@@ -23,6 +23,7 @@ import {
   Moon,
 } from 'lucide-react'
 import { LotusIcon, BreatheIcon, BoltIcon, BellCueIcon, VibrationIcon, OnAirIcon } from './icons'
+import { IconButton } from '@/components/ui/icon-button'
 import { completeSession } from '@/app/(main)/on-air/actions'
 import { isError } from '@/lib/action-result'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
@@ -84,6 +85,7 @@ import {
   clearActiveSession,
 } from '@/lib/on-air/active-session'
 import { clampLoggedSeconds, runOverStateAt } from '@/lib/on-air/run-over'
+import { Field, Textarea } from '@/components/ui/field'
 
 // What a saved Mindless run carries beyond the shared record fields: the mode + cue settings the
 // live clock is rebuilt from. startedAt/pausedAt/practiceId/banked are on the record itself.
@@ -1496,14 +1498,14 @@ export function OnAirSession({
                 )}
                 {/* Journal: the note field lives here so the member writes while they sit. Optional. */}
                 {modeHasNote(liveMode) && (
-                  <textarea
+                  <Textarea
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     rows={3}
                     maxLength={2000}
                     placeholder="Jot a line or two. Or do not. Up to you."
                     aria-label="Session note"
-                    className="w-full max-w-xs resize-none rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+                    className="max-w-xs resize-none"
                   />
                 )}
               </>
@@ -1682,18 +1684,16 @@ export function OnAirSession({
         {/* Just Log: an optional note captured before logging (the One Small Reach entry point).
             Journal's note lives on the live screen instead, so it isn't shown here. */}
         {mode === 'log' && (
-          <div>
-            <Label>Note</Label>
-            <textarea
+          <Field label="Note" labelClassName="mb-2">
+            <Textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={3}
               maxLength={2000}
               placeholder="What happened? A line is plenty. Optional."
-              aria-label="Note"
-              className="mt-2 w-full resize-none rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+              className="resize-none"
             />
-          </div>
+          </Field>
         )}
 
         {mode === 'breath' && (
@@ -1785,23 +1785,13 @@ export function OnAirSession({
             </div>
             {/* The stepper: any length, one minute at a time (1–120). Its own row, like Walk. */}
             <div className="mt-2 flex items-center justify-between rounded-card border border-border px-1.5">
-              <button
-                type="button"
-                onClick={() => setMinutes((m) => clampMinutes(m - 1))}
-                aria-label="One minute less"
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-              >
+              <IconButton label="One minute less" onClick={() => setMinutes((m) => clampMinutes(m - 1))}>
                 <Minus className="h-3.5 w-3.5" />
-              </button>
+              </IconButton>
               <span className="text-body-sm font-semibold tabular-nums text-text">{minutes}m</span>
-              <button
-                type="button"
-                onClick={() => setMinutes((m) => clampMinutes(m + 1))}
-                aria-label="One minute more"
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-              >
+              <IconButton label="One minute more" onClick={() => setMinutes((m) => clampMinutes(m + 1))}>
                 <Plus className="h-3.5 w-3.5" />
-              </button>
+              </IconButton>
             </div>
           </div>
         )}

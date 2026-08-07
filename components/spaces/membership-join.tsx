@@ -55,7 +55,7 @@ export async function MembershipJoin({
     }).format(new Date(mine.startedAt))
     if (mine.status === 'waitlist') {
       return (
-        <div className="rounded-2xl border border-border bg-surface-elevated px-6 py-8 text-center">
+        <div className="rounded-card border border-border bg-surface-elevated px-6 py-8 text-center">
           <Users className="mx-auto mb-3 h-8 w-8 text-muted" aria-hidden />
           <p className="text-body-sm font-semibold text-text">You are on the waitlist.</p>
           <p className="mx-auto mt-1 max-w-sm text-body-sm text-muted">
@@ -68,7 +68,7 @@ export async function MembershipJoin({
       )
     }
     return (
-      <div className="rounded-2xl border border-success/30 bg-success-bg px-6 py-8 text-center">
+      <div className="rounded-card border border-success/30 bg-success-bg px-6 py-8 text-center">
         <BadgeCheck className="mx-auto mb-3 h-8 w-8 text-success" aria-hidden />
         <p className="text-body-sm font-semibold text-text">You are a member.</p>
         <p className="mx-auto mt-1 max-w-sm text-body-sm text-muted">

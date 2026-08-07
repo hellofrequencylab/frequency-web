@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { adoptCircleChallenge, dropCircleChallenge } from '@/app/(main)/circles/admin-actions'
 import type { CircleChallenge } from '@/lib/circles/challenges'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { Select } from '@/components/ui/select'
 
 // The CircleQuest "Challenges" block: the global season challenges this circle has
 // taken on TOGETHER, each with the circle's collective progress ("N of M done"),
@@ -87,18 +88,21 @@ export function CircleChallenges({
 
       {adoptable.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap pt-1">
-          <select
+          {/* aria-label added with the primitive: the control had no label of any kind, so a
+              screen reader announced only the option text. */}
+          <Select
+            aria-label="Adopt a challenge"
             value={pick}
             onChange={(e) => setPick(e.target.value)}
-            className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text"
+            emptyLabel="Adopt a challenge…"
+            wrapperClassName="min-w-0 flex-1"
           >
-            <option value="">Adopt a challenge…</option>
             {adoptable.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
             ))}
-          </select>
+          </Select>
           <button
             onClick={() => run(() => adoptCircleChallenge(circleId, slug, pick))}
             disabled={pending || !pick}

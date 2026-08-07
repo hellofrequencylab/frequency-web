@@ -46,6 +46,13 @@ export function StreamTemplate({
         actions={action ?? sort}
         back={back}
         inlineActions={inlineAction}
+        // A Stream opens on its heading, so the heading gets the hero role and the divider
+        // comes off. DAWN's feed (ui_kits/app/index.html) puts the greeting straight above the
+        // stream with no rule: the rule is what made the page read as a template with a header
+        // bolted on rather than a page that starts with a sentence. The register belongs to the
+        // template, so every Stream gets it — not just the feed.
+        size="hero"
+        divider={false}
       />
       {composer && <div className="mb-6">{composer}</div>}
       {children}

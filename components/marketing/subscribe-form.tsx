@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ArrowRight, Check } from 'lucide-react'
 import { requestSubscribe } from '@/app/(marketing)/subscribe/actions'
+import { Input } from '@/components/ui/field'
 
 export function SubscribeForm() {
   const [name, setName] = useState('')
@@ -48,13 +49,13 @@ export function SubscribeForm() {
           <label htmlFor="subscribe-name" className="block text-body-sm font-semibold text-text mb-1.5">
             First name <span className="font-normal text-subtle">(optional)</span>
           </label>
-          <input
+          <Input
             id="subscribe-name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoComplete="given-name"
-            className="w-full rounded-control border border-border bg-surface px-4 py-3 text-body text-text placeholder:text-subtle focus:border-border-strong outline-none transition-colors"
+            className="px-4 py-3 text-body"
             placeholder="Alex"
           />
         </div>
@@ -62,7 +63,7 @@ export function SubscribeForm() {
           <label htmlFor="subscribe-email" className="block text-body-sm font-semibold text-text mb-1.5">
             Email
           </label>
-          <input
+          <Input
             id="subscribe-email"
             type="email"
             required
@@ -71,7 +72,7 @@ export function SubscribeForm() {
             autoComplete="email"
             aria-describedby={error ? 'subscribe-error' : undefined}
             aria-invalid={error ? true : undefined}
-            className="w-full rounded-control border border-border bg-surface px-4 py-3 text-body text-text placeholder:text-subtle focus:border-border-strong outline-none transition-colors"
+            className="px-4 py-3 text-body"
             placeholder="you@email.com"
           />
         </div>

@@ -104,7 +104,7 @@ export function EventCoreStatsCards({
       {tiles.map((t) => (
         <div
           key={t.key}
-          className="flex items-center gap-2 rounded-lg border border-border bg-surface px-2.5 py-1.5"
+          className="flex items-center gap-2 rounded-card border border-border bg-surface px-2.5 py-1.5"
         >
           <t.Icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
           <div className="min-w-0">

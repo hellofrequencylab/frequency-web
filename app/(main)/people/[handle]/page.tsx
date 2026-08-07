@@ -9,7 +9,8 @@ import { ProfileFeed } from '@/components/feed/profile-feed'
 import { ProfilePosts } from '@/components/feed/profile-posts'
 import { type ProfileTab } from './profile-tabs'
 import { getInitials } from '@/lib/utils'
-import { isEndorsed, rankProgress, seasonRankStyle, type RankDef, type SeasonRank } from '@/lib/season-ranks'
+import { isEndorsed, rankProgress, type RankDef, type SeasonRank } from '@/lib/season-ranks'
+import { RankBadge } from '@/components/ui/rank-badge'
 import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { FriendButton, type FriendState } from './friend-button'
@@ -312,7 +313,8 @@ export default async function ProfilePage({
       <FoundingBadge founding={profile.is_founding_member} className="text-meta leading-tight" />
       {isSupporter && <SupporterBadge />}
       {rankEndorsed && (
-        <span className="rank-badge text-meta font-medium" style={seasonRankStyle(rank)}>{rankDef.label}</span>
+        // `dot={false}`: this identity band already carries four sibling chips.
+        <RankBadge rank={rank} size="lg" dot={false}>{rankDef.label}</RankBadge>
       )}
       {isDemo && <DemoBadge />}
     </span>
@@ -658,7 +660,7 @@ export default async function ProfilePage({
           </div>
 
           {/* Achievements — the earned / nearly-earned chips. */}
-          <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
+          <div className="rounded-card border border-border bg-surface p-4 lift-1">
             <p className="mb-3 text-body-sm font-bold tracking-tight text-text">
               Achievements <span className="font-medium text-subtle">· {rewardsEarned}/{rewards.length}</span>
             </p>
@@ -685,7 +687,7 @@ function ProfileFeedSkeleton() {
   return (
     <div className="space-y-4" aria-hidden>
       {[0, 1, 2].map((i) => (
-        <div key={i} className="rounded-2xl border border-border bg-surface p-4 lift-1">
+        <div key={i} className="rounded-card border border-border bg-surface p-4 lift-1">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 animate-pulse rounded-pill bg-surface-elevated" />
             <div className="flex-1 space-y-2">
@@ -727,10 +729,10 @@ function ProfileStandingCard({
     { icon: Trophy, label: 'Rank', value: rankDef.label, href: isOwner ? '/crew/leaderboard' : null },
   ]
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
+    <div className="rounded-card border border-border bg-surface p-4 lift-1">
       <div className="flex items-center justify-between gap-2">
         <p className="text-body-sm font-bold tracking-tight text-text">Standing</p>
-        <span className="rank-badge text-2xs font-medium" style={seasonRankStyle(rank)}>{rankDef.label}</span>
+        <RankBadge rank={rank}>{rankDef.label}</RankBadge>
       </div>
 
       {next ? (

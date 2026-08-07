@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { Loader2, ClipboardPaste, Home, Tag, ImagePlus, X } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
+import { Input, Textarea } from '@/components/ui/field'
 import { Banner } from '@/components/admin/status'
 import { cn } from '@/lib/utils'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
@@ -18,8 +19,6 @@ import { detectListingKind } from '@/lib/listing-seeder/detect'
 import type { ListingSeedKind } from '@/lib/listing-seeder/types'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 
-const field =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 const labelCls = 'flex flex-col gap-1 text-meta font-medium text-muted'
 
 const KINDS: { key: ListingSeedKind; label: string; blurb: string; icon: typeof Tag }[] = [
@@ -159,7 +158,7 @@ export function StartImportForm() {
               onClick={() => pickKind(k.key)}
               aria-pressed={active}
               className={cn(
-                'flex items-start gap-3 rounded-xl border p-3 text-left transition-colors',
+                'flex items-start gap-3 rounded-card border p-3 text-left transition-colors',
                 active
                   ? 'border-primary bg-primary-bg'
                   : 'border-border bg-surface hover:border-border-strong',
@@ -180,8 +179,8 @@ export function StartImportForm() {
       {/* Paste */}
       <label className={`${labelCls} mt-4`}>
         Paste the listing
-        <textarea
-          className={`${field} min-h-40 resize-y`}
+        <Textarea
+          className="min-h-40 resize-y"
           placeholder="Paste the copied listing here: the title, the description, the price or rent, and how to reach the poster."
           value={pastedText}
           onChange={(e) => onPasteChange(e.target.value)}
@@ -194,16 +193,15 @@ export function StartImportForm() {
       <div className="grid gap-4 sm:grid-cols-3">
         <label className={labelCls}>
           City
-          <input className={field} placeholder="Encinitas" value={city} onChange={(e) => setCity(e.target.value)} />
+          <Input placeholder="Encinitas" value={city} onChange={(e) => setCity(e.target.value)} />
         </label>
         <label className={labelCls}>
           Neighborhood
-          <input className={field} placeholder="Leucadia" value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} />
+          <Input placeholder="Leucadia" value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} />
         </label>
         <label className={labelCls}>
           {kind === 'housing' ? 'Property type' : 'Category'}
-          <input
-            className={field}
+          <Input
             placeholder={kind === 'housing' ? 'Apartment' : 'Furniture'}
             value={category}
             onChange={(e) => setCategory(e.target.value)}
@@ -220,7 +218,7 @@ export function StartImportForm() {
             <Image src={safeUploadPreviewSrc(p.url) ?? ''} alt="" width={200} height={200} unoptimized className="h-full w-full object-cover" />
             {/* KEEP the black/white pair below: A scrim chip painted on a photo thumbnail, not on a themed surface, so the monochrome pair stays. */}
             {i === 0 && (
-              <span className="absolute left-1.5 top-1.5 rounded-pill bg-black/60 px-1.5 py-0.5 text-2xs font-semibold text-white">
+              <span className="absolute left-1.5 top-1.5 rounded-pill bg-ink/60 px-1.5 py-0.5 text-2xs font-semibold text-on-ink">
                 Primary
               </span>
             )}
@@ -228,7 +226,7 @@ export function StartImportForm() {
               type="button"
               onClick={() => setPhotos((prev) => prev.filter((f) => f !== p.file))}
               aria-label="Remove photo"
-              className="absolute right-1.5 top-1.5 rounded-pill bg-black/60 p-1 text-white opacity-0 transition-opacity hover:bg-black/80 focus:opacity-100 group-hover:opacity-100"
+              className="absolute right-1.5 top-1.5 rounded-pill bg-ink/60 p-1 text-on-ink opacity-0 transition-opacity hover:bg-ink/80 focus:opacity-100 group-hover:opacity-100"
             >
               <X className="h-3.5 w-3.5" />
             </button>

@@ -3,8 +3,9 @@
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Save, Plus, Trash2 } from 'lucide-react'
-import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
+import { Input, Textarea, Label } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { TemplateHeaderArt } from '@/components/circles/template-art'
 import { Banner } from '@/components/admin/status'
@@ -72,19 +73,14 @@ function PillarSelect({
   id?: string
 }) {
   return (
-    <select
-      id={id}
-      name={name}
-      defaultValue={defaultValue ?? ''}
-      className={fieldClasses}
-    >
+    <Select id={id} name={name} defaultValue={defaultValue ?? ''}>
       {includeNone && <option value="">Any (Expression)</option>}
       {PILLAR_ORDER.map((p) => (
         <option key={p} value={p}>
           {PILLAR_LABEL[p]}
         </option>
       ))}
-    </select>
+    </Select>
   )
 }
 
@@ -329,19 +325,18 @@ export function TemplateEditor({ template }: { template: CircleTemplate }) {
               <div className="flex flex-wrap items-end gap-3">
                 <div className="space-y-1">
                   <Label htmlFor={`callout.${i}.anchor`}>Anchor</Label>
-                  <select
+                  <Select
                     id={`callout.${i}.anchor`}
                     name={`callout.${i}.anchor`}
                     value={c.anchor}
                     onChange={(e) => patchCallout(i, { anchor: e.target.value as CalloutAnchor })}
-                    className={fieldClasses}
                   >
                     {CALLOUT_ANCHORS.map((a) => (
                       <option key={a} value={a}>
                         {a}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
                 <button
                   type="button"

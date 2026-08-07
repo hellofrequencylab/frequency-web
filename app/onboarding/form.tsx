@@ -8,6 +8,7 @@ import { completeOnboarding } from './actions'
 import { getInitials } from '@/lib/utils'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { WizardShell } from '@/components/templates'
+import { Select } from '@/components/ui/select'
 
 type Region = { id: string; name: string }
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
@@ -347,7 +348,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
       {/* ── Step 2: Bio + Avatar ── */}
       {step === 2 && (
                 <div className="mt-2 space-y-5">
-                  <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-4">
+                  <div className="flex items-center gap-4 rounded-card border border-border bg-surface p-4">
                     {renderAvatar()}
                     <div className="flex flex-col items-start gap-1">
                       <button
@@ -413,26 +414,25 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                       No regions available yet. Check back soon.
                     </p>
                   ) : (
-                    <select
+                    <Select
                       id="region"
                       value={regionId}
                       onChange={(e) => setRegionId(e.target.value)}
-                      className={inputBase}
+                      emptyLabel="Select a region…"
                     >
-                      <option value="">Select a region…</option>
                       {regions.map((r) => (
                         <option key={r.id} value={r.id}>
                           {r.name}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   )}
                 </div>
       )}
 
       {/* ── Step 4: Review ── */}
       {step === 4 && (
-                <div className="mt-2 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface lift-1">
+                <div className="mt-2 divide-y divide-border overflow-hidden rounded-card border border-border bg-surface lift-1">
                   <div className="flex items-center gap-4 p-5">
                     {renderAvatar('lg')}
                     <div className="min-w-0">

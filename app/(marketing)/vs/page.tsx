@@ -67,7 +67,7 @@ export default function ComparisonsIndexPage() {
         subtitle="Most tools help you throw one event, share one link, or sell one ticket. Frequency is the standing room underneath: a small Circle that keeps meeting in person. When you host, selling is open on a free account and your own people are always free. Here is how it stacks up against the tools you already know."
       />
 
-      <Section tone="canvas" pad="pb-16 sm:pb-20">
+      <Section tone="canvas" role="cont">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {COMPARISONS.map((c) => (
             <Link

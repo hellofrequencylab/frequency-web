@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { PhotoHero, Statement, Button } from '@/components/marketing/marketing-ui'
+import { PhotoHero, Statement, Section, Button } from '@/components/marketing/marketing-ui'
 import { BETA_SEQUENCES, getSequence } from '@/lib/onboarding/beta-sequences'
 import { getSplashOverride } from '@/lib/onboarding/sequence-overrides'
 
@@ -35,6 +35,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     robots: { index: false },
     alternates: { canonical: `/beta/${slug}` },
     openGraph: { title: splash.headline, description: splash.body, url: `/beta/${slug}` },
+    // Metadata merges per top-level key: omitting `twitter` inherits the ROOT block, so a shared
+    // /beta/<slug> link would preview as generic site copy instead of this sequence's splash.
+    twitter: { card: 'summary_large_image', title: splash.headline, description: splash.body },
   }
 }
 
@@ -78,7 +81,10 @@ export default async function BetaSequenceSplash({ params }: { params: Promise<{
 
       <Statement tone="canvas">{accent(splash.statement)}</Statement>
 
-      <section className="bg-surface px-6 py-16 text-center sm:py-20">
+      {/* The close. `role="band"` is the loose beat the four-role rhythm reserves for a tone
+          change and the end of a page (globals.css) — the same weight BetaCTA carries on every
+          other marketing page, so this flow-specific CTA closes at the site's cadence. */}
+      <Section tone="surface" role="band" className="text-center">
         <p className="mx-auto max-w-xl text-body-lg leading-relaxed text-muted">
           Two minutes to step in. You’ll take the founder’s oath, claim your handle, and meet your people.
         </p>
@@ -87,7 +93,7 @@ export default async function BetaSequenceSplash({ params }: { params: Promise<{
             {splash.cta}
           </Button>
         </div>
-      </section>
+      </Section>
     </>
   )
 }

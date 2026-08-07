@@ -16,6 +16,7 @@ import {
 import { publishCircleAction, generateCircleEventsAction } from '@/app/(main)/circles/remix-actions'
 import { CircleCallouts } from './circle-callouts'
 import { CircleVeraPanel } from './circle-vera-panel'
+import { Input, Textarea } from '@/components/ui/field'
 
 // The member-facing Starter Circle BUILDER (Stage 4). A full-page editor that
 // mirrors the Journey builder's chrome (deferred creation already happened on
@@ -35,9 +36,6 @@ const PILLAR_LABELS: Record<PillarSlug, string> = {
 }
 
 type SaveState = 'idle' | 'saving' | 'saved'
-
-const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none transition-colors hover:border-border-strong focus:border-primary placeholder:text-subtle'
 
 export function CircleBuilder({ draft }: { draft: CircleDraft }) {
   const router = useRouter()
@@ -196,23 +194,22 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
           {/* ── Identity ─────────────────────────────────────────── */}
           <Section title="Identity" anchor="identity" editorNotes={draft.editorNotes}>
             <Labeled label="Name">
-              <input
+              <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onBlur={() => saveIfChanged('name', name.trim(), draft.name)}
                 maxLength={120}
                 placeholder="Name it for the people, e.g. The Reading Room"
-                className={FIELD}
               />
             </Labeled>
             <Labeled label="About">
-              <textarea
+              <Textarea
                 value={about}
                 onChange={(e) => setAbout(e.target.value)}
                 onBlur={() => saveIfChanged('about', about.trim() || null, draft.about)}
                 rows={3}
                 placeholder="Who it is for and what they get, in plain words."
-                className={`${FIELD} resize-y`}
+                className="resize-y"
               />
             </Labeled>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -227,7 +224,7 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
                         setType(t)
                         saveIfChanged('type', t, draft.type)
                       }}
-                      className={`flex-1 rounded-lg border px-3 py-2 text-body-sm font-medium transition-colors ${
+                      className={`flex-1 rounded-control border px-3 py-2 text-body-sm font-medium transition-colors ${
                         type === t
                           ? 'border-primary/50 bg-primary-bg text-primary-strong'
                           : 'border-border bg-surface text-muted hover:text-text'
@@ -239,7 +236,7 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
                 </div>
               </Labeled>
               <Labeled label="Member cap">
-                <input
+                <Input
                   type="number"
                   min={2}
                   max={50}
@@ -250,8 +247,7 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
                     setMemberCap(String(n))
                     saveIfChanged('memberCap', n, draft.memberCap)
                   }}
-                  className={FIELD}
-                />
+                  />
               </Labeled>
             </div>
             <Labeled label="Primary Pillar (the lean)">
@@ -284,7 +280,7 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
             <div className="space-y-3">
               {PILLAR_SLUGS.map((p) => (
                 <Labeled key={p} label={PILLAR_LABELS[p]}>
-                  <input
+                  <Input
                     value={pillarsInside[p] ?? ''}
                     onChange={(e) => setPillarsInside((prev) => ({ ...prev, [p]: e.target.value }))}
                     onBlur={() => {
@@ -296,8 +292,7 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
                       saveIfChanged('pillarsInside', next, draft.pillarsInside)
                     }}
                     placeholder={`One honest line for ${PILLAR_LABELS[p]}.`}
-                    className={FIELD}
-                  />
+                      />
                 </Labeled>
               ))}
             </div>
@@ -306,7 +301,7 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
           {/* ── Rhythm ───────────────────────────────────────────── */}
           <Section title="The standing rhythm" anchor="rhythm" editorNotes={draft.editorNotes}>
             <Labeled label="Circle Meetup (midweek)">
-              <textarea
+              <Textarea
                 value={meetup}
                 onChange={(e) => setMeetup(e.target.value)}
                 onBlur={() =>
@@ -318,11 +313,11 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
                 }
                 rows={2}
                 placeholder="The midweek connect-and-process session: what happens, in person or virtual."
-                className={`${FIELD} resize-y`}
+                className="resize-y"
               />
             </Labeled>
             <Labeled label="Meetup length (optional)">
-              <input
+              <Input
                 value={meetupLength}
                 onChange={(e) => setMeetupLength(e.target.value)}
                 onBlur={() =>
@@ -334,11 +329,10 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
                 }
                 maxLength={60}
                 placeholder="e.g. 90 minutes"
-                className={FIELD}
               />
             </Labeled>
             <Labeled label="Weekend Gathering">
-              <textarea
+              <Textarea
                 value={gathering}
                 onChange={(e) => setGathering(e.target.value)}
                 onBlur={() =>
@@ -350,7 +344,7 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
                 }
                 rows={2}
                 placeholder="The weekend in-person event that fits the group's vibe."
-                className={`${FIELD} resize-y`}
+                className="resize-y"
               />
             </Labeled>
           </Section>
@@ -358,13 +352,13 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
           {/* ── Thread ───────────────────────────────────────────── */}
           <Section title="The Thread" anchor="rhythm" editorNotes={[]}>
             <Labeled label="What lives in the always-on Thread">
-              <textarea
+              <Textarea
                 value={thread}
                 onChange={(e) => setThread(e.target.value)}
                 onBlur={() => saveIfChanged('thread', thread.trim() || null, draft.thread)}
                 rows={2}
                 placeholder="The online Thread that runs between gatherings: check-ins, photos, plans."
-                className={`${FIELD} resize-y`}
+                className="resize-y"
               />
             </Labeled>
           </Section>
@@ -372,13 +366,13 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
           {/* ── Format ───────────────────────────────────────────── */}
           <Section title="Format" anchor="meetup" editorNotes={draft.editorNotes}>
             <Labeled label="How it runs (in person, virtual, hybrid)">
-              <textarea
+              <Textarea
                 value={format}
                 onChange={(e) => setFormat(e.target.value)}
                 onBlur={() => saveIfChanged('format', format.trim() || null, draft.format)}
                 rows={2}
                 placeholder="In person is the default. Always name a virtual path for busy weeks."
-                className={`${FIELD} resize-y`}
+                className="resize-y"
               />
             </Labeled>
           </Section>
@@ -386,13 +380,12 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
           {/* ── Size ─────────────────────────────────────────────── */}
           <Section title="Size" anchor="size" editorNotes={draft.editorNotes}>
             <Labeled label="The headcount that makes it work">
-              <input
+              <Input
                 value={sizeLabel}
                 onChange={(e) => setSizeLabel(e.target.value)}
                 onBlur={() => saveIfChanged('sizeLabel', sizeLabel.trim() || null, draft.sizeLabel)}
                 maxLength={60}
                 placeholder="e.g. 5 to 10"
-                className={FIELD}
               />
             </Labeled>
           </Section>
@@ -452,7 +445,7 @@ function CircleActions({
   const [eventsDone, setEventsDone] = useState(false)
   const live = published || justPublished
   const btn =
-    'inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-body-sm font-semibold transition-colors disabled:opacity-60'
+    'inline-flex items-center gap-1.5 rounded-control px-3 py-2 text-body-sm font-semibold transition-colors disabled:opacity-60'
 
   const publish = () => {
     setError(null)
@@ -609,7 +602,7 @@ function ListEditor({
     <div className="space-y-2">
       {draftRows.map((row, i) => (
         <div key={i} className="flex items-center gap-2">
-          <input
+          <Input
             value={row}
             onChange={(e) => {
               const next = [...draftRows]
@@ -618,7 +611,7 @@ function ListEditor({
             }}
             onBlur={() => commit(draftRows)}
             placeholder={placeholder}
-            className={FIELD}
+            aria-label={`${addLabel} ${i + 1}`}
           />
           <button
             type="button"
@@ -628,7 +621,7 @@ function ListEditor({
               setDraftRows(next)
               commit(next)
             }}
-            className="shrink-0 rounded-lg border border-border p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+            className="shrink-0 rounded-control border border-border p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
           >
             <X className="h-4 w-4" aria-hidden />
           </button>
@@ -637,7 +630,7 @@ function ListEditor({
       <button
         type="button"
         onClick={() => setDraftRows([...draftRows, ''])}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-2 text-body-sm font-medium text-muted transition-colors hover:border-primary/40 hover:text-text"
+        className="inline-flex items-center gap-1.5 rounded-control border border-dashed border-border px-3 py-2 text-body-sm font-medium text-muted transition-colors hover:border-primary/40 hover:text-text"
       >
         <Plus className="h-4 w-4" aria-hidden /> {addLabel}
       </button>

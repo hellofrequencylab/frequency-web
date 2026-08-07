@@ -65,7 +65,7 @@ export default async function SeasonPreviewPage({ params }: { params: Promise<{ 
 }
 
 function PreviewFallback() {
-  return <div className="h-72 animate-pulse rounded-3xl border border-border bg-surface" aria-hidden />
+  return <div className="h-72 animate-pulse rounded-card border border-border bg-surface" aria-hidden />
 }
 
 async function SeasonPreviewMap({ id }: { id: string }) {

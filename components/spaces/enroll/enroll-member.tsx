@@ -86,7 +86,7 @@ export async function EnrollMember({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
+      <div className="rounded-card border border-border bg-surface p-5 lift-1">
         <h3 className="text-body font-bold leading-tight text-text">{program.name}</h3>
 
         <ul className="mt-2 space-y-1.5 text-body-sm text-muted">
@@ -116,7 +116,7 @@ export async function EnrollMember({
 
         <div className="mt-4">
           {mine ? (
-            <div className="rounded-xl border border-success/30 bg-success-bg px-4 py-3 text-center">
+            <div className="rounded-card border border-success/30 bg-success-bg px-4 py-3 text-center">
               <BadgeCheck className="mx-auto mb-1.5 h-6 w-6 text-success" aria-hidden />
               <p className="text-body-sm font-semibold text-text">You are enrolled.</p>
               <p className="mt-0.5 text-2xs text-muted">

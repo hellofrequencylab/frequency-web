@@ -35,6 +35,7 @@ import {
 } from '../actions'
 import { PracticeFeatureToggle, PracticePublicToggle } from '../content-controls'
 import { PracticeDuplicatesButton } from './practice-duplicates'
+import { Checkbox } from '@/components/ui/checkbox'
 
 export interface LibraryRow {
   id: string
@@ -141,18 +142,15 @@ function RowCheckbox({
   label: string
 }) {
   return (
-    <label className="-my-3 flex h-11 w-11 cursor-pointer items-center justify-center lg:my-0 lg:h-auto lg:w-auto">
-      <span className="sr-only">{label}</span>
-      <input
-        type="checkbox"
-        checked={checked}
-        ref={(el) => {
-          if (el) el.indeterminate = indeterminate
-        }}
-        onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 cursor-pointer rounded border-border-strong text-primary focus:ring-2 focus:ring-primary/50"
-      />
-    </label>
+    <Checkbox
+      wrapperClassName="-my-3 h-11 w-11 justify-center lg:my-0 lg:h-auto lg:w-auto"
+      aria-label={label}
+      checked={checked}
+      ref={(el) => {
+        if (el) el.indeterminate = indeterminate
+      }}
+      onChange={(e) => onChange(e.target.checked)}
+    />
   )
 }
 

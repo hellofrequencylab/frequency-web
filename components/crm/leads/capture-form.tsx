@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { ArrowRight, Check, ExternalLink } from 'lucide-react'
+import { Input } from '@/components/ui/field'
 
 // The shared client form behind the public capture doors 3 to 5 (event / lead magnet / share-back).
 // One anti-enumeration, honeypot-guarded form; each door passes its own bound server action, submit
@@ -118,13 +119,13 @@ export function CaptureForm({
           <label htmlFor="cap-name" className="mb-1.5 block text-body-sm font-semibold text-text">
             Name
           </label>
-          <input
+          <Input
             id="cap-name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoComplete="name"
-            className="w-full rounded-control border border-border bg-surface px-4 py-3 text-body text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
+            className="px-4 py-3 text-body"
             placeholder={namePlaceholder}
           />
         </div>
@@ -132,7 +133,7 @@ export function CaptureForm({
           <label htmlFor="cap-email" className="mb-1.5 block text-body-sm font-semibold text-text">
             Email
           </label>
-          <input
+          <Input
             id="cap-email"
             type="email"
             required
@@ -141,7 +142,7 @@ export function CaptureForm({
             autoComplete="email"
             aria-describedby={error ? 'cap-error' : undefined}
             aria-invalid={error ? true : undefined}
-            className="w-full rounded-control border border-border bg-surface px-4 py-3 text-body text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
+            className="px-4 py-3 text-body"
             placeholder="you@email.com"
           />
         </div>
@@ -150,13 +151,13 @@ export function CaptureForm({
             <label htmlFor="cap-phone" className="mb-1.5 block text-body-sm font-semibold text-text">
               Phone <span className="font-normal text-subtle">(optional)</span>
             </label>
-            <input
+            <Input
               id="cap-phone"
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               autoComplete="tel"
-              className="w-full rounded-control border border-border bg-surface px-4 py-3 text-body text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
+              className="px-4 py-3 text-body"
               placeholder="(555) 555-0134"
             />
           </div>

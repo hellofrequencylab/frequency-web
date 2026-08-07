@@ -42,6 +42,7 @@ import {
   STORAGE_STATE,
   appSurfaces,
   applyRenderState,
+  assertMemberSession,
   assertNotProtectionWall,
   currentPathname,
   publicSurfaces,
@@ -189,6 +190,9 @@ async function open(page: Page, surface: Surface, state: RenderState): Promise<b
   await applyRenderState(page, state)
   await page.goto(surface.path, { waitUntil: 'load' })
   await assertNotProtectionWall(page)
+  // Auditing the sign-in page under `/feed`'s name would report someone else's contrast as
+  // the shell's. A member surface that lands there is a dead credential — say so.
+  assertMemberSession(page, surface)
 
   const landed = currentPathname(page)
   if (surface.audience === 'anon' && landed.startsWith('/sign-in') && surface.path !== '/sign-in') {
@@ -254,7 +258,9 @@ test.describe('a11y · contrast', { tag: '@a11y' }, () => {
 
 /* ── The member shell ───────────────────────────────────────────────────────── */
 
-test.describe('a11y · member shell', { tag: '@a11y' }, () => {
+// @shell: counted by test/e2e/shell-reporter.ts, which turns "these skipped" into a job
+// summary naming each unaudited surface. A new member-shell describe needs the tag too.
+test.describe('a11y · member shell', { tag: ['@a11y', '@shell'] }, () => {
   test.use({ storageState: STORAGE_STATE })
 
   test.skip(

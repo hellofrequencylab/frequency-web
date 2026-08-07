@@ -24,10 +24,10 @@ export function CheckinCodeCard({ svg, link }: { svg: string; link: string }) {
   }
 
   const btn =
-    'inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated'
+    'inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated'
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
+    <div className="rounded-card border border-border bg-surface p-5 lift-1">
       <h3 className="flex items-center gap-1.5 text-body-sm font-bold text-text">
         <QrCode className="h-4 w-4 text-primary-strong" aria-hidden /> Check-in code
       </h3>
@@ -36,6 +36,7 @@ export function CheckinCodeCard({ svg, link }: { svg: string; link: string }) {
       </p>
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
         <div
+          // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
           className="h-40 w-40 shrink-0 overflow-hidden rounded-card border border-border bg-white p-2 [&>svg]:h-full [&>svg]:w-full"
           aria-label="Check-in QR code"
           dangerouslySetInnerHTML={{ __html: svg }}
@@ -43,7 +44,7 @@ export function CheckinCodeCard({ svg, link }: { svg: string; link: string }) {
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex items-center gap-2">
             <code
-              className="min-w-0 flex-1 truncate rounded-lg border border-border bg-surface-elevated/50 px-2.5 py-1.5 font-mono text-meta text-muted"
+              className="min-w-0 flex-1 truncate rounded-control border border-border bg-surface-elevated/50 px-2.5 py-1.5 font-mono text-meta text-muted"
               title={link}
             >
               {link}

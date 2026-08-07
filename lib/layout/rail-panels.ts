@@ -43,7 +43,10 @@ const RULES: { test: (p: string) => boolean; panels: PanelKey[] }[] = [
   // People-led browse — who's online + circles to join + what's on. (/market moved to the
   // marketplace vertical descriptor, ADR-278.)
   {
-    test: (p) => ['/channels', '/people'].some((s) => p === s || p.startsWith(s + '/')),
+    // '/network' is the Members hub's real route; this rule read '/people' long after the
+    // rail row was repointed (ADR-868), so every /network page silently fell through to
+    // DEFAULT_PANELS. Both are listed: /people is still a live profile route.
+    test: (p) => ['/channels', '/people', '/network'].some((s) => p === s || p.startsWith(s + '/')),
     panels: ['online', 'circles', 'events'],
   },
   // Practice — keep momentum: the board + who's around.

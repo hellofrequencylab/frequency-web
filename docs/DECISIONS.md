@@ -17688,7 +17688,660 @@ how this project applies migrations, not a schema difference; the applied SQL is
 
 ---
 
-## ADR-946 — A signed-out induction leaves a row, not just a one-hour cookie (2026-08-07)
+## ADR-946 — The Vault dock hides at strip width rather than shrinking to icons
+
+**Date.** 2026-08-05 · **Status.** Accepted (owner decision) · **Scope.** `components/layout/dock-bar.tsx`, `components/layout/app-shell.tsx`
+
+**Context.** `DockBar` is `fixed bottom-0 right-3 w-72`, and its own comment states the coupling
+plainly: "the rail is `w-72` and the dock was built to sit under it." That was true while the fold
+was gated to two builder routes. ADR-925's rail ladder made either rail foldable to a 56px strip on
+**every** page, and the bar was never told. At strip width it spans 288px against a 56px rail and
+overhangs the content column by ~232px — a visible box sitting on top of the page.
+
+The bug is pre-existing. What changed is its reach: a rare state on two routes became a one-click
+state everywhere, which is the difference between a latent defect and a shipped one.
+
+**Options.** (a) Narrow the bar to the strip and collapse both segments to glyphs — preserves
+one-tap Vault and Messages at every rail width, and keeps the three-docks law whole, at the cost of
+a second layout for the bar and a second tone treatment for the chat tab's unread states.
+(b) Hide the bar while the rail is folded. (c) Anchor the bar to the viewport and accept the
+overlap.
+
+**Decision.** **(b) — hide it.** (c) is not a decision, it is the current bug restated. Between (a)
+and (b), the owner's call is that a member who has *deliberately folded the rail away* has asked
+for the page, not for more chrome over it; re-asserting a 56px dock on top of that argues with the
+instruction they just gave.
+
+**What is genuinely lost, stated rather than glossed.** One-tap Vault and one-tap Messages. Nothing
+becomes unreachable — the rail-foot account dock and the top-right system dock still carry
+navigation, and every account link in the folded rail's foot also lives in the system menu — but
+"still reachable" is not "still one tap," and this ADR does not pretend otherwise. If the Vault
+proves to be a surface members reach for constantly while folded, (a) is the upgrade path and this
+ADR is what to revisit.
+
+**Consequences.** ✅ The content column is never overlapped. ✅ The fold means one thing on every
+route. ⚠️ Hiding must route through the same `close()` path Esc and outside-click already use, or
+folding while a panel is open strands that panel and drops keyboard focus onto `<body>`, restarting
+the member's tab order. ⚠️ `RAIL_END_SENTINEL_ID` is measured by the bar; with the bar unmounted
+that measurement must not run against a null ref. ⚠️ `railFoldClearsDock()` in
+`lib/layout/shell-metrics.ts` pins the fold control's sticky offset above the bar's height — with
+no bar to clear, that clearance becomes conditional and the guard must say which case it is
+asserting.
+
+**🔴 Amendment (2026-08-05, owner) — the two segments no longer share a fate.** The owner's later
+instruction, "in the closed state on the right, the chat tab should be present in the bottom,"
+overrides the half of this decision that hid *everything*. The bar is now `lg:w-auto` rather than
+`lg:hidden`: the **Vault segment** goes with the fold, the **chat tab** survives it, shrinking from
+the rail's width to a corner tab.
+
+Two consequences the original text got wrong and this amendment corrects:
+
+- **"What is genuinely lost" is now half of what it said.** One-tap Vault is still surrendered by
+  folding. One-tap **Messages is not** — the tab is right there. The paragraph above should be read
+  as applying to the Vault alone.
+- **`dockDismissalDue` measures the wrong thing if read literally from the original.** With the bar
+  no longer vanishing, "the bar has no width" stopped being the dismissal trigger; the predicate now
+  reads the **Vault segment's** width. A fold still dismisses **both** panels, which is deliberate
+  and not an oversight: the chat *panel* hangs off a bar that just shrank to a corner, so leaving it
+  open would strand it against a column the fold deleted. Closing it costs one press to undo,
+  because the tab it re-opens from never left.
+
+The rest of the decision — that folding means one thing on every route, and that the content column
+is never overlapped — stands unchanged. Option (a) remains the upgrade path if the Vault proves to
+be a surface members reach for constantly while folded.
+
+---
+
+## ADR-947 — Three fixed type roles, because the ladder is fluid all the way down
+
+**Date.** 2026-08-05 · **Status.** Accepted (owner decision) · **Scope.** `app/globals.css` type roles
+
+**Context.** The `app/**` display sweep took `literal-display-type` from 300 to 112 and stopped,
+leaving 12 literals rather than guess at them. Reading what survived, the residue is not 12
+unrelated judgment calls — it is **one gap, named three ways**. Every display role in the
+vocabulary is `clamp()`-based and fluid, so there is nothing to reach for when a figure must *not*
+scale:
+
+- A 4-up KPI strip in a page header (`admin/page.tsx:214`) — `text-stat` at 3.5–4.5rem breaks the
+  row, and the ladder has no rung between that and body copy.
+- A hero price (`upgrade` ×2, `pricing`) — `display-h3` shrinks the conversion-critical figure ~22%
+  on phones, which is the one place it must not shrink.
+- A print poster title — viewport units resolve against the **page box** on a print surface, so
+  every fluid role sizes unpredictably there.
+
+**Decision.** Add three roles: a **compact stat** (~1.875rem, fixed), a **fixed mid-scale numeral**
+(~2.25rem, not fluid), and a **non-viewport display** role. Name them consistently with the
+existing vocabulary and register them in `scripts/check-phantom-classes.mjs` so a typo in a
+consumer is caught rather than silently emitting nothing.
+
+**What is deliberately NOT a role.** `pricing`'s `sizeFor()` is a length-driven fitting algorithm —
+four sizes chosen by label character count so the display face never wraps mid-figure. Roles have
+no 4-step ladder in that band, and inventing one to serve a single call site would be fitting the
+vocabulary to a layout problem. Likewise emoji glyphs, avatar initials, and single-letter fallback
+cover glyphs: sized to fill a tile, not display type, and a role would be wrong on all three.
+
+**Consequences.** ✅ The 12 remaining literals get a home. ✅ "Fixed" becomes expressible, which it
+was not. ⚠️ Tailwind v4 generates utilities from `@theme inline`, not `:root` — a role defined in
+the wrong block emits nothing while reading correctly, which is the exact failure `check:bridge`
+exists for. ⚠️ `events/[slug]:1705` and `detail-template.tsx:133` are a pair: the first is an
+inline-edit input mirroring the second's chain verbatim, and they must move together or the editor
+stops matching the title it edits.
+
+**Resolved (2026-08-05).** The three roles as shipped in `app/globals.css` — declared in `:root`,
+bridged into `@theme inline`, each with a paired line-height, each asserted in
+`scripts/check-phantom-classes.mjs`'s `DECLARED` list:
+
+| Role | Value | Line-height | Why that value |
+| --- | --- | --- | --- |
+| `--text-stat-sm` | `1.875rem × --type-scale` | `calc(2.25 / 1.875)` | The compact KPI / dense-row numeral. Exactly the `text-3xl` it retires, so adoption is zero-pixel. |
+| `--text-stat-md` | `2.25rem × --type-scale` | `calc(2.5 / 2.25)` | The price. Exactly the `text-4xl` it retires; fixed so a phone never shrinks the figure. |
+| `--text-display-poster` | `2.25rem × --type-scale` | `calc(2.5 / 2.25)` | No `vw` term at all. Equals `display-h3`'s **ceiling**, i.e. what that role was always meant to reach; on A4 at 12mm margins `3vw` ≈ 21px would drop it to its 1.75rem floor. |
+
+Naming follows the neighbours: `display-poster` is parallel to `display-card` (a display role named
+for its artifact), and `stat-md`/`stat-sm` follow StatCard's own `size: md | sm | xs` ordering, so
+the family reads `stat` > `stat-md` > `stat-sm`. `stat-md` and `display-poster` share a value and
+stay separate names — different families, different failure modes (one must not shrink on a phone,
+the other must not depend on a viewport at all), and merging them would put a price on the same
+token as a poster title.
+
+The line-heights deliberately do **not** copy `--text-stat`'s flat `1`. That `1` is text-7xl's
+line-height, not a house style for numerals; Tailwind only flattens from text-5xl up. All three of
+these replace a text-3xl/4xl literal that still carries a ratio, so copying `1` would tighten every
+adopting site 11–20% and smuggle a leading change inside a size change.
+
+Sites converted: `admin/page.tsx:214` (→ `text-stat-sm`), `upgrade/page.tsx` ×2 (→ `text-stat-md`),
+`print/qr/page.tsx` PosterSheet (→ `text-display-poster`; the route is confirmed print — it sets
+`@page { size: A4 portrait }`, uses `print:` variants and calls `window.print()`).
+The `events/[slug]` ⇄ `detail-template` pair is **left on literals, together**: it is a three-step
+responsive ramp (1.5 / 1.875 / 2.25rem), no fixed role reproduces a ramp, and the nearest fluid role
+(`display-h3`) floors at 1.75rem — it would grow every Detail title ~17% on phones and swap bold
+sans for Anton. Retiring it needs a fluid *page-title* role, which is a fourth decision.
+
+> **⚠️ SUPERSEDED, same day.** The fourth decision was taken and shipped hours after this section
+> was written: **ADR-951** adds `--text-page-title-lg`, and `77bb066e5` converted **both** halves of
+> the pair onto it. The paragraph above is preserved because it is the reasoning that *produced*
+> ADR-951 — but read as current status it is false, and a repo-wide audit caught it in that state.
+> An ADR's Resolved section is a snapshot, not a subscription; when the thing it resolved moves,
+> the amendment is the work.
+
+---
+
+## ADR-948 — `pr-compare` becomes a required check
+
+**Date.** 2026-08-05 · **Status.** Accepted (owner decision); **branch protection not yet applied**
+
+**Context.** Three baseline recaptures in two days, every one the same shape: a rendering change
+merges while `pr-compare` is advisory, and the *next* PR inherits red shots for a diff it did not
+make. Measured instances — #2038 recaptured across six merges; #2042 merged red and the next PR
+inherited 4 failures on `/about` mobile; #2046 merged a one-line type-role change on `/pricing` and
+#2047 inherited 8 failures across four theme states and two viewports, `18869px` vs `18864px`.
+
+An advisory gate cannot block anything, so "merged red" is not a mistake anyone makes — it is the
+only behaviour available.
+
+**Decision.** Require `pr-compare` on `main`, beside the existing `checks` and `analyze`. Applied
+in Settings → Branches → `main` → *Require status checks to pass*; needs repo-admin rights, so it
+is recorded here as approved and pending rather than done.
+
+**Consequences.** ✅ A green `pr-compare` starts meaning "nothing rendered differently" instead of
+"either nothing changed, or nobody looked." ⚠️ Every rendering PR gains ~11 minutes before it can
+merge — preview resolution plus a ~5-minute visual pass. ⚠️ A legitimately-changed surface now
+**blocks** until its baselines are recaptured rather than merging red. That is the point, not a
+side effect: it converts a silent inheritance into a step someone has to take.
+
+**The recapture procedure, and the trap in it.** Dispatch `e2e-manual.yml` with `base_url` = the
+PR's preview and `update_baselines: true`; then **check the capture commit's file list against the
+failing-test list — they must match**; then **push a real commit**. The runner commits with
+`GITHUB_TOKEN`, which GitHub excludes from triggering workflow runs so an Action cannot recurse, so
+the baseline commit lands with no checks at all — and re-running the failed job replays the old SHA
+against the new baselines. Only a fresh push fires `pull_request: synchronize`. The failure mode is
+silent waiting.
+
+**The attribution property, three-for-three and worth relying on.** A capture can only rewrite what
+already differs. On #2047, 56 of 64 shots passed and the capture rewrote **exactly the 8 that
+failed** — mechanical proof the other 56 surfaces were pixel-identical. Read it in both directions:
+**if a capture rewrites more files than the run reported failing, the extras are the regression.**
+
+### 🔴 AMENDMENT, 2026-08-05 — `PW_STORAGE_STATE` is a HARD PREREQUISITE, not a companion task
+
+**Do not apply the branch-protection change until `PW_STORAGE_STATE` is set.** Ordering matters
+here in a way it usually does not, and the reason was found the same day this ADR was written.
+
+**What happened.** #2048 removed `bg-chrome` from all four rail branches, moved the fold control to
+an edge handle, and resized both dock heads from 72px and 48px onto a shared measure. Every one of
+those is a visible change on every page of the app shell. `pr-compare` came back **green**:
+
+```
+  12 skipped
+  64 passed (3.5m)
+```
+
+Those 12 skips are the **entire member shell** — `/feed`, the room, `/settings`, the Space console
+(`test/e2e/surfaces.ts` → `appSurfaces()`). They are the only captured surfaces that *have* rails,
+and they sit behind `test.use({ storageState: STORAGE_STATE })` with a `test.skip` when the env var
+is absent. The 64 that passed are anonymous marketing pages, which render **outside** the `(main)`
+shell and therefore have no rail, no dock and no fold control to photograph.
+
+So the gate did not miss the change. It reported honestly on the surfaces it can reach, and **the
+surfaces it can reach exclude the entire app.** Sign-in is magic-link only, so there is nothing to
+script — the suite cannot authenticate itself, by design.
+
+**Why the ordering is the whole point.** Required-and-blind is strictly worse than
+advisory-and-blind. Advisory, a green `pr-compare` means "either nothing changed, or nobody
+looked" — this ADR's own words, and a reader who knows that goes and looks. Required, the same
+green becomes a merge gate saying the shell is fine, and it will say that no matter what happens to
+the shell. That converts a known blind spot into an institutional claim, which is the exact failure
+ADR-949 was written about, promoted to a branch-protection rule.
+
+**Therefore:**
+
+1. **First** — create the e2e member account and expose it to CI so a session can be minted.
+   `test/e2e/surfaces.ts` carried this as a 🔴 owner action; it is now blocking rather than
+   aspirational.
+2. **Then** — capture baselines for the four member-shell surfaces, which have never had any,
+   and seed their a11y counts.
+3. **Only then** — add `pr-compare` to the required checks on `main`.
+
+Until step 1 lands, every rendering change to the app shell is verified by types, tests and the
+token gates, and looked at by nobody. The honest mitigation in the meantime is a human opening the
+Vercel preview, and saying so in the PR rather than pointing at a green tick.
+
+**Amendment update, 2026-08-05 (later the same day).** Steps 1-3 are now BUILT, and the shape of
+step 1 changed on contact with the facts — see **ADR-950**. The credential is not a saved file
+handed to CI; it is a session **minted per run** from the service-role key, because a saved
+storage state is defeated twice over (auth cookies are host-scoped and every PR gets a new preview
+hostname; refresh tokens rotate on first use). What the owner must produce is therefore an
+ACCOUNT and three repo secrets, not a file to keep rotating.
+
+The waiting is now instrumented rather than silent: while the account does not exist, every
+`pr-compare` run prints a **PARTIAL** banner naming `/feed`, the room, `/settings` and the Space
+console as unphotographed. The exact run this ADR was written about would no longer read as a
+pass. The ordered checklist is `test/e2e/README.md` § *Owner runbook*; step 5 of it
+(`PW_REQUIRE_SHELL=1`) is what makes step 3 here safe to apply.
+
+---
+
+## ADR-949 — Prove a guard can fail before trusting it
+
+**Date.** 2026-08-05 · **Status.** Accepted · **Scope.** every `scripts/check-*.mjs` and every drift-guard test
+
+**Context.** A day of DAWN conversion work produced one finding larger than any of the sweeps: the
+palette was already 100% correct — all 81 tokens present, value-for-value — and **five separate
+gates were green over the exact defects they existed to catch.**
+
+| Gate | Green over |
+| :--- | :--- |
+| `check:adoption` | comments — `shadow-lg` inside a `//` raised the count with no markup involved, so a sweep could bank a phantom win by deleting prose |
+| `check:phantom` | all of `lib/`, every `.ts` file, every alpha modifier — precisely where a sweep moves classes *to* |
+| `check:contrast` | white on all 10 rank cores at 2.46:1–3.88:1, because it models named pairs and has no `white-on-rank` entry |
+| `check:bridge` | a token *mentioned* in a comment 1,000 lines from the real at-rule |
+| `select-checkbox.test.tsx` | a `className` string containing `w-auto` while the element rendered `w-full`, under the name "shrinks to its options" |
+
+**Decision.** A guard is not trusted until it has been **observed failing**: reintroduce the
+defect, watch the assertion go red, restore, watch it go green — and record that you did. Applied
+to every guard added on 2026-08-05; the dock-clearance pair was proven by re-applying `sticky
+bottom-4` and confirming two assertions flipped.
+
+**The shape to watch for, which is the transferable part.** Four of the five share one form: **a
+test that greps the string it was handed cannot see what the compiler or the cascade does with
+it.** `cn()` here is a plain join, not `tailwind-merge`, so a class passed to a primitive does not
+replace the default — both reach the attribute and emit order decides. Measured against the real
+compiled sheet: `.w-auto` (8610) precedes `.w-full` (8643) so `w-auto` loses; `.w-max` (8676)
+follows, so it wins. No call site can see this. Any assertion about width, padding, or display that
+does not compile `app/globals.css` is asserting about a string, not a rendering.
+
+**Consequences.** ✅ A green board becomes evidence again. ⚠️ Proving a failure costs a minute per
+guard and cannot be skipped when the guard is the reason a sweep is believed. ⚠️ Seven
+`adoption-baselines.json` entries carry rebase provenance rather than earned falls, because they
+were measured under a question the instrument was asking wrong — those are debt the ratchet stopped
+guarding, and they stay named until a sweep brings them down.
+
+---
+
+## ADR-950 — The e2e member session is minted per run, and a run that photographs no app surface says so
+
+**Date.** 2026-08-05 · **Status.** Accepted · **Scope.** `test/e2e/**`, `.github/workflows/e2e*.yml`
+· **Follows** ADR-948's 🔴 amendment (`PW_STORAGE_STATE` is a hard prerequisite) and ADR-949
+(prove a guard can fail).
+
+**Context.** `pr-compare` cannot see the app. The four member-shell surfaces — `/feed`, the room,
+`/settings`, the Space console — are the only captured surfaces with a rail, a dock or a fold
+control, and they skip whenever `PW_STORAGE_STATE` is unset. On #2048 that produced `12 skipped ·
+64 passed`, green, over a PR that changed all three of those things. Sign-in is magic-link only, so
+the suite cannot authenticate itself.
+
+Two separate problems hide in that sentence, and they have different fixes: the suite has no
+credential, and **nothing in its output says that the credential's absence emptied the run of the
+product.**
+
+**Decision 1 — make the silence loud, with no credential at all.** A Playwright reporter
+(`test/e2e/shell-reporter.ts`) counts every `@shell`-tagged test. When they are collected and none
+execute, the run prints a **PARTIAL** banner to `$GITHUB_STEP_SUMMARY` and the terminal that names
+each unphotographed surface, the cause (unset variable / missing file / present-but-inert, told
+apart rather than guessed at), and the command that fixes it, plus a `::warning` annotation. It
+also says when `PW_SPACE_SLUG` is unset, because that surface is not skipped — it is never
+created, which is quieter still.
+
+**It does not fail the run.** A red X meaning "the owner has not made a credential yet" is how a
+check gets ignored, and that is e2e.yml's own founding argument. The exit code stays as it was;
+the words change. The single opt-in exception is `PW_REQUIRE_SHELL=1`, set as a repo variable
+AFTER the credential and the baselines exist: from then on a zero-app-surface run fails, so a
+credential that later expires cannot re-open the blind spot the same silent way. The rendering
+logic is pure and unit-tested, including the negative control that a covered run cannot print the
+partial banner (ADR-949: observed red, then green).
+
+**Decision 2 — mint the session per run; never store one.** `pnpm e2e:session`
+(`test/e2e/mint-storage-state.mts`) calls `admin.auth.admin.generateLink({ type: 'magiclink' })`,
+which sends no email, then `verifyOtp` — the same two calls `app/(main)/impersonate-actions.ts`
+already makes in production. The cookies are written by handing `@supabase/ssr` a jar of our own,
+so the cookie name, base64url encoding and >3180-byte chunking come from the installed library
+rather than a second implementation of a private format.
+
+A **saved** storage state was the obvious alternative and it fails twice, independently:
+
+| | Why a stored credential dies |
+| :--- | :--- |
+| Cookie domain | Supabase auth cookies are host-scoped, and every PR gets a NEW `*.vercel.app` preview hostname. A file exported against production is simply never sent to the deployment under test. |
+| Refresh rotation | Refresh tokens rotate on use, so the first run that refreshes invalidates the stored copy. |
+
+Both land the suite on `/sign-in` — indistinguishable from having no credential, which is exactly
+the failure this ADR is closing. So the owner produces an ACCOUNT and three repo secrets
+(`PW_MEMBER_EMAIL`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL`; the latter two already
+exist for `help-index.yml`), and nothing needs rotating. The script **verifies before it writes**:
+it replays the minted cookies against `PW_BASE_URL/feed` and refuses to emit a file that lands on
+`/sign-in`. `assertMemberSession()` in `surfaces.ts` throws for the same case at test time, because
+photographing the sign-in page under `/feed`'s name would be worse than skipping it.
+
+**Decision 3 — the first shell capture is opt-in.** `e2e-manual.yml` gains `capture_shell`,
+defaulting OFF. The four shell surfaces have never had baselines, so their first capture writes 12
+new PNGs (16 with a Space slug) and their first a11y run measures debt against a `$defaultMax` of
+zero. Neither should be discovered by someone dispatching a routine baseline refresh.
+
+**Consequences.** ✅ A green `pr-compare` with the app missing from it now reads as PARTIAL, in
+words, before the credential exists — which is the whole gap ADR-948's amendment describes, closed
+from the side that needed no owner action. ✅ CI holds no long-lived member credential. ⚠️ It does
+hold the service-role key, which `help-index.yml` already required; it is used only to mint and is
+never written to disk. ⚠️ The ordering in ADR-948 stands and gains two steps: account + secrets,
+`capture_shell` baselines, `capture_shell` a11y seed, `PW_REQUIRE_SHELL=1`, and only then required.
+The runbook is `test/e2e/README.md` § *Owner runbook*.
+
+---
+
+## ADR-951 — A fluid page-title role, because a ramp is a decision the ladder could not express
+
+**Date.** 2026-08-05 · **Status.** Accepted (owner decision) · **Scope.** `app/globals.css`,
+`components/templates/detail-template.tsx`, `app/(main)/events/[slug]/page.tsx`
+· **Completes** the "fourth decision" ADR-947 named and deferred.
+
+**Context.** ADR-947 added three **fixed** roles because the type ladder was `clamp()`-based all
+the way down and nothing could express "this figure must not scale." It then hit a case that is the
+exact inverse and correctly refused to guess at it: `detail-template.tsx` and `events/[slug]` both
+carried `text-page-title sm:text-3xl lg:text-4xl` — a **three-step responsive ramp**, 1.5 → 1.875 →
+2.25rem. No fixed role reproduces a ramp, and the nearest fluid role is not a substitute:
+`display-h3` floors at 1.75rem, so every Detail title would grow ~17% on phones, and it is an Anton
+display face against this surface's bold sans.
+
+Two things made this worth its own decision rather than a sweep's judgment call:
+
+1. **It is the opposite call to ADR-947's.** That ADR replaced fixed literals with fixed roles. This
+   one replaces a *stepped* literal chain with a *fluid* role. Both are correct, and a reader who
+   sees only one will generalise it wrongly — hence a separate record rather than a footnote.
+2. **The two sites are one decision, not two.** `events/[slug]` is an **inline-edit input mirroring
+   the template's rendered title verbatim**. Converting either alone desyncs the editor from the
+   thing it edits — the member types into a box that no longer looks like the heading it produces.
+   They were marked `🔴 MIRRORED` at both ends for exactly this reason.
+
+**Decision.** Add `--text-page-title-lg: clamp(1.5rem, 4vw, 2.25rem)`, scaled by `--type-scale` so
+it stays on the generation axis, with a paired `--*--line-height`, declared in `:root` and bridged
+into `@theme inline`. Convert both halves of the mirrored pair together.
+
+Floor and ceiling are **unchanged** from the ramp they replace, so nothing resizes at either end.
+What changes is that the title interpolates instead of jumping at 640px and 1024px.
+
+**Consequences.** ✅ A ramp is now expressible, and the editor still matches its own output.
+⚠️ Registered in `check-phantom-classes`' `DECLARED` list, not only the consumer scan: a role born
+declared-but-unbridged with zero consumers is invisible to a scan that starts from call sites, and
+that is precisely the state a new role passes through. ⚠️ The `🔴 MIRRORED` markers **stay** — the
+coupling is a property of the two files, not of the literals they happened to share, and the next
+sweep must still move them together. ⚠️ ADR-947's Resolved section said this pair was "left on
+literals, together"; that is now superseded and annotated in place rather than rewritten, because
+the reasoning there is what produced this ADR.
+
+**How this was found, which is the transferable part.** Not by a gate — by a **repo-wide
+reconciliation** run specifically to find decisions the code had outgrown. It compared the phase
+plan's status markers, the ADR ledger, every commit message containing "left alone" / "follow-up" /
+"needs a design call", in-code `🔴` markers, and the ratchet's rebased entries against each other.
+The shipped-role-with-no-ADR was its top finding. Four ADRs were written in one day here, and a
+decision record that describes behaviour the product does not have is worse than no record — so
+that reconciliation is worth repeating after any burst of decisions, not just this one.
+
+---
+
+## ADR-952 — A settled surface is one whose HEIGHT stopped changing, not one whose network went quiet
+
+**Date.** 2026-08-05 · **Status.** Accepted · **Scope.** `test/e2e/surfaces.ts` (`settle`)
+
+**Context.** `pr-compare` closed the app-shell blind spot and immediately produced three failures,
+all `/feed`, all `Failed to take two consecutive stable screenshots`, with the page height reported
+at 8497 → 9272 → 9390px across attempts. The obvious reading is that the feed renders live content
+and is therefore unphotographable. That reading is wrong, and acting on it would have masked or
+excluded the most-visited member surface for a reason that was never true.
+
+`/feed` carries **five** `<Suspense fallback={null}>` boundaries; `/settings`, the other failing
+surface, carries **twelve**. This is the page framework working as designed — PAGE-FRAMEWORK §5
+says never block the shell on a slow await, push it behind a per-section boundary. But a `null`
+fallback reserves **zero height**. A resolving boundary therefore does not swap a placeholder for
+content of similar size; it **appends**, and everything below it moves.
+
+Neither existing wait can observe that. `networkidle` is capped at 10s *precisely because* these
+pages never reach true idle, and `document.fonts.ready` resolves long before the last boundary does.
+So `settle()` was returning while the page was still growing, and doing so by design.
+
+There is a second mechanism compounding it: `fullPage: true` stitches by scrolling the whole
+document, which trips lazy content below the fold, which grows the page again. **The act of
+capturing was producing the instability the capture then failed on.**
+
+**Options.** (a) Mask more of the feed. (b) Capture `/feed` at viewport size instead of `fullPage`.
+(c) Exclude `/feed` from the visual suite. (d) Wait for height.
+
+**Decision.** **(d).** (a) cannot work and it matters that this is understood rather than merely
+rejected: a mask paints over a region, but the masked element **keeps its box**, so a late-arriving
+masked block still moves everything under it. The failure is the page's height, not its pixels —
+masking is aimed at the wrong quantity. (b) and (c) both buy green by photographing less, and (c)
+would surrender the surface members actually look at, to fix a fault that is not in the surface.
+
+`settle()` now holds until `scrollHeight` reports one unchanged value for 600ms, capped at 15s.
+
+**🔴 Correction, same day — the first version of this shipped TWO fixes and only one of them was
+diagnosed.** It also scrolled the document end to end before waiting, on the reasoning quoted above:
+`fullPage` stitches by scrolling, so walking the page first would trip lazy content while we were
+still allowed to wait. That is plausible, it was never observed, and **it cost 46 passing tests**.
+
+Scrolling fires every scroll-triggered reveal on the page, and `animations: 'disabled'` does not
+undo it — an IntersectionObserver toggling a class is JS state, not a CSS animation, and it does not
+rewind when you scroll back to the top. Every marketing surface then rendered ~3% away from a
+baseline captured without the scroll, over the 2% `maxDiffPixelRatio`. `/`, `/about`, `/the-lab`,
+`/discover`, `/spaces`, `/the-community` and `/the-quest` went red across both viewports and all
+four render states. The tell was in the error text: the message stopped being "failed to take two
+consecutive stable screenshots" and became "78550 pixels are different" alongside "captured a
+stable screenshot" — the height wait had worked, and the scroll pass had changed what was being
+photographed. Measured on the same sweeps, with `settle` as the only difference: **3 failures
+became 49.**
+
+The scroll pass is gone and `settleHeight` is now observation-only. The lesson is narrower than
+"no scrolling in a settle helper": the height problem was **observed**, in a logged 8497 → 9272 →
+9390. The lazy-content problem was **hypothesised**. Shipping a fix for the second alongside the
+first is what turned a three-surface failure into a suite-wide one, and it also made the first fix
+impossible to evaluate on its own. A 🔴 comment in `settle()` records this so the scroll pass is not
+reinvented by the next person who notices that `fullPage` scrolls.
+
+**Why the whole wait lives inside a single `page.evaluate`.** Polling height over CDP would put a
+round trip between readings, so a page growing steadily could report the same number twice by luck
+of timing and be declared stable — a flake that would appear only under load, which is the worst
+kind. In-page, the readings are ~100ms apart and mean what they say.
+
+**Why it resolves rather than throws on timeout.** A surface that genuinely never settles should
+fail as a *screenshot diff* — naming the surface, showing the pixels — not as an opaque helper
+timeout several frames removed from whatever moved. The helper's job is to give the assertion its
+best shot, not to become a second, worse assertion.
+
+**Consequences.** ✅ Every streaming surface benefits, not just `/feed` — the existing comment in
+`settle` already named `/discover` as never reaching idle. ✅ `/feed` and `/settings` stay
+`fullPage`, so below-fold regressions remain catchable. ⚠️ Each captured surface now costs up to
+~20s more in the worst case; the scroll pass is bounded by the same clock, so a pathological page
+cannot spend the budget twice. ⚠️ This makes the suite tolerant of zero-height fallbacks rather
+than fixing them. A `fallback` that reserved the height of the content it stands in for would stop
+the layout shift **for members**, not just for the camera — members on a slow connection are
+watching the same 900px jump. That is a real follow-up and this ADR is not a substitute for it.
+
+**Open, unchanged by this.** The four `/feed` and `/settings` a11y failures are a *separate* fault:
+those baselines were never seeded, so both surfaces are being held to zero serious+ violations
+against debt that predates the gate. Seeding them is `e2e-manual.yml` with `capture_shell` +
+`update_a11y`, and it is a different decision from this one.
+
+---
+
+## ADR-953 — The menu's permissions leave the database
+
+**Date:** 2026-08-06 · **Status:** Accepted · **Owner-decided**
+
+**Context.** `docs/MENU-AUDIT-2026-08-06.md` found six live gate defects on the seeded `left`
+menu. Every one was the same shape: a `menu_items` row is allowed to state its own permissions,
+and nothing except the renderer ever reads that statement. `Admin > Market` sat at
+`min_access: 'visitor'`, so every logged-in member saw an Admin group. Six admin rows had their
+`staff_domain` deleted, silently disabling one half of the ADR-390 union gate — a staff-only
+operator stopped seeing their own domains. `Journal` was seeded open to visitors. All of it
+shipped green, because no test reads production data.
+
+**Options.** (a) A drift guard comparing seeded gates to the code defaults. (b) Fix the rows and
+move on. (c) Stop storing gates.
+
+**Decision. (c).** `lib/menus/gates.ts` re-derives `minAccess` / `staffDomain` / `staffLevel` /
+`requiresOperatedSpaces` from `lib/nav/registry.ts` by href, inside `getMenu` — the one seam every
+surface reads through. The database keeps everything an operator should actually control: order,
+grouping, label, icon, subheading, grid placement, and the on/off mode.
+
+(a) was the obvious answer and it is not enough. A guard turns a wrong gate into a red build,
+which is better than silence, but the gate is still settable and therefore still gets set. (b)
+fixes six rows and leaves the seventh to a future operator with a dropdown in front of them.
+
+**Consequences.** ✅ All six defects are fixed everywhere at once, in code, with no data
+migration. ✅ A category's floor is now DERIVED as the lowest floor among its rows, so a group
+header can never advertise itself to someone who cannot reach a single row inside it — which is
+what made the Admin leak visible. ✅ The Menu Manager stops lying: for a page the registry knows,
+`GateControls` renders the inherited gate read-only and says where it comes from; for an
+operator-added page it keeps the real editors, because there the stored gate genuinely is the
+gate. ⚠️ Operators lose per-row re-gating for registry pages. That knob produced six defects and
+zero intended outcomes, and the per-role mode matrix still covers presentation. 🔴 An undeclared
+href under `/admin/` is floored at `admin` regardless of what it was seeded as — the escape hatch
+must not be the hole that opens an operator surface to the public.
+
+---
+
+## ADR-954 — My Frequency, and the dock that stopped being two docks
+
+**Date:** 2026-08-06 · **Status:** Accepted · **Owner-decided**
+
+**Context.** The rail's home anchor carried a flat "Profile" link. The Spaces a member runs and
+the Circles they are in were reachable only from the account dock at the far bottom of the rail,
+as an undifferentiated link list, with no indication that anything inside wanted them.
+
+**Decision.** The Profile row becomes **My Frequency**: a disclosure listing profile, journal,
+contacts, the Spaces you run and the Circles you are in, each carrying its unread notice count,
+with the total on the parent row. Counts come from one grouped read of `notifications`
+(`reference_type` + `reference_id` + `read_at` already exist; nothing new is stored).
+
+**And the account dock's link list is deleted in the same pass.** DAWN's three-docks card files
+this exact content under "You, and what you run" and opens with "a control appears in exactly one
+dock." Shipping My Frequency additively would have put the same links twice on one rail, four
+inches apart. The dock keeps what only it can say: identity, standing, view-as, operator context.
+
+**Why it discloses in place rather than popping over.** The rail is a scroller, so a floating
+panel has to escape it with `position: fixed` and re-anchor on scroll — DAWN's own `AccountDock`
+carries that workaround. Rows that push their neighbours down need none of it, keep one tab
+order, and survive a fold by reusing the flyout the folded strip already has.
+
+**Consequences.** ✅ A member sees from a folded rail that something wants them (DAWN's `NavRow`
+badge: a count open, a 6px dot folded). ✅ One You surface. ⚠️ The read is suppressed under a
+view-as downgrade, like `operatesSpaces` and `staffRole`, so a steward previewing as a member does
+not keep their own Spaces in the menu. ⚠️ Capped at 8 entries per group: a disclosure that needs
+its own scrollbar is a page.
+
+---
+
+## ADR-955 — The rail regroups, and two rows leave it
+
+**Date:** 2026-08-06 · **Status:** Accepted · **Owner-decided**
+
+**Decision.** Community was eleven rows holding three unrelated things — places to gather,
+commerce, and people. Commerce (Market · Housing · Frequency Store) becomes its own **Market**
+group. `My Contacts` and `Journal` leave the rail via a new `railHidden` flag on `NavArea`.
+
+**Why a flag and not a deletion.** Both areas still need their `/admin/roles` permission row,
+their access-matrix surface, and their palette entry. `railHidden` drops `'spine'` from the
+registry projection and keeps `'palette'` — the same statement in the registry's own vocabulary.
+
+🔴 **It is deliberately NOT `section: null`.** A null section pins an area to the headerless home
+anchor beside Feed, which is the opposite of removing it. The two were one edit apart.
+
+**Why My Contacts specifically.** It is a TAB of the Members hub rendered as that hub's sibling,
+and because `routeActive` prefix-matches, standing on `/network/contacts` lit BOTH rows at once —
+the rail naming two locations for one page. Journal moves because DAWN files the journal under
+"You", not under the game.
+
+**Consequences.** ✅ 17 rows to 13, four groups, two levels. ⚠️ The seeded database owns the live
+grouping, so the code change alone moves nothing: `20270213000000_menu_regroup_and_canon.sql`
+applies the same shape to the seeded rows, and switches the two departing rows OFF (`mode =
+'hidden'`, the same switch the Menu Manager's toggle writes) rather than deleting them, so either
+can be put back from the UI in one click while the owner tests layouts.
+
+---
+
+## ADR-956 — The mega-menu panel stops guessing the shell's geometry
+
+**Date:** 2026-08-06 · **Status:** Accepted
+
+**Context.** Two faults, both from the audit. Every header dropdown rendered as one ~170px column
+inside a ~1,139px band: `triggerLevel='category'` puts a trigger's children in `categories` and
+its own links in `rootItems`, the header tree is one level deep, so `categories` was always empty
+and every dropdown took the single-`div` branch. On top of that, `cardGutters` reserved two of six
+grid columns for rail cards unconditionally — and there is not one rail card in the database on
+any surface. And the panel hand-copied the shell's rail widths and gaps, drifting 8.5px at rest,
+136px with the left rail folded, 229px with the right one collapsed.
+
+**Decision.** Loose items chunk into 1-3 columns by count (explicit chunks, not CSS `columns`,
+because these rows are label + subheading and multi-column would break one across a boundary). A
+gutter is reserved only when that side actually has a card. And the row's class spellings move
+into `lib/layout/shell-metrics.ts` — the file that exists for exactly this failure — with the
+rails' live fold state threaded through `PrimaryNav`.
+
+**Consequences.** ✅ The panel is inside the guard that `shell-metrics.test.ts` already runs
+against `app-shell.tsx`. ⚠️ Dropdowns of 5+ links now read across as well as down; the four-link
+ones are unchanged.
+
+---
+
+## ADR-957 — A retired name cannot be typed back in
+
+**Date:** 2026-08-06 · **Status:** Accepted
+
+**Context.** `docs/NAMING.md` retires "Interests" by name: *"The SEVEN topics are Channels, never
+'Interests'"* and *"'Interests' is RETIRED as a member-facing word for these."* The live header
+dropdown said Interests. Every code path respected the canon; the label field in the Menu Manager
+did not, because a text input has no opinion.
+
+**Why `check:canon` could never have caught it.** That guard scans `content/**` in the repo. This
+string lived in a database row. CI has no access to it, and no amount of widening the file glob
+changes that.
+
+**Decision.** The guard moves to the write. `lib/menus/canon.ts` holds the retired-term list
+(pure, framework-free), and `createItem` / `updateItem` / `createCategory` / `updateCategory`
+reject a label that reintroduces one, with the canon's own replacement in the message: *"Interests"
+is a retired name. Use "Channels" instead. See docs/NAMING.md.* An operator is told what to type,
+not just told no.
+
+**Consequences.** ✅ The one surface that could override a locked canon no longer can. ✅ Three
+terms seeded: Interests → Channels, Marketplace → Market, Domains → Pillars. ⚠️ Matching is
+word-bounded, and `canon.test.ts` pins the case that matters most — "Market" must never trip the
+"Marketplace" rule, or the canon-correct name would be unenterable, which is the worst possible
+failure for a guard whose whole job is naming. ⏳ Only menu labels are covered; other operator-editable
+copy fields are a later pass.
+
+---
+
+## ADR-958
+
+**`/profile` exists, and it is the only href that can mean "my profile"**
+
+**Date:** 2026-08-06 · **Status:** Accepted · **Owner ask:** *"the menu editor doesn't let me
+select /profile and the menu link is going to /profile/settings"*
+
+**The problem.** A member's profile lives at `/people/<handle>`. A menu row is **static data** —
+one href stored once and served to everybody — so there has never been a value an operator could
+put in the Menu Manager that resolves to the viewer's own profile. The closest available answer
+was `/settings/profile`, which is the profile **editor**. So the rail's Profile row opened a
+settings form, and `lib/menus/defaults.ts` carried the note admitting it: *"/profile has never
+existed as a route and there is no redirect for it, so this pin 404'd for every member who clicked
+it."* That note correctly identified the gap and then worked around it instead of closing it.
+
+**Decision.** Close it. `app/(main)/profile/page.tsx` is a redirect-only route that resolves per
+session: signed in with a handle → `/people/<handle>`; signed in without one → `/settings/profile`,
+the one screen that can fix the reason the first branch failed; signed out →
+`/sign-in?next=/profile`. It renders no UI of its own — everything a profile page shows already
+lives at `/people/[handle]`, and a second implementation would be a fork that drifts.
+
+**Consequences.** ✅ `/profile` is now a real destination the Menu Manager, ⌘K, and a typed URL can
+all point at. ✅ `KNOWN_ROUTES` offers it as "My profile", directly above `/settings/profile`, now
+relabelled "Settings: Profile (editor)" — picking the wrong one was the easy mistake and the list
+now says which is which. ✅ The code default and the seeded row moved together
+(`20270214000000_profile_menu_points_at_profile.sql`), because the `left` surface is seeded and a
+code-only change would not have moved what members see — the same lesson as ADR-953's migration.
+⚠️ The redirect costs one extra hop and one `profiles` row read per visit; it is a nav destination,
+not a hot path. ⏳ The Menu Manager still shows two Profile rows in its editor — the runtime-injected
+pin plus the seeded row. Only the seeded one renders in the live rail, so this is an editor
+artifact rather than a duplicate link, and it is left for the Menu Manager pass.
+
+## ADR-959 — A signed-out induction leaves a row, not just a one-hour cookie (2026-08-07)
 
 **Status:** Accepted · corroborated by `supabase/migrations/20270213000000_signup_leads.sql`,
 `app/onboarding/beta/lead-actions.ts`, `app/onboarding/beta/induction.tsx`, and
@@ -17750,11 +18403,28 @@ becomes real, not from the auth callback.
 
 **Consequences.** ✅ An abandoned induction is now recoverable, and the funnel's drop-off is
 measurable per step. ✅ The `fq_lead` cookie is consumed at conversion, following the same
-shared-browser lifecycle as `fq_beta_seq` and `fq_pending_induction`. ⚠️ The migration ships
-**unapplied**; `signup_leads` and the three RPCs are therefore absent from `lib/database.types.ts`,
-so the actions call them through the untyped `.rpc()` surface (repo convention, see
-`lib/quest/complete.ts`). Both should be regenerated on apply. ⚠️ The recovery job that sends the
-follow-up does not exist yet — this is the spine only, so the beat-2 helper line promises to save
-their spot and nothing more. ⚠️ `induction.tsx` is hand-rolled Tailwind end to end rather than kit
-components; the email row matches the file it lives in (`inputInset`, `wizardPrimaryClass`) instead
-of half-converting one beat, per PAGE-FRAMEWORK's own "match the idiom" rule.
+shared-browser lifecycle as `fq_beta_seq` and `fq_pending_induction`. ⚠️ Both migrations were
+**applied directly to the shared database** at the owner's instruction rather than riding a merge,
+so `supabase/migrations/` is the record of something already live; do not apply them again.
+⚠️ `signup_leads` and the three RPCs are absent from `lib/database.types.ts`, so the actions call
+them through the untyped `.rpc()` surface (repo convention, see `lib/quest/complete.ts`);
+regenerating the types is worth doing but does not by itself remove the cast. ⚠️ The recovery job
+that sends the follow-up does not exist yet — this is the spine only, deferred by the owner and
+parked on `docs/BUILD-LIST.md` under P6, so the beat-2 helper line promises to save their spot and
+nothing more. ⚠️ `induction.tsx` is hand-rolled Tailwind end to end rather than kit components; the
+name and email rows match the file they live in (`inputInset`, `wizardPrimaryClass`) instead of
+half-converting one beat, per PAGE-FRAMEWORK's own "match the idiom" rule.
+
+**Postscript — the revoke that removed nothing.** `20270213000000` ends with the usual
+`REVOKE ... FROM public` then `GRANT` back, whose intent was that anon may capture and update but
+never convert, and that the table carries no anon grant. Verified against the database after
+applying, neither held: `mark_signup_lead_converted` was anon-callable and anon/authenticated held
+14 table grants. Supabase ships `ALTER DEFAULT PRIVILEGES IN SCHEMA public` granting those roles on
+new objects, and they arrive as **explicit per-role grants**, which `REVOKE ... FROM public` does not
+touch — the statement succeeds and removes nothing. Neither was exposed (`auth.uid()` is null for
+anon, and RLS-on-no-policy denied the table), but both of those are the second lock;
+`20270213000001` restores the first. **Every "revoke from public, then grant back" block in this
+repo has the same hole**, which is the part worth carrying past this table.
+
+**Numbering.** Written as ADR-946 and renumbered to 959 on merge: ADR-946 was taken by the Vault
+dock decision on `main` while this branch was open.

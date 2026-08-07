@@ -5,6 +5,7 @@ import { ShieldAlert } from 'lucide-react'
 import { openDisputeAction, cancelDisputeAction } from '@/app/(main)/orders/dispute-actions'
 import { isError } from '@/lib/action-result'
 import type { DisputeStatus } from '@/lib/commerce/disputes'
+import { Textarea } from '@/components/ui/field'
 
 const REASONS = ['Item not received', 'Not as described', 'Damaged or faulty', 'Billing problem', 'Other'] as const
 
@@ -94,13 +95,13 @@ export function DisputeButton({
           </button>
         ))}
       </div>
-      <textarea
+      <Textarea
         value={detail}
         onChange={(e) => setDetail(e.target.value)}
+        aria-label="Detail that helps us sort it out"
         placeholder="Add any detail that helps us sort it out (optional)"
         rows={2}
         maxLength={2000}
-        className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary"
       />
       {error && <p className="text-meta text-warning">{error}</p>}
       <div className="flex items-center justify-end gap-2">
@@ -118,7 +119,7 @@ export function DisputeButton({
               else setState({ id: 'pending', status: 'open' })
             })
           }
-          className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {pending ? 'Filing' : 'Submit dispute'}
         </button>

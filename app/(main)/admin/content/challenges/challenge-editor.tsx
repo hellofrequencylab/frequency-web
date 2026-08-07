@@ -7,7 +7,8 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Zap, Plus, Mountain, ChevronUp, ChevronDown, Trash2, Eye, EyeOff, Pencil } from 'lucide-react'
-import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
+import { Input, Textarea, Label } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { StudioWindow } from '@/components/studio/studio-window'
 import { StudioFooter } from '@/components/studio/kit/studio-footer'
@@ -119,11 +120,10 @@ function ChallengeEditForm({
         {isExpression && (
           <div className="space-y-1">
             <Label htmlFor="edit-ch-journey">Caps which Journey</Label>
-            <select
+            <Select
               id="edit-ch-journey"
               value={row.journey_id ?? ''}
               onChange={(e) => update({ journey_id: e.target.value })}
-              className={fieldClasses}
             >
               {!journeys.some((j) => j.id === row.journey_id) && row.journey_id && (
                 <option value={row.journey_id}>Current Journey</option>
@@ -133,7 +133,7 @@ function ChallengeEditForm({
                   {j.title}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         )}
 
@@ -145,18 +145,17 @@ function ChallengeEditForm({
         {!isExpression && (
           <div className="space-y-1">
             <Label htmlFor="edit-ch-cat">Category</Label>
-            <select
+            <Select
               id="edit-ch-cat"
               value={row.category}
               onChange={(e) => update({ category: e.target.value })}
-              className={fieldClasses}
             >
               {CATEGORIES.filter((c) => c !== 'special').map((c) => (
                 <option key={c} value={c}>
                   {c.charAt(0).toUpperCase() + c.slice(1)}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         )}
 
@@ -168,13 +167,13 @@ function ChallengeEditForm({
         <div className="grid grid-cols-3 gap-3">
           <div className="space-y-1">
             <Label htmlFor="edit-ch-diff">Difficulty</Label>
-            <select id="edit-ch-diff" value={row.difficulty} onChange={(e) => update({ difficulty: e.target.value })} className={fieldClasses}>
+            <Select id="edit-ch-diff" value={row.difficulty} onChange={(e) => update({ difficulty: e.target.value })}>
               {DIFFICULTIES.map((d) => (
                 <option key={d} value={d}>
                   {d.charAt(0).toUpperCase() + d.slice(1)}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <div className="space-y-1">
             <Label htmlFor="edit-ch-target">Target</Label>
@@ -447,30 +446,29 @@ export function ChallengeCreateForm({ journeys, onCreated }: { journeys: Express
         {isExpression ? (
           <div className="space-y-1">
             <Label htmlFor="ch-journey">Journey to cap</Label>
-            <select
+            <Select
               id="ch-journey"
               value={journeyId}
               onChange={(e) => setJourneyId(e.target.value)}
-              className={fieldClasses}
+              emptyLabel="Pick a Journey…"
             >
-              <option value="">Pick a Journey…</option>
               {journeys.map((j) => (
                 <option key={j.id} value={j.id}>
                   {j.title}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         ) : (
           <div className="space-y-1">
             <Label htmlFor="ch-category">Category</Label>
-            <select id="ch-category" value={category} onChange={(e) => setCategory(e.target.value)} className={fieldClasses}>
+            <Select id="ch-category" value={category} onChange={(e) => setCategory(e.target.value)}>
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
                   {c.charAt(0).toUpperCase() + c.slice(1)}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         )}
         <div className="space-y-1 sm:col-span-2">
@@ -486,13 +484,13 @@ export function ChallengeCreateForm({ journeys, onCreated }: { journeys: Express
         <div className="flex flex-wrap items-end gap-3 sm:col-span-2">
           <div className="space-y-1">
             <Label htmlFor="ch-difficulty">Difficulty</Label>
-            <select id="ch-difficulty" value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className={fieldClasses}>
+            <Select id="ch-difficulty" value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
               {DIFFICULTIES.map((d) => (
                 <option key={d} value={d}>
                   {d.charAt(0).toUpperCase() + d.slice(1)}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <div className="space-y-1">
             <Label htmlFor="ch-target">Target</Label>

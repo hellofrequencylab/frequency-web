@@ -40,6 +40,13 @@ export function generateStaticParams() {
 // A real gathering photo doubles as the multimodal AIO signal + E-E-A-T proof.
 const HERO_IMAGE = '/images/site/community-dinner.jpg'
 
+// Article dates for every comparison page. Google requires datePublished/dateModified on an
+// Article node, and each pillar page stamps them as literals the same way; without them all five
+// /vs/<slug> URLs published a dateless Article. One template, one build date, so the whole set
+// stays honest at once: first shipped 2026-07-28, last revised 2026-08-05.
+const PUBLISHED = '2026-07-28'
+const UPDATED = '2026-08-05'
+
 export async function generateMetadata({
   params,
 }: {
@@ -88,6 +95,8 @@ export default async function ComparisonPage({
             title: copy.metaTitle,
             description: copy.description,
             path,
+            published: PUBLISHED,
+            updated: UPDATED,
             image: HERO_IMAGE,
           }),
           faqSchema(copy.faq),
@@ -112,7 +121,7 @@ export default async function ComparisonPage({
       </PhotoHero>
 
       {/* Answer-first opening: the honest difference, in the first lines. */}
-      <Section tone="canvas" pad="pt-16 pb-16 sm:pt-20 sm:pb-20">
+      <Section tone="canvas">
         <Lead>{copy.lede}</Lead>
         <Body>{comparison.forReader}</Body>
       </Section>
@@ -124,10 +133,10 @@ export default async function ComparisonPage({
 
       {/* The scannable contrast. One concept per row; honest about both sides. */}
       <Section tone="surface">
-        <h2 className="mb-6 font-display text-3xl uppercase text-text sm:text-4xl">
+        <h2 className="mb-6 font-display text-display-h3 uppercase text-text">
           {comparison.name} vs Frequency, side by side
         </h2>
-        <div className="overflow-hidden rounded-2xl border border-border">
+        <div className="overflow-hidden rounded-card border border-border">
           {/* Header row */}
           <div className="grid grid-cols-3 border-b border-border bg-surface-elevated text-body-sm font-semibold text-text">
             <div className="px-4 py-3" />
@@ -154,7 +163,7 @@ export default async function ComparisonPage({
 
       {/* Soft, honest hand-off into the product. Two doors. */}
       <Section tone="canvas">
-        <h2 className="mb-5 font-display text-3xl uppercase text-text sm:text-4xl">
+        <h2 className="mb-5 font-display text-display-h3 uppercase text-text">
           Where to start
         </h2>
         <Body>
@@ -183,7 +192,7 @@ export default async function ComparisonPage({
 
       {/* FAQ: answer-first pairs, mirrored into the FAQPage schema above. */}
       <Section tone="surface">
-        <h2 className="mb-7 font-display text-3xl uppercase text-text sm:text-4xl">
+        <h2 className="mb-7 font-display text-display-h3 uppercase text-text">
           Common questions
         </h2>
         <FaqList items={copy.faq.map((f) => ({ q: f.q, a: f.a }))} />

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { labelClasses, fieldClasses } from '@/components/ui/field'
+import { Textarea, labelClasses } from '@/components/ui/field'
 import { RailAutosaveForm } from '@/components/admin/rail/rail-autosave-form'
 import { getCircleTextForEditor, saveCircleTextOverride } from '@/lib/circles/circle-text-actions'
 
@@ -56,12 +56,11 @@ export function CircleTextModule() {
     <RailAutosaveForm action={action} className="space-y-2">
       <label className="block space-y-1.5">
         <span className={labelClasses}>Text</span>
-        <textarea
+        <Textarea
           name="text"
           defaultValue={data.text}
           rows={5}
-          placeholder="Add a welcome, a schedule, a note. Leave blank to use the network default."
-          className={`${fieldClasses} resize-y`}
+          placeholder="Add a welcome, a schedule, a note. Leave blank to use the network default." className="resize-y"
         />
       </label>
       <p className="text-meta text-muted">

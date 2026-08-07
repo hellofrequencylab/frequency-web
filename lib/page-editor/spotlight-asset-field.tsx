@@ -95,7 +95,7 @@ export function SpotlightAssetField({
               type="button"
               onClick={() => inputRef.current?.click()}
               disabled={busy}
-              className="min-h-[32px] rounded-lg bg-canvas/90 px-2.5 py-1 text-meta font-medium text-text shadow-sm backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60"
+              className="min-h-8 rounded-control bg-canvas/90 px-2.5 py-1 text-meta font-medium text-text shadow-sm backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60"
             >
               {busy ? 'Uploading…' : 'Replace'}
             </button>
@@ -104,7 +104,7 @@ export function SpotlightAssetField({
               onClick={() => onChange('')}
               disabled={busy}
               aria-label="Remove image"
-              className="flex min-h-[32px] items-center rounded-lg bg-canvas/90 p-1 text-subtle shadow-sm backdrop-blur transition-colors hover:text-danger disabled:opacity-60"
+              className="flex min-h-8 items-center rounded-control bg-canvas/90 p-1 text-subtle shadow-sm backdrop-blur transition-colors hover:text-danger disabled:opacity-60"
             >
               <X className="h-4 w-4" aria-hidden />
             </button>

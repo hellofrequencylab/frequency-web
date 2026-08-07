@@ -35,18 +35,25 @@ const HERO_IMAGE = '/images/site/community-1.jpg'
 const ROOM_IMAGE = '/images/site/mens-group.jpg'
 const TABLE_IMAGE = '/images/site/community-dinner.jpg'
 
+// Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
+const OG_TITLE = 'How to start a Circle · Frequency'
+const OG_DESCRIPTION =
+  'You do not have to build a community. Start one small Circle: one thing, a standing time, a few people, the same simple format every week.'
+
 export function generateMetadata(): Metadata {
   return {
     title: TITLE,
     description: DESCRIPTION,
     alternates: { canonical: PATH },
     openGraph: {
-      title: 'How to start a Circle · Frequency',
-      description:
-        'You do not have to build a community. Start one small Circle: one thing, a standing time, a few people, the same simple format every week.',
+      title: OG_TITLE,
+      description: OG_DESCRIPTION,
       url: PATH,
       images: [{ url: HERO_IMAGE }],
     },
+    // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+    // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+    twitter: { card: 'summary_large_image', title: OG_TITLE, description: OG_DESCRIPTION },
   }
 }
 
@@ -153,7 +160,7 @@ export default function HowToStartACirclePage() {
       </PhotoHero>
 
       {/* Answer-first opening: the direct answer in the first two sentences. */}
-      <Section tone="canvas" pad="pt-16 pb-16 sm:pt-20 sm:pb-20">
+      <Section tone="canvas">
         <Lead>
           To start a Circle, pick one simple thing to do together, set a standing
           time, and invite a few people to the first one. You are not building a
@@ -175,7 +182,7 @@ export default function HowToStartACirclePage() {
 
       {/* One concept per section. Question H2 in the reader's words, answer first. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How many people do I need to start a group?
         </h2>
         <Lead>
@@ -215,7 +222,7 @@ export default function HowToStartACirclePage() {
 
       {/* Answer-first how-to, then the concrete steps (mirrored into HowTo schema). */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           What are the steps to start a Circle?
         </h2>
         <Lead>
@@ -234,7 +241,7 @@ export default function HowToStartACirclePage() {
 
       {/* One concept per section: why groups fizzle, the failure mode named plainly. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Why do most community groups fizzle out?
         </h2>
         <Lead>
@@ -283,7 +290,7 @@ export default function HowToStartACirclePage() {
       {/* One concept per section: the cost question, answered plainly. Weaves the
           Community Collective positioning + the /pricing spoke where intent is real. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           What does it cost to start a Circle?
         </h2>
         <Lead>
@@ -305,7 +312,7 @@ export default function HowToStartACirclePage() {
 
       {/* Soft CTA into the product. Two honest doors. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Where to start
         </h2>
         <Body>
@@ -334,7 +341,7 @@ export default function HowToStartACirclePage() {
 
       {/* FAQ: answer-first pairs, mirrored into the FAQPage schema above. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-7">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-7">
           Common questions
         </h2>
         <FaqList items={FAQ} />

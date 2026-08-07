@@ -58,17 +58,24 @@ const DESCRIPTION =
 // The hero photo, fed to the Article schema for richer-result eligibility.
 const HERO_IMAGE = '/images/site/community-1.jpg'
 
+// Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
+const OG_TITLE = 'What is Frequency and how does it work? · Frequency'
+const OG_DESCRIPTION =
+  'Frequency is a Community Collective: small local Circles, nearby Events, a real space to gather, and the tools to grow together. What it is, how it works, and what it costs.'
+
 export function generateMetadata(): Metadata {
   return {
     title: TITLE,
     description: META_DESCRIPTION,
     alternates: { canonical: '/what-is-frequency' },
     openGraph: {
-      title: 'What is Frequency and how does it work? · Frequency',
-      description:
-        'Frequency is a Community Collective: small local Circles, nearby Events, a real space to gather, and the tools to grow together. What it is, how it works, and what it costs.',
+      title: OG_TITLE,
+      description: OG_DESCRIPTION,
       url: '/what-is-frequency',
     },
+    // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+    // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+    twitter: { card: 'summary_large_image', title: OG_TITLE, description: OG_DESCRIPTION },
   }
 }
 
@@ -197,7 +204,7 @@ export default function WhatIsFrequencyPage() {
       </PhotoHero>
 
       {/* Answer-first: the direct answer in the first two sentences. */}
-      <Section tone="canvas" pad="pt-14 pb-16 sm:pt-16 sm:pb-20">
+      <Section tone="canvas">
         <Lead>
           Frequency is a Community Collective built to rebuild the third place:
           the spaces that are not home and not work where you are known by name.
@@ -223,7 +230,7 @@ export default function WhatIsFrequencyPage() {
       {/* How it works, at a glance. Three steps, then the taxonomy that carries
           them (absorbed from the retired /how-it-works explainer). */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How does Frequency work?
         </h2>
         <Lead>
@@ -255,7 +262,7 @@ export default function WhatIsFrequencyPage() {
 
       {/* One concept per section. Question H2s in the reader's words. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           What is a Circle?
         </h2>
         <Lead>
@@ -274,7 +281,7 @@ export default function WhatIsFrequencyPage() {
 
       {/* How it grows: absorbed from the retired /how-it-works explainer. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How does Frequency grow?
         </h2>
         <Lead>
@@ -293,7 +300,7 @@ export default function WhatIsFrequencyPage() {
       </Section>
 
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           What is The Lab?
         </h2>
         <Lead>
@@ -310,7 +317,7 @@ export default function WhatIsFrequencyPage() {
       </Section>
 
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Is Frequency a social media app?
         </h2>
         <Lead>
@@ -334,7 +341,7 @@ export default function WhatIsFrequencyPage() {
 
       {/* Why it exists — the mission, said plainly, once. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Why does Frequency exist?
         </h2>
         <Lead>
@@ -359,7 +366,7 @@ export default function WhatIsFrequencyPage() {
 
       {/* The Community Collective: who it serves and how the money works. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Who is Frequency for?
         </h2>
         <Lead>
@@ -386,7 +393,7 @@ export default function WhatIsFrequencyPage() {
 
       {/* The tier ladder, scannable, so answer engines can quote the whole shape. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How much does Frequency cost?
         </h2>
         <Lead>
@@ -399,7 +406,7 @@ export default function WhatIsFrequencyPage() {
           {TIERS.map((t) => (
             <li
               key={t.name}
-              className="rounded-2xl border border-border bg-surface p-5 sm:flex sm:items-baseline sm:gap-5"
+              className="rounded-card border border-border bg-surface p-5 sm:flex sm:items-baseline sm:gap-5"
             >
               <div className="flex items-baseline gap-3 sm:w-64 sm:shrink-0">
                 <span className="font-display uppercase text-text text-lead leading-none">
@@ -426,7 +433,7 @@ export default function WhatIsFrequencyPage() {
       {/* Hub-and-spoke: cross-link the three sibling pillars. This page is the
           canonical explainer; the triptych goes deep on each part. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Where can I go deeper?
         </h2>
         <Lead>
@@ -494,7 +501,7 @@ export default function WhatIsFrequencyPage() {
 
       {/* FAQ: answer-first pairs, mirrored into FAQPage schema above. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-7">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-7">
           Common questions
         </h2>
         <FaqList items={FAQ} />

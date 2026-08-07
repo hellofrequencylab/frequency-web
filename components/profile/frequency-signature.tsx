@@ -76,9 +76,13 @@ interface Props {
   /** Whose signature this is — tunes the empty-state copy ('you' vs a name). */
   name?: string
   className?: string
+  /** Draw the surrounding card. TRUE on a profile page, where the signature is its own object.
+   *  FALSE in the right rail, where the panel already supplies a titled group — a card there
+   *  turns the rail back into a stack of boxes. */
+  framed?: boolean
 }
 
-export function FrequencySignature({ signature, variant = 'full', layout = 'auto', name, className }: Props) {
+export function FrequencySignature({ signature, variant = 'full', layout = 'auto', name, className, framed = true }: Props) {
   const compact = variant === 'compact'
   const stacked = layout === 'stack'
 
@@ -96,7 +100,7 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
     }
     return (
       <div
-        className={`rounded-2xl border border-dashed border-border bg-surface/50 px-6 py-10 text-center ${className ?? ''}`}
+        className={`rounded-card border border-dashed border-border bg-surface/50 px-6 py-10 text-center ${className ?? ''}`}
       >
         <Compass className="mx-auto mb-3 h-8 w-8 text-subtle" />
         <p className="text-body-sm font-semibold text-text">No Frequency Signature yet</p>
@@ -266,7 +270,7 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
   // Full: the constellation with corner Pillar labels overlaid, plus a legend that
   // reads the balance + dominant pillar and the per-pillar shares.
   return (
-    <div className={`rounded-2xl border border-border bg-surface p-5 lift-1 ${className ?? ''}`}>
+    <div className={`${framed ? 'rounded-card border border-border bg-surface p-5 lift-1' : ''} ${className ?? ''}`}>
       <div className={`flex flex-col items-center gap-5 ${stacked ? '' : 'sm:flex-row sm:items-center sm:gap-6'}`}>
         {/* The constellation, with axis labels positioned at the four cardinals.
             Stacked (narrow sidebar): a responsive square that shrinks to fit. */}

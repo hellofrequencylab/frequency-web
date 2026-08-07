@@ -13,6 +13,9 @@ import {
   type Offering,
 } from '@/lib/commerce/types'
 import { PriceModeEditor } from '@/components/commerce/price-mode-editor'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import type { SpaceAccessContext } from '@/lib/events/ticket-space-access'
 import {
   hostCreateTicketTier,
@@ -31,8 +34,6 @@ import {
 
 const centsToDollars = (c: number | null | undefined) => (c != null ? (c / 100).toFixed(2) : '')
 
-const input =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
 const lbl = 'block text-meta font-medium text-muted mb-1'
 
 function modeSummary(t: TicketTierRow): string {
@@ -87,7 +88,7 @@ export function TicketTiersPanel({
               setAdding(true)
               setEditingId(null)
             }}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated"
           >
             <Plus className="h-3.5 w-3.5" /> Add tier
           </button>
@@ -154,7 +155,7 @@ export function TicketTiersPanel({
                       setAdding(false)
                     }}
                     disabled={isPending}
-                    className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-control border border-border px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
                   >
                     <Pencil className="h-3 w-3" /> Edit
                   </button>
@@ -162,7 +163,7 @@ export function TicketTiersPanel({
                     type="button"
                     onClick={() => run(() => hostSetTicketTierActive(t.id, eventId, slug, !t.active))}
                     disabled={isPending}
-                    className="rounded-lg border border-border px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
+                    className="rounded-control border border-border px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
                   >
                     {t.active ? 'Retire' : 'Reactivate'}
                   </button>
@@ -240,13 +241,13 @@ function TierForm({
     >
       <div>
         <label className={lbl}>Tier name *</label>
-        <input
+        <Input
+          aria-label="Tier name"
           name="name"
           type="text"
           defaultValue={initial?.name ?? ''}
           required
           disabled={disabled}
-          className={input}
           placeholder="e.g. General, Supporter"
         />
       </div>
@@ -255,12 +256,12 @@ function TierForm({
         <label className={lbl}>
           Description <span className="font-normal text-subtle">(optional)</span>
         </label>
-        <input
+        <Input
+          aria-label="Description"
           name="description"
           type="text"
           defaultValue={initial?.description ?? ''}
           disabled={disabled}
-          className={input}
           placeholder="What this tier includes"
         />
       </div>
@@ -281,40 +282,37 @@ function TierForm({
           <label className={lbl}>
             Quantity <span className="font-normal text-subtle">(blank = unlimited)</span>
           </label>
-          <input
+          <Input
+            aria-label="Quantity"
             name="quantity"
             type="number"
             min="0"
             step="1"
             defaultValue={initial?.quantity ?? ''}
             disabled={disabled}
-            className={input}
             placeholder="Unlimited"
           />
         </div>
         <div>
           <label className={lbl}>Sort order</label>
-          <input
+          <Input
+            aria-label="Sort order"
             name="sort_order"
             type="number"
             step="1"
             defaultValue={initial?.sort_order ?? 0}
             disabled={disabled}
-            className={input}
           />
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-body-sm text-text">
-        <input
-          name="member_only"
-          type="checkbox"
-          defaultChecked={initial?.member_only ?? false}
-          disabled={disabled}
-          className="h-4 w-4 rounded border-border"
-        />
-        Members only (Crew+)
-      </label>
+      <Checkbox
+        name="member_only"
+        defaultChecked={initial?.member_only ?? false}
+        disabled={disabled}
+        label="Members only (Crew+)"
+        wrapperClassName="flex"
+      />
 
       {/* Who can buy (ADR-823): restrict this ticket to the hosting Space's own membership.
           Renders only for a Space-hosted event; locked below the Collective plan. */}
@@ -324,21 +322,20 @@ function TierForm({
             <label className={lbl} htmlFor={`audience-${initial?.id ?? 'new'}`}>
               Who can buy
             </label>
-            <select
+            <Select
               id={`audience-${initial?.id ?? 'new'}`}
               value={audience}
               onChange={(e) => setAudience(e.target.value)}
               disabled={disabled}
-              className={input}
+              emptyLabel="Everyone"
             >
-              <option value="">Everyone</option>
               <option value="members">{spaceAccess.spaceName} members (any tier)</option>
               {spaceAccess.membershipTiers.map((mt) => (
                 <option key={mt.id} value={mt.id}>
                   {spaceAccess.spaceName} · {mt.name} members
                 </option>
               ))}
-            </select>
+            </Select>
             {audience !== '' && spaceAccess.membershipTiers.length === 0 && (
               <p className="mt-1 text-meta text-muted">
                 Tip: publish membership tiers on your space page so people have something to join.
@@ -355,7 +352,7 @@ function TierForm({
         <button
           type="submit"
           disabled={disabled}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
         >
           {initial ? 'Save tier' : 'Add tier'}
         </button>
@@ -363,7 +360,7 @@ function TierForm({
           type="button"
           onClick={onCancel}
           disabled={disabled}
-          className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-muted transition-colors hover:bg-surface disabled:opacity-50"
+          className="inline-flex items-center gap-1 rounded-control border border-border px-3 py-2 text-body-sm font-medium text-muted transition-colors hover:bg-surface disabled:opacity-50"
         >
           <X className="h-3.5 w-3.5" /> Cancel
         </button>

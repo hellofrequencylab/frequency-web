@@ -89,7 +89,7 @@ export function GridSkeleton() {
   return (
     <div className="mp-grid gap-6">
       {Array.from({ length: 6 }).map((_, i) => (
-        <Skeleton key={i} className="h-80 rounded-2xl" />
+        <Skeleton key={i} className="h-80 rounded-card" />
       ))}
     </div>
   )
@@ -115,7 +115,7 @@ function DirectoryPager({
   if (total <= DEFAULT_PER_PAGE && per === DEFAULT_PER_PAGE) return null
 
   const sizePill = (n: number) =>
-    `rounded-lg px-2.5 py-1 text-meta font-medium transition-colors ${
+    `rounded-control px-2.5 py-1 text-meta font-medium transition-colors ${
       n === per ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface hover:text-text'
     }`
 
@@ -124,7 +124,7 @@ function DirectoryPager({
       {/* Page-size selector — resets to page 1 (a new window over the same set). */}
       <div className="flex items-center gap-2 text-meta text-subtle">
         <span>Per page</span>
-        <div className="flex items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
+        <div className="flex items-center gap-0.5 rounded-control bg-surface-elevated p-0.5">
           {PER_PAGE_OPTIONS.map((n) => (
             <Link key={n} href={buildDirectoryHref(basePath, urlBase, { per: n, page: null })} className={sizePill(n)}>
               {n}
@@ -182,7 +182,7 @@ const BUSINESS_FEATURES = [
 
 export function StartBusinessCTA() {
   return (
-    <section className="mt-12 overflow-hidden rounded-2xl border border-border bg-surface p-8 sm:p-10">
+    <section className="mt-12 overflow-hidden rounded-card border border-border bg-surface p-8 sm:p-10">
       <div className="max-w-2xl">
         <p className="mb-2 text-meta font-semibold uppercase tracking-widest text-primary-strong">Go Business</p>
         <h2 className="text-balance text-page-title font-bold text-text sm:text-3xl">Run your whole business here</h2>
@@ -195,7 +195,7 @@ export function StartBusinessCTA() {
       <ul className="mt-7 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
         {BUSINESS_FEATURES.map(({ Icon, label }) => (
           <li key={label} className="flex items-center gap-2.5 text-body-sm text-text">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
               <Icon className="h-4 w-4" aria-hidden />
             </span>
             {label}

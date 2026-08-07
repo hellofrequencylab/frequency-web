@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Trash2, Loader2 } from 'lucide-react'
+import { Input } from '@/components/ui/field'
 
 // Shared "danger zone" delete control for the entity settings modules (circle, event,
 // practice). Two-step confirm, runs the passed server action, surfaces its {error},
@@ -85,14 +86,14 @@ export function DangerDelete({
                 <span className="block text-meta text-muted">
                   Type <span className="font-semibold text-text">{confirmText}</span> to confirm.
                 </span>
-                <input
+                <Input
                   value={typed}
                   onChange={(e) => setTyped(e.target.value)}
                   autoFocus
                   spellCheck={false}
                   autoComplete="off"
                   aria-label={`Type ${confirmText} to confirm deletion`}
-                  className="w-40 rounded-lg border border-danger/40 bg-surface px-2.5 py-1.5 text-meta text-text outline-none focus:border-danger"
+                  className="!w-40 !px-2.5 !py-1.5 text-meta border-danger/40 focus:border-danger"
                 />
               </label>
             )}

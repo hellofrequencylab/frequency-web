@@ -1,5 +1,4 @@
 import { Suspense } from 'react'
-import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { CaptureBar } from '@/components/feed/capture-bar'
@@ -10,7 +9,7 @@ import { HostPromptCard } from '@/components/feed/host-prompt-card'
 import { RomanceStrip } from '@/components/feed/romance-strip'
 import { getLocalActivity } from '@/lib/feed/density'
 import { StreamTemplate } from '@/components/templates/stream-template'
-import { SectionHeader } from '@/components/ui/section-header'
+import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { PracticePrompt } from '@/components/practice/practice-prompt'
 import { FeedOnboardingGuide } from '@/components/feed/feed-onboarding-guide'
 import { AvatarNudge } from '@/components/feed/avatar-nudge'
@@ -130,6 +129,15 @@ export default async function FeedPage({
   const composerVisibility = 'public' as const
   const hasCircle = !!primaryCircleId
   const hasHome = homeLat != null && homeLng != null
+  // Names the stream region for assistive tech. This used to be a visible <SectionHeader>
+  // title that simply restated whichever sort was active; the tab strip below now says it,
+  // so it stays as the region's accessible name rather than a duplicated word on screen.
+  const sortLabel =
+    sort === 'nearby' ? 'Nearby'
+      : sort === 'relevant' ? 'Resonance'
+        : sort === 'popular' ? 'Most popular'
+          : sort === 'story' ? 'The community’s story'
+            : 'Most recent'
 
   // The feed's independent reads, fetched together (they were serial — a visible slice of the
   // page's latency, site audit 2026-06-18): the adopted-practices "log today" nudge (WAM); the
@@ -281,67 +289,35 @@ export default async function FeedPage({
         </div>
       )}
 
-      {/* Sort toggle + feed */}
-      <section className="mt-8">
-        <SectionHeader
-          title={sort === 'nearby' ? 'Nearby' : sort === 'relevant' ? 'Resonance' : sort === 'popular' ? 'Most popular' : sort === 'story' ? 'The community’s story' : 'Most recent'}
-          action={
-            <div className="flex items-center gap-0.5 bg-surface-elevated rounded-lg p-0.5">
-              {hasHome && (
-                <Link
-                  href="?sort=nearby"
-                  className={`px-2.5 py-1 rounded-md text-meta font-medium transition-colors ${
-                    sort === 'nearby'
-                      ? 'bg-surface text-text lift-1'
-                      : 'text-muted hover:text-text'
-                  }`}
-                >
-                  Nearby
-                </Link>
-              )}
-              <Link
-                href="?sort=relevant"
-                className={`px-2.5 py-1 rounded-md text-meta font-medium transition-colors ${
-                  sort === 'relevant'
-                    ? 'bg-surface text-text lift-1'
-                    : 'text-muted hover:text-text'
-                }`}
-              >
-                Resonance
-              </Link>
-              <Link
-                href="?sort=recent"
-                className={`px-2.5 py-1 rounded-md text-meta font-medium transition-colors ${
-                  sort === 'recent'
-                    ? 'bg-surface text-text lift-1'
-                    : 'text-muted hover:text-text'
-                }`}
-              >
-                Most recent
-              </Link>
-              <Link
-                href="?sort=popular"
-                className={`px-2.5 py-1 rounded-md text-meta font-medium transition-colors ${
-                  sort === 'popular'
-                    ? 'bg-surface text-text lift-1'
-                    : 'text-muted hover:text-text'
-                }`}
-              >
-                Most popular
-              </Link>
-              <Link
-                href="?sort=story"
-                className={`px-2.5 py-1 rounded-md text-meta font-medium transition-colors ${
-                  sort === 'story'
-                    ? 'bg-surface text-text lift-1'
-                    : 'text-muted hover:text-text'
-                }`}
-              >
-                Story
-              </Link>
-            </div>
-          }
-        />
+      {/* Sort lens + feed.
+          PATTERN: UnderlineTabs — the one tab vocabulary (DAWN readme §"The composition
+          system": "UnderlineTabs …, so pill tabs do not exist"). WHY: these five sorts are
+          page-level navigation between sibling views of one stream, which is exactly the
+          case UnderlineTabs owns; the segmented `bg-surface-elevated p-0.5` track this
+          replaces was one of four pill groups in a single feed viewport and the loudest
+          reason the page read as a SaaS template. DAWN's own feed mock ships NO sort
+          control, so there is no direct reference to copy — the closest DAWN-consistent
+          treatment is the vocabulary DAWN already names for "switch between views of one
+          thing", used here the same way /search, /library and /market already use it.
+          They stay real <Link>s (UnderlineTabs renders next/link), so middle-click, "open
+          in new tab" and crawlable ?sort= URLs all survive, and `activeHref` is the
+          documented escape hatch for query-param tabs that pathname matching can't tell
+          apart. The section keeps its accessible name — the active tab label was the old
+          SectionHeader title, so rendering both would say the same word twice. */}
+      <section className="mt-8" aria-label={sortLabel}>
+        <div className="mb-4">
+          <UnderlineTabs
+            label="Sort the feed"
+            activeHref={`?sort=${sort}`}
+            tabs={[
+              ...(hasHome ? [{ href: '?sort=nearby', label: 'Nearby' }] : []),
+              { href: '?sort=relevant', label: 'Resonance' },
+              { href: '?sort=recent', label: 'Most recent' },
+              { href: '?sort=popular', label: 'Most popular' },
+              { href: '?sort=story', label: 'Story' },
+            ]}
+          />
+        </div>
 
         {sort === 'story' && (
           <p className="-mt-1 mb-4 px-1 text-meta text-muted">
@@ -408,7 +384,7 @@ function FeedListSkeleton() {
   return (
     <div className="space-y-4" aria-hidden>
       {[0, 1, 2].map((i) => (
-        <div key={i} className="rounded-2xl border border-border bg-surface p-4">
+        <div key={i} className="rounded-card border border-border bg-surface p-4">
           <div className="mb-3 flex items-center gap-3">
             <div className="h-9 w-9 rounded-pill bg-surface-elevated animate-pulse" />
             <div className="h-3 w-32 rounded bg-surface-elevated animate-pulse" />

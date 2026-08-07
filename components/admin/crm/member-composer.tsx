@@ -33,6 +33,7 @@ import {
   type RecipientOption,
 } from './member-composer-actions'
 
+import { Input } from '@/components/ui/field'
 /** One recipient in the composed audience. `key` is the SegmentKey the server resolves. */
 interface Chip {
   key: string
@@ -64,8 +65,6 @@ export interface MemberComposerProps {
   onSent?: () => void
 }
 
-const inputClass =
-  'w-full rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none'
 
 export function MemberComposer({
   profileId,
@@ -319,13 +318,12 @@ export function MemberComposer({
         {/* SEARCH to add more members. */}
         <div className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-subtle" aria-hidden />
-          <input
+          <Input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Add someone by name or email"
-            aria-label="Search members to add"
-            className={`${inputClass} pl-8`}
+            aria-label="Search members to add" className="pl-8"
           />
           {(searching || results.length > 0) && query.trim().length >= 2 && (
             <ul className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-border bg-surface lift-1">

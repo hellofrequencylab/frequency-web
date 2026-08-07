@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 
 type ButtonVariant =
   | 'primary'
+  | 'primarySoft'
   | 'secondary'
   | 'ghost'
   | 'danger'
@@ -17,12 +18,18 @@ type ButtonVariant =
 type ButtonSize = 'sm' | 'md'
 
 const VARIANT: Record<ButtonVariant, string> = {
-  primary: 'bg-primary text-on-primary hover:bg-primary-hover',
+  primary: 'bg-primary text-on-primary chisel hover:bg-primary-hover',
+  // The MUTED amber: present, but not shouting until it matters. The token pair the system
+  // already carries for exactly this (`bg-primary-bg` + `text-primary-strong`, ~250 sites), on
+  // the primitive so a control can go quiet at rest without hand-rolling a fill string. Hover
+  // steps up to the full amber, which is the "this is the same button, louder" cue. First
+  // consumer: the dock's chat tab, muted until there is an unread.
+  primarySoft: 'bg-primary-bg text-primary-strong hover:bg-primary-hover hover:text-on-primary hover:chisel',
   secondary: 'border border-border bg-surface text-text hover:border-border-strong hover:bg-surface-elevated',
   ghost: 'text-muted hover:bg-surface-elevated hover:text-text',
-  danger: 'bg-danger text-on-danger hover:opacity-90',
+  danger: 'bg-danger text-on-danger chisel hover:opacity-90',
   // Solid caution action (moderation Hide/Warn) — the danger shape in the warning tone.
-  warning: 'bg-warning text-on-warning hover:opacity-90',
+  warning: 'bg-warning text-on-warning chisel hover:opacity-90',
   // Outlined state-change actions (Delete account / Deactivate / Reactivate):
   // quieter than the solid fills, tinting on hover. One scale, three tones.
   dangerOutline: 'border border-danger text-danger hover:bg-danger-bg',
@@ -41,9 +48,25 @@ const SIZE: Record<ButtonSize, string> = {
 // The transition names the properties the state changes actually touch — `transform` has to be
 // in the list or `.press` snaps instead of easing. `motion-reduce:transition-none` is the guard
 // (`.press` itself is already collapsed under prefers-reduced-motion in globals.css).
+// 🔴 `tap-target` is on the BASE, not on a size, and it is the fix for the most widespread touch
+// defect in the product. The SIZE strings above set padding and type and nothing else, so a
+// button's height was whatever its line-box happened to add up to:
+//
+//   sm  →  py-1.5 (12.75px) + text-meta's 17px box     = 29.75px
+//   md  →  py-2   (17px)    + text-body-sm's 21.25px   = 38.25px
+//
+// Both are under the 44px touch floor, and this primitive is the most-used interactive element
+// in the app — so every <Button> and every buttonClasses()-styled <Link> was undersized on a
+// phone. The repo already had the tool: `--tap-min` is 32px and rises to 44px under
+// `@media (pointer: coarse)` (globals.css), and `@utility tap-target` consumes it. It simply was
+// never composed here.
+//
+// `min-block-size` does not fight an explicit `h-*` from a caller — a minimum only ever raises,
+// so shape overrides like the dock trigger's `h-full w-11` keep their geometry. On a mouse the
+// change is 29.75 → 32px for `sm` and nothing for `md`.
 const BASE =
   // DAWN: controls take the ROLE radius (skinnable), not a literal step (dawn/tokens/spacing.css).
-  'inline-flex items-center justify-center gap-1.5 rounded-control font-semibold press transition-[color,background-color,border-color,box-shadow,transform] motion-reduce:transition-none disabled:opacity-50 disabled:cursor-not-allowed'
+  'inline-flex items-center justify-center gap-1.5 rounded-control font-semibold tap-target press transition-[color,background-color,border-color,box-shadow,transform] motion-reduce:transition-none disabled:opacity-50 disabled:cursor-not-allowed'
 
 /** The exact button token string for a variant × size — so a styled `<Link>` (or
  *  any non-`<button>` element) shares the SAME tokens as `<Button>` without a

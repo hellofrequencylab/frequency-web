@@ -350,7 +350,7 @@ export default async function PricingPage() {
       </PhotoHero>
 
       {/* Mission framing, stated plainly, with the "we only earn when you do" infographic. */}
-      <Section tone="canvas" pad="pt-14 pb-10 sm:pt-16 sm:pb-12">
+      <Section tone="canvas">
         <div className="mx-auto mb-6 h-28 w-full max-w-xs">
           <Illustration name="earn-together" className="h-full" />
         </div>
@@ -573,14 +573,14 @@ function PlanCard({
       }`
     : `lift-1 border p-6 ${ink ? 'border-on-ink/10 bg-on-ink/5' : 'border-border bg-surface'}`
   return (
-    <Reveal as="article" className={`relative flex flex-col rounded-2xl ${shell}`}>
+    <Reveal as="article" className={`relative flex flex-col rounded-card ${shell}`}>
       {featured && (
         <span className="absolute -top-3 left-6 rounded-md bg-primary px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-on-primary">
           Most chosen
         </span>
       )}
       <h3
-        className={`font-display uppercase ${featured ? 'text-3xl' : 'text-page-title'} ${
+        className={`font-display uppercase ${featured ? 'text-display-h3' : 'text-page-title'} ${
           ink ? 'text-on-ink' : 'text-text'
         }`}
       >
@@ -652,15 +652,25 @@ function PlanPrice({
   ]
   // A long price label (pay-what-you-want Crew reads "from $4.99/mo") steps down a size so the display
   // face never wraps mid-figure; the reference sizes by string length the same way.
+  //
+  // THIS FUNCTION STAYS (ADR-947). It is not four stray literals — it is a length-driven FITTING
+  // algorithm, and collapsing it to one role would let a long figure wrap mid-price. What the roles
+  // can do is name three of its four outputs, at exactly the sizes it already picked:
+  // `stat-sm` IS 1.875rem with text-3xl's ratio and `stat-md` IS 2.25rem with text-4xl's, so these
+  // swaps are byte-identical renders that additionally put the price back on the --type-scale axis.
+  // The featured/short branch keeps its literals: it runs 3rem → 3.75rem, and the ladder has no rung
+  // between `stat-md` (2.25rem) and the hero `stat` (3.5rem floor, and fluid). The new
+  // `page-title-lg` does not reach it either — it CEILINGS at 2.25rem, i.e. where this branch starts.
+  // Inventing a role for one call site is the thing ADR-947 declined to do; that has not changed.
   const sizeFor = (label: string) => {
     const long = label.length > 8
     return featured
       ? long
-        ? 'text-3xl sm:text-4xl'
+        ? 'text-stat-sm sm:text-stat-md'
         : 'text-5xl sm:text-6xl'
       : long
-        ? 'text-3xl'
-        : 'text-4xl'
+        ? 'text-stat-sm'
+        : 'text-stat-md'
   }
   return (
     <div className="mt-4">
@@ -742,7 +752,7 @@ function IndependentStrip({ offering }: { offering: Offering }) {
   return (
     <Reveal
       as="article"
-      className="lift-1 mt-8 flex flex-col gap-5 rounded-2xl border border-on-ink/10 bg-on-ink/5 p-6 sm:flex-row sm:items-center sm:justify-between"
+      className="lift-1 mt-8 flex flex-col gap-5 rounded-card border border-on-ink/10 bg-on-ink/5 p-6 sm:flex-row sm:items-center sm:justify-between"
     >
       <div>
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">

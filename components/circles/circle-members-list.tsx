@@ -64,7 +64,7 @@ export function CircleMembersList({
           return (
             <div
               key={profile.id}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-surface transition-colors -mx-3 group"
+              className="flex items-center gap-3 rounded-control px-3 py-2 hover:bg-surface transition-colors -mx-3 group"
             >
               <Link
                 href={`/people/${profile.handle}`}
@@ -91,7 +91,7 @@ export function CircleMembersList({
                       {profile.display_name}
                     </span>
                     {memberIsHost && (
-                      <span className="text-meta px-1.5 py-0.5 rounded-md bg-success-bg text-success font-medium">
+                      <span className="text-meta px-1.5 py-0.5 rounded-pill bg-success-bg text-success font-medium">
                         Host
                       </span>
                     )}
@@ -117,7 +117,7 @@ export function CircleMembersList({
                   threadTitle={profile.display_name}
                   ariaLabel={`Message ${profile.display_name}`}
                   title={`Message ${profile.display_name}`}
-                  className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-subtle hover:text-primary-strong hover:bg-primary-bg transition-all"
+                  className="opacity-0 group-hover:opacity-100 p-1.5 rounded-control text-subtle hover:text-primary-strong hover:bg-primary-bg transition-all"
                 >
                   <MessageSquare className="w-4 h-4" />
                 </MessageMemberButton>

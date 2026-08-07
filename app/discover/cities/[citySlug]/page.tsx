@@ -14,10 +14,10 @@ import {
   PageHero,
   Section,
   SectionHeading,
-  Stat,
   BetaCTA,
   Button,
 } from '@/components/marketing/marketing-ui'
+import { Stat } from '@/components/ui/stat'
 import { createClient } from '@/lib/supabase/server'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, circleListSchema, eventListSchema } from '@/lib/jsonld'
@@ -125,7 +125,7 @@ export default async function DiscoverCityPage({
       />
 
       {/* ── At a glance ─────────────────────────────────────────── */}
-      <Section tone="canvas" pad="pb-14 sm:pb-20">
+      <Section tone="canvas" role="cont">
         <div className="grid grid-cols-2 gap-8 text-center sm:gap-12">
           <Stat value={circles.length} label={circles.length === 1 ? 'Circle' : 'Circles'} />
           <Stat
@@ -190,7 +190,7 @@ export default async function DiscoverCityPage({
       {/* ── If you would rather start one ───────────────────────── */}
       <Section tone="surface">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="mb-4 font-display text-3xl uppercase text-text sm:text-4xl">
+          <h2 className="mb-4 font-display text-display-h3 uppercase text-text">
             Want to start one in {city}?
           </h2>
           <p className="text-body-lg leading-relaxed text-muted">

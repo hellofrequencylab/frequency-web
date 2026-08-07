@@ -9,10 +9,10 @@ import {
   PageHero,
   Section,
   SectionHeading,
-  Stat,
   BetaCTA,
   Button,
 } from '@/components/marketing/marketing-ui'
+import { Stat } from '@/components/ui/stat'
 import { createClient } from '@/lib/supabase/server'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, circleListSchema, eventListSchema } from '@/lib/jsonld'
@@ -128,7 +128,7 @@ export default async function DiscoverPlacePage({
       />
 
       {/* ── At a glance ─────────────────────────────────────────── */}
-      <Section tone="canvas" pad="pb-14 sm:pb-20">
+      <Section tone="canvas" role="cont">
         <div className="grid grid-cols-2 gap-8 text-center sm:gap-12">
           <Stat value={circles.length} label={circles.length === 1 ? 'Circle' : 'Circles'} />
           <Stat

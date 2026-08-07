@@ -190,14 +190,23 @@ export function PostCard({
     ? 'border-primary/70'
     : post.is_pinned
     ? 'border-primary/35'
-    : 'border-border/70 dark:border-border/60'
+    : 'border-border'
 
   return (
-    // `bg-surface-post`, not `bg-surface`: DAWN gives feed posts their own surface a step
+    // `bg-surface-post` is still the RIGHT NAME here and no longer a different COLOUR: the
+    // token now resolves to `var(--color-surface)` in every skin (owner, 2026-08-06: "make the
+    // post and announcement boxes the same shade white as the post box site wide").
+    //
+    // This comment used to argue the opposite — "DAWN gives feed posts their own surface a step
     // warmer than the white composer above them, so a post reads as a card and the composer
-    // reads as a bright input on top of it. The token has existed in globals.css since the
-    // 2026-08-03 round with zero call sites, which is why every post was the same pure white
-    // as the box that writes them.
+    // reads as a bright input on top of it" — and that step is what has been retired. Kept as a
+    // record rather than deleted, because the next person to see two names for one colour will
+    // reasonably want to collapse them, and the answer is in globals.css: the name is the hook
+    // for re-separating the two, and it costs nothing while they agree.
+    //
+    // Announcements and pinned posts are unaffected: they tint the HAIRLINE (see `cardBorder`
+    // above), never the fill, so they follow the fill wherever it goes and stay in the same
+    // visual family as an ordinary post.
     <article
       className={`rounded-card border bg-surface-post lift-1 ${cardBorder}`}
     >
@@ -233,13 +242,13 @@ export function PostCard({
               <Image
                 src={avatarSrc(author.avatar_url)}
                 alt={author.display_name}
-                width={36}
-                height={36}
+                width={40}
+                height={40}
                 style={avatarFocusStyle(author.avatar_url)}
-                className="h-9 w-9 rounded-pill object-cover"
+                className="h-10 w-10 rounded-pill object-cover"
               />
             ) : (
-              <div className="flex h-9 w-9 select-none items-center justify-center rounded-pill bg-primary-bg text-meta font-semibold text-primary-strong">
+              <div className="flex h-10 w-10 select-none items-center justify-center rounded-pill bg-primary-bg text-meta font-semibold text-primary-strong">
                 {getInitials(author.display_name)}
               </div>
             )}
@@ -303,9 +312,13 @@ export function PostCard({
           <PostBody body={post.body} className="mb-2.5 text-body leading-relaxed text-text" />
         )}
 
-        {/* Post image — inset media, no second frame around it. */}
+        {/* Post image — inset media, no second frame around it. `h-54` is 13.5rem = 229.5px,
+            DAWN's 230px (feed.jsx:86). It was `h-96`, 384px: two thirds taller than the mock, so
+            a single photo post filled the column and the stream stopped reading as a stream.
+            `rounded-control`, not `rounded-card` — inset media sits one radius step INSIDE the
+            card that contains it; matching the parent made the photo look like the card. */}
         {post.media_urls?.length > 0 && (
-          <div className="relative mb-2.5 h-96 w-full overflow-hidden rounded-card">
+          <div className="relative mb-2.5 h-54 w-full overflow-hidden rounded-control">
             <Image
               src={post.media_urls[0]}
               alt="Post attachment"

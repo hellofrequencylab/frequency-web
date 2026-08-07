@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 // post-checkout landing is never a blank screen. Mirrors the OrderCard shape.
 function OrderCardSkeleton() {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
+    <div className="rounded-card border border-border bg-surface p-4 lift-1">
       <div className="flex items-center justify-between gap-3">
         <Skeleton className="h-3 w-24" />
         <Skeleton className="h-4 w-16 rounded-pill" />

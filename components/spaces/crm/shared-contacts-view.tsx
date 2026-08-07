@@ -72,7 +72,7 @@ function ContactCard({ contact }: { contact: SharedWithSpaceView }) {
     .filter((s): s is { key: 'instagram' | 'linkedin' | 'x' | 'other'; value: string } => !!s.value?.trim())
 
   return (
-    <li className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
+    <li className="flex flex-col gap-3 rounded-card border border-border bg-surface p-4">
       <div className="flex items-start gap-3">
         {contact.avatarUrl ? (
           <Image

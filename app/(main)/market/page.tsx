@@ -23,12 +23,23 @@ import { resolveHeaderElement } from '@/lib/elements/header'
 // band, then Products / Services / Tickets rails aggregating market-published listings across makers and
 // Business Spaces. A ?group= narrows to one type. No em or en dashes.
 
+// Same posture as the Frequency Store index (app/(main)/store/page.tsx:19-23): no /discover twin
+// exists for the Market, and this thin, client-filtered aggregate index is not the SEO surface —
+// the individual /market/<id> listing pages are (self-canonical, Product schema, and the ones
+// app/sitemap.ts advertises). So the index is noindexed but still FOLLOWED, letting crawlers walk
+// through to the indexable listing pages. It stays out of the robots.ts DISALLOW list for exactly
+// the reason noted there: a blanket "/market" rule would deindex the listing pages too.
 export const metadata = {
   title: 'Market',
   description: 'Products, services, and tickets from people and businesses in the Frequency community.',
+  robots: { index: false, follow: true },
 }
 
-const HERO_IMAGE = 'https://picsum.photos/seed/frequency-market/1600/600'
+// A real community photo, not a random stock placeholder. This is the hero and the LCP element, and
+// it is what any social or AI preview of the page surfaces, so it has to be ours. Shares the asset
+// the Spaces/business directory heroes use: the Market aggregates listings from those same makers
+// and Business Spaces.
+const HERO_IMAGE = '/images/site/business-directory-hero.jpg'
 const GROUP_LABEL: Record<MarketGroup, string> = { products: 'Products', services: 'Services', tickets: 'Tickets' }
 
 const GRID_CLASS = 'mp-grid gap-6'

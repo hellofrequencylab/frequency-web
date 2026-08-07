@@ -12,6 +12,7 @@ import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { safeImageSrc, safeUploadPreviewSrc } from '@/lib/safe-image-src'
+import { Input } from '@/components/ui/field'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB (post-prep; HEIC is converted and big photos shrink first)
 
@@ -267,16 +268,17 @@ export function EventActivity({
           gets a "Send as a Dispatch" toggle that turns the post into an event announcement with
           an optional title; off, and for every other guest, it's a plain thread comment. */}
       {canPost ? (
-        <div className="mb-4 rounded-2xl border border-border bg-surface p-3">
+        <div className="mb-4 rounded-card border border-border bg-surface p-3">
           {/* Title — only for a Dispatch (an announcement may carry a headline). */}
           {canDispatch && asDispatch && (
-            <input
+            <Input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Title (optional)"
+              aria-label="Dispatch title"
               disabled={pending}
-              className="mb-2 w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
+              className="mb-2"
             />
           )}
 
@@ -318,7 +320,7 @@ export function EventActivity({
                 type="button"
                 onClick={() => (gifUrl ? clearGif() : clearImage())}
                 aria-label={gifUrl ? 'Remove GIF' : 'Remove image'}
-                className="absolute right-1.5 top-1.5 rounded-pill bg-black/60 p-1 text-white transition-colors hover:bg-black/80"
+                className="absolute right-1.5 top-1.5 rounded-pill bg-ink/60 p-1 text-on-ink transition-colors hover:bg-ink/80"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -336,13 +338,13 @@ export function EventActivity({
                 }}
                 placeholder="Paste a GIF link"
                 disabled={pending}
-                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
+                className="min-w-0 flex-1 rounded-control border border-border bg-surface px-3 py-1.5 text-meta text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
               />
               <button
                 type="button"
                 onClick={applyGif}
                 disabled={pending}
-                className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-40"
+                className="shrink-0 rounded-control border border-border px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-40"
               >
                 Add
               </button>
@@ -363,7 +365,7 @@ export function EventActivity({
                     onClick={() => fileInputRef.current?.click()}
                     disabled={pending}
                     aria-label="Attach image"
-                    className={`inline-flex items-center rounded-lg p-1.5 transition-colors disabled:opacity-40 ${
+                    className={`inline-flex items-center rounded-control p-1.5 transition-colors disabled:opacity-40 ${
                       imageFile ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
                     }`}
                   >
@@ -374,7 +376,7 @@ export function EventActivity({
                     onClick={() => setShowGifInput((v) => !v)}
                     disabled={pending}
                     aria-label="Add a GIF"
-                    className={`inline-flex items-center rounded-lg p-1.5 transition-colors disabled:opacity-40 ${
+                    className={`inline-flex items-center rounded-control p-1.5 transition-colors disabled:opacity-40 ${
                       gifUrl || showGifInput
                         ? 'bg-primary-bg text-primary-strong'
                         : 'text-subtle hover:bg-surface-elevated hover:text-muted'
@@ -400,7 +402,7 @@ export function EventActivity({
                   }}
                   disabled={pending}
                   aria-pressed={asDispatch}
-                  className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
+                  className={`inline-flex items-center gap-1.5 rounded-control px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
                     asDispatch
                       ? 'bg-primary-bg text-primary-strong'
                       : 'text-muted hover:bg-surface-elevated hover:text-muted'
@@ -415,7 +417,7 @@ export function EventActivity({
               type="button"
               onClick={submit}
               disabled={!canSubmit}
-              className="shrink-0 rounded-lg bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+              className="shrink-0 rounded-control bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
             >
               {pending ? 'Posting…' : asDispatch ? 'Send Dispatch' : 'Post'}
             </button>
@@ -459,7 +461,7 @@ export function EventActivity({
                   </div>
                 )}
                 <div
-                  className={`min-w-0 flex-1 rounded-2xl border px-3 py-2 ${
+                  className={`min-w-0 flex-1 rounded-card border px-3 py-2 ${
                     post.isDispatch ? 'border-primary-bg bg-primary-bg/20' : 'border-border bg-surface'
                   }`}
                 >
@@ -628,7 +630,7 @@ function DeletePostButton({ postId, slug }: { postId: string; slug: string }) {
       onClick={() => startTransition(() => deleteEventPost(postId, slug))}
       disabled={pending}
       aria-label="Delete comment"
-      className="shrink-0 rounded-lg p-1 text-subtle transition-colors hover:text-danger disabled:opacity-40"
+      className="shrink-0 rounded-control p-1 text-subtle transition-colors hover:text-danger disabled:opacity-40"
     >
       <Trash2 className="h-3.5 w-3.5" />
     </button>

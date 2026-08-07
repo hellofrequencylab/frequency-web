@@ -6,6 +6,7 @@ import type { Walkthrough } from '@/lib/walkthroughs'
 import { WalkthroughSlide } from '@/components/walkthroughs/slide'
 import { completeWalkthroughAction } from '@/app/(main)/walkthrough-actions'
 import { Dialog } from '@/components/ui/dialog'
+import { IconButton } from '@/components/ui/icon-button'
 
 // Walkthroughs Phase B — the slide deck. A focused overlay that opens ONLY when the
 // member taps "Start" on the gentle in-feed card (never an auto-popup). It walks the
@@ -58,14 +59,14 @@ export function WalkthroughLightbox({
   return (
     <Dialog open onClose={close} ariaLabel={walkthrough.name} className="max-w-lg">
       <div className="relative w-full">
-        <button
-          type="button"
+        <IconButton
+          variant="bordered"
+          label="Close"
           onClick={close}
-          aria-label="Close"
-          className="absolute -top-2 -right-2 z-10 flex h-9 w-9 items-center justify-center rounded-pill border border-border bg-surface text-muted lift-3 transition-colors hover:text-text"
+          className="absolute -top-2 -right-2 z-10 bg-surface lift-3"
         >
           <X className="h-4 w-4" aria-hidden />
-        </button>
+        </IconButton>
 
         <WalkthroughSlide step={step} />
 
@@ -89,12 +90,12 @@ export function WalkthroughLightbox({
             type="button"
             onClick={back}
             disabled={index === 0}
-            className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-body-sm font-semibold text-white/80 transition-colors hover:text-white disabled:opacity-0"
+            className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-body-sm font-semibold text-on-ink/80 transition-colors hover:text-on-ink disabled:opacity-0"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden /> Back
           </button>
 
-          <span className="text-meta font-medium text-white/70">
+          <span className="text-meta font-medium text-on-ink/70">
             {index + 1} of {steps.length}
           </span>
 

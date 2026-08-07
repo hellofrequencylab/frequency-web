@@ -34,6 +34,14 @@ export async function generateMetadata({
       description,
       images: data.profile.avatar_url ? [avatarSrc(data.profile.avatar_url)] : undefined,
     },
+    // Metadata merges per TOP-LEVEL KEY: omitting `twitter` inherits the ROOT block, so a member
+    // sharing their own Spotlight link posted a card with the generic site name and tagline on it.
+    twitter: {
+      card: 'summary_large_image',
+      title: name,
+      description,
+      images: data.profile.avatar_url ? [avatarSrc(data.profile.avatar_url)] : undefined,
+    },
   }
 }
 

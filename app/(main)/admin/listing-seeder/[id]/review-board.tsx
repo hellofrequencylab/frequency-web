@@ -19,6 +19,8 @@ import { Loader2, Check, X, Pencil, Send, CheckCircle2, Copy, ImagePlus, Star, P
 import { Button } from '@/components/ui/button'
 import { Banner, StatusChip } from '@/components/admin/status'
 import { cn } from '@/lib/utils'
+import { Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { AMENITIES } from '@/lib/listings/types'
 import type { ListingDetail, ListingSeedKind } from '@/lib/listing-seeder/types'
@@ -362,8 +364,6 @@ function FieldRow({
 
 // ── The per-type editor ──────────────────────────────────────────────────────────────
 
-const inputCls =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none'
 
 function FieldEditor({
   field,
@@ -391,28 +391,33 @@ function FieldEditor({
   setDetails: (v: ListingDetail[]) => void
 }) {
   if (field.input === 'textarea') {
-    return <textarea className={cn(inputCls, 'min-h-24 resize-y')} value={text} onChange={(e) => setText(e.target.value)} autoFocus />
+    return <Textarea aria-label={field.label} className="min-h-24 resize-y" value={text} onChange={(e) => setText(e.target.value)} autoFocus />
   }
   if (field.input === 'number') {
-    return <input type="number" inputMode="decimal" className={inputCls} value={num} onChange={(e) => setNum(e.target.value)} autoFocus />
+    return <Input type="number" aria-label={field.label} inputMode="decimal" value={num} onChange={(e) => setNum(e.target.value)} autoFocus />
   }
   if (field.input === 'select') {
     return (
-      <select className={inputCls} value={text} onChange={(e) => setText(e.target.value)} autoFocus>
-        <option value="">Not set</option>
+      <Select aria-label={field.label} value={text} onChange={(e) => setText(e.target.value)} autoFocus emptyLabel="Not set">
         {(field.options ?? []).map((o) => (
           <option key={o.value} value={o.value}>{o.label}</option>
         ))}
-      </select>
+      </Select>
     )
   }
   if (field.input === 'bool') {
     return (
-      <select className={inputCls} value={bool} onChange={(e) => setBool(e.target.value as 'yes' | 'no' | 'unset')} autoFocus>
-        <option value="unset">Not set</option>
-        <option value="yes">Yes</option>
-        <option value="no">No</option>
-      </select>
+      <Select
+        aria-label={field.label}
+        value={bool}
+        onChange={(e) => setBool(e.target.value as 'yes' | 'no' | 'unset')}
+        autoFocus
+        options={[
+          { value: 'unset', label: 'Not set' },
+          { value: 'yes', label: 'Yes' },
+          { value: 'no', label: 'No' },
+        ]}
+      />
     )
   }
   if (field.input === 'amenities') {
@@ -443,7 +448,7 @@ function FieldEditor({
   if (field.input === 'details') {
     return <DetailsEditor details={details} setDetails={setDetails} />
   }
-  return <input className={inputCls} value={text} onChange={(e) => setText(e.target.value)} autoFocus />
+  return <Input aria-label={field.label} value={text} onChange={(e) => setText(e.target.value)} autoFocus />
 }
 
 // ── The item-detail chips editor (a repeater of {label, value} rows) ───────────────────
@@ -463,19 +468,18 @@ function DetailsEditor({
     <div className="space-y-1.5">
       {details.map((d, i) => (
         <div key={i} className="flex items-center gap-1.5">
-          <input
+          <Input
             value={d.label}
             placeholder="Label"
             aria-label={`Detail ${i + 1} label`}
             onChange={(e) => update(i, { label: e.target.value })}
-            className={cn(inputCls, 'w-32 shrink-0')}
+            className="w-32 shrink-0"
           />
-          <input
+          <Input
             value={d.value}
             placeholder="Value"
             aria-label={`Detail ${i + 1} value`}
             onChange={(e) => update(i, { value: e.target.value })}
-            className={inputCls}
           />
           <button
             type="button"
@@ -595,7 +599,7 @@ function PhotoStrip({
             <Image src={url} alt="" width={240} height={240} unoptimized className="h-full w-full object-cover" />
             {/* KEEP the black/white pair below: A scrim chip painted on a photo thumbnail, not on a themed surface, so the monochrome pair stays. */}
             {i === 0 && (
-              <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-pill bg-black/60 px-1.5 py-0.5 text-2xs font-semibold text-white">
+              <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-pill bg-ink/60 px-1.5 py-0.5 text-2xs font-semibold text-on-ink">
                 <Star className="h-3 w-3 fill-current" aria-hidden /> Primary
               </span>
             )}
@@ -604,7 +608,7 @@ function PhotoStrip({
               onClick={() => remove(url)}
               disabled={busy}
               aria-label="Remove photo"
-              className="absolute right-1.5 top-1.5 rounded-pill bg-black/60 p-1 text-white opacity-0 transition-opacity hover:bg-black/80 focus:opacity-100 group-hover:opacity-100 disabled:opacity-60"
+              className="absolute right-1.5 top-1.5 rounded-pill bg-ink/60 p-1 text-on-ink opacity-0 transition-opacity hover:bg-ink/80 focus:opacity-100 group-hover:opacity-100 disabled:opacity-60"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -614,7 +618,7 @@ function PhotoStrip({
                 onClick={() => makePrimary(url)}
                 disabled={busy}
                 aria-label="Make primary"
-                className="absolute inset-x-1.5 bottom-1.5 inline-flex items-center justify-center gap-1 rounded-pill bg-black/60 px-2 py-1 text-2xs font-semibold text-white opacity-0 transition-opacity hover:bg-black/80 focus:opacity-100 group-hover:opacity-100 disabled:opacity-60"
+                className="absolute inset-x-1.5 bottom-1.5 inline-flex items-center justify-center gap-1 rounded-pill bg-ink/60 px-2 py-1 text-2xs font-semibold text-on-ink opacity-0 transition-opacity hover:bg-ink/80 focus:opacity-100 group-hover:opacity-100 disabled:opacity-60"
               >
                 <Star className="h-3 w-3" /> Primary
               </button>

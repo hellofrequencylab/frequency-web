@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { Check, Loader2, Pencil, Sparkles, X } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { runSpacePlaybookAction, dismissSpacePlaybook } from '@/app/(main)/spaces/[slug]/crm/playbook-actions'
+import { Textarea } from '@/components/ui/field'
 
 // THE NEXT-BEST-ACTION PLAYBOOK PICKER on the Space contact detail (Resonance Engine · ADR-382 ·
 // docs/NEXT-GEN-CRM.md Altitude 3 "Action: next-best-action playbook picker"). The one-tap move for
@@ -81,7 +82,7 @@ export function SpacePlaybookPicker({
   if (done) {
     return (
       <section>
-        <div className="rounded-2xl border border-border bg-surface p-4 text-body-sm text-muted lift-1">
+        <div className="rounded-card border border-border bg-surface p-4 text-body-sm text-muted lift-1">
           {done === 'ran' ? 'Done. The move is on their timeline above.' : 'Set aside for now. Vera will learn from that.'}
         </div>
       </section>
@@ -90,7 +91,7 @@ export function SpacePlaybookPicker({
 
   return (
     <section>
-      <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
+      <div className="rounded-card border border-border bg-surface p-4 lift-1">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <p className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wider text-subtle">
             <Sparkles className="h-3.5 w-3.5" aria-hidden /> Next best move
@@ -110,12 +111,12 @@ export function SpacePlaybookPicker({
               placeholder="Subject"
               className="w-full rounded-control border border-border bg-canvas px-3 py-2 text-body-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             />
-            <textarea
+            <Textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
+              aria-label="Note"
               placeholder="Write the note in your own words. You approve before it sends."
               rows={4}
-              className="w-full rounded-control border border-border bg-canvas px-3 py-2 text-body-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             />
           </div>
         )}
@@ -127,7 +128,7 @@ export function SpacePlaybookPicker({
             type="button"
             disabled={pending}
             onClick={doIt}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-body-sm font-medium text-on-primary transition-colors hover:bg-primary-strong disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-2 text-body-sm font-medium text-on-primary transition-colors hover:bg-primary-strong disabled:opacity-50"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
             Do it

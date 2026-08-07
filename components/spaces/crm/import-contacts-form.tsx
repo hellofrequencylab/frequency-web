@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Check, Loader2, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { importContactsToSpace } from '@/lib/crm/graduation-actions'
 
@@ -49,9 +50,9 @@ export function ImportContactsForm({ spaceId }: { spaceId: string }) {
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-surface p-5 lift-1">
+    <section className="rounded-card border border-border bg-surface p-5 lift-1">
       <div className="mb-3 flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
           <Users className="h-5 w-5" aria-hidden />
         </span>
         <div className="min-w-0">
@@ -74,18 +75,13 @@ export function ImportContactsForm({ spaceId }: { spaceId: string }) {
           <Label htmlFor="grad-status" className="text-meta font-semibold">
             Status
           </Label>
-          <select
+          <Select
             id="grad-status"
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="mt-1 rounded-lg border border-border-strong bg-surface px-2 py-1.5 text-body-sm text-text focus:border-border-strong focus:outline-none"
-          >
-            {STATUS_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+            options={STATUS_OPTIONS}
+            wrapperClassName="mt-1 inline-block w-max max-w-full"
+          />
         </div>
 
         <div>
@@ -116,14 +112,14 @@ export function ImportContactsForm({ spaceId }: { spaceId: string }) {
       </form>
 
       {error && (
-        <p className="mt-3 rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+        <p className="mt-3 rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
 
       {result && !pending && (
         <p
-          className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-success-bg px-3 py-2 text-body-sm font-medium text-success"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-card bg-success-bg px-3 py-2 text-body-sm font-medium text-success"
           role="status"
         >
           <Check className="h-4 w-4" aria-hidden />

@@ -158,7 +158,11 @@ describe('the details layer is keyboard-reachable and never traps focus', () => 
     // Emitted only while the layer is mounted: aria-controls pointing at an absent id is a
     // dangling reference.
     expect(dockChat).toContain("aria-controls={detailsOpen ? 'dock-thread-details' : undefined}")
-    expect(dockChat).toContain('aria-label="Conversation details"')
+    // The accessible NAME, not the attribute that happens to spell it. This pinned
+    // `aria-label="Conversation details"` until the control moved onto IconButton, which takes
+    // the name as `label` and emits the aria-label itself. The name never changed; only the
+    // spelling did — so the assertion failed on a refactor that improved what it guards.
+    expect(dockChat).toMatch(/label="Conversation details"/)
     expect(details).toContain('id="dock-thread-details"')
   })
 
@@ -250,7 +254,12 @@ describe('the layer behaves as a bottom sheet on a phone, not a desktop panel', 
   it('touch targets are real ones', () => {
     expect(details).toContain('min-h-11') // roster rows
     expect(details.includes('min-h-10')).toBe(true) // buttons
-    expect(dockChat).toContain('h-10 w-10') // header icon buttons
+    // The header controls used to hardcode `h-10 w-10` — a fixed 42.5px for every pointer.
+    // They compose IconButton now, which is strictly better: 32px for a mouse, 44px on a coarse
+    // pointer, so the target answers the device instead of splitting the difference. Asserting
+    // the literal would have forced the sweep to keep the worse implementation, which is the
+    // failure mode of pinning markup rather than the contract.
+    expect(dockChat).toContain('<IconButton') // header icon buttons own the floors
   })
 })
 

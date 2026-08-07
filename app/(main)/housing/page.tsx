@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { Heart, Home, Plus, Users, DoorOpen, SlidersHorizontal } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { getMyProfileId } from '@/lib/auth'
 import { listSavedListingIds, listSavedListings } from '@/lib/listings'
 import { listHousingListings } from '@/lib/listings/housing'
@@ -23,12 +25,22 @@ import { resolveHeaderElement } from '@/lib/elements/header'
 // URL-driven and shareable without any client JS: the server reads searchParams and narrows the read
 // through listHousingListings(facets). No em or en dashes.
 
+// Same posture as the Frequency Store index (app/(main)/store/page.tsx:19-23): no /discover twin
+// exists for Housing, and this facet-filtered index is not the SEO surface — the individual
+// /housing/<id> pages are (self-canonical, Accommodation schema, and the ones app/sitemap.ts
+// advertises). So the index is noindexed but still FOLLOWED, letting crawlers walk through to the
+// indexable listing pages. It stays out of the robots.ts DISALLOW list for exactly the reason noted
+// there: a blanket "/housing" rule would deindex the listing pages too.
 export const metadata = {
   title: 'Housing',
   description: 'Find a rental or a roommate who actually fits, in your community.',
+  robots: { index: false, follow: true },
 }
 
-const HERO_IMAGE = 'https://picsum.photos/seed/frequency-housing/1600/600'
+// A real community photo, not a random stock placeholder. This is the hero and the LCP element, and
+// it is what any social or AI preview of the page surfaces, so it has to be ours. This one shows the
+// street the community actually lives on, homes and all, which is what the page is about.
+const HERO_IMAGE = '/images/site/community-1.jpg'
 
 type HousingSearchParams = {
   type?: string
@@ -39,8 +51,6 @@ type HousingSearchParams = {
   saved?: string
 }
 
-const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
 const FILTER_LABEL = 'mb-1 block text-meta font-medium text-muted'
 
 // Canonical quick-browse sub-menu: All + one tab per property type, then Roommates (its own route).
@@ -174,7 +184,7 @@ export default async function HousingPage({
             {!savedOnly && (
             <form
               method="get"
-              className="space-y-4 rounded-2xl border border-border bg-surface p-4 lift-1"
+              className="space-y-4 rounded-card border border-border bg-surface p-4 lift-1"
               aria-label="Filter housing"
             >
               <div className="flex items-center gap-2 text-body-sm font-medium text-text">
@@ -186,27 +196,25 @@ export default async function HousingPage({
                   <label htmlFor="type" className={FILTER_LABEL}>
                     Property type
                   </label>
-                  <select id="type" name="type" defaultValue={selectedType} className={FIELD}>
-                    <option value="">Any type</option>
+                  <Select id="type" name="type" defaultValue={selectedType} emptyLabel="Any type">
                     {PROPERTY_TYPES.map((p) => (
                       <option key={p.slug} value={p.slug}>
                         {p.label}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <label htmlFor="min" className={FILTER_LABEL}>
                     Min rent (per month)
                   </label>
-                  <input
+                  <Input
                     id="min"
                     name="min"
                     type="number"
                     min="0"
                     inputMode="numeric"
                     defaultValue={sp.min ?? ''}
-                    className={FIELD}
                     placeholder="Any"
                   />
                 </div>
@@ -214,14 +222,13 @@ export default async function HousingPage({
                   <label htmlFor="max" className={FILTER_LABEL}>
                     Max rent (per month)
                   </label>
-                  <input
+                  <Input
                     id="max"
                     name="max"
                     type="number"
                     min="0"
                     inputMode="numeric"
                     defaultValue={sp.max ?? ''}
-                    className={FIELD}
                     placeholder="Any"
                   />
                 </div>

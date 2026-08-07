@@ -107,7 +107,7 @@ function CodeCard({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface lift-1 p-4 flex flex-col">
+    <div className="rounded-card border border-border bg-surface lift-1 p-4 flex flex-col">
       <div className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wide text-subtle">
         <Icon className="w-3.5 h-3.5" /> {card.title}
       </div>
@@ -171,7 +171,7 @@ function CodeCard({
             <button
               onClick={save}
               disabled={pending}
-              className="rounded-lg bg-primary text-on-primary px-3 py-1.5 text-meta font-semibold hover:bg-primary-hover transition-colors disabled:opacity-60"
+              className="rounded-control bg-primary text-on-primary px-3 py-1.5 text-meta font-semibold hover:bg-primary-hover transition-colors disabled:opacity-60"
             >
               {pending ? 'Saving…' : 'Save design'}
             </button>

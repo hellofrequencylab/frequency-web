@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { HelpCircle, ArrowUp, ArrowDown, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
-import { Label, fieldClasses } from '@/components/ui/field'
+import { Label, Input, Textarea } from '@/components/ui/field'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { FormError } from '@/components/spaces/space-form'
@@ -151,7 +151,12 @@ export function SpaceFaqEditor({
 
   return (
     <section aria-labelledby="space-faq-heading">
-      <SectionHeader title="Common questions" count={rows.length} action={readOnly ? undefined : addButton} />
+      <SectionHeader
+        id="space-faq-heading"
+        title="Common questions"
+        count={rows.length}
+        action={readOnly ? undefined : addButton}
+      />
 
       {error && <FormError message={error} />}
 
@@ -175,9 +180,8 @@ export function SpaceFaqEditor({
                   <div className="space-y-3">
                     <div>
                       <Label htmlFor={`faq-q-${i}`}>Question</Label>
-                      <input
+                      <Input
                         id={`faq-q-${i}`}
-                        className={fieldClasses}
                         value={row.question}
                         onChange={(e) => patch(i, { question: e.target.value })}
                         disabled={readOnly || busy}
@@ -187,9 +191,8 @@ export function SpaceFaqEditor({
                     </div>
                     <div>
                       <Label htmlFor={`faq-a-${i}`}>Answer</Label>
-                      <textarea
+                      <Textarea
                         id={`faq-a-${i}`}
-                        className={fieldClasses}
                         rows={3}
                         value={row.answer}
                         onChange={(e) => patch(i, { answer: e.target.value })}

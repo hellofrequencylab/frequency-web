@@ -9,6 +9,7 @@ import {
   type SplashUsage,
 } from '@/lib/library/splash-registry'
 import { SplashRail } from '@/components/admin/library/splash-rail'
+import { Input } from '@/components/ui/field'
 import {
   SplashLane,
   type SplashTemplateCard,
@@ -181,12 +182,13 @@ export async function SplashLaneView({
             {view !== 'cards' && <input type="hidden" name="view" value={view} />}
             <span className="relative min-w-[180px] flex-1 sm:max-w-xs">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
-              <input
+              <Input
                 type="search"
                 name="q"
+                aria-label="Search splashes"
                 defaultValue={q}
                 placeholder="Search splashes…"
-                className="w-full rounded-2xl border border-border bg-surface py-2 pl-9 pr-3 text-body-sm"
+                className="py-2 pl-9 pr-3"
               />
             </span>
             <button

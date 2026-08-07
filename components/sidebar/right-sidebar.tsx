@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { Suspense, cache } from 'react'
 import { headers } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SEASON_RANKS, rankForCompletion, journeysFinishedThisSeason } from '@/lib/season-ranks'
@@ -73,7 +73,17 @@ export async function MobileGameStats({ profileId }: { profileId: string }) {
 
 // Assemble the player's "progress cockpit" — best-effort; any one source failing
 // degrades to an empty/teaser state. Shared by the desktop dock + the mobile menu.
-export async function loadGameStats(profileId: string): Promise<DockData> {
+//
+// 🔴 `cache()` IS LOAD-BEARING, not an optimisation. Two callers await this on EVERY member page
+// and neither is conditional: MobileGameStats (the drawer's Vault, mounted from the layout) and
+// VaultDockSlot (the desktop dock, same layout). "The score renders once per viewport" is a CSS
+// statement — `md:hidden` on one and `hidden md:flex` on the other — and CSS does not stop a
+// server component from running. Both rendered, so both fetched, and each call is a six-way
+// Promise.all: twelve queries for one score, on every page load, at every viewport.
+//
+// React's `cache()` dedupes per REQUEST, which is exactly the scope of the double-render. Do not
+// replace it with a module-level map: that would leak one member's score to the next request.
+export const loadGameStats = cache(async function loadGameStats(profileId: string): Promise<DockData> {
   const admin = createAdminClient()
 
   // All sources fetch in ONE parallel batch (no serial waterfall): the profile row, today's
@@ -143,7 +153,7 @@ export async function loadGameStats(profileId: string): Promise<DockData> {
   }
 
   return { zaps, gems, streak, rank, todaysMove, last7, rankProgress, arc, vaultGems: gems }
-}
+})
 
 // The viewer's practice activity — the Insight-Timer-style bar chart (Days / Weeks / Months),
 // pinned right under the Season Standing block on every rail. Renders nothing until there's
@@ -173,7 +183,7 @@ async function ActivityPanel({ profileId }: { profileId: string }) {
       <div className="mb-2 px-1">
         <h3 className="text-body-sm font-bold tracking-tight text-text">Your activity</h3>
       </div>
-      <ActivityChart activity={activity} />
+      <ActivityChart activity={activity} framed={false} />
     </section>
   )
 }
@@ -188,7 +198,7 @@ async function SignaturePanel({ profileId }: { profileId: string }) {
       <div className="mb-2 px-1">
         <h3 className="text-body-sm font-bold tracking-tight text-text">Your Frequency Signature</h3>
       </div>
-      <FrequencySignature signature={signature} variant="full" layout="stack" />
+      <FrequencySignature signature={signature} variant="full" layout="stack" framed={false} />
     </section>
   )
 }
@@ -251,8 +261,12 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
       <div className="flex-1 space-y-6 pt-1 pb-6">
         {/* Report a bug / get help — pinned to the very TOP of the right rail. The shared
             support sheet (same `open-support` event as the account menu + footer). */}
-        {/* Quiet, not boxed. Invite is the rail's ONE deliberate tinted object; a second
-            bordered box above it made the top of the rail read as two competing cards. */}
+        {/* CORRECTED 2026-08-05. This used to read "Invite is the rail's ONE deliberate tinted
+            object", and that reasoning is now inverted: the tint was on the wrong object. DAWN
+            gives Invite a NEUTRAL card and reserves the amber fill for the standing block, which
+            this product moved into the Vault dock — so neither of these two rows is the tinted
+            one, and both take the same bordered utility-row treatment (right-rail.jsx:38-44 and
+            :154). Report keeps its ghost variant, which now carries that treatment itself. */}
         <ReportButton
           variant="ghost"
           className="w-full justify-start hover:bg-surface-elevated"

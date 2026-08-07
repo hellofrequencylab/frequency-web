@@ -25,7 +25,7 @@ export function CircleCallouts({
       {all.map((c, i) => (
         <div
           key={`${c.title}-${i}`}
-          className="rounded-xl border border-primary/30 bg-primary-bg/20 px-3.5 py-3"
+          className="rounded-card border border-primary/30 bg-primary-bg/20 px-3.5 py-3"
         >
           <p className="flex items-start gap-2 text-body-sm font-semibold text-text">
             <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />

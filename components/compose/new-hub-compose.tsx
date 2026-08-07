@@ -3,7 +3,9 @@
 import { useState, useTransition } from 'react'
 import { Plus, Building2 } from 'lucide-react'
 import { createHub } from '@/app/(main)/admin/actions'
-import { CreateModal, cmInput, cmLabel } from '@/components/create-modal'
+import { CreateModal } from '@/components/create-modal'
+import { Field, Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 
 interface NexusOption { id: string; name: string }
 
@@ -56,20 +58,17 @@ export function NewHubCompose({
         submitLabel="Create Hub" pendingLabel="Creating…"
         submitDisabled={!name.trim()} isPending={isPending} error={error}
       >
-        <div>
-          <label className={cmLabel}>Hub name *</label>
-          <input type="text" value={name} onChange={e => setName(e.target.value)}
-            placeholder="e.g. North County" required disabled={isPending} className={cmInput} />
-        </div>
+        <Field label="Hub name *">
+          <Input type="text" value={name} onChange={e => setName(e.target.value)}
+            placeholder="e.g. North County" required disabled={isPending} />
+        </Field>
         {nexuses.length > 0 && (
-          <div>
-            <label className={cmLabel}>Nexus <span className="text-subtle font-normal">(optional)</span></label>
-            <select value={nexusId} onChange={e => setNexusId(e.target.value)}
-              disabled={isPending} className={cmInput}>
-              <option value="">- None -</option>
+          <Field label={<>Nexus <span className="text-subtle font-normal">(optional)</span></>}>
+            <Select value={nexusId} onChange={e => setNexusId(e.target.value)}
+              disabled={isPending} emptyLabel="- None -">
               {nexuses.map(n => <option key={n.id} value={n.id}>{n.name}</option>)}
-            </select>
-          </div>
+            </Select>
+          </Field>
         )}
       </CreateModal>
     </>

@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Gem, Zap, PlusCircle, MinusCircle, Loader2 } from 'lucide-react'
 import { grantGems, revokeGems, grantZaps, revokeZaps } from './economy-actions'
+import { Input } from '@/components/ui/field'
 
 type Currency = 'gems' | 'zaps'
 type Op = 'grant' | 'revoke'
@@ -77,15 +78,14 @@ export function EconomyPanel({ profileId, displayName }: Props) {
             <button
               type="button"
               onClick={() => { setOp('grant'); setStatus(null) }}
-              // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
-              className={`flex items-center gap-1 px-3 py-1.5 transition-colors ${op === 'grant' ? 'bg-success text-white' : 'text-muted hover:bg-surface-elevated'}`}
+              className={`flex items-center gap-1 px-3 py-1.5 transition-colors ${op === 'grant' ? 'bg-success text-on-success' : 'text-muted hover:bg-surface-elevated'}`}
             >
               <PlusCircle className="w-3 h-3" /> Grant
             </button>
             <button
               type="button"
               onClick={() => { setOp('revoke'); setStatus(null) }}
-              className={`flex items-center gap-1 px-3 py-1.5 transition-colors ${op === 'revoke' ? 'bg-danger text-white' : 'text-muted hover:bg-surface-elevated'}`}
+              className={`flex items-center gap-1 px-3 py-1.5 transition-colors ${op === 'revoke' ? 'bg-danger text-on-danger' : 'text-muted hover:bg-surface-elevated'}`}
             >
               <MinusCircle className="w-3 h-3" /> Revoke
             </button>
@@ -94,8 +94,9 @@ export function EconomyPanel({ profileId, displayName }: Props) {
 
         {/* Amount + reason */}
         <div className="flex gap-2">
-          <input
+          <Input
             type="number"
+            aria-label="Amount"
             min={1}
             max={100000}
             step={1}
@@ -103,24 +104,24 @@ export function EconomyPanel({ profileId, displayName }: Props) {
             onChange={e => { setAmount(e.target.value); setStatus(null) }}
             placeholder="Amount"
             required
-            className="w-24 rounded-lg border border-border bg-surface px-2 py-1.5 text-meta focus:outline-none focus:ring-1 focus:ring-border-strong/30"
+            className="w-24 px-2 py-1.5 text-meta"
           />
-          <input
+          <Input
             type="text"
+            aria-label="Reason"
             value={reason}
             onChange={e => { setReason(e.target.value); setStatus(null) }}
             placeholder="Reason (required)"
             required
             maxLength={200}
-            className="flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-meta focus:outline-none focus:ring-1 focus:ring-border-strong/30"
+            className="flex-1 px-2 py-1.5 text-meta"
           />
         </div>
 
         <button
           type="submit"
           disabled={isPending}
-          // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
-          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-meta font-semibold text-white transition-colors disabled:opacity-50 ${op === 'grant' ? 'bg-success hover:bg-success' : 'bg-danger hover:bg-danger'}`}
+          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-meta font-semibold transition-colors disabled:opacity-50 ${op === 'grant' ? 'bg-success text-on-success hover:bg-success' : 'bg-danger text-on-danger hover:bg-danger'}`}
         >
           {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : (op === 'grant' ? <PlusCircle className="w-3 h-3" /> : <MinusCircle className="w-3 h-3" />)}
           {op === 'grant' ? `Grant ${currency}` : `Revoke ${currency}`}

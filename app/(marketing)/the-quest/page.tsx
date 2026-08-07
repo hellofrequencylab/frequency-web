@@ -50,7 +50,21 @@ export const metadata: Metadata = {
       'Real life is the reward. Zaps, Gems, season ranks, and Journeys: a path that rewards showing up, not scrolling.',
     url: '/the-quest',
   },
+  // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+  // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+  twitter: {
+    card: 'summary_large_image',
+    title: 'The Quest · Frequency',
+    description:
+      'Real life is the reward. Zaps, Gems, season ranks, and Journeys: a path that rewards showing up, not scrolling.',
+  },
 }
+
+// Article dates. Google requires datePublished/dateModified on an Article node, and every other
+// pillar page stamps them as literals here; without them this URL published a dateless Article.
+// Sourced from the page's own history: first shipped 2026-07-28, last revised 2026-08-05.
+const PUBLISHED = '2026-07-28'
+const UPDATED = '2026-08-05'
 
 // Answer-first FAQ for AIO. Answers match the definitions the page ships (how the
 // game works, Zaps vs Gems, the season ranks, a Journey) so structured data and
@@ -129,7 +143,9 @@ export default async function TheQuestPage() {
         // Article, and the template's Accordion block emits the FAQPage. Emitting the
         // page-level copies here too shipped BOTH nodes twice on every render, because
         // `data` is never null (templates.test.ts asserts the template is renderable).
-        <BlockDocJsonLd data={data} path="/the-quest" />
+        // The dates are passed on BOTH rungs: this one renders in practice, so leaving them off
+        // here is what actually shipped the dateless Article.
+        <BlockDocJsonLd data={data} path="/the-quest" published={PUBLISHED} updated={UPDATED} />
       ) : (
         <JsonLd
           data={[
@@ -138,6 +154,8 @@ export default async function TheQuestPage() {
               description:
                 'How The Quest works: a light, in-person game where you earn Zaps for showing up in real life and Gems online, climb the season ranks, and run Journeys of small daily Practices, solo or with your Circle.',
               path: '/the-quest',
+              published: PUBLISHED,
+              updated: UPDATED,
               image: '/images/site/36d99363-e483-40a0-b173-7e7ee6c1b379.jpg',
             }),
             faqSchema(QUEST_FAQ.map(({ q, a }) => ({ q, a }))),
@@ -171,7 +189,7 @@ function LegacyTheQuest() {
       </PhotoHero>
 
       {/* The premise */}
-      <Section tone="canvas" pad="pt-20 pb-10 sm:pt-24 sm:pb-12">
+      <Section tone="canvas">
         <SectionHeading
           eyebrow="The premise"
           title="Most games waste your life. This one builds it."
@@ -231,7 +249,7 @@ function LegacyTheQuest() {
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Card tone="feature" className="hover:border-border-strong transition-colors">
-            <div className="w-11 h-11 rounded-2xl bg-signal-bg flex items-center justify-center mb-4">
+            <div className="w-11 h-11 rounded-card bg-signal-bg flex items-center justify-center mb-4">
               <Zap className="w-5 h-5 text-signal-strong" aria-hidden />
             </div>
             <h3 className="font-display uppercase text-text text-page-title leading-none">
@@ -244,7 +262,7 @@ function LegacyTheQuest() {
             </p>
           </Card>
           <Card tone="feature" className="hover:border-border-strong transition-colors">
-            <div className="w-11 h-11 rounded-2xl bg-primary-bg flex items-center justify-center mb-4">
+            <div className="w-11 h-11 rounded-card bg-primary-bg flex items-center justify-center mb-4">
               <Gem className="w-5 h-5 text-primary-strong" aria-hidden />
             </div>
             <h3 className="font-display uppercase text-text text-page-title leading-none">
@@ -281,7 +299,7 @@ function LegacyTheQuest() {
                   <span className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-primary-bg/50">
                     <r.icon className="w-5 h-5 text-primary-strong" aria-hidden />
                   </span>
-                  <span className="font-display uppercase text-4xl text-border-strong leading-none">
+                  <span className="font-display uppercase text-display-h3 text-border-strong leading-none">
                     {String(i + 1).padStart(2, '0')}
                   </span>
                 </div>
@@ -436,7 +454,7 @@ function LegacyTheQuest() {
         />
         <dl className="space-y-6">
           {QUEST_FAQ.map((item) => (
-            <div key={item.q} className="rounded-2xl border border-border bg-canvas p-6">
+            <div key={item.q} className="rounded-card border border-border bg-canvas p-6">
               <dt className="font-display uppercase text-text text-lead leading-tight mb-2">
                 {item.q}
               </dt>

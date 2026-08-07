@@ -4,12 +4,14 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, ListChecks, Loader2, Plus, RotateCcw, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, fieldClasses } from '@/components/ui/field'
+import { Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SectionHeader } from '@/components/ui/section-header'
 import { isError } from '@/lib/action-result'
 import { createTask, updateTask, setTaskDone, deleteTask } from '@/lib/crm/space-tasks-actions'
 import type { SpaceTask } from '@/lib/crm/pipeline'
+import { IconButton } from '@/components/ui/icon-button'
 
 // PER-SPACE TASKS PANEL (client, CRM-STRATEGY §6/§7). The interactive surface for a Space's CRM tasks:
 // create (title, optional due date, optional deal/contact link), edit a title/due date inline, mark
@@ -155,7 +157,7 @@ export function SpaceTasksPanel({
 
       {!readOnly && (
         <form
-          className="mb-4 rounded-2xl border border-border bg-surface p-4 lift-1"
+          className="mb-4 rounded-card border border-border bg-surface p-4 lift-1"
           onSubmit={(e) => {
             e.preventDefault()
             if (!pending) add()
@@ -176,13 +178,13 @@ export function SpaceTasksPanel({
               aria-label="Due date (optional)"
               className="@lg:w-44"
             />
-            <select
+            <Select
               value={linkTo}
               onChange={(e) => setLinkTo(e.target.value)}
               aria-label="Link to a deal or contact (optional)"
-              className={`${fieldClasses} @lg:w-52`}
+              emptyLabel="No link"
+              wrapperClassName="@lg:w-52"
             >
-              <option value="">No link</option>
               {dealOptions.length > 0 && (
                 <optgroup label="Deals">
                   {dealOptions.map((d) => (
@@ -201,7 +203,7 @@ export function SpaceTasksPanel({
                   ))}
                 </optgroup>
               )}
-            </select>
+            </Select>
           </div>
           <div className="mt-3 flex justify-end">
             <Button type="submit" size="sm" disabled={pending}>
@@ -220,7 +222,7 @@ export function SpaceTasksPanel({
       )}
 
       {error && (
-        <p className="mb-3 rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+        <p className="mb-3 rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
@@ -234,7 +236,7 @@ export function SpaceTasksPanel({
       ) : (
         <ul className="space-y-2">
           {open.map((task) => (
-            <li key={task.id} className="rounded-2xl border border-border bg-surface p-3 lift-1">
+            <li key={task.id} className="rounded-card border border-border bg-surface p-3 lift-1">
               {editingId === task.id ? (
                 <div className="space-y-2">
                   <Input
@@ -267,15 +269,27 @@ export function SpaceTasksPanel({
                 </div>
               ) : (
                 <div className="flex items-start gap-3">
+                  {/* TOUCH TARGET, the same split the kit's Checkbox makes (components/ui/checkbox.tsx):
+                      the floor goes on a WRAPPER, never on the visible marker. The marker IS the 20px
+                      box, so a min-size floor on it would grow the box itself (and at the kids
+                      generations `--tap-min` reaches 56px), leaving it three sizes out of step with the
+                      identical static marker on a completed row. Growing the flex ITEM instead of
+                      bleeding a ::before is what keeps this collision-free: `gap-3` is a flex gap, so
+                      the 12.75px channel between this target and the title button survives at every
+                      floor (32px fine, 44px coarse, 56px kids) and the title column, `flex-1 min-w-0`,
+                      absorbs the width. `items-start` + the wrapper's `mt-0.5` hold the marker exactly
+                      where it sat before; only empty target area is added, below and to the right. */}
                   {!readOnly && (
                     <button
                       type="button"
                       onClick={() => toggle(task.id, true)}
                       disabled={pending}
                       aria-label="Mark task complete"
-                      className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border text-transparent transition-colors hover:border-success hover:text-success disabled:opacity-40"
+                      className="tap-target group/check mt-0.5 inline-flex shrink-0 items-start disabled:opacity-40"
                     >
-                      <Check className="h-3.5 w-3.5" aria-hidden />
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-control border border-border text-transparent transition-colors group-hover/check:border-success group-hover/check:text-success">
+                        <Check className="h-3.5 w-3.5" aria-hidden />
+                      </span>
                     </button>
                   )}
                   <div className="min-w-0 flex-1">
@@ -295,15 +309,16 @@ export function SpaceTasksPanel({
                     </div>
                   </div>
                   {!readOnly && (
-                    <button
-                      type="button"
+                    <IconButton
+                      variant="bordered"
+                      tone="danger"
+                      label="Delete task"
                       onClick={() => remove(task.id)}
                       disabled={pending}
-                      aria-label="Delete task"
-                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-danger/40 hover:text-danger disabled:opacity-40"
+                      className="shrink-0"
                     >
                       <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                    </button>
+                    </IconButton>
                   )}
                 </div>
               )}
@@ -327,28 +342,30 @@ export function SpaceTasksPanel({
               {done.map((task) => (
                 <li
                   key={task.id}
-                  className="flex items-start gap-3 rounded-2xl border border-border bg-surface-elevated/40 p-3"
+                  className="flex items-start gap-3 rounded-card border border-border bg-surface-elevated/40 p-3"
                 >
-                  <span
-                    className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-success-bg text-success"
-                    aria-hidden
-                  >
-                    <Check className="h-3.5 w-3.5" />
+                  {/* The completed row's marker is static, but its gutter takes the same
+                      `tap-target` floor the open row's button claims, so the two lists stay
+                      aligned at any tap floor (the roster-manager gutter does the same). */}
+                  <span className="tap-target mt-0.5 inline-flex shrink-0 items-start" aria-hidden>
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-control bg-success-bg text-success">
+                      <Check className="h-3.5 w-3.5" />
+                    </span>
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-body-sm text-muted line-through">{task.title}</p>
                     {task.linkLabel && <p className="mt-0.5 truncate text-meta text-subtle">{task.linkLabel}</p>}
                   </div>
                   {!readOnly && (
-                    <button
-                      type="button"
+                    <IconButton
+                      variant="bordered"
+                      label="Reopen task"
                       onClick={() => toggle(task.id, false)}
                       disabled={pending}
-                      aria-label="Reopen task"
-                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-40"
+                      className="shrink-0"
                     >
                       <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-                    </button>
+                    </IconButton>
                   )}
                 </li>
               ))}
@@ -372,7 +389,7 @@ function DueChip({ dueAt }: { dueAt: string | null }) {
         : 'bg-surface-elevated text-muted'
   const prefix = tone === 'overdue' ? 'Overdue ' : 'Due '
   return (
-    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-meta font-medium ${cls}`}>
+    <span className={`inline-flex items-center rounded-pill px-2 py-0.5 text-meta font-medium ${cls}`}>
       {prefix}
       {label}
     </span>

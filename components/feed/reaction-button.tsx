@@ -5,6 +5,7 @@ import { SmilePlus } from 'lucide-react'
 import { toggleReaction } from '@/app/(main)/feed/actions'
 import { isError } from '@/lib/action-result'
 import { REACTIONS, reactionLabel } from '@/lib/feed/reactions'
+import { IconButton } from '@/components/ui/icon-button'
 
 // The emoji reactions on every post and comment — the site's highest-frequency
 // interaction. Each emoji fills INSTANTLY on click (optimistic), runs the server
@@ -130,11 +131,29 @@ export function ReactionCounts({ base, toggle, failed, compact = false }: Reacti
   )
 }
 
-/** The inline emoji react control: a string of the first `quickCount` reaction emojis
- *  as quick-tap buttons, plus a picker (SmilePlus) for the full set. Render inline with
- *  the comment composer so reacting and commenting share one row. `quickCount={0}` shows
- *  ONLY the picker (used on comments, which stay tight: counts + one add button). */
-export function ReactionInlinePicker({ base, toggle, pending, quickCount = 5 }: ReactionState & { quickCount?: number }) {
+/** The emoji react control: ONE small, neutral trigger that opens the full set in a
+ *  popover. Render it on the ACTION LINE beside the reaction counts and the comment
+ *  count — the three read as one cluster of chrome, and the comment composer below
+ *  gets the whole row to itself.
+ *
+ * 🔴 THE QUICK STRIP IS GONE, and it was a layout bug rather than a taste call (owner,
+ * 2026-08-06: "make sure comment field goes full width"). This used to render the first
+ * five emojis as always-visible quick-tap buttons INSIDE the composer row. Five 28px
+ * glyphs plus this trigger is ~200px of fixed, non-shrinking width; on a 390px phone
+ * that left the `flex-1` textarea about 40px wide — one visible character — with the
+ * send button pushed off the card edge. The strip cost the composer more than the tap
+ * it saved, so the full set moved into the popover and the row it was squatting on went
+ * back to the comment field.
+ *
+ * `align` decides which edge the popover hangs from. On the action line the trigger sits
+ * at the RIGHT edge of the card, so a left-anchored menu would open off-screen; on a
+ * comment row it sits at the left. Nothing auto-detects this, so the call site says which. */
+export function ReactionInlinePicker({
+  base,
+  toggle,
+  pending,
+  align = 'start',
+}: ReactionState & { align?: 'start' | 'end' }) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const pickerRef = useRef<HTMLDivElement>(null)
 
@@ -154,62 +173,76 @@ export function ReactionInlinePicker({ base, toggle, pending, quickCount = 5 }: 
     }
   }, [pickerOpen])
 
-  const quick = REACTIONS.slice(0, quickCount)
+  // Emoji GLYPH toggles, not icon buttons -- the reaction itself is the content, so
+  // IconButton's icon colour pair is the wrong word for them. `tap-target` supplies the floor
+  // (the same utility IconButton composes): the RESTING box is compact, and it grows to the
+  // 44px platform target on a coarse pointer, so "compact on web and mobile" does not mean
+  // "too small to hit with a thumb". The two are not in tension; they are different pointers.
+  //
+  // COMPACT (owner, 2026-08-06: "compact for both web and mobile"). h-6 with a `text-body-sm`
+  // glyph and no gap, so the six-emoji row is ~148px instead of ~180px. Width is the whole
+  // point: the trigger is left-aligned inside a cluster that sits at the right of the card, so
+  // every pixel the menu saves is a pixel it cannot open past the edge of a phone.
   const emojiBtn = (mine: boolean | undefined) =>
-    `flex h-7 w-7 items-center justify-center rounded-pill text-body transition-transform hover:scale-110 hover:bg-surface-elevated ${
-      mine ? 'bg-primary-bg/60' : ''
+    `tap-target group flex h-6 w-6 items-center justify-center rounded-pill text-body-sm transition-transform hover:scale-110 hover:bg-surface-elevated ${
+      mine ? 'bg-surface ring-1 ring-border' : ''
+    }`
+
+  // DESATURATED IN THE SELECTOR (owner: "emojis in selector are desaturated"). Six full-colour
+  // emoji in a small menu is six things competing at once, and none of them means anything yet
+  // — you have not chosen. Greyed, the row reads as a set of OPTIONS; colour then arrives as
+  // the consequence of choosing, out on the count pill beside the trigger. So saturation does
+  // a job here rather than being decoration: it is the difference between "available" and
+  // "picked".
+  //
+  // Colour comes back on hover and on `mine`, because both are answers to "which one is this?"
+  // — you should not have to guess a grey emoji's identity. `filter` is transitioned rather
+  // than swapped, and `motion-reduce` drops the animation but never the end state.
+  const glyphFilter = (mine: boolean | undefined) =>
+    `transition-[filter] duration-[var(--motion-fast)] motion-reduce:transition-none group-hover:grayscale-0 ${
+      mine ? 'grayscale-0' : 'grayscale'
     }`
 
   return (
-    <div className="flex shrink-0 items-center gap-0.5">
-      {quick.map((r) => (
-        <button
-          key={r.key}
-          type="button"
-          onClick={() => toggle(r.key)}
-          aria-label={r.label}
-          title={r.label}
-          className={emojiBtn(base.get(r.key)?.mine)}
+    <div className="relative shrink-0" ref={pickerRef}>
+      <IconButton
+        label="Add a reaction"
+        onClick={() => setPickerOpen((o) => !o)}
+        aria-expanded={pickerOpen}
+        disabled={pending}
+      >
+        {/* 3.5, not 4 — the same glyph size as the comment-count bubble it sits beside. Two
+            icons of the same weight on one line read as a pair; a 16px icon next to a 14px one
+            reads as one of them being more important. */}
+        <SmilePlus className="h-3.5 w-3.5" />
+      </IconButton>
+      {pickerOpen && (
+        <div
+          role="menu"
+          className={`absolute bottom-full z-20 mb-1.5 flex rounded-card bg-surface-elevated p-1 lift-3 ring-1 ring-border/40 ${
+            align === 'end' ? 'right-0' : 'left-0'
+          }`}
         >
-          <span aria-hidden>{r.key}</span>
-        </button>
-      ))}
-      {/* Picker for the full set (the sixth emoji + a discoverable menu). */}
-      <div className="relative" ref={pickerRef}>
-        <button
-          type="button"
-          onClick={() => setPickerOpen((o) => !o)}
-          aria-label="More reactions"
-          aria-expanded={pickerOpen}
-          disabled={pending}
-          className="flex h-7 w-7 items-center justify-center rounded-pill text-subtle transition-colors hover:bg-surface-elevated hover:text-muted"
-        >
-          <SmilePlus className="h-4 w-4" />
-        </button>
-        {pickerOpen && (
-          <div
-            role="menu"
-            className="absolute bottom-full left-0 z-20 mb-1.5 flex gap-0.5 rounded-2xl bg-surface-elevated p-1.5 lift-3 ring-1 ring-border/40"
-          >
-            {REACTIONS.map((r) => (
-              <button
-                key={r.key}
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  setPickerOpen(false)
-                  toggle(r.key)
-                }}
-                aria-label={r.label}
-                title={r.label}
-                className={emojiBtn(base.get(r.key)?.mine)}
-              >
-                <span aria-hidden>{r.key}</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+          {REACTIONS.map((r) => (
+            <button
+              key={r.key}
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setPickerOpen(false)
+                toggle(r.key)
+              }}
+              aria-label={r.label}
+              title={r.label}
+              className={emojiBtn(base.get(r.key)?.mine)}
+            >
+              <span aria-hidden className={glyphFilter(base.get(r.key)?.mine)}>
+                {r.key}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -228,11 +261,13 @@ export function ReactionBar({
   compact?: boolean
 }) {
   const state = usePostReactions(postId, reactions, myProfileId)
-  // Comments stay tight: the counts plus a SINGLE add button (no quick strip).
+  // SELECTOR FIRST, COUNTS TO ITS RIGHT — the same order as the post's action line, for the
+  // same reason (see the note there). The pair used to be counts-then-selector, which put the
+  // fixed control in a position that moved every time somebody reacted.
   return (
     <div className="flex flex-wrap items-center gap-1">
+      <ReactionInlinePicker {...state} />
       <ReactionCounts {...state} compact={compact} />
-      <ReactionInlinePicker {...state} quickCount={0} />
     </div>
   )
 }

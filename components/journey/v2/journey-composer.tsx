@@ -6,6 +6,7 @@ import { Sparkles, Wand2, LayoutTemplate, ChevronDown, Compass } from 'lucide-re
 import { composeJourneyAction, scaffoldJourneyAction, applyVeraChangeAction } from '@/app/(main)/journeys/[slug]/edit/actions'
 import { createMasterFrameworkAction } from '@/app/(main)/journeys/create-actions'
 import { isError } from '@/lib/action-result'
+import { Input, Textarea } from '@/components/ui/field'
 
 // The Vera composer in the editor (ADR-302). It has two modes, by whether the Journey has content:
 //   • EMPTY  — a few SPECIFIC questions (who / about / outcome); Vera fills a balanced opening week.
@@ -17,8 +18,6 @@ const PREVIEW: { tag: string; text: string }[] = [
   { tag: 'Spirit', text: 'A reflective or connecting practice.' },
   { tag: 'Expression', text: 'A practice to make, share, or connect.' },
 ]
-
-const FIELD = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
 
 export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: boolean }) {
   const router = useRouter()
@@ -99,15 +98,15 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
           <div className="mt-3 space-y-2.5">
             <label className="block">
               <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Who is it for</span>
-              <input value={who} disabled={pending} onChange={(e) => setWho(e.target.value)} placeholder="e.g. People who feel wired and tired" className={FIELD} />
+              <Input value={who} disabled={pending} onChange={(e) => setWho(e.target.value)} placeholder="e.g. People who feel wired and tired" />
             </label>
             <label className="block">
               <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">What is it about</span>
-              <input value={topic} disabled={pending} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. Sleep and screen habits" className={FIELD} />
+              <Input value={topic} disabled={pending} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. Sleep and screen habits" />
             </label>
             <label className="block">
               <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">What they walk away with</span>
-              <input value={outcome} disabled={pending} onChange={(e) => setOutcome(e.target.value)} placeholder="e.g. Fall asleep easier, most nights" className={FIELD} />
+              <Input value={outcome} disabled={pending} onChange={(e) => setOutcome(e.target.value)} placeholder="e.g. Fall asleep easier, most nights" />
             </label>
           </div>
           {error && <p className="mt-1 text-meta text-danger">{error}</p>}
@@ -140,13 +139,14 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
       {open && !isEmpty && (
         <>
           <p className="mt-1 text-body-sm text-muted">Tell Vera what to change in plain words. She reads the whole Journey and applies it. You can undo by editing any field by hand.</p>
-          <textarea
+          <Textarea
             value={change}
             disabled={pending}
             onChange={(e) => setChange(e.target.value)}
             rows={2}
+            aria-label="Tell Vera what to change"
             placeholder="e.g. Make week 2 about breathing. Or: swap the Spirit practice for gratitude. Or: shorten the intro."
-            className={`mt-3 resize-y ${FIELD}`}
+            className="mt-3 resize-y"
           />
           {error && <p className="mt-1 text-meta text-danger">{error}</p>}
           {note && <p className="mt-1 text-meta text-muted">{note}</p>}

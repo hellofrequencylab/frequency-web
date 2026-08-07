@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 // ranked library streams (no layout shift).
 function LibraryCardSkeleton() {
   return (
-    <div className="flex flex-col rounded-2xl border border-border bg-surface p-5 lift-1">
+    <div className="flex flex-col rounded-card border border-border bg-surface p-5 lift-1">
       <div className="flex items-center justify-between gap-2">
         <Skeleton className="h-5 w-20 rounded-pill" />
         <Skeleton className="h-4 w-8" />

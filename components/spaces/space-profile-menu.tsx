@@ -45,8 +45,10 @@ export function SpaceProfileMenu({
 
   const itemClasses = (active: boolean) =>
     cn(
-      // rounded-control (was rounded-lg, the same 0.5rem at baseline): tab pills are CONTROLS, so the
-      // Space page theme shapes them (ADR-578 — playful pills them); pinned to today's radius for `bold`.
+      // rounded-control (was rounded-lg): tab pills are CONTROLS, so the Space page theme shapes
+      // them (ADR-578 — playful pills them). NOT value-identical against this repo's ladder —
+      // the 2026-08-04 port moved rounded-lg to 14px while --radius-control stayed 0.5rem. What
+      // holds `bold` at today's radius is the [data-space-theme] baseline pin, not the literal.
       'whitespace-nowrap rounded-control px-3 py-1.5 text-body-sm font-medium transition-colors',
       active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text',
     )
@@ -92,7 +94,7 @@ export function SpaceProfileMenu({
           <span className="text-muted">You are editing</span>
           <span
             aria-current="page"
-            className="inline-flex items-center rounded-lg bg-primary-bg px-2.5 py-1 font-medium text-primary-strong"
+            className="inline-flex items-center rounded-pill bg-primary-bg px-2.5 py-1 font-medium text-primary-strong"
           >
             {openPanelLabel}
           </span>

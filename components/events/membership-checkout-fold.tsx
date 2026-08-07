@@ -46,14 +46,14 @@ export function MembershipCheckoutFold({
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className={`flex w-full items-start justify-between gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-colors ${
+        className={`flex w-full items-start justify-between gap-3 rounded-card border px-3.5 py-2.5 text-left transition-colors ${
           open ? 'border-primary bg-primary-bg/40' : 'border-border hover:border-border-strong'
         }`}
       >
         <div className="min-w-0">
           <p className="truncate text-body-sm font-semibold text-text">{rowName}</p>
           <div className="mt-1">
-            <span className="inline-flex items-center gap-1 rounded-md bg-success-bg px-1.5 py-0.5 text-2xs font-medium text-success">
+            <span className="inline-flex items-center gap-1 rounded-pill bg-success-bg px-1.5 py-0.5 text-2xs font-medium text-success">
               <Lock className="h-2.5 w-2.5" />
               Membership
             </span>
@@ -81,7 +81,7 @@ export function MembershipCheckoutFold({
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close"
-              className="shrink-0 rounded-lg p-1.5 text-subtle transition-colors hover:bg-surface hover:text-text"
+              className="shrink-0 rounded-control p-1.5 text-subtle transition-colors hover:bg-surface hover:text-text"
             >
               <X className="h-4 w-4" />
             </button>
@@ -103,7 +103,7 @@ export function MembershipCheckoutFold({
             <div className="space-y-2">
               <Link
                 href={signInHref}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 Sign in to join
               </Link>

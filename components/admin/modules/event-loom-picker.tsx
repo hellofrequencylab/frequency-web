@@ -110,7 +110,7 @@ export function EventLoomPicker({
                   {/* eslint-disable-next-line @next/next/no-img-element -- Loom asset thumbnail in the picker, not a build-time asset */}
                   <img src={it.url} alt={it.alt ?? ''} className="h-full w-full object-cover" />
                   {adding === it.id && (
-                    <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-3xs font-semibold uppercase tracking-wide text-white">
+                    <span className="absolute inset-0 flex items-center justify-center bg-ink/40 text-3xs font-semibold uppercase tracking-wide text-on-ink">
                       Adding…
                     </span>
                   )}

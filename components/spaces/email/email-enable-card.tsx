@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { isError } from '@/lib/action-result'
 import { setSpaceEmailEnabled } from '@/lib/spaces/campaigns-actions'
 
@@ -43,9 +44,9 @@ export function EmailEnableCard({
   }
 
   return (
-    <div className="space-y-4 rounded-2xl border border-border bg-surface p-6 lift-1">
+    <div className="space-y-4 rounded-card border border-border bg-surface p-6 lift-1">
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
           <Mail className="h-5 w-5" aria-hidden />
         </span>
         <div className="min-w-0">
@@ -57,21 +58,16 @@ export function EmailEnableCard({
         </div>
       </div>
 
-      <label className="flex items-start gap-3 rounded-lg border border-border bg-surface-elevated/40 px-3 py-3">
-        <input
-          type="checkbox"
-          checked={acknowledged}
-          disabled={readOnly}
-          onChange={(e) => setAcknowledged(e.target.checked)}
-          className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-border-strong/30"
-        />
-        <span className="text-body-sm text-text">
-          I have permission to email these people and will follow anti-spam rules.
-        </span>
-      </label>
+      <Checkbox
+        checked={acknowledged}
+        disabled={readOnly}
+        onChange={(e) => setAcknowledged(e.target.checked)}
+        label="I have permission to email these people and will follow anti-spam rules."
+        wrapperClassName="flex rounded-card border border-border bg-surface-elevated/40 px-3 py-3"
+      />
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+        <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}

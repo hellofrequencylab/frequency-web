@@ -219,7 +219,16 @@ export function evaluate(entries, files) {
       status: delta > 0 ? 'risen' : delta < 0 ? 'shrunk' : 'held',
       frozen,
       // A floor nobody swept for: raised outright, or rebased onto a different measurement.
-      unearned: frozen ? UNEARNED.has(frozen.direction) : false,
+      //
+      // …UNLESS the floor is ZERO, and that exception is the point of the warning rather than a
+      // hole in it. The note exists because "a raised or rebased floor is debt the ratchet stopped
+      // guarding" — at baseline 0 the ratchet guards everything, since the very next site fails CI,
+      // so there is nothing standing on that floor to name. literal-type and raw-palette are both
+      // 0, both retired by real sweeps, and both were flagged ⚠️ forever only because a later
+      // corpus change moved their fingerprint. They padded an eight-line warning block that
+      // literal-display-type's 204-site gap was sitting inside, unread. A warning that names
+      // classes with no debt in them is how the one with debt in it gets missed.
+      unearned: frozen ? UNEARNED.has(frozen.direction) && entry.baseline > 0 : false,
       files: hits,
     }
   })
@@ -324,10 +333,13 @@ function walk(dir, exts, out = []) {
  *  thousand lines from the real at-rule.
  *
  *  BLANKED, NOT DELETED — every comment character becomes a space and newlines survive.
- *  `raw-button-bg` is a 500-character proximity window over arbitrary JSX, so deleting text
- *  would pull unrelated code closer together and silently change what that entry measures.
- *  Length-preserving substitution keeps every offset, line number and window distance intact,
- *  which means this change can only ever REMOVE comment matches, never move a real one.
+ *  Deleting text would pull unrelated code together and silently change what a SPAN entry
+ *  measures. `handrolled-icon-button` spans an opening tag through its first child, and
+ *  `raw-button-bg` spans an opening tag (it was a 500-character proximity window until
+ *  2026-08-05 — see its `frozen.reason`); either would move if blanking changed lengths.
+ *  Length-preserving substitution keeps every offset, line number and span distance intact,
+ *  which means this change can only ever REMOVE comment matches, never move a real one. The
+ *  invariant outlives any one pattern, so it holds for whatever span entry is added next.
  *
  *  Line comments are stripped only when the `//` OPENS the line (optionally indented). A naive
  *  strip would treat the `//` in `https://example.com` as a comment and blank the rest of that

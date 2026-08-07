@@ -7,6 +7,7 @@ import { StyleEditor } from './style-editor'
 import { NfcWriter } from './nfc-writer'
 import { updateMarketingCodeAdmin, setMarketingActive, deleteMarketingCodeAdmin } from './marketing-actions'
 import type { QrStyle } from '@/lib/qr/style'
+import { Input } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
 
 // Admin "Marketing codes" category — every member's funnel code, so an operator
@@ -135,10 +136,9 @@ function MarketingCard({ code }: { code: MarketingCodeAdmin }) {
         <div className="mt-3 space-y-3 border-t border-border pt-3">
           <label className="block">
             <span className="mb-1 block text-meta font-medium text-subtle">Code name</span>
-            <input
+            <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
             />
           </label>
           <StyleEditor value={style} onChange={setStyle} previewUrl={code.url} />

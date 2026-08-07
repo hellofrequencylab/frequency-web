@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useId, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Check, Loader2, ExternalLink } from 'lucide-react'
 import { isError } from '@/lib/action-result'
+import { Select } from '@/components/ui/select'
 import { ELEMENT_ROLES, ELEMENT_ROLE_LABEL, type ElementDef, type ElementRole } from '@/lib/elements/registry'
 import type { ResolvedElement, StoredElementConfig } from '@/lib/elements/config'
 import { ElementPreview } from '@/components/elements/previews'
@@ -17,6 +18,9 @@ export function ElementEditor({ def, resolved }: { def: ElementDef; resolved: Re
   const [roles, setRoles] = useState<Record<string, ElementRole>>({ ...resolved.roles })
   const [pending, start] = useTransition()
   const [note, setNote] = useState<string | null>(null)
+  // One card per element, all rendered on the same page, so feature-label ids are minted
+  // per instance rather than derived from the feature key alone.
+  const cardId = useId()
 
   const save = () =>
     start(async () => {
@@ -26,7 +30,6 @@ export function ElementEditor({ def, resolved }: { def: ElementDef; resolved: Re
       setNote(isError(res) ? res.error : 'Saved. This applies everywhere the element appears.')
     })
 
-  const inputSm = 'rounded-lg border border-border bg-surface px-2 py-1 text-body-sm text-text focus:border-primary focus:outline-none'
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
@@ -49,45 +52,53 @@ export function ElementEditor({ def, resolved }: { def: ElementDef; resolved: Re
         {def.features.map((f) => (
           <li key={f.key} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-2.5">
             <div className="min-w-0 flex-1">
-              <p className="text-body-sm font-medium text-text">{f.label}</p>
+              <p id={`${cardId}-${f.key}`} className="text-body-sm font-medium text-text">{f.label}</p>
               {f.help && <p className="text-2xs text-muted">{f.help}</p>}
             </div>
 
-            {/* Value: a toggle, or a choice select */}
+            {/* Value: a toggle, or a choice select. The switch is named by the feature label
+                sitting to its left, so the spoken name is the one on screen. */}
             {f.kind === 'toggle' ? (
               <button
                 type="button"
                 role="switch"
                 aria-checked={settings[f.key] === true}
+                aria-labelledby={`${cardId}-${f.key}`}
                 onClick={() => setSettings((s) => ({ ...s, [f.key]: !(s[f.key] === true) }))}
                 className={`inline-flex h-6 w-11 shrink-0 items-center rounded-pill border transition-colors ${settings[f.key] === true ? 'border-primary bg-primary' : 'border-border bg-surface-elevated'}`}
               >
                 <span className={`ml-0.5 h-5 w-5 rounded-pill bg-canvas shadow transition-transform ${settings[f.key] === true ? 'translate-x-5' : ''}`} />
               </button>
             ) : (
-              <select
+              <Select
+                // Named by the same feature label the toggle branch uses. Both branches render
+                // into the same row beside the same <p>, so a name on one and not the other left
+                // half these controls announcing as an unnamed combobox depending only on which
+                // kind the element happened to declare.
+                aria-labelledby={`${cardId}-${f.key}`}
                 value={String(settings[f.key] ?? '')}
                 onChange={(e) => setSettings((s) => ({ ...s, [f.key]: e.target.value }))}
-                className={inputSm}
+                wrapperClassName="inline-block w-max max-w-full"
               >
                 {f.choices?.map((c) => (
                   <option key={c.value} value={c.value}>{c.label}</option>
                 ))}
-              </select>
+              </Select>
             )}
 
             {/* Role gate */}
             <label className="flex shrink-0 items-center gap-1.5 text-2xs text-muted">
               Who
-              <select
+              <Select
                 value={roles[f.key] ?? f.defaultRole}
                 onChange={(e) => setRoles((r) => ({ ...r, [f.key]: e.target.value as ElementRole }))}
-                className={inputSm}
+                className="text-2xs"
+                wrapperClassName="inline-block w-max max-w-full"
               >
                 {ELEMENT_ROLES.map((r) => (
                   <option key={r} value={r}>{ELEMENT_ROLE_LABEL[r]}</option>
                 ))}
-              </select>
+              </Select>
             </label>
           </li>
         ))}

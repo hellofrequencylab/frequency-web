@@ -30,18 +30,25 @@ const TITLE = 'How to build community (and keep it going)'
 const DESCRIPTION =
   'How to build community: pick one thing, set a standing time and place, keep it small, and meet again. The full builder guide to starting a group, hosting a recurring gathering, and running a community space.'
 
+// Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
+const OG_TITLE = 'How to build community · Frequency'
+const OG_DESCRIPTION =
+  'You do not have to build a whole community. Host one small group, on a regular rhythm, with a format that already works. The builder guide, start to lasting.'
+
 export function generateMetadata(): Metadata {
   return {
     title: TITLE,
     description: DESCRIPTION,
     alternates: { canonical: PATH },
     openGraph: {
-      title: 'How to build community · Frequency',
-      description:
-        'You do not have to build a whole community. Host one small group, on a regular rhythm, with a format that already works. The builder guide, start to lasting.',
+      title: OG_TITLE,
+      description: OG_DESCRIPTION,
       url: PATH,
       images: [{ url: '/images/site/community-1.jpg' }],
     },
+    // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+    // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+    twitter: { card: 'summary_large_image', title: OG_TITLE, description: OG_DESCRIPTION },
   }
 }
 
@@ -244,7 +251,7 @@ export default function HowToBuildCommunityPage() {
       />
 
       {/* Answer-first opening. Fully resolves "how to build community" up front. */}
-      <Section tone="canvas" pad="pt-4 pb-16 sm:pt-6 sm:pb-20">
+      <Section tone="canvas" role="cont">
         <Lead>
           To build community: pick one thing, set a standing time and place, keep it
           small, and meet again. That is the whole recipe, and it works whether you
@@ -289,7 +296,7 @@ export default function HowToBuildCommunityPage() {
 
       {/* The core plan, as numbered steps (mirrors the first HowTo schema). */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How do I start a community group?
         </h2>
         <Lead>
@@ -337,7 +344,7 @@ export default function HowToBuildCommunityPage() {
 
       {/* Absorbed track 1: recurrence logistics (from host-a-recurring-gathering). */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How do I host a recurring gathering?
         </h2>
         <Lead>
@@ -392,7 +399,7 @@ export default function HowToBuildCommunityPage() {
 
       {/* Absorbed track 2: the operator playbook (from how-to-run-a-community-space). */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How do I run a community space?
         </h2>
         <Lead>
@@ -442,7 +449,7 @@ export default function HowToBuildCommunityPage() {
 
       {/* One concept per section: why groups fizzle. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Why do most groups fizzle out?
         </h2>
         <Lead>
@@ -490,7 +497,7 @@ export default function HowToBuildCommunityPage() {
 
       {/* The ladder. Leaderful, not leader-dependent. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Do I have to do this alone?
         </h2>
         <Lead>
@@ -521,7 +528,7 @@ export default function HowToBuildCommunityPage() {
 
       {/* Builder CTA into the product (Build pillar). Pricing intent handled honestly. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Where do I start?
         </h2>
         <Body>
@@ -547,7 +554,7 @@ export default function HowToBuildCommunityPage() {
 
       {/* FAQ. Mirrors the FAQPage schema above. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-7">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-7">
           Common questions
         </h2>
         <FaqList items={FAQ} />

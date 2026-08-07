@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { Send, Users, Loader2, Check } from 'lucide-react'
+import { Textarea } from '@/components/ui/field'
 import { sendOutreach } from './actions'
 import { isError } from '@/lib/action-result'
 
@@ -25,18 +26,19 @@ export function OutreachForm({ scope }: { scope: string }) {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
+    <div className="rounded-card border border-border bg-surface p-5 lift-1">
       <div className="mb-3 flex items-center gap-2 text-body-sm font-semibold text-text">
         <Users className="h-4 w-4 text-primary-strong" />
         Message your {scope}
       </div>
-      <textarea
+      <Textarea
+        aria-label={`Message your ${scope}`}
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         rows={4}
         maxLength={2000}
         placeholder={`Write a note to everyone in your ${scope}…`}
-        className="w-full resize-none rounded-control border border-border bg-surface-elevated px-4 py-3 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary"
+        className="resize-none bg-surface-elevated px-4 py-3"
       />
       <div className="mt-3 flex items-center justify-between gap-3">
         <p className="text-meta text-subtle">Sends through the same email + push spine as Dispatch.</p>

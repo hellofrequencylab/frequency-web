@@ -66,7 +66,7 @@ export function FunnelRowActions({
             type="button"
             disabled={isPending}
             onClick={() => startTransition(() => deleteSequenceVersionAction(slug))}
-            className="inline-flex items-center gap-1 rounded-lg bg-danger px-2.5 py-1.5 text-meta font-semibold text-on-danger transition-colors hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-control bg-danger px-2.5 py-1.5 text-meta font-semibold text-on-danger transition-colors hover:opacity-90 disabled:opacity-50"
           >
             <Trash2 className="h-3.5 w-3.5" /> Confirm
           </button>

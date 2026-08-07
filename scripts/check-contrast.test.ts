@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, it, expect } from 'vitest'
 import {
   contrastRatio,
@@ -7,12 +8,26 @@ import {
   selectorWeight,
   resolveTokens,
   deref,
+  resolveSide,
   evaluateContrast,
   withAlpha,
   ROLE_MINIMUM,
   PAIRS,
+  RANK_KEYS,
   STATES,
+  stripCssComments,
 } from './check-contrast.mjs'
+
+/** Every .tsx under a root, recursively. */
+function tsxFiles(root: string): string[] {
+  const out: string[] = []
+  for (const e of readdirSync(root, { withFileTypes: true })) {
+    const p = join(root, e.name)
+    if (e.isDirectory()) out.push(...tsxFiles(p))
+    else if (e.name.endsWith('.tsx') && !e.name.includes('.test.')) out.push(p)
+  }
+  return out
+}
 
 // Locks the token-pair contrast gate (Lift 3a, docs/UX-MATURITY-PLAN.md). Two jobs: the WCAG math
 // must be right (a wrong ratio is worse than no gate — it would certify a failure), and the state
@@ -176,6 +191,121 @@ describe('check-contrast — the shipped palette', () => {
       expect(inState.length, `${s.key} produced no rows`).toBe(PAIRS.length)
       expect(inState.every((r) => !r.unresolved), `${s.key} has unresolved tokens`).toBe(true)
     }
+  })
+})
+
+describe('the rank spectrum is inside the contract', () => {
+  // 🔴 THE HOLE. Ten rank primitives × three steps drive every crest, pip, chip and dot in The
+  // Quest, and not one of them appeared in the pair table — because the table only modelled
+  // NAMED pairs and no token is named "the ink that goes on a rank ground". The gate reported
+  // green while components/quest/journey-progress-card.tsx painted a check glyph at 2.90:1.
+  const css = readFileSync('app/globals.css', 'utf8')
+  const rows = evaluateContrast(css)
+
+  it('covers all ten primitives on all three grounds', () => {
+    expect(RANK_KEYS).toHaveLength(10)
+    for (const r of RANK_KEYS) {
+      const forRank = PAIRS.filter((p) => p.bg === `--rank-${r}` || p.bg === `--rank-${r}-deep`)
+      expect(forRank.map((p) => `${p.fg} on ${p.bg}`).sort(), `rank ${r} is not fully covered`).toEqual([
+        `#FFFFFF on --rank-${r}`,
+        `--color-on-ink on --rank-${r}-deep`,
+        `--color-text-on-rank on --rank-${r}`,
+      ])
+    }
+  })
+
+  it('resolves a literal side without going through the cascade', () => {
+    // The white-on-core pairing has no token to name, so the table states it as a literal. That
+    // is the ONLY reason literals are allowed; a literal must still resolve, or the "no
+    // unresolved token" guard below would be trivially satisfiable by typing nonsense.
+    const t = resolveTokens(FIXTURE, STATES[0])
+    expect(resolveSide(t, '#FFFFFF')).toBe('#FFFFFF')
+    expect(resolveSide(t, '--color-canvas')).toBe('#FFFFFF')
+    expect(resolveSide(t, '--color-nope')).toBeNull()
+  })
+
+  it('holds a GLYPH on a rank core to 1.4.11 (3:1), not the 4.5 text bar — stated, not assumed', () => {
+    // `text-on-rank`, not `text-on-primary`. They were the same token until 2026-08-06, when the
+    // amber darkened so white could sit on it — at which point the button LABEL went white and
+    // would have taken every rank glyph with it, onto gold, at 2.46:1. Two jobs, two tokens.
+    const glyphs = PAIRS.filter((p) => p.fg === '--color-text-on-rank' && /^--rank-[a-z]+$/.test(p.bg))
+    expect(glyphs).toHaveLength(10)
+    for (const p of glyphs) expect(p.role, `${p.bg} must be an edge/1.4.11 pair`).toBe('edge')
+    expect(ROLE_MINIMUM.edge).toBe(3.0)
+  })
+
+  it('a rank CORE may carry a glyph but never a label — slate and plum prove it', () => {
+    // The reason (A) is `edge` and not `body`: two of the ten cores miss 4.5 against the dark ink.
+    // If that ever stops being true the role could be tightened; until then the ceiling is real
+    // and this test is what keeps "core = glyph, deep = label" from being folklore.
+    const t = resolveTokens(css, STATES[0])
+    const ink = deref(t, '--color-text-on-rank')!
+    expect(contrastRatio(ink, deref(t, '--rank-slate')!)!).toBeLessThan(ROLE_MINIMUM.body)
+    expect(contrastRatio(ink, deref(t, '--rank-plum')!)!).toBeLessThan(ROLE_MINIMUM.body)
+    // …and both clear the glyph bar comfortably, which is why the crest pattern is sound.
+    expect(contrastRatio(ink, deref(t, '--rank-slate')!)!).toBeGreaterThan(ROLE_MINIMUM.edge)
+    expect(contrastRatio(ink, deref(t, '--rank-plum')!)!).toBeGreaterThan(ROLE_MINIMUM.edge)
+  })
+
+  it('the DEEP step carries the light ink at full AA in every state', () => {
+    const deep = rows.filter((r) => r.pair.startsWith('on-ink on rank-') && r.pair.endsWith('-deep'))
+    expect(deep).toHaveLength(RANK_KEYS.length * STATES.length)
+    for (const r of deep) {
+      expect(r.role).toBe('body')
+      expect(r.waived, `${r.pair} must not need a waiver`).toBe(false)
+      expect(r.pass, `${r.state}: ${r.pair} = ${r.ratio?.toFixed(2)}:1`).toBe(true)
+    }
+  })
+
+  it('white on a core fails on gold and only gold, and gold is waived rather than deleted', () => {
+    const white = rows.filter((r) => r.pair.startsWith('#FFFFFF on rank-'))
+    expect(white).toHaveLength(RANK_KEYS.length * STATES.length)
+    // A waived row still PASSES (at its frozen floor) — the assertion is about which pair carries
+    // the waiver, so the gold hole cannot be quietly widened to a second rank.
+    const waived = [...new Set(white.filter((r) => r.waived).map((r) => r.pair))]
+    expect(waived).toEqual(['#FFFFFF on rank-gold'])
+    for (const r of white) expect(r.pass, `${r.state}: ${r.pair}`).toBe(true)
+  })
+
+  it('the rank steps are mode-invariant, so one measurement covers every state', () => {
+    // If a skin or `.dark` block ever starts overriding a rank primitive, these families would
+    // need per-state floors and this assertion is where that shows up.
+    for (const key of RANK_KEYS) {
+      for (const step of ['', '-deep', '-bright']) {
+        const values = new Set(STATES.map((s) => deref(resolveTokens(css, s), `--rank-${key}${step}`)))
+        expect(values.size, `--rank-${key}${step} differs across render states: ${[...values].join(', ')}`).toBe(1)
+      }
+    }
+  })
+
+  it('no component paints a rank ground through an @theme-inline-only alias', () => {
+    // THE EXACT SHAPE OF THE LIVE BUG. `@theme inline { --color-on-primary: … }` inlines its
+    // value into the `text-on-primary` UTILITY and does NOT emit the custom property to :root,
+    // so `style={{ color: 'var(--color-on-primary)' }}` is undefined at computed-value time and
+    // the element silently inherits --color-text. Verified against tailwindcss v4's compiler.
+    // The utility class is fine; the raw var is not. Same trap as `--color-rank-*`.
+    const inlineOnly = stripCssComments(css)
+      .match(/@theme inline\s*\{[\s\S]*?\n\}/)?.[0]
+      ?.match(/(--color-[A-Za-z0-9-]+)\s*:\s*var\(/g)
+      ?.map((m) => m.split(':')[0].trim()) ?? []
+    expect(inlineOnly.length, 'no @theme inline aliases found — the parse is wrong').toBeGreaterThan(10)
+
+    // Only the aliases that are NOT also declared as a real :root role can be undefined at
+    // runtime (`--color-on-ink` is both an alias and a role, so a raw var on it is fine).
+    const tokens = resolveTokens(css, STATES[0])
+    const undefinedAtRuntime = inlineOnly.filter((a) => resolveSide(tokens, a) === null)
+    expect(undefinedAtRuntime).toContain('--color-on-primary')
+
+    const offenders: string[] = []
+    for (const file of tsxFiles('components')) {
+      // Comments are stripped first: this very guard is explained in prose at the fixed call
+      // site, and a guard that fails on its own documentation is a guard nobody keeps.
+      const src = stripCssComments(readFileSync(file, 'utf8')).replace(/\/\/.*$/gm, '')
+      for (const alias of undefinedAtRuntime) {
+        if (src.includes(`var(${alias})`)) offenders.push(`${file}: var(${alias})`)
+      }
+    }
+    expect(offenders, `raw var() on an @theme-inline-only alias:\n${offenders.join('\n')}`).toEqual([])
   })
 })
 

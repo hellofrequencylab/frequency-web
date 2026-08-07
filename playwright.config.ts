@@ -31,6 +31,12 @@ const executablePath = existsSync(PREINSTALLED_CHROMIUM)
 
 export default defineConfig({
   testDir: './test/e2e',
+  // `*.spec.ts` ONLY. Playwright's default testMatch also picks up `*.test.ts`, which is
+  // vitest's extension in this repo — and test/e2e now holds a vitest file
+  // (shell-coverage.test.ts, the unit test for the coverage reporter's logic). Collected by
+  // Playwright it fails the whole run at import with "Vitest cannot be imported in a CommonJS
+  // module". Two runners, two extensions, one line to keep them apart.
+  testMatch: '**/*.spec.ts',
   // Keep all baselines in one predictable folder, keyed by spec + project.
   snapshotPathTemplate:
     '{testDir}/__screenshots__/{testFileName}/{arg}-{projectName}{ext}',
@@ -54,9 +60,16 @@ export default defineConfig({
   // worse than a slow one.
   workers: process.env.CI ? 4 : undefined,
   retries: process.env.CI ? 2 : 0,
+  // `shell-reporter.ts` rides along with every run, CI or local. It is the answer to the
+  // ONE thing the list reporter cannot say: `12 skipped` next to `64 passed` reads as a pass,
+  // and on #2048 those 12 were the entire member shell while the 64 were marketing pages with
+  // no rail to photograph. The reporter names each unphotographed surface in
+  // $GITHUB_STEP_SUMMARY (and in the terminal locally) so a green board and a green board with
+  // the product missing stop looking identical. It never fails a run on its own; see its
+  // header for the single opt-in exception (PW_REQUIRE_SHELL).
   reporter: process.env.CI
-    ? [['list'], ['html', { open: 'never' }]]
-    : [['list']],
+    ? [['list'], ['html', { open: 'never' }], ['./test/e2e/shell-reporter.ts']]
+    : [['list'], ['./test/e2e/shell-reporter.ts']],
   expect: {
     toHaveScreenshot: {
       // Deterministic captures: freeze animations, hide the caret, snapshot

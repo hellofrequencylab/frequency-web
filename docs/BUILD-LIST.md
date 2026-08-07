@@ -893,3 +893,188 @@ edits, every upload ingests, a usage index for safe delete + global swap.
 | D6 | **Privacy system** (full build, later). `library-private` bucket, signed URLs, storage RLS, download gating + audit, EXIF strip enforced, optional watermark/proofing. Hooks (`is_protected` / `download_policy` / `expires_at`) already in the schema. | 📋 |
 | D7 | **Semantic + AI.** Populate `embedding`, hybrid FTS+vector ranking (RRF), AI auto-tag + color extraction, background removal / upscale. Later: the Weave generative composer. | 📋 |
 | D3a | **File export + Vera "draw a card" wizard** ([ADR-481](DECISIONS.md)). Client-side SVG/PNG export for code-drawn cards (inline computed colors) + blob download for photos; a janitor + budget-gated Vera wizard that draws a new card as inline SVG in the house style, with a fail-closed allowlist sanitizer (`lib/library/svg-sanitize.ts`). Generated cards save as `kind='element'` with the SVG in `config.svg`. | ✅ shipped |
+
+---
+
+## DAWN conversion — what is left after the four-territory sweep (2026-08-06)
+
+Four agents swept `app/(main)/admin/**`, `app/(main)/**`, `components/**` and
+`app/(marketing)/** + lib/**` on disjoint territory. **-1178 sites retired**, nothing risen, all
+floors re-frozen against a settled tree. What follows is the residue, with the reason each item was
+left rather than a to-do list of things nobody got to.
+
+### 🔴 Owed to the owner (nothing else can proceed past these)
+
+| Item | Size | Why |
+| :--- | :---: | :--- |
+| Delete `PW_REQUIRE_SHELL` from the **Secrets** tab | XS | The Variables copy is set and the workflow reads either, so the ratchet is armed. But a one-character *secret* makes GitHub redact that character everywhere in the run log — with `1` as a secret, every height, test count and line number came back as `***`. The stale copy is what keeps logs unreadable |
+| Recapture the marketing pixel baselines | S | Phase 7 **intentionally** tightened marketing rhythm. A mid-page `Statement` loses ~22px at 390 and ~77px at 1280 (`py-14 sm:py-24` → `.mk-tight`, plus the double-count correction it can now participate in). The committed baselines are genuinely stale. `e2e-manual.yml` → `update_baselines`. Read the diffs first: recapturing before reading is how a real regression gets frozen into the reference and stops being catchable |
+| Seed the shell a11y baselines | S | `/feed` and `/settings` are held to zero serious+ violations against debt that predates the gate, because their baselines were never captured. `e2e-manual.yml` → `capture_shell` + `update_a11y`. Named as a prerequisite in ADR-948's sequencing |
+| `/the-lab` (200 chars) and `/spaces` (186) meta descriptions | XS | Both over the ~155 snippet window this repo caps at elsewhere. Neither has a clean sentence boundary under the cap, so shortening is a **copy decision**, not a trim. `/about` was fixed (326 → 149) because its trailing sentence subtracted cleanly |
+
+### ⏳ Sweepable, deliberately stopped
+
+| Item | Size | Why it stopped where it did |
+| :--- | :---: | :--- |
+| `raw-input` 184 | M | ~30 are structurally un-primitivable (range, file, radio, colour, honeypot). Most of the rest is a long tail of 1–2 per file across ~70 files, heavily weighted to bare search inputs **inside a composed box** — `Input` would draw a border inside a border. Needs a borderless variant on the primitive, not call-site swaps |
+| `raw-select` 6 · `raw-textarea` 6 | S | Same shape. The selects are chip filters whose ACTIVE state is a border/fill swap; the textareas are borderless auto-growing composers inside a card. `cn()` is a plain join, not `tailwind-merge`, so a tint or a height passed to the primitive lands *beside* its default and emit order decides — converting could silently kill the affordance. Both need a `tone`/borderless variant |
+| `literal-radius` 2450 | L | Only value-identical conversions were taken (`rounded-2xl`→`rounded-card` at 1rem, `rounded-lg`→`rounded-control` at 0.5rem). The rest are genuine resizes: `rounded-2xl`→`rounded-card` is 24px→16px elsewhere, `rounded-xl`/`3xl`/`md` have no 0.75/1.5rem role at all. DAWN §Phase 5 says spend this inside screen passes, never as its own wave |
+| `handrolled-icon-button` 6 | S | Two are `app-shell` (MENU-CONTRACT territory, snapshot-sensitive). Four need a **tinted/selected** variant (`bg-primary-bg + ring`), not the `filled` variant just added. Stopped rather than add a second speculative variant mid-flight |
+| `adhoc-progress` 7 | S | **4 are false positives** — `rounded-pill object-cover` avatars the pattern cannot distinguish from bars. The 3 real ones each need something `ProgressTrack` lacks: a dual-layer buffered+played scrubber, confetti dots, and a runtime hex with no `ProgressTone` |
+
+### ⚠️ Needs a triage pass BEFORE anyone sweeps it
+
+**`bespoke-cards` (24) and `bespoke-rows` (14) — zero retired, and the reason matters more than the
+number.** The ratchet is a filename heuristic and a large fraction of its population are not browse
+cards or list rows at all: `row-controls`, `practice-row-actions`, `member-row-actions`,
+`route-chrome-row` are action clusters; `space-credit-row` is a logo-tile credit line. Of the ones
+that genuinely are cards, the two read carry docstrings saying they are **deliberate** variants —
+`ContactCard` calls itself the portrait counterpart to `PersonCard`, and `GroupCard` is byte-matched
+on purpose to the ChaptersNearMe card so the two can never drift. Converting either is a design
+ruling, not a substitution, and `upcoming-event-rows` has a dimension-matched `h-16` skeleton a
+`RowCard` swap would desynchronise.
+
+**Separate "owed to the kit" from "filename collision" first.** Sweeping this as-is guarantees
+forced conversions to move a number, which is the failure mode the ratchets exist to prevent.
+
+### Instrument gaps (Phase 9 queue, recorded not fixed)
+
+Both found independently by two agents, which is what makes them findings rather than opinions.
+`raw-input`'s lookahead excludes `type="hidden"` and nothing else, so ~18 `type="file"` triggers
+behind `hidden`/`sr-only` are permanently un-retirable debt inside a ratchet.
+`white-black-literals` does not exclude `app/print/**` though §1 of DAWN-CONVERSION names it a
+carve-out, so its floor is permanently 2. Full detail in `docs/DAWN-CONVERSION.md` §4.
+
+**Not fixed on the spot deliberately:** editing a ratchet moves every count under an agent measuring
+against it. That is how three commit messages on this branch came to cite a `literal-radius` floor
+that was already stale when written. An instrument correction changes the *question*, so it lands on
+a settled tree with its own re-freeze and its own reason.
+
+---
+
+## Post-merge sweep (2026-08-06, after #2049)
+
+Verified on merged `main` (`5d15a1efa`): `tsc` rc=0, and `check:adoption`, `check:seo`,
+`check:headers`, `check:contrast`, `check:menu` all exit 0.
+
+### ✅ The migration ledger gap — REPAIRED 2026-08-06
+
+**Every migration in the repo is applied to the database.** All eight files above the ledger head
+were verified against the live schema rather than trusted from a filename:
+
+| Migration | How it was verified |
+| :--- | :--- |
+| `tenancy_walls_space_crm_quads` · `app_instances_phase2_policies` | 4 policies present on `app_instances` |
+| `insights_journey_and_vitals_rpcs` | `public.journey_funnel` and `public.vitals_p75` both exist |
+| `page_settings_tenancy_wall` | policy present on `page_settings` |
+| `pages_space_slug_unique` | `pages_space_id_slug_key` unique constraint present |
+| `invite_token_and_space_scoped_reads` | `space_invites.token` column present |
+| `retire_beta_waitlist` | table is gone |
+| `retire_growth_engine3_intakes` | tables are gone |
+
+**The problem is the numbering.** These eight ran under CLI-minted timestamps
+(`20260803205359` … `20260805054201`) and were later renumbered in the repo to
+`20270206000000` … `20270212000000`. `supabase_migrations.schema_migrations` has **zero rows at or
+above `20270206000000`**, so the ledger does not know the repo's versions ever ran. Several other
+migrations — `event_host_transfers`, `pricing_gate_overrides_reset`, `event_ticket_fee_receipt`,
+`seed_take_rate_vector` — appear **twice** in the ledger, once under each numbering, which is the
+same renumbering caught earlier and repaired by re-running.
+
+**⚠️ The trap: do NOT run `supabase db push` before repairing.** It would re-run all eight against a
+schema that already has them — `create policy` and `alter table … add constraint` are not idempotent,
+so it fails partway and leaves the ledger in a third state. Repair the ledger instead, which touches
+no schema:
+
+```
+supabase migration repair --status applied \
+  20270206000000 20270206000100 20270207000000 20270208000000 \
+  20270209000000 20270210000000 20270211000000 20270212000000
+```
+
+Not done here because it mutates a production ledger and the schema is already correct, so nothing
+is broken until someone pushes. It should be done before the next migration lands.
+
+**Worth fixing at the root:** migrations are being renumbered after they are applied. That is what
+produces both the duplicate rows and this gap. Either stop renumbering applied migrations, or make
+the repair part of whatever does the renumbering.
+
+### ⏳ CodeQL — 4 high alerts on #2049, all documented false positives
+
+`components/feed/composer.tsx:544`, `components/support/report-dialog.tsx:240`,
+`components/ui/image-focal-picker.tsx:219`, `lib/onboarding/step-registry.tsx:102` — all
+`js/xss-through-dom`, "DOM text reinterpreted as HTML".
+
+**None were introduced by that PR.** The `<img>` lines and their guards were untouched; the only
+changes in those four files were class-name swaps (`rounded-2xl` → `rounded-card`,
+`bg-black/60` → `bg-ink/60`), one of them a single line. CodeQL attributed pre-existing alerts to the
+diff because it was 615 files, exactly as its own note warns.
+
+`lib/safe-image-src.ts` already documents these under a **KNOWN CODEQL FALSE POSITIVES** heading with
+the reasoning: the taint path is `<input type="file">` → `createObjectURL(file)` → `<img src>`, and
+`createObjectURL` returns a browser-minted `blob:<origin>/<uuid>` — the filename, bytes and MIME type
+never appear in the string, so there is no attacker-controlled character to escape. The taint label
+belongs to the File, not to the URL identifying it.
+
+**Action: dismiss the four in the Security tab.** That file also records that inline
+`// codeql[js/xss-through-dom]` suppressions were already tried on all nine sites and moved the count
+by zero (an LGTM legacy feature GitHub code scanning does not honour), and that excluding the query
+repo-wide would blind us to a genuine `innerHTML` finding. Dismiss, and leave the query armed.
+
+---
+
+## Closed 2026-08-06 — the last two 🔴 and the ledger
+
+### ✅ The migration ledger is repaired
+
+Eight rows were written to `supabase_migrations.schema_migrations` for versions
+`20270206000000` … `20270212000000`. **No schema was touched** — this is the ledger half of
+`supabase migration repair --status applied`, and every one of the eight was verified against the
+live schema *before* the write, not trusted from a filename:
+
+| Migration | Verified by |
+| :--- | :--- |
+| `tenancy_walls_space_crm_quads` · `app_instances_phase2_policies` | 4 policies on `app_instances` |
+| `insights_journey_and_vitals_rpcs` | `journey_funnel` + `vitals_p75` both present |
+| `page_settings_tenancy_wall` | policy present on `page_settings` |
+| `pages_space_slug_unique` | `pages_space_id_slug_key` constraint present |
+| `invite_token_and_space_scoped_reads` | `space_invites.token` present |
+| `retire_beta_waitlist` · `retire_growth_engine3_intakes` | tables absent |
+
+Ledger is now 602 rows with head `20270212000000`, which matches the newest file in
+`supabase/migrations/`. `supabase db push` is safe again — before this it would have tried to
+re-run all eight against a schema that already had them, and `create policy` / `add constraint`
+are not idempotent, so it would have failed partway and left a third state.
+
+**The root cause is still open and is not a code change:** migrations are being renumbered *after*
+they are applied. That is what produced both this gap and the four duplicate rows already in the
+ledger (`event_host_transfers`, `pricing_gate_overrides_reset`, `event_ticket_fee_receipt`,
+`seed_take_rate_vector`, each present under two numbers). Either stop renumbering applied
+migrations, or make the repair part of whatever renumbers them.
+
+### ✅ The mobile bottom lane is one token, not four hand-derivations
+
+Both remaining 🔴 from the mobile audit were the same defect wearing two faces — four files each
+re-deriving `calc(3.5rem + env(safe-area-inset-bottom))` by hand.
+
+`--tab-bar-h`, `--tab-bar-clearance` and `--app-header-h` now live in `app/globals.css`.
+**`--tab-bar-clearance` is deliberately not the bar's height:** the raised Zap catch is a 59.5px
+disc sitting 22px *above* the bar, so anything placed above the lane must clear the disc. The
+teaser-gate pill and the event RSVP bar both cleared the bar exactly and were being painted over
+by 9.25px and 22px — on the primary conversion control of each page. The shell's own content
+padding had the same fault, so the last 22px of every page sat under the disc.
+
+The three chat routes double-counted the tab bar: `h-[calc(100dvh-3.5rem)]` subtracts the header,
+but the shell already pads the column by the bar's height, so the box was taller than its space by
+exactly the bar and pushed the composer below the fold.
+
+The guard in `lib/meta-scan-highs.test.ts` pinned the literal `100dvh-3.5rem` — which *was* the
+bug. Rewritten to assert what it protects (dvh never vh, the shell gutter mirrored, both tokens
+present, and the old shape prohibited), it then caught two more files I had missed.
+
+### ⚠️ Still open — one decision, not a task
+
+**White-on-amber button text.** The DAWN artifact shows white on `#E2912F`; the shipped token is
+ink. Measured: ink 7.35:1 (passes AA and AAA), white **2.52:1** (needs 4.5). White cannot ship on
+the current amber without failing `check:contrast` and degrading every primary button in the
+product. Either darken the amber (~`#8A5410` puts white at 6.26:1, but that is a real brand shift,
+not a tweak) or correct the DS artifact to match the shipped ink. **Owner's call.**

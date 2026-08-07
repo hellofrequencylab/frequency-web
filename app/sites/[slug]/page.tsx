@@ -47,10 +47,10 @@ export default async function SpaceWebsiteComingSoon({
     <AccentScope vars={accentVars} theme={parseSpaceTheme(space.preferences)}>
       <main className="flex min-h-dvh items-center justify-center bg-canvas px-6 py-16 text-text">
         <div className="w-full max-w-md text-center">
-          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-card bg-primary-bg text-primary-strong">
             <Radio className="h-7 w-7" aria-hidden />
           </span>
-          <h1 className="mt-6 font-display text-3xl font-bold tracking-tight text-text">Coming soon</h1>
+          <h1 className="mt-6 font-display text-display-h3 font-bold tracking-tight text-text">Coming soon</h1>
           <p className="mt-3 text-body leading-relaxed text-muted">
             The standalone website for {brandName} is on its way. For now, everything lives on the
             {' '}

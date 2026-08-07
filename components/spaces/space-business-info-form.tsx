@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Check, ChevronDown, Loader2, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SectionHeader } from '@/components/ui/section-header'
-import { Input, Label, fieldClasses } from '@/components/ui/field'
+import { Input, Label } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { TextareaField, FormError } from '@/components/spaces/space-form'
 import { updateSpaceProfile } from '@/lib/spaces/profile-settings'
@@ -155,7 +156,7 @@ export function SpaceInfoConnectForm({
 
   return (
     <form
-      className="space-y-8 rounded-2xl border border-border bg-surface p-5 lift-1 sm:p-6"
+      className="space-y-8 rounded-card border border-border bg-surface p-5 lift-1 sm:p-6"
       onSubmit={(e) => e.preventDefault()}
       onBlur={onFieldBlur}
     >
@@ -174,13 +175,12 @@ export function SpaceInfoConnectForm({
               <Label htmlFor="biz-subject" className="mb-1 block font-semibold">
                 Subject
               </Label>
-              <select
+              <Select
                 id="biz-subject"
                 value={biz.subject}
                 onChange={(e) => pickListing('subject', e.target.value)}
-                className={fieldClasses}
+                emptyLabel="Not set"
               >
-                <option value="">Not set</option>
                 {biz.subject !== '' && !isSubjectKey(biz.subject) && (
                   <option value={biz.subject}>{biz.subject} (not a standard subject)</option>
                 )}
@@ -189,7 +189,7 @@ export function SpaceInfoConnectForm({
                     {s.label}
                   </option>
                 ))}
-              </select>
+              </Select>
               <p className="mt-1 text-meta text-subtle">
                 What your Space is about. The directory filters by this, so pick the closest fit.
               </p>
@@ -199,13 +199,12 @@ export function SpaceInfoConnectForm({
               <Label htmlFor="biz-kind" className="mb-1 block font-semibold">
                 Kind
               </Label>
-              <select
+              <Select
                 id="biz-kind"
                 value={biz.kind}
                 onChange={(e) => pickListing('kind', e.target.value)}
-                className={fieldClasses}
+                emptyLabel="Not set (shows as Business)"
               >
-                <option value="">Not set (shows as Business)</option>
                 {biz.kind !== '' && !isSpaceKind(biz.kind) && (
                   <option value={biz.kind}>{biz.kind} (not a standard kind)</option>
                 )}
@@ -214,7 +213,7 @@ export function SpaceInfoConnectForm({
                     {k.label}
                   </option>
                 ))}
-              </select>
+              </Select>
               <p className="mt-1 text-meta text-subtle">
                 The shape of what you run: a studio, a shop, one-on-one work. Shows on your directory card.
               </p>
@@ -300,7 +299,7 @@ export function SpaceInfoConnectForm({
             <Label htmlFor="biz-price-range" className="mb-1 block font-semibold">
               Price range
             </Label>
-            <select
+            <Select
               id="biz-price-range"
               value={biz.priceRange}
               onChange={(e) => {
@@ -308,14 +307,8 @@ export function SpaceInfoConnectForm({
                 // A select fires no blur to autosave on, so commit on the next frame (matches the category picker).
                 requestAnimationFrame(() => saveRef.current())
               }}
-              className={fieldClasses}
-            >
-              {PRICE_RANGE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+              options={PRICE_RANGE_OPTIONS}
+            />
             <p className="mt-1 text-meta text-subtle">
               A rough guide to how pricey you are, shown to search engines. Leave it unset if it does not fit.
             </p>
@@ -350,7 +343,7 @@ export function SpaceInfoConnectForm({
         </section>
 
         {veraError && (
-          <p className="rounded-lg bg-warning-bg px-3 py-2 text-body-sm font-medium text-warning" role="status">
+          <p className="rounded-card bg-warning-bg px-3 py-2 text-body-sm font-medium text-warning" role="status">
             {veraError}
           </p>
         )}

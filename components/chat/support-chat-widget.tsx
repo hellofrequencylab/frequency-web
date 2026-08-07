@@ -24,6 +24,8 @@ import {
   loadSupportChatHistoryAction,
 } from '@/app/support-chat/actions'
 import { useSupportChat } from './use-support-chat'
+import { Input, Textarea } from '@/components/ui/field'
+import { IconButton } from '@/components/ui/icon-button'
 
 interface Session {
   ref: string
@@ -236,22 +238,20 @@ function StartForm({ onStarted }: { onStarted: (s: { ref: string; token: string;
     onStarted({ ref: r.data.ref, token: r.data.token, name: name.trim() || 'Visitor' })
   }
 
-  const input =
-    'w-full rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none'
-
   return (
     <form onSubmit={submit} className="flex flex-1 flex-col gap-2 overflow-y-auto p-4">
-      <input className={input} placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} required />
-      <input
-        className={input}
+      <Input aria-label="Your name" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} required />
+      <Input
         type="email"
+        aria-label="Your email"
         placeholder="Your email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
       />
-      <textarea
-        className={`${input} min-h-[5rem] resize-none`}
+      <Textarea
+        className="min-h-[5rem] resize-none"
+        aria-label="How can we help?"
         placeholder="How can we help?"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
@@ -338,7 +338,7 @@ function ChatSession({ session, viewerId, onBack }: { session: Session; viewerId
         </p>
       )}
       <div className="flex items-end gap-2 border-t border-border p-2">
-        <textarea
+        <Textarea
           value={draft}
           onChange={(e) => {
             setDraft(e.target.value)
@@ -351,17 +351,13 @@ function ChatSession({ session, viewerId, onBack }: { session: Session; viewerId
             }
           }}
           rows={1}
+          aria-label="Write a message"
           placeholder="Write a message…"
-          className="max-h-24 flex-1 resize-none rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none"
+          className="max-h-24 flex-1 resize-none"
         />
-        <button
-          type="button"
-          onClick={onSend}
-          aria-label="Send"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-on-primary transition-colors hover:bg-primary-hover"
-        >
-          <Send className="h-4 w-4" />
-        </button>
+        <IconButton label="Send" variant="filled" onClick={onSend} className="shrink-0">
+          <Send className="h-4 w-4" aria-hidden />
+        </IconButton>
       </div>
     </>
   )

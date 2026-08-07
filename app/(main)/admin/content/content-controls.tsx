@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { Star, Check, X, Trash2 } from 'lucide-react'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { DangerModal } from '@/components/admin/danger-modal'
+import { Select } from '@/components/ui/select'
 import {
   setJourneyStatusAction,
   setJourneyOfficialAction,
@@ -272,23 +273,27 @@ export function JourneyOfficialControl({
           }`}
         />
       </button>
+      {/* `title` describes what the choice DOES; it is not a name. The aria-label is, so the
+          control announces as "Quest" rather than reading the whole sentence. */}
       {optimisticOfficial && quests.length > 0 && (
-        <select
+        <Select
           value={selectedQuest}
           onChange={(e) => {
             setSelectedQuest(e.target.value)
             save(true, e.target.value)
           }}
           disabled={pending}
+          aria-label="Quest"
           title="The Quest this Journey files under"
-          className="max-w-32 rounded-md border border-border bg-canvas px-1.5 py-1 text-meta text-text disabled:opacity-50"
+          className="text-meta"
+          wrapperClassName="inline-block w-max max-w-32"
         >
           {quests.map((q) => (
             <option key={q.id} value={q.id}>
               {q.name}
             </option>
           ))}
-        </select>
+        </Select>
       )}
     </span>
   )

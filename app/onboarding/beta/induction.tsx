@@ -549,7 +549,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
   function renderCoreArt(art: FunnelCoreFeature['art'], active: boolean) {
     if (art.kind === 'image') {
       // eslint-disable-next-line @next/next/no-img-element
-      return <img src={art.src} alt="" className="h-full w-full rounded-2xl border border-border object-cover" />
+      return <img src={art.src} alt="" className="h-full w-full rounded-card border border-border object-cover" />
     }
     const C = RENDERS[art.render] ?? EventsRender
     return <C animate={active} />
@@ -600,10 +600,10 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
       )}
 
       {/* Preview end-state. */}
-      {/* KEEP bg-black/40 below: a modal backdrop scrim over whatever is behind it, the same value components/ui/dialog.tsx uses. */}
+      {/* The modal backdrop scrim is the INK tone at low alpha, not raw black, so the dim follows the skin. */}
       {preview && previewDone && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6">
-          <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-7 text-center lift-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-6">
+          <div className="w-full max-w-sm rounded-card border border-border bg-surface p-7 text-center lift-3">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-pill bg-primary-bg text-page-title text-primary-strong">✓</div>
             <h2 className="mt-4 text-lead font-bold text-text">Welcome in.</h2>
             <p className="mt-2 text-body-sm leading-relaxed text-muted">
@@ -632,7 +632,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
             Welcome
           </span>
           <span className="brandmark-link mt-5 block">
-            <span className="brandmark h-12 sm:h-[52px]" aria-hidden />
+            <span className="brandmark h-12 sm:h-13" aria-hidden />
           </span>
 
           {/* Scanned in via a member's QR code → a warm "Invited by {name}" chip with
@@ -666,7 +666,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
             {beat === 0 && (
               <div className="mx-auto max-w-5xl">
                 <p className={eyebrow}>{VERA.oath.eyebrow}</p>
-                <h1 className={`mx-auto mt-3 max-w-4xl text-balance text-6xl sm:text-7xl ${heading}`}>
+                <h1 className={`mx-auto mt-3 max-w-4xl text-balance text-display-hero ${heading}`}>
                   {accent(VERA.oath.heading)}
                 </h1>
                 <p className="mx-auto mt-4 max-w-xl text-body-lg leading-relaxed text-muted">{VERA.oath.body}</p>
@@ -699,7 +699,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
             {beat === 1 && (
               <div className="mx-auto max-w-4xl">
                 <p className={eyebrow}>{VERA.intro.eyebrow}</p>
-                <h1 className={`mx-auto mt-3 max-w-3xl text-balance text-6xl sm:text-7xl ${heading}`}>
+                <h1 className={`mx-auto mt-3 max-w-3xl text-balance text-display-hero ${heading}`}>
                   {accent(VERA.intro.heading)}
                 </h1>
                 <p className="mx-auto mt-4 max-w-2xl text-lead leading-relaxed text-muted">{VERA.intro.body}</p>
@@ -819,7 +819,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
             {beat === 2 && (
               <div className="mx-auto max-w-5xl">
                 <p className={eyebrow}>{VERA.tour.eyebrow}</p>
-                <h1 className={`mt-3 text-balance text-4xl sm:text-5xl ${heading}`}>{accent(VERA.tour.heading)}</h1>
+                <h1 className={`mt-3 text-balance text-display-h2 ${heading}`}>{accent(VERA.tour.heading)}</h1>
 
                 {/* Beat-2 fork. NICHE funnel: pick one of 3 core features; the mockup shows the
                     SELECTED card's art. GENERAL funnel: the auto-playing tour reel, unchanged. */}
@@ -879,7 +879,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
 
                     {/* caption + dots + action, right */}
                     <div className="max-w-xs text-center md:text-left">
-                      <p className="text-3xl font-bold text-text">{slide.title}</p>
+                      <p className="text-display-card font-bold text-text">{slide.title}</p>
                       <p className="mt-2 text-body-lg leading-relaxed text-muted">{slide.line}</p>
                       <div className="mt-5 flex items-center justify-center gap-2 md:justify-start">
                         {reel.map((s, i) => (
@@ -907,7 +907,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
             {/* ── Beat 3: Identity ── */}
             {beat === 3 && (
               <div className="mx-auto max-w-4xl">
-                <h1 className={`text-balance text-5xl sm:text-6xl ${heading}`}>{accent(VERA.identity.heading)}</h1>
+                <h1 className={`text-balance text-display-h1 ${heading}`}>{accent(VERA.identity.heading)}</h1>
 
                 <div className="mt-7 flex flex-col items-center gap-8 text-left md:flex-row md:items-center md:justify-center md:gap-10">
                   {/* left: form card */}
@@ -1038,7 +1038,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
             {beat === 4 && !deferred && (
               <div className="mx-auto max-w-4xl">
                 <p className={eyebrow}>{VERA.enter.eyebrow}</p>
-                <h1 className={`mt-3 text-balance text-5xl sm:text-6xl ${heading}`}>{accent(VERA.enter.heading)}</h1>
+                <h1 className={`mt-3 text-balance text-display-h1 ${heading}`}>{accent(VERA.enter.heading)}</h1>
 
                 <div className="mt-7 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-10">
                   {/* portrait profile card with blank slots */}
@@ -1070,7 +1070,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
             {beat === 4 && deferred && (
               <div className="mx-auto max-w-4xl">
                 <p className={eyebrow}>{VERA.enter.eyebrow}</p>
-                <h1 className={`mt-3 text-balance text-5xl sm:text-6xl ${heading}`}>{accent(VERA.enter.heading)}</h1>
+                <h1 className={`mt-3 text-balance text-display-h1 ${heading}`}>{accent(VERA.enter.heading)}</h1>
 
                 <div className="mt-7 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-10">
                   {/* portrait profile card — everything they just built */}

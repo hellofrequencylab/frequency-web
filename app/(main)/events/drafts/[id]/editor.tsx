@@ -12,7 +12,9 @@
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, Plus, X, Send, UserRound, ImageIcon } from 'lucide-react'
-import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input, Textarea, Label } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import type {
   EventDetails, LineupItem, ScheduleItem, TicketTier, EventLink, ImageRegion, OtherDetail,
 } from '@/lib/events/types'
@@ -372,16 +374,13 @@ export function DraftEditor({
           <div className="space-y-1">
             <Label>Price</Label>
             <div className="flex items-center gap-3">
-              <label className="flex shrink-0 items-center gap-1.5 text-body-sm text-text">
-                <input
-                  type="checkbox"
-                  checked={isFree}
-                  onChange={(e) => setIsFree(e.target.checked)}
-                  disabled={pending}
-                  className="h-4 w-4 accent-primary"
-                />
-                Free
-              </label>
+              <Checkbox
+                checked={isFree}
+                onChange={(e) => setIsFree(e.target.checked)}
+                disabled={pending}
+                label="Free"
+                wrapperClassName="flex shrink-0"
+              />
               {!isFree && (
                 <Input
                   type="number"
@@ -399,16 +398,15 @@ export function DraftEditor({
           </div>
           <label className="block space-y-1">
             <Label>Pillar</Label>
-            <select
+            <Select
               value={domain}
               onChange={(e) => setDomain(e.target.value)}
               disabled={pending}
-              className={fieldClasses}
             >
               {PILLAR_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
-            </select>
+            </Select>
           </label>
         </div>
 
@@ -449,16 +447,17 @@ export function DraftEditor({
                   placeholder="Name"
                   disabled={pending}
                 />
-                <select
+                <Select
+                  aria-label="Role"
                   value={row.role}
                   onChange={(e) => setLineup((p) => p.map((r, x) => (x === i ? { ...r, role: e.target.value as LineupItem['role'] } : r)))}
                   disabled={pending}
-                  className={`${fieldClasses} sm:w-32`}
+                  wrapperClassName="sm:w-32"
                 >
                   {ROLE_OPTIONS.map((r) => (
                     <option key={r} value={r}>{r}</option>
                   ))}
-                </select>
+                </Select>
               </div>
             </Row>
           ))}
@@ -562,16 +561,17 @@ export function DraftEditor({
                   disabled={pending}
                   className="min-w-0"
                 />
-                <select
+                <Select
+                  aria-label="Link type"
                   value={row.kind}
                   onChange={(e) => setLinks((p) => p.map((r, x) => (x === i ? { ...r, kind: e.target.value as EventLink['kind'] } : r)))}
                   disabled={pending}
-                  className={`${fieldClasses} sm:w-28`}
+                  wrapperClassName="sm:w-28"
                 >
                   {LINK_KIND_OPTIONS.map((k) => (
                     <option key={k} value={k}>{k}</option>
                   ))}
-                </select>
+                </Select>
               </div>
             </Row>
           ))}
@@ -674,7 +674,7 @@ export function DraftEditor({
           type="button"
           onClick={handleSave}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
           {pending ? 'Saving' : 'Save draft'}
@@ -682,7 +682,7 @@ export function DraftEditor({
       </div>
 
       {/* ── Publish: the ownership question ── */}
-      <div className="rounded-2xl border border-border bg-surface p-4">
+      <div className="rounded-card border border-border bg-surface p-4">
         <p className="text-body-sm font-bold text-text">Ready to publish?</p>
         <p className="mt-1 text-meta text-muted">One honest question first. It decides who hosts the event.</p>
         <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -707,7 +707,7 @@ export function DraftEditor({
             onClick={handlePublish}
             disabled={pending || !ownership || !!dateProblem}
             title={dateProblem ? 'Set a valid future start date to publish' : undefined}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             Publish

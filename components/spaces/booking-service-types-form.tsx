@@ -4,11 +4,12 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, Label, Textarea, fieldClasses } from '@/components/ui/field'
+import { Input, Label, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { isError } from '@/lib/action-result'
 import { setSpaceServiceTypes } from '@/lib/spaces/booking-actions'
 import type { ServiceType, ServiceTypeInput, BookingQuestion } from '@/lib/spaces/booking'
-import { cn } from '@/lib/utils'
 import { IconButton } from '@/components/ui/icon-button'
 
 // OWNER SERVICE TYPES EDITOR (client, P1, ADR-605). The Practitioner defines the reusable bookable
@@ -138,7 +139,7 @@ export function BookingServiceTypesForm({
 
   return (
     <form
-      className="space-y-6 rounded-2xl border border-border bg-surface p-5 lift-1 sm:p-6"
+      className="space-y-6 rounded-card border border-border bg-surface p-5 lift-1 sm:p-6"
       onSubmit={(e) => {
         e.preventDefault()
         if (!pending) save()
@@ -147,14 +148,14 @@ export function BookingServiceTypesForm({
       <div className="space-y-3">
         <Label className="font-semibold">Services</Label>
         {rows.length === 0 && (
-          <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
+          <p className="rounded-card border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
             No services yet. Add one so members know what they are booking.
           </p>
         )}
         {rows.map((r, i) => (
           <div
             key={r.id ?? `new-${i}`}
-            className="space-y-3 rounded-lg border border-border bg-surface-elevated/40 p-3"
+            className="space-y-3 rounded-card border border-border bg-surface-elevated/40 p-3"
           >
             <div className="flex flex-wrap items-end gap-3">
               <label className="flex min-w-48 flex-1 flex-col gap-1">
@@ -168,26 +169,26 @@ export function BookingServiceTypesForm({
               </label>
               <label className="flex flex-col gap-1">
                 <span className="text-meta font-medium text-muted">Length</span>
-                <select
+                <Select
                   value={r.durationMinutes}
                   onChange={(e) => update(i, { durationMinutes: Number(e.target.value) })}
-                  className={cn(fieldClasses, 'w-32')}
                 >
                   {DURATIONS.map((m) => (
                     <option key={m} value={m}>
                       {m} min
                     </option>
                   ))}
-                </select>
+                </Select>
               </label>
-              <button
-                type="button"
+              <IconButton
+                variant="bordered"
+                tone="danger"
+                label="Remove this service"
                 onClick={() => removeRow(i)}
-                aria-label="Remove this service"
-                className="mb-1 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-danger/40 hover:text-danger"
+                className="mb-1"
               >
                 <Trash2 className="h-4 w-4" aria-hidden />
-              </button>
+              </IconButton>
             </div>
             <label className="flex flex-col gap-1">
               <span className="text-meta font-medium text-muted">Description (optional)</span>
@@ -201,7 +202,7 @@ export function BookingServiceTypesForm({
             </label>
 
             {/* Booking questions (P3): asked when a member books this service. */}
-            <div className="space-y-2 rounded-lg border border-dashed border-border p-3">
+            <div className="space-y-2 rounded-card border border-dashed border-border p-3">
               <span className="text-meta font-semibold text-muted">Booking questions (optional)</span>
               {r.questions.map((q, j) => (
                 <div key={q.id} className="flex flex-wrap items-center gap-2">
@@ -212,22 +213,23 @@ export function BookingServiceTypesForm({
                     maxLength={200}
                     className="min-w-40 flex-1"
                   />
-                  <select
+                  {/* aria-label added with the primitive: this select sat bare in the row with
+                      no label of any kind. */}
+                  <Select
+                    aria-label="Answer length"
                     value={q.type}
                     onChange={(e) => updateQuestion(i, j, { type: e.target.value === 'long' ? 'long' : 'short' })}
-                    className={cn(fieldClasses, 'w-28')}
-                  >
-                    <option value="short">Short</option>
-                    <option value="long">Long</option>
-                  </select>
-                  <label className="flex items-center gap-1.5 text-meta font-medium text-muted">
-                    <input
-                      type="checkbox"
-                      checked={q.required}
-                      onChange={(e) => updateQuestion(i, j, { required: e.target.checked })}
-                    />
-                    Required
-                  </label>
+                    wrapperClassName="inline-block w-max max-w-full"
+                    options={[
+                      { value: 'short', label: 'Short' },
+                      { value: 'long', label: 'Long' },
+                    ]}
+                  />
+                  <Checkbox
+                    label="Required"
+                    checked={q.required}
+                    onChange={(e) => updateQuestion(i, j, { required: e.target.checked })}
+                  />
                   <IconButton
                     variant="bordered"
                     tone="danger"
@@ -258,7 +260,7 @@ export function BookingServiceTypesForm({
       </div>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+        <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}

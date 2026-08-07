@@ -3,6 +3,9 @@
 import { useState, useTransition } from 'react'
 import { RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { APP_MIN_ROLES, type AppMinRole } from '@/lib/apps/overrides'
 import { setAppOverride, clearAppOverride } from '@/app/(main)/admin/page-layout/app-actions'
@@ -105,20 +108,16 @@ export function AppOverrideRow({
           {isPending ? 'Saving…' : saved ? 'Saved' : overridden ? '' : 'Catalog default'}
         </span>
 
-        <label className="flex items-center gap-1.5 text-meta font-medium text-muted">
-          <input
-            type="checkbox"
-            checked={state.enabled}
-            disabled={isPending}
-            onChange={(e) => commit({ ...state, enabled: e.target.checked })}
-            className="h-4 w-4 rounded border-border text-primary-strong"
-          />
-          Shown
-        </label>
+        <Checkbox
+          label="Shown"
+          checked={state.enabled}
+          disabled={isPending}
+          onChange={(e) => commit({ ...state, enabled: e.target.checked })}
+        />
 
         <label className="flex items-center gap-1.5 text-meta font-medium text-muted">
           <span className="sr-only sm:not-sr-only">Order</span>
-          <input
+          <Input
             type="number"
             inputMode="numeric"
             value={state.position}
@@ -127,18 +126,18 @@ export function AppOverrideRow({
             aria-label={`Order for ${label}`}
             onChange={(e) => setState((s) => ({ ...s, position: e.target.value }))}
             onBlur={() => commit(state)}
-            className="w-16 rounded-lg border border-border bg-canvas px-2 py-1.5 text-body-sm text-text disabled:opacity-50"
+            className="w-16"
           />
         </label>
 
         <label className="flex items-center gap-1.5 text-meta font-medium text-muted">
           <span className="sr-only sm:not-sr-only">Who sees it</span>
-          <select
+          <Select
             value={state.minRole}
             disabled={isPending}
             aria-label={`Who sees ${label}`}
             onChange={(e) => commit({ ...state, minRole: e.target.value as AppMinRole | '' })}
-            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm font-medium text-text disabled:opacity-50"
+            wrapperClassName="inline-block w-max max-w-full"
           >
             <option value="">Everyone</option>
             {APP_MIN_ROLES.map((r) => (
@@ -146,7 +145,7 @@ export function AppOverrideRow({
                 {ROLE_LABEL[r]}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
 
         <Button

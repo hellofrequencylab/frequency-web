@@ -7,6 +7,9 @@ import { updateCircle, archiveCircle, setCircleFeaturedAction } from '../actions
 import { isError, type ActionResult } from '@/lib/action-result'
 import { InviteLinkButton } from './invite-link-button'
 import { Button } from '@/components/ui/button'
+import { Field, Input, Textarea } from '@/components/ui/field'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Select } from '@/components/ui/select'
 import { DataTable, type ColumnDef } from '@/components/admin/data-table'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -34,7 +37,6 @@ type HostOption = { id: string; display_name: string }
 
 const STATUSES = ['forming', 'active', 'paused', 'archived'] as const
 
-const input  = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
 const lbl    = 'block text-meta font-medium text-muted mb-1'
 
 // The one status vocabulary (retired the local STATUS_COLOR dict, ADR-233 §4).
@@ -135,54 +137,55 @@ function CircleForm({
 
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <div className="sm:col-span-2">
-        <label className={lbl}>Circle name *</label>
-        <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Encinitas Morning Ride" required disabled={isPending} className={input} />
-      </div>
+      <Field className="sm:col-span-2" label="Circle name *">
+        <Input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Encinitas Morning Ride" required disabled={isPending} />
+      </Field>
 
-      <div className="sm:col-span-2">
-        <label className={lbl}>About <span className="font-normal text-subtle">(optional)</span></label>
-        <textarea value={about} onChange={e => setAbout(e.target.value)} placeholder="What is this circle about?" rows={2} disabled={isPending} className={`${input} resize-none`} />
-      </div>
+      <Field className="sm:col-span-2" label={<>About <span className="font-normal text-subtle">(optional)</span></>}>
+        <Textarea value={about} onChange={e => setAbout(e.target.value)} placeholder="What is this circle about?" rows={2} disabled={isPending} className="resize-none" />
+      </Field>
 
       <div>
-        <label className={lbl}>Type</label>
-        <select value={type} onChange={e => setType(e.target.value)} disabled={isPending} className={input}>
-          <option value="in-person">In-person</option>
-          <option value="online">Online</option>
-        </select>
+        <label className={lbl} htmlFor={`circle-type-${initial?.id ?? 'new'}`}>Type</label>
+        <Select
+          id={`circle-type-${initial?.id ?? 'new'}`}
+          value={type}
+          onChange={e => setType(e.target.value)}
+          disabled={isPending}
+          options={[
+            { value: 'in-person', label: 'In-person' },
+            { value: 'online', label: 'Online' },
+          ]}
+        />
       </div>
 
-      <div>
-        <label className={lbl}>Member cap</label>
-        <input type="number" min="1" max="500" value={cap} onChange={e => setCap(e.target.value)} required disabled={isPending} className={input} />
-      </div>
+      <Field label="Member cap">
+        <Input type="number" min="1" max="500" value={cap} onChange={e => setCap(e.target.value)} required disabled={isPending} />
+      </Field>
 
       {hubs.length > 0 && (
         <div>
-          <label className={lbl}>Hub</label>
-          <select value={hubId} onChange={e => setHubId(e.target.value)} disabled={isPending} className={input}>
-            <option value="">- No hub -</option>
+          <label className={lbl} htmlFor={`circle-hub-${initial?.id ?? 'new'}`}>Hub</label>
+          <Select id={`circle-hub-${initial?.id ?? 'new'}`} value={hubId} onChange={e => setHubId(e.target.value)} disabled={isPending} emptyLabel="- No hub -">
             {hubs.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-          </select>
+          </Select>
         </div>
       )}
 
       {hosts.length > 0 && (
         <div>
-          <label className={lbl}>Host</label>
-          <select value={hostId} onChange={e => setHostId(e.target.value)} disabled={isPending} className={input}>
-            <option value="">- Assign later -</option>
+          <label className={lbl} htmlFor={`circle-host-${initial?.id ?? 'new'}`}>Host</label>
+          <Select id={`circle-host-${initial?.id ?? 'new'}`} value={hostId} onChange={e => setHostId(e.target.value)} disabled={isPending} emptyLabel="- Assign later -">
             {hosts.map(h => <option key={h.id} value={h.id}>{h.display_name}</option>)}
-          </select>
+          </Select>
         </div>
       )}
 
       <div>
-        <label className={lbl}>Status</label>
-        <select value={status} onChange={e => setStatus(e.target.value)} disabled={isPending} className={input}>
+        <label className={lbl} htmlFor={`circle-status-${initial?.id ?? 'new'}`}>Status</label>
+        <Select id={`circle-status-${initial?.id ?? 'new'}`} value={status} onChange={e => setStatus(e.target.value)} disabled={isPending}>
           {STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-        </select>
+        </Select>
       </div>
 
       <div className="sm:col-span-2">
@@ -196,21 +199,21 @@ function CircleForm({
         />
       </div>
 
-      <div>
-        <label className={lbl}>City <span className="font-normal text-subtle">(optional)</span></label>
-        <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="e.g. Encinitas" disabled={isPending} className={input} />
-      </div>
+      <Field label={<>City <span className="font-normal text-subtle">(optional)</span></>}>
+        <Input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="e.g. Encinitas" disabled={isPending} />
+      </Field>
 
-      <div>
-        <label className={lbl}>Neighborhood <span className="font-normal text-subtle">(optional)</span></label>
-        <input type="text" value={neighborhood} onChange={e => setNeighborhood(e.target.value)} placeholder="e.g. Leucadia" disabled={isPending} className={input} />
-      </div>
+      <Field label={<>Neighborhood <span className="font-normal text-subtle">(optional)</span></>}>
+        <Input type="text" value={neighborhood} onChange={e => setNeighborhood(e.target.value)} placeholder="e.g. Leucadia" disabled={isPending} />
+      </Field>
 
       <div className="sm:col-span-2">
-        <label className="flex items-center gap-2 text-body-sm text-text">
-          <input type="checkbox" checked={resonancePublic} onChange={e => setResonancePublic(e.target.checked)} disabled={isPending} className="h-4 w-4 rounded border-border-strong text-primary focus:ring-2 focus:ring-primary/40" />
-          Show this circle&apos;s resonance publicly
-        </label>
+        <Checkbox
+          label={<>Show this circle&apos;s resonance publicly</>}
+          checked={resonancePublic}
+          onChange={e => setResonancePublic(e.target.checked)}
+          disabled={isPending}
+        />
       </div>
 
       {error && (

@@ -35,18 +35,25 @@ const FEED_IMAGE = '/images/site/PHOTO-2020-09-09-16-38-27.jpeg'
 const BUILD_IMAGE = '/images/site/community-1.jpg'
 const TABLE_IMAGE = '/images/site/community-dinner.jpg'
 
+// Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
+const OG_TITLE = 'High-functioning loneliness, explained · Frequency'
+const OG_DESCRIPTION =
+  'A hundred contacts and no one to call on a Tuesday. What high-functioning loneliness is, why third places got rare, how to beat the feed, and small ways back to real connection.'
+
 export function generateMetadata(): Metadata {
   return {
     title: TITLE,
     description: DESCRIPTION,
     alternates: { canonical: '/loneliness' },
     openGraph: {
-      title: 'High-functioning loneliness, explained · Frequency',
-      description:
-        'A hundred contacts and no one to call on a Tuesday. What high-functioning loneliness is, why third places got rare, how to beat the feed, and small ways back to real connection.',
+      title: OG_TITLE,
+      description: OG_DESCRIPTION,
       url: '/loneliness',
       images: [{ url: HERO_IMAGE }],
     },
+    // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+    // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+    twitter: { card: 'summary_large_image', title: OG_TITLE, description: OG_DESCRIPTION },
   }
 }
 
@@ -165,7 +172,7 @@ export default function LonelinessPage() {
       </PhotoHero>
 
       {/* Answer-first: the direct answer in the first two sentences. */}
-      <Section tone="canvas" pad="pt-14 pb-16 sm:pt-16 sm:pb-20">
+      <Section tone="canvas">
         <Lead>
           High-functioning loneliness is feeling alone while your outer life
           looks fine. You hold down a job, keep plans, and answer texts, and you
@@ -189,7 +196,7 @@ export default function LonelinessPage() {
 
       {/* One concept per section. Question H2s in the reader's words, answer first. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           What is high-functioning loneliness?
         </h2>
         <Lead>
@@ -206,7 +213,7 @@ export default function LonelinessPage() {
       </Section>
 
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Can you be lonely but not alone?
         </h2>
         <Lead>
@@ -223,7 +230,7 @@ export default function LonelinessPage() {
       </Section>
 
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Why do I feel lonely when I have friends?
         </h2>
         <Lead>
@@ -246,7 +253,7 @@ export default function LonelinessPage() {
 
       {/* ── Absorbed: what-is-a-third-space ──────────────────────────────────── */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           What is a third place, and why does it matter?
         </h2>
         <Lead>
@@ -268,7 +275,7 @@ export default function LonelinessPage() {
       </Section>
 
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           What counts as a third place?
         </h2>
         <Lead>
@@ -316,7 +323,7 @@ export default function LonelinessPage() {
 
       {/* ── Absorbed: life-after-the-feed (doomscrolling) ────────────────────── */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How do I quit doomscrolling?
         </h2>
         <Lead>
@@ -359,7 +366,7 @@ export default function LonelinessPage() {
       </ZigZag>
 
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Does deleting the app work?
         </h2>
         <Lead>
@@ -384,10 +391,10 @@ export default function LonelinessPage() {
       </PullQuote>
 
       {/* ── The answer: how to feel less alone (steps → HowTo schema) ─────────── */}
-      <Section tone="surface" pad="pt-16 pb-8 sm:pt-20 sm:pb-10">
+      <Section tone="surface">
         <h2
           id="how-to-feel-less-alone"
-          className="font-display uppercase text-text text-3xl sm:text-4xl mb-5"
+          className="font-display uppercase text-text text-display-h3 mb-5"
         >
           How do I actually feel less alone?
         </h2>
@@ -404,7 +411,7 @@ export default function LonelinessPage() {
           to become a friend.
         </Body>
       </Section>
-      <Section tone="surface" pad="pt-0 pb-16 sm:pb-20">
+      <Section tone="surface" role="cont">
         <Steps steps={HOWTO_STEPS} tone="surface" />
       </Section>
 
@@ -489,7 +496,7 @@ export default function LonelinessPage() {
 
       {/* FAQ: answer-first pairs, mirrored into FAQPage schema above. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-7">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-7">
           Common questions
         </h2>
         <FaqList items={FAQ} />

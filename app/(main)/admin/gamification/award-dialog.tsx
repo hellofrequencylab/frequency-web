@@ -3,8 +3,10 @@
 import { useState, useTransition } from 'react'
 import { Award, Search, X, Loader2, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { Dialog } from '@/components/ui/dialog'
 import { awardAchievement, revokeAchievement } from '@/app/(main)/crew/gamification-actions'
+import { Input } from '@/components/ui/field'
 
 interface Achievement {
   id: string
@@ -122,12 +124,13 @@ export function AwardDialog({
                   <div className="mt-1">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-subtle" />
-                      <input
+                      <Input
                         type="text"
+                        aria-label="Search members"
                         value={memberSearch}
                         onChange={e => setMemberSearch(e.target.value)}
                         placeholder="Search members..."
-                        className="w-full rounded-lg border border-border bg-surface pl-9 pr-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-border-strong/30"
+                        className="pl-9"
                       />
                     </div>
                     {memberSearch && (
@@ -153,22 +156,23 @@ export function AwardDialog({
 
               {/* Achievement picker */}
               <div>
-                <label className="text-meta font-semibold text-muted uppercase tracking-wider">Achievement</label>
-                <select
+                <label className="text-meta font-semibold text-muted uppercase tracking-wider" htmlFor="award-achievement">Achievement</label>
+                <Select
+                  id="award-achievement"
                   value={selectedAchievement?.id ?? ''}
                   onChange={e => {
                     const a = achievements.find(x => x.id === e.target.value)
                     setSelectedAchievement(a ?? null)
                   }}
-                  className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text focus:outline-none focus:ring-2 focus:ring-border-strong/30"
+                  wrapperClassName="mt-1"
+                  emptyLabel="Select an achievement..."
                 >
-                  <option value="">Select an achievement...</option>
                   {achievements.map(a => (
                     <option key={a.id} value={a.id}>
                       [{a.tier}] {a.name}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               {/* Actions */}

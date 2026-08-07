@@ -3,7 +3,9 @@
 import { useState, useTransition } from 'react'
 import { Plus, Network } from 'lucide-react'
 import { createNexus } from '@/app/(main)/admin/actions'
-import { CreateModal, cmInput, cmLabel } from '@/components/create-modal'
+import { CreateModal } from '@/components/create-modal'
+import { Field, Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 
 export function NewNexusCompose({
   outposts,
@@ -56,27 +58,24 @@ export function NewNexusCompose({
         submitLabel="Create Nexus" pendingLabel="Creating…"
         submitDisabled={!name.trim() || !outpostId} isPending={isPending} error={error}
       >
-        <div>
-          <label className={cmLabel}>Nexus name *</label>
-          <input type="text" value={name} onChange={e => setName(e.target.value)}
-            placeholder="e.g. San Diego" required disabled={isPending} className={cmInput} />
-        </div>
-        <div>
-          <label className={cmLabel}>Outpost *</label>
-          <select value={outpostId} onChange={e => setOutpostId(e.target.value)}
-            required disabled={isPending} className={cmInput}>
+        <Field label="Nexus name *">
+          <Input type="text" value={name} onChange={e => setName(e.target.value)}
+            placeholder="e.g. San Diego" required disabled={isPending} />
+        </Field>
+        <Field label="Outpost *">
+          <Select value={outpostId} onChange={e => setOutpostId(e.target.value)}
+            required disabled={isPending}>
             <option value="" disabled>Select an outpost…</option>
             {outposts.map(o => (
               <option key={o.id} value={o.id}>{o.name}</option>
             ))}
-          </select>
-        </div>
-        <div>
-          <label className={cmLabel}>Member cap</label>
-          <input type="number" min={100} max={10000} value={memberCap}
+          </Select>
+        </Field>
+        <Field label="Member cap">
+          <Input type="number" min={100} max={10000} value={memberCap}
             onChange={e => setMemberCap(parseInt(e.target.value) || 2500)}
-            disabled={isPending} className={cmInput} />
-        </div>
+            disabled={isPending} />
+        </Field>
       </CreateModal>
     </>
   )

@@ -10,6 +10,7 @@ import { isError } from '@/lib/action-result'
 import { createSpaceCode, setCodeSplash } from '@/lib/qr/space-codes-actions'
 import { emptySplash, type Splash, type SplashLink } from '@/lib/qr/splash'
 import type { SpaceCode } from '@/lib/qr/space-codes'
+import { IconButton } from '@/components/ui/icon-button'
 
 // OWNER QR + SPLASH EDITOR (client) for the per-space QR studio (ENTITY-SPACES-BUILD §C, Phase 2).
 // Two jobs, both behind canEditProfile-gated server actions:
@@ -67,7 +68,7 @@ export function QrSplashForm({
       {!readOnly && (
         <section>
           {capReached ? (
-            <p className="rounded-2xl border border-dashed border-border bg-surface/50 px-4 py-3 text-body-sm text-muted">
+            <p className="rounded-card border border-dashed border-border bg-surface/50 px-4 py-3 text-body-sm text-muted">
               Your plan allows {codeCap} codes. Remove one to add another, or upgrade for more.
             </p>
           ) : (
@@ -134,7 +135,7 @@ function CreateCodeForm({ spaceId }: { spaceId: string }) {
 
   return (
     <form
-      className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1"
+      className="space-y-4 rounded-card border border-border bg-surface p-5 lift-1"
       onSubmit={(e) => {
         e.preventDefault()
         if (!pending) submit()
@@ -184,7 +185,7 @@ function CreateCodeForm({ spaceId }: { spaceId: string }) {
       </div>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+        <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
@@ -210,7 +211,7 @@ function CodeRow({ code, slug, readOnly }: { code: SpaceCode; slug: string; read
   const [open, setOpen] = useState(false)
 
   return (
-    <li className="rounded-2xl border border-border bg-surface lift-1">
+    <li className="rounded-card border border-border bg-surface lift-1">
       <div className="flex items-center justify-between gap-4 px-4 py-3">
         <div className="min-w-0">
           <p className="truncate text-body-sm font-semibold text-text">{code.title}</p>
@@ -385,14 +386,14 @@ function SplashEditor({
                 className="mt-1"
               />
             </div>
-            <button
-              type="button"
+            <IconButton
+              variant="bordered"
+              tone="danger"
+              label="Remove this link"
               onClick={() => removeLink(i)}
-              aria-label="Remove this link"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-danger/40 hover:text-danger"
             >
               <X className="h-4 w-4" aria-hidden />
-            </button>
+            </IconButton>
           </div>
         ))}
         {draft.links.length < MAX_SPLASH_LINKS && (
@@ -407,7 +408,7 @@ function SplashEditor({
       </div>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+        <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}

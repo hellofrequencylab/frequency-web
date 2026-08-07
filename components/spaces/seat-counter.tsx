@@ -29,10 +29,10 @@ export function SeatCounter({
 }) {
   const { used, licensed, full } = usage
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-5 py-4 lift-1">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface px-5 py-4 lift-1">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <span
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-control ${
             enforced && full ? 'bg-warning-bg text-warning' : 'bg-surface-elevated text-subtle'
           }`}
           aria-hidden

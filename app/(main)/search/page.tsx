@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { IndexTemplate } from '@/components/templates'
 import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Input } from '@/components/ui/field'
 import { EntityCard } from '@/components/cards/entity-card'
 import { PersonCard } from '@/components/cards/person-card'
 import { DemoBadge } from '@/components/ui/demo-badge'
@@ -223,13 +224,14 @@ export default async function SearchPage({
         <form method="GET" action="/search">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle pointer-events-none" />
-            <input
+            <Input
               name="q"
               defaultValue={query}
               placeholder="Search people, posts, events…"
+              aria-label="Search people, posts, events"
               autoFocus
               autoComplete="off"
-              className="w-full rounded-control border border-border bg-surface pl-9 pr-4 py-2.5 text-body-sm text-text placeholder:text-subtle focus:border-border-strong dark:focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30"
+              className="py-2.5 pl-9 pr-4"
             />
             {/* Preserve tab across searches */}
             <input type="hidden" name="tab" value={tab} />

@@ -4,6 +4,7 @@ import { AdminSearchBar } from '@/components/admin/admin-search-bar'
 import { AdminSubNav } from '@/components/admin/admin-sub-nav'
 import { AdminInfoRail } from '@/components/admin/admin-info-rail'
 import { AdminRailDrawerColumn } from '@/components/admin/admin-rail-drawer-column'
+import { DockBar } from '@/components/layout/dock-bar'
 import { AdminPageDock } from '@/components/admin/admin-page-dock'
 import { AdminFooter } from '@/components/admin/admin-footer'
 import { getMenu } from '@/lib/menus/read'
@@ -37,11 +38,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     viewerRole: viewerRoleFor({ loggedIn: true, communityRole: role, webRole }),
     staffRole,
   }
-
-  // The page-admin dock shares the canvas-tab skin: flush to the bottom edge, rounded
-  // on top, hairline outline, canvas-colored with a soft blur over content.
-  const cornerTab =
-    'pointer-events-auto rounded-t-2xl border-x border-t border-border/70 bg-[var(--color-canvas)]/95 px-2 pt-1 backdrop-blur-sm'
 
   return (
     <div>
@@ -81,11 +77,20 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </AdminRailDrawerColumn>
       </div>
 
-      {/* The page-admin dock (bottom-right canvas tab, lg+). The operator profile card
-          is the shell's own (one card site-wide), so it is not duplicated here. */}
-      <div className={`fixed bottom-0 right-3 z-40 hidden w-72 lg:block ${cornerTab}`}>
-        <AdminPageDock role={role} webRole={webRole} staffRole={staffRole} />
-      </div>
+      {/* The page-admin dock — the SAME bar as the member Vault, populated with operator
+          elements. It used to be a second hand-rolled corner tab with its own skin string, no
+          chat segment and no ride-up, so the operator corner and the member corner were two
+          different objects pretending to be one pattern. Now both mount DockBar: left segment
+          is the page dock, right segment is the chat, one crest across the rail. `railFor`
+          returns 'none' on /admin, so the member dock never renders here and the two can never
+          collide. */}
+      {/* `folded` is FALSE here, and it is a statement rather than a placeholder: the operator
+          info rail (AdminRailDrawerColumn) is not on DAWN's fold ladder at all — it carries no
+          RailFoldControl, so there is no press that could fold it and nothing for the bar to
+          react to. The member rail's fold cannot reach this bar either; `railFor` returns 'none'
+          on /admin, so the two bars never co-exist. If the operator rail ever joins the ladder,
+          this is where its resolved fold goes — one prop, same behaviour. */}
+      <DockBar folded={false} vault={<AdminPageDock role={role} webRole={webRole} staffRole={staffRole} />} />
 
       <AdminFooter role={role} webRole={webRole} staffRole={staffRole} />
     </div>

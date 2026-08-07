@@ -104,7 +104,7 @@ export function MembershipJoinCard({
   }
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-border bg-surface p-5 lift-1">
+    <div className="flex h-full flex-col rounded-card border border-border bg-surface p-5 lift-1">
       <h3 className="text-body font-bold leading-tight text-text">{tier.name}</h3>
       <p className="mt-1 text-body-sm text-muted">
         {free ? (

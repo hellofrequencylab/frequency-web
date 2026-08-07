@@ -234,12 +234,12 @@ export function SeederImages({
             <Image src={url} alt="" width={240} height={240} unoptimized className="h-full w-full object-cover" />
             {/* KEEP the black/white pair below: A scrim chip painted on a photo thumbnail, not on a themed surface, so the monochrome pair stays. */}
             {i === 0 && (
-              <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-pill bg-black/60 px-1.5 py-0.5 text-2xs font-semibold text-white">
+              <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-pill bg-ink/60 px-1.5 py-0.5 text-2xs font-semibold text-on-ink">
                 <Star className="h-3 w-3 fill-current" aria-hidden /> Primary
               </span>
             )}
             {roleByUrl.get(url) && roleByUrl.get(url) !== 'other' && (
-              <span className="absolute bottom-1.5 left-1.5 rounded-pill bg-black/60 px-1.5 py-0.5 text-2xs font-medium capitalize text-white">
+              <span className="absolute bottom-1.5 left-1.5 rounded-pill bg-ink/60 px-1.5 py-0.5 text-2xs font-medium capitalize text-on-ink">
                 {roleByUrl.get(url)}
               </span>
             )}
@@ -248,7 +248,7 @@ export function SeederImages({
               onClick={() => remove(url)}
               disabled={busy}
               aria-label="Remove image"
-              className="absolute right-1.5 top-1.5 rounded-pill bg-black/60 p-1 text-white opacity-0 lift-1 transition-opacity hover:bg-black/80 focus:opacity-100 group-hover:opacity-100 disabled:opacity-60"
+              className="absolute right-1.5 top-1.5 rounded-pill bg-ink/60 p-1 text-on-ink opacity-0 lift-1 transition-opacity hover:bg-ink/80 focus:opacity-100 group-hover:opacity-100 disabled:opacity-60"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -259,7 +259,7 @@ export function SeederImages({
                 onClick={() => move(url, -1)}
                 disabled={busy || i === 0}
                 aria-label="Move earlier"
-                className="rounded-pill bg-black/60 p-1 text-white hover:bg-black/80 disabled:opacity-30"
+                className="rounded-pill bg-ink/60 p-1 text-on-ink hover:bg-ink/80 disabled:opacity-30"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </button>
@@ -269,7 +269,7 @@ export function SeederImages({
                   onClick={() => makePrimary(url)}
                   disabled={busy}
                   aria-label="Make primary"
-                  className="inline-flex items-center gap-1 rounded-pill bg-black/60 px-2 py-1 text-2xs font-semibold text-white hover:bg-black/80 disabled:opacity-60"
+                  className="inline-flex items-center gap-1 rounded-pill bg-ink/60 px-2 py-1 text-2xs font-semibold text-on-ink hover:bg-ink/80 disabled:opacity-60"
                 >
                   <Star className="h-3 w-3" /> Primary
                 </button>
@@ -279,7 +279,7 @@ export function SeederImages({
                 onClick={() => move(url, 1)}
                 disabled={busy || i === images.length - 1}
                 aria-label="Move later"
-                className="rounded-pill bg-black/60 p-1 text-white hover:bg-black/80 disabled:opacity-30"
+                className="rounded-pill bg-ink/60 p-1 text-on-ink hover:bg-ink/80 disabled:opacity-30"
               >
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>

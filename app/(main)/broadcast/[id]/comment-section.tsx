@@ -4,6 +4,7 @@ import { useState, useTransition, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Loader2, Trash2, MessageCircle } from 'lucide-react'
+import { Textarea } from '@/components/ui/field'
 import { addDispatchComment, deleteDispatchComment } from '../actions'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
@@ -118,15 +119,16 @@ export function CommentSection({
       {/* Compose */}
       {myProfileId ? (
         <form onSubmit={handleSubmit} className="flex gap-3">
-          <textarea
+          <Textarea
             ref={textareaRef}
+            aria-label="Add a comment"
             value={body}
             onChange={e => setBody(e.target.value.slice(0, 2000))}
             onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit(e) }}
             placeholder="Add a comment… (⌘↵ to post)"
             rows={2}
             disabled={isPending}
-            className="flex-1 rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 resize-none disabled:opacity-50"
+            className="flex-1 resize-none"
           />
           <button
             type="submit"

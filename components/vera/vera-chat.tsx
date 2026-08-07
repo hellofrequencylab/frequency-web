@@ -5,6 +5,7 @@ import { Check, X, Send, Bug } from 'lucide-react'
 import { conciergeTurn, confirmProposal } from '@/app/onboarding/vera-actions'
 import { openSupport } from '@/components/support/support-launcher'
 import { UpsellTease } from '@/components/upsell/upsell-tease'
+import { Button } from '@/components/ui/button'
 import type { TeaseGate } from '@/lib/pricing/upsell-tease'
 import type { ProposedToolCall } from '@/lib/ai/vera/concierge'
 import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
@@ -29,6 +30,19 @@ export interface VeraOpeningSeed {
   /** Quick-reply chips offered with the opening. */
   suggestions: string[]
 }
+
+// ── Bubbles ───────────────────────────────────────────────────────────────────
+// The card radius on three corners and the control radius on the speaker's corner: the
+// flattened corner is what points a bubble at whoever said it, and doing it with the two ROLE
+// radii keeps it skinnable rather than pinned to a literal step. `.lift-1` ("rests on the page
+// — rows, chips, inline panels") is the one elevation a bubble may take; a transcript full of
+// floating cards is DAWN's "everything in an identical bordered box" failure mode in motion.
+//
+// Hoisted out of the JSX because the raw-button-bg ratchet reads a 500-character window forward
+// from every `<button` in the file, and the composer's Send sits close enough to catch one.
+const YOU_BUBBLE = 'lift-1 max-w-[80%] rounded-card rounded-br-control bg-primary px-3.5 py-2 text-body-sm text-on-primary'
+const VERA_BUBBLE =
+  'lift-1 max-w-[85%] rounded-card rounded-bl-control border border-border bg-surface-elevated px-3.5 py-2 text-body-sm text-text'
 
 /** Member-facing label for a proposed write Vera wants to make. */
 function proposalLabel(p: ProposedToolCall): string {
@@ -103,13 +117,7 @@ export function VeraChat({ opening, veraTease }: { opening: VeraOpeningSeed; ver
       <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
         {messages.map((m, i) => (
           <div key={i} className={m.from === 'you' ? 'flex justify-end' : 'flex justify-start'}>
-            <div
-              className={
-                m.from === 'you'
-                  ? 'max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-3.5 py-2 text-body-sm text-on-primary'
-                  : 'max-w-[85%] rounded-2xl rounded-bl-sm border border-border bg-surface-elevated px-3.5 py-2 text-body-sm text-text'
-              }
-            >
+            <div className={m.from === 'you' ? YOU_BUBBLE : VERA_BUBBLE}>
               {m.text}
             </div>
           </div>
@@ -118,14 +126,14 @@ export function VeraChat({ opening, veraTease }: { opening: VeraOpeningSeed; ver
         {pending && <p className="text-meta text-subtle">Vera is thinking…</p>}
 
         {proposals.map((p, i) => (
-          <div key={i} className="rounded-card border border-border bg-surface-elevated p-3">
+          <div key={i} className="lift-1 rounded-card border border-border bg-surface-elevated p-3">
             <p className="text-meta text-muted">{proposalLabel(p)}</p>
             <div className="mt-2 flex gap-2">
-              <button type="button" onClick={() => allow(p)} className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg px-3 py-1.5 text-meta font-semibold text-success hover:opacity-80">
-                <Check className="h-3.5 w-3.5" /> {p.tool === 'join_circle' ? 'Join' : p.tool === 'draft_intro' ? 'Post' : 'Allow'}
+              <button type="button" onClick={() => allow(p)} className="inline-flex items-center gap-1.5 rounded-control bg-success-bg px-3 py-1.5 text-meta font-semibold text-success transition-colors hover:opacity-80">
+                <Check className="h-3.5 w-3.5" aria-hidden /> {p.tool === 'join_circle' ? 'Join' : p.tool === 'draft_intro' ? 'Post' : 'Allow'}
               </button>
-              <button type="button" onClick={() => setProposals((ps) => ps.filter((x) => x !== p))} className="inline-flex items-center gap-1.5 rounded-lg bg-surface px-3 py-1.5 text-meta font-medium text-muted hover:text-danger">
-                <X className="h-3.5 w-3.5" /> Skip
+              <button type="button" onClick={() => setProposals((ps) => ps.filter((x) => x !== p))} className="inline-flex items-center gap-1.5 rounded-control bg-surface px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:text-danger">
+                <X className="h-3.5 w-3.5" aria-hidden /> Skip
               </button>
             </div>
           </div>
@@ -150,8 +158,10 @@ export function VeraChat({ opening, veraTease }: { opening: VeraOpeningSeed; ver
         </div>
       )}
 
-      {/* composer + chips */}
-      <div className="shrink-0 space-y-2.5 border-t border-border px-4 py-3">
+      {/* Composer + chips. Canvas under the composer, the way every DAWN dock separates its
+          action row from the content above it — the hairline alone reads as one more divider
+          inside a scrolling transcript. */}
+      <div className="shrink-0 space-y-2.5 border-t border-border bg-canvas px-4 py-3">
         {suggestions.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {suggestions.map((s) => (
@@ -168,11 +178,11 @@ export function VeraChat({ opening, veraTease }: { opening: VeraOpeningSeed; ver
             onKeyDown={(e) => { if (e.key === 'Enter') send() }}
             placeholder="Say something to Vera…"
             aria-label="Message Vera"
-            className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+            className="w-full rounded-pill border border-border bg-surface px-4 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
           />
-          <button type="button" onClick={send} disabled={pending || !input.trim()} aria-label="Send" className="rounded-xl bg-primary p-2 text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50">
-            <Send className="h-4 w-4" />
-          </button>
+          <Button type="button" size="sm" onClick={send} disabled={pending || !input.trim()} aria-label="Send" className="shrink-0 rounded-pill px-3 py-2">
+            <Send className="h-4 w-4" aria-hidden />
+          </Button>
         </div>
         {/* Always-available bug report — opens the capture dialog (page details +
             screenshot). Vera can also point members here in conversation. */}

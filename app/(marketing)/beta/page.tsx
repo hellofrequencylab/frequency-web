@@ -16,6 +16,13 @@ export const metadata: Metadata = {
     description: 'Be one of the first. The community Beta is open.',
     url: '/beta',
   },
+  // Without this the page inherits the ROOT twitter block (generic site copy) — metadata merges
+  // per top-level key, not per field. Mirrors the openGraph values above.
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Join the Frequency Beta',
+    description: 'Be one of the first. The community Beta is open.',
+  },
 }
 
 export const revalidate = 3600
@@ -53,20 +60,20 @@ export default function BetaPage() {
       />
 
       {/* ── The ask + what you get ───────────────────────────────────────── */}
-      <Section tone="surface" pad="py-20 sm:py-24">
+      <Section tone="surface">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-start">
           {/* Why you're here */}
           <div>
             <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-4">
               What you&apos;re joining
             </p>
-            <h2 className="font-display uppercase text-text text-4xl sm:text-5xl mb-7">
+            <h2 className="font-display uppercase text-text text-display-h2 mb-7">
               Not another feed. A place to be missed.
             </h2>
             <ul className="space-y-5">
               {WHAT_YOU_GET.map(({ Icon, label, body }) => (
                 <li key={label} className="flex items-start gap-4">
-                  <span className="shrink-0 w-10 h-10 rounded-2xl bg-primary-bg flex items-center justify-center">
+                  <span className="shrink-0 w-10 h-10 rounded-card bg-primary-bg flex items-center justify-center">
                     <Icon className="w-5 h-5 text-primary-strong" aria-hidden />
                   </span>
                   <div>
@@ -81,8 +88,8 @@ export default function BetaPage() {
           {/* The ask. This was a waitlist form until the beta opened; there is no
               queue to join now, so it goes straight to the induction. */}
           <div className="lg:pt-1">
-            <div className="rounded-2xl border border-border bg-surface p-7 sm:p-8 lift-1 text-center">
-              <h3 className="font-display uppercase text-text text-3xl mb-2">The door is open</h3>
+            <div className="rounded-card border border-border bg-surface p-7 sm:p-8 lift-1 text-center">
+              <h3 className="font-display uppercase text-text text-display-h3 mb-2">The door is open</h3>
               <p className="text-body text-muted leading-relaxed mb-6">
                 No invite, no waiting list. Start a Circle where you live, or join one that is
                 already meeting.
@@ -110,12 +117,12 @@ export default function BetaPage() {
       </Statement>
 
       {/* ── How it works after you sign up ───────────────────────────────── */}
-      <Section tone="canvas" pad="py-20 sm:py-24">
+      <Section tone="canvas">
         <div className="text-center mb-12">
           <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-4">
             What happens next
           </p>
-          <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">
+          <h2 className="font-display uppercase text-text text-display-h2">
             Three steps to belonging.
           </h2>
         </div>
@@ -125,8 +132,8 @@ export default function BetaPage() {
             { n: '02', t: 'Pick your Circle', b: 'Join one that is already meeting near you, or start the first one where you live.' },
             { n: '03', t: 'Show up', b: "Meet your people at a standing time, and start being missed when you're gone." },
           ].map((s) => (
-            <li key={s.n} className="rounded-2xl border border-border bg-surface p-7 lift-1">
-              <span className="font-display text-3xl text-border-strong" aria-hidden>
+            <li key={s.n} className="rounded-card border border-border bg-surface p-7 lift-1">
+              <span className="font-display text-display-h3 text-border-strong" aria-hidden>
                 {s.n}
               </span>
               <p className="mt-3 text-body-lg font-bold text-text">{s.t}</p>

@@ -304,7 +304,7 @@ export default async function JourneyPlanPage({
 
           {/* The repeat CTA closes the page (no bottom dump of rewards/rules). */}
           {!isAuthor && (
-            <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
+            <div className="rounded-card border border-border bg-surface p-5 lift-1">
               <p className="mb-3 text-body-sm font-semibold text-text">
                 Start it solo, or run it with your Circle.
               </p>
@@ -319,7 +319,7 @@ export default async function JourneyPlanPage({
   return (
     <>
       {isAuthor && preview && (
-        <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-4 py-2.5">
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-2.5">
           <span className="text-body-sm text-muted">Preview. How others see your Journey.</span>
           <Link
             href={`/journeys/${plan.slug}`}

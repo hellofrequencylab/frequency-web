@@ -21,8 +21,23 @@
 // width already lives in SHELL_ROW_CLASS at the bottom of this file, which is what pages actually
 // use; a second, unused spelling of the same number is a place for the two to disagree.)
 
-/** Left navigation rail: `w-48` = 12rem. `hidden md:flex`, so it costs nothing below `md`. */
+/** Left navigation rail: `w-48` = 12rem. `hidden md:flex`, so it costs nothing below `md`.
+ *
+ *  This is the OPEN rail, and open is what the claim page must match. Both rails now run DAWN's
+ *  three-position fold ladder (lib/layout/rail-fold.ts), so a member can fold either one to a
+ *  56px strip — but that is a PER-VIEWER standing instruction, not the shell's geometry. The
+ *  claim page renders for a visitor who has no rails at all and no instruction to read, so it
+ *  keeps deriving from the open widths. (Same reasoning the right rail already used: its folded
+ *  56 has never been part of RIGHT_RAIL_PX either.) */
 export const LEFT_RAIL = 12 // rem
+
+/** Either rail, FOLDED: the `w-14` strip. Deliberately NOT a number here — it is not part of any
+ *  claim-page calc, and stating it as "56" would repeat the unit mistake this file exists to end:
+ *  `w-14` is 3.5rem, which is 59.5px at this app's 17px root, while the right rail's COLUMN
+ *  carries a literal inline `56`. The left rail's strip uses the same `w-14` class the right
+ *  rail's strip has always used, so the two sides fold to the same STEP; the column's 56 is a
+ *  separate, pre-existing inline value. shell-metrics.test.ts pins both spellings. */
+export const RAIL_STRIP_CLASS = 'w-14'
 
 /** Right rail column, in PIXELS. Its width is an INLINE STYLE, not a Tailwind class:
  *  `settings.open ? settings.width : railCollapsed ? 56 : 288`.
@@ -87,3 +102,47 @@ export const SHELL_CONTENT_WIDTH_CLASS =
 
 /** The shell row's own box, so a page outside the shell starts from the identical container. */
 export const SHELL_ROW_CLASS = 'mx-auto w-full max-w-[105rem] px-4 sm:px-6 lg:px-8'
+
+// ── THE ROW'S CLASS SPELLINGS, for anything that has to REPRODUCE the row ─────────────────────
+//
+// The numbers above answer "how wide is the content column"; a second kind of consumer needs
+// "what does the row itself look like" — it lays out the same [rail | gap | content | gap | rail]
+// shape and has to land on the same seams. The header mega-menu panel is one: it drops from under
+// the top bar across the full viewport, and the visible card has to line up with the page content
+// between the rails.
+//
+// 🔴 IT USED TO COPY THESE BY HAND, and had already drifted — `gap-8` where the shell says
+// `gap-8 lg:gap-10`, a fixed `w-48` that ignored the fold, a `w-72` that ignored the right rail's
+// collapse. Measured misalignment: 8.5px at rest, 136px with the left rail folded, 229px with the
+// right one collapsed (docs/MENU-AUDIT-2026-08-06.md §2.2). That is precisely the failure mode
+// this file was created for, in a second place, outside its guard. So the spellings move here and
+// shell-metrics.test.ts pins them against app-shell.tsx like everything else.
+//
+// Whole class strings, never interpolated, for the Tailwind-scanner reason documented above.
+
+/** The left rail column, open. */
+export const LEFT_RAIL_CLASS = 'w-48'
+/** The right rail column at rest. (Its live width is an inline style that also carries the
+ *  settings-drawer width; this is the resting spelling a spacer should reserve.) */
+export const RIGHT_RAIL_CLASS = 'w-72'
+/** The row gap, both breakpoints, exactly as the shell writes it. */
+export const SHELL_ROW_GAP_CLASS = 'gap-8 lg:gap-10'
+/** The extra left margin on the right rail column (ADR-404), so the two gutters read even. */
+export const RIGHT_RAIL_ML_CLASS = 'lg:ml-3'
+
+// ── RETIRED, 2026-08-05: DOCK_BAR_H_PX + RAIL_FOLD_STICKY_* + railFoldClearsDock() ──────────
+//
+// Those existed to keep the rail's fold control from hiding UNDER the dock bar: the control was
+// `sticky` at the rail's foot, DockBar is `fixed bottom-0` and ~48px tall, and sticky offsets do
+// not stack against a fixed sibling — so the control shipped at `bottom-4`, fully inside the bar,
+// on every rail page. The fix was a literal clearance (`bottom-14`) with the two heights pinned
+// against each other here.
+//
+// The owner then moved the control off the foot entirely: it is a handle on the middle of the
+// rail's EDGE now (components/layout/rail-fold-control.tsx). Nothing is under it, so there is no
+// clearance left to hold — and constants asserting a relationship between two things that no
+// longer meet are worse than absent, because the next reader takes them for a live constraint.
+//
+// The one number still worth sharing is the two docks' head height, and it lives WITH the docks
+// as DOCK_HEAD_H_CLASS (components/layout/dock-bar.tsx): it is a class the left and right tabs
+// both wear, not an arithmetic relationship anyone has to reason about.

@@ -63,7 +63,7 @@ export function ShowCoverPicker({
             type="button"
             onClick={() => setOpen(true)}
             disabled={disabled}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-2.5 py-1.5 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-50"
           >
             <ImageIcon className="h-3.5 w-3.5" aria-hidden /> {value ? 'Change cover' : 'Choose cover art'}
           </button>
@@ -72,7 +72,7 @@ export function ShowCoverPicker({
               type="button"
               onClick={() => onChange(null)}
               disabled={disabled}
-              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-meta font-medium text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-control px-2.5 py-1.5 text-meta font-medium text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
             >
               <Trash2 className="h-3.5 w-3.5" aria-hidden /> Remove
             </button>
@@ -84,14 +84,14 @@ export function ShowCoverPicker({
       </p>
 
       <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="Choose cover art from the Loom" className="max-w-lg">
-        <div className="rounded-2xl border border-border bg-canvas p-4 lift-3">
+        <div className="rounded-card border border-border bg-canvas p-4 lift-3">
           <div className="mb-3 flex items-center justify-between gap-2">
             <h2 className="text-body-sm font-semibold text-text">Your Loom</h2>
             <button
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close"
-              className="rounded-lg p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+              className="rounded-control p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
             >
               <X className="h-4 w-4" aria-hidden />
             </button>
@@ -101,6 +101,7 @@ export function ShowCoverPicker({
             <Search className="h-3.5 w-3.5 text-subtle" aria-hidden />
             <input
               type="text"
+              aria-label="Search the Loom"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search the Loom"
@@ -125,7 +126,7 @@ export function ShowCoverPicker({
                     setOpen(false)
                   }}
                   title={it.title}
-                  className="relative aspect-square overflow-hidden rounded-lg border border-border transition-colors hover:border-primary"
+                  className="relative aspect-square overflow-hidden rounded-control border border-border transition-colors hover:border-primary"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element -- Loom asset thumbnail in the picker, not a build asset */}
                   <img src={it.url} alt={it.alt ?? ''} className="h-full w-full object-cover" />

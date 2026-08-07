@@ -37,7 +37,7 @@ export function FeatureEventField({ spaceId }: { spaceId: string }) {
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-surface p-4">
+    <section className="rounded-card border border-border bg-surface p-4">
       <div className="mb-2 flex items-center gap-2">
         <CalendarPlus className="h-4 w-4 text-subtle" aria-hidden />
         <h2 className="text-body-sm font-bold text-text">Feature an event</h2>

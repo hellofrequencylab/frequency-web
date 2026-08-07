@@ -34,7 +34,7 @@ export function BookingMineList({
   })
 
   return (
-    <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
+    <ul className="divide-y divide-border rounded-card border border-border bg-surface lift-1">
       {bookings.map((b) => (
         <li key={b.id} className="px-4 py-3">
           <BookingMineRow spaceId={spaceId} booking={b} whenLabel={whenFmt.format(new Date(b.startsAt))} timezone={timezone} />
@@ -100,7 +100,7 @@ function BookingMineRow({
             <button
               type="button"
               onClick={openReschedule}
-              className="rounded-lg border border-border px-2.5 py-1 text-meta font-semibold text-muted transition-colors hover:border-border-strong hover:text-text"
+              className="rounded-control border border-border px-2.5 py-1 text-meta font-semibold text-muted transition-colors hover:border-border-strong hover:text-text"
             >
               Reschedule
             </button>
@@ -110,7 +110,7 @@ function BookingMineRow({
                 setMode('cancel')
                 setError(null)
               }}
-              className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-meta font-semibold text-muted transition-colors hover:border-danger/40 hover:text-danger"
+              className="inline-flex items-center gap-1 rounded-control border border-border px-2.5 py-1 text-meta font-semibold text-muted transition-colors hover:border-danger/40 hover:text-danger"
             >
               <X className="h-3.5 w-3.5" aria-hidden /> Cancel
             </button>
@@ -119,13 +119,13 @@ function BookingMineRow({
       </div>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-meta font-medium text-danger" role="alert">
+        <p className="rounded-card bg-danger-bg px-3 py-2 text-meta font-medium text-danger" role="alert">
           {error}
         </p>
       )}
 
       {mode === 'cancel' && (
-        <div className="space-y-2 rounded-lg border border-border bg-surface-elevated/40 p-3">
+        <div className="space-y-2 rounded-card border border-border bg-surface-elevated/40 p-3">
           <label htmlFor={`reason-${booking.id}`} className="text-meta font-medium text-muted">
             Reason (optional)
           </label>
@@ -134,14 +134,14 @@ function BookingMineRow({
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             maxLength={500}
-            className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm"
+            className="w-full rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm"
           />
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={doCancel}
               disabled={pending}
-              className="inline-flex items-center gap-1 rounded-lg border border-danger px-2.5 py-1 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-control border border-danger px-2.5 py-1 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
             >
               {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
               Cancel booking
@@ -159,7 +159,7 @@ function BookingMineRow({
       )}
 
       {mode === 'reschedule' && (
-        <div className="space-y-3 rounded-lg border border-border bg-surface-elevated/40 p-3">
+        <div className="space-y-3 rounded-card border border-border bg-surface-elevated/40 p-3">
           <div className="flex items-center justify-between">
             <p className="text-meta font-semibold text-muted">Pick a new time</p>
             <button

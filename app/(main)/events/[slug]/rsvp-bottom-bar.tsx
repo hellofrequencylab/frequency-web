@@ -32,7 +32,7 @@ export function RsvpBottomBar({
     <>
       {/* Sit ABOVE the mobile tab bar (md:hidden, height 3.5rem + safe-area) on phones so the
           two fixed bars don't stack; drop to the screen bottom at md+ where the tab bar is gone. */}
-      <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-40 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur md:bottom-0 lg:hidden">
+      <div className="fixed inset-x-0 bottom-[var(--tab-bar-clearance)] z-40 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur md:bottom-0 lg:hidden">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             {statusLine && <p className="truncate text-body-sm font-medium text-text">{statusLine}</p>}
@@ -40,7 +40,7 @@ export function RsvpBottomBar({
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-control bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             <ChevronUp className="h-4 w-4" />
             {primaryLabel}
@@ -49,7 +49,7 @@ export function RsvpBottomBar({
       </div>
 
       <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="RSVP" className="max-w-md">
-        <div className="rounded-2xl border border-border bg-surface p-5 lift-3">
+        <div className="rounded-card border border-border bg-surface p-5 lift-3">
           {children}
         </div>
       </Dialog>

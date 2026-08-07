@@ -17,7 +17,7 @@ export default function CodesLoading() {
       {/* Code cards: a QR tile over its title + scan count */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="rounded-2xl border border-border bg-surface p-4">
+          <div key={i} className="rounded-card border border-border bg-surface p-4">
             <Skeleton className="aspect-square w-full rounded-xl" />
             <Skeleton className="mt-3 h-4 w-24" />
             <Skeleton className="mt-2 h-3 w-16" />

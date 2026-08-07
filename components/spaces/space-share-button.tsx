@@ -109,7 +109,7 @@ export function SpaceShareButton({
       </button>
 
       <Dialog open={open} onClose={() => setOpen(false)} ariaLabel={`Connect with ${brandName}`} className="max-w-md">
-        <div className="rounded-2xl border border-border bg-surface p-4 shadow-pop sm:p-6">
+        <div className="rounded-card border border-border bg-surface p-4 shadow-pop sm:p-6">
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
             <div className="shrink-0">
               <p className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
@@ -117,6 +117,7 @@ export function SpaceShareButton({
               </p>
               <div
                 aria-label={`QR code for ${brandName}`}
+                // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
                 className="mx-auto aspect-square w-40 rounded-card border border-border bg-white p-2 lift-1 [&>svg]:h-full [&>svg]:w-full"
                 dangerouslySetInnerHTML={{ __html: svg }}
               />
@@ -126,14 +127,14 @@ export function SpaceShareButton({
                 <button
                   type="button"
                   onClick={() => void downloadQr('png')}
-                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2 py-1 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  className="inline-flex items-center gap-1 rounded-control border border-border bg-surface px-2 py-1 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated"
                 >
                   <Download className="h-3 w-3" /> PNG
                 </button>
                 <button
                   type="button"
                   onClick={() => void downloadQr('svg')}
-                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2 py-1 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  className="inline-flex items-center gap-1 rounded-control border border-border bg-surface px-2 py-1 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated"
                 >
                   <Download className="h-3 w-3" /> SVG
                 </button>
@@ -143,7 +144,7 @@ export function SpaceShareButton({
                 <Link2 className="h-3.5 w-3.5" /> Share link
               </p>
               <code
-                className="block truncate rounded-lg border border-border bg-surface-elevated/50 px-2.5 py-1.5 font-mono text-2xs text-muted"
+                className="block truncate rounded-control border border-border bg-surface-elevated/50 px-2.5 py-1.5 font-mono text-2xs text-muted"
                 title={url}
               >
                 {url}
@@ -152,7 +153,7 @@ export function SpaceShareButton({
                 <button
                   type="button"
                   onClick={copy}
-                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-2.5 py-1.5 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated"
                 >
                   {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Link2 className="h-3.5 w-3.5" />}
                   {copied ? 'Copied' : 'Link'}
@@ -162,7 +163,7 @@ export function SpaceShareButton({
                   target="_blank"
                   rel="noreferrer"
                   title="Open in a new tab"
-                  className="inline-flex shrink-0 items-center rounded-lg border border-border bg-surface p-1.5 text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                  className="inline-flex shrink-0 items-center rounded-control border border-border bg-surface p-1.5 text-muted transition-colors hover:bg-surface-elevated hover:text-text"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
                 </a>
@@ -172,7 +173,7 @@ export function SpaceShareButton({
                   href={`/spaces/${slug}/vcard`}
                   download={`${slug}.vcf`}
                   className={cn(
-                    'inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated',
+                    'inline-flex w-full items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-2.5 py-1.5 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated',
                   )}
                 >
                   <Contact className="h-3.5 w-3.5" /> Save contact
@@ -194,7 +195,7 @@ export function SpaceShareButton({
                   <button
                     type="button"
                     onClick={copyClaim}
-                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-2.5 py-1.5 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated"
                   >
                     {claimCopied ? <Check className="h-3.5 w-3.5 text-success" /> : <Link2 className="h-3.5 w-3.5" />}
                     {claimCopied ? 'Copied' : 'Copy claim link'}

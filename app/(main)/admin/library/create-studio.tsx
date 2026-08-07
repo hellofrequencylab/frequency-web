@@ -4,9 +4,11 @@ import { useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sparkles, Wand2, RotateCcw, Palette, Zap, Loader2 } from 'lucide-react'
 import { sanitizeSvg } from '@/lib/library/svg-sanitize'
+import { Select } from '@/components/ui/select'
 import { generateLoomCard, saveLoomCard, type LoomCardMode } from './vera-actions'
 import { generateWithRecraft, listBrandStyles } from './recraft-actions'
 import type { BrandStyle } from '@/lib/library/styles'
+import { Input, Textarea } from '@/components/ui/field'
 
 // One smart "Create" surface for the whole Loom. You pick WHAT you're making; the studio picks the
 // engine: Vera draws quick house-style line marks (icons / spot art) as inline SVG, and the Image
@@ -82,7 +84,6 @@ const TYPES: Record<CreateType, TypeCfg> = {
 }
 
 const ORDER: CreateType[] = ['icon', 'spot', 'illustration', 'trophy', 'card', 'texture']
-const inputCls = 'w-full rounded-2xl border border-border bg-surface px-3 py-2 text-body-sm'
 
 export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
   const router = useRouter()
@@ -225,8 +226,8 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
           })}
         </div>
 
-        <textarea
-          className={inputCls}
+        <Textarea
+          aria-label="What to draw"
           rows={2}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
@@ -288,33 +289,28 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
             <>
               <label className="flex items-center gap-1.5 text-body-sm text-muted">
                 Count
-                <select
+                <Select
                   value={count}
                   onChange={(e) => setCount(Number(e.target.value))}
-                  className="rounded-control border border-border bg-surface px-2 py-1 text-body-sm"
-                >
-                  {[1, 2, 3, 4].map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
+                  wrapperClassName="inline-block w-max max-w-full"
+                  options={[1, 2, 3, 4].map((n) => ({ value: n, label: n }))}
+                />
               </label>
               {laneStyles.length > 0 && (
                 <label className="flex items-center gap-1.5 text-body-sm text-muted">
                   <Palette className="h-4 w-4" aria-hidden /> Style
-                  <select
+                  <Select
                     value={styleId}
                     onChange={(e) => setStyleId(e.target.value)}
-                    className="rounded-control border border-border bg-surface px-2 py-1 text-body-sm"
+                    wrapperClassName="inline-block w-max max-w-full"
+                    emptyLabel="Base"
                   >
-                    <option value="">Base</option>
                     {laneStyles.map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
               )}
             </>
@@ -356,7 +352,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
             />
             <label className="flex-1">
               <span className="mb-1 block text-meta font-semibold uppercase tracking-wide text-subtle">Title</span>
-              <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} />
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
             </label>
             <button
               type="button"

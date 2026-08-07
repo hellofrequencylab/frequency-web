@@ -22,10 +22,25 @@
   --color-marketing-canvas:  #F5EEE2;
   --color-surface:           #FFFFFF;
   --color-surface-elevated:  #F5F2EC;
-  /* Feed post-card surface — a soft warm off-white that sits a step darker than
-     the pure-white composer so a post reads as a card and the comment field reads
-     as a bright input on top of it. Warm, but short of the yellow cream cast. */
-  --color-surface-post:      #F7F5F0;
+  /* Feed post-card surface. IT IS THE SURFACE (owner, 2026-08-06: "make the post and
+     announcement boxes the same shade white as the post box site wide").
+
+     🔴 THE TOKEN STAYS, THE STEP GOES. This was #F7F5F0 — a warm off-white a step darker
+     than the pure-white composer, so a post read as a card and the composer read as a bright
+     input above it. That was DAWN's intent and the owner has now retired it twice over: first
+     the comment FIELD came down to the card, and now the card itself comes up to white. What
+     was left was a three-value ladder (canvas / post / surface) doing work nobody had asked
+     for, on the surface a member looks at most.
+
+     Written as `var(--color-surface)` rather than a second `#FFFFFF`, and that is the whole
+     reason the token survives instead of being deleted at its call sites. Two literals are two
+     things to keep in sync across FIVE skins; a reference cannot drift, and it keeps one named
+     hook to re-separate the two later without hunting down `bg-surface` in the feed.
+
+     Posts still read as cards. The fill was never what said "card" — the hairline border and
+     `lift-1` are, and both are untouched. Every skin gets this, including the two dark ones,
+     because a decision that holds in light and not in dark is not a decision, it is a mode. */
+  --color-surface-post:      var(--color-surface);
   /* Chrome — the tinted frame band (top bar / dock hairlines), a step off the
      canvas so the frame reads as frame, not as another white card. DAWN round
      2026-08-03; currently only adopted where the shell opts in. */
@@ -68,7 +83,14 @@
   --color-primary-hover:    #CE8023;
   --color-primary-strong:   #9A5E12;
   --color-primary-bg:       #FBEFD9;
-  --color-text-on-primary:  #1A1206;
+  --color-text-on-primary:  #FFFFFF;
+  /* Glyphs on a RANK CORE, decoupled from the button label (2026-08-06). These borrowed
+     --color-text-on-primary while that token was ink, and the contrast gate's own model still
+     called it "the dark ink on the CORE". The moment on-primary became white, every rank core inherited a white glyph — and gold, the lightest core in the
+     spectrum by design, fell to 2.46:1. The two are different jobs on different fills and now
+     have different tokens; the rank spectrum is fixed across skins, so this needs no per-skin
+     override. */
+  --color-text-on-rank:     #1A1206;
 
   /* Brand. Signal (emerald-teal) — a deep, green-leaning jewel teal, distinct in hue
      from Broadcast's cyan and cohesive with the teal success. */
@@ -103,10 +125,13 @@
   --color-warning-bg:       #F6ECD8;
   --color-danger:           #BA3B30;
   --color-danger-bg:        #F7E4E1;
-  /* Labels ON a solid semantic fill. Split out from --color-text-on-primary, which is the
-     amber pair and now resolves to ink: ink on the light danger red is 3.31 (sub-AA), so a
-     shared token cannot serve both. Measured light: white/danger 5.59, ink/warning 4.77,
-     white/success 4.67. */
+  /* Labels ON a solid semantic fill. Split out from --color-text-on-primary because the two
+     fills need different labels: ink on the light danger red is 3.31 (sub-AA), so one shared
+     token cannot serve both. Measured light: white/danger 5.59, ink/warning 4.77,
+     white/success 4.67.
+     (This comment used to add "…--color-text-on-primary, which now resolves to ink". It resolves
+     to WHITE as of 2026-08-06 — see the amber block above. The split still stands: warning keeps
+     ink, because ink on the light warning yellow is what passes there.) */
   --color-text-on-danger:   #FFFFFF;
   --color-text-on-warning:  #1A1206;
   --color-text-on-success:  #FFFFFF;
@@ -194,6 +219,26 @@
   --ornament:   0.6;
   --tap-min:    32px;
 
+  /* ── The mobile bottom lane, named once ──────────────────────────────────────
+     Below md the bottom edge belongs to the tab bar, and FOUR separate files were each
+     re-deriving its geometry by hand — `calc(3.5rem + env(safe-area-inset-bottom))`, written
+     out longhand in the shell, the teaser gate, the event RSVP bar and the room page. Four
+     copies of one number is four chances to be wrong, and two of them already were.
+
+     🔴 --tab-bar-clearance IS NOT THE BAR'S HEIGHT, and that gap is the bug it exists to stop.
+     The bar is 3.5rem, but the raised Zap catch (`-translate-y-[22px]` in app-shell.tsx) is a
+     59.5px disc whose top sits 22px ABOVE the bar's top edge. Anything pinned "above the tab
+     bar" that centres horizontally has to clear the CATCH, not the bar — the teaser pill and
+     the RSVP bar both cleared the bar exactly, and the disc painted straight over them
+     (9.25px and 22px of overlap respectively, on the primary conversion control of each page).
+
+     Use --tab-bar-h when you need the bar's own box (content padding, scroll offsets).
+     Use --tab-bar-clearance when you are PLACING something above it. */
+  --tab-bar-h:         calc(3.5rem + env(safe-area-inset-bottom));
+  --tab-bar-clearance: calc(3.5rem + env(safe-area-inset-bottom) + 22px);
+  /* The sticky app header, same reasoning: 3.5rem plus the TOP inset under viewport-fit=cover. */
+  --app-header-h:      calc(3.5rem + env(safe-area-inset-top));
+
   /* ── Structure axis token (docs/THEME.md, lib/theme/structure.ts) ────────────
      The STRUCTURE axis is the coarse COMPOSITION knob, orthogonal to the feel knobs
      above: the resolved generation maps (via structureFor) to one of simple /
@@ -231,7 +276,37 @@
   --text-display-h2:   calc(clamp(2.25rem, 4vw, 3rem) * var(--type-scale, 1));
   --text-display-h3:   calc(clamp(1.75rem, 3vw, 2.25rem) * var(--type-scale, 1));
   --text-display-card: calc(1.5rem * var(--type-scale, 1));
+  /* THE FIXED DISPLAY ROLE, for surfaces that have no viewport (ADR-947).
+     Every other display role above is a clamp with a `vw` term, and that is correct on
+     screen and wrong on paper: in print, viewport units resolve against the PAGE BOX, so
+     `--text-display-h3` on an A4 sheet at 12mm margins (≈186mm ≈ 703px of page area)
+     evaluates 3vw ≈ 21px, falls to its 1.75rem floor, and a wall-poster title prints 22%
+     smaller than the same markup shows on screen — silently, and differently again on
+     Letter or at a different margin. A poster title must not be a function of the medium.
+     1.5rem was already available (`display-card`) and is a card title, not a poster; this
+     is the ladder's next fixed step up, and equals `--text-display-h3`'s CEILING, i.e. the
+     size a display-h3 was always meant to reach when nothing was squeezing it.
+     Named for the artifact, exactly like `display-card`. */
+  --text-display-poster: calc(2.25rem * var(--type-scale, 1));
   --text-stat:         calc(clamp(3.5rem, 6vw, 4.5rem) * var(--type-scale, 1));
+  /* THE TWO FIXED STAT STEPS BELOW IT (ADR-947). `--text-stat` is a HERO numeral: one per
+     surface, 3.5rem floor, and its own `6vw` term. Two jobs the ladder had no answer for:
+
+       stat-md  A price or headline figure. Fixed BECAUSE it is fixed: a fluid role shrinks
+                the conversion-critical number on exactly the device most people convert on
+                (`display-h3` prints it ~22% smaller on a phone than on a desktop), which is
+                the one direction a price must never move on its own.
+       stat-sm  The same numeral where the row is dense — four KPIs abreast inside a page
+                header, or a long price label ("from $4.99/mo") that would wrap at stat-md. The
+                hero `stat` cannot serve either at any width: its 3.5rem FLOOR breaks the row.
+
+     Suffixes follow the component vocabulary already in use (StatCard's `size: md | sm | xs`,
+     where md is the larger), so the family reads stat > stat-md > stat-sm.
+     No `vw`, no breakpoint, and deliberately no media query: this app's root is 17px but a
+     media query resolves against 16px, so a breakpointed numeral changes size on TWO axes at
+     once. These change on neither. */
+  --text-stat-md:      calc(2.25rem * var(--type-scale, 1));
+  --text-stat-sm:      calc(1.875rem * var(--type-scale, 1));
 
   /* PAIRED LINE-HEIGHTS for the display roles — the same prerequisite the content
      roles needed, and for the same reason. `text-4xl` emits font-size AND
@@ -255,9 +330,44 @@
   --text-display-h3--line-height:   calc(2.5 / 2.25);
   --text-display-card--line-height: calc(2 / 1.5);
   --text-stat--line-height:         1;
+  /* The three roles added by ADR-947 take the SAME rule, and it is worth saying out loud why
+     they do not inherit `--text-stat`'s flat 1: that 1 is not a house style for numerals, it
+     is text-7xl's line-height. Tailwind only flattens to 1 from text-5xl up. All three of
+     these replace a text-3xl/text-4xl literal, which still carry ratios — so copying stat's 1
+     would tighten every adopting site by 11-20% and hide a leading change inside a size
+     change, which is the exact failure the rule above exists to prevent. */
+  --text-display-poster--line-height: calc(2.5 / 2.25);
+  --text-stat-md--line-height:        calc(2.5 / 2.25);
+  --text-stat-sm--line-height:        calc(2.25 / 1.875);
 
   /* Sans (Nunito) — body, in-app headings, UI. */
   --text-page-title:   calc(1.5rem * var(--type-scale, 1));
+  /* THE FLUID PAGE TITLE — ADR-947's "fourth decision", named there and not yet written up, so
+     this cites the parent rather than reserve a number (949 is already taken, by an unrelated
+     decision). It is the only role in this file that exists to retire a RESPONSIVE RAMP rather
+     than a single literal. Two sites — DetailTemplate's
+     `titleScale="display"` h1 and the event page's inline-edit input that mirrors it — carried
+     `text-page-title sm:text-3xl lg:text-4xl`: 1.5 → 1.875 → 2.25rem in two jumps. Nothing in the
+     vocabulary could take it. Every FIXED role is one size by definition, and the nearest fluid
+     one, `display-h3`, is wrong twice over: it floors at 1.75rem (so every Detail title would grow
+     ~17% on a phone, at the width where a long title is already wrapping) and it is an Anton
+     DISPLAY face against a bold sans h1.
+     So: the ramp's own floor and its own ceiling, interpolated instead of stepped.
+       floor 1.5rem   — identical to what the ramp already paints below `sm`.
+       ceiling 2.25rem — identical to what it already paints at `lg` and above.
+     `4vw` is chosen, not decorative. The floor releases at 1.5rem ÷ 4vw = 637.5px, which is the
+     `sm` breakpoint (640px) to within 2.5px — so BELOW sm this role is pixel-identical to the ramp
+     it replaces, and the phone rendering, the one the ramp's floor exists to protect, does not
+     move at all. It reaches the ceiling at 956px rather than waiting for `lg`, which is the point
+     of interpolating: the title arrives at full stature as the surface earns it instead of
+     snapping. Mid-band fidelity is close — at 768px it reads 1.81rem against the ramp's 1.875rem.
+     An integer `vw` also keeps it on the same construction as its neighbours (6/5/4/3vw above).
+     Note this is the OPPOSITE call to ADR-947's three roles, and deliberately: those replaced
+     literals that must NOT move with the medium (a price, a printed poster), this replaces one
+     whose entire intent was to move with it. `* var(--type-scale, 1)` wraps the clamp, so the
+     whole ramp still rides the generation axis — a `clamp()` outside that multiply would be the
+     one role the axis could not reach. */
+  --text-page-title-lg: calc(clamp(1.5rem, 4vw, 2.25rem) * var(--type-scale, 1));
   --text-lead:         calc(1.25rem * var(--type-scale, 1));
   /* PAIRED LINE-HEIGHTS — the thing that makes the literal->role sweep safe.
      Tailwind's text-* utilities emit font-size AND line-height (`--text-sm--line-height`
@@ -272,6 +382,11 @@
      NOT bundled here: it would move every baseline at the same moment as 7,282 mechanical
      edits, and destroy the one property that makes this sweep reviewable. */
   --text-page-title--line-height: calc(2 / 1.5);
+  /* Same rule as the display roles: the line-height of the literal AT THE CEILING, because the
+     ceiling is what the role replaces. The ramp topped out at `text-4xl`, so this is text-4xl's
+     ratio — desktop leading is unchanged and SIZE is the only thing the conversion moves. It is
+     also what `display-h3` and `stat-md` carry, for the same reason: they end at 2.25rem too. */
+  --text-page-title-lg--line-height: calc(2.5 / 2.25);
   --text-lead--line-height:       calc(1.75 / 1.25);
   --text-body-lg--line-height:    calc(1.75 / 1.125);
   --text-body--line-height:       calc(1.5 / 1);
@@ -346,7 +461,8 @@
   --color-marketing-canvas:  #F5EEE2;
   --color-surface:           #FFFFFF;
   --color-surface-elevated:  #F5F2EC;
-  --color-surface-post:      #F7F5F0;
+  /* Tracks the surface — see the note in :root. */
+  --color-surface-post:      var(--color-surface);
   --color-chrome:            #F2EFE8;
   --color-chrome-border:     #E5E0D6;
   /* The lock mirrors :root. */
@@ -360,7 +476,7 @@
   --color-primary-hover:     #CE8023;
   --color-primary-strong:    #9A5E12;
   --color-primary-bg:        #FBEFD9;
-  --color-text-on-primary:   #1A1206;
+  --color-text-on-primary:   #FFFFFF;
   --color-success:           #11827A;
   --color-success-bg:        #D7EFEA;
   --color-danger:            #BA3B30;
@@ -446,8 +562,9 @@
   --color-marketing-canvas:  #E3E8F1;
   --color-surface:           #FFFFFF;
   --color-surface-elevated:  #F4F6FB;
-  /* Cool-neutral counterpart of the DAWN post surface (a step darker than white). */
-  --color-surface-post:      #F0F2F6;
+  /* Tracks the surface — see the note in :root. Midnight's own step (#F0F2F6, a cool slate)
+     goes for the same reason DAWN's warm one did: the skin changes the hue, not the ladder. */
+  --color-surface-post:      var(--color-surface);
   /* Chrome band, cool side. */
   --color-chrome:            #E8ECF3;
   --color-chrome-border:     #D2D8E4;
@@ -469,7 +586,7 @@
   --color-primary-hover:     #C2741F;
   --color-primary-strong:    #8C5410;
   --color-primary-bg:        #F6E7CF;
-  --color-text-on-primary:   #1A1206;
+  --color-text-on-primary:   #FFFFFF;
 
   /* Focus follows primary, as DAWN does. */
   --color-focus-ring:        #B86A15;
@@ -490,8 +607,9 @@
   --color-marketing-canvas: #120E07;
   --color-surface:          #211A10;
   --color-surface-elevated: #2B2415;
-  /* Post cards keep the elevated timber surface in dark mode. */
-  --color-surface-post:     #2B2415;
+  /* Tracks the surface — see the note in :root. The timber step (#2B2415) goes with the
+     light one: a post is a card because of its border and lift, in either mode. */
+  --color-surface-post:     var(--color-surface);
   /* Chrome band, dark timber side. */
   --color-chrome:           #1C1710;
   --color-chrome-border:    #33291A;
@@ -518,7 +636,7 @@
   --color-primary-hover:    #F8C56F;
   --color-primary-strong:   #F2B14E;
   --color-primary-bg:       #30240F;
-  --color-text-on-primary:  #1A1206;
+  --color-text-on-primary:  #FFFFFF;
 
   /* Teal stays the calibrated secondary (pool-water accent); slightly richer
      tint so it reads clearly teal against the warm dark wood. Amber still leads. */
@@ -580,7 +698,8 @@
   --color-marketing-canvas: #080B12;
   --color-surface:          #161C28;
   --color-surface-elevated: #1F2736;
-  --color-surface-post:     #1F2736;
+  /* Tracks the surface — see the note in :root. */
+  --color-surface-post:     var(--color-surface);
   /* Chrome band, deep cool side. */
   --color-chrome:           #111721;
   --color-chrome-border:    #232D3D;
@@ -602,7 +721,7 @@
   --color-primary-hover:    #F6C16F;
   --color-primary-strong:   #F0AD4E;
   --color-primary-bg:       #2A2113;
-  --color-text-on-primary:  #1A1206;
+  --color-text-on-primary:  #FFFFFF;
 
   --color-focus-ring:       #F0AD4E;
 
@@ -1100,6 +1219,7 @@
   --color-primary-strong:   var(--color-primary-strong);
   --color-primary-bg:       var(--color-primary-bg);
   --color-on-primary:       var(--color-text-on-primary);
+  --color-on-rank:          var(--color-text-on-rank);
   --color-on-danger:        var(--color-text-on-danger);
   --color-on-warning:       var(--color-text-on-warning);
   --color-on-success:       var(--color-text-on-success);
@@ -1261,7 +1381,10 @@
   --text-display-h2:   var(--text-display-h2);
   --text-display-h3:   var(--text-display-h3);
   --text-display-card: var(--text-display-card);
+  --text-display-poster: var(--text-display-poster);
   --text-stat:         var(--text-stat);
+  --text-stat-md:      var(--text-stat-md);
+  --text-stat-sm:      var(--text-stat-sm);
 
   /* Same @theme requirement as the content roles: declared in :root alone, Tailwind v4
      leaves the utility emitting font-size ONLY. Verified by compiling, not by reading. */
@@ -1270,13 +1393,17 @@
   --text-display-h2--line-height:   var(--text-display-h2--line-height);
   --text-display-h3--line-height:   var(--text-display-h3--line-height);
   --text-display-card--line-height: var(--text-display-card--line-height);
+  --text-display-poster--line-height: var(--text-display-poster--line-height);
   --text-stat--line-height:         var(--text-stat--line-height);
+  --text-stat-md--line-height:      var(--text-stat-md--line-height);
+  --text-stat-sm--line-height:      var(--text-stat-sm--line-height);
   /* The `--text-{role}--line-height` companions MUST be bridged here, not just declared in
      :root. Tailwind v4 only pairs a line-height onto a `text-*` utility when it can see the
      companion inside @theme; declaring it in :root alone leaves the utility emitting
      font-size ONLY, which is exactly the silent line-height drop this sweep exists to avoid.
      Caught by compiling and comparing against the literal before touching a single call site. */
   --text-page-title--line-height: var(--text-page-title--line-height);
+  --text-page-title-lg--line-height: var(--text-page-title-lg--line-height);
   --text-lead--line-height:       var(--text-lead--line-height);
   --text-body-lg--line-height:    var(--text-body-lg--line-height);
   --text-body--line-height:       var(--text-body--line-height);
@@ -1286,6 +1413,12 @@
   --text-eyebrow--line-height:    var(--text-eyebrow--line-height);
 
   --text-page-title:   var(--text-page-title);
+  /* The fluid page title. Bridged for the same reason as every line above it — declared in :root
+     alone it reads perfectly and emits NOTHING, and unlike a colour there is no Tailwind default
+     under this name to mask the miss with a wrong-but-present value. `check:phantom` asserts the
+     class directly (its DECLARED list) so the omission fails on the declaration, not on the first
+     call site that reaches for it. */
+  --text-page-title-lg: var(--text-page-title-lg);
   --text-lead:         var(--text-lead);
   --text-card-title:   var(--text-card-title);
   --text-body-lg:      var(--text-body-lg);
@@ -1415,8 +1548,33 @@
 .mk-cont-soft { padding-block: calc(var(--space-section) / 2) var(--space-section); }
 /* And the same correction, automatically. Tag a section .mk-cream or .mk-ink and
    two of the SAME tone in a row halve the gap between them, while a tone CHANGE
-   keeps the full beat — which is what makes a tone change read as a change. */
-.mk-cream + .mk-cream, .mk-ink + .mk-ink { padding-top: calc(var(--space-section) / 2); }
+   keeps the full beat — which is what makes a tone change read as a change.
+
+   THE :where() GUARD IS LOAD-BEARING — do not "simplify" it away. This rule is an
+   INFERENCE (we guessed the tone repeated, so we shrink the gap); .mk-cont, .mk-arc
+   and .mk-cont-soft are DECLARATIONS (an author stated this section's top padding).
+   A declaration must beat an inference, and without the guard it does not: bare
+   `.mk-cream + .mk-cream` is (0,2,0) and outranks all three at (0,1,0), so the
+   automatic correction silently overwrites the deliberate one. The collision is
+   structural, not incidental — .mk-cont is *defined* as "continues at the same
+   tone", so it is the same-tone case by construction and this rule would fire on
+   100% of them, replacing its deliberate 0 with half a beat. .mk-arc has the same
+   problem the moment an arc rises out of cream rather than ink (the-lab's
+   Statement→arc pair is exactly that), and there the shoulder clearance is what
+   keeps the heading out of the curve.
+
+   Nobody has seen this because the rule has never fired: .mk-cream / .mk-ink have
+   zero adopters today, so the defect is latent and lands with the tone sweep, not
+   before it. Guard first, then adopt.
+
+   :where() and NOT :not() at full weight: :where() contributes ZERO specificity, so
+   the selector stays exactly (0,2,0) — unchanged from before the guard. That matters
+   in both directions. Plain `.mk-cream + .mk-cream:not(…)` would be (0,3,0) and would
+   start beating `.mk-hero-dock + .mk-band` below, stealing the fact dock's overhang
+   clearance the first time a dark hero is tagged .mk-ink (which is what DAWN's own
+   kit does). The guard must remove this rule from two fights without entering a third. */
+.mk-cream + .mk-cream:where(:not(.mk-cont, .mk-cont-soft, .mk-arc)),
+.mk-ink   + .mk-ink:where(:not(.mk-cont, .mk-cont-soft, .mk-arc)) { padding-top: calc(var(--space-section) / 2); }
 /* And the double-count correction. Two stacked sections EACH pay for the gap between
    them, so a padding that reads right at the end of a page reads as a hole in the
    middle of one. A section that is followed by another gives up a third of its
@@ -1478,6 +1636,20 @@
    `tap-target` consumer inherits it. */
 @media (pointer: coarse) {
   :root { --tap-min: 44px; }
+}
+
+@utility chisel {
+  /* The ultra-fine top highlight (owner, 2026-08-06). A one-pixel inset light edge along the top
+     of a filled control, so the deeper amber reads as a raised, chiselled face rather than a flat
+     slab. Paired with a whisper of shade along the bottom edge, which is what makes it read as
+     bevelled rather than merely lighter at the top.
+     🔴 IT IS A FINISH, NOT A FIX. A highlight cannot move a contrast ratio -- WCAG measures the
+     text colour against the fill behind it, and an inset shadow is neither. White reads on these
+     buttons because the FILL was darkened to 4.75:1 (see --color-primary above); this is what
+     stops that darker fill from looking heavy. Never reach for it to rescue a failing pair. */
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.20),
+    inset 0 -1px 0 0 rgb(0 0 0 / 0.10);
 }
 
 @utility tap-target {

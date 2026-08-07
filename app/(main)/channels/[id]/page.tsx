@@ -135,7 +135,7 @@ async function ForumPreview({
 
   if (posts.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-3">
+      <div className="rounded-card border border-dashed border-border bg-surface/60 px-4 py-3">
         <p className="text-meta text-muted leading-relaxed">
           {!myProfileId
             ? 'The forum is where people tuned in talk shop. Sign in to read and post.'
@@ -603,7 +603,7 @@ export default async function ChannelPage({
                 />
               ) : (
                 myProfileId && (
-                  <div className="mb-4 rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-3">
+                  <div className="mb-4 rounded-card border border-dashed border-border bg-surface/60 px-4 py-3">
                     <p className="text-meta text-muted leading-relaxed">
                       Tune in to post and follow this forum from your feed.
                     </p>

@@ -5,6 +5,7 @@ import { Sparkles, Heart, Check, ShieldCheck } from 'lucide-react'
 import { saveMatchPrefsAction } from '@/app/(main)/settings/connections/match-actions'
 import { isError } from '@/lib/action-result'
 import { sunSign, SIGN_INFO } from '@/lib/astrology/signs'
+import { Input } from '@/components/ui/field'
 
 // Match preferences (Resonance Feed Phase 5, ADR-419). Opt into the astrology signal
 // (enter a birth date) and romance matching. Everything is OFF by default and saves on
@@ -68,7 +69,7 @@ export function MatchPrefsForm({
             Your birth date
           </label>
           <div className="mt-1.5 flex items-center gap-3">
-            <input
+            <Input
               id="birthDate"
               type="date"
               value={birthDate}
@@ -76,7 +77,7 @@ export function MatchPrefsForm({
               min="1900-01-01"
               onChange={(e) => setBirthDate(e.target.value)}
               onBlur={() => persist({ birthDate })}
-              className="rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text"
+              className="!w-auto !py-1.5"
             />
             {sign && (
               <span className="text-body-sm text-muted">

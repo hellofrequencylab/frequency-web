@@ -53,6 +53,40 @@ const IGNORE = new Set([
   'rounded-end',
 ])
 
+/** Classes the design system PROMISES, checked whether or not a call site writes one today.
+ *
+ *  The scan below is consumer-driven: it can only test a class some file already writes. That
+ *  is the right default (it is how a typo gets caught) but it has a blind spot at exactly the
+ *  moment a role is born. A role declared in `:root` and never bridged into `@theme inline`
+ *  generates NO utility — and with zero consumers there is no string to scan, so this gate
+ *  stays green and the first person to reach for the role gets nothing on the page.
+ *
+ *  So the display/stat roles are asserted directly. Listing one here is the claim "this class
+ *  exists"; if the bridge line is missing or the token is renamed, the gate fails on the
+ *  DECLARATION rather than waiting for a consumer to discover it. (check:bridge cannot cover
+ *  this: it only fires on names Tailwind ALSO defines, and `--text-stat-sm` is ours alone.)
+ *
+ *  Consumers are still the thing that catches typos — `text-stat-smal` is scanned like any
+ *  other string and emits no CSS. The two halves check opposite directions of the same
+ *  contract: the source must not write a class the sheet lacks, and the sheet must not lack
+ *  a class the design system published. */
+const DECLARED = [
+  'text-display-hero', 'text-display-h1', 'text-display-h2', 'text-display-h3',
+  'text-display-card',
+  // ADR-947 — the three roles a sweep proved were missing: a fixed poster/print display size
+  // (no `vw`, because print resolves viewport units against the page box), and the two fixed
+  // stat steps under the fluid hero `stat` (a price that must not shrink, a KPI that must fit
+  // four abreast in a header).
+  'text-display-poster',
+  'text-stat', 'text-stat-md', 'text-stat-sm',
+  // The fluid page title (ADR-947's "fourth decision") — the role that retires a responsive RAMP
+  // rather than a literal. Asserted here for the reason this list exists: it is a `clamp()` under
+  // a name Tailwind has no default for, so an unbridged declaration emits nothing and reads fine.
+  'text-page-title-lg',
+  'text-page-title', 'text-lead', 'text-card-title',
+  'text-body-lg', 'text-body', 'text-body-sm', 'text-meta', 'text-eyebrow',
+]
+
 function walk(dir, out = []) {
   for (const entry of readdirSync(dir)) {
     if (entry === 'node_modules' || entry.startsWith('.')) continue
@@ -88,6 +122,8 @@ const compiler = await compile(css, {
     return { path: p, base: dirname(p), content: readFileSync(p, 'utf8') }
   },
 })
+
+for (const c of DECLARED) if (!seen.has(c)) seen.set(c, 'app/globals.css (declared role, no call site yet)')
 
 const candidates = [...seen.keys()].sort()
 const out = compiler.build(candidates)

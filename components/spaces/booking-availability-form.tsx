@@ -4,11 +4,12 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, Label, fieldClasses } from '@/components/ui/field'
+import { Input, Label } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { setSpaceAvailability } from '@/lib/spaces/booking-actions'
 import type { AvailabilityWindow } from '@/lib/spaces/booking'
-import { cn } from '@/lib/utils'
+import { IconButton } from '@/components/ui/icon-button'
 
 // OWNER AVAILABILITY EDITOR (client). The Practitioner sets one or more weekly windows (weekday,
 // start, end, slot length) plus the Space's timezone, saved through the canEditProfile-gated
@@ -136,7 +137,7 @@ export function BookingAvailabilityForm({
 
   return (
     <form
-      className="space-y-6 rounded-2xl border border-border bg-surface p-5 lift-1 sm:p-6"
+      className="space-y-6 rounded-card border border-border bg-surface p-5 lift-1 sm:p-6"
       onSubmit={(e) => {
         e.preventDefault()
         if (!pending) save()
@@ -161,69 +162,68 @@ export function BookingAvailabilityForm({
       <div className="space-y-3">
         <Label className="font-semibold">Weekly windows</Label>
         {rows.length === 0 && (
-          <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
+          <p className="rounded-card border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
             No windows yet. Add one to start taking bookings.
           </p>
         )}
         {rows.map((r, i) => (
           <div
             key={i}
-            className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-surface-elevated/40 p-3"
+            className="flex flex-wrap items-end gap-3 rounded-card border border-border bg-surface-elevated/40 p-3"
           >
             <label className="flex flex-col gap-1">
               <span className="text-meta font-medium text-muted">Day</span>
-              <select
+              <Select
                 value={r.weekday}
                 onChange={(e) => update(i, { weekday: Number(e.target.value) })}
-                className={cn(fieldClasses, 'w-36')}
               >
                 {WEEKDAYS.map((d) => (
                   <option key={d.value} value={d.value}>
                     {d.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-meta font-medium text-muted">Start</span>
-              <input
+              <Input
                 type="time"
                 value={r.start}
                 onChange={(e) => update(i, { start: e.target.value })}
-                className={cn(fieldClasses, 'w-32')}
+                className="w-32"
               />
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-meta font-medium text-muted">End</span>
-              <input
+              <Input
                 type="time"
                 value={r.end}
                 onChange={(e) => update(i, { end: e.target.value })}
-                className={cn(fieldClasses, 'w-32')}
+                className="w-32"
               />
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-meta font-medium text-muted">Slot length</span>
-              <select
+              <Select
                 value={r.slotMinutes}
                 onChange={(e) => update(i, { slotMinutes: Number(e.target.value) })}
-                className={cn(fieldClasses, 'w-32')}
               >
                 {SLOT_LENGTHS.map((m) => (
                   <option key={m} value={m}>
                     {m} min
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
-            <button
-              type="button"
+            <IconButton
+              variant="bordered"
+              tone="danger"
+              label="Remove this window"
               onClick={() => removeRow(i)}
-              aria-label="Remove this window"
-              className="mb-1 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-danger/40 hover:text-danger"
+              className="mb-1"
             >
               <Trash2 className="h-4 w-4" aria-hidden />
-            </button>
+            </IconButton>
           </div>
         ))}
         <button
@@ -236,7 +236,7 @@ export function BookingAvailabilityForm({
       </div>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+        <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}

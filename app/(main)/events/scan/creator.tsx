@@ -298,7 +298,7 @@ export function Creator({ userId }: { userId: string }) {
   // ── Scanning / building: calm progress ──────────────────────────────────────
   if (stage === 'scanning' || stage === 'building') {
     return (
-      <div className="rounded-2xl border border-border bg-surface p-10 text-center">
+      <div className="rounded-card border border-border bg-surface p-10 text-center">
         <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary-strong" />
         <p className="mt-4 text-body-sm font-medium text-text">
           {stage === 'scanning' ? 'Reading the poster' : 'Building your draft'}
@@ -331,7 +331,7 @@ export function Creator({ userId }: { userId: string }) {
             <button
               type="button"
               onClick={retake}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               <RefreshCw className="h-4 w-4" /> Retake
             </button>
@@ -339,7 +339,7 @@ export function Creator({ userId }: { userId: string }) {
         )}
 
         {previewSrc && (
-          <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+          <div className="overflow-hidden rounded-card border border-border bg-surface">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={previewSrc} alt="Poster preview" className="max-h-[28rem] w-full object-contain" />
             {deskewedUrl && (
@@ -368,7 +368,7 @@ export function Creator({ userId }: { userId: string }) {
         )}
 
         {/* What Vera read — a quick sanity check before the editor. */}
-        <div className="rounded-2xl border border-border bg-surface-elevated/40 p-4">
+        <div className="rounded-card border border-border bg-surface-elevated/40 p-4">
           <p className="text-body-sm font-bold text-text">{extraction.title || 'Untitled event'}</p>
           <div className="mt-1.5 space-y-1 text-meta text-muted">
             {extraction.startsAt && (
@@ -425,14 +425,14 @@ export function Creator({ userId }: { userId: string }) {
       {msg && <p className={`rounded-lg border px-3 py-2 text-body-sm ${banner}`}>{msg.text}</p>}
 
       {/* The capture tip, up front — a good shot saves a retake. */}
-      <div className="flex items-start gap-2.5 rounded-2xl border border-border bg-surface-elevated/40 p-3">
+      <div className="flex items-start gap-2.5 rounded-card border border-border bg-surface-elevated/40 p-3">
         <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" />
         <p className="text-body-sm text-muted">
           Get the whole poster in frame, squared up, no glare.
         </p>
       </div>
 
-      <div className="rounded-2xl border border-dashed border-border-strong bg-surface p-6 text-center">
+      <div className="rounded-card border border-dashed border-border-strong bg-surface p-6 text-center">
         <ScanLine className="mx-auto h-8 w-8 text-primary-strong" />
         <p className="mt-3 text-body-sm font-medium text-text">Snap the poster</p>
         <p className="mt-1 text-meta text-subtle">
@@ -467,7 +467,7 @@ export function Creator({ userId }: { userId: string }) {
                 onClick={() => removeFile(i)}
                 aria-label={`Remove shot ${i + 1}`}
                 // KEEP the black/white pair: A scrim chip painted on a photo thumbnail, not on a themed surface, so the monochrome pair stays.
-                className="absolute right-1 top-1 rounded-pill bg-black/55 p-0.5 text-white transition-colors hover:bg-black/70"
+                className="absolute right-1 top-1 rounded-pill bg-ink/55 p-0.5 text-on-ink transition-colors hover:bg-ink/70"
               >
                 <X className="h-3 w-3" />
               </button>

@@ -14,8 +14,10 @@ import { getInitials, cn } from '@/lib/utils'
 //     of either polarity stays visible in BOTH modes. The halo has no effect on an opaque photo.
 // Fail-safe: an unknown or extensionless URL takes the logo path (contain — never crops), and a missing logo
 // renders the neutral initials chip, never a crash. Query strings (?t=…) are tolerated.
-// `rounded-card` (was rounded-2xl, the same 1rem at baseline): the Space page theme shapes the chip
-// (ADR-578); the [data-space-theme] baseline pin keeps `bold` at exactly today's radius.
+// `rounded-card` (was rounded-2xl): the Space page theme shapes the chip (ADR-578). NOT
+// value-identical against this repo's ladder — the 2026-08-04 port moved rounded-2xl to 24px
+// while --radius-card stayed 1rem. The [data-space-theme] baseline pin is what keeps `bold`
+// at exactly today's radius.
 export function BrandAnchor({ name, logoUrl }: { name: string; logoUrl: string | null }) {
   if (logoUrl) {
     const isOpaquePhoto = /\.(jpe?g|jfif)(\?|$)/i.test(logoUrl)

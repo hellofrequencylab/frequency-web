@@ -8,6 +8,7 @@ import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { Button } from '@/components/ui/button'
 import type { ContactCore } from '@/lib/crm/person'
 import { setContactConsent, bulkSetContactConsent } from './actions'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const CONSENT_TONE: Record<string, StatusTone> = {
   subscribed: 'success',
@@ -69,22 +70,18 @@ export function ContactsTable({ contacts }: { contacts: ContactCore[] }) {
       key: 'select',
       width: '2.5rem',
       header: (
-        <input
-          type="checkbox"
+        <Checkbox
           aria-label="Select all contacts"
           checked={allSelected}
           onChange={toggleAll}
-          className="h-4 w-4 cursor-pointer rounded border-border-strong accent-primary"
         />
       ),
       render: (c) => (
-        <input
-          type="checkbox"
+        <Checkbox
           aria-label={`Select ${c.email}`}
           checked={selected.has(c.id)}
           onChange={() => toggleOne(c.id)}
           onClick={(e) => e.stopPropagation()}
-          className="h-4 w-4 cursor-pointer rounded border-border-strong accent-primary"
         />
       ),
     },

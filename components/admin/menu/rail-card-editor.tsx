@@ -2,11 +2,13 @@
 
 import { useState, useTransition } from 'react'
 import { ChevronDown, ChevronRight, Trash2 } from 'lucide-react'
+import { Select } from '@/components/ui/select'
 import type { ResolvedRailCard } from '@/lib/menus/types'
 import { updateRailCard, deleteRailCard, type UpdateRailCardPatch } from '@/lib/menus/actions'
 import { LinkTargetField } from './link-target-field'
 import { RoleModeMatrix } from './role-mode-matrix'
 import { OnOffToggle } from './on-off-toggle'
+import { Input, Textarea } from '@/components/ui/field'
 
 // One featured rail card editor: title, body, href, cta, side, an on/off visibility
 // toggle (the global show/hide, point 6), and the per-role matrix. Like the "Find your
@@ -113,21 +115,21 @@ export function RailCardEditor({
               <label className="mb-1 block text-meta font-semibold text-subtle" htmlFor={`ct-${card.id}`}>
                 Title
               </label>
-              <input
+              <Input
                 id={`ct-${card.id}`}
                 type="text"
                 value={title}
                 disabled={isPending}
                 onChange={(e) => setTitle(e.target.value)}
                 onBlur={() => title !== card.title && title && save({ title }, { title })}
-                className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                className="!px-2.5 !py-1.5"
               />
             </div>
             <div className="min-w-0">
               <label className="mb-1 block text-meta font-semibold text-subtle" htmlFor={`cs-${card.id}`}>
                 Side
               </label>
-              <select
+              <Select
                 id={`cs-${card.id}`}
                 value={card.side}
                 disabled={isPending}
@@ -137,11 +139,11 @@ export function RailCardEditor({
                     { side: e.target.value as 'left' | 'right' },
                   )
                 }
-                className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
-              >
-                <option value="left">Left</option>
-                <option value="right">Right</option>
-              </select>
+                options={[
+                  { value: 'left', label: 'Left' },
+                  { value: 'right', label: 'Right' },
+                ]}
+              />
             </div>
           </div>
 
@@ -149,14 +151,14 @@ export function RailCardEditor({
             <label className="mb-1 block text-meta font-semibold text-subtle" htmlFor={`cb-${card.id}`}>
               Body
             </label>
-            <textarea
+            <Textarea
               id={`cb-${card.id}`}
               value={body}
               rows={2}
               disabled={isPending}
               onChange={(e) => setBody(e.target.value)}
               onBlur={() => body !== card.body && body && save({ body }, { body })}
-              className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+              className="!px-2.5 !py-1.5"
             />
           </div>
 
@@ -166,7 +168,7 @@ export function RailCardEditor({
               <label className="mb-1 block text-meta font-semibold text-subtle" htmlFor={`cc-${card.id}`}>
                 Call to action
               </label>
-              <input
+              <Input
                 id={`cc-${card.id}`}
                 type="text"
                 value={cta}
@@ -176,7 +178,7 @@ export function RailCardEditor({
                 onBlur={() =>
                   cta !== (card.cta ?? '') && save({ cta: cta || null }, { cta: cta || undefined })
                 }
-                className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                className="!px-2.5 !py-1.5"
               />
             </div>
           </div>

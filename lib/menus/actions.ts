@@ -6,6 +6,7 @@ import { isJanitor } from '@/lib/core/roles'
 import { menuDb } from './db'
 import { defaultMenu, DEFAULT_MENU_SETTINGS, isPinnedRailItem } from './defaults'
 import { getAdminMenu } from './read'
+import { canonRejection } from './canon'
 import { STAFF_DOMAINS, ACCESS_LEVELS, type StaffDomain, type Access } from '@/lib/core/staff-roles'
 import type {
   MenuAccess,
@@ -30,6 +31,12 @@ import type {
 // rejected before they ever reach the database.
 
 type Result = { ok: true } | { ok: false; error: string }
+
+// The naming canon is LOCKED (docs/NAMING.md), and the live header menu still said "Interests"
+// for /discover/topics — a word that canon retires by name. It got there through this file:
+// every code path respects the canon, but a label text input has no opinion, and
+// scripts/check-canon.mjs scans `content/**` in the repo, which a database row is not.
+// So the guard lives on the write. See lib/menus/canon.ts for the term list.
 type EnsureResult = { ok: true; id: string } | { ok: false; error: string }
 
 const SURFACE_KEYS: readonly MenuSurfaceKey[] = ['header', 'left', 'footer', 'profile', 'admin_header']
@@ -561,6 +568,10 @@ export async function createCategory(input: CreateCategoryInput): Promise<Ensure
   try {
     await requireJanitor()
     if (!input?.menuId) return { ok: false, error: 'Missing menu id' }
+    if (input.label) {
+      const rejection = canonRejection(input.label)
+      if (rejection) return { ok: false, error: rejection }
+    }
     const db = adminDb()
     const { data, error } = await db
       .from<{ id: string }>('menu_categories')
@@ -609,6 +620,10 @@ export async function updateCategory(id: string, patch: UpdateCategoryPatch): Pr
     await requireJanitor()
     if (!id) return { ok: false, error: 'Missing category id' }
     const update: Record<string, unknown> = {}
+    if (patch.label) {
+      const rejection = canonRejection(patch.label)
+      if (rejection) return { ok: false, error: rejection }
+    }
     if ('label' in patch) update.label = patch.label ?? null
     if (patch.position != null) update.position = Math.trunc(patch.position)
     if ('parentId' in patch) update.parent_id = patch.parentId ?? null
@@ -674,6 +689,8 @@ export async function createItem(input: CreateItemInput): Promise<EnsureResult> 
     await requireJanitor()
     if (!input?.menuId) return { ok: false, error: 'Missing menu id' }
     if (!input.label || !input.href) return { ok: false, error: 'Label and href are required' }
+    const createCanon = canonRejection(input.label)
+    if (createCanon) return { ok: false, error: createCanon }
     if (input.mode != null && !isMode(input.mode)) return { ok: false, error: 'Invalid mode' }
     if (input.minAccess != null && !isAccess(input.minAccess))
       return { ok: false, error: 'Invalid min access' }
@@ -738,6 +755,10 @@ export async function updateItem(id: string, patch: UpdateItemPatch): Promise<Re
     if (patch.mode != null && !isMode(patch.mode)) return { ok: false, error: 'Invalid mode' }
     if (patch.minAccess != null && !isAccess(patch.minAccess))
       return { ok: false, error: 'Invalid min access' }
+    if (patch.label != null) {
+      const rejection = canonRejection(patch.label)
+      if (rejection) return { ok: false, error: rejection }
+    }
 
     const update: Record<string, unknown> = {}
     if (patch.label != null) update.label = patch.label

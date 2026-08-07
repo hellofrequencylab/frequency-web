@@ -7,6 +7,7 @@ import { parseSequenceDef } from '@/lib/onboarding/sequence-schema'
 import { DEFAULT_ONBOARDING_SEQUENCE } from '@/lib/onboarding/default-sequence'
 import { PERSONAS, isPersonaId } from '@/lib/onboarding/personas'
 import { SequenceEditor, NewSequenceButton } from './sequence-editor'
+import { Input } from '@/components/ui/field'
 
 // The Loom Studio "Onboarding flows" lane (docs/LOOM-PLATFORM.md §3). Rendered when ?lane=sequence.
 // A Server Component: it lists the managed onboarding flows (library_assets kind='sequence') and, with
@@ -70,12 +71,13 @@ export async function SequenceLaneView({ q = '', editId = '' }: { q?: string; ed
           </div>
           <form className="flex flex-1 items-center justify-end gap-2" action="/admin/library" method="get">
             <input type="hidden" name="lane" value="sequence" />
-            <input
+            <Input
               type="search"
               name="q"
+              aria-label="Search flows"
               defaultValue={q}
               placeholder="Search flows…"
-              className="min-w-[180px] flex-1 rounded-2xl border border-border bg-surface px-3 py-2 text-body-sm sm:max-w-xs sm:flex-none"
+              className="min-w-[180px] flex-1 px-3 py-2 sm:max-w-xs sm:flex-none"
             />
             <button type="submit" className="rounded-2xl border border-border-strong px-4 py-2 text-body-sm font-semibold text-text hover:bg-surface-elevated">
               Apply

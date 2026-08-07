@@ -61,7 +61,7 @@ export function BookingServiceMember({
           <ArrowLeft className="h-4 w-4" aria-hidden /> All services
         </button>
 
-        <div className="rounded-2xl border border-border bg-surface-elevated/40 px-4 py-3">
+        <div className="rounded-card border border-border bg-surface-elevated/40 px-4 py-3">
           <p className="text-body-sm font-bold text-text">{selected.name}</p>
           <p className="flex items-center gap-1.5 text-meta text-muted">
             <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -104,7 +104,7 @@ export function BookingServiceMember({
             key={service.id}
             type="button"
             onClick={() => pick(service)}
-            className="flex flex-col items-start gap-1 rounded-2xl border border-border bg-surface p-4 text-left lift-1 transition-colors hover:border-border-strong hover:bg-surface-elevated"
+            className="flex flex-col items-start gap-1 rounded-card border border-border bg-surface p-4 text-left lift-1 transition-colors hover:border-border-strong hover:bg-surface-elevated"
           >
             <span className="text-body-sm font-bold text-text">{service.name}</span>
             <span className="flex items-center gap-1.5 text-meta font-semibold text-muted">

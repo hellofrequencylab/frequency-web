@@ -31,18 +31,25 @@ const HERO_IMAGE = '/images/site/group-of-friends.jpg'
 const GATHER_IMAGE = '/images/site/breathwork-circle.jpg'
 const STACK_IMAGE = '/images/site/community-1.jpg'
 
+// Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
+const OG_TITLE = 'Tools for community builders · Frequency'
+const OG_DESCRIPTION =
+  'Membership, gatherings, a shared feed, and recognition: the four tools every community builder needs, and how Frequency Labs covers them in one place.'
+
 export function generateMetadata(): Metadata {
   return {
     title: TITLE,
     description: DESCRIPTION,
     alternates: { canonical: '/tools-for-community-builders' },
     openGraph: {
-      title: 'Tools for community builders · Frequency',
-      description:
-        'Membership, gatherings, a shared feed, and recognition: the four tools every community builder needs, and how Frequency Labs covers them in one place.',
+      title: OG_TITLE,
+      description: OG_DESCRIPTION,
       url: '/tools-for-community-builders',
       images: [{ url: HERO_IMAGE }],
     },
+    // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+    // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+    twitter: { card: 'summary_large_image', title: OG_TITLE, description: OG_DESCRIPTION },
   }
 }
 
@@ -110,7 +117,7 @@ export default function ToolsForCommunityBuildersPage() {
       </PhotoHero>
 
       {/* Answer-first opening: the direct answer in the first two sentences. */}
-      <Section tone="canvas" pad="pt-16 pb-16 sm:pt-20 sm:pb-20">
+      <Section tone="canvas">
         <Lead>
           A community builder needs four tools: a way in so new people can find you,
           a place to gather on a rhythm, a shared feed so the group stays connected
@@ -133,7 +140,7 @@ export default function ToolsForCommunityBuildersPage() {
 
       {/* One concept per section. Question H2 in the reader's words, answer first. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           A way in: how do new people find you?
         </h2>
         <Lead>
@@ -150,7 +157,7 @@ export default function ToolsForCommunityBuildersPage() {
       </Section>
 
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           A place to gather: what holds the group together?
         </h2>
         <Lead>
@@ -190,7 +197,7 @@ export default function ToolsForCommunityBuildersPage() {
       </ZigZag>
 
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Recognition: what brings people back?
         </h2>
         <Lead>
@@ -238,7 +245,7 @@ export default function ToolsForCommunityBuildersPage() {
 
       {/* Soft CTA into the product. Two honest doors: get the toolkit, or see the venue. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Where to start
         </h2>
         <Body>
@@ -259,7 +266,7 @@ export default function ToolsForCommunityBuildersPage() {
 
       {/* FAQ: answer-first pairs, mirrored into the FAQPage schema above. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-7">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-7">
           Common questions
         </h2>
         <FaqList items={FAQ} />

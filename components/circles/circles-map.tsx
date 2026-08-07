@@ -10,7 +10,7 @@ import { projectStarterCircles, type StarterSeed } from '@/lib/circles/starter-p
 // maplibre must not run on the server — load the map client-side only.
 const CircleMap = dynamic(() => import('./circle-map'), {
   ssr: false,
-  loading: () => <div className="h-full w-full animate-pulse rounded-2xl border border-border bg-surface-elevated" />,
+  loading: () => <div className="h-full w-full animate-pulse rounded-card border border-border bg-surface-elevated" />,
 })
 
 type Ctx = {
@@ -104,7 +104,7 @@ export function FindNearMeButton({ className }: { className?: string }) {
       type="button"
       onClick={find}
       disabled={loading}
-      className={className ?? 'inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:border-primary-bg hover:text-primary-strong disabled:opacity-60'}
+      className={className ?? 'inline-flex items-center gap-2 rounded-control border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:border-primary-bg hover:text-primary-strong disabled:opacity-60'}
     >
       <LocateFixed className="h-4 w-4" />
       {loading ? 'Locating…' : 'Find circles near me'}
@@ -118,16 +118,16 @@ export function MapBanner() {
   const [mapKey, setMapKey] = useState(0)
   if (!ctx || (ctx.circles.length === 0 && ctx.starters.length === 0) || !ctx.open) return null
 
-  const pill = 'inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:border-primary-bg hover:text-text'
+  const pill = 'inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:border-primary-bg hover:text-text'
 
   return (
     <div className="mb-8">
-      <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border lift-1">
+      <div className="relative aspect-video w-full overflow-hidden rounded-card border border-border lift-1">
         <CircleMap key={mapKey} circles={ctx.circles} starters={ctx.starters} interactive center={ctx.center} className="h-full w-full" />
         <button
           type="button"
           onClick={() => ctx.setOpen(false)}
-          className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-lg bg-surface/95 px-3 py-1.5 text-body-sm font-semibold text-text lift-1 transition-colors hover:bg-surface"
+          className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-control bg-surface/95 px-3 py-1.5 text-body-sm font-semibold text-text lift-1 transition-colors hover:bg-surface"
         >
           <X className="h-4 w-4" /> Close
         </button>

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Check, Pencil } from 'lucide-react'
 import { AdminModuleCard } from '@/components/admin/admin-module-card'
 import { InlineCover } from '@/components/admin/inline/inline-cover'
-import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Textarea, Input, labelClasses } from '@/components/ui/field'
 import {
   getEditablePageContent,
   savePageContent,
@@ -73,12 +73,11 @@ export function PageContentModule() {
         </div>
         <label className="block space-y-1">
           <span className={labelClasses}>Description</span>
-          <textarea
+          <Textarea
             name="description"
             defaultValue={data.description}
             rows={2}
-            disabled={pending}
-            className={`${fieldClasses} resize-none`}
+            disabled={pending} className="resize-none"
             placeholder="Default description"
           />
         </label>
@@ -96,21 +95,19 @@ export function PageContentModule() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="block space-y-1">
             <span className={labelClasses}>CTA label</span>
-            <input
+            <Input
               name="cta_label"
               defaultValue={data.ctaLabel}
               disabled={pending}
-              className={fieldClasses}
               placeholder="e.g. Join the next event"
             />
           </label>
           <label className="block space-y-1">
             <span className={labelClasses}>CTA link</span>
-            <input
+            <Input
               name="cta_href"
               defaultValue={data.ctaHref}
               disabled={pending}
-              className={fieldClasses}
               placeholder="/events or https://…"
             />
           </label>

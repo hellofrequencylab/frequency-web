@@ -152,7 +152,7 @@ export async function BillingBody({ slug }: { slug: string }) {
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
 
       <div className="space-y-8">
-        <div className="rounded-2xl border border-border bg-surface px-5 py-4 lift-1">
+        <div className="rounded-card border border-border bg-surface px-5 py-4 lift-1">
           <p className="text-meta font-semibold uppercase tracking-widest text-subtle">Current plan</p>
           <p className="mt-1 text-body-lg font-bold text-text">{SPACE_PLAN_LABEL[currentPlan]}</p>
         </div>
@@ -161,7 +161,7 @@ export async function BillingBody({ slug }: { slug: string }) {
             recorded. Shows the plan, the locked rate, how far the space is paid, and how it settles.
             No self-serve controls on purpose: the crew manages the deal. */}
         {manualAgreement && (
-          <div className="rounded-2xl border border-border bg-surface px-5 py-4 lift-1">
+          <div className="rounded-card border border-border bg-surface px-5 py-4 lift-1">
             <p className="text-meta font-semibold uppercase tracking-widest text-subtle">Billing agreement</p>
             <p className="mt-1 text-body-sm font-semibold text-text">
               {SPACE_PLAN_LABEL[asSpacePlan(manualAgreement.plan)]} plan, billed{' '}
@@ -300,7 +300,7 @@ export async function BillingBody({ slug }: { slug: string }) {
             at settings/billing/verify: the owner submits their EIN + legal name, an operator reviews it,
             and approval grants the Non Profit plan. We show the current request status if one exists,
             otherwise the "get verified" invite. */}
-        <div className="rounded-2xl border border-border bg-surface px-5 py-4">
+        <div className="rounded-card border border-border bg-surface px-5 py-4">
           <p className="text-body-sm font-semibold text-text">Non Profit</p>
           {verification?.status === 'verified' ? (
             <p className="mt-0.5 text-meta leading-relaxed text-muted">

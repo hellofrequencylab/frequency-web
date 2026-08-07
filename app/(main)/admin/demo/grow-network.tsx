@@ -4,6 +4,8 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Plus, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { Banner } from '@/components/admin/status'
 import { addMembersToCircle, addCircle } from './actions'
 
@@ -39,8 +41,7 @@ export function GrowNetwork({ circles, channels }: { circles: DemoCircle[]; chan
     })
   }
 
-  const field =
-    'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text focus:border-border-strong focus:outline-none'
+  const field = 'px-2.5 py-1.5'
 
   return (
     <div className="space-y-3">
@@ -55,10 +56,10 @@ export function GrowNetwork({ circles, channels }: { circles: DemoCircle[]; chan
           <div className="mt-4 flex flex-wrap items-end gap-2">
             <label className="flex flex-col gap-1 text-meta text-muted">
               Add members to
-              <select
+              <Select
                 value={memberCircle}
                 onChange={(e) => setMemberCircle(e.target.value)}
-                className={`min-w-44 ${field}`}
+                wrapperClassName="min-w-44"
               >
                 {circles.length === 0 && <option value="">No demo circles yet</option>}
                 {circles.map((c) => (
@@ -66,11 +67,11 @@ export function GrowNetwork({ circles, channels }: { circles: DemoCircle[]; chan
                     {c.name} ({c.memberCount})
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label className="flex flex-col gap-1 text-meta text-muted">
               How many
-              <input
+              <Input
                 type="number"
                 min={1}
                 max={50}
@@ -102,7 +103,7 @@ export function GrowNetwork({ circles, channels }: { circles: DemoCircle[]; chan
           <div className="mt-4 flex flex-wrap items-end gap-2">
             <label className="flex flex-col gap-1 text-meta text-muted">
               New circle name
-              <input
+              <Input
                 value={circleName}
                 onChange={(e) => setCircleName(e.target.value)}
                 placeholder="e.g. Cardiff Trail Runners"
@@ -111,21 +112,21 @@ export function GrowNetwork({ circles, channels }: { circles: DemoCircle[]; chan
             </label>
             <label className="flex flex-col gap-1 text-meta text-muted">
               Channel
-              <select value={circleChannel} onChange={(e) => setCircleChannel(e.target.value)} className={field}>
+              <Select value={circleChannel} onChange={(e) => setCircleChannel(e.target.value)}>
                 {channels.map((c) => (
                   <option key={c.slug} value={c.slug}>
                     {c.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label className="flex flex-col gap-1 text-meta text-muted">
               City
-              <input value={circleCity} onChange={(e) => setCircleCity(e.target.value)} className={`w-32 ${field}`} />
+              <Input value={circleCity} onChange={(e) => setCircleCity(e.target.value)} className={`w-32 ${field}`} />
             </label>
             <label className="flex flex-col gap-1 text-meta text-muted">
               Size
-              <input
+              <Input
                 type="number"
                 min={6}
                 max={49}

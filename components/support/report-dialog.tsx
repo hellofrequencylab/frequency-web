@@ -14,6 +14,7 @@ import { TYPE_LABELS, type SupportContext, type TicketType } from '@/lib/support
 import type { HelpCitation } from '@/lib/ai/help-rag'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
+import { Textarea } from '@/components/ui/field'
 
 const TYPE_META: { key: TicketType; icon: typeof Bug }[] = [
   { key: 'bug', icon: Bug },
@@ -135,7 +136,7 @@ export function ReportDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-stretch justify-center bg-black/60 backdrop-blur-sm sm:items-center sm:p-4"
+      className="fixed inset-0 z-[80] flex items-stretch justify-center bg-ink/60 backdrop-blur-sm sm:items-center sm:p-4"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
@@ -216,12 +217,12 @@ export function ReportDialog({
 
             <label className="mt-3 block">
               <span className="mb-1 block text-meta font-medium text-subtle">What happened?</span>
-              <textarea
+              <Textarea
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 rows={4}
                 placeholder="What you were doing, what you expected, and what happened instead."
-                className="w-full resize-none rounded-control border border-border bg-surface px-3 py-2 text-body-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+                className="resize-none leading-relaxed"
               />
             </label>
 
@@ -238,7 +239,7 @@ export function ReportDialog({
                 <div className="relative overflow-hidden rounded-card border border-border">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={safeUploadPreviewSrc(shot?.url) ?? undefined} alt="Attached screenshot" className="max-h-48 w-full object-contain bg-surface-elevated" />
-                  <button type="button" onClick={() => setShot(null)} aria-label="Remove screenshot" className="absolute right-2 top-2 rounded-pill bg-black/60 p-1.5 text-white transition-colors hover:bg-black/80">
+                  <button type="button" onClick={() => setShot(null)} aria-label="Remove screenshot" className="absolute right-2 top-2 rounded-pill bg-ink/60 p-1.5 text-on-ink transition-colors hover:bg-ink/80">
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>

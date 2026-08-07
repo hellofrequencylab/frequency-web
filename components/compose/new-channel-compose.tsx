@@ -5,7 +5,8 @@ import { Plus } from 'lucide-react'
 import { createChannel } from '@/app/(main)/channels/actions'
 import { StudioWindow } from '@/components/studio/studio-window'
 import { StudioFooter } from '@/components/studio/kit/studio-footer'
-import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
+import { Field, Input, Textarea, labelClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 
 interface ScopeOption {
   scope: 'hub' | 'nexus' | 'outpost'
@@ -106,8 +107,7 @@ export function NewChannelCompose({
           }
         >
           <div className="space-y-5">
-            <div className="space-y-1.5">
-              <Label>Channel name</Label>
+            <Field label="Channel name">
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -115,10 +115,12 @@ export function NewChannelCompose({
                 maxLength={80}
                 disabled={isPending}
               />
-            </div>
+            </Field>
 
             <div className="space-y-1.5">
-              <Label>Type</Label>
+              {/* Not a <Label>: this names a group of buttons, and a <label> would bind to the
+                  first labelable descendant rather than to the set. */}
+              <span className={labelClasses}>Type</span>
               <div className="flex gap-2">
                 {(['group', 'event', 'thread'] as const).map((t) => (
                   <button
@@ -140,37 +142,33 @@ export function NewChannelCompose({
             </div>
 
             {scopeOptions.length > 0 && (
-              <div className="space-y-1.5">
-                <Label>Visible to</Label>
-                <select
+              <Field label="Visible to">
+                <Select
                   value={selected}
                   onChange={(e) => setSelected(e.target.value)}
                   disabled={isPending}
-                  className={fieldClasses}
                 >
                   {scopeOptions.map((opt) => (
                     <option key={`${opt.scope}|${opt.scopeId}`} value={`${opt.scope}|${opt.scopeId}`}>
                       {opt.label}
                     </option>
                   ))}
-                </select>
-              </div>
+                </Select>
+              </Field>
             )}
 
             {type === 'event' && (
-              <div className="space-y-1.5">
-                <Label>Event date</Label>
+              <Field label="Event date">
                 <Input
                   type="datetime-local"
                   value={eventDate}
                   onChange={(e) => setEventDate(e.target.value)}
                   disabled={isPending}
                 />
-              </div>
+              </Field>
             )}
 
-            <div className="space-y-1.5">
-              <Label>Description <span className="font-normal text-subtle">(optional)</span></Label>
+            <Field label={<>Description <span className="font-normal text-subtle">(optional)</span></>}>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -180,13 +178,17 @@ export function NewChannelCompose({
                 disabled={isPending}
                 className="resize-y leading-relaxed"
               />
-            </div>
+            </Field>
 
             <div className="flex items-center gap-2 pt-1">
+              {/* The text beside the switch reports the STATE, and it flips with the toggle, so
+                  it cannot be the name (a name that changes when you flip it is not a name).
+                  `aria-checked` already carries the state; the name says what the switch does. */}
               <button
                 type="button"
                 role="switch"
                 aria-checked={isPublic}
+                aria-label="Public channel"
                 onClick={() => setIsPublic(!isPublic)}
                 disabled={isPending}
                 className={`relative inline-flex h-5 w-9 shrink-0 rounded-pill border-2 border-transparent transition-colors ${

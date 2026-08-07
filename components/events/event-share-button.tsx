@@ -97,7 +97,7 @@ export function EventShareButton({
         title="QR and share"
         className={
           className ??
-          'inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated'
+          'inline-flex items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated'
         }
       >
         <QrCode className="h-4 w-4 text-subtle" aria-hidden />
@@ -105,7 +105,7 @@ export function EventShareButton({
       </button>
 
       <Dialog open={open} onClose={() => setOpen(false)} ariaLabel={`QR and share for ${title}`} className="max-w-md">
-        <div className="rounded-2xl border border-border bg-surface p-4 shadow-pop sm:p-6">
+        <div className="rounded-card border border-border bg-surface p-4 shadow-pop sm:p-6">
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
             <div className="shrink-0">
               <p className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
@@ -113,6 +113,7 @@ export function EventShareButton({
               </p>
               <div
                 aria-label={`QR code for ${title}`}
+                // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
                 className="mx-auto aspect-square w-40 rounded-card border border-border bg-white p-2 lift-1 [&>svg]:h-full [&>svg]:w-full"
                 dangerouslySetInnerHTML={{ __html: svg }}
               />
@@ -121,14 +122,14 @@ export function EventShareButton({
                 <button
                   type="button"
                   onClick={() => void downloadQr('png')}
-                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2 py-1 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  className="inline-flex items-center gap-1 rounded-control border border-border bg-surface px-2 py-1 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated"
                 >
                   <Download className="h-3 w-3" /> PNG
                 </button>
                 <button
                   type="button"
                   onClick={() => void downloadQr('svg')}
-                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2 py-1 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  className="inline-flex items-center gap-1 rounded-control border border-border bg-surface px-2 py-1 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated"
                 >
                   <Download className="h-3 w-3" /> SVG
                 </button>
@@ -139,7 +140,7 @@ export function EventShareButton({
                 <Link2 className="h-3.5 w-3.5" /> Share link
               </p>
               <code
-                className="block truncate rounded-lg border border-border bg-surface-elevated/50 px-2.5 py-1.5 font-mono text-2xs text-muted"
+                className="block truncate rounded-control border border-border bg-surface-elevated/50 px-2.5 py-1.5 font-mono text-2xs text-muted"
                 title={url}
               >
                 {url}
@@ -148,7 +149,7 @@ export function EventShareButton({
                 <button
                   type="button"
                   onClick={copy}
-                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-2.5 py-1.5 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated"
                 >
                   {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Link2 className="h-3.5 w-3.5" />}
                   {copied ? 'Copied' : 'Copy link'}
@@ -158,7 +159,7 @@ export function EventShareButton({
                   target="_blank"
                   rel="noreferrer"
                   title="Open in a new tab"
-                  className="inline-flex shrink-0 items-center rounded-lg border border-border bg-surface p-1.5 text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                  className="inline-flex shrink-0 items-center rounded-control border border-border bg-surface p-1.5 text-muted transition-colors hover:bg-surface-elevated hover:text-text"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
                 </a>
@@ -167,7 +168,7 @@ export function EventShareButton({
                 <button
                   type="button"
                   onClick={nativeShare}
-                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-2xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-control bg-primary px-2.5 py-1.5 text-2xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
                 >
                   <Share2 className="h-3.5 w-3.5" /> Share
                 </button>
@@ -179,7 +180,7 @@ export function EventShareButton({
           {/* Send to host: only the person who SEEDED this event sees this, and only until it is claimed.
               The claim link hands the event off to its real organizer so they can take it over. */}
           {hostClaimUrl && (
-            <div className="mt-4 space-y-2 rounded-xl border border-primary/30 bg-primary-bg/40 p-3">
+            <div className="mt-4 space-y-2 rounded-card border border-primary/30 bg-primary-bg/40 p-3">
               <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-primary-strong">
                 <Send className="h-3.5 w-3.5" /> Send to host
               </p>
@@ -188,7 +189,7 @@ export function EventShareButton({
               </p>
               <div className="flex items-center gap-2">
                 <code
-                  className="block flex-1 truncate rounded-lg border border-border bg-surface px-2.5 py-1.5 font-mono text-2xs text-muted"
+                  className="block flex-1 truncate rounded-control border border-border bg-surface px-2.5 py-1.5 font-mono text-2xs text-muted"
                   title={hostClaimUrl}
                 >
                   {hostClaimUrl}
@@ -196,7 +197,7 @@ export function EventShareButton({
                 <button
                   type="button"
                   onClick={copyHost}
-                  className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-2xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                  className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control bg-primary px-2.5 py-1.5 text-2xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
                 >
                   {hostCopied ? <Check className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
                   {hostCopied ? 'Copied' : 'Copy'}

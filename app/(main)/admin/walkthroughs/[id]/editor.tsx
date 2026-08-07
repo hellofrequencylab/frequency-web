@@ -7,6 +7,8 @@ import {
   ArrowLeft, Check, Eye, GripVertical, Plus, Copy, Trash2, Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Field, Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import {
   AVAILABLE_TRIGGERS, CADENCES, LAYOUTS, ACCENTS,
@@ -31,9 +33,15 @@ import { updateWalkthrough, setWalkthroughActive } from '../actions'
 // swatches, never a raw hex. Mirrors the sequence-wizard's ergonomics (dirty/save state,
 // per-step fields, in-page preview). Triggering + rendering are Phase B.
 
-const field =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-broadcast'
-const lbl = 'block text-meta font-semibold text-subtle mb-1'
+// The label look this editor already wore, handed to `Field`. Every control here used to sit
+// beside a bare <label> with no htmlFor, so none of them had an accessible name: a screen reader
+// announced eleven inputs, two textareas and three selects as blank. `Field` WRAPS its control,
+// which is HTML's implicit association, so the name comes from the label already on screen.
+const lbl = 'font-semibold text-subtle'
+// The same look for a GROUP heading (the swatch, layout and icon pickers are button groups, not
+// labelable controls, so a <label> around them would name nothing). Those buttons carry their own
+// aria-label/aria-pressed.
+const groupLbl = `block text-meta mb-1 ${lbl}`
 
 // Local datetime <input> wants 'YYYY-MM-DDTHH:mm'; the DB stores ISO. Convert both ways.
 function toLocalInput(iso: string | null): string {
@@ -182,75 +190,75 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
           {/* Sequence meta */}
           <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
             <h2 className="text-body font-bold text-text">Sequence</h2>
-            <div>
-              <label className={lbl}>Name</label>
-              <input className={field} value={wt.name} onChange={(e) => setMeta('name', e.target.value)} />
-            </div>
-            <div>
-              <label className={lbl}>Description <span className="font-normal text-subtle/70">· an operator note</span></label>
-              <textarea
-                className={`${field} resize-y`}
+            <Field label="Name" labelClassName={lbl}>
+              <Input value={wt.name} onChange={(e) => setMeta('name', e.target.value)} />
+            </Field>
+            <Field
+              label={<>Description <span className="font-normal text-subtle/70">· an operator note</span></>}
+              labelClassName={lbl}
+            >
+              <Textarea
+                className="resize-y"
                 rows={2}
                 value={wt.description ?? ''}
                 onChange={(e) => setMeta('description', e.target.value || null)}
               />
-            </div>
+            </Field>
             <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className={lbl}>Trigger <span className="font-normal text-subtle/70">· when it fires</span></label>
-                <select className={field} value={wt.trigger} onChange={(e) => setMeta('trigger', e.target.value as Walkthrough['trigger'])}>
+              <Field
+                label={<>Trigger <span className="font-normal text-subtle/70">· when it fires</span></>}
+                labelClassName={lbl}
+              >
+                <Select value={wt.trigger} onChange={(e) => setMeta('trigger', e.target.value as Walkthrough['trigger'])}>
                   {/* Offer only wired triggers; keep a legacy/unwired current value visible so the select never blanks. */}
                   {(AVAILABLE_TRIGGERS.includes(wt.trigger) ? AVAILABLE_TRIGGERS : [wt.trigger, ...AVAILABLE_TRIGGERS]).map((t) => (
                     <option key={t} value={t}>{TRIGGER_LABELS[t]}</option>
                   ))}
-                </select>
-              </div>
-              <div>
-                <label className={lbl}>Cadence <span className="font-normal text-subtle/70">· how often</span></label>
-                <select className={field} value={wt.cadence} onChange={(e) => setMeta('cadence', e.target.value as Walkthrough['cadence'])}>
+                </Select>
+              </Field>
+              <Field
+                label={<>Cadence <span className="font-normal text-subtle/70">· how often</span></>}
+                labelClassName={lbl}
+              >
+                <Select value={wt.cadence} onChange={(e) => setMeta('cadence', e.target.value as Walkthrough['cadence'])}>
                   {CADENCES.map((c) => (
                     <option key={c} value={c}>{CADENCE_LABELS[c]}</option>
                   ))}
-                </select>
-              </div>
+                </Select>
+              </Field>
             </div>
-            <div>
-              <label className={lbl}>Audience note <span className="font-normal text-subtle/70">· optional target / role key</span></label>
-              <input
-                className={field}
+            <Field
+              label={<>Audience note <span className="font-normal text-subtle/70">· optional target / role key</span></>}
+              labelClassName={lbl}
+            >
+              <Input
                 value={wt.audience ?? ''}
                 placeholder="e.g. spring-2026 season, or first-week hosts"
                 onChange={(e) => setMeta('audience', e.target.value || null)}
               />
-            </div>
+            </Field>
             <div className="grid gap-3 sm:grid-cols-3">
-              <div>
-                <label className={lbl}>Priority</label>
-                <input
+              <Field label="Priority" labelClassName={lbl}>
+                <Input
                   type="number"
-                  className={field}
                   value={wt.priority}
                   onChange={(e) => setMeta('priority', Number(e.target.value) || 0)}
                 />
-              </div>
-              <div>
-                <label className={lbl}>Starts</label>
-                <input
+              </Field>
+              <Field label="Starts" labelClassName={lbl}>
+                <Input
                   type="datetime-local"
-                  className={field}
                   value={toLocalInput(wt.startsAt)}
                   onChange={(e) => setMeta('startsAt', fromLocalInput(e.target.value))}
                 />
-              </div>
-              <div>
-                <label className={lbl}>Ends</label>
-                <input
+              </Field>
+              <Field label="Ends" labelClassName={lbl}>
+                <Input
                   type="datetime-local"
-                  className={field}
                   value={toLocalInput(wt.endsAt)}
                   onChange={(e) => setMeta('endsAt', fromLocalInput(e.target.value))}
                 />
-              </div>
+              </Field>
             </div>
             <div className="flex items-center justify-between rounded-card border border-border bg-surface-elevated/40 px-3 py-2.5">
               <div>
@@ -348,29 +356,26 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
           {step && (
             <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
               <h2 className="text-body font-bold text-text">Slide {selected + 1}</h2>
-              <div>
-                <label className={lbl}>Title</label>
-                <input className={field} value={step.title} onChange={(e) => setStep(selected, { title: e.target.value })} />
-              </div>
-              <div>
-                <label className={lbl}>Body</label>
-                <textarea
-                  className={`${field} resize-y`}
+              <Field label="Title" labelClassName={lbl}>
+                <Input value={step.title} onChange={(e) => setStep(selected, { title: e.target.value })} />
+              </Field>
+              <Field label="Body" labelClassName={lbl}>
+                <Textarea
+                  className="resize-y"
                   rows={4}
                   value={step.body}
                   onChange={(e) => setStep(selected, { body: e.target.value })}
                 />
-              </div>
+              </Field>
 
               {/* Activation step — ONLY on the reserved Next Steps funnel. Tags this slide
                   to a real milestone; the funnel's done-detection keys off it. */}
               {wt.slug === ONBOARDING_WALKTHROUGH_SLUG && (
-                <div>
-                  <label className={lbl}>
-                    Activation step <span className="font-normal text-subtle/70">· which milestone this slide stands for</span>
-                  </label>
-                  <select
-                    className={field}
+                <Field
+                  label={<>Activation step <span className="font-normal text-subtle/70">· which milestone this slide stands for</span></>}
+                  labelClassName={lbl}
+                >
+                  <Select
                     value={step.criterion ?? ''}
                     onChange={(e) =>
                       setStep(selected, { criterion: (e.target.value || undefined) as OnboardingStepKey | undefined })
@@ -380,13 +385,13 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
                     {ONBOARDING_CRITERIA.map((c) => (
                       <option key={c} value={c}>{CRITERION_LABELS[c]}</option>
                     ))}
-                  </select>
-                </div>
+                  </Select>
+                </Field>
               )}
 
               {/* Accent picker — SEMANTIC token swatches (never a hex field) */}
               <div>
-                <label className={lbl}>Accent <span className="font-normal text-subtle/70">· a semantic token</span></label>
+                <span className={groupLbl}>Accent <span className="font-normal text-subtle/70">· a semantic token</span></span>
                 <div className="flex flex-wrap gap-1.5">
                   {ACCENTS.map((a) => (
                     <button
@@ -406,7 +411,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
 
               {/* Layout toggle */}
               <div>
-                <label className={lbl}>Layout</label>
+                <span className={groupLbl}>Layout</span>
                 <div className="inline-flex rounded-lg border border-border bg-surface p-0.5">
                   {LAYOUTS.map((l) => (
                     <button
@@ -425,7 +430,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
 
               {/* Icon picker */}
               <div>
-                <label className={lbl}>Icon <span className="font-normal text-muted/70">· optional</span></label>
+                <span className={groupLbl}>Icon <span className="font-normal text-muted/70">· optional</span></span>
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     type="button"
@@ -454,45 +459,46 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
                 </div>
               </div>
 
-              <div>
-                <label className={lbl}>Media URL <span className="font-normal text-subtle/70">· for Media-top / Split</span></label>
-                <input
-                  className={field}
+              <Field
+                label={<>Media URL <span className="font-normal text-subtle/70">· for Media-top / Split</span></>}
+                labelClassName={lbl}
+              >
+                <Input
                   value={step.mediaUrl ?? ''}
                   placeholder="/images/site/…"
                   onChange={(e) => setStep(selected, { mediaUrl: e.target.value || undefined })}
                 />
-              </div>
+              </Field>
 
               <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className={lbl}>CTA label <span className="font-normal text-subtle/70">· optional</span></label>
-                  <input
-                    className={field}
+                <Field
+                  label={<>CTA label <span className="font-normal text-subtle/70">· optional</span></>}
+                  labelClassName={lbl}
+                >
+                  <Input
                     value={step.ctaLabel ?? ''}
                     onChange={(e) => setStep(selected, { ctaLabel: e.target.value || undefined })}
                   />
-                </div>
-                <div>
-                  <label className={lbl}>CTA link</label>
-                  <input
-                    className={field}
+                </Field>
+                <Field label="CTA link" labelClassName={lbl}>
+                  <Input
                     value={step.ctaHref ?? ''}
                     placeholder="/circles"
                     onChange={(e) => setStep(selected, { ctaHref: e.target.value || undefined })}
                   />
-                </div>
+                </Field>
               </div>
 
-              <div>
-                <label className={lbl}>Zaps reward <span className="font-normal text-subtle/70">· optional, granted on finish (Phase B)</span></label>
-                <input
+              <Field
+                label={<>Zaps reward <span className="font-normal text-subtle/70">· optional, granted on finish (Phase B)</span></>}
+                labelClassName={lbl}
+              >
+                <Input
                   type="number"
-                  className={field}
                   value={step.zaps ?? ''}
                   onChange={(e) => setStep(selected, { zaps: e.target.value ? Number(e.target.value) : undefined })}
                 />
-              </div>
+              </Field>
             </div>
           )}
         </div>
@@ -506,7 +512,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
           {step ? (
             <WalkthroughSlide step={step} />
           ) : (
-            <div className="rounded-3xl border border-dashed border-border bg-surface/50 px-6 py-16 text-center text-body-sm text-subtle">
+            <div className="rounded-card border border-dashed border-border bg-surface/50 px-6 py-16 text-center text-body-sm text-subtle">
               Add a slide to preview it.
             </div>
           )}

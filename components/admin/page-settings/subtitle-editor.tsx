@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition, type FormEvent } from 'react'
 import { usePathname } from 'next/navigation'
 import { Check } from 'lucide-react'
-import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Textarea, labelClasses } from '@/components/ui/field'
 import { getEditablePageContent, savePageContent } from '@/lib/page-content-actions'
 import { isError } from '@/lib/action-result'
 
@@ -65,13 +65,12 @@ export function SubtitleEditor() {
       <form onSubmit={submit} className="space-y-3">
         <label className="block space-y-1">
           <span className={labelClasses}>Subtitle</span>
-          <textarea
+          <Textarea
             name="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            disabled={pending}
-            className={`${fieldClasses} resize-none`}
+            disabled={pending} className="resize-none"
             placeholder="The line shown under the page title"
           />
         </label>

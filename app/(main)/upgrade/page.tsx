@@ -157,7 +157,7 @@ export default async function UpgradePage({
       )}
 
       {/* Main card */}
-      <div className="rounded-2xl border border-border bg-surface lift-1 overflow-hidden">
+      <div className="rounded-card border border-border bg-surface lift-1 overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-br bg-primary px-6 py-8 text-center">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-on-primary/20 backdrop-blur-sm mb-4">
@@ -175,12 +175,14 @@ export default async function UpgradePage({
             {live ? (
               <>
                 <span className="text-primary-strong text-body-sm mr-1">from</span>
-                <span className="text-4xl font-black text-on-primary">{formatCents(pwyw.minCents)}</span>
+                {/* text-stat-md is FIXED on purpose. A fluid display role shrinks the figure on
+                    phones, which is where this page converts. */}
+                <span className="text-stat-md font-black text-on-primary">{formatCents(pwyw.minCents)}</span>
                 <span className="text-primary-strong text-body-sm ml-1">/ month</span>
               </>
             ) : (
               <>
-                <span className="text-4xl font-black text-on-primary">Free</span>
+                <span className="text-stat-md font-black text-on-primary">Free</span>
                 <span className="text-primary-strong text-body-sm ml-1">during beta</span>
               </>
             )}
@@ -303,7 +305,7 @@ function MetersSkeleton() {
   return (
     <div className="space-y-4">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="h-44 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
+        <div key={i} className="h-44 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
       ))}
     </div>
   )

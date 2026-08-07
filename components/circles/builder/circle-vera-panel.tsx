@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Sparkles, Wand2, ChevronDown } from 'lucide-react'
 import type { CircleComposeSection } from '@/lib/ai/circle-compose'
+import { Textarea } from '@/components/ui/field'
 
 // The Vera panel in the Circle builder, mirroring the Journey composer (ADR-302):
 // a collapsible section with two moves. "Fill this section" buttons ask Vera to
@@ -60,7 +61,7 @@ export function CircleVeraPanel({
   }
 
   return (
-    <section className="rounded-2xl border border-primary/30 bg-primary-bg/20 p-4">
+    <section className="rounded-card border border-primary/30 bg-primary-bg/20 p-4">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -90,7 +91,7 @@ export function CircleVeraPanel({
                 type="button"
                 disabled={pending}
                 onClick={() => compose(s.key)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
               >
                 <Wand2 className="h-3.5 w-3.5 text-primary-strong" aria-hidden />
                 {busySection === s.key ? 'Filling…' : s.label}
@@ -99,20 +100,21 @@ export function CircleVeraPanel({
           </div>
 
           <p className="mt-4 text-2xs font-semibold uppercase tracking-wide text-muted">Tell Vera what to change</p>
-          <textarea
+          <Textarea
             value={change}
             disabled={pending}
             onChange={(e) => setChange(e.target.value)}
             rows={2}
+            aria-label="Tell Vera what to change"
             placeholder="e.g. Make the Meetup biweekly. Or: more beginner-friendly. Or: shorten the about."
-            className="mt-2 w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary"
+            className="mt-2 resize-y"
           />
           <div className="mt-2">
             <button
               type="button"
               disabled={pending || !change.trim()}
               onClick={apply}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60"
             >
               <Wand2 className="h-4 w-4" aria-hidden /> {pending && !busySection ? 'Applying…' : 'Apply with Vera'}
             </button>

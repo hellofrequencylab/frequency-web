@@ -8,6 +8,7 @@ import { VERTICALS } from '@/lib/verticals'
 import AppShell from '@/components/layout/app-shell'
 import { ImpersonationBanner } from '@/components/layout/impersonation-banner'
 import { BetaCountdownBanner } from '@/components/layout/beta-countdown-banner'
+import { BannerMeasure } from '@/components/layout/banner-measure'
 import { SiteAlertBar } from '@/components/layout/site-alert-bar'
 import type { Metadata } from 'next'
 import { loadChromeOverrides, isSafeRoute, adminScopeFor } from '@/lib/layout/page-chrome'
@@ -16,6 +17,7 @@ import { loadPageSettings } from '@/lib/page-settings/store'
 import { resolveTheme } from '@/lib/theme/server/resolve'
 import { structureFor } from '@/lib/theme/structure'
 import { THEME_COOKIE, parseThemeCookie } from '@/lib/theme/cookie'
+import { RAIL_FOLD_COOKIE, readRailFoldCookie } from '@/lib/layout/rail-fold'
 import { loadActiveThemeCss, resolveActiveOccasionSlug } from '@/lib/theme/server/themes'
 import RightSidebar, { MobileGameStats, VaultDockSlot } from '@/components/sidebar/right-sidebar'
 import { isQuestSurface } from '@/lib/layout/rail-panels'
@@ -76,6 +78,7 @@ import {
 } from '@/lib/marketplace/visibility'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import { isAnonPublicDetail } from '@/lib/nav/public-detail-routes'
+import { getMyFrequency } from '@/lib/nav/my-frequency'
 import { viewerRoleFor } from '@/components/layout/menu-role'
 import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
@@ -358,6 +361,12 @@ export default async function MainLayout({
   // ceiling and the raw value already reflects this person's true eligibility).
   const canReceivePayoutsGate = previewingDown ? false : payoutsEligibleRaw
 
+  // MY FREQUENCY — the rail's disclosure (you, and what you run). One React-cached read, itself
+  // fail-safe (any error resolves to a profile-only menu), so the rail can never block or throw on
+  // it. Suppressed under a view-as downgrade / visitor preview for the same reason operatesSpaces
+  // and staffRole are: a steward previewing as a member must not keep their own Spaces in the menu.
+  const myFrequency = previewingDown ? null : await getMyFrequency(profile.id, profile.handle)
+
   // Staff web_role axis (ADR-208) — gates the staff-only on-page "Page" settings group
   // (admin+, the EMBEDDED-ADMIN inline layer). Suppressed under a downgrade preview so a
   // steward's "view as" faithfully hides operator chrome, matching staffRole above.
@@ -538,7 +547,7 @@ export default async function MainLayout({
   // when there is no pin and no explicit occasion. All fail-safe. The per-request
   // cookie + DB-theme reads live HERE, not in the root layout, so public marketing/
   // discover pages stay static (app/layout.tsx).
-  const [theme, occasionPinned, autoOccasion, pageGate] = await Promise.all([
+  const [theme, occasionPinned, autoOccasion, pageGate, railFold] = await Promise.all([
     resolveTheme({ spaceSkin: activeSkin, spaceGeneration: activeGeneration }),
     (async () => {
       try {
@@ -555,6 +564,20 @@ export default async function MainLayout({
     reqPath && reqPath !== '/feed' && isSafeRoute(reqPath) && !isStaff(pageWebRole)
       ? loadPageSettings(reqPath).catch(() => null)
       : Promise.resolve(null),
+    // A folded rail is different MARKUP, not restyled markup, so unlike the theme it cannot be
+    // corrected pre-paint by an inline script — by the time any script runs the open rail is
+    // already in the HTML. The server is the only actor who can paint the fold on frame one, and
+    // this cookie is the client's mirror of its localStorage instruction so the server can.
+    // Without it the shell hydrates from `auto`, then flips a `shrink-0` track from w-48 to w-14
+    // and shoves the whole content column sideways one frame after paint.
+    (async () => {
+      try {
+        const jar = await cookies()
+        return readRailFoldCookie(jar.get(RAIL_FOLD_COOKIE)?.value)
+      } catch {
+        return undefined /* no cookie → Auto, which is the pre-existing first paint */
+      }
+    })(),
   ])
   if (pageGate) {
     const draftHidden = pageGate.status === 'draft'
@@ -577,6 +600,7 @@ export default async function MainLayout({
     <>
       {themeCss ? <style id="fx-theme" dangerouslySetInnerHTML={{ __html: themeCss }} /> : null}
     <AppShell
+      railFold={railFold}
       skin={theme.skin}
       generation={theme.generation}
       structure={structure}
@@ -614,6 +638,7 @@ export default async function MainLayout({
       adminHeaderMenu={adminHeaderMenu}
       menuViewerRole={menuViewerRole}
       menuTimings={menuTimings}
+      myFrequency={myFrequency}
     >
       <GaConsentGate disabled={!analyticsConsent || gaStaffExcluded} />
       {gaStaffExcluded && <GaStaffOptOut />}
@@ -621,7 +646,12 @@ export default async function MainLayout({
       {/* Beta countdown (platform_settings.beta_ends_at) — renders nothing until an operator sets a
           date; its one cached read sits behind Suspense so it never blocks the shell. */}
       <Suspense fallback={null}>
-        <BetaCountdownBanner />
+        {/* BannerMeasure holds it to the page BODY's width on the operator consoles, whose info
+            rail is a column inside the page rather than a shell rail — without it the alert ran
+            the full width and painted across LIVE / NEEDS ATTENTION. */}
+        <BannerMeasure>
+          <BetaCountdownBanner />
+        </BannerMeasure>
       </Suspense>
       {children}
       {/* ONE bottom-right toast lane. Both stacks used to declare their own identical `fixed`

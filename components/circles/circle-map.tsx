@@ -71,7 +71,7 @@ export default function CircleMap({
   circles,
   starters = [],
   interactive = true,
-  className = 'h-[420px] w-full overflow-hidden rounded-2xl border border-border',
+  className = 'h-[420px] w-full overflow-hidden rounded-card border border-border',
   center = null,
 }: {
   circles: MapCircle[]

@@ -67,7 +67,7 @@ export function EventFactPanel({
   const overflow = Math.max(0, going - faces.length)
 
   return (
-    <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+    <div className="space-y-3 rounded-card border border-border bg-surface p-4">
       {/* When */}
       <p className="flex items-start gap-2 text-body-sm text-text">
         <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
@@ -155,7 +155,7 @@ export function EventFactPanel({
                 <li key={g.id}>
                   <Link
                     href={`/people/${g.handle}`}
-                    className="-mx-2 flex items-center gap-2 rounded-lg px-2 py-1 transition-colors hover:bg-surface-elevated"
+                    className="-mx-2 flex items-center gap-2 rounded-control px-2 py-1 transition-colors hover:bg-surface-elevated"
                   >
                     {g.avatarUrl ? (
                       <Image

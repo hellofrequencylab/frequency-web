@@ -5,11 +5,12 @@ import Link from 'next/link'
 import { Flame, Check, ChevronDown, Sparkles, Heart, Compass, Map, Users, Route, ArrowRight, Snowflake } from 'lucide-react'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { StandingTiles } from '@/components/gamification/standing-tiles'
-import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 import { STREAK_MILESTONES, streakProgress } from '@/lib/streak'
 import type { Practice, PartialPracticeToday } from '@/lib/practices'
 import type { PillarCount } from '@/lib/pillars'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { RankBadge } from '@/components/ui/rank-badge'
 
 // The graduated home surface. Once a member finishes activation, the streak box
 // "levels up" into this: a multi-purpose journey guide + resource center that takes
@@ -109,7 +110,7 @@ export function JourneyBoard({
   // behind the chevron.
   if (collapsed) {
     return (
-      <div className="mb-6 overflow-hidden rounded-2xl border border-primary-bg bg-primary-bg/30">
+      <div className="mb-6 overflow-hidden rounded-card border border-border bg-surface-elevated">
         <div className="flex items-center gap-2.5 px-3 py-2">
           <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-surface text-primary-strong lift-1">
             <Flame className="h-3 w-3" />
@@ -134,7 +135,7 @@ export function JourneyBoard({
             onClick={toggle}
             aria-label="Expand"
             aria-expanded={false}
-            className="shrink-0 rounded-md p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
+            className="shrink-0 rounded-control p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
           >
             <ChevronDown className="h-4 w-4" />
           </button>
@@ -144,10 +145,13 @@ export function JourneyBoard({
   }
 
   return (
-    <div className="mb-6 overflow-hidden rounded-2xl border border-primary-bg bg-primary-bg/30">
+    // NEUTRAL, not tinted (DAWN index.html StreakBar): surface-elevated + border. The board
+    // used to be a second amber block sitting under the page's amber eyebrow, which warmed
+    // the whole top of the feed. Amber now survives only on the Zap/flame glyph, the
+    // milestone dots, and the rank badge.
+    <div className="mb-6 overflow-hidden rounded-card border border-border bg-surface-elevated">
       {/* Hero band: streak + a warm, un-gamified line. */}
       <div className="relative px-4 pt-4">
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-primary/10 to-transparent" />
         <div className="relative flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5">
             <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-surface text-primary-strong lift-1">
@@ -181,13 +185,12 @@ export function JourneyBoard({
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             {rank && (
-              <Link
-                href="/crew"
-                title={`Season rank · ${RANK_LABELS[rank] ?? rank}`}
-                className="rank-badge text-2xs font-bold leading-tight"
-                style={seasonRankStyle(rank)}
-              >
-                {RANK_LABELS[rank] ?? rank}
+              // The chip is a LINK, and the primitive renders a <span>, so the anchor wraps it
+              // rather than being it. `title` stays on the anchor — it is the link's own
+              // description, and moving it inside would detach it from the focusable element.
+              // `dot={false}`: this cluster is a 1.5-gap pair with the collapse button.
+              <Link href="/crew" title={`Season rank · ${RANK_LABELS[rank] ?? rank}`} className="inline-flex">
+                <RankBadge rank={rank} dot={false}>{RANK_LABELS[rank] ?? rank}</RankBadge>
               </Link>
             )}
             <button
@@ -195,7 +198,7 @@ export function JourneyBoard({
               onClick={toggle}
               aria-label="Collapse"
               aria-expanded
-              className="rounded-md p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
+              className="rounded-control p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
             >
               <ChevronDown className="h-4 w-4 rotate-180" />
             </button>
@@ -244,7 +247,7 @@ export function JourneyBoard({
       </div>
 
       {/* Today's move — the one action, always visible. */}
-      <div className="mx-4 mt-3 border-t border-primary-bg pt-3">
+      <div className="mx-4 mt-3 border-t border-border pt-3">
         {hasReminders ? (
           <ul className="space-y-2">
             {/* Partials first — a started-but-unfinished sit reads "Continue Practice" and
@@ -305,7 +308,7 @@ export function JourneyBoard({
       {activeJourney && (
         <Link
           href={activeJourney.href}
-          className="group mx-4 mt-3 flex items-center gap-2.5 border-t border-primary-bg pt-3"
+          className="group mx-4 mt-3 flex items-center gap-2.5 border-t border-border pt-3"
         >
           <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-pill bg-surface text-primary-strong">
             <Route className="h-3.5 w-3.5" />
@@ -328,13 +331,13 @@ export function JourneyBoard({
       {/* Pillar balance — a calm read of where your practice sits across the four
           Pillars. Coverage, not a score. */}
       {stageIndex >= 3 && pillarBalance && pillarBalance.length > 0 && (
-        <div className="mt-3 border-t border-primary-bg px-4 pt-3">
+        <div className="mt-3 border-t border-border px-4 pt-3">
           <p className="mb-1.5 text-2xs font-medium text-muted">Your pillars</p>
           <div className="flex gap-1.5">
             {pillarBalance.map((p) => (
               <div
                 key={p.slug}
-                className={`flex-1 rounded-lg px-2 py-1.5 text-center ${
+                className={`flex-1 rounded-card px-2 py-1.5 text-center ${
                   p.count > 0 ? 'bg-surface' : 'bg-surface/50'
                 }`}
               >
@@ -351,7 +354,7 @@ export function JourneyBoard({
       {/* Resource center — a few warm doors back into the place. Held back until a
           member is past the very first days so the board stays focused early on. */}
       {stageIndex >= 2 && (
-        <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-primary-bg bg-surface/40 px-3 py-2.5">
+        <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-border bg-surface/40 px-3 py-2.5">
           <Compass className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
           <span className="mr-0.5 text-meta font-medium text-subtle">Keep exploring</span>
           {RESOURCES.map(({ href, label, Icon }) => (

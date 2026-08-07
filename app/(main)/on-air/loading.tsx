@@ -16,7 +16,7 @@ export default function OnAirLoading() {
       </div>
 
       {/* Body card */}
-      <div className="rounded-2xl border border-border bg-surface p-6">
+      <div className="rounded-card border border-border bg-surface p-6">
         <Skeleton className="mx-auto h-4 w-44" />
         <Skeleton className="mx-auto mt-3 h-4 w-56 max-w-full" />
         <Skeleton className="mx-auto mt-5 h-9 w-36 rounded-lg" />

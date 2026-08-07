@@ -27,6 +27,8 @@ export function PrimaryNav({
   className = '',
   panelAlign = 'viewport',
   rightRail = false,
+  leftFolded = false,
+  rightFolded = false,
   headerMenu,
   viewerRole = 'visitor',
   timings,
@@ -38,6 +40,10 @@ export function PrimaryNav({
   panelAlign?: 'viewport' | 'content'
   /** Forwarded to MegaBar (only with panelAlign='content'): reserve the right rail width. */
   rightRail?: boolean
+  /** The rails' live fold state, forwarded so the panel's spacers track the shell rather than
+   *  assuming both rails are open (docs/MENU-AUDIT-2026-08-06.md §2.2). */
+  leftFolded?: boolean
+  rightFolded?: boolean
   /** The resolved `header` menu (server-fetched). Falls back to the code default. */
   headerMenu?: ResolvedMenu
   /** The viewer collapsed to a single MenuAccess token; drives per-item mode. */
@@ -60,6 +66,8 @@ export function PrimaryNav({
       className={`hidden md:block ${className}`}
       panelAlign={panelAlign}
       rightRail={rightRail}
+      leftFolded={leftFolded}
+      rightFolded={rightFolded}
       cardGutters
       timings={timings}
       isAuth={isAuth}

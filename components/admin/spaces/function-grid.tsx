@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { SlidersHorizontal, RotateCcw } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { SPACE_ROLES, type SpaceRole } from '@/lib/spaces/membership'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
@@ -145,29 +147,28 @@ export function FunctionGrid({ spaceId, rows }: { spaceId: string; rows: Functio
                     </span>
                   </th>
                   <td className="px-2 py-3 text-center">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       aria-label={`${r.label}: enabled`}
                       checked={cur.enabled}
                       disabled={savingKey === r.key}
                       onChange={(e) => toggleEnabled(r.key, e.target.checked)}
-                      className="h-4 w-4 cursor-pointer accent-[var(--color-primary)] disabled:opacity-50"
+                      className="cursor-pointer"
                     />
                   </td>
                   <td className="px-2 py-3">
-                    <select
+                    <Select
                       aria-label={`${r.label}: lowest role`}
                       value={cur.minRole}
                       disabled={savingKey === r.key || !cur.enabled}
                       onChange={(e) => chooseRole(r.key, e.target.value as SpaceRole)}
-                      className="rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text outline-none focus:border-primary disabled:opacity-50"
+                      wrapperClassName="inline-block w-max max-w-full"
                     >
                       {SPACE_ROLES.map((role) => (
                         <option key={role} value={role}>
                           {ROLE_LABEL[role]}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </td>
                 </tr>
               )

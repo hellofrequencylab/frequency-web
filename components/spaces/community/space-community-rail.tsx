@@ -15,7 +15,7 @@ import type {
 
 function Card({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+    <section className="space-y-3 rounded-card border border-border bg-surface p-4">
       <h3 className="flex items-center gap-1.5 text-body-sm font-bold text-text">
         <span className="text-primary-strong" aria-hidden>{icon}</span>
         {title}
@@ -70,7 +70,7 @@ export function SpaceCommunityRail({
       {booking.enabled && booking.href && (
         <Link
           href={booking.href}
-          className="flex items-center justify-center gap-1.5 rounded-2xl bg-primary px-4 py-3 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className="flex items-center justify-center gap-1.5 rounded-control bg-primary px-4 py-3 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           <Ticket className="h-4 w-4" aria-hidden /> Book with {brandName}
         </Link>
@@ -130,7 +130,7 @@ export function SpaceCommunityRail({
             {events.slice(0, 4).map((e) => (
               <li key={e.id}>
                 <Link href={`/events/${e.slug}`} className="flex items-start gap-2 text-body-sm hover:text-primary-strong">
-                  <span className="mt-0.5 shrink-0 rounded-md bg-primary-bg px-1.5 py-0.5 text-2xs font-bold text-primary-strong">
+                  <span className="mt-0.5 shrink-0 rounded-pill bg-primary-bg px-1.5 py-0.5 text-2xs font-bold text-primary-strong">
                     {shortDate(e.startsAt)}
                   </span>
                   <span className="font-medium text-text">{e.title}</span>

@@ -10,6 +10,7 @@
 
 import type { RankKey } from '@/lib/season-ranks'
 import { rankBadgeStyle } from '@/lib/season-ranks'
+import { RankBadge, type RankBadgeSize } from '@/components/ui/rank-badge'
 import { Gem } from 'lucide-react'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
@@ -43,25 +44,41 @@ export const ROLE_LABEL: Record<RoleChipKey, string> = {
   moderator: 'Moderator',
 }
 
-// Inline style triplet to feed into the .rank-badge CSS class. Pass the
-// result to a `style={}` prop on the chip element.
+// Inline style triplet to feed into the .rank-badge CSS class. Kept for the
+// handful of non-chip surfaces that paint a role's rank vars onto a container
+// (a row, a tile) rather than a badge; a BADGE should use RoleBadge instead,
+// which now drives the kit's RankBadge and needs no style prop at all.
 export function roleBadgeStyle(role: RoleChipKey): React.CSSProperties {
   return rankBadgeStyle(ROLE_RANK[role])
 }
 
 // Ready-made chip. Use this everywhere a role badge shows up so the colour
-// stays consistent — no per-page ROLE_COLOR / ROLE_BADGE constants.
+// stays consistent — no per-page ROLE_COLOR / ROLE_BADGE constants, and no
+// hand-rolled `<span className="rank-badge" style={roleBadgeStyle(r)}>` either:
+// this composes the kit primitive (components/ui/rank-badge), which resolves the
+// three CSS vars off the ONE rank mapping and renders the documented anatomy.
+//
+// NO DOT by default, unlike the primitive: a role chip is an IDENTITY mark that
+// rides beside an avatar and a display name, where the name is already the
+// subject and a second coloured mark reads as noise. The Quest's season-rank
+// chips — where the colour IS the message — take the dot.
 export function RoleBadge({
   role,
   className,
   capitalize,
+  size = 'sm',
+  dot = false,
 }: {
   role: RoleChipKey | string | null | undefined
-  /** Extra utility classes (size, margin). */
+  /** Extra utility classes (margin, layout). Sizing belongs on `size`. */
   className?: string
   /** Set to false to render the role name as-is instead of the canonical
    *  Title-Case label. Useful when the source string is already cleaned. */
   capitalize?: boolean
+  /** The primitive's size role. `sm` matches this chip's historical 10px default. */
+  size?: RankBadgeSize
+  /** Opt a chip into the `.rank-dot` where it stands alone rather than beside a name. */
+  dot?: boolean
 }) {
   const safeRole = (role && ROLE_RANK[role as RoleChipKey])
     ? (role as RoleChipKey)
@@ -70,12 +87,9 @@ export function RoleBadge({
     ? String(role ?? ROLE_LABEL[safeRole])
     : ROLE_LABEL[safeRole]
   return (
-    <span
-      className={`rank-badge ${className ?? 'text-3xs leading-tight'}`}
-      style={roleBadgeStyle(safeRole)}
-    >
+    <RankBadge rank={ROLE_RANK[safeRole]} size={size} dot={dot} className={className}>
       {label}
-    </span>
+    </RankBadge>
   )
 }
 
@@ -89,20 +103,20 @@ export function RoleBadge({
 export function FoundingBadge({
   founding,
   className,
+  size = 'sm',
 }: {
   founding?: boolean | null
   className?: string
+  size?: RankBadgeSize
 }) {
   if (!founding) return null
   return (
-    <span
-      className={`rank-badge inline-flex items-center gap-1 ${className ?? 'text-3xs leading-tight'}`}
-      style={rankBadgeStyle('gold')}
-      title="Founding Member"
-    >
+    // `dot={false}`: the Gem IS this chip's mark. A rank dot beside it would be a
+    // second glyph saying nothing the gold wash does not already say.
+    <RankBadge rank="gold" size={size} dot={false} className={className} title="Founding Member">
       <Gem className="h-3 w-3" aria-hidden />
       Founder
-    </span>
+    </RankBadge>
   )
 }
 
@@ -122,19 +136,23 @@ export function FoundingBadge({
 export function FoundingBusinessBadge({
   founding,
   className,
+  size = 'sm',
 }: {
   founding?: boolean | null
   className?: string
+  size?: RankBadgeSize
 }) {
   if (!founding) return null
   return (
-    <span
-      className={`rank-badge inline-flex items-center gap-1 ${className ?? 'text-3xs leading-tight'}`}
-      style={rankBadgeStyle('gold')}
+    <RankBadge
+      rank="gold"
+      size={size}
+      dot={false}
+      className={className}
       title="Founding Business. One of the first businesses to join Frequency."
     >
       <Gem className="h-3 w-3" aria-hidden />
       Founding Business
-    </span>
+    </RankBadge>
   )
 }

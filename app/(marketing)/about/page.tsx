@@ -29,13 +29,25 @@ export const revalidate = 3600
 export function generateMetadata(): Metadata {
   return {
     title: 'About',
+    // Capped under the ~155 char search-snippet window, the same rule
+    // /discover/circles/[id] already applies. This ran 326 characters, so
+    // everything after "where they live" was cut by the SERP and the money
+    // model was being written to an audience that never saw it. That paragraph
+    // lives on the page and on /pricing, where a reader can actually read it.
     description:
-      'The story behind Frequency, born on a cliff at Moonlight Beach in 2020. We hand ordinary people the tools to rebuild the third place where they live. You keep 100% of your own bookings; we earn only a small, shrinking cut on what the network sends you, and the physical Spaces are funded by a separate community-owned vehicle.',
+      'The story behind Frequency, born on a cliff at Moonlight Beach in 2020. We hand ordinary people the tools to rebuild the third place where they live.',
     alternates: { canonical: '/about' },
     openGraph: {
       title: 'About Frequency',
       description: 'The third place is gone. We hand ordinary people the tools to bring it back.',
       url: '/about',
+    },
+    // Metadata merges per TOP-LEVEL KEY, so a page that sets only `openGraph` inherits the ROOT
+    // `twitter` block verbatim and posts the generic site card. Mirror the page's own OG values.
+    twitter: {
+      card: 'summary_large_image',
+      title: 'About Frequency',
+      description: 'The third place is gone. We hand ordinary people the tools to bring it back.',
     },
   }
 }
@@ -238,7 +250,7 @@ function LegacyAbout() {
       </Section>
 
       {/* ── What we hand you — the rebuild, said as three plain things ─────────── */}
-      <Section tone="canvas" width="wide" pad="mk-cont-soft">
+      <Section tone="canvas" width="wide" role="cont-soft">
         <SectionHeading
           align="center"
           eyebrow="Why the rebuild is deliberate"
@@ -287,7 +299,7 @@ function Value({
   body: string
 }) {
   return (
-    <Reveal as="article" className="sheen rounded-2xl border border-on-ink/10 bg-on-ink/5 p-6">
+    <Reveal as="article" className="sheen rounded-card border border-on-ink/10 bg-on-ink/5 p-6">
       <div className="flex items-center gap-3">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary/20 text-primary">
           <Icon className="h-5 w-5" aria-hidden />
@@ -304,7 +316,7 @@ function Ask({ n, title, body }: { n: string; title: string; body: string }) {
   return (
     <Reveal>
       <Card tone="feature" className="lift-2 h-full">
-        <span className="font-display text-4xl leading-none text-primary-strong sm:text-5xl">
+        <span className="font-display text-display-h2 leading-none text-primary-strong">
           {n}
         </span>
         <h3 className="mt-3 text-body-lg font-bold text-text">{title}</h3>

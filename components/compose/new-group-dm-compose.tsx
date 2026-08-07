@@ -8,7 +8,8 @@ import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { startGroupConversation } from '@/app/(main)/messages/actions'
 import { sendFriendRequest } from '@/app/(main)/people/friend-actions'
-import { CreateModal, cmInput, cmLabel } from '@/components/create-modal'
+import { CreateModal, cmLabel } from '@/components/create-modal'
+import { Field, Input } from '@/components/ui/field'
 
 type FriendStatus = 'none' | 'pending_outgoing' | 'pending_incoming' | 'accepted'
 
@@ -117,16 +118,15 @@ export function NewGroupDMCompose({
         submitLabel="Start conversation" pendingLabel="Starting…"
         submitDisabled={recipients.length === 0} isPending={isPending} error={error}
       >
-        <div>
-          <label className={cmLabel}>Name <span className="text-subtle font-normal">(optional, auto-generated otherwise)</span></label>
-          <input type="text" value={name} onChange={e => setName(e.target.value)}
-            placeholder="e.g. Wednesday Crew" className={cmInput} />
-        </div>
+        <Field label={<>Name <span className="text-subtle font-normal">(optional, auto-generated otherwise)</span></>}>
+          <Input type="text" value={name} onChange={e => setName(e.target.value)}
+            placeholder="e.g. Wednesday Crew" />
+        </Field>
 
         <div>
-          <label className={cmLabel}>
+          <span className={cmLabel}>
             People <span className="text-subtle font-normal">({recipients.length}/{GROUP_DM_CAP - 1})</span>
-          </label>
+          </span>
 
           {recipients.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-2">
@@ -151,8 +151,8 @@ export function NewGroupDMCompose({
 
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-subtle" />
-            <input type="text" value={query} onChange={e => setQuery(e.target.value)}
-              placeholder="Search name or handle…" className={`${cmInput} pl-9`} />
+            <Input type="text" value={query} onChange={e => setQuery(e.target.value)}
+              placeholder="Search name or handle…" className="pl-9" />
           </div>
         </div>
 

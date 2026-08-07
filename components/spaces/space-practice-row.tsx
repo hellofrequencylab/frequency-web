@@ -57,9 +57,9 @@ export function SpacePracticeRow({ practice, slug }: { practice: RowPractice; sl
     })
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
+    <div className="rounded-card border border-border bg-surface p-4">
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-body-lg" aria-hidden>
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-primary-bg text-body-lg" aria-hidden>
           {practice.icon ?? '🌀'}
         </span>
         <div className="min-w-0 flex-1">

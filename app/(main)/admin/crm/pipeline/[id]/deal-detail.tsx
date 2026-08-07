@@ -9,6 +9,8 @@ import {
 } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
 import { Button } from '@/components/ui/button'
+import { Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { StatusChip, Banner, type StatusTone } from '@/components/admin/status'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { updateDeal, moveDeal, deleteDeal, addActivity, toggleTask, deleteActivity } from '../../actions'
@@ -77,7 +79,7 @@ export function DealDetail({
     close !== (deal.expected_close_date ?? '') ||
     source !== (laneMeta(deal.source)?.id ?? PIPELINE_LANES[0]!.id)
 
-  const field = 'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text focus:border-border-strong focus:outline-none'
+  const field = 'px-2.5 py-1.5'
   const statusTone: StatusTone = deal.status === 'won' ? 'success' : deal.status === 'lost' ? 'danger' : 'info'
 
   return (
@@ -100,19 +102,20 @@ export function DealDetail({
         actions={
           <>
             <div className="flex items-center gap-2">
-              <label className="text-meta text-muted">Stage</label>
-              <select
+              <label className="text-meta text-muted" htmlFor="deal-stage">Stage</label>
+              <Select
+                id="deal-stage"
                 value={deal.stage_id ?? ''}
                 disabled={pending}
                 onChange={(e) => run(() => moveDeal(deal.id, e.target.value))}
-                className={field}
+                wrapperClassName="inline-block w-max max-w-full"
               >
                 {stages.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             {wonStage && deal.stage_id !== wonStage.id && (
               <button
@@ -163,7 +166,7 @@ export function DealDetail({
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1 text-meta text-muted">
             Contact
-            <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Who" className={field} />
+            <Input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Who" className={field} />
             {deal.member && (
               <Link href={`/people/${deal.member.handle}`} className="text-meta text-primary-strong hover:underline">
                 Linked member · @{deal.member.handle}
@@ -172,21 +175,21 @@ export function DealDetail({
           </label>
           <label className="flex flex-col gap-1 text-meta text-muted">
             Value ($)
-            <input type="number" min={0} value={value} onChange={(e) => setValue(e.target.value)} className={field} />
+            <Input type="number" min={0} value={value} onChange={(e) => setValue(e.target.value)} className={field} />
           </label>
           <label className="flex flex-col gap-1 text-meta text-muted">
             Expected close
-            <input type="date" value={close} onChange={(e) => setClose(e.target.value)} className={field} />
+            <Input type="date" value={close} onChange={(e) => setClose(e.target.value)} className={field} />
           </label>
           <label className="flex flex-col gap-1 text-meta text-muted">
             Lane
-            <select value={source} onChange={(e) => setSource(e.target.value as PipelineLane)} className={field}>
+            <Select value={source} onChange={(e) => setSource(e.target.value as PipelineLane)}>
               {PIPELINE_LANES.map((l) => (
                 <option key={l.id} value={l.id}>
                   {l.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
         </div>
 
@@ -216,23 +219,29 @@ export function DealDetail({
         {/* Add */}
         <div className="mt-3 space-y-2 rounded-card border border-border bg-surface-elevated/40 p-3">
           <div className="flex flex-wrap items-center gap-2">
-            <select value={actKind} onChange={(e) => setActKind(e.target.value as CrmActivity['kind'])} className={field}>
+            <Select
+              value={actKind}
+              onChange={(e) => setActKind(e.target.value as CrmActivity['kind'])}
+              aria-label="Activity type"
+              wrapperClassName="inline-block w-max max-w-full"
+            >
               {(['note', 'call', 'email', 'meeting', 'task'] as const).map((k) => (
                 <option key={k} value={k}>
                   {ACTIVITY_META[k].label}
                 </option>
               ))}
-            </select>
+            </Select>
             {actKind === 'task' && (
-              <input type="datetime-local" value={actDue} onChange={(e) => setActDue(e.target.value)} className={field} title="Due" />
+              <Input type="datetime-local" aria-label="Due" value={actDue} onChange={(e) => setActDue(e.target.value)} className={field} title="Due" />
             )}
           </div>
-          <textarea
+          <Textarea
+            aria-label={actKind === 'task' ? 'What needs doing' : 'Activity note'}
             value={actBody}
             onChange={(e) => setActBody(e.target.value)}
             rows={2}
             placeholder={actKind === 'task' ? 'What needs doing?' : 'Log a note, call, email, or meeting…'}
-            className={`w-full ${field}`}
+            className={field}
           />
           <div className="flex justify-end">
             <Button
@@ -263,21 +272,32 @@ export function DealDetail({
             const done = !!a.completed_at
             return (
               <li key={a.id} className="flex items-start gap-3 rounded-card border border-border bg-surface p-3">
+                {/* TOUCH TARGET: the floor goes on a WRAPPER, not on the 20px marker itself (same
+                    split as components/ui/checkbox.tsx), so the task box stays the same size as the
+                    static activity marker it alternates with down the timeline. Growing the flex item
+                    keeps `gap-3` intact at every floor, so nothing overlaps the body column; the
+                    non-task rows take the same floor as a spacer so the gutter never jumps. */}
                 {isTask ? (
                   <button
                     type="button"
                     disabled={pending}
                     onClick={() => run(() => toggleTask(a.id, deal.id, !done))}
                     aria-label={done ? 'Mark task not done' : 'Mark task done'}
-                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
-                      done ? 'border-success bg-success text-on-success' : 'border-border-strong hover:border-primary'
-                    }`}
+                    className="tap-target group/check mt-0.5 inline-flex shrink-0 items-start"
                   >
-                    {done && <Check className="h-3.5 w-3.5" />}
+                    <span
+                      className={`flex h-5 w-5 items-center justify-center rounded-md border transition-colors ${
+                        done ? 'border-success bg-success text-on-success' : 'border-border-strong group-hover/check:border-primary'
+                      }`}
+                    >
+                      {done && <Check className="h-3.5 w-3.5" />}
+                    </span>
                   </button>
                 ) : (
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-surface-elevated text-subtle">
-                    <Icon className="h-3.5 w-3.5" />
+                  <span className="tap-target mt-0.5 inline-flex shrink-0 items-start">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-surface-elevated text-subtle">
+                      <Icon className="h-3.5 w-3.5" />
+                    </span>
                   </span>
                 )}
                 <div className="min-w-0 flex-1">

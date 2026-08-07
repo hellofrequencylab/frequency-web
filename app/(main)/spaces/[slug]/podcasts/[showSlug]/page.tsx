@@ -137,7 +137,7 @@ export default async function ShowPage({
               ) : (
                 <div
                   aria-hidden
-                  className="grid h-40 w-40 place-items-center rounded-2xl border border-dashed border-border bg-surface-elevated text-page-title font-bold text-subtle sm:h-48 sm:w-48"
+                  className="grid h-40 w-40 place-items-center rounded-card border border-dashed border-border bg-surface-elevated text-page-title font-bold text-subtle sm:h-48 sm:w-48"
                 >
                   {show.title.slice(0, 1).toUpperCase()}
                 </div>
@@ -147,7 +147,7 @@ export default async function ShowPage({
             <div className="min-w-0 flex-1">
               <p className="text-meta font-semibold uppercase tracking-widest text-subtle">Show</p>
               {/* header-ok: the h1 lives inside DetailTemplate's `band` slot, which by contract owns the single page h1 (the band replaces the default title lockup). The template owns the chrome. */}
-              <h1 className="mt-1 text-balance text-page-title font-bold leading-tight text-text sm:text-3xl">{show.title}</h1>
+              <h1 className="mt-1 text-balance text-display-h3 font-bold leading-tight text-text">{show.title}</h1>
               {show.author && <p className="mt-1 text-body-sm text-muted">{show.author}</p>}
               {show.description && (
                 <p className="mt-3 whitespace-pre-line text-body-sm leading-relaxed text-muted">{show.description}</p>

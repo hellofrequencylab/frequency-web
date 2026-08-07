@@ -148,7 +148,7 @@ export function SpotlightTour({
           }}
         />
       ) : (
-        <div aria-hidden className="absolute inset-0 bg-black/62" />
+        <div aria-hidden className="absolute inset-0 bg-ink/62" />
       )}
 
       {/* Narration card */}

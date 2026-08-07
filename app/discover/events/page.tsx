@@ -73,7 +73,7 @@ export default async function DiscoverEventsPage() {
       {events.length === 0 ? (
         // Founding state: no events on the calendar yet near the beta. Frame it as a
         // beginning, not an absence.
-        <section className="relative overflow-hidden bg-surface px-6 py-20 sm:py-24">
+        <section className="relative overflow-hidden bg-surface mk-beat">
           <FrequencyArcs
             aria-hidden
             className="pointer-events-none absolute -top-12 left-1/2 -translate-x-1/2 w-[38rem] max-w-none text-primary opacity-[0.05]"
@@ -99,7 +99,7 @@ export default async function DiscoverEventsPage() {
       ) : (
         <>
           {/* ── The intro ───────────────────────────────────────── */}
-          <section className="relative overflow-hidden bg-surface px-6 py-20 sm:py-24">
+          <section className="relative overflow-hidden bg-surface mk-beat">
             {/* Frequency arcs radiating up under the calendar, tying events to place. */}
             <FrequencyArcs
               aria-hidden

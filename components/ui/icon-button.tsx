@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react'
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, Ref, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 // The modern icon-group control: a tight 32px icon-only affordance for row-action (44px on
@@ -46,8 +46,19 @@ import { cn } from '@/lib/utils'
 const iconControlBase =
   'tap-target inline-flex h-8 w-8 items-center justify-center rounded-control press transition-[color,background-color,border-color,box-shadow,transform] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50'
 
+// THREE VARIANTS. `filled` is the third, added 2026-08-05, and it was added because the code
+// asked for it in prose: `events/event-calendar.tsx`, `marketplace/column-selector.tsx` and
+// `admin/crm/live-chat-bridge.tsx` each carry a comment saying the control stays hand-rolled
+// because "IconButton has no filled variant, and `cn` is a plain join, so a className fill would
+// be settled by stylesheet order rather than by the call site." That is the correct read of the
+// merge rule and the wrong conclusion to have to live with: the fix is a variant, not a merge.
+//
+// It is the SELECTED half of a segmented toggle (grid-vs-list, a density radiogroup) and the one
+// affirmative icon action in a composer row (send). Both are "this control is the answer", which
+// is why one variant serves them. It does NOT replace `Button` — a filled icon-only control is
+// still an icon affordance at icon density, not a small primary button.
 export type IconButtonTone = 'default' | 'danger' | 'warning' | 'success'
-export type IconButtonVariant = 'plain' | 'bordered'
+export type IconButtonVariant = 'plain' | 'bordered' | 'filled'
 
 // Quiet at rest, one step louder on hover -- so a cluster of these never shouts. `plain`
 // rests one step quieter than `bordered` because it has no border to carry the affordance.
@@ -65,12 +76,26 @@ const BORDERED_TONE: Record<IconButtonTone, string> = {
   success: 'hover:border-success/40 hover:text-success',
 }
 
-function iconControl(variant: IconButtonVariant = 'plain', tone: IconButtonTone = 'default') {
-  return variant === 'bordered'
-    ? cn(iconControlBase, 'border border-border text-muted', BORDERED_TONE[tone])
-    : cn(iconControlBase, 'text-subtle hover:bg-surface-elevated', PLAIN_TONE[tone])
+// Filled is the only variant that is LOUD at rest, so tone here is the fill itself rather than a
+// hover step, and each pair carries its own `on-*` foreground so contrast is decided once, here,
+// instead of at every call site.
+const FILLED_TONE: Record<IconButtonTone, string> = {
+  default: 'bg-primary text-on-primary hover:bg-primary-hover',
+  danger: 'bg-danger text-on-primary hover:bg-danger/90',
+  warning: 'bg-warning text-on-primary hover:bg-warning/90',
+  success: 'bg-success text-on-primary hover:bg-success/90',
 }
 
+function iconControl(variant: IconButtonVariant = 'plain', tone: IconButtonTone = 'default') {
+  if (variant === 'bordered') return cn(iconControlBase, 'border border-border text-muted', BORDERED_TONE[tone])
+  if (variant === 'filled') return cn(iconControlBase, FILLED_TONE[tone])
+  return cn(iconControlBase, 'text-subtle hover:bg-surface-elevated', PLAIN_TONE[tone])
+}
+
+// `ref` is a plain prop, not a forwardRef wrapper: React 19 passes it through like any other,
+// and several adopters need the node (a dock header that returns focus to its own trigger, a
+// mobile editor that focuses Back on mount). Without it in the props type those sites had to
+// stay hand-rolled, which is the primitive losing a call site over a one-line gap.
 /** An icon-only <button> for a row action. `label` names it for a11y + the tooltip. */
 export function IconButton({
   label,
@@ -78,15 +103,18 @@ export function IconButton({
   tone,
   className,
   children,
+  ref,
   ...props
 }: {
   label: string
   variant?: IconButtonVariant
   tone?: IconButtonTone
   children: ReactNode
+  ref?: Ref<HTMLButtonElement>
 } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'aria-label'>) {
   return (
     <button
+      ref={ref}
       type="button"
       aria-label={label}
       title={label}
@@ -106,6 +134,7 @@ export function IconLink({
   href,
   className,
   children,
+  ref,
   ...props
 }: {
   label: string
@@ -113,9 +142,11 @@ export function IconLink({
   tone?: IconButtonTone
   href: string
   children: ReactNode
+  ref?: Ref<HTMLAnchorElement>
 } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'aria-label' | 'href'>) {
   return (
     <Link
+      ref={ref}
       href={href}
       aria-label={label}
       title={label}

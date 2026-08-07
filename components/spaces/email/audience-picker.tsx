@@ -4,12 +4,12 @@ import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Users, Save, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, fieldClasses } from '@/components/ui/field'
+import { Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { countSpaceAudience } from '@/lib/spaces/campaigns-actions'
 import { createSpaceSegment, deleteSpaceSegment } from '@/lib/spaces/segments-actions'
 import type { AudienceFilter } from '@/lib/spaces/audiences'
 import { isError } from '@/lib/action-result'
-import { cn } from '@/lib/utils'
 
 // AUDIENCE PICKER (ENTITY-SPACES-BUILD §C Phase 3 + ADR-380). The owner picks who a campaign goes to:
 // everyone in this Space, one tag, or a SAVED SEGMENT. A LIVE count updates as they pick
@@ -122,7 +122,7 @@ export function AudiencePicker({
     : null
 
   return (
-    <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 lift-1">
+    <div className="space-y-3 rounded-card border border-border bg-surface p-5 lift-1">
       <div>
         <p className="text-body-sm font-semibold text-text">Audience</p>
         <p className="mt-0.5 text-meta text-muted">
@@ -132,13 +132,13 @@ export function AudiencePicker({
 
       <label className="flex flex-col gap-1">
         <span className="text-meta font-medium text-muted">Send to</span>
-        <select
+        <Select
           value={selectValue}
           disabled={disabled}
           onChange={(e) => handleSelect(e.target.value)}
-          className={cn(fieldClasses, 'max-w-xs')}
+          emptyLabel="Everyone in this space"
+          wrapperClassName="max-w-xs"
         >
-          <option value="">Everyone in this space</option>
           {tags.length > 0 && (
             <optgroup label="By tag">
               {tags.map((t) => (
@@ -157,7 +157,7 @@ export function AudiencePicker({
               ))}
             </optgroup>
           )}
-        </select>
+        </Select>
       </label>
 
       <p className="inline-flex items-center gap-1.5 text-body-sm text-muted" role="status" aria-live="polite">
@@ -209,7 +209,7 @@ export function AudiencePicker({
           )}
 
           {manageError && (
-            <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+            <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
               {manageError}
             </p>
           )}

@@ -6,7 +6,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Loader2, Trash2, UserMinus, UserCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { fieldClasses } from '@/components/ui/field'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Select } from '@/components/ui/select'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
@@ -197,24 +198,20 @@ export function RosterManager({
     <div className="space-y-4">
       {/* Bulk action bar — appears once members are selected. */}
       {selected.size > 0 && (
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface-elevated p-3 lift-1">
+        <div className="flex flex-wrap items-center gap-3 rounded-card border border-border bg-surface-elevated p-3 lift-1">
           <span className="text-body-sm font-medium text-text">
             {selected.size} selected
           </span>
           <div className="flex items-center gap-2">
-            <select
+            <Select
               value={bulkRole}
               onChange={(e) => setBulkRole(e.target.value as SpaceRole)}
               disabled={bulkPending}
               aria-label="Role to assign in bulk"
-              className={cn(fieldClasses, 'w-auto py-1.5 text-meta')}
-            >
-              {ROLE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+              options={ROLE_OPTIONS}
+              wrapperClassName="inline-block w-max max-w-full"
+              className="text-meta"
+            />
             <Button
               type="button"
               variant="secondary"
@@ -261,7 +258,7 @@ export function RosterManager({
       )}
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+        <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
@@ -271,17 +268,11 @@ export function RosterManager({
         </p>
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface lift-1">
+      <div className="overflow-hidden rounded-card border border-border bg-surface lift-1">
         {/* Select-all header (only when there are selectable members). */}
         {selectableIds.length > 0 && (
           <div className="flex items-center gap-3 border-b border-border px-4 py-2.5 text-meta font-medium text-muted">
-            <input
-              type="checkbox"
-              checked={allSelected}
-              onChange={toggleAll}
-              aria-label="Select all members"
-              className="h-4 w-4 rounded border-border accent-primary"
-            />
+            <Checkbox checked={allSelected} onChange={toggleAll} aria-label="Select all members" />
             <span>Select all</span>
           </div>
         )}
@@ -298,16 +289,16 @@ export function RosterManager({
                   suspended && 'opacity-60',
                 )}
               >
+                {/* The owner has no box; the gutter takes the same `tap-target` floor the Checkbox
+                    wrapper claims, so every row stays aligned at any tap floor. */}
                 {row.isOwner ? (
-                  <span className="h-4 w-4 shrink-0" aria-hidden />
+                  <span className="tap-target shrink-0" aria-hidden />
                 ) : (
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={selected.has(row.profileId)}
                     onChange={() => toggle(row.profileId)}
                     disabled={anyPending}
                     aria-label={`Select ${row.displayName}`}
-                    className="h-4 w-4 shrink-0 rounded border-border accent-primary"
                   />
                 )}
 
@@ -332,20 +323,16 @@ export function RosterManager({
                   <span className="shrink-0 text-body-sm font-medium text-primary-strong">Owner</span>
                 ) : (
                   <div className="flex shrink-0 items-center gap-2">
-                    <select
+                    <Select
                       value={row.role}
                       onChange={(e) => onRole(row.profileId, e.target.value as SpaceRole)}
                       disabled={anyPending || suspended}
                       aria-label={`Role for ${row.displayName}`}
                       title={suspended ? 'Reactivate to change the role' : undefined}
-                      className={cn(fieldClasses, 'w-auto py-1.5 text-meta')}
-                    >
-                      {ROLE_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
+                      options={ROLE_OPTIONS}
+                      wrapperClassName="inline-block w-max max-w-full"
+                      className="text-meta"
+                    />
 
                     {suspended ? (
                       <IconButton

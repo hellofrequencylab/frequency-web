@@ -4,6 +4,7 @@ import { useRef, useState, type DragEvent, type ReactNode } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, GripVertical, Loader2, Plus, Upload, X } from 'lucide-react'
+import { Input, Textarea } from '@/components/ui/field'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
 import {
   blockBearsText,
@@ -67,8 +68,11 @@ export type UploadImage = (file: File) => Promise<{ url: string } | { error: str
 // calls back on every change (the builder applies it to the shared store, which repaints + debounce-saves).
 // Semantic DAWN tokens, no hex, voice canon (no em dashes).
 
-const inputCls =
-  'w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-meta text-text placeholder:text-subtle outline-none focus:border-primary'
+// The rail is ~300px wide, so its fields keep a tighter box than the sitewide default while
+// taking the field primitive's chrome (calm focus halo, aria-invalid error border, disabled
+// fade). `!` is load-bearing: `cn()` joins rather than merges, and `fieldClasses`' `px-3`/`py-2`
+// emit AFTER `px-2.5`/`py-1.5` in the compiled sheet, so a plain override would lose.
+const compactField = '!px-2.5 !py-1.5 text-meta'
 const labelCls = 'block text-2xs font-semibold uppercase tracking-wide text-muted'
 
 /** Whether a field stays in the SETTINGS-ONLY rail when block content is edited on the live page (the
@@ -253,12 +257,12 @@ export function FieldEditor({
     return (
       <label className="block space-y-1">
         <span className={labelCls}>{field.label}</span>
-        <input
+        <Input
           type={field.type === 'text' ? 'text' : 'url'}
           value={str}
           placeholder={field.placeholder}
           onChange={(e) => onChange(e.target.value)}
-          className={inputCls}
+          className={compactField}
         />
         {canUpload && uploadImage && (
           <UploadButton uploadImage={uploadImage} onUploaded={(urls) => onChange(urls[urls.length - 1])} />
@@ -270,12 +274,12 @@ export function FieldEditor({
     return (
       <label className="block space-y-1">
         <span className={labelCls}>{field.label}</span>
-        <textarea
+        <Textarea
           rows={3}
           value={typeof value === 'string' ? value : ''}
           placeholder={field.placeholder}
           onChange={(e) => onChange(e.target.value)}
-          className={inputCls}
+          className={compactField}
         />
       </label>
     )
@@ -604,13 +608,13 @@ function ImagesEditor({
               {/* Unoptimized: gallery images come from Supabase Storage, not the configured next/image domains. */}
               <Image src={url} alt="" width={160} height={160} unoptimized className="pointer-events-none h-full w-full object-cover" />
               {i === 0 && (
-                <span className="absolute left-1 top-1 rounded bg-black/60 px-1 py-0.5 text-2xs font-semibold text-white">First</span>
+                <span className="absolute left-1 top-1 rounded bg-ink/60 px-1 py-0.5 text-2xs font-semibold text-on-ink">First</span>
               )}
               <button
                 type="button"
                 onClick={() => removeAt(i)}
                 aria-label="Remove image"
-                className="absolute right-1 top-1 rounded-pill bg-black/60 p-0.5 text-white opacity-0 transition-opacity hover:bg-black/80 focus:opacity-100 group-hover:opacity-100"
+                className="absolute right-1 top-1 rounded-pill bg-ink/60 p-0.5 text-on-ink opacity-0 transition-opacity hover:bg-ink/80 focus:opacity-100 group-hover:opacity-100"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -620,7 +624,7 @@ function ImagesEditor({
                   onClick={() => move(i, -1)}
                   disabled={i === 0}
                   aria-label="Move earlier"
-                  className="rounded bg-black/60 p-0.5 text-white hover:bg-black/80 disabled:opacity-30"
+                  className="rounded bg-ink/60 p-0.5 text-on-ink hover:bg-ink/80 disabled:opacity-30"
                 >
                   <ChevronUp className="h-3.5 w-3.5" />
                 </button>
@@ -629,7 +633,7 @@ function ImagesEditor({
                   onClick={() => move(i, 1)}
                   disabled={i === urls.length - 1}
                   aria-label="Move later"
-                  className="rounded bg-black/60 p-0.5 text-white hover:bg-black/80 disabled:opacity-30"
+                  className="rounded bg-ink/60 p-0.5 text-on-ink hover:bg-ink/80 disabled:opacity-30"
                 >
                   <ChevronDown className="h-3.5 w-3.5" />
                 </button>
@@ -650,7 +654,7 @@ function ImagesEditor({
 
       <details className="text-2xs text-muted">
         <summary className="cursor-pointer select-none">Add or edit by URL</summary>
-        <textarea
+        <Textarea
           rows={3}
           value={urlDraft ?? urls.join('\n')}
           placeholder="One image URL per line"
@@ -660,7 +664,7 @@ function ImagesEditor({
             onChange(urlDraft.split('\n').map((s) => s.trim()).filter(Boolean))
             setUrlDraft(null)
           }}
-          className={`${inputCls} mt-1`}
+          className={`${compactField} mt-1`}
         />
       </details>
     </div>
@@ -832,51 +836,51 @@ function FeaturesEditor({
             {textOnCanvas ? (
               <p className="flex-1 pt-1 text-2xs leading-snug text-muted">Edit the title and text on the canvas.</p>
             ) : (
-              <input
+              <Input
                 value={it.title}
                 placeholder="Title"
                 onChange={(e) => patch(i, { title: e.target.value })}
-                className={inputCls}
+                className={compactField}
               />
             )}
           </div>
           {!textOnCanvas && (
-            <textarea
+            <Textarea
               rows={2}
               value={it.text}
               placeholder="Description"
               onChange={(e) => patch(i, { text: e.target.value })}
-              className={inputCls}
+              className={compactField}
             />
           )}
           {/* An image (ADR-585): use INSTEAD of the icon for a photo-forward item (cards / spotlight layouts). */}
           <label className="block space-y-1">
             <span className={labelCls}>Image</span>
-            <input
+            <Input
               value={it.image}
               placeholder="https:// (leave blank to use the icon)"
               onChange={(e) => patch(i, { image: e.target.value })}
-              className={inputCls}
+              className={compactField}
             />
             {uploadImage && <UploadButton uploadImage={uploadImage} onUploaded={(urls) => patch(i, { image: urls[urls.length - 1] })} />}
           </label>
-          <input
+          <Input
             value={it.price}
             placeholder="Price (optional), e.g. from $80"
             onChange={(e) => patch(i, { price: e.target.value })}
-            className={inputCls}
+            className={compactField}
           />
-          <input
+          <Input
             value={it.link}
             placeholder="Link (optional), https://"
             onChange={(e) => patch(i, { link: e.target.value })}
-            className={inputCls}
+            className={compactField}
           />
-          <input
+          <Input
             value={it.cta}
             placeholder="Button label (optional), e.g. Learn more"
             onChange={(e) => patch(i, { cta: e.target.value })}
-            className={inputCls}
+            className={compactField}
           />
         </div>
       </div>
@@ -1009,20 +1013,20 @@ function CardsEditor({
         <ItemSettingsHeader label={c.title || `Card ${i + 1}`} onBack={() => selectItem(null)} />
         <div className="space-y-1.5 rounded-lg border border-border bg-surface p-2">
           {!textOnCanvas && (
-            <input
+            <Input
               value={c.title}
               placeholder="Card title"
               onChange={(e) => patch(i, { title: e.target.value })}
-              className={inputCls}
+              className={compactField}
             />
           )}
           {!textOnCanvas && (
-            <textarea
+            <Textarea
               rows={2}
               value={c.text}
               placeholder="Card text"
               onChange={(e) => patch(i, { text: e.target.value })}
-              className={inputCls}
+              className={compactField}
             />
           )}
           {textOnCanvas && (
@@ -1032,50 +1036,50 @@ function CardsEditor({
           {/* Photo card: an image URL (+ upload when the surface allows it). */}
           <label className="block space-y-1">
             <span className={labelCls}>Photo</span>
-            <input
+            <Input
               value={c.image}
               placeholder="https:// (leave blank for a stat card)"
               onChange={(e) => patch(i, { image: e.target.value })}
-              className={inputCls}
+              className={compactField}
             />
             {uploadImage && <UploadButton uploadImage={uploadImage} onUploaded={(urls) => patch(i, { image: urls[urls.length - 1] })} />}
           </label>
 
           {/* Stat box: a big value + a label. Use INSTEAD of a photo for a metric card. */}
           <div className="flex items-center gap-1.5">
-            <input
+            <Input
               value={c.statValue}
               placeholder="Stat, e.g. 500+"
               onChange={(e) => patch(i, { statValue: e.target.value })}
-              className={`${inputCls} w-28`}
+              className={`${compactField} w-28`}
             />
-            <input
+            <Input
               value={c.statLabel}
               placeholder="Stat label"
               onChange={(e) => patch(i, { statLabel: e.target.value })}
-              className={inputCls}
+              className={compactField}
             />
           </div>
 
           {/* Whole-card link + an optional separate button. */}
-          <input
+          <Input
             value={c.link}
             placeholder="Card link (optional), https://"
             onChange={(e) => patch(i, { link: e.target.value })}
-            className={inputCls}
+            className={compactField}
           />
           <div className="flex items-center gap-1.5">
-            <input
+            <Input
               value={c.buttonLabel}
               placeholder="Button label"
               onChange={(e) => patch(i, { buttonLabel: e.target.value })}
-              className={`${inputCls} w-1/3`}
+              className={`${compactField} w-1/3`}
             />
-            <input
+            <Input
               value={c.buttonHref}
               placeholder="Button link, https://"
               onChange={(e) => patch(i, { buttonHref: e.target.value })}
-              className={inputCls}
+              className={compactField}
             />
           </div>
         </div>
@@ -1257,17 +1261,17 @@ function LinksEditor({
       <span className={labelCls}>{label}</span>
       {items.map((it, i) => (
         <div key={i} className="flex items-center gap-1.5">
-          <input
+          <Input
             value={it.label}
             placeholder="Label"
             onChange={(e) => update(items.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
-            className={`${inputCls} w-1/3`}
+            className={`${compactField} w-1/3`}
           />
-          <input
+          <Input
             value={it.url}
             placeholder="https://"
             onChange={(e) => update(items.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)))}
-            className={inputCls}
+            className={compactField}
           />
           <button
             type="button"

@@ -14,7 +14,8 @@ import {
 import { circleEventVisibilities } from '@/lib/events/circle-upcoming'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
-import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
+import { RankBadge } from '@/components/ui/rank-badge'
 import { isOnline, ONLINE_MS, RECENT_MS } from '@/lib/presence'
 import { getRecentDispatchesForProfile } from '@/lib/dispatches'
 import { getOnboardingStatus, nextStepsEnabled } from '@/lib/onboarding/status'
@@ -302,9 +303,10 @@ export async function LeaderboardPanel() {
             )}
             <span className="text-body-sm flex-1 truncate text-text">{member.display_name}</span>
             <div className="flex items-center gap-1 shrink-0">
-              <span className="rank-badge text-3xs font-bold leading-tight" style={seasonRankStyle(member.current_season_rank)}>
+              {/* `dot={false}`: five names deep in a 288px rail, already paired with a Counter. */}
+              <RankBadge rank={member.current_season_rank} size="sm" dot={false}>
                 {RANK_LABELS[member.current_season_rank] ?? member.current_season_rank}
-              </span>
+              </RankBadge>
               {/* Season Zaps through Counter: amber bolt (the Zaps tone), mono numeral. The word
                   "Zaps" is hidden on this row — the board is five names deep in a 288px rail and
                   the bolt already says which currency it is — but it still reaches assistive tech. */}

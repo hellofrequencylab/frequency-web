@@ -84,7 +84,7 @@ export function ModeSettings({
   return (
     <div className="space-y-8">
       {/* Current Mode + Focus */}
-      <section className="rounded-2xl border border-border bg-surface p-5 lift-1">
+      <section className="rounded-card border border-border bg-surface p-5 lift-1">
         <p className="text-meta font-semibold uppercase tracking-wide text-subtle">Starter preset</p>
         <h2 className="mt-1 text-body-lg font-semibold text-text">
           {view.modeLabel}: {view.focusLabel}

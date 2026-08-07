@@ -27,7 +27,7 @@ export function CancelEventButton({ eventId, slug, title }: { eventId: string; s
         type="button"
         onClick={() => setOpen(true)}
         disabled={pending}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-danger/40 px-3 py-1.5 text-body-sm font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 rounded-control border border-danger/40 px-3 py-1.5 text-body-sm font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
       >
         <Ban className="h-4 w-4" />
         {pending ? 'Cancelling…' : 'Cancel event'}

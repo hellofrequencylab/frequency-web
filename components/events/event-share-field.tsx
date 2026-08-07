@@ -106,17 +106,17 @@ export function EventShareField({ eventId, slug }: { eventId: string; slug: stri
       {shares.length > 0 && (
         <ul className="space-y-1.5">
           {shares.map((s) => (
-            <li key={s.id} className="flex items-center gap-2.5 rounded-lg bg-surface px-3 py-2">
+            <li key={s.id} className="flex items-center gap-2.5 rounded-card bg-surface px-3 py-2">
               {s.space.logoUrl ? (
                 <Image
                   src={s.space.logoUrl}
                   alt={s.space.name}
                   width={28}
                   height={28}
-                  className="h-7 w-7 shrink-0 rounded-lg object-cover"
+                  className="h-7 w-7 shrink-0 rounded-control object-cover"
                 />
               ) : (
-                <div className="flex h-7 w-7 shrink-0 select-none items-center justify-center rounded-lg bg-primary-bg text-3xs font-bold text-primary-strong">
+                <div className="flex h-7 w-7 shrink-0 select-none items-center justify-center rounded-control bg-primary-bg text-3xs font-bold text-primary-strong">
                   {getInitials(s.space.name)}
                 </div>
               )}
@@ -147,7 +147,7 @@ export function EventShareField({ eventId, slug }: { eventId: string; slug: stri
                     type="button"
                     onClick={() => run(declineEventShare(s.id))}
                     disabled={pending}
-                    className="rounded-lg px-2 py-1 text-meta font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
+                    className="rounded-control px-2 py-1 text-meta font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
                   >
                     Decline
                   </button>
@@ -155,7 +155,7 @@ export function EventShareField({ eventId, slug }: { eventId: string; slug: stri
                     type="button"
                     onClick={() => run(approveEventShare(s.id))}
                     disabled={pending}
-                    className="rounded-lg bg-primary px-2.5 py-1 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                    className="rounded-control bg-primary px-2.5 py-1 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
                   >
                     Approve
                   </button>
@@ -175,7 +175,7 @@ export function EventShareField({ eventId, slug }: { eventId: string; slug: stri
                   }}
                   disabled={pending}
                   aria-label={s.status === 'accepted' ? 'Remove collaborator' : 'Cancel request'}
-                  className="shrink-0 rounded-lg px-2 py-1 text-meta font-medium text-subtle transition-colors hover:text-danger disabled:opacity-40"
+                  className="shrink-0 rounded-control px-2 py-1 text-meta font-medium text-subtle transition-colors hover:text-danger disabled:opacity-40"
                 >
                   {s.status === 'accepted' ? 'Remove' : 'Cancel request'}
                 </button>
@@ -254,7 +254,7 @@ function SpaceSearch({ pending, onPick }: { pending: boolean; onPick: (spaceId: 
 
   return (
     <div ref={boxRef} onKeyDown={onKeyDown}>
-      <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5">
+      <div className="flex items-center gap-2 rounded-control border border-border bg-surface px-3 py-1.5">
         <Share2 className="h-4 w-4 shrink-0 text-subtle" />
         <input
           type="text"
@@ -285,9 +285,9 @@ function SpaceSearch({ pending, onPick }: { pending: boolean; onPick: (spaceId: 
               className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-elevated disabled:opacity-40"
             >
               {h.image_url ? (
-                <Image src={h.image_url} alt={h.name} width={24} height={24} className="h-6 w-6 shrink-0 rounded-lg object-cover" />
+                <Image src={h.image_url} alt={h.name} width={24} height={24} className="h-6 w-6 shrink-0 rounded-control object-cover" />
               ) : (
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-3xs font-bold text-primary-strong">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-control bg-primary-bg text-3xs font-bold text-primary-strong">
                   {getInitials(h.name)}
                 </div>
               )}

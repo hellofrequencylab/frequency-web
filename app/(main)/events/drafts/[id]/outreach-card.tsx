@@ -46,7 +46,7 @@ export function OutreachCard({ claimToken, slug, sentTo }: { claimToken: string;
         <button
           type="button"
           onClick={() => copy('message')}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           {copied === 'message' ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           {copied === 'message' ? 'Copied' : 'Copy the message'}
@@ -54,7 +54,7 @@ export function OutreachCard({ claimToken, slug, sentTo }: { claimToken: string;
         <button
           type="button"
           onClick={() => copy('link')}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-meta font-medium text-text transition-colors hover:bg-surface-elevated"
+          className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-3 py-2 text-meta font-medium text-text transition-colors hover:bg-surface-elevated"
         >
           {copied === 'link' ? <Check className="h-3.5 w-3.5" /> : <Link2 className="h-3.5 w-3.5" />}
           {copied === 'link' ? 'Copied' : 'Copy link'}

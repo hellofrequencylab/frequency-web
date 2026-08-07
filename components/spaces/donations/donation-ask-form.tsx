@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { isError } from '@/lib/action-result'
 import { PriceModeEditor } from '@/components/commerce/price-mode-editor'
 import type { Offering } from '@/lib/commerce/types'
@@ -83,7 +84,7 @@ export function DonationAskForm({
         if (!pending) save()
       }}
     >
-      <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
+      <div className="space-y-4 rounded-card border border-border bg-surface p-5 lift-1">
         <PriceModeEditor
           value={offering}
           onChange={(next) => {
@@ -106,18 +107,15 @@ export function DonationAskForm({
           }}
         />
 
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={isActive}
-            onChange={(e) => {
-              setIsActive(e.target.checked)
-              setSaved(false)
-            }}
-            className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
-          />
-          <span className="text-body-sm text-muted">Show this ask to members</span>
-        </label>
+        <Checkbox
+          checked={isActive}
+          onChange={(e) => {
+            setIsActive(e.target.checked)
+            setSaved(false)
+          }}
+          label="Show this ask to members"
+          wrapperClassName="flex"
+        />
       </div>
 
       <p className="text-meta text-subtle">
@@ -126,7 +124,7 @@ export function DonationAskForm({
       </p>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+        <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}

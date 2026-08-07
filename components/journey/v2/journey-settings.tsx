@@ -18,6 +18,7 @@ import { readJourneyCoverFocus } from '@/lib/journeys/header'
 import type { PlanStatus, PlanVisibility, StoredVeraReview, JourneyMeeting, JourneyTouchpoint } from '@/lib/journey-plans'
 import { Toggle } from '@/components/admin/toggle'
 import { JourneyEventLink } from './journey-event-link'
+import { Input, Textarea } from '@/components/ui/field'
 
 const DIFFICULTIES = ['gentle', 'standard', 'deep'] as const
 // Meeting formats (ADR-302): how a Circle gathers around the Journey. Icon + label per option.
@@ -307,28 +308,28 @@ export function JourneySettings(props: JourneySettingsProps) {
           <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
             <Gem className="h-3.5 w-3.5" /> Completion Gems
           </span>
-          <input
+          <Input
             type="number"
             min={0}
             max={100}
             value={gems}
             onChange={(e) => setGems(Number(e.target.value))}
             onBlur={() => save(() => setJourneyRewards(props.planId, gems))}
-            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
+            className="px-2.5 py-1.5"
           />
         </label>
         <label className="flex flex-col gap-1">
           <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
             <CalendarClock className="h-3.5 w-3.5" /> Phase drip (days)
           </span>
-          <input
+          <Input
             type="number"
             min={1}
             max={30}
             value={drip}
             onChange={(e) => setDrip(Number(e.target.value))}
             onBlur={() => save(() => setJourneyDelivery(props.planId, { dripIntervalDays: drip }))}
-            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
+            className="px-2.5 py-1.5"
           />
         </label>
         </div>
@@ -401,30 +402,30 @@ export function JourneySettings(props: JourneySettingsProps) {
 
         <label className="flex flex-col gap-1">
           <span className="text-2xs font-medium text-muted">Category</span>
-          <input
+          <Input
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             onBlur={() => attrs({ category: category || null })}
             placeholder="e.g. Rest and recovery"
-            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
+            className="px-2.5 py-1.5"
           />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-2xs font-medium text-muted">Tags (comma-separated)</span>
-          <input
+          <Input
             value={tags}
             onChange={(e) => setTags(e.target.value)}
             onBlur={() => attrs({ tags: tags.split(',').map((t) => t.trim()).filter(Boolean) })}
             placeholder="e.g. sleep, calm, screens"
-            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
+            className="px-2.5 py-1.5"
           />
         </label>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1">
             <span className="text-2xs font-medium text-muted">Minutes a day</span>
-            <input
+            <Input
               type="number"
               min={0}
               max={600}
@@ -432,19 +433,19 @@ export function JourneySettings(props: JourneySettingsProps) {
               onChange={(e) => setDailyMinutes(Number(e.target.value))}
               onBlur={() => attrs({ dailyMinutes: dailyMinutes || null })}
               placeholder="optional"
-              className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
+              className="px-2.5 py-1.5"
             />
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-2xs font-medium text-muted">Max people</span>
-            <input
+            <Input
               type="number"
               min={0}
               value={enrollCap || ''}
               onChange={(e) => setEnrollCap(Number(e.target.value))}
               onBlur={() => attrs({ enrollCap: enrollCap || null })}
               placeholder="no limit"
-              className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
+              className="px-2.5 py-1.5"
             />
             <span className="text-2xs text-muted">A Run of about 8 to 12 keeps real accountability.</span>
           </label>
@@ -548,26 +549,26 @@ function TouchpointForm({
           <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-muted">
             <CalendarClock className="h-3.5 w-3.5" aria-hidden /> Schedule
           </span>
-          <input
+          <Input
             value={t?.schedule ?? ''}
             onChange={(e) => onPatch({ schedule: e.target.value })}
             onBlur={(e) => onCommit({ schedule: e.target.value })}
             maxLength={120}
             placeholder="e.g. Sundays 7pm"
-            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
+            className="px-2.5 py-1.5"
           />
         </label>
         <label className="flex flex-col gap-1 sm:w-28">
           <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-muted">
             <Clock className="h-3.5 w-3.5" aria-hidden /> Timezone
           </span>
-          <input
+          <Input
             value={t?.timezone ?? ''}
             onChange={(e) => onPatch({ timezone: e.target.value })}
             onBlur={(e) => onCommit({ timezone: e.target.value })}
             maxLength={40}
             placeholder="e.g. ET"
-            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
+            className="px-2.5 py-1.5"
           />
         </label>
       </div>
@@ -577,13 +578,13 @@ function TouchpointForm({
           <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-muted">
             <MapPin className="h-3.5 w-3.5" aria-hidden /> Location
           </span>
-          <input
+          <Input
             value={t?.location ?? ''}
             onChange={(e) => onPatch({ location: e.target.value })}
             onBlur={(e) => onCommit({ location: e.target.value })}
             maxLength={200}
             placeholder="e.g. The community hall, 14 Main St"
-            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
+            className="px-2.5 py-1.5"
           />
         </label>
       )}
@@ -593,14 +594,14 @@ function TouchpointForm({
           <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-muted">
             <Video className="h-3.5 w-3.5" aria-hidden /> Join link
           </span>
-          <input
+          <Input
             type="url"
             value={t?.link ?? ''}
             onChange={(e) => onPatch({ link: e.target.value })}
             onBlur={(e) => onCommit({ link: e.target.value })}
             maxLength={500}
             placeholder="https://"
-            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
+            className="px-2.5 py-1.5"
           />
         </label>
       )}
@@ -614,14 +615,14 @@ function TouchpointForm({
 
       <label className="flex flex-col gap-1">
         <span className="text-2xs font-medium text-muted">Notes</span>
-        <textarea
+        <Textarea
           value={t?.notes ?? ''}
           onChange={(e) => onPatch({ notes: e.target.value })}
           onBlur={(e) => onCommit({ notes: e.target.value })}
           maxLength={500}
           rows={2}
           placeholder="Any other details people should know before they join"
-          className="resize-none rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
+          className="resize-none px-2.5 py-1.5"
         />
       </label>
     </div>

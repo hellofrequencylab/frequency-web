@@ -61,7 +61,7 @@ export function ResonanceMatchingToggle({
     <section className="mt-5 rounded-2xl border border-border bg-surface p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h2 className="flex items-center gap-2 text-body-sm font-bold text-text">
+          <h2 id="resonance-matching-heading" className="flex items-center gap-2 text-body-sm font-bold text-text">
             <Sparkles className="h-4 w-4 text-primary-strong" /> Resonance matching
           </h2>
           <p className="mt-1 text-body-sm text-muted">
@@ -70,10 +70,13 @@ export function ResonanceMatchingToggle({
             introduced until you both say yes, and a human still sends the hello.
           </p>
         </div>
+        {/* Each switch is named by the heading it sits beside, so the spoken name is the
+            visible one and cannot drift. `aria-checked` carries on/off. */}
         <button
           type="button"
           role="switch"
           aria-checked={optedIn}
+          aria-labelledby="resonance-matching-heading"
           onClick={toggleMatching}
           disabled={pending}
           className={`relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-pill transition-colors disabled:opacity-50 ${
@@ -88,7 +91,7 @@ export function ResonanceMatchingToggle({
       {optedIn && (
         <div className="mt-4 flex items-start justify-between gap-4 border-t border-border/60 pt-4">
           <div className="min-w-0">
-            <h3 className="flex items-center gap-2 text-body-sm font-semibold text-text">
+            <h3 id="resonance-mute-heading" className="flex items-center gap-2 text-body-sm font-semibold text-text">
               <EyeOff className="h-3.5 w-3.5 text-subtle" /> Mute being suggested
             </h3>
             <p className="mt-1 text-body-sm text-muted">
@@ -99,6 +102,7 @@ export function ResonanceMatchingToggle({
             type="button"
             role="switch"
             aria-checked={muted}
+            aria-labelledby="resonance-mute-heading"
             onClick={toggleMute}
             disabled={pending}
             className={`relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-pill transition-colors disabled:opacity-50 ${

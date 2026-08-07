@@ -3,14 +3,13 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check } from 'lucide-react'
+import { Input, Textarea } from '@/components/ui/field'
 import { SITE_URL } from '@/lib/site'
 import { saveHomeSeo } from './actions'
 
 // Title + meta description for '/', with a search-result preview so the owner sees
 // what they're shipping. Blank fields fall back to the coded copy.
 
-const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-broadcast'
 const LABEL = 'mb-1 block text-meta font-semibold text-subtle'
 
 export function HomeSeoForm({
@@ -50,14 +49,13 @@ export function HomeSeoForm({
 
   return (
     <div className="space-y-4">
-      <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
+      <div className="space-y-4 rounded-card border border-border bg-surface p-5 lift-1">
         <div>
           <label className={LABEL} htmlFor="home-seo-title">
             Title <span className="ml-1.5 font-normal text-subtle/70">· blank = the coded title</span>
           </label>
-          <input
+          <Input
             id="home-seo-title"
-            className={FIELD}
             value={title}
             maxLength={200}
             placeholder={fallback.title}
@@ -68,9 +66,9 @@ export function HomeSeoForm({
           <label className={LABEL} htmlFor="home-seo-description">
             Meta description <span className="ml-1.5 font-normal text-subtle/70">· blank = the coded description</span>
           </label>
-          <textarea
+          <Textarea
             id="home-seo-description"
-            className={`${FIELD} resize-y`}
+            className="resize-y"
             rows={3}
             value={description}
             maxLength={600}
@@ -90,7 +88,7 @@ export function HomeSeoForm({
             type="button"
             onClick={save}
             disabled={pending}
-            className="rounded-lg bg-primary px-5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            className="rounded-control bg-primary px-5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
           >
             {pending ? 'Saving…' : 'Save'}
           </button>
@@ -98,7 +96,7 @@ export function HomeSeoForm({
       </div>
 
       {/* How it reads in a search result */}
-      <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
+      <div className="rounded-card border border-border bg-surface p-5 lift-1">
         <p className="mb-3 text-meta font-semibold uppercase tracking-wide text-subtle">Search preview</p>
         <p className="truncate text-body font-semibold text-broadcast">{effectiveTitle}</p>
         <p className="mt-0.5 text-meta text-success">{SITE_URL.replace(/^https?:\/\//, '')}</p>

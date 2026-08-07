@@ -3,6 +3,8 @@
 import { useCallback } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Search, X } from 'lucide-react'
+import { Select } from '@/components/ui/select'
+import { Input } from '@/components/ui/field'
 
 // URL-as-state filter bar for Index/Queue surfaces (ADR-233 §4/§5, GitHub qualifier
 // filters + Retool toolbar). Filter + search state lives in the query string so the
@@ -56,30 +58,31 @@ export function FilterBar({
         {search && (
           <div className="relative min-w-48 flex-1">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
-            <input
+            <Input
               type="search"
               defaultValue={params.get(search) ?? ''}
               placeholder={searchPlaceholder}
               onChange={(e) => setParam(search, e.target.value || null)}
-              className="w-full rounded-lg border border-border bg-surface py-1.5 pl-8 pr-3 text-body-sm text-text placeholder:text-subtle focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="!py-1.5 pl-8 pr-3"
             />
           </div>
         )}
         {filters.map((f) => (
-          <select
+          <Select
             key={f.key}
             value={params.get(f.key) ?? ''}
             onChange={(e) => setParam(f.key, e.target.value || null)}
             aria-label={f.label}
-            className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm font-medium text-text focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            emptyLabel={f.label}
+            wrapperClassName="inline-block w-max max-w-full"
+            className="font-medium"
           >
-            <option value="">{f.label}</option>
             {f.options.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
               </option>
             ))}
-          </select>
+          </Select>
         ))}
       </div>
       {active.length > 0 && (

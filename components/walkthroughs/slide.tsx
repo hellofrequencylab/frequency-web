@@ -45,12 +45,19 @@ export const ACCENT_CLASSES: Record<StepAccent, { solid: string; onSolid: string
   broadcast: { solid: 'bg-broadcast', onSolid: 'text-on-broadcast', soft: 'bg-broadcast-bg', text: 'text-broadcast-strong' },
   success: { solid: 'bg-success', onSolid: 'text-on-success', soft: 'bg-success-bg', text: 'text-success' },
   warning: { solid: 'bg-warning', onSolid: 'text-on-warning', soft: 'bg-warning-bg', text: 'text-warning' },
-  'rank-gold': { solid: 'bg-[var(--rank-gold)]', onSolid: 'text-white', soft: 'bg-[var(--rank-gold-bright)]/30', text: 'text-[var(--rank-gold-deep)]' },
-  'rank-jade': { solid: 'bg-[var(--rank-jade)]', onSolid: 'text-white', soft: 'bg-[var(--rank-jade-bright)]/30', text: 'text-[var(--rank-jade-deep)]' },
-  'rank-teal': { solid: 'bg-[var(--rank-teal)]', onSolid: 'text-white', soft: 'bg-[var(--rank-teal-bright)]/30', text: 'text-[var(--rank-teal-deep)]' },
-  'rank-indigo': { solid: 'bg-[var(--rank-indigo)]', onSolid: 'text-white', soft: 'bg-[var(--rank-indigo-bright)]/30', text: 'text-[var(--rank-indigo-deep)]' },
-  'rank-plum': { solid: 'bg-[var(--rank-plum)]', onSolid: 'text-white', soft: 'bg-[var(--rank-plum-bright)]/30', text: 'text-[var(--rank-plum-deep)]' },
-  'rank-rose': { solid: 'bg-[var(--rank-rose)]', onSolid: 'text-white', soft: 'bg-[var(--rank-rose-bright)]/30', text: 'text-[var(--rank-rose-deep)]' },
+  // The rank chips fill with the spectrum's DEEP step, not its core. DAWN documents core as
+  // "solid dot/fill" — a dot, or a fill with nothing on top — and every core fails white text:
+  // measured 2.46:1 (gold) to 3.88:1 (stone), all under AA. The deep step runs 6.00:1 to 8.83:1
+  // with the same hue. check-contrast never caught this because white-on-rank is not a pair it
+  // models, so the gate was green over six failing chips.
+  // These are real utilities now rather than bg-[var(--rank-*)]: the deep/bright steps were
+  // bridged into @theme during the gamification pass, so the arbitrary-value form is obsolete.
+  'rank-gold': { solid: 'bg-rank-gold-deep', onSolid: 'text-on-ink', soft: 'bg-rank-gold-bright/30', text: 'text-rank-gold-deep' },
+  'rank-jade': { solid: 'bg-rank-jade-deep', onSolid: 'text-on-ink', soft: 'bg-rank-jade-bright/30', text: 'text-rank-jade-deep' },
+  'rank-teal': { solid: 'bg-rank-teal-deep', onSolid: 'text-on-ink', soft: 'bg-rank-teal-bright/30', text: 'text-rank-teal-deep' },
+  'rank-indigo': { solid: 'bg-rank-indigo-deep', onSolid: 'text-on-ink', soft: 'bg-rank-indigo-bright/30', text: 'text-rank-indigo-deep' },
+  'rank-plum': { solid: 'bg-rank-plum-deep', onSolid: 'text-on-ink', soft: 'bg-rank-plum-bright/30', text: 'text-rank-plum-deep' },
+  'rank-rose': { solid: 'bg-rank-rose-deep', onSolid: 'text-on-ink', soft: 'bg-rank-rose-bright/30', text: 'text-rank-rose-deep' },
 }
 
 // The card shell — hoisted so it isn't re-created on every render.

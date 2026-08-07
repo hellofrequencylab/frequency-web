@@ -4,14 +4,12 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { UserPlus, ScanLine, Check } from 'lucide-react'
 import { createProfile } from '@/app/(main)/connections/actions'
+import { Input, Textarea } from '@/components/ui/field'
 
 // Contact capture — the headline of Capture (the rework): get a person's details
 // into your personal CRM in seconds. On web this is manual entry (you won't shoot
 // a card on a laptop); the card/poster *scan* path lives one tap away at
 // /connections/new. Saves a private, owner-scoped contact (member-tier, §5.2).
-
-const input =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-broadcast'
 
 export function ContactCaptureForm() {
   const [name, setName] = useState('')
@@ -64,11 +62,12 @@ export function ContactCaptureForm() {
 
   return (
     <div className="space-y-2">
-      <input className={input} placeholder="Name *" value={name} onChange={(e) => setName(e.target.value)} />
-      <input className={input} placeholder="Email (optional)" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-      <textarea
-        className={`${input} resize-none`}
+      <Input aria-label="Name" placeholder="Name *" value={name} onChange={(e) => setName(e.target.value)} />
+      <Input aria-label="Email" placeholder="Email (optional)" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <Textarea
+        className="resize-none"
         rows={2}
+        aria-label="Note"
         placeholder="Where you met, what to remember…"
         value={note}
         onChange={(e) => setNote(e.target.value)}
@@ -85,7 +84,7 @@ export function ContactCaptureForm() {
           type="button"
           onClick={save}
           disabled={!name.trim() || pending}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-control bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
           <UserPlus className="h-3.5 w-3.5" aria-hidden /> {pending ? 'Saving…' : 'Capture'}
         </button>

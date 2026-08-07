@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChevronUp, GripVertical, RotateCcw, SlidersHorizontal } from 'lucide-react'
+import { DockSegment } from '@/components/layout/dock-segment'
 import { visibleLinks } from '@/app/(main)/admin/sections'
 import {
   DASH_SCOPES,
@@ -42,7 +43,6 @@ export function AdminPageDock({
   webRole?: WebRole
   staffRole?: StaffRole | null
 }) {
-  const [open, setOpen] = useState(false)
   const pathname = usePathname()
   const scope = scopeForPath(pathname)
   const links = visibleLinks(role, webRole, staffRole)
@@ -51,56 +51,47 @@ export function AdminPageDock({
   )
 
   return (
-    <div>
-      {/* The panel — revealed above the tab's pinned bottom edge. */}
-      <div
-        className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${
-          open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
-        }`}
-      >
-        <div className="overflow-hidden">
-          <div className="px-1 pt-2">
-            <p className="px-2 pb-1 text-meta font-semibold uppercase tracking-wide text-muted">
-              Page settings
-            </p>
-            <div className="space-y-0.5">
-              {settingLinks.map((l) => (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
-                >
-                  <l.Icon className="h-4 w-4 shrink-0 text-muted" />
-                  {l.label}
-                </Link>
-              ))}
-            </div>
-
-            {scope && <SectionSorter scope={scope} />}
-          </div>
-        </div>
+    <DockSegment
+      regionLabel="Page admin"
+      head={({ open }) => (
+        <>
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-muted">
+            <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1 text-left">
+            <span className="block truncate text-body-sm font-semibold leading-tight text-text">Page admin</span>
+          </span>
+          <ChevronUp
+            className={`h-4 w-4 shrink-0 text-subtle transition-transform duration-[var(--motion-base)] motion-reduce:transition-none ${open ? 'rotate-180' : ''}`}
+            aria-hidden
+          />
+        </>
+      )}
+    >
+      {/* ── ONE VERTICAL STEP THROUGH THE PANEL (owner, 2026-08-06: "vertical spacing is off") ──
+          This had three. The eyebrow sat on `pb-1`, the rows on `py-1.5`, and the sorter opened on
+          `mt-3 pt-2.5` — so the gap above "Page settings", the gap between its links, and the gap
+          before "Sort sections" were all different, and none of them matched the head above them.
+          The panel now steps on 2 (0.5rem) between blocks and 1.5 inside a row, which is the same
+          rhythm the rail's own groups use. */}
+      <p className="px-2 pb-2 text-meta font-semibold uppercase tracking-wide text-muted">
+        Page settings
+      </p>
+      <div className="space-y-0.5">
+        {settingLinks.map((l) => (
+          <Link
+            key={l.href}
+            href={l.href}
+            className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+          >
+            <l.Icon className="h-4 w-4 shrink-0 text-muted" />
+            {l.label}
+          </Link>
+        ))}
       </div>
 
-      {/* The tab. */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="flex w-full items-center gap-2.5 rounded-lg px-2 py-3 text-left transition-colors hover:bg-surface-elevated"
-      >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-muted">
-          <SlidersHorizontal className="h-[18px] w-[18px]" aria-hidden />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-body-sm font-semibold leading-tight text-text">Page admin</span>
-          <span className="mt-0.5 block text-meta text-subtle">Settings &amp; sort</span>
-        </span>
-        <ChevronUp
-          className={`h-4 w-4 shrink-0 text-subtle transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
-          aria-hidden
-        />
-      </button>
-    </div>
+      {scope && <SectionSorter scope={scope} />}
+    </DockSegment>
   )
 }
 
@@ -137,8 +128,8 @@ function SectionSorter({ scope }: { scope: DashScope }) {
   }
 
   return (
-    <div className="mt-3 border-t border-border/60 px-0 pt-2.5">
-      <div className="flex items-baseline justify-between px-2 pb-1.5">
+    <div className="mt-4 border-t border-border/60 px-0 pt-3">
+      <div className="flex items-baseline justify-between px-2 pb-2">
         <p className="text-meta font-semibold uppercase tracking-wide text-muted">Sort sections</p>
         <span className="text-meta text-subtle">{isPending ? 'Saving…' : 'Drag to reorder'}</span>
       </div>
@@ -173,7 +164,7 @@ function SectionSorter({ scope }: { scope: DashScope }) {
           setOrder(next)
           save(next)
         }}
-        className="mt-1.5 flex items-center gap-2 rounded-lg px-2 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+        className="mt-2 flex items-center gap-2 rounded-lg px-2 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
       >
         <RotateCcw className="h-3.5 w-3.5 shrink-0" aria-hidden />
         Reset to default order

@@ -5,12 +5,14 @@ import { PenLine, Megaphone, NotebookPen, UserPlus, Camera } from 'lucide-react'
 import { updateMyAvatar } from '@/app/(main)/feed/actions'
 import { uploadProfileImageAction } from '@/app/(main)/settings/profile/actions'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
+import { IconButton } from '@/components/ui/icon-button'
 import { Composer } from './composer'
 import { ContactCaptureForm } from './contact-capture-form'
 
 // The Capture box — one Substack-style box, one **bottom row of selectable capture
-// features** (the rework): Post · Dispatch · Note · Connect, an icon segmented control
-// alongside the send button. Each selector shows just its icon until it's the active
+// features** (the rework): Post · Dispatch · Note · Connect, rendered the way DAWN's
+// composer renders them — one labelled chip for the active mode, bare icon buttons for
+// the rest, on no track. Each selector shows just its icon until it's the active
 // mode, when it reveals its label — so the row stays compact on a phone and the
 // current mode reads at a glance. The active feature drives the editor + send
 // behaviour; Dispatch (host announcement) is just one of the features. (Photo is
@@ -48,27 +50,52 @@ export function CaptureBox({
   const modes = MODES.filter((m) => !m.hostOnly || canAnnounce)
 
   // One row of selectable capture features — never wraps; scrolls if it must.
+  //
+  // PATTERN: DAWN's own composer row (design_handoff/dawn/ui_kits/app/feed.jsx:138-148) is
+  // the direct reference, so this is a copy rather than a judgement call: ONE active chip
+  // that carries its label (radius-pill + a border-strong hairline + meta type), and every
+  // other mode as a bare 32px radius-control icon button on no background. WHY not a tab
+  // vocabulary: this switches what the editor beneath it DOES, it does not navigate between
+  // views, so UnderlineTabs would be the wrong word for it.
+  //
+  // The thing that changed is the wrapper: the old `rounded-lg bg-surface-elevated p-0.5`
+  // TRACK is what made these read as SaaS pill tabs, and DAWN has no such track anywhere —
+  // not here, not in the right rail. Dropping it (and the `lift-1` on the active pill) is
+  // the whole fix; the icon-then-label reveal DAWN also does is kept as it was.
+  //
+  // The inactive modes compose IconButton so the kit keeps owning the 32px density floor,
+  // the coarse-pointer tap target, the focus ring and the press affordance. The active mode
+  // stays a real <button aria-pressed> (DAWN's mock renders a dead <span>) so the row is
+  // still one coherent set of toggles to a screen reader.
   const featureRow = (
-    <div className="flex flex-nowrap items-center gap-0.5 overflow-x-auto rounded-lg bg-surface-elevated p-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="flex flex-nowrap items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {modes.map((m) => {
         const active = mode === m.key
-        return (
+        return active ? (
           <button
             key={m.key}
             type="button"
             onClick={() => setMode(m.key)}
-            aria-pressed={active}
-            aria-label={m.label}
-            className={`inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-2xs font-semibold transition-colors ${
-              active
-                ? `bg-surface lift-1 ${m.key === 'dispatch' ? 'text-warning' : 'text-primary-strong'}`
-                : 'text-muted hover:text-muted'
+            aria-pressed
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-pill border border-border-strong px-3 py-1.5 text-meta font-bold ${
+              m.key === 'dispatch' ? 'text-warning' : 'text-text'
             }`}
           >
-            <m.icon className="h-3.5 w-3.5" />
+            <m.icon className="h-3.5 w-3.5" aria-hidden />
             {/* Reveal the label only for the active mode — icon-only otherwise. */}
-            {active && <span>{m.label}</span>}
+            <span>{m.label}</span>
           </button>
+        ) : (
+          <IconButton
+            key={m.key}
+            label={m.label}
+            tone={m.key === 'dispatch' ? 'warning' : 'default'}
+            onClick={() => setMode(m.key)}
+            aria-pressed={false}
+            className="shrink-0"
+          >
+            <m.icon className="h-4 w-4" aria-hidden />
+          </IconButton>
         )
       })}
     </div>
@@ -76,7 +103,7 @@ export function CaptureBox({
 
   if (mode === 'contact') {
     return (
-      <div className="rounded-2xl bg-surface p-4 lift-1">
+      <div className="rounded-card bg-surface p-4 lift-1">
         <ContactCaptureForm />
         <TakeProfilePic />
         <div className="mt-3 border-t border-border pt-3">{featureRow}</div>
@@ -160,7 +187,7 @@ function TakeProfilePic() {
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={state === 'saving'}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
       >
         <Camera className="h-3.5 w-3.5" />
         {state === 'saving'

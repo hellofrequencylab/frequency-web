@@ -31,9 +31,15 @@ import { spaceTypeLabel } from '@/components/spaces/space-type'
 // so the gate is simply "signed in". FRAMING note: this hub reads the operator set from real
 // authority, never from the context cookie.
 
+// Found by check:seo Scan C on the run that first looked outside app/(marketing) (2026-08-05).
+// The gate here is "signed in", which this page applies by SCOPING rather than by redirecting, so
+// an anonymous crawler gets a real 200 with an empty operator hub on it. It is not robots-disallowed
+// (a blanket /spaces rule would deindex the public Space profiles), so the declaration has to live
+// here: noindex so the empty shell never enters the index, follow so the links out still count.
 export const metadata = {
   title: 'Spaces you run',
   description: 'Open the management console for any Space you own or help run.',
+  robots: { index: false, follow: true },
 }
 
 // A dimension-matched skeleton grid — same shape/spacing as the real card grid, so the streamed
@@ -128,10 +134,10 @@ const SPACE_BENEFITS = [
 // Primary CTA opens the same create flow as the header action; the secondary points to the directory.
 function NoSpacesSplash() {
   return (
-    <section className="overflow-hidden rounded-2xl border border-border bg-surface p-8 sm:p-10">
+    <section className="overflow-hidden rounded-card border border-border bg-surface p-8 sm:p-10">
       <div className="max-w-2xl">
         <p className="mb-2 text-meta font-semibold uppercase tracking-widest text-primary-strong">Go Business</p>
-        <h2 className="text-balance text-page-title font-bold text-text sm:text-3xl">Run your whole business here</h2>
+        <h2 className="text-balance text-display-h3 font-bold text-text">Run your whole business here</h2>
         <p className="mt-3 text-body leading-relaxed text-muted">
           You do not run any Spaces yet. A Business Space is one page for everything you sell, everyone
           you serve, and every event you run. Your people find it in the same network they already

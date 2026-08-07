@@ -111,7 +111,7 @@ export default async function DiscoverJourneyPage({
         title={
           <span className="inline-flex items-center gap-3 align-middle">
             <span
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-card"
               style={{ backgroundColor: accentTint(accent, 16), color: accentColor(accent) }}
             >
               <PlanIcon className="h-6 w-6" />
@@ -187,7 +187,7 @@ export default async function DiscoverJourneyPage({
             <InstructorBlock author={author} />
             <JourneyFaq plan={plan} />
 
-            <div className="rounded-2xl border border-border bg-surface p-5 text-center lift-1">
+            <div className="rounded-card border border-border bg-surface p-5 text-center lift-1">
               <p className="mb-1 text-body-lg font-bold text-text">Start this Journey</p>
               <p className="mx-auto mb-4 max-w-sm text-body-sm leading-relaxed text-muted">
                 Sign up free to start it. Its phases drip one per week, your Circle can run it

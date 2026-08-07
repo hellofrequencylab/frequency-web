@@ -3,7 +3,8 @@
 import { useEffect, useState, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
 import { Trophy, X } from 'lucide-react'
-import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { labelClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import {
   getCircleEngageData,
   adoptCircleChallenge,
@@ -18,7 +19,6 @@ import { ProgressTrack } from '@/components/ui/progress-track'
 // the circle's collective progress on each, and drop one. Reuses the existing challenge layer + the
 // adopt/drop actions (each re-checks the capability server-side).
 
-const input = fieldClasses
 const fieldLabel = labelClasses
 
 export function CircleEngageModule() {
@@ -95,21 +95,26 @@ export function CircleEngageModule() {
         {/* Adopt a shared challenge. */}
         {data.adoptable.length > 0 && (
           <div className="space-y-1.5">
-            <span className={fieldLabel}>Take on a challenge together</span>
+            {/* A <label htmlFor>, not the bare <span> this used to be: the select sits in a
+                sibling row, so the heading was not naming it. */}
+            <label htmlFor="circle-adopt-challenge" className={fieldLabel}>
+              Take on a challenge together
+            </label>
             <div className="flex items-center gap-2">
-              <select
+              <Select
+                id="circle-adopt-challenge"
                 value={pick}
                 onChange={(e) => setPick(e.target.value)}
                 disabled={pending}
-                className={`${input} min-w-0 flex-1 px-2`}
+                emptyLabel="Pick a challenge…"
+                wrapperClassName="min-w-0 flex-1"
               >
-                <option value="">Pick a challenge…</option>
                 {data.adoptable.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
                 ))}
-              </select>
+              </Select>
               <button
                 type="button"
                 onClick={handleAdopt}

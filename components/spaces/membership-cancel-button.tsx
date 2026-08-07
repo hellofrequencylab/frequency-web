@@ -44,7 +44,7 @@ export function MembershipCancelButton({
           type="button"
           onClick={cancel}
           disabled={pending}
-          className="inline-flex items-center gap-1 rounded-lg border border-danger px-2.5 py-1 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
+          className="inline-flex items-center gap-1 rounded-control border border-danger px-2.5 py-1 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
         >
           {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
           Confirm
@@ -66,7 +66,7 @@ export function MembershipCancelButton({
       <button
         type="button"
         onClick={() => setConfirming(true)}
-        className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-meta font-semibold text-muted transition-colors hover:border-danger/40 hover:text-danger"
+        className="inline-flex items-center gap-1 rounded-control border border-border px-2.5 py-1 text-meta font-semibold text-muted transition-colors hover:border-danger/40 hover:text-danger"
       >
         <X className="h-3.5 w-3.5" aria-hidden /> {label}
       </button>

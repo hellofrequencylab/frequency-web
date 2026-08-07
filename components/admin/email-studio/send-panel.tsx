@@ -14,6 +14,7 @@
 import { useState, useTransition } from 'react'
 import { Send, Clock, Users, Pause, Ban } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { StatusChip, Banner, type StatusTone } from '@/components/admin/status'
 import { isError } from '@/lib/action-result'
 import {
@@ -24,6 +25,7 @@ import {
   cancelAction,
 } from '@/app/(main)/admin/email-studio/send-actions'
 
+import { Input } from '@/components/ui/field'
 export type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'paused' | 'cancelled'
 
 export interface SegmentOption {
@@ -49,9 +51,6 @@ const STATUS_TONE: Record<CampaignStatus, StatusTone> = {
   paused: 'warning',
   cancelled: 'danger',
 }
-
-const field =
-  'w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text placeholder:text-subtle'
 
 export interface SendPanelProps {
   campaignId: string
@@ -165,13 +164,12 @@ export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGM
         <div className={row ? 'flex flex-wrap items-end gap-x-6 gap-y-4' : 'space-y-4'}>
           <label className={row ? 'block min-w-[220px] flex-1 space-y-1' : 'block space-y-1'}>
             <span className="text-meta font-medium text-subtle">Audience</span>
-            <select
+            <Select
               value={selected}
               onChange={(e) => {
                 setSelected(e.target.value)
                 setCount(null)
               }}
-              className={field}
               disabled={pending}
             >
               {segments.map((s) => (
@@ -179,7 +177,7 @@ export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGM
                   {s.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -197,11 +195,11 @@ export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGM
           <div className={row ? 'space-y-1' : 'space-y-1 border-t border-border pt-3'}>
             <span className="text-meta font-medium text-subtle">Schedule (optional)</span>
             <div className="flex flex-wrap items-center gap-2">
-              <input
+              <Input
                 type="datetime-local"
                 value={scheduleAt}
                 onChange={(e) => setScheduleAt(e.target.value)}
-                className="rounded-md border border-border bg-canvas px-2 py-1 text-meta text-text"
+                className="!w-auto !px-2 !py-1 text-meta"
                 aria-label="Send date and time"
                 disabled={pending || !canSchedule}
               />

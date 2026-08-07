@@ -11,7 +11,9 @@ import { NfcWriter } from './nfc-writer'
 import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
 import { shortLinkUrl } from '@/lib/qr/links'
 import type { PartnerOption } from './qr-studio'
+import { Input } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 
 export interface StudioLink {
   id: string
@@ -477,17 +479,17 @@ export function LinkForm({
     <div className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Title">
-          <input
+          <Input
             value={form.title}
             onChange={(e) => set('title', e.target.value)}
             placeholder="e.g. Spring flyer → signup"
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
         <Field label="Custom link (optional)">
           <div className="flex items-center rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm">
             <span className="text-subtle">/q/</span>
             <input
+              aria-label="Custom link slug"
               value={form.slug ?? ''}
               onChange={(e) => set('slug', e.target.value || null)}
               placeholder="auto"
@@ -496,20 +498,19 @@ export function LinkForm({
           </div>
         </Field>
         <Field label="Destination type">
-          <select
+          <Select
             value={form.destination_type}
             onChange={(e) => set('destination_type', e.target.value as LinkInput['destination_type'])}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           >
             <option value="url">Redirect to a URL</option>
             <option value="node">Run a check-in code (earns)</option>
             <option value="circle">Join a circle on scan</option>
             <option value="event">RSVP + check in to an event</option>
-          </select>
+          </Select>
         </Field>
         {form.destination_type === 'url' && (
           <Field label="Destination">
-            <select
+            <Select
               value={urlMode === 'custom' ? '__custom__' : isKnownDestination(form.target_url ?? '') ? form.target_url ?? '' : ''}
               onChange={(e) => {
                 const v = e.target.value
@@ -520,7 +521,6 @@ export function LinkForm({
                 setUrlMode('preset')
                 set('target_url', v)
               }}
-              className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
             >
               <option value="">Choose a destination…</option>
               {groupedDestinations().map((g) => (
@@ -533,15 +533,14 @@ export function LinkForm({
                 </optgroup>
               ))}
               <option value="__custom__">Custom URL…</option>
-            </select>
+            </Select>
           </Field>
         )}
         {form.destination_type === 'node' && (
           <Field label="Check-in code">
-            <select
+            <Select
               value={form.node_id ?? ''}
               onChange={(e) => set('node_id', e.target.value || null)}
-              className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
             >
               <option value="">Choose a code…</option>
               {nodes.map((n) => (
@@ -549,15 +548,14 @@ export function LinkForm({
                   {n.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
         )}
         {form.destination_type === 'circle' && (
           <Field label="Circle">
-            <select
+            <Select
               value={form.circle_id ?? ''}
               onChange={(e) => set('circle_id', e.target.value || null)}
-              className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
             >
               <option value="">Choose a circle…</option>
               {circles.map((c) => (
@@ -565,15 +563,14 @@ export function LinkForm({
                   {c.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
         )}
         {form.destination_type === 'event' && (
           <Field label="Event">
-            <select
+            <Select
               value={form.event_id ?? ''}
               onChange={(e) => set('event_id', e.target.value || null)}
-              className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
             >
               <option value="">Choose an event…</option>
               {events.map((ev) => (
@@ -581,22 +578,20 @@ export function LinkForm({
                   {ev.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
         )}
         <Field label="Expires (optional)">
-          <input
+          <Input
             type="datetime-local"
             value={toLocalInput(form.valid_until)}
             onChange={(e) => set('valid_until', fromLocalInput(e.target.value))}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
         <Field label="Partner (optional)">
-          <select
+          <Select
             value={form.partner_id ?? ''}
             onChange={(e) => set('partner_id', e.target.value || null)}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           >
             <option value="">No partner</option>
             {partners.map((p) => (
@@ -604,25 +599,23 @@ export function LinkForm({
                 {p.name}
               </option>
             ))}
-          </select>
+          </Select>
         </Field>
         <Field label="Source tag (optional)">
-          <input
+          <Input
             value={form.source_tag ?? ''}
             onChange={(e) => set('source_tag', e.target.value || null)}
             placeholder="e.g. downtown-poster-a"
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
       </div>
 
       {form.destination_type === 'url' && urlMode === 'custom' && (
         <Field label="Custom URL">
-          <input
+          <Input
             value={form.target_url ?? ''}
             onChange={(e) => set('target_url', e.target.value)}
             placeholder="https://… or /path"
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
       )}
@@ -633,19 +626,17 @@ export function LinkForm({
           <p className="mt-0.5 text-meta text-muted">Switch the same printed code to a new destination at a set time.</p>
           <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Switch at">
-              <input
+              <Input
                 type="datetime-local"
                 value={toLocalInput(form.switch_at)}
                 onChange={(e) => set('switch_at', fromLocalInput(e.target.value))}
-                className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
               />
             </Field>
             <Field label="…then point to">
-              <input
+              <Input
                 value={form.alt_target_url ?? ''}
                 onChange={(e) => set('alt_target_url', e.target.value)}
                 placeholder="https://… or /path"
-                className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
               />
             </Field>
           </div>

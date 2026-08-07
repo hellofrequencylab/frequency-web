@@ -4,10 +4,11 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   Award, Trophy, Zap, Flame, Star, Users, Link as LinkIcon,
   Calendar, Mic, Edit, BookOpen, Volume2, MessageCircle, PenTool,
-  Compass, Shield, Sun, Gem, Crown, TrendingUp, HandMetal, X,
+  Compass, Shield, Sun, Gem, Crown, TrendingUp, HandMetal,
 } from 'lucide-react'
 import { TIER_CONFIG } from '@/lib/gamification'
 import type { AchievementTier } from '@/lib/gamification'
+import { Toast } from '@/components/ui/toast'
 
 const ICON_MAP: Record<string, React.ElementType> = {
   award: Award, trophy: Trophy, zap: Zap, flame: Flame, star: Star,
@@ -31,63 +32,42 @@ interface ToastProps {
   onDismiss: () => void
 }
 
+// The CARD is components/ui/toast.tsx now. What stays here is what is actually
+// achievement-specific: the icon lookup, the TIER tint (which is data, so it arrives as a
+// ToastSkin rather than a tone), the eyebrow, the tier chip + Zaps reward footer, and the
+// 6s dwell — a Quest award earns twice the reading time a "+15 Zaps" notice does.
 function AchievementToastCard({ achievement, onDismiss }: ToastProps) {
   const tier = TIER_CONFIG[achievement.tier]
   const Icon = ICON_MAP[achievement.icon] ?? Award
 
-  useEffect(() => {
-    const timer = setTimeout(onDismiss, 6000)
-    return () => clearTimeout(timer)
-  }, [onDismiss])
-
   return (
-    <div
-      className={`
-        pointer-events-auto w-80 rounded-2xl border shadow-xl backdrop-blur-sm
-        animate-[slideUp_0.4s_ease-out]
-        ${tier.border} ${tier.bg}
-        ${tier.glow ? `shadow-lg ${tier.glow}` : ''}
-      `}
+    <Toast
+      className="w-80"
+      size="lg"
+      skin={{ surface: tier.bg, border: tier.border, ink: tier.color, glow: tier.glow }}
+      icon={<Icon className="h-6 w-6" />}
+      eyebrow="Achievement Unlocked"
+      title={achievement.name}
+      duration={6000}
+      dismissible
+      onDismiss={onDismiss}
+      footer={
+        <>
+          <span
+            className={`rounded-control px-1.5 py-0.5 text-3xs font-semibold ${tier.bg} ${tier.color}`}
+          >
+            {tier.label}
+          </span>
+          {achievement.zapsReward > 0 && (
+            <span className="flex items-center gap-0.5 text-2xs font-medium text-warning">
+              <Zap className="h-3 w-3" aria-hidden />+{achievement.zapsReward} zaps
+            </span>
+          )}
+        </>
+      }
     >
-      <div className="p-4">
-        <div className="flex items-start gap-3">
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${tier.bg} ${tier.color} ring-2 ${tier.border}`}>
-            <Icon className="w-6 h-6" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
-              <p className="text-3xs font-bold uppercase tracking-wider text-muted">
-                Achievement Unlocked
-              </p>
-              <button
-                onClick={onDismiss}
-                aria-label="Dismiss"
-                className="p-0.5 rounded text-subtle hover:text-muted dark:hover:text-subtle transition-colors"
-              >
-                <X className="w-3.5 h-3.5" aria-hidden />
-              </button>
-            </div>
-            <p className="text-body-sm font-bold text-text mt-0.5">
-              {achievement.name}
-            </p>
-            <p className="text-meta text-muted mt-0.5 leading-relaxed">
-              {achievement.description}
-            </p>
-            <div className="flex items-center gap-2 mt-2">
-              <span className={`text-3xs px-1.5 py-0.5 rounded-md font-semibold ${tier.bg} ${tier.color}`}>
-                {tier.label}
-              </span>
-              {achievement.zapsReward > 0 && (
-                <span className="text-2xs font-medium text-warning flex items-center gap-0.5">
-                  <Zap className="w-3 h-3" />
-                  +{achievement.zapsReward} zaps
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+      {achievement.description}
+    </Toast>
   )
 }
 

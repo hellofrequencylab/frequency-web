@@ -9,6 +9,9 @@ import {
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { DetailTemplate } from '@/components/templates'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { normalizeTag, hasAnyDetails } from '@/lib/connections/normalize'
 import { DetailsEditor, DetailsView } from '@/components/connections/contact-details-fields'
 import { UpsellTease } from '@/components/upsell/upsell-tease'
@@ -23,7 +26,6 @@ import {
   addReminder, completeReminder, deleteReminder, briefContact,
 } from '../actions'
 
-const input = 'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30'
 const lbl = 'block text-meta font-medium text-muted mb-1'
 
 function fmtDate(s: string | null): string {
@@ -163,17 +165,19 @@ export function Detail({
       }
       badges={
         <span className="inline-flex items-center gap-1.5">
-          <select
+          <Select
             value={contact.status}
             disabled={pending}
             onChange={(e) => start(async () => { await setStatus(contact.id, e.target.value as ContactStatus); router.refresh() })}
-            className="rounded-lg border border-border-strong bg-surface px-2 py-1 text-meta text-text focus:outline-none"
+            className="text-meta"
+            wrapperClassName="inline-block w-max max-w-full"
             aria-label="Status"
-          >
-            <option value="new">New</option>
-            <option value="active">Active</option>
-            <option value="archived">Archived</option>
-          </select>
+            options={[
+              { value: 'new', label: 'New' },
+              { value: 'active', label: 'Active' },
+              { value: 'archived', label: 'Archived' },
+            ]}
+          />
           {/* At-a-glance visibility; the actionable toggle + helper live in the Sharing section below. */}
           <span className="inline-flex items-center gap-1 rounded-lg border border-border-strong px-2 py-1 text-meta font-medium text-muted">
             {contact.visibility === 'network' ? (
@@ -192,7 +196,7 @@ export function Detail({
           <button
             type="button"
             onClick={() => setEditing((v) => !v)}
-            className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated"
+            className="inline-flex items-center gap-1 rounded-control border border-border px-2.5 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated"
           >
             {editing ? <X className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
             {editing ? 'Close' : 'Edit'}
@@ -201,7 +205,7 @@ export function Detail({
             type="button"
             disabled={pending}
             onClick={onDelete}
-            className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-meta font-medium text-danger transition-colors hover:bg-danger-bg"
+            className="inline-flex items-center gap-1 rounded-control px-2 py-1.5 text-meta font-medium text-danger transition-colors hover:bg-danger-bg"
           >
             <Trash2 className="h-3.5 w-3.5" /> Delete
           </button>
@@ -289,7 +293,7 @@ export function Detail({
 
       {/* Shared history — only when this capture is a linked member and resonance
           is enabled (the timeline node is built server-side in page.tsx). */}
-      {timeline && <section className="rounded-2xl border border-border/70 bg-surface/60 p-5">{timeline}</section>}
+      {timeline && <section className="rounded-card border border-border/70 bg-surface/60 p-5">{timeline}</section>}
 
       {/* Before you reach out — a short, grounded brief from Vera (metered, never auto-sends). */}
       <Section title="Before you reach out">
@@ -315,7 +319,7 @@ export function Detail({
               type="button"
               onClick={onBrief}
               disabled={briefBusy}
-              className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+              className="inline-flex items-center gap-1 rounded-control bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               {briefBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               {briefBusy ? 'Thinking…' : 'Prep brief'}
@@ -335,15 +339,12 @@ export function Detail({
           email / sms / calls. Hidden until there is something to show. */}
       {timelineEntries.length > 0 && (
         <Section title="Timeline">
-          <label className="mb-3 inline-flex cursor-pointer items-center gap-2 text-meta font-medium text-muted">
-            <input
-              type="checkbox"
-              checked={showAutomated}
-              onChange={(e) => setShowAutomated(e.target.checked)}
-              className="h-3.5 w-3.5 rounded border-border-strong text-primary focus:ring-primary/40"
-            />
-            Show automated events
-          </label>
+          <Checkbox
+            checked={showAutomated}
+            onChange={(e) => setShowAutomated(e.target.checked)}
+            label="Show automated events"
+            wrapperClassName="mb-3"
+          />
           {visibleTimeline.length === 0 ? (
             <p className="text-body-sm text-subtle">
               Only automated events so far. Turn on &ldquo;Show automated events&rdquo; to see them.
@@ -383,6 +384,7 @@ export function Detail({
             </span>
           ))}
           <input
+            aria-label="Add a tag"
             value={tagDraft}
             onChange={(e) => setTagDraft(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); onAddTag(tagDraft) } }}
@@ -395,18 +397,19 @@ export function Detail({
       {/* Notes */}
       <Section title="Notes">
         <div className="flex gap-2">
-          <textarea
+          <Textarea
+            aria-label="Note"
             value={noteDraft}
             onChange={(e) => setNoteDraft(e.target.value)}
             rows={2}
             placeholder="Add a note…"
-            className={`${input} resize-none`}
+            className="resize-none"
           />
           <button
             type="button"
             onClick={onAddNote}
             disabled={pending || !noteDraft.trim()}
-            className="inline-flex h-fit items-center gap-1 self-end rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            className="inline-flex h-fit items-center gap-1 self-end rounded-control bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add
           </button>
@@ -473,7 +476,7 @@ function FollowUp({ contactId, reminders }: { contactId: string; reminders: Cont
               type="button"
               disabled={pending}
               onClick={() => start(async () => { await completeReminder(r.id, contactId); router.refresh() })}
-              className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
             >
               <Check className="h-3.5 w-3.5" /> Done
             </button>
@@ -493,24 +496,25 @@ function FollowUp({ contactId, reminders }: { contactId: string; reminders: Cont
       <div className="mt-4 flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1">
           <span className={lbl}>Remind me on</span>
-          <input
+          <Input
             type="date"
             value={due}
             onChange={(e) => setDue(e.target.value)}
-            className={`${input} w-auto`}
+            className="w-auto"
           />
         </label>
-        <input
+        <Input
+          aria-label="What to follow up on"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="What to follow up on… (optional)"
-          className={`${input} min-w-[10rem] flex-1`}
+          className="min-w-[10rem] flex-1"
         />
         <button
           type="button"
           onClick={onAdd}
           disabled={pending || !due}
-          className="inline-flex h-fit items-center gap-1 rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+          className="inline-flex h-fit items-center gap-1 rounded-control bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add
         </button>
@@ -523,7 +527,7 @@ function FollowUp({ contactId, reminders }: { contactId: string; reminders: Cont
 // the three identical bordered+shadowed boxes the detail used to stack.
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-border/70 bg-surface/60 p-5">
+    <section className="rounded-card border border-border/70 bg-surface/60 p-5">
       <h2 className="mb-3 text-body-sm font-semibold tracking-tight text-text">{title}</h2>
       {children}
     </section>
@@ -542,7 +546,7 @@ function CardImage({ url, label }: { url: string; label: string }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={url} alt={`${label} of the card`} className="w-full object-contain" />
       {/* KEEP the black/white pair: A scrim chip painted on a photo thumbnail, not on a themed surface, so the monochrome pair stays. */}
-      <span className="absolute bottom-1.5 left-1.5 rounded bg-black/55 px-1.5 py-0.5 text-meta font-medium text-white">
+      <span className="absolute bottom-1.5 left-1.5 rounded bg-ink/55 px-1.5 py-0.5 text-meta font-medium text-on-ink">
         {label}
       </span>
     </a>
@@ -614,19 +618,19 @@ function EditForm({ contact, onSaved }: { contact: ContactDetail['contact']; onS
   }
 
   return (
-    <section className="rounded-2xl border border-border/70 bg-surface/60 p-5">
+    <section className="rounded-card border border-border/70 bg-surface/60 p-5">
       <h2 className="mb-3 text-body-sm font-semibold tracking-tight text-text">Edit details</h2>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="Name" full><input className={input} value={f.displayName} onChange={(e) => set('displayName', e.target.value)} /></Field>
-        <Field label="Title"><input className={input} value={f.title} onChange={(e) => set('title', e.target.value)} /></Field>
-        <Field label="Company"><input className={input} value={f.company} onChange={(e) => set('company', e.target.value)} /></Field>
-        <Field label="Email"><input className={input} type="email" value={f.email} onChange={(e) => set('email', e.target.value)} /></Field>
-        <Field label="Phone"><input className={input} type="tel" value={f.phone} onChange={(e) => set('phone', e.target.value)} /></Field>
-        <Field label="City"><input className={input} value={f.city} onChange={(e) => set('city', e.target.value)} /></Field>
-        <Field label="Website"><input className={input} value={f.website} onChange={(e) => set('website', e.target.value)} /></Field>
-        <Field label="Instagram"><input className={input} value={f.instagram} onChange={(e) => set('instagram', e.target.value)} /></Field>
-        <Field label="LinkedIn"><input className={input} value={f.linkedin} onChange={(e) => set('linkedin', e.target.value)} /></Field>
-        <Field label="X"><input className={input} value={f.x} onChange={(e) => set('x', e.target.value)} /></Field>
+        <Field label="Name" full><Input aria-label="Name" value={f.displayName} onChange={(e) => set('displayName', e.target.value)} /></Field>
+        <Field label="Title"><Input aria-label="Title" value={f.title} onChange={(e) => set('title', e.target.value)} /></Field>
+        <Field label="Company"><Input aria-label="Company" value={f.company} onChange={(e) => set('company', e.target.value)} /></Field>
+        <Field label="Email"><Input aria-label="Email" type="email" value={f.email} onChange={(e) => set('email', e.target.value)} /></Field>
+        <Field label="Phone"><Input aria-label="Phone" type="tel" value={f.phone} onChange={(e) => set('phone', e.target.value)} /></Field>
+        <Field label="City"><Input aria-label="City" value={f.city} onChange={(e) => set('city', e.target.value)} /></Field>
+        <Field label="Website"><Input aria-label="Website" value={f.website} onChange={(e) => set('website', e.target.value)} /></Field>
+        <Field label="Instagram"><Input aria-label="Instagram" value={f.instagram} onChange={(e) => set('instagram', e.target.value)} /></Field>
+        <Field label="LinkedIn"><Input aria-label="LinkedIn" value={f.linkedin} onChange={(e) => set('linkedin', e.target.value)} /></Field>
+        <Field label="X"><Input aria-label="X" value={f.x} onChange={(e) => set('x', e.target.value)} /></Field>
       </div>
       <div className="mt-4 border-t border-border/70 pt-4">
         <p className="mb-3 text-meta font-medium text-muted">From the card</p>

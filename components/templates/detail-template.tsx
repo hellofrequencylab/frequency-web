@@ -128,9 +128,22 @@ export function DetailTemplate({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
+                {/* The `display` scale is now ONE role (ADR-947's "fourth decision"). It used to be the three-step
+                    ramp `text-page-title sm:text-3xl lg:text-4xl` — 1.5 / 1.875 / 2.25rem in two
+                    jumps — kept on literals because nothing in the vocabulary could take it:
+                    every fixed role is a single size, and the nearest fluid one (`display-h3`)
+                    floors at 1.75rem and is an Anton display face against this bold sans.
+                    `text-page-title-lg` is that ramp's own floor and ceiling interpolated:
+                    clamp(1.5rem, 4vw, 2.25rem). Below `sm` it is pixel-identical to what the ramp
+                    painted; it reaches 2.25rem at ~956px instead of snapping there at `lg`.
+                    🔴 STILL MIRRORED at app/(main)/events/[slug]/page.tsx (the inline-edit input
+                    for the event title), and the marker stays: a browser gives form controls their
+                    own font, so the input cannot inherit this h1 and must NAME the same role. What
+                    the conversion removed is the ramp — one token to keep in step, not three
+                    classes across two breakpoints — not the requirement that both say it. */}
                 <h1
                   className={`${
-                    titleScale === 'display' ? 'text-page-title sm:text-3xl lg:text-4xl' : 'text-lead sm:text-page-title'
+                    titleScale === 'display' ? 'text-page-title-lg' : 'text-lead sm:text-page-title'
                   } font-bold text-text break-words`}
                 >
                   {title}

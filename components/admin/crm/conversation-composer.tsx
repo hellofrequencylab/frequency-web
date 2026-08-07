@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation'
 import { Loader2, Lock, Send, Sparkles } from 'lucide-react'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { sendConversationReply } from '@/app/(main)/admin/crm/conversations/actions'
+import { Textarea } from '@/components/ui/field'
 
 type SendAction = (input: { conversationId: string; body: string; isInternal?: boolean }) => Promise<ActionResult>
 type DraftAction = (conversationId: string) => Promise<ActionResult<{ draft: string }>>
@@ -113,7 +114,7 @@ export function ConversationComposer({
         </button>
       </div>
 
-      <textarea
+      <Textarea
         value={body}
         onChange={(e) => {
           setBody(e.target.value)
@@ -125,7 +126,7 @@ export function ConversationComposer({
         rows={3}
         placeholder={internal ? 'A note only your team can see...' : `Reply to ${counterpartName || 'them'}...`}
         aria-label={internal ? 'Internal note' : 'Reply'}
-        className="w-full resize-none rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+        className="resize-none leading-relaxed"
       />
       {aiDrafted && <p className="mt-1 text-2xs text-muted">Vera drafted this. Read it and edit before you send.</p>}
       {error && (

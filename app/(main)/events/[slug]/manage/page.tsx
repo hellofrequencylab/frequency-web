@@ -225,7 +225,7 @@ export default async function ManageEventPage({
               parallel form (MENU-CONTRACT). It reads the event scope from the live path and
               self-gates; autosaves in place. */}
           <SectionHeader title="Event settings" />
-          <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
+          <div className="rounded-card border border-border bg-surface p-5 lift-1">
             <EventSettingsModule />
           </div>
         </section>

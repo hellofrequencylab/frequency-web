@@ -10,11 +10,13 @@ import { SaveStatus, StudioFooter } from '../kit/studio-footer'
 import { getBrowserPosition } from '@/lib/geo-browser'
 import { LISTING_KINDS, type ListingDetailField, type ListingKind, type ListingPatch, type ListingStatus } from '@/lib/marketplace'
 import { updateListingAction } from '@/app/(main)/classifieds/actions'
+import { Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
 import { ListingOwnerControls } from '@/components/market/listing-owner-controls'
 import { ListingShareButton } from '@/components/marketplace/listing-share-button'
 
-const FIELD = 'rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
 // Best-practice detail fields a seller can add with one tap. A field with `options` edits its value
 // through a select; the rest are free text. Every preset still persists through the same
@@ -128,18 +130,18 @@ export function ListingBuilder(props: ListingBuilderProps) {
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <StudioField label="Type">
-          <select value={kind} onChange={(e) => { const v = e.target.value as ListingKind; setKind(v); queueSave({ kind: v }) }} className={FIELD}>
+          <Select value={kind} onChange={(e) => { const v = e.target.value as ListingKind; setKind(v); queueSave({ kind: v }) }}>
             {LISTING_KINDS.map((k) => <option key={k.key} value={k.key}>{k.label}</option>)}
-          </select>
+          </Select>
         </StudioField>
         <StudioField label="Price / terms (free text)">
-          <input value={priceNote} onChange={(e) => { setPriceNote(e.target.value); queueSave({ priceNote: e.target.value || null }) }} maxLength={80} placeholder="e.g. $20, or a trade, or free" className={FIELD} />
+          <Input value={priceNote} onChange={(e) => { setPriceNote(e.target.value); queueSave({ priceNote: e.target.value || null }) }} maxLength={80} placeholder="e.g. $20, or a trade, or free" />
         </StudioField>
         <StudioField label="Neighborhood">
-          <input value={neighborhood} onChange={(e) => { setNeighborhood(e.target.value); queueSave({ neighborhood: e.target.value || null }) }} maxLength={80} className={FIELD} />
+          <Input value={neighborhood} onChange={(e) => { setNeighborhood(e.target.value); queueSave({ neighborhood: e.target.value || null }) }} maxLength={80} />
         </StudioField>
         <StudioField label="City">
-          <input value={city} onChange={(e) => { setCity(e.target.value); queueSave({ city: e.target.value || null }) }} maxLength={80} className={FIELD} />
+          <Input value={city} onChange={(e) => { setCity(e.target.value); queueSave({ city: e.target.value || null }) }} maxLength={80} />
         </StudioField>
       </div>
 
@@ -155,23 +157,19 @@ export function ListingBuilder(props: ListingBuilderProps) {
           chooses to reveal the exact address. */}
       <div className="mt-4">
         <StudioField label="Pickup address (private)">
-          <input
+          <Input
             value={pickupAddress}
             onChange={(e) => { setPickupAddress(e.target.value); queueSave({ pickupAddress: e.target.value || null }) }}
             maxLength={200}
             placeholder="Where a buyer picks up. Not shown until you choose to reveal it."
-            className={FIELD}
           />
         </StudioField>
-        <label className="mt-2 flex items-center gap-2 text-body-sm text-muted">
-          <input
-            type="checkbox"
-            checked={showExact}
-            onChange={(e) => { setShowExact(e.target.checked); queueSave({ pickupPrecision: e.target.checked ? 'exact' : 'area' }) }}
-            className="h-4 w-4 rounded border-border"
-          />
-          Show the exact address on the listing (off shows only the approximate area)
-        </label>
+        <Checkbox
+          checked={showExact}
+          onChange={(e) => { setShowExact(e.target.checked); queueSave({ pickupPrecision: e.target.checked ? 'exact' : 'area' }) }}
+          label="Show the exact address on the listing (off shows only the approximate area)"
+          wrapperClassName="mt-2"
+        />
       </div>
 
       {/* Item details — compact label/value chips shown in the listing right rail. */}
@@ -200,29 +198,31 @@ export function ListingBuilder(props: ListingBuilderProps) {
               const preset = presetFor(d.label)
               return (
                 <div key={i} className="flex items-center gap-2">
-                  <input
+                  <Input
                     value={d.label}
                     onChange={(e) => setDetail(i, { label: e.target.value })}
                     maxLength={40}
                     placeholder="Condition"
-                    className={`${FIELD} w-1/3`}
+                    aria-label={`Detail ${i + 1} label`}
+                    className="!w-1/3"
                   />
                   {preset?.options ? (
-                    <select
+                    <Select
                       value={d.value}
                       onChange={(e) => setDetail(i, { value: e.target.value })}
-                      className={`${FIELD} flex-1`}
-                    >
-                      <option value="">Choose one</option>
-                      {preset.options.map((o) => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                      aria-label={d.label ? `${d.label} value` : `Detail ${i + 1} value`}
+                      wrapperClassName="flex-1"
+                      emptyLabel="Choose one"
+                      options={preset.options}
+                    />
                   ) : (
-                    <input
+                    <Input
                       value={d.value}
                       onChange={(e) => setDetail(i, { value: e.target.value })}
                       maxLength={120}
                       placeholder={preset?.placeholder ?? 'Like new'}
-                      className={`${FIELD} flex-1`}
+                      aria-label={d.label ? `${d.label} value` : `Detail ${i + 1} value`}
+                      className="flex-1"
                     />
                   )}
                   <button type="button" onClick={() => removeDetail(i)} aria-label="Remove detail" className="shrink-0 rounded-lg border border-border p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text">
@@ -254,7 +254,7 @@ export function ListingBuilder(props: ListingBuilderProps) {
 
       <div className="mt-4">
         <StudioField label="Details">
-          <textarea value={description} onChange={(e) => { setDescription(e.target.value); queueSave({ description: e.target.value || null }) }} rows={5} maxLength={2000} className={FIELD} />
+          <Textarea value={description} onChange={(e) => { setDescription(e.target.value); queueSave({ description: e.target.value || null }) }} rows={5} maxLength={2000} />
         </StudioField>
       </div>
 

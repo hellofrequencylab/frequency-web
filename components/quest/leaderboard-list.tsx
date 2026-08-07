@@ -2,10 +2,11 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Zap, Flame } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { getRankDef, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { getRankDef, type SeasonRank } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { Counter, type CounterTone } from '@/components/ui/counter'
+import { RankBadge } from '@/components/ui/rank-badge'
 
 // LeaderboardList — the responsive, mobile-first board that replaces the old fixed
 // six-column grid (grid-cols-[2.5rem_1fr_5rem_4rem_4rem_5rem]) that broke on phones.
@@ -82,7 +83,7 @@ export function LeaderboardList({
           <li key={entry.id}>
             <Link
               href={`/people/${entry.handle}`}
-              className={`flex min-h-[3.25rem] items-center gap-3 rounded-2xl px-3 py-2 transition-colors motion-reduce:transition-none ${
+              className={`flex min-h-[3.25rem] items-center gap-3 rounded-control px-3 py-2 transition-colors motion-reduce:transition-none ${
                 isSelf
                   ? 'bg-primary-bg/60 dark:bg-primary-bg'
                   : 'bg-surface-elevated/40 hover:bg-surface-elevated'
@@ -119,9 +120,9 @@ export function LeaderboardList({
                   {entry.displayName}
                   {isSelf && <span className="ml-1.5 text-meta font-medium text-primary-strong">you</span>}
                 </span>
-                <span className="rank-badge w-fit text-2xs" style={seasonRankStyle(rankDef.rank)}>
-                  {rankDef.label}
-                </span>
+                {/* `w-fit` stays: the chip is a child of a `flex-col` block, so without it
+                    the pill would stretch the full column width. */}
+                <RankBadge rank={rankDef.rank} className="w-fit">{rankDef.label}</RankBadge>
               </span>
 
               {/* The ONE metric for the active track — the only number per row, and now the kit's

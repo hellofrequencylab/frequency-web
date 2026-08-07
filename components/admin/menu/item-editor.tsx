@@ -9,6 +9,7 @@ import { RoleModeMatrix } from './role-mode-matrix'
 import { OnOffToggle } from './on-off-toggle'
 import { GateControls } from './gate-controls'
 import { MenuMoveField } from './menu-move-field'
+import { Input } from '@/components/ui/field'
 
 // One editable menu link. Collapsed it shows the label + an on/off toggle + drag handle;
 // expanded it edits the subheading, link target, grid placement (grid surfaces only),
@@ -183,14 +184,14 @@ export function ItemEditor({
               <label className="mb-1 block text-meta font-semibold text-subtle" htmlFor={`label-${item.id}`}>
                 Label
               </label>
-              <input
+              <Input
                 id={`label-${item.id}`}
                 type="text"
                 value={label}
                 disabled={isPending}
                 onChange={(e) => setLabel(e.target.value)}
                 onBlur={() => label !== item.label && save({ label }, { label })}
-                className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                className="!px-2.5 !py-1.5"
               />
             </div>
             <LinkTargetField
@@ -215,7 +216,7 @@ export function ItemEditor({
             <label className="mb-1 block text-meta font-semibold text-subtle" htmlFor={`sub-${item.id}`}>
               Subheading
             </label>
-            <input
+            <Input
               id={`sub-${item.id}`}
               type="text"
               value={subheading}
@@ -226,7 +227,7 @@ export function ItemEditor({
                 subheading !== (item.subheading ?? '') &&
                 save({ subheading: subheading || null }, { subheading: subheading || undefined })
               }
-              className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+              className="!px-2.5 !py-1.5"
             />
           </div>
 
@@ -255,7 +256,7 @@ export function ItemEditor({
                 <label className="mb-1 block text-meta font-semibold text-subtle" htmlFor={`gt-${item.id}`}>
                   Ghost tier
                 </label>
-                <input
+                <Input
                   id={`gt-${item.id}`}
                   type="text"
                   value={ghostTier}
@@ -266,14 +267,14 @@ export function ItemEditor({
                     ghostTier !== (item.ghostTier ?? 'crew') &&
                     save({ ghostTier: ghostTier || null }, { ghostTier: ghostTier || undefined })
                   }
-                  className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                  className="!px-2.5 !py-1.5"
                 />
               </div>
               <div className="min-w-0 sm:row-span-1">
                 <label className="mb-1 block text-meta font-semibold text-subtle" htmlFor={`gm-${item.id}`}>
                   Ghost upsell message
                 </label>
-                <input
+                <Input
                   id={`gm-${item.id}`}
                   type="text"
                   value={ghostMessage}
@@ -284,7 +285,7 @@ export function ItemEditor({
                     ghostMessage !== (item.ghostMessage ?? '') &&
                     save({ ghostMessage: ghostMessage || null }, { ghostMessage: ghostMessage || undefined })
                   }
-                  className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                  className="!px-2.5 !py-1.5"
                 />
               </div>
             </div>
@@ -294,6 +295,7 @@ export function ItemEditor({
           <div>
             <p className="mb-1.5 text-meta font-semibold text-subtle">Who can see this</p>
             <GateControls
+              href={item.href}
               minAccess={item.minAccess}
               staffDomain={item.staffDomain}
               staffLevel={item.staffLevel}
@@ -394,9 +396,12 @@ function NumField({
   const [draft, setDraft] = useState<string>(value == null ? '' : String(value))
   const initial = value == null ? '' : String(value)
   return (
-    <div className="min-w-0">
-      <label className="mb-1 block text-meta font-semibold text-subtle">{label}</label>
-      <input
+    // The label WRAPS the control: this pair used to be a <label> with no `htmlFor` beside an
+    // input with no `id`, so the field was programmatically unnamed and a click on the label did
+    // not focus it. Implicit association needs no id to mint and cannot drift.
+    <label className="block min-w-0">
+      <span className="mb-1 block text-meta font-semibold text-subtle">{label}</span>
+      <Input
         type="number"
         inputMode="numeric"
         min={min}
@@ -413,8 +418,8 @@ function NumField({
             if (Number.isFinite(n)) onCommit(n)
           }
         }}
-        className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm tabular-nums text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+        className="!px-2.5 !py-1.5 tabular-nums"
       />
-    </div>
+    </label>
   )
 }

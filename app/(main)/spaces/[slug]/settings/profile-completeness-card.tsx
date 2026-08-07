@@ -31,7 +31,7 @@ export function ProfileCompletenessCard({ input }: { input: CompletenessInput })
   return (
     <section
       aria-labelledby="profile-readiness-heading"
-      className="mb-6 rounded-2xl border border-border bg-surface p-5"
+      className="mb-6 rounded-card border border-border bg-surface p-5"
     >
       <div className="flex items-baseline justify-between gap-3">
         <h2 id="profile-readiness-heading" className="text-body-sm font-bold tracking-tight text-text">

@@ -5,11 +5,23 @@ import Link from 'next/link'
 import {
   Zap, Gem, Flame, Target, Sparkles, CheckCircle2, ArrowRight, Lock, ChevronUp,
 } from 'lucide-react'
-import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
+import { RankBadge } from '@/components/ui/rank-badge'
 import { ProgressTrack } from '@/components/ui/progress-track'
 import { StreakMeter } from '@/components/ui/streak-meter'
 import { Counter } from '@/components/ui/counter'
 import { StandingTiles } from '@/components/gamification/standing-tiles'
+import {
+  DOCK_HEAD_H_CLASS,
+  RAIL_END_OPENS,
+  DOCK_SCROLL_DISMISS_PX,
+  announceDockSegmentOpen,
+  getDockGeometry,
+  onOtherDockSegmentOpen,
+  railEndOpenDue,
+  setDockPanelOpen,
+  subscribeDockGeometry,
+} from '@/components/layout/dock-bar'
 
 // ── Data shape (assembled server-side in right-sidebar.tsx) ───────────────────
 
@@ -59,12 +71,18 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 // THE BOTTOM-RIGHT CONTRACT, from the edge up. Every number is stated, because the last
 // version of this comment asserted a lane the arithmetic did not support.
 //
-//   >= 768 (the bar renders):
+//   >= 768 (the bar renders — unless the right rail is FOLDED at lg+, which hides it in CSS;
+//   see components/layout/dock-bar.tsx):
 //     SLOT 0 - the anchored bar: bottom-0 right-3, z-40, w-72, split into the Vault segment
-//              (flex-1) and the chat segment (~48px). Occupies [0, 69] vertically: 1px border-t
-//              + 4px pt-1 + 64px head (h-10 crest + py-3).
-//     SLOT 1 - toasts: right-4, z-50, md:bottom-24 = 96px. NOT bottom-20: 80px would sit 1px
-//              INSIDE a 69px tab. 96 clears it by 27.
+//              (flex-1) and the chat segment (~48px). Occupies [0, 52] vertically at this app's
+//              17px root: 1px border-t + 4.25px pt-1 + a 46.75px head (DOCK_HEAD_H_CLASS, h-11).
+//              It was [0, 69] when this block was written, off an `h-10` head measured at a 16px
+//              root and a `py-3` that is not on the head at all; the head is now the class the
+//              LEFT tab shares, so the number is stated from the token rather than from memory.
+//     SLOT 1 - toasts: right-4, z-50, md:bottom-24 = 96px, clearing the bar by 44. (It was chosen
+//              to clear the old 69px reading by 27; a shorter bar only widens the gap. NOT
+//              bottom-20 = 80px, which was 1px inside the tab under the old arithmetic and is the
+//              reason this slot is written down at all.)
 //     SLOT 2 - RETIRED. The chat used to be an edge pill at top-1/2 of the right edge, off the
 //              corner, because it and the Vault were two floating objects fighting for it. They
 //              are one bar now, so there is no second object to keep away.
@@ -84,6 +102,20 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
   const rootRef = useRef<HTMLDivElement>(null)
 
   // Esc or an outside click dismisses, like the other dock popovers.
+  //
+  // ONE PANEL AT A TIME (the bar's two segments are mutually exclusive). The mouse case was
+  // already covered — the chat tab portals into the bar's OTHER segment, so clicking it is an
+  // outside click on this root and this panel closed. What it could not see was every other way
+  // the chat opens: the `open-chat` event, a `?chat=…` deep link, ⌘K, the admin "Ask Vera" bar.
+  // The bar's announcement channel covers all of them with the same one line, and because the
+  // listener only exists WHILE THIS IS OPEN, being told to close while already closed is not a
+  // case that can arise. Nothing here fights the two dismissals above: it calls the same setter.
+  //
+  // It also covers a case that is not another panel at all: FOLDING THE RAIL takes the whole bar
+  // off the screen, and DockBar announces that on the same channel (`announceDockDismissed`).
+  // The filter is "anyone who is not me", so this needs no new rule and no new listener — the
+  // Vault closes through this exact setter, and the bar hands focus to the rail's foot control
+  // if it was sitting in here when the fold happened.
   useEffect(() => {
     if (!open) return
     function onDoc(e: MouseEvent) {
@@ -92,27 +124,108 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') setOpen(false)
     }
+    // Scroll dismissal with the shared deadband — the same rule the admin segment takes, from
+    // the same constant, so the two bottom docks cannot drift on it.
+    const openedAt = window.scrollY
+    function onScroll() {
+      if (Math.abs(window.scrollY - openedAt) > DOCK_SCROLL_DISMISS_PX) setOpen(false)
+    }
     document.addEventListener('mousedown', onDoc)
     document.addEventListener('keydown', onKey)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    const offOther = onOtherDockSegmentOpen('vault', () => setOpen(false))
     return () => {
       document.removeEventListener('mousedown', onDoc)
       document.removeEventListener('keydown', onKey)
+      window.removeEventListener('scroll', onScroll)
+      offOther()
     }
   }, [open])
+
+  /**
+   * THE ONE WAY IN. Every path that opens this panel goes through here.
+   *
+   * That is not tidiness: the announcement is what slides the chat panel closed (items 6 + 7 —
+   * the two segments are never open at once), so an open path that forgets to announce is an
+   * open path that leaves two panels stacked in one column. There are two paths now — the head
+   * button and the rail's end — and there was exactly one before, which is precisely when a
+   * side effect written inline at the call site stops being safe.
+   */
+  function openVault() {
+    setOpen(true)
+    // Announced on the way OPEN only; closing the Vault is nobody else's business.
+    announceDockSegmentOpen('vault')
+  }
+
+  // ── Reaching the end of the rail OPENS the Vault (owner, 2026-08-05) ────────────────────────
+  //
+  // "Scroll-to-bottom OR click opens the Vault." DockBar already measures the rail's end to ride
+  // up and meet it and publishes that as `atRailEnd`, so this is one subscription to a fact that
+  // already exists — not a second scroll listener racing the first.
+  //
+  // It reacts inside the store's CALLBACK rather than in an effect body keyed on the value. That
+  // is not a style preference: an effect body that calls a setter when a subscribed value changes
+  // is a cascading render, and this repo's lint (react-hooks/set-state-in-effect) rejects it by
+  // name. Reacting to an external system from the callback it hands you is the sanctioned shape.
+  //
+  // `railEndOpenDue` is the rising edge, and it is the whole difference between "opens when you
+  // arrive" and "will not stay closed": `atRailEnd` remains true while you sit at the end of the
+  // rail, and the store notifies on every scroll frame that changes anything, so an unguarded
+  // open re-opens the panel on the next pixel after the member dismisses it.
+  // ── "When the Vault is open, the message tab stays closed" (owner, 2026-08-05) ──────────────
+  //
+  // The announcement channel above is an EVENT — it says "I just opened", never "I just closed" —
+  // so a neighbour that listened to it alone would latch on the first open and never learn that
+  // the Vault went away again. The chat tab needs the standing fact, not the edge, so this
+  // publishes its open state to the small store in dock-bar.ts and the tab reads it there.
+  //
+  // Reported from an effect rather than from `openVault()` / `setOpen(false)` so it cannot drift:
+  // every path that changes `open` — the head button, the rail's end, Esc, an outside click, the
+  // fold's dismissal — arrives here, and the CLEANUP covers the one path none of them can (this
+  // component unmounting on a route that has no rail) without a sixth call site.
+  useEffect(() => {
+    setDockPanelOpen('vault', open)
+    return () => setDockPanelOpen('vault', false)
+  }, [open])
+
+  const wasAtRailEnd = useRef(false)
+  useEffect(() => {
+    if (RAIL_END_OPENS !== 'vault') return
+    return subscribeDockGeometry(() => {
+      const atEnd = getDockGeometry().atRailEnd
+      const due = railEndOpenDue(wasAtRailEnd.current, atEnd)
+      wasAtRailEnd.current = atEnd
+      if (due) openVault()
+    })
+    // `openVault` only touches a setter and a module function, both stable for this component's
+    // life — the same reasoning the chat launcher's rail-end subscription already carries.
+  }, [])
 
 
   return (
     <div
       ref={rootRef}
-      // Positioning belongs to DockBar now, not here. This is a SEGMENT of the anchored bar
-      // (components/layout/dock-bar.tsx) rather than its own floating object, so it carries
-      // only its surface: the top-rounded crest, the border and the blur.
-      className="w-full rounded-t-2xl border-x border-t border-border/70 bg-[var(--color-canvas)]/95 px-2 pt-1 backdrop-blur-sm"
+      // Positioning AND surface belong to DockBar, not here. This is a SEGMENT of the anchored
+      // bar (components/layout/dock-bar.tsx), so it draws NO crest, NO border and NO blur — the
+      // bar already draws all three around both segments.
+      //
+      // It used to keep its own `rounded-t-2xl border-x border-t bg-canvas/95 backdrop-blur-sm`
+      // INSIDE the bar's `rounded-t-card` + border + blur. Two nested crests, two hairlines, two
+      // blurs: the Vault read as a separate rounded pill sitting in a tray, while the chat side
+      // was correctly flush (`rounded-none h-full`). That mismatch is the whole reason the two
+      // halves looked like different objects. A split button shares one surface; only the
+      // divider between the halves says there are two.
+      className="w-full px-2 pt-1"
     >
       {/* The panel reveals INSIDE the tab (grid-rows 0fr -> 1fr) rather than as a sibling above
           it, so the tab's bottom edge stays pinned to 0 and the corner never lifts off. */}
       <div
-        className={`grid overflow-hidden transition-[grid-template-rows] duration-200 ease-out ${
+        // The motion tokens, not literals. The reduced-motion block in globals.css zeroes the
+        // --motion-* vars rather than disabling transitions, so a hardcoded `duration-200`
+        // opts this dock out of the member's stated preference — the other two docks honour it
+        // and this one animated for 200ms regardless. The token also scales with the
+        // generation feel, which a literal cannot.
+        className={`grid overflow-hidden transition-[grid-template-rows] duration-[var(--motion-base)] ease-[var(--ease-out)] motion-reduce:transition-none ${
           open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
         }`}
       >
@@ -132,10 +245,15 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
           give (it managed 2 of 5); rank moved into the panel when the chat segment landed. */}
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        // Through the one open path, so the click and the rail's end announce identically.
+        // (The announcement stays OUTSIDE any updater: an updater must be pure, and this has to
+        // run exactly once per press.)
+        onClick={() => (open ? setOpen(false) : openVault())}
         aria-expanded={open}
         aria-label="The Vault. Your Zaps, Gems and streak"
-        className="flex h-10 w-full items-center gap-2 rounded-lg px-1.5 transition-colors hover:bg-surface-elevated"
+        // The head height is SHARED with the left rail's account tab (owner: both tabs the same
+        // height). It is imported rather than restated — see DOCK_HEAD_H_CLASS.
+        className={`flex ${DOCK_HEAD_H_CLASS} w-full items-center gap-2 rounded-lg px-1.5 transition-colors hover:bg-surface-elevated`}
       >
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-primary">
           <Zap className="h-3.5 w-3.5 fill-current text-on-primary" />
@@ -204,9 +322,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
       {rank && (
         <div className="flex items-center justify-between gap-2 border-b border-border pb-3">
           <SectionLabel>Season standing</SectionLabel>
-          <span className="rank-badge text-3xs leading-tight" style={seasonRankStyle(rank)}>
-            {RANK_LABELS[rank] ?? rank}
-          </span>
+          <RankBadge rank={rank} size="sm">{RANK_LABELS[rank] ?? rank}</RankBadge>
         </div>
       )}
 

@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sparkles, ArrowLeft, Loader2, ScanLine, ImagePlus, X, CalendarDays, MapPin, Tag } from 'lucide-react'
 import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/components/templates'
+import { Input, Textarea } from '@/components/ui/field'
 import { createClient } from '@/lib/supabase/client'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import type { ExtractedEvent } from '@/lib/events/types'
@@ -27,8 +28,6 @@ const SCAN_BUCKET = 'network-contacts'
 // persists until that create. "Fill it in myself" hands off to the manual EventForm. Degrades
 // cleanly when Vera is off.
 
-const FIELD =
-  'w-full rounded-card border border-border bg-surface px-3 py-2.5 text-body-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
 
 type Group = { id: string; name: string; kind?: 'circle' | 'space' }
 /** A Journey the manual form may link the event to. Passed straight through — the Spark's wizard
@@ -253,19 +252,19 @@ export function EventSpark({
 
       <div className="mt-7">
         <p className="mb-1.5 text-meta font-semibold uppercase tracking-widest text-primary-strong">New event</p>
-        <h1 className="text-page-title font-bold text-text">{heading.title}</h1>
+        <h1 id="event-spark-question" className="text-page-title font-bold text-text">{heading.title}</h1>
         <p className="mt-1 text-body-sm leading-relaxed text-muted">{heading.description}</p>
 
         <div className="mt-5">
           {/* IMPORT path: paste the full write-up AND/OR attach a photo of the flyer. */}
           {usingFlyer && !onReview && (
             <div className="space-y-3">
-              <textarea
+              <Textarea
                 autoFocus
+                aria-labelledby="event-spark-question"
                 value={flyer}
                 onChange={(e) => setFlyer(e.target.value)}
                 rows={7}
-                className={FIELD}
                 placeholder="Paste the full event write-up, page, or post here…"
               />
 
@@ -281,7 +280,7 @@ export function EventSpark({
                     onClick={removePhoto}
                     disabled={pending}
                     aria-label="Remove photo"
-                    className="shrink-0 rounded-lg border border-border p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+                    className="shrink-0 rounded-control border border-border p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -313,12 +312,12 @@ export function EventSpark({
           {/* QUESTIONS path */}
           {!usingFlyer && step === 1 && (
             <>
-              <textarea
+              <Textarea
                 autoFocus
+                aria-labelledby="event-spark-question"
                 value={what}
                 onChange={(e) => setWhat(e.target.value)}
                 rows={3}
-                className={FIELD}
                 placeholder="e.g. A Sunday sound bath and tea circle for beginners."
               />
               <button
@@ -335,18 +334,18 @@ export function EventSpark({
             </>
           )}
           {!usingFlyer && step === 2 && (
-            <input autoFocus value={when} onChange={(e) => setWhen(e.target.value)} className={FIELD} placeholder="e.g. this Friday 7pm" />
+            <Input autoFocus aria-labelledby="event-spark-question" value={when} onChange={(e) => setWhen(e.target.value)} placeholder="e.g. this Friday 7pm" />
           )}
           {!usingFlyer && step === 3 && (
-            <input autoFocus value={where} onChange={(e) => setWhere(e.target.value)} className={FIELD} placeholder="e.g. Balboa Park, San Diego, or online" />
+            <Input autoFocus aria-labelledby="event-spark-question" value={where} onChange={(e) => setWhere(e.target.value)} placeholder="e.g. Balboa Park, San Diego, or online" />
           )}
           {!usingFlyer && step === 4 && (
-            <textarea
+            <Textarea
               autoFocus
+              aria-labelledby="event-spark-question"
               value={details}
               onChange={(e) => setDetails(e.target.value)}
               rows={4}
-              className={FIELD}
               placeholder="Who it's for, the price, what to bring…"
             />
           )}
@@ -356,11 +355,11 @@ export function EventSpark({
             <div className="space-y-3">
               <label className="block">
                 <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Title</span>
-                <input value={title} onChange={(e) => setTitle(e.target.value)} className={`${FIELD} font-semibold`} placeholder="Name your event" />
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} className="font-semibold" placeholder="Name your event" />
               </label>
               <label className="block">
                 <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Description</span>
-                <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className={FIELD} placeholder="What it is and who it's for." />
+                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="What it is and who it's for." />
               </label>
               <div className="space-y-1.5 rounded-card border border-border bg-canvas px-3 py-3 text-body-sm text-muted">
                 <p className="flex items-center gap-2">

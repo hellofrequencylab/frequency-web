@@ -6,6 +6,7 @@ import {
   type SeasonRank,
 } from '@/lib/season-ranks'
 import { Counter, CounterRow, type CounterTone } from '@/components/ui/counter'
+import { RankBadge } from '@/components/ui/rank-badge'
 import type { SeasonBlock, JourneyTrophy } from '@/lib/quest/trophies'
 
 // TrophyCase — the lifetime record beside the resettable seasonal rank.
@@ -55,12 +56,11 @@ function TrophyTile({ trophy }: { trophy: JourneyTrophy }) {
               {trophy.pillar}
             </span>
           )}
-          <span
-            className="rank-badge text-3xs font-bold leading-tight"
-            style={seasonRankStyle(trophy.rankEarned)}
-          >
+          {/* `dot={false}`: this chip shares a wrapped meta row with the Pillar label and
+              the date, and the tile already carries the rank wash on its emoji medallion. */}
+          <RankBadge rank={trophy.rankEarned} size="sm" dot={false}>
             {rankLabel}
-          </span>
+          </RankBadge>
         </span>
         <span className="mt-1 block text-2xs font-medium text-muted">
           {formatDate(trophy.completedAt)}
@@ -70,7 +70,7 @@ function TrophyTile({ trophy }: { trophy: JourneyTrophy }) {
   )
 
   const cls =
-    'rounded-2xl border border-border bg-surface p-3.5 lift-1 transition-colors hover:bg-surface-elevated motion-reduce:transition-none'
+    'rounded-card border border-border bg-surface p-3.5 lift-1 transition-colors hover:bg-surface-elevated motion-reduce:transition-none'
 
   return trophy.slug ? (
     <Link href={`/journeys/${trophy.slug}`} className={`block ${cls}`}>
@@ -110,9 +110,7 @@ function SeasonSummary({
       <CounterRow>
         <span className="inline-flex items-baseline gap-1.5">
           <span className="text-2xs font-medium text-muted">Rank reached</span>
-          <span className="rank-badge text-2xs font-bold leading-tight" style={seasonRankStyle(finalRank)}>
-            {RANK_LABELS[finalRank] ?? finalRank}
-          </span>
+          <RankBadge rank={finalRank}>{RANK_LABELS[finalRank] ?? finalRank}</RankBadge>
         </span>
         {stats.map((s) => (
           <Counter key={s.label} value={s.value} label={s.label} glyph={s.icon} tone={s.tone} />
@@ -174,7 +172,7 @@ export function TrophyCase({
   currentSeason: number | null
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface/60 p-5 lift-1">
+    <div className="rounded-card border border-border bg-surface/60 p-5 lift-1">
       <div className="mb-4 flex items-center gap-2.5">
         <span
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control lift-1"

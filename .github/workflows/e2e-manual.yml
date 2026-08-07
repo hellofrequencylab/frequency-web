@@ -17,6 +17,21 @@
 #   run_visual       also run the @visual compare against committed baselines
 #   update_baselines CAPTURE fresh @visual baselines and commit them to the branch
 #   update_a11y      CAPTURE the @a11y ratchet counts and commit them to the branch
+#   capture_shell    ALSO cover the member shell (/feed, the room, /settings, the Space
+#                    console) by minting a session first — see below
+#
+# ── capture_shell, and why it is opt-in ───────────────────────────────────────────────────
+# The four member-shell surfaces have NEVER had baselines, because sign-in is magic-link only
+# and the suite could not authenticate itself (ADR-948's 🔴 amendment). With the secrets in
+# place this flag mints a session per run and brings them into the matrix. It defaults OFF so
+# the first capture is something you chose, not something a routine baseline refresh did to
+# you: `update_baselines + capture_shell` writes 12 brand-new PNGs (16 with PW_SPACE_SLUG),
+# and `update_a11y + capture_shell` seeds the shell's a11y debt, which is what stops the first
+# PR run reaching /feed from failing on debt that predates it.
+#
+# Secrets it needs: SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL, PW_MEMBER_EMAIL.
+# Repo variables it reads: PW_ROOM_PATH (default /channels), PW_SPACE_SLUG (adds the console).
+# Full procedure: test/e2e/README.md § The member shell.
 #
 # ⚠️ THE COMMIT THIS MAKES WILL NOT RE-RUN CI. Both capture jobs push with GITHUB_TOKEN, and
 # GitHub deliberately suppresses workflow runs triggered by that token so an Action cannot
@@ -55,6 +70,11 @@ on:
         required: false
         default: false
         type: boolean
+      capture_shell:
+        description: 'Include the MEMBER SHELL (/feed, the room, /settings, the Space console). Mints a session first; needs the SUPABASE_SERVICE_ROLE_KEY + PW_MEMBER_EMAIL secrets. Leave OFF for a marketing-only run.'
+        required: false
+        default: false
+        type: boolean
 
 # contents: write is needed ONLY by the two capture jobs' commit steps.
 permissions:
@@ -82,12 +102,41 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
+      # ── The member shell, on purpose (ADR-950) ─────────────────────────────────────────
+      # `capture_shell` is OPT-IN because the four app-shell surfaces have never had
+      # baselines: their first capture is a deliberate act, not something a routine dispatch
+      # should spring on you. Unlike the PR gate, this step FAILS when the secrets are
+      # absent — you asked for the shell, so quietly handing back the marketing site would be
+      # the same silence in a different wrapper.
+      - name: Mint the member session
+        id: session
+        if: ${{ inputs.capture_shell }}
+        env:
+          PW_BASE_URL: ${{ inputs.base_url }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PW_MEMBER_EMAIL: ${{ secrets.PW_MEMBER_EMAIL }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          PW_STORAGE_STATE: ${{ github.workspace }}/test/e2e/.auth/member.json
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ] || [ -z "${PW_MEMBER_EMAIL:-}" ]; then
+            echo "::error title=capture_shell::SUPABASE_SERVICE_ROLE_KEY / PW_MEMBER_EMAIL are not configured, so no member session can be minted. Add them (test/e2e/README.md § The member shell) or re-run with capture_shell off."
+            exit 1
+          fi
+          pnpm e2e:session
+          echo "path=${PW_STORAGE_STATE}" >> "$GITHUB_OUTPUT"
+
       # `pnpm test:e2e` is grep-invert @visual, i.e. @smoke AND @a11y — the two suites with
       # no committed-baseline dependency.
       - name: Smoke + a11y suite
         env:
           PW_BASE_URL: ${{ inputs.base_url }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          PW_STORAGE_STATE: ${{ steps.session.outputs.path }}
+          PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
+          PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
         run: pnpm test:e2e
       - name: Upload report
         if: failure()
@@ -113,10 +162,38 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
+      # Same opt-in mint as the smoke job. THIS is the job that takes the member shell's
+      # first-ever baselines: 12 PNGs (3 surfaces × 2 modes × 2 viewports), or 16 with
+      # PW_SPACE_SLUG set. Expect the commit below to be large the first time and to name
+      # only `app-*` files; anything else in that diff is a regression, not a capture
+      # (ADR-948's attribution property).
+      - name: Mint the member session
+        id: session
+        if: ${{ inputs.capture_shell }}
+        env:
+          PW_BASE_URL: ${{ inputs.base_url }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PW_MEMBER_EMAIL: ${{ secrets.PW_MEMBER_EMAIL }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          PW_STORAGE_STATE: ${{ github.workspace }}/test/e2e/.auth/member.json
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ] || [ -z "${PW_MEMBER_EMAIL:-}" ]; then
+            echo "::error title=capture_shell::SUPABASE_SERVICE_ROLE_KEY / PW_MEMBER_EMAIL are not configured, so no member session can be minted. Add them (test/e2e/README.md § The member shell) or re-run with capture_shell off."
+            exit 1
+          fi
+          pnpm e2e:session
+          echo "path=${PW_STORAGE_STATE}" >> "$GITHUB_OUTPUT"
+
       - name: Capture baselines
         env:
           PW_BASE_URL: ${{ inputs.base_url }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          PW_STORAGE_STATE: ${{ steps.session.outputs.path }}
+          PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
+          PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
         run: pnpm test:e2e:update
       - name: Commit baselines to the branch
         # The runner commits the captures directly: artifact downloads redirect to a
@@ -171,11 +248,38 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
       # PW_A11Y_UPDATE makes every @a11y test RECORD its violation count instead of asserting
       # against the baseline, so the capture cannot fail on the debt it is there to measure.
+      # With capture_shell on, this also SEEDS the shell's a11y debt. It matters: a surface
+      # with no entry in a11y-baselines.json is held to `$defaultMax` (0 serious+), so the
+      # first PR run that reaches /feed would fail on debt that predates it. Seed here first,
+      # deliberately, with the numbers written down and named.
+      - name: Mint the member session
+        id: session
+        if: ${{ inputs.capture_shell }}
+        env:
+          PW_BASE_URL: ${{ inputs.base_url }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PW_MEMBER_EMAIL: ${{ secrets.PW_MEMBER_EMAIL }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          PW_STORAGE_STATE: ${{ github.workspace }}/test/e2e/.auth/member.json
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ] || [ -z "${PW_MEMBER_EMAIL:-}" ]; then
+            echo "::error title=capture_shell::SUPABASE_SERVICE_ROLE_KEY / PW_MEMBER_EMAIL are not configured, so no member session can be minted. Add them (test/e2e/README.md § The member shell) or re-run with capture_shell off."
+            exit 1
+          fi
+          pnpm e2e:session
+          echo "path=${PW_STORAGE_STATE}" >> "$GITHUB_OUTPUT"
+
       - name: Capture a11y counts
         env:
           PW_BASE_URL: ${{ inputs.base_url }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
           PW_A11Y_UPDATE: '1'
+          PW_STORAGE_STATE: ${{ steps.session.outputs.path }}
+          PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
+          PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
         run: pnpm test:e2e:a11y
       # Merge is asymmetric and exits non-zero on a rise, so a regression cannot be quietly
       # absorbed by re-running this job. No always() here for exactly that reason.
@@ -223,10 +327,33 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
+      - name: Mint the member session
+        id: session
+        if: ${{ inputs.capture_shell }}
+        env:
+          PW_BASE_URL: ${{ inputs.base_url }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PW_MEMBER_EMAIL: ${{ secrets.PW_MEMBER_EMAIL }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          PW_STORAGE_STATE: ${{ github.workspace }}/test/e2e/.auth/member.json
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ] || [ -z "${PW_MEMBER_EMAIL:-}" ]; then
+            echo "::error title=capture_shell::SUPABASE_SERVICE_ROLE_KEY / PW_MEMBER_EMAIL are not configured, so no member session can be minted. Add them (test/e2e/README.md § The member shell) or re-run with capture_shell off."
+            exit 1
+          fi
+          pnpm e2e:session
+          echo "path=${PW_STORAGE_STATE}" >> "$GITHUB_OUTPUT"
+
       - name: Visual suite
         env:
           PW_BASE_URL: ${{ inputs.base_url }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          PW_STORAGE_STATE: ${{ steps.session.outputs.path }}
+          PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
+          PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
         run: pnpm test:e2e:visual
       - name: Upload report + diffs
         if: failure()

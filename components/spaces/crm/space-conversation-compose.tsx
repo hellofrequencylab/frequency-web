@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { Loader2, PenLine, Send } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { isError, type ActionResult } from '@/lib/action-result'
+import { Textarea } from '@/components/ui/field'
 
 type StartAction = (input: { email: string; subject: string; body: string }) => Promise<ActionResult<{ ref: string }>>
 
@@ -51,7 +52,7 @@ export function SpaceConversationCompose({
   }
 
   const field =
-    'w-full rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
+    'w-full rounded-control border border-border bg-canvas px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
   return (
     <>
@@ -62,7 +63,7 @@ export function SpaceConversationCompose({
           setError(null)
           setOpen(true)
         }}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
       >
         <PenLine className="h-4 w-4" /> New conversation
       </button>
@@ -75,13 +76,13 @@ export function SpaceConversationCompose({
           </div>
 
           {done ? (
-            <div className="rounded-lg bg-success-bg px-3 py-3 text-body-sm text-success">
+            <div className="rounded-card bg-success-bg px-3 py-3 text-body-sm text-success">
               Sent. The conversation is now in your inbox.
               <div className="mt-2">
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-text hover:bg-surface-elevated"
+                  className="rounded-control border border-border px-2.5 py-1.5 text-meta font-semibold text-text hover:bg-surface-elevated"
                 >
                   Done
                 </button>
@@ -91,13 +92,13 @@ export function SpaceConversationCompose({
             <>
               <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Recipient email" aria-label="Recipient email" className={field} />
               <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" aria-label="Subject" className={field} />
-              <textarea
+              <Textarea
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="Write your message..."
                 aria-label="Message"
                 rows={6}
-                className={`${field} resize-none leading-relaxed`}
+                className="resize-none leading-relaxed"
               />
               {error && (
                 <p role="alert" className="text-meta text-danger">
@@ -109,7 +110,7 @@ export function SpaceConversationCompose({
                   type="button"
                   onClick={() => setOpen(false)}
                   disabled={pending}
-                  className="rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-muted hover:bg-surface-elevated disabled:opacity-50"
+                  className="rounded-control border border-border px-2.5 py-1.5 text-meta font-semibold text-muted hover:bg-surface-elevated disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -117,7 +118,7 @@ export function SpaceConversationCompose({
                   type="button"
                   onClick={submit}
                   disabled={pending || !email.trim() || !subject.trim() || !body.trim()}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50"
                 >
                   {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                   Send

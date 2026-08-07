@@ -154,7 +154,7 @@ export default async function ConversationPage({
   // past the viewport and causing a horizontal scroll) and under-pulled at lg. dvh, not vh, so
   // the iOS dynamic toolbar does not push the composer off-screen.
   return (
-    <div className="-mx-4 -my-6 sm:-mx-6 lg:-mx-8 flex flex-col h-[calc(100dvh-3.5rem)]">
+    <div className="-mx-4 -my-6 sm:-mx-6 lg:-mx-8 flex flex-col h-[calc(100dvh-var(--app-header-h)-var(--tab-bar-h))] md:h-[calc(100dvh-var(--app-header-h))]">
       {/* Takeover chat bar — bespoke, full-bleed chrome (the documented exception,
           MEMBER-DESIGN-SYSTEM §207), but the identity title now flows through the
           shared PageHeading grammar instead of a hand-rolled <h1>. */}
@@ -181,7 +181,7 @@ export default async function ConversationPage({
                 <form action={leaveConversation.bind(null, conversationId)}>
                   <button
                     type="submit"
-                    className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated"
+                    className="flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated"
                   >
                     <LogOut className="h-3 w-3" /> Leave
                   </button>

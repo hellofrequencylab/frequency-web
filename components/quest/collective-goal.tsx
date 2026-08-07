@@ -63,7 +63,7 @@ export function CollectiveGoal({
 
   return (
     <section
-      className="overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary-bg/55 via-surface to-surface lift-1 dark:from-primary-bg/20"
+      className="overflow-hidden rounded-card border border-border bg-gradient-to-br from-primary-bg/55 via-surface to-surface lift-1 dark:from-primary-bg/20"
       aria-labelledby="collective-goal-heading"
     >
       <div className="px-6 pt-6 sm:px-7">

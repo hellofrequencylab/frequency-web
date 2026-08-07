@@ -37,6 +37,14 @@ export const metadata: Metadata = {
       'A vision for 2028: a sauna, a cold plunge, and rooms to gather in person. Nothing is bookable yet. The first Lab is planned for North County San Diego.',
     url: '/the-lab',
   },
+  // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+  // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+  twitter: {
+    card: 'summary_large_image',
+    title: 'The Lab · Frequency',
+    description:
+      'A vision for 2028: a sauna, a cold plunge, and rooms to gather in person. Nothing is bookable yet. The first Lab is planned for North County San Diego.',
+  },
 }
 
 // Answer-first FAQ schema that matches the honest present: The Lab is a vision
@@ -322,7 +330,7 @@ function Room({
   return (
     <Reveal
       as="article"
-      className="lift-2 h-full overflow-hidden rounded-2xl border border-on-ink/10 bg-on-ink/5"
+      className="lift-2 h-full overflow-hidden rounded-card border border-on-ink/10 bg-on-ink/5"
     >
       <div className="relative">
         <SiteImage src={img} alt={alt} aspect="16/10" sizes="(min-width: 640px) 22rem, 100vw" />
@@ -361,7 +369,7 @@ function BuildStep({
     <Reveal>
       <Card tone={final ? 'highlight' : 'feature'} className="lift-2 h-full">
         <span
-          className={`font-display text-4xl leading-none ${final ? 'text-primary-strong' : 'text-text'}`}
+          className={`font-display text-display-h3 leading-none ${final ? 'text-primary-strong' : 'text-text'}`}
         >
           {when}
         </span>

@@ -17,6 +17,8 @@ import {
   RotateCcw,
 } from 'lucide-react'
 import { AdminTemplate, AdminSection } from '@/components/templates'
+import { Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { STEP_REGISTRY, STEP_TYPES } from '@/lib/onboarding/step-registry'
 import type { StepType } from '@/lib/onboarding/step-types'
 import { listPersonas } from '@/lib/onboarding/personas'
@@ -43,8 +45,6 @@ type EditStep = {
   content: Record<string, string>
 }
 
-const inputBase =
-  'w-full rounded-card border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/20'
 
 /** The operator-editable copy field keys for a step type, read from its Zod contentSchema shape. */
 function contentFieldsFor(type: StepType): string[] {
@@ -301,11 +301,11 @@ export function SequenceEditor({
         <div className="grid gap-4 @xl:grid-cols-2">
           <label className="block">
             <span className="mb-1.5 block text-body-sm font-medium text-text">Label</span>
-            <input value={label} onChange={(e) => { setLabel(e.target.value); setSaved(false) }} className={inputBase} placeholder="Every new member" />
+            <Input value={label} onChange={(e) => { setLabel(e.target.value); setSaved(false) }} placeholder="Every new member" />
           </label>
           <label className="block">
             <span className="mb-1.5 block text-body-sm font-medium text-text">Eyebrow</span>
-            <input value={eyebrow} onChange={(e) => { setEyebrow(e.target.value); setSaved(false) }} className={inputBase} placeholder="Welcome home" />
+            <Input value={eyebrow} onChange={(e) => { setEyebrow(e.target.value); setSaved(false) }} placeholder="Welcome home" />
           </label>
         </div>
       </AdminSection>
@@ -345,25 +345,23 @@ export function SequenceEditor({
                 <div className="grid gap-3 @xl:grid-cols-2">
                   <label className="block">
                     <span className="mb-1.5 block text-body-sm font-medium text-text">Type</span>
-                    <select
+                    <Select
                       value={step.type}
                       onChange={(e) => changeType(index, e.target.value as StepType)}
-                      className={inputBase}
                     >
                       {STEP_TYPES.map((t) => (
                         <option key={t} value={t}>
                           {t}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </label>
                   <label className="block">
                     <span className="mb-1.5 block text-body-sm font-medium text-text">Progress label</span>
-                    <input
+                    <Input
                       value={step.label}
                       onChange={(e) => patchStep(index, { label: e.target.value })}
                       placeholder={STEP_REGISTRY[step.type]?.label ?? ''}
-                      className={inputBase}
                     />
                   </label>
                 </div>
@@ -374,17 +372,16 @@ export function SequenceEditor({
                       <label key={key} className="block">
                         <span className="mb-1.5 block text-body-sm font-medium text-text">{humanizeKey(key)}</span>
                         {MULTILINE.test(key) ? (
-                          <textarea
+                          <Textarea
                             value={step.content[key] ?? ''}
                             onChange={(e) => patchContent(index, key, e.target.value)}
                             rows={2}
-                            className={`${inputBase} resize-none`}
+                            className="resize-none"
                           />
                         ) : (
-                          <input
+                          <Input
                             value={step.content[key] ?? ''}
                             onChange={(e) => patchContent(index, key, e.target.value)}
-                            className={inputBase}
                           />
                         )}
                       </label>
@@ -438,11 +435,10 @@ export function SequenceEditor({
           </div>
           <label className="block">
             <span className="mb-1.5 block text-body-sm font-medium text-text">Region ids</span>
-            <input
+            <Input
               value={regionInput}
               onChange={(e) => { setRegionInput(e.target.value); setSaved(false) }}
               placeholder="Optional. Comma-separated nexus_region_id values."
-              className={inputBase}
             />
             <span className="mt-1 block text-meta text-subtle">Advanced. Leave empty to serve every region.</span>
           </label>

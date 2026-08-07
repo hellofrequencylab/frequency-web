@@ -10,7 +10,7 @@ import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, Clock, Plus, RotateCcw, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, Textarea, fieldClasses } from '@/components/ui/field'
+import { Input, Textarea } from '@/components/ui/field'
 import { EmptyState } from '@/components/ui/empty-state'
 import { isError } from '@/lib/action-result'
 import type { CrmTask } from '@/lib/crm/tasks'
@@ -231,12 +231,11 @@ function TaskCreateForm({
         aria-label="Task title"
       />
       <div className="flex flex-wrap items-center gap-2">
-        <input
+        <Input
           type="date"
           value={dueAt}
           onChange={(e) => setDueAt(e.target.value)}
           aria-label="Due date"
-          className={fieldClasses}
         />
       </div>
       <Textarea

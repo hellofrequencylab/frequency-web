@@ -60,7 +60,7 @@ Legend — Driver: 🟢 `BETA_OPEN_ACCESS` (auto-swaps via `beta-notices.ts`) ·
 | `app/(main)/upgrade/page.tsx:79` | "…free during beta." (always shown) | Manual edit. **High risk (unconditional).** |
 | `app/(main)/upgrade/page.tsx:82-206` · `app/(main)/settings/billing/page.tsx:85` | Free-beta banners | 🟡 `billingLive()` auto-hides. |
 | `components/layout/site-alert-bar.tsx:63` | "Frequency will be in Beta until September 1st…" | Edit copy + bump `ALERT_KEY`. |
-| `components/layout/beta-countdown-banner.tsx` | "Summer of Frequency runs through…" | 🟡 `betaEndsAt()` auto-hides. |
+| `components/layout/beta-countdown-banner.tsx` | "We're in Beta. The Founding Business rate ends…" | 🟡 `betaEndsAt()` auto-hides. Reframed 2026-08-06: what ends is the **rate**, not free access. The closing clause ("it stays your rate") is load-bearing, not decoration — see the file's header. |
 | `app/page.tsx:125,137,249,588` | Home hero + FAQ "free for the whole beta / no card / $10/mo" | Manual edit (4 strings). **High risk.** |
 | `app/(marketing)/beta/*` · `app/(marketing)/founders/*` · `components/marketing/beta-form.tsx` · `components/discover/inline-beta-capture.tsx` | Waitlist + founder-reservation funnels | Retire at GA. |
 | `lib/marketing/comparisons.ts` (×6) · `app/(marketing)/what-is-frequency`, `/vs`, `/vs/[slug]`, `/spaces` · `app/discover/cities/*` · `app/llms.txt/route.ts:147` | "Free to join during the beta." / "Free during the beta." | Manual edit. Candidate to centralize (see §4). |

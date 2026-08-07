@@ -55,8 +55,7 @@ export function SeasonControl({
                     }
                   })
                 }
-                // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
-                className="rounded-lg bg-danger text-white px-3 py-1.5 text-body-sm font-semibold disabled:opacity-60"
+                className="rounded-lg bg-danger text-on-danger px-3 py-1.5 text-body-sm font-semibold disabled:opacity-60"
               >
                 {pending ? 'Ending…' : 'Confirm end'}
               </button>

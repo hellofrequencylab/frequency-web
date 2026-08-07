@@ -2,7 +2,8 @@
 
 import { useState, useTransition, useRef, useEffect, useCallback, type ReactNode } from 'react'
 import Image from 'next/image'
-import { Megaphone, ImagePlus, X, PenLine, Bold, Italic, List, Link2, Maximize2, Minimize2, ChevronDown, ChevronUp, Camera } from 'lucide-react'
+import { Megaphone, ImagePlus, X, PenLine, Bold, Italic, List, Link2, Maximize2, Minimize2, ChevronDown, ChevronUp, Camera, type LucideIcon } from 'lucide-react'
+import { IconButton } from '@/components/ui/icon-button'
 import { createPost } from '@/app/(main)/feed/actions'
 import { isError } from '@/lib/action-result'
 import { createClient } from '@/lib/supabase/client'
@@ -14,6 +15,13 @@ import { ComposeLightbox } from './compose-lightbox'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024 // 5 MB (post-prep; raw camera shots are converted + downscaled first)
+
+// The composer's two send modes. Same shape as the Capture box's feature row so the two
+// selectors read as one control (see the render, "PATTERN:" note).
+const MODES: { label: string; icon: LucideIcon; announcement: boolean; hint: string }[] = [
+  { label: 'Post', icon: PenLine, announcement: false, hint: 'A regular post' },
+  { label: 'Dispatch', icon: Megaphone, announcement: true, hint: 'Dispatch: send an announcement to your group' },
+]
 
 type HandleResult = { id: string; handle: string; display_name: string; avatar_url: string | null }
 
@@ -40,7 +48,7 @@ function Tool({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className={`inline-flex items-center rounded-lg p-1.5 transition-colors disabled:opacity-40 ${
+      className={`inline-flex items-center rounded-control p-1.5 transition-colors disabled:opacity-40 ${
         active ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
       }`}
     >
@@ -445,8 +453,8 @@ export function Composer({
       data-tour-anchor="composer"
       className={`relative bg-surface transition-shadow dark:bg-surface-elevated/80 ${
         expanded
-          ? 'rounded-3xl border border-border p-5 lift-3'
-          : 'rounded-2xl border border-border/70 p-4 lift-1 dark:border-border/60'
+          ? 'rounded-card border border-border p-5 lift-3'
+          : 'rounded-card border border-border/70 p-4 lift-1 dark:border-border/60'
       }`}
     >
       {expanded && (
@@ -537,7 +545,7 @@ export function Composer({
           <button
             type="button"
             onClick={removeImage}
-            className="absolute right-1.5 top-1.5 rounded-pill bg-black/60 p-1 text-white transition-colors hover:bg-black/80"
+            className="absolute right-1.5 top-1.5 rounded-pill bg-ink/60 p-1 text-on-ink transition-colors hover:bg-ink/80"
             aria-label="Remove image"
           >
             <X className="h-3.5 w-3.5" />
@@ -555,14 +563,14 @@ export function Composer({
           library. A bottom sheet on phones, a centered card on larger touch screens. */}
       {photoSheetOpen && (
         <div
-          className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center"
+          className="fixed inset-0 z-[80] flex items-end justify-center bg-ink/40 backdrop-blur-sm sm:items-center"
           onClick={() => setPhotoSheetOpen(false)}
           role="dialog"
           aria-modal="true"
           aria-label="Add a photo"
         >
           <div
-            className="w-full max-w-sm space-y-1 rounded-t-2xl border border-border bg-surface p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lift-3 sm:rounded-2xl sm:pb-2"
+            className="w-full max-w-sm space-y-1 rounded-t-card border border-border bg-surface p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lift-3 sm:rounded-card sm:pb-2"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -639,7 +647,7 @@ export function Composer({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => setToolsOpen(true)}
             aria-expanded={false}
-            className="inline-flex items-center gap-1 rounded-md px-1 py-0.5 text-2xs font-medium text-muted transition-colors hover:text-text"
+            className="inline-flex items-center gap-1 rounded-control px-1 py-0.5 text-2xs font-medium text-muted transition-colors hover:text-text"
           >
             <ChevronUp className="h-3 w-3" /> Format
           </button>
@@ -651,29 +659,44 @@ export function Composer({
         {bottomSlot != null ? (
           bottomSlot
         ) : canAnnounce && kind !== 'note' ? (
-          <div className="inline-flex items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
-            <button
-              type="button"
-              onClick={() => setIsAnnouncement(false)}
-              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-2xs font-semibold transition-colors ${
-                !isAnnouncement ? 'bg-surface text-primary-strong lift-1' : 'text-muted hover:text-muted'
-              }`}
-              title="A regular post"
-            >
-              <PenLine className="h-3.5 w-3.5" />
-              Post
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsAnnouncement(true)}
-              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-2xs font-semibold transition-colors ${
-                isAnnouncement ? 'bg-surface text-warning lift-1' : 'text-muted hover:text-muted'
-              }`}
-              title="Dispatch: send an announcement to your group"
-            >
-              <Megaphone className="h-3.5 w-3.5" />
-              Dispatch
-            </button>
+          // PATTERN: the same DAWN composer row as the Capture box's feature selector
+          // (dawn/ui_kits/app/feed.jsx:138-148) — one labelled chip for the active mode
+          // (radius-pill + border-strong hairline), the other mode as a bare 32px
+          // radius-control icon button, and NO `bg-surface-elevated p-0.5` track. WHY the
+          // same pattern rather than tabs: Post/Dispatch is the same choice this box's
+          // richer sibling offers (it is literally the two-mode case of the CaptureBox
+          // row), so the two must read as one control, and neither navigates anywhere.
+          // `title` is kept on both so the "what is a Dispatch" hint survives.
+          <div className="inline-flex items-center gap-1">
+            {MODES.map((m) => {
+              const active = m.announcement === isAnnouncement
+              return active ? (
+                <button
+                  key={m.label}
+                  type="button"
+                  onClick={() => setIsAnnouncement(m.announcement)}
+                  aria-pressed
+                  title={m.hint}
+                  className={`inline-flex items-center gap-1.5 rounded-pill border border-border-strong px-3 py-1.5 text-meta font-bold ${
+                    m.announcement ? 'text-warning' : 'text-text'
+                  }`}
+                >
+                  <m.icon className="h-3.5 w-3.5" aria-hidden />
+                  {m.label}
+                </button>
+              ) : (
+                <IconButton
+                  key={m.label}
+                  label={m.label}
+                  title={m.hint}
+                  tone={m.announcement ? 'warning' : 'default'}
+                  onClick={() => setIsAnnouncement(m.announcement)}
+                  aria-pressed={false}
+                >
+                  <m.icon className="h-4 w-4" aria-hidden />
+                </IconButton>
+              )
+            })}
           </div>
         ) : (
           <span />
@@ -684,7 +707,7 @@ export function Composer({
           <button
             onClick={submit}
             disabled={!canPost}
-            className="shrink-0 rounded-lg bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+            className="shrink-0 rounded-control bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
           >
             {isPending
               ? kind === 'note' ? 'Saving…' : 'Posting…'

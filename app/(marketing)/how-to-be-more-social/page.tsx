@@ -40,18 +40,25 @@ const AWKWARD_IMAGE = '/images/site/song-circle.jpg'
 const SOBER_IMAGE = '/images/site/group-singing.jpg'
 const ROOM_IMAGE = '/images/site/community-dinner.jpg'
 
+// Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
+const OG_TITLE = 'How to be more social · Frequency'
+const OG_DESCRIPTION =
+  'You want to be more social and still end up home alone. The fix is not a new personality. Pick one recurring thing, put it on the calendar, and become a regular.'
+
 export function generateMetadata(): Metadata {
   return {
     title: TITLE,
     description: DESCRIPTION,
     alternates: { canonical: '/how-to-be-more-social' },
     openGraph: {
-      title: 'How to be more social · Frequency',
-      description:
-        'You want to be more social and still end up home alone. The fix is not a new personality. Pick one recurring thing, put it on the calendar, and become a regular.',
+      title: OG_TITLE,
+      description: OG_DESCRIPTION,
       url: '/how-to-be-more-social',
       images: [{ url: HERO_IMAGE }],
     },
+    // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+    // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+    twitter: { card: 'summary_large_image', title: OG_TITLE, description: OG_DESCRIPTION },
   }
 }
 
@@ -174,7 +181,7 @@ export default function HowToBeMoreSocialPage() {
       </PhotoHero>
 
       {/* Answer-first opening: the direct answer in the first two sentences. */}
-      <Section tone="canvas" pad="pt-16 pb-16 sm:pt-20 sm:pb-20">
+      <Section tone="canvas">
         <Lead>
           To be more social, pick one recurring thing you would actually show up
           for, put it on the calendar, and go back until people there know your
@@ -199,7 +206,7 @@ export default function HowToBeMoreSocialPage() {
 
       {/* One concept per section. Question H2 in the reader's words, answer first. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Why do I want to be social but always stay home?
         </h2>
         <Lead>
@@ -243,7 +250,7 @@ export default function HowToBeMoreSocialPage() {
 
       {/* Answer-first how-to, then the concrete steps. Mirrored into HowTo schema. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How do I actually start?
         </h2>
         <Lead>
@@ -264,7 +271,7 @@ export default function HowToBeMoreSocialPage() {
 
       {/* One concept per section: the introvert reader, named plainly. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How can I be more social as an introvert?
         </h2>
         <Lead>
@@ -287,7 +294,7 @@ export default function HowToBeMoreSocialPage() {
           mechanism as an illustrated beat, then the concrete tactics (hands/eyes,
           alone vs a friend). Relational register, no medical claims. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How do I feel less awkward in groups?
         </h2>
         <Lead>
@@ -332,7 +339,7 @@ export default function HowToBeMoreSocialPage() {
       </ZigZag>
 
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Should I go alone or bring a friend?
         </h2>
         <Lead>
@@ -360,7 +367,7 @@ export default function HowToBeMoreSocialPage() {
           telling friends). No health or recovery framing: where you gather, not
           how you drink. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How do I build a social life without drinking?
         </h2>
         <Lead>
@@ -436,7 +443,7 @@ export default function HowToBeMoreSocialPage() {
       {/* Soft CTA into the product. Two honest doors, plus the sibling pillars so the
           cluster cross-links (hub-and-spoke). */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Where to start
         </h2>
         <Body>
@@ -478,7 +485,7 @@ export default function HowToBeMoreSocialPage() {
 
       {/* FAQ: answer-first pairs, mirrored into the FAQPage schema above. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-7">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-7">
           Common questions
         </h2>
         <FaqList items={FAQ} />

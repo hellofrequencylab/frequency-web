@@ -21,13 +21,11 @@ import { PostBody } from '@/components/feed/post-body'
 import { ToggleRow } from '@/components/entity-blocks/controls/field-controls'
 import { isError } from '@/lib/action-result'
 import type { SpaceCommunityPost, SpaceUpdateComment, SpaceUpdateReactions } from '@/lib/spaces/content-data'
+import { Input, Textarea } from '@/components/ui/field'
 
 // THE COMMUNITY FEED (business Community tab). Facebook/Yelp-style: the business posts Updates, FOLLOWERS
 // may also post (when the business allows it), and members react + comment. PUBLIC read; only followers (or
 // the operator) may interact, enforced server-side. Semantic DAWN tokens only, voice canon (no em dashes).
-
-const inputCls =
-  'w-full rounded-card border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary'
 
 /** Push a chosen file through the Space's follower-gated community-image action and hand the shared
  *  Composer back the public URL (or null on failure, which the Composer surfaces). */
@@ -104,7 +102,7 @@ function MemberPostsToggle({ slug, initial }: { slug: string; initial: boolean }
   const [on, setOn] = useState(initial)
   const [, start] = useTransition()
   return (
-    <div className="rounded-2xl border border-border bg-surface-elevated/50 px-4 py-2">
+    <div className="rounded-card border border-border bg-surface-elevated/50 px-4 py-2">
       <ToggleRow
         label="Allow members to post"
         checked={on}
@@ -132,12 +130,12 @@ function BrandComposer({ slug, spaceId }: { slug: string; spaceId: string }) {
       submitLabel="Post"
       onUploadImage={(file) => uploadSpaceImage(slug, file)}
       topSlot={
-        <input
+        <Input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          aria-label="Title"
           placeholder="Add a title (optional)"
           maxLength={200}
-          className={inputCls}
         />
       }
       onSubmit={async ({ body, imageUrl }) => {
@@ -169,7 +167,7 @@ function MemberComposer({ slug, spaceId }: { slug: string; spaceId: string }) {
 /** The prompt a non-interacting viewer sees: follow to join in, or sign in first. */
 function JoinPrompt({ spaceId, brandName, signedIn }: { spaceId: string; brandName: string; signedIn: boolean }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface-elevated/50 p-4">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface-elevated/50 p-4">
       <p className="text-body-sm text-muted">
         {signedIn
           ? `Follow ${brandName} to react, comment, and post.`
@@ -180,7 +178,7 @@ function JoinPrompt({ spaceId, brandName, signedIn }: { spaceId: string; brandNa
       ) : (
         <Link
           href="/sign-in"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           Sign in
         </Link>
@@ -191,7 +189,7 @@ function JoinPrompt({ spaceId, brandName, signedIn }: { spaceId: string; brandNa
 
 function EmptyState({ canPost, brandName }: { canPost: boolean; brandName: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border p-10 text-center">
+    <div className="rounded-card border border-dashed border-border p-10 text-center">
       <MessageCircle className="mx-auto h-8 w-8 text-subtle" aria-hidden />
       <p className="mt-3 text-body-sm font-semibold text-text">
         {canPost ? 'Post your first update' : `${brandName} has not posted yet`}
@@ -286,7 +284,7 @@ function PostCard({
 
   return (
     <article
-      className={`space-y-3 rounded-2xl border bg-surface p-4 lift-1 ${pinned ? 'border-primary/50' : 'border-border'}`}
+      className={`space-y-3 rounded-card border bg-surface p-4 lift-1 ${pinned ? 'border-primary/50' : 'border-border'}`}
     >
       <header className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5">
@@ -323,7 +321,7 @@ function PostCard({
       {update.title && <h3 className="text-body-lg font-bold text-text">{update.title}</h3>}
       {update.body && <PostBody body={update.body} className="text-body-sm leading-relaxed text-muted" />}
       {update.imageUrl && (
-        <Image src={update.imageUrl} alt="" width={800} height={450} unoptimized className="w-full rounded-xl object-cover" />
+        <Image src={update.imageUrl} alt="" width={800} height={450} unoptimized className="w-full rounded-card object-cover" />
       )}
 
       {/* Reaction bar */}
@@ -366,20 +364,23 @@ function PostCard({
       {/* Comment box (followers / operator only) */}
       {canInteract && anchorId && (
         <div className="flex items-start gap-2 pt-1">
-          <textarea
+          <Textarea
+            // Level with the post it sits in — the same rule as the main feed's comment box
+            // (components/feed/post-replies.tsx). "In every feed" was the owner's phrasing.
+            surface="post"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
+            aria-label="Write a comment"
             placeholder="Write a comment"
             rows={1}
             maxLength={5000}
-            className={inputCls}
           />
           <button
             type="button"
             onClick={submitComment}
             disabled={pending || !draft.trim()}
             aria-label="Post comment"
-            className="mt-0.5 inline-flex shrink-0 items-center rounded-lg bg-primary p-2 text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+            className="mt-0.5 inline-flex shrink-0 items-center rounded-control bg-primary p-2 text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Send className="h-4 w-4" aria-hidden />}
           </button>

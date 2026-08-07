@@ -15,7 +15,8 @@ import { FocusTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button, buttonClasses } from '@/components/ui/button'
-import { Field, Input, fieldClasses } from '@/components/ui/field'
+import { Field, Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
@@ -70,7 +71,7 @@ export default async function SpaceProgramPage({
         description="Run your model as a Program. Your flagship circle becomes the blueprint, and members start Chapters anywhere."
         back={{ href: `/spaces/${slug}/manage`, label: 'Manage' }}
       >
-        <p className="rounded-2xl border border-border bg-surface p-6 text-body-sm text-muted">
+        <p className="rounded-card border border-border bg-surface p-6 text-body-sm text-muted">
           Program is turned off for this space, or your role does not include it. An admin can turn it on
           in the module settings.
         </p>
@@ -136,7 +137,7 @@ export default async function SpaceProgramPage({
               const chapters = chaptersByProgram[program.id] ?? []
               return (
                 <div key={program.id} className="space-y-6">
-                  <section className="rounded-2xl border border-border bg-surface p-6">
+                  <section className="rounded-card border border-border bg-surface p-6">
                     <SectionHeader
                       title={program.name}
                       href={program.isActive ? `/channels/${program.slug}` : undefined}
@@ -171,7 +172,7 @@ export default async function SpaceProgramPage({
 
                   <form
                     action={updateSpaceProgramAction.bind(null, slug, program.id)}
-                    className="space-y-4 rounded-2xl border border-border bg-surface p-6"
+                    className="space-y-4 rounded-card border border-border bg-surface p-6"
                   >
                     <SectionHeader title="Edit your Program" />
                     <p className="text-body-sm text-muted">
@@ -188,7 +189,7 @@ export default async function SpaceProgramPage({
 
                   <form
                     action={refreshProgramBlueprintAction.bind(null, slug, program.id)}
-                    className="space-y-4 rounded-2xl border border-border bg-surface p-6"
+                    className="space-y-4 rounded-card border border-border bg-surface p-6"
                   >
                     <SectionHeader title="Blueprint" />
                     <p className="text-body-sm text-muted">
@@ -198,7 +199,7 @@ export default async function SpaceProgramPage({
                       from the new snapshot.
                     </p>
                     <Field label="Snapshot from" hint="One of your live circles. Its current setup becomes the new blueprint.">
-                      <select name="sourceCircleId" required defaultValue="" className={fieldClasses}>
+                      <Select name="sourceCircleId" required defaultValue="">
                         <option value="" disabled>
                           Pick a circle
                         </option>
@@ -207,14 +208,14 @@ export default async function SpaceProgramPage({
                             {c.name}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </Field>
                     <Button type="submit" variant="secondary">
                       Refresh blueprint
                     </Button>
                   </form>
 
-                  <section className="space-y-4 rounded-2xl border border-border bg-surface p-6">
+                  <section className="space-y-4 rounded-card border border-border bg-surface p-6">
                     <SectionHeader title={program.isActive ? 'Pause your Program' : 'Resume your Program'} />
                     <p className="text-body-sm text-muted">
                       {program.isActive
@@ -246,7 +247,7 @@ export default async function SpaceProgramPage({
         ) : (
           <form
             action={createSpaceProgramAction.bind(null, slug)}
-            className="space-y-4 rounded-2xl border border-border bg-surface p-6"
+            className="space-y-4 rounded-card border border-border bg-surface p-6"
           >
             <SectionHeader title="Create your Program" />
             <p className="text-body-sm text-muted">
@@ -260,7 +261,7 @@ export default async function SpaceProgramPage({
               <Input name="oneLiner" required maxLength={160} placeholder="A weekly movement session run by locals, anywhere." />
             </Field>
             <Field label="Blueprint circle" hint="Your flagship circle. Its setup becomes the blueprint every Chapter starts from.">
-              <select name="sourceCircleId" required defaultValue="" className={fieldClasses}>
+              <Select name="sourceCircleId" required defaultValue="">
                 <option value="" disabled>
                   Pick a circle
                 </option>
@@ -269,7 +270,7 @@ export default async function SpaceProgramPage({
                     {c.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
             <Button type="submit">Create Program</Button>
           </form>

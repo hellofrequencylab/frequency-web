@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useId, useState, useTransition } from 'react'
 import Image from 'next/image'
 import { Pencil, Trash2, Check, X, ShieldCheck, ShieldX } from 'lucide-react'
 import { updateCrewTask, deleteCrewTask, approveVerification, rejectVerification } from '../actions'
 import { getInitials } from '@/lib/utils'
+import { Field, Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 const TASK_TYPES = [
@@ -20,16 +22,18 @@ type CrewTask = {
   requires_verification: boolean
 }
 
-const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
-const select = input
 const label = 'block text-meta font-medium text-muted mb-1'
 
-function Toggle({ value, onChange, disabled }: { value: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
+// The switch takes its name from the label already sitting beside it (`labelId`), so what a
+// screen reader says and what a sighted operator reads are the same string and cannot drift.
+// `aria-checked` carries the state.
+function Toggle({ value, onChange, disabled, labelId }: { value: boolean; onChange: (v: boolean) => void; disabled?: boolean; labelId: string }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={value}
+      aria-labelledby={labelId}
       onClick={() => onChange(!value)}
       disabled={disabled}
       className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-pill border-2 border-transparent transition-colors disabled:opacity-50 ${value ? 'bg-primary' : 'bg-border-strong'}`}
@@ -50,6 +54,8 @@ function TaskForm({
   onCancel: () => void
   isPending: boolean
 }) {
+  // One form can be open per task, so the label ids have to be unique per instance.
+  const formId = useId()
   const [name,    setName]    = useState(initial?.name ?? '')
   const [type,    setType]    = useState(initial?.task_type ?? 'attendance')
   const [points,  setPoints]  = useState(String(initial?.zaps_value ?? 10))
@@ -69,31 +75,28 @@ function TaskForm({
 
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg lift-1">
-      <div className="sm:col-span-2">
-        <label className={label}>Task name *</label>
-        <input
+      <Field className="sm:col-span-2" label="Task name *">
+        <Input
           type="text"
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="e.g. Attend a ride"
           required
           disabled={isPending}
-          className={input}
         />
-      </div>
+      </Field>
 
       <div>
-        <label className={label}>Type</label>
-        <select value={type} onChange={e => setType(e.target.value)} disabled={isPending} className={select}>
+        <label className={label} htmlFor={`${formId}-type`}>Type</label>
+        <Select id={`${formId}-type`} value={type} onChange={e => setType(e.target.value)} disabled={isPending}>
           {TASK_TYPES.map(t => (
             <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
           ))}
-        </select>
+        </Select>
       </div>
 
-      <div>
-        <label className={label}>Zaps</label>
-        <input
+      <Field label="Zaps">
+        <Input
           type="number"
           min="1"
           max="9999"
@@ -101,18 +104,17 @@ function TaskForm({
           onChange={e => setPoints(e.target.value)}
           required
           disabled={isPending}
-          className={input}
         />
+      </Field>
+
+      <div className="flex items-center gap-3">
+        <Toggle value={repeat} onChange={setRepeat} disabled={isPending} labelId={`${formId}-repeatable`} />
+        <span id={`${formId}-repeatable`} className="text-body-sm text-text">Repeatable</span>
       </div>
 
       <div className="flex items-center gap-3">
-        <Toggle value={repeat} onChange={setRepeat} disabled={isPending} />
-        <span className="text-body-sm text-text">Repeatable</span>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <Toggle value={verify} onChange={setVerify} disabled={isPending} />
-        <span className="text-body-sm text-text">Requires verification</span>
+        <Toggle value={verify} onChange={setVerify} disabled={isPending} labelId={`${formId}-verify`} />
+        <span id={`${formId}-verify`} className="text-body-sm text-text">Requires verification</span>
       </div>
 
       <div className="sm:col-span-2 flex items-center gap-2 pt-1">
@@ -188,8 +190,7 @@ function VerificationQueue({ items }: { items: PendingVerification[] }) {
                 onClick={() => handleApprove(c.id)}
                 disabled={isPending}
                 title="Approve"
-                // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-success text-white text-meta font-semibold hover:bg-success disabled:opacity-50 transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-success text-on-success text-meta font-semibold hover:bg-success disabled:opacity-50 transition-colors"
               >
                 <ShieldCheck className="w-3.5 h-3.5" /> Approve
               </button>

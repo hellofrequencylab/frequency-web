@@ -98,7 +98,7 @@ export function EmailStyleEditor({
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)]">
       {/* LEFT: the color fields. */}
       <div className="space-y-3">
-        <ul className="divide-y divide-border rounded-2xl border border-border bg-surface">
+        <ul className="divide-y divide-border rounded-card border border-border bg-surface">
           {FIELDS.map((f) => {
             const value = values[f.key]
             const changed = HEX.test(value) && value.toLowerCase() !== brandDefaults[f.key].toLowerCase()
@@ -110,7 +110,7 @@ export function EmailStyleEditor({
                   value={HEX.test(value) ? value : '#000000'}
                   disabled={readOnly}
                   onChange={(e) => setField(f.key, e.target.value)}
-                  className="h-9 w-9 shrink-0 cursor-pointer rounded-lg border border-border bg-transparent disabled:cursor-not-allowed"
+                  className="h-9 w-9 shrink-0 cursor-pointer rounded-control border border-border bg-transparent disabled:cursor-not-allowed"
                 />
                 <div className="min-w-0 flex-1">
                   <p className="text-body-sm font-semibold text-text">{f.label}</p>
@@ -123,7 +123,7 @@ export function EmailStyleEditor({
                   disabled={readOnly}
                   spellCheck={false}
                   onChange={(e) => setField(f.key, e.target.value)}
-                  className="w-24 rounded-lg border border-border bg-surface-elevated/50 px-2 py-1.5 text-meta text-text placeholder:text-subtle focus:border-primary focus:outline-none disabled:opacity-60"
+                  className="w-24 rounded-control border border-border bg-surface-elevated/50 px-2 py-1.5 text-meta text-text placeholder:text-subtle focus:border-primary focus:outline-none disabled:opacity-60"
                 />
                 <button
                   type="button"
@@ -144,7 +144,7 @@ export function EmailStyleEditor({
             type="button"
             onClick={onSave}
             disabled={readOnly || pending}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             Save style
@@ -168,7 +168,11 @@ export function EmailStyleEditor({
         </div>
       </div>
 
-      {/* RIGHT: a live mini-preview of an email in the working colors (inline hex — this renders the EMAIL). */}
+      {/* RIGHT: a live mini-preview of an email in the working colors (inline hex — this renders the EMAIL).
+          token-ok: the four literal radii below are the EMAIL's geometry, not the app's. `lib/email.ts`
+          paints fixed corners because mail clients do not resolve custom properties, so a preview that
+          followed the operator's skin would show a shape the recipient never receives. Left literal on
+          purpose; do not move these onto the role tokens. */}
       <div>
         <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Preview</p>
         <div className="rounded-2xl p-4" style={{ background: preview.canvas }}>

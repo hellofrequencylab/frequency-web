@@ -87,7 +87,7 @@ export function EventHostOfferField({ eventId, slug }: { eventId: string; slug: 
       </p>
 
       {offer ? (
-        <div className="mt-1.5 rounded-lg border border-border bg-surface p-2.5">
+        <div className="mt-1.5 rounded-card border border-border bg-surface p-2.5">
           <p className="text-meta text-text">
             <span className="font-semibold">{offer.toSpace.name}</span>{' '}
             {offer.initiatedBy === 'host' ? 'has been asked to host this event.' : 'asked to host this event.'}
@@ -105,7 +105,7 @@ export function EventHostOfferField({ eventId, slug }: { eventId: string; slug: 
                   type="button"
                   disabled={pending}
                   onClick={() => void run(() => acceptEventHostTransfer(offer.id), 'This Space now hosts the event.')}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
                 >
                   {pending && <Loader2 className="h-3 w-3 animate-spin" aria-hidden />} Accept hosting
                 </button>
@@ -113,7 +113,7 @@ export function EventHostOfferField({ eventId, slug }: { eventId: string; slug: 
                   type="button"
                   disabled={pending}
                   onClick={() => void run(() => declineEventHostTransfer(offer.id))}
-                  className="rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+                  className="rounded-control border border-border px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
                 >
                   Decline
                 </button>
@@ -126,7 +126,7 @@ export function EventHostOfferField({ eventId, slug }: { eventId: string; slug: 
                 type="button"
                 disabled={pending}
                 onClick={() => void run(() => revokeEventHostTransfer(offer.id))}
-                className="mt-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-60"
+                className="mt-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-60"
               >
                 Withdraw
               </button>
@@ -219,7 +219,7 @@ function HostSpaceSearch({ pending, onPick }: { pending: boolean; onPick: (space
 
   return (
     <div className="mt-1.5" ref={boxRef} onKeyDown={onKeyDown}>
-      <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5">
+      <div className="flex items-center gap-2 rounded-control border border-border bg-surface px-3 py-1.5">
         <Crown className="h-4 w-4 shrink-0 text-subtle" />
         <input
           type="text"
@@ -255,16 +255,16 @@ function HostSpaceSearch({ pending, onPick }: { pending: boolean; onPick: (space
                   alt={h.name}
                   width={24}
                   height={24}
-                  className="h-6 w-6 shrink-0 rounded-lg object-cover"
+                  className="h-6 w-6 shrink-0 rounded-control object-cover"
                 />
               ) : (
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-3xs font-bold text-primary-strong">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-control bg-primary-bg text-3xs font-bold text-primary-strong">
                   {getInitials(h.name)}
                 </div>
               )}
               <span className="min-w-0 flex-1 truncate text-meta font-semibold text-text">{h.name}</span>
               {h.type_label && (
-                <span className="shrink-0 rounded-md bg-surface-elevated px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-muted">
+                <span className="shrink-0 rounded-pill bg-surface-elevated px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-muted">
                   {h.type_label}
                 </span>
               )}

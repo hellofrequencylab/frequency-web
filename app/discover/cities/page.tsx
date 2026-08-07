@@ -73,7 +73,7 @@ export default async function DiscoverCitiesIndexPage() {
         subtitle="These are the cities with real momentum: Circles meeting and events happening near you. Pick yours to see what is on this week, then show up in person."
       />
 
-      <Section tone="canvas" pad="pb-16 sm:pb-20">
+      <Section tone="canvas" role="cont">
         {cities.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {cities.map((c) => (

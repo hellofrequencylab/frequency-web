@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { setTierCircleAction } from '@/lib/spaces/memberships-actions'
-import { fieldClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 
 // CIRCLE ACCESS panel (ADR-859): which of the Space's circles each membership tier includes.
 // One row per tier with a circle select; a change saves immediately through the gated
@@ -33,7 +33,7 @@ export function MembershipCircleAccess({
 
   if (tiers.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
+      <p className="rounded-card border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
         No membership tiers yet. Create a tier above, then pick the circle it includes.
       </p>
     )
@@ -42,14 +42,15 @@ export function MembershipCircleAccess({
   return (
     <div className="space-y-2">
       {tiers.map((t) => (
-        <div key={t.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2">
+        <div key={t.id} className="flex flex-wrap items-center gap-3 rounded-card border border-border bg-surface px-3 py-2">
           <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-text">{t.name}</span>
           {savingId === t.id && isPending && <Loader2 className="h-4 w-4 animate-spin text-subtle" />}
-          <select
+          <Select
             aria-label={`Circle included with ${t.name}`}
             value={t.circleId ?? ''}
             disabled={isPending}
-            className={`${fieldClasses} w-auto min-w-44`}
+            emptyLabel="No circle"
+            wrapperClassName="inline-block w-max min-w-44 max-w-full"
             onChange={(e) => {
               const circleId = e.target.value || null
               setError(null)
@@ -75,13 +76,12 @@ export function MembershipCircleAccess({
               })
             }}
           >
-            <option value="">No circle</option>
             {circles.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       ))}
       {error && <p className="text-meta text-danger">{error}</p>}

@@ -32,18 +32,26 @@ const HERO_IMAGE = '/images/site/breathwork-circle.jpg'
 const PRACTICE_IMAGE = '/images/site/meditation-circle-outdoor.jpg'
 const COMMUNITY_IMAGE = '/images/site/nature-viewing-sunset.jpg'
 
+// Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
+const OG_TITLE = 'How to calm down fast when you cannot switch off · Frequency'
+const OG_DESCRIPTION =
+  'A 60-second way to calm down fast, why you stay wired even when you are exhausted, and how to make calm a habit instead of a rescue.'
+
 export function generateMetadata(): Metadata {
   return {
     title: TITLE,
     description: DESCRIPTION,
     alternates: { canonical: '/calm-down-fast' },
     openGraph: {
-      title: 'How to calm down fast when you cannot switch off · Frequency',
-      description:
-        'A 60-second way to calm down fast, why you stay wired even when you are exhausted, and how to make calm a habit instead of a rescue.',
+      title: OG_TITLE,
+      description: OG_DESCRIPTION,
       url: '/calm-down-fast',
       images: [{ url: HERO_IMAGE }],
     },
+    // Metadata merges per TOP-LEVEL KEY: a page that sets only `openGraph` inherits the root
+    // `twitter` block verbatim, so the X/Slack card read generic site copy while the OG tags
+    // were correct. Mirror the page's own share copy.
+    twitter: { card: 'summary_large_image', title: OG_TITLE, description: OG_DESCRIPTION },
   }
 }
 
@@ -109,7 +117,7 @@ export default function CalmDownFastPage() {
       </PhotoHero>
 
       {/* Answer-first opening: the direct answer in the first two sentences. */}
-      <Section tone="canvas" pad="pt-16 pb-16 sm:pt-20 sm:pb-20">
+      <Section tone="canvas">
         <Lead>
           To calm down fast, slow your exhale until it is longer than your breath
           in. That is the fastest lever you have, and it works in about a minute.
@@ -130,7 +138,7 @@ export default function CalmDownFastPage() {
 
       {/* One concept per section. Question H2 in the reader's words, answer first. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Why am I always wired but tired?
         </h2>
         <Lead>
@@ -170,7 +178,7 @@ export default function CalmDownFastPage() {
 
       {/* Answer-first how-to, then the concrete steps. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How do I make calm my baseline?
         </h2>
         <Lead>
@@ -204,7 +212,7 @@ export default function CalmDownFastPage() {
 
       {/* One concept per section: the phone-as-cause reader. Cross-links the feed cluster. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           What if my phone is keeping me wired?
         </h2>
         <Lead>
@@ -252,7 +260,7 @@ export default function CalmDownFastPage() {
 
       {/* Soft CTA into the product. Two honest doors. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Where to start
         </h2>
         <Body>
@@ -272,7 +280,7 @@ export default function CalmDownFastPage() {
 
       {/* FAQ: answer-first pairs, mirrored into the FAQPage schema above. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-7">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-7">
           Common questions
         </h2>
         <FaqList items={FAQ} />

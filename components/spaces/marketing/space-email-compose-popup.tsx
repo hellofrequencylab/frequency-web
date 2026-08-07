@@ -146,7 +146,7 @@ function ComposeBody({
 
   return (
     <Dialog open onClose={onClose} ariaLabel="New email" className="max-w-7xl !mt-0">
-      <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface lift-3">
+      <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden rounded-card border border-border bg-surface lift-3">
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-5 py-3">
           <div className="min-w-0">
             <h3 className="flex items-center gap-2 text-body-sm font-bold text-text">
@@ -160,7 +160,7 @@ function ComposeBody({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="shrink-0 rounded-lg p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+            className="shrink-0 rounded-control p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
           >
             <X className="h-4 w-4" aria-hidden />
           </button>
@@ -168,7 +168,7 @@ function ComposeBody({
 
         {error ? (
           <div className="flex flex-1 items-center justify-center p-6">
-            <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm text-danger" role="alert">{error}</p>
+            <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm text-danger" role="alert">{error}</p>
           </div>
         ) : !loaded ? (
           <div className="flex flex-1 items-center justify-center p-6 text-subtle">

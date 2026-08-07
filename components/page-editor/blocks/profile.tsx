@@ -337,7 +337,7 @@ export function SpaceIdentityHeaderBlock({
             <img src={cover} alt="" className={`h-full w-full object-cover ${focalClass(focal)}`} />
           )}
           {/* Legibility scrim so the overlaid lockup stays readable on any cover. */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/25 to-transparent" />
           <div className="absolute inset-x-0 bottom-0">
             <div className="mx-auto w-full max-w-5xl px-6 pb-8">
               <IdentityLockup identity={identity} logo={logo} showFollow={!!showFollow} overlay />

@@ -115,6 +115,7 @@ export function EmailPreview({
               srcDoc={html}
               sandbox="allow-same-origin"
               onLoad={measureHeight}
+              // KEEP bg-white: the frame behind an EMAIL document. Mail clients resolve no custom properties, so the preview has to show the paper the message actually lands on.
               className="rounded-lg border border-border bg-white lift-1"
               style={{ width: frameW, height: frameH, transform: `scale(${scale})`, transformOrigin: 'top left' }}
             />

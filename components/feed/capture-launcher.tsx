@@ -115,7 +115,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
           inline Capture box is the entry. This component only hosts the modal. */}
       {open && (
         <div
-          className="fixed inset-0 z-[70] flex items-stretch justify-center bg-black/70 backdrop-blur-sm sm:items-center sm:p-4"
+          className="fixed inset-0 z-[70] flex items-stretch justify-center bg-ink/70 backdrop-blur-sm sm:items-center sm:p-4"
           onMouseDown={(e) => {
             if (e.target === e.currentTarget) close()
           }}
@@ -125,7 +125,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
             role="dialog"
             aria-modal="true"
             aria-label="Capture a moment"
-            className="relative flex max-h-[100dvh] w-full flex-col overflow-y-auto border-border bg-canvas p-4 lift-3 motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[90vh] sm:max-w-md sm:rounded-3xl sm:border"
+            className="relative flex max-h-[100dvh] w-full flex-col overflow-y-auto border-border bg-canvas p-4 lift-3 motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[90vh] sm:max-w-md sm:rounded-card sm:border"
             style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
           >
             {/* Header — the Zap menu: where the interactive energy starts.
@@ -155,7 +155,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
             </div>
 
             {showIntro && (
-              <p className="mb-3 shrink-0 rounded-xl bg-primary-bg/50 px-3 py-2 text-meta leading-relaxed text-primary-strong">
+              <p className="mb-3 shrink-0 rounded-card bg-primary-bg/50 px-3 py-2 text-meta leading-relaxed text-primary-strong">
                 First time? Everything in this menu earns. Tap a tile, do the real
                 thing, and the Zaps follow.
               </p>
@@ -176,7 +176,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
             <button
               type="button"
               onClick={openMindless}
-              className="group mt-3 flex w-full shrink-0 items-center gap-3 overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-br from-primary-bg/80 to-primary-bg/25 p-3.5 text-left lift-1 transition-all hover:border-primary active:scale-[0.99]"
+              className="group mt-3 flex w-full shrink-0 items-center gap-3 overflow-hidden rounded-card border-2 border-primary/50 bg-gradient-to-br from-primary-bg/80 to-primary-bg/25 p-3.5 text-left lift-1 transition-all hover:border-primary active:scale-[0.99]"
             >
               <MindlessArt className="block h-12 shrink-0" />
               <span className="min-w-0 flex-1">
@@ -259,7 +259,7 @@ function ZapTile({
     </>
   )
   const cls =
-    'relative flex flex-col items-center rounded-2xl border p-3 text-center transition-all ' +
+    'relative flex flex-col items-center rounded-card border p-3 text-center transition-all ' +
     (soon
       ? 'cursor-default border-dashed border-border bg-surface/50 opacity-60'
       : alert

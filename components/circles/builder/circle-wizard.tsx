@@ -15,6 +15,7 @@ import {
 import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/components/templates'
 import type { PillarSlug } from '@/lib/pillars'
 import { PILLAR_SLUGS } from '@/lib/pillars'
+import { Input, Textarea } from '@/components/ui/field'
 import type { CircleSparkDraft } from '@/lib/ai/circle-spark'
 import {
   sparkPreviewAction,
@@ -39,9 +40,6 @@ const PILLAR_LABELS: Record<PillarSlug, string> = {
   spirit: 'Spirit',
   expression: 'Expression',
 }
-
-const FIELD =
-  'w-full rounded-card border border-border bg-surface px-3 py-2.5 text-body-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
 
 type Mode = 'choose' | 'upload' | 'questions' | 'review'
 
@@ -226,12 +224,12 @@ export function CircleWizard() {
           {/* ── UPLOAD ── */}
           {mode === 'upload' && (
             <div className="space-y-3">
-              <textarea
+              <Textarea
                 autoFocus
                 value={sourceText}
                 onChange={(e) => setSourceText(e.target.value)}
                 rows={8}
-                className={FIELD}
+                aria-label="Your Circle outline, write-up, or notes"
                 placeholder="Paste your Circle outline, write-up, or notes here…"
               />
               <div className="flex flex-wrap items-center gap-3">
@@ -245,9 +243,10 @@ export function CircleWizard() {
                   Upload a file
                 </button>
                 <span className="text-meta text-subtle">PDF, Word, or plain text</span>
-                <input
+                <Input
                   ref={fileRef}
                   type="file"
+                  aria-label="Circle outline file"
                   accept=".txt,.md,.pdf,.docx,.doc,application/pdf,text/plain"
                   className="hidden"
                   onChange={(e) => {
@@ -265,20 +264,18 @@ export function CircleWizard() {
             <div className="space-y-3">
               <label className="block">
                 <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">What is it about</span>
-                <input
+                <Input
                   autoFocus
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
-                  className={FIELD}
                   placeholder="e.g. Trail running and coffee after"
                 />
               </label>
               <label className="block">
                 <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Who is it for</span>
-                <input
+                <Input
                   value={who}
                   onChange={(e) => setWho(e.target.value)}
-                  className={FIELD}
                   placeholder="e.g. Busy adults who want real friends"
                 />
               </label>
@@ -308,10 +305,9 @@ export function CircleWizard() {
                 <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
                   How it meets (optional)
                 </span>
-                <input
+                <Input
                   value={cadence}
                   onChange={(e) => setCadence(e.target.value)}
-                  className={FIELD}
                   placeholder="e.g. Wednesdays evening, Saturday mornings"
                 />
               </label>
@@ -323,29 +319,27 @@ export function CircleWizard() {
             <div className="space-y-3">
               <label className="block">
                 <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Name</span>
-                <input
+                <Input
                   value={spark.name}
                   onChange={(e) => setSpark({ ...spark, name: e.target.value })}
-                  className={`${FIELD} font-semibold`}
+                  className="font-semibold"
                   placeholder="Name your Circle"
                 />
               </label>
               <label className="block">
                 <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">The Card</span>
-                <input
+                <Input
                   value={spark.card}
                   onChange={(e) => setSpark({ ...spark, card: e.target.value })}
-                  className={FIELD}
                   placeholder="The hook, under a dozen words"
                 />
               </label>
               <label className="block">
                 <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">About</span>
-                <textarea
+                <Textarea
                   value={spark.oneLiner}
                   onChange={(e) => setSpark({ ...spark, oneLiner: e.target.value })}
                   rows={3}
-                  className={FIELD}
                   placeholder="Who it is for and what they get"
                 />
               </label>

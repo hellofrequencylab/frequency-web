@@ -2,6 +2,7 @@
 
 import { useId, useState } from 'react'
 import { Info } from 'lucide-react'
+import { IconButton } from '@/components/ui/icon-button'
 
 // A small info (i) icon that reveals a WRAPPING tooltip with deeper instructions. Unlike HoverTip
 // (whitespace-nowrap, for short header-icon labels), this wraps to a readable width, so it suits a
@@ -14,16 +15,23 @@ export function InfoTip({ label, side = 'top' }: { label: string; side?: 'top' |
   const pos = side === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
   return (
     <span className="group/it relative inline-flex align-middle">
-      <button
-        type="button"
-        aria-label="More info"
+      {/* The (i) is the whole affordance, so it composes IconButton rather than re-deriving a
+          box: the hand-rolled one shipped at 20px, under both the 32px density floor and the
+          44px coarse-pointer target, and carried no focus ring. `-my-1.5` keeps the glyph on
+          the same optical line as the label it follows now that the box is the kit's. */}
+      {/* `title` is cleared on purpose, and ONLY here: IconButton's label doubles as a native
+          tooltip, which is right for a row action but wrong for a control whose entire job is
+          to open a richer tooltip of its own. The accessible name (aria-label) is untouched. */}
+      <IconButton
+        label="More info"
+        title={undefined}
         aria-describedby={id}
         onClick={() => setOpen((v) => !v)}
         onBlur={() => setOpen(false)}
-        className="inline-flex h-5 w-5 items-center justify-center rounded-pill text-subtle transition-colors hover:text-primary-strong focus:text-primary-strong focus:outline-none"
+        className="-my-1.5"
       >
         <Info className="h-4 w-4" aria-hidden />
-      </button>
+      </IconButton>
       <span
         id={id}
         role="tooltip"

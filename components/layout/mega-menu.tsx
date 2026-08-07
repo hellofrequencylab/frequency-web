@@ -13,6 +13,14 @@ import type {
 } from '@/lib/menus/types'
 import { effectiveMode } from '@/components/layout/menu-role'
 import { GhostLink } from '@/components/layout/ghost-link'
+import {
+  SHELL_ROW_CLASS,
+  SHELL_ROW_GAP_CLASS,
+  LEFT_RAIL_CLASS,
+  RIGHT_RAIL_CLASS,
+  RIGHT_RAIL_ML_CLASS,
+  RAIL_STRIP_CLASS,
+} from '@/lib/layout/shell-metrics'
 
 // ── MegaBar — the shared best-practice header navigation ───────────────────────
 // A row of triggers with a SINGLE panel that slides DOWN as a row from UNDER the
@@ -67,6 +75,11 @@ type Variant = 'light' | 'dark'
 const DEFAULT_OPEN_DELAY_MS = 0
 const DEFAULT_DWELL_MS = 1500
 const DEFAULT_FADE_MS = 240
+
+// How far the page must actually move before a scroll dismisses an open panel. Big enough to
+// absorb trackpad inertia and a mobile address bar collapsing, small enough that a deliberate
+// scroll still closes it on the first flick.
+const SCROLL_DISMISS_PX = 24
 
 // ── Resolved-menu adapter ─────────────────────────────────────────────────────
 // The bar renders from a uniform shape regardless of triggerLevel: a list of TRIGGERS,
@@ -144,6 +157,26 @@ function gridStyle(el: {
   return style
 }
 
+// How many columns a loose-item list flows into. Tuned to the rows themselves, not the menu's
+// `columns` count: a dropdown of four links wants one tidy column, not four of one item each.
+// Capped at three so a column never gets narrower than a two-line subheading reads well.
+function columnsFor(count: number): number {
+  if (count <= 4) return 1
+  if (count <= 8) return 2
+  return 3
+}
+
+/** Split a list into `n` roughly equal, ORDER-PRESERVING columns (read down, then across).
+ *  `n <= 1` or an empty list returns a single chunk, so the caller has one code path. PURE. */
+function chunk<T>(items: T[], n: number): T[][] {
+  if (items.length === 0) return []
+  if (n <= 1) return [items]
+  const per = Math.ceil(items.length / n)
+  const out: T[][] = []
+  for (let i = 0; i < items.length; i += per) out.push(items.slice(i, i + per))
+  return out
+}
+
 function routeActive(pathname: string, href: string) {
   if (href === '/') return pathname === '/'
   if (href === '/admin') return pathname === '/admin'
@@ -172,6 +205,8 @@ export function MegaBar({
   className = '',
   panelAlign = 'viewport',
   rightRail = false,
+  leftFolded = false,
+  rightFolded = false,
   cardGutters = false,
   timings,
   panelHeader,
@@ -201,6 +236,10 @@ export function MegaBar({
   /** Only meaningful with panelAlign='content': reserve the right rail width (lg+) so the
    *  card stops at the right rail, like the member shell. Omit where there is no right rail. */
   rightRail?: boolean
+  /** The rails' CURRENT fold state, so the panel's spacers track the shell instead of assuming
+   *  both rails are open. Only meaningful with panelAlign='content'. */
+  leftFolded?: boolean
+  rightFolded?: boolean
   /** Frame the panel as a fixed `columns`-wide grid: dropdown content always begins at
    *  COLUMN 2 (never flush-left), and columns 1 + last are reserved as gutters for the
    *  optional left/right rail cards. The header uses this; skipped under explicit grid
@@ -224,6 +263,8 @@ export function MegaBar({
   const lingerTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const fadeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // The trigger that opened the panel, so Escape can hand focus back to it.
+  const triggerRef = useRef<HTMLElement | null>(null)
   const panelId = useId()
 
   const triggers = useMemo(() => buildTriggers(menus, triggerLevel), [menus, triggerLevel])
@@ -304,12 +345,27 @@ export function MegaBar({
   useEffect(() => {
     if (!active) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') beginClose()
+      // Escape returns focus to the trigger that opened the panel. Without this a keyboard
+      // user who dismissed the menu was dropped at the top of the document and had to tab
+      // back through the whole header (WCAG 2.4.3 Focus Order). `activeRef` is set on open.
+      if (e.key === 'Escape') {
+        beginClose()
+        triggerRef.current?.focus()
+      }
     }
     const onDoc = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) beginClose()
     }
-    const onScroll = () => beginClose()
+    // ── SCROLL DISMISSAL HAS A THRESHOLD ─────────────────────────────────────────────────
+    // This used to close on ANY scroll event. On a trackpad, one pixel of inertial drift with
+    // the pointer resting inside the open panel closed it — and on iOS/Android a scroll fires
+    // from the address bar collapsing, which no member did on purpose. The intent was real
+    // (content moving under a pinned panel reads as stale), so the rule is kept and given a
+    // deadband: dismiss once the page has genuinely moved.
+    const openedAt = window.scrollY
+    const onScroll = () => {
+      if (Math.abs(window.scrollY - openedAt) > SCROLL_DISMISS_PX) beginClose()
+    }
     document.addEventListener('keydown', onKey)
     document.addEventListener('mousedown', onDoc)
     window.addEventListener('scroll', onScroll, { passive: true })
@@ -452,14 +508,28 @@ export function MegaBar({
     const looseItems = activeTrigger.rootItems.map(renderItem).filter(Boolean)
     const colCount = activeTrigger.columns
 
+    // ── LOOSE ITEMS FLOW INTO COLUMNS ────────────────────────────────────────────────
+    //
+    // 🔴 They used to go into ONE `min-w-[10rem]` div, all of them, however many there were.
+    // That is not a small thing on the live header: `triggerLevel='category'` puts a trigger's
+    // CHILDREN in `categories` and its own links in `rootItems`, and the header tree is one
+    // level deep — so `categories` is always empty and EVERY dropdown took this branch. The
+    // Spaces panel stacked six links in a 170px column inside a 1,139px band, and about a
+    // thousand of those pixels were blank (docs/MENU-AUDIT-2026-08-06.md §2.1).
+    //
+    // Chunking here rather than `columns: N` CSS on purpose: multi-column would let one link's
+    // two-line subheading break across a column boundary, and these rows are label + subheading.
+    // Explicit chunks keep each row whole and read top-to-bottom, then left-to-right.
+    const looseColumns = chunk(looseItems, columnsFor(looseItems.length))
+
     const content = (
       <>
         {categoryColumns}
-        {looseItems.length > 0 && (
-          <div className="min-w-[10rem]">
-            <div className="space-y-0.5">{looseItems}</div>
+        {looseColumns.map((col, i) => (
+          <div key={`loose-${i}`} className="min-w-[10rem] flex-1">
+            <div className="space-y-0.5">{col}</div>
           </div>
-        )}
+        ))}
       </>
     )
 
@@ -468,17 +538,31 @@ export function MegaBar({
     // reserved as gutters for the optional left/right rail cards. Skipped under explicit
     // grid placement (gridCol/gridRow), where the operator controls exact placement, and
     // when colCount is too small to leave a center band.
-    if (cardGutters && !useGrid && colCount >= 3) {
+    // ── GUTTERS ARE RESERVED ONLY FOR CARDS THAT EXIST ───────────────────────────────
+    //
+    // 🔴 This branch used to reserve grid column 1 AND column `colCount` unconditionally, for
+    // rail cards, whenever `cardGutters` was set and the menu had 3+ columns. PrimaryNav always
+    // sets `cardGutters`, the header menu is `columns: 6`, and there is not one rail card in the
+    // database on any surface — so two of six columns, a third of the panel, were permanently
+    // empty on every dropdown the product has ever shown (audit §2.1).
+    //
+    // A gutter is now a consequence of a card, not a prerequisite for one. With cards on both
+    // sides the layout is exactly what it was; with none, the content simply gets the width.
+    if (cardGutters && !useGrid && colCount >= 3 && (leftCards.length > 0 || rightCards.length > 0)) {
+      const start = leftCards.length > 0 ? 2 : 1
+      const end = rightCards.length > 0 ? colCount : colCount + 1
       return (
         <div
           className="grid w-full gap-x-10 gap-y-6"
           style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
         >
-          <div style={{ gridColumn: '1' }}>{leftCards.map(renderRailCard)}</div>
-          <div className="flex flex-wrap gap-x-10 gap-y-6" style={{ gridColumn: `2 / ${colCount}` }}>
+          {leftCards.length > 0 && <div style={{ gridColumn: '1' }}>{leftCards.map(renderRailCard)}</div>}
+          <div className="flex flex-wrap gap-x-10 gap-y-6" style={{ gridColumn: `${start} / ${end}` }}>
             {content}
           </div>
-          <div style={{ gridColumn: `${colCount}` }}>{rightCards.map(renderRailCard)}</div>
+          {rightCards.length > 0 && (
+            <div style={{ gridColumn: `${colCount}` }}>{rightCards.map(renderRailCard)}</div>
+          )}
         </div>
       )
     }
@@ -566,6 +650,7 @@ export function MegaBar({
               className={triggerClass(variant, highlighted)}
               onClick={(e) => {
                 e.preventDefault()
+                triggerRef.current = e.currentTarget
                 if (active === t.key) beginClose()
                 else open(t.key)
               }}
@@ -580,7 +665,11 @@ export function MegaBar({
               aria-expanded={active === t.key}
               aria-controls={panelId}
               className={triggerClass(variant, highlighted)}
-              onClick={() => (active === t.key ? beginClose() : open(t.key))}
+              onClick={(e) => {
+                triggerRef.current = e.currentTarget
+                if (active === t.key) beginClose()
+                else open(t.key)
+              }}
             >
               {inner}
             </button>
@@ -604,16 +693,29 @@ export function MegaBar({
           {panelAlign === 'content' ? (
             // Reproduce the shell's body grid (centered max-w, the same gap, and rail-width
             // SPACERS) so the visible card lands exactly in the content column between rails.
-            <div className="mx-auto flex max-w-[105rem] gap-8 px-4 sm:px-6 lg:px-8">
-              <div className="hidden w-48 shrink-0 md:block" aria-hidden />
+            // Reproduce the shell's body row from lib/layout/shell-metrics — the SAME strings
+            // the shell itself uses, so the card lands in the content column and stays there
+            // when a rail folds. Never hand-written here again (see that file's note).
+            <div className={`flex ${SHELL_ROW_CLASS} ${SHELL_ROW_GAP_CLASS}`}>
+              <div
+                className={`hidden shrink-0 md:block ${leftFolded ? RAIL_STRIP_CLASS : LEFT_RAIL_CLASS}`}
+                aria-hidden
+              />
               <div className="min-w-0 flex-1 py-6">
                 {panelHeader && <div className="mb-6">{panelHeader}</div>}
                 {panelBody}
               </div>
-              {rightRail && <div className="hidden w-72 shrink-0 lg:block" aria-hidden />}
+              {rightRail && (
+                <div
+                  className={`hidden shrink-0 lg:block ${RIGHT_RAIL_ML_CLASS} ${
+                    rightFolded ? RAIL_STRIP_CLASS : RIGHT_RAIL_CLASS
+                  }`}
+                  aria-hidden
+                />
+              )}
             </div>
           ) : (
-            <div className="mx-auto flex max-w-[105rem] px-4 py-6 sm:px-6 lg:px-8">{panelBody}</div>
+            <div className={`flex py-6 ${SHELL_ROW_CLASS}`}>{panelBody}</div>
           )}
         </div>
       )}

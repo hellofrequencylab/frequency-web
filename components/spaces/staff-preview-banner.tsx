@@ -10,7 +10,7 @@ export function StaffPreviewBanner({ spaceName }: { spaceName: string }) {
   return (
     <div
       role="status"
-      className="mb-6 flex items-start gap-3 rounded-2xl border border-warning/30 bg-warning-bg px-4 py-3"
+      className="mb-6 flex items-start gap-3 rounded-card border border-warning/30 bg-warning-bg px-4 py-3"
     >
       <Eye className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden />
       <div className="min-w-0 text-body-sm">

@@ -8,6 +8,7 @@ import type {
   NotificationFrequency,
 } from '@/lib/notification-preferences'
 import { NOTIFICATION_FREQUENCIES } from '@/lib/notification-preferences'
+import { Select } from '@/components/ui/select'
 import { saveNotificationPreferences } from './actions'
 import { isError } from '@/lib/action-result'
 
@@ -184,16 +185,18 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
               </div>
               {/* Per-category frequency */}
               <div className="w-28 flex justify-center">
-                <select
+                {/* Named off the row's VISIBLE topic label, not the programmatic key, so the
+                    spoken name and the seen one cannot drift. */}
+                <Select
                   value={(settings[`freq_${key}` as keyof NotificationSettings] as NotificationFrequency) ?? 'realtime'}
                   onChange={(e) => setFrequency(key, e.target.value as NotificationFrequency)}
-                  aria-label={`${key} frequency`}
-                  className="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-meta text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  aria-label={`${label} frequency`}
+                  className="text-meta"
                 >
                   {NOTIFICATION_FREQUENCIES.map((f) => (
                     <option key={f} value={f}>{FREQUENCY_LABELS[f]}</option>
                   ))}
-                </select>
+                </Select>
               </div>
             </div>
           ))}

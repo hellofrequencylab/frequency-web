@@ -24,6 +24,9 @@ export async function generateMetadata({ params }: { params: Promise<{ flow: str
     description: lf.splash.body,
     alternates: { canonical: `/start/${flow}` },
     openGraph: { title: lf.splash.headline, description: lf.splash.body, url: `/start/${flow}` },
+    // Metadata merges per top-level key: omitting `twitter` inherits the ROOT block, so a lead
+    // flow dropped in an IG bio would preview as generic site copy instead of its own splash.
+    twitter: { card: 'summary_large_image', title: lf.splash.headline, description: lf.splash.body },
   }
 }
 
@@ -42,7 +45,7 @@ export default async function LeadFlowPage({ params }: { params: Promise<{ flow:
         subtitle={lf.splash.body}
       />
 
-      <Section tone="canvas" pad="py-16 sm:py-20">
+      <Section tone="canvas">
         <PersonaChooser
           flow={lf.slug}
           source={lf.source}

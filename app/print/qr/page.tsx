@@ -130,7 +130,10 @@ function PosterSheet({ svg, title, url }: { svg: string; title: string; url: str
   return (
     <div className="flex min-h-[1000px] flex-col items-center justify-center gap-8 rounded-card border border-border bg-white px-10 py-16 text-center print:min-h-screen print:rounded-none print:border-0">
       <p className="text-body-sm font-semibold uppercase tracking-[0.25em] text-muted">Scan to join</p>
-      <h1 className="text-4xl font-bold text-text">{title}</h1>
+      {/* text-display-poster, NOT a display-h* role: those are all clamp(…vw…), and on a printed
+          sheet `vw` resolves against the page box — an A4 poster would fall to display-h3's
+          1.75rem floor and print smaller than it previews, differently again on Letter. */}
+      <h1 className="text-display-poster font-bold text-text">{title}</h1>
       <div className="h-[460px] w-[460px] max-w-full [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} />
       <p className="text-body-lg text-muted">{prettyUrl(url)}</p>
     </div>

@@ -4,7 +4,7 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate } from '@/components/templates'
 import { FormSection } from '@/components/admin/form-section'
 import { ROLE_HIERARCHY, type CommunityRole } from '@/lib/core/roles'
-import { ROLE_LABEL, roleBadgeStyle } from '@/lib/community-roles'
+import { RoleBadge } from '@/lib/community-roles'
 import { ROLE_META } from '@/lib/roles-meta'
 import { getAreaPermissions, getCapabilityOverrides } from '@/lib/permissions'
 import { NAV_AREA_DEFAULTS } from '@/lib/nav-areas'
@@ -105,9 +105,7 @@ export default async function AdminRolesPage() {
                     <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-elevated text-muted">
                       <RoleIcon className="h-4 w-4" aria-hidden />
                     </span>
-                    <span className="rank-badge text-meta font-bold leading-tight" style={roleBadgeStyle(r)}>
-                      {ROLE_LABEL[r]}
-                    </span>
+                    <RoleBadge role={r} size="lg" />
                   </div>
                   <span className="text-body-sm font-semibold tabular-nums text-muted">{counts[r]}</span>
                 </div>

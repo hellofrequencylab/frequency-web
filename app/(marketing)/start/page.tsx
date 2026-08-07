@@ -26,6 +26,14 @@ export function generateMetadata(): Metadata {
         'Build, Practice, or Spread. Pick the door that fits and we point you at your first move.',
       url: '/start',
     },
+    // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+    // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+    twitter: {
+      card: 'summary_large_image',
+      title: 'Where do you want to start? · Frequency',
+      description:
+        'Build, Practice, or Spread. Pick the door that fits and we point you at your first move.',
+    },
   }
 }
 
@@ -79,7 +87,7 @@ export default function StartPage() {
         subtitle="The third place is gone, and ordinary people are rebuilding it where they live. There are three ways to be one of them. Pick the one that fits you."
       />
 
-      <Section tone="canvas" pad="pb-24 sm:pb-28 pt-0">
+      <Section tone="canvas" role="cont">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {ROLES.map((role) => (
             <Card key={role.label} tone="feature" className="flex flex-col text-center">

@@ -2,7 +2,8 @@ import Link from 'next/link'
 import { Receipt, ArrowRight } from 'lucide-react'
 import { getVaultData } from '@/lib/vault/vault-data'
 import { SectionHeader } from '@/components/ui/section-header'
-import { RANK_LABELS, seasonRankStyle } from '@/lib/season-ranks'
+import { RANK_LABELS } from '@/lib/season-ranks'
+import { RankBadge } from '@/components/ui/rank-badge'
 import { amplitudeLevel, formatAmplitude } from '@/lib/amplitude'
 
 // Vault layout module: Your Vault — Amplitude (the lifetime layer), the earning ledger, and
@@ -34,9 +35,7 @@ export async function VaultSummary() {
             </span>
             <span className="flex items-center gap-1.5">
               {d.seasonRank && d.seasonRank !== 'ghost' && (
-                <span className="rank-badge text-2xs font-bold leading-tight" style={seasonRankStyle(d.seasonRank)}>
-                  {RANK_LABELS[d.seasonRank]}
-                </span>
+                <RankBadge rank={d.seasonRank}>{RANK_LABELS[d.seasonRank]}</RankBadge>
               )}
               <span className="text-2xs font-bold text-signal-strong">{formatAmplitude(d.amplitude)}</span>
             </span>

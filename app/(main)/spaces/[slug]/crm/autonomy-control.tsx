@@ -52,7 +52,7 @@ export function AutonomyControl({ slug, level }: { slug: string; level: Autonomy
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
+    <div className="rounded-card border border-border bg-surface p-4">
       <div className="flex items-center justify-between gap-2">
         <p className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wider text-subtle">
           <ShieldCheck className="h-3.5 w-3.5" /> How much Vera does on its own

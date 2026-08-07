@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Check, Copy, Loader2, Mail, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input, Label, fieldClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { createInvite, revokeInvite } from '@/lib/spaces/invites-actions'
 // The type + the pure accept-link helper come from the client-safe shared module, NOT from
@@ -13,6 +14,7 @@ import { createInvite, revokeInvite } from '@/lib/spaces/invites-actions'
 import { inviteAcceptUrl, type SpaceInvite } from '@/lib/spaces/invites-shared'
 import type { SpaceRole } from '@/lib/spaces/membership'
 import { cn } from '@/lib/utils'
+import { IconButton } from '@/components/ui/icon-button'
 
 // INVITE A TEAMMATE (client). The owner (or admin) of a Space invites a teammate by email at a role,
 // through the canManageMembers-gated createInvite action. The server is authoritative: it validates
@@ -137,7 +139,7 @@ export function InviteForm({
   return (
     <div className="space-y-6">
       <form
-        className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1"
+        className="space-y-4 rounded-card border border-border bg-surface p-5 lift-1"
         onSubmit={(e) => {
           e.preventDefault()
           if (!pending) send()
@@ -163,18 +165,13 @@ export function InviteForm({
             <Label htmlFor="invite-role" className="font-semibold">
               Role
             </Label>
-            <select
+            <Select
               id="invite-role"
               value={role}
               onChange={(e) => setRole(e.target.value as SpaceRole)}
-              className={cn(fieldClasses, 'mt-1')}
-            >
-              {ROLE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+              options={ROLE_OPTIONS}
+              wrapperClassName="mt-1"
+            />
           </div>
           <Button type="submit" disabled={pending} className="shrink-0">
             {pending ? (
@@ -197,7 +194,7 @@ export function InviteForm({
 
         {error && (
           <p
-            className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger"
+            className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger"
             role="alert"
           >
             {error}
@@ -225,7 +222,7 @@ export function InviteForm({
         </h3>
 
         {invites.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
+          <p className="rounded-card border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
             No invites waiting. Invite a teammate above to add them to your team.
           </p>
         ) : (
@@ -233,7 +230,7 @@ export function InviteForm({
             {invites.map((invite) => (
               <li
                 key={invite.id}
-                className="space-y-3 rounded-2xl border border-border bg-surface p-4 lift-1"
+                className="space-y-3 rounded-card border border-border bg-surface p-4 lift-1"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -242,15 +239,16 @@ export function InviteForm({
                       Invited as {ROLE_LABEL[invite.role]}
                     </p>
                   </div>
-                  <button
-                    type="button"
+                  <IconButton
+                    variant="bordered"
+                    tone="danger"
+                    label={`Revoke the invite for ${invite.email}`}
                     onClick={() => revoke(invite.id)}
                     disabled={revoking}
-                    aria-label={`Revoke the invite for ${invite.email}`}
-                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-danger/40 hover:text-danger disabled:opacity-40"
+                    className="shrink-0"
                   >
                     <Trash2 className="h-4 w-4" aria-hidden />
-                  </button>
+                  </IconButton>
                 </div>
                 <CopyLink url={inviteAcceptUrl(invite.token)} />
               </li>

@@ -66,7 +66,7 @@ export function BottomSheet({
 
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-[70] flex items-end justify-center bg-black/50"
+      className="fixed inset-x-0 bottom-0 z-[70] flex items-end justify-center bg-ink/50"
       style={topInsetPx ? { top: topInsetPx } : { top: 0 }}
       onMouseDown={onClose}
     >

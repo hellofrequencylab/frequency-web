@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
-import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Input, labelClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { useRailSaveNow } from '@/components/admin/rail/rail-autosave-form'
 import { VenueAutocomplete } from '@/components/admin/venue-autocomplete'
 import type { PlaceResult } from '@/lib/geocode'
@@ -15,7 +16,6 @@ import { isoToWallClockInput } from '@/lib/events/datetime'
 // self-contained: it owns its controlled state, seeds from `initial`, and renders the same
 // named inputs the server actions read from FormData, so a parent form just drops it in.
 
-const input = fieldClasses
 const fieldLabel = labelClasses
 
 // maplibre must never run on the server, so the pin picker is client-only.
@@ -40,23 +40,21 @@ export function EventTimeFields({
     <div className="grid grid-cols-1 gap-2 @sm:grid-cols-2">
       <label className="block min-w-0 space-y-1.5">
         <span className={fieldLabel}>Starts</span>
-        <input
+        <Input
           name="starts_at"
           type="datetime-local"
           defaultValue={isoToWallClockInput(startsAt)}
           required
-          disabled={disabled}
-          className={`${input} min-w-0 px-2`}
+          disabled={disabled} className="min-w-0 px-2"
         />
       </label>
       <label className="block min-w-0 space-y-1.5">
         <span className={fieldLabel}>Ends</span>
-        <input
+        <Input
           name="ends_at"
           type="datetime-local"
           defaultValue={isoToWallClockInput(endsAt)}
-          disabled={disabled}
-          className={`${input} min-w-0 px-2`}
+          disabled={disabled} className="min-w-0 px-2"
         />
       </label>
     </div>
@@ -125,38 +123,37 @@ export function EventLocationFields({
       {/* One-line location (full). */}
       <label className="block space-y-1.5">
         <span className={fieldLabel}>Location</span>
-        <input name="location" defaultValue={initial.location ?? ''} disabled={disabled} className={input} />
+        <Input name="location" defaultValue={initial.location ?? ''} disabled={disabled} />
       </label>
 
       {/* Format select — toggles the join link + address / map. */}
       <label className="block min-w-0 space-y-1.5">
         <span className={fieldLabel}>Format</span>
-        <select
+        <Select
           name="attendance_mode"
           value={mode}
           onChange={(e) => setMode(e.target.value)}
           disabled={disabled}
-          className={`${input} min-w-0 px-2`}
+          wrapperClassName="min-w-0"
         >
           {ATTENDANCE_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
 
       {/* Join link (online / hybrid only). */}
       {mode !== 'in_person' && (
         <label className="block space-y-1.5">
           <span className={fieldLabel}>Join link</span>
-          <input
+          <Input
             name="online_url"
             type="url"
             defaultValue={initial.online_url ?? ''}
             placeholder="https://…"
             disabled={disabled}
-            className={input}
           />
         </label>
       )}
@@ -174,48 +171,43 @@ export function EventLocationFields({
             bias={lat != null && lng != null ? { lat, lng } : null}
           />
           <input type="hidden" name="venue_name" value={venueName} />
-          <input
+          <Input
             name="street"
             value={street}
             onChange={(e) => setStreet(e.target.value)}
             placeholder="Street address"
             disabled={disabled}
-            className={input}
           />
           <div className="grid grid-cols-1 gap-3 @sm:grid-cols-2">
-            <input
+            <Input
               name="city"
               value={city}
               onChange={(e) => setCity(e.target.value)}
               placeholder="City"
-              disabled={disabled}
-              className={`${input} min-w-0`}
+              disabled={disabled} className="min-w-0"
             />
-            <input
+            <Input
               name="region"
               value={region}
               onChange={(e) => setRegion(e.target.value)}
               placeholder="State or province"
-              disabled={disabled}
-              className={`${input} min-w-0`}
+              disabled={disabled} className="min-w-0"
             />
           </div>
           <div className="grid grid-cols-1 gap-3 @sm:grid-cols-2">
-            <input
+            <Input
               name="postal_code"
               value={postalCode}
               onChange={(e) => setPostalCode(e.target.value)}
               placeholder="Postal code"
-              disabled={disabled}
-              className={`${input} min-w-0`}
+              disabled={disabled} className="min-w-0"
             />
-            <input
+            <Input
               name="country"
               value={country}
               onChange={(e) => setCountry(e.target.value)}
               placeholder="Country"
-              disabled={disabled}
-              className={`${input} min-w-0`}
+              disabled={disabled} className="min-w-0"
             />
           </div>
         </div>

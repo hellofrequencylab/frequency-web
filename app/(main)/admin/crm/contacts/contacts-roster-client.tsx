@@ -26,6 +26,7 @@ import {
 import type { Facet } from '@/lib/people/member-viewer'
 import { assignRelationship, removeRelationship } from '../relationship-actions'
 import { isError, type ActionResult } from '@/lib/action-result'
+import { Input } from '@/components/ui/field'
 
 // THE CONTACTS ROSTER ISLAND: the thin interactive shell over the pure core (lib/crm/contacts-roster).
 // It mirrors the member-viewer's HERO toolbar (live search + a prominent sort selector + facets) but
@@ -113,12 +114,12 @@ export function ContactsRosterClient({
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative min-w-0 flex-1 basis-64">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
-            <input
+            <Input
               value={text}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name or email"
               aria-label="Search by name or email"
-              className="w-full rounded-control border border-border bg-surface py-2.5 pl-10 pr-9 text-body-sm text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none"
+              className="py-2.5 pl-10 pr-9"
             />
             {text && (
               <button

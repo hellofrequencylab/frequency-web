@@ -6,7 +6,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createEvent, updateEvent } from '@/app/(main)/events/actions'
 import { isError } from '@/lib/action-result'
-import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
+import { Input, Textarea, Label } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
 import { VenueAutocomplete } from '@/components/admin/venue-autocomplete'
@@ -187,7 +188,7 @@ export function EventForm({
   // Sentinel scope for a standalone PUBLIC event (any nearby member — no circle/space needed).
   // createEvent reads scopeType='public' and places it in the creator's region.
   const PUBLIC_SCOPE = '__public__'
-  // Space options carry this prefix in the <select> value so the submit handler can tell a
+  // Space options carry this prefix in the <Select> value so the submit handler can tell a
   // space from a circle without a lookup; circles keep their bare id (so a `?circle=` deep
   // link and the Duplicate prefill, which pass a bare circle id, still select correctly).
   const SPACE_PREFIX = 'space:'
@@ -201,7 +202,7 @@ export function EventForm({
   const [location, setLocation] = useState(initial?.location ?? '')
   // A `?space=` deep link (the Space Calendar console "New event" button) passes the BARE space id as
   // defaultGroupId, but the space <option> values are SPACE_PREFIX-encoded so the submit handler can tell a
-  // space from a circle. Encode a space default to match its option — otherwise the <select> can't
+  // space from a circle. Encode a space default to match its option — otherwise the <Select> can't
   // preselect it and the event silently falls back to Public (attributed to the person, not the Space).
   // A circle default (`?circle=`) and the Duplicate prefill already pass a bare circle id, which matches.
   const encodedDefaultGroupId =
@@ -450,18 +451,17 @@ export function EventForm({
 
           <div className="space-y-1.5">
             <Label className="text-body-sm text-text" htmlFor="event-category">What kind of gathering is this?</Label>
-            <select id="event-category"
+            <Select id="event-category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               disabled={isPending}
-              className={fieldClasses}
             >
               {CATEGORY_OPTIONS.map(({ value, label }) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         </div>
 
@@ -562,7 +562,7 @@ export function EventForm({
                       key={value}
                       onClick={() => setRecurrenceType(value)}
                       disabled={isPending}
-                      className={`rounded-lg border px-3 py-2 text-left transition-colors ${
+                      className={`rounded-control border px-3 py-2 text-left transition-colors ${
                         active
                           ? 'border-primary bg-primary-bg ring-2 ring-primary/30'
                           : 'border-border bg-surface hover:border-border-strong'
@@ -616,7 +616,7 @@ export function EventForm({
                   key={value}
                   onClick={() => setAttendanceMode(value)}
                   disabled={isPending}
-                  className={`rounded-lg border px-3 py-2 text-center text-body-sm font-medium transition-colors ${
+                  className={`rounded-control border px-3 py-2 text-center text-body-sm font-medium transition-colors ${
                     active
                       ? 'border-primary bg-primary-bg text-primary-strong ring-2 ring-primary/30'
                       : 'border-border bg-surface text-text hover:border-border-strong'
@@ -777,7 +777,7 @@ export function EventForm({
             </p>
           ) : (
             <>
-              <select
+              <Select
                 id="event-scope"
                 value={scopeId}
                 onChange={(e) => {
@@ -794,7 +794,6 @@ export function EventForm({
                 }}
                 required
                 disabled={isPending}
-                className={fieldClasses}
               >
                 <option value={PUBLIC_SCOPE}>Public · a local event</option>
                 {circleOptions.length > 0 && (
@@ -815,7 +814,7 @@ export function EventForm({
                     ))}
                   </optgroup>
                 )}
-              </select>
+              </Select>
               <p className="mt-1.5 text-2xs text-muted">
                 {scopeId === PUBLIC_SCOPE
                   ? 'A standalone event in your area, open to anyone nearby.'
@@ -831,20 +830,19 @@ export function EventForm({
         {showJourneyField && (
           <div className="space-y-1.5">
             <Label className="text-body-sm text-text" htmlFor="event-journey">Part of a Journey?</Label>
-            <select
+            <Select
               id="event-journey"
               value={journeyId}
               onChange={(e) => setJourneyId(e.target.value)}
               disabled={isPending}
-              className={fieldClasses}
+              emptyLabel="Not part of a Journey"
             >
-              <option value="">Not part of a Journey</option>
               {journeyOptions.map((j) => (
                 <option key={j.id} value={j.id}>
                   {j.title}
                 </option>
               ))}
-            </select>
+            </Select>
             <p className="mt-1.5 text-2xs text-muted">
               Optional. This does not move the event. It stays where it lives above.
             </p>
@@ -853,18 +851,17 @@ export function EventForm({
 
         <div className="space-y-1.5">
           <Label className="text-body-sm text-text" htmlFor="event-visibility">Who can see this?</Label>
-          <select id="event-visibility"
+          <Select id="event-visibility"
             value={visibility}
             onChange={(e) => setVisibility(e.target.value)}
             disabled={isPending}
-            className={fieldClasses}
           >
             {visibilityOptions.map(({ value, label }) => (
               <option key={value} value={value}>
                 {label}
               </option>
             ))}
-          </select>
+          </Select>
           <p className="mt-1.5 text-2xs text-muted">
             Public events can show up in local discovery. Unlisted stays link-only.
           </p>
@@ -891,7 +888,7 @@ export function EventForm({
                     key={value}
                     onClick={() => setPriceMode(value)}
                     disabled={isPending}
-                    className={`rounded-lg border px-3 py-2 text-center text-body-sm font-medium transition-colors ${
+                    className={`rounded-control border px-3 py-2 text-center text-body-sm font-medium transition-colors ${
                       active
                         ? 'border-primary bg-primary-bg text-primary-strong ring-2 ring-primary/30'
                         : 'border-border bg-surface text-text hover:border-border-strong'
@@ -961,18 +958,17 @@ export function EventForm({
             <Label className="text-body-sm text-text" htmlFor="event-energy">
               Energy <span className="text-2xs font-normal text-muted">(optional)</span>
             </Label>
-            <select id="event-energy"
+            <Select id="event-energy"
               value={energyTag}
               onChange={(e) => setEnergyTag(e.target.value)}
               disabled={isPending}
-              className={fieldClasses}
             >
               {ENERGY_OPTIONS.map(({ value, label }) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
               ))}
-            </select>
+            </Select>
             <p className="mt-1.5 text-2xs text-muted">
               Whether it calms people down or fires them up. Helps us suggest it to the right people.
             </p>
@@ -1008,7 +1004,7 @@ export function EventForm({
         <button
           type="submit"
           disabled={!title.trim() || !scopeId || !startsAt || !!recurrenceError || isPending}
-          className="rounded-lg bg-primary px-5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-control bg-primary px-5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isPending ? (isEdit ? 'Saving…' : 'Creating…') : isEdit ? 'Save changes' : 'Create Event'}
         </button>

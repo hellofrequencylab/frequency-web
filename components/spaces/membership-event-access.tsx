@@ -6,8 +6,7 @@ import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { setSpaceEventAccess, type SpaceEventAccessRow } from '@/lib/events/space-event-access'
-import { cn } from '@/lib/utils'
-import { fieldClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 
 // EVENT ACCESS panel (ADR-824): which of the Space's upcoming events a membership includes.
 // One row per event with an audience select; a change saves immediately through the gated
@@ -36,7 +35,7 @@ export function MembershipEventAccess({
 
   if (rows.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
+      <p className="rounded-card border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
         No upcoming events yet. Events your space hosts show here so you can include them with a
         membership.
       </p>
@@ -46,7 +45,7 @@ export function MembershipEventAccess({
   if (!allowed) {
     // One plain sentence, one link (the house upsell pattern). Never a modal, never urgency.
     return (
-      <p className="rounded-lg bg-surface px-3 py-2 text-body-sm text-muted">
+      <p className="rounded-card bg-surface px-3 py-2 text-body-sm text-muted">
         Including events with your membership comes with the Collective plan.{' '}
         <Link href={`/spaces/${slug}/settings/billing`} className="font-medium text-primary hover:underline">
           See plans
@@ -73,8 +72,8 @@ export function MembershipEventAccess({
 
   return (
     <div className="space-y-2">
-      {error && <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>}
-      <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
+      {error && <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>}
+      <ul className="divide-y divide-border rounded-card border border-border bg-surface lift-1">
         {rows.map((r) => (
           <li key={r.eventId} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
             <div className="min-w-0">
@@ -88,11 +87,11 @@ export function MembershipEventAccess({
             </div>
             <label className="flex items-center gap-2">
               <span className="text-meta font-medium text-muted">Included for</span>
-              <select
+              <Select
                 value={r.audience}
                 onChange={(e) => save(r.eventId, e.target.value)}
                 disabled={isPending}
-                className={cn(fieldClasses, 'w-56')}
+                wrapperClassName="inline-block w-max max-w-full"
               >
                 <option value="none">Nobody (tickets only)</option>
                 <option value="members">All members</option>
@@ -101,7 +100,7 @@ export function MembershipEventAccess({
                     {t.name} members
                   </option>
                 ))}
-              </select>
+              </Select>
               {savingId === r.eventId && isPending && (
                 <Loader2 className="h-4 w-4 animate-spin text-muted" aria-hidden />
               )}

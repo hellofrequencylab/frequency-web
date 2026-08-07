@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Sparkles, Wand2, ChevronDown } from 'lucide-react'
 import { buildPracticeWithVeraAction, applyVeraPracticeChangeAction } from '@/app/(main)/practices/actions'
 import { isError } from '@/lib/action-result'
+import { Textarea } from '@/components/ui/field'
 
 // The Vera composer in the Practice editor (ADR-358), the atom-level twin of the Journey composer
 // (components/journey/v2/journey-composer.tsx). Two modes, by whether the Practice has a guide yet:
@@ -19,7 +20,6 @@ const PREVIEW: { tag: string; text: string }[] = [
   { tag: 'Cadence', text: 'How often and how long, suggested.' },
 ]
 
-const FIELD = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
 
 export function PracticeComposer({ id, isEmpty }: { id: string; isEmpty: boolean }) {
   const router = useRouter()
@@ -70,13 +70,12 @@ export function PracticeComposer({ id, isEmpty }: { id: string; isEmpty: boolean
       {open && isEmpty && (
         <>
           <p className="mt-1 text-body-sm text-muted">Describe the practice in plain words. Vera drafts the name, the hook, the guide, the Pillar, and a cadence. Edit anything after.</p>
-          <textarea
+          <Textarea
             value={build}
             disabled={pending}
             onChange={(e) => setBuild(e.target.value)}
             rows={2}
-            placeholder="e.g. A two-minute morning sit for people who wake up wired. Set a timer, breathe, notice the day."
-            className={`mt-3 resize-y ${FIELD}`}
+            placeholder="e.g. A two-minute morning sit for people who wake up wired. Set a timer, breathe, notice the day." className="mt-3 resize-y"
           />
           {error && <p className="mt-1 text-meta text-danger">{error}</p>}
           {note && <p className="mt-1 text-meta text-muted">{note}</p>}
@@ -102,13 +101,12 @@ export function PracticeComposer({ id, isEmpty }: { id: string; isEmpty: boolean
       {open && !isEmpty && (
         <>
           <p className="mt-1 text-body-sm text-muted">Tell Vera what to change in plain words. She reads the whole practice and applies it. You can undo by editing any field by hand.</p>
-          <textarea
+          <Textarea
             value={change}
             disabled={pending}
             onChange={(e) => setChange(e.target.value)}
             rows={2}
-            placeholder="e.g. Make it gentler. Or: shorten the steps. Or: rewrite the hook for someone who can't switch off."
-            className={`mt-3 resize-y ${FIELD}`}
+            placeholder="e.g. Make it gentler. Or: shorten the steps. Or: rewrite the hook for someone who can't switch off." className="mt-3 resize-y"
           />
           {error && <p className="mt-1 text-meta text-danger">{error}</p>}
           {note && <p className="mt-1 text-meta text-muted">{note}</p>}

@@ -138,8 +138,8 @@ export async function OfferingsBody({ slug }: { slug: string }) {
 function SectionSkeleton() {
   return (
     <div className="space-y-3">
-      <div className="h-40 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
-      <div className="h-14 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
+      <div className="h-40 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
+      <div className="h-14 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
     </div>
   )
 }

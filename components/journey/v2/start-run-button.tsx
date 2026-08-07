@@ -9,6 +9,8 @@ import { useRouter } from 'next/navigation'
 import { Rocket } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { startJourneyRunAction } from '@/app/(main)/journeys/run-actions'
+import { Select } from '@/components/ui/select'
+import { Input } from '@/components/ui/field'
 
 export interface JourneyOption {
   id: string
@@ -51,10 +53,11 @@ export function StartRunButton({ circleId, journeys }: { circleId: string; journ
       <p className="mb-2 text-meta leading-relaxed text-muted">
         Run a journey with your circle. Everyone moves through it together, one phase a week.
       </p>
-      <select
+      <Select
         value={planId}
         onChange={(e) => setPlanId(e.target.value)}
-        className="mb-2 w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-body-sm text-text"
+        aria-label="Journey to run"
+        wrapperClassName="mb-2"
       >
         {journeys.map((j) => (
           <option key={j.id} value={j.id}>
@@ -62,14 +65,14 @@ export function StartRunButton({ circleId, journeys }: { circleId: string; journ
             {j.title}
           </option>
         ))}
-      </select>
+      </Select>
       <label className="mb-2 block">
         <span className="mb-1 block text-2xs font-medium text-muted">Kickoff meetup (optional)</span>
-        <input
+        <Input
           type="datetime-local"
           value={kickoff}
           onChange={(e) => setKickoff(e.target.value)}
-          className="w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-body-sm text-text"
+          className="px-2.5"
         />
       </label>
       <button

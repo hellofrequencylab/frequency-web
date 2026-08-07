@@ -4,6 +4,8 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Send, Lock, Sparkles, Wand2 } from 'lucide-react'
 import { setTicketFields, staffReply, draftReply, suggestTriage } from '@/app/(main)/admin/support/actions'
+import { Select } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/field'
 import {
   TICKET_STATUSES, TICKET_PRIORITIES, STATUS_LABELS, PRIORITY_LABELS,
   type TicketStatus, type TicketPriority, type TicketParty,
@@ -77,7 +79,6 @@ export function AdminTicketControls({
     })
   }
 
-  const sel = 'w-full rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text focus:border-border-strong focus:outline-none'
   const lbl = 'mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted'
 
   return (
@@ -99,22 +100,21 @@ export function AdminTicketControls({
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <label className="block">
           <span className={lbl}>Status</span>
-          <select className={sel} value={status} disabled={pending} onChange={(e) => patch({ status: e.target.value as TicketStatus })}>
+          <Select value={status} disabled={pending} onChange={(e) => patch({ status: e.target.value as TicketStatus })}>
             {TICKET_STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
-          </select>
+          </Select>
         </label>
         <label className="block">
           <span className={lbl}>Priority</span>
-          <select className={sel} value={priority} disabled={pending} onChange={(e) => patch({ priority: e.target.value as TicketPriority })}>
+          <Select value={priority} disabled={pending} onChange={(e) => patch({ priority: e.target.value as TicketPriority })}>
             {TICKET_PRIORITIES.map((p) => <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>)}
-          </select>
+          </Select>
         </label>
         <label className="block">
           <span className={lbl}>Assignee</span>
-          <select className={sel} value={assignedTo ?? ''} disabled={pending} onChange={(e) => patch({ assignedTo: e.target.value || null })}>
-            <option value="">Unassigned</option>
+          <Select value={assignedTo ?? ''} disabled={pending} onChange={(e) => patch({ assignedTo: e.target.value || null })} emptyLabel="Unassigned">
             {agents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-          </select>
+          </Select>
         </label>
       </div>
 
@@ -127,13 +127,14 @@ export function AdminTicketControls({
             <Lock className="h-3 w-3" /> Internal note
           </button>
         </div>
-        <textarea
+        <Textarea
           value={body}
           onChange={(e) => { setBody(e.target.value); setAiDrafted(false) }}
           onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) reply() }}
           rows={3}
+          aria-label={internal ? 'Internal note' : 'Reply to the member'}
           placeholder={internal ? 'A note only staff can see…' : 'Reply to the member…'}
-          className="w-full resize-none rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+          className="resize-none leading-relaxed"
         />
         {aiDrafted && <p className="mt-1 text-2xs text-muted">✨ AI draft. Review and edit before sending.</p>}
         {error && <p className="mt-1 text-meta text-danger">{error}</p>}

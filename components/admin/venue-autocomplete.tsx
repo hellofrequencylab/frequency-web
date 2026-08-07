@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Search, Loader2, MapPin, X } from 'lucide-react'
 import { searchVenues, type PlaceResult } from '@/lib/geocode'
 import { getBrowserPosition } from '@/lib/geo-browser'
+import { Input } from '@/components/ui/field'
 
 // Device location, requested at most ONCE per page load and shared across every autocomplete on
 // the page (a member usually only sees one, but a remount must not re-prompt). The browser's own
@@ -113,7 +114,7 @@ export function VenueAutocomplete({
   return (
     <div ref={boxRef} className="relative">
       <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
-      <input
+      <Input
         type="text"
         value={q}
         onChange={(e) => {
@@ -128,10 +129,7 @@ export function VenueAutocomplete({
         placeholder={placeholder}
         aria-label="Search a venue or address"
         disabled={disabled}
-        className={
-          className ??
-          'w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-9 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none disabled:opacity-50'
-        }
+        className={className ?? 'pl-9 pr-9'}
       />
       {(loading || q) && (
         <span className="absolute right-3 top-1/2 -translate-y-1/2">

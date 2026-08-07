@@ -103,7 +103,7 @@ export function RecapAlbum({
       </h2>
 
       {canUpload && (
-        <div className="mb-4 rounded-2xl border border-border bg-surface p-3">
+        <div className="mb-4 rounded-card border border-border bg-surface p-3">
           {imagePreview ? (
             <div className="relative inline-block">
               {/* Local blob preview of the file being uploaded; next/image with
@@ -120,7 +120,7 @@ export function RecapAlbum({
                 type="button"
                 onClick={clearImage}
                 aria-label="Remove image"
-                className="absolute right-1.5 top-1.5 rounded-pill bg-black/60 p-1 text-white transition-colors hover:bg-black/80"
+                className="absolute right-1.5 top-1.5 rounded-pill bg-ink/60 p-1 text-on-ink transition-colors hover:bg-ink/80"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -150,13 +150,13 @@ export function RecapAlbum({
                 placeholder="Add a caption (optional)"
                 maxLength={280}
                 disabled={pending}
-                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle outline-none focus:border-border-strong disabled:opacity-60"
+                className="min-w-0 flex-1 rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle outline-none focus:border-border-strong disabled:opacity-60"
               />
               <button
                 type="button"
                 onClick={submit}
                 disabled={pending}
-                className="shrink-0 rounded-lg bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+                className="shrink-0 rounded-control bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {pending ? 'Adding…' : 'Add photo'}
               </button>
@@ -203,7 +203,7 @@ function DeleteMediaButton({ mediaId, slug }: { mediaId: string; slug: string })
       onClick={() => startTransition(() => deleteEventMedia(mediaId, slug))}
       disabled={pending}
       aria-label="Remove photo"
-      className="absolute right-1.5 top-1.5 rounded-pill bg-black/60 p-1.5 text-white opacity-0 transition-opacity hover:bg-black/80 focus:opacity-100 group-hover:opacity-100 disabled:opacity-40"
+      className="absolute right-1.5 top-1.5 rounded-pill bg-ink/60 p-1.5 text-on-ink opacity-0 transition-opacity hover:bg-ink/80 focus:opacity-100 group-hover:opacity-100 disabled:opacity-40"
     >
       <Trash2 className="h-3.5 w-3.5" />
     </button>

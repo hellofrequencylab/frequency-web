@@ -12,6 +12,9 @@ import { StudioWindow } from '../studio-window'
 import { useStudioDraft } from '../kit/use-studio-draft'
 import { StudioField, StudioNote } from '../kit/studio-field'
 import { SaveStatus, StudioFooter } from '../kit/studio-footer'
+import { Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { isError } from '@/lib/action-result'
@@ -40,10 +43,14 @@ import {
 // icon — the kit is composed-from, not a rigid template.
 
 const CADENCES = ['Daily', 'A few times a week', 'Weekly', 'As needed']
-const ICONS: { key: string; Icon: LucideIcon }[] = [
-  { key: 'sparkles', Icon: Sparkles }, { key: 'waves', Icon: Waves }, { key: 'footprints', Icon: Footprints },
-  { key: 'snowflake', Icon: Snowflake }, { key: 'brain', Icon: Brain }, { key: 'flame', Icon: Flame },
-  { key: 'heart', Icon: Heart }, { key: 'leaf', Icon: Leaf }, { key: 'sun', Icon: Sun }, { key: 'moon', Icon: Moon },
+// `label` is the accessible name for the icon picker below. It is not decoration: the picker
+// shipped as ten icon-only buttons with no name at all, which reads as ten identical "button"s.
+const ICONS: { key: string; label: string; Icon: LucideIcon }[] = [
+  { key: 'sparkles', label: 'Sparkles', Icon: Sparkles }, { key: 'waves', label: 'Waves', Icon: Waves },
+  { key: 'footprints', label: 'Footprints', Icon: Footprints }, { key: 'snowflake', label: 'Snowflake', Icon: Snowflake },
+  { key: 'brain', label: 'Brain', Icon: Brain }, { key: 'flame', label: 'Flame', Icon: Flame },
+  { key: 'heart', label: 'Heart', Icon: Heart }, { key: 'leaf', label: 'Leaf', Icon: Leaf },
+  { key: 'sun', label: 'Sun', Icon: Sun }, { key: 'moon', label: 'Moon', Icon: Moon },
 ]
 const ICON_BY_KEY = new Map(ICONS.map((i) => [i.key, i.Icon]))
 
@@ -68,7 +75,6 @@ const WEIGHT_OPTIONS: { value: WeightClass; label: string; zaps: number }[] = [
   { value: 'heavy', label: 'Heavy', zaps: 15 },
 ]
 
-const FIELD = 'rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
 export interface PracticeBuilderProps {
   id: string
@@ -330,14 +336,22 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           {iconOpen && (
             <div className="absolute left-0 top-[4.5rem] z-10 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-surface p-3 lift-3">
               <div className="grid grid-cols-5 gap-1">
-                {ICONS.map(({ key, Icon }) => (
+                {/* Every one of these shipped with NO accessible name: icon-only, the glyph
+                    marked nothing, so a screen reader read ten buttons called "button" and the
+                    picker was unusable without sight. `label` names each one. It stays
+                    hand-rolled rather than composing IconButton because the chosen icon carries
+                    a tinted fill and a ring, which the primitive has no variant for. */}
+                {ICONS.map(({ key, label, Icon }) => (
                   <button
                     key={key}
                     type="button"
+                    aria-label={label}
+                    title={label}
+                    aria-pressed={icon === key && !headerImage}
                     onClick={() => { setIcon(key); setIconOpen(false); queueSave({ icon: key }) }}
-                    className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${icon === key && !headerImage ? 'bg-primary-bg text-primary-strong ring-2 ring-primary' : 'text-muted hover:bg-surface-elevated'}`}
+                    className={`tap-target flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${icon === key && !headerImage ? 'bg-primary-bg text-primary-strong ring-2 ring-primary' : 'text-muted hover:bg-surface-elevated'}`}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-4 w-4" aria-hidden />
                   </button>
                 ))}
               </div>
@@ -415,22 +429,20 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                 <legend className="px-1 text-2xs font-semibold uppercase tracking-wide text-muted">{name}</legend>
                 <div className="space-y-3">
                   <StudioField label="Instructions">
-                    <textarea
+                    <Textarea
                       value={detail.instructions}
                       onChange={(e) => setFocusField(pillarId, 'instructions', e.target.value)}
                       rows={3}
                       maxLength={2000}
                       placeholder={`How to do this practice for ${name}`}
-                      className={FIELD}
                     />
                   </StudioField>
                   <StudioField label="Timing">
-                    <input
+                    <Input
                       value={detail.timing}
                       onChange={(e) => setFocusField(pillarId, 'timing', e.target.value)}
                       maxLength={80}
                       placeholder="e.g. 10 min, Morning"
-                      className={FIELD}
                     />
                   </StudioField>
                 </div>
@@ -443,13 +455,12 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
       {/* Taxonomy + cadence */}
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <StudioField label="Cadence">
-          <select value={cadence} onChange={(e) => { setCadence(e.target.value); queueSave({ cadence: e.target.value }) }} className={FIELD}>
-            <option value="">No set cadence</option>
+          <Select value={cadence} onChange={(e) => { setCadence(e.target.value); queueSave({ cadence: e.target.value }) }} emptyLabel="No set cadence">
             {CADENCES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
+          </Select>
         </StudioField>
         <StudioField label="Time (minutes)">
-          <input
+          <Input
             type="number"
             min={0}
             max={1440}
@@ -468,7 +479,6 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
               }
             }}
             placeholder="e.g. 10"
-            className={FIELD}
           />
           <p className="mt-1 text-2xs text-muted">
             Seeds the timer. On a timed practice the member earns the tier they reach:{' '}
@@ -478,37 +488,32 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
         {/* Lock the length: on a timed practice the member normally adjusts it; locking pins it.
             A sibling of the Time field (not nested in its label), spanning the row. */}
         {timerKind !== 'none' && (
-          <label className="inline-flex cursor-pointer items-center gap-2 text-meta font-medium text-muted sm:col-span-2">
-            <input
-              type="checkbox"
-              checked={durationLocked}
-              onChange={(e) => { setDurationLocked(e.target.checked); queueSave({ duration_locked: e.target.checked }) }}
-              className="h-3.5 w-3.5 rounded border-border"
-            />
-            Lock this length so members can&rsquo;t change it at the timer
-          </label>
+          <Checkbox
+            checked={durationLocked}
+            onChange={(e) => { setDurationLocked(e.target.checked); queueSave({ duration_locked: e.target.checked }) }}
+            label="Lock this length so members can’t change it at the timer"
+            wrapperClassName="sm:col-span-2"
+          />
         )}
         <StudioField label="Category">
-          <select value={category} onChange={(e) => { setCategory(e.target.value); queueSave({ category: e.target.value || null }) }} className={FIELD}>
-            <option value="">None</option>
+          <Select value={category} onChange={(e) => { setCategory(e.target.value); queueSave({ category: e.target.value || null }) }} emptyLabel="None">
             {/* An off-list stored value (e.g. the retired `human-relating`) stays selectable and
                 MARKED, never silently rewritten or shown as "None" (the ADR-879 rule). */}
             {category !== '' && !isChannelCategory(category) && (
               <option value={category}>{category} (not a standard category)</option>
             )}
             {CHANNEL_CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
-          </select>
+          </Select>
         </StudioField>
         <StudioField label="Sub Focus">
-          <select
+          <Select
             value={effectiveSubId}
             onChange={(e) => { setSubcategoryId(e.target.value); queueSave({ subcategory_id: e.target.value || null }) }}
             disabled={!domainId}
-            className={`${FIELD} disabled:opacity-50`}
+            emptyLabel={domainId ? 'None' : 'Pick a Focus first'}
           >
-            <option value="">{domainId ? 'None' : 'Pick a Focus first'}</option>
             {subOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
+          </Select>
         </StudioField>
       </div>
 
@@ -804,14 +809,13 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             own 3, 5 or 10 second lead-in.
           </StudioNote>
           <div className="mt-2">
-            <textarea
+            <Textarea
               value={warmupMessage}
               onChange={(e) => setWarmupMessage(e.target.value)}
               onBlur={() => queueSave({ warmup_message: warmupMessage })}
               rows={2}
               maxLength={WARMUP_MESSAGE_MAX}
               placeholder="e.g. Roll your shoulders. Take a slow breath. We start easy."
-              className={FIELD}
             />
             <p className="mt-0.5 text-2xs text-muted">{warmupMessage.trim().length}/{WARMUP_MESSAGE_MAX}. Leave blank for a silent count-in.</p>
           </div>
@@ -835,7 +839,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           <legend className="px-1 text-2xs font-semibold uppercase tracking-wide text-warning">Reward override · admin</legend>
           <div className="grid gap-4 sm:grid-cols-2">
             <StudioField label="Zap reward override">
-              <input
+              <Input
                 type="number"
                 min={0}
                 max={1000}
@@ -843,17 +847,15 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                 onChange={(e) => setRewardZaps(e.target.value)}
                 onBlur={saveReward}
                 placeholder="(weight-class default)"
-                className={FIELD}
               />
             </StudioField>
             <StudioField label="Reward note (on the card)">
-              <input
+              <Input
                 value={rewardNote}
                 onChange={(e) => setRewardNote(e.target.value)}
                 onBlur={saveReward}
                 maxLength={120}
                 placeholder="e.g. +20 Zaps · streak +1"
-                className={FIELD}
               />
             </StudioField>
           </div>
@@ -864,13 +866,12 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
       {/* Tags */}
       <div className="mt-4">
         <StudioField label="Tags">
-          <input
+          <Input
             value={tagsInput}
             onChange={(e) => setTagsInput(e.target.value)}
             onBlur={saveTags}
             maxLength={240}
             placeholder="morning, quick, outdoor"
-            className={FIELD}
           />
         </StudioField>
         <p className="mt-1 text-meta text-subtle">Comma-separated. Helps people find this practice; new tags join the library.</p>
@@ -879,10 +880,10 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
       {/* Description + full guide */}
       <div className="mt-4 space-y-4">
         <StudioField label="Short description">
-          <textarea value={description} onChange={(e) => { setDescription(e.target.value); queueSave({ description: e.target.value }) }} rows={2} maxLength={280} className={FIELD} />
+          <Textarea value={description} onChange={(e) => { setDescription(e.target.value); queueSave({ description: e.target.value }) }} rows={2} maxLength={280} />
         </StudioField>
         <StudioField label="Full guide (markdown)">
-          <textarea value={body} onChange={(e) => { setBody(e.target.value); queueSave({ body: e.target.value }) }} rows={10} maxLength={8000} placeholder="How to do it, why it matters, tips…" className={`font-mono ${FIELD}`} />
+          <Textarea value={body} onChange={(e) => { setBody(e.target.value); queueSave({ body: e.target.value }) }} rows={10} maxLength={8000} placeholder="How to do it, why it matters, tips…" className="font-mono" />
         </StudioField>
       </div>
 
