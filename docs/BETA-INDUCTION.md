@@ -104,9 +104,10 @@ worth finding. Button: **"I'm in."**
 
 Accepting stamps `profiles.meta.beta.oath = { accepted_at, version, oaths: [...ids] }`.
 
-## Data: no migration
+## Data: the finished profile rides `profiles.meta`; the unfinished one rides `signup_leads`
 
-Everything rides the existing `profiles.meta` JSONB (same call as ADR-047's `meta.tour`):
+The completed induction still needs no migration. Everything it writes rides the existing
+`profiles.meta` JSONB (same call as ADR-047's `meta.tour`):
 
 ```jsonc
 meta = {
@@ -126,6 +127,29 @@ meta = {
 - **CRM mirror is a follow-up:** `meta.beta.intent` is the seed for both the CRM `contacts.meta`
   timeline and (when it ships) `ai_member_context.facts.goals` / Vera's `suggest_circle`. Not wired
   in this build, documented so it isn't lost.
+
+### The unfinished induction: `signup_leads` ([ADR-946](DECISIONS.md))
+
+The deferred flow runs signed out, so until the very last beat the ONLY record of a visitor was
+`fq_pending_induction`, a **one-hour** httpOnly cookie. Someone who answered four beats and was
+interrupted left no trace and could not be followed up. Beat 1 now asks for an email beside its
+continue button (optional; nobody is stopped from touring), and that opens a `signup_leads` row:
+
+| Beat | Action | Effect |
+|---|---|---|
+| 1 · Who you are | `captureLead` (step 2) | Upserts on `lower(email)`, parks the row id in the 30-day httpOnly `fq_lead` cookie |
+| 2 · The tour | `updateLead` (step 3) | Records progress + the niche funnel's core-feature pick |
+| 3 · Your profile | `updateLead` (step 4) | Folds in name, handle, city |
+| 4 · Step in (deferred) | `captureLead` (step 5) | The sign-in address, which may be the first one given |
+| Completion | `markLeadConverted` | Stamps `converted_profile_id` + `converted_at`, then consumes `fq_lead` |
+
+Actions live in `app/onboarding/beta/lead-actions.ts`; all five calls are best-effort and never
+block the flow. The follow-up this enables is **transactional** ("finish setting up your account"),
+so nothing here records or implies marketing consent, which stays on `contacts.consent_state`
+behind the `/subscribe` double opt-in. The table is fail-closed to anon (RLS on, no policy); writes
+go through three SECURITY DEFINER functions, and the capture returns a bare uuid so it cannot be
+used to test whether an address is already registered. The recovery job that actually sends the
+note is not built yet.
 
 ## Vera: scripted now, live later
 

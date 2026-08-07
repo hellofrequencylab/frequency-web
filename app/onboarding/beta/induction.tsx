@@ -19,6 +19,7 @@ import type { FunnelFeature, FunnelCoreFeature, FunnelDestination } from '@/lib/
 import { funnelIcon } from '@/lib/onboarding/funnel-icons'
 import { isSafeInAppPath } from '@/lib/onboarding/funnel-destination'
 import { acceptBetaOath, completeBetaInduction, stashPendingInduction } from './actions'
+import { captureLead, updateLead } from './lead-actions'
 import { logPersonaSelection } from './persona-log'
 import { uploadProfileImageAction } from '@/app/(main)/settings/profile/actions'
 import { signInWithMagicLink, signInWithGoogle } from '@/app/sign-in/actions'
@@ -83,6 +84,9 @@ type Props = {
 }
 
 const HANDLE_RE = /^[a-z0-9_]+$/
+// Same shape the server validates with (lead-actions.ts / subscribe). Client-side it only decides
+// whether to bother calling; the action re-checks, because a client check is a courtesy not a gate.
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 const RENDERS = { feed: FeedRender, circles: CirclesRender, events: EventsRender, booking: BookingRender, checkin: CheckinRender, donate: DonateRender, tickets: TicketsRender, crm: CrmRender }
 const BEAT_COUNT = 5 // 0 oath · 1 intro · 2 reel · 3 identity+place · 4 enter
 // Accessible name for each beat — drives the progress bar's label and the polite
@@ -241,8 +245,11 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
 
-  // Deferred (signed-out) final step: collect sign-in, stash answers, then auth.
+  // Email. Asked once, on Beat 1, and reused as the sign-in address on Beat 4 (so the deferred
+  // flow does not ask twice). Given early it also opens the lead row — see advanceFromIntro.
   const [email, setEmail] = useState('')
+  const [emailError, setEmailError] = useState('')
+  const [capturing, setCapturing] = useState(false)
   const [signingIn, setSigningIn] = useState(false)
 
   // Park every collected answer where it survives the auth round-trip: the text in
@@ -261,6 +268,22 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
       heardAbout: '',
       oaths: BETA_OATHS.filter((o) => oaths[o.id]).map((o) => o.id),
     })
+    // The address they are signing in with is the one worth following up on, and it may be the
+    // first we have seen (Beat 1's field is optional). capture, not update: it upserts on the
+    // email, so it opens the row for a visitor who skipped Beat 1 and refreshes it for one who
+    // did not. Best-effort — sign-in must not wait on it.
+    try {
+      await captureLead({
+        email: email.trim(),
+        step: 5,
+        source: 'beta_induction',
+        displayName: displayName.trim(),
+        handle,
+        payload: leadPayload(),
+      })
+    } catch {
+      /* the lead row is a follow-up aid, never a precondition for signing in */
+    }
     if (avatarFile) {
       try {
         const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -427,9 +450,59 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     setBeat(1)
   }
 
+  /** What the funnel knows about this visitor so far, for the lead row. Only keys with a value
+   *  are sent: the RPC merges the payload, so an absent key leaves an earlier answer alone. */
+  function leadPayload(): Record<string, string | string[]> {
+    const p: Record<string, string | string[]> = {}
+    if (personas.length) p.personas = personas
+    if (interestKeys.length) p.interests = interestKeys
+    if (sequence) p.sequence = sequence
+    if (location) p.location = location
+    return p
+  }
+
+  /**
+   * Beat 1 → Beat 2. The email is optional (nobody is stopped from touring), but when it is given
+   * this is where the lead row opens, so a visitor who leaves after the tour is still reachable
+   * with a "finish setting up your account" note. Best-effort: a capture failure never blocks the
+   * flow, and preview never writes.
+   */
+  async function advanceFromIntro() {
+    const value = email.trim()
+    if (value && !EMAIL_RE.test(value)) {
+      setEmailError('That address does not look right. Check it and try again.')
+      return
+    }
+    setEmailError('')
+    if (value && !preview) {
+      setCapturing(true)
+      try {
+        await captureLead({ email: value, step: 2, source: 'beta_induction', payload: leadPayload() })
+      } catch {
+        /* capture is best-effort; it must never hold up the funnel */
+      }
+      setCapturing(false)
+    }
+    setBeat(2)
+  }
+
+  /** Beat 2 → Beat 3. Records how far they got, plus the core feature a niche funnel had them pick. */
+  function advanceFromTour() {
+    if (!preview) {
+      const core = hasCoreFeatures ? slide3Core![coreIndex]?.title : undefined
+      updateLead({ step: 3, payload: { ...leadPayload(), ...(core ? { core_feature: core } : {}) } }).catch(() => {})
+    }
+    setBeat(3)
+  }
+
   async function advanceFromIdentity() {
     // Deferred can't upload yet (no auth); the avatar is parked at the final step.
     if (!preview && !deferred && avatarFile && !avatarUrl) await uploadAvatar()
+    // Fold the identity answers into the lead row (no-op when no email was given). Fire and
+    // forget: the member should never wait on lead bookkeeping.
+    if (!preview) {
+      updateLead({ step: 4, displayName: displayName.trim(), handle, payload: leadPayload() }).catch(() => {})
+    }
     setBeat(4)
   }
 
@@ -707,8 +780,36 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                   </>
                 )}
 
+                {/* Email + continue on ONE row: the field grows, the button keeps its width, and
+                    they stack on a narrow screen. Asking here (rather than only at the final
+                    sign-in beat) is what makes an abandoned induction recoverable. */}
                 <div className="mt-8 flex flex-col items-center gap-3">
-                  <button onClick={() => setBeat(2)} className={btnPrimary}>{VERA.intro.cta}<ArrowRight /></button>
+                  <div className="flex w-full max-w-lg flex-col gap-3 sm:flex-row sm:items-start">
+                    <div className="min-w-0 flex-1 text-left">
+                      <label htmlFor="induction-email" className="sr-only">Your email</label>
+                      <input
+                        id="induction-email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value)
+                          if (emailError) setEmailError('')
+                        }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') advanceFromIntro() }}
+                        placeholder="you@example.com"
+                        autoComplete="email"
+                        aria-invalid={!!emailError}
+                        aria-describedby="induction-email-note"
+                        className={inputInset}
+                      />
+                    </div>
+                    <button onClick={advanceFromIntro} disabled={capturing} className={`${btnPrimary} shrink-0`}>
+                      {capturing ? 'One sec…' : VERA.intro.cta}{!capturing && <ArrowRight />}
+                    </button>
+                  </div>
+                  <p id="induction-email-note" role={emailError ? 'alert' : undefined} className={emailError ? 'text-body-sm text-danger' : 'text-meta text-subtle'}>
+                    {emailError || 'Your email saves your spot so you can finish later. It does not put you on a mailing list.'}
+                  </p>
                   <button onClick={() => setBeat(0)} className={backLink}>Back</button>
                 </div>
               </div>
@@ -756,7 +857,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                         })}
                       </div>
                       <div className="mt-7 flex flex-col items-center gap-3 md:items-start">
-                        <button onClick={() => setBeat(3)} className={btnPrimary}>{VERA.tour.cta}<ArrowRight /></button>
+                        <button onClick={advanceFromTour} className={btnPrimary}>{VERA.tour.cta}<ArrowRight /></button>
                         <button onClick={() => setBeat(1)} className={backLink}>Back</button>
                       </div>
                     </div>
@@ -791,7 +892,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                         ))}
                       </div>
                       <div className="mt-7 flex flex-col items-center gap-3 md:items-start">
-                        <button onClick={() => (isLastSlide ? setBeat(3) : setReelIndex(reelIndex + 1))} className={btnPrimary}>
+                        <button onClick={() => (isLastSlide ? advanceFromTour() : setReelIndex(reelIndex + 1))} className={btnPrimary}>
                           {isLastSlide ? VERA.tour.cta : 'Next'}
                           <ArrowRight />
                         </button>

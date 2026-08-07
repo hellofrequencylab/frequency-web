@@ -17685,3 +17685,76 @@ product that does not exist. ⚠️ Applying through the platform records the mi
 timestamp, so the repo file `20270212000000` shows as version-drifted against the remote ledger — the
 same drift the seven migrations before it already carry. That is a pre-existing bookkeeping wrinkle in
 how this project applies migrations, not a schema difference; the applied SQL is byte-equivalent.
+
+---
+
+## ADR-946 — A signed-out induction leaves a row, not just a one-hour cookie (2026-08-07)
+
+**Status:** Accepted · corroborated by `supabase/migrations/20270213000000_signup_leads.sql`,
+`app/onboarding/beta/lead-actions.ts`, `app/onboarding/beta/induction.tsx`, and
+`test/contract/signup-leads-rpc-gate.test.ts`
+
+**Context.** The beta induction runs signed out. A visitor takes the oath, picks their personas,
+watches the tour, names themselves, chooses a handle and a city — five beats — and only at the very
+end is asked to sign in. Everything they answered along the way lives in `fq_pending_induction`, a
+**one-hour httpOnly cookie** written by `stashPendingInduction`. Nothing else is written anywhere.
+
+So the funnel had no memory. Someone who got four beats deep and was interrupted left **no
+server-side trace at all**: an hour later the cookie expired and the session was gone, with no
+address to follow up on and no way to see where the funnel leaks. The one thing that WAS logged
+early — `logPersonaSelection`, which fires on the persona pick precisely because "intent should be
+captured even if this visitor never finishes" — proves the principle was already accepted. It just
+had no email attached to it, which is the part that makes a follow-up possible.
+
+**Decision.**
+
+1. **`public.signup_leads`** — one row per person (unique on `lower(email)`), carrying the answers
+   so far in `payload`, first-touch `attribution`, `step_reached`, and a nullable
+   `converted_profile_id` / `converted_at`. The email is asked at **beat 2**, beside the continue
+   button rather than under it, and is optional: nobody is stopped from touring.
+
+2. **Transactional, and the schema says so.** What this enables is one "finish setting up your
+   account" note, the same category as a password reset. There is deliberately **no consent, opt-in,
+   subscribed or marketing column**, because none is claimed at capture and none may be inferred
+   later by a reader who finds the table. Marketing consent keeps living exactly where it lives
+   today: `contacts.consent_state`, set by the double opt-in at `/subscribe`. A contract test
+   asserts the absence, since the tempting future change is to add one.
+
+3. **RLS on, zero policies, three SECURITY DEFINER functions.** anon must be able to WRITE here (the
+   funnel is signed out) and must never READ. A table anon can insert into directly is an open spam
+   target with no bound on field width or row count, and its unique index is an address oracle.
+   `capture_signup_lead` upserts and returns **a bare uuid and nothing else**; `update_signup_lead`
+   and `mark_signup_lead_converted` return void. Only the last is withheld from anon, and it proves
+   ownership through `auth.uid()` before attaching a profile id.
+
+4. **🔴 The capture cannot be used to test whether an address is registered.** This is the one
+   property worth stating on its own. The function returns the same shape, and raises the same
+   nothing, for an address that already belongs to a member and one that has never been seen:
+   `ON CONFLICT DO UPDATE` rather than `DO NOTHING` (which would return null only for a known
+   address) or a bare insert (which would raise 23505 only for a known address). The server action
+   in front of it returns `{ ok }` and no more, for the same reason. Both halves are pinned as
+   static assertions, because the natural "improvement" — return the row, or a created flag — is
+   what breaks it.
+
+5. **The capture fails OPEN when Upstash is unconfigured.** `lib/rate-limit.ts` fails CLOSED in
+   production for an absent limiter, which is right for a login and wrong here. The two failure
+   modes are not comparable: a duplicate capture costs one wasted upsert against a unique index
+   that collapses it anyway, while a denied capture costs the lead permanently and leaves no trace
+   that it happened. A CONFIGURED limiter is honoured exactly as everywhere else.
+
+**What was deliberately not touched.** `stashPendingInduction` is unchanged, and so are
+`signInWithMagicLink` / `signInWithGoogle` — `app/onboarding/beta/feature-funnel.tsx` imports the
+same two actions, so a signature change there would break three funnels at once. Conversion is
+stamped from `writeBetaInduction` and `mergeBetaInduction`, which is where a profile actually
+becomes real, not from the auth callback.
+
+**Consequences.** ✅ An abandoned induction is now recoverable, and the funnel's drop-off is
+measurable per step. ✅ The `fq_lead` cookie is consumed at conversion, following the same
+shared-browser lifecycle as `fq_beta_seq` and `fq_pending_induction`. ⚠️ The migration ships
+**unapplied**; `signup_leads` and the three RPCs are therefore absent from `lib/database.types.ts`,
+so the actions call them through the untyped `.rpc()` surface (repo convention, see
+`lib/quest/complete.ts`). Both should be regenerated on apply. ⚠️ The recovery job that sends the
+follow-up does not exist yet — this is the spine only, so the beat-2 helper line promises to save
+their spot and nothing more. ⚠️ `induction.tsx` is hand-rolled Tailwind end to end rather than kit
+components; the email row matches the file it lives in (`inputInset`, `wizardPrimaryClass`) instead
+of half-converting one beat, per PAGE-FRAMEWORK's own "match the idiom" rule.
