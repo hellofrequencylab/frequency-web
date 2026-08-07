@@ -708,6 +708,74 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 - **§6 Capture Phases 2–4** 📋 (richer kinds; Quest pipeline + sponsor rewards) · journal framing (3.1).
 - **§3 Proactive Vera** 🔴 gated on the consent harness (ADR-028) · **AI core** governance kernel (router, RAG, caps, kill switch) 📋.
 
+### Login hardening — the audit ADR-959 did not act on (2026-08-07)
+
+Auditing `/sign-in` while building the lead spine turned up defects that are **not** in the shipped
+work — ADR-959 deliberately touched no sign-in surface. Recorded here because an audit nobody wrote
+down is an audit that gets run again from scratch.
+
+- 🔴 **A magic link opened on a different device fails.** Supabase's PKCE flow stores the
+  `code_verifier` in a cookie in the browser that *requested* the link. Request on desktop, tap the
+  link on a phone, and the exchange has no verifier. This is the single biggest drop-off in the
+  email path and it looks like "the link is broken" to the member.
+- 🔴 **No loading state on submit.** Nothing disables the button between press and redirect, so an
+  impatient second press sends a second email — and the first link is then invalidated by the
+  second, which is worse than doing nothing.
+- ⚠️ **The deep link is lost.** Someone sent to a gated URL signs in and lands at the default
+  destination, not where they were going. The induction already solves this with `?to=`
+  (`isSafeInAppPath` re-validates server-side); sign-in should carry it the same way.
+- ⚠️ **The error box renders text from the query string.** It is React, so this is not injection —
+  but it will faithfully display whatever an attacker puts in a link they send someone.
+- ⚠️ **No rate limit on sign-in.** `lib/rate-limit.ts` exists and `KV_REST_API_URL`/`TOKEN` are set
+  in Vercel (Production + Preview), so this is wiring, not new infrastructure. Note it fails
+  **closed** in production, which is the right posture here and the opposite of the lead capture's.
+- 📋 **Passwords as a third door**, alongside magic link and Google. Best-practice per NIST
+  SP 800-63B: min 8, **no** composition rules, no forced rotation, breach-list checking (already on
+  in Supabase). ⚠️ Confirm email is ON in prod, so a signup-with-password flow has a confirmation
+  step to design; **set-password for already-signed-in members is the smaller first step**.
+  Worth weighing **passkeys** first — they are in the Supabase sidebar, and they beat passwords on
+  both of the owner's stated priorities, ease of use and retention.
+
+**Owner actions, Supabase dashboard** (config, not code): min password length **6 → 8** ·
+**Secure password change → ON** · **Require current password when updating → ON**. Leaked-password
+protection is already ON and password requirements are correctly unset. 🔴 **Leave Captcha OFF** —
+the client sends no captcha token, so enabling it breaks sign-in immediately.
+
+### 🔴 The visual baselines are stale — `pr-compare` is red on every branch (2026-08-07)
+
+`e2e.yml` → `pr-compare` fails **66 of 76** visual snapshot tests, and it is not any one branch's
+fault: it failed three times on `claude/frequency-menu-audit-33skn4` on 2026-08-06, before the
+ADR-959 branch existed. **This is Lift 6's gate, and right now it is failing open** — a check that
+is always red teaches everyone to merge past it, which is worse than not having it.
+
+The signature is the tell. Every failure is a **height** mismatch of the same shape
+(`expected 390px by 10276px, received 390px by 10298px` — 22px), across `/` · `/spaces` ·
+`/the-lab` · `/the-community` · `/the-quest` · `/pricing` · `/discover` · `/feed` · `/settings`,
+on **both** viewports and **all four** themes. A uniform sub-1% height drift on every page in every
+theme is a rendering-environment change (runner image, font metrics, a global line-height or
+spacing token), not nine independent regressions.
+
+**Do not re-record the baselines to make it green until the 22px is explained.** If a token moved,
+the baselines are correct and the code drifted; if the runner moved, the baselines are stale and a
+re-record is the fix. Those have opposite remedies and the screenshots cannot tell them apart.
+Start from the diff images in the run's `playwright-report-pr-compare` artifact.
+
+⚠️ Worth knowing: `pr-compare` is **not** a required check, so it does not block merge — ADR-959 was
+merged while this run was still in flight and it went red afterwards. Verified not caused by that
+change: `onboarding` appears **zero** times in `test/e2e/visual.spec.ts`, so the one surface it
+touches is not in the snapshot set at all.
+
+### Schema + type drift found on 2026-08-07
+
+- ⚠️ **`public.set_updated_at()` is live in prod and defined in no migration.** Several migrations
+  attach triggers to it, so a fresh database built from `supabase/migrations/` alone gets further
+  than it should before failing. It needs a `create or replace` in a migration of its own.
+- ⚠️ **`lib/database.types.ts` has no `signup_leads` and no RPCs**, so `lead-actions.ts` calls them
+  through the untyped `.rpc()` surface. Regenerate — but note the cast does not disappear with the
+  regen alone, every caller has to be retyped in the same pass.
+- ⚠️ **`config.toml` says `enable_confirmations = false`; production has Confirm email ON.** The
+  file is not describing the live project. Fix the drift before it decides someone's auth design.
+
 ### Signup-lead recovery — the send side, deferred by owner 2026-08-07
 
 The **capture** half is built: the beta induction records the email at step 2 into `signup_leads`
@@ -745,6 +813,17 @@ re-do of the capture.
 
 - **Migrations/data:** ✅ **2026-06-09 reconcile** — a batch that merged without being applied to the live DB was applied (`page_content` · `qr_page_folders` · `circle_sidebar_order` · `founders_first_week_badge` · `training_paths` · `connect_accounts` · `tips` · `event_tickets`); a **standing deploy gate** (apply-on-merge, ADR-185) now lives in CHECKLIST so it doesn't recur. ✅ **2026-06-09 second verify** — `lock_economy_columns` (the `prevent_economy_self_edit` trigger) and `perf_indexes` (all 5 indexes) were **already live** in prod, and the zap ledger + `trg_after_zap_transaction` confirm the economy double-award / online-pay-zaps fixes are applied — those "pending" rows were stale. ✅ **quest engine dropped** — `/admin/quests` rebuilt as the Journey-Library manager (chain CRUD removed), the retire migration applied to prod (`quest_outcomes` RPC + the legacy action-chain engine gone, ADR-152), and types regenerated. ✅ **zap-award paths already collapsed** (stale row) — every grant flows through `awardZaps`/`awardZapsForAction` → one `zap_transactions` insert → `trg_after_zap_transaction` owns totals + rank; the only other ledger writers are the deliberate, audited janitor grant/revoke overrides (`economy-actions.ts`). *Remaining (decisions, not code):* resolve gem-farm / store-redeem TOCTOU / zap auto-promotion decisions.
 - **Security:** ✅ **CSP (report-only)** + the `/api/csp-report` sink (next step: tighten + nonces → enforce) · RLS convergence Phase 2 (blocked on test harness) · ✅ **Stripe webhook replay/idempotency** (claim `event_id` before handling, migration `20260608120000`) · ✅ **rate-limit** `check-handle` · `search-handles` · `search` (Upstash sliding-window, 60/min/IP; fails-open + no-ops without the `KV_*` env) · ✅ **admin audit log** — unified `admin_audit_log` (+ `logAdminAction`) instrumented on the crown-jewel actions (role grants · partner verification), read at `/admin/audit` (admin+); complements the domain ledgers (`platform_flag_events` · `studio_site_changes` · `reward_grants`).
+- 🔴 **Sweep every `revoke ... from public` block in `supabase/migrations/`** ([ADR-959](DECISIONS.md),
+  found 2026-08-07). Supabase ships `ALTER DEFAULT PRIVILEGES IN SCHEMA public` granting
+  anon/authenticated on new tables and functions, and those land as **explicit per-role grants** —
+  which `REVOKE ... FROM public` does not touch. The statement succeeds, reports nothing, and
+  removes nothing. `signup_leads` shipped with `mark_signup_lead_converted` anon-callable and 14
+  anon table grants despite a revoke written to prevent exactly that; `20270215000001` fixed that
+  one table. **This idiom is used throughout the migration history and every instance has the same
+  hole.** Audit with `has_function_privilege('anon', …)` and `information_schema.role_table_grants`
+  against prod rather than by reading the SQL, because the SQL reads correct. Where RLS-on-no-policy
+  is also in force the exposure is second-order, but a grant held back only by RLS is one policy
+  mistake from being live.
 - **CI / quality:** ✅ gate `tsc`+`eslint`+`vitest` in CI (`ci.yml`) · ✅ Dependabot (`dependabot.yml`, grouped weekly) + CodeQL (`codeql.yml`, JS/TS security-and-quality) · *remaining:* enable secret-scanning push-protection (repo setting) · vitest consent harness · lint debt (`pnpm lint` is now clean repo-wide) · doc fixes.
 - **Comms infra:** notification router/registry + migrate email/push onto the outbox queue · deliverability hardening (SPF/DKIM/DMARC subdomain) · verify `frequencylocal.com` in Resend + OAuth redirect URLs · submit sitemap/robots.
 - **Scale (Phase 4, when measured):** paginate People/Circles · `force-dynamic`→ISR on CMS pages · profile zap-sum via SQL · `<img>`→`next/image` · Supavisor/read-replicas/denormalized feed read-model/partitioning/Broadcast realtime.
