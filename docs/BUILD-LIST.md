@@ -741,6 +741,30 @@ down is an audit that gets run again from scratch.
 protection is already ON and password requirements are correctly unset. 🔴 **Leave Captcha OFF** —
 the client sends no captcha token, so enabling it breaks sign-in immediately.
 
+### 🔴 The visual baselines are stale — `pr-compare` is red on every branch (2026-08-07)
+
+`e2e.yml` → `pr-compare` fails **66 of 76** visual snapshot tests, and it is not any one branch's
+fault: it failed three times on `claude/frequency-menu-audit-33skn4` on 2026-08-06, before the
+ADR-959 branch existed. **This is Lift 6's gate, and right now it is failing open** — a check that
+is always red teaches everyone to merge past it, which is worse than not having it.
+
+The signature is the tell. Every failure is a **height** mismatch of the same shape
+(`expected 390px by 10276px, received 390px by 10298px` — 22px), across `/` · `/spaces` ·
+`/the-lab` · `/the-community` · `/the-quest` · `/pricing` · `/discover` · `/feed` · `/settings`,
+on **both** viewports and **all four** themes. A uniform sub-1% height drift on every page in every
+theme is a rendering-environment change (runner image, font metrics, a global line-height or
+spacing token), not nine independent regressions.
+
+**Do not re-record the baselines to make it green until the 22px is explained.** If a token moved,
+the baselines are correct and the code drifted; if the runner moved, the baselines are stale and a
+re-record is the fix. Those have opposite remedies and the screenshots cannot tell them apart.
+Start from the diff images in the run's `playwright-report-pr-compare` artifact.
+
+⚠️ Worth knowing: `pr-compare` is **not** a required check, so it does not block merge — ADR-959 was
+merged while this run was still in flight and it went red afterwards. Verified not caused by that
+change: `onboarding` appears **zero** times in `test/e2e/visual.spec.ts`, so the one surface it
+touches is not in the snapshot set at all.
+
 ### Schema + type drift found on 2026-08-07
 
 - ⚠️ **`public.set_updated_at()` is live in prod and defined in no migration.** Several migrations
