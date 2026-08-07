@@ -18343,7 +18343,7 @@ artifact rather than a duplicate link, and it is left for the Menu Manager pass.
 
 ## ADR-959 — A signed-out induction leaves a row, not just a one-hour cookie (2026-08-07)
 
-**Status:** Accepted · corroborated by `supabase/migrations/20270213000000_signup_leads.sql`,
+**Status:** Accepted · corroborated by `supabase/migrations/20270215000000_signup_leads.sql`,
 `app/onboarding/beta/lead-actions.ts`, `app/onboarding/beta/induction.tsx`, and
 `test/contract/signup-leads-rpc-gate.test.ts`
 
@@ -18415,7 +18415,7 @@ nothing more. ⚠️ `induction.tsx` is hand-rolled Tailwind end to end rather t
 name and email rows match the file they live in (`inputInset`, `wizardPrimaryClass`) instead of
 half-converting one beat, per PAGE-FRAMEWORK's own "match the idiom" rule.
 
-**Postscript — the revoke that removed nothing.** `20270213000000` ends with the usual
+**Postscript — the revoke that removed nothing.** `20270215000000` ends with the usual
 `REVOKE ... FROM public` then `GRANT` back, whose intent was that anon may capture and update but
 never convert, and that the table carries no anon grant. Verified against the database after
 applying, neither held: `mark_signup_lead_converted` was anon-callable and anon/authenticated held
@@ -18423,7 +18423,7 @@ applying, neither held: `mark_signup_lead_converted` was anon-callable and anon/
 new objects, and they arrive as **explicit per-role grants**, which `REVOKE ... FROM public` does not
 touch — the statement succeeds and removes nothing. Neither was exposed (`auth.uid()` is null for
 anon, and RLS-on-no-policy denied the table), but both of those are the second lock;
-`20270213000001` restores the first. **Every "revoke from public, then grant back" block in this
+`20270215000001` restores the first. **Every "revoke from public, then grant back" block in this
 repo has the same hole**, which is the part worth carrying past this table.
 
 **Numbering.** Written as ADR-946 and renumbered to 959 on merge: ADR-946 was taken by the Vault

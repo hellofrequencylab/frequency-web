@@ -28,7 +28,7 @@ import { join } from 'node:path'
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url))
 
-const SQL = readFileSync(join(ROOT, 'supabase/migrations/20270213000000_signup_leads.sql'), 'utf8')
+const SQL = readFileSync(join(ROOT, 'supabase/migrations/20270215000000_signup_leads.sql'), 'utf8')
 
 /** The function DEFINITION block only — from `create ... function public.<fn>(` to the `as $$` body
  *  marker — so the SECURITY DEFINER / search_path assertions match the real CLAUSE, never a comment

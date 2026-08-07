@@ -1,6 +1,6 @@
 'use server'
 
-// Lead capture for the onboarding funnels (ADR-959, migration 20270213000000).
+// Lead capture for the onboarding funnels (ADR-959, migration 20270215000000).
 //
 // The induction already parks its answers in `fq_pending_induction` — a ONE-HOUR httpOnly cookie
 // (actions.ts, stashPendingInduction) that is the whole of our memory of a signed-out visitor. When
