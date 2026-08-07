@@ -708,6 +708,32 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 - **§6 Capture Phases 2–4** 📋 (richer kinds; Quest pipeline + sponsor rewards) · journal framing (3.1).
 - **§3 Proactive Vera** 🔴 gated on the consent harness (ADR-028) · **AI core** governance kernel (router, RAG, caps, kill switch) 📋.
 
+### Signup-lead recovery — the send side, deferred by owner 2026-08-07
+
+The **capture** half is built: the beta induction records the email at step 2 into `signup_leads`
+and stamps the step reached, so an abandoned setup leaves a durable record instead of a one-hour
+cookie. What was deliberately **not** built is everything that reads that table. Parked here, not
+dropped — the table fills up either way, so this is additive work against real rows rather than a
+re-do of the capture.
+
+- 📋 **"Finish setting up your account" email.** Transactional, not marketing — it resumes a
+  session the person started, so it is not a consent surface. **No new infrastructure needed:**
+  Resend is already wired (`lib/beta/email.ts`, outbox queue in `lib/queue/outbox.ts`, delivery
+  webhooks at `/api/webhooks/resend`, `lib/suppression.ts`). This is a template plus a send, on
+  rails that already carry mail.
+- 📋 **The sweep that decides who gets one.** A scheduled pass over `signup_leads` for rows that
+  never reached a profile. Two decisions to make before writing it: how long "abandoned" is, and
+  how many sends one lead may receive. Neither has an obvious right answer, which is the honest
+  reason this is not a same-day task.
+- 📋 **Graduate the lead into a contact card.** `network_contacts` +
+  `crm_contact_interactions` already exist and already model this; the lead becomes a contact
+  tagged for follow-up rather than a second, parallel record of the same person. **Do not add a
+  new CRM table for this** — a lead and a contact being different rows is the thing that later
+  makes de-duplication expensive.
+- ⚠️ **Depends on:** a lead that converts must stop being chased. Whatever writes the profile has
+  to mark its lead resolved, or the sweep mails people who already finished. That coupling is the
+  part worth reviewing carefully, and it is why the sweep is not "just a cron".
+
 ## P7 — Navigation & IA
 
 > [IA-RESTRUCTURE.md](IA-RESTRUCTURE.md) §10. The unified-site refactor (P1.3) and this converge.
@@ -723,6 +749,19 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 - **Comms infra:** notification router/registry + migrate email/push onto the outbox queue · deliverability hardening (SPF/DKIM/DMARC subdomain) · verify `frequencylocal.com` in Resend + OAuth redirect URLs · submit sitemap/robots.
 - **Scale (Phase 4, when measured):** paginate People/Circles · `force-dynamic`→ISR on CMS pages · profile zap-sum via SQL · `<img>`→`next/image` · Supavisor/read-replicas/denormalized feed read-model/partitioning/Broadcast realtime.
 - **Design system:** unify pill/button radius (shared `Button`/`Badge` primitive) site-wide.
+- 📋 **Convert `app/onboarding/beta/induction.tsx` to the kit — wholesale, not one beat.** The
+  `raw-input` ratchet was **raised 184 → 186 on 2026-08-07** ([ADR-959](DECISIONS.md)) for three new
+  controls: the Beat 1 email capture and the First/Last pair that replaced one Display name field.
+  It stays flagged ⚠️ on every `check:adoption` run until a sweep brings it down, which is the point.
+  **The blocker is real and worth knowing before anyone tries the one-file fix:** `Input` is
+  `rounded-control border-border bg-surface px-3 py-2`, and these fields sit *inside* a `bg-surface`
+  card where the induction uses an inset `bg-canvas` well — composed as `Input` they are
+  surface-on-surface and effectively invisible. Passing the inset string as `className` is not a
+  rescue either: it emits two `bg-*`, two `rounded-*` and two padding pairs into one list, and `cn`
+  here is a plain join with no `tailwind-merge`, so Tailwind's emit order picks the winner rather
+  than the call site (the trap `components/ui/field.tsx` documents in its own header). So this needs
+  either an inset surface variant on the primitive or a full re-style of the flow — a design
+  decision, not a mechanical swap.
 
 ## PM — Money verticals (gated on PMF + legal entity)
 

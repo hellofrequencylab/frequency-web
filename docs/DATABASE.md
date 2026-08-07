@@ -290,6 +290,18 @@ ADR-180/206), `pages` + `pillars` + `sequence_overrides` (page editor), `team_me
 > `docs/NETWORK-CRM.md`, the source of truth for that domain; the My Contacts CRM layer
 > (the reminders table + `last_contacted_at`) is in [`docs/CRM-STRATEGY.md`](CRM-STRATEGY.md).
 
+> **`signup_leads` — half-finished signups, NOT a mailing list** (ADR-959; migration
+> `20270215000000_signup_leads.sql`, additive). One row per person (unique on `lower(email)`) for a
+> visitor who started an onboarding funnel, whether or not they finished: `source`
+> (`beta_induction` | `feature_funnel`), `step_reached`, `payload jsonb` (the answers so far),
+> `attribution jsonb` (first touch, as `lib/attribution/server.ts` resolves it), and
+> `converted_profile_id` / `converted_at`, stamped when the induction finalises a profile. It
+> carries **no consent column by design** — the follow-up it enables is transactional ("finish
+> setting up your account"), and marketing consent stays on `contacts.consent_state` behind the
+> `/subscribe` double opt-in. RLS on with **no policy**: anon can write but never read, through
+> `capture_signup_lead` / `update_signup_lead` / `mark_signup_lead_converted` (SECURITY DEFINER).
+> The capture returns a bare uuid so it cannot be used to test whether an address is registered.
+
 > **My Contacts CRM · Phase 1** (ADR-361; migration `20260723000000_network_contacts_crm_p1.sql`,
 > additive). `network_contact_reminders` is the owner-scoped follow-up table
 > (`owner_id, contact_id, due_at, note, done_at, created_at`; partial index on

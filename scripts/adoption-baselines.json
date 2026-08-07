@@ -953,7 +953,7 @@
         "components/ui/field.tsx",
         "components/ui/checkbox.tsx"
       ],
-      "baseline": 184,
+      "baseline": 186,
       "history": [
         {
           "at": "2026-08-05",
@@ -982,14 +982,21 @@
           "to": 184,
           "direction": "rebased",
           "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it."
+        },
+        {
+          "at": "2026-08-07",
+          "from": 184,
+          "to": 186,
+          "direction": "raised",
+          "reason": "Three new form controls in the beta induction (ADR-959): the Beat 1 email capture, and First/Last replacing one Display name field. The field primitives cannot serve this surface as it stands - Input is bg-surface px-3 py-2 rounded-control, and these sit inside a bg-surface card where the induction uses an inset bg-canvas field, so the primitive would render them invisible. Passing the inset string as className emits two bg-* and two rounded-* utilities and cn is a plain join, which is the collision field.tsx documents. Owed: convert induction.tsx wholesale, not one beat."
         }
       ],
       "frozen": {
-        "at": "2026-08-06",
-        "value": 184,
-        "direction": "rebased",
+        "at": "2026-08-07",
+        "value": 186,
+        "direction": "raised",
         "basis": "23c25a5145a1",
-        "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it.",
+        "reason": "Three new form controls in the beta induction (ADR-959): the Beat 1 email capture, and First/Last replacing one Display name field. The field primitives cannot serve this surface as it stands - Input is bg-surface px-3 py-2 rounded-control, and these sit inside a bg-surface card where the induction uses an inset bg-canvas field, so the primitive would render them invisible. Passing the inset string as className emits two bg-* and two rounded-* utilities and cn is a plain join, which is the collision field.tsx documents. Owed: convert induction.tsx wholesale, not one beat.",
         "from": 184
       }
     },

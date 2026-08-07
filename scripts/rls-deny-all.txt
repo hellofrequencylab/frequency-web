@@ -78,6 +78,7 @@ resonance_edges
 resonance_embeddings
 resonance_matches
 segments
+signup_leads
 space_availability_overrides
 space_collaborations
 space_follower_event_reminders_sent

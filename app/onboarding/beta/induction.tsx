@@ -19,6 +19,7 @@ import type { FunnelFeature, FunnelCoreFeature, FunnelDestination } from '@/lib/
 import { funnelIcon } from '@/lib/onboarding/funnel-icons'
 import { isSafeInAppPath } from '@/lib/onboarding/funnel-destination'
 import { acceptBetaOath, completeBetaInduction, stashPendingInduction } from './actions'
+import { captureLead, updateLead } from './lead-actions'
 import { logPersonaSelection } from './persona-log'
 import { uploadProfileImageAction } from '@/app/(main)/settings/profile/actions'
 import { signInWithMagicLink, signInWithGoogle } from '@/app/sign-in/actions'
@@ -83,6 +84,9 @@ type Props = {
 }
 
 const HANDLE_RE = /^[a-z0-9_]+$/
+// Same shape the server validates with (lead-actions.ts / subscribe). Client-side it only decides
+// whether to bother calling; the action re-checks, because a client check is a courtesy not a gate.
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 const RENDERS = { feed: FeedRender, circles: CirclesRender, events: EventsRender, booking: BookingRender, checkin: CheckinRender, donate: DonateRender, tickets: TicketsRender, crm: CrmRender }
 const BEAT_COUNT = 5 // 0 oath · 1 intro · 2 reel · 3 identity+place · 4 enter
 // Accessible name for each beat — drives the progress bar's label and the polite
@@ -213,8 +217,17 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
   const [accepting, setAccepting] = useState(false)
   const allOathsChecked = BETA_OATHS.every((o) => oaths[o.id])
 
-  // Identity
+  // Identity. First and last are what the member types; `displayName` is DERIVED from them and
+  // stays the single value everything downstream reads (the profile card, the submit payload, the
+  // handle suggestion). Keeping the derived value in its own state rather than computing it inline
+  // is deliberate: it is what the induction has always submitted, and re-deriving it at each of the
+  // eight read sites is how the card and the saved profile end up disagreeing.
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [displayName, setDisplayName] = useState('')
+  // The real-name note. A disclosure rather than a `title` attribute, which never appears on touch
+  // and is not reachable by keyboard - the two ways most people would meet it.
+  const [nameHintOpen, setNameHintOpen] = useState(false)
   const [handle, setHandle] = useState('')
   const [handleTouched, setHandleTouched] = useState(false)
   const [check, setCheck] = useState<{ handle: string; result: 'available' | 'taken' | 'idle' } | null>(null)
@@ -241,8 +254,11 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
 
-  // Deferred (signed-out) final step: collect sign-in, stash answers, then auth.
+  // Email. Asked once, on Beat 1, and reused as the sign-in address on Beat 4 (so the deferred
+  // flow does not ask twice). Given early it also opens the lead row — see advanceFromIntro.
   const [email, setEmail] = useState('')
+  const [emailError, setEmailError] = useState('')
+  const [capturing, setCapturing] = useState(false)
   const [signingIn, setSigningIn] = useState(false)
 
   // Park every collected answer where it survives the auth round-trip: the text in
@@ -261,6 +277,37 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
       heardAbout: '',
       oaths: BETA_OATHS.filter((o) => oaths[o.id]).map((o) => o.id),
     })
+    // The address they are signing in with is the one worth following up on, and it may be the
+    // first we have seen (Beat 1's field is optional). capture, not update: it upserts on the
+    // email, so it opens the row for a visitor who skipped Beat 1 and refreshes it for one who
+    // did not.
+    //
+    // BOUNDED, and that is the whole point of the race below. This sits directly in front of
+    // sign-in, and it reaches two things that can be slow independently of our database: the
+    // Upstash rate limiter and the attribution resolve. `try/catch` only covers a call that
+    // FAILS - a call that merely hangs would hold the member on "One sec…" for as long as it
+    // takes, which turns lead bookkeeping into a login outage. Dropping the await entirely is
+    // the other tempting fix and it is worse: the next line navigates away, so an un-awaited
+    // capture is cancelled mid-flight and the visitor who skipped Beat 1 is never recorded at
+    // all. Two seconds is long enough for the normal path and short enough that nobody reads it
+    // as broken.
+    try {
+      await Promise.race([
+        captureLead({
+          email: email.trim(),
+          step: 5,
+          source: 'beta_induction',
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          displayName: displayName.trim(),
+          handle,
+          payload: leadPayload(),
+        }),
+        new Promise((resolve) => setTimeout(resolve, 2000)),
+      ])
+    } catch {
+      /* the lead row is a follow-up aid, never a precondition for signing in */
+    }
     if (avatarFile) {
       try {
         const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -427,9 +474,68 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     setBeat(1)
   }
 
+  /** What the funnel knows about this visitor so far, for the lead row. Only keys with a value
+   *  are sent: the RPC merges the payload, so an absent key leaves an earlier answer alone. */
+  function leadPayload(): Record<string, string | string[]> {
+    const p: Record<string, string | string[]> = {}
+    if (personas.length) p.personas = personas
+    if (interestKeys.length) p.interests = interestKeys
+    if (sequence) p.sequence = sequence
+    if (location) p.location = location
+    return p
+  }
+
+  /**
+   * Beat 1 → Beat 2. The email is optional (nobody is stopped from touring), but when it is given
+   * this is where the lead row opens, so a visitor who leaves after the tour is still reachable
+   * with a "finish setting up your account" note. Best-effort: a capture failure never blocks the
+   * flow, and preview never writes.
+   */
+  async function advanceFromIntro() {
+    const value = email.trim()
+    if (value && !EMAIL_RE.test(value)) {
+      setEmailError('That address does not look right. Check it and try again.')
+      return
+    }
+    setEmailError('')
+    if (value && !preview) {
+      setCapturing(true)
+      try {
+        await captureLead({ email: value, step: 2, source: 'beta_induction', payload: leadPayload() })
+      } catch {
+        /* capture is best-effort; it must never hold up the funnel */
+      }
+      setCapturing(false)
+    }
+    setBeat(2)
+  }
+
+  /** Beat 2 → Beat 3. Records how far they got, plus the core feature a niche funnel had them pick. */
+  function advanceFromTour() {
+    if (!preview) {
+      const core = hasCoreFeatures ? slide3Core![coreIndex]?.title : undefined
+      updateLead({ step: 3, payload: { ...leadPayload(), ...(core ? { core_feature: core } : {}) } }).catch(() => {})
+    }
+    setBeat(3)
+  }
+
   async function advanceFromIdentity() {
     // Deferred can't upload yet (no auth); the avatar is parked at the final step.
     if (!preview && !deferred && avatarFile && !avatarUrl) await uploadAvatar()
+    // Fold the identity answers into the lead row (no-op when no email was given). Fire and
+    // forget: the member should never wait on lead bookkeeping.
+    if (!preview) {
+      // first/last go up as themselves now that the field asks for them separately. The action's
+      // splitName fallback still covers the funnels that only ever have one string.
+      updateLead({
+        step: 4,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        displayName: displayName.trim(),
+        handle,
+        payload: leadPayload(),
+      }).catch(() => {})
+    }
     setBeat(4)
   }
 
@@ -707,8 +813,36 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                   </>
                 )}
 
+                {/* Email + continue on ONE row: the field grows, the button keeps its width, and
+                    they stack on a narrow screen. Asking here (rather than only at the final
+                    sign-in beat) is what makes an abandoned induction recoverable. */}
                 <div className="mt-8 flex flex-col items-center gap-3">
-                  <button onClick={() => setBeat(2)} className={btnPrimary}>{VERA.intro.cta}<ArrowRight /></button>
+                  <div className="flex w-full max-w-lg flex-col gap-3 sm:flex-row sm:items-start">
+                    <div className="min-w-0 flex-1 text-left">
+                      <label htmlFor="induction-email" className="sr-only">Your email</label>
+                      <input
+                        id="induction-email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value)
+                          if (emailError) setEmailError('')
+                        }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') advanceFromIntro() }}
+                        placeholder="you@example.com"
+                        autoComplete="email"
+                        aria-invalid={!!emailError}
+                        aria-describedby="induction-email-note"
+                        className={inputInset}
+                      />
+                    </div>
+                    <button onClick={advanceFromIntro} disabled={capturing} className={`${btnPrimary} shrink-0`}>
+                      {capturing ? 'One sec…' : VERA.intro.cta}{!capturing && <ArrowRight />}
+                    </button>
+                  </div>
+                  <p id="induction-email-note" role={emailError ? 'alert' : undefined} className={emailError ? 'text-body-sm text-danger' : 'text-meta text-subtle'}>
+                    {emailError || 'Your email saves your spot so you can finish later. It does not put you on a mailing list.'}
+                  </p>
                   <button onClick={() => setBeat(0)} className={backLink}>Back</button>
                 </div>
               </div>
@@ -756,7 +890,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                         })}
                       </div>
                       <div className="mt-7 flex flex-col items-center gap-3 md:items-start">
-                        <button onClick={() => setBeat(3)} className={btnPrimary}>{VERA.tour.cta}<ArrowRight /></button>
+                        <button onClick={advanceFromTour} className={btnPrimary}>{VERA.tour.cta}<ArrowRight /></button>
                         <button onClick={() => setBeat(1)} className={backLink}>Back</button>
                       </div>
                     </div>
@@ -791,7 +925,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                         ))}
                       </div>
                       <div className="mt-7 flex flex-col items-center gap-3 md:items-start">
-                        <button onClick={() => (isLastSlide ? setBeat(3) : setReelIndex(reelIndex + 1))} className={btnPrimary}>
+                        <button onClick={() => (isLastSlide ? advanceFromTour() : setReelIndex(reelIndex + 1))} className={btnPrimary}>
                           {isLastSlide ? VERA.tour.cta : 'Next'}
                           <ArrowRight />
                         </button>
@@ -811,24 +945,71 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                 <div className="mt-7 flex flex-col items-center gap-8 text-left md:flex-row md:items-center md:justify-center md:gap-10">
                   {/* left: form card */}
                   <div className="w-full max-w-sm space-y-4 rounded-3xl border border-border bg-surface p-6 lift-1">
-                    <div>
-                      <label htmlFor="induction-name" className={fieldLabel}>Display name</label>
-                      <input
-                        id="induction-name"
-                        type="text"
-                        value={displayName}
-                        onChange={(e) => {
-                          const v = e.target.value
-                          setDisplayName(v)
-                          if (!handleTouched) setHandle(suggestHandle(v))
-                        }}
-                        placeholder="Your name"
-                        // Not in preview: autoFocus runs scrollIntoView, which inside the editor's
-                        // scaled preview scrolls the page and hides the buttons under the header.
-                        autoFocus={!preview}
-                        className={inputInset}
-                      />
-                    </div>
+                    {/* TWO FIELDS, ONE NAME. Asking for "Display name" got handles-as-names and
+                        initials, and the CRM then had no first name to greet anyone by. Splitting
+                        it asks the question people already know how to answer, and the display
+                        name assembles itself from the parts. */}
+                    <fieldset>
+                      <legend className={`${fieldLabel} flex items-center gap-1.5`}>
+                        Your Name (First Last)
+                        {/* Not a `title` tooltip: those never appear on touch and cannot be
+                            reached by keyboard, which is most of the people this note is for. */}
+                        <button
+                          type="button"
+                          onClick={() => setNameHintOpen((v) => !v)}
+                          aria-expanded={nameHintOpen}
+                          aria-controls="induction-name-hint"
+                          className="inline-flex h-4 w-4 items-center justify-center rounded-pill border border-border text-[10px] font-bold leading-none text-subtle transition-colors hover:bg-surface-elevated"
+                        >
+                          i<span className="sr-only">Why we ask for your real name</span>
+                        </button>
+                      </legend>
+                      <div className="flex gap-2">
+                        <input
+                          id="induction-name"
+                          type="text"
+                          value={firstName}
+                          onChange={(e) => {
+                            const v = e.target.value
+                            setFirstName(v)
+                            const full = `${v} ${lastName}`.trim()
+                            setDisplayName(full)
+                            if (!handleTouched) setHandle(suggestHandle(full))
+                          }}
+                          placeholder="First"
+                          autoComplete="given-name"
+                          aria-label="First name"
+                          // Not in preview: autoFocus runs scrollIntoView, which inside the editor's
+                          // scaled preview scrolls the page and hides the buttons under the header.
+                          autoFocus={!preview}
+                          className={inputInset}
+                        />
+                        {/* Optional on purpose. A mononym is a real name, and `identityValid` only
+                            needs the assembled display name to be non-empty. */}
+                        <input
+                          id="induction-last-name"
+                          type="text"
+                          value={lastName}
+                          onChange={(e) => {
+                            const v = e.target.value
+                            setLastName(v)
+                            const full = `${firstName} ${v}`.trim()
+                            setDisplayName(full)
+                            if (!handleTouched) setHandle(suggestHandle(full))
+                          }}
+                          placeholder="Last"
+                          autoComplete="family-name"
+                          aria-label="Last name"
+                          className={inputInset}
+                        />
+                      </div>
+                      {nameHintOpen && (
+                        <p id="induction-name-hint" className="mt-1.5 text-left text-meta text-muted">
+                          Real names work best here. People say yes to a person, not a username, and
+                          your handle below is the short one you can hide behind.
+                        </p>
+                      )}
+                    </fieldset>
                     <div>
                       <label htmlFor="induction-handle" className={fieldLabel}>Handle</label>
                       <div className="relative">
