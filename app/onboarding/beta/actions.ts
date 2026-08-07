@@ -421,7 +421,7 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
     // (ADR-131), on top of the tags. Best-effort + idempotent; never blocks onboarding. Uses the member's
     // email (required for the nurture send); no-op when they somehow have none.
     if (user.email) await enrollPersonaOnboarding(prof.id as string, user.email, allPersonas[0] ?? DEFAULT_PERSONA)
-    // The funnel finished, so the lead row this induction opened (ADR-946) stops being a lead:
+    // The funnel finished, so the lead row this induction opened (ADR-959) stops being a lead:
     // stamping it converted is what keeps the recovery job from mailing a member who is already
     // in. No-op when they never gave an email early. Best-effort — never blocks onboarding.
     await markLeadConverted(prof.id as string).catch(() => {})
@@ -623,7 +623,7 @@ async function mergeBetaInduction(data: InductionData): Promise<void> {
   // Tag the event-host interests they ticked on the niche funnel (segmentation).
   await tagInterests(profile.id as string)
   // A returning member who re-ran the intake also converted whatever lead row this browser opened
-  // (ADR-946) — same reason as the new-member path: do not mail a recovery note to someone who is
+  // (ADR-959) — same reason as the new-member path: do not mail a recovery note to someone who is
   // already inside. Best-effort.
   await markLeadConverted(profile.id as string).catch(() => {})
 

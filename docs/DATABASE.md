@@ -290,7 +290,7 @@ ADR-180/206), `pages` + `pillars` + `sequence_overrides` (page editor), `team_me
 > `docs/NETWORK-CRM.md`, the source of truth for that domain; the My Contacts CRM layer
 > (the reminders table + `last_contacted_at`) is in [`docs/CRM-STRATEGY.md`](CRM-STRATEGY.md).
 
-> **`signup_leads` — half-finished signups, NOT a mailing list** (ADR-946; migration
+> **`signup_leads` — half-finished signups, NOT a mailing list** (ADR-959; migration
 > `20270213000000_signup_leads.sql`, additive). One row per person (unique on `lower(email)`) for a
 > visitor who started an onboarding funnel, whether or not they finished: `source`
 > (`beta_induction` | `feature_funnel`), `step_reached`, `payload jsonb` (the answers so far),

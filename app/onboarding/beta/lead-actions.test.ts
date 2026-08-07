@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// ADR-946 — the lead-capture actions in front of the signup_leads RPCs.
+// ADR-959 — the lead-capture actions in front of the signup_leads RPCs.
 //
 // These run for a SIGNED-OUT visitor mid-funnel, so everything they touch is stubbed: the cookie
 // jar (the `fq_lead` id is the whole state machine), the request headers, the rate limiter, and the

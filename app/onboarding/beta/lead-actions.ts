@@ -1,6 +1,6 @@
 'use server'
 
-// Lead capture for the onboarding funnels (ADR-946, migration 20270213000000).
+// Lead capture for the onboarding funnels (ADR-959, migration 20270213000000).
 //
 // The induction already parks its answers in `fq_pending_induction` — a ONE-HOUR httpOnly cookie
 // (actions.ts, stashPendingInduction) that is the whole of our memory of a signed-out visitor. When
@@ -45,8 +45,10 @@ export interface LeadFields {
 export type LeadResult = { ok: true } | { ok: false }
 
 /**
- * The RPCs are not in the generated types yet (the migration ships unapplied), so they are called
- * through the untyped surface — repo convention, see lib/quest/complete.ts and lib/traits/refresh.ts.
+ * The RPCs are live but not in the generated types, so they are called through the untyped surface —
+ * repo convention, see lib/quest/complete.ts and lib/traits/refresh.ts. Regenerating the types will
+ * not remove the need for this: `rpc()` is typed from the same generated file, so the cast stays
+ * until that file is refreshed AND every caller here is retyped in one pass.
  */
 type UntypedRpc = {
   rpc: (

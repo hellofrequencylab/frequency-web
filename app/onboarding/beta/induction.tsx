@@ -217,8 +217,17 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
   const [accepting, setAccepting] = useState(false)
   const allOathsChecked = BETA_OATHS.every((o) => oaths[o.id])
 
-  // Identity
+  // Identity. First and last are what the member types; `displayName` is DERIVED from them and
+  // stays the single value everything downstream reads (the profile card, the submit payload, the
+  // handle suggestion). Keeping the derived value in its own state rather than computing it inline
+  // is deliberate: it is what the induction has always submitted, and re-deriving it at each of the
+  // eight read sites is how the card and the saved profile end up disagreeing.
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [displayName, setDisplayName] = useState('')
+  // The real-name note. A disclosure rather than a `title` attribute, which never appears on touch
+  // and is not reachable by keyboard - the two ways most people would meet it.
+  const [nameHintOpen, setNameHintOpen] = useState(false)
   const [handle, setHandle] = useState('')
   const [handleTouched, setHandleTouched] = useState(false)
   const [check, setCheck] = useState<{ handle: string; result: 'available' | 'taken' | 'idle' } | null>(null)
@@ -277,6 +286,8 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
         email: email.trim(),
         step: 5,
         source: 'beta_induction',
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
         displayName: displayName.trim(),
         handle,
         payload: leadPayload(),
@@ -501,7 +512,16 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     // Fold the identity answers into the lead row (no-op when no email was given). Fire and
     // forget: the member should never wait on lead bookkeeping.
     if (!preview) {
-      updateLead({ step: 4, displayName: displayName.trim(), handle, payload: leadPayload() }).catch(() => {})
+      // first/last go up as themselves now that the field asks for them separately. The action's
+      // splitName fallback still covers the funnels that only ever have one string.
+      updateLead({
+        step: 4,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        displayName: displayName.trim(),
+        handle,
+        payload: leadPayload(),
+      }).catch(() => {})
     }
     setBeat(4)
   }
@@ -912,24 +932,71 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                 <div className="mt-7 flex flex-col items-center gap-8 text-left md:flex-row md:items-center md:justify-center md:gap-10">
                   {/* left: form card */}
                   <div className="w-full max-w-sm space-y-4 rounded-3xl border border-border bg-surface p-6 lift-1">
-                    <div>
-                      <label htmlFor="induction-name" className={fieldLabel}>Display name</label>
-                      <input
-                        id="induction-name"
-                        type="text"
-                        value={displayName}
-                        onChange={(e) => {
-                          const v = e.target.value
-                          setDisplayName(v)
-                          if (!handleTouched) setHandle(suggestHandle(v))
-                        }}
-                        placeholder="Your name"
-                        // Not in preview: autoFocus runs scrollIntoView, which inside the editor's
-                        // scaled preview scrolls the page and hides the buttons under the header.
-                        autoFocus={!preview}
-                        className={inputInset}
-                      />
-                    </div>
+                    {/* TWO FIELDS, ONE NAME. Asking for "Display name" got handles-as-names and
+                        initials, and the CRM then had no first name to greet anyone by. Splitting
+                        it asks the question people already know how to answer, and the display
+                        name assembles itself from the parts. */}
+                    <fieldset>
+                      <legend className={`${fieldLabel} flex items-center gap-1.5`}>
+                        Your Name (First Last)
+                        {/* Not a `title` tooltip: those never appear on touch and cannot be
+                            reached by keyboard, which is most of the people this note is for. */}
+                        <button
+                          type="button"
+                          onClick={() => setNameHintOpen((v) => !v)}
+                          aria-expanded={nameHintOpen}
+                          aria-controls="induction-name-hint"
+                          className="inline-flex h-4 w-4 items-center justify-center rounded-pill border border-border text-[10px] font-bold leading-none text-subtle transition-colors hover:bg-surface-elevated"
+                        >
+                          i<span className="sr-only">Why we ask for your real name</span>
+                        </button>
+                      </legend>
+                      <div className="flex gap-2">
+                        <input
+                          id="induction-name"
+                          type="text"
+                          value={firstName}
+                          onChange={(e) => {
+                            const v = e.target.value
+                            setFirstName(v)
+                            const full = `${v} ${lastName}`.trim()
+                            setDisplayName(full)
+                            if (!handleTouched) setHandle(suggestHandle(full))
+                          }}
+                          placeholder="First"
+                          autoComplete="given-name"
+                          aria-label="First name"
+                          // Not in preview: autoFocus runs scrollIntoView, which inside the editor's
+                          // scaled preview scrolls the page and hides the buttons under the header.
+                          autoFocus={!preview}
+                          className={inputInset}
+                        />
+                        {/* Optional on purpose. A mononym is a real name, and `identityValid` only
+                            needs the assembled display name to be non-empty. */}
+                        <input
+                          id="induction-last-name"
+                          type="text"
+                          value={lastName}
+                          onChange={(e) => {
+                            const v = e.target.value
+                            setLastName(v)
+                            const full = `${firstName} ${v}`.trim()
+                            setDisplayName(full)
+                            if (!handleTouched) setHandle(suggestHandle(full))
+                          }}
+                          placeholder="Last"
+                          autoComplete="family-name"
+                          aria-label="Last name"
+                          className={inputInset}
+                        />
+                      </div>
+                      {nameHintOpen && (
+                        <p id="induction-name-hint" className="mt-1.5 text-left text-meta text-muted">
+                          Real names work best here. People say yes to a person, not a username, and
+                          your handle below is the short one you can hide behind.
+                        </p>
+                      )}
+                    </fieldset>
                     <div>
                       <label htmlFor="induction-handle" className={fieldLabel}>Handle</label>
                       <div className="relative">

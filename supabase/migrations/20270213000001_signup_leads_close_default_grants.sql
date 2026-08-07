@@ -1,4 +1,4 @@
--- Close the default grants the signup_leads migration assumed were not there (ADR-946 follow-up).
+-- Close the default grants the signup_leads migration assumed were not there (ADR-959 follow-up).
 --
 -- WHAT WENT WRONG. 20270213000000_signup_leads.sql ends with a revoke/grant pair whose stated intent
 -- is that anon may call capture and update but NOT mark_signup_lead_converted, and that anon holds no

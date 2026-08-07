@@ -128,7 +128,7 @@ meta = {
   timeline and (when it ships) `ai_member_context.facts.goals` / Vera's `suggest_circle`. Not wired
   in this build, documented so it isn't lost.
 
-### The unfinished induction: `signup_leads` ([ADR-946](DECISIONS.md))
+### The unfinished induction: `signup_leads` ([ADR-959](DECISIONS.md))
 
 The deferred flow runs signed out, so until the very last beat the ONLY record of a visitor was
 `fq_pending_induction`, a **one-hour** httpOnly cookie. Someone who answered four beats and was

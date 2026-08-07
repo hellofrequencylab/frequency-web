@@ -1,4 +1,4 @@
--- SIGNUP LEADS — the lead-capture spine under the induction funnel (ADR-946).
+-- SIGNUP LEADS — the lead-capture spine under the induction funnel (ADR-959).
 --
 -- THE GAP THIS CLOSES. The beta induction collects a whole profile from a signed-out visitor and
 -- parks it in `fq_pending_induction`, a ONE-HOUR httpOnly cookie (app/onboarding/beta/actions.ts,
@@ -65,7 +65,7 @@ create index if not exists signup_leads_recovery_idx on public.signup_leads (con
 create index if not exists signup_leads_converted_profile_idx on public.signup_leads (converted_profile_id);
 
 comment on table public.signup_leads is
-  'ADR-946: half-finished signups from the onboarding funnels, so an abandoned induction can be followed up with a TRANSACTIONAL "finish setting up your account" note. NOT a marketing list and carries no consent state - marketing consent lives on contacts.consent_state. RLS-on-no-policy: fail-closed, service-role only. Every write goes through capture_signup_lead / update_signup_lead / mark_signup_lead_converted.';
+  'ADR-959: half-finished signups from the onboarding funnels, so an abandoned induction can be followed up with a TRANSACTIONAL "finish setting up your account" note. NOT a marketing list and carries no consent state - marketing consent lives on contacts.consent_state. RLS-on-no-policy: fail-closed, service-role only. Every write goes through capture_signup_lead / update_signup_lead / mark_signup_lead_converted.';
 
 drop trigger if exists signup_leads_set_updated_at on public.signup_leads;
 create trigger signup_leads_set_updated_at

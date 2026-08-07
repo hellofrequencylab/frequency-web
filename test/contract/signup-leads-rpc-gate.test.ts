@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 
 // ════════════════════════════════════════════════════════════════════════════════════════════════
-// ADR-946 — the signup_leads write path, pinned as SQL text with no live database.
+// ADR-959 — the signup_leads write path, pinned as SQL text with no live database.
 //
 // signup_leads holds an email address for every visitor who started an induction, whether or not
 // they finished. anon must be able to write to it (the funnel runs signed out) and must never be
