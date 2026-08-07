@@ -280,18 +280,31 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     // The address they are signing in with is the one worth following up on, and it may be the
     // first we have seen (Beat 1's field is optional). capture, not update: it upserts on the
     // email, so it opens the row for a visitor who skipped Beat 1 and refreshes it for one who
-    // did not. Best-effort — sign-in must not wait on it.
+    // did not.
+    //
+    // BOUNDED, and that is the whole point of the race below. This sits directly in front of
+    // sign-in, and it reaches two things that can be slow independently of our database: the
+    // Upstash rate limiter and the attribution resolve. `try/catch` only covers a call that
+    // FAILS - a call that merely hangs would hold the member on "One sec…" for as long as it
+    // takes, which turns lead bookkeeping into a login outage. Dropping the await entirely is
+    // the other tempting fix and it is worse: the next line navigates away, so an un-awaited
+    // capture is cancelled mid-flight and the visitor who skipped Beat 1 is never recorded at
+    // all. Two seconds is long enough for the normal path and short enough that nobody reads it
+    // as broken.
     try {
-      await captureLead({
-        email: email.trim(),
-        step: 5,
-        source: 'beta_induction',
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        displayName: displayName.trim(),
-        handle,
-        payload: leadPayload(),
-      })
+      await Promise.race([
+        captureLead({
+          email: email.trim(),
+          step: 5,
+          source: 'beta_induction',
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          displayName: displayName.trim(),
+          handle,
+          payload: leadPayload(),
+        }),
+        new Promise((resolve) => setTimeout(resolve, 2000)),
+      ])
     } catch {
       /* the lead row is a follow-up aid, never a precondition for signing in */
     }
