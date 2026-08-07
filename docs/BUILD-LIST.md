@@ -749,6 +749,19 @@ re-do of the capture.
 - **Comms infra:** notification router/registry + migrate email/push onto the outbox queue · deliverability hardening (SPF/DKIM/DMARC subdomain) · verify `frequencylocal.com` in Resend + OAuth redirect URLs · submit sitemap/robots.
 - **Scale (Phase 4, when measured):** paginate People/Circles · `force-dynamic`→ISR on CMS pages · profile zap-sum via SQL · `<img>`→`next/image` · Supavisor/read-replicas/denormalized feed read-model/partitioning/Broadcast realtime.
 - **Design system:** unify pill/button radius (shared `Button`/`Badge` primitive) site-wide.
+- 📋 **Convert `app/onboarding/beta/induction.tsx` to the kit — wholesale, not one beat.** The
+  `raw-input` ratchet was **raised 184 → 186 on 2026-08-07** ([ADR-959](DECISIONS.md)) for three new
+  controls: the Beat 1 email capture and the First/Last pair that replaced one Display name field.
+  It stays flagged ⚠️ on every `check:adoption` run until a sweep brings it down, which is the point.
+  **The blocker is real and worth knowing before anyone tries the one-file fix:** `Input` is
+  `rounded-control border-border bg-surface px-3 py-2`, and these fields sit *inside* a `bg-surface`
+  card where the induction uses an inset `bg-canvas` well — composed as `Input` they are
+  surface-on-surface and effectively invisible. Passing the inset string as `className` is not a
+  rescue either: it emits two `bg-*`, two `rounded-*` and two padding pairs into one list, and `cn`
+  here is a plain join with no `tailwind-merge`, so Tailwind's emit order picks the winner rather
+  than the call site (the trap `components/ui/field.tsx` documents in its own header). So this needs
+  either an inset surface variant on the primitive or a full re-style of the flow — a design
+  decision, not a mechanical swap.
 
 ## PM — Money verticals (gated on PMF + legal entity)
 
