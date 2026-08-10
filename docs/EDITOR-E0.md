@@ -5,7 +5,7 @@
 > (§1.7 → 8→9→10→11→12→13); everything else runs beside it.
 >
 > Parent spec: [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md) · Decisions:
-> [ADR-972](DECISIONS.md) · [ADR-973](DECISIONS.md) · [ADR-974](DECISIONS.md).
+> [ADR-974](DECISIONS.md) · [ADR-975](DECISIONS.md) · [ADR-976](DECISIONS.md).
 > **Verified against the live tree and the production database on 2026-08-10.**
 > `tsc --noEmit` exits 0; `rows-ops` + `layout` + `templates` suites are 128/128 green.
 >
@@ -413,7 +413,7 @@ by letting the rows look resolvable. It is `check:surface-binding` (E1) work, no
 
 ---
 
-## 7. The CRDT — what [ADR-974](DECISIONS.md) D-2 adds
+## 7. The CRDT — what [ADR-976](DECISIONS.md) D-2 adds
 
 Multiplayer is the reason E0 is **XL** rather than **L**. Full design in
 [`EDITOR-ARCHITECTURE`](EDITOR-ARCHITECTURE.md) §4.1; the E0-specific work:
@@ -479,7 +479,7 @@ is *currently destroying author work* every time a block type is renamed.
 
 - ⏳ **`FINALIZE-PLAN` Phase 1.2** (recapture the 72 stale visual baselines) gates **E1, not E0** —
   items 8–14 are covered by `renderToStaticMarkup` equivalence, which works while the visual suite is
-  red. This is why [ADR-974](DECISIONS.md) D-8 lets E0 start once 1.2/1.3 land and not before.
+  red. This is why [ADR-976](DECISIONS.md) D-8 lets E0 start once 1.2/1.3 land and not before.
 - 🔴 **Branch protection.** `ci.yml:37-46` requires only `checks` and `analyze`, so `test` and
   `pr-compare` **cannot block a merge today**. Every gate specified above is advisory until an owner
   changes that — still the five-minute action worth more than any of this.

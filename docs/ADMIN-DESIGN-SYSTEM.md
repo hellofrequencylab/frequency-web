@@ -136,7 +136,7 @@ the contract; keep them server-friendly (no client hooks unless interaction requ
   `critical` sets `role="alert"`. The disciplined callout vocabulary (color = severity).
 - `EntityHeader`: context band: `{ title, avatar?, badges?, facts?: {label,value}[],
   actions?, back? }`. Description (key/value) list for facts, not a two-col table.
-- `UnderlineTabs`: `{ tabs: {href, label, count?}[] }`, each tab a real URL segment.
+- `UnderlineTabs` (`@/components/ui/underline-tabs`): `{ tabs: {href, label, count?}[] }`, each tab a real URL segment.
 - `FormSection`: annotated settings group `{ title, description, children }` (left
   copy, right controls), stacked.
 - `DangerModal`: `{ title, body, confirmLabel, onConfirm, requireTyping? }`. Named

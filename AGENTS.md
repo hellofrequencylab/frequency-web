@@ -15,7 +15,7 @@ single source of truth**. Four are wrong. The live plan is:
   the phases the owner has deliberately parked.
 - **[`docs/DECISIONS.md`](docs/DECISIONS.md)** — the ADR record both cite. Recent decisions land
   here first; a plan doc that contradicts an ADR is stale, not authoritative.
-- **[`docs/EDITOR-ARCHITECTURE.md`](docs/EDITOR-ARCHITECTURE.md)** (ADR-972/973) — the editor
+- **[`docs/EDITOR-ARCHITECTURE.md`](docs/EDITOR-ARCHITECTURE.md)** (ADR-974/973) — the editor
   program, phases **E0–E10** in `BUILD-LIST`. **Read it before touching any block, block registry,
   or the page editor.** It supersedes `PAGE-EDITOR-SPEC` as the forward plan, re-sequences
   `WHITE-LABEL-SITES` (W1–W5 → E10), and amends `LOOM-PLATFORM` (six registries, not three;

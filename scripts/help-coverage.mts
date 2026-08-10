@@ -100,6 +100,23 @@ if (coreMissing.length > 0) {
 }
 console.log('')
 
+// An ORPHAN key always fails, in every mode. It is not a backlog item like an undocumented
+// feature: it is a BROKEN LINK. A published article declares `featureKeys: [x]`, nothing in the
+// registry answers to `x`, and every in-product help affordance that resolves by feature key
+// silently finds nothing — the article exists, the reader never reaches it. Ten of these had
+// accumulated by 2026-08-10 (ADR-970), printed as a ⚠️ on a tool whose exit code nobody read.
+//
+// `coreMissing` stays behind --strict on purpose: writing an article is content work with an
+// owner and a queue, and failing every build on it would make the gate something to route
+// around. A key that points at nothing is a defect either way.
+if (orphans.size > 0) {
+  console.error(`✖ ${orphans.size} article featureKey(s) resolve to nothing in lib/help/feature-keys.ts:`)
+  for (const [key, refs] of orphans) console.error(`    ${key}  <- ${refs.join(', ')}`)
+  console.error('\n  Either add the key to the registry (with a route that actually exists), or')
+  console.error('  fix the article front matter. See docs/HELP-CENTER.md.')
+  process.exit(1)
+}
+
 if (strict && coreMissing.length > 0) {
   console.error(`✖ ${coreMissing.length} core feature(s) undocumented (strict mode).`)
   process.exit(1)

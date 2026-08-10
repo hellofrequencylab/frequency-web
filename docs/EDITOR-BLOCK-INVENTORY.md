@@ -5,11 +5,11 @@
 > `variant`, a `binding.source`, or a `density`. Three fields carry almost all of it:
 > `binding.source` collapses **111 layout modules into 4 blocks**.
 >
-> ⚠️ **~49 is a range, not a commitment** ([ADR-975](DECISIONS.md) D-11). The count moved from 138 to
+> ⚠️ **~49 is a range, not a commitment** ([ADR-977](DECISIONS.md) D-11). The count moved from 138 to
 > 304 on measurement; E2 gets its own planning pass once the usage index shows what is *placed*.
 >
 > Parent: [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md) §2.1 · Decisions:
-> [ADR-972](DECISIONS.md) · [ADR-975](DECISIONS.md).
+> [ADR-974](DECISIONS.md) · [ADR-977](DECISIONS.md).
 > **Counts verified against code; retirement risk verified against the live database, 2026-08-10.**
 
 ---
@@ -105,7 +105,7 @@ Two tiers, one registry. Surface keys: **PI** `profile-inapp` · **SP** `spotlig
 
 † **`frq/offerings` is the one sanctioned live-in-email block**, and it is legal only through
 `resolveAt: 'send'` — see [`EDITOR-ARCHITECTURE`](EDITOR-ARCHITECTURE.md) §3 rule 3 and
-[ADR-975](DECISIONS.md).
+[ADR-977](DECISIONS.md).
 
 ### Tier B — 15 operator-widget rows
 
@@ -138,7 +138,7 @@ Every one of the 304 maps to exactly one target, with no unmapped remainder.
 
 ## D. Retirement risk — measured against the live database
 
-### 🔴 P0 — five stored types resolve to nothing ([ADR-975](DECISIONS.md) D-9)
+### 🔴 P0 — five stored types resolve to nothing ([ADR-977](DECISIONS.md) D-9)
 
 | Slug | Status | Orphan types |
 |---|---|---|
@@ -173,7 +173,7 @@ has 2 live `page_settings` placements.** They are stripped at *resolve* time, no
 the stored rows still name them. Dropping the definitions turns a silent filter into a hard unknown
 id.
 
-✅ **Email is not frozen** ([ADR-975](DECISIONS.md) D-12). Verified: **0 campaigns scheduled or
+✅ **Email is not frozen** ([ADR-977](DECISIONS.md) D-12). Verified: **0 campaigns scheduled or
 sending**, **0 nurture steps**, 8 messages in 30 days. A block-id change cannot corrupt an outbound
 send because there is none. ⚠️ **Re-run that check before any PR renaming an email-reachable id** —
 the decision rests on a measurement, and measurements expire.

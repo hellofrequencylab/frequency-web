@@ -7,7 +7,7 @@ subdomain by default, its own custom domain as a premium tier, one visual editor
 model, and the smallest possible support surface. This is the continuation of ADR-508's U4
 line ("Users' external websites use Puck TEMPLATES that read the same entity data").
 
-> **⚠️ Re-sequenced 2026-08-10 ([ADR-972](DECISIONS.md)).** This doc's *hosting* architecture stands —
+> **⚠️ Re-sequenced 2026-08-10 ([ADR-974](DECISIONS.md)).** This doc's *hosting* architecture stands —
 > wildcard subdomain, `proxy.ts` host router, Vercel Domains API. What changed is **what it serves and
 > when**: sites render off the one block contract in
 > [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md), so this work is **phase E10** and lands *after*
@@ -49,7 +49,7 @@ sites' cookie scope is isolated from the app by construction.
 | Edge middleware | ✅ Exists | `proxy.ts` (Next 16 renames middleware). Auth + attribution. **Zero host rewriting** — the router is greenfield. |
 | Page storage | ⚠️ Partial | `pages` table is `space_id`-aware in code (`lib/page-editor/data.ts`); repo migration lacks the column and uses a global-unique `slug`. Authoring gated to a root allowlist (`EDITABLE_PAGES`). |
 | Visual editor | ✅ Exists | In-house fork — `DesktopEditor` + `BlockRender` + `config.tsx`. `@measured/puck` removed (ADR-493). "Full Puck" = extend this. |
-| Public site render | 🔴 **Build** | ⚠️ **This row read "✅ Exists" until 2026-08-10 and was false.** `app/sites/[slug]/page.tsx` is a 70-line "Coming soon" card with `robots: { index: false }`. Its own header records that the real render — `BlockRender` of the Home doc, filtered for the `website` surface, fail-closed on `preferences.websitePublished` — **lives in git history**; `lib/spaces/surface-visibility.ts` was deleted with it. Rebuilt in **E10** ([ADR-972](DECISIONS.md)), on the block contract rather than on today's three block systems. |
+| Public site render | 🔴 **Build** | ⚠️ **This row read "✅ Exists" until 2026-08-10 and was false.** `app/sites/[slug]/page.tsx` is a 70-line "Coming soon" card with `robots: { index: false }`. Its own header records that the real render — `BlockRender` of the Home doc, filtered for the `website` surface, fail-closed on `preferences.websitePublished` — **lives in git history**; `lib/spaces/surface-visibility.ts` was deleted with it. Rebuilt in **E10** ([ADR-974](DECISIONS.md)), on the block contract rather than on today's three block systems. |
 | Entitlements + billing | ✅ Exists | Default-deny entitlements (`lib/spaces/entitlements.ts`), plan ladder, and full Stripe per-Space subscriptions (`lib/billing/space-subscriptions.ts`). A `space_whitelabel` Branding gate is already defined. |
 | Domains model | 🔴 Build | Single unique `spaces.domain` column. No subdomain / verification / status / multi-domain / domains table. |
 | Domain provisioning | 🔴 Build | No Vercel Domains API calls, no DNS verification, no wildcard config in `vercel.json`. The largest greenfield surface. |

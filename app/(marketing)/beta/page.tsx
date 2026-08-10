@@ -9,7 +9,7 @@ import { breadcrumbSchema } from '@/lib/jsonld'
 export const metadata: Metadata = {
   title: 'Join the Beta',
   description:
-    'The Frequency community Beta is open. Start a Circle or join as a member, free during the beta, no card, and membership is pay what you want when it launches.',
+    'The Frequency community Beta is open. Start a Circle or join as a member. Free today, no card, and membership is pay what you want when it launches.',
   alternates: { canonical: '/beta' },
   openGraph: {
     title: 'Join the Frequency Beta',

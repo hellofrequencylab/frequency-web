@@ -4,7 +4,7 @@ import { Users, MapPin, Sparkles } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PersonCard } from '@/components/cards/person-card'
-import { UnderlineTabs } from '@/components/admin/underline-tabs'
+import { UnderlineTabs } from '@/components/ui/underline-tabs'
 import { getMyProfileId } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import {

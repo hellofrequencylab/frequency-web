@@ -20,7 +20,7 @@
 > contract), 503 (admin bar), 504 (Loom Apps lane); see §9. The early "498–500" plan numbers were
 > already taken by unrelated decisions, so the Loom work was renumbered to 501+.
 >
-> **⚠️ Amended 2026-08-10 ([ADR-973](DECISIONS.md)).** Two things in this plan are now known false and
+> **⚠️ Amended 2026-08-10 ([ADR-975](DECISIONS.md)).** Two things in this plan are now known false and
 > are corrected inline below: the feature registries number **six**, not three; and `library_usages`
 > — which §3, §5 and LP3 all reuse — **was dropped by migration `20260925000000`**. Two things are
 > newly settled: **Layer 1 is no longer git-only** (operators may *declare* functions from Loom, as a
@@ -48,7 +48,7 @@ know about each other.
 
 | Layer | State | Finding |
 |---|---|---|
-| **The Loom (DAM)** | ✅ solid, ⚠️ one part gone | `library_assets` is already polymorphic (`kind` = image/icon/element/template/flow/theme/app_asset), space-scoped (root = shared), with `config jsonb`, non-destructive `library_versions`, collections, and semantic search. Built to "grow for years without a code deploy per asset." 🔴 **The `library_usages` xref no longer exists** — created by `20260920000000_library_dam.sql`, **dropped by `20260925000000_retire_orphaned_tables_and_functions.sql` five days later**, and the read discarded its error and silently returned `[]`. Every row below that reuses it is planning on a dropped table. ([ADR-973](DECISIONS.md) rebuilds it as `block_usage`.) |
+| **The Loom (DAM)** | ✅ solid, ⚠️ one part gone | `library_assets` is already polymorphic (`kind` = image/icon/element/template/flow/theme/app_asset), space-scoped (root = shared), with `config jsonb`, non-destructive `library_versions`, collections, and semantic search. Built to "grow for years without a code deploy per asset." 🔴 **The `library_usages` xref no longer exists** — created by `20260920000000_library_dam.sql`, **dropped by `20260925000000_retire_orphaned_tables_and_functions.sql` five days later**, and the read discarded its error and silently returned `[]`. Every row below that reuses it is planning on a dropped table. ([ADR-975](DECISIONS.md) rebuilds it as `block_usage`.) |
 | **Feature registries** | 🔴 fragmented | ⚠️ **Recounted 2026-08-10: it is six, not three.** Beyond `AdminModule` (`lib/admin/modules/registry.ts`), `LAYOUT_MODULES` (`lib/widgets/modules.ts`) and `element-catalog` (`lib/library/element-catalog.ts`), there are `SPACE_MODULES` (`lib/admin/modules/space-modules.ts`), `ENTITY_BLOCKS` (`lib/entity-blocks/registry.ts`) and the Puck-shaped `config.components` (`lib/page-editor/config.tsx`). The three *block* catalogs among them — entity blocks, Puck-shaped, layout modules — are the ones [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md) unifies; `ENTITY_BLOCKS` is **already clean**, so the duplication is *between* catalogs, not inside one. |
 | **Capability systems** | 🟡 two of them | Community `resolveCapabilities(viewer, scope)` (`lib/core/capabilities.ts`) and per-Space `spaceFunctionAccess` / `getSpaceCapabilities` (`lib/spaces/functions.ts`). The admin surface branches per entity. |
 | **The editor surface** | 🟡 partial | Circles/events open a right-rail `SettingsDrawer` whose body path-sniffs the route; only the **Basics** module is built per entity; visibility is a coarse `manager || isOperator` heuristic, not capability-driven; desktop and mobile are two components; no drill-down/search. |
@@ -169,7 +169,7 @@ catalog never holds a stale copy).
 | 9 | Copy / content strings | member-facing text | data | ⛔ skip v1 (a CMS/i18n effort) |
 | 10 | Data connections | integration configs (secrets) | data | ⛔ out of DAM scope |
 
-**The "help section for assets" angle (no new table):** ⚠️ *superseded — the table below was dropped; [ADR-973](DECISIONS.md) rebuilds this as `block_usage`, derived from an `app_instances` trigger plus a periodic JSONB scan, and treats it as disposable.* `library_usages` was the where-referenced
+**The "help section for assets" angle (no new table):** ⚠️ *superseded — the table below was dropped; [ADR-975](DECISIONS.md) rebuilds this as `block_usage`, derived from an `app_instances` trigger plus a periodic JSONB scan, and treats it as disposable.* `library_usages` was the where-referenced
 backbone — every card's detail drawer gets a **"Used in"** section listing each `context`/`ref_id`/
 `block_id` as a deep link, so the library reads like a help index (click an asset → see everywhere
 it lives → jump there). Docs live on existing columns (`description` = what it is / when to use it,
@@ -295,7 +295,7 @@ server).
 | **Installed App + global config (Layer 2)** | **reuse `library_assets kind='app'`** — one row per (space, app), `config = { manifestKey, globalConfig, enabled }`; **root space = platform default**, a per-space row = that space's fork (`parent_id`) | Apps become Loom citizens: space-scoping, fork-on-edit, search, collections, RLS phasing all come free. Root-as-default resolves the "which space owns the default" question without a nullable column |
 | **Global-config history** | **reuse `library_versions`** (snapshot + `is_current` + rollback) | non-destructive versioning already exists |
 | **Instances (Layer 3)** | **NEW `public.app_instances`** (`id` = the layout slot's `block_id`, `space_id`, `app_asset_id`, `manifest_key`, `surface_type`, `surface_ref`, `slot`, `position`, `config` override, `status`) | high-cardinality, render-critical, queryable for usage/safe-delete. `page_settings.layout` stays the **placement/order/role-gate** authority; the instance row holds the **config payload**. One writer per concern |
-| **Usage / xref** | 🔴 **cannot reuse `library_usages` — it was dropped.** Build `block_usage` per [ADR-973](DECISIONS.md) | "used on N surfaces," safe-uninstall, global swap already live here |
+| **Usage / xref** | 🔴 **cannot reuse `library_usages` — it was dropped.** Build `block_usage` per [ADR-975](DECISIONS.md) | "used on N surfaces," safe-uninstall, global swap already live here |
 | **Style (Layer 4)** | **reuse `library_styles`** + `kind='theme'`/`token` config; per-instance `style_override` | tokens already persisted; per-theme resolution exists |
 | **New lanes (fonts/tokens/copy)** | **reuse `library_assets`** — widen the `kind` check constraint + a `config` convention | the catalog was built polymorphic for exactly this (ADR-478) |
 
@@ -331,7 +331,7 @@ App contract, LP1) · **503** (standardized admin bar, LP4) · **504** (Loom App
 |---|---|---|
 | **LP1** | **App contract & catalog** — `lib/apps/{catalog,bindings,access}.ts`; superset + gate-parity tests | 502 |
 | ~~**LP2**~~ | ~~**Registry unification** — invert `AdminModule` / `LAYOUT_MODULES` / `element-catalog` to derive from `APPS`~~ **REJECTED (ADR-501).** LP1 shipped the derive-direction *code → catalog* (`APPS` is a read-only projection of the registries), matching the platform principle "code is source of truth, Loom indexes read-only". Inverting would couple the pure catalog to the render graph for no gain; there is no drift to fix (122 ids ↔ 122 bindings, symmetric). | 501 |
-| **LP3** | **Persistence** — `app_instances` migration + gated actions; reuse `library_assets kind='app'` / `library_versions` / `page_settings` (**not** `library_usages`, dropped); RLS Phase 1. ➡️ **The writers land in E0** ([ADR-973](DECISIONS.md)) | — |
+| **LP3** | **Persistence** — `app_instances` migration + gated actions; reuse `library_assets kind='app'` / `library_versions` / `page_settings` (**not** `library_usages`, dropped); RLS Phase 1. ➡️ **The writers land in E0** ([ADR-975](DECISIONS.md)) | — |
 | **LP4** | **Standardized admin bar** — steps B0–B5; visibility = `appsForScope` non-empty; drill-down + search | 503 |
 | **LP5** | **Loom Apps lane** — `kind='app'` in Loom Studio: read-only source + version (L1), editable config/connections/gate (L2), instances (L3), style (L4); the "Used in" help index | 504 |
 | **LP-EVENT** | **Event, end-to-end** — build its full 9-spine as real Apps (Place&Time, People, Engage are the 🔴 gaps); the reference other entities copy | 441 |

@@ -6,8 +6,8 @@
 > its docstring says so (`lib/entity-blocks/registry.ts:14-17`). What email needed was four concrete
 > things, not an abstraction. Site needs the same four.
 >
-> Decision record: [ADR-972](DECISIONS.md) (the program) · [ADR-973](DECISIONS.md) (Loom authority,
-> superseding [ADR-501](DECISIONS.md)) · [ADR-974](DECISIONS.md) (the eight owner decisions — no raw
+> Decision record: [ADR-974](DECISIONS.md) (the program) · [ADR-975](DECISIONS.md) (Loom authority,
+> superseding [ADR-501](DECISIONS.md)) · [ADR-976](DECISIONS.md) (the eight owner decisions — no raw
 > CSS, full multiplayer, member Stripe Connect, and five more; **two of them changed this document**).
 > Authority order: **running code + `supabase/migrations/` > this doc > Notion.**
 >
@@ -260,7 +260,7 @@ Three hard requirements this fixes:
 
 ### 4.1 Collaboration — multiplayer, and what it costs E0
 
-**Two people can edit the same page at once, with live cursors** ([ADR-974](DECISIONS.md) D-2).
+**Two people can edit the same page at once, with live cursors** ([ADR-976](DECISIONS.md) D-2).
 
 ⚠️ **State the cost before the design.** This is the single most expensive answer in the whole
 program. Multiplayer is not a phase you add later to a document model that assumed one writer — it
@@ -320,7 +320,7 @@ designing.
 | **3 · Instances** | `app_instances` | The editor, at placement | This block, on this surface, with this display config |
 | **4 · Style** | Instance `style_override` | Operators | Token keys only, never colours |
 
-**[ADR-973](DECISIONS.md) supersedes [ADR-501](DECISIONS.md) on authority, and caps execution.**
+**[ADR-975](DECISIONS.md) supersedes [ADR-501](DECISIONS.md) on authority, and caps execution.**
 Operators may *declare* functions from Loom; a Loom-declared function is a **composition of typed
 primitives and existing schemas, never arbitrary JavaScript**. That pairing is what makes it
 affordable: the "we need a block that does X" loop without a plugin platform, a supply-chain surface
@@ -401,7 +401,7 @@ directly opposed to the voice canon) and **self-preference**.
 
 ### No raw CSS — the hole is closed, not defended
 
-**Nobody writes raw CSS. Not operators, not staff, not Vera** ([ADR-974](DECISIONS.md) D-1). Every
+**Nobody writes raw CSS. Not operators, not staff, not Vera** ([ADR-976](DECISIONS.md) D-1). Every
 visual choice resolves through the token system.
 
 An earlier draft of this document allowed it and grew a CSS property allowlist, a value validator, a
@@ -457,7 +457,7 @@ change is a reviewable diff** — ghosted overlays on the canvas, default not-ap
 accept. The accept/reject events double as the quality telemetry that tunes the archetype library.
 
 **Vera builds the first draft when a page or Site is created, then goes quiet until asked**
-([ADR-974](DECISIONS.md) D-4). She does not watch the canvas and does not volunteer improvements
+([ADR-976](DECISIONS.md) D-4). She does not watch the canvas and does not volunteer improvements
 mid-edit. Two reasons this is the right default and not just the polite one:
 
 1. **Creation is where the leverage is.** A blank canvas is the moment an operator has no opinion yet
@@ -547,7 +547,7 @@ count.
 | `unbound-app-surfaces` | 157 | **157** ✅ | → 0 |
 | `block-types-total` | ~~~138~~ | **304** (36+88+157+13+10) | → ~49 |
 | `blocks-without-totext` | all | **304** — zero `toText` anywhere in `app/`, `lib/`, `components/` | → 0 |
-| `raw-css-paths` | **0** ✅ | **must stay 0** — any authored-CSS field, `dangerouslySetInnerHTML` on tenant content, or `<style>` fed from a document is the [ADR-974](DECISIONS.md) D-1 decision leaking back in |
+| `raw-css-paths` | **0** ✅ | **must stay 0** — any authored-CSS field, `dangerouslySetInnerHTML` on tenant content, or `<style>` fed from a document is the [ADR-976](DECISIONS.md) D-1 decision leaking back in |
 | `editor-bytes-on-public-render` | current | → falls. The CRDT, awareness and Realtime client must never reach a visitor bundle (§4.1) |
 
 ### 7.4 Equivalence harnesses
@@ -604,7 +604,7 @@ A runtime flag gives a *rendering* phase what a *schema* phase already has.
 
 ## 8. Phases
 
-Lifts below reflect the [ADR-974](DECISIONS.md) owner decisions. **Three of them cost real
+Lifts below reflect the [ADR-976](DECISIONS.md) owner decisions. **Three of them cost real
 schedule** and the affected phases say so rather than absorbing it quietly: multiplayer (D-2) takes
 E0 from L to **XL**, full mobile editing (D-5) takes E5 and E6 up a step, and Stripe Connect (D-3)
 takes E7 to **XL**. One decision *refunds* schedule: no raw CSS (D-1) deletes a validator from E8.
@@ -612,8 +612,8 @@ takes E7 to **XL**. One decision *refunds* schedule: no raw CSS (D-1) deletes a 
 | # | Phase | Lift | Gate |
 |---|---|:---:|---|
 | **E0** | Foundations — **[implementation breakdown: `EDITOR-E0.md`](EDITOR-E0.md)** (18 ordered tasks; the whole data migration is **41 documents**). Node-id keying, unknown-block preservation, `page_versions`, `app_instances` writers (absorbs **A2**), the `render_path` flag, surface-vocabulary reconciliation, **all five CI gates** (D-10 — four pass on today's tree, so each starts green and provable) — **plus the CRDT** (§4.1): Yjs document schema ⇄ tree mapping, Realtime channel + authorization, awareness, debounced snapshot, reconnect, `Y.UndoManager` per client | **XL** ⬆ | `check:doc-safety` green on a real-document corpus; CRDT ⇄ tree round-trip exact; two clients converge; **zero editor bytes on the public render**; every phase reversible by flag |
-| **E1** | Block contract. One registry, Zod schemas, up/down migrations, **`resolveAt`**, the binding layer. **The five gates are already live** — they land in E0 ([ADR-975](DECISIONS.md) D-10), so E1 turns them from green-on-today's-tree to green-on-the-new-one | **L** | Every registry row resolves to a renderer for every declared surface |
-| **E2** | 🔴 **Re-scope before a target is locked** ([ADR-975](DECISIONS.md) D-11): the real count is **304 across five systems**, not ~138 across three, so this is a 6:1 cut. **Loom projection + usage index**, then consolidate — mapped target **~49** (34 page blocks + 15 operator widgets), held as a **range, not a commitment**, until the usage index shows what is actually placed. **Real retirements** with migrations rewriting stored documents (D-6) | **XL** | "Which tenants use this block" is answerable *before* the first retirement; every retired id has a tested `up` **and** `down` |
+| **E1** | Block contract. One registry, Zod schemas, up/down migrations, **`resolveAt`**, the binding layer. **The five gates are already live** — they land in E0 ([ADR-977](DECISIONS.md) D-10), so E1 turns them from green-on-today's-tree to green-on-the-new-one | **L** | Every registry row resolves to a renderer for every declared surface |
+| **E2** | 🔴 **Re-scope before a target is locked** ([ADR-977](DECISIONS.md) D-11): the real count is **304 across five systems**, not ~138 across three, so this is a 6:1 cut. **Loom projection + usage index**, then consolidate — mapped target **~49** (34 page blocks + 15 operator widgets), held as a **range, not a commitment**, until the usage index shows what is actually placed. **Real retirements** with migrations rewriting stored documents (D-6) | **XL** | "Which tenants use this block" is answerable *before* the first retirement; every retired id has a tested `up` **and** `down` |
 | **E3** | Axis work. Widen `kinds[]` to `member` + member data adapters; density as a declared property; Site's four things | **L** | Spotlight, in-app profile, Space and Site render off one registry with zero visual diff |
 | **E4** | Canvas. Same-origin iframe, portalled tree, `bubbleEvent` + coordinate translation, parent-document overlays, inline Tiptap **on `y-prosemirror`**, live cursors | **L** | Click-to-edit on every surface; RSC ⇄ canvas parity green; two browsers editing one page |
 | **E5** | Inspector + responsive. Fields from schemas, sparse breakpoint overrides with provenance, device switcher, container queries, **and the touch-native inspector** (bottom sheet, no hover dependency) | **L** ⬆ | Real viewports, not simulated widths; every control reachable by touch |
@@ -645,7 +645,7 @@ building on the pre-contract block systems and doing it twice.
 | **`check:render-path`** | Live, exact-match. Its baseline must fall in the same PR that retires a body |
 | **`BUILD-LIST` A2** | Already specs the `app_instances` instance contract. E0 absorbs it; do not build it twice |
 | **Visual suite** | FINALIZE-PLAN 1.2/1.3 are hard prerequisites for E1 |
-| **When E0 starts** | **After FINALIZE-PLAN 1.2/1.3 — and nothing else** ([ADR-974](DECISIONS.md) D-8). E0 is storage-shape and sync work, not pixel work, so recaptured baselines are the one thing it genuinely consumes; waiting for all seven FINALIZE phases would cost a quarter for safety E0 does not use. The rest of FINALIZE-PLAN runs concurrently |
+| **When E0 starts** | **After FINALIZE-PLAN 1.2/1.3 — and nothing else** ([ADR-976](DECISIONS.md) D-8). E0 is storage-shape and sync work, not pixel work, so recaptured baselines are the one thing it genuinely consumes; waiting for all seven FINALIZE phases would cost a quarter for safety E0 does not use. The rest of FINALIZE-PLAN runs concurrently |
 | **Multiplayer ⇄ the render path** | E0 adds a CRDT, a Realtime client and awareness. **None of it may reach a visitor bundle.** Ratcheted (§7.3) because it is the kind of regression that arrives via an innocent shared import, not via a decision |
 | **`cacheComponents`** | 🔴 **Not adoptable.** Zero `revalidateTag` calls, 1,094 `revalidatePath`, **50** `export const revalidate` (which `cacheComponents` rejects), **234** `force-dynamic` in `app/`. Adopting it means rewriting the invalidation strategy, not flipping a flag. Out of scope for this program |
 
@@ -653,7 +653,7 @@ building on the pre-contract block systems and doing it twice.
 
 ## 10. Decisions taken, and what is still open
 
-### 10.1 Settled by the owner — [ADR-974](DECISIONS.md)
+### 10.1 Settled by the owner — [ADR-976](DECISIONS.md)
 
 | # | Question | Decision | Where it lands |
 |---|---|---|---|

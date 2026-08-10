@@ -289,6 +289,8 @@ export default async function MainLayout({
     profileMenu,
     adminHeaderMenu,
     menuTimings,
+    myFrequencyRaw,
+    openTicketsRaw,
   ] = await Promise.all([
     applyViewAs(realRole),
     viewingAsVisitor(realRole),
@@ -334,6 +336,20 @@ export default async function MainLayout({
     getMenu('profile'),
     getMenu('admin_header'),
     getMenuSettings(),
+    // Two more speculative reads folded in for the same reason as getStaffMember and the operator
+    // trio above: both were the last things still awaited SERIALLY between this wave and the theme
+    // chain, so each one pushed the theme (and therefore first paint) back by a full round trip.
+    //
+    // getMyFrequency is React-cached and internally fail-safe (any error resolves to a profile-only
+    // menu). It is discarded on the previewing-down path, where the rail must not keep a steward's
+    // own Spaces.
+    getMyFrequency(profile.id, profile.handle),
+    // The janitor bug alert. Gated on the TRUE web role, which is already known here from the
+    // profile row -- NOT on pageWebRole, which is derived from this wave's own result. So this
+    // stays exactly as cheap as before for everyone who is not a janitor (it does not run at all),
+    // and a janitor stops paying a serial hop for it. Suppressed under a downgrade preview where
+    // it is consumed, matching pageWebRole.
+    isJanitor(asWebRole(profile.web_role)) ? openTicketCount().catch(() => 0) : Promise.resolve(0),
   ])
   // Left-rail order/visibility (NAV-SYSTEM-REDESIGN §8, phase 3): the legacy menu_config
   // overlay is retired. lib/menus (getMenu('left')) is the surviving DB override — when a
@@ -365,7 +381,7 @@ export default async function MainLayout({
   // fail-safe (any error resolves to a profile-only menu), so the rail can never block or throw on
   // it. Suppressed under a view-as downgrade / visitor preview for the same reason operatesSpaces
   // and staffRole are: a steward previewing as a member must not keep their own Spaces in the menu.
-  const myFrequency = previewingDown ? null : await getMyFrequency(profile.id, profile.handle)
+  const myFrequency = previewingDown ? null : myFrequencyRaw
 
   // Staff web_role axis (ADR-208) — gates the staff-only on-page "Page" settings group
   // (admin+, the EMBEDDED-ADMIN inline layer). Suppressed under a downgrade preview so a
@@ -380,7 +396,7 @@ export default async function MainLayout({
   // moment a support ticket is open, so a bug report never sits unseen. One cheap head-count, run
   // ONLY for a janitor (skipped for everyone else and under a view-as downgrade, since pageWebRole
   // is 'none' there) and fail-safe to 0 — the header chrome never blocks on the support table.
-  const openSupportTickets = isJanitor(pageWebRole) ? await openTicketCount().catch(() => 0) : 0
+  const openSupportTickets = isJanitor(pageWebRole) ? openTicketsRaw : 0
 
   // The operator-identity context (FRAMING ONLY — lib/context/operator-context.ts). Re-derived from
   // REAL authority (owned/admin Spaces + the staff axis) and re-validates the cookie, so the chip +

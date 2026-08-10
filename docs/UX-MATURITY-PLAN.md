@@ -243,7 +243,7 @@ shared `templates/article.ts` seed now.
 
 > ⚠️ **`EDITABLE_PAGES` is being pulled two ways — sequence matters.** 5c and 5d **grow** the
 > constant (root marketing routes, then eight articles). The editor program's **E3**
-> ([ADR-972](DECISIONS.md), [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md)) **replaces** it
+> ([ADR-974](DECISIONS.md), [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md)) **replaces** it
 > with per-Space page resolution — the scope `BUILD-LIST` W3 used to carry. **5c and 5d land
 > first; E3 lands after.** Run in the other order and each silently undoes the other: E3 removes
 > the constant these lifts are still adding rows to. Note also that `check:render-path` ships an

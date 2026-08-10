@@ -14,7 +14,7 @@ member app and without sacrificing speed.
 > standardized-block template ("editor = live"). Treat every "Puck" / `/studio/pages` mention below
 > as historical; the block model + draft/publish flow are current.
 >
-> **⚠️ Superseded as the forward plan, 2026-08-10 ([ADR-972](DECISIONS.md)).** This spec documents
+> **⚠️ Superseded as the forward plan, 2026-08-10 ([ADR-974](DECISIONS.md)).** This spec documents
 > the **marketing-page** editor as built, and stays accurate for that. It is **not** the plan for
 > what comes next: [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md) replaces the Puck-shaped
 > `ComponentConfig` in `lib/page-editor/types.ts` (marked "Shape is FROZEN") with one `defineBlock`

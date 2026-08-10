@@ -2,13 +2,13 @@
 
 > **The answer, first.** Four of the five are static AST guards in the `check-menu.mjs` mould; one
 > (`check:doc-safety`) cannot be, because it has to *run* the round trip. **All five land at E0**
-> ([ADR-975](DECISIONS.md) D-10) — four pass on today's tree, so each starts green and provable, and
+> ([ADR-977](DECISIONS.md) D-10) — four pass on today's tree, so each starts green and provable, and
 > the first time one goes red it is telling you something true.
 >
 > ⚠️ **Two of them, as first specced, would have failed on a clean tree.** Both are corrected here.
 >
 > Parent: [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md) §7 · Decisions:
-> [ADR-972](DECISIONS.md) · [ADR-975](DECISIONS.md). Models to copy: `scripts/check-menu.mjs`,
+> [ADR-974](DECISIONS.md) · [ADR-977](DECISIONS.md). Models to copy: `scripts/check-menu.mjs`,
 > `check-elements.mjs`, `check-render-path.mjs`, `check-adoption.mjs`.
 
 ---
@@ -147,7 +147,7 @@ none — it authorises what it cannot honour.
 **Arm A** (L1–L9): every `op` names a real primitive · args match the declared signature · schema and
 field references resolve **against the Zod shape, not a string list**, so a schema edit invalidates
 references automatically · the graph is acyclic and bounded · **zero free identifiers and no raw
-JavaScript anywhere** (ADR-973's cap, mechanically enforced) · output satisfies the output schema ·
+JavaScript anywhere** (ADR-975's cap, mechanically enforced) · output satisfies the output schema ·
 gates exist · **validation is total — no partial persist** · and the read side fails safe, so a
 function whose primitive vanished resolves to nothing and logs rather than throwing.
 
@@ -157,7 +157,7 @@ from `check-elements.mjs`) · the store's write path actually calls the validato
 
 🔴 **No `// loom-ok:` on arm A.** A per-row bypass on a write-time validator is a plugin platform
 with extra steps. The exit is a PR adding a primitive — Layer 1, engineers, CI-gated — which is
-exactly [ADR-973](DECISIONS.md)'s split.
+exactly [ADR-975](DECISIONS.md)'s split.
 
 ⚠️ **Arm B should land with E2**, when `LOOM_PRIMITIVES` first exists. **A manifest with no gate is
 how `library_usages` got dropped five days after creation.**
@@ -226,7 +226,7 @@ up — *change what you count and the number stops being comparable.*
 | `unbound-app-surfaces` | 157 | **157** ✅ | → 0 |
 | `block-types-total` | ~~~138~~ | **304** | → ~49 |
 | `blocks-without-totext` | all | **304** — zero `toText` in the repo | → 0 |
-| `raw-css-paths` | — | **0** | **must stay 0** ([ADR-974](DECISIONS.md) D-1) |
+| `raw-css-paths` | — | **0** | **must stay 0** ([ADR-976](DECISIONS.md) D-1) |
 
 Each is emitted by the guard that owns it (`--ratchet`), so the number and its assertions share one
 manifest and cannot drift apart. Seed all five in **one PR, one `--update` per key** — the harness

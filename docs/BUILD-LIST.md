@@ -14,7 +14,7 @@
 > the near-term order of operations for the redesign.
 
 > **Next program (2026-08-10): [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md)**
-> ([ADR-972](DECISIONS.md) · [ADR-973](DECISIONS.md)) — one block model authored once and rendered on
+> ([ADR-974](DECISIONS.md) · [ADR-975](DECISIONS.md)) — one block model authored once and rendered on
 > a member's Spotlight, a Space's profile, a Space's Site, and email. Phases **E0–E10** below. It
 > **absorbs `A2` and `W1–W5`**, which are re-pointed rather than deleted, and it **must land after**
 > UX-MATURITY Lift 5c/5d because both touch `EDITABLE_PAGES` in opposite directions.
@@ -27,7 +27,7 @@
 > ➡️ absorbed by a later phase (scope kept, do not schedule independently).
 > Spec detail still lives in the per-topic docs; this is the **order of operations**.
 
-## ✏️ The editor program — one block model, four surfaces — 2026-08-10 ([ADR-972](DECISIONS.md) · [ADR-973](DECISIONS.md), full spec [EDITOR-ARCHITECTURE.md](EDITOR-ARCHITECTURE.md))
+## ✏️ The editor program — one block model, four surfaces — 2026-08-10 ([ADR-974](DECISIONS.md) · [ADR-975](DECISIONS.md), full spec [EDITOR-ARCHITECTURE.md](EDITOR-ARCHITECTURE.md))
 
 **The shape.** A block is authored **once** — one Zod content schema, one React component — and its
 *display* varies by where it lands. Three axes, not three fidelities: **kind** (`member | space |
@@ -36,7 +36,7 @@ target** decides React tree vs HTML string. Email already proves the model
 (`lib/entity-blocks/registry.ts:14-17`); Site needs the same four things email got — legality, a
 column ceiling, a palette allowlist, a renderer.
 
-### The eight owner decisions ([ADR-974](DECISIONS.md))
+### The eight owner decisions ([ADR-976](DECISIONS.md))
 
 | # | Decision | Cost |
 |---|---|---|
@@ -49,7 +49,7 @@ column ceiling, a palette allowlist, a renderer.
 | **D-7** | **Subdomain on any paid plan; custom domain is the upgrade** | Enforces `custom_domain` at bind in E10 |
 | **D-8** | **E0 starts after FINALIZE-PLAN 1.2/1.3 only** | E0 is storage + sync work, not pixel work; the rest of FINALIZE-PLAN runs concurrently |
 
-### What measurement corrected ([ADR-975](DECISIONS.md))
+### What measurement corrected ([ADR-977](DECISIONS.md))
 
 Four audits ran against the tree and the production database. **Nine figures in the first draft were
 wrong, always in the same direction — undercounting fragmentation.** Treat the next unmeasured number
@@ -88,20 +88,20 @@ if a tenant's unmet need has somewhere to go.
 
 | # | Phase | Lift | Gate — what proves it worked |
 |---|---|:---:|---|
-| **E0** | **Foundations** ([breakdown: `EDITOR-E0.md`](EDITOR-E0.md) · [gates: `EDITOR-GATES.md`](EDITOR-GATES.md) — 18 ordered tasks, the production data volume, and the risks per item). Node-id keying (two text blocks on one page), unknown-block byte-for-byte preservation, immutable `page_versions` + publish as pointer swap, `app_instances` writers (**absorbs A2**), undo + `base_revision`, the `render_path` runtime flag per surface, surface-vocabulary reconciliation — **plus the CRDT** ([ADR-974](DECISIONS.md) D-2): Yjs schema ⇄ tree mapping, Realtime channel + authorization, awareness, debounced snapshot, per-client undo, reconnect | **XL** ⬆ | `check:doc-safety` green on a frozen corpus of **real stored documents**; CRDT ⇄ tree round-trip exact; two clients converge; **zero editor bytes on the public render**; every later phase reversible by flag |
+| **E0** | **Foundations** ([breakdown: `EDITOR-E0.md`](EDITOR-E0.md) · [gates: `EDITOR-GATES.md`](EDITOR-GATES.md) — 18 ordered tasks, the production data volume, and the risks per item). Node-id keying (two text blocks on one page), unknown-block byte-for-byte preservation, immutable `page_versions` + publish as pointer swap, `app_instances` writers (**absorbs A2**), undo + `base_revision`, the `render_path` runtime flag per surface, surface-vocabulary reconciliation — **plus the CRDT** ([ADR-976](DECISIONS.md) D-2): Yjs schema ⇄ tree mapping, Realtime channel + authorization, awareness, debounced snapshot, per-client undo, reconnect | **XL** ⬆ | `check:doc-safety` green on a frozen corpus of **real stored documents**; CRDT ⇄ tree round-trip exact; two clients converge; **zero editor bytes on the public render**; every later phase reversible by flag |
 | **E1** | **Block contract.** One registry, `defineBlock`, Zod `content`, up/down migrations, `reads: 'live' \| 'authored'`, the binding layer, `check:blocks` + `check:surface-binding` + `check:email-blocks` | **L** | Every registry row resolves to a renderer for **every declared surface**; old ⇄ new `renderToStaticMarkup` equivalence green per block per surface |
-| **E2** | 🔴 **Re-scope before a target is locked** ([ADR-975](DECISIONS.md) D-11; full data in [`EDITOR-BLOCK-INVENTORY.md`](EDITOR-BLOCK-INVENTORY.md)). **Loom projection + usage index**, *then* consolidate — the real count is **304 across five systems**, mapping to **~49**, held as a range. **Aggressive, real retirements** with migrations rewriting stored documents ([ADR-974](DECISIONS.md) D-6) | **XL** | "Which tenants use this block" is answerable **before** the first retirement — the index is a safety mechanism, not a report |
+| **E2** | 🔴 **Re-scope before a target is locked** ([ADR-977](DECISIONS.md) D-11; full data in [`EDITOR-BLOCK-INVENTORY.md`](EDITOR-BLOCK-INVENTORY.md)). **Loom projection + usage index**, *then* consolidate — the real count is **304 across five systems**, mapping to **~49**, held as a range. **Aggressive, real retirements** with migrations rewriting stored documents ([ADR-976](DECISIONS.md) D-6) | **XL** | "Which tenants use this block" is answerable **before** the first retirement — the index is a safety mechanism, not a report |
 | **E3** | **Axis work.** Widen `kinds[]` to `member` + member commerce adapters; density (`compact \| standard \| roomy`) as a declared property; Site's four things | **L** | Spotlight, in-app profile, Space profile and Site render off one registry with **zero visual diff** |
 | **E4** | **Canvas.** Same-origin iframe + single React tree via `createPortal`, `bubbleEvent` + coordinate translation, parent-document overlays, inline Tiptap **on `y-prosemirror`**, live cursors, device switcher at real viewports | **L** | Click-to-edit on every surface; RSC ⇄ canvas parity green (a mismatch here ships as a hydration error) |
 | **E5** | **Inspector + responsive.** Fields derived from schemas, sparse breakpoint overrides with provenance, container queries for component-internal layout, **and the touch-native inspector** (bottom sheet, no hover dependency, D-5) | **L** ⬆ | Real viewports, not simulated widths |
 | **E6** | **Direct manipulation.** Drag/drop, layer tree, keyboard model, spacing handles, presets-first inserter — **plus the touch gesture model** (long-press drag, no hover affordances, thumb-reachable targets, D-5) | **XL** ⬆ | The keyboard path is complete — no mouse-only operation — **and the full authoring path completes on a phone** |
-| **E7** | **Functional blocks.** The five transactional widgets made placeable, the form block, **member Stripe Connect** — onboarding, capability checks, platform fee, payouts, tax surface ([ADR-974](DECISIONS.md) D-3) | **XL** ⬆ | Placeable at every legal surface, gated by `kinds` not by hand; a member completes onboarding and takes a real payment |
+| **E7** | **Functional blocks.** The five transactional widgets made placeable, the form block, **member Stripe Connect** — onboarding, capability checks, platform fee, payouts, tax surface ([ADR-976](DECISIONS.md) D-3) | **XL** ⬆ | Placeable at every legal surface, gated by `kinds` not by hand; a member completes onboarding and takes a real payment |
 | **E8** | **Vera.** Streaming, per-Space retrieval, composer generalized past 15 blocks/one surface, structural + validator layers (**no CSS validator — D-1 deleted it**), bounded critic on screenshot + validator findings, ghosted diff review, **creation-time only** (D-4) | **L** | One prompt → a valid, reviewable, **single-undo** page |
-| **E9** | **Loom authoring.** Layer-2 config editing, per-surface settings console, the declarative composer, `check:loom-integrity` | **M–L** | An operator composes a function without a deploy — and cannot write JavaScript ([ADR-973](DECISIONS.md)) |
-| **E10** | **Sites.** Domains, host routing, per-tenant theming and SEO. **Subdomain on any paid plan, custom domain as the upgrade** ([ADR-974](DECISIONS.md) D-7). **Absorbs W1–W5** | **L** | A tenant serves a custom domain off the same registry; the token-request path exists (D-1) |
+| **E9** | **Loom authoring.** Layer-2 config editing, per-surface settings console, the declarative composer, `check:loom-integrity` | **M–L** | An operator composes a function without a deploy — and cannot write JavaScript ([ADR-975](DECISIONS.md)) |
+| **E10** | **Sites.** Domains, host routing, per-tenant theming and SEO. **Subdomain on any paid plan, custom domain as the upgrade** ([ADR-976](DECISIONS.md) D-7). **Absorbs W1–W5** | **L** | A tenant serves a custom domain off the same registry; the token-request path exists (D-1) |
 
 **Honest total: four XL, five L, one M–L — a multi-quarter program**, up from *eight L, one XL, two
-M–L* before the [ADR-974](DECISIONS.md) owner decisions. Three of those decisions cost schedule and
+M–L* before the [ADR-976](DECISIONS.md) owner decisions. Three of those decisions cost schedule and
 the table says where: multiplayer (D-2) takes **E0 L → XL**, full mobile editing (D-5) takes **E5
 M–L → L** and **E6 L → XL**, Stripe Connect (D-3) takes **E7 L → XL**. One refunds: no raw CSS (D-1)
 deletes a validator from E8.
@@ -160,12 +160,12 @@ shrinks. Remaining before the phases resume: run the pgTAP suite green in `db-te
 | # | Scope | Lift | Status |
 |---|---|---|---|
 | A1 | **Feature modules with enforced boundaries.** `modules/<app>/{components,server,db,index.ts}`, ESLint import-boundary rule (public API via barrel only); CRM · booking · email-design · QR first. Generalizes then retires `check:crm-parity`. | M | 📋 |
-| A2 | **Instance contract live.** Four layers per ADR-499: function (git) ◁ global config (`library_assets kind='app'`) ◁ instance (`app_instances`: space_id, surface, slot, zod-validated `config`) ◁ style (`library_styles` + `style_override`). Placement stays in `page_settings.layout` (block_id = instance id). → **Absorbed by E0** ([ADR-973](DECISIONS.md)); Layer 1 is amended there to allow declarative operator-authored functions. Build it in E0, not here. | M | ➡️ E0 |
+| A2 | **Instance contract live.** Four layers per ADR-499: function (git) ◁ global config (`library_assets kind='app'`) ◁ instance (`app_instances`: space_id, surface, slot, zod-validated `config`) ◁ style (`library_styles` + `style_override`). Placement stays in `page_settings.layout` (block_id = instance id). → **Absorbed by E0** ([ADR-975](DECISIONS.md)); Layer 1 is amended there to allow declarative operator-authored functions. Build it in E0, not here. | M | ➡️ E0 |
 | A3 | **Enablement inside RLS.** Per-tenant module enablement via `spaces.entitlements` + the function grid + Module Manager (all existing); module-table policies also check the enablement key so a disabled module's data is unreachable even via direct API. | M | 📋 |
 | A4 | **Flagship packaged apps.** CRM shipped as ONE module on `/admin/crm` (root instance), `/spaces/[slug]/crm` (tenant instance), and entity consoles — each reading only its tenant's rows under the new policies. Then booking, then email design. pgTAP enablement tests per app. | L | 📋 |
 | A5 | **Meters go live.** The decorative freemium meters (200 contacts · 300 sends/mo · 3 QR codes · 1 journey · 1 seat) enforced at the module boundary with upgrade prompts, behind the existing `gatesLive` switch. | M | 📋 |
 
-### White-label sites (ADR-509 architecture) — ➡️ **W1–W5 absorbed by E10** ([ADR-972](DECISIONS.md))
+### White-label sites (ADR-509 architecture) — ➡️ **W1–W5 absorbed by E10** ([ADR-974](DECISIONS.md))
 
 **W1–W5 are re-pointed, not deleted.** Their scope is real and unchanged; what changed is *when* and
 *on what*. Building the site renderer before the block contract (E1) and the axis work (E3) means
@@ -207,7 +207,7 @@ ADR-828 pill convention), **EntityCard** (32 uses vs 44 bespoke `*-card.tsx`), *
 hand-rolled rows — the worst), **PersonCard** (17 uses). **ProgressTrack was missing entirely**
 (~30 ad-hoc `rounded-full` + inline-width bars) — built with the DAWN §5 primitives (Counter,
 StreakMeter, Meter, GateNotice) in the 2026-08-03 design-sync round; adoption sweeps are the
-fabric phase. UnderlineTabs also lives under `components/admin/`, hurting discoverability — move
+fabric phase. UnderlineTabs ✅ now lives at `components/ui/underline-tabs.tsx` (moved 2026-08-10, ADR-971); it used to sit under `components/admin/`, hurting discoverability — move
 to `components/ui/` during the sweep.
 
 | # | Scope | Lift | Status |

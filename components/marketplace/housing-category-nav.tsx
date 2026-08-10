@@ -1,4 +1,4 @@
-import { UnderlineTabs, type UnderlineTabItem } from '@/components/admin/underline-tabs'
+import { UnderlineTabs, type UnderlineTabItem } from '@/components/ui/underline-tabs'
 import type { PropertyType } from '@/lib/listings/types'
 
 // The Housing category sub-menu (owner ask): a trimmed tab row —

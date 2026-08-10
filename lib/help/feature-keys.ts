@@ -72,6 +72,23 @@ export const FEATURE_KEYS: FeatureKey[] = [
   // ── Membership ──────────────────────────────────────────────────────────────
   { key: 'vault', label: 'The Vault (membership)', area: 'membership', routes: ['/vault', '/upgrade'], core: true },
 
+  // ── Added 2026-08-10 (ADR-970). These ten keys were already in use by PUBLISHED
+  //    articles and simply had no registry row, so `pnpm help:coverage` reported them as
+  //    "featureKeys not in the registry" — the article existed and the key it declared did
+  //    not resolve. Every route below was verified to exist before it was written down;
+  //    `location` and `resonance` have no route of their own and point at the surfaces that
+  //    actually own them (the Connections settings section). Names follow docs/NAMING.md.
+  { key: 'on-air', label: 'On Air sessions', area: 'content', routes: ['/on-air'], core: true },
+  { key: 'journeys', label: 'Journeys', area: 'content', routes: ['/journeys'], core: true },
+  { key: 'challenges', label: 'Season challenges', area: 'engagement', routes: ['/crew/challenges'], core: true },
+  { key: 'achievements', label: 'Achievements', area: 'engagement', routes: ['/crew'], core: true },
+  { key: 'leaderboard', label: 'Leaderboard', area: 'engagement', routes: ['/crew/leaderboard'], core: true },
+  { key: 'profile', label: 'Your profile', area: 'account', routes: ['/profile', '/settings/profile'], core: true },
+  { key: 'connections', label: 'Connections', area: 'comms', routes: ['/connections'], core: true },
+  { key: 'location', label: 'Your location', area: 'account', routes: ['/settings/connections'], core: true },
+  { key: 'resonance', label: 'Resonance matching', area: 'discovery', routes: ['/settings/connections'], core: true },
+  { key: 'billing', label: 'Plans and billing (Space)', area: 'operator', routes: ['/spaces'], core: false },
+
   // ── Safety ──────────────────────────────────────────────────────────────────
   { key: 'moderation', label: 'Reporting & moderation', area: 'safety', routes: ['/feed'], core: true },
   { key: 'blocking', label: 'Blocking', area: 'safety', routes: ['/settings'], core: true },

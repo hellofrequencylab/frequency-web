@@ -16120,6 +16120,13 @@ export type Database = {
         Args: { p_lat: number; p_lng: number; p_node_id: string }
         Returns: boolean
       }
+      node_capture_counts: {
+        Args: never
+        Returns: {
+          node_id: string
+          captures: number
+        }[]
+      }
       nodes_geo: {
         Args: never
         Returns: {

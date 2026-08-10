@@ -1,7 +1,7 @@
 import { Rocket } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
-import { UnderlineTabs } from '@/components/admin/underline-tabs'
+import { UnderlineTabs } from '@/components/ui/underline-tabs'
 import { listReadyForApproval } from '@/lib/beta/approvals'
 import { BetaTodaySection } from '@/components/admin/beta/today-section'
 import { BetaStatsSection } from '@/components/admin/beta/stats-section'
