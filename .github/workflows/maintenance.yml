@@ -27,6 +27,7 @@ concurrency:
 jobs:
   sweep:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6.0.9

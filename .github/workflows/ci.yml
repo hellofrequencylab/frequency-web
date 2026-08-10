@@ -1,7 +1,37 @@
-# Code-quality gate (BUILD-LIST P8): typecheck + lint + tests on every PR to main.
-# The Vercel deploy build is the only other check and it does NOT run the test suite —
-# this does. No app secrets needed: tsc, eslint, and vitest don't touch the Supabase /
+# Code-quality gate (BUILD-LIST P8): typecheck + lint + tests + the contract guards on every
+# PR to main. The Vercel deploy build is the only other check and it does NOT run the test
+# suite — this does. No app secrets needed: tsc, eslint, and vitest don't touch the Supabase /
 # Stripe env (only `next build` does, which Vercel owns).
+#
+# ── Shape, and why (2026-08-10, ADR-962) ──────────────────────────────────────────────────
+# This was ONE job of 23 sequential steps with no `if:`, which had two costs the owner felt as
+# "CI fails every time, twenty minutes in":
+#
+#   · FAIL-FAST HID THE REST. A red Typecheck skipped Lint, Test and all 20 guards. Four guard
+#     violations meant four pushes and four full runs to discover, one at a time. The 20 guards
+#     together take FOURTEEN SECONDS — measured, on this tree — so there was never a cost reason
+#     to stop at the first one.
+#   · THE GUARDS RAN LAST. Checkout (~3 min) + install + typecheck + lint (~2.5 min) + test
+#     (~1.5 min) fill the first ~18 minutes, so whichever guard trips, it trips at ~minute 20.
+#     That is why every failure looked like the same failure.
+#
+# So: three parallel jobs split along the COST axis, and the guards aggregated into one step
+# that runs them all and reports every failure at once. Not a per-guard matrix — that would pay
+# the ~4 min checkout+install prelude 20 times over to parallelise 14 seconds of work.
+#
+# `!cancelled()` rather than `always()`: `always()` is true even for a CANCELLED run, which
+# would make superseded runs finish their whole body and defeat `cancel-in-progress`.
+#
+# 🔴 OWNER ACTION, REQUIRED, AND THIS IS THE ONE THING THAT MAKES THE SPLIT SAFE ────────────
+# Branch protection on `main` requires the contexts `checks` and `analyze`. Splitting this
+# workflow means `checks` NO LONGER CONTAINS lint or the test suite — they are their own jobs
+# now, and an unprotected job cannot block a merge. Until `lint` and `test` are ADDED as
+# required contexts, a PR with failing tests is mergeable.
+#
+#   Settings → Branches → main → Require status checks → add `lint` and `test`.
+#
+# The job names above are deliberately exactly `lint` and `test` so they can be added verbatim.
+# `checks` keeps its name so the existing protection rule never lapses in the meantime.
 name: ci
 
 on:
@@ -15,75 +45,112 @@ on:
 permissions:
   contents: read
 
-# Newer pushes to the same ref supersede in-flight runs.
+# Newer pushes to the same ref supersede in-flight runs — but ONLY for pull requests. Keyed on
+# `github.ref` alone, a push to main collapses to `ci-refs/heads/main`, so merging two PRs in
+# quick succession cancelled the first merge commit's run and destroyed the post-merge signal
+# on that SHA permanently. A merge-commit run has no successor to supersede it; let it finish.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  checks:
+  lint:
     runs-on: ubuntu-latest
+    # Measured ~2.5 min. The ceiling is for a hung process, not a slow one: with no
+    # `timeout-minutes` at all, GitHub's default is SIX HOURS, and this repo has already
+    # burned a 93-minute run on a job nobody was watching.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6.0.9
+      - uses: actions/setup-node@v7
         with:
-          version: 10.33.0
+          node-version: '22'
+          cache: pnpm
+      # ESLint's own cache, keyed on CONTENT rather than the default metadata strategy: a
+      # fresh checkout resets every mtime, so a metadata-keyed cache never hits in CI.
+      - name: Restore ESLint cache
+        uses: actions/cache@v4
+        with:
+          path: .eslintcache
+          key: eslint-${{ hashFiles('eslint.config.mjs', 'pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: eslint-${{ hashFiles('eslint.config.mjs', 'pnpm-lock.yaml') }}-
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6.0.9
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: pnpm
       - name: Install
         run: pnpm install --frozen-lockfile
-      - name: Typecheck
-        run: pnpm exec tsc --noEmit
-      - name: Lint
-        run: pnpm lint
       - name: Test
         run: pnpm test
-      - name: Authz-contract check
-        run: pnpm check:authz
-      - name: Canon check (member copy)
-        run: pnpm check:canon
-      - name: Admin-menu contract check
-        run: pnpm check:menu
-      # A workflow can parse as valid YAML and still be REJECTED by GitHub, near-silently:
-      # the run gets named after the file path, fails instantly, and the gate it carried
-      # just vanishes from the PR. That happened on 2026-08-04 to this very directory.
-      - name: Workflow contract check (every step runs something, no duplicate keys)
-        run: pnpm check:workflows
-      - name: Elements contract check (one catalog + store, mounted via registry)
-        run: pnpm check:elements
-      - name: Token contract check (no hardcoded style)
-        run: pnpm check:tokens
 
-      - name: Phantom classes (a className that emits no CSS)
-        run: pnpm check:phantom
-      - name: Theme bridge (a token declared in :root that Tailwind silently overrules)
-        run: pnpm check:bridge
-      - name: Contrast gate (WCAG token pairs, all four render states — Lift 3a)
-        run: pnpm check:contrast
-      - name: Adoption ratchet (design debt may shrink, never grow — Lift 2a)
-        run: pnpm check:adoption
-      - name: Header contract check (no hand-rolled page <h1>)
-        run: pnpm check:headers
-      - name: SEO/sitemap coherence
-        run: pnpm check:seo
-      - name: Community Collective drift guard (ADR-811 rebuild)
-        run: pnpm check:collective
-      - name: CRM / comms parity guard (ADR-817 — shared comms modules, no per-surface forks)
-        run: pnpm check:crm-parity
-      - name: Vocabulary contract guard (ADR-879/887 — one source per category vocabulary)
-        run: pnpm check:vocab
-      - name: RLS coverage (static shift-left of the DB advisors)
-        run: pnpm check:rls
-      - name: Admin-client ratchet (ADR-923 — no new RLS-bypass adopters)
-        run: pnpm check:admin-client
-      - name: Migration filename contract (unique versions — a collision silently skips a migration)
-        run: pnpm check:migrations
-      - name: ADR ledger contract (unique numbers — a duplicate makes every citation ambiguous)
-        run: pnpm check:adr
-      - name: Docs link contract (every relative .md link in docs resolves)
-        run: pnpm check:docs-links
-      # NOTE: check:cron-freshness is intentionally NOT wired here — it is a runtime/ops
-      # SLO check (inspects live cron heartbeat state, env-dependent, advisory exit 0), not
-      # a deterministic code gate. It runs in the scheduled /maintenance sweep instead.
+  # Typecheck plus every contract guard: about a minute of real work in total.
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6.0.9
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: pnpm
+      # tsconfig sets `incremental: true`, so CI was paying to WRITE .tsbuildinfo every run
+      # and never reading one back.
+      - name: Restore tsbuildinfo
+        uses: actions/cache@v4
+        with:
+          path: tsconfig.tsbuildinfo
+          key: tsbuildinfo-${{ hashFiles('pnpm-lock.yaml', 'tsconfig.json') }}-${{ github.sha }}
+          restore-keys: tsbuildinfo-${{ hashFiles('pnpm-lock.yaml', 'tsconfig.json') }}-
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        run: pnpm exec tsc --noEmit
+
+      # One step, every guard, all failures reported. Each is grouped in the log so a red run
+      # reads as a list of what to fix rather than a single stop-the-world exit.
+      #
+      # NOTE: check:cron-freshness is intentionally absent — it is a runtime/ops SLO check
+      # (inspects live cron heartbeat state, env-dependent, advisory exit 0), not a
+      # deterministic code gate. It runs in the scheduled /maintenance sweep instead.
+      - name: Contract guards (all run; every failure reported)
+        if: ${{ !cancelled() }}
+        run: |
+          set -uo pipefail
+          failed=()
+          for guard in \
+            authz canon menu workflows elements tokens phantom bridge contrast adoption \
+            headers seo collective crm-parity vocab rls admin-client migrations adr docs-links
+          do
+            echo "::group::check:${guard}"
+            if pnpm "check:${guard}"; then
+              echo "::endgroup::"
+            else
+              echo "::endgroup::"
+              echo "::error title=check:${guard}::failed — see the check:${guard} group above"
+              failed+=("${guard}")
+            fi
+          done
+          if [ ${#failed[@]} -gt 0 ]; then
+            {
+              echo "### ✗ ${#failed[@]} contract guard(s) failed"
+              echo
+              for g in "${failed[@]}"; do echo "- \`pnpm check:${g}\`"; done
+              echo
+              echo "Run them locally with the commands above — each prints what to fix."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "### ✓ All 20 contract guards passed" >> "$GITHUB_STEP_SUMMARY"

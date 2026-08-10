@@ -32,8 +32,24 @@ on:
       # routes under app/ and could not see a change to any of them.
       - 'app/**'
       - 'components/**'
-      - 'lib/page-editor/**'
+      # 'lib/**', not just lib/page-editor: lib/layout/page-chrome.ts decides whether a route
+      # gets a rail, which changes the geometry of every capture on it.
+      - 'lib/**'
+      # 🔴 proxy.ts, and this one is not a hypothetical. test/e2e/surfaces.ts:176 PARSES
+      # proxy.ts at run time to read PROTECTED_PATHS, and uses it to decide which surfaces
+      # are anon-reachable at all. Editing that array adds or removes whole surfaces from
+      # both the visual and a11y matrices -- and proxy.ts is at the repo ROOT, so it matched
+      # none of the globs here. A PR that only walls or unwalls a route therefore got NO e2e
+      # run, and the next unrelated app/** PR inherited a wall of missing-baseline failures
+      # it did not cause.
+      - 'proxy.ts'
+      # A font or logo swap under public/ moves every one of the 72 baselines.
+      - 'public/**'
       - 'test/e2e/**'
+      # A Next, Tailwind or PostCSS bump moves pixels without touching a single component.
+      - 'next.config.ts'
+      - 'postcss.config.mjs'
+      - 'pnpm-lock.yaml'
       - 'lighthouserc.json'
       - 'playwright.config.ts'
       - '.github/workflows/e2e.yml'
@@ -57,6 +73,7 @@ jobs:
   #   · preview resolved             → smoke + @a11y, then the @visual compare
   pr-compare:
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     # Narrower than the workflow default (which is only `contents: write` for the
     # maintainer-triggered baseline commit). This job never writes.
     permissions:
@@ -296,6 +313,7 @@ jobs:
   # means nothing was tested, said out loud in a notice, never a red X.
   lighthouse:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       deployments: read

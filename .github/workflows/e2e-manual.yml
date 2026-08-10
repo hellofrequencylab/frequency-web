@@ -89,6 +89,7 @@ jobs:
   smoke:
     # Manual path only — the PR path runs its own smoke step against the resolved preview.
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -149,6 +150,7 @@ jobs:
   update-baselines:
     if: ${{ inputs.update_baselines }}
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -233,6 +235,7 @@ jobs:
   update-a11y:
     if: ${{ inputs.update_a11y }}
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -314,6 +317,7 @@ jobs:
   visual:
     if: ${{ inputs.run_visual }}
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6

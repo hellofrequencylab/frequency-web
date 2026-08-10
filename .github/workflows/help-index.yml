@@ -12,9 +12,17 @@ on:
 permissions:
   contents: read
 
+# SERIALISE, do not race. Two merges to main re-index `help_chunks` concurrently, writing
+# the same rows from two runners. A full re-index is idempotent, so newest-wins is correct —
+# but only one may be in flight at a time. Not keyed on ref: every run targets one table.
+concurrency:
+  group: help-index
+  cancel-in-progress: true
+
 jobs:
   index:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
