@@ -26,7 +26,7 @@ import { sendInviteEmail } from '@/lib/email'
 import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { addSpaceMember, getSpaceMembership, isSpaceRole, type SpaceRole } from '@/lib/spaces/membership'
+import { addSpaceMember, getSpaceMembership, isSpaceRole, listSpaceMembers, type SpaceRole } from '@/lib/spaces/membership'
 import { checkSeatForOperatorInvite, operatorRoleConsumesSeat } from '@/lib/spaces/seats'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import {
@@ -421,4 +421,107 @@ export async function acceptInvite(
   }
 
   return ok({ spaceSlug: space.slug })
+}
+
+/* ── Invite by @handle ────────────────────────────────────────────────────────
+ *
+ * Inviting by EMAIL is backwards when the person is already on Frequency: the owner has to know an
+ * address the product never shows them, and with email delivery not yet shipped they then have to
+ * hand over the accept link by some other channel anyway. This pair adds the missing path — find
+ * the teammate, invite the teammate — without adding a second invite mechanism.
+ *
+ * 🔴 THE EMAIL NEVER CROSSES TO THE CLIENT. The obvious implementation is "search returns the
+ * profile's email, the form posts it to createInvite". That would turn a team-invite box into an
+ * email-address lookup for any Space owner, on any member, by handle — a privacy leak wearing a
+ * feature's clothes. So the search returns PUBLIC identity only, and `inviteByProfile` resolves the
+ * address server-side from the profile id it was given.
+ *
+ * `inviteByProfile` deliberately DELEGATES to createInvite rather than duplicating it: the seat
+ * check, the token, the 14-day expiry, the refresh-an-existing-invite branch and the email enqueue
+ * are all one implementation. This is a new way to reach the same door, not a second door.
+ */
+
+/** What the picker shows: public identity, and nothing else. No email, ever. */
+export interface TeamCandidate {
+  id: string
+  displayName: string | null
+  handle: string | null
+  avatarUrl: string | null
+}
+
+/**
+ * Members the caller could invite to this Space, matched on display name or @handle.
+ *
+ * Gated on canManageMembers and FAIL-SAFE: a caller who cannot manage the team gets `[]`, not an
+ * error, so this never doubles as a probe for whether a Space exists.
+ *
+ * SEC-10 (mirrors searchMembersToLink in app/(main)/connections/actions.ts): each column is matched
+ * with a parameterized `.ilike()` and the results merged, rather than interpolating the term into a
+ * `.or()` filter string — PostgREST parses that string for its own operators and delimiters, so a
+ * term containing them would change the query's meaning. Only the wildcards need escaping here.
+ */
+export async function searchTeamCandidates(spaceId: string, q: string): Promise<TeamCandidate[]> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return []
+  const term = q.trim().replace(/^@/, '')
+  if (term.length < 2) return []
+
+  const space = await getSpaceById(spaceId)
+  if (!space) return []
+  const caps = await getSpaceCapabilities(space, profileId)
+  if (!caps.canManageMembers) return []
+
+  const admin = createAdminClient()
+  const pattern = `%${term.replace(/[%_\\]/g, (c) => `\\${c}`)}%`
+  const base = () =>
+    admin
+      .from('profiles')
+      .select('id, display_name, handle, avatar_url')
+      .eq('is_active', true)
+      .eq('is_demo', false)
+      .limit(8)
+  const [byName, byHandle] = await Promise.all([
+    base().ilike('display_name', pattern),
+    base().ilike('handle', pattern),
+  ])
+
+  // Everyone already seated, plus the owner, so the picker never offers someone who is on the team.
+  const seated = new Set<string>()
+  if (space.ownerProfileId) seated.add(space.ownerProfileId)
+  for (const m of await listSpaceMembers(spaceId)) seated.add(m.profileId)
+
+  type Row = { id: string; display_name: string | null; handle: string | null; avatar_url: string | null }
+  const merged = new Map<string, TeamCandidate>()
+  for (const p of [...((byName.data ?? []) as Row[]), ...((byHandle.data ?? []) as Row[])]) {
+    if (seated.has(p.id) || merged.has(p.id)) continue
+    merged.set(p.id, {
+      id: p.id,
+      displayName: p.display_name,
+      handle: p.handle,
+      avatarUrl: p.avatar_url,
+    })
+  }
+  return [...merged.values()].slice(0, 8)
+}
+
+/**
+ * Invite an existing member, identified by profile id, at a role.
+ *
+ * Resolves the account email server-side (lib/profiles/account-email.ts — the address lives in
+ * `auth.users`, never in `public.profiles`) and hands it to createInvite, which remains the single
+ * authority for permission, seats, token and expiry. The caller never learns the address, and a
+ * caller who cannot manage the team is refused by createInvite exactly as it refuses an email invite.
+ */
+export async function inviteByProfile(
+  spaceId: string,
+  profileId: string,
+  role: SpaceRole,
+): Promise<ActionResult<CreatedInvite>> {
+  if (!profileId) return fail('Pick a teammate to invite.')
+  const { profileAccountEmail } = await import('@/lib/profiles/account-email')
+  const email = await profileAccountEmail(profileId)
+  // Deliberately vague: whether a given profile has a usable address is not something a Space owner
+  // needs to learn from a failed invite.
+  if (!email) return fail('That member cannot be invited by handle yet. Invite them by email instead.')
+  return createInvite(spaceId, email, role)
 }

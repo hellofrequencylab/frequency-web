@@ -459,3 +459,52 @@ describe('acceptInvite — seats the authenticated invitee, fail-closed otherwis
     expect(db.invites.find((r) => r.id === 'seat-fails')?.status).toBe('pending')
   })
 })
+
+// ── Invite by @handle ────────────────────────────────────────────────────────
+// The property that matters most here is a NEGATIVE one: no path returns an email address to the
+// caller. Everything else is convenience; that one is the difference between a team picker and an
+// email-lookup oracle for any Space owner against any member.
+
+describe('TeamCandidate — the shape is the privacy boundary', () => {
+  it('carries public identity only, and no email-ish field', async () => {
+    const src = await import('node:fs').then((fs) =>
+      fs.readFileSync('lib/spaces/invites.ts', 'utf8'),
+    )
+    const iface = /export interface TeamCandidate \{([\s\S]*?)\}/.exec(src)?.[1] ?? ''
+    expect(iface, 'TeamCandidate interface not found').not.toBe('')
+    expect(iface).toMatch(/\bid\b/)
+    expect(iface).toMatch(/\bhandle\b/)
+    // The whole design rests on this: if a future edit adds an address to the DTO, the client gets
+    // it, and searching a handle becomes a way to read a stranger's email.
+    expect(iface.toLowerCase()).not.toMatch(/email/)
+  })
+
+  it('the search selects no email column from profiles', async () => {
+    const src = await import('node:fs').then((fs) =>
+      fs.readFileSync('lib/spaces/invites.ts', 'utf8'),
+    )
+    const fn = /export async function searchTeamCandidates[\s\S]*?\n\}/.exec(src)?.[0] ?? ''
+    expect(fn, 'searchTeamCandidates not found').not.toBe('')
+    expect(fn).toMatch(/\.select\('id, display_name, handle, avatar_url'\)/)
+    expect(fn.toLowerCase()).not.toMatch(/email/)
+    // SEC-10: parameterized per-column ilike, never an interpolated .or() filter string.
+    expect(fn).toMatch(/\.ilike\(/)
+    expect(fn).not.toMatch(/\.or\(/)
+    // A term the caller controls must be escaped before it becomes a LIKE pattern.
+    expect(fn).toMatch(/replace\(\/\[%_\\\\\]\/g/)
+  })
+
+  it('inviteByProfile delegates to createInvite rather than re-implementing the gate', async () => {
+    const src = await import('node:fs').then((fs) =>
+      fs.readFileSync('lib/spaces/invites.ts', 'utf8'),
+    )
+    const fn = /export async function inviteByProfile[\s\S]*?\n\}/.exec(src)?.[0] ?? ''
+    expect(fn, 'inviteByProfile not found').not.toBe('')
+    // One authority for permission, seats, token and expiry. A second implementation is how the
+    // two drift and one of them stops checking seats.
+    expect(fn).toMatch(/return createInvite\(spaceId, email, role\)/)
+    expect(fn).toMatch(/profileAccountEmail/)
+    // It must not hand the resolved address back to the caller in any branch.
+    expect(fn).not.toMatch(/ok\(\s*\{[^}]*email/)
+  })
+})

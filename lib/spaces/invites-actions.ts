@@ -7,7 +7,7 @@
 // (no directive: pure helpers + IO + the action implementations + types, all unit-testable). This
 // thin file is the seam the CLIENT surfaces import, so the mutations cross the network boundary as
 // proper Server Actions:
-//   invite-form.tsx -> createInvite, revokeInvite
+//   invite-form.tsx -> createInvite, revokeInvite, searchTeamCandidates, inviteByProfile
 //
 // SERVER components (the members settings page, the accept route) import the implementations
 // (createInvite / listInvites / revokeInvite / acceptInvite) directly from lib/spaces/invites.ts:
@@ -17,7 +17,10 @@
 import {
   createInvite as createInviteImpl,
   revokeInvite as revokeInviteImpl,
+  searchTeamCandidates as searchTeamCandidatesImpl,
+  inviteByProfile as inviteByProfileImpl,
   type CreatedInvite,
+  type TeamCandidate,
 } from '@/lib/spaces/invites'
 import { type SpaceRole } from '@/lib/spaces/membership'
 import { type ActionResult } from '@/lib/action-result'
@@ -35,4 +38,21 @@ export async function createInvite(
 /** Revoke a pending invite. Gated on canManageMembers for the invite's Space in the implementation. */
 export async function revokeInvite(inviteId: string): Promise<ActionResult> {
   return revokeInviteImpl(inviteId)
+}
+
+/** Members matching a name or @handle who are not already on this team. Gated on canManageMembers
+ *  in the implementation, and FAIL-SAFE (`[]`) rather than throwing, so it never doubles as a probe.
+ *  Returns PUBLIC identity only — never an email address. */
+export async function searchTeamCandidates(spaceId: string, q: string): Promise<TeamCandidate[]> {
+  return searchTeamCandidatesImpl(spaceId, q)
+}
+
+/** Invite an existing member by profile id at a role. The implementation resolves their account
+ *  email server-side and delegates to createInvite, so the caller never learns the address. */
+export async function inviteByProfile(
+  spaceId: string,
+  profileId: string,
+  role: SpaceRole,
+): Promise<ActionResult<CreatedInvite>> {
+  return inviteByProfileImpl(spaceId, profileId, role)
 }
