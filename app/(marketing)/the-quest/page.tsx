@@ -42,7 +42,7 @@ export const revalidate = 3600
 export const metadata: Metadata = {
   title: 'How does The Quest work? Zaps, Gems, Journeys',
   description:
-    'The Quest is a light game where showing up counts. Earn Zaps in person and Gems online, finish three Journeys each season, and climb the ranks by being there.',
+    'The Quest is a light game where showing up counts. Earn Zaps in person and Gems online, finish three Journeys a season, and climb the ranks.',
   alternates: { canonical: '/the-quest' },
   openGraph: {
     title: 'The Quest · Frequency',

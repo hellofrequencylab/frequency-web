@@ -258,6 +258,59 @@ export function layoutChain(file, exists = existsSync) {
 // ── Scans ───────────────────────────────────────────────────────────────────
 
 /**
+ * Walk `src` and yield every `<key>: '<string literal>'` that is a property of a METADATA object
+ * literal — skipping two things that look identical to a regex and are not the same at all:
+ *
+ *   1. `openGraph:` / `twitter:` subobjects. Those fields get no title template and are not
+ *      truncated the way a SERP description is, so several pages here deliberately differ there.
+ *   2. Any object that is a CALL ARGUMENT — `articleSchema({ title, description })`,
+ *      `faqSchema([...])`, and friends. That is JSON-LD, not page metadata: nothing truncates a
+ *      structured-data description at 160 characters, and flagging one is a false positive on
+ *      correct code. `/the-quest` has exactly this shape, and the first version of Scan E failed
+ *      it — caught before it shipped, but only because the fixture existed.
+ *
+ * Yields `{ key, value, line }`.
+ *
+ * `allowInterpolated` is why this takes an option instead of hardcoding one behaviour, and the
+ * distinction is not cosmetic. A template literal containing `${` is:
+ *   · UNMEASURABLE for LENGTH — the interpolated value is unknown at read time, so Scan E skips it
+ *     rather than guess. (Default.)
+ *   · fully MEASURABLE for a hardcoded BRAND SUFFIX — `` `${name} · Frequency` `` is the Spotlight
+ *     bug verbatim: the name is computed, the suffix is not. Scan D must see it.
+ * Folding both scans onto one walker without this flag silently disarmed Scan D, which is exactly
+ * what its own unit test caught.
+ */
+export function metadataStrings(src, keys, { allowInterpolated = false } = {}) {
+  const code = stripComments(src)
+  const out = []
+  /** One entry per open brace: was it a call argument, and is it a social subobject? */
+  const stack = []
+  const wanted = new Set(keys)
+  for (let i = 0; i < code.length; i++) {
+    const ch = code[i]
+    if (ch === '{') {
+      const before = code.slice(Math.max(0, i - 40), i)
+      stack.push({
+        social: /\b(?:openGraph|twitter)\s*:\s*$/.test(before),
+        call: /\(\s*$/.test(before),
+      })
+      continue
+    }
+    if (ch === '}') { stack.pop(); continue }
+    if (stack.some((f) => f.social || f.call)) continue
+    const rest = code.slice(i)
+    const key = [...wanted].find((k) => rest.startsWith(`${k}:`))
+    if (!key) continue
+    const m = new RegExp(`^${key}:\\s*(['"\`])((?:\\\\.|(?!\\1)[^\\\\])*)\\1`).exec(rest)
+    if (!m) { i += key.length; continue }
+    if (!allowInterpolated && m[1] === '`' && m[2].includes('${')) { i += m[0].length - 1; continue }
+    out.push({ key, value: m[2], line: code.slice(0, i).split('\n').length })
+    i += m[0].length - 1
+  }
+  return out
+}
+
+/**
  * SCAN D — DOUBLE-BRANDED TITLE.
  *
  * `app/layout.tsx` sets `title.template: '%s · Frequency'`, so Next.js appends the site name to
@@ -274,39 +327,33 @@ export function layoutChain(file, exists = existsSync) {
  * Returns the offending `title:` lines. Exported for the unit tests.
  */
 export function doubleBrandedTitles(src, siteName) {
-  const code = stripComments(src)
-  const out = []
-  // Depth at which an openGraph:/twitter: object opened, or null when we are outside one.
-  let depth = 0
-  let socialDepth = null
-  for (let i = 0; i < code.length; i++) {
-    const ch = code[i]
-    if (ch === '{') {
-      const before = code.slice(Math.max(0, i - 40), i)
-      if (socialDepth === null && /\b(?:openGraph|twitter)\s*:\s*$/.test(before)) socialDepth = depth
-      depth++
-      continue
-    }
-    if (ch === '}') {
-      depth--
-      if (socialDepth !== null && depth <= socialDepth) socialDepth = null
-      continue
-    }
-    if (socialDepth !== null) continue
-    if (!code.startsWith('title:', i)) continue
-    // Only a string we can read: a quoted literal or a template literal. A template counts,
-    // because `${name} · Frequency` is the Spotlight bug verbatim — the name is computed, the
-    // suffix is not. A call expression (`buildTitle(name)`) is not decidable from source, and
-    // guessing is worse than staying quiet: the point of this file is checks that mean what
-    // they say.
-    const m = /^title:\s*(['"`])((?:\\.|(?!\1)[^\\])*)\1/.exec(code.slice(i))
-    if (!m) { i += 5; continue }
-    if (m[2].includes(`· ${siteName}`) || m[2].includes(`- ${siteName}`)) {
-      out.push({ line: code.slice(0, i).split('\n').length, title: m[2] })
-    }
-    i += m[0].length - 1
-  }
-  return out
+  return metadataStrings(src, ['title'], { allowInterpolated: true })
+    .filter((t) => t.value.includes(`\u00b7 ${siteName}`) || t.value.includes(`- ${siteName}`))
+    .map((t) => ({ line: t.line, title: t.value }))
+}
+
+/**
+ * SCAN E — OVER-LENGTH META DESCRIPTION.
+ *
+ * Google renders roughly 155-160 characters of a description and truncates the rest mid-word, so
+ * the part of the sentence that does the persuading is the part that disappears. Five marketing
+ * pages were over on 2026-08-10, `/the-lab` by 45 characters — its whole third sentence
+ * ("Nothing is bookable yet") never reached a searcher.
+ *
+ * Same brace-depth walk as Scan D, and for the same reason: `openGraph.description` and
+ * `twitter.description` are NOT truncated the same way and are deliberately longer on several
+ * pages here. Only the top-level `description` is measured.
+ *
+ * The cap is 160, not 155: 155 is where truncation STARTS to bite and 160 is where it is certain,
+ * so a gate at 155 would fail copy that renders fine. Failing correct copy is how a gate earns an
+ * allowlist (ADR-966).
+ */
+export const DESCRIPTION_MAX = 160
+
+export function overLongDescriptions(src, max = DESCRIPTION_MAX) {
+  return metadataStrings(src, ['description'])
+    .filter((d) => d.value.length > max)
+    .map((d) => ({ line: d.line, length: d.value.length, text: d.value }))
 }
 
 function run() {
@@ -432,6 +479,30 @@ function run() {
     }
   }
 
+  // ── Scan E: a description long enough that Google truncates the end of it. ──
+  //
+  // Scoped to pages a crawler can actually REACH and that are not noindexed, reusing the same
+  // reachability inputs Scan C computes above. The reason is the gate's own argument: a long
+  // description is a defect because a SERP truncates it -- and a page no SERP will ever show has
+  // no such defect. `/channels` is in proxy.ts's protected prefixes and carries a 269-char
+  // description that doubles as its on-page header copy; flagging that would be demanding a copy
+  // rewrite to fix a symptom that cannot occur.
+  for (const file of allFiles.filter((f) => f.endsWith('page.tsx'))) {
+    const src = readFile(file) ?? ''
+    const route = normalize(routeForFile(file))
+    if (isDynamic(route)) continue
+    if (isPrivateRoute(route, privatePrefixes) || PAGE_GUARD.test(stripComments(src))) continue
+    const directive =
+      robotsDirective(src) ?? layoutChain(file).map((l) => robotsDirective(readFileSync(l, 'utf8'))).filter(Boolean).pop() ?? null
+    if (directive?.index === false) continue
+    for (const hit of overLongDescriptions(src)) {
+      failures.push({
+        kind: 'LONG META DESCRIPTION',
+        detail: `${relative('.', file)}:${hit.line} → description is ${hit.length} chars; Google truncates around ${DESCRIPTION_MAX}, so everything past that never reaches a searcher. Trim to a clean sentence boundary. ("${hit.text.slice(0, 70)}…")`,
+      })
+    }
+  }
+
   return { failures, warnings, coverageChecked, resolutionChecked, declarationChecked, noindexed, skippedPrivate, titlesChecked }
 }
 
@@ -442,7 +513,7 @@ function main() {
     `SEO/sitemap coherence — checked ${coverageChecked.length} forward-facing page(s) for coverage, ` +
       `${resolutionChecked.length} literal sitemap route(s) for resolution, and ${declarationChecked.length} ` +
       `crawler-reachable page(s) outside (marketing) for a declaration (${skippedPrivate} correctly-private page(s) skipped), ` +
-      `and ${titlesChecked} page title(s) for double-branding.`,
+      `${titlesChecked} page title(s) for double-branding, and every meta description for length.`,
   )
   if (noindexed.length > 0) {
     console.log(`  ${noindexed.length} reachable page(s) consciously kept OUT of the index:`)
@@ -467,7 +538,8 @@ function main() {
     '✓ SEO/sitemap coherence — every static marketing page is advertised or consciously excluded,\n' +
       '  every literal sitemap route resolves to a real page, and every crawler-reachable page\n' +
       '  outside (marketing) declares its intent (advertised, or noindex), and no page title\n' +
-      '  re-appends the site name the root title.template already adds.',
+      '  re-appends the site name the root title.template already adds, and no description runs\n' +
+      `  past the ~${DESCRIPTION_MAX} characters a search result shows.`,
   )
 }
 

@@ -19046,3 +19046,50 @@ is nothing behavioural to test beyond that. ✅ The three docs that pointed at t
 repo rule that a doc contradicting the code is fixed where it is found. ⚠️ Nothing enforces that a
 shared primitive lives in `components/ui/` — this move was found by reading a plan, not by a gate,
 and the next one will be too.
+
+---
+
+## ADR-972 — A truncated description, and a gate that was wrong twice before it was right (2026-08-10)
+
+**Decision.** Five marketing descriptions rewritten inside the ~155 character SERP window, and
+`check:seo` gains **Scan E**, which fails any top-level `description` over **160** on a page a
+crawler can actually reach.
+
+`/the-lab` **200→154** · `/spaces` **186→139** · `/beta` **158→148** · `/the-community` **158→142**
+· `/the-quest` **158→140**, plus `/discover/journeys` **163→149**, which no hand pass had recorded
+and only the gate found.
+
+**Why 160 and not 155.** 155 is where truncation *starts* to bite and 160 is where it is certain. A
+gate at 155 would fail copy that renders fine, and failing correct copy is how a gate earns an
+allowlist and then an early grave (ADR-966). The plan's own figure was 155; the gate deliberately
+sits above it.
+
+**The part worth keeping is how the gate was wrong.** It was built, run, and corrected twice before
+it was committed, and both errors were the same species: *a regex that matches the right characters
+in the wrong context.*
+
+1. **It flagged JSON-LD.** `/the-quest` builds `articleSchema({ description: … })` at 202
+   characters. That is structured data. Nothing truncates it at 160, and demanding a rewrite would
+   have been a false failure on correct code. The walker now skips any object literal that is a
+   **call argument**, which distinguishes `articleSchema({` from `metadata = {` structurally rather
+   than by name.
+2. **It flagged a page no crawler can reach.** `/channels` carries a 269-character description —
+   and `/channels` is in `proxy.ts`'s protected prefixes. A description that no search result can
+   show cannot be truncated by one. Worse, that string doubles as the page's on-page header copy,
+   so the "fix" would have been a copy rewrite to cure a symptom that cannot occur. Scan E now
+   reuses the reachability inputs Scan C already computes (`isPrivateRoute`, `PAGE_GUARD`, the
+   robots directive through the layout chain).
+
+**And then the refactor silently disarmed Scan D.** Folding Scans D and E onto one walker looked
+like pure cleanup. It was not: a template literal containing `${` must be **skipped** for length
+(the value is unknowable) and **read** for a hardcoded brand suffix, because
+`` `${name} · Frequency` `` is the ADR-968 Spotlight bug verbatim. One flag, opposite answers. The
+unit test written for that bug is what caught it — which is the argument for writing the test
+against the *defect* rather than against the implementation.
+
+**Consequences.** ✅ 31 tests on `check-seo.mjs`, including both directions of the interpolation
+split and the call-argument exclusion. ✅ Every rewrite passes the CONTENT-VOICE §10 checklist: no
+em dashes, no narrated feelings, proper nouns carrying the weight. ⚠️ Scan E reads the **coded
+fallback**. `pageContentMetadata` lets an operator override the description from the database, and
+no static gate can see what they typed. ⚠️ It cannot measure an interpolated description at all, by
+design.

@@ -19,7 +19,7 @@ import { SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 export const metadata: Metadata = {
   title: 'Journeys',
   description:
-    'Browse Journeys on Frequency: a Journey is part of The Quest, an ordered set of small daily Practices you run for a season. Start solo, or run it with your Circle.',
+    'Browse Journeys on Frequency. A Journey is part of The Quest: an ordered set of small daily Practices you run for a season, solo or with your Circle.',
   alternates: { canonical: '/discover/journeys' },
   openGraph: {
     title: `Journeys · ${SITE_NAME}`,
