@@ -154,7 +154,7 @@ jobs:
           set -uo pipefail
           failed=()
           for guard in \
-            authz canon menu workflows elements labels render-path help tokens phantom bridge contrast adoption \
+            authz canon menu gate-parity workflows elements labels render-path help tokens phantom bridge contrast adoption \
             headers seo collective crm-parity vocab rls grants admin-client migrations adr docs-links
           do
             echo "::group::check:${guard}"
@@ -176,4 +176,4 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          echo "### ✓ All 21 contract guards passed" >> "$GITHUB_STEP_SUMMARY"
+          echo "### ✓ All 25 contract guards passed" >> "$GITHUB_STEP_SUMMARY"
