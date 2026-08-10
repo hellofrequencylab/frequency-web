@@ -512,7 +512,14 @@ to catch, and that suite is red. Guards are therefore not a finishing step; they
 
 ### 7.1 The prerequisite
 
-🔴 **[`FINALIZE-PLAN.md`](FINALIZE-PLAN.md) Phase 1 must complete before E1.** All 72 visual
+⏳ **[`FINALIZE-PLAN.md`](FINALIZE-PLAN.md) Phase 1 — IN FLIGHT (PR #2071).** 62 of 72 baselines are
+recaptured. ⚠️ **It does not clear §8.1 item 2**: none of E3's four target surfaces gains a baseline,
+so "zero visual diff" is still an unmeasurable gate. And it found the **a11y ratchet is stale for the
+same reason but takes the opposite remedy** — 28 of its 32 failures are real rises (all 16 dark-mode
+contrast checks across both skins), and recapturing a *ratchet* deletes the finding rather than
+restoring the truth. Original text follows.
+
+🔴 **Phase 1 must complete before E1.** All 72 visual
 baselines were written across **five commits on 2026-08-04/05** — 8 of them on 08-04 — and are now many
 rendering commits stale (a sixth commit deleted the four app-room baselines on 08-10);
 `pr-compare` has been red on every run; `app-room` has no baselines; the a11y ratchet holds 40
