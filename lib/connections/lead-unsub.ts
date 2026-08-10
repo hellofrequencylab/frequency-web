@@ -5,16 +5,9 @@
 // DB lookup to *issue* the link. Same secret + shape as lib/unsubscribe-tokens.
 
 import { createHmac, timingSafeEqual } from 'crypto'
+import { signingSecret } from '@/lib/signing-secret'
 
-function getSecret(): string {
-  const explicit = process.env.UNSUBSCRIBE_SECRET
-  if (explicit) return explicit
-  const fallback = process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 32)
-  if (!fallback) {
-    throw new Error('[lead-unsub] No UNSUBSCRIBE_SECRET and no SUPABASE_SERVICE_ROLE_KEY — cannot sign.')
-  }
-  return fallback
-}
+const getSecret = (): string => signingSecret('lead-unsub', ['UNSUBSCRIBE_SECRET'])
 
 export function makeLeadUnsubToken(contactId: string): string {
   return createHmac('sha256', getSecret()).update(`lead:${contactId}`).digest('hex').slice(0, 32)

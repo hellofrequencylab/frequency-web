@@ -10,6 +10,7 @@
 // two stateless-token systems share one security model. PURE + server-only (reads a secret); unit-tested.
 
 import { createHmac, timingSafeEqual } from 'crypto'
+import { signingSecret } from '@/lib/signing-secret'
 
 /** The inbound reply subdomain. Its MX points at the provider's inbound; a catch-all route posts to the
  *  inbound-email webhook. Kept out of the apex so bulk/human mail identities stay separate. */
@@ -18,20 +19,7 @@ export const REPLY_DOMAIN = process.env.CONVERSATION_REPLY_DOMAIN ?? 'reply.freq
 // In production: set CONVERSATION_TOKEN_SECRET to a 32+ byte random string. In dev: fall back to the
 // service-role key prefix so tests work (locally-issued addresses won't validate against prod-issued ones).
 // Fail closed in production rather than silently coupling every reply address to the service-role key.
-function getSecret(): string {
-  const explicit = process.env.CONVERSATION_TOKEN_SECRET
-  if (explicit) return explicit
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error(
-      '[reply-address] CONVERSATION_TOKEN_SECRET must be set in production. Refusing to sign with the service-role key.',
-    )
-  }
-  const fallback = process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 32)
-  if (!fallback) {
-    throw new Error('[reply-address] No CONVERSATION_TOKEN_SECRET and no SUPABASE_SERVICE_ROLE_KEY — cannot sign.')
-  }
-  return fallback
-}
+const getSecret = (): string => signingSecret('reply-address', ['CONVERSATION_TOKEN_SECRET'])
 
 /** Who a reply address belongs to. `member` = the counterpart's reply-to (routes INBOUND onto the thread) —
  *  the default, and the ONLY role most of the system uses. `house` = the operator/leader's reply-to on a
