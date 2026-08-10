@@ -139,7 +139,7 @@ line count and unblocks the largest phase in the plan.
 | ~~**CounterRow**~~ | ~~none~~ | **Already built.** Exported + tested in `components/ui/counter.tsx`, 3 call sites. The census row was wrong, not the code |
 | **Avatar** | ~~split across 2 files, neither wired to `presence-dot`~~ | ✅ `components/ui/avatar.tsx`; both wrappers compose it and keep their exports |
 | **Toast** | ~~2 renderers sharing a lane~~ | ✅ `components/ui/toast.tsx`; both renderers compose it, timings and copy unchanged |
-| **UnderlineTabs** | lives in `components/admin/` | promote to `components/ui/`, then retire the 6 rival tab strips |
+| **UnderlineTabs** | ✅ promoted to `components/ui/underline-tabs.tsx` (2026-08-10, ADR-971) | the 6 rival strips were already retired (`handrolled-tabs` **0**) |
 | **Meter** / **GateNotice** / **StreakMeter** / **Counter** | 0–1 call sites | wire to their intended callers, not rebuild |
 
 ### ⏳ Phase 3 — The mechanical sweeps *(the bulk: ~3,124 sites)*

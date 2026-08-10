@@ -1,4 +1,4 @@
-import { UnderlineTabs } from '@/components/admin/underline-tabs'
+import { UnderlineTabs } from '@/components/ui/underline-tabs'
 
 // The Network hub tab strip (ADR-172). Three sibling surfaces read as one hub:
 // Community (the member directory) · Friends (relationships) · Contacts (the CRM

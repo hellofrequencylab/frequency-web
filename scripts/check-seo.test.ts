@@ -11,6 +11,8 @@ import {
   layoutChain,
   doubleBrandedTitles,
   siteName,
+  overLongDescriptions,
+  metadataStrings,
 } from './check-seo.mjs'
 
 // Locks the SEO/sitemap coherence gate. Scans A and B (coverage + resolution) reason about
@@ -172,5 +174,67 @@ describe('siteName', () => {
 
   it('returns null when the shape is gone, so the caller can fail loudly', () => {
     expect(siteName('export const SOMETHING = "x"')).toBeNull()
+  })
+})
+
+describe('Scan E — over-length meta descriptions', () => {
+  // Google renders ~155-160 characters and truncates the rest mid-word, so the part of the
+  // sentence that does the persuading is the part that disappears. /the-lab was 45 over: its
+  // whole third sentence never reached a searcher.
+  it('flags a description past the cap', () => {
+    expect(overLongDescriptions(`export const metadata = { description: '${'x'.repeat(200)}' }`)).toHaveLength(1)
+  })
+
+  it('accepts one inside the cap', () => {
+    expect(overLongDescriptions(`export const metadata = { description: '${'x'.repeat(150)}' }`)).toHaveLength(0)
+  })
+
+  it('leaves openGraph and twitter alone', () => {
+    // Those are not truncated the way a SERP description is, and several pages here are
+    // deliberately longer there.
+    const src = `export const metadata = { openGraph: { description: '${'x'.repeat(200)}' } }`
+    expect(overLongDescriptions(src)).toHaveLength(0)
+  })
+
+  it('leaves JSON-LD builders alone', () => {
+    // `articleSchema({ description })` is structured data, not page metadata: nothing truncates it
+    // at 160. The first version of this scan failed /the-quest on exactly this shape.
+    expect(overLongDescriptions(`articleSchema({ description: '${'x'.repeat(200)}' })`)).toHaveLength(0)
+  })
+
+  it('says nothing about an interpolated description', () => {
+    // The value is not knowable from source, and guessing is worse than staying quiet.
+    expect(overLongDescriptions('const m = { description: `${blurb} and more` }')).toHaveLength(0)
+  })
+})
+
+describe('metadataStrings', () => {
+  it('reads a top-level property', () => {
+    expect(metadataStrings("const m = { title: 'A' }", ['title'])).toHaveLength(1)
+  })
+
+  it('skips a call-argument object at any depth', () => {
+    expect(metadataStrings("const m = { x: articleSchema({ title: 'A' }) }", ['title'])).toHaveLength(0)
+  })
+
+  it('resumes after a call-argument object closes', () => {
+    const src = "const m = { a: schema({ title: 'skipped' }), title: 'counted' }"
+    const hits = metadataStrings(src, ['title'])
+    expect(hits).toHaveLength(1)
+    expect(hits[0].value).toBe('counted')
+  })
+})
+
+describe('metadataStrings — the interpolation split', () => {
+  // The two scans need OPPOSITE handling of a template literal, and folding them onto one walker
+  // without saying so silently disarmed Scan D. This pins the distinction.
+  const src = 'const m = { title: `${name} · Frequency` }'
+
+  it('skips an interpolated value by default (length is unmeasurable)', () => {
+    expect(metadataStrings(src, ['title'])).toHaveLength(0)
+  })
+
+  it('reads it when asked (a hardcoded brand suffix IS measurable)', () => {
+    expect(metadataStrings(src, ['title'], { allowInterpolated: true })).toHaveLength(1)
   })
 })
