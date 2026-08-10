@@ -15,8 +15,10 @@ import { ChoosePlanButton } from './choose-plan'
 // richer CTA below (GoBusinessCta, with the seat picker). A rung whose switch is still OFF reads "Coming
 // soon", truthful, not a dark pattern. Prices come from the ONE placeholder map (feature-tiers), never
 // hardcoded here. Non Profit points at the existing verify flow. No em dashes (CONTENT-VOICE §10); plain,
-// no hype, no guilt. COLLECTIVE_BETA_CENTS ($49) is imported from feature-tiers, the ONE source shared
-// with the marketing pricing page, so the beta anchor never drifts between the two surfaces.
+// no hype, no guilt. Beta anchors resolve through SPACE_PLAN_PRICE_CENTS (feature-tiers), the ONE source
+// shared with the marketing pricing page, so they never drift between the two surfaces. (This note used
+// to name a COLLECTIVE_BETA_CENTS import that this file never had; the constant is gone as of
+// 2026-08-10 and the map it aliased is what was always being read.)
 
 type RungState = 'current' | 'available' | 'soon' | 'verify'
 

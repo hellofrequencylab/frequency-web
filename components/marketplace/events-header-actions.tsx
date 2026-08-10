@@ -18,13 +18,9 @@ import { HERO_SECONDARY_BTN } from './hero-buttons'
 // both the honest place for it and the highest-intent upgrade moment in the product.
 export function EventsHeaderActions({
   myProfileId,
-  isCrew: _isCrew,
   userHasEvents,
 }: {
   myProfileId: string | null
-  /** @deprecated Unused since ADR-913 — creating an event is not a paid feature. Kept so the call
-   *  sites keep type-checking; remove once /events stops resolving it. */
-  isCrew?: boolean
   userHasEvents: boolean
 }) {
   if (!myProfileId) return null

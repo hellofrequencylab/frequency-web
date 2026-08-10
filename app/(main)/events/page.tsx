@@ -36,12 +36,12 @@ export default async function EventsPage({
 }) {
   const sp = await searchParams
   const data = await getEventsIndexData(sp)
-  const { myProfileId, isCrew, userHasEvents } = data
+  const { myProfileId, userHasEvents } = data
 
   // The member action cluster (New Event always; Manage + My drafts once they have added one), from
   // the shared header-actions component.
   const actions = (
-    <EventsHeaderActions myProfileId={myProfileId} isCrew={isCrew} userHasEvents={userHasEvents} />
+    <EventsHeaderActions myProfileId={myProfileId} userHasEvents={userHasEvents} />
   )
 
   // JSON-LD for the self-canonical /events home (the one events URL; the structured data lives on

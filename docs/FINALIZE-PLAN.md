@@ -454,6 +454,44 @@ obvious cases, so any *other* rejection just makes the page do nothing. Same sha
 the `spaces/[slug]/settings/*` forms; that is a sweep, not a one-line fix. The roommate-seeker form
 saves with no confirmation of any kind.
 
+### 6.14 — Dead code: what was removed, what was left, and the comment that misled the audit
+
+Method: every top-level export under `lib/` + `components/` (**9,129 symbols**) looked up against a
+whole-repo token index, then each survivor re-checked with a literal word-boundary `grep -rl` across
+**all** file types. File-level reachability was tried first and **discarded as evidence** — it
+produced 282 false positives, every one of them reachable by bare basename through a string-keyed
+registry. That failure mode is worth keeping: in this repo, "nothing imports the path" does not mean
+"nothing reaches the file."
+
+**Removed here** (each verified to exactly one occurrence — its own definition):
+
+| What | Why it was dead |
+| :--- | :--- |
+| `EventTimeFields` + `EventLocationFields` + `EventLocationInitial` (~215 lines) | Extracted so "the Basics editor and the Place & Time editor render the SAME controls". The Place & Time editor was never built, so the extraction never got its second consumer — and the first one still hand-rolls the identical inputs inline (`event-settings-module.tsx:430`). Only `COMMON_TIME_ZONES` was ever imported; the file is now that. |
+| `COLLECTIVE_BETA_CENTS` + its test | `@deprecated`, "kept as a named alias for the in-app plan ladder" — and the plan ladder does not import it. Its only code consumers were its own definition and the test asserting it equalled the map cell it aliased. Dead code carrying a passing test, the shape ADR-979 named for `splashUsageHref`. Two prose claims fixed with it. |
+| `isCrew` / `isHost` on `EventsIndexData` | ADR-913 moved the paid wall off event creation onto the price field, leaving `isCrew` feeding a prop that renamed it `_isCrew` and never read it. `isHost` was never destructured by any caller. The prop's own comment said "remove once /events stops resolving it" — done. |
+
+**Left deliberately, with reasons:**
+
+- 🔴 **`lib/crm/capabilities.ts`** (`resolveCrmCapabilities`, `canCrm`) — 132 lines of pure, documented,
+  well-tested CRM policy with **zero** production callers, open since the 2026-08-04 scan. Deleting it
+  discards a design (what the CRM gate *should* be); wiring it is a feature. **Owner call**, not a sweep.
+- ⚠️ **~53 further zero-consumer exports and ~86 test-only exports** — verified by grep, not yet by
+  reading each one's context. The list and the one-line re-check are in the scan record; they want a
+  dedicated pass, because at that volume a single false positive costs a working feature.
+- ✅ **12 `@deprecated` markers checked, 11 are live back-compat shims** with real call sites. Do not
+  bulk-remove on the marker alone.
+
+⚠️ **The finding worth carrying forward.** The audit examined `lib/pricing/founding.ts` and concluded
+*"blocked on PR #1999, don't touch"* — reasoning entirely from a comment there that said the three
+`business_*` fields "configure NOTHING" and the console editor "does nothing". **Two of the three are
+live**: `business_monthly_cents` and `business_take_bps` are read by `grantFoundingStatus`
+(`lib/founding/status.ts:280-281`, `:352-353`) to stamp **lifetime** `locked_rate_cents` /
+`locked_take_bps` on every Founding Business minted by the beta-founder grant (ADR-875/880) — a path
+that is not a checkout, which is exactly why "no checkout reads them" was true and its conclusion
+false. Corrected in place. A stale comment does not merely fail to help; it actively steers the next
+careful reader wrong.
+
 ---
 
 ## Phase 7 — Voice, docs, and the owner handoff
