@@ -1,7 +1,7 @@
 # Finalize plan — the run to a fully functional platform
 
 > **The answer, first.** The platform is built and green: `tsc` clean, **8,943 tests passing**,
-> **all 24 `check:*` gates exit 0**, CI green on `main`, and the migration ledger is an exact
+> **all 25 `check:*` gates exit 0**, CI green on `main`, and the migration ledger is an exact
 > bijection with the repo (594 ⇄ 594, ADR-963).
 > What is left is not features. It is **three instruments that stopped telling the truth**, one
 > **access-grant layer** that was never actually closed, and a **short, verified list of real
@@ -26,7 +26,7 @@ Sizes: **XS** under an hour · **S** one PR · **M** 1 to 3 PRs · **L** a wave.
 | :--- | :--- | :--- |
 | Build + types | ✅ | `tsc --noEmit` rc=0 |
 | Tests | ✅ | 708 files, 8,943 tests, 0 failures |
-| Machine gates | ✅ | all 24 `check:*` scripts exit 0 |
+| Machine gates | ✅ | all 25 `check:*` scripts exit 0 (26 defined; `check:cron-freshness` is scheduled nowhere) |
 | CI (`ci.yml`) | ✅ | green on `main` |
 | Migrations applied | ✅ | every repo migration is live in prod |
 | Cron wiring | ✅ | 27 `vercel.json` entries ⇄ 27 handlers, zero drift both ways |
@@ -351,21 +351,53 @@ converting the 2,450 sites become a no-op that a codemod can do safely.
 ⚠️ **Do not sweep `literal-radius` until this is settled.** A sweep now writes 2,450 sites to the
 wrong number and buries the defect where no gate can see it, because the ratchet would go green.
 
-### 6.10 — Template adoption is 242 of 383, and the real violation list is seven components
+### 6.10 — Template adoption is 248 to 258 of 383, and the range is the honest answer
 
-Measured 2026-08-10. Method: `find app -name page.tsx` → **383**; `grep -rl "@/components/templates"`
-→ 243, **plus 5** reaching `AdminTemplate` through the `AdminPage` re-export that a string grep
-misses, **minus 6** corrected below → **242 compose a kit shell**.
+🔴 **Re-measured 2026-08-10 by resolving the import graph rather than grepping. The previous
+"242" does not reproduce, and neither does the "6" below it.**
+
+Method: `find app -name page.tsx` → **383**. Shell set = the 8 real shells exported by
+`components/templates/index.ts` plus the `AdminPage` alias. **Pieces excluded** (`PageHeading`,
+`PageHero`, `WizardProgress`, `AdminSection`, `RailGrid`) — a page importing only a piece composes
+no shell. A page counts as compliant when it, or an ancestor `layout.tsx`, reaches a shell.
+
+| Resolution | Compliant | Non-compliant |
+| :--- | ---: | ---: |
+| Direct import in the page or an ancestor layout (**floor**) | 248 | 135 |
+| Full transitive import closure (**ceiling**) | 258 | 125 |
+
+⚠️ **The range is not indecision, it is the measurement's actual precision.** Transitive
+reachability over-credits: a page scores compliant if *any* module in its closure imports a shell,
+even one not on the rendered path. Direct under-credits a page that composes through a helper. A
+single number here would be a guess with a number attached. **The 125 list is sound in one
+direction** — none of those can reach a shell by any path.
+
+Of the 125, 41 render no JSX (redirect/`notFound` stubs). Of the remaining 84, **38 are under
+`app/(main)/`**, which is where a shell is actually owed. Some of those 38 are registered
+exceptions in `lib/layout/page-chrome.ts`; that registry keys on route patterns rather than file
+paths, so matching the two mechanically would be a claim this measurement cannot stand behind.
+Treat 38 as the superset.
+
+⚠️ **There is no instrument here at all** — no gate, no baseline, no ratchet. Every other class in
+§6.8 has one, which is why their numbers reproduce and this one did not. `check:headers` is the
+nearest thing (305 route entries, 3 named hand-rolled `<h1>`s) but it measures a narrower property.
 
 ⚠️ **The correction, because the method had a hole worth naming.** "Imports from
 `@/components/templates`" is NOT evidence of composing a template: that barrel also exports
-**pieces** — `PageHeading`, `AdminSection`, `WizardProgress`. Six pages import only a piece, compose
-no shell, and have no sibling `layout.tsx` composing one either, yet were scored compliant:
+**pieces** — `PageHeading`, `AdminSection`, `WizardProgress`. **Five** pages import only a piece,
+compose no shell, and have no ancestor `layout.tsx` composing one either, yet were scored compliant:
 `admin/events/[id]` · `admin/spaces/[id]` · `messages/[id]` · `messages/r/[roomId]` ·
-`spaces/[slug]/profile-preview` · `people/[handle]/profile-preview`. Of those, **one is a registered
-exception** — `people/[handle]/profile-preview` is in `page-chrome.ts`'s `BUILDER_PATTERNS`, "a
-profile page whose own identity/layout paints". The Space equivalent is **not** covered (that pattern
-is `/^\/spaces\/[^/]+$/`, root only). The remaining five need a per-page call. Same hole explains
+`people/[handle]/profile-preview`. Of those, **one is a registered exception** —
+`people/[handle]/profile-preview` is in `page-chrome.ts`'s `BUILDER_PATTERNS`, "a profile page whose
+own identity/layout paints". The remaining four need a per-page call.
+
+🔴 **This list said six, and the sixth was wrong twice.** It named
+`spaces/[slug]/profile-preview` as uncovered because `BUILDER_PATTERNS` is `/^\/spaces\/[^/]+$/`
+(root only). But the file lives at `app/(main)/spaces/[slug]/(profile)/profile-preview/page.tsx`,
+and its ancestor `app/(main)/spaces/[slug]/(profile)/layout.tsx:5` composes `DetailTemplate` — so
+it is **Detail-composed-at-layout**, a category this very section already recognises, and it never
+needed the chrome exception at all. The path recorded here omitted the `(profile)` route group,
+which is exactly how a page gets audited as if it had no ancestor. Same hole explains
 `journey-spark.tsx` and `practice-spark.tsx` below: they import from the barrel and compose nothing. Of the remaining 135, **123 are legitimate and were each read
 to confirm it**: 32 redirect stubs · 51 marketing/discover surfaces (a separate system per
 PAGE-FRAMEWORK §10) · 8 Detail-composed-at-`layout.tsx` · 8 sanctioned editable indexes (§8.5) ·
@@ -392,9 +424,24 @@ new/guided-client.tsx:19` does exactly the same thing and **says so**, with a re
 `lib/layout/page-chrome.ts` and the shell that reads it. No page toggles its own rail. `FOCUS_NONE_PREFIXES`
 being empty is the documented contract (§8.2), not a gap.
 
-⚠️ Arbitrary content type, the canon's own ban: **6 hits in 4 files** — `the-community/tour.tsx`
+⚠️ Arbitrary content type, the canon's own ban: **8 hits in 4 files** — `the-community/tour.tsx`
 (`text-[9px]` ×4, `text-[8px]`), `onboarding/beta/induction.tsx:962` (`text-[10px]`),
-`page-editor/desktop/desktop-editor.tsx:355` (`text-[0.7rem]`). `text-2xs`/`text-3xs` already exist.
+`page-editor/desktop/desktop-editor.tsx:355` (`text-[0.7rem]`), `feed/post-body.tsx:41`
+(`text-[0.85em]`, inline `<code>` sizing). `text-2xs`/`text-3xs` already exist.
+
+🔴 **Re-measured 2026-08-10; the previous figure was wrong twice.** It read "6 hits in 4 files"
+while its own enumeration totalled 7 in 3, and it omitted `post-body.tsx` entirely. Method:
+`rg -o 'text-\[[^\]]*\]'` over `{app,components}` excluding tests, then re-run through
+`check-tokens.mjs`'s `stripComments` — that second pass is load-bearing, because
+`people/member-viewer/message-path.tsx:35` mentions `text-[10px]` in a header comment saying it
+deliberately does not use one, and a raw grep books it as a hit.
+
+**Two holes in `check:tokens` that this exposed, both still open:**
+- Its `TEXT_PX = /text-\[\d+px\]/` cannot see `rem`/`em` forms at all, and it `match`es without
+  `/g`, so it counts LINES rather than occurrences.
+- `app/onboarding/beta/induction.tsx` is allowlisted by exact path — an exemption granted for a
+  4-hex Google brand mark that silently also exempts that file's `text-[10px]`. A whole-file
+  waiver for one class quietly waives every other class in the file. Nobody decided that.
 
 ### 6.11 — ⚠️ ELEVEN rows where the menu and the page disagree, now held by `check:gate-parity`
 

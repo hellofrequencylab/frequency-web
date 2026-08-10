@@ -55,7 +55,7 @@
         "value": 2450,
         "direction": "lowered",
         "basis": "6a00b952da5c",
-        "reason": "The components/** sweep finishing the four-territory pass: 3005 -> 2450. Value-identical conversions only -- rounded-2xl -> rounded-card is 1rem, rounded-lg -> rounded-control is 0.5rem at the baseline generation -- so this is a theming fix with no rendering delta on the default skin. Frozen once against a settled tree with tsc rc=0 and vitest 698/8797 green over the result.",
+        "reason": "The components/** sweep finishing the four-territory pass: 3005 -> 2450. Value-identical conversions only -- so this is a theming fix with no rendering delta on the default skin. Frozen once against a settled tree with tsc rc=0 and vitest 698/8797 green over the result. AMENDED 2026-08-10: this reason used to state the values as 'rounded-2xl -> rounded-card is 1rem, rounded-lg -> rounded-control is 0.5rem'. Those were the STOCK Tailwind steps the role tokens had drifted to; the literals render 24px and 14px, and app/globals.css now sets the roles to match (ADR pending in the radius correction). The COUNT is unaffected -- the sweep was value-identical at the time and still is -- but the numbers quoted here described a tree that no longer exists. Recorded rather than deleted, because a baseline exists to account for itself and the prose is the one part of that the fingerprint does not cover.",
         "from": 3005
       },
       "history": [
@@ -155,7 +155,7 @@
           "from": 3005,
           "to": 2450,
           "direction": "lowered",
-          "reason": "The components/** sweep finishing the four-territory pass: 3005 -> 2450. Value-identical conversions only -- rounded-2xl -> rounded-card is 1rem, rounded-lg -> rounded-control is 0.5rem at the baseline generation -- so this is a theming fix with no rendering delta on the default skin. Frozen once against a settled tree with tsc rc=0 and vitest 698/8797 green over the result."
+          "reason": "The components/** sweep finishing the four-territory pass: 3005 -> 2450. Value-identical conversions only -- so this is a theming fix with no rendering delta on the default skin. Frozen once against a settled tree with tsc rc=0 and vitest 698/8797 green over the result. AMENDED 2026-08-10: this reason used to state the values as 'rounded-2xl -> rounded-card is 1rem, rounded-lg -> rounded-control is 0.5rem'. Those were the STOCK Tailwind steps the role tokens had drifted to; the literals render 24px and 14px, and app/globals.css now sets the roles to match (ADR pending in the radius correction). The COUNT is unaffected -- the sweep was value-identical at the time and still is -- but the numbers quoted here described a tree that no longer exists. Recorded rather than deleted, because a baseline exists to account for itself and the prose is the one part of that the fingerprint does not cover."
         }
       ]
     },
