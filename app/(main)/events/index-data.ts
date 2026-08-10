@@ -270,8 +270,6 @@ export interface EventsIndexData {
   nowDate: Date
   myProfileId: string | null
   myCircles: { id: string; name: string }[]
-  isCrew: boolean
-  isHost: boolean
   /** The viewer's RSVP'd events (sorted), the soonest-first remainder, and the map pins. */
   goingEvents: EventRow[]
   sortedEvents: EventRow[]
@@ -310,8 +308,6 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   let myProfileId: string | null = null
   let myCircleIds: string[] = []
   let myCircles: { id: string; name: string }[] = []
-  let isCrew = false
-  let isHost = false
 
   let myGeocell: { lat: number; lng: number } | null = null
 
@@ -327,11 +323,10 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
       if (profile.home_geocell_lat != null && profile.home_geocell_lng != null) {
         myGeocell = { lat: Number(profile.home_geocell_lat), lng: Number(profile.home_geocell_lng) }
       }
-      // Event composing = paid (Crew/Supporter TIER) or a steward — PB.1/ADR-207.
-      isCrew =
-        ['crew', 'supporter'].includes((profile as { membership_tier?: string | null }).membership_tier ?? '') ||
-        ['host', 'guide', 'mentor', 'admin', 'janitor'].includes(profile.community_role ?? '')
-      isHost = ['host', 'guide', 'mentor', 'admin', 'janitor'].includes(profile.community_role ?? '')
+      // `isCrew`/`isHost` were computed here and returned on EventsIndexData until 2026-08-10.
+      // ADR-913 moved the paid wall off event CREATION and onto the price field
+      // (lib/events/ticket-eligibility.ts), which left isCrew feeding one @deprecated prop that
+      // renamed it to `_isCrew` and never read it. `isHost` was never even destructured by a caller.
 
       const { data: memberships } = await admin
         .from('memberships')
@@ -752,8 +747,6 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     nowDate,
     myProfileId,
     myCircles,
-    isCrew,
-    isHost,
     goingEvents,
     sortedEvents,
     mapPins,

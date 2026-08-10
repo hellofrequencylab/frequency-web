@@ -13,7 +13,6 @@ import {
   PLACEHOLDER_PRICING,
   PLACEHOLDER_MEMBER_PRICE_CENTS,
   SPACE_PLAN_PRICE_CENTS,
-  COLLECTIVE_BETA_CENTS,
   spacePlanPriceCents,
   tierPriceCents,
   tierPriceLabel,
@@ -153,8 +152,6 @@ describe('placeholder pricing — nothing charges (the go-live switch)', () => {
       expect(tierPriceCents('plan', plan, true), plan).toBe(amounts.foundingCents)
       expect(tierPriceCents('plan', plan, false), plan).toBe(amounts.listCents)
     }
-    // The Collective-only beta constant is now just a cell of that map, kept as an alias.
-    expect(COLLECTIVE_BETA_CENTS).toBe(SPACE_PLAN_PRICE_CENTS.collective.foundingCents)
     // Business has a beta rate too. That it had no constant of its own is exactly the bug.
     expect(SPACE_PLAN_PRICE_CENTS.business.foundingCents).toBeLessThan(
       SPACE_PLAN_PRICE_CENTS.business.listCents,

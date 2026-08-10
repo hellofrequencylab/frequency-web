@@ -1,6 +1,6 @@
 # Finalize plan — the run to a fully functional platform
 
-> **The answer, first.** The platform is built and green: `tsc` clean, **8,870 tests passing**,
+> **The answer, first.** The platform is built and green: `tsc` clean, **8,943 tests passing**,
 > **all 24 `check:*` gates exit 0**, CI green on `main`, and the migration ledger is an exact
 > bijection with the repo (594 ⇄ 594, ADR-963).
 > What is left is not features. It is **three instruments that stopped telling the truth**, one
@@ -25,7 +25,7 @@ Sizes: **XS** under an hour · **S** one PR · **M** 1 to 3 PRs · **L** a wave.
 | Dimension | State | Evidence |
 | :--- | :--- | :--- |
 | Build + types | ✅ | `tsc --noEmit` rc=0 |
-| Tests | ✅ | 704 files, 8,870 tests, 0 failures |
+| Tests | ✅ | 708 files, 8,943 tests, 0 failures |
 | Machine gates | ✅ | all 24 `check:*` scripts exit 0 |
 | CI (`ci.yml`) | ✅ | green on `main` |
 | Migrations applied | ✅ | every repo migration is live in prod |
@@ -34,8 +34,9 @@ Sizes: **XS** under an hour · **S** one PR · **M** 1 to 3 PRs · **L** a wave.
 | Marketing metadata | ✅ | the 15 pages without `generateMetadata` are all intentional 308 redirect stubs (spot-checked 4) |
 | Code hygiene | ✅ | **18** TODO markers in the entire `app` + `lib` + `components` tree |
 | SEO/AIO surface | ✅ | 14 OG-image routes, 25 JSON-LD emitters, `llms.txt` already carries live first-party stats |
-| Help centre | ⚠️ | 55 articles, core coverage 27/27, **10 orphan feature keys** |
-| **Visual regression** | 🔴 | **fails on every run**, both branches, since at least 2026-08-06 |
+| Help centre | ✅ | 55 articles, core coverage 27/27, **0 orphan feature keys** (the 10 were added to `feature-keys.ts`; `check:help` now fails on an orphan in every mode) |
+| **Visual regression** | ⏳ | **68 of 72 pass** against the fresh baselines (run `31426644985`, 2026-08-10) — was 10 of 72. The 4 remaining are all `/feed` (1.9) |
+| **Accessibility ratchet** | 🔴 | first full run with a session (2026-08-10): **32 failed · 28 passed · 26 skipped** — 4 absent baselines, 28 real rises, **all 16 dark-mode contrast checks among them** (1.7, ADR-980) |
 | **Anon/authenticated grants** | 🔴 | **1,907 explicit grants across 273 tables** (2 worst RPCs closed, ADR-961) |
 | **Migration ledger numbering** | ✅ | **594 ⇄ 594, zero drift both directions** (ADR-963) — was 607 vs 594 |
 
@@ -102,11 +103,14 @@ exist, and all three gates are eligible to be flipped to required.
 | # | Item | Size | Detail |
 | :--- | :--- | :---: | :--- |
 | 1.1 | ✅ **SETTLED from the run log, and the question is now moot** | — | Measured on run `31413554371` (2026-08-10): **`10 passed · 62 failed`, and ZERO size mismatches.** The `expected 390x10276, received 390x10298` shape this item was written to explain **no longer occurs at all** — every remaining failure is a same-size **pixel-content** diff, ratios **0.03 to 0.17**, clustered at 0.06-0.12 against a 0.02 tolerance. Heights matching exactly while content differs rules out the font-metric/runner hypothesis (that moves heights) and leaves the design itself having moved. **So the baselines are stale and recapture is the whole remedy** - no diff-image forensics needed, which is what 1.1 was holding 1.2 for. |
-| 1.2 | 🔴 **Owner: recapture — now unblocked by 1.1** | S | `e2e-manual.yml` → `update_baselines`, and **tick `capture_shell` too**: `PW_MEMBER_EMAIL` is set (checked 2026-08-10), so the run can mint a session and finally photograph the member shell, which is the precondition `PW_REQUIRE_SHELL=1` is already asserting. It must not absorb feature changes — one recapture against a settled tree beats four against a moving target, and the runner's capture commit does not re-trigger CI. |
-| 1.3 | **Seed the shell a11y baselines** | S | `/feed` and `/settings` are currently held to zero serious+ violations against debt that predates the gate, because their baselines were never captured. `e2e-manual.yml` → `capture_shell` + `update_a11y`. |
+| 1.2 | ✅ **DONE — recaptured on run `31422100196` (#15)** | — | `update_baselines` + `capture_shell` against the branch preview: **62 of 72 baselines refreshed, zero additions**, runner-committed as `b0129d6`. The zero additions are the point — every refreshed file already existed, so the recapture absorbed no new surface and no feature change. `test/e2e/baseline-distinctness.test.ts` passes on the new set. ⚠️ The member shell stayed at **2 of 4** surfaces (`app-feed`, `app-settings`): `appSurfaces()` no longer defaults `PW_ROOM_PATH`/`PW_SPACE_SLUG`, so those two surfaces are absent rather than wrong — see 1.8. |
+| 1.3 | **Seed the shell a11y baselines** | S | `/feed` and `/settings` are currently held to zero serious+ violations against debt that predates the gate, because their baselines were never captured — confirmed: `a11y-baselines.json` `surfaces` has **no `/feed` or `/settings` key at all**, so they fall to `$defaultMax`. Run #15 duly failed all four of their checks. `e2e-manual.yml` → `capture_shell` + `update_a11y`. ⚠️ **Re-running `update_a11y` as-is does nothing.** `scripts/a11y-baselines.mjs` refuses a new context whose debt exceeds `$defaultMax` (0) — *"a new surface joins at zero tolerance"* — so `/feed` (7) and `/settings` (2) land in `added`, the script `exit(1)`s **before** it writes, and the file is unchanged. Seeding them is a deliberate `--force` with a reason in the commit. ✅ **One of the 9 is now fixed** (6.15), so the numbers to seed are 6 and 1. |
+| 1.9 | ⚠️ **`pr-compare` ANSWERED: 68 of 72 pass. The 4 that fail are one surface, and recapturing it again will not help** | S | Run `31426644985` on `74c7387`: **`68 passed · 4 failed`**, against **`10 passed · 62 failed`** before the recapture. Phase 1's premise held — the baselines were stale and recapture was the remedy — for **68 of 72** surfaces. The 4 failures are `app-feed` alone, both modes × both viewports, and they are **size** mismatches (`390×11772` expected, `390×11848` received, +76px) rather than the pixel-content diffs the pre-recapture run showed. ⚠️ **Do not re-run `update_baselines` for this.** `surfaces.ts:319` already records `/feed` drifting 8497 → 9272 → 9390px and attributes it to five `<Suspense fallback={null}>` boundaries that **append** height as they resolve (a null fallback reserves zero height), which is why `settle()` grew a height wait and why the file states masking cannot fix it — *"the failure is the page's HEIGHT, not its pixels."* **But the Suspense theory does not survive this run:** `/settings` carries **twelve** such boundaries and **passed all four of its checks**. The surface with more boundaries is the stable one. What separates them is the data: `/settings` renders the caller's own settings, `/feed` renders a **shared, live** post stream, and the baseline was taken ~70 minutes before the comparison. A full-page pixel baseline of a live feed measures when it was taken. Options, in order of honesty: capture `/feed` at **viewport height** rather than `fullPage`; seed deterministic content for the beta member; or drop `/feed` from the visual set and let the a11y suite carry it. All three are a decision about what the instrument should measure, so none is a silent fix. |
+| 1.7 | ⚠️ **NEW, measured on run #15: the a11y ratchet is as stale as the visual baselines were, and it must NOT be re-frozen the same way** | M | The smoke job of run `31422100196` reports **32 failed · 28 passed · 26 skipped**. Four are 1.3's absent shell baselines. The other 28 are a **real rise against a real baseline**, and the shape is systemic: **all 16 dark-mode contrast checks fail** (`dawn-dark` ×8, `midnight-dark` ×8), against baselines that are **0 on every surface but `/spaces` (2) and `/the-community` (3)** — plus `midnight-light` on `/the-lab` · `/pricing` · `/discover`, and 7 `dawn-light` serious+ checks on `/about` · `/the-lab` · `/pricing` · `/discover`. **The baseline is not an artefact:** its counts track the *mode* axis and ignore the *skin* axis (`midnight-light` is identical to `dawn-light`, `midnight-dark` to `dawn-dark`), which is what contrast should do, so these numbers were real when frozen on 2026-08-04. What moved is the design — the same churn that staled 62 of 72 visual baselines (#2042 the DAWN pass, #2053 which recorded a contrast cost *as a waiver*, #2061). ⚠️ **The remedy is NOT `update_a11y`.** A visual baseline is **descriptive** (recapture is always right); this ratchet is **normative** — ADR-928 lets debt fall, never rise, and `update_a11y` over a rise erases the regression instead of recording it. Per the file's own header, *"baselines are debt, and debt gets a name"*: audit each risen surface, fix what is fixable, and waive the rest **with a reason in the same commit**. Start with the 16 dark-mode failures — one cause across eight pages and two skins is one fix, not sixteen. ⚠️ Do not read `check:contrast` being green as a contradiction: it validates the **token layer** against a hand-declared `PAIRS` list, while axe validates what was **painted**, so a token used on a ground it was never paired with is invisible to it. Full reasoning: [ADR-980](DECISIONS.md). |
+| 1.8 | 🔴 **Owner: two repo variables, then one more `capture_shell` run** | XS | The member shell photographs **2 of 4** surfaces. The missing two need a value only you can supply, because there is no safe default — the last default (`PW_ROOM_PATH` → `/channels`) is exactly what made four baselines photographs of the marketing home page. Settings → Secrets and variables → Actions → **Variables**: `PW_ROOM_PATH` = a room route the beta member can reach, `PW_SPACE_SLUG` = a Space slug that account can manage. Then re-run `e2e-manual.yml` with `capture_shell` + `update_baselines`. |
 | 1.4 | ✅ **Already resolved — it is a VARIABLE, not a secret** | — | Verified 2026-08-10 two ways. The Variables tab holds `PW_REQUIRE_SHELL = 1`; the Secrets tab does **not** (its six entries are `ANTHROPIC_API_KEY`, both Supabase keys, `PW_MEMBER_EMAIL`, `SUPABASE_SERVICE_ROLE_KEY`, `VERCEL_AUTOMATION_BYPASS_SECRET`). And the run log contains **zero** `***` redactions while printing figures full of the digit 1 (`117474 pixels`, `ratio 0.03`) — which is only possible if `1` is not a secret. The log-redaction problem this item describes is gone. |
 | 1.5 | ✅ **Already resolved — the account exists and the session mints** | — | `PW_MEMBER_EMAIL` is set (Secrets tab, checked 2026-08-10), and the proof it works is in the run itself: `app-feed` and `app-settings` were **photographed**, which is only possible behind a minted session. What is still missing is narrower than "an account": `app-room` has no baseline (Phase 1 deleted all four as wrong-page captures of the marketing home), and the Space console needs the **`PW_SPACE_SLUG`** repo variable, which is not set — the Variables tab holds only `PW_REQUIRE_SHELL`. Both are covered by one `update_baselines + capture_shell` run. |
-| 1.6 | 🔴 **Owner: flip `pr-compare`, `check:adoption`, `check:contrast` to required** | XS | Only after 1.2 is green for two weeks. Required contexts today are `checks` and `analyze` only (integration 15368). |
+| 1.6 | ⚠️ **Owner: flip `pr-compare`, `check:adoption`, `check:contrast` to required — but `pr-compare` has a hole that must be closed FIRST** | S | Required contexts are now **four** (`checks` · `analyze` · `lint` · `test`). ⚠️ **A green `pr-compare` on a Dependabot PR means nothing was tested.** GitHub does not expose repo secrets to Dependabot runs, so `VERCEL_AUTOMATION_BYPASS_SECRET` is empty, and the job takes its documented skip path — *"Skipping is the honest result; a red X here would mean nothing about this PR"* — and **exits 0**. Verified on #2076 job `93578379589`: `BYPASS:` empty, `::notice ... Nothing was tested`, conclusion `success`. The reasoning is right and the skip is the correct behaviour; the problem is that it produces a checkmark **indistinguishable from a real pass** in the PR list, on exactly the PRs that bump the CI actions themselves. Promote it to required and every Dependabot PR satisfies it vacuously, forever. Fix before promoting: report the skip as **neutral** rather than success, or gate the required context on a job that cannot skip. |
 
 > **Standing rule from the last thread, worth keeping:** on a GitHub `pull_request`-event outage,
 > add a bypass actor to ruleset `17640795` rather than toggling enforcement off.
@@ -272,6 +276,266 @@ review-friendly. **The live baselines are substantially better than either plan 
 | 6.6 | **67 raw `<img>`** | S | → `next/image` on the LCP surfaces first. |
 | 6.7 | **Remaining ratchet tails** | M | `raw-input` 186 (needs a borderless/inset variant on the primitive, not call-site swaps — see the induction note in BUILD-LIST §P8), `literal-display-type` 96, `raw-button-bg` 526 (replace the proximity-window pattern with the opening-tag form under a new basis fingerprint), `literal-radius` 2,450 (**spend inside screen passes, never as its own wave**). |
 
+### 6.8 — The DAWN debt is TWO populations, and only one of them is a sweep
+
+Measured 2026-08-10 with `check:adoption`'s **own** `countEntry`, run per file, so the distribution
+and the score cannot disagree. `top25` is the share of a class's total carried by its 25 worst files.
+
+| Class | Total | Files | top10 | top25 | Median/file | Instrument |
+| :--- | ---: | ---: | ---: | ---: | ---: | :--- |
+| `literal-radius` | 2450 | 816 | 8% | **15%** | 2 | 🔴 **blocked — see 6.9** |
+| `raw-button-bg` | 526 | 312 | 14% | **26%** | 1 | 🔧 codemod |
+| `raw-input` | 186 | 131 | 21% | **37%** | 1 | 🔧 codemod + an inset variant |
+| `raw-px-arbitrary` | 117 | 59 | 47% | 71% | 1 | ✋ sweep |
+| `literal-display-type` | 96 | 37 | 69% | 88% | 1 | ✋ sweep |
+| `shadow-literals` | 49 | 35 | 49% | 80% | 1 | ✋ sweep |
+| `white-black-literals` | 27 | 24 | 48% | **100%** | 1 | ✋ sweep |
+| `bespoke-cards` | 24 | 24 | 42% | **100%** | 1 | ✋ sweep |
+| `subtle-tiny-type` | 23 | 8 | **100%** | 100% | 2 | ✋ sweep |
+| `bespoke-rows` | 14 | 14 | 71% | **100%** | 1 | ✋ sweep |
+| `adhoc-progress` · `handrolled-icon-button` · `raw-select` · `raw-textarea` | 26 | 22 | **100%** | 100% | 1 | ✋ sweep |
+
+**The finding that changes the plan: 11 of the 14 live classes are fully sweepable, and 3 are not.**
+The eleven total **376 occurrences** and every one of them is ≥71% carried by its top 25 files — that
+is one focused wave, not a program. The three long-tail classes total **3,162** with a median of
+**1 to 2 per file** across 816 · 312 · 131 files; a file-by-file sweep of `literal-radius`'s 25 worst
+files buys **15%** of it. Hand-sweeping those three is the wrong instrument, and the ratchet has been
+implying otherwise by listing all fourteen in one column.
+
+⚠️ **Sequencing constraint, and it is new as of today.** Every row above changes pixels, and the
+visual baselines were just recaptured (1.2). A UI sweep now makes `pr-compare` fail — *correctly*,
+because it is catching a real visual change — so these must land **after** `pr-compare` is confirmed
+green on an unrelated PR, each sweep carrying its own recapture. Landing a sweep before that
+confirmation would leave us unable to tell a regression from the sweep's own intended diff, which is
+the exact condition Phase 1 existed to end.
+
+### 6.9 — 🔴 The radius roles and the radius steps disagree, and the ratchet is rewarding the wrong direction
+
+**This is the find of the DAWN pass, and it inverts item 6.8's `literal-radius` row.** I had that row
+down as a codemod. It is not: converting a literal to its role today makes the component render
+**pre-DAWN**.
+
+`app/globals.css` holds two radius systems that were meant to be the same numbers:
+
+| | Role token (`:root`, l.177-179) | Literal step (`@theme`, l.1344-1349) | Agree? |
+| :--- | ---: | ---: | :---: |
+| control | `--radius-control` **8px** (0.5rem) | `rounded-lg` **14px** | ❌ −6px |
+| card | `--radius-card` **16px** (1rem) | `rounded-2xl` **24px** | ❌ −8px |
+| *(incidental)* | `--radius-card` 16px | `rounded-xl` **16px** | ✅ |
+| pill | `--radius-pill` 9999px | `rounded-full` 9999px | ✅ |
+
+The roles were defined against **Tailwind's stock scale**, and the file says so in its own comment at
+l.173: *"control = lg (0.5rem), card = 2xl (1rem)"*. That equivalence was true when written. It stopped
+being true when the DAWN port **re-declared the literal steps** at l.1330-1348 — `rounded-lg` 8→14,
+`rounded-2xl` 16→24 — and the three role tokens were **not moved with them**. The comment still
+documents the old pairing as if it held.
+
+**What that means in the product today**
+
+- A card on `rounded-card` renders **16px**; a visually identical card on `rounded-2xl` renders
+  **24px**. Same intent, different corners, and which one you get depends on when the file was written.
+- **Migrating a literal to its role — the exact move `check:adoption` rewards — makes corners
+  smaller and reverts the component toward its pre-DAWN look.** The ratchet is paying for
+  regressions. This is why "consuming rounded-control/card/pill is incremental" (l.176) has stayed
+  incremental: every early adopter got a worse-looking component, and the gate called it progress.
+- `rounded-full` is already at **1** occurrence out of 2,450, so the pill role is fully adopted and
+  is not part of this. The problem is exactly the two roles whose numbers drifted.
+
+**The fix is one owner decision and then three lines**, not a 2,450-site codemod. If DAWN's corners
+are the intent — and the port says they are — then `--radius-control: 14px` and `--radius-card: 24px`,
+and every skin's overrides (l.595, 729, 840…944, 1023…1079) get re-checked against the same ratio,
+since they were all authored against the pre-port roles too. Only after the roles are correct does
+converting the 2,450 sites become a no-op that a codemod can do safely.
+
+⚠️ **Do not sweep `literal-radius` until this is settled.** A sweep now writes 2,450 sites to the
+wrong number and buries the defect where no gate can see it, because the ratchet would go green.
+
+### 6.10 — Template adoption is 242 of 383, and the real violation list is seven components
+
+Measured 2026-08-10. Method: `find app -name page.tsx` → **383**; `grep -rl "@/components/templates"`
+→ 243, **plus 5** reaching `AdminTemplate` through the `AdminPage` re-export that a string grep
+misses, **minus 6** corrected below → **242 compose a kit shell**.
+
+⚠️ **The correction, because the method had a hole worth naming.** "Imports from
+`@/components/templates`" is NOT evidence of composing a template: that barrel also exports
+**pieces** — `PageHeading`, `AdminSection`, `WizardProgress`. Six pages import only a piece, compose
+no shell, and have no sibling `layout.tsx` composing one either, yet were scored compliant:
+`admin/events/[id]` · `admin/spaces/[id]` · `messages/[id]` · `messages/r/[roomId]` ·
+`spaces/[slug]/profile-preview` · `people/[handle]/profile-preview`. Of those, **one is a registered
+exception** — `people/[handle]/profile-preview` is in `page-chrome.ts`'s `BUILDER_PATTERNS`, "a
+profile page whose own identity/layout paints". The Space equivalent is **not** covered (that pattern
+is `/^\/spaces\/[^/]+$/`, root only). The remaining five need a per-page call. Same hole explains
+`journey-spark.tsx` and `practice-spark.tsx` below: they import from the barrel and compose nothing. Of the remaining 135, **123 are legitimate and were each read
+to confirm it**: 32 redirect stubs · 51 marketing/discover surfaces (a separate system per
+PAGE-FRAMEWORK §10) · 8 Detail-composed-at-`layout.tsx` · 8 sanctioned editable indexes (§8.5) ·
+5 Studio windows (§9) · 4 registered chrome takeovers · plus dev showcases and the retiring beta funnel.
+
+**That leaves 7 components feeding 8 routes with no shell anywhere in their render tree**, all of
+them authoring surfaces, all with a hand-rolled `<h1>` where `PageHeading` belongs:
+
+| Component | Route(s) | Hand-rolled header |
+| :--- | :--- | :--- |
+| `components/circles/builder/circle-builder.tsx` | `/circles/[slug]/edit` | `:181` |
+| `components/circles/builder/circle-wizard.tsx` | `/circles/new` | `:157` |
+| `components/journey/v2/journey-spark.tsx` | `/journeys/new` | `:194` |
+| `components/journey/v2/journey-guide.tsx` | `/journeys/[slug]/guide` | `:240` |
+| `components/studio/practice/practice-spark.tsx` | `/practices/new` | `:152` |
+| `components/admin/theme-studio/theme-editor.tsx` | `/admin/appearance/[id]` · `/new` | `:158` |
+| `app/(main)/admin/walkthroughs/[id]/editor.tsx` | `/admin/walkthroughs/[id]` | `:168` |
+
+Each imports `WizardProgress` (one piece of `WizardShell`) and then re-declares the band the shell
+would have given it. Proof this is a slip rather than a needed exception: `admin/marketing/messaging/
+new/guided-client.tsx:19` does exactly the same thing and **says so**, with a reason. These seven do not.
+
+✅ **Rail discipline is clean** — `grep showSidebar` across `app/` + `components/` returns only
+`lib/layout/page-chrome.ts` and the shell that reads it. No page toggles its own rail. `FOCUS_NONE_PREFIXES`
+being empty is the documented contract (§8.2), not a gap.
+
+⚠️ Arbitrary content type, the canon's own ban: **6 hits in 4 files** — `the-community/tour.tsx`
+(`text-[9px]` ×4, `text-[8px]`), `onboarding/beta/induction.tsx:962` (`text-[10px]`),
+`page-editor/desktop/desktop-editor.tsx:355` (`text-[0.7rem]`). `text-2xs`/`text-3xs` already exist.
+
+### 6.11 — 🔴 Nine rows where the menu and the page disagree about who gets in
+
+Measured 2026-08-10 by walking every `STUDIO_LEAVES` row with an `/admin/*` href and comparing its
+`min`/`staffDomain` against the page's actual `requireAdmin(...)` call. **`pnpm check:menu` passes on
+all nine** — it validates that the catalog is the single source of menu *shape*, and has no way to
+reach into a page body and read its guard. That is the gap, not a bug in the gate.
+
+Two directions, and they fail differently:
+
+- **Menu promises, page denies** (a dead menu item — the user clicks and lands on `/feed`):
+  `connections`, `sms`, `nonprofit-verifications`, `content-tips`, `beta-command`, `crm-pipeline`.
+  `content-tips` is the widest: the catalog offers it to every `host`+ community leader and every
+  `community`-domain staffer; the page admits **janitor only**.
+- **Page allows, menu hides** (a tool its authorized users can never find):
+  `page-layout`, `crm-marketing`, and `business-seeder`/`listing-seeder` — the last two carry **no
+  `staffDomain` at all**, and `lib/nav-areas.ts:227` returns false when it is unset, so a
+  `structure`-write staffer who is fully authorized never sees them.
+
+✅ **Fixed in this pass: `qr` + `qr-stats`.** The catalog comment records the decision already made
+(*"STRICTER = 'admin'. Resolved to 'admin' + staffDomain 'qr'"*) and the rows say `admin`, but both
+pages still ran `requireAdmin('host', …)`. `'host'` reads the **community** ladder (ADR-208), so it
+admitted anyone who cleared the staff-only `/admin` floor **in another domain** and happened to be a
+host. Pages aligned; a real qr-domain operator still passes on the `staff` branch.
+
+⚠️ The remaining eight are **product policy, not defects with an obvious direction** — each needs the
+owner to say which side is right before the code moves. Do not "fix" them by making the numbers match.
+
+### 6.12 — Two fully-built admin pages nothing links to
+
+`/admin/marketing/automations` (rules engine) and `/admin/marketing/nurture` (per-persona sequence
+builder) are complete, gated, working pages with **zero** inbound references anywhere in the repo and
+no row in any catalog. `lib/nav/studio.ts:277` documents the intent — they were "rolled into the
+Resonance CRM Marketing tab" — but `/admin/crm/marketing` has **no automations or nurture UI**. The
+menu rows were removed on the assumption the destination existed. It does not. Same shape, lower
+severity: `/admin/growth/funnels` and `/admin/marketing/funnels` are orphaned index pages whose
+*detail* routes are still linked, so a bookmark works but the list that would lead you there does not.
+
+🔴 **Owner call:** finish the migration, restore the menu rows, or delete the pages. All three are
+defensible; leaving them is the only option that is not.
+
+### 6.13 — Member-surface wiring: 261 routes, 268 links, two real defects (both fixed here)
+
+Method: every `page.tsx` outside `/admin/`, `/crm/`, `/moderation/` → **261 routes**; every literal
+and template-literal `href` in those files → **268 links**, each existence-checked against the route
+inventory, `next.config.ts` redirects, and the target's own `redirect()`. Host-facing manage/settings
+pages were kept **in** scope — a Space owner is a member, not a platform operator.
+
+✅ **267 of 268 links resolve.** No `href="#"`, no `onClick={() => {}}`, no TODO-marked handlers
+anywhere in the member surfaces. The list pages all reach an `EmptyState`, directly or through the
+shared surface component. This part of the product is wired.
+
+🔴 **Fixed: a 404 shown to every unpaid Space owner.** `settings/billing/billing-body.tsx` rendered
+*"See if a founding spot is left"* → `/spaces/[slug]/settings/billing/founding`. That route **does
+not exist**: the per-city Founding Business cohort was withdrawn by owner directive on 2026-07-31 and
+its route deleted, which `lib/pricing/founding.ts:24` states outright. The CTA survived a later edit
+to the same file (#2017, three days after). A door with no room, on the billing page, shown only to
+the people being asked to pay. Removed, with the reason recorded in place.
+
+🔴 **Fixed: `/library/review` had no way in.** A working, Host-gated approval queue whose own page
+comment claimed it was *"reachable from admin"* — a repo-wide search returns its route, one
+`revalidatePath`, and widget bookkeeping, and **no link, in admin or anywhere else**. `/admin` was
+never the right home: that floor is staff-only, while this queue gates on the **community** ladder
+(host+). Added to `/library`'s action band under the review page's own guard, so the population that
+can use it now sees it where they already stand.
+
+⚠️ **Not fixed, recorded:** `market/sell` binds `action={createMakerProductAction}` with no
+`useActionState`, and the action returns bare `void` on rejection — native `required`/`min` catch the
+obvious cases, so any *other* rejection just makes the page do nothing. Same shape is likely across
+the `spaces/[slug]/settings/*` forms; that is a sweep, not a one-line fix. The roommate-seeker form
+saves with no confirmation of any kind.
+
+### 6.14 — Dead code: what was removed, what was left, and the comment that misled the audit
+
+Method: every top-level export under `lib/` + `components/` (**9,129 symbols**) looked up against a
+whole-repo token index, then each survivor re-checked with a literal word-boundary `grep -rl` across
+**all** file types. File-level reachability was tried first and **discarded as evidence** — it
+produced 282 false positives, every one of them reachable by bare basename through a string-keyed
+registry. That failure mode is worth keeping: in this repo, "nothing imports the path" does not mean
+"nothing reaches the file."
+
+**Removed here** (each verified to exactly one occurrence — its own definition):
+
+| What | Why it was dead |
+| :--- | :--- |
+| `EventTimeFields` + `EventLocationFields` + `EventLocationInitial` (~215 lines) | Extracted so "the Basics editor and the Place & Time editor render the SAME controls". The Place & Time editor was never built, so the extraction never got its second consumer — and the first one still hand-rolls the identical inputs inline (`event-settings-module.tsx:430`). Only `COMMON_TIME_ZONES` was ever imported; the file is now that. |
+| `COLLECTIVE_BETA_CENTS` + its test | `@deprecated`, "kept as a named alias for the in-app plan ladder" — and the plan ladder does not import it. Its only code consumers were its own definition and the test asserting it equalled the map cell it aliased. Dead code carrying a passing test, the shape ADR-979 named for `splashUsageHref`. Two prose claims fixed with it. |
+| `isCrew` / `isHost` on `EventsIndexData` | ADR-913 moved the paid wall off event creation onto the price field, leaving `isCrew` feeding a prop that renamed it `_isCrew` and never read it. `isHost` was never destructured by any caller. The prop's own comment said "remove once /events stops resolving it" — done. |
+
+**Left deliberately, with reasons:**
+
+- 🔴 **`lib/crm/capabilities.ts`** (`resolveCrmCapabilities`, `canCrm`) — 132 lines of pure, documented,
+  well-tested CRM policy with **zero** production callers, open since the 2026-08-04 scan. Deleting it
+  discards a design (what the CRM gate *should* be); wiring it is a feature. **Owner call**, not a sweep.
+- ⚠️ **~53 further zero-consumer exports and ~86 test-only exports** — verified by grep, not yet by
+  reading each one's context. The list and the one-line re-check are in the scan record; they want a
+  dedicated pass, because at that volume a single false positive costs a working feature.
+- ✅ **12 `@deprecated` markers checked, 11 are live back-compat shims** with real call sites. Do not
+  bulk-remove on the marker alone.
+
+⚠️ **The finding worth carrying forward.** The audit examined `lib/pricing/founding.ts` and concluded
+*"blocked on PR #1999, don't touch"* — reasoning entirely from a comment there that said the three
+`business_*` fields "configure NOTHING" and the console editor "does nothing". **Two of the three are
+live**: `business_monthly_cents` and `business_take_bps` are read by `grantFoundingStatus`
+(`lib/founding/status.ts:280-281`, `:352-353`) to stamp **lifetime** `locked_rate_cents` /
+`locked_take_bps` on every Founding Business minted by the beta-founder grant (ADR-875/880) — a path
+that is not a checkout, which is exactly why "no checkout reads them" was true and its conclusion
+false. Corrected in place. A stale comment does not merely fail to help; it actively steers the next
+careful reader wrong.
+
+### 6.15 — ✅ FIXED: the one member-shell contrast failure that was not an accepted waiver
+
+The member shell's 9 serious+ elements (7 on `/feed`, 2 on `/settings`, dawn-light) resolve into
+three groups once you read the actual axe output rather than the counts:
+
+| Element | Painted | Verdict |
+| :--- | ---: | :--- |
+| `.bg-primary/10` label — `primary-strong` on the tint | **4.45:1** | 🔴 **real, and now fixed** |
+| `button[aria-label="Create"]`, profile link — `#FFFFFF` on `primary` | 2.52:1 | already **waived** in `check:contrast` (owner palette decision) |
+| `.text-success` ×2 — `success` on `success-bg` | 3.87:1 | already **waived** |
+| `.sm:hidden` (21.3×34), `.-bottom-1` (19.1×19.1) | — | `target-size`, genuinely open |
+
+So **most of the shell's "regression" is the palette debt the owner already accepted**, surfacing for
+the first time because these two surfaces had never been audited. Only one was a live defect.
+
+**The fix, and the hole it came through.** `primary-strong` on a `bg-primary/10` tint painted
+**4.45:1** against a 4.5 floor — short by 0.05 — while every declared pair in `check:contrast` passed.
+The gate could not have caught it: it modelled a translucent **foreground** (`alpha`, added for the
+focus ring) but had no way to express a translucent **ground**. Shipped here: `bgAlpha`/`bgOver` on the
+pair shape, the pair declared, and `--color-primary-strong` moved `#9A5E12` → `#965C12`, which clears
+it at **4.62:1** and is imperceptible.
+
+⚠️ **The declared ground is a literal, deliberately.** The natural entry is *primary @10% over canvas* —
+exactly what `bgAlpha` was added for — but that composites to **#F8EEE0** while the browser painted
+**#F8EAD6**. The element does not sit directly on the canvas. Writing the computed value would have
+produced a **passing 4.58:1 for a panel that renders 4.45:1**: a second entry measuring the declaration
+instead of the paint, which is the precise defect the focus-ring note in that file was written about.
+The literal is attributed to the run that observed it, and carries an instruction to replace it with
+the `bgAlpha` form once the real stack is identified.
+
+Proven both ways: the gate reports **4.45:1, short by 0.05** before the token change and passes after.
+
 ---
 
 ## Phase 7 — Voice, docs, and the owner handoff
@@ -318,8 +582,8 @@ what I would do.
 
 | Call | Evidence | Recommendation |
 | :--- | :--- | :--- |
-| **`library_usages`** — rebuild the index, or delete "Used in"? | **Nothing has ever written to it.** `grep` across `supabase/migrations/`, `lib/`, `app/`, `components/` finds **zero** inserts, in the creating migration or anywhere since. So rebuilding the table gives you an **empty table**, and "Used in" still shows nothing. The working feature is a write path at every place an asset is referenced (Puck block, space brand, spotlight, email) — that is LIBRARY.md D4, a feature, not a table restore. | **Delete the affordance now.** `listSplashUsages`, `SplashUsage`, `UsageList` and the two `usagesBy*` maps are ~60 lines across three files. Rebuild it *with* D4 when D4 is actually built, rather than carrying a permanently-empty control that reads as a bug to any operator who notices it. |
-| **`/admin/library`** — which admin section? | Three options. **(a) File it under Operations** (`janitor` + `platform`): the min matches, but the section gate cascades, so a marketing-domain janitor would lose the tab. **(b) Give it its own top-level `ADMIN_NAV_SPECS` row** (`href: '/admin/library'`, `min: 'janitor'`, `staffDomain: 'marketing'`, no groups) — exactly the shape `/admin/qr` (QR Studio) already has. **(c)** Add a per-leaf gate override to `adminHeaderMenu()`. | **(b).** One row, no gate distortion, no new mechanism, and it matches an existing precedent in the same file. (a) silently narrows who can see it; (c) invents machinery for one page. |
+| ✅ **`library_usages`** — DONE, deleted (ADR-979) | **Nothing has ever written to it.** Zero inserts in the creating migration or anywhere since, so rebuilding gives an empty table and the control still shows nothing. | **Deleted.** `listSplashUsages`, `SplashUsage`, `UsageList`, `liveUsageRef`, the two `usagesBy*` maps, both `<Field label="Used in">` blocks, and `splashUsageHref` **plus its six tests** — its only consumer was `UsageList`, so keeping it would have been dead code carrying passing tests. Rebuild it *with* LIBRARY.md D4. |
+| ✅ **`/admin/library`** — DONE, its own section (ADR-979) | Filing it under an existing section is the wrong fix: `adminHeaderMenu()` stamps the SECTION's gate onto every item, so Growth would offer a janitor tool to hosts and Operations would drop it for a marketing-domain janitor. | **Its own `ADMIN_NAV_SPECS` row** — `min: 'janitor'`, `staffDomain: 'marketing'`, no groups; the shape `/admin/qr` already has. Three tests pin it. ⚠️ The first gate test asserted `staffDomain` only, so flipping `min` left it green — it now asserts **both** axes, verified by flipping each. |
 
 ### 7c. Owner actions, collected
 

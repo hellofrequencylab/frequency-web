@@ -19644,3 +19644,127 @@ exactly the shape such a gate exists to defend. 🔴 **The general lesson outliv
 predicate used by ten callers should be named for the *question*, not the *answer*, and any
 "is this usable" check on stored user content deserves the question *"and what happens to the data
 when it says no?"*
+
+
+---
+
+## ADR-979 — Deleting a control nobody could have filled, and a nav row that is a gate decision (2026-08-10)
+
+Two owner calls, answered 2026-08-10. Both were sitting open because the plan framed them as
+research questions; the code had already settled them.
+
+**1. The Loom Studio "Used in" control is deleted.**
+
+`public.library_usages` was created by `20260920000000_library_dam.sql` and dropped five days later
+as an orphan. The plan asked: rebuild the index, or delete the affordance?
+
+The question had a false premise. **Nothing has ever written to that table.** A repo-wide search
+finds zero inserts — not in the creating migration, not in `lib/`, `app/` or `components/`, not
+since. So recreating it restores an **empty** table and the control still shows "Not referenced
+yet" forever. The choice was never "rebuild vs delete"; it was "delete, or build LIBRARY.md D4",
+and D4 is a write path at every place an asset is referenced (Puck block, space brand, spotlight,
+email) — a feature, not a fix.
+
+Removed: `listSplashUsages`, the `SplashUsage` type, `UsageList`, `liveUsageRef`, the two
+`usagesBy*` maps, both `<Field label="Used in">` blocks, and `splashUsageHref` with its six tests.
+That last one matters: its only consumer was `UsageList`, so leaving it would have been dead code
+carrying passing tests, which reads as coverage. Rebuild the control *with* D4; do not re-add a
+reader on its own.
+
+**2. `/admin/library` gets its own `ADMIN_NAV_SPECS` row, and the reason is the gate.**
+
+Loom Studio matched no `admin_header` section, so its sub-nav band drew empty. Filing it under an
+existing section looks like the small fix and is the wrong one, because `adminHeaderMenu()` stamps
+the **section's** `min` and `staffDomain` onto every item inside it:
+
+- under **Growth** (`host` + `marketing`) a janitor-only tool would be offered to **hosts**;
+- under **Operations** (`janitor` + `platform`) it would be relabelled a platform tool and vanish
+  for a **marketing-domain janitor**.
+
+Its own row carries its own gate — `min: 'janitor'`, `staffDomain: 'marketing'`, no `groups`, so
+the band renders just its landing link. This is the shape `/admin/qr` already has directly above
+it, so it is a precedent rather than a new pattern, and the locked menu contract stays a data edit.
+
+**Consequences.** ✅ Three tests in `lib/menus/gates.test.ts` pin the section, its gate, and the
+absence of borrowed children. ⚠️ **The first version of that gate test was weak and my own probe
+caught it:** it asserted `staffDomain` only, so flipping `min: 'janitor'` to `'admin'` left all 23
+tests green. It now asserts **both** axes, and flipping either one fails — verified by doing it. A
+gate assertion covering one axis misses half the ways the gate breaks.
+
+---
+
+## ADR-980 — Two baselines that look alike and take opposite remedies (2026-08-10)
+
+**Decision.** `update_baselines` and `update_a11y` are the same gesture on two different kinds of
+file, and only one of them is ever automatically right. **A visual baseline is descriptive; the
+accessibility ratchet is normative.** Recapture is the whole remedy for the first and is *erasure*
+for the second, so a run that fails both does not get one fix applied twice.
+
+**Context.** Run `31422100196` (2026-08-10) is the first time the a11y suite has run end to end with
+a member session. It reports **32 failed · 28 passed · 26 skipped**, arriving in the same week the
+visual suite reported 62 of 72 failing. Both instruments were frozen on 2026-08-04 and both went
+stale for exactly one reason: the design moved underneath them (#2042's DAWN pass, #2053, #2061).
+
+The tempting inference is that both take the same remedy, because both failures have the same cause.
+That is the trap. What the two files *mean* is not the same thing:
+
+| | `test/e2e/__screenshots__` | `test/e2e/a11y-baselines.json` |
+| :--- | :--- | :--- |
+| Records | what the page **looked like** | how much serious+ debt is **allowed** |
+| A diff means | the design changed | the product got **worse** |
+| Recapture | restores the truth | **deletes the finding** |
+| Direction | free both ways | ratchets down only (ADR-928) |
+
+Re-freezing a rise satisfies the gate and destroys the only record that anything regressed. The gate
+would go green having learned nothing, which is the repo's own named failure mode wearing a
+different coat: a check whose passing no longer carries information.
+
+**The measurement, so the next pass does not re-derive it.** Four of the 32 are `/feed` and
+`/settings`, which have **no key at all** in `surfaces` and so fall to `$defaultMax` — those are
+absent baselines, and seeding an absent baseline *is* a capture (plan item 1.3, safe to run alone).
+The other 28 are rises against real numbers. The shape is systemic rather than scattered: **all 16
+dark-mode contrast checks fail** — `dawn-dark` and `midnight-dark`, all eight public surfaces —
+against baselines of **0** everywhere except `/spaces` (2) and `/the-community` (3).
+
+That baseline is trustworthy, and it is worth saying why, because "the old numbers were junk" is the
+easy way to justify overwriting them. The frozen counts vary with the **mode** axis and are blind to
+the **skin** axis: `midnight-light` is identical to `dawn-light` on all eight surfaces, and
+`midnight-dark` to `dawn-dark`. Contrast should behave exactly that way. A capture taken while the
+render-state switch was silently not applying would have collapsed all four states onto one number,
+and it does not. So the zeros were true when written, and dark mode has genuinely regressed since.
+
+**⚠️ CORRECTION (2026-08-10, same day).** The warning this ADR was written around — *"do not run
+`update_a11y`, it will erase the finding"* — is **wrong**, and the code says so plainly. The merge in
+`scripts/a11y-baselines.mjs` is asymmetric by design: a fall is written, a **rise** is collected into
+`rose` and **not written**, a **new context above `$defaultMax`** is collected into `added` and **not
+seeded**, and the process `exit(1)`s before `writeFileSync` unless `--force` is passed. The workflow
+does not pass `--force`. Its own comment states the intent: *"Merge is asymmetric and exits non-zero
+on a rise, so a regression cannot be quietly absorbed by re-running this job."*
+
+So the true behaviour is the opposite of the hazard I described: running `update_a11y` today **fails
+and writes nothing at all** — it cannot erase the 28 rises, and it equally cannot seed `/feed` and
+`/settings`, because their debt (7 and 2) is above `$defaultMax` (0) and a new surface joins at zero
+tolerance. Seeding them is a deliberate `--force` act with a reason in the commit, which is exactly
+the ceremony the file's own header asks for. I wrote a warning against a safeguard that already
+existed, having read the workflow's inputs and not the script they call. The rule stands; the risk
+did not.
+
+**Consequences.** ✅ Sixteen failures across eight pages and two skins is **one** cause, not sixteen;
+it is the first thing to look at and the cheapest to fix. ✅ The file's own header already states the
+rule this ADR is enforcing — *"baselines are debt, and debt gets a name"* — so a waiver is legitimate
+where a fix is not affordable, provided the reason lands in the same commit. ⚠️ `update_a11y` is not
+forbidden, it is **not automatic**: it is correct for an absent baseline and for a fall, and wrong
+for a rise. Nothing in the workflow distinguishes those three cases, so the judgement stays with
+whoever dispatches it. ⚠️ The smoke job is dispatch-only and not a required context, which is why 28
+real accessibility regressions sat unseen for six days. That is an argument for e2e coverage on a
+schedule, not for making a manual job blocking.
+
+**Why `check:contrast` is green at the same time, and why that is not a contradiction.** The first
+instinct on reading "16 dark-mode contrast failures" next to a passing contrast gate is that the gate
+is broken. It is not, and the distinction is worth holding on to. `check:contrast` validates the
+**token layer**: it resolves every token in `app/globals.css` across all five render states and
+checks the **declared `PAIRS`** list — 365 pairs, 49 on a frozen waiver floor. axe validates what was
+actually **painted**. The gate therefore cannot see a token applied to a ground it was never paired
+with, a colour that never went through a token, or contrast that only emerges from composition
+(an overlay, an opacity, text over an image). Both instruments are honest; neither is a substitute
+for the other, and the runtime one is the one that had no way to run for six days.

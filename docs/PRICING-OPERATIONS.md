@@ -21,8 +21,10 @@ ladder, ADR-811; every yearly price is two months free):
 
 The founding beta anchors ($19 Business, $49 Collective) auto-revert to list on 2026-09-01
 (`lib/pricing/beta.ts`); a Space that bought at the founding rate keeps it. The Collective beta
-price is the one `COLLECTIVE_BETA_CENTS` constant (`lib/pricing/feature-tiers.ts`), shared by
-every surface that shows it. **Vera AI** is the sole add-on: +$20/mo on any paid Space plan.
+price is one cell of `SPACE_PLAN_PRICE_CENTS` (`lib/pricing/feature-tiers.ts`), read by every
+surface that shows it, and resolved through `tierPriceCents` exactly as the checkout does. (It had
+its own `COLLECTIVE_BETA_CENTS` constant until 2026-08-10; a per-tier patch is a list of tiers
+somebody remembered, which is the whole mechanism [ADR-916](DECISIONS.md) records for the $19/$29 split.) **Vera AI** is the sole add-on: +$20/mo on any paid Space plan.
 
 All of this bills through Stripe subscriptions and one-time payments.
 

@@ -90,11 +90,6 @@ export const PLACEHOLDER_SPACE_PRICE_CENTS: Record<SpacePlan, number> = {
   independent: SPACE_PLAN_PRICE_CENTS.independent.listCents,
 }
 
-/** @deprecated The Collective Opening Beta monthly price (cents), now just one cell of
- *  SPACE_PLAN_PRICE_CENTS. Kept as a named alias for the in-app plan ladder; it is no longer a
- *  Collective-only patch, and no tier needs one. */
-export const COLLECTIVE_BETA_CENTS = SPACE_PLAN_PRICE_CENTS.collective.foundingCents
-
 /** The monthly price per SELLABLE personal membership tier, in cents: Member free, Crew $9 (ADR-878).
  *  THE one place the Crew price is written down. It is not in the Stripe plan catalog (the member ladder
  *  is not sold through the plan loadout), so this pure, client-safe map is the source, and

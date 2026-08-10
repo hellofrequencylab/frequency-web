@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
@@ -256,21 +255,12 @@ export async function BillingBody({ slug }: { slug: string }) {
               seatMonthlyCents={seatMonthlyCents}
               trialDays={values.trial.days}
             />
-            {/* The per-city founding cohort (ADR-599/803). Its page owns every figure and every gate,
-                including whether spots remain in this Space's city, so this is only the DOOR — the
-                offer had none, which is why a founding_members business row could never be created
-                through checkout. Shown to unpaid Spaces beside the standard upgrade, never instead
-                of it. */}
-            <p className="text-2xs text-muted">
-              Opening a business in a city we are just starting in?{' '}
-              <Link
-                href={`/spaces/${space.slug}/settings/billing/founding`}
-                className="font-semibold text-primary-strong hover:underline"
-              >
-                See if a founding spot is left
-              </Link>
-              .
-            </p>
+            {/* The per-city Founding BUSINESS cohort door was here. Removed 2026-08-10: the cohort was
+                withdrawn by owner directive on 2026-07-31 and its route was deleted with it, but this
+                CTA survived a later edit to the file (#2017, 2026-08-03). Every unpaid Space owner who
+                opened Settings → Billing saw "See if a founding spot is left" and got a 404.
+                `lib/pricing/founding.ts:24` is the record of the retirement; the `business_*` config
+                fields it names still exist as fields only. Do not re-add a door without a room. */}
           </fieldset>
         )}
 
