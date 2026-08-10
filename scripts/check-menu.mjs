@@ -546,7 +546,28 @@ const WHY = {
   integrity: 'breaks the guard’s own integrity',
 }
 
+/** A gate that scans nothing reports a clean bill of health. This is the largest guard in the repo
+ *  and it is regex- and AST-driven over a surface it discovers at runtime, so a seed rename, a
+ *  parse failure, or a resolveImport change could shrink `menuSurface()` to a handful of files and
+ *  every rule would then find nothing and pass. `integrityViolations()` already fails when a
+ *  declared SEED goes missing, which is real protection, but it says nothing about how many files
+ *  the walk actually produced. Measured 117 on 2026-08-10; the floor sits well under that and far
+ *  above zero. Same pattern as MIN_ROWS in check-gate-parity.mjs, which shipped after that gate
+ *  printed "0 of 0 ✓" and exited 0. */
+export const MIN_SURFACE_FILES = 60
+
 function main() {
+  const surfaceSize = menuSurface().length
+  if (surfaceSize < MIN_SURFACE_FILES) {
+    console.error(
+      `\n✗ check:menu resolved only ${surfaceSize} file(s) in the menu-resolution surface, expected ` +
+        `at least ${MIN_SURFACE_FILES}.\n  The seeds moved, a parse failed, or import resolution ` +
+        'broke. Every rule below scans this surface, so\n  a run that sees almost none of it must ' +
+        'fail rather than report a clean contract.\n',
+    )
+    process.exit(1)
+  }
+
   const { violations, ratchet } = runCheck()
 
   for (const r of ratchet.fell) {
@@ -557,7 +578,8 @@ function main() {
     const frozen = ratchet.held.reduce((n, r) => n + r.at, 0) + ratchet.fell.reduce((n, r) => n + r.to, 0)
     console.log(
       '✓ Menu contract: every module catalog is registered, the APPS lane manifest holds, and no new ' +
-        `hand-declared menu entered the resolution surface (${frozen} row(s) of frozen debt in ` +
+        `hand-declared menu entered the resolution surface (${surfaceSize} file(s) scanned; ` +
+        `${frozen} row(s) of frozen debt in ` +
         `${ratchet.held.length + ratchet.fell.length} file(s) — see FROZEN_MENU_DEBT).`,
     )
     return

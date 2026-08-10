@@ -241,7 +241,22 @@ export function runCheck() {
   return violations
 }
 
+/** A gate that scans nothing reports a clean bill of health, and this one prints no count at all,
+ *  so an under-scan is invisible. `walk()` returns [] for a missing root without complaint. The
+ *  floor sits well under the live corpus (~3274 on 2026-08-10) and far above zero, so it fires on
+ *  a broken read rather than on growth. Same pattern as MIN_ROWS in check-gate-parity.mjs. */
+export const MIN_SCANNED_FILES = 1500
+
 function main() {
+  const scanned = ROOTS.flatMap(walk).length
+  if (scanned < MIN_SCANNED_FILES) {
+    console.error(
+      `✗ check:tokens scanned only ${scanned} file(s), expected at least ${MIN_SCANNED_FILES}. ` +
+        'A root moved or the walk is broken; a run that reads almost nothing must fail ' +
+        'rather than report a clean contract.',
+    )
+    process.exit(1)
+  }
   const violations = runCheck()
   if (violations.length === 0) {
     console.log('✓ Token guard: in-app UI uses DAWN tokens + the named type scale (no raw hex, no text-[Npx], no inline rgb()).')
