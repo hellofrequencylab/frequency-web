@@ -131,21 +131,24 @@ const admin = createServerClient(supabaseUrl, serviceRole, {
   cookies: { getAll: () => [], setAll: () => {} },
 })
 
-const { data: link, error: linkError } = await admin.auth.admin.generateLink({
-  type: 'magiclink',
-  email,
-})
-const tokenHash = link?.properties?.hashed_token
-if (linkError || !tokenHash) {
-  fail(
-    `Could not mint a magic link for ${email}: ${linkError?.message ?? 'no hashed_token returned'}`,
-    'If this says the user does not exist, sign in once with that address in the app first —',
-    'the account has to be there before a link can be minted for it.',
-  )
-}
+// ⚠️ MINTING RACES WITH ITSELF, and the loop below is why.
+//
+// `e2e-manual.yml` runs `smoke` and `update-baselines` as PARALLEL jobs, and with `capture_shell`
+// on BOTH mint a session for the SAME account. Supabase invalidates a user's previous magic link
+// when a new one is generated, so whichever job verifies second wins and the other gets
+// `Email link is invalid or has expired` — from a token that was valid when it was issued.
+//
+// Observed on run 31437903770: both jobs entered this step within the same second (22:22:07Z),
+// `update-baselines` succeeded, `smoke` failed 200ms after the winner's `last_sign_in_at`. It is a
+// coin flip, it had been latent for as long as both jobs have taken `capture_shell`, and it reads
+// as a credentials problem every time — which is exactly how it cost an afternoon.
+//
+// Retrying is the right shape rather than serialising the jobs: the loss is detectable, cheap to
+// redo, and serialising would make every capture wait out the full smoke suite. Jitter keeps two
+// retrying jobs from re-colliding in lockstep.
+/* ── 2. Mint AND exchange, together, with retries ────────────────────────────────────── */
 
-/* ── 2. Exchange it, and let @supabase/ssr write the cookies ─────────────────────────── */
-
+const MINT_ATTEMPTS = 4
 const jar = new Map<string, JarCookie>()
 const member = createServerClient(supabaseUrl, anonKey, {
   cookies: {
@@ -156,12 +159,53 @@ const member = createServerClient(supabaseUrl, anonKey, {
   },
 })
 
-const { data: session, error: verifyError } = await member.auth.verifyOtp({
-  token_hash: tokenHash,
-  type: 'email',
-})
-if (verifyError || !session.session) {
-  fail(`Could not exchange the link for a session: ${verifyError?.message ?? 'no session returned'}`)
+let minted = false
+let lastError = 'no attempt ran'
+// Hoisted: the failure diagnostic far below reports the session's user + expiry, and scoping this
+// to the loop would have silently cost that detail exactly when it is most needed.
+let session: Awaited<ReturnType<typeof member.auth.verifyOtp>>['data'] | null = null
+
+for (let attempt = 1; attempt <= MINT_ATTEMPTS; attempt++) {
+  const { data: link, error: linkError } = await admin.auth.admin.generateLink({
+    type: 'magiclink',
+    email,
+  })
+  const tokenHash = link?.properties?.hashed_token
+  if (linkError || !tokenHash) {
+    fail(
+      `Could not mint a magic link for ${email}: ${linkError?.message ?? 'no hashed_token returned'}`,
+      'If this says the user does not exist, sign in once with that address in the app first —',
+      'the account has to be there before a link can be minted for it.',
+    )
+  }
+
+  // The generate/verify PAIR is what retries, not the generate alone. A lost race fails at VERIFY
+  // with a token that was valid when it was issued, so re-verifying the same hash would fail
+  // identically forever — the recovery is a FRESH link.
+  jar.clear()
+  const { data, error: verifyError } = await member.auth.verifyOtp({
+    token_hash: tokenHash,
+    type: 'email',
+  })
+  session = data
+  if (!verifyError && data.session) {
+    minted = true
+    break
+  }
+
+  lastError = verifyError?.message ?? 'no session returned'
+  if (attempt < MINT_ATTEMPTS) {
+    console.warn(`  ↻ mint attempt ${attempt} lost the link (${lastError}); minting a fresh one`)
+    await new Promise((r) => setTimeout(r, 400 * attempt + Math.floor(Math.random() * 400)))
+  }
+}
+
+if (!minted) {
+  fail(
+    `Could not exchange the link for a session after ${MINT_ATTEMPTS} attempts: ${lastError}`,
+    'If this is "Email link is invalid or has expired" every time, it is NOT the race this loop',
+    'handles — check that PW_MEMBER_EMAIL names an account that exists and is not banned.',
+  )
 }
 
 // `createServerClient` applies its storage from an onAuthStateChange handler, which resolves a
@@ -225,7 +269,7 @@ try {
       `  probe status : ${response.status}`,
       `  cookies sent : ${cookies.map((c) => c.name).join(', ') || '(none)'}`,
       `  cookie domain: ${baseUrl.hostname}   secure=${baseUrl.protocol === 'https:'}`,
-      `  session user : ${session.session?.user?.email ?? '(none)'} (expires ${session.session?.expires_at ?? '?'})`,
+      `  session user : ${session?.session?.user?.email ?? '(none)'} (expires ${session?.session?.expires_at ?? '?'})`,
       '',
       'The app reads its session with createServerClient(NEXT_PUBLIC_SUPABASE_URL, ...), and',
       '@supabase/ssr derives the cookie NAME from that URL. If the name above does not match the',
