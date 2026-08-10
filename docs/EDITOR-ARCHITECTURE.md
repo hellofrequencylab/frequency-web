@@ -657,6 +657,52 @@ the point someone asks why nothing has shipped.
 E7 (a member takes a payment), E8 (one prompt builds a page). Pulling any of them earlier means
 building on the pre-contract block systems and doing it twice.
 
+### 8.0 🔴 The scale this plan is sized for — measured, not assumed
+
+**The plan measures the code exhaustively and never measured the users.** Here is that half, taken
+from production on 2026-08-10. It is the most important table in this document, because several
+phases are insurance against risks the data says are not arriving this year.
+
+| Measure | Value |
+|---|---:|
+| Spaces | **19** |
+| … with a stored `profileLayout` | 17 |
+| … whose layout was untouched >1 min after creation | **13 of 17** |
+| … with a saved draft (`profileLayoutDraft`) | **0** |
+| **Spaces with two *independent* editors** | **0** — six have two, and the platform owner is one of the two in **every** case |
+| Profiles | 52 · **4** with a Spotlight · **1** with a Stripe account |
+| Signed in, last 7 days | **5** |
+| `stripe_webhook_events`, **all time** | **0** — no payment has ever flowed through this platform |
+| `app_instances` | **0**, since 2026-09 |
+| Editor events in `engagement_events` | **0** of 14,843 |
+| Stored editor documents, all stores | **41** |
+| Email events, 30 days | 704 (297 sends), most recent **today** |
+
+**Three readings follow, and they pull in different directions. Hold all three.**
+
+1. 🔴 **Several commitments serve nobody yet.** Multiplayer ([ADR-976](DECISIONS.md) D-2) is an **XL**
+   for **zero** spaces with two independent editors. E7's member payouts (D-3) build a fee, payout
+   and tax surface on a platform where **no payment has ever settled**. E9's Loom authoring plus its
+   two-arm integrity gate is a plugin platform's safety apparatus for 19 tenants, 16 of them
+   administered by one person — and `app_instances` is that same bet, already placed and already
+   sitting at zero rows for eleven months.
+2. ✅ **But the foundation is at its lifetime cheapest right now.** 41 documents and 19 tenants is the
+   smallest this migration will ever be. Every month of growth raises the cost of node-id keying,
+   the document model and the block contract. **E0's storage work is correctly timed even where
+   E0's CRDT is not.**
+3. 🔴 **There is no feedback channel at all.** Zero editor events of 14,843. Nothing in E0–E7
+   registers one, and §8.1 item 8 leaves telemetry unowned until E8. **The program cannot currently
+   observe whether anyone uses what it builds** — which is how a phase gets to month 10 before
+   anyone notices the bet was wrong.
+
+⚠️ **A working editor already ships.** `components/entity-blocks/**` is ~8,500 LOC of in-place canvas
+with a block picker, an edit panel, autosave, and draft/publish. **This program rebuilds an editor,
+it does not build the first one** — and the current one has been used to change a layout roughly
+three times. That is not evidence the editor is bad. It is evidence **nobody has checked**, and
+checking costs days where the phases that assume an answer cost months.
+
+---
+
 ### 8.1 🔴 Work no phase owns — assign before starting
 
 An implementability audit (2026-08-10) asked, for each phase, *"could an engineer start this on
