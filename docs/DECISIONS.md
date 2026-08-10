@@ -19690,3 +19690,55 @@ absence of borrowed children. ⚠️ **The first version of that gate test was w
 caught it:** it asserted `staffDomain` only, so flipping `min: 'janitor'` to `'admin'` left all 23
 tests green. It now asserts **both** axes, and flipping either one fails — verified by doing it. A
 gate assertion covering one axis misses half the ways the gate breaks.
+
+---
+
+## ADR-980 — Two baselines that look alike and take opposite remedies (2026-08-10)
+
+**Decision.** `update_baselines` and `update_a11y` are the same gesture on two different kinds of
+file, and only one of them is ever automatically right. **A visual baseline is descriptive; the
+accessibility ratchet is normative.** Recapture is the whole remedy for the first and is *erasure*
+for the second, so a run that fails both does not get one fix applied twice.
+
+**Context.** Run `31422100196` (2026-08-10) is the first time the a11y suite has run end to end with
+a member session. It reports **32 failed · 28 passed · 26 skipped**, arriving in the same week the
+visual suite reported 62 of 72 failing. Both instruments were frozen on 2026-08-04 and both went
+stale for exactly one reason: the design moved underneath them (#2042's DAWN pass, #2053, #2061).
+
+The tempting inference is that both take the same remedy, because both failures have the same cause.
+That is the trap. What the two files *mean* is not the same thing:
+
+| | `test/e2e/__screenshots__` | `test/e2e/a11y-baselines.json` |
+| :--- | :--- | :--- |
+| Records | what the page **looked like** | how much serious+ debt is **allowed** |
+| A diff means | the design changed | the product got **worse** |
+| Recapture | restores the truth | **deletes the finding** |
+| Direction | free both ways | ratchets down only (ADR-928) |
+
+Re-freezing a rise satisfies the gate and destroys the only record that anything regressed. The gate
+would go green having learned nothing, which is the repo's own named failure mode wearing a
+different coat: a check whose passing no longer carries information.
+
+**The measurement, so the next pass does not re-derive it.** Four of the 32 are `/feed` and
+`/settings`, which have **no key at all** in `surfaces` and so fall to `$defaultMax` — those are
+absent baselines, and seeding an absent baseline *is* a capture (plan item 1.3, safe to run alone).
+The other 28 are rises against real numbers. The shape is systemic rather than scattered: **all 16
+dark-mode contrast checks fail** — `dawn-dark` and `midnight-dark`, all eight public surfaces —
+against baselines of **0** everywhere except `/spaces` (2) and `/the-community` (3).
+
+That baseline is trustworthy, and it is worth saying why, because "the old numbers were junk" is the
+easy way to justify overwriting them. The frozen counts vary with the **mode** axis and are blind to
+the **skin** axis: `midnight-light` is identical to `dawn-light` on all eight surfaces, and
+`midnight-dark` to `dawn-dark`. Contrast should behave exactly that way. A capture taken while the
+render-state switch was silently not applying would have collapsed all four states onto one number,
+and it does not. So the zeros were true when written, and dark mode has genuinely regressed since.
+
+**Consequences.** ✅ Sixteen failures across eight pages and two skins is **one** cause, not sixteen;
+it is the first thing to look at and the cheapest to fix. ✅ The file's own header already states the
+rule this ADR is enforcing — *"baselines are debt, and debt gets a name"* — so a waiver is legitimate
+where a fix is not affordable, provided the reason lands in the same commit. ⚠️ `update_a11y` is not
+forbidden, it is **not automatic**: it is correct for an absent baseline and for a fall, and wrong
+for a rise. Nothing in the workflow distinguishes those three cases, so the judgement stays with
+whoever dispatches it. ⚠️ The smoke job is dispatch-only and not a required context, which is why 28
+real accessibility regressions sat unseen for six days. That is an argument for e2e coverage on a
+schedule, not for making a manual job blocking.
