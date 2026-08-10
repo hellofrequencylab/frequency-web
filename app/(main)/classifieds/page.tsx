@@ -1,7 +1,7 @@
 import { Store, Tag, Gift, Hand, Search } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { listListings, LISTING_KINDS, type ListingKind } from '@/lib/marketplace'
-import { UnderlineTabs } from '@/components/admin/underline-tabs'
+import { UnderlineTabs } from '@/components/ui/underline-tabs'
 import { EmptyState } from '@/components/ui/empty-state'
 import { NewListingButton } from '@/components/studio/market/new-listing-button'
 import { MarketGrid, type GridListing } from '@/components/market/market-grid'

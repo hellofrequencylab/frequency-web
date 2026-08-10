@@ -19019,3 +19019,30 @@ removing one key makes `check:help` exit 1 and name both articles that reference
 registry keys still have no article — `nexuses`, `store`, `crew`, `profiles`, `marketing`,
 `outreach`, `pages`. All are `core: false` (secondary / operator surfaces), so they are the
 backfill queue this gate deliberately does not block on.
+
+---
+
+## ADR-971 — UnderlineTabs moves to the kit, three years after the sweep it belongs to (2026-08-10)
+
+**Decision.** `components/admin/underline-tabs.tsx` → `components/ui/underline-tabs.tsx`. All 17
+importers repointed. No behaviour change, no markup change.
+
+**Context.** The owner ruled on 2026-08-03 that `UnderlineTabs` is the one tab strip
+(`docs/BUILD-LIST.md`), and the sweep half of that ruling landed: `handrolled-tabs` has been at
+**0** in `scripts/adoption-baselines.json` since. What never happened was the move. A shared
+primitive that both member and admin surfaces compose sat under `components/admin/`, which is a
+discoverability tax paid by everyone who goes looking for the kit's tab strip and does not find one
+there. `docs/DAWN-CONVERSION.md` had it listed as an open gap the whole time.
+
+**The plan's count was wrong here too, in the harmless direction.** `docs/FINALIZE-PLAN.md` §6.3
+said 22 consumers; `git grep` finds **17** files importing it. Recording it because the pattern is
+now consistent enough to be worth naming: five separate figures in this plan were derived from a
+grep rather than from the thing itself, and every one of them was off. Counts in a plan doc are a
+measurement, and a measurement without a method is a guess with a number attached.
+
+**Consequences.** ✅ `tsc` and `lint` clean; the move is a rename plus an import rewrite, so there
+is nothing behavioural to test beyond that. ✅ The three docs that pointed at the old path
+(`DAWN-CONVERSION`, `BUILD-LIST`, `ADMIN-DESIGN-SYSTEM`) are corrected in the same pass, per the
+repo rule that a doc contradicting the code is fixed where it is found. ⚠️ Nothing enforces that a
+shared primitive lives in `components/ui/` — this move was found by reading a plan, not by a gate,
+and the next one will be too.
