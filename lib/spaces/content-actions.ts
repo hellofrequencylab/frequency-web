@@ -351,20 +351,66 @@ export async function updateSpaceUpdate(
     if (input.publish) patch.published_at = new Date().toISOString()
   }
 
-  const { error } = await db().from('space_updates').update(patch).eq('id', id).eq('space_id', auth.spaceId)
+  const { data: saved, error } = await db()
+    .from('space_updates')
+    .update(patch)
+    .eq('id', id)
+    .eq('space_id', auth.spaceId)
+    .select('post_id, title, body')
+    .maybeSingle()
   if (error) return fail('Could not save that update. Try again.')
+
+  // KEEP THE ANCHOR IN STEP. An Update is two rows: the space_updates row that renders, and an
+  // anchor public.posts row carrying the reactions and comments (ensureUpdateAnchor, above). Only
+  // the first was being patched, so an edited Update showed its new text on the landing page and
+  // its OLD text everywhere the anchor renders — with the discussion still attached to wording
+  // that no longer existed. Best-effort, exactly like the create path: the edit is already saved
+  // and a stale anchor must never fail it.
+  const row = saved as { post_id: string | null; title: string | null; body: string | null } | null
+  if (row?.post_id) {
+    try {
+      const anchorBody = `${row.title ?? ''}\n\n${row.body ?? ''}`.trim()
+      await db().from('posts').update({ body: anchorBody.slice(0, 20000) }).eq('id', row.post_id)
+    } catch {
+      // Ignore: the Update is saved. A stale anchor body is cosmetic next to losing the edit.
+    }
+  }
 
   revalidateLanding(slug)
   return ok()
 }
 
-/** Delete a brand Update. Owner/admin/editor-gated + space-scoped. */
+/** Delete a brand Update. Owner/admin/editor-gated + space-scoped. Removes the interaction anchor
+ *  with it, so no public post outlives the Update it was about. */
 export async function deleteSpaceUpdate(slug: string, id: string): Promise<ActionResult> {
   const auth = await authorizeEditor(slug)
   if (!auth) return fail('You do not have access to edit this page.')
 
+  // Read the anchor BEFORE deleting: space_updates.post_id is the only link to it, and the FK is
+  // `on delete set null` in the other direction only — nothing cascades from the Update to the
+  // post. Deleting the Update alone left a public posts row with post_type = 'space_update',
+  // still visible to the member-interaction RLS, whose subject no longer existed.
+  const { data: existing } = await db()
+    .from('space_updates')
+    .select('post_id')
+    .eq('id', id)
+    .eq('space_id', auth.spaceId)
+    .maybeSingle()
+
   const { error } = await db().from('space_updates').delete().eq('id', id).eq('space_id', auth.spaceId)
   if (error) return fail('Could not remove that update. Try again.')
+
+  const anchorId = (existing as { post_id: string | null } | null)?.post_id
+  if (anchorId) {
+    try {
+      // posts.parent_id is ON DELETE CASCADE, so this takes the comment thread with it. That is
+      // the intended reading: the discussion was about the Update, and leaving it attached to a
+      // deleted subject is worse than removing it.
+      await db().from('posts').delete().eq('id', anchorId)
+    } catch {
+      // Ignore: the Update is gone, which is what the operator asked for.
+    }
+  }
 
   revalidateLanding(slug)
   return ok()
