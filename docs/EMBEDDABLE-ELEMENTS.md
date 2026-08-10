@@ -46,10 +46,18 @@ catalog stays client-safe and testable:
 - `components/elements/registry.tsx` — the **component map**: `ELEMENT_COMPONENTS` (key → the one
   canonical component) + `ElementPropsMap` (each element's props, which type `<AppElement>`).
 
-`components/elements/app-element.tsx` is the **generic mounter**: `<AppElement name="loom-picker" …/>`.
-The `name` discriminates the props, so a wrong/missing prop is a compile error. An element MAY also
-export a **typed wrapper** (`const LoomElement = (p: ElementProps<'loom-picker'>) => <AppElement
-name="loom-picker" {...p} />`) as ergonomic sugar — never a second implementation.
+🔴 **`components/elements/app-element.tsx` does not exist** (verified 2026-08-10). This paragraph
+described the generic mounter — `<AppElement name="loom-picker" …/>`, where `name` discriminates the
+props so a wrong or missing prop is a compile error. The file is gone; `AppElement` now survives only
+as four comment references (`lib/elements/registry.ts:89`, `components/elements/registry.tsx:5,17`,
+`registry.test.ts:10`) pointing at a component with **zero call sites and no definition**. The pieces
+that *do* exist — `ELEMENT_COMPONENTS` and `ElementPropsMap` in `components/elements/registry.tsx` —
+are exactly the two halves a mounter needs, so this is a re-add, not a redesign. Rebuild it or delete
+the references; leaving both is how a reader concludes the framework is wired when it is not.
+
+The typed-wrapper sugar the paragraph also described (`const LoomElement = (p: ElementProps<'loom-picker'>)
+=> <AppElement name="loom-picker" {...p} />`) depends on the mounter and is equally hypothetical
+today. It was never a licence for a second implementation, and still is not.
 
 **Enforcement (hard, in CI).** `pnpm check:elements` (`scripts/check-elements.mjs`, wired into the
 `checks` job) fails a PR that (a) declares a second `ElementDef[]` catalog outside the registry, or
