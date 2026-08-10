@@ -19114,5 +19114,140 @@ second `ElementDef[]` catalog** outside `lib/elements/registry.ts`; confirm the 
 not trip it before E1 lands. ⚠️ **"Loom" now means two things in the doc set** —
 [`LOOM-EVERYWHERE-PLAN.md`](LOOM-EVERYWHERE-PLAN.md) scopes it to image uploads (`components/loom/`,
 one file); this ADR and `LOOM-PLATFORM.md` mean the App catalogue and control plane. Say "the Loom
-picker" or "the App catalogue" when either is ambiguous. 🔴 The three dead references to the deleted
-`bindings.tsx` are a live import error waiting on a cold build and are fixed in E0.
+picker" or "the App catalogue" when either is ambiguous. ⚠️ **A claim in the first draft of this ADR was wrong and is corrected here rather than
+quietly dropped:** it said three modules still *import* a deleted `lib/apps/bindings.tsx`, making a
+live build error. They do not. The three sites are header comments, `tsc --noEmit` exits 0, and there
+is nothing for E0 to fix. The genuine gap is that **the App→component resolver was never written at
+all** — which is worse than a broken import, because a broken import fails loudly and this fails by
+letting 349 rows look resolvable. `check:surface-binding` (E1) is what closes it.
+
+---
+
+## ADR-974 — Eight owner decisions on the editor program, and what three of them cost (2026-08-10)
+
+**Decision.** The eight questions [ADR-972](DECISIONS.md) left open are answered here. Two of them
+**change** ADR-972's design; [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md) is updated in the same
+pass so the two documents cannot disagree.
+
+| # | Question | Decision |
+|---|---|---|
+| **D-1** | Who may write raw CSS? | **Nobody.** Not operators, not staff, not Vera. Tokens only |
+| **D-2** | Concurrent editing? | **Full multiplayer**, live cursors |
+| **D-3** | How does a member get paid on Spotlight? | **Their own Stripe Connect account** |
+| **D-4** | Vera's default posture | **Builds the first draft at creation, then quiet until asked** |
+| **D-5** | Mobile editing | **Full editing, through a touch-native UI** |
+| **D-6** | E2 consolidation | **Aggressive — real retirements, with migrations** |
+| **D-7** | Who gets a Site | **Subdomain on any paid plan; custom domain is the upgrade** |
+| **D-8** | When E0 starts | **After FINALIZE-PLAN 1.2/1.3 only** (delegated to me; reasoning below) |
+
+**Three of these cost real schedule, and the estimate moves rather than absorbing it.** The program
+goes from *eight L, one XL, two M–L* to **four XL, five L, one M–L**:
+
+| Decision | Phase | Was | Now | Why |
+|---|---|:---:|:---:|---|
+| D-2 multiplayer | **E0** | L | **XL** | The document becomes a CRDT — that is not a feature bolted on later, it is what the document *is* |
+| D-5 mobile | **E5** | M–L | **L** | A touch-native inspector is a second interaction model, not a media query |
+| D-5 mobile | **E6** | L | **XL** | Direct manipulation twice: pointer and touch, with no hover channel on one of them |
+| D-3 Connect | **E7** | L | **XL** | Onboarding, capability checks, platform fee, payouts, tax surface |
+| D-1 no CSS | **E8** | L | **L** ⬇ | *Refunds* work — deletes a validator that no longer has anything to validate |
+
+### D-1 — no raw CSS, and why removing the feature beats defending it
+
+ADR-972 allowed operators and Vera to write raw CSS, and grew a validator to contain it: a property
+allowlist, a value validator, a container-escape check (`position: fixed|absolute`, unbounded
+`z-index`, negative margins), an injection check (`url()` off-allowlist, `content:`, `@import`), an
+`!important` ban, and a contrast re-check on every colour. **All of that existed to make layer 2
+compensate for coverage layer 1 already provided for free.** Deleting the feature deletes the
+validator and every bug the validator could have had.
+
+The security argument is the decisive one. The block model's first enforcement layer is *structural*:
+the model emits token names from a closed enum, so it cannot emit a value. Allow raw CSS and that
+guarantee evaporates for the one input class an attacker most wants to reach — the most valuable
+prompt-injection payload in the design is "add `position:fixed;z-index:9999`", and **with D-1 it has
+no channel to arrive through.** An allowlist is a thing you can get wrong. An absent parser is not.
+
+**This is not a new principle here; it is the existing one, applied consistently.**
+[ADR-425](DECISIONS.md) and [ADR-432](DECISIONS.md) already settled exactly this for Spotlight themes
+— *"Structured + validated, never raw CSS"*, colours as validated hex, gradients built server-side
+from validated stops, fonts and card options as closed allowlists, citing SpaceHey's blocking of raw
+CSS/JS as the precedent. [ADR-570](DECISIONS.md) states it again: *"No raw CSS reaches the page —
+every field is a fixed enum."* ADR-972 was the outlier, and D-1 brings the editor program back in
+line with two years of decisions rather than establishing something new.
+
+⚠️ **The honest cost, and the mitigation that must actually exist.** Some tenant will want something
+the tokens cannot express, and the answer will be "file it," not "here is a text box." That is
+accepted. But **D-1 converts into a support queue unless token coverage has an owner**: the
+escalation path is a token request with a real SLA, and it must exist **before the first paid Site**
+(E10), not after the first complaint. Recorded as open question **O-4**.
+
+**Consequence for the guards:** the `raw-css-overrides` ratchet — which ADR-972 set at 0 and allowed
+to *rise* as "visibility only" — is replaced by `raw-css-paths`, which **must stay 0**. Any authored
+CSS field, any `dangerouslySetInnerHTML` fed from a document, any `<style>` built from tenant data is
+this decision leaking back in, and the ratchet's asymmetric merge refuses the rise.
+
+### D-2 — multiplayer, taken with the cost stated
+
+I recommended a soft lock (one editor at a time, "Dana is editing this," take-over available) as the
+cheap answer that keeps the door open. **That recommendation was declined and full multiplayer is the
+decision.** Building it.
+
+The reason this is defensible despite the cost: **multiplayer is not addable later.** It changes what
+the document *is*, so committing in E0 costs one XL, and discovering it in E4 costs E0 again. If it
+is ever going to be true, now is the only cheap moment — and the [`EDITOR-ARCHITECTURE`](EDITOR-ARCHITECTURE.md)
+§4 node-id requirement, which exists for AI ops, undo, comments and analytics, is *also* exactly what
+a CRDT needs. E0 was always building the hard part.
+
+| Concern | Decision | Why |
+|---|---|---|
+| CRDT | **Yjs** | `@tiptap/pm` **3.29 is already a dependency**, and Tiptap collaboration *is* `y-prosemirror`. E4's inline rich text and E0's document sync become one technology instead of two. Any other CRDT makes Tiptap collaboration a bespoke bridge |
+| Transport | **Supabase Realtime broadcast** carrying Yjs updates | Already in the stack, already authenticated with the editor's session. Avoids operating a `y-websocket` server — a new production dependency with its own scaling and on-call story |
+| Presence | Yjs **awareness** over Realtime presence | Ephemeral by construction. A cursor that persists to the database is a bug |
+| Persistence | Debounced encoded snapshot into the draft row; `page_versions` stores **serialized trees, not CRDT state** | A version a human restores must be readable without a CRDT runtime. This is what stops Yjs from becoming load-bearing on the *read* path |
+| Undo | `Y.UndoManager`, **scoped to the local client** | The correct multiplayer semantic, and non-obvious: undo must revert *your* edit, never your collaborator's. A shared undo stack is a defect, not a simplification |
+| Public render | **Untouched — zero CRDT, zero Realtime, zero Yjs bytes** | Multiplayer is an authoring concern. A visitor must not pay one kilobyte for it. Ratcheted, because this regresses via an innocent shared import rather than via a decision |
+
+⚠️ **Two consequences to design for.** Server-side authority is weaker in a CRDT — the server cannot
+simply reject an edit, because clients converge independently — so **schema validation moves to a
+boundary at snapshot-and-publish time**, and an invalid intermediate state is normal rather than an
+error. And §7.4 gains a harness: *the CRDT serialization of a document must equal the document*, or
+every other harness is measuring an artifact the editor does not produce.
+
+✅ **One thing gets cheaper.** Vera joins a page as a *client*, not as a server action that rewrites
+the document. Ghosted proposals are literally a separate awareness state; accept is one Yjs
+transaction, so it is atomic and single-undo for free; her edits merge with a human's concurrent
+edits under the same rules as anyone else's, so "Vera stomped my change" is unreachable; and
+attribution is inherent, because every node records the client that last wrote it.
+
+### D-3 — members get their own Stripe Connect account
+
+The member owns the customer relationship, the tax position and the chargeback risk; Frequency takes
+a platform fee. The alternative — routing member sales through Frequency's own account and paying out
+— would make Frequency a money transmitter in substance, with float, tax-reporting and licensing
+consequences far larger than the editor program.
+
+⚠️ **The cost is a real onboarding wall.** A member who wants to sell must complete Stripe identity
+and bank verification before their first sale. E7 must treat "connected" as a *capability gate on the
+block*, not a precondition for placing it: the blocks are placeable and previewable, and checkout is
+what requires the connected account. A member who has not onboarded sees a clear path, not a missing
+feature. **O-1 (Express vs Custom account type) and O-2 (the fee) are open and due before E7** — not
+before E0.
+
+### D-8 — E0 starts after FINALIZE-PLAN 1.2/1.3, and nothing else
+
+Delegated to me. **E0 is storage-shape and sync work, not pixel work**, so recaptured visual baselines
+are the one FINALIZE-PLAN output it actually consumes; the access-layer sweep, the menu work, the kit
+pass and the voice pass are independent of it. Waiting for all seven phases would spend a quarter
+buying safety E0 does not use. Starting *before* 1.2/1.3 is the genuinely bad option — with baselines
+many rendering commits stale, a total regression and a perfect refactor produce the same red X.
+
+**The `EDITABLE_PAGES` collision binds E3, not E0.** UX-MATURITY 5c/5d *grow* the constant; E3
+*replaces* it. That wait happens later in the program and does not delay the start.
+
+**Consequences.** ✅ Eight decisions recorded with their costs rather than their intentions.
+✅ `EDITOR-ARCHITECTURE` §4.1, §6, §7.3, §7.4, §8, §9 and §10 updated in the same commit; §10 is now
+*decisions taken* plus five genuinely open items (O-1…O-5), each with an owner and a due phase, none
+of which blocks E0. ⚠️ **The program got longer, on purpose** — four XL phases now, and D-2 and D-5
+are why. ⚠️ **`raw-css-paths` must stay 0 forever**; if a future PR argues for an escape hatch, it is
+arguing with this ADR and with ADR-425/432/570. 🔴 **O-4 (token-coverage ownership) is the one open
+item that can quietly invalidate a decision**: D-1 is correct only if a tenant's unmet need has
+somewhere to go.

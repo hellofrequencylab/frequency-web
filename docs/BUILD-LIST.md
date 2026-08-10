@@ -36,6 +36,23 @@ target** decides React tree vs HTML string. Email already proves the model
 (`lib/entity-blocks/registry.ts:14-17`); Site needs the same four things email got — legality, a
 column ceiling, a palette allowlist, a renderer.
 
+### The eight owner decisions ([ADR-974](DECISIONS.md))
+
+| # | Decision | Cost |
+|---|---|---|
+| **D-1** | **Nobody writes raw CSS** — not operators, not staff, not Vera. Tokens only | ⬇ *Refunds* E8: deletes a whole CSS validator. Needs a token-request path with an SLA before the first paid Site (**O-4**) |
+| **D-2** | **Full multiplayer**, live cursors | ⬆ **E0 L → XL.** Yjs over Supabase Realtime. Not addable later — it changes what the document *is* |
+| **D-3** | Members sell via **their own Stripe Connect account** | ⬆ **E7 L → XL.** A real onboarding wall; blocks stay placeable, checkout is what gates |
+| **D-4** | Vera **drafts at creation, then waits** | — Scopes E8 |
+| **D-5** | **Full mobile editing**, touch-native UI | ⬆ **E5 M–L → L**, **E6 L → XL.** Two direct-manipulation models, one with no hover channel |
+| **D-6** | **Aggressive** consolidation — real retirements | Every retired id needs a tested `up` **and** `down`. Gated on the usage index |
+| **D-7** | **Subdomain on any paid plan; custom domain is the upgrade** | Enforces `custom_domain` at bind in E10 |
+| **D-8** | **E0 starts after FINALIZE-PLAN 1.2/1.3 only** | E0 is storage + sync work, not pixel work; the rest of FINALIZE-PLAN runs concurrently |
+
+**Five questions remain open** (`EDITOR-ARCHITECTURE` §10.3), each with an owner and a due phase.
+**None blocks E0.** The one that can quietly invalidate a decision is **O-4** — D-1 is correct only
+if a tenant's unmet need has somewhere to go.
+
 ### Prerequisites — neither is code we can write
 
 | # | Prerequisite | Owner | Why it blocks |
@@ -47,21 +64,30 @@ column ceiling, a palette allowlist, a renderer.
 
 | # | Phase | Lift | Gate — what proves it worked |
 |---|---|:---:|---|
-| **E0** | **Foundations.** Node-id keying (two text blocks on one page), unknown-block byte-for-byte preservation, immutable `page_versions` + publish as pointer swap, `app_instances` writers (**absorbs A2**), undo + `base_revision`, the `render_path` runtime flag per surface, surface-vocabulary reconciliation, the three dead `bindings.tsx` imports | **L** | `check:doc-safety` green on a frozen corpus of **real stored documents**; every later phase reversible by flag |
+| **E0** | **Foundations** ([full breakdown: `EDITOR-E0.md`](EDITOR-E0.md) — 18 ordered tasks, the production data volume, and the risks per item). Node-id keying (two text blocks on one page), unknown-block byte-for-byte preservation, immutable `page_versions` + publish as pointer swap, `app_instances` writers (**absorbs A2**), undo + `base_revision`, the `render_path` runtime flag per surface, surface-vocabulary reconciliation — **plus the CRDT** ([ADR-974](DECISIONS.md) D-2): Yjs schema ⇄ tree mapping, Realtime channel + authorization, awareness, debounced snapshot, per-client undo, reconnect | **XL** ⬆ | `check:doc-safety` green on a frozen corpus of **real stored documents**; CRDT ⇄ tree round-trip exact; two clients converge; **zero editor bytes on the public render**; every later phase reversible by flag |
 | **E1** | **Block contract.** One registry, `defineBlock`, Zod `content`, up/down migrations, `reads: 'live' \| 'authored'`, the binding layer, `check:blocks` + `check:surface-binding` + `check:email-blocks` | **L** | Every registry row resolves to a renderer for **every declared surface**; old ⇄ new `renderToStaticMarkup` equivalence green per block per surface |
-| **E2** | **Loom projection + usage index**, *then* consolidate ~138 block types toward ~60 | **XL** | "Which tenants use this block" is answerable **before** the first retirement — the index is a safety mechanism, not a report |
+| **E2** | **Loom projection + usage index**, *then* consolidate ~138 block types toward ~60 — **aggressive, real retirements** with migrations rewriting stored documents ([ADR-974](DECISIONS.md) D-6) | **XL** | "Which tenants use this block" is answerable **before** the first retirement — the index is a safety mechanism, not a report |
 | **E3** | **Axis work.** Widen `kinds[]` to `member` + member commerce adapters; density (`compact \| standard \| roomy`) as a declared property; Site's four things | **L** | Spotlight, in-app profile, Space profile and Site render off one registry with **zero visual diff** |
-| **E4** | **Canvas.** Same-origin iframe + single React tree via `createPortal`, `bubbleEvent` + coordinate translation, parent-document overlays, inline Tiptap, device switcher at real viewports | **L** | Click-to-edit on every surface; RSC ⇄ canvas parity green (a mismatch here ships as a hydration error) |
-| **E5** | **Inspector + responsive.** Fields derived from schemas, sparse breakpoint overrides with provenance, container queries for component-internal layout | **M–L** | Real viewports, not simulated widths |
-| **E6** | **Direct manipulation.** Drag/drop, layer tree, keyboard model, spacing handles, presets-first inserter | **L** | The keyboard path is complete — no mouse-only operation |
-| **E7** | **Functional blocks.** The five transactional widgets made placeable, the form block, the donations Stripe path | **L** | Placeable at every legal surface, gated by `kinds` not by hand |
-| **E8** | **Vera.** Streaming, per-Space retrieval, composer generalized past 15 blocks/one surface, three enforcement layers, bounded critic on screenshot + validator findings, ghosted diff review | **L** | One prompt → a valid, reviewable, **single-undo** page |
+| **E4** | **Canvas.** Same-origin iframe + single React tree via `createPortal`, `bubbleEvent` + coordinate translation, parent-document overlays, inline Tiptap **on `y-prosemirror`**, live cursors, device switcher at real viewports | **L** | Click-to-edit on every surface; RSC ⇄ canvas parity green (a mismatch here ships as a hydration error) |
+| **E5** | **Inspector + responsive.** Fields derived from schemas, sparse breakpoint overrides with provenance, container queries for component-internal layout, **and the touch-native inspector** (bottom sheet, no hover dependency, D-5) | **L** ⬆ | Real viewports, not simulated widths |
+| **E6** | **Direct manipulation.** Drag/drop, layer tree, keyboard model, spacing handles, presets-first inserter — **plus the touch gesture model** (long-press drag, no hover affordances, thumb-reachable targets, D-5) | **XL** ⬆ | The keyboard path is complete — no mouse-only operation — **and the full authoring path completes on a phone** |
+| **E7** | **Functional blocks.** The five transactional widgets made placeable, the form block, **member Stripe Connect** — onboarding, capability checks, platform fee, payouts, tax surface ([ADR-974](DECISIONS.md) D-3) | **XL** ⬆ | Placeable at every legal surface, gated by `kinds` not by hand; a member completes onboarding and takes a real payment |
+| **E8** | **Vera.** Streaming, per-Space retrieval, composer generalized past 15 blocks/one surface, structural + validator layers (**no CSS validator — D-1 deleted it**), bounded critic on screenshot + validator findings, ghosted diff review, **creation-time only** (D-4) | **L** | One prompt → a valid, reviewable, **single-undo** page |
 | **E9** | **Loom authoring.** Layer-2 config editing, per-surface settings console, the declarative composer, `check:loom-integrity` | **M–L** | An operator composes a function without a deploy — and cannot write JavaScript ([ADR-973](DECISIONS.md)) |
-| **E10** | **Sites.** Domains, host routing, per-tenant theming and SEO. **Absorbs W1–W5** | **L** | A tenant serves a custom domain off the same registry |
+| **E10** | **Sites.** Domains, host routing, per-tenant theming and SEO. **Subdomain on any paid plan, custom domain as the upgrade** ([ADR-974](DECISIONS.md) D-7). **Absorbs W1–W5** | **L** | A tenant serves a custom domain off the same registry; the token-request path exists (D-1) |
 
-**Honest total: eight L, one XL, two M–L — a multi-quarter program.** ⚠️ **E0–E3 carry roughly half
-the risk and produce almost nothing visible.** E4 is the first point where the thing is demonstrable.
-Anyone judging progress before E4 by what they can see will conclude it has stalled.
+**Honest total: four XL, five L, one M–L — a multi-quarter program**, up from *eight L, one XL, two
+M–L* before the [ADR-974](DECISIONS.md) owner decisions. Three of those decisions cost schedule and
+the table says where: multiplayer (D-2) takes **E0 L → XL**, full mobile editing (D-5) takes **E5
+M–L → L** and **E6 L → XL**, Stripe Connect (D-3) takes **E7 L → XL**. One refunds: no raw CSS (D-1)
+deletes a validator from E8.
+
+⚠️ **E0–E3 carry roughly half the risk and produce almost nothing visible**, and multiplayer just
+made E0 bigger. **E4 is the first point where the thing is demonstrable.** Anyone judging progress
+before E4 by what they can see will conclude it has stalled — say so at the start, not when someone
+asks why nothing has shipped. The visible wins, for anyone who needs one sooner: **E4** (click-to-edit,
+live cursors), **E7** (a member takes a payment), **E8** (one prompt builds a page). Pulling any of
+them earlier means building on the pre-contract block systems and doing it twice.
 
 ### Guards this program adds
 
