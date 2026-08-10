@@ -45,7 +45,7 @@ export default function BroadcastLoading() {
       {/* Two-column body */}
       <div className="flex flex-col items-start gap-6 lg:flex-row">
         <div className="min-w-0 flex-1">
-          <SectionHeader title="Latest broadcasts" />
+          <SectionHeader title="Latest Dispatches" />
           <div className="grid grid-cols-1 gap-3">
             {Array.from({ length: 5 }).map((_, i) => (
               <DispatchCardSkeleton key={i} />

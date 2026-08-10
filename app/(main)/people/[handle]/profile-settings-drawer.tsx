@@ -135,7 +135,7 @@ export function ProfileSettingsDrawer({
                     onClick={() => run(async () => { await toggleSpotlightEnabled(profileId, !spotOn); setSpotOn(!spotOn) }, spotOn ? 'Spotlight turned off' : 'Spotlight turned on')}
                     className={`w-full rounded-control border px-3 py-2 text-left text-body-sm font-medium transition-colors disabled:opacity-50 ${spotOn ? 'border-success/40 text-success hover:bg-success-bg/30' : 'border-border text-text hover:bg-surface-elevated'}`}
                   >
-                    {spotOn ? 'Spotlight is on — turn off' : 'Turn on Spotlight'}
+                    {spotOn ? 'Spotlight is on. Turn it off' : 'Turn on Spotlight'}
                   </button>
                   {spotOn && (
                     <>
@@ -174,7 +174,7 @@ export function ProfileSettingsDrawer({
                   <UserCog className="h-4 w-4" /> Full account management
                   <ExternalLink className="h-3 w-3" />
                 </Link>
-                <p className="text-meta text-muted">Role, activate/deactivate, delete, gems &amp; zaps.</p>
+                <p className="text-meta text-muted">Role, activate/deactivate, delete, Gems &amp; Zaps.</p>
               </section>
             </div>
           </aside>

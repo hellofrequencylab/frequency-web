@@ -162,7 +162,7 @@ export function JourneyStatChips({
       {time && <StatChip icon={Clock}>{time}</StatChip>}
       <StatChip icon={CalendarDays}>{cadenceLabel(plan.drip_interval_days)}</StatChip>
       <StatChip icon={Gem} tone="reward">
-        {plan.completion_gems} gems
+        {plan.completion_gems} Gems
       </StatChip>
       {plan.certificate_enabled && <StatChip icon={Award}>Certificate</StatChip>}
       {enrolledCount > 0 && (
@@ -382,14 +382,14 @@ export function JourneyFaq({ plan }: { plan: Pick<JourneyPlan, 'drip_interval_da
     },
     {
       q: 'Solo or with my Circle?',
-      a: 'Both work. Start it solo and the phases drip from your own start date, or run it with your Circle as a cohort so you move through it together.',
+      a: 'Both work. Start it solo and the phases drip from your own start date, or run it with your Circle as a Run so you move through it together.',
     },
     {
       q: 'What is a Run?',
-      a: 'A Run is a Circle going through this Journey together as a cohort, with a shared start date and a group trophy at the finish.',
+      a: 'A Run is a Circle going through this Journey together, with a shared start date and a group trophy at the finish.',
     },
     ...(plan.certificate_enabled
-      ? [{ q: 'Do I earn a certificate?', a: 'Yes. Finish every phase and you get a printable certificate to keep and share, plus the completion gems.' }]
+      ? [{ q: 'Do I earn a certificate?', a: 'Yes. Finish every phase and you get a printable certificate to keep and share, plus the completion Gems.' }]
       : []),
   ]
   return (
@@ -530,7 +530,7 @@ export function AtAGlanceCard({
     { icon: Layers, text: `${facts.phaseCount} ${facts.phaseCount === 1 ? 'phase' : 'phases'} · ${facts.lessonCount} ${facts.lessonCount === 1 ? 'lesson' : 'lessons'}` },
     ...(time ? [{ icon: Clock, text: time }] : []),
     { icon: CalendarDays, text: cadenceLabel(plan.drip_interval_days) },
-    { icon: Gem, text: `${plan.completion_gems} gems on completion` },
+    { icon: Gem, text: `${plan.completion_gems} Gems on completion` },
     ...(plan.certificate_enabled ? [{ icon: Award, text: 'Printable certificate' }] : []),
     { icon: UsersRound, text: 'Run with your Circle or solo' },
   ]
@@ -579,7 +579,7 @@ export function AtAGlanceCard({
         )}
 
         <p className="border-t border-border pt-4 text-2xs leading-relaxed text-muted">
-          Runs with your Circle as a cohort, or solo at your own pace.
+          Run it with your Circle, or solo at your own pace.
         </p>
       </div>
     </SidebarCard>

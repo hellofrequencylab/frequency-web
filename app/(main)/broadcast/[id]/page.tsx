@@ -154,14 +154,14 @@ export default async function DispatchDetailPage({ params }: Props) {
             <>
               <span className="inline-flex items-center gap-1.5 rounded-md bg-primary-bg px-2 py-0.5 text-meta font-semibold uppercase tracking-wide text-primary-strong">
                 <Megaphone className="w-3.5 h-3.5" />
-                {dispatch.audience_scope} broadcast
+                {dispatch.audience_scope} Dispatch
               </span>
               <span className={`text-meta px-2 py-0.5 rounded-md font-semibold ${TYPE_COLORS[dispType]}`}>
                 {TYPE_LABELS[dispType] ?? dispType}
               </span>
             </>
           }
-          actions={<StaffEditButton href={`/admin/dispatches?edit=${id}`} label="Edit broadcast" />}
+          actions={<StaffEditButton href={`/admin/dispatches?edit=${id}`} label="Edit Dispatch" />}
           subtitle={
             <div className="flex items-center gap-2 flex-wrap">
               {author?.avatar_url ? (

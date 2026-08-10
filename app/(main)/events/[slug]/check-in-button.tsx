@@ -17,7 +17,7 @@ export function EventCheckInButton({ eventId }: { eventId: string }) {
         <Check className="w-4 h-4" />
         {result.alreadyCheckedIn
           ? 'Checked In'
-          : `Checked In · +${result.zapsAwarded ?? 0} zaps`}
+          : `Checked In · +${result.zapsAwarded ?? 0} Zaps`}
       </div>
     )
   }

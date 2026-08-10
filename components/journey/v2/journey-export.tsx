@@ -9,7 +9,7 @@ import { exportJourneyAction } from '@/app/(main)/journeys/[slug]/edit/actions'
 // (PR #1282 follow-up: the deferred download button). exportJourneyAction re-checks
 // owner-or-admin server-side and hands back the PortableJourney JSON (the federated contract,
 // lib/journeys/portable.ts); we turn it into a Blob and trigger a file download client-side so
-// the Journey can travel to another Space or a Hook cohort. No DB writes, no new read path.
+// the Journey can travel to another Space or a Hook community. No DB writes, no new read path.
 export function JourneyExport({ slug }: { slug: string }) {
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)

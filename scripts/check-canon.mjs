@@ -59,6 +59,28 @@ const RULES = [
   { name: 'lowercase "zaps" (proper noun Zaps)', re: /\bzaps\b/, hint: 'capitalize: Zaps' },
   { name: 'lowercase "gems" (proper noun Gems)', re: /\bgems\b/, hint: 'capitalize: Gems' },
   { name: '"cohort" (member word is "Run")', re: /\bcohorts?\b/i, hint: 'say "Run" (ADR-252)' },
+  // The retired NOUN, not the verb. NAMING.md §Dispatch: "This is the sole member-facing name…
+  // 'Broadcast' is retired from member copy and RESERVED… it survives only as the internal route,
+  // schema, featureKeys, and design token" — and, explicitly, "The verb 'broadcast' as plain
+  // English… is fine; the product noun is always Dispatch."
+  //
+  // That distinction is load-bearing rather than pedantic: content/help/safety/meeting-people-
+  // safely.md says "It is never broadcast, and nobody is added to a mailing list", which is
+  // correct copy. A flat /\bbroadcasts?\b/ would fail the one sentence in content/ that uses the
+  // word properly, and a rule that cries wolf on correct copy gets deleted.
+  //
+  // So: flag the noun, exempt the verb by its grammar. Verb forms are preceded by a be-verb,
+  // a negation, or an infinitive "to"; or followed by "to"/"across" (broadcast TO the hub).
+  // Everything else — "Latest broadcasts", "your broadcast", "Edit broadcast", "${scope}
+  // broadcast" — is the noun, and every one of those was a real violation on 2026-08-10.
+  //
+  // Front matter is already skipped by the scanner above, so `featureKeys: [broadcast]` — a
+  // named survivor — never reaches this rule.
+  {
+    name: '"broadcast" as a NOUN (the member-facing noun is Dispatch)',
+    re: /(?<!\b(?:is|are|was|were|be|been|being|never|not|to)\s)\bbroadcasts?\b(?!\s+(?:to|across)\b)/i,
+    hint: 'say "Dispatch" (NAMING.md §Dispatch). The VERB is fine: "it is never broadcast".',
+  },
   ...BANNED,
 ]
 

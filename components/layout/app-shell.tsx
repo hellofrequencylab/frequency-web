@@ -2375,8 +2375,8 @@ export default function AppShell({
                           key={label}
                           type="button"
                           onClick={toggleRail}
-                          title={`${label} — open the rail`}
-                          aria-label={`${label} — open the rail`}
+                          title={`${label}, open the rail`}
+                          aria-label={`${label}, open the rail`}
                           className="inline-flex h-9 w-9 items-center justify-center rounded-control text-muted transition-colors hover:bg-chrome-hover hover:text-text"
                         >
                           <Icon className="h-5 w-5" aria-hidden />

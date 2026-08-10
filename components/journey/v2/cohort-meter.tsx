@@ -22,7 +22,7 @@ export function CohortMeter({ progress, circleName }: { progress: CohortProgress
         </span>
       </div>
 
-      <ProgressTrack value={progress.meanPercent} minVisible={2} label="Cohort mean progress" size="lg" animate />
+      <ProgressTrack value={progress.meanPercent} minVisible={2} label="Run mean progress" size="lg" animate />
 
       {progress.allComplete ? (
         <p className="mt-2 inline-flex items-center gap-1.5 text-body-sm font-semibold text-success">

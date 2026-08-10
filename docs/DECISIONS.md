@@ -18646,3 +18646,130 @@ only see the repo. Re-verify after any MCP apply, or in `/maintenance`. ⚠️ T
 that this ADR does not make renumbering impossible — it makes the second step cheap, findable
 and asserted. A gate that could see both sides would be better, and it needs a credentialled
 CI job that does not exist yet.
+
+## ADR-964 — RLS is row-level, so a billing id needs a column revoke (2026-08-10)
+
+**Status.** Accepted. Migration: `20270217000000_spaces_revoke_stripe_columns_from_anon.sql`,
+applied and verified. Predecessors: [ADR-959](DECISIONS.md), [ADR-961](DECISIONS.md).
+
+**Context.** A grant-layer census of all 270 `public` tables turned up two findings on `spaces`.
+`public.spaces` carries **column-level** grants to `anon` on 33 columns, two of which are
+`stripe_customer_id` and `stripe_subscription_id`. Its only SELECT policy, `spaces_read_active`,
+is granted to the PUBLIC role — which includes `anon` — with:
+
+```sql
+using (status = 'active' and (visibility is distinct from 'private' or private.is_space_member(id)))
+```
+
+So for every **active, non-private** Space, the anon key that ships in the browser bundle could
+select both Stripe identifiers. This is the same class as
+`20270127000000_revoke_claim_token_from_anon.sql`, on the **same table**, missed when that column
+list was written: RLS is ROW-level and cannot hide a column, which is the entire reason that
+migration exists.
+
+**It is latent, and that is the argument for doing it now.** Measured before the fix: 19 active
+public Spaces, **0** with either column populated, because no Space has ever been charged. The
+first subscription is what makes it live. A Stripe customer id is not a credential, but it
+enumerates who is paying and is exactly the sort of value that makes support impersonation easy.
+
+**Decision.** `revoke select (stripe_customer_id, stripe_subscription_id) on public.spaces from
+anon, authenticated`, plus a column comment saying why, so the next person to widen the grant
+reads the reason first. `authenticated` loses nothing either: a signed-in stranger is no more
+entitled to another Space's billing id than a signed-out one, and every real reader goes through
+`createAdminClient()`.
+
+**The shape of the wider problem, corrected.** The census also corrected this repo's own model of
+it. `REVOKE ... FROM public` appears 19 times and **every one is on a function** — there is no
+table-level instance anywhere. So the table problem is not "a revoke that removed nothing"; it is
+that **263 of 270 tables were never revoked from in any form**, and only 7 carry any explicit
+table-grant decision. The three buckets, derived from the migrations and corroborated against
+production (the repo-derived RLS-on-no-policy count is 77, matching the live measurement exactly):
+
+| Bucket | Count | Signal |
+| :--- | ---: | :--- |
+| Public-readable | 45 | a SELECT policy admitting anon or an identity-free PUBLIC policy |
+| Authenticated-only | 148 | policies exist, every read path is identity-gated |
+| Internal / service-role | 77 | RLS on, **zero** policies — fail-closed by RLS alone |
+
+**Consequences.** ✅ Applied and verified by `has_column_privilege` per role; `slug`/`name` are
+untouched and still anon-readable, which is correct. ✅ Behaviour-preserving. ⚠️ **75 of the 77
+internal tables still hold their default grants** — only `claim_tokens` and `signup_leads` have
+been swept. Ranked by blast radius, the first tier is `nodes` (holds a server-issued signing
+secret), `financial_transactions`, `founding_members`, `team_members` (a privilege table),
+`email_events` / `email_suppressions` / `nurture_enrollments` (raw address lists), `qr_scans`
+(per-member location history), and the Stripe control tables. Each is second-locked by
+RLS-on-no-policy today, which is one policy mistake from live. ⚠️ The `check:grants` gate to hold
+this permanently is designed but **not built**: a three-verdict ledger (`public` / `authenticated`
+/ `internal`) asserting a bijection with the live table set, where `internal` additionally
+requires a real revoke in a migration. It deliberately carries no baseline number, because a bare
+count-ratchet's cheapest fix is to edit the number — the failure ADR-962 recorded for
+`check:adoption`. ⚠️ It cannot see column grants, views, `SECURITY DEFINER` reach-around, or
+anything applied outside `supabase/migrations/`; those stay with `fail-open-guards.test.ts` and
+the ledger bijection (ADR-963).
+
+**One claim in the census was wrong and is recorded as wrong.** It reported `invite_links` as a
+live anon-readable token table on the strength of the `using (true)` policy in
+`20240105000000_invite_links.sql`. That policy was dropped by
+`20270210000000_invite_token_and_space_scoped_reads.sql`, and production confirms zero policies on
+the table today. `scripts/rls-deny-all.txt` listing it is correct, not stale. Verified before
+acting, which is why nothing was changed there.
+
+## ADR-965 — 76 tables swept, and a verdict per table so the next one cannot arrive open (2026-08-10)
+
+**Status.** Accepted. Migration `20270218000000_close_default_grants_on_internal_tables.sql`
+(applied + verified). Gate: `scripts/check-grants.mjs` + `scripts/table-grants.txt`, wired into
+`ci.yml`. Completes [ADR-959](DECISIONS.md) / [ADR-961](DECISIONS.md) / [ADR-964](DECISIONS.md).
+
+**Context.** ADR-964's census found the real shape: not "a revoke that removed nothing", but that
+**no table was ever revoked from at all**. All 19 `revoke … from public` statements in this repo
+are on functions. Only seven of 272 tables carried any explicit grant decision, and `anon` and
+`authenticated` each held **1,907 explicit grants across 273 tables**.
+
+**Decision, in two halves, because either alone rots.**
+
+**1. The sweep.** 76 tables that are RLS-on-with-zero-policies — this repo's deliberate deny-all
+posture, enforced by `check:rls` — had their `anon`/`authenticated` grants revoked by name.
+
+The safety argument is a proof, not a judgement, which is why it could land as one migration:
+`anon` and `authenticated` both have `rolbypassrls = false` (verified on the cluster), and a table
+with RLS enabled and no policy denies every row to any role that does not bypass. **The grants
+were already unreachable, so removing them cannot change a single result.** `service_role` has
+`rolbypassrls = true` and is not revoked from, so every real caller is untouched.
+
+Result: anon grants **1,907 → 1,556**, tables **273 → 195**, and **zero** internal tables still
+holding a client grant. The 195 that remain are the public and authenticated buckets, whose
+policies genuinely admit those roles.
+
+The point of doing it despite the proof: RLS-on-no-policy is the *second* lock, and the first had
+been missing for these tables' entire lives. One `create policy` or one
+`alter table … disable row level security` would have exposed, among others, `nodes` (a
+server-issued signing secret), `financial_transactions`, `team_members` (a privilege table),
+`email_events` and `email_suppressions` (raw address lists), and `qr_scans` (per-member location
+history).
+
+**2. The gate.** `scripts/table-grants.txt` carries one verdict per live table — `public` /
+`authenticated` / `internal` — and `check:grants` asserts two things cumulatively over every
+migration: a **bijection** between the ledger and the tables parsed from `supabase/migrations/`,
+and that every `internal` table has a real `revoke … from … anon …` somewhere. Verdicts were
+seeded from the live database (RLS + policy state), not guessed.
+
+Deliberately **no baseline number**. A count-ratchet's cheapest fix is to edit the count — the
+failure ADR-962 recorded for `check:adoption` booking a phantom sweep. Here, adding a table is a
+one-word edit and the word *is* the decision; the failure message says outright that `internal` is
+the answer when unsure, because it is the only verdict that fails closed.
+
+**Consequences.** ✅ All five failure modes were probe-tested for the **exit code**, not just the
+message: missing verdict, `internal`-without-revoke, stale entry, unparseable line, and running
+from the wrong directory all exit 1; the fixed tree and the revoke-added case exit 0. ✅ The
+parser agrees with `check:rls` on the live-table count, which is the independent corroboration.
+⚠️ **A parser bug found by that corroboration is worth carrying forward:** the first version
+stripped only `--` comments, so the C-style DOWN block in
+`20260628010000_quest_completion_model.sql` — which contains a `DROP TABLE IF EXISTS
+public.journey_completions;` — read as a real drop, and that table silently needed no verdict. A
+table the parser cannot see is a table the gate cannot protect. Both comment forms are now blanked
+length-preservingly, matching `check-adoption.mjs`. ⚠️ **What it still cannot see**, stated so
+green here is not mistaken for safe: whether a revoke was ever *applied* (this reads the repo, and
+only the ADR-963 ledger bijection makes "in a migration" approximate "in the database"); **column**
+grants, which is precisely the ADR-964 class; views and materialized views; whether a policy
+predicate is sane, since `public` and `authenticated` are unverified declarations; and
+`SECURITY DEFINER` reach-around, which stays with `fail-open-guards.test.ts`.

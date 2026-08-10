@@ -404,7 +404,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
         {/* The spendable balance is a READING, so it goes through Counter too — same teal Gem,
             same mono numeral as the head above, rather than a third hand-rolled spelling of it. */}
         <p className="mt-1">
-          <Counter value={vaultGems} label="gems to spend" glyph={Gem} tone="signal" />
+          <Counter value={vaultGems} label="Gems to spend" glyph={Gem} tone="signal" />
         </p>
         <p className="mt-0.5 text-2xs text-muted">Titles, cosmetics &amp; membership credits →</p>
       </Link>

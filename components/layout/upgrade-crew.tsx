@@ -55,7 +55,7 @@ export function UpgradeCrew() {
         Upgrade to Crew
       </p>
       <p className="mb-3 text-meta leading-snug text-muted">
-        Unlock the full game: ranks, seasons, rewards, and the Quest.
+        Crew gets the full game: ranks, seasons, rewards, and the Quest.
       </p>
       <Link
         href="/upgrade"
