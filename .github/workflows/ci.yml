@@ -11,13 +11,25 @@
 #     violations meant four pushes and four full runs to discover, one at a time. The 20 guards
 #     together take FOURTEEN SECONDS — measured, on this tree — so there was never a cost reason
 #     to stop at the first one.
-#   · THE GUARDS RAN LAST. Checkout (~3 min) + install + typecheck + lint (~2.5 min) + test
-#     (~1.5 min) fill the first ~18 minutes, so whichever guard trips, it trips at ~minute 20.
-#     That is why every failure looked like the same failure.
+#   · THE GUARDS RAN LAST. Install + typecheck + lint (~2.5 min) + test (~1.5 min) fill the
+#     first stretch, so whichever guard trips, it trips near the end. That is why every failure
+#     looked like the same failure.
+#
+# MEASURED AFTER THE SPLIT: the `checks` job (checkout + install + typecheck + all 20 guards)
+# completes in **55 seconds**, with the aggregated guard step taking 13 of them.
+#
+# ⚠️ One number in the original diagnosis did NOT hold up, and it is recorded here so nobody
+# re-derives the wrong conclusion. `actions/checkout` took 3m11s on the first run measured, which
+# looked like the 184 MB working tree (100 MB of it PNG baselines). On the three-job run it took
+# **7 to 9 seconds in all three jobs concurrently**. 184 MB in 9 s is a normal warm fetch, so the
+# 191 s was a cold or contended runner, not the tree. Git LFS on the baselines is still worth
+# doing for repo GROWTH -- .git is 348 MB across ~51 commits because every baseline refresh
+# re-commits all 72 PNGs and they do not delta-compress -- but it is NOT what made CI slow, and
+# the three-way split does not depend on it.
 #
 # So: three parallel jobs split along the COST axis, and the guards aggregated into one step
 # that runs them all and reports every failure at once. Not a per-guard matrix — that would pay
-# the ~4 min checkout+install prelude 20 times over to parallelise 14 seconds of work.
+# ~25 s checkout+install prelude 20 times over to parallelise 14 seconds of work.
 #
 # `!cancelled()` rather than `always()`: `always()` is true even for a CANCELLED run, which
 # would make superseded runs finish their whole body and defeat `cancel-in-progress`.
