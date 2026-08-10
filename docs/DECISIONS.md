@@ -18938,3 +18938,45 @@ that is the point, and it is recorded here so the change is not a surprise then.
 read a title built by a call expression (`buildTitle(name)`) — not decidable from source, and
 guessing is worse than staying quiet. It *does* read template literals, because
 `` `${name} · Frequency` `` is the Spotlight bug verbatim.
+
+---
+
+## ADR-969 — An unbounded read is not just slow, it is wrong at 1,001 rows (2026-08-10)
+
+**Decision.** QR Studio's three whole-table reads are retired. `captures` goes through a new
+`public.node_capture_counts()` RPC (`20270219000000`), `qr_scans` reuses the existing
+`qr_stats_summary` RPC that `/admin/qr/stats` already calls, and `qr_codes` is selected once
+instead of twice.
+
+**The part that matters is not the performance.** `db.from('captures').select('node_id')` returned
+one row per verified check-in the community has ever recorded, purely so the page could count them
+per node in JS. That is bad and gets worse forever. But PostgREST caps a response at `max_rows`
+(1,000 on this project), so past a thousand captures the page **under-counted with no error to
+notice** — a smaller number rendered in the same place, in the same style, with the same
+confidence. This is the third instance of that exact class in two weeks (`library_usages`
+discarding its error, the CRM import dedupe truncating at 1,000), and the pattern is worth naming:
+**a read with no explicit bound has a bound anyway, and the silent one is the server's.**
+
+**Why the `qr_scans` swap is safe to call identical, not just equivalent.** `qr_stats_summary`
+already existed for the stats page. Its `totals` and `per_code` CTEs carry **no date filter**, so
+they are lifetime figures, and its `daily` is the trailing `p_days` UTC date buckets, zero-filled.
+That is exactly what `summarizeScans(scans, 30)` computed in JS from the full row set. Same
+aggregates, same window, same `scanSummaryFromRpc` rehydration the stats page uses — the swap
+moves the arithmetic to the database and changes nothing a operator sees.
+
+**Why a new RPC rather than a `.limit()`.** A limit would have made the truncation explicit but
+kept it. The answer the page needs is one small integer per node, and `nodes` is a small
+operator-managed table, so the result set is bounded by construction once the grouping happens
+server-side. `node_capture_counts()` mirrors `qr_stats_summary` exactly: `security definer`,
+`set search_path = ''`, `stable`, and `revoke execute … from public, anon, authenticated` with
+`service_role` granted, leaving the staff gate on the calling page.
+
+**Consequences.** ✅ Applied to production and the ledger repaired per
+`supabase/migrations/README.md`; the bijection is **597 ⇄ 597**, proven by taking an md5 of both
+sorted version sets rather than eyeballing a count. ✅ `page_path` is now selected with the rest of
+the `qr_codes` row, so the second round trip and the untyped second client are both gone. ⚠️ The
+RPC was hand-added to `lib/database.types.ts` rather than regenerated, matching how `nodes_geo` is
+carried; a future full regeneration will simply confirm it. ⚠️ Booked in the same pass: four
+entries left `scripts/admin-client-baseline.txt` (the `apply` / `waitlist` action pair and the two
+`lib/applications` modules), a fall that predates this change. ADR-928 says falls are written down,
+so the baseline is now 736.
