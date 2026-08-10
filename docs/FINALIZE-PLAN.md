@@ -284,7 +284,7 @@ and the score cannot disagree. `top25` is the share of a class's total carried b
 
 | Class | Total | Files | top10 | top25 | Median/file | Instrument |
 | :--- | ---: | ---: | ---: | ---: | ---: | :--- |
-| `literal-radius` | 2450 | 816 | 8% | **15%** | 2 | ✅ **unblocked (6.9)** — now a pixel-neutral codemod |
+| `literal-radius` | 2450 | 816 | 8% | **15%** | 2 | ⚠️ **unblocked (6.9), but NOT a blind codemod — see 6.17** |
 | `raw-button-bg` | 526 | 312 | 14% | **26%** | 1 | 🔧 codemod |
 | `raw-input` | 186 | 131 | 21% | **37%** | 1 | 🔧 codemod + an inset variant |
 | `raw-px-arbitrary` | 117 | 59 | 47% | 71% | 1 | ✋ sweep |
@@ -553,6 +553,30 @@ today's numbers and a reason each, and it fails on a **twelfth** — or on a fro
 **`0 of 0 ✓`** and exited 0. A gate that scans nothing passes everything. `MIN_ROWS` now turns an
 under-scan into a failure — the same guard `check:adoption` and `check:labels` already carry, for
 the same reason, which is why those two have it.
+
+### 6.17 — ⚠️ `literal-radius` is unblocked, and it is still not a find-and-replace
+
+6.9 made the roles equal the steps, so `rounded-lg → rounded-control` and `rounded-2xl →
+rounded-card` are now **pixel-identical in the default skin**. That covers **1,818 of 2,450** sites
+(74%). It is tempting to read that as "run a codemod", and I wrote exactly that in the row above
+before catching it.
+
+**A value match is not a role match.** `rounded-2xl` on a *button* is 24px today and would become
+`rounded-card` — pixel-identical right now, and **wrong the moment any skin retunes card and control
+by different amounts**, which is the entire purpose of having two roles. Midnight already does
+(0.75× vs 0.63×), so the divergence is not hypothetical; it is one skin away.
+
+`globals.css` made this exact point about the other direction and it is why the steps were ported
+rather than swept: *"a sweep would have had to pick a value per site, and the value it would have
+encoded is the wrong one."* Same trap, mirrored.
+
+**What the sweep actually needs** is a per-site judgement of what the element IS — control, card,
+pill, or none of the three — which a regex cannot make. The remaining 632 sites (`rounded-xl` 307,
+`rounded-md` 275, `rounded-sm` 5, `rounded-3xl` 44) have **no matching role at all** and are a
+separate question: either they are deliberate one-offs, or the role set is missing a step.
+
+✅ `rounded-full → rounded-pill` **is** safe and mechanical: one occurrence left in 2,450, both are
+`9999px` in every state, and a pill is unambiguous.
 
 ---
 
