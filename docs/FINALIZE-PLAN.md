@@ -575,8 +575,16 @@ pill, or none of the three — which a regex cannot make. The remaining 632 site
 `rounded-md` 275, `rounded-sm` 5, `rounded-3xl` 44) have **no matching role at all** and are a
 separate question: either they are deliberate one-offs, or the role set is missing a step.
 
-✅ `rounded-full → rounded-pill` **is** safe and mechanical: one occurrence left in 2,450, both are
-`9999px` in every state, and a pill is unambiguous.
+⚠️ I also claimed `rounded-full → rounded-pill` was the one safe mechanical conversion. It is not,
+and the reason is the same one again. The single remaining occurrence is a **spinner**
+(`components/layout/notification-bell.tsx:135`). The swap would be pixel-identical forever —
+`--radius-pill` is `9999px` in every block — but it puts a **control** role on a decorative circle,
+which is the mislabel this very item warns about, and its only effect would be moving a number in a
+ratchet by one. Left alone.
+
+**So the mechanical subset of `literal-radius` is empty.** Every one of the 2,450 needs the same
+per-site judgement. That is worth stating plainly, because "74% is pixel-neutral" reads like most of
+the work is free, and none of it is.
 
 ---
 
