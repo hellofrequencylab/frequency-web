@@ -18597,3 +18597,52 @@ single biggest remaining win and it is what makes the three-way split cheap. ⚠
 fixed: `check:authz`'s `SCOPING_FILTER` treats plain `.filter(`/`.match(` as evidence of tenancy
 scoping, a comment containing `requireAdmin` disarms a whole file, and four gates pass vacuously
 from the wrong working directory.
+
+## ADR-963 — The migration ledger is an exact bijection, and the second step is the whole fix (2026-08-10)
+
+**Status.** Accepted. Runbook: [`supabase/migrations/README.md`](../supabase/migrations/README.md).
+
+**Context.** "Migrations are being renumbered after they are applied" has been recorded as an
+open root cause in at least four passes (2026-07-10, 2026-07-27, 2026-08-06, and BUILD-LIST's
+post-merge sweep). Each pass repaired the symptom and named the cause; none closed it, and by
+2026-08-10 the ledger held **607 rows against 594 repo files**.
+
+The cause is not carelessness. `apply_migration` **mints its own timestamp** — the ADR-961 fix
+applied in this session was recorded as `20260810150605` while its file is `20270216000000`.
+Every MCP apply creates an orphan by construction. Applying is two steps and only the first one
+is obvious.
+
+**Decision.** Repair to an exact bijection, then write the second step down where a migration
+author will actually be standing.
+
+The repair, all verified against the live catalog before any write, in asserted transactions:
+
+| Action | Rows |
+| :--- | ---: |
+| Repo-versioned rows inserted for migrations applied under a CLI timestamp | 5 |
+| Tool-minted orphans deleted (each confirmed to have no repo file at its version) | 13 |
+| Mislabelled row corrected rather than deleted | 1 |
+
+Result: **594 ledger rows ⇄ 594 repo files, head `20270216000000` matching the newest file, and
+an empty diff in both directions.** `supabase db push` is safe again.
+
+**Two traps, both live during this repair.**
+
+- **A duplicated name is not evidence of a duplicated migration.** The ledger held
+  `hierarchy_v3_topical_channels` at both `20240118000000` and `20240201000000`, which reads
+  exactly like the twelve renumbering orphans beside it. But the repo file at `20240118000000`
+  is `gamification.sql` — the version is correct and applied, and only the label is stale.
+  Deleting it on the strength of the duplicate name would have removed a real migration's only
+  ledger row and set up the next `db push` to re-run it. It was corrected in place instead.
+- **Some duplicate names are simply correct.** `fk_covering_indexes` names two genuinely
+  different files. Names are not unique; versions are, and `check:migrations` already enforces
+  that half.
+
+**Consequences.** ✅ Zero drift in either direction, proven by set difference rather than by
+counting. ✅ The runbook lives at `supabase/migrations/README.md`, next to the files, with the
+verify-before-write transaction ready to copy and both traps written down. ⚠️ The DB half of
+this invariant is **not machine-checked**: `check:migrations` runs without credentials and can
+only see the repo. Re-verify after any MCP apply, or in `/maintenance`. ⚠️ The honest framing is
+that this ADR does not make renumbering impossible — it makes the second step cheap, findable
+and asserted. A gate that could see both sides would be better, and it needs a credentialled
+CI job that does not exist yet.
