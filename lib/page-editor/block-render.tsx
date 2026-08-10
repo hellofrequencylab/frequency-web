@@ -13,7 +13,7 @@ import type { Config, Data, Metadata } from '@/lib/page-editor/types'
 function UnknownBlock({ type, isEditing }: { type: string; isEditing?: boolean }) {
   if (!isEditing) return null
   return (
-    <div className="mx-auto my-2 max-w-3xl rounded-lg border border-dashed border-subtle bg-surface-elevated px-4 py-3">
+    <div className="mx-auto my-2 max-w-3xl rounded-card border border-dashed border-subtle bg-surface-elevated px-4 py-3">
       <p className="text-body-sm font-medium text-text">This block is not available in this version</p>
       <p className="mt-0.5 text-body-sm text-muted">
         <code>{type}</code> is kept exactly as saved and will publish unchanged. It shows nothing on the live page.
