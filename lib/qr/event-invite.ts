@@ -11,6 +11,7 @@
 // Crypto-only by design, so it stays a pure, unit-testable seam.
 
 import { createHmac, timingSafeEqual } from 'crypto'
+import { signingSecret } from '@/lib/signing-secret'
 
 /** Default lifetime of an issued invite link. Long enough to walk to the form and fill
  *  it in, short enough that a forwarded /rsvp link cannot capture guests indefinitely. */
@@ -29,18 +30,7 @@ interface EventInvitePayload {
   x: number // expiry (unix seconds)
 }
 
-function getSecret(): string {
-  const explicit =
-    process.env.EVENT_INVITE_SECRET || process.env.BETA_CONFIRM_SECRET || process.env.UNSUBSCRIBE_SECRET
-  if (explicit) return explicit
-  const fallback = process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 32)
-  if (!fallback) {
-    throw new Error(
-      '[event-invite] No EVENT_INVITE_SECRET / BETA_CONFIRM_SECRET / UNSUBSCRIBE_SECRET / service-role key to sign with.',
-    )
-  }
-  return fallback
-}
+const getSecret = (): string => signingSecret('event-invite', ['EVENT_INVITE_SECRET', 'BETA_CONFIRM_SECRET', 'UNSUBSCRIBE_SECRET'])
 
 /** PURE: the signed tag over the base64url payload body (namespaced). */
 function sign(body: string): string {

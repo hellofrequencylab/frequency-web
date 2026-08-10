@@ -19836,3 +19836,88 @@ actually **painted**. The gate therefore cannot see a token applied to a ground 
 with, a colour that never went through a token, or contrast that only emerges from composition
 (an overlay, an opacity, text over an image). Both instruments are honest; neither is a substitute
 for the other, and the runtime one is the one that had no way to run for six days.
+
+## ADR-981 — A guard that gives up a signal owes a replacement, not an exemption (2026-08-10)
+
+**Decision.** When a surface opts into `viewportOnly` capture, `baseline-distinctness` does **not**
+exempt it from the wall check. It swaps the evidence: the height rule is replaced by a **light/dark
+divergence** rule, and the surface must still prove it photographed the app.
+
+**Context.** `test/e2e/baseline-distinctness.test.ts` held every committed baseline to a full-page
+height, on a specific and well-earned reasoning: a capture exactly one viewport tall is the
+signature of a wall. Vercel's Deployment Protection interstitial is one viewport. A framework error
+page is one viewport. A real full-page render essentially never is. That rule exists because #2049
+committed four `app-room` baselines that were pixel-for-pixel the marketing home page, and they sat
+in the tree for five days as the reference for a member room.
+
+Then `/feed` opted into `viewportOnly` (ADR-979's sibling change: a surface whose length is driven by
+live data does not have a stable full-page height, so its baseline recorded the database rather than
+the design). Its four baselines came back at exactly 800 and 844, and the guard failed — correctly,
+by its own rule, on a change that was correct by its own rule.
+
+**Why not just exempt them.** The obvious patch is `if (viewportOnly) skip`. That trades the finding
+for silence, and it does so at the worst possible moment: the wall this guard exists to catch is
+*also* exactly one viewport tall, so `/feed` would become the one surface in the registry with no
+protection against the exact failure the guard was written for. The rule would still be there,
+still passing, and no longer checking the thing its comment says it checks. That is this repo's
+named failure mode wearing a slightly different hat: a gate that checks the shape of a value rather
+than its truth.
+
+**The replacement.** A viewport-only baseline must photograph **differently in light and dark**. The
+app shell repaints completely between the two states; Vercel's protection page and a framework error
+page ignore `.dark` entirely and photograph identically. Measured across the committed baselines,
+light-vs-dark similarity runs 0.0-15.2% for app surfaces and 32-35% for marketing, against ~100% for
+anything theme-blind, so the 90% threshold sits in empty space rather than near a real number. The
+height rule is kept in a narrowed form for these slugs (**exactly** the viewport height), where it no
+longer detects a wall but does detect the registry and the capture disagreeing about which mode ran.
+
+**Consequences.** ✅ Every baseline in the tree is still checked for being a photograph of its own
+surface, by one route or the other. ✅ The two halves **fail closed together**: if the viewport-only
+set came back empty because the registry import broke, the divergence test would check nothing, but
+the height rule would then hold `/feed`'s 800px baselines to the full-page floor and fail loudly.
+Neither can go quiet on its own, which is the property the `MIN_ROWS` floor in
+`scripts/check-gate-parity.mjs` buys by a different means. ⚠️ `appSurfaces()` now takes its env as a
+defaulted parameter, so a plain vitest test can enumerate every row including the two only CI's env
+conjures. Reading `viewportOnly` off the registry rather than re-listing slugs is what stops the two
+from drifting. ⚠️ The divergence rule assumes the two render states differ visibly. A future surface
+that legitimately looks identical in light and dark would need a waiver with its reason, exactly as
+`ALLOWED_TWINS` handles the distinctness rule.
+
+## ADR-982 — Invite the teammate you can see, not an address you have to go find (2026-08-10)
+
+**Decision.** A Space owner invites a teammate by **searching their @handle**. The email path stays,
+as a second **section** rather than the other half of a mode toggle, for people who have no account
+yet. The invitee's address **never crosses to the client** on the handle path.
+
+**Context.** Space invites shipped email-only. On a product where the person being invited usually
+already has a profile, that asks the owner for a piece of information the UI never shows them, about
+someone whose handle is right there in the members list. With delivery not yet fully proven, the
+owner then has to hand over the accept link by some other channel anyway.
+
+**Why not a mode toggle.** Searching a handle and typing an address look like two ways to do one
+thing. They answer different questions: *which of these members do I mean* and *how do I reach
+someone with no account yet*. A segmented control hides whichever the owner needs behind a click and
+makes them track which mode they are in. Two labelled sections say what each is for and cost nothing.
+
+**The privacy boundary is the shape of the DTO.** The natural implementation is "search returns the
+profile's email, the form posts it to `createInvite`". That turns a team-invite box into an
+email-address lookup for any Space owner against any member, by handle: a privacy leak wearing a
+feature's clothes. So `TeamCandidate` carries public identity only, and `inviteByProfile` resolves
+the address server-side from the profile id (`lib/profiles/account-email.ts` — the address lives in
+`auth.users`, never in `public.profiles`).
+
+`inviteByProfile` **delegates** to `createInvite` rather than reimplementing it, so the permission
+gate, the seat check (ADR-465), the token, the 14-day expiry, the refresh-in-place branch and the
+email enqueue stay one implementation. This is a new way to reach the same door, not a second door.
+
+**Consequences.** ✅ The boundary is locked on **both** sides in `lib/spaces/invites.test.ts`: the DTO
+may not name an email field, the search may not select an email column, and the `TeamPicker` body may
+not read, bind or collect an address. The client-side assertions match an address as a **value**, not
+as a word, because the picker's empty state legitimately says "invite them by email below" — the
+first draft banned the word and failed on its own copy. ✅ `TeamCandidate` lives in
+`invites-shared.ts` with the other client-safe shapes, because `invites.ts` pulls `@/lib/auth ->
+view-as -> supabase/server` and a client bundle cannot take it. ⚠️ Search is gated on
+`canManageMembers` and **fail-safe** (`[]`, not an error), so it never doubles as a probe for whether
+a Space exists. ⚠️ It excludes anyone already seated, so the picker never offers someone who is
+already on the team; the empty state says so, since "no members match" would otherwise read as a
+claim about the search.

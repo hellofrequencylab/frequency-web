@@ -9,17 +9,9 @@
 // so a leaked reply address can never be used as a chat token or vice-versa.
 
 import { createHmac, timingSafeEqual } from 'crypto'
+import { signingSecret } from '@/lib/signing-secret'
 
-function getSecret(): string {
-  const explicit = process.env.CONVERSATION_TOKEN_SECRET
-  if (explicit) return explicit
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('[chat-token] CONVERSATION_TOKEN_SECRET must be set in production.')
-  }
-  const fallback = process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 32)
-  if (!fallback) throw new Error('[chat-token] No CONVERSATION_TOKEN_SECRET and no SUPABASE_SERVICE_ROLE_KEY.')
-  return fallback
-}
+const getSecret = (): string => signingSecret('chat-token', ['CONVERSATION_TOKEN_SECRET'])
 
 /** HMAC over the conversation ref (chat variant). 16 bytes (32 hex). */
 export function makeChatToken(ref: string | number): string {

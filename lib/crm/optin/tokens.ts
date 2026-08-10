@@ -8,20 +8,13 @@
 // that flips marketing consent).
 
 import { createHmac, timingSafeEqual } from 'crypto'
+import { signingSecret } from '@/lib/signing-secret'
 
 /** Default lifetime of a confirm link. Long enough for a real inbox, short enough that a
  *  leaked/forwarded link does not confirm someone months later. */
 export const OPTIN_TOKEN_TTL_DAYS = 14
 
-function getSecret(): string {
-  const explicit = process.env.OPTIN_CONFIRM_SECRET || process.env.BETA_CONFIRM_SECRET || process.env.UNSUBSCRIBE_SECRET
-  if (explicit) return explicit
-  const fallback = process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 32)
-  if (!fallback) {
-    throw new Error('[optin-tokens] No OPTIN_CONFIRM_SECRET / BETA_CONFIRM_SECRET / UNSUBSCRIBE_SECRET / service-role key to sign with.')
-  }
-  return fallback
-}
+const getSecret = (): string => signingSecret('optin-tokens', ['OPTIN_CONFIRM_SECRET', 'BETA_CONFIRM_SECRET', 'UNSUBSCRIBE_SECRET'])
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase()

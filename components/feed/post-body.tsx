@@ -37,7 +37,12 @@ export function PostBody({ body, className = '' }: { body: string; className?: s
           ul: ({ children }: Kids) => <ul className="mb-2 list-disc space-y-0.5 pl-5 last:mb-0">{children}</ul>,
           ol: ({ children }: Kids) => <ol className="mb-2 list-decimal space-y-0.5 pl-5 last:mb-0">{children}</ol>,
           li: ({ children }: Kids) => <li className="leading-relaxed">{children}</li>,
+          // Inline <code> sizes RELATIVE to its surrounding text, which is the one thing a fixed
+          // type role cannot do. This mark appears inside body copy, headings and list items
+          // alike, and a role would pin it to one size in all three. `em` is the correct unit
+          // here, not a missed token.
           code: ({ children }: Kids) => (
+            // token-ok: em-relative by design, see above
             <code className="rounded bg-surface-elevated px-1 py-0.5 text-[0.85em] text-text">{children}</code>
           ),
           a: ({ href, children }: Kids & { href?: string }) => {

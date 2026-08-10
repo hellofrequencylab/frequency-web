@@ -22,26 +22,14 @@
 import { createHmac, timingSafeEqual } from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { safeHttpUrl } from '@/lib/safe-url'
+import { signingSecret } from '@/lib/signing-secret'
 
 // ── Token (HMAC, non-enumerable) ─────────────────────────────────────────────────────────────────
 
 // Mirrors lib/unsubscribe-tokens.ts: a dedicated secret in production, a dev fallback to the service
 // role key prefix so local + tests work. Fail-closed in production so a misconfig is caught, not
 // silently degraded to a guessable token.
-function getSecret(): string {
-  const explicit = process.env.UNSUBSCRIBE_SECRET
-  if (explicit) return explicit
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error(
-      '[email-tracking] UNSUBSCRIBE_SECRET must be set in production. Refusing to sign tracking tokens with the service-role key.',
-    )
-  }
-  const fallback = process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 32)
-  if (!fallback) {
-    throw new Error('[email-tracking] No UNSUBSCRIBE_SECRET and no SUPABASE_SERVICE_ROLE_KEY to sign with.')
-  }
-  return fallback
-}
+const getSecret = (): string => signingSecret('email-tracking', ['UNSUBSCRIBE_SECRET'])
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const TOKEN_RE = /^[0-9a-f]{48}$/

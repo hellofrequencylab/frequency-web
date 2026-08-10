@@ -147,7 +147,15 @@ jobs:
       #
       # NOTE: check:cron-freshness is intentionally absent — it is a runtime/ops SLO check
       # (inspects live cron heartbeat state, env-dependent, advisory exit 0), not a
-      # deterministic code gate. It runs in the scheduled /maintenance sweep instead.
+      # deterministic code gate. Excluding it from CI is correct.
+      #
+      # 🔴 But its stated destination does not exist. This comment used to end "It runs in the
+      # scheduled /maintenance sweep instead." It does not: maintenance.yml runs only
+      # advisor-diff.mjs and sweep.mts, and `cron-freshness` appears nowhere under
+      # scripts/maintenance/. docs/MAINTENANCE-AUTOMATION.md item 7 still lists scheduling it as
+      # 📋 not-done. So it is the one guard in the repo that runs only if a human types it, which
+      # compounds the unset CRON_HEARTBEAT_BASE_URL: 27 cron jobs are paging-blind AND the
+      # instrument that would notice is unscheduled. Owner action, tracked in FINALIZE-PLAN §7c.
       - name: Contract guards (all run; every failure reported)
         if: ${{ !cancelled() }}
         run: |
@@ -157,7 +165,7 @@ jobs:
           # derived below from the array itself. It used to be hardcoded, and read "All 21"
           # while 24 guards ran — a drift that a guard suite of all things should not carry.
           guards=(
-            authz canon menu workflows elements labels render-path help tokens phantom bridge contrast adoption
+            authz canon menu gate-parity workflows elements labels render-path help tokens phantom bridge contrast adoption
             headers seo collective crm-parity vocab rls grants admin-client migrations adr docs-links
           )
           for guard in "${guards[@]}"

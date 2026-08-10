@@ -170,12 +170,30 @@
      @theme inline below so `rounded-control/card/pill` and the motion tokens are
      available app-wide. */
 
-  /* Radius by role (docs/DESIGN.md "Radius — by role"): control = lg (0.5rem),
-     card = 2xl (1rem), pill = full. Defining them as tokens lets a skin retune the
-     whole feel (softer / sharper) at once. NOTE: existing components keep their
-     literal rounded-* utilities — consuming rounded-control/card/pill is incremental. */
-  --radius-control: 0.5rem;
-  --radius-card:    1rem;
+  /* Radius by role (docs/DESIGN.md "Radius — by role"): control = lg, card = 2xl,
+     pill = full. Defining them as tokens lets a skin retune the whole feel at once.
+
+     🔴 THESE MUST EQUAL THE STEPS BELOW (l.1344), and for a while they did not.
+     They were written when `rounded-lg` was Tailwind's stock 0.5rem and `rounded-2xl`
+     was 1rem — this comment said exactly that, and it was true. The DAWN port then
+     RE-DECLARED the steps (lg 8→14px, 2xl 16→24px) and left these three behind, so
+     `rounded-card` painted 16px while `rounded-2xl` painted 24px on the same kind of
+     surface, and which one a component got depended on when it was written.
+
+     The cost was not just inconsistency. `check:adoption` scores migrating a literal
+     to its role as progress, so for every one of the 2,678 sites already on a role
+     token, that "progress" made the component render its PRE-DAWN corner. The ratchet
+     was paying for regressions, which is the likeliest reason the note that used to
+     end this comment — "consuming rounded-control/card/pill is incremental" — stayed
+     true for so long: it punished whoever did it.
+
+     Corrected 2026-08-10 (owner decision: the roles follow the steps). Everything that
+     retunes radius below — the midnight skin, the seven generations, the Space-theme
+     default — moved with the same MULTIPLIER it already had, so no design relationship
+     changed. `classic` sitting exactly on the base, before and after, is the evidence
+     that ladder was authored around the base rather than in absolutes. */
+  --radius-control: 14px;   /* = rounded-lg  */
+  --radius-card:    24px;   /* = rounded-2xl */
   --radius-pill:    9999px;
 
   /* Motion durations — defaults match the current animation timings in this file
@@ -592,8 +610,8 @@
   --color-focus-ring:        #B86A15;
 
   /* Feel — sharper, more architectural than DAWN's soft radii. */
-  --radius-control: 0.375rem;
-  --radius-card:    0.625rem;
+  --radius-control: 11px;   /* 0.75x the base control, as before */
+  --radius-card:    15px;   /* 0.63x the base card, as before    */
   --radius-pill:    9999px;
 }
 
@@ -726,8 +744,8 @@
   --color-focus-ring:       #F0AD4E;
 
   /* Feel — sharper radii, matching the light-mode midnight. */
-  --radius-control: 0.375rem;
-  --radius-card:    0.625rem;
+  --radius-control: 11px;   /* 0.75x the base control, as before */
+  --radius-card:    15px;   /* 0.63x the base card, as before    */
   --radius-pill:    9999px;
 }
 
@@ -837,8 +855,8 @@
 [data-generation="spacious"] {
   --type-scale:   1.15;          /* largest adult type */
   --density-root: 112.5%;        /* roomy — airier than baseline 106.25% */
-  --radius-control: 0.625rem;
-  --radius-card:    1.125rem;
+  --radius-control: 18px;   /* 1.25x base */
+  --radius-card:    27px;   /* 1.13x base */
   --motion-fast: 90ms;           /* minimal motion: shorter, calmer beats */
   --motion-base: 170ms;
   --motion-slow: 420ms;
@@ -852,8 +870,8 @@
 [data-generation="classic"] {
   --type-scale:   1.06;
   --density-root: 109%;
-  --radius-control: 0.5rem;
-  --radius-card:    1rem;
+  --radius-control: 14px;   /* 1.00x base — classic IS the base, and was before */
+  --radius-card:    24px;
   --motion-fast: 110ms;
   --motion-base: 210ms;
   --motion-slow: 560ms;
@@ -877,8 +895,8 @@
 [data-generation="bold"] {
   --type-scale:   0.96;          /* smaller / denser */
   --density-root: 103%;          /* tighter than baseline */
-  --radius-control: 0.625rem;
-  --radius-card:    1.25rem;     /* rounder */
+  --radius-control: 18px;   /* 1.25x base */
+  --radius-card:    30px;   /* 1.25x base, rounder */
   --motion-fast: 150ms;          /* livelier */
   --motion-base: 300ms;
   --motion-slow: 760ms;
@@ -892,8 +910,8 @@
 [data-generation="playful"] {
   --type-scale:   1.08;          /* larger, not small */
   --density-root: 107%;          /* comfortable, not dense */
-  --radius-control: 0.875rem;    /* max rounded */
-  --radius-card:    1.5rem;
+  --radius-control: 25px;   /* 1.75x base, max rounded */
+  --radius-card:    36px;   /* 1.50x base */
   --radius-pill:    9999px;
   --motion-fast: 170ms;          /* most motion (purposeful) */
   --motion-base: 340ms;
@@ -909,8 +927,8 @@
 [data-generation="kids-early"] {
   --type-scale:   1.3;           /* largest type overall */
   --density-root: 115%;          /* LOW density — lots of room */
-  --radius-control: 1rem;        /* very rounded, friendly */
-  --radius-card:    1.75rem;
+  --radius-control: 28px;   /* 2.00x base, very rounded, friendly */
+  --radius-card:    42px;   /* 1.75x base */
   --radius-pill:    9999px;
   --motion-fast: 140ms;          /* purposeful, gentle */
   --motion-base: 280ms;
@@ -925,8 +943,8 @@
 [data-generation="kids-mid"] {
   --type-scale:   1.2;
   --density-root: 112%;
-  --radius-control: 0.875rem;
-  --radius-card:    1.5rem;
+  --radius-control: 25px;   /* 1.75x base */
+  --radius-card:    36px;   /* 1.50x base */
   --motion-fast: 130ms;
   --motion-base: 260ms;
   --motion-slow: 580ms;
@@ -940,8 +958,8 @@
 [data-generation="kids-tween"] {
   --type-scale:   1.1;           /* nearing balanced */
   --density-root: 108%;
-  --radius-control: 0.625rem;
-  --radius-card:    1.125rem;
+  --radius-control: 18px;   /* 1.25x base */
+  --radius-card:    27px;   /* 1.13x base */
   --motion-fast: 120ms;
   --motion-base: 240ms;
   --motion-slow: 540ms;
@@ -1020,8 +1038,8 @@
    default — so the font line is a no-op; the other themes swap the reading face. */
 [data-space-theme] {
   font-family: var(--font-body, var(--font-nunito)), system-ui, sans-serif;
-  --radius-card: 1rem;
-  --radius-control: 0.5rem;
+  --radius-card: 24px;
+  --radius-control: 14px;
 }
 
 /* bold — today's look (Anton / Nunito). No radius override: a no-op anchor. */

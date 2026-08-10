@@ -181,12 +181,18 @@ describe('bold byte-identity pins (the default authors NOTHING beyond its font a
   it('the shared [data-space-theme] rule applies the body face and pins the radius baseline', () => {
     // The pin is what keeps a bold Space at today's literals under every skin + generation
     // (those axes retune --radius-card/--radius-control on app-shell ancestors).
+    //
+    // The values moved 2026-08-10, and the reason is this test's own sentence: the pin exists to
+    // hold a Space "at today's literals", and `rounded-2xl`/`rounded-lg` are **24px / 14px**. It
+    // was pinning 1rem / 0.5rem — Tailwind's STOCK steps, from before the DAWN port re-declared
+    // them — so the pin had been holding Spaces at a radius no literal in the codebase painted.
+    // Same drift the role tokens had, in the one place asserting they matched.
     const m = globalsCss.match(/\[data-space-theme\]\s*\{([^}]*)\}/)
     expect(m, 'shared [data-space-theme] { … } rule missing').toBeTruthy()
     const shared = m ? m[1] : ''
     expect(shared).toMatch(/font-family:\s*var\(--font-body/)
-    expect(shared).toMatch(/--radius-card:\s*1rem/)
-    expect(shared).toMatch(/--radius-control:\s*0\.5rem/)
+    expect(shared).toMatch(/--radius-card:\s*24px/)
+    expect(shared).toMatch(/--radius-control:\s*14px/)
   })
 })
 

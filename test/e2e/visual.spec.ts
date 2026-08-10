@@ -62,8 +62,10 @@ async function capture(
   }
 
   await settle(page)
+  // `viewportOnly` surfaces photograph the first screen. See the note on Surface.viewportOnly:
+  // a full-page baseline of a live, shared stream measures WHEN it was taken, not how it looks.
   await expect(page).toHaveScreenshot(`${surface.slug}--${state.id}.png`, {
-    fullPage: true,
+    fullPage: !surface.viewportOnly,
     mask: masksFor(page, surface),
   })
 }

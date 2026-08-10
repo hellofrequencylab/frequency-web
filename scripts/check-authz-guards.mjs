@@ -143,16 +143,38 @@ export function scanFiles(files, classify) {
 }
 
 /** Run both scans against the real tree. Returns { actions, libMutations }. */
+/** A gate that scans nothing reports a clean bill of health, and this one did it silently: on an
+ *  empty tree it printed "✓ Authz-contract check passed" with NO COUNT AT ALL, because `walk()`
+ *  returns [] for a missing root without complaint. The floors sit well under the live corpus
+ *  (1151 app / 1061 lib on 2026-08-10) and far above zero, so they fire on a broken read rather
+ *  than on growth. Same pattern as MIN_ROWS in check-gate-parity.mjs. */
+export const MIN_APP_FILES = 500
+export const MIN_LIB_FILES = 400
+
 export function runChecks() {
+  const appFiles = walk(APP_DIR)
+  const libFiles = walk(LIB_DIR)
   return {
-    actions: scanFiles(walk(APP_DIR), isUnguardedAction),
-    libMutations: scanFiles(walk(LIB_DIR), isUnguardedLibMutation),
+    actions: scanFiles(appFiles, isUnguardedAction),
+    libMutations: scanFiles(libFiles, isUnguardedLibMutation),
+    appCount: appFiles.length,
+    libCount: libFiles.length,
   }
 }
 
 function main() {
-  const { actions, libMutations } = runChecks()
+  const { actions, libMutations, appCount, libCount } = runChecks()
   let failed = false
+
+  if (appCount < MIN_APP_FILES || libCount < MIN_LIB_FILES) {
+    console.error(
+      `\n✗ Authz-contract check scanned ${appCount} ${APP_DIR}/ and ${libCount} ${LIB_DIR}/ file(s), ` +
+        `expected at least ${MIN_APP_FILES} and ${MIN_LIB_FILES}.\n` +
+        '  The roots moved or the walk is broken. This gate guards RLS-bypassing server actions, ' +
+        'so\n  a run that reads almost nothing must fail rather than report a clean bill of health.\n',
+    )
+    process.exit(1)
+  }
 
   if (actions.length > 0) {
     failed = true
@@ -185,8 +207,9 @@ function main() {
 
   if (failed) process.exit(1)
   console.log(
-    '✓ Authz-contract check passed — every admin-client server action has a guard, and every\n' +
-      '  lib/ admin-client mutation helper self-guards, scopes its write, or is consciously delegated.',
+    `✓ Authz-contract check passed across ${appCount} ${APP_DIR}/ + ${libCount} ${LIB_DIR}/ file(s) — ` +
+      'every admin-client server\n  action has a guard, and every lib/ admin-client mutation helper ' +
+      'self-guards, scopes its\n  write, or is consciously delegated.',
   )
 }
 

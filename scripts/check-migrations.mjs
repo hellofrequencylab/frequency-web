@@ -35,6 +35,10 @@ const DIR = join('supabase', 'migrations')
 // The shape `supabase db push` parses: 14 digits, an underscore, a name, `.sql`.
 const FILENAME = /^(\d{14})_([A-Za-z0-9_.-]+)\.sql$/
 
+/** Floor for the migration corpus. Shared value with check:grants (MIN_MIGRATIONS) and check:rls,
+ *  which read the same directory — a gate that scans nothing passes everything. */
+export const MIN_MIGRATIONS = 400
+
 // ── Rule 3: a migration that reseeds MENU DATA has to say what to do afterwards. ──────────────
 //
 // The menu surfaces are DB-seeded, and the read path is a plain uncached query — but
@@ -105,6 +109,19 @@ export function runCheck() {
 
 function main() {
   const { total, malformed, collisions, menuNoteMissing } = runCheck()
+
+  // `total` was reported but never asserted, so "✓ Migration contract: 0 migration(s), every
+  // version unique" was a reachable success line — a vacuous pass on the directory that decides
+  // what ships to the database. The floor sits under the live corpus (597 on 2026-08-10) and far
+  // above zero. check:grants and check:rls read this same directory and floor it at the same 400.
+  if (total < MIN_MIGRATIONS) {
+    console.error(
+      `✗ Migration contract read only ${total} migration(s) from ${DIR}, expected at least ` +
+        `${MIN_MIGRATIONS}. Uniqueness across an empty set is trivially true, so this is a broken ` +
+        'read rather than a clean run.',
+    )
+    process.exit(1)
+  }
 
   if (malformed.length === 0 && collisions.length === 0 && menuNoteMissing.length === 0) {
     console.log(

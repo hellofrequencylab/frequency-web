@@ -459,3 +459,76 @@ describe('acceptInvite — seats the authenticated invitee, fail-closed otherwis
     expect(db.invites.find((r) => r.id === 'seat-fails')?.status).toBe('pending')
   })
 })
+
+// ── Invite by @handle ────────────────────────────────────────────────────────
+// The property that matters most here is a NEGATIVE one: no path returns an email address to the
+// caller. Everything else is convenience; that one is the difference between a team picker and an
+// email-lookup oracle for any Space owner against any member.
+
+describe('TeamCandidate — the shape is the privacy boundary', () => {
+  it('carries public identity only, and no email-ish field', async () => {
+    // Declared in invites-shared.ts, the CLIENT-safe module, because the picker is a client
+    // component and a value/type import from invites.ts would drag the server IO graph into its
+    // bundle. invites.ts re-exports it, so server + test imports are unchanged.
+    const src = await import('node:fs').then((fs) =>
+      fs.readFileSync('lib/spaces/invites-shared.ts', 'utf8'),
+    )
+    const iface = /export interface TeamCandidate \{([\s\S]*?)\}/.exec(src)?.[1] ?? ''
+    expect(iface, 'TeamCandidate interface not found').not.toBe('')
+    expect(iface).toMatch(/\bid\b/)
+    expect(iface).toMatch(/\bhandle\b/)
+    // The whole design rests on this: if a future edit adds an address to the DTO, the client gets
+    // it, and searching a handle becomes a way to read a stranger's email.
+    expect(iface.toLowerCase()).not.toMatch(/email/)
+  })
+
+  it('the search selects no email column from profiles', async () => {
+    const src = await import('node:fs').then((fs) =>
+      fs.readFileSync('lib/spaces/invites.ts', 'utf8'),
+    )
+    const fn = /export async function searchTeamCandidates[\s\S]*?\n\}/.exec(src)?.[0] ?? ''
+    expect(fn, 'searchTeamCandidates not found').not.toBe('')
+    expect(fn).toMatch(/\.select\('id, display_name, handle, avatar_url'\)/)
+    expect(fn.toLowerCase()).not.toMatch(/email/)
+    // SEC-10: parameterized per-column ilike, never an interpolated .or() filter string.
+    expect(fn).toMatch(/\.ilike\(/)
+    expect(fn).not.toMatch(/\.or\(/)
+    // A term the caller controls must be escaped before it becomes a LIKE pattern.
+    expect(fn).toMatch(/replace\(\/\[%_\\\\\]\/g/)
+  })
+
+  it('inviteByProfile delegates to createInvite rather than re-implementing the gate', async () => {
+    const src = await import('node:fs').then((fs) =>
+      fs.readFileSync('lib/spaces/invites.ts', 'utf8'),
+    )
+    const fn = /export async function inviteByProfile[\s\S]*?\n\}/.exec(src)?.[0] ?? ''
+    expect(fn, 'inviteByProfile not found').not.toBe('')
+    // One authority for permission, seats, token and expiry. A second implementation is how the
+    // two drift and one of them stops checking seats.
+    expect(fn).toMatch(/return createInvite\(spaceId, email, role\)/)
+    expect(fn).toMatch(/profileAccountEmail/)
+    // It must not hand the resolved address back to the caller in any branch.
+    expect(fn).not.toMatch(/ok\(\s*\{[^}]*email/)
+  })
+
+  it('the picker posts a profile id, and never carries an address of its own', async () => {
+    // The boundary is only real if the CLIENT side respects it. The server could return public
+    // identity forever and the privacy property would still be lost the moment the form started
+    // asking for, holding, or sending an address on the handle path.
+    const src = await import('node:fs').then((fs) =>
+      fs.readFileSync('components/spaces/invite-form.tsx', 'utf8'),
+    )
+    const picker = /function TeamPicker\(\{[\s\S]*?\n\}\n/.exec(src)?.[0] ?? ''
+    expect(picker, 'TeamPicker not found in invite-form.tsx').not.toBe('')
+    // It identifies the person by id...
+    expect(picker).toMatch(/inviteByProfile\(spaceId, person\.id, role\)/)
+    // ...and never by address. These match an address as a VALUE (a field read, a binding, an
+    // input that collects one) rather than the word, which appears legitimately in the copy that
+    // points at the other form: "if they are not on Frequency yet, invite them by email below".
+    expect(picker).not.toMatch(/\.email\b/)
+    expect(picker).not.toMatch(/\bemail\s*[:=]/i)
+    expect(picker).not.toMatch(/type="email"/)
+    // createInvite takes an address. Reaching for it here is how the handle path would grow one.
+    expect(picker).not.toMatch(/createInvite/)
+  })
+})

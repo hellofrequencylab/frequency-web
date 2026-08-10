@@ -15,6 +15,7 @@
 
 import { createHmac, timingSafeEqual } from 'crypto'
 import { isLeadDoor, type LeadDoor } from './lead-capture'
+import { signingSecret } from '@/lib/signing-secret'
 
 /** Default lifetime of a capture link. Long enough to print on a flyer or leave in a link-in-bio,
  *  short enough that a forgotten link stops sealing leads on its own. */
@@ -53,16 +54,7 @@ export interface LeadLinkPayload {
   exp: number
 }
 
-function getSecret(): string {
-  const explicit =
-    process.env.OPTIN_CONFIRM_SECRET || process.env.BETA_CONFIRM_SECRET || process.env.UNSUBSCRIBE_SECRET
-  if (explicit) return explicit
-  const fallback = process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 32)
-  if (!fallback) {
-    throw new Error('[lead-links] No OPTIN_CONFIRM_SECRET / BETA_CONFIRM_SECRET / UNSUBSCRIBE_SECRET / service-role key to sign with.')
-  }
-  return fallback
-}
+const getSecret = (): string => signingSecret('lead-links', ['OPTIN_CONFIRM_SECRET', 'BETA_CONFIRM_SECRET', 'UNSUBSCRIBE_SECRET'])
 
 function sign(body: string): string {
   return createHmac('sha256', getSecret()).update(`lead-link:${body}`).digest('hex').slice(0, 32)

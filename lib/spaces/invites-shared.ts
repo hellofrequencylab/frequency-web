@@ -36,6 +36,19 @@ export interface CreatedInvite {
   acceptUrl: string
 }
 
+/** A person the team picker can offer: PUBLIC identity, and nothing else.
+ *
+ *  The absence of an email field here is the feature, not an omission. `searchTeamCandidates`
+ *  returns these, and if the shape carried an address then a team-invite box would double as an
+ *  email lookup for any Space owner against any member, by handle. `inviteByProfile` resolves the
+ *  address server-side from the id instead, so it never crosses the boundary. Do not add one. */
+export interface TeamCandidate {
+  id: string
+  displayName: string | null
+  handle: string | null
+  avatarUrl: string | null
+}
+
 /** The absolute accept link for a token. Built off SITE_URL (lib/site.ts) so it is correct in every
  *  environment. Pure. */
 export function inviteAcceptUrl(token: string): string {

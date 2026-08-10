@@ -67,7 +67,6 @@ practice_slug_redirects
 pricing_feature_gates
 pricing_settings
 pricing_stripe_prices
-program_adoptions
 qr_scans
 recording_attachments
 recording_reviews

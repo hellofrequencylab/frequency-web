@@ -1,7 +1,7 @@
 # Finalize plan — the run to a fully functional platform
 
 > **The answer, first.** The platform is built and green: `tsc` clean, **8,943 tests passing**,
-> **all 24 `check:*` gates exit 0**, CI green on `main`, and the migration ledger is an exact
+> **all 25 `check:*` gates exit 0**, CI green on `main`, and the migration ledger is an exact
 > bijection with the repo (594 ⇄ 594, ADR-963).
 > What is left is not features. It is **three instruments that stopped telling the truth**, one
 > **access-grant layer** that was never actually closed, and a **short, verified list of real
@@ -26,7 +26,7 @@ Sizes: **XS** under an hour · **S** one PR · **M** 1 to 3 PRs · **L** a wave.
 | :--- | :--- | :--- |
 | Build + types | ✅ | `tsc --noEmit` rc=0 |
 | Tests | ✅ | 708 files, 8,943 tests, 0 failures |
-| Machine gates | ✅ | all 24 `check:*` scripts exit 0 |
+| Machine gates | ✅ | all 25 `check:*` scripts exit 0 (26 defined; `check:cron-freshness` is scheduled nowhere) |
 | CI (`ci.yml`) | ✅ | green on `main` |
 | Migrations applied | ✅ | every repo migration is live in prod |
 | Cron wiring | ✅ | 27 `vercel.json` entries ⇄ 27 handlers, zero drift both ways |
@@ -35,7 +35,7 @@ Sizes: **XS** under an hour · **S** one PR · **M** 1 to 3 PRs · **L** a wave.
 | Code hygiene | ✅ | **18** TODO markers in the entire `app` + `lib` + `components` tree |
 | SEO/AIO surface | ✅ | 14 OG-image routes, 25 JSON-LD emitters, `llms.txt` already carries live first-party stats |
 | Help centre | ✅ | 55 articles, core coverage 27/27, **0 orphan feature keys** (the 10 were added to `feature-keys.ts`; `check:help` now fails on an orphan in every mode) |
-| **Visual regression** | ⏳ | **68 of 72 pass** against the fresh baselines (run `31426644985`, 2026-08-10) — was 10 of 72. The 4 remaining are all `/feed` (1.9) |
+| **Visual regression** | ✅ | **68 of 72** against the fresh baselines, was 10 of 72. The 4 `/feed` failures are resolved by viewport capture (1.9). ⚠️ The radius correction (6.9) moves corners app-wide, so one recapture is owed. |
 | **Accessibility ratchet** | 🔴 | first full run with a session (2026-08-10): **32 failed · 28 passed · 26 skipped** — 4 absent baselines, 28 real rises, **all 16 dark-mode contrast checks among them** (1.7, ADR-980) |
 | **Anon/authenticated grants** | 🔴 | **1,907 explicit grants across 273 tables** (2 worst RPCs closed, ADR-961) |
 | **Migration ledger numbering** | ✅ | **594 ⇄ 594, zero drift both directions** (ADR-963) — was 607 vs 594 |
@@ -107,7 +107,8 @@ exist, and all three gates are eligible to be flipped to required.
 | 1.3 | **Seed the shell a11y baselines** | S | `/feed` and `/settings` are currently held to zero serious+ violations against debt that predates the gate, because their baselines were never captured — confirmed: `a11y-baselines.json` `surfaces` has **no `/feed` or `/settings` key at all**, so they fall to `$defaultMax`. Run #15 duly failed all four of their checks. `e2e-manual.yml` → `capture_shell` + `update_a11y`. ⚠️ **Re-running `update_a11y` as-is does nothing.** `scripts/a11y-baselines.mjs` refuses a new context whose debt exceeds `$defaultMax` (0) — *"a new surface joins at zero tolerance"* — so `/feed` (7) and `/settings` (2) land in `added`, the script `exit(1)`s **before** it writes, and the file is unchanged. Seeding them is a deliberate `--force` with a reason in the commit. ✅ **One of the 9 is now fixed** (6.15), so the numbers to seed are 6 and 1. |
 | 1.9 | ⚠️ **`pr-compare` ANSWERED: 68 of 72 pass. The 4 that fail are one surface, and recapturing it again will not help** | S | Run `31426644985` on `74c7387`: **`68 passed · 4 failed`**, against **`10 passed · 62 failed`** before the recapture. Phase 1's premise held — the baselines were stale and recapture was the remedy — for **68 of 72** surfaces. The 4 failures are `app-feed` alone, both modes × both viewports, and they are **size** mismatches (`390×11772` expected, `390×11848` received, +76px) rather than the pixel-content diffs the pre-recapture run showed. ⚠️ **Do not re-run `update_baselines` for this.** `surfaces.ts:319` already records `/feed` drifting 8497 → 9272 → 9390px and attributes it to five `<Suspense fallback={null}>` boundaries that **append** height as they resolve (a null fallback reserves zero height), which is why `settle()` grew a height wait and why the file states masking cannot fix it — *"the failure is the page's HEIGHT, not its pixels."* **But the Suspense theory does not survive this run:** `/settings` carries **twelve** such boundaries and **passed all four of its checks**. The surface with more boundaries is the stable one. What separates them is the data: `/settings` renders the caller's own settings, `/feed` renders a **shared, live** post stream, and the baseline was taken ~70 minutes before the comparison. A full-page pixel baseline of a live feed measures when it was taken. Options, in order of honesty: capture `/feed` at **viewport height** rather than `fullPage`; seed deterministic content for the beta member; or drop `/feed` from the visual set and let the a11y suite carry it. All three are a decision about what the instrument should measure, so none is a silent fix. |
 | 1.7 | ⚠️ **NEW, measured on run #15: the a11y ratchet is as stale as the visual baselines were, and it must NOT be re-frozen the same way** | M | The smoke job of run `31422100196` reports **32 failed · 28 passed · 26 skipped**. Four are 1.3's absent shell baselines. The other 28 are a **real rise against a real baseline**, and the shape is systemic: **all 16 dark-mode contrast checks fail** (`dawn-dark` ×8, `midnight-dark` ×8), against baselines that are **0 on every surface but `/spaces` (2) and `/the-community` (3)** — plus `midnight-light` on `/the-lab` · `/pricing` · `/discover`, and 7 `dawn-light` serious+ checks on `/about` · `/the-lab` · `/pricing` · `/discover`. **The baseline is not an artefact:** its counts track the *mode* axis and ignore the *skin* axis (`midnight-light` is identical to `dawn-light`, `midnight-dark` to `dawn-dark`), which is what contrast should do, so these numbers were real when frozen on 2026-08-04. What moved is the design — the same churn that staled 62 of 72 visual baselines (#2042 the DAWN pass, #2053 which recorded a contrast cost *as a waiver*, #2061). ⚠️ **The remedy is NOT `update_a11y`.** A visual baseline is **descriptive** (recapture is always right); this ratchet is **normative** — ADR-928 lets debt fall, never rise, and `update_a11y` over a rise erases the regression instead of recording it. Per the file's own header, *"baselines are debt, and debt gets a name"*: audit each risen surface, fix what is fixable, and waive the rest **with a reason in the same commit**. Start with the 16 dark-mode failures — one cause across eight pages and two skins is one fix, not sixteen. ⚠️ Do not read `check:contrast` being green as a contradiction: it validates the **token layer** against a hand-declared `PAIRS` list, while axe validates what was **painted**, so a token used on a ground it was never paired with is invisible to it. Full reasoning: [ADR-980](DECISIONS.md). |
-| 1.8 | 🔴 **Owner: two repo variables, then one more `capture_shell` run** | XS | The member shell photographs **2 of 4** surfaces. The missing two need a value only you can supply, because there is no safe default — the last default (`PW_ROOM_PATH` → `/channels`) is exactly what made four baselines photographs of the marketing home page. Settings → Secrets and variables → Actions → **Variables**: `PW_ROOM_PATH` = a room route the beta member can reach, `PW_SPACE_SLUG` = a Space slug that account can manage. Then re-run `e2e-manual.yml` with `capture_shell` + `update_baselines`. |
+| 1.8 | ⚠️ **Owner: ONE variable, not two — `PW_ROOM_PATH` has no valid value** | XS | 🔴 **Measured against production 2026-08-10: `channels_total = 0`.** There is not a single channel in the database, so no value of `PW_ROOM_PATH` can point at a room. This item was listed as a five-minute config action four separate times and it is not one: it needs a channel to EXIST first. `app-room` staying absent is correct until then, and is exactly what the deleted `/channels` default was faking. `PW_SPACE_SLUG` is real and unblocked. ⚠️ It must name a Space the `PW_MEMBER_EMAIL` account can MANAGE — `danieltyack` has exactly one manager (its owner), so unless that is the test account, use a Space the test account owns rather than granting automation credentials admin on a live business Space. |
+| 1.8b | ~~Owner: two repo variables~~ | XS | The member shell photographs **2 of 4** surfaces. The missing two need a value only you can supply, because there is no safe default — the last default (`PW_ROOM_PATH` → `/channels`) is exactly what made four baselines photographs of the marketing home page. Settings → Secrets and variables → Actions → **Variables**: `PW_ROOM_PATH` = a room route the beta member can reach, `PW_SPACE_SLUG` = a Space slug that account can manage. Then re-run `e2e-manual.yml` with `capture_shell` + `update_baselines`. |
 | 1.4 | ✅ **Already resolved — it is a VARIABLE, not a secret** | — | Verified 2026-08-10 two ways. The Variables tab holds `PW_REQUIRE_SHELL = 1`; the Secrets tab does **not** (its six entries are `ANTHROPIC_API_KEY`, both Supabase keys, `PW_MEMBER_EMAIL`, `SUPABASE_SERVICE_ROLE_KEY`, `VERCEL_AUTOMATION_BYPASS_SECRET`). And the run log contains **zero** `***` redactions while printing figures full of the digit 1 (`117474 pixels`, `ratio 0.03`) — which is only possible if `1` is not a secret. The log-redaction problem this item describes is gone. |
 | 1.5 | ✅ **Already resolved — the account exists and the session mints** | — | `PW_MEMBER_EMAIL` is set (Secrets tab, checked 2026-08-10), and the proof it works is in the run itself: `app-feed` and `app-settings` were **photographed**, which is only possible behind a minted session. What is still missing is narrower than "an account": `app-room` has no baseline (Phase 1 deleted all four as wrong-page captures of the marketing home), and the Space console needs the **`PW_SPACE_SLUG`** repo variable, which is not set — the Variables tab holds only `PW_REQUIRE_SHELL`. Both are covered by one `update_baselines + capture_shell` run. |
 | 1.6 | ⚠️ **Owner: flip `pr-compare`, `check:adoption`, `check:contrast` to required — but `pr-compare` has a hole that must be closed FIRST** | S | Required contexts are now **four** (`checks` · `analyze` · `lint` · `test`). ⚠️ **A green `pr-compare` on a Dependabot PR means nothing was tested.** GitHub does not expose repo secrets to Dependabot runs, so `VERCEL_AUTOMATION_BYPASS_SECRET` is empty, and the job takes its documented skip path — *"Skipping is the honest result; a red X here would mean nothing about this PR"* — and **exits 0**. Verified on #2076 job `93578379589`: `BYPASS:` empty, `::notice ... Nothing was tested`, conclusion `success`. The reasoning is right and the skip is the correct behaviour; the problem is that it produces a checkmark **indistinguishable from a real pass** in the PR list, on exactly the PRs that bump the CI actions themselves. Promote it to required and every Dependabot PR satisfies it vacuously, forever. Fix before promoting: report the skip as **neutral** rather than success, or gate the required context on a job that cannot skip. |
@@ -283,7 +284,7 @@ and the score cannot disagree. `top25` is the share of a class's total carried b
 
 | Class | Total | Files | top10 | top25 | Median/file | Instrument |
 | :--- | ---: | ---: | ---: | ---: | ---: | :--- |
-| `literal-radius` | 2450 | 816 | 8% | **15%** | 2 | 🔴 **blocked — see 6.9** |
+| `literal-radius` | 2450 | 816 | 8% | **15%** | 2 | ⚠️ **unblocked (6.9), but NOT a blind codemod — see 6.17** |
 | `raw-button-bg` | 526 | 312 | 14% | **26%** | 1 | 🔧 codemod |
 | `raw-input` | 186 | 131 | 21% | **37%** | 1 | 🔧 codemod + an inset variant |
 | `raw-px-arbitrary` | 117 | 59 | 47% | 71% | 1 | ✋ sweep |
@@ -309,7 +310,7 @@ green on an unrelated PR, each sweep carrying its own recapture. Landing a sweep
 confirmation would leave us unable to tell a regression from the sweep's own intended diff, which is
 the exact condition Phase 1 existed to end.
 
-### 6.9 — 🔴 The radius roles and the radius steps disagree, and the ratchet is rewarding the wrong direction
+### 6.9 — ✅ RESOLVED: the radius roles now mean the steps (owner decision, 2026-08-10)
 
 **This is the find of the DAWN pass, and it inverts item 6.8's `literal-radius` row.** I had that row
 down as a codemod. It is not: converting a literal to its role today makes the component render
@@ -350,21 +351,53 @@ converting the 2,450 sites become a no-op that a codemod can do safely.
 ⚠️ **Do not sweep `literal-radius` until this is settled.** A sweep now writes 2,450 sites to the
 wrong number and buries the defect where no gate can see it, because the ratchet would go green.
 
-### 6.10 — Template adoption is 242 of 383, and the real violation list is seven components
+### 6.10 — Template adoption is 248 to 258 of 383, and the range is the honest answer
 
-Measured 2026-08-10. Method: `find app -name page.tsx` → **383**; `grep -rl "@/components/templates"`
-→ 243, **plus 5** reaching `AdminTemplate` through the `AdminPage` re-export that a string grep
-misses, **minus 6** corrected below → **242 compose a kit shell**.
+🔴 **Re-measured 2026-08-10 by resolving the import graph rather than grepping. The previous
+"242" does not reproduce, and neither does the "6" below it.**
+
+Method: `find app -name page.tsx` → **383**. Shell set = the 8 real shells exported by
+`components/templates/index.ts` plus the `AdminPage` alias. **Pieces excluded** (`PageHeading`,
+`PageHero`, `WizardProgress`, `AdminSection`, `RailGrid`) — a page importing only a piece composes
+no shell. A page counts as compliant when it, or an ancestor `layout.tsx`, reaches a shell.
+
+| Resolution | Compliant | Non-compliant |
+| :--- | ---: | ---: |
+| Direct import in the page or an ancestor layout (**floor**) | 248 | 135 |
+| Full transitive import closure (**ceiling**) | 258 | 125 |
+
+⚠️ **The range is not indecision, it is the measurement's actual precision.** Transitive
+reachability over-credits: a page scores compliant if *any* module in its closure imports a shell,
+even one not on the rendered path. Direct under-credits a page that composes through a helper. A
+single number here would be a guess with a number attached. **The 125 list is sound in one
+direction** — none of those can reach a shell by any path.
+
+Of the 125, 41 render no JSX (redirect/`notFound` stubs). Of the remaining 84, **38 are under
+`app/(main)/`**, which is where a shell is actually owed. Some of those 38 are registered
+exceptions in `lib/layout/page-chrome.ts`; that registry keys on route patterns rather than file
+paths, so matching the two mechanically would be a claim this measurement cannot stand behind.
+Treat 38 as the superset.
+
+⚠️ **There is no instrument here at all** — no gate, no baseline, no ratchet. Every other class in
+§6.8 has one, which is why their numbers reproduce and this one did not. `check:headers` is the
+nearest thing (305 route entries, 3 named hand-rolled `<h1>`s) but it measures a narrower property.
 
 ⚠️ **The correction, because the method had a hole worth naming.** "Imports from
 `@/components/templates`" is NOT evidence of composing a template: that barrel also exports
-**pieces** — `PageHeading`, `AdminSection`, `WizardProgress`. Six pages import only a piece, compose
-no shell, and have no sibling `layout.tsx` composing one either, yet were scored compliant:
+**pieces** — `PageHeading`, `AdminSection`, `WizardProgress`. **Five** pages import only a piece,
+compose no shell, and have no ancestor `layout.tsx` composing one either, yet were scored compliant:
 `admin/events/[id]` · `admin/spaces/[id]` · `messages/[id]` · `messages/r/[roomId]` ·
-`spaces/[slug]/profile-preview` · `people/[handle]/profile-preview`. Of those, **one is a registered
-exception** — `people/[handle]/profile-preview` is in `page-chrome.ts`'s `BUILDER_PATTERNS`, "a
-profile page whose own identity/layout paints". The Space equivalent is **not** covered (that pattern
-is `/^\/spaces\/[^/]+$/`, root only). The remaining five need a per-page call. Same hole explains
+`people/[handle]/profile-preview`. Of those, **one is a registered exception** —
+`people/[handle]/profile-preview` is in `page-chrome.ts`'s `BUILDER_PATTERNS`, "a profile page whose
+own identity/layout paints". The remaining four need a per-page call.
+
+🔴 **This list said six, and the sixth was wrong twice.** It named
+`spaces/[slug]/profile-preview` as uncovered because `BUILDER_PATTERNS` is `/^\/spaces\/[^/]+$/`
+(root only). But the file lives at `app/(main)/spaces/[slug]/(profile)/profile-preview/page.tsx`,
+and its ancestor `app/(main)/spaces/[slug]/(profile)/layout.tsx:5` composes `DetailTemplate` — so
+it is **Detail-composed-at-layout**, a category this very section already recognises, and it never
+needed the chrome exception at all. The path recorded here omitted the `(profile)` route group,
+which is exactly how a page gets audited as if it had no ancestor. Same hole explains
 `journey-spark.tsx` and `practice-spark.tsx` below: they import from the barrel and compose nothing. Of the remaining 135, **123 are legitimate and were each read
 to confirm it**: 32 redirect stubs · 51 marketing/discover surfaces (a separate system per
 PAGE-FRAMEWORK §10) · 8 Detail-composed-at-`layout.tsx` · 8 sanctioned editable indexes (§8.5) ·
@@ -391,11 +424,26 @@ new/guided-client.tsx:19` does exactly the same thing and **says so**, with a re
 `lib/layout/page-chrome.ts` and the shell that reads it. No page toggles its own rail. `FOCUS_NONE_PREFIXES`
 being empty is the documented contract (§8.2), not a gap.
 
-⚠️ Arbitrary content type, the canon's own ban: **6 hits in 4 files** — `the-community/tour.tsx`
+⚠️ Arbitrary content type, the canon's own ban: **8 hits in 4 files** — `the-community/tour.tsx`
 (`text-[9px]` ×4, `text-[8px]`), `onboarding/beta/induction.tsx:962` (`text-[10px]`),
-`page-editor/desktop/desktop-editor.tsx:355` (`text-[0.7rem]`). `text-2xs`/`text-3xs` already exist.
+`page-editor/desktop/desktop-editor.tsx:355` (`text-[0.7rem]`), `feed/post-body.tsx:41`
+(`text-[0.85em]`, inline `<code>` sizing). `text-2xs`/`text-3xs` already exist.
 
-### 6.11 — 🔴 Nine rows where the menu and the page disagree about who gets in
+🔴 **Re-measured 2026-08-10; the previous figure was wrong twice.** It read "6 hits in 4 files"
+while its own enumeration totalled 7 in 3, and it omitted `post-body.tsx` entirely. Method:
+`rg -o 'text-\[[^\]]*\]'` over `{app,components}` excluding tests, then re-run through
+`check-tokens.mjs`'s `stripComments` — that second pass is load-bearing, because
+`people/member-viewer/message-path.tsx:35` mentions `text-[10px]` in a header comment saying it
+deliberately does not use one, and a raw grep books it as a hit.
+
+**Two holes in `check:tokens` that this exposed, both still open:**
+- Its `TEXT_PX = /text-\[\d+px\]/` cannot see `rem`/`em` forms at all, and it `match`es without
+  `/g`, so it counts LINES rather than occurrences.
+- `app/onboarding/beta/induction.tsx` is allowlisted by exact path — an exemption granted for a
+  4-hex Google brand mark that silently also exempts that file's `text-[10px]`. A whole-file
+  waiver for one class quietly waives every other class in the file. Nobody decided that.
+
+### 6.11 — ⚠️ ELEVEN rows where the menu and the page disagree, now held by `check:gate-parity`
 
 Measured 2026-08-10 by walking every `STUDIO_LEAVES` row with an `/admin/*` href and comparing its
 `min`/`staffDomain` against the page's actual `requireAdmin(...)` call. **`pnpm check:menu` passes on
@@ -535,6 +583,55 @@ The literal is attributed to the run that observed it, and carries an instructio
 the `bgAlpha` form once the real stack is identified.
 
 Proven both ways: the gate reports **4.45:1, short by 0.05** before the token change and passes after.
+
+### 6.16 — `check:gate-parity`, the 25th gate
+
+`check:menu` is strict about the catalog's **shape** and cannot read a `requireAdmin()` inside a page
+body, so a row promising a tool to a population its page rejects passed every gate in the repo.
+Measured: **11 of 64** comparable rows disagree, in two asymmetric directions — *menu promises, page
+denies* (a dead menu item) and *page allows, menu hides* (a tool its authorized users cannot find).
+
+The gate does **not** pick a side; which is right is a product call. The eleven are frozen with
+today's numbers and a reason each, and it fails on a **twelfth** — or on a frozen row whose numbers
+*move* without being fixed, since half a fix is how these accumulated.
+
+⚠️ **Its first version was broken and green**, which is the part worth keeping. The regex used
+`[^{}]`, which stops at the nested `adminGroups: [{ … }]`, so it matched nothing, printed
+**`0 of 0 ✓`** and exited 0. A gate that scans nothing passes everything. `MIN_ROWS` now turns an
+under-scan into a failure — the same guard `check:adoption` and `check:labels` already carry, for
+the same reason, which is why those two have it.
+
+### 6.17 — ⚠️ `literal-radius` is unblocked, and it is still not a find-and-replace
+
+6.9 made the roles equal the steps, so `rounded-lg → rounded-control` and `rounded-2xl →
+rounded-card` are now **pixel-identical in the default skin**. That covers **1,818 of 2,450** sites
+(74%). It is tempting to read that as "run a codemod", and I wrote exactly that in the row above
+before catching it.
+
+**A value match is not a role match.** `rounded-2xl` on a *button* is 24px today and would become
+`rounded-card` — pixel-identical right now, and **wrong the moment any skin retunes card and control
+by different amounts**, which is the entire purpose of having two roles. Midnight already does
+(0.75× vs 0.63×), so the divergence is not hypothetical; it is one skin away.
+
+`globals.css` made this exact point about the other direction and it is why the steps were ported
+rather than swept: *"a sweep would have had to pick a value per site, and the value it would have
+encoded is the wrong one."* Same trap, mirrored.
+
+**What the sweep actually needs** is a per-site judgement of what the element IS — control, card,
+pill, or none of the three — which a regex cannot make. The remaining 632 sites (`rounded-xl` 307,
+`rounded-md` 275, `rounded-sm` 5, `rounded-3xl` 44) have **no matching role at all** and are a
+separate question: either they are deliberate one-offs, or the role set is missing a step.
+
+⚠️ I also claimed `rounded-full → rounded-pill` was the one safe mechanical conversion. It is not,
+and the reason is the same one again. The single remaining occurrence is a **spinner**
+(`components/layout/notification-bell.tsx:135`). The swap would be pixel-identical forever —
+`--radius-pill` is `9999px` in every block — but it puts a **control** role on a decorative circle,
+which is the mislabel this very item warns about, and its only effect would be moving a number in a
+ratchet by one. Left alone.
+
+**So the mechanical subset of `literal-radius` is empty.** Every one of the 2,450 needs the same
+per-site judgement. That is worth stating plainly, because "74% is pixel-neutral" reads like most of
+the work is free, and none of it is.
 
 ---
 
