@@ -311,6 +311,16 @@ fully actionable list. This is far smaller than the raw counts suggest: repo-wid
 | 7.5 | **Fix the ADR record** | S | Seven numbers (088–094, 090 three times) each name two or more decisions; ADR-219 is still "Accepted" after ADR-305 retired it; `ARCHITECTURE.md` documents two cron endpoints deleted by ADR-305. |
 | 7.6 | **`tsconfig` excludes `scripts/`** | XS | The CI guard test files vitest runs are never typechecked. |
 
+### 7d. The two open product calls, with the evidence and a recommendation
+
+Both were left as open questions. Neither needs research any more — here is what the code says and
+what I would do.
+
+| Call | Evidence | Recommendation |
+| :--- | :--- | :--- |
+| **`library_usages`** — rebuild the index, or delete "Used in"? | **Nothing has ever written to it.** `grep` across `supabase/migrations/`, `lib/`, `app/`, `components/` finds **zero** inserts, in the creating migration or anywhere since. So rebuilding the table gives you an **empty table**, and "Used in" still shows nothing. The working feature is a write path at every place an asset is referenced (Puck block, space brand, spotlight, email) — that is LIBRARY.md D4, a feature, not a table restore. | **Delete the affordance now.** `listSplashUsages`, `SplashUsage`, `UsageList` and the two `usagesBy*` maps are ~60 lines across three files. Rebuild it *with* D4 when D4 is actually built, rather than carrying a permanently-empty control that reads as a bug to any operator who notices it. |
+| **`/admin/library`** — which admin section? | Three options. **(a) File it under Operations** (`janitor` + `platform`): the min matches, but the section gate cascades, so a marketing-domain janitor would lose the tab. **(b) Give it its own top-level `ADMIN_NAV_SPECS` row** (`href: '/admin/library'`, `min: 'janitor'`, `staffDomain: 'marketing'`, no groups) — exactly the shape `/admin/qr` (QR Studio) already has. **(c)** Add a per-leaf gate override to `adminHeaderMenu()`. | **(b).** One row, no gate distortion, no new mechanism, and it matches an existing precedent in the same file. (a) silently narrows who can see it; (c) invents machinery for one page. |
+
 ### 7c. Owner actions, collected
 
 Everything on this list is config or a decision — no code unblocks it.
