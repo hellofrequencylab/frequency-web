@@ -370,10 +370,22 @@ export function topLevelRules(src) {
   return rules
 }
 
-/** Custom-property declarations in one rule body (nested blocks are already excluded). */
+/** Custom-property declarations in one rule body (nested blocks are already excluded).
+ *
+ *  The trailing `;` is OPTIONAL, and that is not a style preference. CSS permits omitting it
+ *  on the final declaration of a block, and the previous pattern required it — so the LAST
+ *  token in any block written that way was silently dropped, fell back to its `:root` value,
+ *  and this gate reported a passing ratio for a pair the browser renders differently. A
+ *  contrast gate that cannot see the last line of a state block is worse than none, because
+ *  the number it prints is confidently wrong. Verified against a fixture:
+ *  `.dark { --color-canvas:#fff; --color-text:#eee }` measured 18.88:1 (from :root) instead
+ *  of the real 1.10:1. Zero live instances in app/globals.css today — this closes it before
+ *  the first one lands. */
 export function declarations(body) {
   const out = new Map()
-  for (const m of body.matchAll(/(--[A-Za-z0-9-]+)\s*:\s*([^;{}]+);/g)) out.set(m[1], m[2].trim())
+  for (const m of body.matchAll(/(--[A-Za-z0-9-]+)\s*:\s*([^;{}]+?)\s*(?:;|(?=\s*$))/g)) {
+    out.set(m[1], m[2].trim())
+  }
   return out
 }
 

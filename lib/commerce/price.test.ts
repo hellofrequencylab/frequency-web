@@ -122,6 +122,36 @@ describe('formatPriceCents', () => {
     expect(formatPriceCents(4000)).toBe('$40')
     expect(formatPriceCents(2550)).toBe('$25.50')
   })
+
+  it('groups thousands', () => {
+    // The hand-rolled `$${dollars}` form produced "$1299" in the seller's price editor and in
+    // product emails, while the product card beside it rendered "$1,299.00". One number, three
+    // surfaces, three answers.
+    expect(formatPriceCents(129900)).toBe('$1,299')
+    expect(formatPriceCents(129950)).toBe('$1,299.50')
+    expect(formatPriceCents(1234567)).toBe('$12,345.67')
+  })
+
+  it('honours the product currency instead of stamping dollars on everything', () => {
+    // CommerceProduct.currency is a real column selected on every read, and this formatter
+    // hardcoded `$` — so a non-USD product was MISLABELLED as dollars at exactly the two
+    // places a seller checks the number.
+    expect(formatPriceCents(129900, 'eur')).toBe('€1,299')
+    expect(formatPriceCents(129900, 'gbp')).toBe('£1,299')
+    expect(formatPriceCents(2550, 'USD')).toBe('$25.50')
+  })
+
+  it('never loses precision, at either end', () => {
+    expect(formatPriceCents(1)).toBe('$0.01')
+    expect(formatPriceCents(0)).toBe('$0')
+    expect(formatPriceCents(99)).toBe('$0.99')
+  })
+
+  it('falls back rather than blanking a price on a bad currency code', () => {
+    // Intl throws on a malformed code; a thrown formatter would blank the price entirely,
+    // which is worse than showing it with the wrong symbol.
+    expect(formatPriceCents(2500, 'not-a-currency')).toBe('$25')
+  })
 })
 
 describe('ticket-tier adapters (no migration)', () => {

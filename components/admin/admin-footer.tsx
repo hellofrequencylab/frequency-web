@@ -110,7 +110,10 @@ export function AdminFooter({ role, webRole = 'none', staffRole = null }: AdminF
           {/* Back / report */}
           <FootCol title="Frequency">
             <FootLink href="/feed">Back to the app</FootLink>
-            <FootLink href="/help/ask" icon={Bug}>
+            {/* /help/ask is a POST-only route handler (the AI ask endpoint) with no page.tsx,
+                so navigating to it returned 405 — every click on this link was a dead end.
+                /help carries the real report affordance and is already linked above. */}
+            <FootLink href="/help" icon={Bug}>
               Report a problem
             </FootLink>
           </FootCol>

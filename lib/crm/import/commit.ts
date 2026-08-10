@@ -227,9 +227,26 @@ async function commitToSpace(
   const phones = new Set<string>()
   const idByKey = new Map<string, string>()
   const metaByKey = new Map<string, Record<string, unknown>>()
+  // PAGED. A select without `.range()` is capped by PostgREST at `max_rows` (1000) server-side,
+  // so a Space with more than 1000 contacts built this dedupe index from only the first page:
+  // contact 1001+ looked absent, `planCommit` planned `create`, and re-importing a list into an
+  // established Space silently duplicated every row past the cap. Service-role does not escape
+  // the cap. Same idiom as lib/connections/store.ts and lib/finance/dashboard.ts.
+  const CONTACT_PAGE = 1000
   try {
-    const { data } = await db.from('contacts').select('id, email, meta').eq('space_id', spaceId)
-    for (const r of (data ?? []) as { id: string; email: string | null; meta: Record<string, unknown> | null }[]) {
+    const rows: { id: string; email: string | null; meta: Record<string, unknown> | null }[] = []
+    for (let page = 0; ; page += 1) {
+      const { data } = await db
+        .from('contacts')
+        .select('id, email, meta')
+        .eq('space_id', spaceId)
+        .order('id', { ascending: true })
+        .range(page * CONTACT_PAGE, page * CONTACT_PAGE + CONTACT_PAGE - 1)
+      const batch = (data ?? []) as typeof rows
+      rows.push(...batch)
+      if (batch.length < CONTACT_PAGE) break
+    }
+    for (const r of rows) {
       const meta = r.meta ?? {}
       const ek = emailKey(r.email)
       if (ek) {

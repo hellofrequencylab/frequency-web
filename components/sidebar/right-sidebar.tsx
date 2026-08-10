@@ -5,6 +5,8 @@ import { SEASON_RANKS, rankForCompletion, journeysFinishedThisSeason } from '@/l
 import { GameStatsPanel, GameStatsDockClient, type DockData } from '@/components/sidebar/game-stats-dock'
 import { getPracticesToLogToday, getRecentPracticeLogs, getMemberPractices } from '@/lib/practices'
 import { getMemberJourneyProgress } from '@/lib/journeys/progress'
+import { getSpendableBalance } from '@/lib/store/balance'
+import { resolveMemberDay } from '@/lib/member-day'
 import { DemoNotice } from '@/components/sidebar/demo-notice'
 import { pageRailPanels, isQuestSurface } from '@/lib/layout/rail-panels'
 import { ControlCenterPanel, PanelSkeleton } from '@/components/sidebar/rail-panels'
@@ -91,7 +93,16 @@ export const loadGameStats = cache(async function loadGameStats(profileId: strin
   // enrolled-Journey progress (the dock's "current track"). journeysFinishedThisSeason keeps its
   // prior behaviour (uncaught → propagates, same as before); getMemberJourneyProgress degrades to
   // an empty list so its arc line just hides (matching the old try/catch).
-  const [{ data: profile }, practicesToLog, memberPractices, recentLogs, finishedCount, progress] = await Promise.all([
+  const [
+    { data: profile },
+    practicesToLog,
+    memberPractices,
+    recentLogs,
+    finishedCount,
+    progress,
+    spendable,
+    memberToday,
+  ] = await Promise.all([
     admin.from('profiles')
       .select('current_season_zaps, lifetime_gems, current_streak')
       .eq('id', profileId).maybeSingle(),
@@ -100,6 +111,17 @@ export const loadGameStats = cache(async function loadGameStats(profileId: strin
     getRecentPracticeLogs(profileId, 30).catch(() => []),
     journeysFinishedThisSeason(profileId),
     getMemberJourneyProgress(profileId).catch(() => []),
+    // The dock's "gems to spend" counter used `lifetime_gems`, which is DOCUMENTED monotonic
+    // (lib/store/balance.ts) — it is the total ever earned and never falls after a redemption
+    // or a gift. The rail was the only surface still reading it that way: /crew/store and the
+    // Gift Gems dialog both go through getSpendableBalance, so the rail disagreed with the
+    // page its own card links to. Degrades to null so the counter falls back rather than
+    // blanking the whole dock if the balance read fails.
+    getSpendableBalance(admin, profileId).catch(() => null),
+    // The 7-day strip is keyed on `logged_for`, which logPractice writes in the MEMBER's day
+    // (lib/member-day.ts), so building the window from the server's day put a Pacific member's
+    // "today" dot out from ~16:00 local and shifted the whole window by one.
+    resolveMemberDay(profileId).catch(() => null),
   ])
 
   const p = profile as { current_season_zaps?: number; lifetime_gems?: number; current_streak?: number } | null
@@ -117,13 +139,20 @@ export const loadGameStats = cache(async function loadGameStats(profileId: strin
         ? { kind: 'done' }
         : { kind: 'adopt' }
 
-  // Last 7 days streak strip
+  // Last 7 days streak strip, in the MEMBER's day — the same key `logged_for` is written with.
+  //
+  // The previous version built the window with server-local `setDate`/`getDate` and read it back
+  // with UTC `toISOString()`, so it was only self-consistent when the server ran UTC, and it was
+  // never consistent with the logs: a Pacific member's log for "today" is keyed to a date the
+  // server has already passed by ~16:00 local, so their own dot went dark and the whole window
+  // sat one day off. Stepping back from the resolved YYYY-MM-DD with UTC arithmetic is safe
+  // because the anchor is already a calendar date, not an instant.
   const loggedDays = new Set(recentLogs.map((r) => r.logged_for))
-  const today = new Date()
+  const anchor = memberToday ?? new Date().toISOString().slice(0, 10)
+  const anchorMs = Date.parse(`${anchor}T00:00:00Z`)
   const last7 = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(today)
-    d.setDate(d.getDate() - (6 - i))
-    return loggedDays.has(d.toISOString().slice(0, 10))
+    const day = new Date(anchorMs - (6 - i) * 86_400_000).toISOString().slice(0, 10)
+    return loggedDays.has(day)
   })
 
   // Rank progress to next tier (completion-based)
@@ -152,7 +181,8 @@ export const loadGameStats = cache(async function loadGameStats(profileId: strin
     }
   }
 
-  return { zaps, gems, streak, rank, todaysMove, last7, rankProgress, arc, vaultGems: gems }
+  // `gems` stays lifetime (the head counter is "total earned"); vaultGems is what is SPENDABLE.
+  return { zaps, gems, streak, rank, todaysMove, last7, rankProgress, arc, vaultGems: spendable ?? gems }
 })
 
 // The viewer's practice activity — the Insight-Timer-style bar chart (Days / Weeks / Months),

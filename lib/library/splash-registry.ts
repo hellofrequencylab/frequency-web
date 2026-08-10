@@ -167,32 +167,29 @@ export interface SplashUsage {
   blockId: string | null
 }
 
-/** The library assets referenced on a given page/surface (context + ref_id), reusing the shared
- *  `library_usages` index (migration 20260920000000) so the lane can note where assets land on a
- *  splash. Staff-gated + FAIL-SAFE to []. `context` defaults to 'page' (the micro-site splash case). */
-export async function listSplashUsages(refId: string, context = 'page'): Promise<SplashUsage[]> {
-  if (!(await isStaff())) return []
-  try {
-    // library_usages isn't in the generated DB types yet (ADR-246), so reach it through a bespoke
-    // untyped `from` handle (cast the client, not to SupabaseClient).
-    const admin = createAdminClient() as unknown as {
-      from: (t: string) => {
-        select: (cols: string) => {
-          eq: (col: string, val: string) => {
-            eq: (col: string, val: string) => Promise<{
-              data: { context: string; ref_id: string | null; block_id: string | null }[] | null
-            }>
-          }
-        }
-      }
-    }
-    const { data } = await admin
-      .from('library_usages')
-      .select('context, ref_id, block_id')
-      .eq('context', context)
-      .eq('ref_id', refId)
-    return (data ?? []).map((r) => ({ context: r.context, refId: r.ref_id, blockId: r.block_id }))
-  } catch {
-    return []
-  }
+/**
+ * The "Used in" index — INERT, because the table it read no longer exists.
+ *
+ * 🔴 `public.library_usages` was created by `20260920000000_library_dam.sql` and **dropped five
+ * days later** by `20260925000000_retire_orphaned_tables_and_functions.sql` as an orphan. It has
+ * never been recreated; those are the only two migrations that mention it repo-wide.
+ *
+ * The read outlived the table and the failure was silent by construction: the query destructured
+ * `{ data }` and discarded `error`, so a `42P01 relation does not exist` came back as `[]` on
+ * every call. The lane's "Used in" note has therefore been permanently empty since 2026-09-25,
+ * and each Loom Studio splash-lane load was paying one doomed round trip **per template plus one
+ * per live splash** to learn nothing.
+ *
+ * Returning `[]` directly is behaviour-identical for every caller — they already only ever
+ * received `[]` — and stops the round trips. The shape is kept rather than deleted because
+ * removing it means touching `SplashTemplateCard` / `LiveSplashCard` and their render, and the
+ * real question is a product one:
+ *
+ *   **Decide: rebuild `library_usages` (the DAM's where-referenced index, LIBRARY.md D4) and
+ *   restore this, or delete the "Used in" affordance and these types outright.**
+ *
+ * Do not "fix" this by re-adding the query without the table.
+ */
+export async function listSplashUsages(_refId: string, _context = 'page'): Promise<SplashUsage[]> {
+  return []
 }

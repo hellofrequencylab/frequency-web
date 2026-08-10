@@ -20,19 +20,83 @@
 //
 // Deliberately NOT a full schema validator: this is the cheap floor that catches the
 // failure modes actually observed in this repo, not a reimplementation of actionlint.
+//
+// ── 2026-08-10 (ADR-962): this gate was checking the shape of a value and not its truth ──
+// An audit ran three fixtures through it. All three were wrong, and two of them were the
+// exact bug class the file was written to catch:
+//
+//   1. VACUOUS PASS. A missing `.github/workflows` printed ✓ and exited 0, and so did an
+//      empty one. The single thing a gate must never do is pass over nothing. Now both are
+//      failures, and there is a floor on the file count.
+//   2. FALSE NEGATIVE — `findStepsWithoutAction` only recognised a step whose FIRST key was
+//      `name`/`uses`/`run`. A step opening with `- id:` or `- if:` never became `current`,
+//      so it was never inspected. A step with `id` + `name` + `env` and no `run` — which
+//      GitHub rejects outright — passed. That is precisely the 2026-08-04 incident this
+//      script exists to prevent, still undetected whenever `if:` leads the step.
+//   3. FALSE POSITIVE — neither function knew about block scalars, so both linted INSIDE
+//      `run: |` bodies. A shell heredoc that writes a YAML file, or any script line reading
+//      `- name: ...`, was reported as a runless step or a duplicate key. Today's files dodge
+//      this by luck; it was one edit away from failing CI on nothing.
+//
+// Block-scalar handling is now shared by both checks (`stripBlockScalars`), because a text
+// linter that reads program text as YAML will always eventually be wrong about someone's
+// shell script.
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 const DIR = '.github/workflows'
 
+/** A repo this size never legitimately drops to a handful of workflows. If it does, the
+ *  scan is broken (wrong cwd, bad filter) and a ✓ would be a lie. */
+const MIN_WORKFLOWS = 5
+
+/**
+ * Blank out the BODY of every block scalar (`key: |`, `key: >`, with any chomp/indent
+ * indicator), preserving line numbering so every reported line still points at the source.
+ *
+ * Everything inside `run: |` is program text, not YAML. Linting it for steps and duplicate
+ * keys is a category error, and it produced a reproducible false positive: a step whose
+ * heredoc emits a YAML fragment was reported as a duplicate-key failure.
+ */
+export function stripBlockScalars(text) {
+  const lines = text.split('\n')
+  const out = []
+  let scalarIndent = null // indent of the KEY that opened the scalar, or null
+
+  for (const raw of lines) {
+    const line = raw.replace(/\t/g, '  ')
+    if (scalarIndent !== null) {
+      const isBlank = !line.trim()
+      const indent = line.length - line.trimStart().length
+      // The body continues while blank or indented deeper than its key.
+      if (isBlank || indent > scalarIndent) {
+        out.push('')
+        continue
+      }
+      scalarIndent = null // dedented out of the scalar; fall through and process this line
+    }
+    // `key: |`, `- key: >-`, `key: |2` … the indicator is the last thing on the line.
+    const opener = line.match(/^(\s*)(?:-\s+)?[A-Za-z_][\w.-]*\s*:\s*[|>][+-]?\d*\s*$/)
+    if (opener) {
+      scalarIndent = opener[1].length + (/^\s*-\s/.test(line) ? 2 : 0)
+      out.push(line)
+      continue
+    }
+    out.push(line)
+  }
+  return out.join('\n')
+}
+
 /** Duplicate-key detection has to happen at the TEXT level: by the time any parser hands
  *  back an object the duplicate is gone. Tracks `key:` at each indent within a block. */
-function findDuplicateKeys(text) {
+export function findDuplicateKeys(text) {
   const dupes = []
   /** indent -> Map(key -> firstLine), reset whenever we dedent past it. */
   const seen = new Map()
-  const lines = text.split('\n')
+  // Block-scalar bodies are program text, not YAML. Linting them produced a reproducible
+  // false positive: a `run: |` heredoc emitting a YAML fragment read as a duplicate key.
+  const lines = stripBlockScalars(text).split('\n')
 
   lines.forEach((raw, i) => {
     const line = raw.replace(/\t/g, '  ')
@@ -58,11 +122,20 @@ function findDuplicateKeys(text) {
   return dupes
 }
 
-/** Every `- name:` step in a jobs block must own a `run:` or `uses:` before the next step. */
-function findStepsWithoutAction(text) {
+/**
+ * Every step in a jobs block must own a `run:` or `uses:`.
+ *
+ * A step begins at ANY `- <key>:` — not only `- name:`/`- uses:`/`- run:`. The previous
+ * version anchored on those three, so `- id: foo` / `- if: always()` opened a step the
+ * scanner never tracked, and a runless step led by `if:` sailed through. Steps are also
+ * only looked for under a `steps:` key, so a `- uses:` inside, say, a `strategy.matrix`
+ * list is not mistaken for one.
+ */
+export function findStepsWithoutAction(text) {
   const bad = []
-  const lines = text.split('\n')
+  const lines = stripBlockScalars(text).split('\n')
   let current = null
+  let stepsIndent = null // indent of the `steps:` key we are inside, or null
 
   const flush = () => {
     if (current && !current.hasAction) bad.push(current)
@@ -70,26 +143,46 @@ function findStepsWithoutAction(text) {
   }
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].replace(/\t/g, '  ')
-    const stepStart = line.match(/^(\s*)-\s+(name|uses|run)\s*:\s*(.*)$/)
+    const line = lines[i]
+    if (!line.trim() || line.trim().startsWith('#')) continue
+    const indent = line.length - line.trimStart().length
+
+    // Entering / leaving a `steps:` block.
+    const stepsKey = line.match(/^(\s*)steps\s*:\s*$/)
+    if (stepsKey) {
+      flush()
+      stepsIndent = stepsKey[1].length
+      continue
+    }
+    if (stepsIndent !== null && !/^\s*-/.test(line) && indent <= stepsIndent) {
+      flush()
+      stepsIndent = null
+    }
+    if (stepsIndent === null) continue
+
+    const stepStart = line.match(/^(\s*)-\s+([A-Za-z_][\w.-]*)\s*:\s*(.*)$/)
     if (stepStart) {
       flush()
-      const [, indent, kind, rest] = stepStart
+      const [, ind, key, rest] = stepStart
       current = {
-        indent: indent.length,
+        indent: ind.length,
         line: i + 1,
-        name: kind === 'name' ? rest.trim() : `(${kind})`,
-        hasAction: kind === 'uses' || kind === 'run',
+        name: key === 'name' ? rest.trim() : `(opens with \`${key}\`)`,
+        hasAction: key === 'run' || key === 'uses',
       }
       continue
     }
     if (!current) continue
+
     const key = line.match(/^(\s*)([A-Za-z_][\w.-]*)\s*:/)
     if (key) {
-      const indent = key[1].length
-      // Dedented past the step: it is over.
-      if (indent <= current.indent) { flush(); continue }
+      const keyIndent = key[1].length
+      // Dedented past the step's own keys: it is over.
+      if (keyIndent <= current.indent) { flush(); continue }
       if (key[2] === 'run' || key[2] === 'uses') current.hasAction = true
+      if (key[2] === 'name' && current.name.startsWith('(opens with')) {
+        current.name = line.slice(line.indexOf(':') + 1).trim() || current.name
+      }
     }
   }
   flush()
@@ -97,11 +190,21 @@ function findStepsWithoutAction(text) {
 }
 
 if (!existsSync(DIR)) {
-  console.log(`✓ Workflow contract: no ${DIR} directory, nothing to check.`)
-  process.exit(0)
+  // Was `exit 0, nothing to check`. A gate that passes when it cannot find its subject is
+  // the one failure mode with no upside: it is green precisely when it is blind.
+  console.error(`✗ Workflow contract: ${DIR} does not exist (cwd: ${process.cwd()}).`)
+  console.error(`    Run this from the repo root. A gate cannot pass over nothing.`)
+  process.exit(1)
 }
 
 const files = readdirSync(DIR).filter((f) => f.endsWith('.yml') || f.endsWith('.yaml'))
+
+if (files.length < MIN_WORKFLOWS) {
+  console.error(`✗ Workflow contract: found ${files.length} workflow file(s), expected at least ${MIN_WORKFLOWS}.`)
+  console.error(`    Either the scan is broken, or workflows were deleted and MIN_WORKFLOWS needs updating.`)
+  process.exit(1)
+}
+
 let failures = 0
 
 for (const file of files) {

@@ -188,6 +188,10 @@ function captureTouch(src: ContactSource): {
   }
 }
 
+/** PostgREST's `max_rows` cap, and the page size for every full-cohort read below. Matching it
+ *  exactly means a short page is an unambiguous end-of-data signal. */
+const CONTACT_PAGE = 1000
+
 /** The owner's existing contact keys for dedupe on import (ADR-374): lowercased emails and last-10-
  *  digit phone keys. Owner-scoped read; fail-safe to empty sets so an import never crashes on a read
  *  error (it would just create duplicates the member can prune, never lose data). */
@@ -197,13 +201,27 @@ export async function existingContactKeys(
   const emails = new Set<string>()
   const phones = new Set<string>()
   try {
-    const { data } = await db().from('network_contacts').select('email, phone').eq('owner_id', ownerId)
-    for (const r of (data ?? []) as { email: string | null; phone: string | null }[]) {
-      if (r.email) emails.add(r.email.toLowerCase())
-      if (r.phone) {
-        const digits = r.phone.replace(/\D+/g, '')
-        if (digits) phones.add(digits.length > 10 ? digits.slice(-10) : digits)
+    // PAGED, because a select with no `.range()` is NOT unbounded: PostgREST caps every response
+    // at `max_rows` (1000 — supabase/config.toml, and the same on hosted). The 1001st contact was
+    // therefore absent from this index, so `planCommit` planned `create` for a contact that
+    // already existed and a re-import silently duplicated it. Service-role does not escape the
+    // cap; it is applied server-side. Same paging idiom as lib/finance/dashboard.ts.
+    for (let page = 0; ; page += 1) {
+      const { data } = await db()
+        .from('network_contacts')
+        .select('email, phone')
+        .eq('owner_id', ownerId)
+        .order('id', { ascending: true })
+        .range(page * CONTACT_PAGE, page * CONTACT_PAGE + CONTACT_PAGE - 1)
+      const batch = (data ?? []) as { email: string | null; phone: string | null }[]
+      for (const r of batch) {
+        if (r.email) emails.add(r.email.toLowerCase())
+        if (r.phone) {
+          const digits = r.phone.replace(/\D+/g, '')
+          if (digits) phones.add(digits.length > 10 ? digits.slice(-10) : digits)
+        }
       }
+      if (batch.length < CONTACT_PAGE) break
     }
   } catch {
     /* read failure → empty index (import proceeds, may create dupes but never loses data) */
@@ -226,28 +244,43 @@ export interface ContactMergeRow {
   details: ContactDetails
 }
 
-/** Every owner contact as a slim merge row (id + scalars + details), UNBOUNDED (no limit). The import
+/** Every owner contact as a slim merge row (id + scalars + details), across ALL pages. The import
  *  commit builds its email/phone -> id resolution map from this so it covers the SAME full cohort as
  *  existingContactKeys — an owner with more contacts than listContacts' page cap still resolves every
  *  planned merge (a row matching a contact past the cap is no longer miscounted as failed). Owner-
- *  scoped read; fail-safe to [] on a read error (the commit then degrades exactly like the key read). */
+ *  scoped read; fail-safe to [] on a read error (the commit then degrades exactly like the key read).
+ *
+ *  This doc line used to claim "UNBOUNDED (no limit)", and the code matched the claim — but the
+ *  claim was never true. PostgREST caps every response at `max_rows` (1000), server-side, so a
+ *  select without `.range()` silently returns the first page and nothing announces the truncation.
+ *  Contact 1001+ resolved to no id, the commit planned `create`, and the re-import duplicated it. */
 export async function listContactsForMerge(ownerId: string): Promise<ContactMergeRow[]> {
+  const rows: ContactMergeRow[] = []
   try {
-    const { data } = await db()
-      .from('network_contacts')
-      .select('id, display_name, email, phone, title, company, city, website, details')
-      .eq('owner_id', ownerId)
-    return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
-      id: String(r.id),
-      displayName: (r.display_name as string) ?? null,
-      email: (r.email as string) ?? null,
-      phone: (r.phone as string) ?? null,
-      title: (r.title as string) ?? null,
-      company: (r.company as string) ?? null,
-      city: (r.city as string) ?? null,
-      website: (r.website as string) ?? null,
-      details: (r.details as ContactDetails) ?? {},
-    }))
+    for (let page = 0; ; page += 1) {
+      const { data } = await db()
+        .from('network_contacts')
+        .select('id, display_name, email, phone, title, company, city, website, details')
+        .eq('owner_id', ownerId)
+        .order('id', { ascending: true })
+        .range(page * CONTACT_PAGE, page * CONTACT_PAGE + CONTACT_PAGE - 1)
+      const batch = (data ?? []) as Record<string, unknown>[]
+      for (const r of batch) {
+        rows.push({
+          id: String(r.id),
+          displayName: (r.display_name as string) ?? null,
+          email: (r.email as string) ?? null,
+          phone: (r.phone as string) ?? null,
+          title: (r.title as string) ?? null,
+          company: (r.company as string) ?? null,
+          city: (r.city as string) ?? null,
+          website: (r.website as string) ?? null,
+          details: (r.details as ContactDetails) ?? {},
+        })
+      }
+      if (batch.length < CONTACT_PAGE) break
+    }
+    return rows
   } catch {
     /* read failure → empty cohort (commit degrades like existingContactKeys, never loses data) */
     return []

@@ -18479,3 +18479,170 @@ Lift 1's user-evidence loop — is at literal zero (`docs/research/findings/` ho
 no phase closes it, because it needs recruiting, not engineering. 🔴 Six owner actions block work
 that is otherwise ready, and one of them (`PW_REQUIRE_SHELL` in the Secrets tab) is what redacts
 every number in the logs needed to diagnose finding 1.
+
+## ADR-961 — A guard that only fires for signed-in callers is a welcome mat (2026-08-10)
+
+**Status.** Accepted. Migration: `20270216000000_insights_rpcs_fail_open_guard_and_grants.sql`.
+Plan: [`FINALIZE-PLAN.md`](FINALIZE-PLAN.md) Phase 2. Predecessor: [ADR-959](DECISIONS.md).
+
+**Context.** ADR-959 ended with a warning: "every `revoke from public, then grant back` block in
+this repo has the same hole." `20270207000000_insights_journey_and_vitals_rpcs` was written *after*
+that ADR and used the idiom anyway. Checked against the live database, both of its RPCs —
+`journey_funnel` and `vitals_p75` — return **true** for `has_function_privilege('anon', …, 'EXECUTE')`.
+
+That is the known half. The unknown half is worse. Both functions open with:
+
+```sql
+if auth.uid() is not null
+   and coalesce(private.get_my_web_role(), 'none') not in ('admin', 'janitor') then
+  raise exception 'not authorized …';
+end if;
+```
+
+The condition is inverted with respect to the threat. For an anonymous caller `auth.uid()` is NULL,
+the first conjunct is false, the exception never raises, and execution falls through to the data. **A
+signed-in ordinary member is blocked; an anonymous stranger is not.** The guard reads as a check and
+behaves as a welcome mat.
+
+Two locks, both open, on the same pair of functions. Platform journey-funnel conversion counts and
+per-route p75 web-vitals were readable with the publishable anon key that ships in every browser
+bundle. Both are aggregate, so this is a serious exposure and not a breach of personal data.
+
+**Decision.** Fix both locks, and fix the guard first because it is the one that survives a future
+grant edit.
+
+1. **The guard keys on `auth.role()`**, which is non-null for every caller, so it fails **closed** for
+   anon: `auth.role() is distinct from 'service_role' and coalesce(private.get_my_web_role(), 'none')
+   not in ('admin','janitor')`. This is the established idiom in this repo
+   (`20240304000000_lock_economy_columns.sql`). Both real callers use `createAdminClient()`
+   (`lib/analytics/insights-read.ts`), so service_role must keep passing, and an admin/janitor session
+   still passes for any future in-app caller.
+2. **The grants are revoked from `anon` and `authenticated` by name.** Naming the roles is the entire
+   fix; `from public` is what did nothing. `20270116000000_delete_topical_channel` already had this
+   right — the idiom existed in the repo and the insights migration did not use it.
+
+`delete_topical_channel` carries the same inverted condition and is corrected in the same migration.
+It is latent rather than live (neither role holds EXECUTE), but it is a DELETE, and leaving a
+fail-open guard in it because the grant happens to be closed today is the bet that lost above.
+
+**Consequences.** ✅ Behaviour-preserving for every real caller: both RPCs are reached only through
+the service-role client. ✅ A survey of the whole schema found the inverted `auth.uid() is not null
+and` pattern in exactly three functions, all three fixed here, so this is a closed set rather than a
+sample. ⚠️ The wider ADR-959 grant problem is **not** closed by this migration: `anon` and
+`authenticated` still hold **1,907 explicit table grants across 273 tables**, 77 of which are tables
+whose only remaining lock is RLS-on-with-no-policy. That is Phase 2a and it needs its own inventory
+and its own `check:grants` gate. ⚠️ The lesson generalises past grants: **a guard whose condition
+begins with "if the caller is authenticated" cannot protect anything from an unauthenticated caller.**
+Prefer `auth.role()`, which every caller has, over `auth.uid()`, which only some do.
+
+## ADR-962 — The gates were checking their own shape, and CI failed once per push (2026-08-10)
+
+**Status.** Accepted. Plan: [`FINALIZE-PLAN.md`](FINALIZE-PLAN.md) Phase 1/2.
+
+**Context.** The owner reported CI "failing every time after about twenty minutes, after we made
+the checks stricter". Two audits — one over the 21 `check:*` scripts, one over the 9 workflows —
+were run against run history rather than intuition, and the report turns out to be two unrelated
+problems wearing one symptom.
+
+**Which workflow.** Measured over the last 30 runs of each: `ci.yml` runs in **6 to 8 minutes and
+mostly succeeds**. `e2e.yml` has **zero successes in 30 runs** (14 failures, 16 cancelled) with
+failure durations of min 22.1, **median 26.2**, max **93.1** minutes. "Fails every time at about
+twenty minutes" is `e2e.yml`, and its cause is the stale baselines of ADR-960, not strictness.
+
+**Why `ci.yml` still felt like that.** The 20 guards take **14.1 seconds combined** — they were
+never the cost. But they ran LAST, behind checkout (~3 min), lint (~2.5 min) and the suite
+(~1.5 min), in one job with no `if:`. So a guard failure always landed at ~minute 20, and
+fail-fast meant **one failure per push**: four violations cost four full runs to discover, one at
+a time. The strictness was fine; the reporting was the problem.
+
+**What the audits found in the gates themselves** — the repo's own named failure mode, a gate
+green while the thing it guards is broken. Every one below was reproduced with a fixture:
+
+| Gate | Defect |
+|---|---|
+| `check:workflows` | Printed ✓ and exited **0** with no `.github/workflows` directory at all |
+| `check:workflows` | Only recognised a step whose FIRST key was `name`/`uses`/`run`, so a runless step led by `- id:` or `- if:` — the exact 2026-08-04 incident it was written for — passed |
+| `check:workflows` | No block-scalar awareness, so it linted inside `run: \|` bodies; a heredoc emitting YAML was a false duplicate-key failure |
+| `check:adoption` | A missing `roots` entry made `walk` return `[]` and booked **every one of the 14 debt classes as shrunk**. Renaming a top-level directory reads as the largest sweep in the project's history |
+| `check:contrast` | `declarations()` required a trailing `;`, so the **last declaration in any block was silently dropped** and fell back to its `:root` value. A fixture measured 18.88:1 for a pair the browser renders at 1.10:1 |
+| `e2e.yml` | The paths filter omitted **`proxy.ts`**, which `test/e2e/surfaces.ts:176` parses at run time to decide which surfaces are anon-reachable. A PR that only walls or unwalls a route got no e2e run, and the next unrelated PR inherited its missing-baseline failures |
+| all 9 workflows | **No `timeout-minutes` anywhere.** The default is six hours; one run had already burned 93 minutes |
+
+**Decision.**
+
+1. **Split `ci.yml` along the cost axis, not the guard axis** — `lint` ∥ `test` ∥ `checks`. A
+   per-guard matrix was considered and rejected: it would pay the ~4-minute checkout+install
+   prelude twenty times to parallelise fourteen seconds of work.
+2. **Aggregate the guards into one step** that runs all twenty and reports every failure, with a
+   step summary listing the exact `pnpm check:*` commands to re-run. `if: ${{ !cancelled() }}`,
+   never `always()` — `always()` is true for a cancelled run and would defeat `cancel-in-progress`.
+3. **Fix the three gate defects** rather than route around them, and give each a fixture.
+4. **`timeout-minutes` on all 15 jobs**, sized from measured durations.
+5. **Concurrency corrected**: `cancel-in-progress` is now `pull_request`-only, because on
+   `github.ref` alone a push to `main` collapsed to one group and merging two PRs in quick
+   succession destroyed the first merge commit's signal permanently. `codeql` is additionally
+   keyed per event so the Monday schedule and a push stop cancelling each other. The three
+   workflows with no concurrency block got one; `help-index` serialises globally rather than per
+   ref, because two merges were re-indexing the same `help_chunks` rows concurrently.
+
+**Consequences.** ✅ A red CI run now names every failing guard at once. ✅ Wall clock should fall
+from ~20 min to ~9. 🔴 **The split changes what branch protection covers**: `checks` no longer
+contains lint or the test suite, so `lint` and `test` must be ADDED as required contexts or a PR
+with failing tests is mergeable. The job names are exactly `lint` and `test` so they can be added
+verbatim, and `checks` keeps its name so the existing rule never lapses. ⚠️ Not done here, and
+worth its own pass: the **3-minute checkout is 184 MB of working tree** — `test/e2e/__screenshots__`
+alone is 100 MB in 72 PNGs, and the `.git` pack is 341 MB across 51 commits because every baseline
+refresh re-commits all 72 files and PNGs do not delta-compress. Git LFS on the baselines is the
+single biggest remaining win and it is what makes the three-way split cheap. ⚠️ Also recorded, not
+fixed: `check:authz`'s `SCOPING_FILTER` treats plain `.filter(`/`.match(` as evidence of tenancy
+scoping, a comment containing `requireAdmin` disarms a whole file, and four gates pass vacuously
+from the wrong working directory.
+
+## ADR-963 — The migration ledger is an exact bijection, and the second step is the whole fix (2026-08-10)
+
+**Status.** Accepted. Runbook: [`supabase/migrations/README.md`](../supabase/migrations/README.md).
+
+**Context.** "Migrations are being renumbered after they are applied" has been recorded as an
+open root cause in at least four passes (2026-07-10, 2026-07-27, 2026-08-06, and BUILD-LIST's
+post-merge sweep). Each pass repaired the symptom and named the cause; none closed it, and by
+2026-08-10 the ledger held **607 rows against 594 repo files**.
+
+The cause is not carelessness. `apply_migration` **mints its own timestamp** — the ADR-961 fix
+applied in this session was recorded as `20260810150605` while its file is `20270216000000`.
+Every MCP apply creates an orphan by construction. Applying is two steps and only the first one
+is obvious.
+
+**Decision.** Repair to an exact bijection, then write the second step down where a migration
+author will actually be standing.
+
+The repair, all verified against the live catalog before any write, in asserted transactions:
+
+| Action | Rows |
+| :--- | ---: |
+| Repo-versioned rows inserted for migrations applied under a CLI timestamp | 5 |
+| Tool-minted orphans deleted (each confirmed to have no repo file at its version) | 13 |
+| Mislabelled row corrected rather than deleted | 1 |
+
+Result: **594 ledger rows ⇄ 594 repo files, head `20270216000000` matching the newest file, and
+an empty diff in both directions.** `supabase db push` is safe again.
+
+**Two traps, both live during this repair.**
+
+- **A duplicated name is not evidence of a duplicated migration.** The ledger held
+  `hierarchy_v3_topical_channels` at both `20240118000000` and `20240201000000`, which reads
+  exactly like the twelve renumbering orphans beside it. But the repo file at `20240118000000`
+  is `gamification.sql` — the version is correct and applied, and only the label is stale.
+  Deleting it on the strength of the duplicate name would have removed a real migration's only
+  ledger row and set up the next `db push` to re-run it. It was corrected in place instead.
+- **Some duplicate names are simply correct.** `fk_covering_indexes` names two genuinely
+  different files. Names are not unique; versions are, and `check:migrations` already enforces
+  that half.
+
+**Consequences.** ✅ Zero drift in either direction, proven by set difference rather than by
+counting. ✅ The runbook lives at `supabase/migrations/README.md`, next to the files, with the
+verify-before-write transaction ready to copy and both traps written down. ⚠️ The DB half of
+this invariant is **not machine-checked**: `check:migrations` runs without credentials and can
+only see the repo. Re-verify after any MCP apply, or in `/maintenance`. ⚠️ The honest framing is
+that this ADR does not make renumbering impossible — it makes the second step cheap, findable
+and asserted. A gate that could see both sides would be better, and it needs a credentialled
+CI job that does not exist yet.

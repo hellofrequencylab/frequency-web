@@ -18,9 +18,16 @@ permissions:
   contents: read
   pull-requests: write
 
+# Burns Anthropic tokens and can post PR comments: two in-flight runs means duplicate
+# comments and double spend.
+concurrency:
+  group: help-autodoc-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   autodoc:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
         with:

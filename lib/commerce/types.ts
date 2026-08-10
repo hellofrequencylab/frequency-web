@@ -371,10 +371,40 @@ export function validatePrice(price: Price): string | null {
   }
 }
 
-/** Format integer cents as a plain dollar string ($25 or $25.50). PURE. */
-export function formatPriceCents(cents: number): string {
+/**
+ * Format integer cents for display: `$25`, `$25.50`, `$1,299`. PURE.
+ *
+ * Two things were wrong with the hand-rolled `$${dollars}` form it replaces, and neither was the
+ * precision the audit note claimed — no cents were ever lost:
+ *
+ *  1. **No thousands separator.** A $1,299 product rendered `$1299` in the seller's price editor
+ *     and in product emails, while the product card beside it (its own local `usd()` helper)
+ *     rendered `$1,299.00`. Same number, three surfaces, three answers.
+ *  2. **The currency was hardcoded.** `CommerceProduct.currency` is a real column, selected on
+ *     every read (`lib/commerce/products.ts`), and this stamped `$` on all of it — so a non-USD
+ *     product was actively MISLABELLED as dollars at the two places a seller is most likely to
+ *     check the number.
+ *
+ * Whole amounts drop the cents (`$25`, not `$25.00`), which is the house convention the offer
+ * dialog and listing surfaces already use.
+ *
+ * NOTE for anyone consolidating further: `lib/crm/pipeline.ts`'s `formatMoney` takes DOLLARS, not
+ * cents. It is not a duplicate of this and must not be merged into it.
+ */
+export function formatPriceCents(cents: number, currency = 'usd'): string {
   const dollars = cents / 100
-  return Number.isInteger(dollars) ? `$${dollars}` : `$${dollars.toFixed(2)}`
+  const fractionDigits = Number.isInteger(dollars) ? 0 : 2
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency.toUpperCase(),
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    }).format(dollars)
+  } catch {
+    // An unknown / malformed currency code throws in Intl. Fall back rather than blank a price.
+    return fractionDigits === 0 ? `$${dollars}` : `$${dollars.toFixed(2)}`
+  }
 }
 
 /** A short, voice-compliant label for a Price ("Fixed $40", "From $20", "Choose your price", "Free",

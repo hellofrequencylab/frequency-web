@@ -16,10 +16,29 @@ let staff = true
 let rootId: string | null = 'root-space-id'
 let importRow: ContactImportRow | null = null
 
+// The dedupe index read is PAGED (`.eq().order().range()`), because PostgREST caps an unranged
+// select at max_rows=1000 and a Space past that was silently building its index from the first
+// page only — planning `create` for contacts that already existed.
+//
+// This mock ENFORCES THE CAP rather than merely accepting the chain: `range(from, to)` returns
+// at most `PG_MAX_ROWS` rows sliced out of `existingRows`, exactly as PostgREST would. That
+// distinction is the whole value of the mock — a first version returned the entire array on
+// page 0, so the past-the-cap regression test passed against the single-page code it was
+// written to catch, and proved nothing.
+const PG_MAX_ROWS = 1000
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: (_t: string) => ({
-      select: (_c: string) => ({ eq: (_col: string, _val: string) => Promise.resolve({ data: existingRows }) }),
+      select: (_c: string) => ({
+        eq: (_col: string, _val: string) => ({
+          order: (_c2: string, _o: unknown) => ({
+            range: (from: number, to: number) =>
+              Promise.resolve({
+                data: existingRows.slice(from, Math.min(to + 1, from + PG_MAX_ROWS)),
+              }),
+          }),
+        }),
+      }),
       insert: (row: Record<string, unknown>) => {
         insertedRows.push(row)
         return Promise.resolve({ error: null })
@@ -155,6 +174,30 @@ describe('commitImport — platform target', () => {
     expect(insertedRows[0]).toMatchObject({ email: 'new@x.com' })
     // The phone-matched row resolved to the existing c2 row (not a failed lookup).
     expect(updatedRows.map((u) => u.id).sort()).toEqual(['c1', 'c2'])
+  })
+
+  it('dedupes against a contact PAST the 1000-row PostgREST page cap', async () => {
+    // The bug this locks: the dedupe index read had no `.range()`, and PostgREST caps an
+    // unranged select at max_rows=1000 SERVER-SIDE (service_role does not escape it). So a
+    // Space with more than 1000 contacts built its index from the first page only, contact
+    // 1001+ looked absent, and re-importing an established list silently duplicated every row
+    // past the cap — corrupting exactly the customer data the CRM exists to hold.
+    //
+    // 1500 existing rows; the import re-adds one that lives at index 1200, well past page 0.
+    // With a single-page read this asserts created: 1 / merged: 0 and fails.
+    existingRows = Array.from({ length: 1500 }, (_, i) => ({
+      id: `c${i}`,
+      email: `person${i}@x.com`,
+      meta: {} as Record<string, unknown>,
+    }))
+    importRow = platformRow([{ Name: 'Way Past The Cap', Email: 'person1200@x.com', Phone: '' }])
+
+    const res = await commitImport('imp1', 'staff1')
+    expect(isError(res)).toBe(false)
+    if (isError(res)) return
+    expect(res.data).toMatchObject({ created: 0, merged: 1, skipped: 0, failed: 0, total: 1 })
+    expect(insertedRows).toHaveLength(0)
+    expect(updatedRows.map((u) => u.id)).toEqual(['c1200'])
   })
 
   it('refuses when the caller is not platform staff (membrane / gate)', async () => {

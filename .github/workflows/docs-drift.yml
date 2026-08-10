@@ -11,9 +11,15 @@ on:
 permissions:
   contents: read
 
+# Advisory-only, and it clones full history — no reason to let pushes pile up.
+concurrency:
+  group: docs-drift-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   drift:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:

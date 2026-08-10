@@ -353,11 +353,46 @@ export function stripComments(text) {
     .replace(/(^|\n)([ \t]*\/\/[^\n]*)/g, (_m, lead, body) => lead + blank(body))
 }
 
+/** A ratchet compares today's count against a frozen one, so it reads an ABSENT corpus as a
+ *  clean sweep. `walk` returns `[]` for a missing directory, every entry then books as
+ *  `shrunk`, and the run prints "✓ 14 shrank" and exits 0.
+ *
+ *  Verified 2026-08-10 (ADR-962): pointing one `roots` entry at a directory that does not
+ *  exist drops the corpus 3,953 → 2,833 files and turns every one of the 14 debt classes into
+ *  a win. Renaming or moving a top-level directory — `components/` → `src/components/`, say —
+ *  therefore reads as the largest sweep in the project's history while changing nothing.
+ *
+ *  This is the same defect the provenance work was built to stop, one level down: `frozen.basis`
+ *  fingerprints the PATTERNS so a narrowed regex cannot bank a fake win, but nothing fingerprinted
+ *  the CORPUS. A missing root is now a hard error, and the file count is asserted against a floor,
+ *  because "the thing I measure disappeared" must never be spelled the same way as "the debt
+ *  disappeared". */
+const MIN_CORPUS_FILES = 2000
+
 export function loadCorpus(config) {
-  return config.roots
+  const missing = config.roots.filter((r) => !existsSync(r))
+  if (missing.length > 0) {
+    throw new Error(
+      `check:adoption cannot see its corpus — missing root(s): ${missing.join(', ')} ` +
+        `(cwd: ${process.cwd()}). An absent root reads as a clean sweep and would silently ` +
+        `book every debt class as shrunk. Run from the repo root, or update "roots" in ${BASELINES}.`,
+    )
+  }
+
+  const corpus = config.roots
     .flatMap((r) => walk(r, config.extensions))
     .sort()
     .map((path) => ({ path, text: stripComments(readFileSync(path, 'utf8')) }))
+
+  if (corpus.length < MIN_CORPUS_FILES) {
+    throw new Error(
+      `check:adoption scanned only ${corpus.length} file(s), expected at least ${MIN_CORPUS_FILES}. ` +
+        `Either the extension filter is wrong or the tree is not what this gate thinks it is; ` +
+        `a shrunken corpus makes every baseline look swept. Update MIN_CORPUS_FILES deliberately ` +
+        `if the repo really did get this much smaller.`,
+    )
+  }
+  return corpus
 }
 
 export function loadConfig(file = BASELINES) {

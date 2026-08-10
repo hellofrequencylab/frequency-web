@@ -18,13 +18,18 @@ permissions:
   security-events: write
   actions: read
 
+# Keyed per event as well as per ref. On `github.ref` alone, the Monday `schedule` run and a
+# push to main collapse to the SAME group and cancel each other, and a cancelled analysis
+# leaves the previous run's stale security-events standing as the current result.
+# Only PR runs supersede; a push or a scheduled scan is the only run for that SHA.
 concurrency:
-  group: codeql-${{ github.ref }}
-  cancel-in-progress: true
+  group: codeql-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   analyze:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - name: Initialize CodeQL

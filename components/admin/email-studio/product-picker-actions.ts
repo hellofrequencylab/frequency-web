@@ -98,7 +98,12 @@ export async function listOwnerProductsAction(
   const options: ProductOption[] = products.map((p) => ({
     id: p.id,
     title: p.title,
-    price: typeof p.priceCents === 'number' && Number.isFinite(p.priceCents) ? formatPriceCents(p.priceCents) : '',
+    // Pass the product's OWN currency. This formatter used to hardcode `$`, so a non-USD
+    // product went into a customer-facing email labelled as dollars.
+    price:
+      typeof p.priceCents === 'number' && Number.isFinite(p.priceCents)
+        ? formatPriceCents(p.priceCents, p.currency)
+        : '',
     image: p.images[0] ?? '',
     url: productUrl(p.id),
     active: p.status === 'active',
