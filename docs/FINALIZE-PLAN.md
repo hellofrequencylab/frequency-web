@@ -1,7 +1,8 @@
 # Finalize plan — the run to a fully functional platform
 
-> **The answer, first.** The platform is built and green: `tsc` clean, **8,861 tests passing**,
-> **all 21 `check:*` gates exit 0**, CI green on `main`, zero open PRs, every migration applied.
+> **The answer, first.** The platform is built and green: `tsc` clean, **8,870 tests passing**,
+> **all 21 `check:*` gates exit 0**, CI green on `main`, and the migration ledger is an exact
+> bijection with the repo (594 ⇄ 594, ADR-963).
 > What is left is not features. It is **three instruments that stopped telling the truth**, one
 > **access-grant layer** that was never actually closed, and a **short, verified list of real
 > defects**. Nothing on this list is speculative: every item below was reproduced against the
@@ -24,7 +25,7 @@ Sizes: **XS** under an hour · **S** one PR · **M** 1 to 3 PRs · **L** a wave.
 | Dimension | State | Evidence |
 | :--- | :--- | :--- |
 | Build + types | ✅ | `tsc --noEmit` rc=0 |
-| Tests | ✅ | 702 files, 8,861 tests, 0 failures |
+| Tests | ✅ | 704 files, 8,870 tests, 0 failures |
 | Machine gates | ✅ | all 21 `check:*` scripts exit 0 |
 | CI (`ci.yml`) | ✅ | green on `main` |
 | Migrations applied | ✅ | every repo migration is live in prod |
@@ -35,8 +36,8 @@ Sizes: **XS** under an hour · **S** one PR · **M** 1 to 3 PRs · **L** a wave.
 | SEO/AIO surface | ✅ | 14 OG-image routes, 25 JSON-LD emitters, `llms.txt` already carries live first-party stats |
 | Help centre | ⚠️ | 55 articles, core coverage 27/27, **10 orphan feature keys** |
 | **Visual regression** | 🔴 | **fails on every run**, both branches, since at least 2026-08-06 |
-| **Anon/authenticated grants** | 🔴 | **1,907 explicit grants across 273 tables** |
-| **Migration ledger numbering** | ⚠️ | 606 ledger rows vs 593 repo files; third recurrence |
+| **Anon/authenticated grants** | 🔴 | **1,907 explicit grants across 273 tables** (2 worst RPCs closed, ADR-961) |
+| **Migration ledger numbering** | ✅ | **594 ⇄ 594, zero drift both directions** (ADR-963) — was 607 vs 594 |
 
 **The single most important sentence in this document:** six merges' worth of rendering changes have
 landed with no working visual gate, so *every* claim about how the site looks is currently unverified.
@@ -66,8 +67,6 @@ themselves; the rest can be parallelised once the instruments are back.
 **Definition of done:** `pr-compare` is green on a PR that changes nothing, the shell a11y baselines
 exist, and all three gates are eligible to be flipped to required.
 
-| # | Item | Size | Detail |
-| :--- | :--- | :---: | :--- |
 > ## ✅ Phase 1.1 is DONE — the 22px is explained, and the diagnosis found something worse
 >
 > **The 22px is not a mystery drift, and it is not one cause.** `app-settings--*-mobile` has a
@@ -100,6 +99,8 @@ exist, and all three gates are eligible to be flipped to required.
 > as the second lock on the committed tree. The new gate was confirmed to **fail** against the
 > pre-fix tree on all four files before it was accepted.
 
+| # | Item | Size | Detail |
+| :--- | :--- | :---: | :--- |
 | 1.1 | ✅ **Explain the 22px before recapturing** | S | Every failure is the same shape: `expected 390×10276, received 390×10298`, on `/` · `/spaces` · `/the-lab` · `/the-community` · `/the-quest` · `/pricing` · `/discover` · `/feed` · `/settings`, both viewports, all four render states. A uniform sub-1% height drift on every page in every theme is **one** cause, not nine. Two candidates with **opposite remedies**: a token/line-height move (baselines right, code drifted) or a runner/font-metric move (baselines stale, recapture is the fix). Start from the diff images in the run's `playwright-report-pr-compare` artifact. |
 | 1.2 | **Recapture from `main`, as its own PR** | S | `e2e-manual.yml` → `update_baselines`. It must not absorb feature changes — one recapture against a settled tree beats four against a moving target, and the runner's capture commit does not re-trigger CI. |
 | 1.3 | **Seed the shell a11y baselines** | S | `/feed` and `/settings` are currently held to zero serious+ violations against debt that predates the gate, because their baselines were never captured. `e2e-manual.yml` → `capture_shell` + `update_a11y`. |
@@ -196,17 +197,20 @@ Every item reproduced in the working tree on 2026-08-10. Sorted worst-first.
 | 3.5 | ⚠️ | **13 serial awaits in the authed layout** block the shell on every navigation | `Promise.all` the independent reads; push the rest behind per-section `<Suspense>` (PAGE-FRAMEWORK §5) | `app/(main)/layout.tsx` |
 | 3.6 | ⚠️ | **10 orphan help feature keys** — `profile`, `connections`, `location`, `resonance`, `billing` and five more point at articles that do not exist | Author or repoint; `pnpm help:coverage` is the check | `content/help/**` |
 
-**Carried from the 2026-07-27 scan, still unverified either way.** These were recorded with a
-`file:line` and were not re-reproduced in this pass. Confirm each against current code *before*
-scheduling, because this scan found several sibling findings already fixed:
+**Carried from the 2026-07-27 scan — now VERIFIED, 2026-08-10.** Every one was re-reproduced
+against current code rather than trusted from the old record. Two were not what the record said:
 
-- Circle-placed events invisible to the circle-membership gate (`events/placement-actions.ts`)
-- Reactivating a suspended operator bypasses the licensed-seat wall (`lib/spaces/roster.ts`)
-- CRM import dedupe index truncates at 1,000 rows (`lib/crm/import/commit.ts`)
-- Circle handoff cannot see or cancel a pending offer
-- Vault card shows `lifetime_gems` as "gems to spend", so it never decreases
-- 7-day streak strip keys days in server UTC, not the member's local day
-- Admin footer "Report a problem" links to a POST-only handler → 405
+| # | Item | Verdict | Status |
+| :--- | :--- | :--- | :--- |
+| 1 | Circle-placed events invisible to the circle gate | ✅ **already fixed** in `9c81b8d` — `livePlacementPatch` writes `scope_id`/`scope_type` explicitly, so the trigger's condition is moot | closed |
+| 2 | Reactivating a suspended operator bypasses the seat wall | 🔴 confirmed, both single and bulk (`roster.ts:172,258`) — but **latent**: `checkSeatForOperatorInvite` short-circuits while `featureGatesLive()` is false | open, do before gates flip |
+| 3 | CRM import dedupe truncates at 1,000 | 🔴 confirmed, **three** reads not one | ✅ **fixed** — all three paged, regression test proven to fail on the single-page shape |
+| 4 | Circle handoff cannot cancel a pending offer | 🔴 confirmed — `cancelSpaceCircleOfferAction` and `pendingOfferForCircle` both have **zero callers**, while the error text tells the operator to "cancel that first" | open, UI-only (server exists) |
+| 5 | Vault card shows `lifetime_gems` as spendable | 🔴 confirmed — the rail was the only surface not using `getSpendableBalance` | ✅ **fixed** |
+| 6 | 7-day streak strip keys days in server UTC | 🔴 confirmed, and worse than recorded: built with server-local `setDate` but read back with UTC `toISOString`, so it was self-consistent only on a UTC server | ✅ **fixed** — anchored on `resolveMemberDay` |
+| 7 | Admin footer "Report a problem" → 405 | 🔴 confirmed — `/help/ask` is POST-only with no `page.tsx` | ✅ **fixed** |
+| 8 | `splash-registry.ts` queries `library_usages` | 🔴 confirmed — **dropped five days after creation** by `20260925000000` and never recreated. The read discarded `error`, so it returned `[]` silently and the lane paid one doomed round trip per template per load | ✅ **inert**, with the rebuild-or-delete decision recorded |
+| 9 | Four incompatible cents formatters | ⚠️ confirmed but **misdescribed** — there are **nine**, and nothing loses precision. What it drops is the thousands separator and the **currency**: `formatPriceCents` hardcodes `$` while `CommerceProduct.currency` is a real column, so a non-USD product is mislabelled in the price editor and product emails | open |
 
 ---
 
