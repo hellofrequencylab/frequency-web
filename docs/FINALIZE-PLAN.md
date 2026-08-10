@@ -282,7 +282,7 @@ and the score cannot disagree. `top25` is the share of a class's total carried b
 
 | Class | Total | Files | top10 | top25 | Median/file | Instrument |
 | :--- | ---: | ---: | ---: | ---: | ---: | :--- |
-| `literal-radius` | 2450 | 816 | 8% | **15%** | 2 | 🔧 codemod |
+| `literal-radius` | 2450 | 816 | 8% | **15%** | 2 | 🔴 **blocked — see 6.9** |
 | `raw-button-bg` | 526 | 312 | 14% | **26%** | 1 | 🔧 codemod |
 | `raw-input` | 186 | 131 | 21% | **37%** | 1 | 🔧 codemod + an inset variant |
 | `raw-px-arbitrary` | 117 | 59 | 47% | 71% | 1 | ✋ sweep |
@@ -307,6 +307,47 @@ because it is catching a real visual change — so these must land **after** `pr
 green on an unrelated PR, each sweep carrying its own recapture. Landing a sweep before that
 confirmation would leave us unable to tell a regression from the sweep's own intended diff, which is
 the exact condition Phase 1 existed to end.
+
+### 6.9 — 🔴 The radius roles and the radius steps disagree, and the ratchet is rewarding the wrong direction
+
+**This is the find of the DAWN pass, and it inverts item 6.8's `literal-radius` row.** I had that row
+down as a codemod. It is not: converting a literal to its role today makes the component render
+**pre-DAWN**.
+
+`app/globals.css` holds two radius systems that were meant to be the same numbers:
+
+| | Role token (`:root`, l.177-179) | Literal step (`@theme`, l.1344-1349) | Agree? |
+| :--- | ---: | ---: | :---: |
+| control | `--radius-control` **8px** (0.5rem) | `rounded-lg` **14px** | ❌ −6px |
+| card | `--radius-card` **16px** (1rem) | `rounded-2xl` **24px** | ❌ −8px |
+| *(incidental)* | `--radius-card` 16px | `rounded-xl` **16px** | ✅ |
+| pill | `--radius-pill` 9999px | `rounded-full` 9999px | ✅ |
+
+The roles were defined against **Tailwind's stock scale**, and the file says so in its own comment at
+l.173: *"control = lg (0.5rem), card = 2xl (1rem)"*. That equivalence was true when written. It stopped
+being true when the DAWN port **re-declared the literal steps** at l.1330-1348 — `rounded-lg` 8→14,
+`rounded-2xl` 16→24 — and the three role tokens were **not moved with them**. The comment still
+documents the old pairing as if it held.
+
+**What that means in the product today**
+
+- A card on `rounded-card` renders **16px**; a visually identical card on `rounded-2xl` renders
+  **24px**. Same intent, different corners, and which one you get depends on when the file was written.
+- **Migrating a literal to its role — the exact move `check:adoption` rewards — makes corners
+  smaller and reverts the component toward its pre-DAWN look.** The ratchet is paying for
+  regressions. This is why "consuming rounded-control/card/pill is incremental" (l.176) has stayed
+  incremental: every early adopter got a worse-looking component, and the gate called it progress.
+- `rounded-full` is already at **1** occurrence out of 2,450, so the pill role is fully adopted and
+  is not part of this. The problem is exactly the two roles whose numbers drifted.
+
+**The fix is one owner decision and then three lines**, not a 2,450-site codemod. If DAWN's corners
+are the intent — and the port says they are — then `--radius-control: 14px` and `--radius-card: 24px`,
+and every skin's overrides (l.595, 729, 840…944, 1023…1079) get re-checked against the same ratio,
+since they were all authored against the pre-port roles too. Only after the roles are correct does
+converting the 2,450 sites become a no-op that a codemod can do safely.
+
+⚠️ **Do not sweep `literal-radius` until this is settled.** A sweep now writes 2,450 sites to the
+wrong number and buries the defect where no gate can see it, because the ratchet would go green.
 
 ---
 
