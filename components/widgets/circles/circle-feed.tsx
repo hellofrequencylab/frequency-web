@@ -16,7 +16,7 @@ export const CircleFeed = async () => {
       allowed={teaserAllowed({ role: isCrew ? 'crew' : 'member', hasAccess: isMember })}
       resourceKey={`circle:${circle.id}`}
       previewSeconds={TEASER_PREVIEW_SECONDS}
-      title="Crew unlocks the full circle"
+      title="Crew gets the full circle"
       body="Take a look around. Crew members can post, join the conversation, and connect with everyone here."
     >
       <section>
@@ -24,7 +24,7 @@ export const CircleFeed = async () => {
           <h2 className="text-body-sm font-bold text-text">Circle feed</h2>
           <p className="mt-0.5 text-meta leading-relaxed text-muted">
             {canManage
-              ? 'Post to your circle. Toggle Announce to broadcast to the wider hub.'
+              ? 'Post to your circle. Toggle Announce to send it to the wider Hub.'
               : 'Conversation and event announcements for everyone in this circle.'}
           </p>
         </div>

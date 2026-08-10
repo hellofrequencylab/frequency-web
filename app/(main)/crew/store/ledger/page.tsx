@@ -154,7 +154,7 @@ export default async function VaultLedgerPage() {
                             isZap ? 'text-primary' : 'text-signal-strong'
                           }`}
                         >
-                          +{e.amount.toLocaleString()} {isZap ? 'zaps' : 'gems'}
+                          +{e.amount.toLocaleString()} {isZap ? 'Zaps' : 'Gems'}
                         </span>
                       </li>
                     )

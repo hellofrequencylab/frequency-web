@@ -427,11 +427,11 @@ export function JourneyGuide({
 
               {access.canRunCohorts ? (
                 <p className="text-2xs text-muted">
-                  Once published, you can open cohort Runs from the Journey page so a group moves through it together.
+                  Once published, you can open Runs from the Journey page so a group moves through it together.
                 </p>
               ) : (
                 <p className="rounded-card border border-border bg-canvas px-3 py-2.5 text-meta text-muted">
-                  Cohort Runs, where a group starts together on a date, come with paid plans.{' '}
+                  Runs, where a group starts together on a date, come with paid plans.{' '}
                   <Link href="/upgrade" className="font-medium text-primary-strong underline-offset-4 hover:underline">
                     See plans
                   </Link>

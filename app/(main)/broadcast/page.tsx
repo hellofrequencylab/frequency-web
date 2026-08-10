@@ -201,7 +201,7 @@ export default async function BroadcastPage({
             {latest.linked_task ? <Zap className="h-5 w-5" /> : <Megaphone className="h-5 w-5" />}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-meta font-medium text-subtle">Latest broadcast</p>
+            <p className="text-meta font-medium text-subtle">Latest Dispatch</p>
             <p className="text-body font-bold leading-tight text-text">{latest.title}</p>
             {latest.excerpt && <p className="mt-0.5 line-clamp-1 text-body-sm leading-relaxed text-muted">{latest.excerpt}</p>}
           </div>
@@ -229,7 +229,7 @@ export default async function BroadcastPage({
           the quick-links sidebar already carry navigation, so these are just
           context. */}
       <p className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-muted">
-        <span><strong className="font-semibold text-text tabular-nums">{dispatches.length}</strong> recent broadcasts</span>
+        <span><strong className="font-semibold text-text tabular-nums">{dispatches.length}</strong> recent Dispatches</span>
         {broadcastsThisWeek > 0 && <span className="text-subtle">({broadcastsThisWeek} this week)</span>}
         <span aria-hidden className="text-subtle">·</span>
         <span><strong className="font-semibold text-text tabular-nums">{(eventsCountRes.count ?? upcomingEvents.length).toLocaleString()}</strong> upcoming events</span>
@@ -345,7 +345,7 @@ function DispatchCard({ dispatch: d, viewerRole, myProfileId }: { dispatch: Disp
         </div>
       }
       title={d.title}
-      context={d.linked_task ? `${scope} · Challenge` : `${scope} broadcast`}
+      context={d.linked_task ? `${scope} · Challenge` : `${scope} Dispatch`}
       description={d.excerpt ?? undefined}
       meta={
         <>

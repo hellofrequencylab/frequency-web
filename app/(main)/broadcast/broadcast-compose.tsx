@@ -141,7 +141,7 @@ export function BroadcastCompose({
             aria-label="Body"
             value={body}
             onChange={e => setBody(e.target.value)}
-            placeholder="Write your broadcast…"
+            placeholder="Write your Dispatch…"
             rows={8}
             required
             disabled={isPending}

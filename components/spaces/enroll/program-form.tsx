@@ -137,7 +137,7 @@ export function ProgramForm({
             id="program-name"
             value={draft.name}
             onChange={(e) => update({ name: e.target.value })}
-            placeholder="Spring coaching cohort"
+            placeholder="Spring coaching group"
             maxLength={120}
             className="mt-1"
           />

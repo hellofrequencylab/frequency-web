@@ -18,7 +18,7 @@ export type MarketplaceArea = (typeof AREAS)[number]['key']
 
 export function MarketplaceFacets({ active }: { active: MarketplaceArea }) {
   return (
-    <nav className="flex flex-wrap gap-2" aria-label="Marketplace areas">
+    <nav className="flex flex-wrap gap-2" aria-label="Browse areas">
       {AREAS.map((a) => {
         const on = a.key === active
         return (

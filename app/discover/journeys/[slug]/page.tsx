@@ -191,7 +191,7 @@ export default async function DiscoverJourneyPage({
               <p className="mb-1 text-body-lg font-bold text-text">Start this Journey</p>
               <p className="mx-auto mb-4 max-w-sm text-body-sm leading-relaxed text-muted">
                 Sign up free to start it. Its phases drip one per week, your Circle can run it
-                with you, and finishing earns the completion gems.
+                with you, and finishing earns the completion Gems.
               </p>
               <Link href="/sign-in" className={buttonClasses('primary', 'md')}>
                 Create a free account
