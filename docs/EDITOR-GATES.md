@@ -208,7 +208,7 @@ moving, which is precisely when one is most likely to move.
 
 ---
 
-## 6. The five ratchets
+## 6. The six ratchets
 
 ### They go in `scripts/block-baselines.json`, not `adoption-baselines.json`
 
@@ -229,9 +229,10 @@ up — *change what you count and the number stops being comparable.*
 | `block-types-total` | ~~~138~~ | **304** | → ~49 |
 | `blocks-without-totext` | all | **304** — zero `toText` in the repo | → 0 |
 | `raw-css-paths` | — | **0** | **must stay 0** ([ADR-976](DECISIONS.md) D-1) |
+| `editor-bytes-on-public-render` | — | *needs an instrument* 🔴 | → falls. **No bundle-size script exists** (`scripts/` has none, `lighthouse` is advisory and cannot attribute bytes to a module). Until one is built this ratchet is decorative, and so is E0's *"zero editor bytes on the public render"* gate — build the instrument in E0 or drop the claim |
 
 Each is emitted by the guard that owns it (`--ratchet`), so the number and its assertions share one
-manifest and cannot drift apart. Seed all five in **one PR, one `--update` per key** — the harness
+manifest and cannot drift apart. Seed all six in **one PR, one `--update` per key** — the harness
 already refuses a multi-key update sharing one reason — with `frozen.reason` recording that the
 3 / ~138 figures were **superseded by measurement**, so the correction is auditable in the ledger and
 not only in prose.
@@ -252,7 +253,7 @@ In `ci.yml`'s `checks` loop: `surface-binding` beside `menu` (shared manifests),
 `blocks` (shared `SEND_RESOLVERS`).
 
 ⚠️ **The success line is already stale** — `ci.yml` echoes *"All 21 contract guards passed"* while the
-loop runs **23**, and it goes to **28**. **Derive it** (`${#guards[@]}`) so it cannot rot again.
+loop actually runs **24**, and it goes to **29**. ✅ **Fixed at the source 2026-08-10** — the list is now a `guards=()` array and the summary prints `${#guards[@]}`, so it cannot rot again. **Derive it** (`${#guards[@]}`) so it cannot rot again.
 
 Measured budget: four AST guards ≈1–2 s against a 13 s aggregate; doc-safety's single-file vitest run
 ≈3–5 s. The job goes ~55 s → ~60 s.

@@ -14,24 +14,47 @@ import { config } from '@/lib/page-editor/config'
 // edit-page + layout server actions, and the tests alike.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// The set of block keys the current Puck config knows how to render. A stored doc
-// is only trusted when every block in it is still a known block type (the same
-// guard the marketing loader uses, lib/page-editor/templates/index.ts isRenderable).
+// The set of block keys the current Puck config knows how to render.
 const KNOWN_BLOCKS = new Set(Object.keys(config.components))
 
 /**
- * Is `data` a renderable Puck document against the CURRENT config? True only when
- * it has a non-empty `content` array AND every block is a known block type. A doc
- * authored against a retired block set fails this, so the resolver falls back to the
- * universal default page rather than trying to render an unknown component. PURE.
+ * Is `data` a well-formed Puck document? Non-empty `content`, every entry naming a
+ * type. Says NOTHING about whether those types still resolve — that is the
+ * renderer's problem, not the loader's, and <BlockRender> already skips a block it
+ * cannot resolve. PURE.
+ *
+ * This is the Space twin of `isWellFormed` (templates/index.ts) and it exists for the
+ * reason recorded in ADR-978: the predicate it replaces answered "does every type
+ * resolve", every caller read it as "can I use this document", and the gap between
+ * those two questions is where an author's work went. A Space carries far more stored
+ * documents than the eight marketing slugs, so the same bug here is the same bug at
+ * a much larger scale.
  */
-export function isRenderableSpaceDoc(data: unknown): data is Data {
+export function isWellFormedSpaceDoc(data: unknown): data is Data {
   const content = (data as Data | null)?.content
   if (!Array.isArray(content) || content.length === 0) return false
-  return content.every(
-    (b) =>
-      b != null &&
-      typeof (b as { type?: unknown }).type === 'string' &&
-      KNOWN_BLOCKS.has((b as { type: string }).type),
-  )
+  return content.every((b) => b != null && typeof (b as { type?: unknown }).type === 'string')
 }
+
+/** The types in a Space doc that no longer resolve to a component. PURE. */
+export function unknownSpaceDocTypes(data: unknown): string[] {
+  const content = (data as Data | null)?.content
+  if (!Array.isArray(content)) return []
+  const out = new Set<string>()
+  for (const b of content) {
+    const t = (b as { type?: unknown } | null)?.type
+    if (typeof t === 'string' && !KNOWN_BLOCKS.has(t)) out.add(t)
+  }
+  return [...out]
+}
+
+/**
+ * Every block resolves against the CURRENT config. Use ONLY to decide whether to seed
+ * a brand-new page from a template — NEVER to discard a stored document. PURE.
+ */
+export function isFullyKnownSpaceDoc(data: unknown): data is Data {
+  return isWellFormedSpaceDoc(data) && unknownSpaceDocTypes(data).length === 0
+}
+
+/** @deprecated Ambiguous, and every caller meant `isWellFormedSpaceDoc`. See ADR-978. */
+export const isRenderableSpaceDoc = isFullyKnownSpaceDoc

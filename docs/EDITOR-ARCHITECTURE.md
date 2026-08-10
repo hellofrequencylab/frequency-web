@@ -67,8 +67,8 @@ with its own renderer map, and both were missed because `ENTITY_BLOCKS`' own hea
 | System | Root type | Blocks | Live importers | Storage | Renderer |
 |---|---|---:|---:|---|---|
 | **Entity blocks** | `EntityBlockDef` (`lib/entity-blocks/registry.ts`, 252 LOC) | 36 | 12 | `spaces.preferences.profileLayout`, `profiles.meta.entityGrid` | `ContentBlockView` / `DesignBlockView` (web), `lib/email-studio/render.ts` (email) |
-| **Puck-shaped** | `ComponentConfig` (`lib/page-editor/types.ts`, 195 LOC) | **88** | 16 | `pages.data` / `pages.published_data` | `lib/page-editor/block-render.tsx` (302 LOC) |
-| **Layout modules** | `LAYOUT_MODULES` (`lib/widgets/modules.ts`, 718 LOC) | 157 | 4 | `page_settings.layout` | `lib/widgets/registry.tsx` |
+| **Puck-shaped** | `config.components` (`lib/page-editor/config.tsx`); row type `ComponentConfig` (`lib/page-editor/types.ts`, 195 LOC) | **88** | 15 | `pages.data` / `pages.published_data` | `lib/page-editor/block-render.tsx` (302 LOC) |
+| **Layout modules** | `LAYOUT_MODULES` (`lib/widgets/modules.ts`, 718 LOC) | 157 | 5 | `page_settings.layout` | `lib/widgets/registry.tsx` |
 | 🔴 **Space profile** | `PROFILE_BLOCKS` (`lib/spaces/profile-blocks.ts`) | **13** | 4 | `spaces.preferences` | its own 14-key map in `space-profile-modules.tsx` |
 | 🔴 **Spotlight** | `BlockType` union (`lib/spotlight/blocks/schema.ts:28`) | **10** | 11 | `profiles.meta.spotlight.layout.blocks` | `components/spotlight/blocks/render.tsx` |
 | | | **304** | | | |
@@ -106,9 +106,9 @@ That last line is the real invariant separating email from web, and it is not a 
 
 🔴 **`productCard` breaks the `data`/`content` category split.** It is filed `content` but resolves
 image, title, price and link from the live commerce catalog at send time
-(`lib/email-studio/product-block.ts`). Before the registry is reshaped, decide whether **category**
-or a new **`reads: 'live' | 'authored'`** field owns that property. This doc recommends the latter,
-because category is already doing palette-grouping work.
+(`lib/email-studio/product-block.ts`). ✅ **Closed by measurement (T-2, [ADR-977](DECISIONS.md)): `reads` + `resolveAt`.** `productCard`'s
+email renderer is *pure*; the live read is `resolveProductRefs`, a separate compile step. So the
+invariant is "no live read **inside a renderer**", and `category` keeps its palette-grouping job.
 
 🔴 **Email is on the send path of three crons** — `/api/cron/nurture` (via `lib/nurture/runner.ts`),
 `/api/cron/space-campaigns` (via `campaigns-send-due.ts` → `lib/email-studio/send.ts`) and
@@ -251,10 +251,13 @@ Three hard requirements this fixes:
 - 🔴 **`rows-ops.ts:61` dedupes block ids globally**, and `content`/`style` are keyed by *block id*.
   **You cannot put two text blocks on one page today.** Acceptable for a profile, fatal for a Site.
   Key by node id instead. This is a storage-shape migration, not a UI change.
-- 🔴 **`isRenderable()` discards the whole document if any block type is unknown**, falling back to a
-  code template. Rename a block and every page using it silently reverts, destroying the author's
-  work. Unknown blocks must round-trip byte-for-byte, render as a selectable placeholder in the
-  editor and nothing on the live page.
+- ✅ **CLOSED by [ADR-978](DECISIONS.md).** `isRenderable()` discarded the whole document if any block
+  type was unknown, so renaming a block silently reverted every page using it to a code template and
+  destroyed the author's work. Now split into `isWellFormed` (never discard) / `isFullyKnown` (seed
+  decisions only); the editor loader, all eight public routes and the Space loader **and both Space
+  write validators** use the former, an unresolvable block round-trips untouched and renders as a
+  labelled placeholder in the editor and nothing on the live page. **What remains for E0** is the
+  frozen corpus and `check:doc-safety` to keep it true.
 - 🔴 **Publish overwrites `published_data` irrecoverably.** Immutable `page_versions` plus an op log;
   publish becomes a pointer swap.
 
@@ -625,15 +628,15 @@ takes E7 to **XL**. One decision *refunds* schedule: no raw CSS (D-1) deletes a 
 | **E1** | Block contract. One registry, Zod schemas, up/down migrations, **`resolveAt`**, the binding layer. **The five gates are already live** — they land in E0 ([ADR-977](DECISIONS.md) D-10), so E1 turns them from green-on-today's-tree to green-on-the-new-one | **L** | Every registry row resolves to a renderer for every declared surface |
 | **E2** | 🔴 **Re-scope before a target is locked** ([ADR-977](DECISIONS.md) D-11): the real count is **304 across five systems**, not ~138 across three, so this is a 6:1 cut. **Loom projection + usage index**, then consolidate — mapped target **~49** (34 page blocks + 15 operator widgets), held as a **range, not a commitment**, until the usage index shows what is actually placed. **Real retirements** with migrations rewriting stored documents (D-6) | **XL** | "Which tenants use this block" is answerable *before* the first retirement; every retired id has a tested `up` **and** `down` |
 | **E3** | Axis work. Widen `kinds[]` to `member` + member data adapters; density as a declared property; Site's four things | **L** | Spotlight, in-app profile, Space and Site render off one registry with zero visual diff |
-| **E4** | Canvas. Same-origin iframe, portalled tree, `bubbleEvent` + coordinate translation, parent-document overlays, inline Tiptap **on `y-prosemirror`**, live cursors | **L** | Click-to-edit on every surface; RSC ⇄ canvas parity green; two browsers editing one page |
+| **E4** | Canvas — **wholly greenfield**: `bubbleEvent` has zero hits (Puck vocabulary, and `@measured/puck` was removed by ADR-493, so there is nothing to copy). Same-origin iframe, portalled tree, coordinate translation, parent-document overlays, inline Tiptap **on `y-prosemirror`**, live cursors. 🔴 **Unsolved and unowned:** a `reads: 'live'` block is server-resolved and injected as `nodes: Record<string, ReactNode>`; inside an iframe each live block needs a server round-trip per edit, and no phase owns that preview channel | **XL** ⬆ | Click-to-edit on every surface; RSC ⇄ canvas parity green; two browsers editing one page |
 | **E5** | Inspector + responsive. Fields from schemas, sparse breakpoint overrides with provenance, device switcher, container queries, **and the touch-native inspector** (bottom sheet, no hover dependency) | **L** ⬆ | Real viewports, not simulated widths; every control reachable by touch |
 | **E6** | Direct manipulation. Drag/drop, layer tree, keyboard model, spacing handles, presets-first inserter — **plus the touch gesture model** (long-press drag, no hover affordances, thumb-reachable targets) | **XL** ⬆ | Keyboard path complete **and** the full authoring path completes on a phone (D-5) |
-| **E7** | Functional blocks. The five transactional widgets made placeable, the form block, **member Stripe Connect** — onboarding, capability checks, platform fee, payouts, tax/1099 surface (D-3) | **XL** ⬆ | Placeable at every legal surface; a member completes onboarding and takes a real payment |
+| **E7** | Functional blocks. The five transactional widgets (`BUSINESS-MODEL-PLAN` §116: Booking · Membership · Donate · Enroll · Tickets) made placeable, the form block. ⚠️ **Re-scoped 2026-08-10 against the code:** `lib/billing/connect.ts` ([ADR-175](DECISIONS.md)) **already ships per-profile Stripe Express Connect** — onboarding, capability sync, dashboard links — and `lib/billing/fees.ts` already exports `memberTakeRateCents`, so **O-1 is largely answered and O-2 half-answered by shipped code**. The real gaps are narrower: **payout eligibility** (`canReceivePayouts` requires host+ or a persona, so a plain member cannot receive payouts — exactly D-3's population) and **tax/1099, which has zero hits repo-wide** | **L** ⬇ | Placeable at every legal surface; a plain member completes onboarding and takes a real payment |
 | **E8** | Vera. Streaming, per-Space retrieval, composer generalized, structural + validator layers, bounded critic, ghosted diff review, **creation-time only** (D-4) | **L** ⬇ | One prompt → a valid, reviewable, single-undo page |
 | **E9** | Loom authoring. Layer-2 config editing, per-surface settings console, declarative composer, `check:loom-integrity` | **M–L** | An operator composes a function without a deploy |
-| **E10** | Sites. Domains, host routing, per-tenant theming, per-tenant SEO. **Subdomain on any paid plan, custom domain as the upgrade** (D-7). Absorbs **W1–W5** | **L** | A tenant serves a custom domain off the same registry; the token-request path exists (D-1) |
+| **E10** | Sites. Domains, host routing, per-tenant theming, per-tenant SEO. **Subdomain on any paid plan, custom domain as the upgrade** (D-7). Absorbs **W1(M) + W2(L) + W3(L) + W4(L) + W5(M)** — a sum that cannot be one L. 🔴 **W4 is still `Blocked on Stripe connector authorization`**, a blocker the absorption erased; **per-tenant theming has no design anywhere in the doc set** while D-1 makes tokens the only expression channel; the long-lead owner items (buy the sites apex — DNS lead time — and Vercel Domains API access) **should start during E0, not here** | **XL** ⬆ | A tenant serves a custom domain off the same registry; the token-request path exists (D-1) |
 
-**Honest total: four XL, five L, one M–L** — up from eight L / one XL / two M–L before the owner
+**Honest total: five XL, five L, one M–L** — up from eight L / one XL / two M–L before the owner
 decisions. A multi-quarter program, and the decisions made it longer, deliberately.
 
 ⚠️ **E0–E3 carry roughly half the risk and produce almost nothing visible**, and multiplayer just
@@ -644,6 +647,35 @@ the point someone asks why nothing has shipped.
 **Where the visible wins are, for anyone who needs one sooner:** E4 (click-to-edit, live cursors),
 E7 (a member takes a payment), E8 (one prompt builds a page). Pulling any of them earlier means
 building on the pre-contract block systems and doing it twice.
+
+### 8.1 🔴 Work no phase owns — assign before starting
+
+An implementability audit (2026-08-10) asked, for each phase, *"could an engineer start this on
+Monday?"* These are the gaps it found. **Each one is real work that the phase table silently assumes
+someone else does.** Assign them or accept the slip.
+
+| # | Missing | Bites at | Why it is not optional |
+|---|---|---|---|
+| 1 | **A design/UX pass on the editor itself** | E4–E6 | `design_handoff/` covers marketing, mobile grammar and the system overview — **no canvas, no inspector, no multiplayer affordances.** E4 onward assume a design exists |
+| 2 | **Visual baselines for the four E3 surfaces** | **E3's whole gate** | The 72 baselines cover 10 marketing/shell surfaces. **Not one** of Spotlight, in-app profile, Space profile or Site. "Zero visual diff" is decorative until they exist |
+| 3 | **A bundle-byte instrument** | **E0's gate** | "Zero editor bytes on the public render" and the `editor-bytes-on-public-render` ratchet have no measuring device — no script, no analyzer, no budget file. `lighthouse` is advisory and cannot attribute bytes to a module |
+| 4 | **A member-scoped commerce data model** | **E3, critically** | Offerings live in `spaces.preferences`, `space_bookings.space_id` is `NOT NULL`, donations are a Space feature gate. §1 calls the widening "adapters, not new blocks" — **but an adapter needs a source, and no phase creates one.** E7 owns member *payments*, four phases later |
+| 5 | **Supabase Realtime authorization** | **E0's CRDT** | §4.1 requires "a client may only join a page it can edit — checked server-side". All five live `.channel()` uses are **public** channels, and there is no `realtime.messages` RLS in any migration. Private channels + RLS + `setAuth` refresh is new ground, and `check:grants`' bijection has no verdict shape for a `realtime.*` table |
+| 6 | **A Yjs ⇄ Supabase Realtime provider** | **E0's CRDT** | No maintained one exists to adopt. E0 must write awareness encoding, update batching, broadcast payload limits and **initial state-vector sync for a late joiner** — which §4.1's "reconnect/offline" line does not cover |
+| 7 | **Per-tenant theming + the token-request path (O-4)** | E10 | D-1 makes tokens the *only* expression channel, and **per-tenant theming has no design anywhere in the doc set.** §6 already says the token path "must exist before the first paid Site" |
+| 8 | **Editor telemetry** | E8, and D-4's revisit | §6 treats Vera accept/reject events as free. `lib/analytics/events.ts` exists; **no phase registers editor events** or placement analytics keyed on `app_instances.id` |
+| 9 | **Error/recovery UX for multiplayer** | E0/E4 | §4.1 moves validation to "a boundary at snapshot-and-publish time", so **publish can now fail on an invalid document** — and nobody specced what the author sees. Same for disconnect, conflicting restore, rejected snapshot |
+| 10 | **Tenant communication for E2's retirements** | E2 | D-6 rewrites stored documents across 17 Space profiles, 5 pages, 3 spotlights, 19 email docs and 36 `page_settings` rows. No notice, changelog or operator warning is owned |
+| 11 | **Migration tooling beyond entity layouts** | E2 | Only `scripts/upgrade-entity-layouts.mjs` is planned, scoped to `EntityLayout`. E2 rewrites `pages`, `page_settings`, `profiles.meta.spotlight` and `*.block_json` with no runner |
+| 12 | **A CRDT testing strategy** | E0 | §7.4 item 5 gives two assertions. No property/fuzz plan, no partition test, no transport test (payload ceiling, ordering, dropped updates), no soak for N editors |
+| 13 | **Performance budgets** | E4–E6 | No per-route JS budget, no canvas latency target, no document-size ceiling. A Site as a Yjs doc over Realtime broadcast has a payload limit nobody has costed |
+| 14 | **Canvas accessibility** | E6 | Drag/drop + live cursors + a floating inspector is the hardest a11y surface in the product. `a11y-baselines.json` holds 40 contexts, **none in an editor** |
+| 15 | **Operator documentation** | E2, E4, E9 | `DOCS-PROTOCOL` requires a Notion page for anything an operator does. Publishing/versioning/rollback, multiplayer semantics and block retirement are all unscheduled |
+| 16 | **i18n — an accepted omission, named** | never, deliberately | Zero i18n infrastructure repo-wide. `content` has no locale axis and `toText` returns one string. **If a Site ever needs two languages that is a fifth axis on a frozen document model** — decide now that it is out of scope, rather than discovering it in E10 |
+
+⚠️ **Items 3, 5 and 6 are E0 scope that E0 does not currently list**, and items 2 and 4 are E3
+prerequisites with no owner at all. Those five are the ones that turn a phase from "in progress" into
+"blocked" once someone starts.
 
 ---
 
@@ -657,6 +689,13 @@ building on the pre-contract block systems and doing it twice.
 | **Visual suite** | FINALIZE-PLAN 1.2/1.3 are hard prerequisites for E1 |
 | **When E0 starts** | **After FINALIZE-PLAN 1.2/1.3 — and nothing else** ([ADR-976](DECISIONS.md) D-8). E0 is storage-shape and sync work, not pixel work, so recaptured baselines are the one thing it genuinely consumes; waiting for all seven FINALIZE phases would cost a quarter for safety E0 does not use. The rest of FINALIZE-PLAN runs concurrently |
 | **Multiplayer ⇄ the render path** | E0 adds a CRDT, a Realtime client and awareness. **None of it may reach a visitor bundle.** Ratcheted (§7.3) because it is the kind of regression that arrives via an innocent shared import, not via a decision |
+| 🔴 **E1 before E2 is circular** | §3's own worked example — `frq/offerings`, `kinds: ['member','space']` — is an **E2 consolidation artifact** whose member legality is an **E3** widening. So the doc illustrates the E1 contract with an object that only exists after E2 *and* E3. Resolve explicitly: either **E1 = contract + gates + two pilot blocks** (and its gate "every registry row resolves" is then unachievable, so restate it), or **E1 = contract + port all 304** (and E1 is XL and contains most of E2). Do not leave it ambiguous |
+| 🔴 **The contract is missing three things that cannot be retrofitted** | (a) **Field/UI metadata** — `content: z.object({…})` cannot express `label`, `placeholder`, `options`, `defaultValue`, `upload`, `pickerBlock`, which `FieldDef` carries today and **E5's gate depends on**; (b) **per-type limits** — E0 introduces `block-limits.ts` and `defineBlock` has no slot for it, so the policy immediately lives in two places; (c) **the `CommunityRole` floor** that only `page_settings.layout` carries, which Tier B needs. Add all three in E1 or they become a second schema later |
+| ⚠️ **E5's breakpoint axis lands after E0 freezes the document** | §4's `BlockNode` has `content` + `display?` and **no breakpoint axis**. E5 adds a fourth persisted axis *after* `check:doc-safety` captures its corpus — a second storage migration and a re-capture, neither budgeted. **Put it in `BlockNode` at E0** |
+| ⚠️ **E0's `surface_type` widening is non-additive and already incomplete** | E0 item 16 drops-and-adds the CHECK to a four-surface vocabulary — but `email` is a fifth surface and Tier B needs a sixth, `app-page`. **Widen once, to six**, or ship two non-additive migrations |
+| ⚠️ **`check:loom-integrity` is placed in three phases** | E0 ([ADR-977](DECISIONS.md) D-10), E2 ([`EDITOR-GATES`](EDITOR-GATES.md) §4 arm B) and E9 (§8). **Settled here: arm A's skeleton + the manifest gate at E0, arm B populated at E2 when `LOOM_PRIMITIVES` first exists, consumed at E9.** `check:blocks` is the same shape — its B0 assertion hard-fails on an absent registry root, so at E0 it ships in *permissive* mode and turns strict in E1 |
+| ⚠️ **E8 depends on E5, undeclared** | `reseedBlockCopy` mints a per-block tool schema from `fieldsForBlock`, so Vera's constrained writes need E5's field definitions |
+| ⚠️ **E10's long-lead items sit at the end** | Buying the sites apex (DNS lead time), Vercel Domains API access, and W4's live *"blocked on Stripe connector authorization"* are owner actions with external latency. **Start them during E0** |
 | **`cacheComponents`** | 🔴 **Not adoptable.** Zero `revalidateTag` calls, 1,094 `revalidatePath`, **50** `export const revalidate` (which `cacheComponents` rejects), **234** `force-dynamic` in `app/`. Adopting it means rewriting the invalidation strategy, not flipping a flag. Out of scope for this program |
 
 ---

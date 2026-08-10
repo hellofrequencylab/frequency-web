@@ -6,7 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { isRenderableSpaceDoc } from '@/lib/page-editor/templates/space'
+import { isWellFormedSpaceDoc } from '@/lib/page-editor/templates/space'
 import { withPageDoc, withoutPageDoc, hasPage, readPageDoc, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { withParkedBlocks } from '@/lib/page-editor/templates/space-blocks'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
@@ -73,7 +73,9 @@ export async function publishSpaceLanding(
   data: Data,
   pageSlug: string = HOME_SLUG,
 ): Promise<ActionResult> {
-  if (!isRenderableSpaceDoc(data)) return fail('That layout could not be saved. Try again.')
+  // Shape only — see ADR-978. A doc carrying a retired block must stay saveable, or the
+  // owner is locked out of their own page the moment a block is renamed.
+  if (!isWellFormedSpaceDoc(data)) return fail('That layout could not be saved. Try again.')
 
   const auth = await authorizeEditor(slug)
   if (!auth) return fail('You do not have access to edit this page.')

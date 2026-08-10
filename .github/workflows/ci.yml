@@ -153,9 +153,14 @@ jobs:
         run: |
           set -uo pipefail
           failed=()
-          for guard in \
-            authz canon menu workflows elements labels render-path help tokens phantom bridge contrast adoption \
+          # Keep this list and the summary count in sync WITHOUT hand-counting: the total is
+          # derived below from the array itself. It used to be hardcoded, and read "All 21"
+          # while 24 guards ran — a drift that a guard suite of all things should not carry.
+          guards=(
+            authz canon menu workflows elements labels render-path help tokens phantom bridge contrast adoption
             headers seo collective crm-parity vocab rls grants admin-client migrations adr docs-links
+          )
+          for guard in "${guards[@]}"
           do
             echo "::group::check:${guard}"
             if pnpm "check:${guard}"; then
@@ -176,4 +181,4 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          echo "### ✓ All 21 contract guards passed" >> "$GITHUB_STEP_SUMMARY"
+          echo "### ✓ All ${#guards[@]} contract guards passed" >> "$GITHUB_STEP_SUMMARY"

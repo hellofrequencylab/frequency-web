@@ -100,7 +100,7 @@ if a tenant's unmet need has somewhere to go.
 | **E9** | **Loom authoring.** Layer-2 config editing, per-surface settings console, the declarative composer, `check:loom-integrity` | **M–L** | An operator composes a function without a deploy — and cannot write JavaScript ([ADR-975](DECISIONS.md)) |
 | **E10** | **Sites.** Domains, host routing, per-tenant theming and SEO. **Subdomain on any paid plan, custom domain as the upgrade** ([ADR-976](DECISIONS.md) D-7). **Absorbs W1–W5** | **L** | A tenant serves a custom domain off the same registry; the token-request path exists (D-1) |
 
-**Honest total: four XL, five L, one M–L — a multi-quarter program**, up from *eight L, one XL, two
+**Honest total: five XL, five L, one M–L — a multi-quarter program**, up from *eight L, one XL, two
 M–L* before the [ADR-976](DECISIONS.md) owner decisions. Three of those decisions cost schedule and
 the table says where: multiplayer (D-2) takes **E0 L → XL**, full mobile editing (D-5) takes **E5
 M–L → L** and **E6 L → XL**, Stripe Connect (D-3) takes **E7 L → XL**. One refunds: no raw CSS (D-1)
@@ -118,9 +118,9 @@ them earlier means building on the pre-contract block systems and doing it twice
 | Kind | What |
 |---|---|
 | **Gates** | `check:blocks` · `check:doc-safety` · `check:surface-binding` · `check:loom-integrity` (write-time) · `check:email-blocks` |
-| **Ratchets** (`scripts/adoption-baselines.json`) | `block-systems` 3→1 · `unbound-app-surfaces` 157→0 · `block-types-total` ~138→~60 · `blocks-without-totext` all→0 · `raw-css-overrides` 0 (visibility only) |
-| **Equivalence** | old ⇄ new renderer · golden markup per (block × surface × density), generated from the registry · **email golden strings** (three cron send paths, and email has no visual gate at all) · RSC ⇄ canvas parity |
-| **Runtime** | `platform_flags.render_path`, per surface. `platform_flags` carries dozens of switches — AI, demo mode, SMS, referrals, feed, billing, every plan gate — and **not one** reverts a surface to its coded body (no seeded key matches `render`/`template`/`block`/`editor` except `circle_templates_enabled`, which is unrelated); the repo has no down-migrations and no rollback convention, so this flag is the only reversal a phase gets |
+| **Ratchets** (`scripts/block-baselines.json` — a sibling ledger, **not** `adoption-baselines.json`, whose regex-over-a-corpus basis cannot fingerprint a structural AST count) | `block-systems` **5**→1 · `unbound-app-surfaces` 157→0 · `block-types-total` **304**→~49 · `blocks-without-totext` 304→0 · `raw-css-paths` 0, **must stay 0** · `editor-bytes-on-public-render` → falls |
+| **Equivalence** (five) | old ⇄ new renderer · golden markup per (block × surface × density), generated from the registry · **email golden strings** (three cron send paths, and email has no visual gate at all) · RSC ⇄ canvas parity · **CRDT ⇄ tree round-trip** — without it the other four validate an artifact the editor does not produce |
+| **Runtime** | `platform_flags.render_path`, per surface. `platform_flags` carries dozens of switches — AI, demo mode, SMS, referrals, feed, billing, every plan gate — and **not one** reverts a surface to its coded body (no seeded key matches `render`/`template`/`block`/`editor` except `circle_templates_enabled`, which is unrelated); **49 of 596 migrations carry `-- ROLLBACK:` blocks, so schema changes have a hand-reversal convention — the render path has none at all**, and this flag is what gives a rendering phase what a schema phase already has |
 | **Process** | Every phase dark behind its flag · shadow-render + diff before each cutover · batch rendering changes and capture once · `check:render-path`'s exact-match baseline edited in the same PR |
 
 ### Sequencing collisions — read before scheduling
@@ -129,17 +129,20 @@ them earlier means building on the pre-contract block systems and doing it twice
 |---|---|
 | **`EDITABLE_PAGES`, two directions** | [UX-MATURITY](UX-MATURITY-PLAN.md) Lift 5c *grows* the constant for root marketing routes (current "Next" wave) and 5d adds 8 seeker articles; **W3** *replaces* it with per-Space resolution. **E3 must land after 5c/5d** or one silently undoes the other |
 | **A2 / W1–W5** | Absorbed by E0 and E10 respectively. Do not build twice; the rows below are re-pointed, not deleted |
-| **Visual suite** | FINALIZE-PLAN 1.2/1.3 are hard prerequisites for E1 (P-a above) |
-| **`check:elements`** | Fails a PR declaring a second `ElementDef[]` catalog outside `lib/elements/registry.ts`. Confirm the block registry does not trip it before E1 |
-| **`cacheComponents`** | 🔴 **Not adoptable, out of scope.** Zero `revalidateTag` against 1,094 `revalidatePath`, 51 `export const revalidate` (which the flag rejects), 242 `force-dynamic`. Adopting it means rewriting invalidation, not flipping a flag |
+| **Visual suite** | FINALIZE-PLAN **1.2/1.3 gate E0's start** ([ADR-976](DECISIONS.md) D-8); the rest of FINALIZE Phase 1 gates E1. The rest of that plan runs concurrently |
+| **E3 has no instrument** | 🔴 The 72 baselines cover 10 marketing/shell surfaces and **none of E3's four targets** — no `/spotlight/[handle]`, no in-app profile, no Space profile, and Site does not render. "Zero visual diff" is decorative until someone captures them, and **no phase owns that.** Add it to E3 |
+| ~~**`check:elements`**~~ | ✅ **Closed by inspection.** `scripts/check-elements.mjs` only fires on a `const X: ElementDef[]` in a file that *imports* `ElementDef` from `lib/elements/registry`. A block registry with its own type cannot trip it |
+| **`cacheComponents`** | 🔴 **Not adoptable, out of scope.** Zero `revalidateTag` against 1,094 `revalidatePath`, **50** `export const revalidate` (which the flag rejects), **234** `force-dynamic`. Adopting it means rewriting invalidation, not flipping a flag |
 
-### Open before E1 freezes the contract
+### Open questions
 
-1. **`reads: 'live'` vs category** as the carrier of the email boundary (this program recommends `reads`).
-2. **The density scale** — three steps (`compact | standard | roomy`) proposed.
-3. **Member commerce** — which capabilities a Spotlight actually gets, and whether a member needs a Stripe account.
-4. **Site: surface of `space`, or a fourth kind** (assumed: surface).
-5. **The usage index shape** — `app_instances` trigger, periodic JSONB scan, or both.
+✅ **The five that used to sit here are all closed** — `reads` + `resolveAt` (T-2), the three-step
+density scale (T-3), member Stripe Connect (D-3), Site as a surface (T-1), and the usage index as
+*both* a trigger and a scan (T-4). See [`EDITOR-ARCHITECTURE`](EDITOR-ARCHITECTURE.md) §10.2.
+
+**What is genuinely still open is §10.3's O-1…O-5**, each with an owner and a due phase, none
+blocking E0. ⚠️ **O-1 is partly answered by shipped code** and its scope needs rewriting against
+`lib/billing/connect.ts` before anyone estimates E7 — see the E7 row above.
 
 ## 🏗️ App Platform + white-label sites — deferred by owner decision — 2026-08-03 ([ADR-921](DECISIONS.md), specs [WHITE-LABEL-SITES.md](WHITE-LABEL-SITES.md) · [LOOM-PLATFORM.md](LOOM-PLATFORM.md) · [SPACES.md](SPACES.md))
 

@@ -19338,6 +19338,14 @@ pass so the two documents cannot disagree.
 **Three of these cost real schedule, and the estimate moves rather than absorbing it.** The program
 goes from *eight L, one XL, two M–L* to **four XL, five L, one M–L**:
 
+> ⚠️ **Re-counted 2026-08-10 after an implementability audit: five XL, five L, one M–L.** E4 and E10
+> were re-estimated against the code (E4 is wholly greenfield — `bubbleEvent` has zero hits since
+> ADR-493 removed Puck; E10 absorbs W1(M)+W2(L)+W3(L)+W4(L)+W5(M), which cannot be one L), and E7
+> came **down** to L because `lib/billing/connect.ts` already ships per-profile Stripe Express
+> Connect. The table below records the decisions; the phase tables in
+> [`EDITOR-ARCHITECTURE`](EDITOR-ARCHITECTURE.md) §8 and [`BUILD-LIST`](BUILD-LIST.md) carry the
+> current numbers.
+
 | Decision | Phase | Was | Now | Why |
 |---|---|:---:|:---:|---|
 | D-2 multiplayer | **E0** | L | **XL** | The document becomes a CRDT — that is not a feature bolted on later, it is what the document *is* |
@@ -19619,8 +19627,8 @@ question.
 | Slug | Status | Types resolving to nothing |
 |---|---|---|
 | `about` | draft | `BetaCTA`, `ImageBand`, `PageHero`, `ZigZag` |
-| `how-it-works` | draft | `BetaCTA`, `PageHero`, `ZigZag` |
 | `the-lab` | draft | `BetaCTA`, `FeatureGallery`, `ImageBand`, `PageHero`, `ZigZag` |
+| ~~`how-it-works`~~ | draft | ⚠️ **Corrected: not at risk.** It carries the same orphan types, but it is **not in `EDITABLE_PAGES`** (a retired 308 redirect), so `isEditableSlug` is false and `/edit/how-it-works` redirects to `/pages`. The editor can never open it. This ADR first counted it and said "verified against production", overstating the blast radius by a third — the code contradicted the doc, so the code wins |
 
 `home` and `the-community` are clean, so nothing public was affected. The trap was armed, not sprung.
 
@@ -19647,10 +19655,34 @@ round-trips the block byte-for-byte.
 so all eight public routes keep their behaviour **byte-for-byte** — the only behavioural change in
 this PR is the editor loader. No stored document is rewritten.
 
-**Consequences.** ✅ Three drafts are publishable again without losing work. ✅ 5 tests cover the five
-real orphan types; `tsc`, `lint` and `check:render-path` clean with `render-path-bodies.txt`
-untouched. ⚠️ **The five retired types still render as nothing on a live page** — this fix protects
-the author's data, it does not restore the blocks. Remapping them belongs with the block-contract
+**Consequences.** ✅ Two drafts are publishable again without losing work. ✅ Tests cover the five real
+orphan types; `tsc`, `lint` and `check:render-path` clean with `render-path-bodies.txt` untouched.
+⚠️ **The five retired types still render as nothing on a live page** — this fix protects the author's
+data, it does not restore the blocks.
+
+> 🔴 **This ADR shipped incomplete, and the completion is recorded here rather than in a new ADR.**
+> The first pass moved only the *editor loader* off the discarding predicate and deliberately left
+> the eight public routes byte-for-byte unchanged. An adversarial review found what that combination
+> actually produces: a janitor could now open their draft, edit it, and publish — and the public
+> route, still gating on `isFullyKnown`, would discard the whole document and render the coded
+> template, while the editor showed a dim **"Published"** and offered an **Unpublish** button. **The
+> operator got every signal that the page was live and it was not.** Preserving the data while
+> silently discarding the publish is arguably worse than the original bug, because the original at
+> least failed visibly.
+>
+> Three further defects came out of the same review: **`isRenderableSpaceDoc`
+> (`lib/page-editor/templates/space.ts`) is a third copy of the predicate** — missed entirely, and
+> gating both the *loader* and the *save* path for Space pages, which hold far more stored documents
+> than eight marketing slugs; a doc carrying a retired block could never be re-saved, locking an owner
+> out of their own page. Widening the loader to accept a doc with no `props` opened a **`TypeError` on
+> `item.props.id`**, a 500 on the editor route. And the inspector rendered a **blank pane above a live
+> Delete button** for an unresolvable block — inviting the operator to delete it by hand, which is the
+> same loss one block at a time.
+>
+> All four are fixed: the eight public routes moved to `isWellFormed`, the Space predicate was split
+> the same way (loaders *and* both write validators), `props?.id` is optional-chained, and the
+> inspector explains what the block is. Verified first that **no published document carries an orphan
+> type**, so the public-route change alters zero live pages today. Remapping them belongs with the block-contract
 work. ⚠️ These three documents are the natural first corpus for a document round-trip gate: they are
 exactly the shape such a gate exists to defend. 🔴 **The general lesson outlives the fix:** a
 predicate used by ten callers should be named for the *question*, not the *answer*, and any

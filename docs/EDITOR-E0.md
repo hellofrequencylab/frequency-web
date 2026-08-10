@@ -407,7 +407,8 @@ which is not suppressible here.
 
 **The underlying gap is real and worse than a broken import.** The resolver was never written, so
 349 App rows still cannot resolve to a component — and unlike a broken import, that fails *silently*,
-by letting the rows look resolvable. It is `check:surface-binding` (E1) work, not E0 work.
+by letting the rows look resolvable. It is `check:surface-binding` work, and that gate lands in **E0** with the other four
+([ADR-977](DECISIONS.md) D-10) — only its *green-on-the-new-registry* proof belongs to E1.
 
 **Lift: XS**, and it *removes* an item from E0.
 
@@ -478,9 +479,11 @@ is *currently destroying author work* every time a block type is renamed.
 
 ## 9. Two prerequisites from outside E0
 
-- ⏳ **`FINALIZE-PLAN` Phase 1.2** (recapture the 72 stale visual baselines) gates **E1, not E0** —
-  items 8–14 are covered by `renderToStaticMarkup` equivalence, which works while the visual suite is
-  red. This is why [ADR-976](DECISIONS.md) D-8 lets E0 start once 1.2/1.3 land and not before.
+- ⏳ **`FINALIZE-PLAN` 1.2/1.3** (recapture the 72 stale visual baselines) **gate E0's START**
+  ([ADR-976](DECISIONS.md) D-8); the *rest* of FINALIZE Phase 1 gates E1. An earlier draft of this
+  bullet said 1.2 gates "E1, not E0" and then cited D-8 saying the opposite in the same sentence.
+  Items 8–14 are additionally covered by `renderToStaticMarkup` equivalence, which works even while
+  the visual suite is red — that is a second net, not the reason to start early.
 - ✅ **Branch protection — CLOSED 2026-08-10.** The ruleset now requires `checks` · `analyze` ·
   **`lint`** · **`test`**, verified by reading it back. Every gate specified above is a real gate.
   ⚠️ `pr-compare` remains advisory on purpose: requiring it before the baselines are recaptured

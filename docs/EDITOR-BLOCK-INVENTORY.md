@@ -3,7 +3,7 @@
 > **The answer, first.** **304 block rows across five systems**, not the ~138 across three the plan
 > first estimated. They map to **~49** with **no capability dropped** — every collapse is a
 > `variant`, a `binding.source`, or a `density`. Three fields carry almost all of it:
-> `binding.source` collapses **111 layout modules into 4 blocks**.
+> `binding.source` collapses **109 layout modules into 4 blocks**.
 >
 > ⚠️ **~49 is a range, not a commitment** ([ADR-977](DECISIONS.md) D-11). The count moved from 138 to
 > 304 on measurement; E2 gets its own planning pass once the usage index shows what is *placed*.
@@ -128,8 +128,9 @@ last two. Folding it in without them is a regression, not a refactor** (ADR-270/
 | | Today | Target |
 |---|---:|---:|
 | Registry rows | **304** | **~49** |
-| … page blocks | 124 | 34 |
-| … operator widgets | 157 | 15 (28 absorbed by Tier A) |
+| … page blocks (entity 36 + Puck 88) | 124 | 34 |
+| … operator widgets (`LAYOUT_MODULES`) | 157 | 15 (28 absorbed by Tier A) |
+| … Spotlight union (10) + `PROFILE_BLOCKS` (13) | 23 | **absorbed by Tier A** — every one is a duplicate of an entity/Puck row already collapsed above (`heading`, `text`, `links`, `image`, `gallery`, `quote`, `stats`, `topfriends`, `embed`, `divider`), which is *why* they are a duplication rather than a system worth its own target |
 | Block **systems** | **5** | **1** |
 
 Every one of the 304 maps to exactly one target, with no unmapped remainder.
@@ -143,16 +144,24 @@ Every one of the 304 maps to exactly one target, with no unmapped remainder.
 | Slug | Status | Orphan types |
 |---|---|---|
 | `about` | draft | `BetaCTA`, `ImageBand`, `PageHero`, `ZigZag` |
-| `how-it-works` | draft | `BetaCTA`, `PageHero`, `ZigZag` |
 | `the-lab` | draft | `BetaCTA`, `FeatureGallery`, `ImageBand`, `PageHero`, `ZigZag` |
+| ~~`how-it-works`~~ | draft | ⚠️ **Not at risk** — it is not in `EDITABLE_PAGES` (a retired 308 redirect), so `/edit/how-it-works` redirects to `/pages` and the editor can never open it. An earlier draft counted it and overstated the blast radius by a third |
 
-None of the five is among the 88. **Note `ZigZag` against the registry's `Zigzag` — a pure casing
-divergence.** A block was renamed and three documents were quietly orphaned, which is the clearest
-possible argument for byte-for-byte unknown-block preservation.
+None of the five is among the 88.
 
-Because `isRenderable()` is `content.every(…)`, **publishing any of these three replaces it with the
-code template and the draft is gone.** `home` and `the-community` are clean, so nothing public is
-broken — the trap is armed, not sprung. **Fixed by a standalone hotfix PR, ahead of the program.**
+⚠️ **`ZigZag` is NOT a casing typo for the registry's `Zigzag`** ([ADR-978](DECISIONS.md)). The
+resemblance is a trap: their props only partly overlap — `titleAccent` vs `accentWord`, `side` vs
+`mediaSide`, and `kicker` / `tone` / `imgAspect` have no home in `Zigzag` at all — so aliasing one to
+the other would **silently drop three fields and mis-map two**, which is the same data loss arriving
+by a quieter route. It is a *retired block with a similar name*, and remapping it is a data migration
+with real decisions in it.
+
+✅ **Shipped ([ADR-978](DECISIONS.md)).** `isRenderable()` was `content.every(…)`, so publishing
+either affected page replaced it with the code template and the draft was gone. The loader now keeps
+any well-formed document, the public routes render it minus the unresolvable blocks, and an
+unresolvable block shows a labelled placeholder in the editor only. **The five retired types still
+render as nothing on a live page** — the fix protects the author's data, it does not restore the
+blocks.
 
 ### ⚠️ P1 — live placements, cannot drop without a migration
 
