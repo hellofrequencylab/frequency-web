@@ -18980,3 +18980,42 @@ carried; a future full regeneration will simply confirm it. ⚠️ Booked in the
 entries left `scripts/admin-client-baseline.txt` (the `apply` / `waitlist` action pair and the two
 `lib/applications` modules), a fall that predates this change. ADR-928 says falls are written down,
 so the baseline is now 736.
+
+---
+
+## ADR-970 — An orphan help key is a broken link, not a backlog item (2026-08-10)
+
+**Decision.** The ten feature keys that published help articles were declaring with no registry row
+are added to `lib/help/feature-keys.ts`, and `pnpm help:coverage` — now also wired in as the 24th
+guard, `check:help` — **fails on any orphan key, in every mode**.
+
+**The plan had the direction backwards, and the direction is the whole point.**
+`docs/FINALIZE-PLAN.md` §3.6 recorded "10 orphan help feature keys … point at articles that do not
+exist". It is the reverse. All ten articles exist and are **published**. What did not exist was the
+registry row, so a reader could reach the article by browsing and every in-product affordance that
+resolves *by feature key* found nothing. The article was written, reviewed, and shipped, and the
+product could not link to it.
+
+That distinction changes the fix from "write ten articles" (content work, weeks) to "add ten rows"
+(minutes), which is why it is worth recording that the first description was wrong.
+
+Added with the route **verified to exist first**, not assumed: `on-air` · `journeys` ·
+`challenges` · `achievements` · `leaderboard` · `profile` · `connections` · `location` ·
+`resonance` · `billing`. `location` and `resonance` have no route of their own and point at the
+Connections settings section, which is the surface that actually owns them.
+
+**Why orphans fail and undocumented core features do not.** `help:coverage` printed both as
+warnings and exited 0 either way, so a tool nobody's CI read was the only thing that knew. Those
+two findings are not the same kind of thing:
+
+- An **orphan key** is a broken link. Something in the product points at a name that resolves to
+  nothing. It is always a defect, it is always cheap to fix, and it fails now.
+- An **undocumented core feature** is a content backlog item with an owner and a queue. Failing
+  every build on it would make the gate something to route around, which is how a gate dies. It
+  stays behind `--strict`.
+
+**Consequences.** ✅ Coverage 29/36 → **39/46**; core coverage **36/36**; orphans **0**. ✅ Probed:
+removing one key makes `check:help` exit 1 and name both articles that referenced it. ⚠️ Seven
+registry keys still have no article — `nexuses`, `store`, `crew`, `profiles`, `marketing`,
+`outreach`, `pages`. All are `core: false` (secondary / operator surfaces), so they are the
+backfill queue this gate deliberately does not block on.

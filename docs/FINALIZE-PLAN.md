@@ -1,7 +1,7 @@
 # Finalize plan — the run to a fully functional platform
 
 > **The answer, first.** The platform is built and green: `tsc` clean, **8,870 tests passing**,
-> **all 23 `check:*` gates exit 0**, CI green on `main`, and the migration ledger is an exact
+> **all 24 `check:*` gates exit 0**, CI green on `main`, and the migration ledger is an exact
 > bijection with the repo (594 ⇄ 594, ADR-963).
 > What is left is not features. It is **three instruments that stopped telling the truth**, one
 > **access-grant layer** that was never actually closed, and a **short, verified list of real
@@ -26,7 +26,7 @@ Sizes: **XS** under an hour · **S** one PR · **M** 1 to 3 PRs · **L** a wave.
 | :--- | :--- | :--- |
 | Build + types | ✅ | `tsc --noEmit` rc=0 |
 | Tests | ✅ | 704 files, 8,870 tests, 0 failures |
-| Machine gates | ✅ | all 23 `check:*` scripts exit 0 |
+| Machine gates | ✅ | all 24 `check:*` scripts exit 0 |
 | CI (`ci.yml`) | ✅ | green on `main` |
 | Migrations applied | ✅ | every repo migration is live in prod |
 | Cron wiring | ✅ | 27 `vercel.json` entries ⇄ 27 handlers, zero drift both ways |
@@ -195,7 +195,7 @@ Every item reproduced in the working tree on 2026-08-10. Sorted worst-first.
 | 3.3 | ⚠️ | **Meta descriptions over the ~155 snippet window.** `/the-lab` **200**, `/spaces` **186**, `/the-community` 158, `/the-quest` 158 | The first two have no clean sentence boundary under the cap, so this is a **copy decision**, not a trim. `/about` (149) is the model | `app/(marketing)/*/page.tsx` |
 | 3.4 | ✅ | ~~**3 `MODULE_ROUTES` entries point at redirect-only pages**~~ **FIXED** — `/admin/crm/graph`, `/admin/crm/playbooks`, `/admin/crm/today`, all merged into `/admin/crm/intelligence`. The Layout panel is advertised on a route that immediately redirects | All three retired, from `MODULE_ROUTES` **and** `ROUTE_MODULE_IDS` (whose keys were also giving the App catalog route scopes that navigate away). Every one of their six block ids already lives on `/admin/crm/intelligence`. The two live outbound links, in the Vera owner-brief email and the dashboard worklist, now point at the merged page instead of through a redirect. A new test asserts **every** `MODULE_ROUTES` entry resolves to a page that really renders `<PageModules>` | `lib/widgets/module-routes.ts` · `lib/widgets/modules.ts` |
 | 3.5 | ✅ | ~~**13 serial awaits in the authed layout**~~ **The count was stale; two remained, both now folded in** | Re-measured 2026-08-10. The layout had already been refactored: the main wave (22 reads) and the theme wave (5) exist, and the whole onboarding tail (`nextStepsEnabled` → `getProfileChores` → `getOnboardingStatus` → `getFounderTasks` → `getActiveTraining`, plus `autoPopupsEnabled`) already streams behind `<Suspense>` in `VeraLauncherSlot` / `CoachOverlaySlot` / `AutoPopupsSlot`, off the critical path entirely. What was genuinely still serial between the main wave and the theme chain: **`getMyFrequency` and the janitor `openTicketCount`** — each one pushing first paint back a full round trip. Both folded into the existing wave as speculative reads, exactly like `getStaffMember` and the operator trio already were. The janitor read stays gated on the **true** `profile.web_role`, which is known before the wave, so it does not become a new read for everyone. The remaining serial steps are genuinely dependent: `createClient` → `getUser` → the profile row, and `theme` → `loadActiveThemeCss` | `app/(main)/layout.tsx` |
-| 3.6 | ⚠️ | **10 orphan help feature keys** — `profile`, `connections`, `location`, `resonance`, `billing` and five more point at articles that do not exist | Author or repoint; `pnpm help:coverage` is the check | `content/help/**` |
+| 3.6 | ✅ | ~~**10 orphan help feature keys**~~ **FIXED, and the direction was backwards** | The plan said they "point at articles that do not exist". It is the reverse: all ten are declared by **published** articles and had no row in `lib/help/feature-keys.ts`, so every in-product affordance that resolves by feature key found nothing while the article sat there. Added with routes **verified to exist** first: `on-air` · `journeys` · `challenges` · `achievements` · `leaderboard` · `profile` · `connections` · `location` · `resonance` · `billing`. Coverage **29/36 → 39/46**, core **36/36**, orphans **0**. `help:coverage` is now the 24th guard (`check:help`) and an orphan key **always** fails — it is a broken link, not a backlog item, unlike the undocumented-core list which stays behind `--strict` (ADR-970) | `lib/help/feature-keys.ts` · `scripts/help-coverage.mts` |
 
 **Carried from the 2026-07-27 scan — now VERIFIED, 2026-08-10.** Every one was re-reproduced
 against current code rather than trusted from the old record. Two were not what the record said:
