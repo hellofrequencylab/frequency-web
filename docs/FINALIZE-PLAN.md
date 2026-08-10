@@ -293,8 +293,8 @@ fully actionable list. This is far smaller than the raw counts suggest: repo-wid
 
 | # | Item | Size |
 | :--- | :--- | :---: |
-| 7.1 | Fix the 26 | S |
-| 7.2 | **Widen `check:canon` past `content/`** to member-facing strings in `app/` and `lib/` | S |
+| 7.1 | ⚠️ **The 26 is not reproducible; a scoped re-scan finds ~8** | S | Re-measured 2026-08-10 over `app/` + `components/`, operator paths excluded, comments stripped. A raw pass returns **97**, but the overwhelming majority are import specifiers (`@/lib/gems`), routes (`/broadcast`), and DOM ids (`broadcast-scope`, `achievement-unlocked`) — identifiers, not copy. Filtering those leaves **16**, of which about half are the scanner matching CODE through a `>…<` JSX-text pattern. The genuinely member-readable set is roughly **eight**: `invite-launcher` "the zaps are yours" · `claim-button` "Offer unlocked:" · `upgrade` "All features are unlocked" · `achievement-toast` "Achievement Unlocked" · `journey-export` "a Hook cohort" · two in `pages/sequences` (a `cohort` and an em dash) · and one more. ⚠️ `broadcast/actions.ts:38` "Only staff can broadcast globally" is the **verb** and is correct copy. Several of the rest sit on `/pages/sequences` and `/upgrade`, where member-vs-operator is a judgement call per string, not a sweep. |
+| 7.2 | ⚠️ **Needs an AST, not a regex — measured** | M | The 97→16→~8 funnel above is the evidence. A regex scan cannot tell `@/lib/gems` from "the zaps are yours", nor JSX text from code that happens to sit between `>` and `<`. Three filters (drop `@/`-and-`/`-prefixed, require a space, drop all-lowercase token runs) got the noise from 97 to 16 and no further — the residue needs real JSX parsing to separate text nodes and string literals from expressions. Sizing raised from S to **M**. Until it exists, `lib/menus/canon.ts` (ADR-957) remains the only enforced canon on the write path, and `check:canon` still covers `content/**` and marketing source. |
 
 > `check:canon` scans `content/**` only, which is why every canon break found by this scan and the
 > two before it was outside its scope. `lib/menus/canon.ts` (ADR-957) already solved the DB half of
