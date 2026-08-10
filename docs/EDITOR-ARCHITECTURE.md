@@ -703,6 +703,27 @@ checking costs days where the phases that assume an answer cost months.
 
 ---
 
+### 8.0.1 ⚠️ Four commitments the measurements argue against — owner's call, not taken
+
+**These decisions stand.** They were made deliberately in [ADR-976](DECISIONS.md), and §8.0's numbers
+arrived afterwards. Recorded here so the choice is re-made on evidence rather than forgotten, with a
+recommendation and a trigger for each. **Nothing below is a change to the plan** — it is the case for
+one.
+
+| Decision | The evidence that arrived after | Recommendation | Automatic trigger to revisit |
+|---|---|---|---|
+| **D-2 multiplayer** — E0 **XL** | **0 Spaces with two independent editors.** Six have two; the platform owner is one of the two in every case. 0 saved drafts. Adds 3 dependencies and an **unbuilt** Yjs⇄Supabase Realtime provider (§8.1 item 6), plus Realtime authorization with no RLS precedent (item 5) | **Soft lock + `base_revision`.** Build stable node ids regardless — they are the real prerequisite and already on the critical path. ⚠️ My §4.1 line *"unaffordable later"* was **overstated**: §4.1 also concedes the persisted form stays a serialized tree, so adding Yjs onto stable node ids is a mapping layer plus transport, not a document redesign | First Space where two non-owner editors both edit in one week |
+| **D-3 member Connect** — E7 **XL** | **`stripe_webhook_events`: 0 rows, all time.** No payment has ever settled here, for a Space *or* a member. E7 builds fees, payouts and a tax surface on a path that has never carried a transaction | **Ship the capability gate only** (blocks placeable, checkout gated on a connected account). Defer payouts/fees/tax until Spaces transact | First 10 settled Space transactions |
+| **E9 Loom authoring** — **M–L** plus the program's most elaborate guard (15 assertions, two arms) | 19 Spaces, **16 administered by one person**. No operator has requested a composed function. `app_instances` is this same bet, already placed, **0 rows for eleven months** | **Keep [ADR-975](DECISIONS.md)'s declarative ceiling as the recorded rule** so nobody builds a plugin platform later — but do not build the surface or its gate until asked. Consider keeping the *catalog* half (the clickable per-layer view the owner asked for) and cutting only the composer | First concrete operator request for a function that does not exist |
+| **D-6 + the `block-types-total` ratchet** | [ADR-977](DECISIONS.md) D-11 says ~49 is *"a range, not a commitment."* **A monotonic ratchet is a commitment with a CI job attached** — the two contradict each other | Retire only the demonstrably dead set (§D P2: ~13 rows, no stored data, no migrations); adopt everything else as a render-only alias. Put the count in a **report**, not a ratchet | — |
+
+⚠️ **One thing the measurements do *not* argue against: E0's storage work.** 41 documents and 19
+tenants is the smallest this migration will ever be. Node-id keying, the document model and the block
+contract get **more** expensive every month. The case above is against multiplayer, payouts and Loom
+authoring — **not** against E0.
+
+---
+
 ### 8.1 🔴 Work no phase owns — assign before starting
 
 An implementability audit (2026-08-10) asked, for each phase, *"could an engineer start this on
