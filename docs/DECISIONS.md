@@ -19733,6 +19733,22 @@ the **skin** axis: `midnight-light` is identical to `dawn-light` on all eight su
 render-state switch was silently not applying would have collapsed all four states onto one number,
 and it does not. So the zeros were true when written, and dark mode has genuinely regressed since.
 
+**⚠️ CORRECTION (2026-08-10, same day).** The warning this ADR was written around — *"do not run
+`update_a11y`, it will erase the finding"* — is **wrong**, and the code says so plainly. The merge in
+`scripts/a11y-baselines.mjs` is asymmetric by design: a fall is written, a **rise** is collected into
+`rose` and **not written**, a **new context above `$defaultMax`** is collected into `added` and **not
+seeded**, and the process `exit(1)`s before `writeFileSync` unless `--force` is passed. The workflow
+does not pass `--force`. Its own comment states the intent: *"Merge is asymmetric and exits non-zero
+on a rise, so a regression cannot be quietly absorbed by re-running this job."*
+
+So the true behaviour is the opposite of the hazard I described: running `update_a11y` today **fails
+and writes nothing at all** — it cannot erase the 28 rises, and it equally cannot seed `/feed` and
+`/settings`, because their debt (7 and 2) is above `$defaultMax` (0) and a new surface joins at zero
+tolerance. Seeding them is a deliberate `--force` act with a reason in the commit, which is exactly
+the ceremony the file's own header asks for. I wrote a warning against a safeguard that already
+existed, having read the workflow's inputs and not the script they call. The rule stands; the risk
+did not.
+
 **Consequences.** ✅ Sixteen failures across eight pages and two skins is **one** cause, not sixteen;
 it is the first thing to look at and the cheapest to fix. ✅ The file's own header already states the
 rule this ADR is enforcing — *"baselines are debt, and debt gets a name"* — so a waiver is legitimate

@@ -81,7 +81,7 @@
   /* Brand. Primary (amber-gold) */
   --color-primary:          #E2912F;
   --color-primary-hover:    #CE8023;
-  --color-primary-strong:   #9A5E12;
+  --color-primary-strong:   #965C12;
   --color-primary-bg:       #FBEFD9;
   --color-text-on-primary:  #FFFFFF;
   /* Glyphs on a RANK CORE, decoupled from the button label (2026-08-06). These borrowed
@@ -474,7 +474,7 @@
   --color-text-subtle:       #6E6558;
   --color-primary:           #E2912F;
   --color-primary-hover:     #CE8023;
-  --color-primary-strong:    #9A5E12;
+  --color-primary-strong:    #965C12;
   --color-primary-bg:        #FBEFD9;
   --color-text-on-primary:   #FFFFFF;
   --color-success:           #11827A;
