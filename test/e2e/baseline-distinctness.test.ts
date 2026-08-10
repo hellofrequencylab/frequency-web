@@ -24,8 +24,20 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import sharp from 'sharp'
 import { describe, expect, it } from 'vitest'
+import { appSurfaces } from './surfaces'
 
 const DIR = join('test', 'e2e', '__screenshots__', 'visual.spec.ts')
+
+/** The Playwright projects' viewports, mirrored from playwright.config.ts. */
+const VIEWPORT = { desktop: { width: 1280, height: 800 }, mobile: { width: 390, height: 844 } }
+
+/** Slugs captured at viewport height, read off the surface registry rather than re-listed.
+ *  The stub env is what makes the two env-gated rows visible here; see appSurfaces(). */
+const VIEWPORT_ONLY = new Set(
+  appSurfaces({ roomPath: '/room', spaceSlug: 'space' })
+    .filter((s) => s.viewportOnly)
+    .map((s) => s.slug),
+)
 
 /** `<slug>--<state>-<project>.png` → its three parts. */
 function parse(file: string): { slug: string; variant: string } | null {
@@ -106,7 +118,7 @@ describe('visual baselines are distinct per surface', () => {
     ).toEqual([])
   }, 60_000)
 
-  it('every baseline is a real PNG with a plausible full-page height', () => {
+  it('every baseline is a real PNG at the height its capture mode implies', () => {
     const bad: string[] = []
     for (const file of files) {
       const b = readFileSync(join(DIR, file))
@@ -117,12 +129,60 @@ describe('visual baselines are distinct per surface', () => {
       }
       const width = b.readUInt32BE(16)
       const height = b.readUInt32BE(20)
-      const expectedWidth = file.includes('-mobile') ? 390 : 1280
-      if (width !== expectedWidth) bad.push(`${file}: width ${width}, expected ${expectedWidth}`)
-      // A viewport-tall capture is the signature of a wall (Vercel Deployment Protection,
-      // an error page) rather than a full-page render of a real surface.
-      if (height <= 900) bad.push(`${file}: height ${height} — viewport-tall, likely a wall`)
+      const vp = file.includes('-mobile') ? VIEWPORT.mobile : VIEWPORT.desktop
+      if (width !== vp.width) bad.push(`${file}: width ${width}, expected ${vp.width}`)
+
+      if (VIEWPORT_ONLY.has(parse(file)?.slug ?? '')) {
+        // Height carries no wall signal for these: a first-screen capture and an interstitial
+        // are both exactly one viewport tall. What it still catches is the two sides
+        // disagreeing — a baseline taller than the viewport means the registry says
+        // `viewportOnly` and the capture ran `fullPage`, so the committed reference was taken
+        // under rules that are no longer in force.
+        if (height !== vp.height) {
+          bad.push(`${file}: height ${height}, expected exactly ${vp.height} (captured viewportOnly)`)
+        }
+      } else if (height <= 900) {
+        // A viewport-tall capture is the signature of a wall (Vercel Deployment Protection,
+        // an error page) rather than a full-page render of a real surface.
+        bad.push(`${file}: height ${height} — viewport-tall, likely a wall`)
+      }
     }
     expect(bad, bad.join('\n')).toEqual([])
   })
+
+  it('a viewport-only baseline still proves it photographed the app, not a wall', async () => {
+    // This is the wall detector the rule above gives up for `viewportOnly` slugs, and it has
+    // to be a different KIND of evidence — height cannot distinguish a first screen from an
+    // interstitial. It leans on something a wall cannot fake: our shell repaints completely
+    // between light and dark, while Vercel's protection page and a framework error page both
+    // ignore `.dark` and photograph identically in the two states.
+    //
+    // The 90% threshold is not a guess. Measured 2026-08-10 across the committed baselines,
+    // light-vs-dark similarity was: app-settings 0.0/0.9%, app-space-console 0.9/3.4%,
+    // app-feed 3.9/15.2%, the-lab 34.9/32.2% (desktop/mobile). A theme-blind page scores ~100%,
+    // so the bar sits in empty space — well above the noisiest real surface, far below a wall.
+    //
+    // Note the two rules fail closed together. If VIEWPORT_ONLY ever came back empty because
+    // the registry import broke, this test would silently check nothing — but the height rule
+    // would then hold /feed's 800px baselines to the full-page floor and fail loudly. Neither
+    // can go quiet on its own.
+    const offenders: string[] = []
+    for (const file of files) {
+      const p = parse(file)
+      if (!p || !VIEWPORT_ONLY.has(p.slug) || !p.variant.includes('-light-')) continue
+      const twin = `${p.slug}--${p.variant.replace('-light-', '-dark-')}.png`
+      if (!files.includes(twin)) {
+        offenders.push(`${file}: no dark twin (${twin}) to compare against`)
+        continue
+      }
+      const score = similarity(await fingerprint(file), await fingerprint(twin))
+      if (score > 0.9) {
+        offenders.push(
+          `${file} ≈ ${twin}: ${(score * 100).toFixed(1)}% identical — this capture does not ` +
+            'respond to dark mode, which is what a wall looks like',
+        )
+      }
+    }
+    expect(offenders, offenders.join('\n')).toEqual([])
+  }, 30_000)
 })

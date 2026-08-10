@@ -254,10 +254,20 @@ export function publicSurfaces(): readonly Surface[] {
  * is honest and shows up in the shell reporter as unphotographed; a bounced one photographs
  * the wrong page under the room's name. Never re-add a fallback here — point PW_ROOM_PATH at
  * a room the beta account is actually in.
+ *
+ * `env` defaults to the real environment; it is a parameter so a plain vitest test can
+ * enumerate EVERY row — including the two only CI's env conjures — without setting env vars.
+ * `baseline-distinctness.test.ts` uses that to learn which slugs are `viewportOnly`. Reading
+ * it off these rows rather than re-listing the slugs is what keeps the two from drifting: a
+ * future env-gated surface that opts into viewport capture is covered the day it is added.
  */
-export function appSurfaces(): readonly Surface[] {
-  const roomPath = process.env.PW_ROOM_PATH
-  const spaceSlug = process.env.PW_SPACE_SLUG
+export function appSurfaces(
+  env: { roomPath?: string; spaceSlug?: string } = {
+    roomPath: process.env.PW_ROOM_PATH,
+    spaceSlug: process.env.PW_SPACE_SLUG,
+  },
+): readonly Surface[] {
+  const { roomPath, spaceSlug } = env
   const surfaces: Surface[] = [
     { path: '/feed', slug: 'app-feed', audience: 'member', viewportOnly: true },
     { path: '/settings', slug: 'app-settings', audience: 'member' },
