@@ -4,9 +4,6 @@ import { AdminTemplate, AdminSection, RailGrid } from '@/components/templates'
 import {
   splashTemplates,
   listLiveSplashes,
-  listSplashUsages,
-  type LiveSplash,
-  type SplashUsage,
 } from '@/lib/library/splash-registry'
 import { SplashRail } from '@/components/admin/library/splash-rail'
 import { Input } from '@/components/ui/field'
@@ -56,16 +53,6 @@ function SplashSchematic() {
   )
 }
 
-/** Map a live splash to its where-referenced lookup key for the "Used in" index. Micro-site splashes
- *  are `public.pages` rows, so they resolve against the `page` context by slug. QR splashes are not
- *  tracked in the library_usages index (its contexts are page/space_brand/spotlight/email/other), so
- *  they have no lookup and show an empty "Used in". */
-function liveUsageRef(live: LiveSplash): { refId: string; context: string } | null {
-  if (live.source === 'micro-site' && live.id.startsWith('page:')) {
-    return { refId: live.id.slice('page:'.length), context: 'page' }
-  }
-  return null
-}
 
 export async function SplashLaneView({
   q = '',
@@ -77,27 +64,7 @@ export async function SplashLaneView({
   view?: string
 }) {
   const templatesAll = splashTemplates()
-  // Resolve the "Used in" index (public.library_usages) for each code template by its sourceSlug.
-  // Template lookups are known synchronously from the code catalog, so they fan out ALONGSIDE the
-  // live read; the live-splash lookups depend on the resolved live rows, so they follow.
-  const [liveAll, templateUsagesList] = await Promise.all([
-    listLiveSplashes(),
-    Promise.all(
-      templatesAll.map((t) =>
-        t.sourceSlug ? listSplashUsages(t.sourceSlug, 'page') : Promise.resolve<SplashUsage[]>([]),
-      ),
-    ),
-  ])
-  const liveUsagesList = await Promise.all(
-    liveAll.map((l) => {
-      const ref = liveUsageRef(l)
-      return ref ? listSplashUsages(ref.refId, ref.context) : Promise.resolve<SplashUsage[]>([])
-    }),
-  )
-  const usagesByTemplateId = new Map<string, SplashUsage[]>()
-  templatesAll.forEach((t, i) => usagesByTemplateId.set(t.id, templateUsagesList[i] ?? []))
-  const usagesByLiveId = new Map<string, SplashUsage[]>()
-  liveAll.forEach((l, i) => usagesByLiveId.set(l.id, liveUsagesList[i] ?? []))
+  const liveAll = await listLiveSplashes()
 
   const query = q.trim().toLowerCase()
   const section: Section = (SECTIONS as readonly string[]).includes(rawSection) ? (rawSection as Section) : ''
@@ -118,10 +85,10 @@ export async function SplashLaneView({
 
   const templates: SplashTemplateCard[] = templatesAll
     .filter(matchTemplate)
-    .map((t) => ({ ...t, preview: <SplashSchematic />, usages: usagesByTemplateId.get(t.id) ?? [] }))
+    .map((t) => ({ ...t, preview: <SplashSchematic /> }))
   const live: LiveSplashCard[] = liveAll
     .filter(matchLive)
-    .map((l) => ({ ...l, usages: usagesByLiveId.get(l.id) ?? [] }))
+    .map((l) => ({ ...l }))
 
   const show =
     section === 'templates' ? 'templates'

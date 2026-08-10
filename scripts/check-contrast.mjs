@@ -196,6 +196,21 @@ export const PAIRS = [
   // table, so nothing caught it.
   { fg: '--color-focus-ring', bg: '--color-surface-elevated', role: 'edge', note: 'focus ring on a field' },
   { fg: '--color-primary', bg: '--color-surface', role: 'edge', note: 'primary fill/graphic on a card' },
+  // The tinted primary panel — `bg-primary/10` — declared at the colour axe MEASURED, not at one
+  // this file computed. Added 2026-08-10 after axe reported `primary-strong` at **4.45:1** on
+  // /feed and /settings while every pair here passed.
+  //
+  // ⚠️ The ground is a literal on purpose, and the reason is worth keeping. The obvious entry is
+  // `primary @10% over canvas` — and the `bgAlpha`/`bgOver` machinery above exists to say exactly
+  // that. But that composite resolves to **#F8EEE0** and the browser painted **#F8EAD6**. The
+  // element does not sit directly on the canvas; something else is in its stack. Writing the
+  // computed value here would have produced a *passing* 4.58:1 for a panel that renders 4.45:1 —
+  // a second entry that measures the declaration instead of the paint, which is the exact defect
+  // the focus-ring note above was written about. So: the observed value, attributed to the run
+  // that observed it, scoped to the states that share this palette. When the real stack is
+  // identified, replace this with the bgAlpha form and delete the literal.
+  { fg: '--color-primary-strong', bg: '#F8EAD6', role: 'body', only: ['DAWN light', 'Light-lock on a dark device'],
+    note: 'label on a bg-primary/10 tint, ground as painted (axe, run 31422100196)' },
 
   // ── The rank spectrum: ten primitives × three grounds. See RANK_PAIRS above for the roles ──
   ...RANK_PAIRS,
@@ -550,7 +565,25 @@ export function evaluateContrast(src, { pairs = PAIRS, states = STATES } = {}) {
       // token while the page rendered 1.75:1 — under the 3:1 that 1.4.11 requires, and invisible
       // to a check that only ever looked at the declaration.
       const fgPainted = pair.alpha === undefined ? fgValue : withAlpha(fgValue, pair.alpha)
-      const ratio = contrastRatio(fgPainted, bgValue)
+      // `bgAlpha` + `bgOver` model a TRANSLUCENT GROUND: a tint like `bg-primary/10` is not the
+      // primary token, it is the primary token at 10% composited over whatever sits behind it.
+      // Until 2026-08-10 this table could only describe a translucent FOREGROUND, so a tinted
+      // panel was inexpressible and therefore undeclared — and axe found the consequence on the
+      // member shell: `primary-strong` on `bg-primary/10` painting **4.45:1** against a 4.5 floor
+      // while every declared pair passed. Same lesson as the focus ring, on the other side of the
+      // pair: a gate that measures the DECLARATION and not the PAINT reports green over a real
+      // failure.
+      const bgPainted =
+        pair.bgAlpha === undefined
+          ? bgValue
+          : (() => {
+              const tint = withAlpha(bgValue, pair.bgAlpha)
+              const under = resolveSide(tokens, pair.bgOver)
+              if (!tint || !under) return null
+              const underC = typeof under === 'string' ? parseColor(under) : under
+              return underC ? composite(tint, underC) : null
+            })()
+      const ratio = contrastRatio(fgPainted, bgPainted)
       const waiver = waiverFor(pair, state.key)
       const min = waiver ? waiver.floor : ROLE_MINIMUM[pair.role]
       rows.push({

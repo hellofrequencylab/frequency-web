@@ -188,7 +188,15 @@ describe('check-contrast — the shipped palette', () => {
     const rows = evaluateContrast(readFileSync('app/globals.css', 'utf8'))
     for (const s of STATES) {
       const inState = rows.filter((r) => r.state === s.key)
-      expect(inState.length, `${s.key} produced no rows`).toBe(PAIRS.length)
+      // The expected count is the pairs that APPLY to this state, not PAIRS.length. `only` has
+      // been a documented part of the pair shape since this table was written ("`only` restricts
+      // a pair to the states where the surface actually exists") but had no user until
+      // 2026-08-10, so this assertion had never been exercised against one — it would have failed
+      // for the first person to use the feature as designed. The test's real subject is unchanged:
+      // a state that resolves to NOTHING, or to unresolved tokens, still fails here.
+      const applicable = PAIRS.filter((p) => !p.only || p.only.includes(s.key))
+      expect(applicable.length, `${s.key} has no applicable pairs`).toBeGreaterThan(0)
+      expect(inState.length, `${s.key} produced no rows`).toBe(applicable.length)
       expect(inState.every((r) => !r.unresolved), `${s.key} has unresolved tokens`).toBe(true)
     }
   })

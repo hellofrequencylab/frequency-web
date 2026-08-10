@@ -14,8 +14,8 @@ import {
   QrCode,
   Target,
 } from 'lucide-react'
-import { splashUsageHref, type SplashTemplate } from '@/lib/library/splash-templates'
-import type { LiveSplash, SplashUsage } from '@/lib/library/splash-registry'
+import { type SplashTemplate } from '@/lib/library/splash-templates'
+import type { LiveSplash } from '@/lib/library/splash-registry'
 
 // The Loom Studio Splash lane (docs/LOOM-PLATFORM.md §4, docs/PAGE-FRAMEWORK.md §10). Renders the
 // code-drawn splash CATALOG (templates) as browse cards, and the GOVERNANCE list (live splashes) as
@@ -27,11 +27,11 @@ import type { LiveSplash, SplashUsage } from '@/lib/library/splash-registry'
 // never the splash block editor.
 
 /** A splash template plus its precomputed preview node (resolved in the Server Component) and its
- *  "Used in" index (public.library_usages, resolved server-side by sourceSlug). */
-export type SplashTemplateCard = SplashTemplate & { preview: ReactNode; usages: SplashUsage[] }
+ */
+export type SplashTemplateCard = SplashTemplate & { preview: ReactNode }
 
-/** A live splash plus its "Used in" index (public.library_usages, resolved server-side). */
-export type LiveSplashCard = LiveSplash & { usages: SplashUsage[] }
+/** A live splash as the lane renders it. */
+export type LiveSplashCard = LiveSplash
 
 const KIND_META: Record<SplashTemplate['kind'], { label: string; Icon: typeof LayoutTemplate }> = {
   template: { label: 'Template', Icon: LayoutTemplate },
@@ -220,40 +220,6 @@ export function SplashLane({
   )
 }
 
-/** The "Used in" index (public.library_usages): each surface a splash asset lands on, deep-linked OUT
- *  to its editor when one exists (a page usage → the Puck micro-site editor). Empty → a quiet line. */
-function UsageList({ usages }: { usages: SplashUsage[] }) {
-  if (usages.length === 0) {
-    return <p className="text-body-sm text-subtle">Not referenced yet</p>
-  }
-  return (
-    <ul className="space-y-1.5">
-      {usages.map((u, i) => {
-        const href = splashUsageHref(u.context, u.refId)
-        const label = u.refId ?? u.context
-        return (
-          <li
-            key={`${u.context}:${u.refId ?? ''}:${u.blockId ?? ''}:${i}`}
-            className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-body-sm"
-          >
-            <span className="shrink-0 rounded-pill border border-border bg-surface-elevated px-2 py-0.5 text-2xs font-medium uppercase tracking-wide text-muted">
-              {u.context}
-            </span>
-            {href ? (
-              <Link href={href} className="inline-flex items-center gap-1 font-medium text-primary-strong hover:underline">
-                {label}
-                <ExternalLink className="h-3 w-3 text-subtle" aria-hidden />
-              </Link>
-            ) : (
-              <span className="min-w-0 truncate text-text" title={label}>{label}</span>
-            )}
-            {u.blockId && <span className="text-meta text-subtle">block {u.blockId}</span>}
-          </li>
-        )
-      })}
-    </ul>
-  )
-}
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -313,9 +279,6 @@ function TemplateDrawer({ template, onClose }: { template: SplashTemplateCard; o
             </Link>
           </Field>
 
-          <Field label="Used in">
-            <UsageList usages={template.usages} />
-          </Field>
         </div>
       </div>
     </div>
@@ -380,9 +343,6 @@ function LiveSplashDrawer({ splash, onClose }: { splash: LiveSplashCard; onClose
             </Link>
           </Field>
 
-          <Field label="Used in">
-            <UsageList usages={splash.usages} />
-          </Field>
 
           <p className="text-meta text-subtle">
             Editing opens the real editor: the Puck page editor for a micro-site, the QR studio for a QR

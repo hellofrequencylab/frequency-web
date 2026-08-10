@@ -22,27 +22,40 @@ export interface FoundingConfig {
   /** How many Founding MEMBER seats the round holds (the first 150). */
   member_cap: number
 
-  // ── 🔴 RETIRED: the three `business_*` fields below configure NOTHING (owner directive, 2026-07-31).
+  // ── 🔴 THE PER-CITY COHORT IS RETIRED (owner directive, 2026-07-31) — but only ONE of the three
+  //    `business_*` fields below went with it. Corrected 2026-08-10; the previous note said all three
+  //    "configure NOTHING" and that the console editor "does nothing", and both were wrong.
   //
-  // The Founding BUSINESS per-city cohort is withdrawn. Its entire purchase path is deleted:
-  // `lib/founding/business-checkout.ts` and the `/spaces/[slug]/settings/billing/founding` route are
-  // gone, so no checkout reads these values and no Space can join the cohort.
+  // What IS gone: the per-city purchase path. `lib/founding/business-checkout.ts` and the
+  // `/spaces/[slug]/settings/billing/founding` route are deleted, so no CHECKOUT reads these values.
+  // That much the original note had right — and it is exactly the sentence that made the rest wrong,
+  // because "no checkout reads them" was read as "nothing reads them."
   //
-  // They survive as FIELDS ONLY so the existing `founding` pricing_settings row still narrows without
-  // a migration, and so the admin console (mid-rewrite on PR #1999) keeps compiling. ⚠️ That console
-  // still renders a Founding Business editor, which is now an operator control that does nothing:
-  // the deliberate cost of not editing a file another branch is rewriting. Deleting that row, these
-  // three fields, and the stored keys is the follow-up once #1999 lands.
+  // ⚠️ A SECOND, LIVE PATH mints Founding Businesses and it is not a checkout: the BETA FOUNDER PUSH
+  // (ADR-875, tightened by ADR-880). `lib/billing/space-subscriptions.ts` grants at Stripe
+  // reconciliation → `lib/billing/beta-founding.ts:95` → `grantFoundingStatus`, which reads
+  // `business_monthly_cents` and `business_take_bps` (`lib/founding/status.ts:280-281`, and again on
+  // the update branch at `:352-353`) to stamp `locked_rate_cents` / `locked_take_bps` onto the new row.
+  // Those are LIFETIME terms. So the pricing console's "Founding Businesses" editor is not inert: an
+  // operator editing it sets the rate and the marketplace fee that every future Founding Business is
+  // grandfathered at. Calling it a control that does nothing invited someone to change it carelessly
+  // or delete the fields outright.
   //
-  // 🔴 NOT retired with them: the `founding_members` rows themselves. Three real Spaces paid cash for
-  // this and are grandfathered, and `foundingBadgeForSpace` still renders their chip. Withdrawing an
-  // offer is not the same as withdrawing recognition from the people who took it.
+  // 🔴 NOT retired: the `founding_members` rows themselves. Three real Spaces paid cash for this and
+  // are grandfathered (verified against the database on 2026-08-10: 3 rows, kind='business',
+  // status='active', all space-keyed), and `foundingBadgeForSpace` still renders their chip.
+  // Withdrawing an offer is not the same as withdrawing recognition from the people who took it.
 
-  /** @deprecated Configures nothing. See the retirement note above. */
+  /** LIVE: stamped as `locked_rate_cents` on every new Founding Business by the beta-founder grant. */
   business_monthly_cents: number
-  /** @deprecated Configures nothing. See the retirement note above. */
+  /** LIVE: stamped as `locked_take_bps` by the same grant. A lifetime marketplace-fee term. */
   business_take_bps: number
-  /** @deprecated Configures nothing. See the retirement note above. */
+  /**
+   * @deprecated Genuinely dead — the ONE field the retirement did take with it. Its only reader is
+   * `foundingBusinessSpotsRemaining` below, whose only remaining callers are its own tests; the
+   * per-city cap it expressed had meaning solely for the deleted checkout. Safe to remove together
+   * with that helper and the stored key.
+   */
   business_city_cap: number
 }
 

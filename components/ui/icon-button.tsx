@@ -44,7 +44,11 @@ import { cn } from '@/lib/utils'
 // Tone is a four-way axis, not the old `danger` boolean: the bordered sites in the wild
 // already used warning and success hovers, so a boolean could not have absorbed them.
 const iconControlBase =
-  'tap-target inline-flex h-8 w-8 items-center justify-center rounded-control press transition-[color,background-color,border-color,box-shadow,transform] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50'
+  // `aria-disabled:` sits beside `disabled:` because this string is shared by IconButton (a real
+  // <button>, where :disabled matches) and IconLink (a <Link> → <a>, where it NEVER can). Until
+  // 2026-08-10 the anchor path carried the disabled utilities as dead CSS: a caller asking for a
+  // disabled icon-link got no dimming, no pointer block, and a fully clickable control.
+  'tap-target inline-flex h-8 w-8 items-center justify-center rounded-control press transition-[color,background-color,border-color,box-shadow,transform] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50'
 
 // THREE VARIANTS. `filled` is the third, added 2026-08-05, and it was added because the code
 // asked for it in prose: `events/event-calendar.tsx`, `marketplace/column-selector.tsx` and
@@ -134,6 +138,7 @@ export function IconLink({
   href,
   className,
   children,
+  disabled,
   ref,
   ...props
 }: {
@@ -142,6 +147,14 @@ export function IconLink({
   tone?: IconButtonTone
   href: string
   children: ReactNode
+  /**
+   * An anchor has no `:disabled`, so this maps to `aria-disabled` plus `tabIndex={-1}` — the
+   * combination that removes the control from the tab order AND tells assistive tech it is
+   * unavailable. `aria-disabled:pointer-events-none` on the shared base handles the pointer.
+   * Prefer NOT rendering the link at all where that is an option; this is for the cases where
+   * the control must stay in place to keep a row's layout stable.
+   */
+  disabled?: boolean
   ref?: Ref<HTMLAnchorElement>
 } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'aria-label' | 'href'>) {
   return (
@@ -150,6 +163,8 @@ export function IconLink({
       href={href}
       aria-label={label}
       title={label}
+      aria-disabled={disabled || undefined}
+      tabIndex={disabled ? -1 : undefined}
       className={cn(iconControl(variant, tone), className)}
       {...props}
     >

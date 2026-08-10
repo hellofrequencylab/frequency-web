@@ -93,7 +93,7 @@ jobs:
       # ESLint's own cache, keyed on CONTENT rather than the default metadata strategy: a
       # fresh checkout resets every mtime, so a metadata-keyed cache never hits in CI.
       - name: Restore ESLint cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .eslintcache
           key: eslint-${{ hashFiles('eslint.config.mjs', 'pnpm-lock.yaml') }}-${{ github.sha }}
@@ -132,7 +132,7 @@ jobs:
       # tsconfig sets `incremental: true`, so CI was paying to WRITE .tsbuildinfo every run
       # and never reading one back.
       - name: Restore tsbuildinfo
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: tsconfig.tsbuildinfo
           key: tsbuildinfo-${{ hashFiles('pnpm-lock.yaml', 'tsconfig.json') }}-${{ github.sha }}

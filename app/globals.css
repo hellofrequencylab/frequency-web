@@ -81,7 +81,7 @@
   /* Brand. Primary (amber-gold) */
   --color-primary:          #E2912F;
   --color-primary-hover:    #CE8023;
-  --color-primary-strong:   #9A5E12;
+  --color-primary-strong:   #965C12;
   --color-primary-bg:       #FBEFD9;
   --color-text-on-primary:  #FFFFFF;
   /* Glyphs on a RANK CORE, decoupled from the button label (2026-08-06). These borrowed
@@ -474,7 +474,7 @@
   --color-text-subtle:       #6E6558;
   --color-primary:           #E2912F;
   --color-primary-hover:     #CE8023;
-  --color-primary-strong:    #9A5E12;
+  --color-primary-strong:    #965C12;
   --color-primary-bg:        #FBEFD9;
   --color-text-on-primary:   #FFFFFF;
   --color-success:           #11827A;
@@ -1781,7 +1781,12 @@ h1, h2, h3, h4, h5, h6 {
    check-contrast.mjs was blind to all of this: it measured the TOKEN at full opacity and
    reported a passing 3.87:1 while the page painted 1.75:1. Pairs now carry an `alpha` so the
    gate measures what actually renders. */
-:where(button, a, select, [tabindex]:not([tabindex="-1"])):focus-visible {
+/* `summary` is in this list deliberately (added 2026-08-10). It is NATIVELY focusable, so it
+   needs no tabindex and therefore never matched the `[tabindex]` branch — a disclosure control
+   you can tab to that painted nothing when you got there. 30 `<summary>` elements across 24
+   files were in that state; only 4 carried a ring of their own. Listing it here fixes all of
+   them at once rather than asking every future `<details>` to remember. */
+:where(button, a, select, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
