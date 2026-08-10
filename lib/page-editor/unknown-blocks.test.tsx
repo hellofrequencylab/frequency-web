@@ -6,7 +6,7 @@ const withUnknown = { root: {}, content: [
   { type: 'ZigZag', props: { id: 'b', title: 'Retired' } },
 ] }
 
-describe('unknown-block preservation (ADR-975 D-9)', () => {
+describe('unknown-block preservation (ADR-978)', () => {
   it('keeps a document that carries a retired type', () => {
     expect(isWellFormed(withUnknown)).toBe(true)
   })

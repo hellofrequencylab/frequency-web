@@ -28,7 +28,7 @@ export default async function EditPage({
   // This used to require every block to still be a KNOWN type, which quietly made a
   // renamed block destroy an author's work: the janitor opened the editor, saw the code
   // template instead of their draft, published, and the draft was gone. Three real drafts
-  // were one click from that (/about, /how-it-works, /the-lab — ADR-975 D-9). A document
+  // were one click from that (/about, /how-it-works, /the-lab — ADR-978). A document
   // is now kept whenever it is well-formed; an unresolvable block renders as a labelled
   // placeholder here and as nothing on the live page, and round-trips untouched on save.
   const data: Data = isWellFormed(page?.data) ? (page!.data as Data) : getTemplate(slug) ?? EMPTY

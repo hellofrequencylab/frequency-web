@@ -64,7 +64,7 @@ export function unknownTypes(data: unknown): string[] {
 
 // A stored document is "fully known" if every block in it still resolves. Use this ONLY
 // to decide whether a brand-new page seeds from a template — NEVER to discard a stored
-// document (see ADR-975 D-9: three drafts carried retired types, and this predicate meant
+// document (see ADR-978: three drafts carried retired types, and this predicate meant
 // opening the editor replaced them with the code template).
 export function isFullyKnown(data: unknown): data is Data {
   return isWellFormed(data) && unknownTypes(data).length === 0

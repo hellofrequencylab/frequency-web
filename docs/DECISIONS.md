@@ -19127,3 +19127,74 @@ done: `supabase_migrations.schema_migrations` has a `statements` array, and all 
 **0** statements, so a comment-only prepend cannot diverge from anything the ledger holds.
 ⚠️ The rule keys on table names. A menu write through a function or a dynamic statement would not
 be seen.
+
+---
+
+## ADR-978 — A predicate answering two questions deleted the answer to both (2026-08-10)
+
+**Decision.** `isRenderable()` is split into **`isWellFormed`** (content is a non-empty array of
+typed entries — never a reason to discard a document) and **`isFullyKnown`** (every type resolves —
+for seed decisions only), plus **`unknownTypes`** for diagnostics. The editor loader moves to
+`isWellFormed`, so **a stored document is never thrown away.** An unresolvable block renders as a
+labelled placeholder while editing and as nothing on the live page.
+
+**Context — one line, two questions, and the wrong answer to the important one.**
+
+```ts
+// lib/page-editor/templates/index.ts
+return content.every((b) => typeof b?.type === 'string' && KNOWN_BLOCKS.has(b.type))
+```
+
+Ten call sites read this as *"can I use this document."* On the eight public routes, answering "no"
+degrades a page to its coded template — visible, recoverable, arguably correct. At
+`app/(main)/edit/[slug]/page.tsx:28` it is neither visible nor recoverable: **the janitor opens the
+editor, sees the code template instead of their draft, publishes, and the draft is overwritten.**
+
+The route comment described the behaviour accurately — *"Prefer the saved draft, but only if every
+block in it is still a known block type"* — and that is the point worth recording. **Nobody read an
+accurate comment as the data-loss path it describes.** A predicate named for what it returns
+(`isRenderable`) rather than for the question it answers invites every caller to supply their own
+question.
+
+🔴 **This was live, not hypothetical.** Three drafts, verified against production:
+
+| Slug | Status | Types resolving to nothing |
+|---|---|---|
+| `about` | draft | `BetaCTA`, `ImageBand`, `PageHero`, `ZigZag` |
+| `how-it-works` | draft | `BetaCTA`, `PageHero`, `ZigZag` |
+| `the-lab` | draft | `BetaCTA`, `FeatureGallery`, `ImageBand`, `PageHero`, `ZigZag` |
+
+`home` and `the-community` are clean, so nothing public was affected. The trap was armed, not sprung.
+
+**`ZigZag` is not a casing typo, and checking that mattered.** The registry has `Zigzag`, and the
+resemblance is a trap. Their props only partly overlap:
+
+| | |
+|---|---|
+| Shared | `image`, `alt`, `eyebrow`, `title`, `body`, `ctaLabel`, `ctaHref` |
+| Plausibly renamed | `titleAccent` → `accentWord` · `side` → `mediaSide` |
+| **No home in `Zigzag`** | `kicker`, `tone`, `imgAspect` |
+
+Aliasing one to the other would **silently drop three fields and mis-map two** — the same data loss,
+arriving by a quieter route. `ZigZag` is a *retired block with a similar name*, and remapping it is a
+data migration with real decisions in it. It is deliberately **not** in this fix.
+
+**Why a placeholder rather than `null`.** Both render sites already returned `null`, so an
+unresolvable block was invisible. **An invisible block gets mistaken for empty space and tidied
+away** — data loss again, one step slower. The placeholder appears only when `isEditing`, so a
+visitor never meets editor scaffolding, and props ride through untouched either way, so saving
+round-trips the block byte-for-byte.
+
+**Scope held deliberately narrow.** `isRenderable` survives as a deprecated alias of `isFullyKnown`,
+so all eight public routes keep their behaviour **byte-for-byte** — the only behavioural change in
+this PR is the editor loader. No stored document is rewritten.
+
+**Consequences.** ✅ Three drafts are publishable again without losing work. ✅ 5 tests cover the five
+real orphan types; `tsc`, `lint` and `check:render-path` clean with `render-path-bodies.txt`
+untouched. ⚠️ **The five retired types still render as nothing on a live page** — this fix protects
+the author's data, it does not restore the blocks. Remapping them belongs with the block-contract
+work. ⚠️ These three documents are the natural first corpus for a document round-trip gate: they are
+exactly the shape such a gate exists to defend. 🔴 **The general lesson outlives the fix:** a
+predicate used by ten callers should be named for the *question*, not the *answer*, and any
+"is this usable" check on stored user content deserves the question *"and what happens to the data
+when it says no?"*

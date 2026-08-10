@@ -3,7 +3,7 @@ import type { Config, Data, Metadata } from '@/lib/page-editor/types'
 
 // A block the current config cannot resolve — a type that was renamed or retired while
 // stored documents still name it. The document ALWAYS keeps it (the loader no longer
-// discards a document over one unknown type, ADR-975 D-9), so the only question is what
+// discards a document over one unknown type, ADR-978), so the only question is what
 // the author sees.
 //
 // Editing: a labelled placeholder, so the block is visibly still there and cannot be
