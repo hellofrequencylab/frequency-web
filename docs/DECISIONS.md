@@ -19093,3 +19093,37 @@ em dashes, no narrated feelings, proper nouns carrying the weight. ⚠️ Scan E
 fallback**. `pageContentMetadata` lets an operator override the description from the database, and
 no static gate can see what they typed. ⚠️ It cannot measure an interpolated description at all, by
 design.
+
+---
+
+## ADR-973 — A gate cannot flush a cache, so make the migration say so (2026-08-10)
+
+**Decision.** `check:migrations` gains a third rule: a migration that writes seeded menu data
+(`menus`, `menu_items`, `menu_categories`, `menu_settings`, `menu_rail_cards`) must carry a
+`-- MENU CACHE:` note. The four existing menu migrations now carry it.
+
+**The mechanism, verified rather than assumed.** All 18 Menu Manager mutations end with
+`revalidatePath('/', 'layout')`. Raw SQL cannot. What makes that matter is one specific design
+choice: `app/(marketing)/layout.tsx` reads `getMenu('header')` and `getMenu('footer')` while
+**deliberately** avoiding `cookies()` and `getUser()`, precisely so marketing pages stay static —
+its own header says so. Static pages hold the rail they were built with.
+
+**The plan overstated the hazard, and that is worth correcting rather than quietly inheriting.**
+`docs/FINALIZE-PLAN.md` §4.1 said a menu migration "serves a stale rail until the next deploy". It
+is bounded: those pages declare `revalidate = 3600`, so ISR picks the change up within an hour, and
+the in-app `(main)` layout is request-time and never goes stale at all. A hazard described as worse
+than it is gets discounted the first time somebody checks — which is how a real one-hour window
+becomes a thing nobody believes.
+
+**Why a marker and not a fix.** There is no way to make a `.sql` file call a Next.js cache API. The
+buildable thing is to refuse a change that does not state its own consequence: the operator
+applying it learns the rail is stale, and the reviewer sees it in the diff. That is a smaller claim
+than "fixed", and it is the true one.
+
+**Consequences.** ✅ Detection strips both SQL comment forms first, so a menu write inside a
+rollback block is not a menu write; the marker itself is looked for in the raw text, since the
+marker is a comment. ✅ Editing four already-applied migration files was checked before it was
+done: `supabase_migrations.schema_migrations` has a `statements` array, and all four rows record
+**0** statements, so a comment-only prepend cannot diverge from anything the ledger holds.
+⚠️ The rule keys on table names. A menu write through a function or a dynamic statement would not
+be seen.

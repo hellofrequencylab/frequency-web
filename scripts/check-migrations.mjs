@@ -27,13 +27,59 @@
 // Usage: `node scripts/check-migrations.mjs` (or `pnpm check:migrations`). Exits 1 on violation.
 // Model: scripts/check-headers.mjs.
 
-import { readdirSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 const DIR = join('supabase', 'migrations')
 // The shape `supabase db push` parses: 14 digits, an underscore, a name, `.sql`.
 const FILENAME = /^(\d{14})_([A-Za-z0-9_.-]+)\.sql$/
+
+// ── Rule 3: a migration that reseeds MENU DATA has to say what to do afterwards. ──────────────
+//
+// The menu surfaces are DB-seeded, and the read path is a plain uncached query — but
+// `app/(marketing)/layout.tsx` deliberately avoids cookies()/getUser() so marketing pages stay
+// STATIC with `revalidate = 3600`. That is what makes the menu cacheable at all, and it is why
+// all 18 Menu Manager mutations call `revalidatePath('/', 'layout')` after every write.
+//
+// Raw SQL cannot call revalidatePath. So a migration that changes a seeded menu leaves the static
+// surfaces serving the OLD rail until either the ISR window rolls or a deploy rebuilds them.
+//
+// ⚠️ THE PLAN OVERSTATED THIS as "serves a stale rail until the next deploy". It is bounded: ISR
+// picks it up within `revalidate = 3600`, so the worst case is one hour, not forever. Recorded
+// because a hazard described as worse than it is gets discounted once someone checks.
+//
+// A gate cannot make SQL flush a cache. What it CAN do is refuse a migration that changes menus
+// without stating the consequence, so the operator who applies it knows the rail is stale and the
+// reviewer sees it in the diff. Hence a marker, not a fix.
+const MENU_TABLES = ['menus', 'menu_items', 'menu_categories', 'menu_settings', 'menu_rail_cards']
+const MENU_WRITE = new RegExp(
+  `\\b(?:insert\\s+into|update|delete\\s+from)\\s+(?:public\\.)?(?:${MENU_TABLES.join('|')})\\b`,
+  'i',
+)
+const MENU_MARKER = /--\s*MENU CACHE:/i
+
+/** Blank both SQL comment forms, length-preserving (same reason as check-grants.mjs: a menu write
+ *  inside a rollback comment is not a menu write). The MARKER is looked for in the RAW text, since
+ *  the marker is itself a comment. */
+export function stripSqlComments(text) {
+  const blank = (m) => m.replace(/[^\n]/g, ' ')
+  return text
+    .replace(/\/\*[\s\S]*?\*\//g, blank)
+    .replace(/(^|\n)([ \t]*--[^\n]*)/g, (_m, lead, body) => lead + blank(body))
+}
+
+/** Files that write seeded menu data without a `-- MENU CACHE:` note. */
+export function menuWritesMissingNote(files, read) {
+  const out = []
+  for (const f of files) {
+    const raw = read(f)
+    if (!MENU_WRITE.test(stripSqlComments(raw))) continue
+    if (MENU_MARKER.test(raw)) continue
+    out.push(f)
+  }
+  return out
+}
 
 export function runCheck() {
   const files = readdirSync(DIR).filter((f) => f.endsWith('.sql')).sort()
@@ -52,16 +98,19 @@ export function runCheck() {
     .filter(([, fs]) => fs.length > 1)
     .map(([version, fs]) => ({ version, files: fs }))
 
-  return { total: files.length, malformed, collisions }
+  const menuNoteMissing = menuWritesMissingNote(files, (f) => readFileSync(join(DIR, f), 'utf8'))
+
+  return { total: files.length, malformed, collisions, menuNoteMissing }
 }
 
 function main() {
-  const { total, malformed, collisions } = runCheck()
+  const { total, malformed, collisions, menuNoteMissing } = runCheck()
 
-  if (malformed.length === 0 && collisions.length === 0) {
+  if (malformed.length === 0 && collisions.length === 0 && menuNoteMissing.length === 0) {
     console.log(
-      `✓ Migration contract: ${total} migration(s), every version unique and every filename ` +
-        'parseable (no silently-skipped migration on a fresh apply).',
+      `✓ Migration contract: ${total} migration(s), every version unique, every filename ` +
+        'parseable (no silently-skipped migration on a fresh apply), and every menu reseed\n' +
+        '  carrying its cache note.',
     )
     return
   }
@@ -74,6 +123,19 @@ function main() {
     console.error(
       '      Only ONE of these will ever apply — the ledger keys on the version, so the rest are\n' +
         '      skipped with no error on `db push` / `db reset`.\n',
+    )
+  }
+
+  for (const f of menuNoteMissing) {
+    console.error(`  • ${DIR}/${f} writes seeded MENU data with no \`-- MENU CACHE:\` note.`)
+    console.error(
+      '      Raw SQL cannot call revalidatePath, so the static marketing surfaces keep serving the\n' +
+        '      OLD rail until ISR rolls (revalidate = 3600) or a deploy rebuilds them. All 18 Menu\n' +
+        '      Manager mutations flush it; a migration cannot. Say so in the file:\n' +
+        '\n' +
+        '        -- MENU CACHE: reseeds the <surface> menu. Static surfaces serve the old rail for\n' +
+        '        -- up to an hour (ISR) unless a deploy follows. Deploy after applying, or touch any\n' +
+        '        -- menu in Menu Manager to fire revalidatePath(\'/\', \'layout\').\n',
     )
   }
 
