@@ -349,6 +349,80 @@ converting the 2,450 sites become a no-op that a codemod can do safely.
 ⚠️ **Do not sweep `literal-radius` until this is settled.** A sweep now writes 2,450 sites to the
 wrong number and buries the defect where no gate can see it, because the ratchet would go green.
 
+### 6.10 — Template adoption is 248 of 383, and the real violation list is seven components
+
+Measured 2026-08-10. Method: `find app -name page.tsx` → **383**; `grep -rl "@/components/templates"`
+→ 243, **plus 5** reaching `AdminTemplate` through the `AdminPage` re-export that a string grep
+misses → **248 compose a kit shell**. Of the remaining 135, **123 are legitimate and were each read
+to confirm it**: 32 redirect stubs · 51 marketing/discover surfaces (a separate system per
+PAGE-FRAMEWORK §10) · 8 Detail-composed-at-`layout.tsx` · 8 sanctioned editable indexes (§8.5) ·
+5 Studio windows (§9) · 4 registered chrome takeovers · plus dev showcases and the retiring beta funnel.
+
+**That leaves 7 components feeding 8 routes with no shell anywhere in their render tree**, all of
+them authoring surfaces, all with a hand-rolled `<h1>` where `PageHeading` belongs:
+
+| Component | Route(s) | Hand-rolled header |
+| :--- | :--- | :--- |
+| `components/circles/builder/circle-builder.tsx` | `/circles/[slug]/edit` | `:181` |
+| `components/circles/builder/circle-wizard.tsx` | `/circles/new` | `:157` |
+| `components/journey/v2/journey-spark.tsx` | `/journeys/new` | `:194` |
+| `components/journey/v2/journey-guide.tsx` | `/journeys/[slug]/guide` | `:240` |
+| `components/studio/practice/practice-spark.tsx` | `/practices/new` | `:152` |
+| `components/admin/theme-studio/theme-editor.tsx` | `/admin/appearance/[id]` · `/new` | `:158` |
+| `app/(main)/admin/walkthroughs/[id]/editor.tsx` | `/admin/walkthroughs/[id]` | `:168` |
+
+Each imports `WizardProgress` (one piece of `WizardShell`) and then re-declares the band the shell
+would have given it. Proof this is a slip rather than a needed exception: `admin/marketing/messaging/
+new/guided-client.tsx:19` does exactly the same thing and **says so**, with a reason. These seven do not.
+
+✅ **Rail discipline is clean** — `grep showSidebar` across `app/` + `components/` returns only
+`lib/layout/page-chrome.ts` and the shell that reads it. No page toggles its own rail. `FOCUS_NONE_PREFIXES`
+being empty is the documented contract (§8.2), not a gap.
+
+⚠️ Arbitrary content type, the canon's own ban: **6 hits in 4 files** — `the-community/tour.tsx`
+(`text-[9px]` ×4, `text-[8px]`), `onboarding/beta/induction.tsx:962` (`text-[10px]`),
+`page-editor/desktop/desktop-editor.tsx:355` (`text-[0.7rem]`). `text-2xs`/`text-3xs` already exist.
+
+### 6.11 — 🔴 Nine rows where the menu and the page disagree about who gets in
+
+Measured 2026-08-10 by walking every `STUDIO_LEAVES` row with an `/admin/*` href and comparing its
+`min`/`staffDomain` against the page's actual `requireAdmin(...)` call. **`pnpm check:menu` passes on
+all nine** — it validates that the catalog is the single source of menu *shape*, and has no way to
+reach into a page body and read its guard. That is the gap, not a bug in the gate.
+
+Two directions, and they fail differently:
+
+- **Menu promises, page denies** (a dead menu item — the user clicks and lands on `/feed`):
+  `connections`, `sms`, `nonprofit-verifications`, `content-tips`, `beta-command`, `crm-pipeline`.
+  `content-tips` is the widest: the catalog offers it to every `host`+ community leader and every
+  `community`-domain staffer; the page admits **janitor only**.
+- **Page allows, menu hides** (a tool its authorized users can never find):
+  `page-layout`, `crm-marketing`, and `business-seeder`/`listing-seeder` — the last two carry **no
+  `staffDomain` at all**, and `lib/nav-areas.ts:227` returns false when it is unset, so a
+  `structure`-write staffer who is fully authorized never sees them.
+
+✅ **Fixed in this pass: `qr` + `qr-stats`.** The catalog comment records the decision already made
+(*"STRICTER = 'admin'. Resolved to 'admin' + staffDomain 'qr'"*) and the rows say `admin`, but both
+pages still ran `requireAdmin('host', …)`. `'host'` reads the **community** ladder (ADR-208), so it
+admitted anyone who cleared the staff-only `/admin` floor **in another domain** and happened to be a
+host. Pages aligned; a real qr-domain operator still passes on the `staff` branch.
+
+⚠️ The remaining eight are **product policy, not defects with an obvious direction** — each needs the
+owner to say which side is right before the code moves. Do not "fix" them by making the numbers match.
+
+### 6.12 — Two fully-built admin pages nothing links to
+
+`/admin/marketing/automations` (rules engine) and `/admin/marketing/nurture` (per-persona sequence
+builder) are complete, gated, working pages with **zero** inbound references anywhere in the repo and
+no row in any catalog. `lib/nav/studio.ts:277` documents the intent — they were "rolled into the
+Resonance CRM Marketing tab" — but `/admin/crm/marketing` has **no automations or nurture UI**. The
+menu rows were removed on the assumption the destination existed. It does not. Same shape, lower
+severity: `/admin/growth/funnels` and `/admin/marketing/funnels` are orphaned index pages whose
+*detail* routes are still linked, so a bookmark works but the list that would lead you there does not.
+
+🔴 **Owner call:** finish the migration, restore the menu rows, or delete the pages. All three are
+defensible; leaving them is the only option that is not.
+
 ---
 
 ## Phase 7 — Voice, docs, and the owner handoff
