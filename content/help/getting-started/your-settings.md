@@ -36,13 +36,13 @@ Frequency helps you find people nearby, and you're always in control of how visi
 
 ## Choosing what reaches you
 
-Under **Settings → Notifications** you decide exactly what Frequency sends and how often. Nothing here is all-or-nothing.
+Under **Settings → Notifications** you decide exactly what Frequency sends and where it reaches you. Nothing here is all-or-nothing.
 
 - **Topics**: turn each kind on or off on its own, and per place (in-app, email, push). Topics include Dispatches, events, mentions, replies and comments on your own posts, **practice reminders**, and the occasional marketing note about Frequency.
 - **Practice reminders**: one nudge a day at most, at the time you usually practice, and only on days a practice is still waiting. It also carries the note when a commitment completes. On for the app by default; push is opt-in and it never comes by email.
-- **How often**: for each topic, pick real-time, a daily digest, or a weekly digest. Choose real-time for the things you want right away, and a digest for the rest, so a busy day arrives as one summary instead of a stream.
-- **Mute one Circle or Space**: quiet a single [Circle](/help/getting-started/what-is-a-circle) or Space without leaving it. You stay a member and see everything when you open the app; you just stop getting pinged about that one.
 - **Marketing and memory**: separate switches control marketing email and whether Vera remembers your details between chats. Both are yours to turn off any time.
+
+Everything sends as it happens. There is no digest option today.
 
 Account and security messages, like a password reset or a sign-in alert, always send. They're not marketing, so they aren't part of these choices.
 
