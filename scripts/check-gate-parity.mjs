@@ -33,19 +33,77 @@ const CATALOG = 'lib/nav/studio.ts'
  * The 11 known disagreements, frozen 2026-08-10 with the values measured that day.
  * A row leaves this list by being FIXED (either side), not by being edited here.
  * `catalog` / `page` are recorded so a drift in either direction is visible in the diff.
+ *
+ * `fix` + `rec` are a RECOMMENDATION, added 2026-08-10 after reading each page against its row.
+ * They are not authority: which side is right is a product call about who should have access, and
+ * an owner may take the other side on any row. What they remove is the re-derivation — the ladder
+ * is `member < crew < host < guide < mentor < admin < janitor`, so `min: 'janitor'` is the
+ * NARROWEST setting and `min: 'host'` the widest, which is the opposite of how these rows read at
+ * a glance and the reason several of them were mischaracterised when first frozen.
+ *
+ * The shape of the answer, once each row is read against its page:
+ *   · 8 are CATALOG fixes — the page's gate matches the job the page does, and the menu row is
+ *     describing a different population than the one the page was built for.
+ *   · 3 are PAGE fixes — the page is stricter than the work it holds, so the people whose job it
+ *     is cannot reach it. These are the ones worth doing first: each is a tool that currently has
+ *     no reachable owner.
  */
 export const FROZEN_GATE_DEBT = [
-  { id: 'connections', catalog: 'janitor+members', page: 'admin+none', why: 'menu promises members-domain staff a page that admits the staff web axis only' },
-  { id: 'sms', catalog: 'janitor+members', page: 'janitor+platform', why: 'catalog unions members, the page unions platform — two unrelated domains' },
-  { id: 'nonprofit-verifications', catalog: 'janitor+profiles', page: 'janitor+none', why: 'profiles-domain staff see the link and are denied' },
-  { id: 'content-tips', catalog: 'host+community', page: 'janitor+none', why: 'the widest: offered to every host+ leader and community staffer, admits janitor only' },
-  { id: 'beta-command', catalog: 'host+marketing', page: 'admin+marketing', why: 'catalog uses the community ladder, the page uses the staff axis' },
-  { id: 'marketing-control-panel', catalog: 'host+marketing', page: 'admin+marketing', why: 'same axis mismatch as beta-command' },
-  { id: 'crm-pipeline', catalog: 'host+marketing', page: 'janitor+none', why: 'promised to hosts and marketing staff, admits janitor only' },
-  { id: 'crm-marketing', catalog: 'janitor+marketing', page: 'admin+marketing', why: 'page is MORE permissive than the catalog states' },
-  { id: 'page-layout', catalog: 'janitor+none', page: 'admin+none', why: 'menu hides it from a plain admin the URL admits' },
-  { id: 'business-seeder', catalog: 'janitor+none', page: 'admin+structure', why: 'no staffDomain, so nav-areas grants nothing: structure-write staff can use it but never see it' },
-  { id: 'listing-seeder', catalog: 'janitor+none', page: 'admin+structure', why: 'same as business-seeder' },
+  {
+    id: 'connections', catalog: 'janitor+members', page: 'admin+none',
+    why: 'menu promises members-domain staff a page that admits the staff web axis only',
+    fix: 'catalog', rec: "min: 'admin', drop staffDomain. This row fails BOTH ways at once: members-domain staff see the link and are denied, while a plain admin the page admits never sees it. Connection and friend-request settings is platform configuration, which is what 'admin' with no staff grant already says. Aligning the row removes a dead link without widening access. If members-domain staff genuinely own this, the other side is to add { staff: 'members' } to the page instead.",
+  },
+  {
+    id: 'sms', catalog: 'janitor+members', page: 'janitor+platform',
+    why: 'catalog unions members, the page unions platform — two unrelated domains',
+    fix: 'catalog', rec: "staffDomain: 'platform'. The ranks already agree; only the domain differs. SMS provisioning status and the operator on/off switch is infrastructure, so the page's domain is the one that matches the subject. The cheapest row on the list.",
+  },
+  {
+    id: 'nonprofit-verifications', catalog: 'janitor+profiles', page: 'janitor+none',
+    why: 'profiles-domain staff see the link and are denied',
+    fix: 'page', rec: "requireAdmin('janitor', { staff: 'profiles' }). Reviewing 501(c)(3) verification requests is profiles-domain work and the menu already offers it to exactly those people. The page simply never got the staff grant, so today only a janitor can do a job the nav says belongs to the profiles team.",
+  },
+  {
+    id: 'content-tips', catalog: 'host+community', page: 'janitor+none',
+    why: 'the widest: offered to every host+ leader and community staffer, admits janitor only',
+    fix: 'page', rec: "requireAdmin('host', { staff: 'community' }). The largest population gap on the list, and the most visible: every host, guide, mentor and community staffer is shown a link that lands them on /feed. Tips and prompts for content creators is content work, and janitor-only reads as a copy-pasted default rather than an intent. Highest priority of the eleven.",
+  },
+  {
+    id: 'beta-command', catalog: 'host+marketing', page: 'admin+marketing',
+    why: 'catalog uses the community ladder, the page uses the staff axis',
+    fix: 'catalog', rec: "min: 'admin'. The domains agree; the catalog is two rungs wider on the ladder. This is the launch phase plan and the approval queue where nothing sends without a sign-off, so the page's stricter rank is the defensible one. Tighten the menu; do not lower the page.",
+  },
+  {
+    id: 'marketing-control-panel', catalog: 'host+marketing', page: 'admin+marketing',
+    why: 'same axis mismatch as beta-command',
+    fix: 'catalog', rec: "min: 'admin'. Same shape as beta-command and same call: the page shows every campaign email and broadcast per recipient, including where it landed, which is per-person delivery data rather than a leader-level view. Match the page.",
+  },
+  {
+    id: 'crm-pipeline', catalog: 'host+marketing', page: 'janitor+none',
+    why: 'promised to hosts and marketing staff, admits janitor only',
+    fix: 'page', rec: "requireAdmin('host', { staff: 'marketing' }). The pipeline is marketing's daily surface and the catalog already says so. As it stands the marketing team cannot open their own pipeline unless they happen to be a janitor.",
+  },
+  {
+    id: 'crm-marketing', catalog: 'janitor+marketing', page: 'admin+marketing',
+    why: 'page is MORE permissive than the catalog states',
+    fix: 'catalog', rec: "min: 'admin'. The one row where the URL is wider than the menu: the page admits any admin, the row shows it to janitors only. It sits in the same console as crm-pipeline and serves the same marketing team, so match the page rather than tightening it and stranding the tool again.",
+  },
+  {
+    id: 'page-layout', catalog: 'janitor+none', page: 'admin+none',
+    why: 'menu hides it from a plain admin the URL admits',
+    fix: 'catalog', rec: "min: 'admin'. A pure hidden-tool row, no domain involved: the page admits admins, the menu shows janitors only. Nothing about a layout editor argues for the top rung, and the page has already made that call.",
+  },
+  {
+    id: 'business-seeder', catalog: 'janitor+none', page: 'admin+structure',
+    why: 'no staffDomain, so nav-areas grants nothing: structure-write staff can use it but never see it',
+    fix: 'catalog', rec: "min: 'admin', staffDomain: 'structure'. The row omits the domain entirely, and lib/nav-areas.ts reads an unset staffDomain as 'nobody' rather than 'everybody' — so the structure team, who hold write on exactly this, are the one group that cannot find it. This is the row that motivated the whole gate.",
+  },
+  {
+    id: 'listing-seeder', catalog: 'janitor+none', page: 'admin+structure',
+    why: 'same as business-seeder',
+    fix: 'catalog', rec: 'Same as business-seeder, and worth doing in the same commit: identical rows, identical pages, identical fix.',
+  },
 ]
 
 /** Catalog rows carrying an `/admin/...` href, with the gate they declare. */

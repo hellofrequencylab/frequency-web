@@ -107,4 +107,24 @@ describe('the frozen list is a record, not a waiver', () => {
     const ids = FROZEN_GATE_DEBT.map((d) => d.id)
     expect(new Set(ids).size).toBe(ids.length)
   })
+
+  it('every frozen row carries a recommendation naming WHICH SIDE to change', () => {
+    // `why` describes the disagreement; on its own it leaves the reader to re-derive the ladder
+    // (`member < crew < host < guide < mentor < admin < janitor`, so `janitor` is the NARROWEST
+    // setting) before they can act. Several of these rows were mischaracterised when first frozen
+    // for exactly that reason. A row without a recommendation is a row nobody can pick up, which
+    // is how frozen debt becomes permanent debt.
+    for (const d of FROZEN_GATE_DEBT) {
+      expect(['catalog', 'page'], `${d.id}: fix must name a side`).toContain(d.fix)
+      expect(d.rec.length, `${d.id}: rec must say what to change and why`).toBeGreaterThan(80)
+    }
+  })
+
+  it('the recommendations split both ways (a list that always blames one side is not a reading)', () => {
+    // Not a style rule. If every row resolved to "fix the catalog", the honest conclusion would be
+    // that nobody read the pages and the default was applied eleven times.
+    const sides = new Set(FROZEN_GATE_DEBT.map((d) => d.fix))
+    expect(sides).toContain('catalog')
+    expect(sides).toContain('page')
+  })
 })
