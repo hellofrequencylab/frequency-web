@@ -34,6 +34,7 @@ import {
   type InviteStatus,
   type SpaceInvite,
   type CreatedInvite,
+  type TeamCandidate,
 } from '@/lib/spaces/invites-shared'
 
 // Re-export the client-safe surface so existing server + test imports from '@/lib/spaces/invites'
@@ -41,7 +42,12 @@ import {
 // live in invites-shared.ts (no server imports) so a CLIENT component can import them without
 // pulling this module's server-only IO graph into the browser bundle.
 export { inviteAcceptUrl } from '@/lib/spaces/invites-shared'
-export type { InviteStatus, SpaceInvite, CreatedInvite } from '@/lib/spaces/invites-shared'
+export type {
+  InviteStatus,
+  SpaceInvite,
+  CreatedInvite,
+  TeamCandidate,
+} from '@/lib/spaces/invites-shared'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
 // InviteStatus / SpaceInvite / CreatedInvite live in invites-shared.ts (client-safe) and are
@@ -440,14 +446,6 @@ export async function acceptInvite(
  * check, the token, the 14-day expiry, the refresh-an-existing-invite branch and the email enqueue
  * are all one implementation. This is a new way to reach the same door, not a second door.
  */
-
-/** What the picker shows: public identity, and nothing else. No email, ever. */
-export interface TeamCandidate {
-  id: string
-  displayName: string | null
-  handle: string | null
-  avatarUrl: string | null
-}
 
 /**
  * Members the caller could invite to this Space, matched on display name or @handle.
