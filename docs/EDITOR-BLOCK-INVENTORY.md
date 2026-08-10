@@ -182,28 +182,43 @@ has 2 live `page_settings` placements.** They are stripped at *resolve* time, no
 the stored rows still name them. Dropping the definitions turns a silent filter into a hard unknown
 id.
 
-✅ **Email is not frozen** ([ADR-977](DECISIONS.md) D-12). Verified: **0 campaigns scheduled or
-sending**, **0 nurture steps**, 8 messages in 30 days. A block-id change cannot corrupt an outbound
-send because there is none. ⚠️ **Re-run that check before any PR renaming an email-reachable id** —
-the decision rests on a measurement, and measurements expire.
+🔴 **Email is NOT idle — the measurement behind D-12 was wrong, and is corrected in
+[ADR-977](DECISIONS.md).** The original figure, *"8 messages in 30 days"*, was `public.messages` —
+the **direct-message table** — which has nothing to do with email. The real numbers:
+
+| Measure | Value |
+|---|---|
+| `email_events`, 30 days | **704** (297 `sent`, 292 `delivered`, 102 `opened`) |
+| … sends tied to a campaign | **196** |
+| Most recent send | **today** |
+| `campaigns` | **7 draft** (still sendable), 5 sent |
+| Queued *right now* | 0 ✅ · `nurture_steps` 0 ✅ |
+
+An empty queue is the **normal state between sends**, not evidence the surface is unused. A rename
+cannot corrupt an already-sent email, but it corrupts the **7 draft campaigns and 7 templates that
+are still sendable**.
+
+⚠️ **Land the email golden-string harness in E0, before any email-reachable id moves.** It is ~120
+lines against a set that is exactly 14 and green today. Until then, a renaming PR must re-run the
+queue check *and* render the 7 drafts + 7 templates through `compileEmailDoc` and diff the output.
 
 ### ✅ P2 — demonstrably unused
 
-**5 entity blocks** genuinely cold on all three axes: `practices`, `circles`, `updates`, `journeys`,
-`reviews` — subject to `frq/programs` absorbing their capability.
+**6 entity blocks** genuinely cold on all three axes: `practices`, `circles`, `updates`, `journeys`,
+`reviews` and **`topfriends`** — subject to `frq/programs` / `frq/people` absorbing their capability.
 ⚠️ **Not** `productCard` (the only email path to a live catalog card) or `recording` (the ADR-608
 Airwaves block) — both are **new, not dead**.
 
 **4 genuinely dead Puck types**: `LiveStats`, `LiveEvents`, `LivePosts` (never placed anywhere, pure
 duplicates of `stats`/`events`/`updates`) and `CirclesChannelNav`.
 
-⚠️ **31 Puck types have no live placement, and that list is a trap.** Three reasons it is not a
+⚠️ **66 Puck types have no live placement** — only 22 of the 88 appear in any stored document — **and that list is a trap.** Three reasons it is not a
 retirement list: the seven design types (`PhotoHero`…`Prose`) are cold *as Puck names* while their
 entity counterparts are the most-placed blocks in the system (`editorial` 17, `cardGrid` 14,
 `zigzag` 13) — retiring the name is free, retiring the component breaks 17 Space profiles; the
 primitives (`Container`, `Columns`, `Divider`, `Image`…) can be placed at any moment, so zero
-placements means zero *today*; and **64 layout modules were never stored at all**, which means "never
-rearranged," not "never rendered" — the resolver falls back to code defaults, so retiring one still
+placements means zero *today*; and **65 layout modules were never stored at all** (92 of 157 ids appear across the 36
+`page_settings` rows), which means "never rearranged," not "never rendered" — the resolver falls back to code defaults, so retiring one still
 changes a live page.
 
 ---

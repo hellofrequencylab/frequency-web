@@ -110,11 +110,13 @@ image, title, price and link from the live commerce catalog at send time
 email renderer is *pure*; the live read is `resolveProductRefs`, a separate compile step. So the
 invariant is "no live read **inside a renderer**", and `category` keeps its palette-grouping job.
 
-🔴 **Email is on the send path of three crons** — `/api/cron/nurture` (via `lib/nurture/runner.ts`),
-`/api/cron/space-campaigns` (via `campaigns-send-due.ts` → `lib/email-studio/send.ts`) and
-`/api/cron/space-drips` (via `drip-runner.ts` → `lib/spaces/email.ts`). ⚠️ An earlier draft also
-named `lib/spaces/email-drafts.ts`; **that module is not on any cron path** — its importers are all
-interactive UI. A change to
+🔴 **Email is on the send path of two crons** — `/api/cron/nurture` (via `lib/nurture/runner.ts`) and
+`/api/cron/space-campaigns` (via `campaigns-send-due.ts` → `lib/email-studio/send.ts`). ⚠️ Two
+earlier claims here were wrong: `lib/spaces/email-drafts.ts` is **not** on any cron path (its
+importers are all interactive UI), and **`/api/cron/space-drips` does not render block documents at
+all** — `drip-runner.ts:63` builds HTML from a plain-text `space_drip_steps.body` and never imports
+`compileEmailDoc`. **Two paths, and both are live: 297 sends in the last 30 days, 196 campaign-linked,
+most recent today.** A change to
 `KNOWN_BLOCK_IDS` or any block id ships straight into outbound mail, and **there is no visual gate on
 email at all.** §7 adds one.
 
@@ -578,7 +580,7 @@ Build, in this order:
    is red**.
 2. **Golden markup per (block × surface × density)**, generated from the registry rather than
    hand-written, so the combinatorics stay enumerable.
-3. **Email golden strings** — the only gate email will ever have, and it sits on three cron send
+3. **Email golden strings** — the only gate email will ever have, and it sits on two cron send
    paths.
 4. **RSC ⇄ canvas parity** — the same document rendered server-side and in the editor canvas must
    match, or hydration mismatches ship.

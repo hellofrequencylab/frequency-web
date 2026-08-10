@@ -19576,16 +19576,40 @@ resolve time, not at write time, so live `page_settings` rows still name them.
 The proposal was a hard freeze on the 14 email-reachable block ids until golden-string tests exist,
 on the grounds that a bad web render is a bad page while a bad email is thousands of sent messages.
 
-**The owner's answer was that nothing is using it, and the database agrees.** Verified: **0 campaigns
-scheduled or sending** (12 total, 5 already sent — immutable history), **0 nurture steps**, **8
-messages in 30 days**. A block-id change therefore **cannot corrupt an outbound send**, because there
-is no outbound send to corrupt. The residual risk is that an operator opens an old campaign draft and
-sees it render wrong, which is visible and recoverable.
+The owner's answer was that nothing is using it. **I supported that with a measurement, and the
+measurement was wrong.**
 
-⚠️ **The condition that reverses this:** a scheduled or sending campaign, or a non-zero
-`nurture_steps` count. Both are one query. **Re-check before any PR that renames an email-reachable
-block id** — the decision is sound *because of a measurement*, not as a standing policy, and the
-measurement has a shelf life.
+🔴 **Corrected 2026-08-10, same day.** I wrote *"8 messages in 30 days"* — that figure is
+`public.messages`, the **direct-message table**. It is not an email measure and has nothing to do
+with this decision. The actual email numbers:
+
+| Measure | Value |
+|---|---|
+| `email_events` in 30 days | **704** — 297 `sent`, 292 `delivered`, 102 `opened` |
+| … of the sends, tied to a campaign | **196** |
+| Most recent send | **today** |
+| `campaigns` | 7 **draft**, 5 sent |
+| Scheduled or sending *right now* | 0 ✅ |
+| `nurture_steps` | 0 ✅ |
+
+**Email is actively sending.** "0 scheduled or sending" was a snapshot of the *queue at one instant*,
+not evidence that the surface is idle — a campaign is `sent` and then sits in history, so an empty
+queue is the normal state between sends, not an unused feature. Reading it as "nobody is using this"
+was the error, and it is exactly the class of mistake [ADR-977](DECISIONS.md) warns about: a number
+that looks like it answers the question and does not.
+
+**What this changes.** A rename cannot corrupt an already-sent email — sent is sent. It corrupts the
+**7 draft campaigns and 7 templates that are still sendable**, and with 196 campaign-linked sends in
+the last 30 days more sends are likely, not hypothetical. So the honest posture is not the hard
+freeze originally proposed, but it is not "change them freely" either:
+
+> **Email-reachable block ids may change, but not blind.** The golden-string harness
+> ([`EDITOR-ARCHITECTURE`](EDITOR-ARCHITECTURE.md) §7.4 item 3) is the real gate and should land in
+> **E0**, before any id moves — it is ~120 lines against a set that is exactly 14 and green today.
+> Until it exists, a PR renaming an email-reachable id must (a) re-run the queue check, and (b) render
+> the 7 draft campaigns and 7 templates through `compileEmailDoc` and diff the output. **This is the
+> owner's call to revisit** now that the measurement is right; the original answer was given on a
+> figure that did not mean what I said it meant.
 
 **Consequences.** ✅ Nine figures corrected at the source rather than inherited. ✅ Two gates
 re-specced before being written, instead of failing on their first run and being deleted in week one.

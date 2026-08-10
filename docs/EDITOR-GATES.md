@@ -190,13 +190,13 @@ bijection that holds is **`EMAIL_PALETTE_BLOCK_IDS` ⇄ switch, 14 ⇄ 14, exact
 | **E5** | `KNOWN_BLOCK_IDS` ⊇ palette **and derived**, never a restated literal | ✅ |
 | **E6** | The switch has a `default:` returning empty — fail-closed on a cron | ✅ |
 | **E7** | `MAX_COLUMNS_BY_KIND.email === 1` | ✅ |
-| **E8** | Send-path integrity — the three crons still reach the renderer through `compileEmailDoc` | ✅ |
+| **E8** | Send-path integrity — the **two** document-rendering crons (`nurture`, `space-campaigns`) still reach the renderer through `compileEmailDoc`. ⚠️ `space-drips` is **not** one of them — it sends plain-text-derived HTML and never touches a block document | ✅ |
 | **E9** | **Integrity: if the walker stops finding `renderBlockInner`, that is a hard failure** | — |
 
 **E9 is the important one.** A parser that silently finds zero cases would report a perfect bijection
 against an empty set. `check-render-path.mjs` already learned this: *fix it; do not lower the floor.*
 
-**Why AST and not grep, concretely:** a naive `grep "case '"` returns **27** hits in `render.ts`; the
+**Why AST and not grep, concretely:** a naive `grep "case '"` returns **30** hits in `render.ts`; the
 AST walk over `renderBlockInner`'s body returns exactly the **14** that matter.
 
 **Cannot see:** whether the HTML renders in Outlook (this proves *coverage*, not *correctness* — the
