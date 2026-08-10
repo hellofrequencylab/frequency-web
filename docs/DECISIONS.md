@@ -19742,3 +19742,13 @@ for a rise. Nothing in the workflow distinguishes those three cases, so the judg
 whoever dispatches it. ⚠️ The smoke job is dispatch-only and not a required context, which is why 28
 real accessibility regressions sat unseen for six days. That is an argument for e2e coverage on a
 schedule, not for making a manual job blocking.
+
+**Why `check:contrast` is green at the same time, and why that is not a contradiction.** The first
+instinct on reading "16 dark-mode contrast failures" next to a passing contrast gate is that the gate
+is broken. It is not, and the distinction is worth holding on to. `check:contrast` validates the
+**token layer**: it resolves every token in `app/globals.css` across all five render states and
+checks the **declared `PAIRS`** list — 365 pairs, 49 on a frozen waiver floor. axe validates what was
+actually **painted**. The gate therefore cannot see a token applied to a ground it was never paired
+with, a colour that never went through a token, or contrast that only emerges from composition
+(an overlay, an opacity, text over an image). Both instruments are honest; neither is a substitute
+for the other, and the runtime one is the one that had no way to run for six days.
