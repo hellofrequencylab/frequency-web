@@ -1,5 +1,12 @@
 # Master build list — Frequency web
 
+> **Finish line (2026-08-10): [`FINALIZE-PLAN.md`](FINALIZE-PLAN.md)** ([ADR-960](DECISIONS.md)) — the
+> seven phases that take the current build to fully functional: restore the instruments (the visual
+> suite has been red on every run since 2026-08-06) · close the access layer (1,907 anon/authenticated
+> grants across 273 tables) · the verified defect sweep · finish the menu system · one render path ·
+> kit + a11y · voice and docs. It also **re-derives the adoption baselines**, which this file and the
+> UX plan both quote from an older column — `literal-radius` is 2,450, not 3,824.
+
 > **Active companion (2026-08-04): [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md)** ([ADR-925](DECISIONS.md)) —
 > the eight gated lifts (user-evidence loop · adoption ratchets · a11y gates · mobile grammar ·
 > one render path · visual regression at scale · vitals budgets · interaction states) and the

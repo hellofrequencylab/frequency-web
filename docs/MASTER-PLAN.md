@@ -1,5 +1,12 @@
 # Master plan: one consolidated, ordered work list
 
+> ⚠️ **SUPERSEDED — history, not status (banner added 2026-08-10, [ADR-960](DECISIONS.md)).** This
+> plan's 48 work items all landed; it is kept for per-item depth, never for what ships next. The
+> live plans are [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) (design maturity, ADR-925),
+> [`BUILD-LIST.md`](BUILD-LIST.md) (phase runway, ADR-921) and
+> [`FINALIZE-PLAN.md`](FINALIZE-PLAN.md) (the finish line for the current build, ADR-960).
+> `AGENTS.md` names this file as history; the banner it assumed was here now is.
+
 > **The answer, first.** ✅ **DONE.** Entity Spaces Phases 0 to 3 plus the tenancy hardening sweep
 > are shipped and live (ADR-320 to ADR-338), and the **48 independently-shippable work items** in
 > this plan have now all landed across the seven streams: Hardening, UX/UI Polish, Entity-role

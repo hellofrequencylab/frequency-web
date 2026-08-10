@@ -115,7 +115,7 @@ Member-shell files are the `app-*` ones (`app-feed`, `app-room`, `app-settings`,
 | `PW_BASE_URL` | yes (else everything skips) | Target deployment |
 | `VERCEL_AUTOMATION_BYPASS_SECRET` | for previews | Bypass Deployment Protection |
 | `PW_STORAGE_STATE` | for the member shell | Path to a saved storage-state JSON |
-| `PW_ROOM_PATH` | no (default `/channels`) | The room surface to capture |
+| `PW_ROOM_PATH` | no (**no default** — unset means no room surface) | The room surface to capture |
 | `PW_SPACE_SLUG` | no | Adds `/spaces/<slug>/manage` to the matrix |
 | `PW_VISUAL_EXTRA_MASK` | no | Extra mask selectors, comma-separated |
 | `PW_MEMBER_EMAIL` | to mint a session | The e2e member account (see below) |
@@ -125,11 +125,21 @@ Member-shell files are the `app-*` ones (`app-feed`, `app-room`, `app-settings`,
 ## The member shell
 
 Four surfaces live inside the `(main)` shell and need a signed-in member:
-`/feed`, the room (`PW_ROOM_PATH`, default `/channels`), `/settings`, and the
-Space console (`/spaces/<PW_SPACE_SLUG>/manage`, present only when the slug is
-set). **They are the only captured surfaces that have a rail, a dock or a fold
-control.** Everything else in the matrix is a marketing page rendered outside
-the shell.
+`/feed`, `/settings`, the room (`PW_ROOM_PATH`) and the Space console
+(`/spaces/<PW_SPACE_SLUG>/manage`). The last two are present **only** when their
+env var is set. **They are the only captured surfaces that have a rail, a dock or
+a fold control.** Everything else in the matrix is a marketing page rendered
+outside the shell.
+
+> 🔴 **The room had a `/channels` fallback and it was silently wrong.** `/channels`
+> is in `proxy.ts`'s `PROTECTED_PATHS`, so the visit bounced and #2049 committed
+> four `app-room` baselines that were pixel-for-pixel the marketing home page —
+> hero copy and JOIN THE BETA button included. They were deleted in the 2026-08-10
+> pass. `assertMemberSession` now fails a member surface that lands anywhere but
+> its own path, or that renders without the shell's own `[data-tour-anchor="content"]`
+> region, and `baseline-distinctness.test.ts` fails the committed tree if two
+> surfaces are ever near-identical again. **Do not re-add a fallback here** — point
+> `PW_ROOM_PATH` at a room the beta account is actually in, or leave the surface absent.
 
 That is why this section exists at all. On PR #2048 the gate returned
 `12 skipped · 64 passed` — green — over a change that removed the rail fill,

@@ -1,5 +1,11 @@
 # Owner checklist: what to verify & decide (when you're at a computer)
 
+> ⚠️ **SUPERSEDED — history, not status (banner added 2026-08-10, [ADR-960](DECISIONS.md)).** The
+> current owner-action list is [`FINALIZE-PLAN.md`](FINALIZE-PLAN.md) §7c, which is verified against
+> the live project. Several items here are already done (leaked-password protection is on; the
+> migration batch is applied). The one durable thing this file still owns is the **standing deploy
+> gate** (ADR-185, apply-on-merge) — that convention is live and unchanged.
+
 > 👉 **For the ordered, step-by-step path, use [START-HERE.md](START-HERE.md).**
 > This file is the detailed reference (decisions + tech debt) behind it.
 >
