@@ -35,15 +35,26 @@
 # would make superseded runs finish their whole body and defeat `cancel-in-progress`.
 #
 # 🔴 OWNER ACTION, REQUIRED, AND THIS IS THE ONE THING THAT MAKES THE SPLIT SAFE ────────────
-# Branch protection on `main` requires the contexts `checks` and `analyze`. Splitting this
-# workflow means `checks` NO LONGER CONTAINS lint or the test suite — they are their own jobs
-# now, and an unprotected job cannot block a merge. Until `lint` and `test` are ADDED as
-# required contexts, a PR with failing tests is mergeable.
+# `main` is protected by a REPOSITORY RULESET (id 17640795, named "main") — not by classic
+# branch protection, which is why the "Settings → Branches" path this note used to give leads
+# nowhere. Verified against the API on 2026-08-10: the ruleset's `required_status_checks` rule
+# lists exactly two contexts, `checks` and `analyze`, both on integration_id 15368 (GitHub
+# Actions).
 #
-#   Settings → Branches → main → Require status checks → add `lint` and `test`.
+# Splitting this workflow means `checks` NO LONGER CONTAINS lint or the test suite — they are
+# their own jobs now, and a job that is not a required context cannot block a merge. Until
+# `lint` and `test` are ADDED, a PR with failing tests is mergeable.
 #
-# The job names above are deliberately exactly `lint` and `test` so they can be added verbatim.
-# `checks` keeps its name so the existing protection rule never lapses in the meantime.
+#   Settings → Rules → Rulesets → "main" → Require status checks to pass
+#     → Add checks → `lint`, then `test` (source: GitHub Actions)
+#
+# The job names below are deliberately exactly `lint` and `test` so they can be added verbatim.
+# `checks` keeps its name so the existing rule never lapses in the meantime.
+#
+# This cannot be done from a Claude Code session: the agent proxy refuses writes to the GitHub
+# rulesets API ("Write access to this GitHub API path is not permitted through this proxy"),
+# and the GitHub App token cannot read classic branch protection either. It is an owner action
+# in the UI, by design.
 name: ci
 
 on:
