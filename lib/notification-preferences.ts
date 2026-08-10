@@ -181,19 +181,37 @@ export function normalizeFrequency(value: unknown): NotificationFrequency {
 }
 
 /**
+ * Is there a job that actually batches deferred categories into a digest?
+ *
+ * There is not. `/api/cron/weekly-digest` is the COMMUNITY digest (lib/digest,
+ * assembleDigestForProfile); nothing reads the per-category `freq_*` columns and batches them.
+ * Flip this to true in the same commit that ships the batcher.
+ */
+export const DIGEST_BATCHER_EXISTS = false
+
+/**
  * Whether a realtime send should be DEFERRED to a digest for this category. Pure so the
  * gate + tests can reason about it without IO. Digests only apply to email today (in-app
  * + push are inherently realtime surfaces); a non-email channel is never deferred.
  *
- * SEAM: when this returns true the gate suppresses the realtime send and expects a digest
- * cron to batch the category later. The batching job is a follow-up — until it ships, a
- * member on 'daily_digest' simply receives fewer realtime emails for that category. This is
- * deliberately fail-safe: over-quieting, never over-sending.
+ * 🔴 THIS RETURNED TRUE WITH NOTHING ON THE OTHER SIDE OF THE SEAM. Deferring means "suppress
+ * the realtime send, a cron will batch it later". The cron was a follow-up that never shipped, so
+ * a member who chose Daily digest for a category received the realtime email never and the digest
+ * never — not "fewer emails", as the old note here put it, but none, permanently. Fail-safe is
+ * the right instinct and this was past it: a preference that silently means "off" is not quieter,
+ * it is broken, and the member has no way to tell.
+ *
+ * So deferral is gated on the batcher existing. Until it does, every category sends realtime,
+ * which is what a member on a digest was already expecting to receive eventually. The two options
+ * are also gone from the settings form (owner call 2026-08-10), but this half is what matters for
+ * the rows already storing 'daily_digest': removing the control alone would have left exactly the
+ * people affected by the bug muted forever, with the control to fix it taken away.
  */
 export function isFrequencyDeferred(
   channel: NotificationChannel,
   frequency: NotificationFrequency,
 ): boolean {
+  if (!DIGEST_BATCHER_EXISTS) return false
   return channel === 'email' && frequency !== 'realtime'
 }
 

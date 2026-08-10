@@ -168,13 +168,41 @@ jobs:
             authz canon menu gate-parity workflows elements labels render-path help tokens phantom bridge contrast adoption
             headers seo collective crm-parity vocab rls grants admin-client migrations adr docs-links
           )
+          # RUN IN PARALLEL, REPORT IN ORDER. The guards are independent node processes that only
+          # read the tree, so nothing about them needed to be sequential — it just was. Run wall
+          # clock was the SUM of 25 guards plus 25 pnpm startups; it is now bounded by the
+          # slowest single guard (check:tokens, ~2.5s locally).
+          #
+          # Output still reads exactly as before. Each guard's stdout+stderr goes to its own file
+          # and the groups are printed afterwards in the DECLARED order, so a parallel run never
+          # interleaves two guards' output or shuffles them run to run. Losing that is the usual
+          # price of parallelising a loop like this, and it is the whole reason the loop is
+          # readable when something breaks.
+          #
+          # Concurrency is capped: the runner has 2 cores, and 25 concurrent node processes trade
+          # a fast pass for an OOM on the one run that matters.
+          out=$(mktemp -d)
+          maxp=6
+          for guard in "${guards[@]}"
+          do
+            (
+              if pnpm "check:${guard}" >"${out}/${guard}.log" 2>&1
+              then echo ok > "${out}/${guard}.status"
+              else echo fail > "${out}/${guard}.status"
+              fi
+            ) &
+            while [ "$(jobs -rp | wc -l)" -ge "${maxp}" ]; do wait -n; done
+          done
+          wait
+
           for guard in "${guards[@]}"
           do
             echo "::group::check:${guard}"
-            if pnpm "check:${guard}"; then
-              echo "::endgroup::"
-            else
-              echo "::endgroup::"
+            cat "${out}/${guard}.log" || true
+            echo "::endgroup::"
+            # A missing status file means the subshell died without writing one — treat that as a
+            # failure rather than a pass, so a killed worker cannot read as a green guard.
+            if [ "$(cat "${out}/${guard}.status" 2>/dev/null)" != "ok" ]; then
               echo "::error title=check:${guard}::failed — see the check:${guard} group above"
               failed+=("${guard}")
             fi

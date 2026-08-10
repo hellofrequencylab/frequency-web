@@ -5,10 +5,7 @@ import { Mail, Bell, Smartphone, MessageSquare, Minus, Check, ShieldCheck } from
 import type {
   NotificationSettings,
   NotificationCategory,
-  NotificationFrequency,
 } from '@/lib/notification-preferences'
-import { NOTIFICATION_FREQUENCIES } from '@/lib/notification-preferences'
-import { Select } from '@/components/ui/select'
 import { saveNotificationPreferences } from './actions'
 import { isError } from '@/lib/action-result'
 
@@ -57,12 +54,6 @@ const CHANNELS = [
 // the column exists, the card below is where texts are actually managed.
 const SMS_PLACEHOLDER_TITLE = 'Texts are managed in the Text messages card below.'
 
-const FREQUENCY_LABELS: Record<NotificationFrequency, string> = {
-  realtime:      'Realtime',
-  daily_digest:  'Daily digest',
-  weekly_digest: 'Weekly digest',
-}
-
 export function NotificationsForm({ initial }: { initial: NotificationSettings }) {
   const [settings, setSettings] = useState(initial)
   const [isPending, startTransition] = useTransition()
@@ -89,11 +80,6 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
     persist({ ...settings, [key]: !settings[key] }, settings)
   }
 
-  function setFrequency(category: NotificationCategory, freq: NotificationFrequency) {
-    const key = `freq_${category}` as keyof NotificationSettings
-    persist({ ...settings, [key]: freq }, settings)
-  }
-
   function toggleFollowerReminders() {
     persist({ ...settings, space_event_reminders: !settings.space_event_reminders }, settings)
   }
@@ -104,23 +90,21 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
       <div className="rounded-card border border-border bg-surface-elevated px-4 py-3 text-body-sm text-muted">
         <p className="text-text font-medium">Choose what you hear about, and how often.</p>
         <p className="mt-1">
-          Each row is a topic. The switches pick the channels. Frequency sets the pace: realtime
-          sends each one as it happens, a digest holds them and sends one roundup. Digests apply to
-          email.
+          Each row is a topic. The switches pick the channels. Everything sends as it happens.
         </p>
       </div>
 
-      {/* The four-channel grid: topics down, channels across (Email / In-app / Push / SMS),
-          plus the per-topic frequency. SMS renders as a placeholder column — see the
-          Text messages card below for the real controls. */}
-      {/* overflow-x-auto, not overflow-hidden. The grid below is rigid: three w-16 channel
-          columns (192) + w-12 SMS (48) + w-28 Frequency (112) + five gap-3 (60) + px-4 (32)
-          = 444px before the 1fr Topic column gets a pixel. Inside the shell's padding on a
-          393px iPhone that clipped the Frequency dropdown and the SMS column with no way to
-          scroll to them -- so a member could not switch a topic to digest on a phone, which
-          is the single most common reason to open this page. */}
+      {/* The four-channel grid: topics down, channels across (Email / In-app / Push / SMS).
+          SMS renders as a placeholder column — see the Text messages card below for the real
+          controls. */}
+      {/* overflow-x-auto, not overflow-hidden. The grid is rigid: three w-16 channel columns
+          (192) + w-12 SMS (48) + four gap-3 (48) + px-4 (32) = 320px before the 1fr Topic
+          column gets a pixel, which still overflows a 393px iPhone once the shell's padding
+          is counted. The per-topic Frequency column that used to sit here (a further 112px +
+          one gap) is gone with the digest options, so the squeeze is milder than it was, but
+          it has not disappeared. */}
       <div className="rounded-card border border-border bg-surface lift-1 overflow-x-auto">
-        <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 px-4 py-3 border-b border-border bg-surface-elevated">
+        <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-3 px-4 py-3 border-b border-border bg-surface-elevated">
           <span className="text-meta font-semibold text-muted uppercase tracking-wide">Topic</span>
           {CHANNELS.map(({ key, label, Icon, disabled }) => (
             <div key={key} className="flex items-center gap-1.5 w-16 justify-center">
@@ -134,9 +118,6 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
             <MessageSquare className="w-3.5 h-3.5 text-subtle" />
             <span className="text-meta font-semibold uppercase tracking-wide text-subtle">SMS</span>
           </div>
-          <span className="text-meta font-semibold text-muted uppercase tracking-wide w-28 text-center">
-            Frequency
-          </span>
         </div>
 
         <div className="divide-y divide-border">
@@ -182,21 +163,6 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
               {/* SMS placeholder cell — the real controls live in the Text messages card below. */}
               <div className="w-12 flex justify-center" title={SMS_PLACEHOLDER_TITLE}>
                 <Minus className="w-3.5 h-3.5 text-subtle" aria-hidden />
-              </div>
-              {/* Per-category frequency */}
-              <div className="w-28 flex justify-center">
-                {/* Named off the row's VISIBLE topic label, not the programmatic key, so the
-                    spoken name and the seen one cannot drift. */}
-                <Select
-                  value={(settings[`freq_${key}` as keyof NotificationSettings] as NotificationFrequency) ?? 'realtime'}
-                  onChange={(e) => setFrequency(key, e.target.value as NotificationFrequency)}
-                  aria-label={`${label} frequency`}
-                  className="text-meta"
-                >
-                  {NOTIFICATION_FREQUENCIES.map((f) => (
-                    <option key={f} value={f}>{FREQUENCY_LABELS[f]}</option>
-                  ))}
-                </Select>
               </div>
             </div>
           ))}
