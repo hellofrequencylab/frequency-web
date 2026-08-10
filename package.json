@@ -29,6 +29,7 @@
     "check:contrast": "node scripts/check-contrast.mjs",
     "check:adoption": "node scripts/check-adoption.mjs",
     "check:rls": "node scripts/check-rls.mjs",
+    "check:grants": "node scripts/check-grants.mjs",
     "check:admin-client": "node scripts/check-admin-client.mjs",
     "check:seo": "node scripts/check-seo.mjs",
     "check:collective": "node scripts/check-collective.mjs",

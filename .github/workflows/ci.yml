@@ -144,7 +144,7 @@ jobs:
           failed=()
           for guard in \
             authz canon menu workflows elements tokens phantom bridge contrast adoption \
-            headers seo collective crm-parity vocab rls admin-client migrations adr docs-links
+            headers seo collective crm-parity vocab rls grants admin-client migrations adr docs-links
           do
             echo "::group::check:${guard}"
             if pnpm "check:${guard}"; then
@@ -165,4 +165,4 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          echo "### ✓ All 20 contract guards passed" >> "$GITHUB_STEP_SUMMARY"
+          echo "### ✓ All 21 contract guards passed" >> "$GITHUB_STEP_SUMMARY"
