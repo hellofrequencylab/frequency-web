@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Check, ChevronDown, Loader2, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SectionHeader } from '@/components/ui/section-header'
-import { Input, Label } from '@/components/ui/field'
+import { Input, Label, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { TextareaField, FormError } from '@/components/spaces/space-form'
@@ -323,8 +323,12 @@ export function SpaceInfoConnectForm({
             maxLength={500}
           />
           <div>
-            <Label className="mb-1.5 block font-semibold">Social and business links</Label>
-            <div className="grid gap-3 sm:grid-cols-2">
+            {/* Names the set. Not a <Label>: it has no control of its own to point at, and
+                every field below already carries its own htmlFor. */}
+            <p className={`${labelClasses} mb-1.5 block font-semibold`} id="biz-social-label">
+              Social and business links
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2" role="group" aria-labelledby="biz-social-label">
               {SPACE_SOCIAL_PLATFORMS.map((p) => (
                 <div key={p.key}>
                   <Label htmlFor={`biz-social-${p.key}`} className="mb-1 block text-2xs font-medium text-muted">

@@ -47,9 +47,34 @@ const { updateSpaceMemberRole, setSpaceMemberStatus, removeSpaceMember } = vi.ho
   setSpaceMemberStatus: vi.fn<(...args: unknown[]) => Promise<boolean>>(async () => true),
   removeSpaceMember: vi.fn<(...args: unknown[]) => Promise<boolean>>(async () => true),
 }))
+// `getSpaceMembership` is what the seat guards read to decide whether a change NEWLY consumes a
+// seat, so it is a seam too: without it these tests could not tell "suspended admin" from "active
+// admin", which is the entire distinction the reactivation wall turns on.
+const { getSpaceMembership } = vi.hoisted(() => ({
+  getSpaceMembership: vi.fn<(...args: unknown[]) => Promise<{ role: string; status: string } | null>>(
+    async () => null,
+  ),
+}))
 vi.mock('./membership', async () => {
   const actual = await vi.importActual<typeof import('./membership')>('./membership')
-  return { ...actual, updateSpaceMemberRole, setSpaceMemberStatus, removeSpaceMember }
+  return { ...actual, updateSpaceMemberRole, setSpaceMemberStatus, removeSpaceMember, getSpaceMembership }
+})
+
+// The seat wall itself. Real in production and GATED on featureGatesLive(), which is why this whole
+// class of bug is latent today: the check grants everything while the gates are off. Mocking it here
+// is what lets us test the behaviour that arrives when they flip, instead of shipping a guard whose
+// first real exercise is in production.
+let seatsAvailable = true
+vi.mock('./seats', async () => {
+  const actual = await vi.importActual<typeof import('./seats')>('./seats')
+  return {
+    ...actual,
+    checkSeatForOperatorInvite: async () => ({
+      allowed: seatsAvailable,
+      reason: seatsAvailable ? undefined : 'This space is using all 2 of its operator seats.',
+      usage: { seatQuantity: 0, base: 2, licensed: 2, used: 2, remaining: 0, full: true },
+    }),
+  }
 })
 
 import {
@@ -73,6 +98,8 @@ beforeEach(() => {
   updateSpaceMemberRole.mockClear().mockResolvedValue(true)
   setSpaceMemberStatus.mockClear().mockResolvedValue(true)
   removeSpaceMember.mockClear().mockResolvedValue(true)
+  getSpaceMembership.mockClear().mockResolvedValue(null)
+  seatsAvailable = true
 })
 
 describe('pure helpers (fail-closed)', () => {
@@ -206,5 +233,56 @@ describe('bulkRosterOp — gated, per-member, owner-skipped, honest tally', () =
       isError(await bulkRosterOp('space-1', [ALICE], { kind: 'role', role: 'overlord' as never })),
     ).toBe(true)
     expect(updateSpaceMemberRole).not.toHaveBeenCalled()
+  })
+})
+
+
+// ── The seat wall on REACTIVATION (ADR-968) ─────────────────────────────────────────────────────
+// `usedSeats` counts `status = 'active'` AND a seat-consuming role, so a SUSPENDED operator consumes
+// no seat. Flipping them back to active newly consumes one, which makes reactivation the same seat
+// event as a promotion. It had no wall on either the single or the bulk path: an owner sitting at
+// the limit could reactivate a suspended admin and end up one seat over, the exact thing
+// setMemberRole already refuses.
+describe('reactivateMember respects the operator seat limit', () => {
+  it('refuses to bring back a suspended OPERATOR when the space is out of seats', async () => {
+    getSpaceMembership.mockResolvedValue({ role: 'admin', status: 'suspended' })
+    seatsAvailable = false
+    const res = await reactivateMember('space-1', ALICE)
+    expect(isError(res)).toBe(true)
+    expect(setSpaceMemberStatus).not.toHaveBeenCalled()
+  })
+
+  it('allows it when a seat is free', async () => {
+    getSpaceMembership.mockResolvedValue({ role: 'admin', status: 'suspended' })
+    seatsAvailable = true
+    expect(isError(await reactivateMember('space-1', ALICE))).toBe(false)
+    expect(setSpaceMemberStatus).toHaveBeenCalledWith('space-1', ALICE, 'active')
+  })
+
+  it('never blocks a VIEWER, who consumes no seat at all', async () => {
+    getSpaceMembership.mockResolvedValue({ role: 'viewer', status: 'suspended' })
+    seatsAvailable = false
+    expect(isError(await reactivateMember('space-1', ALICE))).toBe(false)
+    expect(setSpaceMemberStatus).toHaveBeenCalled()
+  })
+
+  it('never blocks an ALREADY-ACTIVE member, whose seat is already counted', async () => {
+    // Re-activating an active member is a no-op; charging them a second seat would be a wall that
+    // fires on a change that consumes nothing.
+    getSpaceMembership.mockResolvedValue({ role: 'admin', status: 'active' })
+    seatsAvailable = false
+    expect(isError(await reactivateMember('space-1', ALICE))).toBe(false)
+    expect(setSpaceMemberStatus).toHaveBeenCalled()
+  })
+
+  it('bulk reactivation SKIPS over the wall instead of failing the batch', async () => {
+    // Matches the batch's partial-success contract, and mirrors what the bulk PROMOTION path
+    // already did. The two paths now share one helper so they cannot drift again.
+    getSpaceMembership.mockResolvedValue({ role: 'admin', status: 'suspended' })
+    seatsAvailable = false
+    const res = await bulkRosterOp('space-1', [ALICE, BOB], { kind: 'reactivate' })
+    expect(isError(res)).toBe(false)
+    if (!isError(res)) expect(res.data).toEqual({ changed: 0, skipped: 2 })
+    expect(setSpaceMemberStatus).not.toHaveBeenCalled()
   })
 })

@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { moduleIdsForScope, moduleMeta, ROUTE_MODULE_IDS } from './modules'
 import { COMPONENT_IDS } from './registry'
 import { MODULE_ROUTES } from './module-routes'
@@ -174,13 +176,18 @@ describe('moduleIdsForScope', () => {
     expect(c).not.toContain('crm-trust')
   })
 
-  it('the Vera Today page (/admin/crm/today) resolves its one block via the exact route, not the CRM index set', () => {
-    const t = moduleIdsForScope('/admin/crm/today')
-    expect(t).toBe(ROUTE_MODULE_IDS['/admin/crm/today'])
-    expect(t).toEqual(['crm-today'])
-    // The nested exact route wins over the /admin/crm cockpit set (and never the global default).
-    expect(t).not.toContain('crm-members')
-    expect(t).not.toContain('community-pulse')
+  it('the three merged CRM routes are gone, and their blocks live on Intelligence', () => {
+    // /admin/crm/today, /graph and /playbooks became `redirect('/admin/crm/intelligence')` and
+    // nothing else. Keeping their sets gave the App catalog route scopes that navigate away, and
+    // keeping their MODULE_ROUTES rows advertised a Layout editor on a page that never draws.
+    for (const dead of ['/admin/crm/today', '/admin/crm/graph', '/admin/crm/playbooks']) {
+      expect(ROUTE_MODULE_IDS[dead], `${dead} redirects; it must not declare a module set`).toBeUndefined()
+      expect(MODULE_ROUTES).not.toContain(dead)
+    }
+    const intel = ROUTE_MODULE_IDS['/admin/crm/intelligence'] ?? []
+    for (const id of ['crm-today', 'crm-graph-metrics', 'crm-graph-connections', 'crm-playbooks-stats', 'crm-playbooks-registry', 'crm-playbooks-runs']) {
+      expect(intel, `${id} lost its home when its former route retired`).toContain(id)
+    }
   })
 
   it('the CRM members page (/admin/crm/members) resolves its one roster block via the exact route, distinct from the cockpit', () => {
@@ -230,18 +237,37 @@ describe('moduleIdsForScope', () => {
 // it is in MODULE_ROUTES, and it only has blocks to arrange when it has a set in ROUTE_MODULE_IDS. The
 // LP7 admin routes must be wired in both, so the editor matches the page's real content.
 describe('module route registration (LP7 admin dashboards)', () => {
-  const LP7_ROUTES = [
-    '/admin/operations',
-    '/admin/growth',
-    '/admin/crm/today',
-    '/admin/crm/members',
-  ] as const
+  // /admin/crm/today was here; it is now a bare redirect into /admin/crm/intelligence, so it has
+  // neither a MODULE_ROUTES row nor a module set. See the retirement test above.
+  const LP7_ROUTES = ['/admin/operations', '/admin/growth', '/admin/crm/members'] as const
 
   it('each converted route is registered in MODULE_ROUTES and declares its own module set', () => {
     for (const route of LP7_ROUTES) {
       expect(MODULE_ROUTES, `missing MODULE_ROUTES entry for ${route}`).toContain(route)
       expect(ROUTE_MODULE_IDS[route], `missing ROUTE_MODULE_IDS set for ${route}`).toBeDefined()
       expect((ROUTE_MODULE_IDS[route] ?? []).length).toBeGreaterThan(0)
+    }
+  })
+
+  // The truth check that would have caught the three redirect stubs, and the one that keeps the
+  // next merge from leaving one behind. MODULE_ROUTES is what makes isModuleRoute() true, which is
+  // what draws the on-page Layout editor — so an entry whose page renders no <PageModules> offers
+  // an operator a panel of blocks the page does not contain. Reading the file is the only way to
+  // know: the list is strings, and nothing about a string says whether its page still exists.
+  it('every MODULE_ROUTES entry resolves to a page that actually renders <PageModules>', () => {
+    const root = join(__dirname, '..', '..')
+    const GROUPS = ['(main)', '(marketing)', '(help)', '']
+    for (const route of MODULE_ROUTES) {
+      const file = GROUPS.map((g) => join(root, 'app', g, route.replace(/^\//, ''), 'page.tsx')).find((p) =>
+        existsSync(p),
+      )
+      expect(file, `${route} is in MODULE_ROUTES but has no page.tsx`).toBeDefined()
+      const src = readFileSync(file!, 'utf8')
+      expect(
+        src.includes('<PageModules'),
+        `${route} is in MODULE_ROUTES but its page never renders <PageModules>` +
+          (/redirect\(/.test(src) ? ' — it is a redirect stub, so the Layout editor draws on a page that navigates away' : ''),
+      ).toBe(true)
     }
   })
 })

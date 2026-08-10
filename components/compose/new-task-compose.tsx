@@ -77,8 +77,8 @@ export function NewTaskCompose({
         <div>
           {/* Effort tier (ADR-442): a constrained Light/Standard/Heavy range, never a free
               number, so a task can't be set to an unlimited reward. */}
-          <label className={cmLabel}>Effort</label>
-          <div role="radiogroup" aria-label="Effort" className="grid grid-cols-3 gap-2">
+          <p className={cmLabel} id="task-effort-label">Effort</p>
+          <div role="radiogroup" aria-labelledby="task-effort-label" className="grid grid-cols-3 gap-2">
             {TIER_ORDER.map(t => {
               const zaps = TIER_ZAPS[t]
               const active = zapsValue === zaps

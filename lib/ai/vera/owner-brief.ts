@@ -131,7 +131,7 @@ function briefHtml(intro: string, cards: TodayCard[], laterCount: number): strin
     <p style="font-size:16px;color:#3D352A;line-height:1.6;margin:0 0 20px;">${escapeHtml(intro)}</p>
     ${rows}
     ${later}
-    <p style="margin:24px 0 0;"><a href="${BASE_URL}/admin/crm/today" style="display:inline-block;background:#E2912F;color:#FFFFFF;font-size:15px;font-weight:700;text-decoration:none;padding:12px 26px;border-radius:10px;">Open Today &rarr;</a></p>
+    <p style="margin:24px 0 0;"><a href="${BASE_URL}/admin/crm/intelligence" style="display:inline-block;background:#E2912F;color:#FFFFFF;font-size:15px;font-weight:700;text-decoration:none;padding:12px 26px;border-radius:10px;">Open Today &rarr;</a></p>
   </div>`
 }
 
@@ -144,7 +144,7 @@ function briefText(intro: string, cards: TodayCard[], laterCount: number): strin
     lines.push('')
   }
   if (laterCount > 0) lines.push(`${laterCount} more are on the Later shelf.`, '')
-  lines.push(`Open Today: ${BASE_URL}/admin/crm/today`)
+  lines.push(`Open Today: ${BASE_URL}/admin/crm/intelligence`)
   return lines.join('\n') + '\n'
 }
 

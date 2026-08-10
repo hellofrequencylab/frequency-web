@@ -176,8 +176,34 @@ export async function reactivateMember(spaceId: string, profileId: string): Prom
   if (!isManageableTarget(profileId, gate.ownerProfileId))
     return fail('You cannot change the space owner.')
 
+  // SEAT-LIMIT ENFORCEMENT (ADR-465), and this is the SAME event as a promotion even though it does
+  // not touch the role column. `usedSeats` counts `status = 'active'` AND a seat-consuming role, so a
+  // SUSPENDED operator consumes no seat: flipping them back to active newly consumes one. Without this
+  // check, an owner at the wall could suspend nobody, reactivate a suspended admin, and sit one seat
+  // over the limit -- the one thing setMemberRole already prevents. GATED on featureGatesLive() inside
+  // the check, so this is latent while the gates are off and correct the moment they flip.
+  const seatDenial = await seatDenialForReactivation(spaceId, profileId)
+  if (seatDenial) return fail(seatDenial)
+
   const okWrite = await setSpaceMemberStatus(spaceId, profileId, 'active')
   return okWrite ? ok() : fail('Could not reactivate the member. Try again.')
+}
+
+/** The seat-wall verdict for flipping ONE member back to active: a reason string when the wall
+ *  refuses, or null when the reactivation is free (a non-operator role, an already-active member, or
+ *  a seat available). Shared by the single and bulk paths so the two can never diverge -- they
+ *  already had, which is how the bulk promotion guard shipped with no reactivation counterpart. */
+async function seatDenialForReactivation(spaceId: string, profileId: string): Promise<string | null> {
+  const current = await getSpaceMembership(spaceId, profileId)
+  // Only an operator role consumes a seat, and only a member who is not already active is a NEW
+  // consumer. Re-activating an already-active member is a no-op the wall must not block.
+  if (!current || current.status === 'active' || !operatorRoleConsumesSeat(current.role)) return null
+  const seatCheck = await checkSeatForOperatorInvite(spaceId, current.role)
+  if (seatCheck.allowed) return null
+  return (
+    seatCheck.reason ??
+    'This space has no operator seats left. Add a seat to bring this member back.'
+  )
 }
 
 /** The bulk operations a multi-select supports: change role, remove, suspend, or reactivate. */
@@ -255,9 +281,17 @@ export async function bulkRosterOp(
       case 'suspend':
         okWrite = await setSpaceMemberStatus(spaceId, profileId, 'suspended')
         break
-      case 'reactivate':
+      case 'reactivate': {
+        // Same seat event as a bulk promotion (see the 'role' case): a suspended operator counts
+        // toward no seat, so bringing them back consumes one. Skipped rather than failed, matching
+        // this batch's partial-success contract.
+        if (await seatDenialForReactivation(spaceId, profileId)) {
+          skipped += 1
+          continue
+        }
         okWrite = await setSpaceMemberStatus(spaceId, profileId, 'active')
         break
+      }
     }
     if (okWrite) changed += 1
     else skipped += 1

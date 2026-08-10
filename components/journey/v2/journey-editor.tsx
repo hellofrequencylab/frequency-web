@@ -188,7 +188,7 @@ function SlotCoaching({
       />
       {/* Per-step warm-up override (ADR-592, P5): shown in the timer pre-roll for this step, over
           the practice's own warm-up message. Blank = the practice's message (or a silent pre-roll). */}
-      <label className="mt-2 block text-2xs font-semibold uppercase tracking-wide text-muted">Warm-up message for this step</label>
+      <p className="mt-2 block text-2xs font-semibold uppercase tracking-wide text-muted">Warm-up message for this step</p>
       <Textarea
         value={warmup}
         disabled={disabled}

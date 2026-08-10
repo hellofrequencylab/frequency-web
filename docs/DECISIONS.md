@@ -18773,3 +18773,168 @@ only the ADR-963 ledger bijection makes "in a migration" approximate "in the dat
 grants, which is precisely the ADR-964 class; views and materialized views; whether a policy
 predicate is sane, since `public` and `authenticated` are unverified declarations; and
 `SECURITY DEFINER` reach-around, which stays with `fail-open-guards.test.ts`.
+
+---
+
+## ADR-966 — A label that names nothing still looks like a label (2026-08-10)
+
+**Decision.** Every `<label>` in `app/` and `components/` must either carry `htmlFor` or **wrap**
+its control, and no `<label>` may nest inside another. Anything else is a heading and gets
+`<p className={labelClasses}>`. 39 sites across 16 files were fixed to that rule, and
+`scripts/check-labels.mjs` (`pnpm check:labels`, the 22nd guard) now enforces it.
+
+**Context.** `components/ui/field.tsx` exports a `Label` that renders a bare `<label>`: it mints no
+`id` and threads no `htmlFor`. So the shape everyone reached for,
+
+```tsx
+<div className="space-y-1">
+  <Label>Board name</Label>
+  <Input value={n} onChange={…} />
+</div>
+```
+
+renders a `<label>` pointing at nothing and an `<input>` with no accessible name. **It looks
+labelled in review, in a screenshot, and in a visual diff.** A screen reader announces "edit text,
+blank", and clicking the text does not focus the field. Several call sites had noticed the symptom
+and papered over it with a duplicate `aria-label` on the control — which fixes the name and leaves
+the click-to-focus broken, while making the visible text and the announced text two separate
+strings that can drift.
+
+A second failure was worse and equally invisible. `app/(main)/events/drafts/[id]/editor.tsx`
+wrapped each `<Label>` in a native `<label>`, so a `<label>` contained a `<label>` — forbidden by
+the HTML content model. Browsers recover from that inconsistently, which means the symptom depends
+on the browser rather than on the markup.
+
+**The measurement was wrong twice before it was right, and both errors ran the same way.** The
+plan first recorded "103 of 229 `Label` uses unassociated" from a line-scoped grep; the real count
+of *that* pattern was 23. But scoping the re-count to the `Label` component was itself the error:
+the same bug in plain `<label className={lbl}>` form was **more** common, and invisible to any
+search for `Label`. The gate, which asks about `<label>` elements rather than about one component,
+found 39. Twice now, a name-scoped search has under-reported a structural problem.
+
+**Why a gate and not a checklist.** This class has no visual symptom, so nothing already in the
+pipeline could see it: not review, not the visual baselines, not `tsc`. The axe pass catches an
+unnamed control at runtime but only on the surfaces the e2e run actually visits, and only when a
+session can reach them. A static structural rule catches it at author time on all 1,836 files.
+
+**Consequences.** ✅ 635 labels across `app/` + `components/`, every one naming exactly one
+control, none nested. ✅ 18 unit tests in `scripts/check-labels.test.ts` cover both halves — the
+five real violation shapes **and** the seven correct shapes that must stay silent. ⚠️ The
+false-positive half is not padding: 60 `<Label>` uses in the onboarding illustration renders and
+the on-air stage overlays are a **local** component that draws an SVG `<text>`, which has no
+control to name by construction. Counting those would have made the gate 60 false positives deep
+on day one, and a gate that cries wolf earns an allowlist and then an early grave. ⚠️ **What it
+cannot see:** a control named only by a sibling `<span>` — there is no `<label>` to find. Two of
+those shipped in `qr-splash-form.tsx` and were swept by hand; the axe pass remains the net for the
+rest. It also does not verify that an `htmlFor` target exists in another file (all 125 were checked
+by hand on 2026-08-10), nor that the label text is any good, which is `docs/CONTENT-VOICE.md`'s job.
+
+---
+
+## ADR-967 — The duality gets a scoreboard before it gets a sweep (2026-08-10)
+
+**Decision.** `pnpm check:render-path` (the 23rd guard) enforces two things about the eight slugs
+in `EDITABLE_PAGES`: every one's route actually renders `<BlockRender>`, and the coded body each
+still carries beside it may only shrink. The per-slug counts live in
+`scripts/render-path-bodies.txt`.
+
+**Context.** Each gated marketing route resolves published → template → a bespoke coded body, so
+the page exists twice: once as blocks an operator can rearrange, once as TSX only a developer can
+change. The redesign left the **coded** side ahead of the templates, inverting the drift the
+three-rung chain was built to survive. `docs/FINALIZE-PLAN.md` §5.2 retires those bodies one slug
+per PR, and each retirement is gated on the visual suite proving the template equivalent — which
+is gated in turn on the owner recapturing baselines against `main`. That is a real wait, and
+during it nothing stopped the duality from getting **worse**.
+
+**The first rule is a truth check, not a ratchet.** A slug can be added to `EDITABLE_PAGES` and
+get an editor route, a save path, and a publish button, while its actual page never reads the
+document. The operator edits, saves, publishes, and the site ignores all of it. Nothing in the
+repo could see that before; the failure is silent by construction, because every visible part of
+the loop works.
+
+**Why the ratchet counts components and not lines.** Lines are the figure the plan quotes (~3,085
+of duplicate truth, or 4,032 counting whole route files) and they are the wrong thing to gate on:
+a copy edit moves the number, so the gate would go red for reasons that have nothing to do with
+the duality — and a gate that cries wolf earns an allowlist and then an early grave, which is the
+lesson ADR-966 already paid for. A top-level `function <Capitalized>` is a **structural** fact; it
+changes when the page's shape changes, which is the event being watched. Lines are printed as
+context and never checked.
+
+**A fall fails too, and that is deliberate.** Most ratchets in this repo let a number drop
+silently. This one refuses, because the file *is* the Phase 5 scoreboard: if retiring a body did
+not also lower the number, the scoreboard would read as stale the moment it mattered. The fix is
+one digit, in the PR that earned it.
+
+**Consequences.** ✅ Seven failure modes probe-tested for the **exit code**: grow, shrink, missing
+render path, unmapped new slug, stale ledger row, unparseable row, and wrong working directory all
+exit 1; the clean tree exits 0. ✅ 13 unit tests on the parser, which is the whole gate — comments
+are blanked length-preservingly, so a component named in a comment is not a component and a
+commented-out `<BlockRender>` does not count as a render path. ✅ Today's reading: **8 slugs, 7
+still carrying a body (27 components), `circles` already template-only.** ⚠️ **The count cannot
+tell a retirement from a move.** A body that leaves the route file for a sibling component drops
+the number and the gate will ask you to record a win you did not earn; the ledger comment is where
+that has to be written down. ⚠️ It says nothing about whether a template renders the same *page* —
+only the visual suite can, and that remains the gate on actually deleting a body.
+
+---
+
+## ADR-968 — Reactivation is a seat event, and three routes were advertising a redirect (2026-08-10)
+
+Three verified defects from `docs/FINALIZE-PLAN.md` §Phase 3, each closed with the guard that would
+have caught it.
+
+**1. The operator seat wall had no reactivation half.** `usedSeats` counts `status = 'active'` AND
+a seat-consuming role, so a **suspended** operator consumes no seat. Flipping one back to active
+newly consumes one, which makes reactivation the same seat event as a promotion — and neither
+`reactivateMember` nor the bulk `reactivate` case checked it. An owner sitting at the limit could
+reactivate a suspended admin and end up one seat over, the exact thing `setMemberRole` already
+refuses.
+
+Both paths now go through one `seatDenialForReactivation`, deliberately shared rather than
+duplicated: the promotion guard exists on both the single and bulk paths and its reactivation
+counterpart existed on neither, which is what drift between two copies of a rule looks like. The
+single path fails with the wall's own reason; the bulk path skips, matching its partial-success
+contract.
+
+The whole thing is **latent**: `checkSeatForOperatorInvite` grants everything while
+`featureGatesLive()` is false. That is exactly why it needed tests with the seat seam mocked — a
+guard whose first real exercise is the day the gates flip is not a guard, it is a hypothesis. Two
+of the five new tests were proven to fail against the pre-fix shape.
+
+**2. Double-branded page titles, and the scan that found one the audit missed.** `app/layout.tsx`
+sets `title.template: '%s · Frequency'`, so a page that also writes the brand renders
+"Name · Frequency · Frequency" in the tab, the SERP, and every share card that falls back to
+`<title>`. `/spotlight/[handle]` shipped it on every published Spotlight.
+
+The fix is one line; the durable part is `check:seo` **Scan D**. The reason this needed a real
+scanner rather than a grep: the template applies ONLY to the top-level `title`. `openGraph.title`
+and `twitter.title` get no template, so they *should* carry the brand, and 14 marketing pages
+correctly do. A flat grep would have failed every one of them. Scan D walks brace depth and skips
+anything inside an `openGraph:` or `twitter:` object — and on its first run found a second real
+instance in `journeys/[slug]`'s private fallback that the hand audit had not recorded. It reads
+`SITE_NAME` from `lib/site.ts` rather than hardcoding "Frequency", and fails loudly if it cannot,
+because a scan that silently checks nothing is worse than one that fails.
+
+**3. Three `MODULE_ROUTES` entries pointed at redirect stubs.** `/admin/crm/graph`,
+`/admin/crm/playbooks` and `/admin/crm/today` are `redirect('/admin/crm/intelligence')` and nothing
+else since the owner merge. Being in `MODULE_ROUTES` made `isModuleRoute()` true, which draws the
+on-page Layout editor — so an operator was offered a panel of blocks on a page that navigates away
+before it can render. That is the "Settings don't make sense" trap the list exists to prevent.
+
+All three are retired from `MODULE_ROUTES` **and** from `ROUTE_MODULE_IDS`, whose keys were
+separately giving the App catalog route scopes that redirect. Every one of their six block ids
+already lives in `CRM_INTELLIGENCE_MODULE_IDS`, so nothing lost a home. The two live outbound links
+— the Vera owner-brief email CTA and the dashboard worklist's default `actionHref` — now point at
+the merged page instead of through a redirect.
+
+The guard is a test that reads the filesystem: **every `MODULE_ROUTES` entry must resolve to a page
+that actually renders `<PageModules>`.** Reading the file is the only way to know — the list is
+strings, and nothing about a string says whether its page still exists. Proven to fail when a
+redirect stub is put back.
+
+**Consequences.** ✅ All three fixed with a guard each, none of which existed before. ⚠️ The seat
+fix changes no behaviour today and will change behaviour the moment `featureGatesLive()` flips;
+that is the point, and it is recorded here so the change is not a surprise then. ⚠️ Scan D cannot
+read a title built by a call expression (`buildTitle(name)`) — not decidable from source, and
+guessing is worse than staying quiet. It *does* read template literals, because
+`` `${name} · Frequency` `` is the Spotlight bug verbatim.

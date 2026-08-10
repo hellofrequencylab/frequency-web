@@ -21,9 +21,11 @@ if the checks are green, the change is structurally safe, so your job is just "d
 | Gate | What it protects |
 |---|---|
 | `tsc` + `lint` | No broken or malformed code |
-| tests (5,600+) | Existing behavior isn't broken |
+| tests (8,890+) | Existing behavior isn't broken |
 | CodeQL | No new security vulnerability |
-| `check:menu` / `check:rls` / `check:tokens` / `check:elements` | The architecture rules can't be violated (one menu source · every table has RLS · tokens not hex · apps go through the registry) |
+| `check:menu` / `check:rls` / `check:grants` / `check:tokens` / `check:elements` | The architecture rules can't be violated (one menu source · every table has RLS · every table a deliberate grant verdict · tokens not hex · apps go through the registry) |
+| `check:labels` | Every `<label>` names exactly one control, and none nest. Catches the class with no visual symptom: a label sitting beside its control names nothing, and looks correct in a screenshot (ADR-966) |
+| `check:render-path` | An editable marketing page actually renders the document its operator edits, and the coded body beside it can only shrink (ADR-967) |
 | Vercel build | It actually builds + deploys |
 
 ## Bots you can ignore

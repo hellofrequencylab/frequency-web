@@ -229,7 +229,9 @@ export function ProfileForm({
       {/* ── Header / cover image — the ONE shared header control (upload/browse via the Loom picker,
           with the same drag-to-focus preview every header uses). Scoped to your own uploads. ──────── */}
       <div>
-        <label className={lbl}>Header image</label>
+        {/* HeaderImageField is a composite (picker + drag-to-focus), not a labelable control, so
+            this is a heading. A <label> here would point at nothing. */}
+        <p className={lbl}>Header image</p>
         <HeaderImageField
           value={headerUrl || null}
           onChange={(url) => setHeaderUrl(url ?? '')}
@@ -246,8 +248,8 @@ export function ProfileForm({
       {/* ── Header overlay — the 3 shared styles (ADR-794). None keeps a clean photo; Shadow darkens it;
           Fade blends it into the page. Shadow and Fade take a pickable color. Saved with the form. ── */}
       <div>
-        <label className={lbl}>Header overlay</label>
-        <div className="flex flex-wrap gap-2">
+        <p className={lbl} id="profile-overlay-label">Header overlay</p>
+        <div className="flex flex-wrap gap-2" role="group" aria-labelledby="profile-overlay-label">
           {([['none', 'None'], ['shadow', 'Shade'], ['fade', 'Blend']] as const).map(([v, label]) => {
             const active = overlayStyle === v
             return (
@@ -293,7 +295,7 @@ export function ProfileForm({
           Loom picker (scoped to your uploads), with the same drag-to-focus selector on a round crop so you
           can reframe an existing photo too. ──────── */}
       <div>
-        <label className={lbl}>Photo</label>
+        <p className={lbl}>Photo</p>
         <HeaderImageField
           value={avatarUrl || null}
           onChange={(url) => setAvatarUrl(url ?? '')}
@@ -391,15 +393,16 @@ export function ProfileForm({
 
         {/* Email — read-only (managed by your sign-in) */}
         <div>
-          <label className={lbl}>Email</label>
-          <Input
-            aria-label="Email"
-            type="email"
-            value={initial.email}
-            readOnly
-            disabled
-            className="cursor-not-allowed text-muted"
-          />
+          <label className="block">
+            <span className={lbl}>Email</span>
+            <Input
+              type="email"
+              value={initial.email}
+              readOnly
+              disabled
+              className="cursor-not-allowed text-muted"
+            />
+          </label>
           <p className="mt-1 text-meta text-subtle">Your sign-in email. Contact support to change it.</p>
         </div>
 
@@ -418,9 +421,11 @@ export function ProfileForm({
         </div>
 
         <div>
-          <label className={lbl}>
+          {/* LocationAutocomplete names its own input ("Search a location"), which an outer
+              <label> could not override, so this is a heading over a composite. */}
+          <p className={lbl}>
             City <span className="text-subtle font-normal text-meta">(optional)</span>
-          </label>
+          </p>
           <LocationAutocomplete
             value={city}
             placeholder="Start typing your city…"

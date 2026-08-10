@@ -7,6 +7,10 @@ import type { CrmStage, CrmDeal } from '@/lib/crm/pipeline'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/field'
 
+// The label TEXT class. Every field below wraps its control in a native <label>, which is HTML's
+// own implicit association: no id to mint, no htmlFor to thread. The previous shape put the
+// <label> BESIDE the control, so it named nothing and each control needed a duplicate `aria-label`
+// to have any name at all (ADR-966).
 const label = 'block text-meta font-semibold text-subtle mb-1'
 
 // Create / edit a CRM deal (build §9.5). Wires the UI gap to the existing actions
@@ -56,38 +60,38 @@ export function DealForm({ stages, deal }: { stages: CrmStage[]; deal?: CrmDeal 
 
   return (
     <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
-      <div>
-        <label className={label}>Title *</label>
-        <Input aria-label="Title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Partner: Encinitas Yoga" autoFocus />
+      <label className="block">
+        <span className={label}>Title *</span>
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Partner: Encinitas Yoga" autoFocus />
+      </label>
+      <div className="grid grid-cols-2 gap-3">
+        <label className="block">
+          <span className={label}>Contact</span>
+          <Input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Name" />
+        </label>
+        <label className="block">
+          <span className={label}>Value</span>
+          <Input type="number" inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value)} placeholder="0" />
+        </label>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={label}>Contact</label>
-          <Input aria-label="Contact" value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Name" />
-        </div>
-        <div>
-          <label className={label}>Value</label>
-          <Input aria-label="Value" type="number" inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value)} placeholder="0" />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={label}>Stage</label>
-          <Select aria-label="Stage" value={stageId} onChange={(e) => setStageId(e.target.value)}>
+        <label className="block">
+          <span className={label}>Stage</span>
+          <Select value={stageId} onChange={(e) => setStageId(e.target.value)}>
             {stages.map((s) => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </Select>
-        </div>
-        <div>
-          <label className={label}>Expected close</label>
-          <Input aria-label="Expected close" type="date" value={closeDate} onChange={(e) => setCloseDate(e.target.value)} />
-        </div>
+        </label>
+        <label className="block">
+          <span className={label}>Expected close</span>
+          <Input type="date" value={closeDate} onChange={(e) => setCloseDate(e.target.value)} />
+        </label>
       </div>
-      <div>
-        <label className={label}>Source</label>
-        <Input aria-label="Source" value={source} onChange={(e) => setSource(e.target.value)} placeholder="Where it came from" />
-      </div>
+      <label className="block">
+        <span className={label}>Source</span>
+        <Input value={source} onChange={(e) => setSource(e.target.value)} placeholder="Where it came from" />
+      </label>
 
       {error && <p className="text-meta text-danger">{error}</p>}
 

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Settings, Globe, Lock, Trash2 } from 'lucide-react'
 import { StudioWindow } from '@/components/studio/studio-window'
 import { StudioFooter } from '@/components/studio/kit/studio-footer'
-import { Input, Textarea, Label } from '@/components/ui/field'
+import { Input, Textarea, Field, labelClasses } from '@/components/ui/field'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { isError } from '@/lib/action-result'
 import { updateRoom, deleteRoom } from '@/app/(main)/messages/rooms/actions'
@@ -100,13 +100,11 @@ export function RoomSettings({
           }
         >
           <div className="space-y-5">
-            <div className="space-y-1.5">
-              <Label>Board name</Label>
+            <Field label="Board name">
               <Input value={n} onChange={(e) => setN(e.target.value)} maxLength={80} placeholder="Name this board" />
-            </div>
+            </Field>
 
-            <div className="space-y-1.5">
-              <Label>Description</Label>
+            <Field label="Description">
               <Textarea
                 value={d}
                 onChange={(e) => setD(e.target.value)}
@@ -115,11 +113,13 @@ export function RoomSettings({
                 placeholder="What is this board for?"
                 className="resize-none"
               />
-            </div>
+            </Field>
 
             <div className="space-y-1.5">
-              <Label>Who can see it</Label>
-              <div className="flex gap-2">
+              {/* A pair of toggle buttons is not a labelable control, so the name comes from
+                  role="group" + aria-labelledby, not from a <label> with nothing to point at. */}
+              <p className={labelClasses} id="room-visibility-label">Who can see it</p>
+              <div className="flex gap-2" role="group" aria-labelledby="room-visibility-label">
                 {([
                   ['public', Globe, 'Anyone'],
                   ['private', Lock, 'Invite only'],

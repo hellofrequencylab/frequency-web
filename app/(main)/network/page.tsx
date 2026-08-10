@@ -576,9 +576,10 @@ export default async function CommunityPage({
             pulse below them. The pulse (P5/P3b) is Suspense-wrapped so it never blocks. */}
         <aside className="flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start">
           <div>
-            <label className="mb-2 block text-body-sm font-bold tracking-tight text-text">
+            {/* DirectorySearch is a composite that names its own input, so this is a heading. */}
+            <p className="mb-2 block text-body-sm font-bold tracking-tight text-text">
               Search members
-            </label>
+            </p>
             <DirectorySearch placeholder="Search by name or @handle…" />
           </div>
           <OnlineMembersCard members={onlineMembers} />

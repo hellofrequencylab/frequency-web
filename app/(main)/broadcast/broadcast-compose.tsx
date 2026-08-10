@@ -100,10 +100,9 @@ export function BroadcastCompose({
         isPending={isPending}
         error={error}
       >
-        <div>
-          <label className={cmLabel}>Title *</label>
+        <label className="block">
+          <span className={cmLabel}>Title *</span>
           <Input
-            aria-label="Title"
             type="text"
             value={title}
             onChange={e => setTitle(e.target.value)}
@@ -111,11 +110,11 @@ export function BroadcastCompose({
             required
             disabled={isPending}
           />
-        </div>
+        </label>
 
         <div>
-          <label className={cmLabel}>Type</label>
-          <div className="flex gap-2 flex-wrap">
+          <p className={cmLabel} id="dispatch-type-label">Type</p>
+          <div className="flex gap-2 flex-wrap" role="group" aria-labelledby="dispatch-type-label">
             {(['post', 'poll', 'challenge', 'article'] as DispatchType[]).map(t => (
               <button
                 key={t}
@@ -133,12 +132,11 @@ export function BroadcastCompose({
           </div>
         </div>
 
-        <div>
-          <label className={cmLabel}>
+        <label className="block">
+          <span className={cmLabel}>
             Body * <span className="text-subtle font-normal">(markdown supported)</span>
-          </label>
+          </span>
           <Textarea
-            aria-label="Body"
             value={body}
             onChange={e => setBody(e.target.value)}
             placeholder="Write your Dispatch…"
@@ -147,7 +145,7 @@ export function BroadcastCompose({
             disabled={isPending}
             className="resize-y font-mono text-meta leading-relaxed"
           />
-        </div>
+        </label>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>

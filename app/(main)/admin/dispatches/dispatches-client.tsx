@@ -125,8 +125,8 @@ function DispatchForm({
 
       {/* Type */}
       <div>
-        <label className={lbl}>Type</label>
-        <div className="flex gap-2 flex-wrap">
+        <p className={lbl} id="admin-dispatch-type-label">Type</p>
+        <div className="flex gap-2 flex-wrap" role="group" aria-labelledby="admin-dispatch-type-label">
           {(['post', 'poll', 'challenge', 'article'] as DispatchType[]).map(t => (
             <button
               key={t}
@@ -177,8 +177,9 @@ function DispatchForm({
       {/* Poll options. Only when type=poll */}
       {dispatchType === 'poll' && (
         <div>
-          <label className={lbl}>Poll Options <span className="text-subtle font-normal">(min 2)</span></label>
-          <div className="space-y-2">
+          {/* A list of rows, each input named by its own aria-label, so this is a heading. */}
+          <p className={lbl} id="admin-poll-options-label">Poll Options <span className="text-subtle font-normal">(min 2)</span></p>
+          <div className="space-y-2" role="group" aria-labelledby="admin-poll-options-label">
             {pollOptions.map((opt, i) => (
               <div key={i} className="flex items-center gap-2">
                 <Input

@@ -85,6 +85,12 @@ export function Label({ className, ...props }: LabelHTMLAttributes<HTMLLabelElem
 //
 // Wrap exactly ONE control. Implicit association binds the label to the first labelable descendant,
 // so a Field containing two inputs would name only the first; use two Fields.
+//
+// 🔒 ENFORCED. `pnpm check:labels` (ADR-966) fails the build on a <label> that names nothing or
+// nests inside another. If you have something that is not one control, do NOT reach for `Label`:
+//   several controls -> <p className={labelClasses} id="x"> + role="group" aria-labelledby="x"
+//   no control       -> <p className={labelClasses}>  (a caption over a read-only preview, or a
+//                       heading over a list of already-labelled rows, is not a label)
 export function Field({
   label,
   hint,

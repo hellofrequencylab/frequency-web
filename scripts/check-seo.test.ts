@@ -9,6 +9,8 @@ import {
   isPrivateRoute,
   robotsDirective,
   layoutChain,
+  doubleBrandedTitles,
+  siteName,
 } from './check-seo.mjs'
 
 // Locks the SEO/sitemap coherence gate. Scans A and B (coverage + resolution) reason about
@@ -113,5 +115,62 @@ describe('check-seo — the shipped tree', () => {
     for (const route of ['/market', '/housing', '/classifieds']) {
       expect(result.noindexed, `${route} must be seen, and seen as noindex+follow`).toContain(`${route} (noindex, follow)`)
     }
+  })
+})
+
+describe('Scan D — double-branded titles', () => {
+  // app/layout.tsx sets `title.template: '%s · Frequency'`, so a page that ALSO writes the brand
+  // renders "Name · Frequency · Frequency" in the tab, the SERP, and every share card that falls
+  // back to <title>. /spotlight/[handle] shipped that on every published Spotlight, and
+  // /journeys/[slug]'s private fallback shipped it too (found by this scan, not by the plan).
+  it('flags a top-level title that re-appends the site name', () => {
+    expect(doubleBrandedTitles("export const metadata = { title: 'Spotlight · Frequency' }", 'Frequency')).toHaveLength(1)
+  })
+
+  it('leaves openGraph.title and twitter.title alone', () => {
+    // These get NO template, so they SHOULD carry the brand — 14 marketing pages correctly do.
+    // A flat grep would fail every one of them, which is why the scan walks brace depth.
+    const src = `export const metadata = {
+      title: 'The Quest works how?',
+      openGraph: { title: 'The Quest · Frequency' },
+      twitter: { card: 'summary_large_image', title: 'The Quest · Frequency' },
+    }`
+    expect(doubleBrandedTitles(src, 'Frequency')).toHaveLength(0)
+  })
+
+  it('resumes checking after a social block closes', () => {
+    const src = `export const metadata = {
+      openGraph: { title: 'Fine · Frequency' },
+      title: 'Bad · Frequency',
+    }`
+    expect(doubleBrandedTitles(src, 'Frequency')).toHaveLength(1)
+  })
+
+  it('accepts a clean title', () => {
+    expect(doubleBrandedTitles("export const metadata = { title: 'Pricing' }", 'Frequency')).toHaveLength(0)
+  })
+
+  it('flags an interpolated title with a hardcoded brand suffix', () => {
+    // This IS the Spotlight bug verbatim: the name is computed, the ` · Frequency` is not.
+    expect(doubleBrandedTitles('return { title: `${name} · Frequency` }', 'Frequency')).toHaveLength(1)
+  })
+
+  it('says nothing about a title it cannot read', () => {
+    // A call expression is not decidable from source, and guessing is worse than staying quiet.
+    expect(doubleBrandedTitles('return { title: buildTitle(name) }', 'Frequency')).toHaveLength(0)
+  })
+
+  it('ignores a title inside a comment', () => {
+    expect(doubleBrandedTitles("// title: 'Old · Frequency'", 'Frequency')).toHaveLength(0)
+  })
+})
+
+describe('siteName', () => {
+  it('reads the brand from its one source instead of hardcoding it', () => {
+    expect(siteName('export const SITE_NAME = "Frequency";')).toBe('Frequency')
+  })
+
+  it('returns null when the shape is gone, so the caller can fail loudly', () => {
+    expect(siteName('export const SOMETHING = "x"')).toBeNull()
   })
 })

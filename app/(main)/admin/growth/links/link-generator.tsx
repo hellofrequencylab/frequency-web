@@ -15,7 +15,7 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { Link2, Copy, Check, QrCode } from 'lucide-react'
-import { Input, Label } from '@/components/ui/field'
+import { Input, Label, labelClasses } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { DEFAULT_STYLE } from '@/lib/qr/style'
@@ -121,11 +121,13 @@ export function LinkGenerator() {
         </div>
 
         <div className="space-y-1.5">
-          <Label>Campaign tags</Label>
+          {/* Names the four UTM fields as a set. Not a <Label>: a <label> with no `htmlFor`
+              names nothing, and each field below already carries its own. */}
+          <p className={labelClasses} id="lg-utm-label">Campaign tags</p>
           <p className="text-2xs text-muted">
             Optional UTM tags, added to the destination so scans attribute to this campaign.
           </p>
-          <div className="mt-2 grid gap-3 sm:grid-cols-2">
+          <div className="mt-2 grid gap-3 sm:grid-cols-2" role="group" aria-labelledby="lg-utm-label">
             {UTM_FIELDS.map((f) => (
               <div key={f.key} className="space-y-1">
                 <Label htmlFor={`lg-utm-${f.key}`} className="text-2xs uppercase tracking-wide">
@@ -161,7 +163,8 @@ export function LinkGenerator() {
 
         {trackedPreview && (
           <div className="space-y-1.5">
-            <Label>Tracked destination</Label>
+            {/* Captions a read-only <code> preview, not a control, so <label> is wrong here. */}
+            <p className={labelClasses}>Tracked destination</p>
             <div className="flex items-start gap-2 rounded-lg border border-border bg-surface-elevated/60 p-3">
               <code className="min-w-0 flex-1 break-all text-2xs leading-relaxed text-muted">{trackedPreview}</code>
               <button

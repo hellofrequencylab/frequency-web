@@ -419,18 +419,13 @@ const MARKETING_DELIVERABILITY_MODULE_IDS = [
   'marketing-deliverability-dead-letters',
 ] as const
 
-// The Resonance Graph page (/admin/crm/graph), in default render order — the consent-first metric row
-// then the ranked list of the strongest consented connections. Each block self-fetches (fail-safe) and
-// reads only double-opt-in ties. The page keeps its own janitor/insights staff gate; the modules render
-// only through that gated route, so they never re-gate.
-const CRM_GRAPH_MODULE_IDS = ['crm-graph-metrics', 'crm-graph-connections'] as const
-
-// The Playbooks page (/admin/crm/playbooks), in default render order — the stat band, the code-registry
-// table, then the recent run history. Each block self-fetches (fail-safe); the stats and runs read the
-// activity independently (as the hand-built sections did), so there's no shared-fetch change. The page
-// keeps its own janitor gate (and its idempotent seedPlaybooks sync); the modules render only through it.
-const CRM_PLAYBOOKS_MODULE_IDS = ['crm-playbooks-stats', 'crm-playbooks-registry', 'crm-playbooks-runs'] as const
-
+// NOTE: CRM_GRAPH_MODULE_IDS (/admin/crm/graph) and CRM_PLAYBOOKS_MODULE_IDS
+// (/admin/crm/playbooks) were HERE, alongside CRM_TODAY_MODULE_IDS (/admin/crm/today) further
+// down. All three pages became `redirect('/admin/crm/intelligence')` and nothing else, so their
+// keys in ROUTE_MODULE_IDS gave the App catalog route scopes that navigate away before rendering,
+// and MODULE_ROUTES advertised a Layout editor on them. Every one of their block ids is in
+// CRM_INTELLIGENCE_MODULE_IDS below, which is where they actually render.
+//
 // The Intelligence page (/admin/crm/intelligence) — the unified Resonance CRM surface that merges Vera
 // Today, Playbooks, and the Resonance Graph into one operator page (owner merge). Default arrangement
 // order: the two stat rows (Playbooks headline, then the Graph metric row) lead the full-width stats
@@ -523,10 +518,6 @@ const GROWTH_MODULE_IDS = [
   'growth-related',
 ] as const
 
-// The Vera Today page (/admin/crm/today). The whole interior is one self-fetching, janitor-gated block
-// (the five person-plus-action cards + the you-are-at-zero empty), keyed only on the model's scores with
-// no searchParams facet, so it converts wholesale to one module. The page keeps its janitor gate.
-const CRM_TODAY_MODULE_IDS = ['crm-today'] as const
 
 // The standalone Resonance CRM members page (/admin/crm/members). The whole interior is one self-
 // fetching roster (the fully-featured member-viewer + its fail-safe empty), keyed only on the
@@ -658,8 +649,6 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/admin/content/journeys': ADMIN_JOURNEYS_MODULE_IDS,
   '/admin/marketing/analytics': MARKETING_ANALYTICS_MODULE_IDS,
   '/admin/marketing/deliverability': MARKETING_DELIVERABILITY_MODULE_IDS,
-  '/admin/crm/graph': CRM_GRAPH_MODULE_IDS,
-  '/admin/crm/playbooks': CRM_PLAYBOOKS_MODULE_IDS,
   '/admin/community': COMMUNITY_ADMIN_MODULE_IDS,
   '/admin/operations': OPERATIONS_MODULE_IDS,
   '/admin/growth': GROWTH_MODULE_IDS,
@@ -667,7 +656,6 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   // composes its own kit directly (the roster + the compact stat row), and its former cockpit blocks
   // (verdict/worklist/funnel, rising-members, trust-backtest) were re-homed to /admin/crm/intelligence.
   // Registering it would make the on-page Layout editor offer blocks the page does not render.
-  '/admin/crm/today': CRM_TODAY_MODULE_IDS,
   '/admin/crm/intelligence': CRM_INTELLIGENCE_MODULE_IDS,
   '/admin/crm/members': CRM_MEMBERS_MODULE_IDS,
   '/admin/gamification': GAMIFICATION_MODULE_IDS,

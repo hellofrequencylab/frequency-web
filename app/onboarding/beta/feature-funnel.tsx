@@ -446,24 +446,26 @@ function RewardStep({
 
       {/* Claim the @username. */}
       <div className="mx-auto mt-5 max-w-sm text-left">
-        <label className="mb-1 block text-meta font-semibold text-subtle">Your @username</label>
-        <div className="flex items-center gap-2 rounded-card border border-border bg-canvas px-3 focus-within:border-border-strong">
-          <span className="text-body text-subtle">@</span>
-          <input
-            type="text"
-            value={handle}
-            onChange={(e) => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-            placeholder="yourname"
-            autoComplete="off"
-            className="w-full bg-transparent py-3 text-body text-text placeholder:text-subtle focus:outline-none"
-          />
-          {check.status === 'available' && check.handle === handle.trim().toLowerCase() && (
-            <span className="text-meta font-semibold text-success">free</span>
-          )}
-          {check.status === 'taken' && check.handle === handle.trim().toLowerCase() && (
-            <span className="text-meta font-semibold text-warning">taken</span>
-          )}
-        </div>
+        <label className="block">
+          <span className="mb-1 block text-meta font-semibold text-subtle">Your @username</span>
+          <span className="flex items-center gap-2 rounded-card border border-border bg-canvas px-3 focus-within:border-border-strong">
+            <span className="text-body text-subtle">@</span>
+            <input
+              type="text"
+              value={handle}
+              onChange={(e) => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+              placeholder="yourname"
+              autoComplete="off"
+              className="w-full bg-transparent py-3 text-body text-text placeholder:text-subtle focus:outline-none"
+            />
+            {check.status === 'available' && check.handle === handle.trim().toLowerCase() && (
+              <span className="text-meta font-semibold text-success">free</span>
+            )}
+            {check.status === 'taken' && check.handle === handle.trim().toLowerCase() && (
+              <span className="text-meta font-semibold text-warning">taken</span>
+            )}
+          </span>
+        </label>
       </div>
 
       <div className="mx-auto mt-6 flex max-w-sm items-center gap-3">

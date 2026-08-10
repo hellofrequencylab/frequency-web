@@ -120,7 +120,8 @@ export function GiftGemsDialog({ balance }: { balance: number }) {
 
               {/* Recipient picker */}
               <div>
-                <label className="text-meta font-semibold uppercase tracking-wider text-muted">To</label>
+                {/* Heading: the picked-recipient chip or a search box that names its own input. */}
+                <p className="text-meta font-semibold uppercase tracking-wider text-muted">To</p>
                 {recipient ? (
                   <div className="mt-1 flex items-center gap-2 rounded-lg border border-border px-3 py-2">
                     <span className="flex-1 text-body-sm text-text">

@@ -65,7 +65,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params
   const loaded = await getPlan(slug)
-  if (!loaded || loaded.plan.visibility === 'private') return { title: 'Journey · Frequency' }
+  // No ` · Frequency` suffix: the root layout's `title.template` appends it (app/layout.tsx).
+  if (!loaded || loaded.plan.visibility === 'private') return { title: 'Journey' }
   const { plan } = loaded
   const title = plan.title
   const description =
