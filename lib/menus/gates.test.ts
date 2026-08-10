@@ -169,12 +169,12 @@ describe('applyRegistryGates — idempotence on the code defaults', () => {
   })
 })
 
-// ── Loom Studio is its own admin_header section, and the gate is the reason (ADR-974) ────────────
+// ── Loom Studio is its own admin_header section, and the gate is the reason (ADR-979) ────────────
 // /admin/library matched NO section, so its sub-nav band drew empty. The fix could not be "file it
 // under an existing section", because adminHeaderMenu() stamps the SECTION's min + staffDomain onto
 // every item in it: Growth (host + marketing) would have offered a janitor-only tool to hosts, and
 // Operations (janitor + platform) would have dropped it for a marketing-domain janitor.
-describe('Loom Studio section (ADR-974)', () => {
+describe('Loom Studio section (ADR-979)', () => {
   const menu = defaultMenu('admin_header')
   const section = menu.categories.find((c) => c.items.some((i) => i.href === '/admin/library'))
 

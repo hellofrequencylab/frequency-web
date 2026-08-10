@@ -158,7 +158,7 @@ export async function listLiveSplashes(): Promise<LiveSplash[]> {
   return [...micro, ...qr]
 }
 
-// ── "Used in" — REMOVED 2026-08-10 (ADR-974) ──────────────────────────────────────────────────────
+// ── "Used in" — REMOVED 2026-08-10 (ADR-979) ──────────────────────────────────────────────────────
 // The where-referenced note is gone, and the reason is not that the table was dropped. It is that
 // NOTHING EVER WROTE TO IT: `public.library_usages` was created by `20260920000000_library_dam.sql`,
 // dropped five days later, and a repo-wide search finds zero inserts in that migration or anywhere

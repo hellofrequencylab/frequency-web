@@ -683,7 +683,7 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
   // `min` + `staffDomain` onto every item inside it, so filing a janitor+marketing tool under
   // host+marketing Growth would offer it to hosts, and under janitor+platform Operations would
   // relabel it a platform tool and drop it for a marketing-domain janitor. Its own row carries its
-  // own gate, exactly like QR Studio directly above (ADR-974).
+  // own gate, exactly like QR Studio directly above (ADR-979).
   //
   // No `groups`: the sub-nav then renders just the section's own landing link, which is what
   // /admin/library needs — it previously matched NO section at all, so the band drew empty.
