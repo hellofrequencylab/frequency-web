@@ -423,6 +423,37 @@ severity: `/admin/growth/funnels` and `/admin/marketing/funnels` are orphaned in
 🔴 **Owner call:** finish the migration, restore the menu rows, or delete the pages. All three are
 defensible; leaving them is the only option that is not.
 
+### 6.13 — Member-surface wiring: 261 routes, 268 links, two real defects (both fixed here)
+
+Method: every `page.tsx` outside `/admin/`, `/crm/`, `/moderation/` → **261 routes**; every literal
+and template-literal `href` in those files → **268 links**, each existence-checked against the route
+inventory, `next.config.ts` redirects, and the target's own `redirect()`. Host-facing manage/settings
+pages were kept **in** scope — a Space owner is a member, not a platform operator.
+
+✅ **267 of 268 links resolve.** No `href="#"`, no `onClick={() => {}}`, no TODO-marked handlers
+anywhere in the member surfaces. The list pages all reach an `EmptyState`, directly or through the
+shared surface component. This part of the product is wired.
+
+🔴 **Fixed: a 404 shown to every unpaid Space owner.** `settings/billing/billing-body.tsx` rendered
+*"See if a founding spot is left"* → `/spaces/[slug]/settings/billing/founding`. That route **does
+not exist**: the per-city Founding Business cohort was withdrawn by owner directive on 2026-07-31 and
+its route deleted, which `lib/pricing/founding.ts:24` states outright. The CTA survived a later edit
+to the same file (#2017, three days after). A door with no room, on the billing page, shown only to
+the people being asked to pay. Removed, with the reason recorded in place.
+
+🔴 **Fixed: `/library/review` had no way in.** A working, Host-gated approval queue whose own page
+comment claimed it was *"reachable from admin"* — a repo-wide search returns its route, one
+`revalidatePath`, and widget bookkeeping, and **no link, in admin or anywhere else**. `/admin` was
+never the right home: that floor is staff-only, while this queue gates on the **community** ladder
+(host+). Added to `/library`'s action band under the review page's own guard, so the population that
+can use it now sees it where they already stand.
+
+⚠️ **Not fixed, recorded:** `market/sell` binds `action={createMakerProductAction}` with no
+`useActionState`, and the action returns bare `void` on rejection — native `required`/`min` catch the
+obvious cases, so any *other* rejection just makes the page do nothing. Same shape is likely across
+the `spaces/[slug]/settings/*` forms; that is a sweep, not a one-line fix. The roommate-seeker form
+saves with no confirmation of any kind.
+
 ---
 
 ## Phase 7 — Voice, docs, and the owner handoff

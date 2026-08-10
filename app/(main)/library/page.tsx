@@ -1,6 +1,9 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Dumbbell, Route, TrendingUp, Users2, Flame, Clock } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
+import { atLeastRole } from '@/lib/core/roles'
+import { buttonClasses } from '@/components/ui/button'
 import { IndexTemplate } from '@/components/templates'
 import { EntityCard } from '@/components/cards/entity-card'
 import { UnderlineTabs } from '@/components/ui/underline-tabs'
@@ -85,9 +88,20 @@ export default async function LibraryPage({
       heroScrim={header.scrim}
       action={
         <div className="flex items-center gap-2">
-          {/* The two guided create flows (each route carries its own canCreate gate). The
-              review queue keeps living at /library/review, reachable from admin. */}
+          {/* The two guided create flows (each route carries its own canCreate gate). */}
           <CreateMenu />
+          {/* The review queue. This comment used to say it was "reachable from admin" and that was
+              simply not true — a repo-wide search for `library/review` returned its own route, a
+              revalidatePath call and widget bookkeeping, and NO link, in admin or anywhere else. So a
+              Host had a working approval queue reachable only by typing the URL. `/admin` was never
+              the right home for it either: that floor is staff-only, while this queue gates on the
+              COMMUNITY ladder (host+), which is the population already standing on this page. The
+              condition below mirrors the review page's own guard exactly. */}
+          {atLeastRole(caller.community_role, 'host') && (
+            <Link href="/library/review" className={buttonClasses('secondary', 'sm')}>
+              Review queue
+            </Link>
+          )}
           {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
           {ctaLabel && ctaHref && (
             <a
