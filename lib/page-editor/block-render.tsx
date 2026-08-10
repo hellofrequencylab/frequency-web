@@ -1,6 +1,27 @@
 import { Fragment, type CSSProperties, type ReactNode } from 'react'
 import type { Config, Data, Metadata } from '@/lib/page-editor/types'
 
+// A block the current config cannot resolve — a type that was renamed or retired while
+// stored documents still name it. The document ALWAYS keeps it (the loader no longer
+// discards a document over one unknown type, ADR-975 D-9), so the only question is what
+// the author sees.
+//
+// Editing: a labelled placeholder, so the block is visibly still there and cannot be
+// mistaken for empty space and "tidied" away. Live: nothing at all — a visitor must never
+// meet editor scaffolding. The props ride through untouched either way, so saving the page
+// round-trips the block byte-for-byte.
+function UnknownBlock({ type, isEditing }: { type: string; isEditing?: boolean }) {
+  if (!isEditing) return null
+  return (
+    <div className="mx-auto my-2 max-w-3xl rounded-lg border border-dashed border-subtle bg-surface-elevated px-4 py-3">
+      <p className="text-body-sm font-medium text-text">This block is not available in this version</p>
+      <p className="mt-0.5 text-body-sm text-muted">
+        <code>{type}</code> is kept exactly as saved and will publish unchanged. It shows nothing on the live page.
+      </p>
+    </div>
+  )
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // BlockRender — the in-house read/render path for Puck-format page documents.
 //
@@ -168,7 +189,10 @@ function SlotRender({
   return (
     <div className={className} style={style}>
       {content.map((item) => {
-        if (!ctx.config.components[item.type]) return null
+        if (!ctx.config.components[item.type])
+          return (
+            <UnknownBlock key={item.props.id as string} type={item.type} isEditing={ctx.isEditing} />
+          )
         return <SlotItem key={item.props.id as string} item={item} ctx={ctx} />
       })}
     </div>
@@ -232,7 +256,10 @@ function DropZoneRender({
             isEditing: ctx.isEditing,
           },
         }
-        if (!component) return null
+        if (!component)
+          return (
+            <UnknownBlock key={item.props.id as string} type={item.type} isEditing={ctx.isEditing} />
+          )
         const resolved = propsWithSlots({ type: item.type, props: baseProps }, ctx)
         const Component = component.render
         return <Component key={item.props.id as string} {...resolved} />
