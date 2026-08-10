@@ -82,7 +82,7 @@ if a tenant's unmet need has somewhere to go.
 | # | Prerequisite | Owner | Why it blocks |
 |---|---|---|---|
 | **P-a** | [`FINALIZE-PLAN.md`](FINALIZE-PLAN.md) Phase 1.2/1.3 — recapture the 72 visual baselines from a settled `main` | Engineering | All 72 were written in one commit on 2026-08-05 and are many rendering commits stale. Until then a total regression and a perfect refactor produce the **same red X**. Hard gate on **E1** |
-| **P-b** | Add `lint`, `test` and `pr-compare` to required branch-protection contexts (`ci.yml:37-46`) | 🔴 **Owner, ~5 minutes** | Only `checks` and `analyze` are required today, so 8,874 tests **cannot block a merge**. Worth more than any gate below |
+| **P-b** | ✅ **DONE 2026-08-10** — `lint` and `test` added as required branch-protection contexts | Owner | The ruleset now requires `checks` · `analyze` · `lint` · `test`, verified by reading it back. **the full suite can now block a merge** (708 files, 8,944 tests on 2026-08-10 — a figure that moves with every PR, so quote it with a date or not at all), so every gate in this program is real rather than advisory. ⚠️ `pr-compare` deliberately still advisory — requiring it before the baselines are recaptured would block every PR on a pre-existing failure. Pair those two changes |
 
 ### Phases
 

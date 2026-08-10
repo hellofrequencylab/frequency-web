@@ -420,6 +420,7 @@ Multiplayer is the reason E0 is **XL** rather than **L**. Full design in
 
 | Item | Detail | Lift |
 |---|---|:---:|
+| **Add the dependencies** | ⚠️ `yjs`, `y-prosemirror`, `@tiptap/extension-collaboration` — **none is installed.** Tiptap 3.29 + ProseMirror are, but v3 dropped v2's `y-prosemirror` re-export, so this is three new packages, not zero. Check bundle impact against the public-render ratchet in the same PR | S |
 | **Yjs document schema** | `Y.Array` of nodes, `Y.Map` per node's `content`, `Y.Text` for rich text | M |
 | **Bidirectional mapping** | `toYDoc(tree)` / `serialize(ydoc)`, with `serialize(toYDoc(t)) === t` as a hard test over the frozen 41-document corpus | M |
 | **Realtime channel + authz** | Supabase Realtime broadcast; a client may only join a page it can edit — checked server-side, not by the client's own claim | M |
@@ -480,6 +481,7 @@ is *currently destroying author work* every time a block type is renamed.
 - ⏳ **`FINALIZE-PLAN` Phase 1.2** (recapture the 72 stale visual baselines) gates **E1, not E0** —
   items 8–14 are covered by `renderToStaticMarkup` equivalence, which works while the visual suite is
   red. This is why [ADR-976](DECISIONS.md) D-8 lets E0 start once 1.2/1.3 land and not before.
-- 🔴 **Branch protection.** `ci.yml:37-46` requires only `checks` and `analyze`, so `test` and
-  `pr-compare` **cannot block a merge today**. Every gate specified above is advisory until an owner
-  changes that — still the five-minute action worth more than any of this.
+- ✅ **Branch protection — CLOSED 2026-08-10.** The ruleset now requires `checks` · `analyze` ·
+  **`lint`** · **`test`**, verified by reading it back. Every gate specified above is a real gate.
+  ⚠️ `pr-compare` remains advisory on purpose: requiring it before the baselines are recaptured
+  would block every PR on a pre-existing failure. Pair the two changes.

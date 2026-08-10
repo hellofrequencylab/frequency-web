@@ -19220,6 +19220,15 @@ same red X. 🔴 **Branch protection is a five-minute owner action worth more th
 `ci.yml:37-46` records `checks` and `analyze` as the only required contexts, so `lint` and `test`
 (704 files, 8,874 tests) cannot block a merge. **A PR with failing tests is mergeable today.**
 
+> ✅ **Resolved the same day this ADR was written.** The owner added `lint` and `test`; the ruleset
+> now requires four contexts — `checks` · `analyze` · `lint` · `test` — confirmed by reading the
+> rulesets API back after the change. Every gate in this program is therefore a real gate. The
+> paragraph above is left standing as the record of why it mattered. (The test figures are also
+> superseded: 708 files, 8,944 tests on 2026-08-10, and the figure moves with every PR — date it or
+> omit it.) ⚠️ `pr-compare` is still
+> advisory **on purpose**: requiring it before the visual baselines are recaptured would block every
+> PR on a pre-existing failure. Those two changes belong in the same commit.
+
 **Consequences.** ✅ One contract, four surfaces, authored once. ✅ `~138` block types across three
 systems ratchet toward `~60` in one. ⚠️ **E0–E3 carry roughly half the program's risk and produce
 almost nothing visible**; E4 is the first demonstrable point. Honest total: eight **L**, one **XL**,
@@ -19385,7 +19394,7 @@ a CRDT needs. E0 was always building the hard part.
 
 | Concern | Decision | Why |
 |---|---|---|
-| CRDT | **Yjs** | `@tiptap/pm` **3.29 is already a dependency**, and Tiptap collaboration *is* `y-prosemirror`. E4's inline rich text and E0's document sync become one technology instead of two. Any other CRDT makes Tiptap collaboration a bespoke bridge |
+| CRDT | **Yjs** | Tiptap's collaboration extension is built on `y-prosemirror`, so E4's inline rich text and E0's document sync become one technology instead of two. Any other CRDT makes Tiptap collaboration a bespoke bridge. ⚠️ **Corrected 2026-08-10:** an earlier draft said `@tiptap/pm` 3.29 being installed made Yjs *already a dependency*. It does not — Tiptap v3 dropped v2's `y-prosemirror` re-export, and `yjs` / `y-prosemirror` / `@tiptap/extension-collaboration` are all absent. **Three new packages in E0.** The argument survives as compatibility, not as install cost |
 | Transport | **Supabase Realtime broadcast** carrying Yjs updates | Already in the stack, already authenticated with the editor's session. Avoids operating a `y-websocket` server — a new production dependency with its own scaling and on-call story |
 | Presence | Yjs **awareness** over Realtime presence | Ephemeral by construction. A cursor that persists to the database is a bug |
 | Persistence | Debounced encoded snapshot into the draft row; `page_versions` stores **serialized trees, not CRDT state** | A version a human restores must be readable without a CRDT runtime. This is what stops Yjs from becoming load-bearing on the *read* path |
@@ -19528,8 +19537,11 @@ after the change it was meant to catch never gets that moment — as `check:menu
 first year enforcing a naming convention while the invariant walked past it.
 
 ⚠️ **`check:doc-safety` goes in the `checks` job, not `test`.** It runs vitest, so `test` is the
-instinctive home and the wrong one: `checks` and `analyze` are the only required branch-protection
-contexts, so **a hard gate placed in `test` cannot block a merge today.** Measured cost: four AST
+instinctive home and the wrong one: at the time of writing, `checks` and `analyze` were the only
+required branch-protection contexts, so **a hard gate placed in `test` could not block a merge.**
+✅ *That is no longer true — `test` became a required context on 2026-08-10 — so the placement is now
+a matter of cohesion rather than correctness: `checks` is the guard job and its budget is where a
+3–5 s addition belongs.* Measured cost: four AST
 guards ≈1–2 s against a 13 s aggregate; doc-safety's single-file vitest run ≈3–5 s. The job goes
 ~55 s → ~60 s.
 

@@ -96,8 +96,10 @@ only shrink, stale entries fail) or a re-capture that records the new sha, date 
 boundary · rendering · publish safety · concurrency.
 
 🔴 **Goes in the `checks` job, not `test`.** It runs vitest, so `test` is the instinctive home and the
-wrong one — `checks` and `analyze` are the only required contexts, so a hard gate in `test` cannot
-block a merge.
+wrong one. ⚠️ *Note: as of 2026-08-10 `test` IS a required context, so this is no longer a
+correctness argument — but it remains the right home. `checks` is the guard job, it is where every
+sibling gate lives, and its ~13 s budget is where a 3–5 s addition belongs. Historically the argument
+was harder: before that date a hard gate in `test` could not block a merge at all.*
 
 ---
 

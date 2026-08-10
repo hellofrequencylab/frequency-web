@@ -275,7 +275,7 @@ document — `Y.Array` of nodes, `Y.Map` per node's `content`, `Y.Text` for rich
 
 | Concern | Decision | Why this one |
 |---|---|---|
-| **CRDT** | **Yjs** | The mature choice, and `@tiptap/pm` **3.29 is already a dependency** — Tiptap's collaboration extension is `y-prosemirror`, so E4's inline rich-text editing and E0's document sync are the *same* technology instead of two. Choosing anything else means Tiptap collaboration is a bespoke bridge |
+| **CRDT** | **Yjs** | The mature choice, and the one Tiptap's own collaboration extension is built on (`y-prosemirror`) — so E4's inline rich-text editing and E0's document sync are the *same* technology instead of two. Choosing anything else makes Tiptap collaboration a bespoke bridge. ⚠️ **Verified 2026-08-10: this is a compatibility argument, not a free ride.** Tiptap 3.29 and the ProseMirror packages are installed; **`yjs`, `y-prosemirror` and `@tiptap/extension-collaboration` are NOT** — Tiptap v3 dropped the `y-prosemirror` re-export v2 carried. Budget three new dependencies in E0, not zero |
 | **Transport** | **Supabase Realtime broadcast**, carrying Yjs update payloads | Already in the stack and already authenticated with the session the editor holds. Avoids standing up and operating a `y-websocket` server, which is otherwise a new production dependency with its own scaling and on-call story |
 | **Presence + cursors** | Yjs **awareness** over Realtime presence | Awareness is ephemeral by design — it must never touch the document or the database. Cursors that persist are a bug |
 | **Persistence** | Debounced snapshot of the encoded state into the draft row; `page_versions` stores **serialized trees, not CRDT state** | A version a human restores must be readable without a CRDT runtime. Keeping the durable format plain is what stops Yjs from becoming load-bearing for the *read* path |
@@ -514,8 +514,18 @@ rendering commits stale (a sixth commit deleted the four app-room baselines on 0
 contexts and **zero member-shell**. Until 1.2 (recapture from a settled `main`) runs, a total
 regression and a perfect refactor produce the same red X.
 
-🔴 **Branch protection is a five-minute owner action worth more than any gate below.** `ci.yml:37-46`
-records it: required contexts are `checks` and `analyze` only, so `lint`, `test` (**706 files, 8,920 tests**) and `pr-compare` **cannot block a merge**. A PR with failing tests is mergeable today.
+✅ **Branch protection was the highest-value gap here, and it is CLOSED (2026-08-10).** The ruleset
+that guards `main` now requires four contexts — `checks` · `analyze` · **`lint`** · **`test`** —
+verified by reading the ruleset API back after the change. Until that day `checks` did not contain
+lint or the suite, so **the full test suite could not block a merge** (708 files / 8,944 tests as of
+2026-08-10 — it moves with every PR, so date it or omit it); that window is shut, and
+every gate in §7.2 is therefore a real gate rather than an advisory one.
+
+⚠️ **`pr-compare` and `lighthouse` are still advisory, deliberately.** Making `pr-compare` required
+*today* would block every PR on the stale baselines above, which is a pre-existing failure no diff
+can fix. **Add it as a required context in the same change that recaptures the baselines** — that
+pairing is the whole point, and doing it in either order alone produces a gate that is ignored or a
+repo that cannot merge.
 
 ### 7.2 New gates
 
@@ -674,7 +684,7 @@ building on the pre-contract block systems and doing it twice.
 | **T-2** | `reads: 'live'` vs `category` as the email boundary | **`reads` + `resolveAt`** ✅ *closed by measurement* | `category` already groups the palette; overloading it is what let `productCard` sit in `content` while reading the live catalog. Two jobs, two fields |
 | **T-3** | Density scale | **Three steps** — `compact \| standard \| roomy` | The code already exhibits exactly two (`space-y-6`, `space-y-14`) plus Site's roomier target. Three covers what exists with one slot spare; a fourth can be added without breaking stored documents, because density is declared per surface and never persisted per node |
 | **T-4** | Usage index shape | **Both** — an `app_instances` trigger *and* a periodic JSONB scan | The trigger is exact but only sees Layer-3 placements; the scan is the only thing that can see blocks embedded in stored documents. D-6's aggressive retirements make a single-source index the risk, not the cost. Rebuildable from scratch by design |
-| **T-5** | CRDT choice | **Yjs** | `@tiptap/pm` 3.29 is already a dependency and Tiptap collaboration *is* `y-prosemirror`, so E4's rich text and E0's sync are one technology instead of two |
+| **T-5** | CRDT choice | **Yjs** | Tiptap's collaboration extension is built on `y-prosemirror`, so E4's rich text and E0's sync are one technology instead of two. ⚠️ The installed base is Tiptap 3.29 + ProseMirror; **`yjs`, `y-prosemirror` and `@tiptap/extension-collaboration` are three NEW dependencies** (v3 dropped v2's re-export). The saving is integration risk, not install cost |
 
 ### 10.3 Still open — and who owns each
 
