@@ -106,6 +106,45 @@ export const FROZEN_GATE_DEBT = [
   },
 ]
 
+/* ── Rule 2: a `?tab=` row must point at a page that READS the tab ──────────────────────────────
+ *
+ * The rule above skips query-string rows, correctly: their authz happens per-tab inside a shared
+ * page body, so there is no page-level `requireAdmin` to compare against. But "out of scope for
+ * the authz comparison" quietly became "unchecked", and a different disagreement moved in.
+ *
+ * A row promising `/admin/programs?tab=content` lands on `/admin/programs`. If that page takes no
+ * `searchParams`, the query string is inert and the row renders the parent dashboard under a
+ * child's name. Two rows pointing at two tabs of a page with no tabs are two menu entries that
+ * open the same screen, and the operator has no way to tell that from a bug.
+ *
+ * Measured 2026-08-10: 4 of 8 tab rows point at a page that reads no searchParams. Both targets
+ * say so in their own header comments — `/admin/programs` is "a single DASHBOARD (no sub-tabs)".
+ * So the pages are behaving as designed and the CATALOG is the side that is wrong; which of the
+ * two fixes to take (teach the pages tabs, re-point the rows, or drop them) is a nav decision for
+ * an owner. Frozen with their numbers until then. What this refuses is a NINTH.
+ */
+export const FROZEN_TAB_DEBT = [
+  { href: '/admin/programs?tab=content', why: 'programs is a single dashboard by design; the row renders it under a sub-page name' },
+  { href: '/admin/programs?tab=rewards', why: 'same page, second synthetic row: two menu entries, one screen' },
+  { href: '/admin/growth?tab=acquisition', why: 'growth takes no searchParams; the tab is inert' },
+  { href: '/admin/growth?tab=marketing', why: 'same page, second synthetic row' },
+]
+
+/** Every catalog href carrying a `?tab=`, including the `synthetic:` rows that have no `id`. */
+export function tabRows(src) {
+  const out = new Set()
+  for (const m of src.matchAll(/href:\s*'(\/admin\/[^']*\?tab=[^']*)'/g)) out.add(m[1])
+  return [...out].sort()
+}
+
+/** Does the page behind an href read `searchParams` at all? */
+export function pageReadsSearchParams(href, read = (f) => readFileSync(f, 'utf8'), exists = existsSync) {
+  const path = href.split('?')[0].replace(/^\//, '')
+  const file = [`app/(main)/${path}/page.tsx`, `app/${path}/page.tsx`].find((p) => exists(p))
+  if (!file) return { file: null, missing: true, reads: false }
+  return { file, missing: false, reads: /searchParams/.test(read(file)) }
+}
+
 /** Catalog rows carrying an `/admin/...` href, with the gate they declare. */
 export function catalogRows(src) {
   const rows = []
@@ -151,6 +190,10 @@ const fmt = (min, domain) => `${min ?? '-'}+${domain ?? 'none'}`
  *  printed "0 of 0 ✓" and exited 0. */
 export const MIN_ROWS = 40
 
+/** Same reasoning for rule 2's corpus: 8 tab rows live in the catalog, so a collapse to a couple
+ *  means the `?tab=` regex stopped matching, not that the menu shrank. */
+export const MIN_TAB_ROWS = 6
+
 export function evaluate(src, io = {}) {
   const rows = catalogRows(src)
   if (rows.length < MIN_ROWS) {
@@ -183,12 +226,33 @@ export function evaluate(src, io = {}) {
       drifted.push({ ...r, cat, pag, was: `${known.catalog} vs ${known.page}`, file: g.file })
     }
   }
-  return { rows: rows.length, compared, fresh, drifted, healed }
+  // Rule 2: tab rows whose page cannot read a tab.
+  const frozenTabs = new Set(FROZEN_TAB_DEBT.map((d) => d.href))
+  const tabs = tabRows(src)
+  if (tabs.length < MIN_TAB_ROWS) {
+    throw new Error(
+      `check:gate-parity parsed only ${tabs.length} '?tab=' row(s), expected at least ` +
+        `${MIN_TAB_ROWS}. The parser is broken; a rule that scans nothing passes everything.`,
+    )
+  }
+  const inertTabs = []
+  const healedTabs = []
+  for (const href of tabs) {
+    const p = pageReadsSearchParams(href, io.read, io.exists)
+    if (p.missing) continue // a dangling href is check:menu's job
+    if (p.reads) {
+      if (frozenTabs.has(href)) healedTabs.push({ href, file: p.file })
+      continue
+    }
+    if (!frozenTabs.has(href)) inertTabs.push({ href, file: p.file })
+  }
+
+  return { rows: rows.length, compared, fresh, drifted, healed, tabs: tabs.length, inertTabs, healedTabs }
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const src = readFileSync(CATALOG, 'utf8')
-  const { rows, compared, fresh, drifted, healed } = evaluate(src)
+  const { rows, compared, fresh, drifted, healed, tabs, inertTabs, healedTabs } = evaluate(src)
   let bad = false
 
   if (fresh.length > 0) {
@@ -218,9 +282,29 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.log('')
   }
 
+  if (inertTabs.length > 0) {
+    bad = true
+    console.error(`\n✗ ${inertTabs.length} '?tab=' menu row(s) point at a page that reads no searchParams:\n`)
+    for (const t of inertTabs) console.error(`    ${t.href}\n      ${t.file} takes no searchParams, so the tab is inert`)
+    console.error(
+      '\n  The row renders the parent page under a child\'s name, which the operator cannot tell\n' +
+        '  from a bug. Either teach the page to read the tab (see admin/vera-ai/page.tsx) or point\n' +
+        '  the row somewhere real. Do NOT add it to FROZEN_TAB_DEBT — that list is a record of what\n' +
+        '  predates the rule.\n',
+    )
+  }
+
+  if (healedTabs.length > 0) {
+    console.log(`\n✅ ${healedTabs.length} frozen tab row(s) now resolve — delete them from FROZEN_TAB_DEBT:`)
+    for (const t of healedTabs) console.log(`    ${t.href}`)
+    console.log('')
+  }
+
   if (bad) process.exit(1)
   console.log(
     `✓ Gate parity: ${compared} of ${rows} catalog row(s) compared against their page guard; ` +
-      `no new disagreement (${FROZEN_GATE_DEBT.length} frozen, see FROZEN_GATE_DEBT).`,
+      `no new disagreement (${FROZEN_GATE_DEBT.length} frozen, see FROZEN_GATE_DEBT).\n` +
+      `  ${tabs} '?tab=' row(s) checked against their page's searchParams; ` +
+      `no new inert tab (${FROZEN_TAB_DEBT.length} frozen, see FROZEN_TAB_DEBT).`,
   )
 }

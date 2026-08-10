@@ -1,6 +1,16 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { catalogRows, pageGate, evaluate, FROZEN_GATE_DEBT, MIN_ROWS } from './check-gate-parity.mjs'
+import {
+  catalogRows,
+  pageGate,
+  evaluate,
+  tabRows,
+  pageReadsSearchParams,
+  FROZEN_GATE_DEBT,
+  FROZEN_TAB_DEBT,
+  MIN_ROWS,
+  MIN_TAB_ROWS,
+} from './check-gate-parity.mjs'
 
 // The menu catalog and the page must agree about who gets in. `check:menu` cannot see this:
 // it validates the catalog's shape and has no way to read a guard inside a page body.
@@ -56,8 +66,15 @@ describe('evaluate', () => {
     (domain ? `, staffDomain: '${domain}'` : '') + ` },\n`.padEnd(60, ' ')
 
   // MIN_ROWS makes a tiny synthetic catalog throw, which is the point of it — so the
-  // behavioural tests below pad to the floor with rows that agree.
-  const padding = Array.from({ length: MIN_ROWS }, (_, i) => catalogOf(`pad${i}`, 'janitor')).join('')
+  // behavioural tests below pad to the floor with rows that agree. The padding also carries
+  // MIN_TAB_ROWS `?tab=` rows, because evaluate() floors BOTH corpora: a fixture with no tab
+  // rows is indistinguishable from a broken tab parser, and evaluate cannot tell them apart.
+  // The pad tab rows point at pages the stub io does not define, so they read as missing and
+  // are skipped rather than counted as inert.
+  const tabOf = (i: number) => `{ synthetic: { href: '/admin/padtab${i}?tab=t', label: 'X' } },\n`
+  const padding =
+    Array.from({ length: MIN_ROWS }, (_, i) => catalogOf(`pad${i}`, 'janitor')).join('') +
+    Array.from({ length: MIN_TAB_ROWS }, (_, i) => tabOf(i)).join('')
   const padFiles = Object.fromEntries(
     Array.from({ length: MIN_ROWS }, (_, i) => [`app/(main)/admin/pad${i}/page.tsx`, "requireAdmin('janitor')"]),
   )
@@ -126,5 +143,76 @@ describe('the frozen list is a record, not a waiver', () => {
     const sides = new Set(FROZEN_GATE_DEBT.map((d) => d.fix))
     expect(sides).toContain('catalog')
     expect(sides).toContain('page')
+  })
+})
+
+// ── Rule 2: a `?tab=` row must point at a page that reads the tab ────────────────────────────
+// Rule 1 skips query-string rows because their authz is per-tab inside a shared body. That is
+// right, and "out of scope for the authz comparison" had quietly become "unchecked": four rows
+// point at dashboards taking no searchParams, so the tab is inert and the row renders the parent
+// page under a child's name.
+
+describe('inert tab rows', () => {
+  // Local fixtures: a catalog with enough ROWS to clear MIN_ROWS but no tabs at all, for the
+  // under-scan test. The behavioural tests run against the REAL catalog with a stub file map, so
+  // every real page reads as missing and is skipped -- which isolates the row under test.
+  const plainRow = (id: string) =>
+    `{ id: '${id}', href: '/admin/${id}', label: 'X', min: 'janitor' },\n`.padEnd(60, ' ')
+  const noTabs = Array.from({ length: MIN_ROWS }, (_, i) => plainRow(`pad${i}`)).join('')
+
+  it('finds every ?tab= href in the real catalog, including the synthetic rows with no id', () => {
+    const tabs = tabRows(CATALOG)
+    expect(tabs.length).toBeGreaterThanOrEqual(MIN_TAB_ROWS)
+    // The synthetic rows carry no `id:`, so rule 1's row regex cannot see them at all.
+    expect(tabs).toContain('/admin/programs?tab=content')
+    expect(tabs).toContain('/admin/vera-ai?tab=studio')
+  })
+
+  it('reads searchParams off a page that destructures it, and not off one that does not', () => {
+    const f = io({
+      'app/(main)/admin/reads/page.tsx': 'export default async function P({ searchParams }) {}',
+      'app/(main)/admin/inert/page.tsx': 'export default async function P() {}',
+    })
+    expect(pageReadsSearchParams('/admin/reads?tab=a', f.read, f.exists).reads).toBe(true)
+    expect(pageReadsSearchParams('/admin/inert?tab=a', f.read, f.exists).reads).toBe(false)
+  })
+
+  it('FAILS a NEW inert tab row (the ninth)', () => {
+    const src = CATALOG + `{ synthetic: { href: '/admin/newthing?tab=whatever', label: 'X' } },`
+    const f = io({ 'app/(main)/admin/newthing/page.tsx': 'export default async function P() { return null }' })
+    const r = evaluate(src, f)
+    expect(r.inertTabs.map((t: { href: string }) => t.href)).toEqual(['/admin/newthing?tab=whatever'])
+  })
+
+  it('PASSES a new tab row whose page reads the tab', () => {
+    const src = CATALOG + `{ synthetic: { href: '/admin/newthing?tab=whatever', label: 'X' } },`
+    const f = io({ 'app/(main)/admin/newthing/page.tsx': 'export default async function P({ searchParams }) {}' })
+    expect(evaluate(src, f).inertTabs).toEqual([])
+  })
+
+  it('does NOT re-report the four frozen rows against the real tree', () => {
+    const r = evaluate(CATALOG)
+    expect(r.inertTabs).toEqual([])
+    expect(r.tabs).toBeGreaterThanOrEqual(MIN_TAB_ROWS)
+  })
+
+  it('reports a frozen row as HEALED once its page learns to read the tab', () => {
+    const f = io({
+      'app/(main)/admin/programs/page.tsx': 'export default async function P({ searchParams }) {}',
+    })
+    const r = evaluate(CATALOG, f)
+    expect(r.healedTabs.map((t: { href: string }) => t.href)).toContain('/admin/programs?tab=content')
+  })
+
+  it('throws rather than passing when the tab regex matches almost nothing', () => {
+    // Same failure mode MIN_ROWS exists for: a rule that scans nothing passes everything.
+    expect(() => evaluate(noTabs, io({}))).toThrow(/tab/)
+  })
+
+  it('every frozen tab row names a reason', () => {
+    for (const d of FROZEN_TAB_DEBT) {
+      expect(d.href).toMatch(/\?tab=/)
+      expect(d.why.length, d.href).toBeGreaterThan(20)
+    }
   })
 })
