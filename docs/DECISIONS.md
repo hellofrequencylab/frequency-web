@@ -19251,3 +19251,135 @@ are why. ⚠️ **`raw-css-paths` must stay 0 forever**; if a future PR argues f
 arguing with this ADR and with ADR-425/432/570. 🔴 **O-4 (token-coverage ownership) is the one open
 item that can quietly invalidate a decision**: D-1 is correct only if a tenant's unmet need has
 somewhere to go.
+
+---
+
+## ADR-975 — Nine measurements that corrected the plan, and four decisions taken on them (2026-08-10)
+
+**Decision.** [ADR-972](DECISIONS.md) and [ADR-974](DECISIONS.md) were written partly on estimates.
+Four parallel audits measured them. **Nine figures were wrong**, two of them badly enough to have
+produced gates that fail on a clean tree and a ratchet that reads green while two whole systems sit
+outside the count. The corrections are applied to [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md)
+in the same pass, and four operational decisions follow from them.
+
+**Why this is its own ADR rather than an edit.** The repo's rule is *"when the code and a plan doc
+disagree, the code wins, and the doc gets fixed in the same pass."* Fixing the doc silently would
+lose the more useful fact: **the estimates were wrong in a consistent direction — always
+undercounting fragmentation.** That pattern is worth recording, because the next estimate will be
+too.
+
+### The corrections
+
+| # | Claimed | **Measured** | Consequence |
+|---|---|---|---|
+| **1** | **Three** parallel block systems | 🔴 **Five.** `PROFILE_BLOCKS` (13 rows, `lib/spaces/profile-blocks.ts`, **4 live importers**, its own 14-key renderer map) and the Spotlight `BlockType` union (10 types, `lib/spotlight/blocks/schema.ts:28`, **11 importers**) are both live | The `block-systems` ratchet at 3 **would have read green with two systems uncounted** |
+| **2** | `block-types-total` ~138 | 🔴 **304** = 36 + 88 + 157 + 13 + 10 | Consolidation is a **6:1** cut, not 2:1. E2's usage-index gate is proportionally more load-bearing than the plan implied |
+| **3** | Puck-shaped ~89 | **88** | Minor; stated exactly because a gate counts it |
+| **4** | `check:email-blocks` = `KNOWN_BLOCK_IDS` ⇄ renderer switch | 🔴 **The gate fails on a clean tree.** `KNOWN_BLOCK_IDS` is all **36** entity ids (`block-content.ts:1286` — it is the *prototype-pollution allowlist*, deliberately the whole registry); the switch has **14**. The bijection that actually holds is `EMAIL_PALETTE_BLOCK_IDS` ⇄ switch, **14 ⇄ 14, exact both directions** | Gate re-specced |
+| **5** | `reads: 'live'` ⇒ no email renderer | 🔴 **Also fails on a clean tree**, because `productCard` is live-reading *and* renders to email | Resolved below |
+| **6** | `raw-css-overrides` may rise | **0**, and [ADR-974](DECISIONS.md) D-1 removed the feature | Replaced by `raw-css-paths`, **must stay 0** |
+| **7** | `unbound-app-surfaces` = 157 | ✅ **157** confirmed — and it is `PAGE_APPS` alone. ⚠️ But the *other* reading — rows that cannot resolve to a component — is **0** (157 `LAYOUT_MODULES` ids ⇄ 157 `COMPONENTS` keys, perfect) | **Pin the definition in the ratchet entry**, or the next re-measure books a 157-site phantom win |
+| **8** | Ratchets go in `adoption-baselines.json` | That harness is **regex-over-a-file-corpus** and fingerprints `patterns`; these are structural AST counts | New sibling ledger `scripts/block-baselines.json`, same provenance contract, `basis` fingerprinting the **manifest** |
+| **9** | ~24 guards | **23**, and `ci.yml`'s success line hardcodes **"All 21"** | Derive the count so it cannot rot again |
+
+### The `productCard` resolution — measurement closed an open question
+
+[`EDITOR-ARCHITECTURE`](EDITOR-ARCHITECTURE.md) §10.2 **T-2** asked whether `reads` or `category`
+owns "hits the DB at render." **The code already answered it.**
+
+`productCard`'s email renderer (`render.ts:482`) is **pure** — `props.title`, `props.price`,
+`props.image`, `props.url`, nothing else. The live read happens in a *separate compile step*,
+`resolveProductRefs` (`lib/email-studio/product-block.ts:49`), which refreshes the stored snapshot
+into props **before** `renderEmailLayout` runs, and fails safe to the last-known snapshot when the
+product is gone.
+
+So the invariant is not *"a live block may not reach email."* It is:
+
+> **A live read may not happen inside a renderer.** A `reads: 'live'` block is legal in email exactly
+> when it declares a **`resolveAt: 'send'`** resolver that turns it into an authored block before any
+> renderer sees it.
+
+Mechanical, checkable, and it carves nothing out by name. **T-2 is closed on `reads` + `resolveAt`;
+the `category` option is dropped.** Two independent audits reached this conclusion separately, which
+is the strongest evidence available that it is the natural shape rather than a rationalisation.
+
+### D-9 — the orphan block types get a hotfix PR now, not a phase
+
+🔴 **A live defect, verified against production.** Three draft pages carry five block types that
+exist in **no** registry:
+
+| Slug | Status | Orphan types |
+|---|---|---|
+| `about` | draft | `BetaCTA`, `ImageBand`, `PageHero`, `ZigZag` |
+| `how-it-works` | draft | `BetaCTA`, `PageHero`, `ZigZag` |
+| `the-lab` | draft | `BetaCTA`, `FeatureGallery`, `ImageBand`, `PageHero`, `ZigZag` |
+
+Because `isRenderable()` is `content.every(…)`, **one unknown type discards the whole document.**
+At `app/(main)/edit/[slug]/page.tsx:28` that means an operator opens the editor, sees the *code
+template* instead of their draft, publishes, and **the draft is gone.** Nothing public is broken
+today — all three are drafts and `home` / `the-community` are clean — but the trap is armed and one
+click from firing.
+
+Note `ZigZag` against the registry's `Zigzag`: **a pure casing divergence**, and the clearest possible
+argument for the byte-for-byte unknown-block preservation rule. A block was renamed and three
+documents were quietly orphaned.
+
+**Decision: a separate hotfix PR, ahead of the program.** Not folded into E0, because E0 has not
+started and the risk is live now. It also hands `check:doc-safety` its first real corpus for free.
+
+### D-10 — all five gates land at E0, before the rebuild
+
+**Four of the five pass on today's tree**, or pass after a two-line manifest entry.
+`check:email-blocks` is green right now: 14 ⇄ 14, exact, both directions.
+
+That is the argument. **A gate written against the tree it is about to protect can be verified green
+on day one, which means the first time it goes red it is telling you something true.** A gate written
+after the change it was meant to catch never gets that moment — as `check:menu` learned, spending its
+first year enforcing a naming convention while the invariant walked past it.
+
+⚠️ **`check:doc-safety` goes in the `checks` job, not `test`.** It runs vitest, so `test` is the
+instinctive home and the wrong one: `checks` and `analyze` are the only required branch-protection
+contexts, so **a hard gate placed in `test` cannot block a merge today.** Measured cost: four AST
+guards ≈1–2 s against a 13 s aggregate; doc-safety's single-file vitest run ≈3–5 s. The job goes
+~55 s → ~60 s.
+
+### D-11 — E2 is re-scoped before a target is locked
+
+The mapped target is **~49** (34 page blocks + 15 operator widgets) and every one of the 304 rows
+lands somewhere — no capability dropped, because each collapse becomes a `variant`, a
+`binding.source`, or a `density`. Three fields carry almost all of it: `binding.source` collapses
+**111 modules into 4 blocks**, `variant` collapses 16 Puck types into 2, and `density` absorbs the
+`space-y-6` / `space-y-14` split.
+
+**But ~49 is recorded as a range, not a commitment.** The count moved from 138 to 304 on
+measurement; committing a target on the strength of one pass would repeat the error this ADR exists
+to correct. E2 gets its own planning pass once the usage index can show what is actually placed.
+
+⚠️ **Two block types are already retired from every palette yet live in stored data** — `faq`
+(11 spaces) and `stats` (1 spotlight). The fail-safe holds, so they still render and merely cannot be
+re-added. **They must survive E2 as render-only rows.** Four parked layout modules
+(`event-venue-map`, `event-gallery`, `event-pricing`, `event-sales`) are the same shape: stripped at
+resolve time, not at write time, so live `page_settings` rows still name them.
+
+### D-12 — no email freeze; change the ids freely
+
+The proposal was a hard freeze on the 14 email-reachable block ids until golden-string tests exist,
+on the grounds that a bad web render is a bad page while a bad email is thousands of sent messages.
+
+**The owner's answer was that nothing is using it, and the database agrees.** Verified: **0 campaigns
+scheduled or sending** (12 total, 5 already sent — immutable history), **0 nurture steps**, **8
+messages in 30 days**. A block-id change therefore **cannot corrupt an outbound send**, because there
+is no outbound send to corrupt. The residual risk is that an operator opens an old campaign draft and
+sees it render wrong, which is visible and recoverable.
+
+⚠️ **The condition that reverses this:** a scheduled or sending campaign, or a non-zero
+`nurture_steps` count. Both are one query. **Re-check before any PR that renames an email-reachable
+block id** — the decision is sound *because of a measurement*, not as a standing policy, and the
+measurement has a shelf life.
+
+**Consequences.** ✅ Nine figures corrected at the source rather than inherited. ✅ Two gates
+re-specced before being written, instead of failing on their first run and being deleted in week one.
+✅ T-2 closed by measurement. ⚠️ **`block-systems` seeds at 5 and `block-types-total` at 304**, with
+`frozen.reason` recording that the 3 / ~138 figures were superseded — so the correction is auditable
+in the ledger, not only in prose. 🔴 **The estimates were wrong in one direction every time: they
+undercounted fragmentation.** Treat the next unmeasured figure in this program as a floor.

@@ -49,6 +49,30 @@ column ceiling, a palette allowlist, a renderer.
 | **D-7** | **Subdomain on any paid plan; custom domain is the upgrade** | Enforces `custom_domain` at bind in E10 |
 | **D-8** | **E0 starts after FINALIZE-PLAN 1.2/1.3 only** | E0 is storage + sync work, not pixel work; the rest of FINALIZE-PLAN runs concurrently |
 
+### What measurement corrected ([ADR-975](DECISIONS.md))
+
+Four audits ran against the tree and the production database. **Nine figures in the first draft were
+wrong, always in the same direction — undercounting fragmentation.** Treat the next unmeasured number
+in this program as a floor.
+
+| Claimed | **Measured** |
+|---|---|
+| 3 block systems | 🔴 **5** — `PROFILE_BLOCKS` (13) and the Spotlight `BlockType` union (10) are both live |
+| ~138 block types | 🔴 **304** — so consolidation is a **6:1** cut, not 2:1 |
+| `check:email-blocks` on `KNOWN_BLOCK_IDS` | 🔴 **Fails on a clean tree.** The real bijection is `EMAIL_PALETTE_BLOCK_IDS` ⇄ switch, 14 ⇄ 14 |
+| `reads:'live'` ⇒ no email renderer | 🔴 **Fails on a clean tree** — resolved with `resolveAt: 'send'` |
+| "no rollback convention anywhere" | **49 of 596 migrations carry `-- ROLLBACK:` blocks.** Schema has a convention; the *render path* has none |
+| 8,874 tests · 72 baselines in one commit · 18 snapshots · 51 `revalidate` · 242 `force-dynamic` | **8,920** · five commits · **10** · **50** · **234** |
+
+**Four decisions taken on those measurements:**
+
+| # | Decision |
+|---|---|
+| **D-9** | 🔴 The five orphan block types in three draft pages get a **separate hotfix PR now**, ahead of the program |
+| **D-10** | **All five CI gates land at E0**, before the rebuild — four pass on today's tree, so each starts green and provable |
+| **D-11** | **E2 is re-scoped before a target is locked.** ~49 is a range, not a commitment |
+| **D-12** | ✅ **No email freeze.** Verified: 0 campaigns scheduled or sending, 0 nurture steps. Re-check before any PR renaming an email id |
+
 **Five questions remain open** (`EDITOR-ARCHITECTURE` §10.3), each with an owner and a due phase.
 **None blocks E0.** The one that can quietly invalidate a decision is **O-4** — D-1 is correct only
 if a tenant's unmet need has somewhere to go.
@@ -64,9 +88,9 @@ if a tenant's unmet need has somewhere to go.
 
 | # | Phase | Lift | Gate — what proves it worked |
 |---|---|:---:|---|
-| **E0** | **Foundations** ([full breakdown: `EDITOR-E0.md`](EDITOR-E0.md) — 18 ordered tasks, the production data volume, and the risks per item). Node-id keying (two text blocks on one page), unknown-block byte-for-byte preservation, immutable `page_versions` + publish as pointer swap, `app_instances` writers (**absorbs A2**), undo + `base_revision`, the `render_path` runtime flag per surface, surface-vocabulary reconciliation — **plus the CRDT** ([ADR-974](DECISIONS.md) D-2): Yjs schema ⇄ tree mapping, Realtime channel + authorization, awareness, debounced snapshot, per-client undo, reconnect | **XL** ⬆ | `check:doc-safety` green on a frozen corpus of **real stored documents**; CRDT ⇄ tree round-trip exact; two clients converge; **zero editor bytes on the public render**; every later phase reversible by flag |
+| **E0** | **Foundations** ([breakdown: `EDITOR-E0.md`](EDITOR-E0.md) · [gates: `EDITOR-GATES.md`](EDITOR-GATES.md) — 18 ordered tasks, the production data volume, and the risks per item). Node-id keying (two text blocks on one page), unknown-block byte-for-byte preservation, immutable `page_versions` + publish as pointer swap, `app_instances` writers (**absorbs A2**), undo + `base_revision`, the `render_path` runtime flag per surface, surface-vocabulary reconciliation — **plus the CRDT** ([ADR-974](DECISIONS.md) D-2): Yjs schema ⇄ tree mapping, Realtime channel + authorization, awareness, debounced snapshot, per-client undo, reconnect | **XL** ⬆ | `check:doc-safety` green on a frozen corpus of **real stored documents**; CRDT ⇄ tree round-trip exact; two clients converge; **zero editor bytes on the public render**; every later phase reversible by flag |
 | **E1** | **Block contract.** One registry, `defineBlock`, Zod `content`, up/down migrations, `reads: 'live' \| 'authored'`, the binding layer, `check:blocks` + `check:surface-binding` + `check:email-blocks` | **L** | Every registry row resolves to a renderer for **every declared surface**; old ⇄ new `renderToStaticMarkup` equivalence green per block per surface |
-| **E2** | **Loom projection + usage index**, *then* consolidate ~138 block types toward ~60 — **aggressive, real retirements** with migrations rewriting stored documents ([ADR-974](DECISIONS.md) D-6) | **XL** | "Which tenants use this block" is answerable **before** the first retirement — the index is a safety mechanism, not a report |
+| **E2** | 🔴 **Re-scope before a target is locked** ([ADR-975](DECISIONS.md) D-11; full data in [`EDITOR-BLOCK-INVENTORY.md`](EDITOR-BLOCK-INVENTORY.md)). **Loom projection + usage index**, *then* consolidate — the real count is **304 across five systems**, mapping to **~49**, held as a range. **Aggressive, real retirements** with migrations rewriting stored documents ([ADR-974](DECISIONS.md) D-6) | **XL** | "Which tenants use this block" is answerable **before** the first retirement — the index is a safety mechanism, not a report |
 | **E3** | **Axis work.** Widen `kinds[]` to `member` + member commerce adapters; density (`compact \| standard \| roomy`) as a declared property; Site's four things | **L** | Spotlight, in-app profile, Space profile and Site render off one registry with **zero visual diff** |
 | **E4** | **Canvas.** Same-origin iframe + single React tree via `createPortal`, `bubbleEvent` + coordinate translation, parent-document overlays, inline Tiptap **on `y-prosemirror`**, live cursors, device switcher at real viewports | **L** | Click-to-edit on every surface; RSC ⇄ canvas parity green (a mismatch here ships as a hydration error) |
 | **E5** | **Inspector + responsive.** Fields derived from schemas, sparse breakpoint overrides with provenance, container queries for component-internal layout, **and the touch-native inspector** (bottom sheet, no hover dependency, D-5) | **L** ⬆ | Real viewports, not simulated widths |

@@ -11,6 +11,10 @@
 > CSS, full multiplayer, member Stripe Connect, and five more; **two of them changed this document**).
 > Authority order: **running code + `supabase/migrations/` > this doc > Notion.**
 >
+> Companion docs: [`EDITOR-E0.md`](EDITOR-E0.md) (the 18-task foundations breakdown) ·
+> [`EDITOR-BLOCK-INVENTORY.md`](EDITOR-BLOCK-INVENTORY.md) (all 304 rows, the overlap map, retirement
+> risk) · [`EDITOR-GATES.md`](EDITOR-GATES.md) (the five gates, specced assertion by assertion).
+>
 > Legend: ✅ built · ⏳ partial · 📋 specced, not built · 🔴 blocked / missing.
 > Lift: **XS** under an hour · **S** one PR · **M** 1–3 PRs · **L** a wave · **XL** multiple waves.
 
@@ -46,24 +50,42 @@ Two facts settle it:
   happened to mount the component.
 - **Give Site the four things email got**: legality (`kinds`), a column ceiling, a palette allowlist,
   and a renderer. Site's renderer is the web one, so it is the cheapest of the four surfaces to add
-  — but it needs a published flag and a surface filter, both of which currently live only in git
-  history.
+  — but it needs a surface filter, which currently lives only in git history. ✅ **The published flag
+  is live**: `lib/spaces/website.ts` exports `readWebsitePublished`, the `setWebsitePublished` server
+  action exists, and `space-page-panel.tsx` exposes the operator toggle.
 
 ---
 
 ## 2. Where we actually stand
 
-### 2.1 Three parallel block systems, and the fragmentation is not where it looks
+### 2.1 Five parallel block systems — the fragmentation is worse than it looks
 
-| System | Root type | Blocks | Storage | Renderer |
-|---|---|---:|---|---|
-| **Entity blocks** | `EntityBlockDef` (`lib/entity-blocks/registry.ts`, 252 LOC) | 36 | `spaces.preferences.profileLayout`, `profiles.meta.entityGrid` | `ContentBlockView` / `DesignBlockView` (web), `lib/email-studio/render.ts` (email) |
-| **Puck-shaped** | `ComponentConfig` (`lib/page-editor/types.ts`, 195 LOC) | ~89 across 11,405 LOC | `pages.data` / `pages.published_data` | `lib/page-editor/block-render.tsx` (302 LOC) |
-| **Layout modules** | `LAYOUT_MODULES` (`lib/widgets/modules.ts`, 730 LOC) | 157 | `page_settings.layout` | `lib/widgets/registry.tsx` |
+⚠️ **Corrected 2026-08-10.** An earlier draft of this section said *three*. Two more are live, each
+with its own renderer map, and both were missed because `ENTITY_BLOCKS`' own header says it
+"unifies the two prior systems" — **it describes an intent, not the tree. Neither was retired.**
+
+| System | Root type | Blocks | Live importers | Storage | Renderer |
+|---|---|---:|---:|---|---|
+| **Entity blocks** | `EntityBlockDef` (`lib/entity-blocks/registry.ts`, 252 LOC) | 36 | 12 | `spaces.preferences.profileLayout`, `profiles.meta.entityGrid` | `ContentBlockView` / `DesignBlockView` (web), `lib/email-studio/render.ts` (email) |
+| **Puck-shaped** | `ComponentConfig` (`lib/page-editor/types.ts`, 195 LOC) | **88** | 16 | `pages.data` / `pages.published_data` | `lib/page-editor/block-render.tsx` (302 LOC) |
+| **Layout modules** | `LAYOUT_MODULES` (`lib/widgets/modules.ts`, 718 LOC) | 157 | 4 | `page_settings.layout` | `lib/widgets/registry.tsx` |
+| 🔴 **Space profile** | `PROFILE_BLOCKS` (`lib/spaces/profile-blocks.ts`) | **13** | 4 | `spaces.preferences` | its own 14-key map in `space-profile-modules.tsx` |
+| 🔴 **Spotlight** | `BlockType` union (`lib/spotlight/blocks/schema.ts:28`) | **10** | 11 | `profiles.meta.spotlight.layout.blocks` | `components/spotlight/blocks/render.tsx` |
+| | | **304** | | | |
+
+⚠️ **"Live importers" counts non-test files importing the catalog's own module**, and two rows are
+approximate: `lib/widgets/modules` has **5**, and the Puck row depends what you count — **15** files
+reference `ComponentConfig`, **49** import from `lib/page-editor/types`. Treat the column as
+*evidence a system is alive*, which is its only job here, not as a dependency count.
 
 ⚠️ **`ENTITY_BLOCKS` is already one clean catalog.** The duplication is *between* it and the other
-two. Any plan called "one block registry" that does not name the Puck set and `LAYOUT_MODULES` is
-unifying the part that is already unified.
+four. Any plan called "one block registry" that does not name all five is unifying the part that is
+already unified.
+
+⚠️ **`SPOTLIGHT_PUCK_TYPES` (`lib/spotlight/puck/convert.ts:31`) is an explicit entity-id ⇄ Puck-type
+bijection**, and `components/widgets/space-profile/authored-content.tsx:44` renders entity content
+*through* the Puck registry for `heading`, `text`, `image`, `gallery`, `quote`, `embed`, `divider`.
+**The duplication is formalised in code, not accidental** — which is why it survived three plan docs.
 
 ⚠️ **`page_settings.layout` has something the others lack**: a per-module `CommunityRole` gate
 (`SlotConfig.roles[id]`) plus a scope cascade (exact route → `/seg/*` → `*`), per ADR-270/271/272.
@@ -88,8 +110,11 @@ image, title, price and link from the live commerce catalog at send time
 or a new **`reads: 'live' | 'authored'`** field owns that property. This doc recommends the latter,
 because category is already doing palette-grouping work.
 
-🔴 **Email is on the send path of three crons** — `/api/cron/nurture`, `/api/cron/space-campaigns`,
-`/api/cron/space-drips` — via `lib/nurture/runner.ts` and `lib/spaces/email-drafts.ts`. A change to
+🔴 **Email is on the send path of three crons** — `/api/cron/nurture` (via `lib/nurture/runner.ts`),
+`/api/cron/space-campaigns` (via `campaigns-send-due.ts` → `lib/email-studio/send.ts`) and
+`/api/cron/space-drips` (via `drip-runner.ts` → `lib/spaces/email.ts`). ⚠️ An earlier draft also
+named `lib/spaces/email-drafts.ts`; **that module is not on any cron path** — its importers are all
+interactive UI. A change to
 `KNOWN_BLOCK_IDS` or any block id ships straight into outbound mail, and **there is no visual gate on
 email at all.** §7 adds one.
 
@@ -105,7 +130,7 @@ row is false today and is corrected in this pass.
 
 ### 2.4 Loom is an index that cannot resolve its own rows
 
-`lib/apps/**` (2,572 LOC) projects five code registries into 349 uniform `App` rows and drives the
+`lib/apps/**` (**1,376 LOC of source**; 2,572 with its 1,196 lines of tests) projects five code registries into 349 uniform `App` rows and drives the
 admin rail and both entity consoles. It is a real index. It is not a source of truth, not editable,
 and not per-surface.
 
@@ -144,6 +169,9 @@ defineBlock({
   // ── AXIS 1: legality ──────────────────────────────────────────────
   kinds: ['member', 'space'],          // which entity kinds may hold it
   reads: 'live',                       // 'live' = hits the DB at render; 'authored' = self-contained
+  resolveAt: 'send',                   // OPTIONAL. Names a compile step that freezes the live read
+                                       // into props BEFORE any renderer runs. This is what makes a
+                                       // live block legal in email — see rule 3.
   binding: { source: 'offerings', gate: 'commerce' },
 
   // ── the content model, shared by every surface, forever ───────────
@@ -177,8 +205,15 @@ defineBlock({
    there. This replaces the four overlapping allowlists that make "what can I add here" currently
    unanswerable (`CORE_PROFILE_BLOCK_IDS`, `KIND_PALETTE_EXCLUSIONS`, `EMAIL_PALETTE_BLOCK_IDS`,
    `MEMBER_CHROME_BLOCK_IDS`).
-3. **`reads: 'live'` is the email boundary.** A live-reading block cannot render to an email string;
-   the gate is mechanical, not editorial. This is the field that resolves the `productCard` anomaly.
+3. **A live read may not happen *inside a renderer*.** That — not *"a live block may not reach
+   email"* — is the real invariant, and the code already proves it. `productCard`'s email renderer
+   (`render.ts:482`) is **pure**: it reads `props.title/price/image/url` and nothing else. The live
+   read happens in a separate compile step, `resolveProductRefs` (`lib/email-studio/product-block.ts`),
+   which refreshes the stored snapshot into props *before* `renderEmailLayout` is called and fails
+   safe to the last-known snapshot. So: **a `reads: 'live'` block is legal in email exactly when it
+   declares a `resolveAt: 'send'` resolver that turns it into an authored block before the renderer
+   sees it.** Mechanical, checkable, and it does not carve `productCard` out by name. This closes
+   §10.2 **T-2** on `reads` + `resolveAt`, and drops the `category` option.
 4. **One React component per block, density as a prop.** Not one component per surface. Density is
    `compact | standard | roomy` and maps to a spacing/type scale, exactly as `space-y-6` vs
    `space-y-14` does today.
@@ -473,43 +508,51 @@ to catch, and that suite is red. Guards are therefore not a finishing step; they
 ### 7.1 The prerequisite
 
 🔴 **[`FINALIZE-PLAN.md`](FINALIZE-PLAN.md) Phase 1 must complete before E1.** All 72 visual
-baselines were written on 2026-08-05 in one commit and are now many rendering commits stale;
+baselines were written across **five commits on 2026-08-04/05** — 8 of them on 08-04 — and are now many
+rendering commits stale (a sixth commit deleted the four app-room baselines on 08-10);
 `pr-compare` has been red on every run; `app-room` has no baselines; the a11y ratchet holds 40
 contexts and **zero member-shell**. Until 1.2 (recapture from a settled `main`) runs, a total
 regression and a perfect refactor produce the same red X.
 
 🔴 **Branch protection is a five-minute owner action worth more than any gate below.** `ci.yml:37-46`
-records it: required contexts are `checks` and `analyze` only, so `lint`, `test` (704 files, 8,874
-tests) and `pr-compare` **cannot block a merge**. A PR with failing tests is mergeable today.
+records it: required contexts are `checks` and `analyze` only, so `lint`, `test` (**706 files, 8,920 tests**) and `pr-compare` **cannot block a merge**. A PR with failing tests is mergeable today.
 
 ### 7.2 New gates
 
 | Gate | Asserts | Kind |
 |---|---|---|
-| `check:blocks` | AST manifest over the registry: every block resolves to a renderer for **each declared surface**; `toText` present; migration chain complete and contiguous; `content` is a Zod schema; `reads: 'live'` implies no email renderer | Hard |
+| `check:blocks` | AST manifest over the registry: every block resolves to a renderer for **each declared surface**; `toText` present; migration chain complete and contiguous; `content` is a Zod schema; `reads: 'live'` implies no email renderer **unless `resolveAt: 'send'` names a registered resolver**. ⚠️ Without that clause the gate fails on a clean tree, because `productCard` is live-reading *and* renders to email | Hard |
 | `check:doc-safety` | A frozen corpus of real stored documents round-trips through the registry with **zero loss** — unknown types preserved byte-for-byte | Hard |
-| `check:surface-binding` | Extends `check:menu` (rule 6): every App carrying a surface resolves to a component. The guard whose absence let `surfaces.page = {}` ship 157 times | Hard |
+| `check:surface-binding` | **Adds a sixth rule to `check:menu`'s five** (`MENU-CONTRACT.md`), sharing its manifests: every App carrying a surface resolves to a component. The guard whose absence let `surfaces.page = {}` ship 157 times | Hard |
 | `check:loom-integrity` | Every Loom-declared function resolves to real primitives and real schemas | Write-time |
-| `check:email-blocks` | No `reads: 'live'` block reachable from `EMAIL_PALETTE_BLOCK_IDS`; `KNOWN_BLOCK_IDS` ⇄ renderer switch bijection | Hard |
+| `check:email-blocks` | `EMAIL_PALETTE_BLOCK_IDS` ⇄ renderer-switch **bijection** (14 ⇄ 14, exact today); no `reads: 'live'` block in the palette without a declared send-time resolver. ⚠️ **The first draft said `KNOWN_BLOCK_IDS` ⇄ switch. That gate fails on a clean tree** — `KNOWN_BLOCK_IDS` is all **36** entity ids (`block-content.ts:1286`, the prototype-pollution allowlist), the switch has **14**. Its real assertion is *superset, and derived rather than restated* | Hard |
 
 ### 7.3 Ratchets
 
-Added to `scripts/adoption-baselines.json`, which already enforces provenance integrity, a basis
-fingerprint and asymmetric merge — falls auto-write, **a rise is refused** without `--allow-raise`
-and a reason, and stays flagged forever.
+A **sibling ledger, `scripts/block-baselines.json`**, reusing `check-adoption.mjs`'s provenance
+integrity, basis fingerprint and asymmetric merge — falls auto-write, **a rise is refused** without
+`--allow-raise` and a reason, and stays flagged forever. ⚠️ **Not `adoption-baselines.json` itself:**
+that harness is regex-over-a-file-corpus and fingerprints `patterns`. These are structural counts
+over parsed ASTs, so `basis` must fingerprint the **manifest** instead. Forcing them into `patterns`
+reproduces the `adhoc-progress` failure — *the pattern named a class that no longer exists* — the
+first time a symbol is renamed.
 
-| Key | Baseline | Direction |
-|---|---:|---|
-| `block-systems` | 3 | → 1 |
-| `unbound-app-surfaces` | 157 | → 0 |
-| `block-types-total` | ~138 | → ~60 |
-| `blocks-without-totext` | all | → 0 |
-| `raw-css-paths` | 0 | **must stay 0** — any authored-CSS field, `dangerouslySetInnerHTML` on tenant content, or `<style>` fed from a document is the [ADR-974](DECISIONS.md) D-1 decision leaking back in |
+⚠️ **Two of these baselines were wrong in the first draft and are corrected here.** Both were
+estimates nobody ran, and both would have read green while the thing they measure sat outside the
+count.
+
+| Key | First draft | **Measured** | Direction |
+|---|---:|---:|---|
+| `block-systems` | ~~3~~ | **5** | → 1 |
+| `unbound-app-surfaces` | 157 | **157** ✅ | → 0 |
+| `block-types-total` | ~~~138~~ | **304** (36+88+157+13+10) | → ~49 |
+| `blocks-without-totext` | all | **304** — zero `toText` anywhere in `app/`, `lib/`, `components/` | → 0 |
+| `raw-css-paths` | **0** ✅ | **must stay 0** — any authored-CSS field, `dangerouslySetInnerHTML` on tenant content, or `<style>` fed from a document is the [ADR-974](DECISIONS.md) D-1 decision leaking back in |
 | `editor-bytes-on-public-render` | current | → falls. The CRDT, awareness and Realtime client must never reach a visitor bundle (§4.1) |
 
 ### 7.4 Equivalence harnesses
 
-The model already exists: `lib/page-editor/block-render.test.tsx` — 18 inline snapshots of
+The model already exists: `lib/page-editor/block-render.test.tsx` — **10 inline snapshots** across 18 `it()` cases, of
 `renderToStaticMarkup`, blocks chosen so they need no providers, and **a dated re-baselining
 changelog in the file header** stating that any diff showing something other than the logged change
 is a real regression. That converts a snapshot from a rubber stamp into a gate. The cross-layer
@@ -537,8 +580,15 @@ Build, in this order:
 demo mode, SMS, referrals, feed, billing, every plan and tier gate — and not one reverts a surface
 from templates to the coded body. No seeded flag key matches `render`, `template`, `block`, `page` or
 `editor` except `circle_templates_enabled`, which is about circle seeding. **E0 adds `render_path`**,
-per surface. There are no down-migrations and no rollback convention anywhere
-in the repo, so a runtime flag is the only reversal mechanism a phase will have.
+per surface.
+
+⚠️ **A claim in the first draft overstated this and is corrected.** It said the repo has *"no
+down-migrations and no rollback convention anywhere."* There are no automated down-migrations — but
+**49 of 596 migrations carry an explicit `-- ROLLBACK:` block with hand-reversal SQL**, and that *is*
+the convention. `20260924000100_app_instances.sql` — the very migration §2.4 cites — says "Rollback
+notes at the foot" and carries them. The accurate statement is narrower and still sufficient:
+**schema changes have a hand-reversal convention; the render path has no reversal mechanism at all.**
+A runtime flag gives a *rendering* phase what a *schema* phase already has.
 
 ### 7.6 Process guards
 
@@ -561,9 +611,9 @@ takes E7 to **XL**. One decision *refunds* schedule: no raw CSS (D-1) deletes a 
 
 | # | Phase | Lift | Gate |
 |---|---|:---:|---|
-| **E0** | Foundations — **[implementation breakdown: `EDITOR-E0.md`](EDITOR-E0.md)** (18 ordered tasks; the whole data migration is **41 documents**). Node-id keying, unknown-block preservation, `page_versions`, `app_instances` writers (absorbs **A2**), the `render_path` flag, surface-vocabulary reconciliation — **plus the CRDT** (§4.1): Yjs document schema ⇄ tree mapping, Realtime channel + authorization, awareness, debounced snapshot, reconnect, `Y.UndoManager` per client | **XL** ⬆ | `check:doc-safety` green on a real-document corpus; CRDT ⇄ tree round-trip exact; two clients converge; **zero editor bytes on the public render**; every phase reversible by flag |
-| **E1** | Block contract. One registry, Zod schemas, up/down migrations, the binding layer, `check:blocks` + `check:surface-binding` + `check:email-blocks` | **L** | Every registry row resolves to a renderer for every declared surface |
-| **E2** | Loom projection + usage index. **Then** consolidate to ~60 blocks — **real retirements** with migrations rewriting stored documents (D-6) | **XL** | "Which tenants use this block" is answerable *before* the first retirement; every retired id has a tested `up` **and** `down` |
+| **E0** | Foundations — **[implementation breakdown: `EDITOR-E0.md`](EDITOR-E0.md)** (18 ordered tasks; the whole data migration is **41 documents**). Node-id keying, unknown-block preservation, `page_versions`, `app_instances` writers (absorbs **A2**), the `render_path` flag, surface-vocabulary reconciliation, **all five CI gates** (D-10 — four pass on today's tree, so each starts green and provable) — **plus the CRDT** (§4.1): Yjs document schema ⇄ tree mapping, Realtime channel + authorization, awareness, debounced snapshot, reconnect, `Y.UndoManager` per client | **XL** ⬆ | `check:doc-safety` green on a real-document corpus; CRDT ⇄ tree round-trip exact; two clients converge; **zero editor bytes on the public render**; every phase reversible by flag |
+| **E1** | Block contract. One registry, Zod schemas, up/down migrations, **`resolveAt`**, the binding layer. **The five gates are already live** — they land in E0 ([ADR-975](DECISIONS.md) D-10), so E1 turns them from green-on-today's-tree to green-on-the-new-one | **L** | Every registry row resolves to a renderer for every declared surface |
+| **E2** | 🔴 **Re-scope before a target is locked** ([ADR-975](DECISIONS.md) D-11): the real count is **304 across five systems**, not ~138 across three, so this is a 6:1 cut. **Loom projection + usage index**, then consolidate — mapped target **~49** (34 page blocks + 15 operator widgets), held as a **range, not a commitment**, until the usage index shows what is actually placed. **Real retirements** with migrations rewriting stored documents (D-6) | **XL** | "Which tenants use this block" is answerable *before* the first retirement; every retired id has a tested `up` **and** `down` |
 | **E3** | Axis work. Widen `kinds[]` to `member` + member data adapters; density as a declared property; Site's four things | **L** | Spotlight, in-app profile, Space and Site render off one registry with zero visual diff |
 | **E4** | Canvas. Same-origin iframe, portalled tree, `bubbleEvent` + coordinate translation, parent-document overlays, inline Tiptap **on `y-prosemirror`**, live cursors | **L** | Click-to-edit on every surface; RSC ⇄ canvas parity green; two browsers editing one page |
 | **E5** | Inspector + responsive. Fields from schemas, sparse breakpoint overrides with provenance, device switcher, container queries, **and the touch-native inspector** (bottom sheet, no hover dependency) | **L** ⬆ | Real viewports, not simulated widths; every control reachable by touch |
@@ -597,7 +647,7 @@ building on the pre-contract block systems and doing it twice.
 | **Visual suite** | FINALIZE-PLAN 1.2/1.3 are hard prerequisites for E1 |
 | **When E0 starts** | **After FINALIZE-PLAN 1.2/1.3 — and nothing else** ([ADR-974](DECISIONS.md) D-8). E0 is storage-shape and sync work, not pixel work, so recaptured baselines are the one thing it genuinely consumes; waiting for all seven FINALIZE phases would cost a quarter for safety E0 does not use. The rest of FINALIZE-PLAN runs concurrently |
 | **Multiplayer ⇄ the render path** | E0 adds a CRDT, a Realtime client and awareness. **None of it may reach a visitor bundle.** Ratcheted (§7.3) because it is the kind of regression that arrives via an innocent shared import, not via a decision |
-| **`cacheComponents`** | 🔴 **Not adoptable.** Zero `revalidateTag` calls, 1,094 `revalidatePath`, 51 `export const revalidate` (which `cacheComponents` rejects), 242 `force-dynamic`. Adopting it means rewriting the invalidation strategy, not flipping a flag. Out of scope for this program |
+| **`cacheComponents`** | 🔴 **Not adoptable.** Zero `revalidateTag` calls, 1,094 `revalidatePath`, **50** `export const revalidate` (which `cacheComponents` rejects), **234** `force-dynamic` in `app/`. Adopting it means rewriting the invalidation strategy, not flipping a flag. Out of scope for this program |
 
 ---
 
@@ -621,7 +671,7 @@ building on the pre-contract block systems and doing it twice.
 | # | Question | Decision | Why |
 |---|---|---|---|
 | **T-1** | Site: fourth `EntityKind`, or a surface of `space`? | **A surface** | It renders the same entity's data through the same web renderer. Becomes a kind only if Sites must hold blocks a Space profile may not — and nothing in D-1…D-8 implies that |
-| **T-2** | `reads: 'live'` vs `category` as the email boundary | **`reads`** | `category` already groups the palette; overloading it is what let `productCard` sit in `content` while reading the live catalog. Two jobs, two fields |
+| **T-2** | `reads: 'live'` vs `category` as the email boundary | **`reads` + `resolveAt`** ✅ *closed by measurement* | `category` already groups the palette; overloading it is what let `productCard` sit in `content` while reading the live catalog. Two jobs, two fields |
 | **T-3** | Density scale | **Three steps** — `compact \| standard \| roomy` | The code already exhibits exactly two (`space-y-6`, `space-y-14`) plus Site's roomier target. Three covers what exists with one slot spare; a fourth can be added without breaking stored documents, because density is declared per surface and never persisted per node |
 | **T-4** | Usage index shape | **Both** — an `app_instances` trigger *and* a periodic JSONB scan | The trigger is exact but only sees Layer-3 placements; the scan is the only thing that can see blocks embedded in stored documents. D-6's aggressive retirements make a single-source index the risk, not the cost. Rebuildable from scratch by design |
 | **T-5** | CRDT choice | **Yjs** | `@tiptap/pm` 3.29 is already a dependency and Tiptap collaboration *is* `y-prosemirror`, so E4's rich text and E0's sync are one technology instead of two |
