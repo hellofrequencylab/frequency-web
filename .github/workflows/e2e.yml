@@ -286,7 +286,7 @@ jobs:
 
       - name: Upload report + diffs
         if: ${{ failure() && steps.preview.outputs.ready == 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-pr-compare
           path: |
@@ -490,7 +490,7 @@ jobs:
       # the numbers in them are the only way to re-set the thresholds ADR-930 admits are guesses.
       - name: Upload Lighthouse report
         if: ${{ always() && steps.preview.outputs.ready == 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lighthouse-pr-compare
           path: .lighthouseci/
