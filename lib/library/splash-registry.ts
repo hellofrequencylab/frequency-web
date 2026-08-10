@@ -158,38 +158,13 @@ export async function listLiveSplashes(): Promise<LiveSplash[]> {
   return [...micro, ...qr]
 }
 
-// ── "Used in" — reuse the library_usages index for a where-referenced note ────────────────────────
-
-/** One where-referenced usage row (public.library_usages): a surface a library asset appears on. */
-export interface SplashUsage {
-  context: string
-  refId: string | null
-  blockId: string | null
-}
-
-/**
- * The "Used in" index — INERT, because the table it read no longer exists.
- *
- * 🔴 `public.library_usages` was created by `20260920000000_library_dam.sql` and **dropped five
- * days later** by `20260925000000_retire_orphaned_tables_and_functions.sql` as an orphan. It has
- * never been recreated; those are the only two migrations that mention it repo-wide.
- *
- * The read outlived the table and the failure was silent by construction: the query destructured
- * `{ data }` and discarded `error`, so a `42P01 relation does not exist` came back as `[]` on
- * every call. The lane's "Used in" note has therefore been permanently empty since 2026-09-25,
- * and each Loom Studio splash-lane load was paying one doomed round trip **per template plus one
- * per live splash** to learn nothing.
- *
- * Returning `[]` directly is behaviour-identical for every caller — they already only ever
- * received `[]` — and stops the round trips. The shape is kept rather than deleted because
- * removing it means touching `SplashTemplateCard` / `LiveSplashCard` and their render, and the
- * real question is a product one:
- *
- *   **Decide: rebuild `library_usages` (the DAM's where-referenced index, LIBRARY.md D4) and
- *   restore this, or delete the "Used in" affordance and these types outright.**
- *
- * Do not "fix" this by re-adding the query without the table.
- */
-export async function listSplashUsages(_refId: string, _context = 'page'): Promise<SplashUsage[]> {
-  return []
-}
+// ── "Used in" — REMOVED 2026-08-10 (ADR-974) ──────────────────────────────────────────────────────
+// The where-referenced note is gone, and the reason is not that the table was dropped. It is that
+// NOTHING EVER WROTE TO IT: `public.library_usages` was created by `20260920000000_library_dam.sql`,
+// dropped five days later, and a repo-wide search finds zero inserts in that migration or anywhere
+// since. So recreating the table would have restored an EMPTY one and the control would still have
+// shown nothing.
+//
+// The working feature is a write path at every place an asset is referenced (Puck block, space
+// brand, spotlight, email) -- LIBRARY.md D4. Build the control back WITH D4; do not re-add a reader
+// on its own.

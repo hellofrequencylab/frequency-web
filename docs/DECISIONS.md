@@ -19127,3 +19127,48 @@ done: `supabase_migrations.schema_migrations` has a `statements` array, and all 
 **0** statements, so a comment-only prepend cannot diverge from anything the ledger holds.
 ⚠️ The rule keys on table names. A menu write through a function or a dynamic statement would not
 be seen.
+
+---
+
+## ADR-974 — Deleting a control nobody could have filled, and a nav row that is a gate decision (2026-08-10)
+
+Two owner calls, answered 2026-08-10. Both were sitting open because the plan framed them as
+research questions; the code had already settled them.
+
+**1. The Loom Studio "Used in" control is deleted.**
+
+`public.library_usages` was created by `20260920000000_library_dam.sql` and dropped five days later
+as an orphan. The plan asked: rebuild the index, or delete the affordance?
+
+The question had a false premise. **Nothing has ever written to that table.** A repo-wide search
+finds zero inserts — not in the creating migration, not in `lib/`, `app/` or `components/`, not
+since. So recreating it restores an **empty** table and the control still shows "Not referenced
+yet" forever. The choice was never "rebuild vs delete"; it was "delete, or build LIBRARY.md D4",
+and D4 is a write path at every place an asset is referenced (Puck block, space brand, spotlight,
+email) — a feature, not a fix.
+
+Removed: `listSplashUsages`, the `SplashUsage` type, `UsageList`, `liveUsageRef`, the two
+`usagesBy*` maps, both `<Field label="Used in">` blocks, and `splashUsageHref` with its six tests.
+That last one matters: its only consumer was `UsageList`, so leaving it would have been dead code
+carrying passing tests, which reads as coverage. Rebuild the control *with* D4; do not re-add a
+reader on its own.
+
+**2. `/admin/library` gets its own `ADMIN_NAV_SPECS` row, and the reason is the gate.**
+
+Loom Studio matched no `admin_header` section, so its sub-nav band drew empty. Filing it under an
+existing section looks like the small fix and is the wrong one, because `adminHeaderMenu()` stamps
+the **section's** `min` and `staffDomain` onto every item inside it:
+
+- under **Growth** (`host` + `marketing`) a janitor-only tool would be offered to **hosts**;
+- under **Operations** (`janitor` + `platform`) it would be relabelled a platform tool and vanish
+  for a **marketing-domain janitor**.
+
+Its own row carries its own gate — `min: 'janitor'`, `staffDomain: 'marketing'`, no `groups`, so
+the band renders just its landing link. This is the shape `/admin/qr` already has directly above
+it, so it is a precedent rather than a new pattern, and the locked menu contract stays a data edit.
+
+**Consequences.** ✅ Three tests in `lib/menus/gates.test.ts` pin the section, its gate, and the
+absence of borrowed children. ⚠️ **The first version of that gate test was weak and my own probe
+caught it:** it asserted `staffDomain` only, so flipping `min: 'janitor'` to `'admin'` left all 23
+tests green. It now asserts **both** axes, and flipping either one fails — verified by doing it. A
+gate assertion covering one axis misses half the ways the gate breaks.

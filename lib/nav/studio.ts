@@ -678,4 +678,14 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
     href: '/admin/qr', label: 'QR Studio', min: 'admin', staffDomain: 'qr',
     groups: [{ leaves: [{ leaf: 'qr', label: 'QR codes' }, { leaf: 'qr-stats' }] }],
   },
+  // Loom Studio owns the media + asset library. It is a SECTION rather than a leaf under another
+  // one, and that is a gate decision, not a taste one: `adminHeaderMenu()` stamps the SECTION's
+  // `min` + `staffDomain` onto every item inside it, so filing a janitor+marketing tool under
+  // host+marketing Growth would offer it to hosts, and under janitor+platform Operations would
+  // relabel it a platform tool and drop it for a marketing-domain janitor. Its own row carries its
+  // own gate, exactly like QR Studio directly above (ADR-974).
+  //
+  // No `groups`: the sub-nav then renders just the section's own landing link, which is what
+  // /admin/library needs — it previously matched NO section at all, so the band drew empty.
+  { href: '/admin/library', label: 'Loom Studio', min: 'janitor', staffDomain: 'marketing' },
 ]

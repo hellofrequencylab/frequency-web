@@ -168,3 +168,35 @@ describe('applyRegistryGates — idempotence on the code defaults', () => {
     expect(twice).toEqual(once)
   })
 })
+
+// ── Loom Studio is its own admin_header section, and the gate is the reason (ADR-974) ────────────
+// /admin/library matched NO section, so its sub-nav band drew empty. The fix could not be "file it
+// under an existing section", because adminHeaderMenu() stamps the SECTION's min + staffDomain onto
+// every item in it: Growth (host + marketing) would have offered a janitor-only tool to hosts, and
+// Operations (janitor + platform) would have dropped it for a marketing-domain janitor.
+describe('Loom Studio section (ADR-974)', () => {
+  const menu = defaultMenu('admin_header')
+  const section = menu.categories.find((c) => c.items.some((i) => i.href === '/admin/library'))
+
+  it('resolves to a section at all, so the sub-nav band is not empty', () => {
+    expect(section, '/admin/library must match an admin_header section').toBeDefined()
+  })
+
+  it('carries its OWN gate rather than inheriting a neighbour\'s', () => {
+    // BOTH halves, and the second one is here because the first version of this test only checked
+    // staffDomain: flipping `min: janitor` to `admin` in the spec left all 23 tests green. A gate
+    // assertion that only covers one axis is a gate assertion that misses half the ways it breaks.
+    //
+    //   staffDomain 'platform' -> someone filed it under Operations, and a marketing-domain
+    //                             janitor silently lost the tab.
+    //   minAccess  'host'      -> someone filed it under Growth, and it is now offered to hosts.
+    const item = section!.items.find((i) => i.href === '/admin/library')!
+    expect(item.staffDomain).toBe('marketing')
+    expect(item.minAccess).toBe('janitor')
+  })
+
+  it('does not drag another section\'s leaves in with it', () => {
+    // No `groups` on the spec, so the band shows only its own landing link.
+    expect(section!.children).toHaveLength(0)
+  })
+})
