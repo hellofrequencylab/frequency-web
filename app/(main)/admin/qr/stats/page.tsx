@@ -18,7 +18,13 @@ export const dynamic = 'force-dynamic'
 // function of the QR system: scan volume + funnel, where scans happen (locator map),
 // the live code inventory, top locations, and top codes.
 export default async function QrStatsPage() {
-  await requireAdmin('host', { staff: 'qr' })
+  // GATE (aligned 2026-08-10): the catalog resolved this to 'admin' + qr and the pages never
+  // followed, so the two disagreed about a decision `lib/nav/studio.ts` records as already made.
+  // 'host' reads the COMMUNITY ladder (ADR-208), so it admitted anyone who cleared the /admin
+  // staff floor in some OTHER domain and happened to be a host — a structure-domain staffer with
+  // QR Studio. 'admin' reads the STAFF axis. A real qr-domain operator still passes on the
+  // `staff` branch; only the cross-domain host loses access, which is the point.
+  await requireAdmin('admin', { staff: 'qr' })
   const db = createAdminClient()
 
   const [{ data: statsPayload }, { data: codes }, { count: nodeCount }, { data: events }, { data: challenges }, { data: acq }] =

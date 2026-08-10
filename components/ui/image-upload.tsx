@@ -270,7 +270,13 @@ export function ImageUpload({
       />
 
       {hint && <p className="text-2xs text-muted">{hint}</p>}
-      {error && <p className="text-2xs text-danger">{error}</p>}
+      {/* The live region is PERSISTENT and the error renders inside it — the same shape
+          `field.tsx` uses. Mounting the region and its content together is the version that
+          does not announce: a screen reader has to be observing the region before the text
+          lands in it. A failed upload was silent until 2026-08-10 for exactly that reason. */}
+      <p aria-live="polite" className="text-2xs text-danger">
+        {error || null}
+      </p>
     </div>
   )
 }

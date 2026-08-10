@@ -378,7 +378,10 @@ export function MultiImageUpload({
       )}
 
       {hint && <p className="text-2xs text-muted">{hint}</p>}
-      {error && <p className="text-2xs text-danger">{error}</p>}
+      {/* Persistent live region, same shape as `field.tsx` — see the note in image-upload.tsx. */}
+      <p aria-live="polite" className="text-2xs text-danger">
+        {error || null}
+      </p>
     </div>
   )
 }
