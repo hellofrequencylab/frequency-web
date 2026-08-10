@@ -1,0 +1,34 @@
+# ONE RENDER PATH — the Phase 5 scoreboard, enforced by `pnpm check:render-path`.
+#
+# Format:  <slug>  <coded-component-count>
+#
+# One row per slug in EDITABLE_PAGES (lib/page-editor/data.ts). The count is how many top-level
+# React components the route file still declares BESIDE its default export — the coded body that
+# duplicates the Puck template an operator edits. The gate requires the measured count to MATCH:
+# a rise is new duplicate truth and is refused; a fall means a body retired and the number here
+# has to come down with it, in the same PR that earned it.
+#
+# WHY COMPONENTS AND NOT LINES. Lines are the figure docs/FINALIZE-PLAN.md quotes, and they are
+# the wrong thing to gate on: a copy edit moves the number for reasons that have nothing to do
+# with the duality. A top-level component is a structural fact. Lines are printed by the gate as
+# context and never checked.
+#
+# RETIREMENT ORDER (FINALIZE-PLAN §5.2, by risk): circles -> about -> spaces -> the-lab ->
+# the-quest -> the-community -> pricing. Each retirement is gated on the visual suite proving the
+# template equivalent, one slug per PR. `pricing` is partial only: it carries LIVE take-rate
+# bindings, and its figures must never be frozen into a document.
+#
+# ⚠️ THE COUNT CANNOT TELL A RETIREMENT FROM A MOVE. If a body leaves the route file for a
+# sibling component rather than actually retiring, the number falls and this gate will ask you to
+# book a win you did not earn. Say so in a comment on the line when that happens.
+#
+# Seeded 2026-08-10 from the live tree (ADR-967).
+
+home            5   # Splash + LiveProof + LiveProofSkeleton + PostPreviewCard + EventRow (940 lines)
+about           3   # LegacyAbout + Value + Ask (328 lines)
+spaces          2   # LegacySpaces + GuideLink (285 lines)
+the-lab         3   # LegacyTheLab + Room + BuildStep (382 lines)
+the-community   5   # LegacyTheCommunity + Step + Layer + Hold + DayBeat (635 lines)
+the-quest       2   # LegacyTheQuest + Guard (498 lines)
+pricing         7   # PlanCard + RateLine + PlanPrice + PlanCta + IndependentStrip + ExtraCard + ComparisonBlock (860 lines)
+circles         0   # ✅ template only — the one slug already on a single render path (104 lines)

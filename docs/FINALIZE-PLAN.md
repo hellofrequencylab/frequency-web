@@ -1,7 +1,7 @@
 # Finalize plan — the run to a fully functional platform
 
 > **The answer, first.** The platform is built and green: `tsc` clean, **8,870 tests passing**,
-> **all 22 `check:*` gates exit 0**, CI green on `main`, and the migration ledger is an exact
+> **all 23 `check:*` gates exit 0**, CI green on `main`, and the migration ledger is an exact
 > bijection with the repo (594 ⇄ 594, ADR-963).
 > What is left is not features. It is **three instruments that stopped telling the truth**, one
 > **access-grant layer** that was never actually closed, and a **short, verified list of real
@@ -26,7 +26,7 @@ Sizes: **XS** under an hour · **S** one PR · **M** 1 to 3 PRs · **L** a wave.
 | :--- | :--- | :--- |
 | Build + types | ✅ | `tsc --noEmit` rc=0 |
 | Tests | ✅ | 704 files, 8,870 tests, 0 failures |
-| Machine gates | ✅ | all 22 `check:*` scripts exit 0 |
+| Machine gates | ✅ | all 23 `check:*` scripts exit 0 |
 | CI (`ci.yml`) | ✅ | green on `main` |
 | Migrations applied | ✅ | every repo migration is live in prod |
 | Cron wiring | ✅ | 27 `vercel.json` entries ⇄ 27 handlers, zero drift both ways |
@@ -251,7 +251,7 @@ three-rung chain was built to survive. Two sources of truth is a standing invita
 
 | # | Item | Size | Detail |
 | :--- | :--- | :---: | :--- |
-| 5.1 | **Write `check:render-path`** | S | Does not exist. Grep-class guard, same harness as `check:adoption`: assert no gated slug carries a bespoke body beyond the allowed shell (metadata + server fetch + `<BlockRender>`). |
+| 5.1 | ✅ **`check:render-path` — DONE (ADR-967)** | — | The 23rd guard. Two rules: (1) every `EDITABLE_PAGES` slug's route actually renders `<BlockRender>`, so a page an operator can "edit" with no effect fails; (2) `scripts/render-path-bodies.txt` records the coded-component count per slug and the measured count must **match** — a rise is new duplicate truth, a fall means a body retired and the scoreboard comes down with it in the same PR. It gates on **components, not lines**: lines are the figure this plan quotes, and a copy edit moves them, so gating on them would fail for reasons unrelated to the duality. Measured today: **8 slugs, 7 still carrying a body (27 components, 4,032 route-file lines); `circles` is already template-only.** Seven failure modes probe-tested for the exit code.
 | 5.2 | **Retire the coded bodies, one slug per PR** | L | Gated on Phase 1: only retire a body once the visual suite proves the template is equivalent. Order by risk: `circles` → `about` → `spaces` → `the-lab` → `the-quest` → `the-community` → `pricing` (partial only, live bindings, never frozen figures). |
 | 5.3 | ✅ **The seeker-article blocker is stale — 5d is unblocked** | M | `UX-MATURITY-PLAN` §Lift 5d says the articles are "blocked on the `DawnHowToSteps` block emitting HowTo JSON-LD". **That block exists and owns its structured data**, with a dedicated test at `components/page-editor/blocks/dawn.howto.test.tsx`. The eight slugs can join `EDITABLE_PAGES` with a shared `templates/article.ts` seed. |
 

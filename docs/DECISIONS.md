@@ -18828,3 +18828,50 @@ cannot see:** a control named only by a sibling `<span>` — there is no `<label
 those shipped in `qr-splash-form.tsx` and were swept by hand; the axe pass remains the net for the
 rest. It also does not verify that an `htmlFor` target exists in another file (all 125 were checked
 by hand on 2026-08-10), nor that the label text is any good, which is `docs/CONTENT-VOICE.md`'s job.
+
+---
+
+## ADR-967 — The duality gets a scoreboard before it gets a sweep (2026-08-10)
+
+**Decision.** `pnpm check:render-path` (the 23rd guard) enforces two things about the eight slugs
+in `EDITABLE_PAGES`: every one's route actually renders `<BlockRender>`, and the coded body each
+still carries beside it may only shrink. The per-slug counts live in
+`scripts/render-path-bodies.txt`.
+
+**Context.** Each gated marketing route resolves published → template → a bespoke coded body, so
+the page exists twice: once as blocks an operator can rearrange, once as TSX only a developer can
+change. The redesign left the **coded** side ahead of the templates, inverting the drift the
+three-rung chain was built to survive. `docs/FINALIZE-PLAN.md` §5.2 retires those bodies one slug
+per PR, and each retirement is gated on the visual suite proving the template equivalent — which
+is gated in turn on the owner recapturing baselines against `main`. That is a real wait, and
+during it nothing stopped the duality from getting **worse**.
+
+**The first rule is a truth check, not a ratchet.** A slug can be added to `EDITABLE_PAGES` and
+get an editor route, a save path, and a publish button, while its actual page never reads the
+document. The operator edits, saves, publishes, and the site ignores all of it. Nothing in the
+repo could see that before; the failure is silent by construction, because every visible part of
+the loop works.
+
+**Why the ratchet counts components and not lines.** Lines are the figure the plan quotes (~3,085
+of duplicate truth, or 4,032 counting whole route files) and they are the wrong thing to gate on:
+a copy edit moves the number, so the gate would go red for reasons that have nothing to do with
+the duality — and a gate that cries wolf earns an allowlist and then an early grave, which is the
+lesson ADR-966 already paid for. A top-level `function <Capitalized>` is a **structural** fact; it
+changes when the page's shape changes, which is the event being watched. Lines are printed as
+context and never checked.
+
+**A fall fails too, and that is deliberate.** Most ratchets in this repo let a number drop
+silently. This one refuses, because the file *is* the Phase 5 scoreboard: if retiring a body did
+not also lower the number, the scoreboard would read as stale the moment it mattered. The fix is
+one digit, in the PR that earned it.
+
+**Consequences.** ✅ Seven failure modes probe-tested for the **exit code**: grow, shrink, missing
+render path, unmapped new slug, stale ledger row, unparseable row, and wrong working directory all
+exit 1; the clean tree exits 0. ✅ 13 unit tests on the parser, which is the whole gate — comments
+are blanked length-preservingly, so a component named in a comment is not a component and a
+commented-out `<BlockRender>` does not count as a render path. ✅ Today's reading: **8 slugs, 7
+still carrying a body (27 components), `circles` already template-only.** ⚠️ **The count cannot
+tell a retirement from a move.** A body that leaves the route file for a sibling component drops
+the number and the gate will ask you to record a win you did not earn; the ledger comment is where
+that has to be written down. ⚠️ It says nothing about whether a template renders the same *page* —
+only the visual suite can, and that remains the gate on actually deleting a body.
