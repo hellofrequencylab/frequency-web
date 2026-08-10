@@ -352,7 +352,7 @@ function OutlineTree({
               {node.slots.map((slot) => (
                 <div key={slot.key}>
                   <div className="flex items-center justify-between px-1 py-0.5">
-                    <span className="text-[0.7rem] font-semibold uppercase tracking-wide text-subtle">
+                    <span className="text-2xs font-semibold uppercase tracking-wide text-muted">
                       {slot.label}
                     </span>
                     <IconBtn label={`Add to ${slot.label}`} onClick={() => onAddToSlot(node.id, slot.key)}>

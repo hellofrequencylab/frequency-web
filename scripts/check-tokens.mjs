@@ -68,8 +68,10 @@ const ALLOWLIST = [
   (p) => p.startsWith('app/(marketing)/'),
   (p) => p.startsWith('components/marketing/'),
   // third-party OAuth PROVIDER brand palettes (the Google "G" is a fixed 4-color mark, not a token).
-  (p) => p.startsWith('app/sign-in/'),
-  (p) => p === 'app/onboarding/beta/induction.tsx',
+  // Scoped to 'hex color': the reason is a brand palette, so it must not also waive the type scale.
+  // It used to, and induction.tsx's `text-[10px]` rode along on an exemption granted for four hexes.
+  { match: (p) => p.startsWith('app/sign-in/'), kinds: ['hex color'] },
+  { match: (p) => p === 'app/onboarding/beta/induction.tsx', kinds: ['hex color'] },
   // print stylesheet: a print document renders literal CSS, not the app's CSS-var cascade.
   (p) => p.startsWith('app/print/'),
   // map markers: *-map.tsx / *map*.tsx
@@ -122,20 +124,38 @@ const ALLOWLIST = [
   (p) => p === 'lib/spaces/profile-settings.ts',
 ]
 
-function isAllowed(relPath) {
-  return ALLOWLIST.some((f) => f(relPath))
+/**
+ * Is this file exempt from `kind`?
+ *
+ * An ALLOWLIST entry is either a bare predicate (exempt from EVERY check) or
+ * `{ match, kinds }` (exempt from those kinds only). The distinction exists because a whole-file
+ * waiver granted for one reason silently waives every other class in the file, and nobody decides
+ * that — `app/onboarding/beta/induction.tsx` was allowlisted for a 4-hex Google brand mark and the
+ * exemption quietly covered its arbitrary type as well. Prefer `kinds` for any entry whose reason
+ * names a specific class of literal.
+ */
+function isAllowed(relPath, kind) {
+  return ALLOWLIST.some((entry) => {
+    if (typeof entry === 'function') return entry(relPath)
+    if (!entry.match(relPath)) return false
+    return kind === undefined ? false : entry.kinds.includes(kind)
+  })
 }
 
 // (a) hex colors: #rgb / #rrggbb / #rrggbbaa (longest first so the match reads whole).
-const HEX = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b/
-// (b) arbitrary type size: text-[12px]
-const TEXT_PX = /text-\[\d+px\]/
+const HEX = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b/g
+// (b) arbitrary type size. This used to be `/text-\[\d+px\]/` — px only — so the canon's ban on
+// arbitrary content type could be sidestepped by writing the same size in another unit, and two
+// live sites did exactly that (`text-[0.7rem]`, `text-[0.85em]`) while the gate read green.
+// `clamp()` is deliberately NOT matched: fluid DISPLAY sizing is a different class with its own
+// rules, and folding it in here would report 25 sites the canon does not ban.
+const TEXT_ARBITRARY = /text-\[\d*\.?\d+(?:px|rem|em|pt|ch|ex)\]/g
 // (c) inline rgb()/rgba() color literal.
-const RGB = /\brgba?\(/
+const RGB = /\brgba?\(/g
 
 const CHECKS = [
   { kind: 'hex color', re: HEX, hint: 'use a DAWN token utility/var (e.g. text-text, bg-surface, var(--color-primary))' },
-  { kind: 'arbitrary text-[Npx]', re: TEXT_PX, hint: 'use the named scale (text-3xs=10px, text-2xs=11px, else text-xs/sm/base)' },
+  { kind: 'arbitrary text size', re: TEXT_ARBITRARY, hint: 'use the named scale (text-3xs=10px, text-2xs=11px, else a type ROLE: text-meta / text-body-sm / text-body)' },
   { kind: 'inline rgb()/rgba()', re: RGB, hint: 'use a DAWN token (e.g. bg-primary, var(--color-…))' },
 ]
 
@@ -199,8 +219,13 @@ export function tokenViolations(relPath, src) {
     if (ANNOTATION.test(rawLines[i])) continue
     if (i > 0 && ANNOTATION.test(rawLines[i - 1])) continue
     for (const c of CHECKS) {
-      const m = code.match(c.re)
-      if (m) out.push({ line: i + 1, kind: c.kind, match: m[0], hint: c.hint })
+      if (isAllowed(relPath, c.kind)) continue
+      // matchAll, not match: the patterns are /g and `String.match` with a /g regex returns every
+      // match but `match` WITHOUT /g returned only the first, so two literals on one line counted
+      // as one. A gate that undercounts is a gate that reports progress it did not make.
+      for (const m of code.matchAll(c.re)) {
+        out.push({ line: i + 1, kind: c.kind, match: m[0], hint: c.hint })
+      }
     }
   }
   return out

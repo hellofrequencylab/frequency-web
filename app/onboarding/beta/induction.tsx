@@ -959,7 +959,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                           onClick={() => setNameHintOpen((v) => !v)}
                           aria-expanded={nameHintOpen}
                           aria-controls="induction-name-hint"
-                          className="inline-flex h-4 w-4 items-center justify-center rounded-pill border border-border text-[10px] font-bold leading-none text-subtle transition-colors hover:bg-surface-elevated"
+                          className="inline-flex h-4 w-4 items-center justify-center rounded-pill border border-border text-3xs font-bold leading-none text-muted transition-colors hover:bg-surface-elevated"
                         >
                           i<span className="sr-only">Why we ask for your real name</span>
                         </button>
