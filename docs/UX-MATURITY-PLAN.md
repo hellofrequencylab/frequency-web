@@ -231,13 +231,24 @@ the reverse-sync) → home → pricing (partial only, live bindings, never froze
 **5c. Retire the coded bodies (S per page, the actual de-dualing).** Once a route's
 template is visually equivalent (Lift 6 proves it): the coded page keeps ONLY metadata +
 server-data fetch + `<BlockRender>`; its bespoke JSX body is deleted. `EDITABLE_PAGES`
-grows to match. A `check:render-path` guard asserts no gated slug carries a bespoke body
-beyond the allowed shell (grep-class check, same harness as Lift 2).
+grows to match. ✅ **The `check:render-path` guard now exists** ([ADR-967](DECISIONS.md), the
+23rd guard) and asserts both halves: every gated slug's route actually renders `<BlockRender>`,
+and the per-slug coded-component count in `scripts/render-path-bodies.txt` **matches exactly**.
 
-**5d. Seeker articles, second wave (M, SEO-gated).** Blocked on the `DawnHowToSteps`
-block emitting HowTo JSON-LD; converting before that is a net SEO loss on the
-highest-intent pages. Then the eight slugs join `EDITABLE_PAGES` with a shared
-`templates/article.ts` seed.
+**5d. Seeker articles, second wave (M, ~~SEO-gated~~ — ✅ unblocked).** This lift recorded a
+block on `DawnHowToSteps` emitting HowTo JSON-LD. **That block exists and owns its structured
+data**, with a dedicated test at `components/page-editor/blocks/dawn.howto.test.tsx`
+([FINALIZE-PLAN](FINALIZE-PLAN.md) §5.3). The eight slugs can join `EDITABLE_PAGES` with a
+shared `templates/article.ts` seed now.
+
+> ⚠️ **`EDITABLE_PAGES` is being pulled two ways — sequence matters.** 5c and 5d **grow** the
+> constant (root marketing routes, then eight articles). The editor program's **E3**
+> ([ADR-972](DECISIONS.md), [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md)) **replaces** it
+> with per-Space page resolution — the scope `BUILD-LIST` W3 used to carry. **5c and 5d land
+> first; E3 lands after.** Run in the other order and each silently undoes the other: E3 removes
+> the constant these lifts are still adding rows to. Note also that `check:render-path` ships an
+> **exact-match** ratchet (`scripts/render-path-bodies.txt`), so a PR retiring a body must edit
+> the baseline in the same PR — a fall is not auto-accepted here.
 
 **Metric:** routes on single-path (target: all gated slugs + articles), `check:render-path`
 green, zero template-vs-coded visual diffs in the snapshot suite.

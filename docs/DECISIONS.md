@@ -18938,3 +18938,181 @@ that is the point, and it is recorded here so the change is not a surprise then.
 read a title built by a call expression (`buildTitle(name)`) — not decidable from source, and
 guessing is worse than staying quiet. It *does* read template literals, because
 `` `${name} · Frequency` `` is the Spotlight bug verbatim.
+
+---
+
+## ADR-972 — Three axes, not three fidelities: the block is authored once (2026-08-10)
+
+**Decision.** Frequency builds **one block model** serving a member's Spotlight, a Space's profile, a
+Space's external Site, and email. The program is specced in
+[`docs/EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md) and runs as phases **E0–E10** in
+[`BUILD-LIST.md`](BUILD-LIST.md). Ten sub-decisions are settled here.
+
+**Context — the framing that was wrong.** The obvious model was *"three fidelities: Spotlight
+minimal, Space standard, Site full."* It collapses three axes the codebase already separates, and two
+facts kill it outright:
+
+1. **Density already varies within one `kind`.** `MemberProfileModules` defaults to `space-y-14`;
+   `ProfileSpotlightBlocks` passes `space-y-6`. Same `kind: 'member'`, two densities, both shipped. A
+   single fidelity enum has no slot for that.
+2. **"Spotlight = minimal" inverts the live meaning.** `/spotlight/[handle]` is the *airier*
+   standalone mini-site; `/(main)/people/[handle]` is the dense one. The word would mean the opposite
+   of the route.
+
+The axes the code already has:
+
+| Axis | Decides | Today |
+|---|---|---|
+| **Kind** — `member \| space \| email` | Which blocks are legal; the column ceiling | ✅ `kinds[]` (`lib/entity-blocks/registry.ts`), `MAX_COLUMNS_BY_KIND` |
+| **Surface** — where a kind mounts | Which renderer runs, and how densely it paints | ⏳ ad-hoc `className` props |
+| **Render target** — React tree vs HTML string | Output format | ✅ `ContentBlockView` (web), `lib/email-studio/render.ts` (email) |
+
+**Email is the proof, not the analogy.** `EntityKind` already includes `email`; 14 of 36 blocks
+declare it and `EMAIL_PALETTE_BLOCK_IDS` is exactly 14, so offer and renderer are locked. Email did
+not need a fidelity enum. It needed four concrete things: `kinds[]`, a column ceiling, a palette
+allowlist, and a renderer. **Site needs the same four** — and its renderer is the web one, making it
+the cheapest of the four surfaces to add.
+
+**The ten decisions.**
+
+1. **The block contract is `defineBlock`** — `kinds` (legality), `reads` (`'live' | 'authored'`),
+   `content` (one Zod schema, surface-independent, no presentation words), `surfaces` (density +
+   field projection), `render` (lazy per target), `toText`. A surface's `fields` is a *subset* of
+   `content`, never a second schema.
+2. **`reads: 'live'` is the email boundary**, replacing category as the carrier of that property.
+   This resolves the `productCard` anomaly: filed `content` but resolving image, title, price and
+   link from the live catalog at send time (`lib/email-studio/product-block.ts`). Category keeps its
+   palette-grouping job.
+3. **One React component per block, density as a prop** (`compact | standard | roomy`) — not one
+   component per surface. Density becomes a *declared* per-surface property instead of a `className`
+   passed by whoever mounted the component.
+4. **`toText` is mandatory, CI-enforced.** Slack Block Kit's required `text`, oEmbed's `link` type
+   and AMP-for-Email's required non-AMP part are three unrelated systems that converged on a terminal
+   degradation tier; Notion is the counter-example, where leaving it unspecified produced emergent
+   user-visible breakage. It backs search, notifications, screen readers, RSS, and the surface nobody
+   has built yet.
+5. **Migrations are `up` *and* `down`.** `down` because a tenant pinned to an older renderer will
+   need a newer document migrated *down*. Retrofitting it later is not possible.
+6. **Persist a tree of `BlockNode`s keyed by a stable nanoid**, derive the flat index at load. This
+   fixes three defects, each currently silent: `rows-ops.ts:61` dedupes block ids globally and keys
+   `content`/`style` by block id, so **two text blocks cannot coexist on one page** — tolerable for a
+   profile, fatal for a Site; `isRenderable()` discards the *whole document* when any one block type
+   is unknown, so renaming a block silently reverts every page using it to a code template; and
+   publish overwrites `published_data` irrecoverably. Unknown blocks must round-trip byte-for-byte.
+7. **Site is a surface of kind `space`, not a fourth kind** — it renders the same entity's data
+   through the same web renderer. Revisit only if Sites must hold blocks a Space profile may not.
+8. **`page_settings.layout`'s per-module `CommunityRole` gate survives consolidation.**
+   `SlotConfig.roles[id]` plus the scope cascade (exact route → `/seg/*` → `*`) per ADR-270/271/272
+   is capability the other two systems lack. Folding it in naively is a regression, not a refactor.
+9. **Vera composes through code, and code composes the layout.** Theme resolution, compose and
+   validate are pure TypeScript; the model plans and fills slots under strict tool use over closed
+   enums, and never sees a hex value. `lib/importer/compose.ts` ([ADR-577](DECISIONS.md)) already
+   proves the shape at 15 blocks and one surface; the work is generalizing it. Three constraints from
+   the literature bind the design: **there is no temperature knob** on Opus 5 / Sonnet 5 / Opus
+   4.7–4.8 (it 400s), so diversity comes from prompt-angle variation and parallel sampling; rationale
+   fields precede answer fields, because an answer field that comes first commits the model early;
+   and **self-critique works only with external signal**, so the critic is fed the rendered
+   screenshot plus failing validator findings, never "is this good?".
+10. **Propose-and-confirm holds** ([ADR-028](DECISIONS.md), [ADR-066](DECISIONS.md)). Every Vera
+    change is a reviewable diff — ghosted on the canvas, default not-applied, per-section accept. The
+    accept/reject events are the quality telemetry.
+
+**Guards, because this is the change class the visual suite exists to catch — and that suite is red.**
+Five new gates (`check:blocks`, `check:doc-safety`, `check:surface-binding`, `check:loom-integrity`,
+`check:email-blocks`), five ratchets in `scripts/adoption-baselines.json`, four equivalence harnesses
+modelled on `lib/page-editor/block-render.test.tsx` (whose dated re-baselining changelog is what turns
+a snapshot from a rubber stamp into a gate), and a `render_path` runtime flag per surface — because
+`platform_flags` carries dozens of switches — AI, demo mode, SMS, referrals, feed, billing, the plan gates — and **not one reverts a surface from templates to its coded body**,
+and the repo has no down-migrations and no rollback convention. Old ⇄ new `renderToStaticMarkup`
+equivalence is built first precisely because it needs no browser, so it works while the visual suite
+is red.
+
+**Two prerequisites are not ours to satisfy with code.** 🔴 [`FINALIZE-PLAN.md`](FINALIZE-PLAN.md)
+Phase 1 must complete before E1: all 72 visual baselines were written in one commit on 2026-08-05 and
+are many rendering commits stale, so a total regression and a perfect refactor currently produce the
+same red X. 🔴 **Branch protection is a five-minute owner action worth more than every gate above**:
+`ci.yml:37-46` records `checks` and `analyze` as the only required contexts, so `lint` and `test`
+(704 files, 8,874 tests) cannot block a merge. **A PR with failing tests is mergeable today.**
+
+**Consequences.** ✅ One contract, four surfaces, authored once. ✅ `~138` block types across three
+systems ratchet toward `~60` in one. ⚠️ **E0–E3 carry roughly half the program's risk and produce
+almost nothing visible**; E4 is the first demonstrable point. Honest total: eight **L**, one **XL**,
+two **M–L** — a multi-quarter program. ⚠️ `EDITABLE_PAGES` is being pulled in two directions:
+[UX-MATURITY](UX-MATURITY-PLAN.md) Lift 5c *grows* it, `BUILD-LIST` W3 *replaces* it, so **E3 must
+land after 5c/5d** or one silently undoes the other. 🔴 `cacheComponents` is **not adoptable** and is
+out of scope: zero `revalidateTag` calls against 1,094 `revalidatePath`, 51 `export const revalidate`
+(which the flag rejects) and 242 `force-dynamic` — adopting it means rewriting the invalidation
+strategy, not flipping a flag. 🔴 Five questions stay open and are listed in
+[`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md) §10; **#2 (`reads` vs category) and #5 (the density
+scale) must be answered before E1 freezes the contract.**
+
+---
+
+## ADR-973 — Loom may declare a function; it may not write JavaScript (2026-08-10)
+
+**Status:** Accepted (2026-08-10). **Supersedes [ADR-501](DECISIONS.md) on authority** — narrowly.
+ADR-501's derive-direction (code → catalog) stands unchanged; its closing line that Loom manages
+"never its **Layer-1 function**" is amended.
+
+**Decision.** Operators may **declare** functions from Loom. A Loom-declared function is a
+**composition of typed primitives and existing schemas — never arbitrary JavaScript.** The four
+layers become authoritative rather than aspirational:
+
+| Layer | Lives in | Who edits | Example |
+|---|---|---|---|
+| **1 · Function** | Code, CI-gated — *or* a declarative composition, integrity-validated at write | Engineers via PR; operators via Loom, declaratively | Zod schema, migrations, renderers, `kinds`, `reads` |
+| **2 · Config** | A table, edited in Loom | Operators | Which surfaces are on, entitlement gates, defaults, role floors |
+| **3 · Instances** | `app_instances` | The editor, at placement | This block, on this surface, with this display config |
+| **4 · Style** | Instance `style_override` | Operators | Token keys only, never colours |
+
+**Context — Loom is an index that cannot resolve its own rows.** `lib/apps/**` (2,572 LOC) projects
+five code registries into 349 uniform `App` rows and drives the admin rail and both entity consoles.
+It is a real index. It is not a source of truth, not editable, and not per-surface:
+
+| Claim | Reality |
+|---|---|
+| `lib/apps/bindings.tsx` is the App→component resolver | **Deleted** as "orphaned, zero importers" — still imported by `catalog.ts:8`, `types.ts:8`, `app-registry.tsx:14` |
+| `surfaces.page` names a page surface | Literal `{}` on all 157 rows; `defaultTemplate`/`defaultSlot` declared, read nowhere |
+| Apps declare surfaces | All 349 declare exactly one. The multi-surface badge (`app-registry.tsx:243`) has never fired |
+| `App.config` is the editable Layer-2 schema | Populated on **zero** of 349 rows |
+| `app_instances` is Layer 3 | Correct schema, 3 indexes, full RLS quad — **zero writers, zero readers** |
+| `library_usages` is the live xref | 🔴 **Dropped by migration `20260925000000`**, five days after creation. The read discarded its error and silently returned `[]` |
+
+[ADR-927](DECISIONS.md) already stated the rule this table violates: *"a registry that cannot resolve
+its rows to a component is a list, not a system — and a table with a perfect schema and no writer is a
+plan, not a feature."*
+
+**Why the amendment, and why the ceiling.** The owner's requirement is to click a function and see it
+per layer — Spotlight, Space, Site — edit its settings, and add one without waiting for a deploy.
+ADR-501's blanket "Layer 1 is git's" forbids that. But lifting it without a ceiling reinvents a plugin
+platform: arbitrary operator-authored code means a sandbox, a supply-chain surface, a review process
+and a security model none of which are in scope. **Declarative-only is what makes the requirement
+affordable** — the "we need a block that does X" loop, with none of the above.
+
+**What this costs, named up front.** `check:menu`'s guarantee narrows from *"every menu row traces to
+a catalog row"* to *"every **code** row traces."* The replacement for the lost coverage is
+`check:loom-integrity`, a **write-time** validator proving every composed function resolves to real
+primitives and real schemas. A write-time guard is weaker than a build-time one — it cannot be run
+over history — and that is an accepted trade, recorded so it is not rediscovered as a surprise.
+
+**The usage index is rebuilt, not reused, and it is a safety mechanism.** `library_usages` is gone.
+Derive `block_usage` from a trigger on `app_instances` plus a periodic scan of the JSONB documents,
+and treat it as disposable and rebuildable. **E2 gates on it**: consolidating ~138 block types toward
+~60 without being able to answer "which tenants use this" is how tenant pages break silently, so the
+index lands *before* the first retirement.
+
+**The pattern to copy already exists.** `element_settings` + `lib/elements/{registry,config,store}.ts`
++ `/admin/elements` + `check:elements` is 342 LOC that proves the entire loop: fail-safe to code
+defaults at every layer, per-feature role gates on one context-switching ladder, an operator console,
+a CI guard, and `resolveHeaderElement` demonstrating "edit the master, every occurrence updates." The
+change needed is **one axis on its key**: `(element_key, space_id)` → `(app_id, surface, space_id)`.
+
+**Consequences.** ✅ [`LOOM-PLATFORM.md`](LOOM-PLATFORM.md) §3's four-layer split is confirmed as the
+target and needs finishing, not designing. ✅ `app_instances` gets its writers in E0 — which is
+`BUILD-LIST` **A2**, absorbed rather than duplicated. ⚠️ `check:elements` **fails a PR that declares a
+second `ElementDef[]` catalog** outside `lib/elements/registry.ts`; confirm the block registry does
+not trip it before E1 lands. ⚠️ **"Loom" now means two things in the doc set** —
+[`LOOM-EVERYWHERE-PLAN.md`](LOOM-EVERYWHERE-PLAN.md) scopes it to image uploads (`components/loom/`,
+one file); this ADR and `LOOM-PLATFORM.md` mean the App catalogue and control plane. Say "the Loom
+picker" or "the App catalogue" when either is ambiguous. 🔴 The three dead references to the deleted
+`bindings.tsx` are a live import error waiting on a cold build and are fixed in E0.

@@ -13,12 +13,83 @@
 > wave sequencing that interleaves them with the DAWN 2 screen passes. Its §Sequencing table is
 > the near-term order of operations for the redesign.
 
+> **Next program (2026-08-10): [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md)**
+> ([ADR-972](DECISIONS.md) · [ADR-973](DECISIONS.md)) — one block model authored once and rendered on
+> a member's Spotlight, a Space's profile, a Space's Site, and email. Phases **E0–E10** below. It
+> **absorbs `A2` and `W1–W5`**, which are re-pointed rather than deleted, and it **must land after**
+> UX-MATURITY Lift 5c/5d because both touch `EDITABLE_PAGES` in opposite directions.
+
 > **The single, prioritized, execute-from list for the whole platform.** Consolidates every
 > scattered roadmap (BACKLOG · ONBOARDING-BUILD-LIST · DEVELOPMENT-MAP · IA-RESTRUCTURE ·
 > EDIT-PATH-AUDIT · STUDIO-REVIEW · LAUNCH · CHECKLIST) into one ranked list, after the
 > 2026-06-08 five-domain code sweep + the owner's Roles & Permissions redesign.
-> Legend: ✅ done · ⏳ partial / in flight · 📋 specced, not built · 🔴 blocked / gated.
+> Legend: ✅ done · ⏳ partial / in flight · 📋 specced, not built · 🔴 blocked / gated ·
+> ➡️ absorbed by a later phase (scope kept, do not schedule independently).
 > Spec detail still lives in the per-topic docs; this is the **order of operations**.
+
+## ✏️ The editor program — one block model, four surfaces — 2026-08-10 ([ADR-972](DECISIONS.md) · [ADR-973](DECISIONS.md), full spec [EDITOR-ARCHITECTURE.md](EDITOR-ARCHITECTURE.md))
+
+**The shape.** A block is authored **once** — one Zod content schema, one React component — and its
+*display* varies by where it lands. Three axes, not three fidelities: **kind** (`member | space |
+email`) decides legality and the column ceiling; **surface** decides renderer and density; **render
+target** decides React tree vs HTML string. Email already proves the model
+(`lib/entity-blocks/registry.ts:14-17`); Site needs the same four things email got — legality, a
+column ceiling, a palette allowlist, a renderer.
+
+### Prerequisites — neither is code we can write
+
+| # | Prerequisite | Owner | Why it blocks |
+|---|---|---|---|
+| **P-a** | [`FINALIZE-PLAN.md`](FINALIZE-PLAN.md) Phase 1.2/1.3 — recapture the 72 visual baselines from a settled `main` | Engineering | All 72 were written in one commit on 2026-08-05 and are many rendering commits stale. Until then a total regression and a perfect refactor produce the **same red X**. Hard gate on **E1** |
+| **P-b** | Add `lint`, `test` and `pr-compare` to required branch-protection contexts (`ci.yml:37-46`) | 🔴 **Owner, ~5 minutes** | Only `checks` and `analyze` are required today, so 8,874 tests **cannot block a merge**. Worth more than any gate below |
+
+### Phases
+
+| # | Phase | Lift | Gate — what proves it worked |
+|---|---|:---:|---|
+| **E0** | **Foundations.** Node-id keying (two text blocks on one page), unknown-block byte-for-byte preservation, immutable `page_versions` + publish as pointer swap, `app_instances` writers (**absorbs A2**), undo + `base_revision`, the `render_path` runtime flag per surface, surface-vocabulary reconciliation, the three dead `bindings.tsx` imports | **L** | `check:doc-safety` green on a frozen corpus of **real stored documents**; every later phase reversible by flag |
+| **E1** | **Block contract.** One registry, `defineBlock`, Zod `content`, up/down migrations, `reads: 'live' \| 'authored'`, the binding layer, `check:blocks` + `check:surface-binding` + `check:email-blocks` | **L** | Every registry row resolves to a renderer for **every declared surface**; old ⇄ new `renderToStaticMarkup` equivalence green per block per surface |
+| **E2** | **Loom projection + usage index**, *then* consolidate ~138 block types toward ~60 | **XL** | "Which tenants use this block" is answerable **before** the first retirement — the index is a safety mechanism, not a report |
+| **E3** | **Axis work.** Widen `kinds[]` to `member` + member commerce adapters; density (`compact \| standard \| roomy`) as a declared property; Site's four things | **L** | Spotlight, in-app profile, Space profile and Site render off one registry with **zero visual diff** |
+| **E4** | **Canvas.** Same-origin iframe + single React tree via `createPortal`, `bubbleEvent` + coordinate translation, parent-document overlays, inline Tiptap, device switcher at real viewports | **L** | Click-to-edit on every surface; RSC ⇄ canvas parity green (a mismatch here ships as a hydration error) |
+| **E5** | **Inspector + responsive.** Fields derived from schemas, sparse breakpoint overrides with provenance, container queries for component-internal layout | **M–L** | Real viewports, not simulated widths |
+| **E6** | **Direct manipulation.** Drag/drop, layer tree, keyboard model, spacing handles, presets-first inserter | **L** | The keyboard path is complete — no mouse-only operation |
+| **E7** | **Functional blocks.** The five transactional widgets made placeable, the form block, the donations Stripe path | **L** | Placeable at every legal surface, gated by `kinds` not by hand |
+| **E8** | **Vera.** Streaming, per-Space retrieval, composer generalized past 15 blocks/one surface, three enforcement layers, bounded critic on screenshot + validator findings, ghosted diff review | **L** | One prompt → a valid, reviewable, **single-undo** page |
+| **E9** | **Loom authoring.** Layer-2 config editing, per-surface settings console, the declarative composer, `check:loom-integrity` | **M–L** | An operator composes a function without a deploy — and cannot write JavaScript ([ADR-973](DECISIONS.md)) |
+| **E10** | **Sites.** Domains, host routing, per-tenant theming and SEO. **Absorbs W1–W5** | **L** | A tenant serves a custom domain off the same registry |
+
+**Honest total: eight L, one XL, two M–L — a multi-quarter program.** ⚠️ **E0–E3 carry roughly half
+the risk and produce almost nothing visible.** E4 is the first point where the thing is demonstrable.
+Anyone judging progress before E4 by what they can see will conclude it has stalled.
+
+### Guards this program adds
+
+| Kind | What |
+|---|---|
+| **Gates** | `check:blocks` · `check:doc-safety` · `check:surface-binding` · `check:loom-integrity` (write-time) · `check:email-blocks` |
+| **Ratchets** (`scripts/adoption-baselines.json`) | `block-systems` 3→1 · `unbound-app-surfaces` 157→0 · `block-types-total` ~138→~60 · `blocks-without-totext` all→0 · `raw-css-overrides` 0 (visibility only) |
+| **Equivalence** | old ⇄ new renderer · golden markup per (block × surface × density), generated from the registry · **email golden strings** (three cron send paths, and email has no visual gate at all) · RSC ⇄ canvas parity |
+| **Runtime** | `platform_flags.render_path`, per surface. `platform_flags` carries dozens of switches — AI, demo mode, SMS, referrals, feed, billing, every plan gate — and **not one** reverts a surface to its coded body (no seeded key matches `render`/`template`/`block`/`editor` except `circle_templates_enabled`, which is unrelated); the repo has no down-migrations and no rollback convention, so this flag is the only reversal a phase gets |
+| **Process** | Every phase dark behind its flag · shadow-render + diff before each cutover · batch rendering changes and capture once · `check:render-path`'s exact-match baseline edited in the same PR |
+
+### Sequencing collisions — read before scheduling
+
+| Collision | Detail |
+|---|---|
+| **`EDITABLE_PAGES`, two directions** | [UX-MATURITY](UX-MATURITY-PLAN.md) Lift 5c *grows* the constant for root marketing routes (current "Next" wave) and 5d adds 8 seeker articles; **W3** *replaces* it with per-Space resolution. **E3 must land after 5c/5d** or one silently undoes the other |
+| **A2 / W1–W5** | Absorbed by E0 and E10 respectively. Do not build twice; the rows below are re-pointed, not deleted |
+| **Visual suite** | FINALIZE-PLAN 1.2/1.3 are hard prerequisites for E1 (P-a above) |
+| **`check:elements`** | Fails a PR declaring a second `ElementDef[]` catalog outside `lib/elements/registry.ts`. Confirm the block registry does not trip it before E1 |
+| **`cacheComponents`** | 🔴 **Not adoptable, out of scope.** Zero `revalidateTag` against 1,094 `revalidatePath`, 51 `export const revalidate` (which the flag rejects), 242 `force-dynamic`. Adopting it means rewriting invalidation, not flipping a flag |
+
+### Open before E1 freezes the contract
+
+1. **`reads: 'live'` vs category** as the carrier of the email boundary (this program recommends `reads`).
+2. **The density scale** — three steps (`compact | standard | roomy`) proposed.
+3. **Member commerce** — which capabilities a Spotlight actually gets, and whether a member needs a Stripe account.
+4. **Site: surface of `space`, or a fourth kind** (assumed: surface).
+5. **The usage index shape** — `app_instances` trigger, periodic JSONB scan, or both.
 
 ## 🏗️ App Platform + white-label sites — deferred by owner decision — 2026-08-03 ([ADR-921](DECISIONS.md), specs [WHITE-LABEL-SITES.md](WHITE-LABEL-SITES.md) · [LOOM-PLATFORM.md](LOOM-PLATFORM.md) · [SPACES.md](SPACES.md))
 
@@ -39,20 +110,29 @@ shrinks. Remaining before the phases resume: run the pgTAP suite green in `db-te
 | # | Scope | Lift | Status |
 |---|---|---|---|
 | A1 | **Feature modules with enforced boundaries.** `modules/<app>/{components,server,db,index.ts}`, ESLint import-boundary rule (public API via barrel only); CRM · booking · email-design · QR first. Generalizes then retires `check:crm-parity`. | M | 📋 |
-| A2 | **Instance contract live.** Four layers per ADR-499: function (git) ◁ global config (`library_assets kind='app'`) ◁ instance (`app_instances`: space_id, surface, slot, zod-validated `config`) ◁ style (`library_styles` + `style_override`). Placement stays in `page_settings.layout` (block_id = instance id). | M | 📋 |
+| A2 | **Instance contract live.** Four layers per ADR-499: function (git) ◁ global config (`library_assets kind='app'`) ◁ instance (`app_instances`: space_id, surface, slot, zod-validated `config`) ◁ style (`library_styles` + `style_override`). Placement stays in `page_settings.layout` (block_id = instance id). → **Absorbed by E0** ([ADR-973](DECISIONS.md)); Layer 1 is amended there to allow declarative operator-authored functions. Build it in E0, not here. | M | ➡️ E0 |
 | A3 | **Enablement inside RLS.** Per-tenant module enablement via `spaces.entitlements` + the function grid + Module Manager (all existing); module-table policies also check the enablement key so a disabled module's data is unreachable even via direct API. | M | 📋 |
 | A4 | **Flagship packaged apps.** CRM shipped as ONE module on `/admin/crm` (root instance), `/spaces/[slug]/crm` (tenant instance), and entity consoles — each reading only its tenant's rows under the new policies. Then booking, then email design. pgTAP enablement tests per app. | L | 📋 |
 | A5 | **Meters go live.** The decorative freemium meters (200 contacts · 300 sends/mo · 3 QR codes · 1 journey · 1 seat) enforced at the module boundary with upgrade prompts, behind the existing `gatesLive` switch. | M | 📋 |
 
-### White-label sites (ADR-509 architecture) — 🔴 deferred
+### White-label sites (ADR-509 architecture) — ➡️ **W1–W5 absorbed by E10** ([ADR-972](DECISIONS.md))
+
+**W1–W5 are re-pointed, not deleted.** Their scope is real and unchanged; what changed is *when* and
+*on what*. Building the site renderer before the block contract (E1) and the axis work (E3) means
+building it against three block systems and then rebuilding it against one. The rows stay here as the
+scope inventory E10 draws from — read them, do not schedule them independently. **W6 stays deferred**
+and is not part of the editor program.
+
+⚠️ **W3 collides with UX-MATURITY Lift 5c/5d** on `EDITABLE_PAGES` in the opposite direction. See the
+sequencing table above.
 
 | # | Scope | Lift | Status |
 |---|---|---|---|
-| W1 | **Foundations.** `space_domains` table (host unique, kind subdomain/custom, status lifecycle, verification token, is_primary); `pages` drops global-unique slug for `unique(space_id, slug)`; `site_templates` + `pages.template_version`; `custom_domain` entitlement key created (unenforced). Owner decision D1: converge `spaces.preferences.pageDocs` → `pages` (dual-read fallback window, lazy migrate on publish). | M | 📋 |
-| W2 | **Subdomains live.** Sites apex purchased (owner decision D2 — DNS lead time); Vercel wildcard; host router in `proxy.ts` (tenant hosts short-circuit before session/cookies, rewrite to internal `app/_site/[spaceId]`, set `x-space-id`); resurrect the ADR-508 BlockRender public renderer from git history; per-tenant SEO (metadata, canonical, robots, sitemap, OG); per-Space site nav via the `menus` space_id seam; 301 from `/sites/[slug]`. | L | 📋 |
-| W3 | **Per-Space editor.** Replace the hardcoded 8-slug `EDITABLE_PAGES` with per-Space page resolution (create/rename/reorder/delete under quota); Website tool row in the Space console; `site_templates` gallery; publish via `revalidateTag('site:<spaceId>')`; website-surface Puck blocks incl. packaged apps as site blocks. | L | 📋 |
-| W4 | **Custom domains + billing.** `lib/vercel/domains.ts` (Domains API), DNS wizard, `pending→verifying→active→error`, bind-time entitlement gate, downgrade→redirect (never 404); rebuild the white-label purchase/lead flow (owner decision D8: self-serve Independent vs high-touch). Blocked on Stripe connector authorization. | L | 🔴 |
-| W5 | **Hardening.** Per-site CSP, embed sandbox + allowlist, abuse kill switch honored at the edge, dangling-DNS monitor cron, per-tenant quotas (pages/domains/bandwidth), optional per-Space sender domains/DKIM. | M | 📋 |
+| W1 | **Foundations.** `space_domains` table (host unique, kind subdomain/custom, status lifecycle, verification token, is_primary); `pages` drops global-unique slug for `unique(space_id, slug)`; `site_templates` + `pages.template_version`; `custom_domain` entitlement key created (unenforced). Owner decision D1: converge `spaces.preferences.pageDocs` → `pages` (dual-read fallback window, lazy migrate on publish). | M | ➡️ E10 |
+| W2 | **Subdomains live.** Sites apex purchased (owner decision D2 — DNS lead time); Vercel wildcard; host router in `proxy.ts` (tenant hosts short-circuit before session/cookies, rewrite to internal `app/_site/[spaceId]`, set `x-space-id`); resurrect the ADR-508 BlockRender public renderer from git history; per-tenant SEO (metadata, canonical, robots, sitemap, OG); per-Space site nav via the `menus` space_id seam; 301 from `/sites/[slug]`. | L | ➡️ E10 |
+| W3 | **Per-Space editor.** Replace the hardcoded 8-slug `EDITABLE_PAGES` with per-Space page resolution (create/rename/reorder/delete under quota); Website tool row in the Space console; `site_templates` gallery; publish via `revalidateTag('site:<spaceId>')`; website-surface Puck blocks incl. packaged apps as site blocks. | L | ➡️ E10 |
+| W4 | **Custom domains + billing.** `lib/vercel/domains.ts` (Domains API), DNS wizard, `pending→verifying→active→error`, bind-time entitlement gate, downgrade→redirect (never 404); rebuild the white-label purchase/lead flow (owner decision D8: self-serve Independent vs high-touch). Blocked on Stripe connector authorization. | L | 🔴 ➡️ E10 |
+| W5 | **Hardening.** Per-site CSP, embed sandbox + allowlist, abuse kill switch honored at the edge, dangling-DNS monitor cron, per-tenant quotas (pages/domains/bandwidth), optional per-Space sender domains/DKIM. | M | ➡️ E10 |
 | W6 | **Members + marketplace.** Member sites on the same rails; theme/template marketplace on DTCG portable themes + `site_templates`. | L | 📋 |
 
 ## 🎨 Site re-theme — every surface unified, one parent to change — 2026-07-18 ([ADR-781](DECISIONS.md), full plan [RETHEME-PLAN.md](RETHEME-PLAN.md), protocol [THEME-PROTOCOL.md](THEME-PROTOCOL.md))

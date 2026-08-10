@@ -13,6 +13,16 @@ member app and without sacrificing speed.
 > `/the-community`, `/the-quest`, and `/pricing` are editor-editable, each seeded from a faithful
 > standardized-block template ("editor = live"). Treat every "Puck" / `/studio/pages` mention below
 > as historical; the block model + draft/publish flow are current.
+>
+> **⚠️ Superseded as the forward plan, 2026-08-10 ([ADR-972](DECISIONS.md)).** This spec documents
+> the **marketing-page** editor as built, and stays accurate for that. It is **not** the plan for
+> what comes next: [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md) replaces the Puck-shaped
+> `ComponentConfig` in `lib/page-editor/types.ts` (marked "Shape is FROZEN") with one `defineBlock`
+> contract spanning Spotlight, Space profiles, Sites and email. Three defects this spec's model
+> carries are named there and fixed in **E0**: block ids are deduped globally so **two text blocks
+> cannot coexist on one page**; `isRenderable()` discards the *whole document* if any single block
+> type is unknown; and publish overwrites `published_data` irrecoverably. Read this doc for what
+> ships today, that one for what replaces it.
 
 ---
 
