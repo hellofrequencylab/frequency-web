@@ -275,6 +275,39 @@ review-friendly. **The live baselines are substantially better than either plan 
 | 6.6 | **67 raw `<img>`** | S | → `next/image` on the LCP surfaces first. |
 | 6.7 | **Remaining ratchet tails** | M | `raw-input` 186 (needs a borderless/inset variant on the primitive, not call-site swaps — see the induction note in BUILD-LIST §P8), `literal-display-type` 96, `raw-button-bg` 526 (replace the proximity-window pattern with the opening-tag form under a new basis fingerprint), `literal-radius` 2,450 (**spend inside screen passes, never as its own wave**). |
 
+### 6.8 — The DAWN debt is TWO populations, and only one of them is a sweep
+
+Measured 2026-08-10 with `check:adoption`'s **own** `countEntry`, run per file, so the distribution
+and the score cannot disagree. `top25` is the share of a class's total carried by its 25 worst files.
+
+| Class | Total | Files | top10 | top25 | Median/file | Instrument |
+| :--- | ---: | ---: | ---: | ---: | ---: | :--- |
+| `literal-radius` | 2450 | 816 | 8% | **15%** | 2 | 🔧 codemod |
+| `raw-button-bg` | 526 | 312 | 14% | **26%** | 1 | 🔧 codemod |
+| `raw-input` | 186 | 131 | 21% | **37%** | 1 | 🔧 codemod + an inset variant |
+| `raw-px-arbitrary` | 117 | 59 | 47% | 71% | 1 | ✋ sweep |
+| `literal-display-type` | 96 | 37 | 69% | 88% | 1 | ✋ sweep |
+| `shadow-literals` | 49 | 35 | 49% | 80% | 1 | ✋ sweep |
+| `white-black-literals` | 27 | 24 | 48% | **100%** | 1 | ✋ sweep |
+| `bespoke-cards` | 24 | 24 | 42% | **100%** | 1 | ✋ sweep |
+| `subtle-tiny-type` | 23 | 8 | **100%** | 100% | 2 | ✋ sweep |
+| `bespoke-rows` | 14 | 14 | 71% | **100%** | 1 | ✋ sweep |
+| `adhoc-progress` · `handrolled-icon-button` · `raw-select` · `raw-textarea` | 26 | 22 | **100%** | 100% | 1 | ✋ sweep |
+
+**The finding that changes the plan: 11 of the 14 live classes are fully sweepable, and 3 are not.**
+The eleven total **376 occurrences** and every one of them is ≥71% carried by its top 25 files — that
+is one focused wave, not a program. The three long-tail classes total **3,162** with a median of
+**1 to 2 per file** across 816 · 312 · 131 files; a file-by-file sweep of `literal-radius`'s 25 worst
+files buys **15%** of it. Hand-sweeping those three is the wrong instrument, and the ratchet has been
+implying otherwise by listing all fourteen in one column.
+
+⚠️ **Sequencing constraint, and it is new as of today.** Every row above changes pixels, and the
+visual baselines were just recaptured (1.2). A UI sweep now makes `pr-compare` fail — *correctly*,
+because it is catching a real visual change — so these must land **after** `pr-compare` is confirmed
+green on an unrelated PR, each sweep carrying its own recapture. Landing a sweep before that
+confirmation would leave us unable to tell a regression from the sweep's own intended diff, which is
+the exact condition Phase 1 existed to end.
+
 ---
 
 ## Phase 7 — Voice, docs, and the owner handoff
