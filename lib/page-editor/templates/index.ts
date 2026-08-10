@@ -54,8 +54,10 @@ export function isWellFormed(data: unknown): data is Data {
   return content.every((b) => typeof b?.type === 'string')
 }
 
-// The types in a document that no longer resolve to a component. Powers the editor's
-// UnknownBlock placeholder, and the doc-safety corpus in docs/EDITOR-GATES.md.
+// The types in a document that no longer resolve to a component. Used by isFullyKnown,
+// and intended for the doc-safety corpus in docs/EDITOR-GATES.md. NOTE: the editor's
+// UnknownBlock placeholder does its own per-item lookup in block-render.tsx rather than
+// calling this — this reports on a whole document, that decides one item.
 export function unknownTypes(data: unknown): string[] {
   const content = (data as Data | null)?.content
   if (!Array.isArray(content)) return []

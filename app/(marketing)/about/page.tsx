@@ -17,7 +17,7 @@ import {
 import { Reveal } from '@/components/marketing/motion'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
-import { getTemplate, isRenderable } from '@/lib/page-editor/templates'
+import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { FOUNDING_PLACE } from '@/lib/site'
@@ -62,7 +62,7 @@ export function generateMetadata(): Metadata {
 export default async function AboutPage() {
   const published = await getPublishedData('about')
   const template = getTemplate('about')
-  const data = isRenderable(published) ? published : isRenderable(template) ? template : null
+  const data = isWellFormed(published) ? published : isWellFormed(template) ? template : null
   const live = data ? await getLiveData(createAdminClient()).catch(() => null) : null
   return (
     <>

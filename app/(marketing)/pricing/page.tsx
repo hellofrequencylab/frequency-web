@@ -47,7 +47,7 @@ import { BlockRender } from '@/lib/page-editor/block-render'
 import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
-import { isRenderable } from '@/lib/page-editor/templates'
+import { isWellFormed } from '@/lib/page-editor/templates'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -300,7 +300,7 @@ export default async function PricingPage() {
     )
 
   const published = await getPublishedData('pricing')
-  if (isRenderable(published)) {
+  if (isWellFormed(published)) {
     const live = await getLiveData(createAdminClient()).catch(() => null)
     return (
       <>

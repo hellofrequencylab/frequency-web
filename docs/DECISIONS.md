@@ -19220,6 +19220,15 @@ same red X. 🔴 **Branch protection is a five-minute owner action worth more th
 `ci.yml:37-46` records `checks` and `analyze` as the only required contexts, so `lint` and `test`
 (704 files, 8,874 tests) cannot block a merge. **A PR with failing tests is mergeable today.**
 
+> ✅ **Resolved the same day this ADR was written.** The owner added `lint` and `test`; the ruleset
+> now requires four contexts — `checks` · `analyze` · `lint` · `test` — confirmed by reading the
+> rulesets API back after the change. Every gate in this program is therefore a real gate. The
+> paragraph above is left standing as the record of why it mattered. (The test figures are also
+> superseded: 708 files, 8,944 tests on 2026-08-10, and the figure moves with every PR — date it or
+> omit it.) ⚠️ `pr-compare` is still
+> advisory **on purpose**: requiring it before the visual baselines are recaptured would block every
+> PR on a pre-existing failure. Those two changes belong in the same commit.
+
 **Consequences.** ✅ One contract, four surfaces, authored once. ✅ `~138` block types across three
 systems ratchet toward `~60` in one. ⚠️ **E0–E3 carry roughly half the program's risk and produce
 almost nothing visible**; E4 is the first demonstrable point. Honest total: eight **L**, one **XL**,
@@ -19329,6 +19338,14 @@ pass so the two documents cannot disagree.
 **Three of these cost real schedule, and the estimate moves rather than absorbing it.** The program
 goes from *eight L, one XL, two M–L* to **four XL, five L, one M–L**:
 
+> ⚠️ **Re-counted 2026-08-10 after an implementability audit: five XL, five L, one M–L.** E4 and E10
+> were re-estimated against the code (E4 is wholly greenfield — `bubbleEvent` has zero hits since
+> ADR-493 removed Puck; E10 absorbs W1(M)+W2(L)+W3(L)+W4(L)+W5(M), which cannot be one L), and E7
+> came **down** to L because `lib/billing/connect.ts` already ships per-profile Stripe Express
+> Connect. The table below records the decisions; the phase tables in
+> [`EDITOR-ARCHITECTURE`](EDITOR-ARCHITECTURE.md) §8 and [`BUILD-LIST`](BUILD-LIST.md) carry the
+> current numbers.
+
 | Decision | Phase | Was | Now | Why |
 |---|---|:---:|:---:|---|
 | D-2 multiplayer | **E0** | L | **XL** | The document becomes a CRDT — that is not a feature bolted on later, it is what the document *is* |
@@ -19385,7 +19402,7 @@ a CRDT needs. E0 was always building the hard part.
 
 | Concern | Decision | Why |
 |---|---|---|
-| CRDT | **Yjs** | `@tiptap/pm` **3.29 is already a dependency**, and Tiptap collaboration *is* `y-prosemirror`. E4's inline rich text and E0's document sync become one technology instead of two. Any other CRDT makes Tiptap collaboration a bespoke bridge |
+| CRDT | **Yjs** | Tiptap's collaboration extension is built on `y-prosemirror`, so E4's inline rich text and E0's document sync become one technology instead of two. Any other CRDT makes Tiptap collaboration a bespoke bridge. ⚠️ **Corrected 2026-08-10:** an earlier draft said `@tiptap/pm` 3.29 being installed made Yjs *already a dependency*. It does not — Tiptap v3 dropped v2's `y-prosemirror` re-export, and `yjs` / `y-prosemirror` / `@tiptap/extension-collaboration` are all absent. **Three new packages in E0.** The argument survives as compatibility, not as install cost |
 | Transport | **Supabase Realtime broadcast** carrying Yjs updates | Already in the stack, already authenticated with the editor's session. Avoids operating a `y-websocket` server — a new production dependency with its own scaling and on-call story |
 | Presence | Yjs **awareness** over Realtime presence | Ephemeral by construction. A cursor that persists to the database is a bug |
 | Persistence | Debounced encoded snapshot into the draft row; `page_versions` stores **serialized trees, not CRDT state** | A version a human restores must be readable without a CRDT runtime. This is what stops Yjs from becoming load-bearing on the *read* path |
@@ -19528,8 +19545,11 @@ after the change it was meant to catch never gets that moment — as `check:menu
 first year enforcing a naming convention while the invariant walked past it.
 
 ⚠️ **`check:doc-safety` goes in the `checks` job, not `test`.** It runs vitest, so `test` is the
-instinctive home and the wrong one: `checks` and `analyze` are the only required branch-protection
-contexts, so **a hard gate placed in `test` cannot block a merge today.** Measured cost: four AST
+instinctive home and the wrong one: at the time of writing, `checks` and `analyze` were the only
+required branch-protection contexts, so **a hard gate placed in `test` could not block a merge.**
+✅ *That is no longer true — `test` became a required context on 2026-08-10 — so the placement is now
+a matter of cohesion rather than correctness: `checks` is the guard job and its budget is where a
+3–5 s addition belongs.* Measured cost: four AST
 guards ≈1–2 s against a 13 s aggregate; doc-safety's single-file vitest run ≈3–5 s. The job goes
 ~55 s → ~60 s.
 
@@ -19556,16 +19576,40 @@ resolve time, not at write time, so live `page_settings` rows still name them.
 The proposal was a hard freeze on the 14 email-reachable block ids until golden-string tests exist,
 on the grounds that a bad web render is a bad page while a bad email is thousands of sent messages.
 
-**The owner's answer was that nothing is using it, and the database agrees.** Verified: **0 campaigns
-scheduled or sending** (12 total, 5 already sent — immutable history), **0 nurture steps**, **8
-messages in 30 days**. A block-id change therefore **cannot corrupt an outbound send**, because there
-is no outbound send to corrupt. The residual risk is that an operator opens an old campaign draft and
-sees it render wrong, which is visible and recoverable.
+The owner's answer was that nothing is using it. **I supported that with a measurement, and the
+measurement was wrong.**
 
-⚠️ **The condition that reverses this:** a scheduled or sending campaign, or a non-zero
-`nurture_steps` count. Both are one query. **Re-check before any PR that renames an email-reachable
-block id** — the decision is sound *because of a measurement*, not as a standing policy, and the
-measurement has a shelf life.
+🔴 **Corrected 2026-08-10, same day.** I wrote *"8 messages in 30 days"* — that figure is
+`public.messages`, the **direct-message table**. It is not an email measure and has nothing to do
+with this decision. The actual email numbers:
+
+| Measure | Value |
+|---|---|
+| `email_events` in 30 days | **704** — 297 `sent`, 292 `delivered`, 102 `opened` |
+| … of the sends, tied to a campaign | **196** |
+| Most recent send | **today** |
+| `campaigns` | 7 **draft**, 5 sent |
+| Scheduled or sending *right now* | 0 ✅ |
+| `nurture_steps` | 0 ✅ |
+
+**Email is actively sending.** "0 scheduled or sending" was a snapshot of the *queue at one instant*,
+not evidence that the surface is idle — a campaign is `sent` and then sits in history, so an empty
+queue is the normal state between sends, not an unused feature. Reading it as "nobody is using this"
+was the error, and it is exactly the class of mistake [ADR-977](DECISIONS.md) warns about: a number
+that looks like it answers the question and does not.
+
+**What this changes.** A rename cannot corrupt an already-sent email — sent is sent. It corrupts the
+**7 draft campaigns and 7 templates that are still sendable**, and with 196 campaign-linked sends in
+the last 30 days more sends are likely, not hypothetical. So the honest posture is not the hard
+freeze originally proposed, but it is not "change them freely" either:
+
+> **Email-reachable block ids may change, but not blind.** The golden-string harness
+> ([`EDITOR-ARCHITECTURE`](EDITOR-ARCHITECTURE.md) §7.4 item 3) is the real gate and should land in
+> **E0**, before any id moves — it is ~120 lines against a set that is exactly 14 and green today.
+> Until it exists, a PR renaming an email-reachable id must (a) re-run the queue check, and (b) render
+> the 7 draft campaigns and 7 templates through `compileEmailDoc` and diff the output. **This is the
+> owner's call to revisit** now that the measurement is right; the original answer was given on a
+> figure that did not mean what I said it meant.
 
 **Consequences.** ✅ Nine figures corrected at the source rather than inherited. ✅ Two gates
 re-specced before being written, instead of failing on their first run and being deleted in week one.
@@ -19607,8 +19651,8 @@ question.
 | Slug | Status | Types resolving to nothing |
 |---|---|---|
 | `about` | draft | `BetaCTA`, `ImageBand`, `PageHero`, `ZigZag` |
-| `how-it-works` | draft | `BetaCTA`, `PageHero`, `ZigZag` |
 | `the-lab` | draft | `BetaCTA`, `FeatureGallery`, `ImageBand`, `PageHero`, `ZigZag` |
+| ~~`how-it-works`~~ | draft | ⚠️ **Corrected: not at risk.** It carries the same orphan types, but it is **not in `EDITABLE_PAGES`** (a retired 308 redirect), so `isEditableSlug` is false and `/edit/how-it-works` redirects to `/pages`. The editor can never open it. This ADR first counted it and said "verified against production", overstating the blast radius by a third — the code contradicted the doc, so the code wins |
 
 `home` and `the-community` are clean, so nothing public was affected. The trap was armed, not sprung.
 
@@ -19635,10 +19679,34 @@ round-trips the block byte-for-byte.
 so all eight public routes keep their behaviour **byte-for-byte** — the only behavioural change in
 this PR is the editor loader. No stored document is rewritten.
 
-**Consequences.** ✅ Three drafts are publishable again without losing work. ✅ 5 tests cover the five
-real orphan types; `tsc`, `lint` and `check:render-path` clean with `render-path-bodies.txt`
-untouched. ⚠️ **The five retired types still render as nothing on a live page** — this fix protects
-the author's data, it does not restore the blocks. Remapping them belongs with the block-contract
+**Consequences.** ✅ Two drafts are publishable again without losing work. ✅ Tests cover the five real
+orphan types; `tsc`, `lint` and `check:render-path` clean with `render-path-bodies.txt` untouched.
+⚠️ **The five retired types still render as nothing on a live page** — this fix protects the author's
+data, it does not restore the blocks.
+
+> 🔴 **This ADR shipped incomplete, and the completion is recorded here rather than in a new ADR.**
+> The first pass moved only the *editor loader* off the discarding predicate and deliberately left
+> the eight public routes byte-for-byte unchanged. An adversarial review found what that combination
+> actually produces: a janitor could now open their draft, edit it, and publish — and the public
+> route, still gating on `isFullyKnown`, would discard the whole document and render the coded
+> template, while the editor showed a dim **"Published"** and offered an **Unpublish** button. **The
+> operator got every signal that the page was live and it was not.** Preserving the data while
+> silently discarding the publish is arguably worse than the original bug, because the original at
+> least failed visibly.
+>
+> Three further defects came out of the same review: **`isRenderableSpaceDoc`
+> (`lib/page-editor/templates/space.ts`) is a third copy of the predicate** — missed entirely, and
+> gating both the *loader* and the *save* path for Space pages, which hold far more stored documents
+> than eight marketing slugs; a doc carrying a retired block could never be re-saved, locking an owner
+> out of their own page. Widening the loader to accept a doc with no `props` opened a **`TypeError` on
+> `item.props.id`**, a 500 on the editor route. And the inspector rendered a **blank pane above a live
+> Delete button** for an unresolvable block — inviting the operator to delete it by hand, which is the
+> same loss one block at a time.
+>
+> All four are fixed: the eight public routes moved to `isWellFormed`, the Space predicate was split
+> the same way (loaders *and* both write validators), `props?.id` is optional-chained, and the
+> inspector explains what the block is. Verified first that **no published document carries an orphan
+> type**, so the public-route change alters zero live pages today. Remapping them belongs with the block-contract
 work. ⚠️ These three documents are the natural first corpus for a document round-trip gate: they are
 exactly the shape such a gate exists to defend. 🔴 **The general lesson outlives the fix:** a
 predicate used by ten callers should be named for the *question*, not the *answer*, and any

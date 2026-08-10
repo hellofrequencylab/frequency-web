@@ -96,8 +96,10 @@ only shrink, stale entries fail) or a re-capture that records the new sha, date 
 boundary · rendering · publish safety · concurrency.
 
 🔴 **Goes in the `checks` job, not `test`.** It runs vitest, so `test` is the instinctive home and the
-wrong one — `checks` and `analyze` are the only required contexts, so a hard gate in `test` cannot
-block a merge.
+wrong one. ⚠️ *Note: as of 2026-08-10 `test` IS a required context, so this is no longer a
+correctness argument — but it remains the right home. `checks` is the guard job, it is where every
+sibling gate lives, and its ~13 s budget is where a 3–5 s addition belongs. Historically the argument
+was harder: before that date a hard gate in `test` could not block a merge at all.*
 
 ---
 
@@ -188,13 +190,13 @@ bijection that holds is **`EMAIL_PALETTE_BLOCK_IDS` ⇄ switch, 14 ⇄ 14, exact
 | **E5** | `KNOWN_BLOCK_IDS` ⊇ palette **and derived**, never a restated literal | ✅ |
 | **E6** | The switch has a `default:` returning empty — fail-closed on a cron | ✅ |
 | **E7** | `MAX_COLUMNS_BY_KIND.email === 1` | ✅ |
-| **E8** | Send-path integrity — the three crons still reach the renderer through `compileEmailDoc` | ✅ |
+| **E8** | Send-path integrity — the **two** document-rendering crons (`nurture`, `space-campaigns`) still reach the renderer through `compileEmailDoc`. ⚠️ `space-drips` is **not** one of them — it sends plain-text-derived HTML and never touches a block document | ✅ |
 | **E9** | **Integrity: if the walker stops finding `renderBlockInner`, that is a hard failure** | — |
 
 **E9 is the important one.** A parser that silently finds zero cases would report a perfect bijection
 against an empty set. `check-render-path.mjs` already learned this: *fix it; do not lower the floor.*
 
-**Why AST and not grep, concretely:** a naive `grep "case '"` returns **27** hits in `render.ts`; the
+**Why AST and not grep, concretely:** a naive `grep "case '"` returns **30** hits in `render.ts`; the
 AST walk over `renderBlockInner`'s body returns exactly the **14** that matter.
 
 **Cannot see:** whether the HTML renders in Outlook (this proves *coverage*, not *correctness* — the
@@ -206,7 +208,7 @@ moving, which is precisely when one is most likely to move.
 
 ---
 
-## 6. The five ratchets
+## 6. The six ratchets
 
 ### They go in `scripts/block-baselines.json`, not `adoption-baselines.json`
 
@@ -227,9 +229,10 @@ up — *change what you count and the number stops being comparable.*
 | `block-types-total` | ~~~138~~ | **304** | → ~49 |
 | `blocks-without-totext` | all | **304** — zero `toText` in the repo | → 0 |
 | `raw-css-paths` | — | **0** | **must stay 0** ([ADR-976](DECISIONS.md) D-1) |
+| `editor-bytes-on-public-render` | — | *needs an instrument* 🔴 | → falls. **No bundle-size script exists** (`scripts/` has none, `lighthouse` is advisory and cannot attribute bytes to a module). Until one is built this ratchet is decorative, and so is E0's *"zero editor bytes on the public render"* gate — build the instrument in E0 or drop the claim |
 
 Each is emitted by the guard that owns it (`--ratchet`), so the number and its assertions share one
-manifest and cannot drift apart. Seed all five in **one PR, one `--update` per key** — the harness
+manifest and cannot drift apart. Seed all six in **one PR, one `--update` per key** — the harness
 already refuses a multi-key update sharing one reason — with `frozen.reason` recording that the
 3 / ~138 figures were **superseded by measurement**, so the correction is auditable in the ledger and
 not only in prose.
@@ -250,7 +253,7 @@ In `ci.yml`'s `checks` loop: `surface-binding` beside `menu` (shared manifests),
 `blocks` (shared `SEND_RESOLVERS`).
 
 ⚠️ **The success line is already stale** — `ci.yml` echoes *"All 21 contract guards passed"* while the
-loop runs **23**, and it goes to **28**. **Derive it** (`${#guards[@]}`) so it cannot rot again.
+loop actually runs **24**, and it goes to **29**. ✅ **Fixed at the source 2026-08-10** — the list is now a `guards=()` array and the summary prints `${#guards[@]}`, so it cannot rot again. **Derive it** (`${#guards[@]}`) so it cannot rot again.
 
 Measured budget: four AST guards ≈1–2 s against a 13 s aggregate; doc-safety's single-file vitest run
 ≈3–5 s. The job goes ~55 s → ~60 s.

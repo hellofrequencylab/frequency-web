@@ -470,12 +470,26 @@ function Inspector({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <FieldForm
-          fields={fields}
-          value={value}
-          onChange={onFieldsChange}
-          onPushScreen={(req) => setSubs((s) => [...s, req])}
-        />
+        {/* A block whose type no longer resolves has no fields, so this pane would
+            otherwise be blank — directly above a live Delete button. Say what it is,
+            or the operator reasonably concludes the block is broken and removes it,
+            which is the data loss ADR-978 exists to prevent, one block at a time. */}
+        {!entry && subs.length === 0 ? (
+          <div className="px-3 py-4">
+            <p className="text-body-sm font-medium text-text">This block is not available in this version</p>
+            <p className="mt-1 text-body-sm text-muted">
+              <code>{block.type}</code> has no settings to edit here. It is kept exactly as saved and
+              publishes unchanged. Delete it only if you meant to remove it for good.
+            </p>
+          </div>
+        ) : (
+          <FieldForm
+            fields={fields}
+            value={value}
+            onChange={onFieldsChange}
+            onPushScreen={(req) => setSubs((s) => [...s, req])}
+          />
+        )}
       </div>
 
       {subs.length === 0 && (

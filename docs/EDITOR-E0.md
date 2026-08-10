@@ -29,7 +29,8 @@
 | `page_settings` | 36 | untouched by node-id keying; relevant to §4 |
 
 **41 documents total.** The scary-sounding storage-shape migration is a fixture file. The genuine
-risk is concentrated in **19 email documents on three cron send paths with no visual gate**, and in
+risk is concentrated in **19 email documents on two cron send paths with no visual gate** (and email
+is actively sending — 297 in the last 30 days, most recent today), and in
 the ~40 code files that assume one block per type.
 
 ---
@@ -39,7 +40,7 @@ the ~40 code files that assume one block per type.
 ### 1.1 What is actually true today
 
 `lib/entity-blocks/rows-ops.ts:52` opens `normalize()` with `const seenBlocks = new Set<string>()`
-and `:61` refuses any block id already in it. **The same dedupe is implemented four more times,
+and `:61` refuses any block id already in it. **The same dedupe is implemented five more times,
 independently:**
 
 | Site | Function | Line |
@@ -47,11 +48,14 @@ independently:**
 | `lib/entity-blocks/rows-ops.ts` | `normalize` | 52, 61 |
 | `lib/entity-blocks/layout.ts` | `parseRows` | 204, 226 |
 | `lib/entity-blocks/layout.ts` | `sanitizeRows` | 258, 266 |
-| `lib/entity-blocks/layout.ts` | `resolveRows` | 645, 652 |
+| `lib/entity-blocks/layout.ts` | `sanitizeEntityLayout` | 405, 408 |
+| `lib/entity-blocks/layout.ts` | `resolveRows` | 644, 652 |
 | `lib/entity-blocks/layout.ts` | `mergeEntityLayout` (`placed`) | 373 |
 
-The invariant is enforced on parse, on sanitize, on every mutation, **and again on render.** Fixing
-one does nothing.
+The invariant is enforced on parse, on sanitize (twice), on merge, on every mutation, **and again on
+render.** Fixing one does nothing. ⚠️ An earlier draft counted five sites and missed
+`sanitizeEntityLayout` — the count is **six**, and a missed site is exactly how this survives a
+refactor.
 
 Three structures depend on uniqueness and collapse without it:
 
@@ -160,7 +164,7 @@ public.spaces where preferences ? 'profileLayout'`, and the same for the 19 emai
 
 | Risk | Detail |
 |---|---|
-| 🔴 **The three email crons** | `/api/cron/nurture`, `/api/cron/space-campaigns`, `/api/cron/space-drips` render the 19 email documents through `renderEmailLayout` (`render.ts:637`), which does `content[id]`. **An outbound send path with no visual gate.** Golden-string tests land *before* `render.ts` is touched, not after |
+| 🔴 **The email crons — TWO, not three** | `/api/cron/nurture` and `/api/cron/space-campaigns` render the 19 email documents through `renderEmailLayout` (`render.ts:637`), which does `content[id]`. ⚠️ **`/api/cron/space-drips` does NOT touch block documents at all** — `lib/spaces/drip-runner.ts:63` builds HTML from a plain-text `space_drip_steps.body` and never imports `compileEmailDoc`. An earlier draft counted it. **Two outbound send paths, no visual gate.** Golden-string tests land *before* `render.ts` is touched, not after |
 | 🔴 **`layout-equal.ts` is a byte comparison** | It powers the "unpublished changes" badge and draft-discard. Changing the canonical shape makes every Space read dirty exactly once — harmless, but expect it. Worse: `layout-equal.test.ts:94-111` asserts on the **source text** of `actions.ts`, so those fail on any rename |
 | ⚠️ **`selectedId` is the shared editor selection** | With duplicate types allowed, selection must key on `nid` or clicking the second text block focuses the first |
 | ⚠️ **`MEMBER_CHROME_BLOCK_IDS` locked rows** | `profile-page-builder.tsx:1062` passes `lockedIds` — a type-level lock over what is now a node list. Becomes "lock every node of these types" |
@@ -407,7 +411,8 @@ which is not suppressible here.
 
 **The underlying gap is real and worse than a broken import.** The resolver was never written, so
 349 App rows still cannot resolve to a component — and unlike a broken import, that fails *silently*,
-by letting the rows look resolvable. It is `check:surface-binding` (E1) work, not E0 work.
+by letting the rows look resolvable. It is `check:surface-binding` work, and that gate lands in **E0** with the other four
+([ADR-977](DECISIONS.md) D-10) — only its *green-on-the-new-registry* proof belongs to E1.
 
 **Lift: XS**, and it *removes* an item from E0.
 
@@ -420,6 +425,7 @@ Multiplayer is the reason E0 is **XL** rather than **L**. Full design in
 
 | Item | Detail | Lift |
 |---|---|:---:|
+| **Add the dependencies** | ⚠️ `yjs`, `y-prosemirror`, `@tiptap/extension-collaboration` — **none is installed.** Tiptap 3.29 + ProseMirror are, but v3 dropped v2's `y-prosemirror` re-export, so this is three new packages, not zero. Check bundle impact against the public-render ratchet in the same PR | S |
 | **Yjs document schema** | `Y.Array` of nodes, `Y.Map` per node's `content`, `Y.Text` for rich text | M |
 | **Bidirectional mapping** | `toYDoc(tree)` / `serialize(ydoc)`, with `serialize(toYDoc(t)) === t` as a hard test over the frozen 41-document corpus | M |
 | **Realtime channel + authz** | Supabase Realtime broadcast; a client may only join a page it can edit — checked server-side, not by the client's own claim | M |
@@ -477,9 +483,12 @@ is *currently destroying author work* every time a block type is renamed.
 
 ## 9. Two prerequisites from outside E0
 
-- ⏳ **`FINALIZE-PLAN` Phase 1.2** (recapture the 72 stale visual baselines) gates **E1, not E0** —
-  items 8–14 are covered by `renderToStaticMarkup` equivalence, which works while the visual suite is
-  red. This is why [ADR-976](DECISIONS.md) D-8 lets E0 start once 1.2/1.3 land and not before.
-- 🔴 **Branch protection.** `ci.yml:37-46` requires only `checks` and `analyze`, so `test` and
-  `pr-compare` **cannot block a merge today**. Every gate specified above is advisory until an owner
-  changes that — still the five-minute action worth more than any of this.
+- ⏳ **`FINALIZE-PLAN` 1.2/1.3** (recapture the 72 stale visual baselines) **gate E0's START**
+  ([ADR-976](DECISIONS.md) D-8); the *rest* of FINALIZE Phase 1 gates E1. An earlier draft of this
+  bullet said 1.2 gates "E1, not E0" and then cited D-8 saying the opposite in the same sentence.
+  Items 8–14 are additionally covered by `renderToStaticMarkup` equivalence, which works even while
+  the visual suite is red — that is a second net, not the reason to start early.
+- ✅ **Branch protection — CLOSED 2026-08-10.** The ruleset now requires `checks` · `analyze` ·
+  **`lint`** · **`test`**, verified by reading it back. Every gate specified above is a real gate.
+  ⚠️ `pr-compare` remains advisory on purpose: requiring it before the baselines are recaptured
+  would block every PR on a pre-existing failure. Pair the two changes.
