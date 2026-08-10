@@ -227,17 +227,25 @@ export function publicSurfaces(): readonly Surface[] {
  * expose the file to CI.
  *
  * The room and the Space console are account-specific, so their paths come from env
- * (PW_ROOM_PATH / PW_SPACE_SLUG). The room falls back to the channels index, which every
- * member can reach; the console is simply absent until a slug is provided.
+ * (PW_ROOM_PATH / PW_SPACE_SLUG). BOTH are absent until their env var is provided.
+ *
+ * 🔴 The room used to fall back to `/channels`, "which every member can reach". It does not:
+ * `/channels` is in proxy.ts's PROTECTED_PATHS, that visit bounced, and #2049 committed four
+ * `app-room` baselines that were pixel-for-pixel the marketing HOME page. An absent surface
+ * is honest and shows up in the shell reporter as unphotographed; a bounced one photographs
+ * the wrong page under the room's name. Never re-add a fallback here — point PW_ROOM_PATH at
+ * a room the beta account is actually in.
  */
 export function appSurfaces(): readonly Surface[] {
-  const roomPath = process.env.PW_ROOM_PATH ?? '/channels'
+  const roomPath = process.env.PW_ROOM_PATH
   const spaceSlug = process.env.PW_SPACE_SLUG
   const surfaces: Surface[] = [
     { path: '/feed', slug: 'app-feed', audience: 'member' },
-    { path: roomPath, slug: 'app-room', audience: 'member' },
     { path: '/settings', slug: 'app-settings', audience: 'member' },
   ]
+  if (roomPath) {
+    surfaces.push({ path: roomPath, slug: 'app-room', audience: 'member' })
+  }
   if (spaceSlug) {
     surfaces.push({
       path: `/spaces/${spaceSlug}/manage`,
@@ -412,10 +420,15 @@ export async function assertNotProtectionWall(page: Page): Promise<void> {
   }
 }
 
+/** The shell's own content region (`app-shell.tsx`, `<main id="main" data-tour-anchor="content">`).
+ *  Present on every authed surface and on NO marketing page, which is what makes it the
+ *  positive half of the check below. */
+const SHELL_MARKER = '[data-tour-anchor="content"]'
+
 /**
- * Fail LOUDLY when a MEMBER surface lands on /sign-in.
+ * Fail LOUDLY when a MEMBER surface photographs anything other than that surface.
  *
- * Two different silences hide here, and neither may be allowed to pass as a result:
+ * Three different silences hide here, and none may be allowed to pass as a result:
  *
  *  · The storage state is present but DEAD — an expired access token whose refresh token has
  *    already been rotated, or (the one that bites in CI) a session minted for a different
@@ -425,25 +438,61 @@ export async function assertNotProtectionWall(page: Page): Promise<void> {
  *    and report on the sign-in form's contrast as if it were the shell's.
  *  · The account exists but cannot reach the surface (onboarding not finished, no Space
  *    membership). Same photograph-the-wrong-page outcome.
+ *  · 🔴 The surface bounces somewhere that is NOT /sign-in. This is the one the first version
+ *    of this guard could not see, and it had already happened when the guard was written:
+ *    `appSurfaces()` defaults PW_ROOM_PATH to `/channels`, that visit landed on the marketing
+ *    HOME page, and all four `app-room` baselines committed in #2049 are photographs of `/`
+ *    — 99.3% to 99.7% pixel-identical to the `home` baselines, hero copy and JOIN THE BETA
+ *    button included. A guard that only tests for `/sign-in` reads a bounce to `/` as success,
+ *    and the next `update_baselines` run would have re-frozen the wrong page as the reference
+ *    for a member room. Hence both halves below: the landing path must be the requested path,
+ *    AND the shell must actually be on screen.
  *
  * A skip would be wrong here. The anon path skips because "this route has no public view" is
- * a true and permanent fact; this is a broken credential, which is a thing someone must fix,
- * so it throws.
+ * a true and permanent fact; this is a broken credential or a mis-pointed surface, which is a
+ * thing someone must fix, so it throws.
  */
-export function assertMemberSession(page: Page, surface: Surface): void {
+export async function assertMemberSession(page: Page, surface: Surface): Promise<void> {
   if (surface.audience !== 'member') return
   const landed = currentPathname(page)
-  if (!landed.startsWith('/sign-in')) return
-  throw new Error(
-    [
-      `${surface.path} redirected to ${landed} WITH a member session configured.`,
-      'PW_STORAGE_STATE is set, so this is a dead credential rather than the known blind spot:',
-      '  · the session expired, or its refresh token was already rotated by an earlier run; or',
-      '  · it was minted for a different host (auth cookies are domain-scoped, and every PR',
-      '    preview gets a new hostname), so re-mint it against THIS PW_BASE_URL.',
-      'Re-mint with `pnpm e2e:session` — see test/e2e/README.md § The member shell.',
-    ].join('\n'),
-  )
+
+  if (landed.startsWith('/sign-in')) {
+    throw new Error(
+      [
+        `${surface.path} redirected to ${landed} WITH a member session configured.`,
+        'PW_STORAGE_STATE is set, so this is a dead credential rather than the known blind spot:',
+        '  · the session expired, or its refresh token was already rotated by an earlier run; or',
+        '  · it was minted for a different host (auth cookies are domain-scoped, and every PR',
+        '    preview gets a new hostname), so re-mint it against THIS PW_BASE_URL.',
+        'Re-mint with `pnpm e2e:session` — see test/e2e/README.md § The member shell.',
+      ].join('\n'),
+    )
+  }
+
+  const requested = surface.path.split('?')[0].replace(/\/$/, '') || '/'
+  const arrived = landed.replace(/\/$/, '') || '/'
+  if (arrived !== requested) {
+    throw new Error(
+      [
+        `${surface.path} landed on ${landed} — a DIFFERENT page, and it would have been`,
+        `photographed under the name "${surface.slug}".`,
+        'This is how all four app-room baselines became pictures of the marketing home page.',
+        'Either the surface points at a route this account cannot reach (set PW_ROOM_PATH /',
+        'PW_SPACE_SLUG to something it can), or the route now redirects and the registry in',
+        'test/e2e/surfaces.ts needs to follow it.',
+      ].join('\n'),
+    )
+  }
+
+  if ((await page.locator(SHELL_MARKER).count()) === 0) {
+    throw new Error(
+      [
+        `${surface.path} rendered without the member shell (${SHELL_MARKER} is absent),`,
+        'so whatever is on screen is not the authed surface this baseline claims to be.',
+        'Check the session first (`pnpm e2e:session`), then the route.',
+      ].join('\n'),
+    )
+  }
 }
 
 /** Did an anonymous visit get bounced to sign-in? Returns the landing pathname. */

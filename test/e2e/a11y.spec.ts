@@ -191,8 +191,10 @@ async function open(page: Page, surface: Surface, state: RenderState): Promise<b
   await page.goto(surface.path, { waitUntil: 'load' })
   await assertNotProtectionWall(page)
   // Auditing the sign-in page under `/feed`'s name would report someone else's contrast as
-  // the shell's. A member surface that lands there is a dead credential — say so.
-  assertMemberSession(page, surface)
+  // the shell's, and auditing the marketing home page under the room's name would do the
+  // same (it is exactly what the app-room baselines caught). A member surface that lands
+  // anywhere but its own path is a dead credential or a mis-pointed surface — say so.
+  await assertMemberSession(page, surface)
 
   const landed = currentPathname(page)
   if (surface.audience === 'anon' && landed.startsWith('/sign-in') && surface.path !== '/sign-in') {

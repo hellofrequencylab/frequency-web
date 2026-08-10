@@ -421,6 +421,14 @@ held by a gate rather than a memory.
 > provenance in the JSON (`frozen: { at, value, from, direction, basis, reason }`), and the gate
 > prints it on every run. **Verdicts below are what the numbers can support, not what we hoped.**
 
+> ⚠️ **STALE as of 2026-08-10 — re-derived in [`FINALIZE-PLAN.md`](FINALIZE-PLAN.md) §8.** The
+> four-territory sweep moved nine of these rows after this table was written. `literal-radius` is
+> **2,450** (not 3,824), `literal-display-type` **96** (not 301), `white-black-literals` **27**,
+> `handrolled-icon-button` **6**, and `raw-palette` + `handrolled-tabs` are both at **0** — meaning
+> §3 packages 1 and 4 are DONE and package 9 is two-thirds done. The scorecard's 80.0/100 therefore
+> understates the site. **Re-derive from `scripts/adoption-baselines.json` before sequencing off
+> this table**; the numbers below are kept only as the provenance record of how each floor was set.
+
 | Baseline key | Live baseline | Frozen | How it got there |
 |---|---|---|---|
 | `literal-radius` | **3,824** | 2026-08-05 | lowered — the radius sweep, then a pass-2a side effect |

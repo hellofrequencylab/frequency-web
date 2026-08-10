@@ -18428,3 +18428,54 @@ repo has the same hole**, which is the part worth carrying past this table.
 
 **Numbering.** Written as ADR-946 and renumbered to 959 on merge: ADR-946 was taken by the Vault
 dock decision on `main` while this branch was open.
+
+## ADR-960 — The finish line is three instruments, not a feature list (2026-08-10)
+
+**Status.** Accepted. Plan: [`FINALIZE-PLAN.md`](FINALIZE-PLAN.md).
+
+**Context.** A full-site scan run against the working tree and the live database found the platform
+green on every measure the repo can check itself: `tsc` clean, 8,861 tests passing, all 21 `check:*`
+gates at rc=0, CI green on `main`, zero open PRs, every migration applied, 27 cron entries matching
+27 handlers in both directions, and 18 TODO markers across `app` + `lib` + `components`. Of 240
+static routes, 8 have no inbound link and all 8 are documented redirects or dev tools.
+
+That is the problem. The remaining work is invisible to the gates *because* the gates are the thing
+that broke.
+
+**Three findings carry the plan.**
+
+1. **The visual suite has been failing on every run since at least 2026-08-06**, on two unrelated
+   branches, 66 of 76 snapshots, with one signature: a uniform sub-1% height drift on every page in
+   every render state. Six merges of rendering changes have landed with no working gate. `pr-compare`
+   is not a required check, so a permanently-red gate teaches everyone to merge past it — worse than
+   not having one.
+2. **`REVOKE ... FROM public` removed nothing, repo-wide.** ADR-959 found this on one table.
+   Measured across prod: `anon` and `authenticated` each hold **1,907 explicit table grants across
+   273 tables**, and 77 of those tables are fail-closed by RLS alone. Two functions prove the idiom
+   is still failing on new work: migration `20270207000000` revokes and re-grants `journey_funnel`
+   and `vitals_p75` to `service_role`, and `has_function_privilege('anon', ...)` returns true for
+   both today.
+3. **Migrations are still being renumbered after they are applied** — third recurrence. Four repo
+   files sit above the ledger head, all four live under CLI-minted timestamps. The schema is
+   correct; `supabase db push` is not safe until the ledger is repaired.
+
+**Decision.** Seven phases, ordered so each restores the ability to verify the next. Phase 1 is the
+instruments and nothing else: diagnose the 22px *before* recapturing, because a token move and a
+runner move have opposite remedies and the screenshots cannot tell them apart. Phase 2 closes the
+access layer and the ledger. Phases 3 to 7 are the verified defect sweep, the menu system's
+unlanded half, the render-path de-dualing, the kit/a11y debt the ratchets already measure, and the
+canon/docs reconciliation.
+
+Every phase ships a **gate**, not just a fix — six in total, each closing a class this scan had to
+find by hand. The test of the plan is that the next scan finds nothing these gates could have caught.
+
+**Consequences.** ✅ Every finding is reproduced against the tree or the database, and the five that
+turned out to be false are recorded as false so nobody re-audits them. ✅ The adoption baselines are
+re-derived from `scripts/adoption-baselines.json`: both live plan docs quoted an older column, and
+two DAWN-parity packages are already complete. ⚠️ `FINALIZE-PLAN.md` is a sixth document that could
+claim to be the source of truth; it is scoped deliberately to *finishing the current build* and
+defers to ADR-925 on design maturity and ADR-921 on the phase runway. ⚠️ The largest single gap —
+Lift 1's user-evidence loop — is at literal zero (`docs/research/findings/` holds only a README) and
+no phase closes it, because it needs recruiting, not engineering. 🔴 Six owner actions block work
+that is otherwise ready, and one of them (`PW_REQUIRE_SHELL` in the Secrets tab) is what redacts
+every number in the logs needed to diagnose finding 1.

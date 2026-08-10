@@ -1,5 +1,11 @@
 # Patch list — final meta-scan (admin surfaces · control boards · member features)
 
+> ⚠️ **SUPERSEDED — history, not status (banner added 2026-08-10, [ADR-960](DECISIONS.md)).** Its
+> P0/P1/P2 items are fixed and its remainder was absorbed by the meta-scan record. Read it for the
+> `file:line` depth on a specific finding, never for what is open. Open work lives in
+> [`FINALIZE-PLAN.md`](FINALIZE-PLAN.md) and [`META-SCAN-STATUS.md`](META-SCAN-STATUS.md).
+> ⚠️ Findings here predate several fix waves — **re-verify against current code before scheduling**.
+
 > Read-only bug + gap audit of every wired admin/operator surface and the full member-facing
 > app (2026-07-02), adversarially verified, then fixed. **Headline: the money/economy, privacy, and
 > auth-guard paths were already unusually well-hardened**; the holes were a data-integrity race, two

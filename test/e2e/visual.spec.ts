@@ -45,9 +45,10 @@ async function capture(
   await applyRenderState(page, state)
   await page.goto(surface.path, { waitUntil: 'load' })
   await assertNotProtectionWall(page)
-  // A member surface on the sign-in page is a dead credential, not a missing one. Throw
-  // rather than photograph the wall under the shell's name.
-  assertMemberSession(page, surface)
+  // A member surface on the sign-in page is a dead credential, not a missing one; a member
+  // surface on ANY other page is a mis-pointed surface. Throw rather than photograph the
+  // wrong page under the shell's name — see the app-room case in assertMemberSession.
+  await assertMemberSession(page, surface)
 
   const landed = currentPathname(page)
   if (surface.audience === 'anon' && landed.startsWith('/sign-in') && surface.path !== '/sign-in') {
