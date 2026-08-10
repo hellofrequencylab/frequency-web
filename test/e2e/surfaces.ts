@@ -95,6 +95,25 @@ export interface Surface {
   audience: 'anon' | 'member'
   /** Selectors masked on this surface only (on top of the global list). */
   masks?: readonly string[]
+  /**
+   * Photograph the FIRST SCREEN instead of the whole page.
+   *
+   * For a surface whose length is driven by live, shared data, a `fullPage` baseline does not
+   * record what the page looks like — it records what was in the database the moment it was
+   * taken. `/feed` proved it: the recaptured baseline held for ~70 minutes and then failed on a
+   * pure SIZE change (390x11772 expected, 390x11848 received) with no code between the two.
+   * Re-running `update_baselines` only resets that clock.
+   *
+   * Masking cannot substitute for this. A mask paints over a region and the element keeps its
+   * box, so a late or extra item still moves everything under it — the failure is the page's
+   * HEIGHT (`surfaces.ts` records the same finding for `<Suspense fallback={null}>`).
+   *
+   * What is given up is an unbounded list of member posts, which was never design surface. What
+   * is kept is the shell, the composer and the first cards — the part a designer actually owns.
+   * Do NOT set this to paper over a flaky surface with real layout drift; the fix there is the
+   * drift.
+   */
+  viewportOnly?: boolean
 }
 
 /** Last-known-good EDITABLE_PAGES paths, used only if the parse below cannot run.
@@ -240,7 +259,7 @@ export function appSurfaces(): readonly Surface[] {
   const roomPath = process.env.PW_ROOM_PATH
   const spaceSlug = process.env.PW_SPACE_SLUG
   const surfaces: Surface[] = [
-    { path: '/feed', slug: 'app-feed', audience: 'member' },
+    { path: '/feed', slug: 'app-feed', audience: 'member', viewportOnly: true },
     { path: '/settings', slug: 'app-settings', audience: 'member' },
   ]
   if (roomPath) {
