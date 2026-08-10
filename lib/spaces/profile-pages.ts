@@ -1,5 +1,5 @@
 import type { Data } from '@/lib/page-editor/types'
-import { isRenderableSpaceDoc } from '@/lib/page-editor/templates/space'
+import { isWellFormedSpaceDoc } from '@/lib/page-editor/templates/space'
 import { generateDefaultSpacePage } from '@/lib/page-editor/templates/space-default'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -143,11 +143,14 @@ function readPageDocs(preferences: unknown): Record<string, unknown> | null {
 export function readPageDoc(preferences: unknown, slug: string): Data | null {
   const docs = readPageDocs(preferences)
   const raw = docs?.[slug]
-  if (isRenderableSpaceDoc(raw)) return raw
+  // ALWAYS return a stored doc that is well-formed. Requiring every type to still
+  // resolve is what made a renamed block replace an owner's page with the default —
+  // ADR-978. An unresolvable block is skipped by <BlockRender>; the page survives.
+  if (isWellFormedSpaceDoc(raw)) return raw
   if (slug === HOME_SLUG) {
     // Legacy fallback: the pre-model single landing doc.
     const legacy = asRecord(preferences)?.puck
-    if (isRenderableSpaceDoc(legacy)) return legacy
+    if (isWellFormedSpaceDoc(legacy)) return legacy
   }
   return null
 }

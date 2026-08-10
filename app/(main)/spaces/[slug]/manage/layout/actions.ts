@@ -7,7 +7,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities, spaceCanUseFullWebsite } from '@/lib/spaces/entitlements'
 import { isValidAccent } from '@/lib/spaces/accent'
-import { isRenderableSpaceDoc } from '@/lib/page-editor/templates/space'
+import { isWellFormedSpaceDoc } from '@/lib/page-editor/templates/space'
 import { moveBlock, setBlockHidden } from '@/lib/page-editor/templates/space-blocks'
 import {
   resolveSpacePageDoc,
@@ -548,8 +548,11 @@ async function writeBlockContent(
     root: (current.root ?? {}) as Data['root'],
     content: nextContent as Data['content'],
   }
-  // Re-validate the full doc against the current config (every block a known type) before storing.
-  if (!isRenderableSpaceDoc(nextDoc)) return fail('That change could not be saved. Try again.')
+  // Re-validate the SHAPE before storing. Deliberately not "every block a known type":
+  // a doc that legitimately carries a retired block could then never be re-saved, which
+  // turns an editable page into a read-only one (ADR-978). The render path is already
+  // fail-closed on an unresolvable block, so the type check bought nothing here.
+  if (!isWellFormedSpaceDoc(nextDoc)) return fail('That change could not be saved. Try again.')
 
   const preferences = withPageDoc(auth.preferences, pageSlug, nextDoc)
   if (!(await writePreferences(auth.spaceId, preferences))) {

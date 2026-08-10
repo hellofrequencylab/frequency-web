@@ -31,7 +31,7 @@ import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
 import { communityHref } from '@/lib/community-href'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
-import { getTemplate, isRenderable } from '@/lib/page-editor/templates'
+import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
 import { Suspense } from 'react'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { getReferrer } from '@/lib/qr/referral'
@@ -213,7 +213,7 @@ export default async function RootPage() {
   // wrapped in that same chrome here.
   const published = await getPublishedData('home')
   const template = getTemplate('home')
-  const data = isRenderable(published) ? published : isRenderable(template) ? template : null
+  const data = isWellFormed(published) ? published : isWellFormed(template) ? template : null
   if (data) {
     return (
       <>

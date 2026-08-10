@@ -13,7 +13,7 @@ import type { Config, Data, Metadata } from '@/lib/page-editor/types'
 function UnknownBlock({ type, isEditing }: { type: string; isEditing?: boolean }) {
   if (!isEditing) return null
   return (
-    <div className="mx-auto my-2 max-w-3xl rounded-card border border-dashed border-subtle bg-surface-elevated px-4 py-3">
+    <div className="mx-auto my-2 max-w-3xl rounded-card border border-dashed border-border bg-surface-elevated px-4 py-3">
       <p className="text-body-sm font-medium text-text">This block is not available in this version</p>
       <p className="mt-0.5 text-body-sm text-muted">
         <code>{type}</code> is kept exactly as saved and will publish unchanged. It shows nothing on the live page.
@@ -190,8 +190,11 @@ function SlotRender({
     <div className={className} style={style}>
       {content.map((item) => {
         if (!ctx.config.components[item.type])
+          // `item.props` is optional-chained: isWellFormed only guarantees a `type`, so a
+          // hand-edited or partially-migrated row can reach here with no props at all.
+          // Before ADR-978 such a row was rejected by the loader and never rendered.
           return (
-            <UnknownBlock key={item.props.id as string} type={item.type} isEditing={ctx.isEditing} />
+            <UnknownBlock key={item.props?.id as string} type={item.type} isEditing={ctx.isEditing} />
           )
         return <SlotItem key={item.props.id as string} item={item} ctx={ctx} />
       })}
@@ -258,7 +261,7 @@ function DropZoneRender({
         }
         if (!component)
           return (
-            <UnknownBlock key={item.props.id as string} type={item.type} isEditing={ctx.isEditing} />
+            <UnknownBlock key={item.props?.id as string} type={item.type} isEditing={ctx.isEditing} />
           )
         const resolved = propsWithSlots({ type: item.type, props: baseProps }, ctx)
         const Component = component.render

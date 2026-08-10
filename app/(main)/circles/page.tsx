@@ -4,7 +4,7 @@ import type { Data } from '@/lib/page-editor/types'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
-import { getTemplate, isRenderable } from '@/lib/page-editor/templates'
+import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { HERO_PRIMARY_BTN, HERO_SECONDARY_BTN } from '@/components/marketplace/hero-buttons'
 import { PageAdminBar } from '@/components/layout/page-admin-bar'
@@ -41,7 +41,7 @@ export default async function CirclesPage({
 
   // Block layout: an operator-published doc wins; else the coded default template.
   const published = await getPublishedData('circles')
-  const data: Data = isRenderable(published) ? published : getTemplate('circles') ?? EMPTY
+  const data: Data = isWellFormed(published) ? published : getTemplate('circles') ?? EMPTY
 
   // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
   const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })

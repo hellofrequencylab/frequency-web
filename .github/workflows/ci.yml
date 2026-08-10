@@ -34,27 +34,27 @@
 # `!cancelled()` rather than `always()`: `always()` is true even for a CANCELLED run, which
 # would make superseded runs finish their whole body and defeat `cancel-in-progress`.
 #
-# 🔴 OWNER ACTION, REQUIRED, AND THIS IS THE ONE THING THAT MAKES THE SPLIT SAFE ────────────
+# ✅ THE SPLIT IS SAFE — the owner action this block used to demand was taken on 2026-08-10.
 # `main` is protected by a REPOSITORY RULESET (id 17640795, named "main") — not by classic
-# branch protection, which is why the "Settings → Branches" path this note used to give leads
-# nowhere. Verified against the API on 2026-08-10: the ruleset's `required_status_checks` rule
-# lists exactly two contexts, `checks` and `analyze`, both on integration_id 15368 (GitHub
-# Actions).
+# branch protection, which is why a "Settings → Branches" path leads nowhere. Re-verified
+# against the API on 2026-08-10, AFTER the fix, the ruleset's `required_status_checks` rule
+# now lists FOUR contexts:
 #
-# Splitting this workflow means `checks` NO LONGER CONTAINS lint or the test suite — they are
-# their own jobs now, and a job that is not a required context cannot block a merge. Until
-# `lint` and `test` are ADDED, a PR with failing tests is mergeable.
+#     checks · analyze · lint · test
 #
-#   Settings → Rules → Rulesets → "main" → Require status checks to pass
-#     → Add checks → `lint`, then `test` (source: GitHub Actions)
+# Splitting this workflow meant `checks` no longer contains lint or the test suite, and a job
+# that is not a required context cannot block a merge — so for a window, a PR with failing
+# tests was mergeable. That window is closed. The job names below are exactly `lint` and
+# `test` because that is how they are named in the ruleset; renaming one silently un-gates it.
 #
-# The job names below are deliberately exactly `lint` and `test` so they can be added verbatim.
-# `checks` keeps its name so the existing rule never lapses in the meantime.
+# ⚠️ STILL NOT REQUIRED, deliberately: `pr-compare` and `lighthouse` (e2e.yml, ADR-936). Both
+# are advisory while the visual baselines are stale (FINALIZE-PLAN Phase 1) — a required
+# `pr-compare` today would block every PR on a pre-existing failure. Add it as a required
+# context in the SAME change that recaptures the baselines, not before.
 #
-# This cannot be done from a Claude Code session: the agent proxy refuses writes to the GitHub
-# rulesets API ("Write access to this GitHub API path is not permitted through this proxy"),
-# and the GitHub App token cannot read classic branch protection either. It is an owner action
-# in the UI, by design.
+# A Claude Code session cannot change this: the agent proxy refuses writes to the GitHub
+# rulesets API. Reading it back is permitted, which is how the state above was confirmed —
+# so verify, do not assume, before citing this block.
 name: ci
 
 on:
@@ -153,9 +153,14 @@ jobs:
         run: |
           set -uo pipefail
           failed=()
-          for guard in \
-            authz canon menu gate-parity workflows elements labels render-path help tokens phantom bridge contrast adoption \
+          # Keep this list and the summary count in sync WITHOUT hand-counting: the total is
+          # derived below from the array itself. It used to be hardcoded, and read "All 21"
+          # while 24 guards ran — a drift that a guard suite of all things should not carry.
+          guards=(
+            authz canon menu gate-parity workflows elements labels render-path help tokens phantom bridge contrast adoption
             headers seo collective crm-parity vocab rls grants admin-client migrations adr docs-links
+          )
+          for guard in "${guards[@]}"
           do
             echo "::group::check:${guard}"
             if pnpm "check:${guard}"; then
@@ -176,4 +181,4 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          echo "### ✓ All 25 contract guards passed" >> "$GITHUB_STEP_SUMMARY"
+          echo "### ✓ All ${#guards[@]} contract guards passed" >> "$GITHUB_STEP_SUMMARY"
