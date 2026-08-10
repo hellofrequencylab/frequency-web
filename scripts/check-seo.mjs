@@ -70,6 +70,15 @@ const MARKETING_DIR = join(APP_DIR, '(marketing)')
 const SITEMAP_FILE = join(APP_DIR, 'sitemap.ts')
 const ROBOTS_FILE = join(APP_DIR, 'robots.ts')
 const PROXY_FILE = 'proxy.ts'
+const SITE_FILE = join('lib', 'site.ts')
+
+const readFile = (p) => { try { return readFileSync(p, 'utf8') } catch { return null } }
+
+/** The brand string the root `title.template` appends, read from its one source rather than
+ *  hardcoded — rename the site and this gate follows instead of going quietly blind. */
+export function siteName(src) {
+  return /export const SITE_NAME\s*=\s*["'`]([^"'`]+)["'`]/.exec(src ?? '')?.[1] ?? null
+}
 
 // Static forward-facing pages that are DELIBERATELY not advertised in the sitemap. Each
 // entry carries the real, verified reason (grep the page: redirect / noindex). Do NOT add
@@ -248,6 +257,58 @@ export function layoutChain(file, exists = existsSync) {
 
 // ── Scans ───────────────────────────────────────────────────────────────────
 
+/**
+ * SCAN D — DOUBLE-BRANDED TITLE.
+ *
+ * `app/layout.tsx` sets `title.template: '%s · Frequency'`, so Next.js appends the site name to
+ * every page's own `title`. A page that ALSO writes it produces "Name · Frequency · Frequency" in
+ * the tab, in the SERP, and in every share card that falls back to <title>. `/spotlight/[handle]`
+ * shipped exactly that on every published Spotlight.
+ *
+ * The distinction that makes this checkable: the template applies ONLY to the top-level `title`.
+ * `openGraph.title` and `twitter.title` get no template, so they SHOULD carry the brand, and most
+ * of this repo's marketing pages correctly do. A flat grep cannot tell the two apart — it would
+ * fail 14 files that are right. So walk brace depth and skip anything inside an `openGraph:` or
+ * `twitter:` object.
+ *
+ * Returns the offending `title:` lines. Exported for the unit tests.
+ */
+export function doubleBrandedTitles(src, siteName) {
+  const code = stripComments(src)
+  const out = []
+  // Depth at which an openGraph:/twitter: object opened, or null when we are outside one.
+  let depth = 0
+  let socialDepth = null
+  for (let i = 0; i < code.length; i++) {
+    const ch = code[i]
+    if (ch === '{') {
+      const before = code.slice(Math.max(0, i - 40), i)
+      if (socialDepth === null && /\b(?:openGraph|twitter)\s*:\s*$/.test(before)) socialDepth = depth
+      depth++
+      continue
+    }
+    if (ch === '}') {
+      depth--
+      if (socialDepth !== null && depth <= socialDepth) socialDepth = null
+      continue
+    }
+    if (socialDepth !== null) continue
+    if (!code.startsWith('title:', i)) continue
+    // Only a string we can read: a quoted literal or a template literal. A template counts,
+    // because `${name} · Frequency` is the Spotlight bug verbatim — the name is computed, the
+    // suffix is not. A call expression (`buildTitle(name)`) is not decidable from source, and
+    // guessing is worse than staying quiet: the point of this file is checks that mean what
+    // they say.
+    const m = /^title:\s*(['"`])((?:\\.|(?!\1)[^\\])*)\1/.exec(code.slice(i))
+    if (!m) { i += 5; continue }
+    if (m[2].includes(`· ${siteName}`) || m[2].includes(`- ${siteName}`)) {
+      out.push({ line: code.slice(0, i).split('\n').length, title: m[2] })
+    }
+    i += m[0].length - 1
+  }
+  return out
+}
+
 function run() {
   const failures = []
   const warnings = []
@@ -352,16 +413,36 @@ function run() {
     })
   }
 
-  return { failures, warnings, coverageChecked, resolutionChecked, declarationChecked, noindexed, skippedPrivate }
+  // ── Scan D: a page title that re-appends the site name the root template already adds. ──
+  let titlesChecked = 0
+  const brand = siteName(readFile(SITE_FILE))
+  if (!brand) {
+    failures.push({
+      kind: 'SITE NAME UNREADABLE',
+      detail: `could not read SITE_NAME from ${SITE_FILE} — Scan D (double-branded titles) cannot run, and a scan that silently checks nothing is worse than one that fails`,
+    })
+  }
+  for (const file of brand ? allFiles.filter((f) => f.endsWith('page.tsx')) : []) {
+    titlesChecked += 1
+    for (const hit of doubleBrandedTitles(readFile(file) ?? '', brand)) {
+      failures.push({
+        kind: 'DOUBLE-BRANDED TITLE',
+        detail: `${relative('.', file)}:${hit.line} → title "${hit.title}" already ends in the site name, and app/layout.tsx's title.template appends it again ("… · ${brand} · ${brand}"). Drop the suffix. (openGraph.title / twitter.title correctly keep it — they get no template.)`,
+      })
+    }
+  }
+
+  return { failures, warnings, coverageChecked, resolutionChecked, declarationChecked, noindexed, skippedPrivate, titlesChecked }
 }
 
 function main() {
-  const { failures, warnings, coverageChecked, resolutionChecked, declarationChecked, noindexed, skippedPrivate } = run()
+  const { failures, warnings, coverageChecked, resolutionChecked, declarationChecked, noindexed, skippedPrivate, titlesChecked } = run()
 
   console.log(
     `SEO/sitemap coherence — checked ${coverageChecked.length} forward-facing page(s) for coverage, ` +
       `${resolutionChecked.length} literal sitemap route(s) for resolution, and ${declarationChecked.length} ` +
-      `crawler-reachable page(s) outside (marketing) for a declaration (${skippedPrivate} correctly-private page(s) skipped).`,
+      `crawler-reachable page(s) outside (marketing) for a declaration (${skippedPrivate} correctly-private page(s) skipped), ` +
+      `and ${titlesChecked} page title(s) for double-branding.`,
   )
   if (noindexed.length > 0) {
     console.log(`  ${noindexed.length} reachable page(s) consciously kept OUT of the index:`)
@@ -385,7 +466,8 @@ function main() {
   console.log(
     '✓ SEO/sitemap coherence — every static marketing page is advertised or consciously excluded,\n' +
       '  every literal sitemap route resolves to a real page, and every crawler-reachable page\n' +
-      '  outside (marketing) declares its intent (advertised, or noindex).',
+      '  outside (marketing) declares its intent (advertised, or noindex), and no page title\n' +
+      '  re-appends the site name the root title.template already adds.',
   )
 }
 

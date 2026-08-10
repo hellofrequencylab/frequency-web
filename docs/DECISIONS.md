@@ -18875,3 +18875,66 @@ tell a retirement from a move.** A body that leaves the route file for a sibling
 the number and the gate will ask you to record a win you did not earn; the ledger comment is where
 that has to be written down. ⚠️ It says nothing about whether a template renders the same *page* —
 only the visual suite can, and that remains the gate on actually deleting a body.
+
+---
+
+## ADR-968 — Reactivation is a seat event, and three routes were advertising a redirect (2026-08-10)
+
+Three verified defects from `docs/FINALIZE-PLAN.md` §Phase 3, each closed with the guard that would
+have caught it.
+
+**1. The operator seat wall had no reactivation half.** `usedSeats` counts `status = 'active'` AND
+a seat-consuming role, so a **suspended** operator consumes no seat. Flipping one back to active
+newly consumes one, which makes reactivation the same seat event as a promotion — and neither
+`reactivateMember` nor the bulk `reactivate` case checked it. An owner sitting at the limit could
+reactivate a suspended admin and end up one seat over, the exact thing `setMemberRole` already
+refuses.
+
+Both paths now go through one `seatDenialForReactivation`, deliberately shared rather than
+duplicated: the promotion guard exists on both the single and bulk paths and its reactivation
+counterpart existed on neither, which is what drift between two copies of a rule looks like. The
+single path fails with the wall's own reason; the bulk path skips, matching its partial-success
+contract.
+
+The whole thing is **latent**: `checkSeatForOperatorInvite` grants everything while
+`featureGatesLive()` is false. That is exactly why it needed tests with the seat seam mocked — a
+guard whose first real exercise is the day the gates flip is not a guard, it is a hypothesis. Two
+of the five new tests were proven to fail against the pre-fix shape.
+
+**2. Double-branded page titles, and the scan that found one the audit missed.** `app/layout.tsx`
+sets `title.template: '%s · Frequency'`, so a page that also writes the brand renders
+"Name · Frequency · Frequency" in the tab, the SERP, and every share card that falls back to
+`<title>`. `/spotlight/[handle]` shipped it on every published Spotlight.
+
+The fix is one line; the durable part is `check:seo` **Scan D**. The reason this needed a real
+scanner rather than a grep: the template applies ONLY to the top-level `title`. `openGraph.title`
+and `twitter.title` get no template, so they *should* carry the brand, and 14 marketing pages
+correctly do. A flat grep would have failed every one of them. Scan D walks brace depth and skips
+anything inside an `openGraph:` or `twitter:` object — and on its first run found a second real
+instance in `journeys/[slug]`'s private fallback that the hand audit had not recorded. It reads
+`SITE_NAME` from `lib/site.ts` rather than hardcoding "Frequency", and fails loudly if it cannot,
+because a scan that silently checks nothing is worse than one that fails.
+
+**3. Three `MODULE_ROUTES` entries pointed at redirect stubs.** `/admin/crm/graph`,
+`/admin/crm/playbooks` and `/admin/crm/today` are `redirect('/admin/crm/intelligence')` and nothing
+else since the owner merge. Being in `MODULE_ROUTES` made `isModuleRoute()` true, which draws the
+on-page Layout editor — so an operator was offered a panel of blocks on a page that navigates away
+before it can render. That is the "Settings don't make sense" trap the list exists to prevent.
+
+All three are retired from `MODULE_ROUTES` **and** from `ROUTE_MODULE_IDS`, whose keys were
+separately giving the App catalog route scopes that redirect. Every one of their six block ids
+already lives in `CRM_INTELLIGENCE_MODULE_IDS`, so nothing lost a home. The two live outbound links
+— the Vera owner-brief email CTA and the dashboard worklist's default `actionHref` — now point at
+the merged page instead of through a redirect.
+
+The guard is a test that reads the filesystem: **every `MODULE_ROUTES` entry must resolve to a page
+that actually renders `<PageModules>`.** Reading the file is the only way to know — the list is
+strings, and nothing about a string says whether its page still exists. Proven to fail when a
+redirect stub is put back.
+
+**Consequences.** ✅ All three fixed with a guard each, none of which existed before. ⚠️ The seat
+fix changes no behaviour today and will change behaviour the moment `featureGatesLive()` flips;
+that is the point, and it is recorded here so the change is not a surprise then. ⚠️ Scan D cannot
+read a title built by a call expression (`buildTitle(name)`) — not decidable from source, and
+guessing is worse than staying quiet. It *does* read template literals, because
+`` `${name} · Frequency` `` is the Spotlight bug verbatim.

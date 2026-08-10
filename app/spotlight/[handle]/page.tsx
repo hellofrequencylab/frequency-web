@@ -24,7 +24,9 @@ export async function generateMetadata({
   const description = data.profile.bio ?? `${name} on Frequency`
   const path = `/spotlight/${data.profile.handle}`
   return {
-    title: `${name} · Frequency`,
+    // No ` · Frequency` suffix here: app/layout.tsx sets `title.template: '%s · Frequency'`, so
+    // adding it produced "Name · Frequency · Frequency" on every Spotlight.
+    title: name,
     description,
     alternates: { canonical: path },
     openGraph: {

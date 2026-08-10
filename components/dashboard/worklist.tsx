@@ -6,7 +6,8 @@ import type { WorklistRow } from '@/lib/dashboard/scores'
 
 // The who-needs-attention worklist (Resonance Engine Phase 2 · ADR-383). The part operators
 // actually use: the top members the model says are sliding now, each carrying its next move as
-// a one-tap route into Vera Today (/admin/crm/today), where the governed action lives. People,
+// a one-tap route into Vera Today, now the MAIN column of /admin/crm/intelligence (the owner
+// merge), where the governed action lives. People,
 // not a chart. Composed from SidebarCard rows + the shared EmptyState. Semantic tokens only
 // (no hardcoded hex); copy in voice (no em or en dashes).
 
@@ -23,7 +24,7 @@ export function Worklist({
   laterCount,
   title = 'Who needs you',
   /** Where a row routes on tap. Defaults to Vera Today (the platform action surface). */
-  actionHref = '/admin/crm/today',
+  actionHref = '/admin/crm/intelligence',
   /** Optional per-row href builder (e.g. a Space board's contact detail). Wins over actionHref. */
   hrefFor,
   /** Where the "Later shelf" tail links. Defaults to actionHref. */

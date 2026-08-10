@@ -16,12 +16,18 @@ export const MODULE_ROUTES: readonly string[] = [
   '/admin/content/journeys',
   '/admin/marketing/analytics',
   '/admin/marketing/deliverability',
-  '/admin/crm/graph',
-  '/admin/crm/playbooks',
+  // NOTE: '/admin/crm/graph', '/admin/crm/playbooks' and '/admin/crm/today' were HERE, and all
+  // three pages are `redirect('/admin/crm/intelligence')` and nothing else (the owner merge into
+  // the unified Resonance surface). isModuleRoute() was therefore true on three routes that render
+  // no interior at all, so the on-page Layout editor was advertised on a page that navigates away
+  // before it can draw — the exact "Settings don't make sense" trap this list exists to prevent.
+  // Their blocks all live on /admin/crm/intelligence, which composes them directly rather than
+  // through <PageModules> (see ROUTE_MODULE_IDS in lib/widgets/modules.ts for why), so it is
+  // deliberately not here either. Guarded by a test in lib/widgets/modules.test.ts: every entry
+  // in this list must resolve to a page that actually renders <PageModules>.
   '/admin/community',
   '/admin/operations',
   '/admin/growth',
-  '/admin/crm/today',
   '/admin/crm/members',
   '/admin/gamification',
   '/admin/audit',
