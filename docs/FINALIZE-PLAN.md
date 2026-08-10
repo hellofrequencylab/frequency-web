@@ -1,6 +1,6 @@
 # Finalize plan — the run to a fully functional platform
 
-> **The answer, first.** The platform is built and green: `tsc` clean, **8,870 tests passing**,
+> **The answer, first.** The platform is built and green: `tsc` clean, **8,943 tests passing**,
 > **all 24 `check:*` gates exit 0**, CI green on `main`, and the migration ledger is an exact
 > bijection with the repo (594 ⇄ 594, ADR-963).
 > What is left is not features. It is **three instruments that stopped telling the truth**, one
@@ -25,7 +25,7 @@ Sizes: **XS** under an hour · **S** one PR · **M** 1 to 3 PRs · **L** a wave.
 | Dimension | State | Evidence |
 | :--- | :--- | :--- |
 | Build + types | ✅ | `tsc --noEmit` rc=0 |
-| Tests | ✅ | 704 files, 8,870 tests, 0 failures |
+| Tests | ✅ | 708 files, 8,943 tests, 0 failures |
 | Machine gates | ✅ | all 24 `check:*` scripts exit 0 |
 | CI (`ci.yml`) | ✅ | green on `main` |
 | Migrations applied | ✅ | every repo migration is live in prod |
