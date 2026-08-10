@@ -440,7 +440,9 @@ export function ImportWizard({
         <div className="space-y-4">
           {targetKind === 'space' && (
             <div>
-              <label className="mb-1 block text-meta font-medium text-muted">Import into</label>
+              {/* Heading, not a label: what sits under it is either a read-only <p> (locked
+                   Space), a Select that names itself, or an empty-state line. */}
+              <p className="mb-1 block text-meta font-medium text-muted">Import into</p>
               {lockedSpace ? (
                 <p className="rounded-lg border border-border bg-surface-elevated/40 px-3 py-2 text-body-sm font-medium text-text">{lockedSpace.name}</p>
               ) : spaces.length ? (
@@ -691,8 +693,8 @@ export function ImportWizard({
           </div>
 
           <div>
-            <label className="mb-1 block text-meta font-medium text-muted">When a contact already exists</label>
-            <div className="grid gap-2 sm:grid-cols-3">
+            <p className="mb-1 block text-meta font-medium text-muted" id="import-merge-label">When a contact already exists</p>
+            <div className="grid gap-2 sm:grid-cols-3" role="group" aria-labelledby="import-merge-label">
               {(Object.keys(MERGE_LABEL) as MergeStrategy[]).map((k) => (
                 <button
                   key={k}

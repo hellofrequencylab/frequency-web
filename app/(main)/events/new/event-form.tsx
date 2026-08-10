@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createEvent, updateEvent } from '@/app/(main)/events/actions'
 import { isError } from '@/lib/action-result'
-import { Input, Textarea, Label } from '@/components/ui/field'
+import { Input, Textarea, Label, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
@@ -551,8 +551,10 @@ export function EventForm({
             {/* Recurrence — set the cadence on create, change it on edit. */}
             <div className="space-y-1.5">
               {/* A button group is not a labelable control, so `htmlFor` has nothing to point at:
-                  the accessible name comes from role="group" + aria-labelledby instead. */}
-              <Label className="text-body-sm text-text" id="event-repeats-label">Repeats</Label>
+                  the accessible name comes from role="group" + aria-labelledby instead. It is a <p>
+                  and not a <Label> for the same reason: a <label> naming nothing is still a <label>
+                  naming nothing (ADR-966). */}
+              <p className={`${labelClasses} text-body-sm text-text`} id="event-repeats-label">Repeats</p>
               <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby="event-repeats-label">
                 {RECURRENCE_OPTIONS.map(({ value, label, helper }) => {
                   const active = recurrenceType === value
@@ -606,7 +608,7 @@ export function EventForm({
       {/* ── Where ─────────────────────────────────────────────────────────── */}
       <FormSection title="Where" hint="Add an address for in-person events so people nearby can find it on the map.">
         <div className="space-y-1.5">
-          <Label className="text-body-sm text-text" id="event-attendance-label">How do people attend?</Label>
+          <p className={`${labelClasses} text-body-sm text-text`} id="event-attendance-label">How do people attend?</p>
           <div className="grid grid-cols-3 gap-2" role="group" aria-labelledby="event-attendance-label">
             {ATTENDANCE_OPTIONS.map(({ value, label }) => {
               const active = attendanceMode === value
@@ -676,9 +678,9 @@ export function EventForm({
               aria-labelledby="event-address-label"
             >
               <div className="space-y-1">
-                <Label className="text-body-sm text-text" id="event-address-label">
+                <p className={`${labelClasses} text-body-sm text-text`} id="event-address-label">
                   Address <span className="text-2xs font-normal text-muted">(optional, for the map)</span>
-                </Label>
+                </p>
                 <p className="text-2xs text-muted">
                   Start typing a venue or address and pick it to fill the rest and drop the pin. Then
                   drag the pin below to set the exact spot.
@@ -767,10 +769,15 @@ export function EventForm({
             Owned targets place instantly (no approval needed). */}
         <div className="space-y-1.5">
           {/* On EDIT the scope is fixed and renders as static text, so there is no control to point
-              at and the label is a plain heading; on CREATE it names the select. */}
-          <Label className="text-body-sm text-text" htmlFor={isEdit ? undefined : 'event-scope'}>
-            Where does it live? {!isEdit && <span className="text-danger">*</span>}
-          </Label>
+              at: it must be a heading, not a <label htmlFor={undefined}>, which renders a real
+              <label> naming nothing. On CREATE it names the select. */}
+          {isEdit ? (
+            <p className={`${labelClasses} text-body-sm text-text`}>Where does it live?</p>
+          ) : (
+            <Label className="text-body-sm text-text" htmlFor="event-scope">
+              Where does it live? <span className="text-danger">*</span>
+            </Label>
+          )}
           {isEdit ? (
             <p className="rounded-lg border border-border bg-surface-elevated/40 px-3 py-2 text-body-sm text-muted">
               {currentScopeName ?? 'This event'}
@@ -875,7 +882,7 @@ export function EventForm({
         <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
           {/* Price — free RSVP or a set ticket price (events.price_cents). */}
           <div className="space-y-1.5">
-            <Label className="text-body-sm text-text" id="event-price-label">Price</Label>
+            <p className={`${labelClasses} text-body-sm text-text`} id="event-price-label">Price</p>
             <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby="event-price-label">
               {([
                 { value: 'free' as const, label: 'Free' },

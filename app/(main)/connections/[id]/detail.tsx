@@ -621,16 +621,16 @@ function EditForm({ contact, onSaved }: { contact: ContactDetail['contact']; onS
     <section className="rounded-card border border-border/70 bg-surface/60 p-5">
       <h2 className="mb-3 text-body-sm font-semibold tracking-tight text-text">Edit details</h2>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="Name" full><Input aria-label="Name" value={f.displayName} onChange={(e) => set('displayName', e.target.value)} /></Field>
-        <Field label="Title"><Input aria-label="Title" value={f.title} onChange={(e) => set('title', e.target.value)} /></Field>
-        <Field label="Company"><Input aria-label="Company" value={f.company} onChange={(e) => set('company', e.target.value)} /></Field>
-        <Field label="Email"><Input aria-label="Email" type="email" value={f.email} onChange={(e) => set('email', e.target.value)} /></Field>
-        <Field label="Phone"><Input aria-label="Phone" type="tel" value={f.phone} onChange={(e) => set('phone', e.target.value)} /></Field>
-        <Field label="City"><Input aria-label="City" value={f.city} onChange={(e) => set('city', e.target.value)} /></Field>
-        <Field label="Website"><Input aria-label="Website" value={f.website} onChange={(e) => set('website', e.target.value)} /></Field>
-        <Field label="Instagram"><Input aria-label="Instagram" value={f.instagram} onChange={(e) => set('instagram', e.target.value)} /></Field>
-        <Field label="LinkedIn"><Input aria-label="LinkedIn" value={f.linkedin} onChange={(e) => set('linkedin', e.target.value)} /></Field>
-        <Field label="X"><Input aria-label="X" value={f.x} onChange={(e) => set('x', e.target.value)} /></Field>
+        <Field label="Name" full><Input value={f.displayName} onChange={(e) => set('displayName', e.target.value)} /></Field>
+        <Field label="Title"><Input value={f.title} onChange={(e) => set('title', e.target.value)} /></Field>
+        <Field label="Company"><Input value={f.company} onChange={(e) => set('company', e.target.value)} /></Field>
+        <Field label="Email"><Input type="email" value={f.email} onChange={(e) => set('email', e.target.value)} /></Field>
+        <Field label="Phone"><Input type="tel" value={f.phone} onChange={(e) => set('phone', e.target.value)} /></Field>
+        <Field label="City"><Input value={f.city} onChange={(e) => set('city', e.target.value)} /></Field>
+        <Field label="Website"><Input value={f.website} onChange={(e) => set('website', e.target.value)} /></Field>
+        <Field label="Instagram"><Input value={f.instagram} onChange={(e) => set('instagram', e.target.value)} /></Field>
+        <Field label="LinkedIn"><Input value={f.linkedin} onChange={(e) => set('linkedin', e.target.value)} /></Field>
+        <Field label="X"><Input value={f.x} onChange={(e) => set('x', e.target.value)} /></Field>
       </div>
       <div className="mt-4 border-t border-border/70 pt-4">
         <p className="mb-3 text-meta font-medium text-muted">From the card</p>
@@ -649,11 +649,14 @@ function EditForm({ contact, onSaved }: { contact: ContactDetail['contact']; onS
   )
 }
 
+// Wraps its control so the label is associated by HTML's own implicit rule. It used to render the
+// <label> BESIDE the control, which names nothing, and every call site carried a duplicate
+// `aria-label` to compensate (ADR-966).
 function Field({ label, full = false, children }: { label: string; full?: boolean; children: React.ReactNode }) {
   return (
-    <div className={full ? 'sm:col-span-2' : ''}>
-      <label className={lbl}>{label}</label>
+    <label className={`block ${full ? 'sm:col-span-2' : ''}`}>
+      <span className={lbl}>{label}</span>
       {children}
-    </div>
+    </label>
   )
 }

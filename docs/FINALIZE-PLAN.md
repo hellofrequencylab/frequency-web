@@ -1,7 +1,7 @@
 # Finalize plan — the run to a fully functional platform
 
 > **The answer, first.** The platform is built and green: `tsc` clean, **8,870 tests passing**,
-> **all 21 `check:*` gates exit 0**, CI green on `main`, and the migration ledger is an exact
+> **all 22 `check:*` gates exit 0**, CI green on `main`, and the migration ledger is an exact
 > bijection with the repo (594 ⇄ 594, ADR-963).
 > What is left is not features. It is **three instruments that stopped telling the truth**, one
 > **access-grant layer** that was never actually closed, and a **short, verified list of real
@@ -26,7 +26,7 @@ Sizes: **XS** under an hour · **S** one PR · **M** 1 to 3 PRs · **L** a wave.
 | :--- | :--- | :--- |
 | Build + types | ✅ | `tsc --noEmit` rc=0 |
 | Tests | ✅ | 704 files, 8,870 tests, 0 failures |
-| Machine gates | ✅ | all 21 `check:*` scripts exit 0 |
+| Machine gates | ✅ | all 22 `check:*` scripts exit 0 |
 | CI (`ci.yml`) | ✅ | green on `main` |
 | Migrations applied | ✅ | every repo migration is live in prod |
 | Cron wiring | ✅ | 27 `vercel.json` entries ⇄ 27 handlers, zero drift both ways |
@@ -264,7 +264,7 @@ review-friendly. **The live baselines are substantially better than either plan 
 
 | # | Item | Size | Detail |
 | :--- | :--- | :---: | :--- |
-| 6.1 | ⚠️ **Label association sweep — the number was wrong: 23, not 103** | S | Re-measured 2026-08-10 by resolving every `<Label>` to its actual component. **81 of the 103 are grep artifacts**: 43 are the onboarding renders' `Label` from `./frame`, which emits an **SVG `<text>`**; 12 are `<Labeled>` in `circle-builder.tsx`, which already wraps its control; 14 are local `Label` helpers in `on-air/` that render a `<p>`; 4 are `events/new/event-form.tsx`, the already-fixed reference. All 125 existing `htmlFor` targets were checked against their `id` — **zero broken**. The 23 real sites: `events/drafts/[id]/editor.tsx` (9, and the only HTML-validity bug — `<Label>` nested inside a native `<label>`), `space-branding-form.tsx` (4), `room-settings.tsx` (3), `growth/links/link-generator.tsx` (2), 5 singles. Plus one the grep could not see: two inputs in `qr-splash-form.tsx` are **completely unnamed** (span-as-label). |
+| 6.1 | ✅ **Label contract — DONE, and the number was wrong twice (ADR-966)** | — | The plan's "103 of 229" was a line-scoped grep artifact; the real count of *that* pattern was 23. But scoping the re-count to the `Label` **component** was itself the error: the same bug in plain `<label className={lbl}>` form was more common and invisible to any search for `Label`. Asking about `<label>` **elements** instead found **39 sites across 16 files**, all fixed. `deal-form.tsx` (6), `profile-form.tsx` (5), `circle-settings-form.tsx` (5), `event-form.tsx` (4), `ticket-tiers-panel.tsx` (4), `broadcast-compose.tsx` (3), 12 more. Nine of those had papered over the symptom with a duplicate `aria-label`, which fixes the name and leaves click-to-focus broken. **`pnpm check:labels` is the 22nd guard** and holds it: 635 labels, every one naming exactly one control, none nested. Proven to exit 1 on the pre-fix tree (62 violations) and 0 now; 18 unit tests cover the five violation shapes *and* the seven correct shapes that must stay silent.
 | 6.2 | ✅ **Icon-button accessible names — CLOSED, the finding was false** | — | `IconButton` declares **`label: string` as required** and `Omit<…, 'aria-label'>`, so a site without a name would not typecheck. A brace-aware parse of every opening tag: **79 real call sites, 79 named, 0 missing** (the other 3 of 82 are `Record<IconButtonTone, string>` generics inside `icon-button.tsx` itself). 82 − 34-with-it-on-the-opening-line = 48, which reproduces the reported number exactly. All 79 label strings were audited against NAMING/CONTENT-VOICE: clean. Two consistency nits remain in `movement-session.tsx` ("Less"/"More" name the direction, not the object — `session.tsx` already says "One minute less"), which is a copy call, not an a11y gap. |
 | 6.3 | **Move `UnderlineTabs` to `components/ui/`** | XS | Still at `components/admin/underline-tabs.tsx` with 22 consumers. Owner-ruled 2026-08-03; never moved. `handrolled-tabs` is already at **0**, so the sweep half is done and only the move remains. |
 | 6.4 | **Kit state sweep (Lift 8b)** | M | Every `components/ui/*` primitive gets its required states per `INTERACTION-STATES.md`, each landing with a test. Then extend `check:elements` so a new primitive cannot ship without one. |

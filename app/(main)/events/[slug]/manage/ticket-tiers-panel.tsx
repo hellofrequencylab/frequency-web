@@ -239,10 +239,9 @@ function TierForm({
       onSubmit={handle}
       className="space-y-3 rounded-card border border-border-strong bg-surface-elevated p-4"
     >
-      <div>
-        <label className={lbl}>Tier name *</label>
+      <label className="block">
+        <span className={lbl}>Tier name *</span>
         <Input
-          aria-label="Tier name"
           name="name"
           type="text"
           defaultValue={initial?.name ?? ''}
@@ -250,21 +249,20 @@ function TierForm({
           disabled={disabled}
           placeholder="e.g. General, Supporter"
         />
-      </div>
+      </label>
 
-      <div>
-        <label className={lbl}>
+      <label className="block">
+        <span className={lbl}>
           Description <span className="font-normal text-subtle">(optional)</span>
-        </label>
+        </span>
         <Input
-          aria-label="Description"
           name="description"
           type="text"
           defaultValue={initial?.description ?? ''}
           disabled={disabled}
           placeholder="What this tier includes"
         />
-      </div>
+      </label>
 
       {/* A tier is one named option, so packages are off; the Price maps onto the tier columns. */}
       <PriceModeEditor
@@ -278,12 +276,11 @@ function TierForm({
       {priceError && <p className="text-body-sm text-danger">{priceError}</p>}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div>
-          <label className={lbl}>
+        <label className="block">
+          <span className={lbl}>
             Quantity <span className="font-normal text-subtle">(blank = unlimited)</span>
-          </label>
+          </span>
           <Input
-            aria-label="Quantity"
             name="quantity"
             type="number"
             min="0"
@@ -292,18 +289,17 @@ function TierForm({
             disabled={disabled}
             placeholder="Unlimited"
           />
-        </div>
-        <div>
-          <label className={lbl}>Sort order</label>
+        </label>
+        <label className="block">
+          <span className={lbl}>Sort order</span>
           <Input
-            aria-label="Sort order"
             name="sort_order"
             type="number"
             step="1"
             defaultValue={initial?.sort_order ?? 0}
             disabled={disabled}
           />
-        </div>
+        </label>
       </div>
 
       <Checkbox

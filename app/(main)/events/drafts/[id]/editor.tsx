@@ -13,7 +13,7 @@ import { useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, Plus, X, Send, UserRound, ImageIcon } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Input, Textarea, Label } from '@/components/ui/field'
+import { Input, Textarea, Field, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import type {
   EventDetails, LineupItem, ScheduleItem, TicketTier, EventLink, ImageRegion, OtherDetail,
@@ -312,13 +312,11 @@ export function DraftEditor({
 
       {/* ── Primary fields ── */}
       <div className="space-y-3">
-        <label className="block space-y-1">
-          <Label>Title</Label>
+        <Field label="Title">
           <Input value={title} onChange={(e) => setTitle(e.target.value)} disabled={pending} />
-        </label>
+        </Field>
 
-        <label className="block space-y-1">
-          <Label>Description</Label>
+        <Field label="Description">
           <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -326,13 +324,12 @@ export function DraftEditor({
             disabled={pending}
             className="resize-none"
           />
-        </label>
+        </Field>
 
         {/* Stacked on phones (two datetime-local inputs cannot shrink side by
             side on a phone — same fix as event-settings-module). */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <label className="block min-w-0 space-y-1">
-            <Label>Starts</Label>
+          <Field label="Starts" className="min-w-0">
             <Input
               type="datetime-local"
               value={startsAt}
@@ -341,15 +338,14 @@ export function DraftEditor({
               className="min-w-0"
             />
             {dateProblem && (
-              <p className="text-2xs font-medium text-danger">
+              <p className="mt-1 text-2xs font-medium text-danger">
                 {dateProblem === 'missing'
                   ? 'Add a start date, or this event won’t show in the library.'
                   : 'This date is in the past (the scan may have misread the year). Fix it to publish.'}
               </p>
             )}
-          </label>
-          <label className="block min-w-0 space-y-1">
-            <Label>Ends</Label>
+          </Field>
+          <Field label="Ends" className="min-w-0">
             <Input
               type="datetime-local"
               value={endsAt}
@@ -357,23 +353,26 @@ export function DraftEditor({
               disabled={pending}
               className="min-w-0"
             />
-          </label>
+          </Field>
         </div>
 
-        <label className="block space-y-1">
-          <Label>Location</Label>
+        <Field label="Location">
           <Input
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             placeholder="Venue and city"
             disabled={pending}
           />
-        </label>
+        </Field>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {/* NOT a Field: two controls under one name. Implicit association binds a <label> to
+              its FIRST labelable descendant, so wrapping both would name the Free checkbox
+              "Price" and leave the amount input unnamed. A group + aria-labelledby names the
+              pair without stealing either control's own name. */}
           <div className="space-y-1">
-            <Label>Price</Label>
-            <div className="flex items-center gap-3">
+            <p className={labelClasses} id="draft-price-label">Price</p>
+            <div className="flex items-center gap-3" role="group" aria-labelledby="draft-price-label">
               <Checkbox
                 checked={isFree}
                 onChange={(e) => setIsFree(e.target.checked)}
@@ -387,6 +386,7 @@ export function DraftEditor({
                   min="0"
                   step="0.01"
                   inputMode="decimal"
+                  aria-label="Price in dollars"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="15.00"
@@ -396,8 +396,7 @@ export function DraftEditor({
               )}
             </div>
           </div>
-          <label className="block space-y-1">
-            <Label>Pillar</Label>
+          <Field label="Pillar">
             <Select
               value={domain}
               onChange={(e) => setDomain(e.target.value)}
@@ -407,23 +406,21 @@ export function DraftEditor({
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </Select>
-          </label>
+          </Field>
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <label className="block space-y-1">
-            <Label>Organizer name</Label>
+          <Field label="Organizer name">
             <Input value={organizerName} onChange={(e) => setOrganizerName(e.target.value)} disabled={pending} />
-          </label>
-          <label className="block space-y-1">
-            <Label>Organizer contact</Label>
+          </Field>
+          <Field label="Organizer contact">
             <Input
               value={organizerContact}
               onChange={(e) => setOrganizerContact(e.target.value)}
               placeholder="Email, phone, or handle"
               disabled={pending}
             />
-          </label>
+          </Field>
         </div>
       </div>
 

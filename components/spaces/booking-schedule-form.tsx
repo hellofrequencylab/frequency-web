@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, Label } from '@/components/ui/field'
+import { Input, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { setSpaceSchedule } from '@/lib/spaces/booking-actions'
@@ -225,7 +225,8 @@ export function BookingScheduleForm({
       </div>
 
       <div className="space-y-3">
-        <Label className="font-semibold">Date overrides</Label>
+        {/* Heads the list of override rows. Not a <Label>: no single control under it. */}
+        <p className={`${labelClasses} font-semibold`}>Date overrides</p>
         <p className="-mt-1 text-meta text-subtle">
           Take a day off, or set one-off hours for a specific date. These win over your weekly times.
         </p>

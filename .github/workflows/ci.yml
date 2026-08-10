@@ -143,7 +143,7 @@ jobs:
           set -uo pipefail
           failed=()
           for guard in \
-            authz canon menu workflows elements tokens phantom bridge contrast adoption \
+            authz canon menu workflows elements labels tokens phantom bridge contrast adoption \
             headers seo collective crm-parity vocab rls grants admin-client migrations adr docs-links
           do
             echo "::group::check:${guard}"

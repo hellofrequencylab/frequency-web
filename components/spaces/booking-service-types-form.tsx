@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, Label, Textarea } from '@/components/ui/field'
+import { Input, Textarea, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { isError } from '@/lib/action-result'
@@ -146,7 +146,9 @@ export function BookingServiceTypesForm({
       }}
     >
       <div className="space-y-3">
-        <Label className="font-semibold">Services</Label>
+        {/* Heads the list of service rows. Not a <Label>: there is no single control under it,
+            and each row's own fields are already labelled. */}
+        <p className={`${labelClasses} font-semibold`}>Services</p>
         {rows.length === 0 && (
           <p className="rounded-card border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
             No services yet. Add one so members know what they are booking.

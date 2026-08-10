@@ -6,7 +6,7 @@ import { Check, ChevronDown, Loader2, PanelTop, Type } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { SectionHeader } from '@/components/ui/section-header'
-import { Input, Textarea, Label } from '@/components/ui/field'
+import { Input, Textarea, Label, labelClasses } from '@/components/ui/field'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { HeaderImageField } from '@/components/ui/header-image-field'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
@@ -298,8 +298,10 @@ export function SpaceBrandingForm({
             />
           </div>
           <div className="min-w-0 flex-1 space-y-2">
-            <Label className="block font-semibold">Header height</Label>
-            <div className="grid grid-cols-1 gap-2">
+            {/* Button groups, not labelable controls: the accessible name comes from
+                role="group" + aria-labelledby. A <label> here would point at nothing. */}
+            <p className={cn(labelClasses, 'block font-semibold')} id="branding-height-label">Header height</p>
+            <div className="grid grid-cols-1 gap-2" role="group" aria-labelledby="branding-height-label">
               {HERO_HEIGHTS.map((h) => {
                 const active = hHeight === h.value
                 return (
@@ -342,8 +344,8 @@ export function SpaceBrandingForm({
         </summary>
         <div className="space-y-5 px-4 pb-4 pt-1">
         <div className="space-y-2">
-          <Label className="block font-semibold">Buttons</Label>
-          <div className="grid grid-cols-2 gap-2">
+          <p className={cn(labelClasses, 'block font-semibold')} id="branding-buttons-label">Buttons</p>
+          <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby="branding-buttons-label">
             {HERO_BUTTONS.map((b) => {
               const active = hButtons === b.value
               return (
@@ -373,8 +375,8 @@ export function SpaceBrandingForm({
 
         {/* Shade — the cover-scrim treatment over the header photo. */}
         <div className="space-y-2">
-          <Label className="block font-semibold">Overlay</Label>
-          <div className="grid grid-cols-3 gap-2">
+          <p className={cn(labelClasses, 'block font-semibold')} id="branding-overlay-label">Overlay</p>
+          <div className="grid grid-cols-3 gap-2" role="group" aria-labelledby="branding-overlay-label">
             {COVER_SCRIMS.map((c) => {
               const active = scrim === c.value
               return (
@@ -407,14 +409,14 @@ export function SpaceBrandingForm({
         {/* Header button — the one dominant action on your hero. Autosaves on each pick / blur; a custom
             link only saves once its label + URL are valid. */}
         <div className="space-y-3">
-          <Label className="block font-semibold">Header button</Label>
+          <p className={cn(labelClasses, 'block font-semibold')} id="branding-cta-label">Header button</p>
           <p className="text-meta text-muted">
             The main button on your page. Keep the default, point it at one of your pages, or add your own
             link.
           </p>
 
           {/* Mode picker: Default / Built in / Custom link. */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2" role="group" aria-labelledby="branding-cta-label">
             {[
               { value: 'default' as const, label: 'Default' },
               { value: 'function' as const, label: 'Built in' },

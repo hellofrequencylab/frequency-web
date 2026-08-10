@@ -24,6 +24,8 @@ export interface CircleSettingsInitial {
   unlisted: boolean
 }
 
+// The label TEXT class. Fields wrap their control in a native <label> (HTML's implicit
+// association); a <label> beside the control names nothing (ADR-966).
 const lbl = 'block text-meta font-medium text-muted mb-1'
 
 // Host self-service circle settings — the full-page editor a host opens from their circle.
@@ -88,15 +90,15 @@ export function CircleSettingsForm({
 
   return (
     <form onSubmit={submit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <div className="sm:col-span-2">
-        <label className={lbl}>Circle name *</label>
-        <Input aria-label="Circle name" type="text" value={name} onChange={(e) => setName(e.target.value)} required disabled={pending} />
-      </div>
+      <label className="block sm:col-span-2">
+        <span className={lbl}>Circle name *</span>
+        <Input type="text" value={name} onChange={(e) => setName(e.target.value)} required disabled={pending} />
+      </label>
 
-      <div className="sm:col-span-2">
-        <label className={lbl}>About <span className="font-normal text-subtle">(optional)</span></label>
-        <Textarea aria-label="About" value={about} onChange={(e) => setAbout(e.target.value)} rows={3} placeholder="What is this circle about?" disabled={pending} className="resize-none" />
-      </div>
+      <label className="block sm:col-span-2">
+        <span className={lbl}>About <span className="font-normal text-subtle">(optional)</span></span>
+        <Textarea value={about} onChange={(e) => setAbout(e.target.value)} rows={3} placeholder="What is this circle about?" disabled={pending} className="resize-none" />
+      </label>
 
       <div>
         <label className={lbl} htmlFor="circle-type">Type</label>
@@ -112,10 +114,10 @@ export function CircleSettingsForm({
         />
       </div>
 
-      <div>
-        <label className={lbl}>Member cap</label>
-        <Input aria-label="Member cap" type="number" min={1} max={500} value={cap} onChange={(e) => setCap(e.target.value)} disabled={pending} />
-      </div>
+      <label className="block">
+        <span className={lbl}>Member cap</span>
+        <Input type="number" min={1} max={500} value={cap} onChange={(e) => setCap(e.target.value)} disabled={pending} />
+      </label>
 
       <div className="sm:col-span-2">
         <span className={lbl}>Cover image</span>
@@ -133,15 +135,15 @@ export function CircleSettingsForm({
         <p className="text-2xs text-muted">Shown on the circle&apos;s card and header.</p>
       </div>
 
-      <div>
-        <label className={lbl}>City <span className="font-normal text-subtle">(optional)</span></label>
-        <Input aria-label="City" type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g. Encinitas" disabled={pending} />
-      </div>
+      <label className="block">
+        <span className={lbl}>City <span className="font-normal text-subtle">(optional)</span></span>
+        <Input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g. Encinitas" disabled={pending} />
+      </label>
 
-      <div>
-        <label className={lbl}>Neighborhood <span className="font-normal text-subtle">(optional)</span></label>
-        <Input aria-label="Neighborhood" type="text" value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} placeholder="e.g. Leucadia" disabled={pending} />
-      </div>
+      <label className="block">
+        <span className={lbl}>Neighborhood <span className="font-normal text-subtle">(optional)</span></span>
+        <Input type="text" value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} placeholder="e.g. Leucadia" disabled={pending} />
+      </label>
 
       <div className="rounded-lg border border-border bg-surface-elevated/40 p-3 sm:col-span-2">
         <Checkbox

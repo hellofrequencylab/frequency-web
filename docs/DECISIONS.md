@@ -18773,3 +18773,58 @@ only the ADR-963 ledger bijection makes "in a migration" approximate "in the dat
 grants, which is precisely the ADR-964 class; views and materialized views; whether a policy
 predicate is sane, since `public` and `authenticated` are unverified declarations; and
 `SECURITY DEFINER` reach-around, which stays with `fail-open-guards.test.ts`.
+
+---
+
+## ADR-966 — A label that names nothing still looks like a label (2026-08-10)
+
+**Decision.** Every `<label>` in `app/` and `components/` must either carry `htmlFor` or **wrap**
+its control, and no `<label>` may nest inside another. Anything else is a heading and gets
+`<p className={labelClasses}>`. 39 sites across 16 files were fixed to that rule, and
+`scripts/check-labels.mjs` (`pnpm check:labels`, the 22nd guard) now enforces it.
+
+**Context.** `components/ui/field.tsx` exports a `Label` that renders a bare `<label>`: it mints no
+`id` and threads no `htmlFor`. So the shape everyone reached for,
+
+```tsx
+<div className="space-y-1">
+  <Label>Board name</Label>
+  <Input value={n} onChange={…} />
+</div>
+```
+
+renders a `<label>` pointing at nothing and an `<input>` with no accessible name. **It looks
+labelled in review, in a screenshot, and in a visual diff.** A screen reader announces "edit text,
+blank", and clicking the text does not focus the field. Several call sites had noticed the symptom
+and papered over it with a duplicate `aria-label` on the control — which fixes the name and leaves
+the click-to-focus broken, while making the visible text and the announced text two separate
+strings that can drift.
+
+A second failure was worse and equally invisible. `app/(main)/events/drafts/[id]/editor.tsx`
+wrapped each `<Label>` in a native `<label>`, so a `<label>` contained a `<label>` — forbidden by
+the HTML content model. Browsers recover from that inconsistently, which means the symptom depends
+on the browser rather than on the markup.
+
+**The measurement was wrong twice before it was right, and both errors ran the same way.** The
+plan first recorded "103 of 229 `Label` uses unassociated" from a line-scoped grep; the real count
+of *that* pattern was 23. But scoping the re-count to the `Label` component was itself the error:
+the same bug in plain `<label className={lbl}>` form was **more** common, and invisible to any
+search for `Label`. The gate, which asks about `<label>` elements rather than about one component,
+found 39. Twice now, a name-scoped search has under-reported a structural problem.
+
+**Why a gate and not a checklist.** This class has no visual symptom, so nothing already in the
+pipeline could see it: not review, not the visual baselines, not `tsc`. The axe pass catches an
+unnamed control at runtime but only on the surfaces the e2e run actually visits, and only when a
+session can reach them. A static structural rule catches it at author time on all 1,836 files.
+
+**Consequences.** ✅ 635 labels across `app/` + `components/`, every one naming exactly one
+control, none nested. ✅ 18 unit tests in `scripts/check-labels.test.ts` cover both halves — the
+five real violation shapes **and** the seven correct shapes that must stay silent. ⚠️ The
+false-positive half is not padding: 60 `<Label>` uses in the onboarding illustration renders and
+the on-air stage overlays are a **local** component that draws an SVG `<text>`, which has no
+control to name by construction. Counting those would have made the gate 60 false positives deep
+on day one, and a gate that cries wolf earns an allowlist and then an early grave. ⚠️ **What it
+cannot see:** a control named only by a sibling `<span>` — there is no `<label>` to find. Two of
+those shipped in `qr-splash-form.tsx` and were swept by hand; the axe pass remains the net for the
+rest. It also does not verify that an `htmlFor` target exists in another file (all 125 were checked
+by hand on 2026-08-10), nor that the label text is any good, which is `docs/CONTENT-VOICE.md`'s job.

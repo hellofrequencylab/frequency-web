@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { stripComments } from '../scripts/check-labels.mjs'
 
 // Guards for the four verified HIGHS the meta scan left open, plus the RSVP silent-failure fix.
 // Each assertion was confirmed to FAIL against the pre-fix tree — a green suite that would also
@@ -93,14 +94,22 @@ describe('Create Event form labels are associated', () => {
   // A bare <Label>Name</Label> beside an <Input /> renders a <label> with no htmlFor and an input
   // with no id, so the control is programmatically unlabelled: a screen reader announces
   // "edit text, blank", and clicking the label does not focus the field. Create Event had 17.
-  const src = read('app/(main)/events/new/event-form.tsx')
+  //
+  // The GENERAL rule now lives in `pnpm check:labels` (ADR-966), which enforces it across all of
+  // app/ + components/. What stays here is the part that gate cannot check: that this form's
+  // htmlFor targets resolve, and that its four button groups keep their group naming.
+  const raw = read('app/(main)/events/new/event-form.tsx')
+  // Comments are stripped for the tag scan. This test used to read them, so a comment that merely
+  // DISCUSSED the rule ("a <Label> naming nothing…") failed the rule — a guard tripping over its
+  // own documentation. Same blind spot check-grants.mjs hit with SQL comments (ADR-965).
+  const src: string = stripComments(raw)
 
   it('every Label either points at a control or names a group', () => {
     // Each <Label ...> opening tag must carry htmlFor (labels a control) or id (named group,
     // referenced by an aria-labelledby on a role="group" wrapper).
     const tags = src.match(/<Label\b[^>]*>/g) ?? []
     expect(tags.length).toBeGreaterThan(0)
-    const orphans = tags.filter((t) => !t.includes('htmlFor') && !t.includes('id='))
+    const orphans = tags.filter((t: string) => !t.includes('htmlFor') && !t.includes('id='))
     expect(orphans).toEqual([])
   })
 

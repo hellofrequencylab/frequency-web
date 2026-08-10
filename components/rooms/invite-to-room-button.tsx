@@ -80,9 +80,9 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
         submitLabel="Invite" pendingLabel="Inviting…"
         submitDisabled={!selected} isPending={isPending} error={error}
       >
-        <div>
-          <label className={cmLabel}>Search by name or handle</label>
-          <div className="relative">
+        <label className="block">
+          <span className={cmLabel}>Search by name or handle</span>
+          <span className="relative block">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-subtle" />
             <input
               type="text" value={query} onChange={e => { setQuery(e.target.value); setSelected(null) }}
@@ -90,8 +90,8 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
               className={`${cmInput} pl-9`}
               autoFocus
             />
-          </div>
-        </div>
+          </span>
+        </label>
 
         {query.trim() && results.length > 0 && (
           <div className="rounded-lg border border-border max-h-64 overflow-y-auto divide-y divide-border">

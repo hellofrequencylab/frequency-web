@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, Plus, QrCode, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, Label, Textarea } from '@/components/ui/field'
+import { Input, Label, Textarea, Field, labelClasses } from '@/components/ui/field'
 import { EmptyState } from '@/components/ui/empty-state'
 import { isError } from '@/lib/action-result'
 import { createSpaceCode, setCodeSplash } from '@/lib/qr/space-codes-actions'
@@ -364,28 +364,28 @@ function SplashEditor({
       </div>
 
       <div className="space-y-3">
-        <Label className="font-semibold">Links</Label>
+        {/* Heads the list of link rows. Not a <Label>: no single control under it. */}
+        <p className={`${labelClasses} font-semibold`}>Links</p>
         {draft.links.map((l, i) => (
           <div key={i} className="flex flex-wrap items-end gap-2">
-            <div className="min-w-0 flex-1">
-              <span className="text-meta font-medium text-muted">Label</span>
+            {/* These two were named by a bare <span>, which names nothing: a screen reader
+                announced both as "edit text, blank". Field wraps the control, so the
+                association is HTML's own, with no id to mint per row. */}
+            <Field label="Label" className="min-w-0 flex-1">
               <Input
                 value={l.label}
                 onChange={(e) => updateLink(i, { label: e.target.value })}
                 placeholder={i === 0 ? 'Book a spot' : 'See the schedule'}
                 maxLength={60}
-                className="mt-1"
               />
-            </div>
-            <div className="min-w-0 flex-1">
-              <span className="text-meta font-medium text-muted">Link</span>
+            </Field>
+            <Field label="Link" className="min-w-0 flex-1">
               <Input
                 value={l.url}
                 onChange={(e) => updateLink(i, { url: e.target.value })}
                 placeholder="https://example.com"
-                className="mt-1"
               />
-            </div>
+            </Field>
             <IconButton
               variant="bordered"
               tone="danger"

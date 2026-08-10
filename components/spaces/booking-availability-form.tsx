@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, Label } from '@/components/ui/field'
+import { Input, Label, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { setSpaceAvailability } from '@/lib/spaces/booking-actions'
@@ -160,7 +160,8 @@ export function BookingAvailabilityForm({
       </div>
 
       <div className="space-y-3">
-        <Label className="font-semibold">Weekly windows</Label>
+        {/* Heads the list of window rows. Not a <Label>: no single control under it. */}
+        <p className={`${labelClasses} font-semibold`}>Weekly windows</p>
         {rows.length === 0 && (
           <p className="rounded-card border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
             No windows yet. Add one to start taking bookings.

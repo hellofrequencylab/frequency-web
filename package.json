@@ -23,6 +23,7 @@
     "check:workflows": "node scripts/check-workflows.mjs",
     "check:migrations": "node scripts/check-migrations.mjs",
     "check:elements": "node scripts/check-elements.mjs",
+    "check:labels": "node scripts/check-labels.mjs",
     "check:tokens": "node scripts/check-tokens.mjs",
     "check:phantom": "node scripts/check-phantom-classes.mjs",
     "check:bridge": "node scripts/check-bridge.mjs",
