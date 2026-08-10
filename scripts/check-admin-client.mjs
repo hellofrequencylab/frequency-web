@@ -65,8 +65,23 @@ export function loadBaseline() {
   )
 }
 
+/** `findImporters()` swallows a missing root (`try { walk(r) } catch { return [] }`), so a moved
+ *  or renamed ROOT yields zero importers and the ratchet prints "✓ 0 importer(s), no new
+ *  RLS-bypass adopters" — the entire baseline reported as removable, as a friendly suggestion,
+ *  exit 0. The floor sits under the live count (736 on 2026-08-10) and far above zero. */
+export const MIN_IMPORTERS = 300
+
 function main() {
   const importers = findImporters()
+
+  if (importers.length < MIN_IMPORTERS) {
+    console.error(
+      `✗ admin-client ratchet found only ${importers.length} importer(s), expected at least ` +
+        `${MIN_IMPORTERS}.\n  A root moved or the walk is broken. This gate tracks who can bypass ` +
+        'RLS, so a run that\n  sees almost nobody must fail rather than report that nobody was added.',
+    )
+    process.exit(1)
+  }
 
   if (process.argv.includes('--update')) {
     // A ratchet must be ASYMMETRIC or it is just a snapshot. Regenerating used to accept a

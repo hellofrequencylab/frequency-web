@@ -52,12 +52,29 @@ export function scanRls(rawSql, denyAll = new Set()) {
   for (const m of sql.matchAll(/create policy .+? on ([a-z0-9_."]+)/g)) policied.add(bare(m[1]))
 
   const live = [...created].filter((t) => !dropped.has(t))
+  const liveSet = new Set(live)
   return {
     liveCount: live.length,
     missingRls: live.filter((t) => !rls.has(t)).sort(),
     noPolicy: live.filter((t) => rls.has(t) && !policied.has(t) && !denyAll.has(t)).sort(),
+    // An allowlist entry naming a table that no longer exists. The allowlist is only ever
+    // SUBTRACTED above, so a stale line is invisible: it exempts nothing and reports nothing,
+    // and the file slowly stops describing the database it is supposed to account for. Every
+    // other frozen list in this repo guards its own rot in so many words — `KNOWN_DELEGATED`
+    // in check-headers, `FROZEN_MENU_DEBT` in check-menu, `FROZEN_GATE_DEBT` in
+    // check-gate-parity — and this one did not. Found with one dead entry
+    // (`program_adoptions`, dropped by 20261114000000); the mechanism is unbounded.
+    staleDenyAll: [...denyAll].filter((t) => !liveSet.has(t)).sort(),
   }
 }
+
+/** A gate that scans nothing reports a clean bill of health. `check:grants` reads THIS SAME
+ *  directory and floors it at 400; the floor was written once and not applied to its neighbour.
+ *  If the `create table` regex stops matching (a DDL style change, a different spelling), `live`
+ *  goes empty and the success line reads "all 0 live public table(s)" — which is how a table
+ *  ships anon-readable with a green check beside it. */
+export const MIN_MIGRATIONS = 400
+export const MIN_LIVE_TABLES = 150
 
 /** Load the reviewed deny-all allowlist (RLS-on-no-policy = fail-closed, service-role-only). */
 export function loadDenyAll() {
@@ -71,8 +88,38 @@ export function loadDenyAll() {
 
 function main() {
   const files = readdirSync(DIR).filter((f) => f.endsWith('.sql')).sort()
+  if (files.length < MIN_MIGRATIONS) {
+    console.error(
+      `✗ check:rls read only ${files.length} migration(s) from ${DIR}, expected at least ` +
+        `${MIN_MIGRATIONS}. The directory moved or the read is broken. A gate that scans nothing ` +
+        'passes everything, so this is a failure rather than a clean run.',
+    )
+    process.exit(1)
+  }
   const rawSql = files.map((f) => readFileSync(join(DIR, f), 'utf8')).join('\n')
-  const { liveCount, missingRls, noPolicy } = scanRls(rawSql, loadDenyAll())
+  const { liveCount, missingRls, noPolicy, staleDenyAll } = scanRls(rawSql, loadDenyAll())
+
+  if (liveCount < MIN_LIVE_TABLES) {
+    console.error(
+      `✗ check:rls resolved only ${liveCount} live public table(s), expected at least ` +
+        `${MIN_LIVE_TABLES}. The migrations were read but the DDL scanner matched almost nothing, ` +
+        'so its silence about RLS means nothing either.',
+    )
+    process.exit(1)
+  }
+
+  if (staleDenyAll.length > 0) {
+    console.error(
+      `✗ scripts/rls-deny-all.txt names ${staleDenyAll.length} table(s) that no longer exist:\n`,
+    )
+    for (const t of staleDenyAll) console.error(`    - ${t}`)
+    console.error(
+      '\n  Delete the line. An allowlist is only ever subtracted from the live set, so a stale\n' +
+        '  entry exempts nothing and warns nobody, and the file quietly stops describing the\n' +
+        '  database. Removing it is the whole fix.\n',
+    )
+    process.exit(1)
+  }
 
   if (missingRls.length + noPolicy.length === 0) {
     console.log(
