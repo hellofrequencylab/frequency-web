@@ -6,6 +6,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceManageHref } from '@/lib/spaces/types'
 import { listSpaceCirclesWithRuns } from '@/lib/circles/store'
+import { pendingOfferForCircle } from '@/lib/circles/handoff'
 import { journeysOfferedBySpace } from '@/lib/journeys/run-gate'
 import { IndexTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
@@ -41,6 +42,15 @@ export default async function SpaceCirclesPage({ params }: { params: Promise<{ s
     journeysOfferedBySpace(space.id),
   ])
 
+  // A pending handoff BLOCKS the circle: `circle_transfer_offers` carries a unique partial index
+  // allowing one pending offer per circle (migration 20261230000000), and the failure text tells
+  // the operator to "cancel that first" — but there was no way to see an offer or cancel one.
+  // Only the recipient could clear it, by visiting that circle's page. `cancelSpaceCircleOfferAction`
+  // and `pendingOfferForCircle` both existed with ZERO callers; this is the read half.
+  const pendingOffers = await Promise.all(
+    circles.map((c) => pendingOfferForCircle(c.id).catch(() => null)),
+  )
+
   const running = circles.filter((c) => c.run).length
   const members = circles.reduce((n, c) => n + (c.member_count ?? 0), 0)
 
@@ -62,7 +72,7 @@ export default async function SpaceCirclesPage({ params }: { params: Promise<{ s
         <SpaceCirclesManager
           spaceSlug={space.slug}
           viewerProfileId={viewerProfileId ?? ''}
-          circles={circles.map((c) => ({
+          circles={circles.map((c, i) => ({
             id: c.id,
             slug: c.slug,
             name: c.name,
@@ -70,6 +80,7 @@ export default async function SpaceCirclesPage({ params }: { params: Promise<{ s
             status: c.status,
             memberCount: c.member_count ?? 0,
             run: c.run,
+            pendingOffer: pendingOffers[i],
           }))}
           journeys={offered}
         />

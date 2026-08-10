@@ -11,6 +11,7 @@ import {
   transferSpaceCircleAction,
   listTransferTargetsAction,
   offerSpaceCircleAction,
+  cancelSpaceCircleOfferAction,
   attachCircleToSpaceAction,
   listAttachableCirclesAction,
 } from '@/app/(main)/spaces/[slug]/circles/actions'
@@ -33,6 +34,10 @@ export interface SpaceCircleRow {
   status: string
   memberCount: number
   run: { id: string; planId: string; journeyTitle: string; journeySlug: string | null; startedAt: string } | null
+  /** An unanswered handoff. One pending offer per circle is enforced by a unique partial index
+   *  (migration 20261230000000), so while this is set the circle cannot be offered to anyone
+   *  else — and until now the only person who could clear it was the recipient. */
+  pendingOffer?: { id: string; toProfileId: string } | null
 }
 
 export interface OfferedJourney {
@@ -165,6 +170,22 @@ export function SpaceCirclesManager({
     start(async () => {
       const res = await listTransferTargetsAction(spaceSlug)
       setTargets(isError(res) ? [] : res.data)
+    })
+  }
+
+  /** Take back an unanswered handoff. Without this the circle was stuck: the unique partial index
+   *  refuses a second pending offer, and the error text told the operator to "cancel that first"
+   *  with nothing to cancel it with. */
+  function cancelOffer(offerId: string, circleName: string) {
+    if (!window.confirm(`Take back the handoff for ${circleName}? They will no longer be able to accept it.`)) return
+    setError(null)
+    start(async () => {
+      const res = await cancelSpaceCircleOfferAction(spaceSlug, offerId)
+      if (isError(res)) {
+        setError(res.error)
+        return
+      }
+      router.refresh()
     })
   }
 
@@ -369,6 +390,21 @@ export function SpaceCirclesManager({
                 </div>
 
                 <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+                  {c.pendingOffer ? (
+                    <>
+                      <span className="inline-flex items-center gap-1.5 rounded-pill bg-signal-bg px-2 py-0.5 text-2xs font-semibold text-signal-strong">
+                        Handoff waiting
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => cancelOffer(c.pendingOffer!.id, c.name)}
+                        disabled={pending}
+                        className="rounded-control border border-border px-2 py-1 text-2xs font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
+                      >
+                        Take it back
+                      </button>
+                    </>
+                  ) : null}
                   {c.run ? (
                     <>
                       <span className="inline-flex items-center gap-1.5 rounded-pill bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
