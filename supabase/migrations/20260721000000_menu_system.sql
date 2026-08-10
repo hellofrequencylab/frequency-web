@@ -1,3 +1,12 @@
+-- MENU CACHE: this migration writes seeded menu data. Raw SQL cannot call revalidatePath, and
+-- app/(marketing)/layout.tsx reads getMenu('header')/getMenu('footer') while deliberately avoiding
+-- cookies()/getUser() so those pages stay STATIC with revalidate = 3600. So the marketing surfaces
+-- keep serving the OLD rail for up to an hour after this applies, unless a deploy rebuilds them
+-- first. The in-app (main) layout is request-time and picks the change up immediately.
+--
+-- After applying: deploy, or touch any menu in Menu Manager to fire revalidatePath('/', 'layout').
+-- Enforced by `pnpm check:migrations` (ADR-973).
+
 -- =============================================================================
 -- DB-backed, editable navigation / menu system (foundation).
 --

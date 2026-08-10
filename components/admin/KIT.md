@@ -23,7 +23,7 @@ only; warm type; tabular numerals; AA.
 
 ## Entity detail — Detail template
 - `EntityHeader` — `@/components/admin/entity-header`. Context band: `{ title, eyebrow?, avatar?, badges?, facts?, actions?, back? }` (facts = description list).
-- `UnderlineTabs` — `@/components/admin/underline-tabs`. `{ tabs:{href,label,count?}[] }`; each tab a URL segment.
+- `UnderlineTabs` — `@/components/ui/underline-tabs`. `{ tabs:{href,label,count?}[] }`; each tab a URL segment.
 
 ## Forms & settings
 - `FormSection` — `@/components/admin/form-section`. Annotated group `{ title, description, children }` (Settings template).

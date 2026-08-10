@@ -8,7 +8,7 @@ import { nodeUrl, shortLinkUrl } from '@/lib/qr/links'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { parseStyle, withMemberAvatar } from '@/lib/qr/style'
 import { parseVcard } from '@/lib/vcard'
-import { summarizeScans, type ScanRow } from '@/lib/qr/analytics'
+import { scanSummaryFromRpc, type QrStatsRpcPayload } from '@/lib/qr/analytics'
 import { QrStudioDashboard } from './qr-studio-dashboard'
 import type { StudioNode } from './qr-studio'
 import type { StudioLink, NodeOption, PickOption } from './dynamic-links'
@@ -28,36 +28,49 @@ export default async function QrStudioPage() {
   await requireAdmin('host', { staff: 'qr' })
   const db = createAdminClient()
 
-  const [{ data: nodes }, { data: caps }, { data: links }, { data: scans }, { data: partners }] =
-    await Promise.all([
-      db
-        .from('nodes')
-        .select('id, type, label, zaps_value, capture_rule, active, city, valid_until, partner_id, style, max_claims, secret, created_at')
-        .order('created_at', { ascending: false }),
-      db.from('captures').select('node_id').eq('verified', true),
-      db
-        .from('qr_codes')
-        .select('id, slug, title, destination_type, target_url, alt_target_url, switch_at, node_id, circle_id, event_id, partner_id, active, valid_until, scan_count, style, purpose, owner_profile_id, source_tag, created_at')
-        .order('created_at', { ascending: false }),
-      db.from('qr_scans').select('qr_code_id, profile_id, scanned_at, medium'),
-      db.from('partners').select('id, name').order('name'),
-    ])
+  // Three whole-table reads used to live here and none of them needed to (ADR-969):
+  //   · `captures` was read in full to count rows per node. It grows with every verified check-in
+  //     the community ever makes, and PostgREST caps a response at max_rows (1,000), so past that
+  //     the count was silently WRONG as well as slow. Now `node_capture_counts()` groups in the DB.
+  //   · `qr_scans` was read in full to build the same aggregates the /admin/qr/stats page already
+  //     gets from `qr_stats_summary`. Same RPC, same rehydration, identical numbers: the RPC's
+  //     totals / per_code are lifetime (no date filter) and `daily` is the trailing 30 UTC buckets,
+  //     which is exactly what summarizeScans(scans, 30) produced.
+  //   · `qr_codes` was read TWICE, the second time only for `page_path`. It is one selection.
+  const [
+    { data: nodes },
+    { data: captureRows },
+    { data: links },
+    { data: statsPayload },
+    { data: partners },
+  ] = await Promise.all([
+    db
+      .from('nodes')
+      .select('id, type, label, zaps_value, capture_rule, active, city, valid_until, partner_id, style, max_claims, secret, created_at')
+      .order('created_at', { ascending: false }),
+    db.rpc('node_capture_counts'),
+    db
+      .from('qr_codes')
+      .select('id, slug, title, destination_type, target_url, alt_target_url, switch_at, node_id, circle_id, event_id, partner_id, active, valid_until, scan_count, style, purpose, owner_profile_id, source_tag, created_at, page_path')
+      .order('created_at', { ascending: false }),
+    db.rpc('qr_stats_summary', { p_days: 30 }),
+    db.from('partners').select('id, name').order('name'),
+  ])
 
-  // Per-page folder key (ADR-179). `page_path` isn't in the generated DB types yet,
-  // so read it through an untyped client and join it back by id.
-  const { data: folderRows } = await (db)
-    .from('qr_codes')
-    .select('id, page_path')
+  // Per-page folder key (ADR-179), now selected with the rest of the row rather than in a second
+  // pass. `page_path` is still absent from the generated DB types, so it is read off the row
+  // through a narrow cast instead of an untyped second client.
   const pagePathById = new Map<string, string | null>(
-    ((folderRows ?? []) as Array<{ id: string; page_path: string | null }>).map((r) => [
+    ((links ?? []) as Array<{ id: string; page_path?: string | null }>).map((r) => [
       r.id,
-      r.page_path,
+      r.page_path ?? null,
     ]),
   )
 
   // ── Check-in codes (nodes) ──────────────────────────────────────────────────
-  const captureCounts = new Map<string, number>()
-  for (const c of caps ?? []) captureCounts.set(c.node_id, (captureCounts.get(c.node_id) ?? 0) + 1)
+  const captureCounts = new Map<string, number>(
+    (captureRows ?? []).map((r) => [r.node_id, r.captures]),
+  )
 
   // Geofences (location-aware earning) — coords + radius per node, read via RPC
   // (the geography column can't be selected as lat/lng through PostgREST).
@@ -102,7 +115,7 @@ export default async function QrStudioPage() {
   // surfaced here so operators can oversee, restyle, pause, or retire them.
   const marketingRows = allCodes.filter((l) => l.owner_profile_id && !l.purpose)
 
-  const summary = summarizeScans((scans ?? []) as ScanRow[])
+  const { summary } = scanSummaryFromRpc(statsPayload as QrStatsRpcPayload | null)
   const nodeLabels = new Map((nodes ?? []).map((n) => [n.id, n.label ?? `${n.type} code`]))
 
   // Circles + events for the circle-join / event check-in destination pickers.

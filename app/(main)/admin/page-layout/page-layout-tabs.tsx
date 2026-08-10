@@ -1,4 +1,4 @@
-import { UnderlineTabs, type UnderlineTabItem } from '@/components/admin/underline-tabs'
+import { UnderlineTabs, type UnderlineTabItem } from '@/components/ui/underline-tabs'
 
 // The two sections of the Page layout manager, rendered as tabs by the shared layout so both the
 // Chrome (right-rail) manager and the Apps (per-scope override) manager sit under one surface

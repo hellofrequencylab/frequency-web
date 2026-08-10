@@ -18938,3 +18938,192 @@ that is the point, and it is recorded here so the change is not a surprise then.
 read a title built by a call expression (`buildTitle(name)`) — not decidable from source, and
 guessing is worse than staying quiet. It *does* read template literals, because
 `` `${name} · Frequency` `` is the Spotlight bug verbatim.
+
+---
+
+## ADR-969 — An unbounded read is not just slow, it is wrong at 1,001 rows (2026-08-10)
+
+**Decision.** QR Studio's three whole-table reads are retired. `captures` goes through a new
+`public.node_capture_counts()` RPC (`20270219000000`), `qr_scans` reuses the existing
+`qr_stats_summary` RPC that `/admin/qr/stats` already calls, and `qr_codes` is selected once
+instead of twice.
+
+**The part that matters is not the performance.** `db.from('captures').select('node_id')` returned
+one row per verified check-in the community has ever recorded, purely so the page could count them
+per node in JS. That is bad and gets worse forever. But PostgREST caps a response at `max_rows`
+(1,000 on this project), so past a thousand captures the page **under-counted with no error to
+notice** — a smaller number rendered in the same place, in the same style, with the same
+confidence. This is the third instance of that exact class in two weeks (`library_usages`
+discarding its error, the CRM import dedupe truncating at 1,000), and the pattern is worth naming:
+**a read with no explicit bound has a bound anyway, and the silent one is the server's.**
+
+**Why the `qr_scans` swap is safe to call identical, not just equivalent.** `qr_stats_summary`
+already existed for the stats page. Its `totals` and `per_code` CTEs carry **no date filter**, so
+they are lifetime figures, and its `daily` is the trailing `p_days` UTC date buckets, zero-filled.
+That is exactly what `summarizeScans(scans, 30)` computed in JS from the full row set. Same
+aggregates, same window, same `scanSummaryFromRpc` rehydration the stats page uses — the swap
+moves the arithmetic to the database and changes nothing a operator sees.
+
+**Why a new RPC rather than a `.limit()`.** A limit would have made the truncation explicit but
+kept it. The answer the page needs is one small integer per node, and `nodes` is a small
+operator-managed table, so the result set is bounded by construction once the grouping happens
+server-side. `node_capture_counts()` mirrors `qr_stats_summary` exactly: `security definer`,
+`set search_path = ''`, `stable`, and `revoke execute … from public, anon, authenticated` with
+`service_role` granted, leaving the staff gate on the calling page.
+
+**Consequences.** ✅ Applied to production and the ledger repaired per
+`supabase/migrations/README.md`; the bijection is **597 ⇄ 597**, proven by taking an md5 of both
+sorted version sets rather than eyeballing a count. ✅ `page_path` is now selected with the rest of
+the `qr_codes` row, so the second round trip and the untyped second client are both gone. ⚠️ The
+RPC was hand-added to `lib/database.types.ts` rather than regenerated, matching how `nodes_geo` is
+carried; a future full regeneration will simply confirm it. ⚠️ Booked in the same pass: four
+entries left `scripts/admin-client-baseline.txt` (the `apply` / `waitlist` action pair and the two
+`lib/applications` modules), a fall that predates this change. ADR-928 says falls are written down,
+so the baseline is now 736.
+
+---
+
+## ADR-970 — An orphan help key is a broken link, not a backlog item (2026-08-10)
+
+**Decision.** The ten feature keys that published help articles were declaring with no registry row
+are added to `lib/help/feature-keys.ts`, and `pnpm help:coverage` — now also wired in as the 24th
+guard, `check:help` — **fails on any orphan key, in every mode**.
+
+**The plan had the direction backwards, and the direction is the whole point.**
+`docs/FINALIZE-PLAN.md` §3.6 recorded "10 orphan help feature keys … point at articles that do not
+exist". It is the reverse. All ten articles exist and are **published**. What did not exist was the
+registry row, so a reader could reach the article by browsing and every in-product affordance that
+resolves *by feature key* found nothing. The article was written, reviewed, and shipped, and the
+product could not link to it.
+
+That distinction changes the fix from "write ten articles" (content work, weeks) to "add ten rows"
+(minutes), which is why it is worth recording that the first description was wrong.
+
+Added with the route **verified to exist first**, not assumed: `on-air` · `journeys` ·
+`challenges` · `achievements` · `leaderboard` · `profile` · `connections` · `location` ·
+`resonance` · `billing`. `location` and `resonance` have no route of their own and point at the
+Connections settings section, which is the surface that actually owns them.
+
+**Why orphans fail and undocumented core features do not.** `help:coverage` printed both as
+warnings and exited 0 either way, so a tool nobody's CI read was the only thing that knew. Those
+two findings are not the same kind of thing:
+
+- An **orphan key** is a broken link. Something in the product points at a name that resolves to
+  nothing. It is always a defect, it is always cheap to fix, and it fails now.
+- An **undocumented core feature** is a content backlog item with an owner and a queue. Failing
+  every build on it would make the gate something to route around, which is how a gate dies. It
+  stays behind `--strict`.
+
+**Consequences.** ✅ Coverage 29/36 → **39/46**; core coverage **36/36**; orphans **0**. ✅ Probed:
+removing one key makes `check:help` exit 1 and name both articles that referenced it. ⚠️ Seven
+registry keys still have no article — `nexuses`, `store`, `crew`, `profiles`, `marketing`,
+`outreach`, `pages`. All are `core: false` (secondary / operator surfaces), so they are the
+backfill queue this gate deliberately does not block on.
+
+---
+
+## ADR-971 — UnderlineTabs moves to the kit, three years after the sweep it belongs to (2026-08-10)
+
+**Decision.** `components/admin/underline-tabs.tsx` → `components/ui/underline-tabs.tsx`. All 17
+importers repointed. No behaviour change, no markup change.
+
+**Context.** The owner ruled on 2026-08-03 that `UnderlineTabs` is the one tab strip
+(`docs/BUILD-LIST.md`), and the sweep half of that ruling landed: `handrolled-tabs` has been at
+**0** in `scripts/adoption-baselines.json` since. What never happened was the move. A shared
+primitive that both member and admin surfaces compose sat under `components/admin/`, which is a
+discoverability tax paid by everyone who goes looking for the kit's tab strip and does not find one
+there. `docs/DAWN-CONVERSION.md` had it listed as an open gap the whole time.
+
+**The plan's count was wrong here too, in the harmless direction.** `docs/FINALIZE-PLAN.md` §6.3
+said 22 consumers; `git grep` finds **17** files importing it. Recording it because the pattern is
+now consistent enough to be worth naming: five separate figures in this plan were derived from a
+grep rather than from the thing itself, and every one of them was off. Counts in a plan doc are a
+measurement, and a measurement without a method is a guess with a number attached.
+
+**Consequences.** ✅ `tsc` and `lint` clean; the move is a rename plus an import rewrite, so there
+is nothing behavioural to test beyond that. ✅ The three docs that pointed at the old path
+(`DAWN-CONVERSION`, `BUILD-LIST`, `ADMIN-DESIGN-SYSTEM`) are corrected in the same pass, per the
+repo rule that a doc contradicting the code is fixed where it is found. ⚠️ Nothing enforces that a
+shared primitive lives in `components/ui/` — this move was found by reading a plan, not by a gate,
+and the next one will be too.
+
+---
+
+## ADR-972 — A truncated description, and a gate that was wrong twice before it was right (2026-08-10)
+
+**Decision.** Five marketing descriptions rewritten inside the ~155 character SERP window, and
+`check:seo` gains **Scan E**, which fails any top-level `description` over **160** on a page a
+crawler can actually reach.
+
+`/the-lab` **200→154** · `/spaces` **186→139** · `/beta` **158→148** · `/the-community` **158→142**
+· `/the-quest` **158→140**, plus `/discover/journeys` **163→149**, which no hand pass had recorded
+and only the gate found.
+
+**Why 160 and not 155.** 155 is where truncation *starts* to bite and 160 is where it is certain. A
+gate at 155 would fail copy that renders fine, and failing correct copy is how a gate earns an
+allowlist and then an early grave (ADR-966). The plan's own figure was 155; the gate deliberately
+sits above it.
+
+**The part worth keeping is how the gate was wrong.** It was built, run, and corrected twice before
+it was committed, and both errors were the same species: *a regex that matches the right characters
+in the wrong context.*
+
+1. **It flagged JSON-LD.** `/the-quest` builds `articleSchema({ description: … })` at 202
+   characters. That is structured data. Nothing truncates it at 160, and demanding a rewrite would
+   have been a false failure on correct code. The walker now skips any object literal that is a
+   **call argument**, which distinguishes `articleSchema({` from `metadata = {` structurally rather
+   than by name.
+2. **It flagged a page no crawler can reach.** `/channels` carries a 269-character description —
+   and `/channels` is in `proxy.ts`'s protected prefixes. A description that no search result can
+   show cannot be truncated by one. Worse, that string doubles as the page's on-page header copy,
+   so the "fix" would have been a copy rewrite to cure a symptom that cannot occur. Scan E now
+   reuses the reachability inputs Scan C already computes (`isPrivateRoute`, `PAGE_GUARD`, the
+   robots directive through the layout chain).
+
+**And then the refactor silently disarmed Scan D.** Folding Scans D and E onto one walker looked
+like pure cleanup. It was not: a template literal containing `${` must be **skipped** for length
+(the value is unknowable) and **read** for a hardcoded brand suffix, because
+`` `${name} · Frequency` `` is the ADR-968 Spotlight bug verbatim. One flag, opposite answers. The
+unit test written for that bug is what caught it — which is the argument for writing the test
+against the *defect* rather than against the implementation.
+
+**Consequences.** ✅ 31 tests on `check-seo.mjs`, including both directions of the interpolation
+split and the call-argument exclusion. ✅ Every rewrite passes the CONTENT-VOICE §10 checklist: no
+em dashes, no narrated feelings, proper nouns carrying the weight. ⚠️ Scan E reads the **coded
+fallback**. `pageContentMetadata` lets an operator override the description from the database, and
+no static gate can see what they typed. ⚠️ It cannot measure an interpolated description at all, by
+design.
+
+---
+
+## ADR-973 — A gate cannot flush a cache, so make the migration say so (2026-08-10)
+
+**Decision.** `check:migrations` gains a third rule: a migration that writes seeded menu data
+(`menus`, `menu_items`, `menu_categories`, `menu_settings`, `menu_rail_cards`) must carry a
+`-- MENU CACHE:` note. The four existing menu migrations now carry it.
+
+**The mechanism, verified rather than assumed.** All 18 Menu Manager mutations end with
+`revalidatePath('/', 'layout')`. Raw SQL cannot. What makes that matter is one specific design
+choice: `app/(marketing)/layout.tsx` reads `getMenu('header')` and `getMenu('footer')` while
+**deliberately** avoiding `cookies()` and `getUser()`, precisely so marketing pages stay static —
+its own header says so. Static pages hold the rail they were built with.
+
+**The plan overstated the hazard, and that is worth correcting rather than quietly inheriting.**
+`docs/FINALIZE-PLAN.md` §4.1 said a menu migration "serves a stale rail until the next deploy". It
+is bounded: those pages declare `revalidate = 3600`, so ISR picks the change up within an hour, and
+the in-app `(main)` layout is request-time and never goes stale at all. A hazard described as worse
+than it is gets discounted the first time somebody checks — which is how a real one-hour window
+becomes a thing nobody believes.
+
+**Why a marker and not a fix.** There is no way to make a `.sql` file call a Next.js cache API. The
+buildable thing is to refuse a change that does not state its own consequence: the operator
+applying it learns the rail is stale, and the reviewer sees it in the diff. That is a smaller claim
+than "fixed", and it is the true one.
+
+**Consequences.** ✅ Detection strips both SQL comment forms first, so a menu write inside a
+rollback block is not a menu write; the marker itself is looked for in the raw text, since the
+marker is a comment. ✅ Editing four already-applied migration files was checked before it was
+done: `supabase_migrations.schema_migrations` has a `statements` array, and all four rows record
+**0** statements, so a comment-only prepend cannot diverge from anything the ledger holds.
+⚠️ The rule keys on table names. A menu write through a function or a dynamic statement would not
+be seen.

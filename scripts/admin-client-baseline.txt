@@ -86,7 +86,6 @@ app/(main)/admin/studio/actions.ts
 app/(main)/admin/vera-ai/page.tsx
 app/(main)/admin/vera/load-vera.ts
 app/(main)/admin/walkthroughs/actions.ts
-app/(main)/apply/actions.ts
 app/(main)/broadcast/[id]/page.tsx
 app/(main)/broadcast/actions.ts
 app/(main)/broadcast/page.tsx
@@ -222,7 +221,6 @@ app/(main)/spaces/[slug]/settings/shop/shop-actions.ts
 app/(main)/spaces/[slug]/venue-actions.ts
 app/(main)/timezone-actions.ts
 app/(main)/upgrade/actions.ts
-app/(main)/waitlist/actions.ts
 app/(marketing)/about/page.tsx
 app/(marketing)/pricing/page.tsx
 app/(marketing)/rsvp/[token]/page.tsx
@@ -374,8 +372,6 @@ lib/analytics/insights-read.ts
 lib/analytics/marketing-intel.ts
 lib/analytics/outcomes.ts
 lib/analytics/practice.ts
-lib/applications/handoff.ts
-lib/applications/store.ts
 lib/apps/overrides.ts
 lib/attribution/acquisition.ts
 lib/attribution/backfill.ts

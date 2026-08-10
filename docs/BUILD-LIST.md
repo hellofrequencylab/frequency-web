@@ -77,7 +77,7 @@ ADR-828 pill convention), **EntityCard** (32 uses vs 44 bespoke `*-card.tsx`), *
 hand-rolled rows — the worst), **PersonCard** (17 uses). **ProgressTrack was missing entirely**
 (~30 ad-hoc `rounded-full` + inline-width bars) — built with the DAWN §5 primitives (Counter,
 StreakMeter, Meter, GateNotice) in the 2026-08-03 design-sync round; adoption sweeps are the
-fabric phase. UnderlineTabs also lives under `components/admin/`, hurting discoverability — move
+fabric phase. UnderlineTabs ✅ now lives at `components/ui/underline-tabs.tsx` (moved 2026-08-10, ADR-971); it used to sit under `components/admin/`, hurting discoverability — move
 to `components/ui/` during the sweep.
 
 | # | Scope | Lift | Status |

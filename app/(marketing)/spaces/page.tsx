@@ -37,7 +37,7 @@ export const revalidate = 3600
 export const metadata: Metadata = {
   title: 'Spaces',
   description:
-    'Run your community as a Space on Frequency. A front door in Discover, the tools to host Circles and Runs, and a model that holds the door open for everyone. Free to start, no card today.',
+    'Run your community as a Space on Frequency. A front door in Discover, and the tools to host Circles and Runs. Free to start, no card today.',
   alternates: { canonical: '/spaces' },
   openGraph: {
     title: 'Spaces · Frequency',

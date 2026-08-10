@@ -29,7 +29,7 @@ export const revalidate = 3600
 export const metadata: Metadata = {
   title: 'The Lab: a third space, planned for 2028',
   description:
-    'The Lab is the third space the Frequency community is building: a sauna, a cold plunge, and rooms to gather in person. The first is planned for 2028 in North County San Diego. Nothing is bookable yet.',
+    'The third space the Frequency community is building: a sauna, a cold plunge, and rooms to gather. The first is planned for 2028 in North County San Diego.',
   alternates: { canonical: '/the-lab' },
   openGraph: {
     title: 'The Lab · Frequency',
