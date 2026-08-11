@@ -26,7 +26,7 @@
 // Usage: `node scripts/check-templates.mjs` (or `pnpm check:templates`). Exits 1 when the count
 // RISES above the frozen baseline. Falling is reported and asks you to re-freeze.
 
-import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -58,8 +58,6 @@ export const SHELLS = [
 /** Exported by the SAME barrel and deliberately NOT shells. Listed so the distinction is explicit
  *  rather than implied by omission — this is the exact confusion that made the old number wrong. */
 export const PIECES = ['PageHeading', 'PageHero', 'WizardProgress', 'AdminSection', 'RailGrid']
-
-const SHELL_RE = new RegExp(`\\b(${SHELLS.join('|')})\\b`)
 
 /** Every `page.tsx` under app/. */
 export function pages(dir = ROOT, out = []) {

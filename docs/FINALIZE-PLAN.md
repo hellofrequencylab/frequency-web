@@ -35,7 +35,7 @@ Sizes: **XS** under an hour · **S** one PR · **M** 1 to 3 PRs · **L** a wave.
 | Code hygiene | ✅ | **18** TODO markers in the entire `app` + `lib` + `components` tree |
 | SEO/AIO surface | ✅ | 14 OG-image routes, 25 JSON-LD emitters, `llms.txt` already carries live first-party stats |
 | Help centre | ✅ | 55 articles, core coverage 27/27, **0 orphan feature keys** (the 10 were added to `feature-keys.ts`; `check:help` now fails on an orphan in every mode) |
-| **Visual regression** | ✅ | **68 of 72** against the fresh baselines, was 10 of 72. The 4 `/feed` failures are resolved by viewport capture (1.9). ⚠️ The radius correction (6.9) moves corners app-wide, so one recapture is owed. |
+| **Visual regression** | ✅ | **71 of 76**, was 10 of 72. `/feed`'s viewport capture WORKS (passes now). App shell coverage **3/3 surfaces, 12/12 checks**, from zero this morning. The 4 remaining failures are `/settings` × 4 and are a TRUE POSITIVE — see 1.10. |
 | **Accessibility ratchet** | 🔴 | first full run with a session (2026-08-10): **32 failed · 28 passed · 26 skipped** — 4 absent baselines, 28 real rises, **all 16 dark-mode contrast checks among them** (1.7, ADR-980) |
 | **Anon/authenticated grants** | 🔴 | **1,907 explicit grants across 273 tables** (2 worst RPCs closed, ADR-961) |
 | **Migration ledger numbering** | ✅ | **594 ⇄ 594, zero drift both directions** (ADR-963) — was 607 vs 594 |
@@ -915,3 +915,36 @@ expandable control that cannot be operated. Six icon-only buttons of 297 lack an
 `app/sitemap.ts:386-388` issues one `listShowsForSpace` per networked Space, inside a route whose
 `try/catch` degrades to `[]` — so a timeout silently drops every podcast URL from the index. This is
 in the DB-driven section `check:seo` explicitly trusts without verifying (`check-seo.mjs:16-19`).
+
+
+### 1.10 — ✅ `pr-compare` is no longer a stale-baseline problem, and the radius scare was wrong
+
+Run `31445440131` on `b606814`, the first full evaluation after the radius correction and the
+viewport fix:
+
+```
+71 passed · 4 failed · 1 flaky
+✅ App shell covered: 3/3 surfaces, 12/12 checks.
+```
+
+🔴 **The claim that the radius correction "moves corners app-wide, so one recapture is owed" was
+wrong, and it was repeated twice.** Every marketing baseline passes. The role tokens live in the app
+shell and the kit; marketing composes literals, which is exactly what the earlier capture showed and
+what §6.9 records. Nothing about the radius change drifted the public site.
+
+**`/feed`'s viewport capture works.** It failed all four checks before and passes all four now, which
+settles §1.9 on its visual half.
+
+**The four failures are `/settings`, in both modes × both viewports, and they are a TRUE POSITIVE.**
+`app/(main)/settings/page.tsx:11` renders `NotificationsSection`, which renders `NotificationsForm`
+(`settings/notifications/section.tsx:108`) — and the digest decision removed the Frequency column
+from that grid, taking a whole column out of the layout. The suite caught an intended change, which
+is the instrument doing its job rather than failing.
+
+**So the remedy is a recapture, and this time it is the right remedy** (ADR-980's rule: a visual
+baseline is descriptive, and recapture is the whole fix for a described change). One
+`e2e-manual.yml → update_baselines` run re-freezes `/settings`.
+
+⚠️ **After that, `pr-compare` is promotable to a required context.** The vacuous-green hole that
+blocked promotion is closed — a missing bypass secret now SKIPS the job rather than passing it. The
+secret is demonstrably set, since this run executed rather than skipping.
