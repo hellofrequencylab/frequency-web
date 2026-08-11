@@ -34,7 +34,7 @@ export function CommunityProof({
 
   return (
     <div className="rounded-2xl border border-border bg-surface px-6 py-5 lift-1">
-      <p className="mb-4 text-center text-meta font-bold uppercase tracking-eyebrow text-primary">
+      <p className="mb-4 text-center text-meta font-bold uppercase tracking-eyebrow text-primary-strong">
         Already happening in {FOUNDING_PLACE}
       </p>
       <dl className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4">

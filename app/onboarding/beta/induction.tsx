@@ -614,7 +614,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
   const backLink = 'text-body-sm font-medium text-subtle underline-offset-4 transition-colors hover:text-muted hover:underline'
   // Primary action — the shared Wizard button (app register), used across the beats.
   const btnPrimary = wizardPrimaryClass
-  const eyebrow = 'text-body-sm font-semibold uppercase tracking-eyebrow text-primary'
+  const eyebrow = 'text-body-sm font-semibold uppercase tracking-eyebrow text-primary-strong'
   const heading = 'font-display uppercase leading-[1.0] text-text'
 
   const slide = reel[reelIndex]
