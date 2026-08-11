@@ -113,6 +113,7 @@ export function MyFrequencyMenu({
   isActive,
   onNavigate,
   compact = false,
+  label = 'My Frequency',
 }: {
   data: MyFrequency
   isActive: (href: string) => boolean
@@ -121,6 +122,11 @@ export function MyFrequencyMenu({
    *  profile — folding must never make something unreachable, and every entry inside is also
    *  reachable from its own index page and from the palette. */
   compact?: boolean
+  /** The row's own name. On the rail it is "My Frequency", which is the surface's name
+   *  (ADR-954). Inside the phone drawer's IDENTITY CARD the card above it is already the "you"
+   *  half, so the row states the other half of DAWN's law instead: "What you run". Same menu,
+   *  same component, one mount per viewport — the label is the only thing that differs. */
+  label?: string
 }) {
   const [open, setOpen] = useState(false)
   const anyActive =
@@ -133,10 +139,8 @@ export function MyFrequencyMenu({
       <Link
         href={data.profileHref}
         onClick={onNavigate}
-        aria-label={
-          data.total > 0 ? `My Frequency, ${data.total} unread` : 'My Frequency'
-        }
-        title="My Frequency"
+        aria-label={data.total > 0 ? `${label}, ${data.total} unread` : label}
+        title={label}
         className={`relative flex h-11 w-11 items-center justify-center rounded-control transition-colors ${
           anyActive ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-chrome-hover hover:text-text'
         }`}
@@ -169,10 +173,10 @@ export function MyFrequencyMenu({
         }`}
       >
         <UserRound className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-        <span className="flex-1">My Frequency</span>
+        <span className="flex-1">{label}</span>
         {!open && <Badge count={data.total} active={anyActive} />}
         <ChevronDown
-          className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 motion-reduce:transition-none ${
+          className={`h-3.5 w-3.5 shrink-0 transition-transform duration-[var(--motion-base)] motion-reduce:transition-none ${
             open ? 'rotate-180' : ''
           }`}
           aria-hidden
@@ -180,9 +184,12 @@ export function MyFrequencyMenu({
       </button>
 
       {/* Grid-rows disclosure, the same 0fr/1fr technique the account dock uses, so the two
-          openings on this rail animate identically. */}
+          openings on this rail animate identically — and the same one the phone drawer's Vault
+          disclosure uses, which is why the duration is `--motion-base` rather than the 300ms
+          literal it used to be. The literal happened to equal ONE generation's value of the
+          token; the other four (170 / 210 / 260 / 340ms) it silently opted out of. */}
       <div
-        className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${
+        className={`grid transition-[grid-template-rows] duration-[var(--motion-base)] ease-out motion-reduce:transition-none ${
           open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
         }`}
       >

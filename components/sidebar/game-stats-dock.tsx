@@ -89,13 +89,72 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 //     The chat PANEL stays at md:bottom-[4.75rem] = 76px (69 + 7 gap) so it does not cover the
 //     bar. That line is load-bearing, not cosmetic.
 //
-//   < 768 (the tab does NOT render):
-//     The bottom edge belongs to the tab bar: [0, 56 + env(safe-area-inset-bottom)], up to 90px
-//     on a home-indicator phone, plus the raised Zap catch whose top reaches 112px. Toasts sit
-//     at bottom-32 = 128px, clearing the catch by 16. A 288px tab cannot coexist with a 7-slot
-//     tab bar and a centred raised action, so the score's < 768 home stays the drawer cluster.
+//   < 768 — THE MOBILE STACKING CONTRACT (DAWN 2026-08-11, answering BRIEF-07 Q1 + Q6).
+//   The tab does NOT render here. The TAB BAR IS THE SOLE OWNER OF THE PHONE'S BOTTOM EDGE and
+//   the score does not get a home there: a 306px tab, a seven-slot bar and a centred raised
+//   action cannot all own the same 93.5px. The score's phone home is the drawer's identity card.
 //
-// SCORE ONCE PER VIEWPORT: < 768 the drawer cluster; >= 768 this tab. Nothing else renders it.
+//   Measured on 390x844 with a 34px home-indicator inset, from the safe-area edge UP. Every
+//   number is at this app's 17px root, which is why they do not match their class names —
+//   `bottom-32` is 136px, not 128, and the tab bar's 3.5rem is 59.5px, not 56. The previous
+//   version of this block, and the one in components/toast-lane.tsx, both did that arithmetic
+//   at 16px and were wrong by 6.25% throughout.
+//
+//     SLOT 0  - the tab bar. NOTHING ELSE MAY BE bottom-0. Spans [0, 93.5]:
+//               var(--tab-bar-h) = 3.5rem + env(safe-area-inset-bottom) = 59.5 + 34. z-40.
+//     SLOT 0a - the raised Zap catch, a CHILD of slot 0 breaking upward. An h-14 (59.5px) disc
+//               at top-0, translated up by var(--tab-bar-lift). Spans [34, 115.5]; the band it
+//               exposes above the bar is [93.5, 115.5], 59.5px wide and centred. z-40.
+//     SLOT 1  - the toast lane. ONE lane, one definition (components/toast-lane.tsx). bottom-32
+//               = 136px, right-4 = 17px. Clears slot 0a's top by 20.5px. z-60.
+//     SLOT 2  - a bottom sheet (Vera's h-[68dvh] panel, the capture composer). Takes the edge
+//               FROM slot 0 while open and pads its own inset. ONE AT A TIME. z-50.
+//     SLOT 3  - RETIRED. The chat edge pill left the corner when the Vault and the chat became
+//               one bar, so there is no second floating object to keep away.
+//
+//   WHAT A NEW FIXED ELEMENT MUST DO. Six rules, and they are the answer to the question:
+//     1. Name your slot before you pick a number. If it is not a tab bar, a toast or a sheet,
+//        it does not belong at the phone's bottom edge. Put it in the drawer or in the flow.
+//     2. Measure from var(--tab-bar-h), never from a literal. The bottom inset is 0 on one
+//        phone and 34px on the next; a literal is right on exactly one device.
+//     3. Clear 115.5px, not 93.5px — var(--tab-bar-clearance), which is the bar plus
+//        var(--tab-bar-lift). The catch is the real top of the bar. This is the one number
+//        every prior comment in this area got wrong.
+//     4. Two fixed boxes that must not overlap is not a thing you fix with better offsets. It
+//        is ONE box. toast-lane.tsx is the precedent, written after two lanes drifted into
+//        being byte-identical.
+//     5. The z-ladder is fixed: bar 40, sheets 50, toasts 60. A toast is transient and
+//        pointer-events-none, so it deliberately outranks the sheet it briefly overlaps.
+//     6. State the arithmetic at a 17px root in the comment. Every bottom-* in this app is
+//        6.25% larger than its class name.
+//
+//   THUMB ZONE (Q6). The repo's rules, written down here because DAWN carries no touch
+//   guidance at all — no media query in tokens/ except prefers-reduced-motion and
+//   scripting: none, nothing in the docks card, nothing in readme.md.
+//     - MINIMUM TARGET for anything `fixed`: 44 x 44 CSS px. That is --tap-min under
+//       (pointer: coarse) (globals.css) and WCAG 2.5.5; the ratchet allowlists min-h-[44px] by
+//       name and cites it. A FIXED CONTROL TAKES THE COARSE 44 AND NEVER THE PER-GENERATION
+//       DIP: --tap-min is non-monotonic by design (`bold` dips to 26px), and that dip is a
+//       density choice for controls IN FLOW, which have neighbours to borrow slack from and a
+//       scroll that can reposition them. A fixed control has neither.
+//     - SEVEN SLOTS IS A HARD CAP on the tab bar, not a preference. Seven flex-1 slots are
+//       55.71px at 390px and 45.7px at 320px, the narrowest phone we support. Eight at 320px
+//       would be 40px and fail 2.5.5.
+//     - TWO FIXED CONTROLS: never closer than 12.75px (--space-3), and two separately
+//       actionable ones are either >= 40px apart or JOINED INTO ONE OBJECT. See the rollback
+//       note above: 12px of clearance still read as one cluster, and joining them was the fix.
+//     - THE REACHABLE BAND is bottom-0 to 35dvh, 295px on a 390x844 phone. Anchored to numbers
+//       already committed to rather than to a heatmap: slot 0 ends at 93.5, the lane at 136,
+//       and the drawer's Vault disclosure is capped max-h-[50dvh] precisely so the drawer's
+//       foot Close stays reachable. 35dvh is the smallest band holding all three. Anything a
+//       member touches more than once a session goes in the band.
+//     - WHAT MAY PASS BENEATH A FLOATING CONTROL: content, never a control. A floating control
+//       may overlap scrolling content that CAN BE SCROLLED CLEAR of it; it may never overlap a
+//       submit button, a link or an input. Which is why the content column pads by
+//       var(--tab-bar-clearance) and not by var(--tab-bar-h) (app-shell.tsx).
+//
+// SCORE ONCE PER VIEWPORT: < 768 the drawer's identity card; >= 768 this tab. Nothing else
+// renders it.
 export function GameStatsDockClient({ data }: { data: DockData }) {
   const { zaps, gems, streak } = data
   const [open, setOpen] = useState(false)
