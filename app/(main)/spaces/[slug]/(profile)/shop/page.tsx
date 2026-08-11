@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Store } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
@@ -12,6 +13,7 @@ import { marketGroupForKind, MARKET_GROUPS, type MarketGroup } from '@/lib/comme
 import Image from 'next/image'
 import { ProductCard } from '@/components/marketplace/product-card'
 import { EmptyState } from '@/components/ui/empty-state'
+import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 
 // THE PUBLIC SPACE SHOP TAB (ADR-596). The member-facing storefront: this Space's active catalog grouped
 // by type (Products / Services / Tickets). Identity Hero + tab chrome come from the (profile) layout; this
@@ -20,6 +22,17 @@ import { EmptyState } from '@/components/ui/empty-state'
 // Reads the PUBLIC catalog (status='active' only), never the console reader (which leaks drafts).
 
 const GROUP_LABEL: Record<MarketGroup, string> = { products: 'Products', services: 'Services', tickets: 'Tickets' }
+
+// Its OWN canonical + title. Without this the tab inherits the Space ROOT's metadata and declares
+// itself a duplicate of a page it is not (FINALIZE-PLAN §9.5).
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  return spaceProfileMetadata(slug, {
+    segment: 'shop',
+    label: 'Shop',
+    describe: (brandName) => `Products, services, and tickets from ${brandName}.`,
+  })
+}
 
 export default async function SpaceShopTabPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params

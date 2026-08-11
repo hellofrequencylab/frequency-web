@@ -87,10 +87,11 @@ export function DealDetail({
       <DetailTemplate
         back={{ href: '/admin/crm/pipeline', label: 'Pipeline' }}
         title={
-          <input
+          <Input
+            variant="seamless"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full min-w-0 bg-transparent text-lead font-bold text-text focus:outline-none sm:text-page-title"
+            className="w-full min-w-0 text-lead font-bold text-text sm:text-page-title"
             aria-label="Card title"
           />
         }

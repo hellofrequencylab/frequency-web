@@ -59,7 +59,9 @@ their standing in the Quest, nothing else.
 
 - **The four counts:** **Zaps** (season currency), **Gems** (lifetime/spend), **Streak**
   (the flame + shields), **Season rank** (the badge). These are the *only* values that earn
-  a stat tile, a `StatCard`, or a `StreakStrip` on a primary page.
+  a stat tile, a `StatCard`, or a ~~`StreakStrip`~~ **`StreakMeter`** on a primary page.
+  (⚠️ Corrected 2026-08-11: `StreakStrip` returns **zero** matches in the tree. The shipped
+  primitive is `components/ui/streak-meter.tsx`, in **3** files.)
 - **One source of truth for rank.** Rank tier, color, and label come from
   `lib/season-ranks.ts` (`SEASON_RANKS`), never a page-local `RANK_TIERS` (retire the copy
   in `people/[handle]`). Rank renders identically on the feed, crew home, profile, and
@@ -100,9 +102,20 @@ or `font-bold tabular-nums`; body `text-sm/text-base`; meta `text-xs text-subtle
 `text-[9/10/11px]` for content (retire `broadcast`'s `text-[9px]` date → `text-xs`).
 
 **The grammar.** Headers + instructional copy on the **canvas**; content in cards and the
-few **white tiles** that carry game stats. Radius `rounded-2xl` (cards/tiles/rows) ·
-`rounded-3xl` (feature/framed media) · `rounded-md` (chips). One elevation ladder
-(`shadow-sm` rest · `shadow-md`/`pop` lift).
+few **white tiles** that carry game stats. Radius **by ROLE, not by literal**: `rounded-card`
+(cards/tiles/rows) · `rounded-control` (controls) · `rounded-pill` (chips/pills). One elevation
+ladder (`shadow-sm` rest · `shadow-md`/`pop` lift).
+
+> ⚠️ **Corrected 2026-08-11.** This paragraph used to name literals: ~~`rounded-2xl`
+> (cards/tiles/rows) · `rounded-3xl` (feature/framed media) · `rounded-md` (chips)~~. **The role
+> system is the grammar now**, and writing the literal is what the `literal-radius` ratchet
+> counts (**2,450** live, `node scripts/check-adoption.mjs`).
+>
+> The literals are also no longer the values they were. #2077 re-anchored the roles to the
+> steps: `--radius-control` 8px → **14px** and `--radius-card` 16px → **24px**
+> (`app/globals.css:195-197`). So `rounded-2xl` is 16px while `rounded-card` is 24px, and a
+> "value-identical" swap that was safe when this line was written is a visible resize today.
+> Reach for the role and let the token move.
 
 ---
 
@@ -147,14 +160,21 @@ Pages never toggle it.
   search, network contacts, library, market). No pill/button tab variants anywhere.
 - **Standing kit (game tiles):** **`StandingHero`** (the dashboard centerpiece: rank crest +
   the four counts as feature tiles + the climb ladder, §2; the member analog of the admin
-  KPI hero) · `StandingTiles` (the compact four-count render for the feed/rail) · `StreakStrip`
-  (flame + shields) · `StatCard` (a single game tile) · `JourneyBoard` (the feed's graduated
-  home). Rank ALWAYS from `lib/season-ranks`. These are the only "tiles with numbers" a member
-  sees.
+  KPI hero, **5** files) · `StandingTiles` (the compact four-count render for the feed/rail,
+  **4** files) · ~~`StreakStrip`~~ **`StreakMeter`** (flame + shields;
+  `components/ui/streak-meter.tsx`, **3** files) · `StatCard` (a single game tile, **116**
+  files) · `JourneyBoard` (the feed's graduated home, **3** files). Rank ALWAYS from
+  `lib/season-ranks`. These are the only "tiles with numbers" a member sees.
+  (Counts re-measured 2026-08-11.)
 - **`EmptyState`**: never a blank pane; teach the next step + one CTA. Fill the gaps
   (on-air/dispatches, library/review, support, some detail sub-pages).
-- **`RoleActions`**: the resolver-fed header action menu (primary + overflow, gate-aware);
-  finish building it as Detail headers adopt it (replaces the ~60 inline role checks).
+- 📋 **`RoleActions`**: the resolver-fed header action menu (primary + overflow, gate-aware);
+  replaces the ~60 inline role checks. ⚠️ **Corrected 2026-08-11: it does NOT exist and was
+  never started.** `rg -l '\bRoleActions\b' app components lib` returns **zero** files, so
+  "finish building it" mis-states the work as a tail when it is the whole build.
+  [`REDESIGN-INAPP.md`](REDESIGN-INAPP.md) makes the same claim in six places (its §3 defect
+  table, its kit table, and four sequencing rows) and is stale in the same direction. Treat this
+  as unbuilt and unscheduled.
 - **Chips/badges:** the tokenized `Pill`/`Badge`/`StatusChip` vocabulary; rank badges from
   `season-ranks`. No inline `bg-danger`/`bg-warning` hex on the profile.
 
@@ -209,7 +229,13 @@ Deliberate exceptions (intentionally NOT folded): the chat-thread headers
 `library`'s `LibraryCard` keeps its shell (two in-card controls `EntityCard` can't nest).
 
 Do-not-touch (on-grammar): the five templates, `EntityCard`/`PersonCard`/`RowCard`/`StatCard`,
-`StandingHero`/`StandingTiles`/`StreakStrip`/`GamificationPanel`/`JourneyBoard`.
+`StandingHero`/`StandingTiles`/**`StreakMeter`**/`JourneyBoard`.
+
+> ⚠️ **Corrected 2026-08-11.** Two names in this list do not exist in the tree and cannot be
+> "not touched": ~~`StreakStrip`~~ (the shipped primitive is `StreakMeter`,
+> `components/ui/streak-meter.tsx`) and ~~`GamificationPanel`~~ (**zero** matches; nothing
+> replaced it under a different name, so if the concept is still wanted it is a build). Both
+> return 0 from `rg -l '\bNAME\b' app components lib`.
 
 ---
 

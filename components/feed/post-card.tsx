@@ -207,8 +207,12 @@ export function PostCard({
     // Announcements and pinned posts are unaffected: they tint the HAIRLINE (see `cardBorder`
     // above), never the fill, so they follow the fill wherever it goes and stay in the same
     // visual family as an ordinary post.
+    // `id="post-<id>"` is the post's only address: there is no standalone permalink route, so a
+    // mention notification deep-links to /feed#post-<id> (lib/notifications/href) and the browser
+    // scrolls here. `scroll-mt-24` keeps the card clear of the sticky header on that jump.
     <article
-      className={`rounded-card border bg-surface-post lift-1 ${cardBorder}`}
+      id={`post-${post.id}`}
+      className={`scroll-mt-24 rounded-card border bg-surface-post lift-1 ${cardBorder}`}
     >
       <div className="p-4">
         {/* Kicker — the ONE slot for a post's special state (announcement / pinned /

@@ -6,6 +6,7 @@ import { ArrowLeft, Building2, LayoutGrid, List as ListIcon, Search, X } from 'l
 import { PersonCard } from '@/components/cards/person-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Select } from '@/components/ui/select'
 import { ROLE_LABEL } from '@/lib/community-roles'
 import { getInitials, cn } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
@@ -386,25 +387,20 @@ export function MemberViewer({
               </label>
             ))}
             {facets.map((f) => (
-              <select
+              // `tone` rather than a className tint: `cn` is a plain join, so a `border-primary`
+              // passed in would land BESIDE the primitive's own `border-border` and Tailwind's
+              // emit order — not this call site — would pick the winner.
+              <Select
                 key={f.key}
                 id={`facet-${f.key}`}
                 value={facetSel[f.key] ?? ''}
                 onChange={(e) => setFacet(f.key, e.target.value)}
-                className={cn(
-                  'rounded-lg border px-2.5 py-1.5 text-meta font-medium transition-colors focus:outline-none',
-                  facetSel[f.key]
-                    ? 'border-primary bg-primary-bg text-primary-strong'
-                    : 'border-border bg-surface text-muted hover:border-primary',
-                )}
-              >
-                <option value="">{f.label}</option>
-                {f.options.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+                tone={facetSel[f.key] ? 'active' : 'default'}
+                emptyLabel={f.label}
+                options={f.options}
+                wrapperClassName="inline-block w-max max-w-full"
+                className="text-meta font-medium"
+              />
             ))}
 
             <div className="ml-auto inline-flex rounded-lg border border-border bg-surface p-0.5">

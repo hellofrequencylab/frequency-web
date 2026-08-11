@@ -25,7 +25,7 @@ import { DispatchTickerSlot } from '@/components/layout/dispatch-ticker-slot'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
 import { getMessagesUnreadCount } from '@/app/(main)/messages/popover-actions'
-import { canReceivePayouts } from '@/lib/billing/connect'
+import { canReceivePayouts, payoutsLive } from '@/lib/billing/connect'
 import { getAreaPermissions } from '@/lib/permissions'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import type { Capability } from '@/lib/core/capabilities'
@@ -301,7 +301,15 @@ export default async function MainLayout({
     // Real payouts eligibility for the account menu's "Receive payments" item — a host+ OR anyone
     // holding a live partner persona (lib/billing/connect). Replaces the host-tier proxy gate.
     // Fetched with the REAL role; suppressed below under a downgrade/visitor preview. Fail-safe false.
-    canReceivePayouts(profile.id, realRole).catch(() => false),
+    //
+    // `payoutsLive()` rides alongside it because the item deep-links to the #payouts ANCHOR of
+    // /settings, and the card that owns that anchor renders on exactly `payoutsLive() &&
+    // canReceivePayouts` (app/(main)/settings/billing/section.tsx). Gating the menu on the
+    // eligibility half alone put a live link in every host's account menu that scrolled to nothing
+    // while payouts were off (FINALIZE-PLAN §9.4). The two predicates are now the same predicate.
+    (async () => (await payoutsLive()) && (await canReceivePayouts(profile.id, realRole)))().catch(
+      () => false,
+    ),
     getAreaPermissions(),
     // Global-scope capabilities for the standardized admin bar (docs/ADMIN-RAIL.md Phase 1), threaded
     // through PageAdminProvider. Per-entity caps ride the open event from each entity page; this is the

@@ -7,11 +7,20 @@
 > narrow sticky right **Join area**). Both **compose the existing kit**: no new
 > templates, no hand-rolled headers/cards/grids, DAWN tokens only.
 >
-> **The one chrome change** (the load-bearing decision): set
-> `/events/[slug]` to rail **`'none'`** so the page interior owns BOTH columns,
-> like Luma/Partiful. The exact one-line edit to `lib/layout/page-chrome.ts` is in
-> §1. Everything else reuses what is already built. **Only the page interior
-> changes. The app shell, top nav, and global navigation are untouched.**
+> 🔴 ~~**The one chrome change** (the load-bearing decision): set `/events/[slug]` to rail
+> **`'none'`** so the page interior owns BOTH columns, like Luma/Partiful.~~
+> **REJECTED. Do not make this edit.** Corrected 2026-08-11: the code has already answered this
+> and answered it the other way, in capitals. `lib/layout/page-chrome.ts:202-207` reads
+> "⚠️ THE GLOBAL COMMUNITY RIGHT RAIL ALWAYS EXISTS ON THE EVENTS DETAIL PAGE. ⚠️ Do NOT suppress
+> the rail for /events/<slug> (**a past change set it to 'none' to dodge a 'double right column'
+> — that was wrong**)." It is locked by `lib/layout/page-chrome.test.ts:143-152`, which asserts
+> `railFor('/events/sunrise-sit') === 'global'` for every events route. **The doc lost; §1 has
+> been rewritten to match.**
+>
+> **The ruling in one line:** the global rail is a fixed part of the member chrome, and the fix
+> for a doubled-column feeling is to make the PAGE'S OWN interior templated/movable blocks, never
+> to remove the rail. Everything else in this spec reuses what is already built and is unaffected.
+> **Only the page interior changes. The app shell, top nav, and global navigation are untouched.**
 
 **Scope of this doc:** layout (sections → slots), component inventory mapped to the
 kit, gamification/badge treatment, every state, responsive rules, the chrome call,
@@ -28,14 +37,21 @@ and a reference JSX skeleton per page. It is a *design* deliverable: no code in
 | Route | Today | Recommend | Why |
 |---|---|---|---|
 | `/events` (Catalog) | `global` rail | **keep `global`** ✅ | An Index/browse page. The community rail (`['events','online','circles']` from `rail-panels.ts`) is *additive context*, not a competing column. Discovery cards live in the main column; the rail stays. |
-| `/events/[slug]` (Invite) | `global` rail | **change to `'none'`** ⚠️ | The interior needs a real two-column split (wide Post area + narrow sticky Join area). A global right rail on top of an interior right Join column is the **double-rail trap** the framework warns against (PAGE-FRAMEWORK §8.2). Luma/Partiful/Eventbrite all give the detail page its own full-width canvas with an in-content sticky aside. `'none'` lets the interior own both columns. |
+| `/events/[slug]` (Invite) | `global` rail | ~~**change to `'none'`**~~ → **keep `global`** 🔴 **RULED AGAINST** | The recommendation was: the interior needs a two-column split, and a global right rail on top of an interior right Join column is the double-rail trap. **The code rejects it** (`lib/layout/page-chrome.ts:202-207`, `page-chrome.test.ts:143-152`): the rail is a fixed part of the member chrome, a past change to `'none'` was made and reverted as **wrong**, and the sanctioned fix for a doubled-column feeling is to make the page's own interior templated/movable blocks. The Join aside must be designed to sit **beside** the global rail, not in place of it. |
 
-### The exact edit (one line, in `lib/layout/page-chrome.ts`)
+### ~~The exact edit (one line, in `lib/layout/page-chrome.ts`)~~ 🔴 DO NOT APPLY
 
-The detail page is a *read/decide* surface, not a Focus form, so it does not belong
+> **Struck 2026-08-11.** The `FOCUS_PATTERNS` entry below is kept only as the record of what was
+> proposed. Applying it re-introduces the exact change `page-chrome.ts:202-207` documents as
+> wrong and breaks `page-chrome.test.ts:143-152`, which asserts `'global'` for
+> `/events/sunrise-sit`, `/events/some-slug`, `/events`, `/events/new`, `/events/scan` and
+> `/events/drafts`. There is **no** chrome edit in this spec. Design the Join aside to coexist
+> with the global rail.
+
+~~The detail page is a *read/decide* surface, not a Focus form, so it does not belong
 in `FOCUS_PREFIXES`. Add a precise pattern to `FOCUS_PATTERNS` that matches the
 detail slug **without** swallowing the index, `/events/new`, `/events/drafts`,
-`/events/scan` (already matched above it), or `/events/[slug]/event.ics`.
+`/events/scan` (already matched above it), or `/events/[slug]/event.ics`.~~
 
 ```ts
 // lib/layout/page-chrome.ts — inside FOCUS_PATTERNS, AFTER the existing
@@ -51,15 +67,16 @@ Notes on the regex: `[^/]+` keeps it to a single segment (the slug), so
 `/events/[slug]/event.ics` and any future `/events/[slug]/manage` are **not**
 matched and keep their own treatment. The negative lookahead re-excludes the
 sibling Focus routes belt-and-suspenders even though their own rules sit earlier.
-Lock it with a case in `page-chrome.test.ts` (assert `railFor('/events/some-slug')
-=== 'none'` and `railFor('/events') === 'global'`).
+~~Lock it with a case in `page-chrome.test.ts` (assert `railFor('/events/some-slug')
+=== 'none'` and `railFor('/events') === 'global'`).~~ **That test exists and asserts the
+opposite**: `page-chrome.test.ts:143-152`, "ALWAYS keeps the global rail on the event detail page
+(and every events route)", `expect(railFor('/events/some-slug')).toBe('global')`.
 
-> **Why not `'scoped'`?** `'scoped'` means "the Detail page renders its own *scope
-> rail* in-body" (the circle/channel pattern). The Invite's right column is not a
-> scope rail of stat widgets. It is the primary **Join** action surface. `'none'`
-> is the honest setting: the page draws its own grid. `DetailTemplate`'s own header
-> comment already notes the scoped rail comes from the shell slot, not the
-> template, so suppressing it is correct here.
+> ~~**Why not `'scoped'`?**~~ Moot: neither `'none'` nor `'scoped'` is on the table. The route
+> falls through to `'global'` like every other member surface, and that is the ruling. The
+> observation that survives is the design one: the Invite's right column is **not** a scope rail
+> of stat widgets, it is the primary **Join** action surface, so it must be designed as page
+> content that sits beside the global rail rather than as chrome that replaces it.
 
 > **`DashboardTemplate` for the host Manage screen** (`/admin/events/[id]`, Track A2)
 > is out of scope for this doc but noted: it is `'none'` already (under `/admin/*`)
@@ -536,7 +553,7 @@ export default function CatalogPage(/* … server fetch + facets as today … */
 
 | # | Change | Files | Status |
 |---|---|---|---|
-| 1 | Rail → `'none'` for the slug | `lib/layout/page-chrome.ts` (+ test) | ⚠️ one line |
+| 1 | ~~Rail → `'none'` for the slug~~ **No chrome change. Keep `'global'`.** | ~~`lib/layout/page-chrome.ts`~~ *(do not edit)* | 🔴 **ruled against** — `page-chrome.ts:202-207` + `page-chrome.test.ts:143-152` |
 | 2 | Cover image into the `hero` slot | `app/(main)/events/[slug]/page.tsx` | ⏳ |
 | 3 | Two-column interior grid + sticky aside + mobile bottom bar | `app/(main)/events/[slug]/page.tsx` | ⏳ layout |
 | 4 | `EventRewardStrip` (Zaps/check-in/streak/Current chips) | `components/events/event-reward-strip.tsx` | ⚠️ new |

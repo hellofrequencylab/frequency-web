@@ -203,19 +203,21 @@ export function JourneySettings(props: JourneySettingsProps) {
           image below, set through the Loom picker. Hidden in the single-page editor (ADR-301). */}
       {!props.hideIdentity && (
         <div className="min-w-0">
-          <input
+          <Input
+            variant="seamless"
             defaultValue={props.initialTitle}
             onBlur={(e) => meta({ title: e.target.value })}
             maxLength={120}
             placeholder="Name your Journey"
-            className="w-full bg-transparent text-lead font-bold text-text outline-none placeholder:text-subtle"
+            className="w-full text-lead font-bold text-text"
           />
-          <input
+          <Input
+            variant="seamless"
             defaultValue={props.initialSummary ?? ''}
             onBlur={(e) => meta({ summary: e.target.value })}
             maxLength={280}
             placeholder="One line on what this is and who it's for"
-            className="mt-1 w-full bg-transparent text-body-sm text-muted outline-none placeholder:text-subtle"
+            className="mt-1 w-full text-body-sm text-muted"
           />
         </div>
       )}

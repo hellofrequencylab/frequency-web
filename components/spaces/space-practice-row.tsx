@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Pencil, Radio, Globe, Loader2 } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
+import { RowCard } from '@/components/cards/row-card'
 import { isError } from '@/lib/action-result'
 import { setSpacePracticeLiveAction, submitSpacePracticeToLibraryAction } from '@/app/(main)/spaces/[slug]/practices/actions'
 
@@ -11,6 +12,10 @@ import { setSpacePracticeLiveAction, submitSpacePracticeToLibraryAction } from '
 // owner takes. A practice is born a private Draft, goes Live in the Space (own-space, no review),
 // and can then be submitted to the public Library (paid Crew + staff review). Each action re-gates
 // server-side; a failed submit (e.g. the paid-Crew gate) surfaces its message inline.
+//
+// Composed on the kit's RowCard: identity/badge/summary fill its standard zones and the lifecycle
+// bar (plus the note/error line it writes back) rides in its `footer` slot, so this manager and the
+// Journeys manager next door are the same row, not two look-alikes.
 
 interface RowPractice {
   id: string
@@ -57,39 +62,37 @@ export function SpacePracticeRow({ practice, slug }: { practice: RowPractice; sl
     })
 
   return (
-    <div className="rounded-card border border-border bg-surface p-4">
-      <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-primary-bg text-body-lg" aria-hidden>
+    <RowCard
+      href={`/practices/${practice.id}/edit`}
+      anchor={
+        <span className="flex h-10 w-10 items-center justify-center rounded-control bg-primary-bg text-body-lg" aria-hidden>
           {practice.icon ?? '🌀'}
         </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <Link href={`/practices/${practice.id}/edit`} className="truncate text-body font-bold text-text hover:text-primary-strong">
-              {practice.title}
+      }
+      title={practice.title}
+      badge={<span className={`shrink-0 rounded-pill px-2 py-0.5 text-2xs font-semibold ${badge.cls}`}>{badge.label}</span>}
+      description={practice.summary}
+      footer={
+        <>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Link href={`/practices/${practice.id}/edit`} className={buttonClasses('primary', 'sm')}>
+              <Pencil className="h-3.5 w-3.5" /> Edit
             </Link>
-            <span className={`shrink-0 rounded-pill px-2 py-0.5 text-2xs font-semibold ${badge.cls}`}>{badge.label}</span>
+            {isDraft && (
+              <button type="button" disabled={pending} onClick={makeLive} className={buttonClasses('secondary', 'sm')}>
+                {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Radio className="h-3.5 w-3.5" />} Make live in your space
+              </button>
+            )}
+            {canSubmit && (
+              <button type="button" disabled={pending} onClick={submitToLibrary} className={buttonClasses('secondary', 'sm')}>
+                {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe className="h-3.5 w-3.5" />} Add to library
+              </button>
+            )}
           </div>
-          {practice.summary && <p className="mt-0.5 line-clamp-1 text-body-sm text-muted">{practice.summary}</p>}
-        </div>
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-border pt-3">
-        <Link href={`/practices/${practice.id}/edit`} className={buttonClasses('primary', 'sm')}>
-          <Pencil className="h-3.5 w-3.5" /> Edit
-        </Link>
-        {isDraft && (
-          <button type="button" disabled={pending} onClick={makeLive} className={buttonClasses('secondary', 'sm')}>
-            {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Radio className="h-3.5 w-3.5" />} Make live in your space
-          </button>
-        )}
-        {canSubmit && (
-          <button type="button" disabled={pending} onClick={submitToLibrary} className={buttonClasses('secondary', 'sm')}>
-            {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe className="h-3.5 w-3.5" />} Add to library
-          </button>
-        )}
-      </div>
-      {note && <p className="mt-2 text-meta text-muted">{note}</p>}
-      {error && <p className="mt-2 text-meta text-danger">{error}</p>}
-    </div>
+          {note && <p className="mt-2 text-meta text-muted">{note}</p>}
+          {error && <p className="mt-2 text-meta text-danger">{error}</p>}
+        </>
+      }
+    />
   )
 }

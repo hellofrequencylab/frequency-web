@@ -8,6 +8,7 @@ import { inviteCohost, removeCohost, transferEventHost } from '@/app/(main)/even
 import { isError } from '@/lib/action-result'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
+import { Input } from '@/components/ui/field'
 
 export type CohostView = {
   id: string
@@ -174,7 +175,8 @@ function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
           border either, so this reads as a quiet inline field, not a boxed control. */}
       <div className="flex items-center gap-2 rounded-control px-3 py-1.5">
         <UserPlus className="h-4 w-4 shrink-0 text-subtle" />
-        <input
+        <Input
+          variant="seamless"
           type="text"
           value={query}
           onChange={(e) => {
@@ -184,7 +186,7 @@ function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
           }}
           placeholder="Invite a Co Host by name or @handle"
           disabled={pending}
-          className="min-w-0 flex-1 bg-transparent text-body-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
+          className="min-w-0 flex-1 text-body-sm text-text"
         />
       </div>
 

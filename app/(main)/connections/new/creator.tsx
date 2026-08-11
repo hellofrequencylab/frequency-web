@@ -753,7 +753,8 @@ export function Creator({ userId }: { userId: string }) {
                   </button>
                 </span>
               ))}
-              <input
+              <Input
+                variant="seamless"
                 aria-label="Add a tag"
                 value={tagDraft}
                 onChange={(e) => setTagDraft(e.target.value)}
@@ -761,7 +762,7 @@ export function Creator({ userId }: { userId: string }) {
                   if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(tagDraft) }
                 }}
                 placeholder={form.tags.length ? 'Add tag…' : 'yoga, investor, met at SXSW…'}
-                className="min-w-[8rem] flex-1 bg-transparent px-1 py-0.5 text-body-sm text-text placeholder-subtle focus:outline-none"
+                className="min-w-[8rem] flex-1 px-1 py-0.5 text-body-sm text-text"
               />
             </div>
           </Field>

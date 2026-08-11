@@ -68,7 +68,8 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
         ))}
         <div className="flex items-center gap-1 rounded-card border border-border px-2.5 py-1.5">
           <span className="text-body-sm text-subtle">$</span>
-          <input
+          <Input
+            variant="seamless"
             type="number"
             inputMode="decimal"
             aria-label="Another tip amount, in dollars"
@@ -77,7 +78,7 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
             value={custom}
             onChange={(e) => setCustom(e.target.value)}
             placeholder="Other"
-            className="w-16 bg-transparent text-body-sm text-text outline-none placeholder:text-subtle"
+            className="w-16 text-body-sm text-text"
           />
         </div>
       </div>

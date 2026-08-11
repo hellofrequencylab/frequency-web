@@ -404,14 +404,15 @@ export function EventSettingsModule() {
           <span className={fieldLabel}>Ticket price</span>
           <span className="flex items-center rounded-lg border border-border bg-surface px-3 text-body-sm text-subtle">
             <span className="shrink-0 uppercase">{data.currency ?? 'usd'}</span>
-            <input
+            <Input
+              variant="seamless"
               name="price"
               type="number"
               min={0}
               step="0.01"
               defaultValue={data.price_cents != null && data.price_cents > 0 ? (data.price_cents / 100).toString() : ''}
               placeholder="Free"
-              className="min-w-0 flex-1 bg-transparent px-2 py-2 text-text outline-none"
+              className="min-w-0 flex-1 px-2 py-2 text-text"
             />
           </span>
           <span className="text-2xs text-muted">Leave blank for a free RSVP event. Set a price to sell tickets.</span>
@@ -660,11 +661,12 @@ export function EventSettingsModule() {
         <div className="flex items-center gap-2">
           <span className="flex flex-1 items-center rounded-lg border border-border bg-surface px-3 text-body-sm text-subtle">
             <span className="shrink-0">/events/</span>
-            <input
+            <Input
+              variant="seamless"
               value={permalink}
               onChange={(e) => setPermalink(e.target.value)}
               disabled={permaPending}
-              className="min-w-0 flex-1 bg-transparent py-2 text-text outline-none disabled:opacity-50"
+              className="min-w-0 flex-1 py-2 text-text"
             />
           </span>
           <button

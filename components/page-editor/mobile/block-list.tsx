@@ -13,6 +13,7 @@
 
 import { useRef, useState } from 'react'
 import { ChevronRight, GripVertical } from 'lucide-react'
+import { IconButton } from '@/components/ui/icon-button'
 import type { Config, Data } from '@/lib/page-editor/types'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { blockSummary, blockTitle, itemId } from './data-ops'
@@ -166,14 +167,18 @@ export function BlockList({
               <div
                 className={`flex min-h-[56px] items-center gap-3 px-4 ${dragging ? 'opacity-50' : ''}`}
               >
-                <button
-                  type="button"
-                  aria-label={`Drag ${title} to reorder`}
-                  className="flex h-11 w-11 items-center justify-center rounded-lg text-muted hover:bg-surface-elevated"
+                {/* A thumb-sized handle in a phone editor, so it states 44px outright rather
+                    than waiting for the primitive's coarse-pointer growth — the mobile editor
+                    renders at that size on a desktop preview too. Measured, not hoped:
+                    `.h-11`/`.w-11` are emitted after `.h-8`/`.w-8`, so the call site wins.
+                    Composing the kit is what gives the handle its press and its focus ring. */}
+                <IconButton
+                  label={`Drag ${title} to reorder`}
+                  className="h-11 w-11"
                   onPointerDown={() => beginDrag(index)}
                 >
                   <GripVertical className="h-6 w-6" aria-hidden />
-                </button>
+                </IconButton>
                 <span className="truncate text-body-sm font-medium text-text">{title}</span>
               </div>
             </li>

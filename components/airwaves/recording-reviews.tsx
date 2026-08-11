@@ -12,6 +12,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Star, Trash2 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { Textarea } from '@/components/ui/field'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import type { ReviewAggregate } from '@/lib/spaces/reviews-aggregate'
 import type { RecordingReview } from '@/lib/airwaves/reviews'
@@ -145,13 +146,14 @@ export function RecordingReviews({
             </span>
             <Stars value={rating} onPick={setRating} size="lg" />
           </div>
-          <textarea
+          <Textarea
+            variant="seamless"
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="Add a note (optional)."
             rows={2}
             disabled={pending}
-            className="mt-2 w-full resize-none rounded-lg bg-transparent text-body-sm leading-relaxed text-text/90 outline-none placeholder:text-subtle disabled:opacity-60"
+            className="mt-2 w-full text-body-sm leading-relaxed text-text/90"
           />
           {error && <p className="mt-1 text-meta text-danger">{error}</p>}
           <div className="mt-2 flex justify-end border-t border-border pt-2">

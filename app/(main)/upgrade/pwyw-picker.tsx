@@ -5,6 +5,7 @@ import { Zap, Loader2 } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { startMembershipCheckout } from './actions'
 import { isError } from '@/lib/action-result'
+import { Input } from '@/components/ui/field'
 
 // THE CREW PAY-WHAT-YOU-WANT PICKER (ADR-908).
 //
@@ -115,7 +116,8 @@ export function PwywPicker({
         <span className="text-meta font-medium text-muted">Another amount</span>
         <div className="mt-1 flex items-center gap-2 rounded-card border border-border px-3 py-2 focus-within:border-primary">
           <span className="text-body-sm text-muted">$</span>
-          <input
+          <Input
+            variant="seamless"
             inputMode="decimal"
             value={custom}
             onChange={(e) => {
@@ -124,7 +126,7 @@ export function PwywPicker({
             }}
             placeholder={(suggestedCents / 100).toString()}
             aria-label="Another amount per month, in dollars"
-            className="w-full bg-transparent text-body-sm text-text outline-none"
+            className="w-full text-body-sm text-text"
           />
           <span className="text-meta text-muted">/mo</span>
         </div>

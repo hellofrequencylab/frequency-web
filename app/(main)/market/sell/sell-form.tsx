@@ -132,13 +132,14 @@ export function SellForm() {
               </button>
             </span>
           ))}
-          <input
+          <Input
+            variant="seamless"
             id="tag-input"
             value={tagDraft}
             onChange={(e) => setTagDraft(e.target.value)}
             onKeyDown={onTagKeyDown}
             onBlur={() => tagDraft.trim() && commitTags(tagDraft)}
-            className="min-w-[8rem] flex-1 bg-transparent px-1 py-0.5 text-body-sm text-text outline-none"
+            className="min-w-[8rem] flex-1 px-1 py-0.5 text-body-sm text-text"
             placeholder={tags.length ? 'Add another' : 'e.g. ceramic, handmade, mug'}
           />
         </div>

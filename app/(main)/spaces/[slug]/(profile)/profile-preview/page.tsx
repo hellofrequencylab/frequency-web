@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
+import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { PageHeading } from '@/components/templates'
 import { toProfileContext, enabledFunctionKeys } from '@/lib/spaces/profile-modules'
@@ -20,9 +21,18 @@ import { SpaceProfileModules } from '@/components/widgets/space-profile/space-pr
 // the module body renders where the Puck body normally would.
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = {
-  title: 'Profile preview (block-picker)',
-  robots: { index: false, follow: false },
+
+// A static `metadata` here set the title and the robots rule but INHERITED the Space root's
+// `alternates.canonical`, so a staff-only preview quietly claimed to be the public profile
+// (FINALIZE-PLAN §9.5). The shared builder stamps this route's own canonical alongside the
+// noindex, so the two signals agree.
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  return spaceProfileMetadata(slug, {
+    segment: 'profile-preview',
+    label: 'Profile preview (block-picker)',
+    noindex: true,
+  })
 }
 
 export default async function SpaceProfilePreviewPage({

@@ -5,6 +5,7 @@ import { Upload, X, ImageIcon, Search } from 'lucide-react'
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 import { listLoomImages, uploadToLoom, type LoomImagePick } from './loom-field-actions'
 import { useSpaceEditorSlug } from './space-editor-context'
+import { Input } from '@/components/ui/field'
 
 // A Loom-BACKED custom Puck image field for a SPACE OPERATOR editing their own profile. The operator
 // either PICKS an existing image from the Loom (their space's own images UNIONED with the shared/public
@@ -178,12 +179,13 @@ function LoomImageField({
         <div className="rounded-card border border-border bg-surface p-2">
           <div className="mb-2 flex items-center gap-2 rounded-control border border-border bg-surface px-2">
             <Search className="h-3.5 w-3.5 text-subtle" aria-hidden />
-            <input
+            <Input
+              variant="seamless"
               type="text"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search the Loom"
-              className="w-full bg-transparent py-1.5 text-body-sm outline-none"
+              className="w-full py-1.5 text-body-sm"
             />
           </div>
           {loading ? (

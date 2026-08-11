@@ -20,6 +20,7 @@ import { searchSiteIcons, type SiteIcon } from '@/lib/loom/site-icons'
 import { looksLikeImage } from '@/lib/library/upload-kinds'
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 import type { LoomPickAsset } from '@/lib/library/store'
+import { Input } from '@/components/ui/field'
 
 // Fallback config until the resolved one loads (matches the registry defaults). The real config comes
 // from the element_settings master (role-gated), resolved server-side by loomScopes().
@@ -361,11 +362,12 @@ export function LoomPicker({
               {/* Search within the scope */}
               <div className="mt-2 flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5">
                 <Search className="h-3.5 w-3.5 shrink-0 text-subtle" />
-                <input
+                <Input
+                  variant="seamless"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search this library"
-                  className="min-w-0 flex-1 bg-transparent text-body-sm text-text outline-none placeholder:text-subtle"
+                  className="min-w-0 flex-1 text-body-sm text-text"
                 />
               </div>
               {error && <p className="mt-2 text-2xs text-danger">{error}</p>}

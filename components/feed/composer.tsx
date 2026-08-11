@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useEffect, useCallback, type ReactNode
 import Image from 'next/image'
 import { Megaphone, ImagePlus, X, PenLine, Bold, Italic, List, Link2, Maximize2, Minimize2, ChevronDown, ChevronUp, Camera, type LucideIcon } from 'lucide-react'
 import { IconButton } from '@/components/ui/icon-button'
+import { Textarea } from '@/components/ui/field'
 import { createPost } from '@/app/(main)/feed/actions'
 import { isError } from '@/lib/action-result'
 import { createClient } from '@/lib/supabase/client'
@@ -470,7 +471,8 @@ export function Composer({
 
       {/* Text region — soft, roomy, and auto-growing. */}
       <div className="relative">
-        <textarea
+        <Textarea
+          variant="seamless"
           ref={textareaRef}
           value={body}
           onChange={handleChange}
@@ -478,7 +480,11 @@ export function Composer({
           placeholder={isAnnouncement ? 'Share an announcement with your group…' : placeholder}
           rows={expanded ? 6 : 3}
           disabled={isPending}
-          className={`w-full resize-none bg-transparent leading-relaxed text-text/90 placeholder:text-subtle outline-none focus-visible:shadow-none disabled:opacity-60 ${
+          // `focus-visible:shadow-none` stays: this box is the `data-tour-anchor="composer"`
+          // surface whose ring is suppressed UNLAYERED in app/globals.css (one of the three
+          // sanctioned opt-outs in docs/INTERACTION-STATES.md §2), because the card itself lifts
+          // on focus-within and a second ring inside it doubled up.
+          className={`w-full leading-relaxed text-text/90 focus-visible:shadow-none ${
             expanded ? 'min-h-[40vh] text-body' : 'min-h-24 text-body-sm'
           }`}
         />

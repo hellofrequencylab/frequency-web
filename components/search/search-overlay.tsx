@@ -9,6 +9,7 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { paletteDestinations, type NavViewer } from '@/lib/nav/registry'
 import { railIconFor } from '@/components/layout/nav-icons'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
+import { Input } from '@/components/ui/field'
 
 // Live, full-screen search overlay. Opens from the header search affordance (and
 // ⌘K); types → debounced fetch to /api/search → results appear without a page
@@ -134,13 +135,14 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
           style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}
         >
           <Search className="h-5 w-5 shrink-0 text-subtle" />
-          <input
+          <Input
+            variant="seamless"
             ref={inputRef}
             value={q}
             onChange={handleChange}
             placeholder="Search people, posts, events…"
             autoComplete="off"
-            className="flex-1 bg-transparent py-3.5 text-body text-text outline-none placeholder:text-subtle"
+            className="flex-1 py-3.5 text-body text-text"
           />
           {loading && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-subtle" />}
           <button

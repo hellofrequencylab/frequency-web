@@ -6,6 +6,7 @@ import { searchRoomAction } from '@/app/(main)/messages/rooms/actions'
 import { isError } from '@/lib/action-result'
 import { relativeTime } from '@/lib/utils'
 import type { RoomSearchHit } from '@/lib/ai/room-search'
+import { Input } from '@/components/ui/field'
 
 // Phase C: in-room search. A header button opens a panel; typing runs a semantic
 // search over the room's history (substring fallback when AI is off). Results are
@@ -60,12 +61,13 @@ export function RoomSearch({ roomId }: { roomId: string }) {
           <form onSubmit={run} className="flex items-center gap-2">
             <div className="flex flex-1 items-center gap-2 rounded-lg border border-border bg-surface-elevated/60 px-2.5 py-1.5">
               <Search className="h-4 w-4 shrink-0 text-subtle" />
-              <input
+              <Input
+                variant="seamless"
                 ref={inputRef}
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search this room…"
-                className="min-w-0 flex-1 bg-transparent text-body-sm text-text placeholder:text-subtle focus:outline-none"
+                className="min-w-0 flex-1 text-body-sm text-text"
               />
               {q && (
                 <button type="button" onClick={() => { setQ(''); setHits([]); setSearched(false) }} aria-label="Clear">

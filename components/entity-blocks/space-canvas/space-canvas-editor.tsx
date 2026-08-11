@@ -21,6 +21,7 @@ import {
 import { useProfileLayout } from '@/components/entity-blocks/profile-layout-context'
 import { FieldEditor, type UploadImage } from '@/components/entity-blocks/block-edit-panel'
 import { SpaceCanvasBlock, isCanvasTextField, isCanvasImageField } from './space-canvas-block'
+import { Input } from '@/components/ui/field'
 
 // THE ON-CANVAS WYSIWYG SPACE PAGE EDITOR — the space mirror of the Email Studio canvas editor. A two-pane
 // surface over the SHARED entity-layout store (same provider, seed, debounced save + sanitize as the
@@ -251,13 +252,14 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
 
                 {/* Section title (blank renders nothing on the live page). */}
                 <div className="px-2 pt-2">
-                  <input
+                  <Input
+                    variant="seamless"
                     type="text"
                     value={row.title ?? ''}
                     placeholder="Section title (optional)"
                     aria-label={`Title for section ${ri + 1}`}
                     onChange={(e) => onSectionTitle(row.id, e.target.value)}
-                    className="w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 text-meta font-semibold text-text placeholder:font-normal placeholder:text-subtle hover:border-border focus:border-primary focus:outline-none"
+                    className="w-full rounded-md border border-transparent px-1 py-0.5 text-meta font-semibold text-text placeholder:font-normal hover:border-border focus:border-primary"
                   />
                 </div>
 

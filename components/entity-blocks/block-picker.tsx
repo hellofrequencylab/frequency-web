@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { Search, X } from 'lucide-react'
 import type { EntityBlockDef } from '@/lib/entity-blocks/registry'
+import { Input } from '@/components/ui/field'
 
 // THE SEARCHABLE BLOCK PICKER (ADR-516 Phase C). A command-list that fills an empty column slot: it lists
 // the member blocks from the registry that are NOT already placed (or hidden), grouped "Suggested" (the
@@ -76,7 +77,8 @@ export function BlockPicker({
     <div className="rounded-card border border-border bg-surface p-2 lift-1" role="dialog" aria-label="Add a block">
       <div className="mb-1 flex items-center gap-1.5 rounded-lg border border-border bg-surface-elevated px-2">
         <Search className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
-        <input
+        <Input
+          variant="seamless"
           type="text"
           autoFocus
           value={query}
@@ -84,7 +86,7 @@ export function BlockPicker({
           onKeyDown={(e) => e.key === 'Escape' && onClose()}
           placeholder="Search blocks"
           aria-label="Search blocks"
-          className="min-w-0 flex-1 bg-transparent py-1.5 text-body-sm text-text placeholder:text-subtle focus:outline-none"
+          className="min-w-0 flex-1 py-1.5 text-body-sm text-text"
         />
         <button
           type="button"

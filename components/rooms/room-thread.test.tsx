@@ -33,6 +33,7 @@ vi.mock('@/lib/realtime/use-typing', () => ({
 }))
 
 import { RoomThread } from './room-thread'
+import type { RoomVisibility } from '@/lib/messages/room-access'
 
 // jsdom has no scrollIntoView (the thread auto-scrolls to its newest message).
 Element.prototype.scrollIntoView = () => {}
@@ -55,9 +56,15 @@ function mount(ui: React.ReactElement) {
   return container!
 }
 
-function mountThread(canPost = true) {
+function mountThread(canPost = true, visibility: RoomVisibility = 'public') {
   return mount(
-    <RoomThread roomId="room-1" initialMessages={[]} myProfileId="me" canPost={canPost} />,
+    <RoomThread
+      roomId="room-1"
+      initialMessages={[]}
+      myProfileId="me"
+      canPost={canPost}
+      visibility={visibility}
+    />,
   )
 }
 
@@ -121,5 +128,11 @@ describe('RoomThread composer', () => {
     expect(openButton(c)).toBeUndefined()
     expect(c.querySelector('textarea')).toBeNull()
     expect(c.textContent).toContain('Join this room to send messages.')
+  })
+
+  it('names the right door: a Channel is tuned into, not joined (docs/NAMING.md)', () => {
+    const c = mountThread(false, 'channel')
+    expect(c.textContent).toContain('Tune into this Channel to post.')
+    expect(c.textContent).not.toContain('Join this room')
   })
 })

@@ -7,6 +7,7 @@ import { Search, Sparkles, ArrowRight } from 'lucide-react'
 import type { CommunityRole, WebRole } from '@/lib/core/roles'
 import type { StaffRole } from '@/lib/core/staff-roles'
 import { visibleLinks } from '@/app/(main)/admin/sections'
+import { Input } from '@/components/ui/field'
 
 // The admin command bar above the content: an inline search FIELD (not a popup) with
 // a live suggestion menu of admin areas, plus an "Ask Vera" action. As you type, the
@@ -92,7 +93,8 @@ export function AdminSearchBar({ role, webRole = 'none', staffRole = null }: Pro
       <div ref={boxRef} className="relative flex-1">
         <div className="flex items-center gap-2.5 rounded-card bg-surface px-3.5 py-2.5">
           <Search className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-          <input
+          <Input
+            variant="seamless"
             value={q}
             onChange={(e) => {
               setQ(e.target.value)
@@ -104,7 +106,7 @@ export function AdminSearchBar({ role, webRole = 'none', staffRole = null }: Pro
             placeholder="Search the admin workspace…"
             aria-label="Search the admin workspace"
             autoComplete="off"
-            className="admin-search-field min-w-0 flex-1 bg-transparent text-body-sm text-text outline-none placeholder:text-subtle"
+            className="admin-search-field min-w-0 flex-1 text-body-sm text-text"
           />
         </div>
 

@@ -111,19 +111,21 @@ export function ListingBuilder(props: ListingBuilderProps) {
           <Store className="h-7 w-7" />
         </div>
         <div className="min-w-0 flex-1">
-          <input
+          <Input
+            variant="seamless"
             value={title}
             onChange={(e) => { setTitle(e.target.value); queueSave({ title: e.target.value }) }}
             maxLength={120}
             placeholder="What are you offering or looking for?"
-            className="w-full bg-transparent text-page-title font-bold text-text outline-none placeholder:text-subtle"
+            className="w-full text-page-title font-bold text-text"
           />
-          <input
+          <Input
+            variant="seamless"
             value={category}
             onChange={(e) => { setCategory(e.target.value); queueSave({ category: e.target.value || null }) }}
             maxLength={40}
             placeholder="Category (optional)"
-            className="mt-1 w-full bg-transparent text-body-sm text-muted outline-none placeholder:text-subtle"
+            className="mt-1 w-full text-body-sm text-muted"
           />
         </div>
       </div>

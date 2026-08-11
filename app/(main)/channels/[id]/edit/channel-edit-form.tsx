@@ -131,10 +131,11 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
           >
             <span className="flex items-center rounded-lg border border-border bg-surface px-3 text-body-sm text-subtle focus-within:border-border-strong focus-within:ring-2 focus-within:ring-border-strong/30">
               <span className="shrink-0">/channels/</span>
-              <input
+              <Input
+                variant="seamless"
                 name="slug"
                 defaultValue={channel.slug}
-                className="min-w-0 flex-1 bg-transparent py-2 text-text outline-none"
+                className="min-w-0 flex-1 py-2 text-text"
               />
             </span>
           </FieldBlock>

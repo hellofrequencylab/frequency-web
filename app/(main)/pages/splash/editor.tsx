@@ -343,9 +343,10 @@ export function SplashCopyEditor({
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2">
                 <span className="shrink-0 text-meta text-subtle">?seq=</span>
-                <input
+                <Input
+                  variant="seamless"
                   id="splash-permalink"
-                  className="min-w-0 flex-1 bg-transparent text-body-sm text-text outline-none"
+                  className="min-w-0 flex-1 text-body-sm text-text"
                   value={permalink}
                   placeholder="event-experience-hosts"
                   onChange={(e) => { setPermalink(e.target.value); setRenameError(null) }}

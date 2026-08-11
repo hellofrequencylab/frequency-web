@@ -316,8 +316,11 @@ interface Profile extends ProfileIdentity {
 
 // The account menu's "Receive payments" item (lib/nav/registry payouts seed) is gated in the menu
 // DATA by the `host` trust tier as an EARNER PROXY. The shell now threads the REAL payouts
-// capability (canReceivePayouts — a host+ OR anyone holding a live partner persona, resolved
-// server-side in the layout) and gates that ONE item on it instead of the proxy. Identified by its
+// capability (payoutsLive() AND canReceivePayouts — payouts switched on platform-wide, and this
+// person a host+ or a live partner persona; resolved server-side in the layout, the SAME pair the
+// #payouts card itself renders on) and gates that ONE item on it instead of the proxy. Both halves
+// matter: the eligibility half alone left the link pointing at an anchor that does not exist while
+// payouts are off. Identified by its
 // destination (the payouts tab of the billing page — distinct from the plain Billing href) + the
 // `host` access floor the seed carries. A custom DB menu that re-gated the item off `host` falls
 // through to the normal canSeeMenuItem path (fail-safe: no worse than the old proxy).

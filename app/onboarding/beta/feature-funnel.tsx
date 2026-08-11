@@ -35,6 +35,7 @@ import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { beginFeatureFunnelSignup } from './feature-actions'
 import { signInWithMagicLink } from '@/app/sign-in/actions'
 import { safeImageSrc } from '@/lib/safe-image-src'
+import { Input } from '@/components/ui/field'
 
 // Avatar is too big for a cookie, so the deferred flow parks it in localStorage and
 // /onboarding/beta/complete uploads it. Same key the finalizer reads.
@@ -450,13 +451,14 @@ function RewardStep({
           <span className="mb-1 block text-meta font-semibold text-subtle">Your @username</span>
           <span className="flex items-center gap-2 rounded-card border border-border bg-canvas px-3 focus-within:border-border-strong">
             <span className="text-body text-subtle">@</span>
-            <input
+            <Input
+              variant="seamless"
               type="text"
               value={handle}
               onChange={(e) => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
               placeholder="yourname"
               autoComplete="off"
-              className="w-full bg-transparent py-3 text-body text-text placeholder:text-subtle focus:outline-none"
+              className="w-full py-3 text-body text-text"
             />
             {check.status === 'available' && check.handle === handle.trim().toLowerCase() && (
               <span className="text-meta font-semibold text-success">free</span>

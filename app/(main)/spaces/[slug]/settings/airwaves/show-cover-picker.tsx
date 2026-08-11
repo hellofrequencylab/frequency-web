@@ -11,6 +11,7 @@ import { ImageIcon, Search, Trash2, X } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import type { LibraryImagePick } from '@/lib/library/store'
 import { listShowCoverImagesAction } from './actions'
+import { Input } from '@/components/ui/field'
 
 export interface CoverPick {
   id: string
@@ -99,13 +100,14 @@ export function ShowCoverPicker({
 
           <div className="mb-3 flex items-center gap-2 rounded-lg border border-border bg-surface px-2">
             <Search className="h-3.5 w-3.5 text-subtle" aria-hidden />
-            <input
+            <Input
+              variant="seamless"
               type="text"
               aria-label="Search the Loom"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search the Loom"
-              className="w-full bg-transparent py-2 text-body-sm outline-none"
+              className="w-full py-2 text-body-sm"
             />
           </div>
 

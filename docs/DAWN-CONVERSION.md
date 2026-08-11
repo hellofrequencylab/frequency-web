@@ -7,24 +7,42 @@
 > `scripts/adoption-baselines.json` (live, via `node scripts/check-adoption.mjs`) and from a
 > six-way census run 2026-08-05 against `31e2acb`. **Where a count here and the JSON disagree,
 > the JSON wins.**
+>
+> ⚠️ **Every number and every status glyph in this doc must be re-derived before it is quoted.**
+> "Holds no status of its own" describes where sequencing is decided, not what these columns
+> contain: each one *is* a status, and eight of them were stale for six days because
+> `UX-MATURITY-PLAN` and `FINALIZE-PLAN` were both re-derived on 2026-08-11 and this file was
+> not. Re-derive counts from `node scripts/check-adoption.mjs` (the live ratchet) and adoption
+> claims from a grep, never from the column below.
+>
+> **Last re-derived: 2026-08-11.** Every correction in this pass carries the prior value and the
+> command or `file:line` that establishes the new one, so the next reader can re-check the
+> correction rather than trust it.
 
-Status legend: ✅ done · ⏳ in progress · ⚠️ needs a ruling · 🔴 not started · 🅿️ out of scope.
+Status legend: ✅ done · ⏳ in progress · 📋 specced, not built · ⚠️ needs a ruling · 🔴 not
+started · 🅿️ out of scope.
 
 ---
 
 ## 1. The denominator
 
-| Population | Count | Note |
-| :--- | ---: | :--- |
-| Raw `<button>` not composing `Button` | 1,887 | the single largest population in the product |
-| Raw `<input>` not composing `Input` | 808 | `ui/field.tsx` exists, 80 importers |
-| Raw `<select>` | 267 | **no primitive exists at all** |
-| Raw `<textarea>` | 162 | `ui/field.tsx` exists |
-| **Raw markup subtotal** | **3,124** | ~98% of the element count |
-| Duplicate implementations of a DAWN concept | 52 | 32 bespoke card shells · 6 tab strips · 5 badges · 3 meters · 2 avatars · 2 modals · 2 toasts |
-| **Element total** | **~3,176** | |
-| DAWN primitives missing or orphaned | **10** of 30 | Badge · RankBadge · Stat · Select · Checkbox · CounterRow, plus Toast / Meter / GateNotice / StreakMeter at 0–1 call sites. **Glyph was struck — see below** |
-| Routes with genuinely hand-rolled layout | 13 | of 382 `page.tsx`; 260 already compose a template |
+> **The form-control rows below are the 2026-08-05 census and are now HISTORY, not status.**
+> Re-measured 2026-08-11 on the ratchet's own basis (`{app,components,lib}/**/*.tsx`, the
+> `include` glob in `scripts/adoption-baselines.json`). The three raw-control populations have
+> collapsed by ~95%. The census column is kept so the size of the win is visible; read the
+> **Live** column for what is true.
+
+| Population | Census 2026-08-05 | **Live 2026-08-11** | Note |
+| :--- | ---: | ---: | :--- |
+| Raw `<button>` not composing `Button` | 1,887 | *(not re-measured this pass)* | the single largest population in the product. The `raw-button-bg` ratchet reads **526**, which measures opening tags carrying a background, not every `<button>` |
+| Raw `<input>` not composing `Input` | 808 | **250** | `git ls-files 'app/**/*.tsx' 'components/**/*.tsx' 'lib/**/*.tsx' \| xargs rg -o --no-filename '<input\b' \| wc -l`. `ui/field.tsx` now has **252** importers, not 80. Ratchet `raw-input` = **186** |
+| Raw `<select>` | 267 | **15** | same command, `<select\b`. The primitive **exists** (`components/ui/select.tsx`, **144** importers). Ratchet `raw-select` = **6** |
+| Raw `<textarea>` | 162 | **9** | same command, `<textarea\b`. Ratchet `raw-textarea` = **6** |
+| **Raw markup subtotal** | **3,124** | n/a | the census subtotal. The three control rows in it are now **274**, not 1,237 |
+| Duplicate implementations of a DAWN concept | 52 | n/a | 32 bespoke card shells · 6 tab strips · 5 badges · 3 meters · 2 avatars · 2 modals · 2 toasts |
+| **Element total** | **~3,176** | n/a | |
+| DAWN primitives missing or orphaned | **10** of 30 | **2** | Badge · RankBadge · Stat · Select · Checkbox · CounterRow · Toast · Avatar all shipped AND adopted (see Phase 2). Only `GateNotice` and `StreakMeter` (3 call sites) are still thin. **Glyph was struck, see below** |
+| Routes with genuinely hand-rolled layout | 13 | *(not re-measured this pass)* | of 382 `page.tsx`; 260 already compose a template |
 
 **The style surface itself is clean, and that is the good news.** Zero CSS modules, zero stray
 `.css` files in the build, 346 inline `style={{}}` of which **zero** are static colour, and the one
@@ -66,7 +84,10 @@ dismissal contract. See the commits on `claude/frequency-design-theming-lfz5sv`.
 > the spectrum's `deep`/`bright` steps into `@theme` — only `.rank-badge` could reach them before,
 > which is precisely *why* every caller had reached for a Tailwind palette class instead. A token
 > nothing can consume gets worked around, not obeyed.
-> **Still open in this phase:** `white-black-literals` (266).
+> **Still open in this phase:** `white-black-literals` is **27**, not 266. ⏳ Re-measured
+> 2026-08-11 via `node scripts/check-adoption.mjs` (`✅ held`, frozen 2026-08-06 `lowered`).
+> The 266 figure was the 2026-08-05 census and predates the four-territory sweep. Two of the
+> remaining 27 are the `app/print/qr/*` carve-out named in §1 and are the floor by design.
 
 Not drift. These are sites where switching skin, generation or mode **does nothing**, so the
 product is visibly wrong on any look but the default.
@@ -74,7 +95,7 @@ product is visibly wrong on any look but the default.
 | Item | Count | Size | Note |
 | :--- | ---: | :---: | :--- |
 | `lib/gamification.ts` `TIER_CONFIG` / `DIFFICULTY_CONFIG` | 48 | S | raw Tailwind palette classes in ONE exported file; propagates to every achievement, badge and leaderboard surface. The whole `raw-palette` ratchet |
-| `white-black-literals` | 266 | M | hardcoded monochromes; the ratchet's own description calls this the only *bug* class in the census |
+| `white-black-literals` | ~~266~~ → **27** | ~~M~~ **S** | hardcoded monochromes; the ratchet's own description calls this the only *bug* class in the census. **Was 266 (2026-08-05 census); live is 27** per `node scripts/check-adoption.mjs`, frozen 2026-08-06 `lowered`. 2 of the 27 are the `app/print/qr/*` carve-out and cannot go |
 
 > **Correction (2026-08-05).** An earlier revision of this doc, and the session handoff it came
 > from, listed `--radius-cover` here as a phantom token that "compiles to nothing." **That is
@@ -129,10 +150,14 @@ product is visibly wrong on any look but the default.
 Sweeping 3,124 elements onto primitives that do not exist is not possible. This phase is small in
 line count and unblocks the largest phase in the plan.
 
-| Primitive | Today | Action |
+> ⚠️ **The "Today" column below is the 2026-08-05 census, not today.** Kept as the record of what
+> each primitive was built against; every row marked "none" has since shipped. Re-derived
+> 2026-08-11.
+
+| Primitive | Census 2026-08-05 | Action / **live** |
 | :--- | :--- | :--- |
-| **Select** | none — 267 raw `<select>` | build it; largest un-primitived control |
-| **Checkbox** | none | build it |
+| **Select** | none, 267 raw `<select>` | ✅ built. `components/ui/select.tsx`, **144** importers; raw `<select\b` is **15**, ratchet `raw-select` **6** |
+| **Checkbox** | none | ✅ built and adopted by the select sweep |
 | **Badge** | 5 one-off pill components | one `Badge` with a tone prop; retire the five |
 | ~~**Glyph**~~ | ~~raw `lucide-react` everywhere~~ | **Struck.** `components/ui/icon.tsx` already is it (ADR-505); a Glyph would be a third icon entry point |
 | **Stat** / **RankBadge** | none | build from the DAWN reference |
@@ -140,28 +165,35 @@ line count and unblocks the largest phase in the plan.
 | **Avatar** | ~~split across 2 files, neither wired to `presence-dot`~~ | ✅ `components/ui/avatar.tsx`; both wrappers compose it and keep their exports |
 | **Toast** | ~~2 renderers sharing a lane~~ | ✅ `components/ui/toast.tsx`; both renderers compose it, timings and copy unchanged |
 | **UnderlineTabs** | ✅ promoted to `components/ui/underline-tabs.tsx` (2026-08-10, ADR-971) | the 6 rival strips were already retired (`handrolled-tabs` **0**) |
-| **Meter** / **GateNotice** / **StreakMeter** / **Counter** | 0–1 call sites | wire to their intended callers, not rebuild |
+| **Meter** / **GateNotice** / **StreakMeter** / **Counter** | ~~0–1 call sites~~ **re-measured 2026-08-11:** `Counter` **11** files · `Meter` **4** · `StreakMeter` **3** · `GateNotice` **still thin** | ✅ mostly wired. Only `GateNotice` still needs the widening described above (its single-`<p>` body cannot hold a three-paragraph notice) |
 
 ### ⏳ Phase 3 — The mechanical sweeps *(the bulk: ~3,124 sites)*
 
 | Sweep | Sites | Size | Ratchet | State |
 | :--- | ---: | :---: | :--- | :--- |
-| `<button>` → `Button` / `IconButton` | 1,887 | L | `raw-button-bg` 528 → **517** · `handrolled-icon-button` 37 → **12** | ⏳ icon buttons largely done |
-| `<input>` / `<textarea>` → field primitives | 970 | L | — | 🔴 |
-| `<select>` → `Select` | 267 | M | — | ⏳ **`components/spaces` + `components/admin`: 83 → 0** |
+| `<button>` → `Button` / `IconButton` | 1,887 | L | `raw-button-bg` 528 → **526** · `handrolled-icon-button` 37 → **6** | ⏳ icon buttons largely done |
+| `<input>` / `<textarea>` → field primitives | ~~970~~ → **259** | ~~L~~ **M** | `raw-input` **186** · `raw-textarea` **6** | ⏳ **the bulk is retired.** `<input\b` is **250** and `<textarea\b` is **9** on the ratchet basis (see §1), and `ui/field.tsx` has **252** importers. The row said 🔴 "not started"; the residue is the long tail §"Sweepable, deliberately stopped" in `BUILD-LIST` describes |
+| `<select>` → `Select` | ~~267~~ → **15** | ~~M~~ **S** | `raw-select` **6** | ✅ **effectively done, not "spaces+admin only."** `components/ui/select.tsx` has **144** importers; 15 raw `<select\b` remain repo-wide |
 | `<input type=checkbox>` → `Checkbox` | 14 | S | — | ✅ **0 remaining in those two trees** |
-| bespoke cards / rows → `EntityCard` / `RowCard` | 37 | M | `bespoke-cards` 24 · `bespoke-rows` 14 | 🔴 |
+| bespoke cards / rows → `EntityCard` / `RowCard` | 37 | M | `bespoke-cards` 24 · `bespoke-rows` 14 | ⚠️ **needs triage before a sweep.** A large fraction of the ratchet's population are action clusters, not cards (`BUILD-LIST` §"Needs a triage pass") |
 | hand-rolled tabs → `UnderlineTabs` | 3 + 6 strips | S | `handrolled-tabs` **0** | ✅ |
-| hand-rolled bars → `ProgressTrack` | 14 | S | `adhoc-progress` 14 → **12** | ⏳ |
-| hand-rolled rank badges → `RankBadge` | 23 | M | `bespoke-cards` | 🔴 **primitive shipped with 0 adopters** |
+| hand-rolled bars → `ProgressTrack` | 14 | S | `adhoc-progress` 14 → **8** | ⏳ `ProgressTrack` is in **44** files; 4 of the 8 remaining are false positives |
+| hand-rolled rank badges → `RankBadge` | ~~23~~ → **0** | ~~M~~ **XS** | `bespoke-cards` | ✅ **adopted.** The row said 🔴 "primitive shipped with 0 adopters": live it has **12** importers (`rg -l "from '@/components/ui/rank-badge'" app components lib`), and a hand-rolled `className="rank-badge"` outside the primitive returns **one** match (`lib/community-roles.tsx:57`), and it is a **comment** saying the file no longer hand-rolls one |
 
 > **A primitive with no adopters makes the debt worse, not better.** `RankBadge`, `Stat` and
 > `Checkbox` all landed in Phase 2 with **zero importers**, and `rank-badge.tsx`'s own docstring
 > says it exists to retire "twenty call sites [that] currently hand-roll `<span
-> className="rank-badge">`" — 23 of which still exist, so `bespoke-cards` went 23 → 24 when it
-> shipped. Build-then-adopt is the sequencing rule (§3.3); the lesson is that the *adopt* half has
-> to be scheduled, not assumed. Checkbox has since been adopted by the select sweep. The other two
-> are outstanding.
+> className="rank-badge">`" — 23 of which existed at the time, so `bespoke-cards` went 23 → 24
+> when it shipped. Build-then-adopt is the sequencing rule (§3.3); the lesson is that the *adopt*
+> half has to be scheduled, not assumed.
+>
+> ✅ **Closed 2026-08-11. The adopt half happened, and this paragraph outlived it by six days.**
+> `RankBadge` has **12** importers (`rg -l "from '@/components/ui/rank-badge'" app components lib`)
+> across the profile, the ledger, the journey board, the standing hero, both quest surfaces, both
+> rail docks and the vault. Hand-rolled `className="rank-badge"` outside the primitive is **one
+> match, and it is a comment** (`lib/community-roles.tsx:57`, explaining that the file composes
+> the primitive instead). `Checkbox` was adopted by the select sweep. The lesson stands as a
+> sequencing rule; it is no longer a description of `RankBadge`.
 >
 > **The rank-badge conversion is a contrast fix, not a restyle.** Measured 2026-08-05: white on
 > every rank **core** is 2.46:1–3.88:1, all under AA; **deep** is 6.00:1–8.83:1. Core is a fill or
@@ -238,15 +270,23 @@ before trusting it to measure this sweep.
 | Item | Sites | Size |
 | :--- | ---: | :---: |
 | `h-[…]` / `w-[…]` arbitrary | 442 | M |
-| `literal-radius` → role tokens | **3,687** (was 3,824) | L — **spend inside screen passes, never as its own wave** |
+| `literal-radius` → role tokens | ~~3,687~~ → **2,450** | L. **Spend inside screen passes, never as its own wave** |
 | R3: the radius ladder (`sm`…`2xl` in px, `xs`/`3xl`/`4xl` left at Tailwind's rem, so the top rung is a 1.5px step and ignores the density lever) | ~1,319 | S |
 | `rounded-[…]` 20 · `shadow-[…]` 2 · `border-[…]` 1 | 23 | XS |
 
-### ⚠️ Phase 6 — Structure and the framework
+> **`literal-radius` was 3,824, then 3,687 here, and is 2,450 live** (`node
+> scripts/check-adoption.mjs`, `✅ held`, frozen 2026-08-06 `lowered`). Both older figures were
+> quoted from a column, not a run, and three commit messages on this branch cited a floor that
+> was already stale when written. The radius ROLES also moved under it: `--radius-control` 8px →
+> 14px and `--radius-card` 16px → 24px in #2077 (`app/globals.css:195-197`), so a
+> value-identical conversion today is a different conversion than the one this row was scoped
+> against. Re-derive before spending against this number.
+
+### ⏳ Phase 6. Structure and the framework
 
 | Item | Detail | Size |
 | :--- | :--- | :---: |
-| ⚠️ **The 8 browse surfaces** | Circles, Channels, Classifieds, Events, Housing, Market, Store and the Spaces directory were deliberately migrated OFF `IndexTemplate` onto `MarketHero` + `BlockRender`. `PAGE-FRAMEWORK.md` §8.5 still lists two of them as `IndexTemplate` exemplars. **Needs a ruling: is that a sanctioned 12th composition, or the backlog?** The doc is stale either way | M |
+| ✅ **The 8 browse surfaces** | Circles, Channels, Classifieds, Events, Housing, Market, Store and the Spaces directory were deliberately migrated OFF `IndexTemplate` onto `MarketHero` + `BlockRender`. This row asked "⚠️ needs a ruling"; **it was RULED on 2026-08-05 (owner) and the ruling is written down** at [`PAGE-FRAMEWORK.md`](PAGE-FRAMEWORK.md) §"The editable index" (lines 656-690): a **sanctioned composition**, not drift and not a ninth shell, because `MarketHero` is a thin wrapper over the same canonical `PageHero` and every one of the eight still returns `'global'` from `railFor`. The doc names all eight in a table. Nothing is owed here | n/a |
 | 5 hand-rolled editors | `admin/appearance/{new,[id]}`, `admin/walkthroughs/[id]`, `circles/[slug]/edit`, `spaces/[slug]/manage` | M |
 | ✅ Dead templates | **Done 2026-08-05.** `TwoColumnTemplate` and `HeaderSidebarTemplate` had zero JSX usages while being documented as 2 of the nine shells. Both deleted. The canon is now **eight**: Stream · Index · Detail · Dashboard · Focus · WizardShell · RailGrid · Admin — and `RailGrid` was in §8.1's table but missing from the prose, so the "nine" heading was really counting ten rows | XS |
 | `check:headers` scope gap | it walks `page.tsx` only, so an `<h1>` inside a delegated component is invisible to it — 3 confirmed hand-rolled ones evade it today | S |
@@ -254,13 +294,27 @@ before trusting it to measure this sweep.
 | 🔴 The breakpoint | production sheds the left rail at 768px and the right at 1024px; DAWN's law is one 1000px line. Between 768 and 1024 the app is in a state DAWN does not describe. **Contained fix:** add `--breakpoint-rail: 62.5rem` to `@theme inline` and swap only the five rail/menu classes in `app-shell.tsx`. Do NOT redefine `--breakpoint-md` — that moves **629** `md:`/`lg:` usages repo-wide to fix five | S |
 | ✅ Rail ladder | **Done 2026-08-05.** Auto / Open / Strip as a persisted standing instruction (`lib/layout/rail-fold.ts`), both rails, one shared 26px foot control, read via `useSyncExternalStore`. Replaced a `useState` keyed on pathname that discarded the choice on every navigation. `NavLinkList`'s `compact` prop turned out to be a complete implementation with no caller | M |
 | ✅ Server-painted fold | **Done 2026-08-05.** A folded rail is different *markup*, not restyled markup, so unlike the theme it cannot be corrected pre-paint by an inline script — by the time any script runs the open rail is already in the HTML. The server is the only actor who can paint it on frame one; `app/(main)/layout.tsx` now seeds `railFold` from the cookie mirror | S |
-| 🔴 **Dock bar at strip width — DECIDED: hide it** | `DockBar` hardcodes `w-72` (288px) with no awareness of the fold, so at the 56px strip it overhangs the content column by ~232px. Pre-existing, but making the fold available on every rail page took it from rare to likely. **Owner decision 2026-08-05: hide the bar when the rail is folded**, rather than narrowing it to two icons. The rail-foot account dock and the top-right system dock still cover navigation; what is genuinely lost is one-tap Vault and Messages, and that is accepted. Hiding must route through the same `close()` path Esc and outside-click use, or an open panel is stranded and focus is dropped on `<body>` | S |
+| ✅ **Dock bar at strip width: shipped, and the DECISION CHANGED** | `DockBar` hardcoded `w-72` (288px) with no awareness of the fold, so at the 56px strip it overhung the content column by ~232px. This row recorded the 🔴 owner decision "hide the bar when the rail is folded" (ADR-946). **The owner saw it live and amended it, and the amendment is what shipped.** `components/layout/dock-bar.tsx:380-397` states it in full: the **Vault segment** takes `lg:hidden` while folded (it is the 288px score readout, and the half that actually overhung), the **chat tab deliberately stays** ("a conversation somebody else may be waiting on, which is not the same kind of thing as a score you can look at later"), and the **bar itself** shrinks to its content via `lg:w-auto` (`:628`, which explicitly notes it *replaces* the `lg:hidden` ADR-946 shipped). The overhang is fixed by SIZING, not by hiding. What is genuinely lost is one-tap Vault, and that is accepted and stated in the code | n/a |
 
 `PAGE-FRAMEWORK.md` §8.2 is also stale: it documents a Focus-`'none'` rail policy that the
 2026-06-20 owner directive replaced (`FOCUS_NONE_PREFIXES` and `SCOPED_PREFIXES` are both empty —
 the rail shows everywhere by design). Fix the doc, do not "fix" the code.
 
-### 🔴 Phase 7 — Marketing
+### ✅ Phase 7. Marketing *(closed 2026-08-11: the header said 🔴, all three residual items had shipped)*
+
+> **What this heading used to claim, and why it was wrong.** The phase carried 🔴 on the strength
+> of one sentence below: "`.mk-cream` / `.mk-ink` have **zero** adopters … it is **one line in
+> `Section`**." That line exists. Re-measured 2026-08-11:
+>
+> | Residual item | Then | **Live** | Evidence |
+> | :--- | :--- | :--- | :--- |
+> | `Section` emits `.mk-cream` / `.mk-ink` | 🔴 zero adopters | ✅ emitted | `components/marketing/marketing-ui.tsx:240`, `const toneClass = tone === 'ink' ? 'mk-ink' : 'mk-cream'`, plus `:633` and `:972` |
+> | `role` has no `'cont-soft'` member, so `about` needs the `pad=` escape hatch | 🔴 component gap | ✅ closed | `marketing-ui.tsx:210`, `role?: 'band' \| 'beat' \| 'cont' \| 'cont-soft' \| 'tight'`, documented at `:208` as "a ROLE, not a `pad` string" |
+> | `pad=` opt-outs under `app/(marketing)/**` | 1 remaining ("22 retired but one") | ✅ **0** | `rg -n 'pad=' 'app/(marketing)' \| wc -l` → `0` |
+>
+> The same-tone-halving rule now fires. What is still true and still dead code is the second
+> finding below, the `.mk-hero:not(.mk-hero-dock) + .mk-beat` adjacency rule, because no hero
+> carries `.mk-hero` unconditionally. That is a one-line note, not a phase.
 
 ~~15 of 38 marketing pages bypass `Section` and its four-role rhythm.~~ **Corrected 2026-08-05: this
 census row was wrong.** All 38 were re-checked one by one, and **the 15 are redirect stubs** —
@@ -269,10 +323,12 @@ only non-redirect pages with zero `<Section>` were `beta/[slug]` (now composing 
 plus `rsvp/[token]` and `subscribe/confirm`, both single-section transactional surfaces. An audit
 finding is a lead, not a fact; this one survived unverified until someone opened all 38 files.
 
-What was true and remains the real work: `.mk-cream` / `.mk-ink` have **zero** adopters, so the
+~~What was true and remains the real work: `.mk-cream` / `.mk-ink` have **zero** adopters, so the
 same-tone-halving rule never fires and the thing that makes a tone change read as a change is inert.
-That is not 15 stubborn pages — it is **one line in `Section`** (`components/marketing/marketing-ui.tsx`),
-which must emit the class before any page can adopt it.
+That is not 15 stubborn pages — it is **one line in `Section`**
+(`components/marketing/marketing-ui.tsx`), which must emit the class before any page can adopt it.~~
+✅ **Done.** That one line is `marketing-ui.tsx:240`, and the rule fires. See the table above the
+strikethrough for what each of the three residual items reads today.
 
 A second dead rule found in the same pass: `.mk-hero:not(.mk-hero-dock) + .mk-beat { padding-top: 0 }`
 in `app/globals.css` **has never fired for any hero on the site**, because `PageHero` never emits
@@ -281,11 +337,12 @@ hand-written `pt-0`. The pages now declare `role="cont"` instead, which is corre
 the adjacency rule stays dead code until a hero carries the class.
 
 Marketing page-level rhythm is **done**: all 22 `pad=` opt-outs under `app/(marketing)/**` are
-retired but one, and that one is a component gap rather than a holdout (`Section`'s `role` prop has
-no `'cont-soft'` member, so `about/page.tsx` reaches `mk-cont-soft` through the escape hatch). What
-remains is in `components/marketing/**`: the two class emissions above, plus `Statement` and
-`BetaCTA` hand-rolling padding that is exactly `mk-tight` and `mk-band`. Size: M → **S**, and it
-moved to a different file than this row assumed.
+retired, ~~"but one"~~ **including the last one**, because the component gap it was waiting on
+closed: `Section`'s `role` prop now carries `'cont-soft'` (`marketing-ui.tsx:210`), so
+`about/page.tsx` no longer needs the escape hatch. `rg -n 'pad=' 'app/(marketing)'` returns **0**.
+The class emissions are done too (`:240`). What is left in `components/marketing/**` is `Statement`
+and `BetaCTA` hand-rolling padding that is exactly `mk-tight` and `mk-band`. Size: M → **XS**, and
+it is polish rather than a blocker.
 
 ### 🅿️ Phase 8 — `resonance/`
 
@@ -464,7 +521,7 @@ or display that does not compile `app/globals.css` is asserting about a string, 
 | ✅ `check:headers` sees delegated `<h1>` | S | **Done 2026-08-05.** It had TWO defects, not one: it walked `page.tsx` only, *and* its `/<h1[\s/>]/` ran per line, so `\s` had no newline to match and a bare `<h1` with attributes on following lines scored zero — **the shape `PageHeading` itself is written in**. Now starts at `page.tsx` *and* `layout.tsx` and follows route-local imports. The 3 evaders are named in a `KNOWN_DELEGATED` map that may only shrink, and a listed file that stops hand-rolling fails as a stale entry |
 | ✅ `check:seo` covers non-marketing indexable routes | S | **Done 2026-08-05.** Every crawler-reachable page outside `(marketing)` must now declare intent — advertised, or `index:false`. Silence fails; noindex *and* advertised fails as a contradiction. 47 checked, 158 skipped as private, 0 noise. Found one real defect on its first run: `/spaces/operating` gates by **scoping rather than redirecting**, so an anonymous crawler got a 200 and an empty operator hub |
 | ✅ **`PW_STORAGE_STATE`** | S | **Built 2026-08-05 (ADR-950).** Was the top of this queue. Two halves: the harness now ANNOUNCES an unphotographed shell (no credential needed — see below), and `pnpm e2e:session` mints a member session per run from the service-role key, the same `generateLink` + `verifyOtp` pair `impersonate-actions.ts` uses. 🔴 Owner action remaining: create the e2e member account and add three repo secrets |
-| 🔴 First member-shell baselines | S | The four shell surfaces have **never had a PNG**. `e2e-manual.yml` gained `capture_shell` (default OFF) so the first capture is chosen, not sprung: `capture_shell + update_baselines` writes 12 new files (16 with `PW_SPACE_SLUG`), then `capture_shell + update_a11y` seeds their a11y counts before a PR run meets `$defaultMax: 0` |
+| ⏳ First member-shell baselines | S | ~~"The four shell surfaces have **never had a PNG**."~~ **They have. 12 shell PNGs are committed**: `ls test/e2e/__screenshots__/visual.spec.ts/ \| grep -cE '^app-'` → `12`, namely `app-feed`, `app-settings` and `app-space-console`, each × light/dark × desktop/mobile. Captured across #2049 (the first shell capture) and #2077 (the Space console). **What is genuinely still owed is narrower than this row, and in two named pieces:** (1) `app-room` has **no** baseline. #2064 deleted all four because `PW_ROOM_PATH` defaulted to the protected `/channels`, the visit bounced, and the PNGs were pixel-for-pixel the marketing home page; point `PW_ROOM_PATH` at a room the beta account is actually in. (2) **No shell a11y baseline exists at all.** `test/e2e/a11y-baselines.json` holds 40 surface entries and **not one** is an `app-*` key, so `/feed` and `/settings` are held to `$defaultMax: 0` against debt that predates the gate. `e2e-manual.yml` → `capture_shell` + `update_a11y` |
 | ✅ `PW_REQUIRE_SHELL=1` | XS | **Done 2026-08-06.** The ratchet: before the credential a zero-app-surface run announces, after it the same run fails, so an expiring credential cannot silently re-open the blind spot. Now read as `vars.PW_REQUIRE_SHELL \|\| secrets.PW_REQUIRE_SHELL` — it belongs in Variables, but a ratchet that stays silently off because it was typed into the Secrets tab is the exact failure it exists to prevent, so it does not depend on aim. 🔴 One consequence worth knowing: a **one-character secret** makes GitHub redact that character everywhere in the run log — with `1` as a secret, every height, test count and line number came back as `***`. Keep it in Variables |
 | `pr-compare` required | XS | Approved (ADR-948) — but **strictly after** the rows above. Required-and-blind is worse than advisory-and-blind: it turns a known gap into a merge gate asserting the shell is fine |
 | 🔴 `raw-input` counts controls no primitive can receive | XS | Found independently by **two** sweep agents, which is what makes it worth a row. The lookahead is `(?!(?:[^>]\|=>)*?type=["']hidden)` — it excludes `type="hidden"` and nothing else. But ~18 sites are `<input type="file">` held behind `className="hidden"` or `sr-only` and fired by a sibling button. They are not fields, they have no chrome, and routing them through a text-field primitive is cosmetic misuse — so they are **permanently un-retirable debt inside a ratchet**, which is the same "puts zero out of reach" reasoning the existing lookahead was written for. Fix is a second lookahead for `type="file"` co-occurring with `hidden`/`sr-only`; write it order-independently, since `className` may precede `type` |

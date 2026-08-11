@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { accentColor, accentTint } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
+import { RowCard } from '@/components/cards/row-card'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { isError } from '@/lib/action-result'
 import {
@@ -25,6 +26,11 @@ import {
 // own manager). Identity + state badges + structure stats + the full action set: edit, view,
 // visibility (draft / live in space / listed in library), MOVE the owner (personal <-> a Space you
 // run), duplicate, delete. Every action re-checks authorization server-side.
+//
+// It is the kit's RowCard, not a hand-rolled row: identity/badge/summary/stats fill the standard
+// zones, and the lifecycle bar rides in RowCard's `footer` slot (the divider + full-width control
+// row a manager list needs). The DangerModal is a SIBLING of the card, never a child, so a fixed
+// overlay never inherits the row's stacking context.
 
 export interface ManagePlan {
   id: string
@@ -183,38 +189,37 @@ export function JourneyManageCard({ plan }: { plan: ManagePlan }) {
   const btn = 'inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60'
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
-      <div className="flex items-start gap-3">
-        {plan.coverImage ? (
-          // Unoptimized: user-controlled Supabase Storage host, not a configured next/image domain.
-          <Image src={plan.coverImage} alt="" width={44} height={44} unoptimized className="h-11 w-11 shrink-0 rounded-2xl object-cover" />
-        ) : (
-          <div
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
-            style={{ backgroundColor: accentTint(plan.accent, 16), color: accentColor(plan.accent) }}
-          >
-            <Icon className="h-5 w-5" />
-          </div>
-        )}
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <Link href={`/journeys/${plan.slug}/edit`} className="truncate text-body font-bold text-text hover:text-primary-strong">
-              {plan.title}
-            </Link>
-            <span className={`shrink-0 rounded-pill px-2 py-0.5 text-2xs font-semibold ${badge.cls}`}>{badge.label}</span>
-          </div>
-          {plan.summary && <p className="mt-0.5 line-clamp-1 text-body-sm text-muted">{plan.summary}</p>}
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-muted">
+    <>
+      <RowCard
+        href={`/journeys/${plan.slug}/edit`}
+        anchor={
+          plan.coverImage ? (
+            // Unoptimized: user-controlled Supabase Storage host, not a configured next/image domain.
+            <Image src={plan.coverImage} alt="" width={44} height={44} unoptimized className="h-11 w-11 rounded-2xl object-cover" />
+          ) : (
+            <div
+              className="flex h-11 w-11 items-center justify-center rounded-2xl"
+              style={{ backgroundColor: accentTint(plan.accent, 16), color: accentColor(plan.accent) }}
+            >
+              <Icon className="h-5 w-5" />
+            </div>
+          )
+        }
+        title={plan.title}
+        badge={<span className={`shrink-0 rounded-pill px-2 py-0.5 text-2xs font-semibold ${badge.cls}`}>{badge.label}</span>}
+        description={plan.summary}
+        meta={
+          <>
             <span className="inline-flex items-center gap-1"><Vis.Icon className="h-3 w-3" /> {Vis.label}</span>
             <span className="inline-flex items-center gap-1"><Layers className="h-3 w-3" /> {plan.phaseCount} {plan.phaseCount === 1 ? 'phase' : 'phases'}</span>
             <span className="inline-flex items-center gap-1"><ListChecks className="h-3 w-3" /> {plan.stepCount} {plan.stepCount === 1 ? 'step' : 'steps'}</span>
             {isPublic && <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> {plan.adoptCount.toLocaleString()}</span>}
             <span>Updated {relativeTime(plan.updatedAt)}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-border pt-3">
+          </>
+        }
+        footer={
+          <>
+      <div className="flex flex-wrap items-center gap-1.5">
         <Link href={`/journeys/${plan.slug}/edit`} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover">
           <Pencil className="h-3.5 w-3.5" /> Edit
         </Link>
@@ -300,7 +305,10 @@ export function JourneyManageCard({ plan }: { plan: ManagePlan }) {
           <Trash2 className="h-3.5 w-3.5" /> Delete
         </button>
       </div>
-      {note && <p className="mt-2 text-meta text-muted">{note}</p>}
+            {note && <p className="mt-2 text-meta text-muted">{note}</p>}
+          </>
+        }
+      />
 
       <DangerModal
         open={confirmDelete}
@@ -316,6 +324,6 @@ export function JourneyManageCard({ plan }: { plan: ManagePlan }) {
         requireTyping={plan.title}
         onConfirm={remove}
       />
-    </div>
+    </>
   )
 }

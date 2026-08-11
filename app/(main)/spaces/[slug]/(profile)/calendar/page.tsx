@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
@@ -8,11 +9,24 @@ import { eventDayKey } from '@/lib/events/calendar-grid'
 import { SITE_URL } from '@/lib/site'
 import { EventCalendar, type CalendarEvent } from '@/components/events/event-calendar'
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
+import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 
 // THE PER-SPACE CALENDAR TAB (Events EC2). A month grid of the Space's upcoming events; clicking one opens
 // a truncated popup with a "Go to Event" link. Guests can subscribe the whole Space calendar into any
 // calendar app via the public per-space .ics feed (Events EC1). The identity hero + tab chrome come from
 // the (profile) layout; this is the body.
+
+// Its OWN canonical + title. Without this the tab inherits the Space ROOT's metadata and declares
+// itself a duplicate of a page it is not (FINALIZE-PLAN §9.5).
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  return spaceProfileMetadata(slug, {
+    segment: 'calendar',
+    label: 'Calendar',
+    describe: (brandName) => `Every upcoming event at ${brandName}, on one calendar you can subscribe to.`,
+  })
+}
+
 export default async function SpaceCalendarPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const viewerProfileId = await getMyProfileId()
