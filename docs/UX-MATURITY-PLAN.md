@@ -394,8 +394,8 @@ The lifts are not a new track; they mount onto the waves already running.
 | ✅ **Shipped** (was Wave +1) | Template regeneration · **radius codemod sweep** (`ecd8f52`) · **axe in e2e** (`test/e2e/a11y-baselines.json`, `pnpm test:e2e:a11y`) · **visual suite ×4 states** (`test/e2e/surfaces.ts` `RENDER_STATES`) · vitals readout panel · **mobile brief to DAWN** (`design_handoff/BRIEF-07-MOBILE-GRAMMAR.md`) | 5b · 2b · 3b · 6b · 7b · 4a |
 | ✅ **Shipped, unplanned** — the whole type-role program | **ADR-941/942/943 + pass 2a**: 7,578 type literals onto the roles, paired display line-heights, `literal-type` to 0. This was three of six consecutive merges and appeared in NO row of this table until now. | (new) |
 | ✅ **Shipped, unplanned** — gate correctness | **ADR-944** the lockup · **ADR-945** Engine 3 retired · four gates corrected + three added (`literal-display-type`, `raw-palette`, `handrolled-icon-button`) · `check:bridge` · the focus ring at full strength | (new) |
-| **Now** | Recapture the visual baselines main has drifted from (six rendering merges since the last capture — `pr-compare` has been red on drift, not on changes) · pass 2b, the 301 display literals | 6c · 2b |
-| **Next** | Coded-body retirement + `check:render-path` (no such script yet) · UnderlineTabs `components/admin/` → `components/ui/` (not yet moved) · kit state sweep · first moderated test round (🔴 recruiting) | 5c · 2b · 8b · 1b |
+| **Now** | 🔴 **Corrected 2026-08-11 — this row and the one below had gone stale in three separate ways.** Baselines: RECAPTURED (PR #2071, `pr-compare` 62 failures → 1). Display literals: **96**, not 301 — 204 were bought across `6056d0a82`, `959ddb678`, `77bb066e5`. What is actually now: **5c coded-body retirement**, in the order already committed to `scripts/render-path-bodies.txt` — `about` → `spaces` → `the-lab` → `the-quest` → `the-community` → `pricing` (partial). One slug per PR. | 5c |
+| **Next** | **8b kit state sweep** — 0 of 10 action + field controls carry their required states, the largest single UX gap on this plan · **ADR-980's 16 dark-mode contrast failures** (one systemic cause, all eight public surfaces, cheapest points on the board) · first moderated test round (🔴 recruiting). ⚠️ Two items removed from this row because they were DONE while it still asked for them: `check:render-path` exists (`scripts/check-render-path.mjs`, in CI, and §5c of this same document says so), and UnderlineTabs moved to `components/ui/` under ADR-971 — `handrolled-tabs` went 3 → 0. | 8b · 3a · 1b |
 | **After** | Seeker articles (HowTo block) · home + pricing-partial conversion · RowCard/EntityCard sweeps · mobile implementation wave (gated on DAWN's mobile round) · focus/reduced-motion audit | 5d · 2b · 4c · 3c/3d |
 | **Standing, every DAWN round** | Vitals table + research findings in the outbound handoff; mobile behavior stated per screen pass; ratchet counts only shrink | 7c · 1c · 4-rule · 2 |
 
@@ -570,7 +570,7 @@ column is the model; the score column is measured. **Total: 80.0 / 100.**
 | 6 | **Rails + docks + chrome** | 10 | 70% | 7.00 | Three-docks law ✅, foot-mounted rail control ✅, mini-strip ✅. Missing: the three-position ladder, persistence, any desktop left-rail fold |
 | 7 | **Marketing rhythm + page spine** | 10 | 70% | 7.00 | `Section` defaults to the four `mk-*` roles ✅. 23 / 38 marketing pages route through it; the tone-adjacency half is unadopted |
 | 8 | **Type roles** (body ✅ · display ⏳ · eyebrow 🔴) | 10 | 60% | 6.00 | `literal-type` at a defended **0** (7,578 sites swept). `literal-display-type` **301**; the eyebrow is split ten ways across ~698 sites |
-| 9 | **Radius roles** | 5 | 45% | 2.25 | Role tokens shipped and bridged; `literal-radius` still **3,824** |
+| 9 | **Radius roles** | 5 | 45% | 2.25 | Role tokens shipped and bridged; `literal-radius` **2,450** (corrected 2026-08-11; was quoted as 3,824). The roles now EQUAL the steps as of the radius correction, so 1,816 of those are value-identical conversions |
 | 10 | **Contrast · a11y · interaction states** | 5 | 85% | 4.25 | Focus ring 1.75:1 → 3.87:1, alpha-aware contrast script, axe baselines, ×5 render states. `subtle-tiny-type` 24 open; the kit state sweep (8b) has not run |
 | | **Total** | **100** | | **80.0** | |
 
@@ -594,16 +594,16 @@ Sizes: **S** one PR · **M** 1 to 3 PRs · **L** a wave. "Gain" is points on the
 
 | # | Package | Size | Gain | Why this order |
 | :--- | :--- | :---: | ---: | :--- |
-| 1 | **`raw-palette` — 48 sites, one file** | S | +1.5 | Every one is in `lib/gamification.ts` (`TIER_CONFIG` / `DIFFICULTY_CONFIG`), exported, so raw Tailwind palette classes propagate into every achievement surface and **ignore every skin, occasion and generation**. Best ratio on the board: one file, whole-app effect |
+| 1 | ✅ **`raw-palette` — DONE, 48 → 0** | S | +1.5 | Every one is in `lib/gamification.ts` (`TIER_CONFIG` / `DIFFICULTY_CONFIG`), exported, so raw Tailwind palette classes propagate into every achievement surface and **ignore every skin, occasion and generation**. Best ratio on the board: one file, whole-app effect |
 | 2 | **R3 — the radius ladder** | S | +2.0 | `sm`…`2xl` authored in `px`, `xs`/`3xl`/`4xl` left at Tailwind's `rem`: the top rung is a 1.5px step and the only part of the scale that ignores the density lever. Touches 1,317 sites' *meaning*, so it owes a baseline recapture. (The `--radius-cover` half of this row was retracted — see §4.1) |
-| 3 | **`subtle-tiny-type` AA rule + 24 sites** | S | +1.0 | The rule is the valuable half; the population is 24, not the 832 the audit implied |
+| 3 | **`subtle-tiny-type` AA rule + 23 sites** (was 24) | S | +1.0 | The rule is the valuable half; the population is 24, not the 832 the audit implied |
 | 4 | **Adopt or retire `edge-light` · `scanlines` · `vignette`** | XS | +0.5 | Three effect classes at zero adopters. Either give them a home or delete them; a contract class nobody calls is a lie in the stylesheet |
 | 5 | **R7 — unify the eyebrow** | M | +3.0 | Split **ten** ways: `tracking-wide` 484 · `wider` 77 · `widest` 75 · 62 arbitrary values, against **3** adopters of the `eyebrow` utility. The dominant hand-rolled value is 7.2× tighter than `--tracking-eyebrow`. Largely mechanical, and it is the single most visible type tell |
-| 6 | **Kit sweeps** (`bespoke-cards` 23 · `bespoke-rows` 14 · `handrolled-icon-button` 37 · `adhoc-progress` 14 · `handrolled-tabs` 3 + move `UnderlineTabs` to `components/ui/`) | M×5 | +4.0 | 91 sites. `components/events/rsvp-controls.tsx` ships a **28px** stepper, under both the 32px density floor and the 44px tap target; `components/gamification/standing-hero.tsx` is a five-line copy of `ProgressTrack`'s own render |
+| 6 | **Kit sweeps** (`bespoke-cards` 24 · `bespoke-rows` 14 · `handrolled-icon-button` **6** · `adhoc-progress` **8** · `handrolled-tabs` **0, done**) | M×5 | +4.0 | 91 sites. `components/events/rsvp-controls.tsx` ships a **28px** stepper, under both the 32px density floor and the 44px tap target; `components/gamification/standing-hero.tsx` is a five-line copy of `ProgressTrack`'s own render |
 | 7 | **The rail ladder** (Auto / Open / Strip, persisted; a desktop left-rail fold) | M | +3.0 | Today the right rail is binary, its state lives in `useState` keyed on `pathname` so it resets on navigation, and the left rail has a `compact` mode with **no user control at all**. DAWN's law is a three-position standing instruction honoured until the window is too narrow |
 | 8 | **Marketing: the last 15 pages + tone tagging** | M | +3.0 | 15 of 38 marketing pages bypass `Section`. `.mk-cream` / `.mk-ink` have **0** adopters, so the same-tone-halving rule never fires and the thing that makes a tone change read as a change is inert |
 | 9 | **Pass 2b — 301 display literals** | M/L | +4.0 | `text-3xl`…`9xl` onto the display roles across 67 files. Per-site design judgment (*which role is this heading?*), not a codemod |
-| 10 | **`literal-radius` — 3,824** | L | +2.0 | Biggest number, worst ratio. The plan's own advice stands: **spend it inside screen passes, never as its own wave** |
+| 10 | **`literal-radius` — 2,450** (was quoted 3,824) | L | +2.0 | Biggest number, worst ratio. The plan's own advice stands: **spend it inside screen passes, never as its own wave** |
 
 **Reaching 100 is packages 1 to 9 (~24 points, capping at 100); packages 1 to 4 are a single
 afternoon and buy 5 of them.** Package 10 is not a project, it is a habit.
@@ -658,3 +658,37 @@ Two consequences, both non-negotiable if this plan is going to hold:
 - 🔴 **Owner:** flip `pr-compare`, `check:adoption` and `check:contrast` to required in branch
   protection now that all three are green. Until then the ratchet is the only thing holding
   the line, and it cannot see a visual regression.
+
+---
+
+## Addendum, 2026-08-11 — why these numbers went stale, and why there is no gate for it
+
+An audit found **twelve** doc-vs-tree contradictions across the four live plan docs. Nine were in
+this file. The corrected ones are marked inline above; the freeze-log table in §8 was NOT touched,
+because those rows record what a value was **at its freeze date** and are correct as history.
+
+**The cause is one habit:** prose quoting `scripts/adoption-baselines.json` instead of re-deriving
+from it. Both live plan docs do it. Both already contain a note admitting they do it. Neither had
+been regenerated. `node scripts/check-adoption.mjs` takes two seconds and settles every number in
+this document.
+
+### A gate was prototyped for this and deliberately NOT shipped
+
+The obvious fix is a `check:baseline-citations` guard: find every line naming a debt class, pull the
+integers out, compare to the live baseline. It was built and measured before being proposed, and it
+produced **41 candidates of which roughly 8 were real**. The false positives were:
+
+- ADR numbers on the same line (`ADR-944`, `ADR-941/942/943`)
+- freeze dates (`2026-08-05`)
+- the freeze-log rows above, which are **supposed** to hold historical values
+- before/after tables in FINALIZE-PLAN (`37` → **6**), where both numbers are correct
+- section references (`§6.17`)
+
+The distinction between *citing a current value* and *recording a historical one* is semantic. A
+regex cannot make it, and a guard that cries wolf 33 times out of 41 gets muted within a week — at
+which point it is worse than no guard, because it looks like coverage. That is this repo's own named
+failure mode (a gate that checks the SHAPE of a value rather than its truth), and shipping it here
+would have been an instance of it.
+
+**So the standing rule is a habit, not a gate:** re-derive every count from
+`node scripts/check-adoption.mjs` before quoting it, and when you quote one, say the date you read it.
