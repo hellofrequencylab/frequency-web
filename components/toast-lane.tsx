@@ -33,13 +33,22 @@ import type { ReactNode } from 'react'
 //
 // ── THE VERTICAL OFFSETS ─────────────────────────────────────────────────────
 //
-// Mobile: the chat edge pill sits at bottom-20 with h-11 (80–124px) and the tab bar is
-// 3.5rem + env(safe-area-inset-bottom), up to ~90px on a home-indicator phone. bottom-32 (128px)
-// is the first lane clearing BOTH.
+// EVERY NUMBER HERE IS AT THIS APP'S 17px ROOT (--density-root, app/globals.css), so a `rem`
+// class does not render at its Tailwind name: `bottom-32` is 136px, not 128, and `bottom-24` is
+// 102px, not 96. The previous version of this block did the arithmetic at 16px — as did the
+// mobile half of the contract in components/sidebar/game-stats-dock.tsx — and was 6.25% out
+// throughout. Both were corrected in the same pass (DAWN 2026-08-11, Q1).
+//
+// Mobile — this is SLOT 1 of the mobile stacking contract, which is written out in full in
+// components/sidebar/game-stats-dock.tsx. The tab bar owns [0, 93.5] (var(--tab-bar-h) =
+// 3.5rem + a 34px home-indicator inset = 59.5 + 34), and the raised Zap catch breaks upward out
+// of it to 115.5px. THE CATCH IS WHAT HAS TO BE CLEARED, not the bar: bottom-32 = 136px clears
+// it by 20.5px. The chat edge pill is no longer part of this stack at all — it moved to
+// top-1/2 of the right edge when the Vault and the chat became one bar.
 //
 // md and up: the tab bar is gone and the dock bar (components/layout/dock-bar.tsx) sits at
-// bottom-0 right-3, so bottom-24 (96px) clears it. Deliberately LOWER than mobile, because what
-// has to be cleared is higher on mobile.
+// bottom-0 right-3 occupying [0, 52], so bottom-24 = 102px clears it by 50. Deliberately LOWER
+// than mobile, because what has to be cleared is higher on mobile.
 //
 // Both toast files previously carried an identical comment block asserting "bottom-20 clears it
 // by 12px" while the class on the very next line read `md:bottom-24`. The prose was describing a
