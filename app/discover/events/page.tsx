@@ -81,7 +81,7 @@ export default async function DiscoverEventsPage() {
           <div className="relative max-w-3xl mx-auto text-center">
             <SectionHeading
               eyebrow="Founding chapter"
-              title={<>The first gathering hasn&apos;t <span className="text-primary">happened yet</span></>}
+              title={<>The first gathering hasn&apos;t <span className="text-primary-strong">happened yet</span></>}
               kicker="Every Circle begins with a few neighbors deciding to show up."
             />
             <p className="mt-6 text-body-lg text-muted leading-relaxed">
@@ -109,7 +109,7 @@ export default async function DiscoverEventsPage() {
               <div className="text-center max-w-2xl mx-auto mb-9">
                 <SectionHeading
                   eyebrow="On the calendar"
-                  title={<>What&apos;s <span className="text-primary">coming up</span></>}
+                  title={<>What&apos;s <span className="text-primary-strong">coming up</span></>}
                   kicker="Pick one, RSVP, and you're expected."
                 />
                 <p className="mt-5 text-body-lg text-muted leading-relaxed">

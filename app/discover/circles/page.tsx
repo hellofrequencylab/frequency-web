@@ -90,7 +90,7 @@ export default async function DiscoverCirclesPage() {
         <div className="relative max-w-3xl mx-auto text-center">
           <SectionHeading
             eyebrow="Why a Circle"
-            title={<>A crowd can&apos;t miss you. A <span className="text-primary">Circle</span> can.</>}
+            title={<>A crowd can&apos;t miss you. A <span className="text-primary-strong">Circle</span> can.</>}
             kicker="Small enough to learn every name, big enough to always have plans."
           />
           <p className="mt-5 text-body-lg text-muted leading-relaxed max-w-prose mx-auto">
@@ -208,7 +208,7 @@ export default async function DiscoverCirclesPage() {
         />
         <Statement tone="canvas">
           Your people are already gathering.{' '}
-          <span className="text-primary">Pull up a chair.</span>
+          <span className="text-primary-strong">Pull up a chair.</span>
         </Statement>
       </div>
 

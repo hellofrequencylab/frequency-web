@@ -1,5 +1,15 @@
-# E2E against a live URL, the MAINTAINER path. Dispatch-only, so nothing here ever appears
-# on a pull request.
+# E2E against a live URL, the MAINTAINER path. Dispatch-only: nothing here is ever TRIGGERED
+# by a pull request.
+#
+# ⚠️ THAT IS NOT THE SAME AS "never appears on a pull request", which is what this header
+# claimed until 2026-08-11 and is false. A check run attaches to the SHA it ran against, so
+# dispatching this workflow on a branch that has an open PR surfaces `smoke`, `visual`,
+# `update-a11y` and `update-baselines` on that PR's checklist. Observed on PR #2086: a
+# marketing-only capture dispatch put a red `smoke` X on the PR, because `smoke` runs on every
+# dispatch regardless of inputs and the branch still carried known a11y debt.
+#
+# It is harmless — none of these are required contexts, so they cannot block a merge — but it
+# looks alarming and it is worth knowing before you dispatch against a live PR branch.
 #
 # It lives apart from e2e.yml on purpose. These jobs used to sit in the same file behind
 # `if: github.event_name == 'workflow_dispatch'`, which meant every PR showed four checks
@@ -33,18 +43,22 @@
 # Repo variables it reads: PW_ROOM_PATH (default /channels), PW_SPACE_SLUG (adds the console).
 # Full procedure: test/e2e/README.md § The member shell.
 #
-# ⚠️ THE COMMIT THIS MAKES WILL NOT RE-RUN CI. Both capture jobs push with GITHUB_TOKEN, and
-# GitHub deliberately suppresses workflow runs triggered by that token so an Action cannot
-# recurse into itself. So after a capture lands you get a branch whose newest commit has NO
-# `checks`, NO `pr-compare`, NO `analyze` — only Vercel, which uses its own webhook and is
-# unaffected. Observed on PR #2026 (2026-08-05): commit 6ced257 re-captured all 64 baselines
-# and produced exactly one check run.
+# ⚠️ WHETHER THE COMMIT THIS MAKES RE-RUNS CI IS NOT RELIABLE — DO NOT PLAN AROUND EITHER ANSWER.
 #
-# The failure mode is waiting: the PR looks mid-run forever because the run was never queued.
+# Both capture jobs push with GITHUB_TOKEN. GitHub suppresses workflow runs triggered by that
+# token so an Action cannot recurse into itself, and on PR #2026 (2026-08-05) that is exactly
+# what happened: commit 6ced257 re-captured all 64 baselines and produced exactly one check run.
 #
-# And re-running the PREVIOUS failed run does NOT fix it — a re-run replays the same SHA, so
-# it would judge the new baselines' commit against the old commit's tree. Push a commit to
-# the branch instead (any real change), which fires `pull_request: synchronize` normally.
+# 🔴 It did NOT happen on PR #2086 (2026-08-11). The capture commit 7aa2ded fired a full
+# `pull_request: synchronize` — `pr-compare` ran against the new baselines and reported 32
+# visual failures down to 1. Same workflow, same token, opposite outcome, six days apart. So
+# this file has now been observed both ways and cannot tell you which you will get.
+#
+# WHAT TO DO INSTEAD OF BELIEVING EITHER BRANCH: after a capture lands, LOOK at the PR's
+# checklist for the new SHA. If a run fired, read it. If none did, push a real commit — merging
+# the base branch in is the useful one, since it fires `synchronize` AND brings you up to date.
+# Do not re-run the PREVIOUS failed run: a re-run replays the same SHA, so it would judge the
+# new baselines' commit against the old commit's tree.
 name: e2e (manual)
 
 on:

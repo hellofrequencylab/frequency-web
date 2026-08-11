@@ -215,7 +215,7 @@ export default async function DiscoverHubPage() {
             <div className="text-center max-w-2xl mx-auto">
               <SectionHeading
                 eyebrow="Explore by Channel"
-                title={<>Find what you <span className="text-primary">practice</span></>}
+                title={<>Find what you <span className="text-primary-strong">practice</span></>}
                 kicker="The thing you already love is a doorway to a room of people."
               />
               <p className="mt-5 text-body-lg text-muted leading-relaxed">
@@ -250,7 +250,7 @@ export default async function DiscoverHubPage() {
             <div className="text-center max-w-2xl mx-auto">
               <SectionHeading
                 eyebrow="Coming up"
-                title={<>Show up <span className="text-primary">this week</span></>}
+                title={<>Show up <span className="text-primary-strong">this week</span></>}
                 kicker="These are real plans, on real days, with room for you."
               />
               <p className="mt-5 text-body-lg text-muted leading-relaxed">
@@ -284,7 +284,7 @@ export default async function DiscoverHubPage() {
             <div className="text-center max-w-2xl mx-auto">
               <SectionHeading
                 eyebrow="Find your people"
-                title={<>Circles forming <span className="text-primary">now</span></>}
+                title={<>Circles forming <span className="text-primary-strong">now</span></>}
                 kicker="Up to fifty neighbors, small enough to know everyone."
               />
               <p className="mt-5 text-body-lg text-muted leading-relaxed">

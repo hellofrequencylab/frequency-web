@@ -60,7 +60,7 @@ export default async function DiscoverPlacesPage() {
         eyebrow="Discover by place"
         title={
           <>
-            Find your people, <span className="text-primary">near you</span>
+            Find your people, <span className="text-primary-strong">near you</span>
           </>
         }
         subtitle="Somewhere close to you, neighbors are already meeting this week. Pick your town to see the Circles forming and the events coming up there."

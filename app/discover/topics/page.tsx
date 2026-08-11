@@ -85,7 +85,7 @@ export default async function DiscoverTopicsPage() {
           <div className="mb-9 text-center max-w-2xl mx-auto">
             <SectionHeading
               eyebrow="The seven Channels"
-              title={<>One name that finds your <span className="text-primary">people</span></>}
+              title={<>One name that finds your <span className="text-primary-strong">people</span></>}
               kicker="Say what you practice and you skip the small talk."
             />
             <p className="mt-5 text-body-lg text-muted leading-relaxed">

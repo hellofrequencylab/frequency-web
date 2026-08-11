@@ -83,7 +83,7 @@ export default async function DiscoverJourneysPage() {
           <div className="relative max-w-3xl mx-auto text-center">
             <SectionHeading
               eyebrow="Founding chapter"
-              title={<>The first Journeys are <span className="text-primary">being mapped</span></>}
+              title={<>The first Journeys are <span className="text-primary-strong">being mapped</span></>}
               kicker="Every Journey starts as one person's daily Practice, written down."
             />
             <p className="mt-6 text-body-lg text-muted leading-relaxed">
@@ -108,7 +108,7 @@ export default async function DiscoverJourneysPage() {
               <div className="text-center max-w-2xl mx-auto mb-9">
                 <SectionHeading
                   eyebrow="The library"
-                  title={<>What you can <span className="text-primary">practice</span></>}
+                  title={<>What you can <span className="text-primary-strong">practice</span></>}
                   kicker="Pick one, start small, and keep it up for a season."
                 />
                 <p className="mt-5 text-body-lg text-muted leading-relaxed">

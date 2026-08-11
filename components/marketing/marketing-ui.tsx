@@ -336,7 +336,11 @@ export function BlockHeading({ title, kicker }: { title: React.ReactNode; kicker
 }
 
 // Editorial pull-quote — a centered, oversized display blockquote with an
-// uppercase attribution. Wrap accent words in <span className="text-primary">.
+// uppercase attribution. Wrap accent words in a <span>.
+//   ACCENT WORDS take the band: `text-primary` on an INK band, `text-primary-strong` on a
+//   LIGHT one. `-strong` is #965C12 in the light states, so on ink it paints brown on
+//   near-black; `text-primary` is 2.18-2.86:1 on light, under even the 3:1 large-text floor.
+//   `accentize()` in lib/page-editor/fields.tsx applies the same conditional (ADR-929).
 // Distinct from Statement (no attribution; this carries a voice).
 export function PullQuote({
   children,
@@ -573,10 +577,23 @@ export function OutcomeSkeleton() {
 export function Card({
   children,
   tone = 'soft',
+  pad = 'p-6',
   className = '',
 }: {
   children: React.ReactNode
   tone?: 'soft' | 'feature' | 'elevated' | 'highlight'
+  /**
+   * The card's own padding, as a prop rather than a className override — for exactly the reason
+   * the `highlight` tone below is a tone.
+   *
+   * 🔴 It used to be a hardcoded `p-6` inside the template, and three callers tried to override it
+   * from `className`. Both land on one element and `className` is a plain join, not `cn`, so the
+   * winner was whichever utility Tailwind emitted LAST — i.e. the larger step, every time.
+   * `p-8` therefore worked and `p-5` silently did not: the two browse cards in
+   * components/discover/cards.tsx asked for p-5 and painted p-6, which is how axe came to report
+   * their contents under the selector `.p-5.p-6`. Passing it here removes the race.
+   */
+  pad?: string
   className?: string
 }) {
   const tones = {
@@ -587,7 +604,7 @@ export function Card({
     // the border width cannot depend on which utility Tailwind happened to emit last.
     highlight: 'border-2 border-primary bg-surface shadow-pop ring-4 ring-primary-bg',
   } as const
-  return <div className={`rounded-2xl p-6 ${tones[tone]} ${className}`}>{children}</div>
+  return <div className={`rounded-2xl ${pad} ${tones[tone]} ${className}`}>{children}</div>
 }
 
 export function Lead({ children }: { children: React.ReactNode }) {
@@ -639,8 +656,12 @@ export function Body({ children }: { children: React.ReactNode }) {
   return <p className="text-body-lg text-muted leading-relaxed mb-6">{children}</p>
 }
 
-// Big full-width typographic interstitial. Wrap accent words in
-// <span className="text-primary"> inside children.
+// Big full-width typographic interstitial. Wrap accent words in a <span> inside children.
+// This one takes BOTH bands (`tone="ink"` vs `"canvas"`), so the rule below is not optional.
+//   ACCENT WORDS take the band: `text-primary` on an INK band, `text-primary-strong` on a
+//   LIGHT one. `-strong` is #965C12 in the light states, so on ink it paints brown on
+//   near-black; `text-primary` is 2.18-2.86:1 on light, under even the 3:1 large-text floor.
+//   `accentize()` in lib/page-editor/fields.tsx applies the same conditional (ADR-929).
 export function Statement({
   children,
   tone = 'canvas',
@@ -675,8 +696,9 @@ export function Statement({
 // ── PhotoBeat — a full-bleed photograph carrying one sentence (DAWN) ──────────
 // The rhythm alternative to the slat Statement: same job in the page's heartbeat,
 // but the picture is the argument. Ink scrim + light-strip seams top and bottom so
-// it reads as one printed thing against the cream around it. Accent a phrase in
-// `line` with <span className="text-primary">.
+// it reads as one printed thing against the cream around it. Accent a phrase in `line` with
+// <span className="text-primary"> -- correct here and ONLY here, because PhotoBeat is always
+// an ink scrim. On a light band the same span needs `text-primary-strong`; see PullQuote above.
 export function PhotoBeat({
   image,
   alt = '',
