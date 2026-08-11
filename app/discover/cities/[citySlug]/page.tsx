@@ -118,7 +118,7 @@ export default async function DiscoverCityPage({
         eyebrow="A community taking root"
         title={
           <>
-            Find your people in <span className="text-primary">{city}</span>
+            Find your people in <span className="text-primary-strong">{city}</span>
           </>
         }
         subtitle={`Circles are meeting and events are happening in ${city} right now. Browse them free, then sign up to join one, RSVP, or start your own. It is the same simple thing every week, with room for you.`}
@@ -143,7 +143,7 @@ export default async function DiscoverCityPage({
               eyebrow="Find your people"
               title={
                 <>
-                  Circles in <span className="text-primary">{city}</span>
+                  Circles in <span className="text-primary-strong">{city}</span>
                 </>
               }
               kicker="Up to fifty neighbors, small enough to know everyone."
@@ -165,7 +165,7 @@ export default async function DiscoverCityPage({
               eyebrow="Coming up"
               title={
                 <>
-                  Happening in <span className="text-primary">{city}</span>
+                  Happening in <span className="text-primary-strong">{city}</span>
                 </>
               }
               kicker="Real plans, on real days, with room for you."

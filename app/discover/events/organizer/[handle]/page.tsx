@@ -216,7 +216,7 @@ export default async function OrganizerPage({
         <section className="mb-12">
           <SectionHeading
             eyebrow="On the calendar"
-            title={<>Coming <span className="text-primary">up</span></>}
+            title={<>Coming <span className="text-primary-strong">up</span></>}
             kicker={
               upcoming.length > 0
                 ? 'Pick one, RSVP, and you are expected.'
@@ -242,7 +242,7 @@ export default async function OrganizerPage({
           <section className="mb-12">
             <SectionHeading
               eyebrow="Already happened"
-              title={<>Recently <span className="text-primary">hosted</span></>}
+              title={<>Recently <span className="text-primary-strong">hosted</span></>}
               kicker="A sense of the rooms this host puts together."
             />
             <div className="mt-6 space-y-3 opacity-80">

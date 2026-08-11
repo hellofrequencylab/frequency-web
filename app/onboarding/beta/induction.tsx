@@ -115,7 +115,7 @@ function accent(text: string): React.ReactNode {
   if (parts.length === 1) return text
   return parts.map((part, i) =>
     part.startsWith('*') && part.endsWith('*') && part.length > 2 ? (
-      <span key={i} className="text-primary">{part.slice(1, -1)}</span>
+      <span key={i} className="text-primary-strong">{part.slice(1, -1)}</span>
     ) : (
       <span key={i}>{part}</span>
     ),

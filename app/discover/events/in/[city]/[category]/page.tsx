@@ -114,7 +114,7 @@ export default async function CityCategoryHubPage({ params }: Params) {
         back={{ href: '/discover/events', label: 'Events' }}
         title={
           <>
-            {cat.label} in <span className="text-primary">{hub.city}</span>
+            {cat.label} in <span className="text-primary-strong">{hub.city}</span>
           </>
         }
         subtitle={

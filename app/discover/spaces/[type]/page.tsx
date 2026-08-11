@@ -86,7 +86,7 @@ export default async function DiscoverSpacesByTypePage({
         eyebrow="Discover by type"
         title={
           <>
-            {hub.plural} on <span className="text-primary">{SITE_NAME}</span>
+            {hub.plural} on <span className="text-primary-strong">{SITE_NAME}</span>
           </>
         }
         subtitle={`The ${hub.plural.toLowerCase()} building on ${SITE_NAME}: ${hub.blurb}. Browse them free, follow the ones you like, then reach out.`}
