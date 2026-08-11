@@ -49,16 +49,18 @@ function str(v: unknown): string {
 // The four Pillars are deliberately NOT restated here: `domain_id` stores a `pillars` row id, so
 // it has to be loaded, which is what `optionsFrom` is for.
 
-/** Which timer a Practice opens. Mirrors TIMER_KINDS (lib/practices.ts). Labels follow the
- *  naming canon: Mindless is THE timer, and `Be Still` / `Get Moving` are its two modes, so the
- *  shipped builder's stale "Mindless" button label is corrected here. */
+/** Which MODE of the Mindless timer a Practice opens (owner, 2026-08-11). The whole timer system IS
+ *  the Mindless timer; `Be Still` and `Get Moving` are its two modes, NOT alternatives to it. An
+ *  earlier pass read the canon backwards and labelled the timer itself "Be Still". Mirrors
+ *  TIMER_KINDS (lib/practices.ts): the stored value `mindless` is the Be Still mode, kept for
+ *  back-compat with every existing row. */
 const TIMER_KINDS = [
   { value: 'mindless', label: 'Be Still' },
   { value: 'movement', label: 'Get Moving' },
   { value: 'none', label: 'Log it' },
 ] as const
 
-/** The Be Still flavours. Mirrors MINDLESS_MODES (lib/practices.ts) with the builder's labels. */
+/** The Be Still flavours, one level below the mode. Mirrors MINDLESS_MODES (lib/practices.ts). */
 const BE_STILL_MODES = [
   { value: 'meditate', label: 'Meditate' },
   { value: 'breathe', label: 'Breathe' },
@@ -90,7 +92,7 @@ export const PRACTICE_MANIFEST: EntityManifest = {
     { key: 'content', title: 'The practice', desc: 'The hook, the description, and the guide people actually follow.' },
     { key: 'pillars', title: 'Pillars and tags', desc: 'Where it sits across the four Pillars, and how people browse to it.' },
     { key: 'shape', title: 'Cadence and length', desc: 'How often it is done, and how long one session takes.' },
-    { key: 'timer', title: 'How it is done', desc: 'The timer it opens, its tuning, and the warm-up before it starts.' },
+    { key: 'timer', title: 'The Mindless timer', desc: 'Which mode it opens in, its tuning, and the warm-up before it starts.' },
     { key: 'rewards', title: 'Rewards', desc: 'What one log is worth. The override is for admins.' },
     { key: 'publishing', title: 'Publishing', desc: 'Who can see it, and where it stands with the Hosts.' },
   ],
@@ -181,7 +183,7 @@ export const PRACTICE_MANIFEST: EntityManifest = {
     // ── How it is done. The timer the practice routes to, plus its tuning. ──
     // 'none' is a one-tap Log it, 'mindless' opens Be Still, 'movement' opens Get Moving.
     // The column default is 'mindless'.
-    { path: 'timer_kind', label: 'How it is done', kind: 'select', section: 'timer', veraDrafts: false, options: TIMER_KINDS, read: (d) => str(d.timer_kind) || 'mindless' },
+    { path: 'timer_kind', label: 'Mindless timer mode', kind: 'select', section: 'timer', veraDrafts: false, options: TIMER_KINDS, read: (d) => str(d.timer_kind) || 'mindless' },
     // A nested config object (mode plus per-mode tuning), read here as its mode.
     {
       path: 'movement_config',

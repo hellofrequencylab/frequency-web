@@ -17,9 +17,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState } from 'react'
-import { X } from 'lucide-react'
+import { ImageIcon, X } from 'lucide-react'
 import { Input, Textarea, fieldClasses } from '@/components/ui/field'
-import { LoomImageField } from '@/lib/page-editor/loom-image-field'
+import { LoomPicker } from '@/components/loom/loom-picker'
 import type { FieldDef, FieldKind } from '@/lib/studio/kernel/manifest'
 import { cn } from '@/lib/utils'
 
@@ -43,16 +43,14 @@ export interface FieldControlProps {
   /** Collections the surface loaded, keyed by `optionsFrom` name. */
   loaded?: FieldOptions
   /**
-   * The Space an image is chosen INSIDE (ADR-598: the Loom is the only image picker). Every pick
-   * or upload files into that Space's Loom, so it is reusable afterwards instead of being a
-   * one-off URL. Untrusted: the server re-resolves the space and re-gates edit permission.
+   * Which Loom scope the picker opens in (ADR-987: the Loom is the only image picker). Pass a Space
+   * id when editing inside a Space, so a pick files into that Space's library and is reusable there.
    *
-   * WITHOUT it there is no Loom to file into, and an `image` field renders DISABLED with a plain
-   * reason rather than falling back to a direct uploader, because a silent fallback is exactly how
-   * the two competing controls got established in the first place. Space-less entities (a Practice,
-   * a Journey) need a member-scoped Loom before they can carry image fields; see docs/STUDIO.md.
+   * Omit it and the picker opens the member's own Loom plus every Space they operate. That is what
+   * lets a SPACE-LESS entity (a Practice, a Journey, a Circle) carry image fields at all: the member
+   * always has a Loom of their own, so there is no surface left needing a direct-upload escape hatch.
    */
-  spaceSlug?: string
+  scopeKey?: string
   disabled?: boolean
   /** Rendered under the control (a hint, or a validation reason). */
   hint?: string
@@ -110,9 +108,9 @@ const asList = (v: string | string[]): string[] => (Array.isArray(v) ? v : v ? [
  * exactly like the rest of the Studio kit, so this composes with autosave or with a staged wizard
  * without knowing which it is in.
  */
-export function FieldControl({ def, value, onChange, loaded, spaceSlug, disabled, hint, id }: FieldControlProps) {
+export function FieldControl({ def, value, onChange, loaded, scopeKey, disabled, hint, id }: FieldControlProps) {
   const describedBy = hint ? `${id ?? def.path}-hint` : undefined
-  const control = renderControl({ def, value, onChange, loaded, spaceSlug, disabled, id, describedBy })
+  const control = renderControl({ def, value, onChange, loaded, scopeKey, disabled, id, describedBy })
 
   return (
     <div>
@@ -131,7 +129,7 @@ function renderControl({
   value,
   onChange,
   loaded,
-  spaceSlug,
+  scopeKey,
   disabled,
   id,
   describedBy,
@@ -196,6 +194,10 @@ function renderControl({
             type="color"
             aria-label={`${def.label} swatch`}
             disabled={disabled}
+            // A native <input type="color"> requires a literal 7-char hex and cannot take a token. This
+            // is only the fallback swatch shown when the field holds a TOKEN NAME rather than a hex, so
+            // it is never a rendered brand color; the text box beside it stays authoritative.
+            // token-ok: native color input cannot accept a design token
             value={/^#[0-9a-f]{6}$/i.test(asText(value)) ? asText(value) : '#000000'}
             onChange={(e) => onChange(e.target.value)}
             className="h-9 w-9 shrink-0 cursor-pointer rounded-lg border border-border bg-surface p-1"
@@ -203,50 +205,33 @@ function renderControl({
         </div>
       )
 
-    // ONE image control everywhere: the Loom (ADR-598). A pick or an upload lands in the Space's
-    // own library, so the next block can reuse it. There is deliberately no direct-upload fallback.
+    // ONE image control everywhere: the Loom (ADR-987). A pick or an upload lands in a real library
+    // and is reusable, so there is deliberately no direct-upload path here.
     case 'image':
-      if (!spaceSlug) return <NoLoom label={def.label} />
-      return <LoomImageField value={asText(value)} onChange={(next) => onChange(next)} spaceSlug={spaceSlug} />
-
-    case 'images': {
-      if (!spaceSlug) return <NoLoom label={def.label} />
-      const picked = asList(value)
       return (
-        <div>
-          {picked.length > 0 && (
-            <ul className="mb-2 space-y-1.5">
-              {picked.map((url, i) => (
-                <li key={`${url}-${i}`} className="flex items-center gap-2">
-                  {/* A plain img, not next/image: these are operator-chosen Loom URLs at thumbnail
-                      size inside an editor, so optimization buys nothing and the domain allow-list
-                      would have to know every storage host. */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt="" className="h-10 w-10 shrink-0 rounded-lg border border-border object-cover" />
-                  <span className="min-w-0 flex-1 truncate text-2xs text-muted">{url}</span>
-                  <button
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => onChange(picked.filter((_, j) => j !== i))}
-                    className="shrink-0 rounded-lg border border-border p-1 text-muted transition-colors hover:text-text disabled:opacity-50"
-                  >
-                    <X className="h-3 w-3" aria-hidden />
-                    <span className="sr-only">Remove image {i + 1}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          {/* Held at an empty value so each pick APPENDS. One at a time is the current cost of
-              routing everything through the Loom; a multi-select mode on the picker is the fix,
-              not a second control. */}
-          <LoomImageField value="" onChange={(next) => next && onChange([...picked, next])} spaceSlug={spaceSlug} />
-        </div>
+        <LoomImageSlot
+          value={asText(value)}
+          onChange={(next) => onChange(next)}
+          label={def.label}
+          scopeKey={scopeKey}
+          disabled={disabled}
+        />
       )
-    }
 
-    // `daterange` is two instants. The manifest declares one field; the control renders the pair
-    // and stores them as an ISO tuple, so an entity never has to declare "start" and "end" twice.
+    case 'images':
+      return (
+        <LoomImageSlot
+          multiple
+          values={asList(value)}
+          onChange={(next) => onChange(next)}
+          label={def.label}
+          scopeKey={scopeKey}
+          disabled={disabled}
+        />
+      )
+
+    // `daterange` is two instants. The manifest declares ONE field; the control renders the pair and
+    // stores them as an ISO tuple, so an entity never has to declare "start" and "end" twice.
     case 'daterange':
       return <DateRangeControl {...common} value={asList(value)} onChange={onChange} />
 
@@ -268,13 +253,96 @@ function renderControl({
 
 // ── Composite controls ───────────────────────────────────────────────────────────────────
 
-/** Shown for an image field with no Space behind it. Says what is missing instead of quietly
- *  offering a direct upload, which is the failure mode ADR-598 exists to end. */
-function NoLoom({ label }: { label: string }) {
+/**
+ * An image slot backed by the Loom. Shows what is chosen, opens the picker to change it, and (in
+ * `multiple` mode) keeps an ordered list. There is no file input here on purpose: every image on
+ * the platform goes through the Loom so it is catalogued and reusable (ADR-987).
+ */
+function LoomImageSlot({
+  value,
+  values,
+  onChange,
+  label,
+  scopeKey,
+  disabled,
+  multiple,
+}: {
+  value?: string
+  values?: string[]
+  onChange: (next: string & string[]) => void
+  label: string
+  scopeKey?: string
+  disabled?: boolean
+  multiple?: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const list = values ?? []
+
   return (
-    <p className="rounded-lg border border-dashed border-border-strong bg-surface/50 px-3 py-2 text-2xs leading-snug text-muted">
-      {label} needs a Space to pick from. Images live in the Loom, and this surface is not inside one yet.
-    </p>
+    <div>
+      {multiple && list.length > 0 && (
+        <ul className="mb-2 space-y-1.5">
+          {list.map((url, i) => (
+            <li key={`${url}-${i}`} className="flex items-center gap-2">
+              {/* A plain img, not next/image: these are operator-chosen Loom URLs at thumbnail size
+                  inside an editor, so optimization buys nothing and the domain allow-list would have
+                  to know every storage host. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={url} alt="" className="h-10 w-10 shrink-0 rounded-lg border border-border object-cover" />
+              <span className="min-w-0 flex-1 truncate text-2xs text-muted">{url}</span>
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onChange(list.filter((_, j) => j !== i) as string & string[])}
+                className="shrink-0 rounded-lg border border-border p-1 text-muted transition-colors hover:text-text disabled:opacity-50"
+              >
+                <X className="h-3 w-3" aria-hidden />
+                <span className="sr-only">Remove image {i + 1}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {!multiple && value && (
+        <div className="mb-2 flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={value} alt="" className="h-14 w-14 shrink-0 rounded-lg border border-border object-cover" />
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange('' as string & string[])}
+            className="rounded-lg border border-border p-1.5 text-muted transition-colors hover:text-text disabled:opacity-50"
+          >
+            <X className="h-3.5 w-3.5" aria-hidden />
+            <span className="sr-only">Remove {label}</span>
+          </button>
+        </div>
+      )}
+
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+      >
+        <ImageIcon className="h-3.5 w-3.5" aria-hidden />
+        {multiple ? 'Add from the Loom' : value ? 'Change' : 'Choose from the Loom'}
+      </button>
+
+      {open && (
+        <LoomPicker
+          open={open}
+          onClose={() => setOpen(false)}
+          title={multiple ? `Add to ${label}` : `Choose ${label}`}
+          scopeKey={scopeKey}
+          kinds={['image']}
+          multiple={multiple}
+          onSelect={(url) => onChange(url as string & string[])}
+          onSelectMany={(urls) => onChange([...list, ...urls] as string & string[])}
+        />
+      )}
+    </div>
   )
 }
 
