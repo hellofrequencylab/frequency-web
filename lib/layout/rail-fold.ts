@@ -32,10 +32,27 @@
 // server could not know is exactly how you ship a layout flash. So: the position decides the
 // fold, the media query decides whether there is a rail to fold at all.
 //
-// (DAWN puts that line at 1000px for BOTH rails and turns the menu into an overlay below it.
-// Production still runs two lines, 768 and 1024, because Tailwind's breakpoints are
-// uncustomised here — see docs note in the handoff report. Moving them is a `--breakpoint-*`
-// declaration in app/globals.css, which this pass does not own.)
+// (RULED 2026-08-11, DAWN's answer to BRIEF-07 Q3: THE NUMBER IS 768, and DAWN's 1000 is
+// re-scoped rather than overruled, because the two were never measuring the same thing.
+// DAWN does not run one line either — `ui_kits/screens/frame.jsx` runs four: overlayMenu at
+// w < 1000, autoLeft at 1180, forceRightStrip at 1100, autoRight at 1400. Its readme compresses
+// those to "under 1000px the menu leaves the layout", which is true of DAWN's MENU MODE and not
+// of its shell.
+//   1000 is a MENU-MODE line. DAWN can overlay there because its TopBar's nav toggle is always
+//        on screen, so the overlay always has an opener.
+//   768  is this repo's INPUT-MODE line. Below it the shell becomes touch chrome: tab bar in,
+//        rail out, drawer in. The drawer's ONLY opener is the tab bar, and the tab bar is
+//        md:hidden — so moving the rail to 1000 leaves 768-999 with no rail, no tab bar, and
+//        therefore no way to open the menu at all. The "contained fix" is not contained.
+// So `--breakpoint-md` is NOT redefined and `--breakpoint-rail` is NOT added. Two further
+// reasons, both measurable: `rg -oE '\b(md|lg):' components app lib` is ~870 sites, three orders
+// of magnitude past the five it would fix; and `--breakpoint-rail: 62.5rem` would land at 1000
+// CSS px, because a MEDIA QUERY resolves rem against 16px, while every rem in the layout it
+// governs renders at this app's 17px root. Two unit bases in one decision, permanently.
+// DAWN's 1180 / 1400 / 1100 are not breakpoints at all: they are AUTO-FOLD thresholds, which
+// move a rail's position on this ladder rather than removing it from the layout. `autoStrip`
+// below is keyed on the ROUTE, so "Auto follows the room" is the half not built — and it is not
+// a breakpoint edit either, for the same server-cannot-know-the-viewport reason stated above.)
 
 /** One side's position on the ladder. */
 export type RailFold = 'auto' | 'open' | 'strip'

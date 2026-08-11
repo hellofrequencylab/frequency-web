@@ -68,10 +68,14 @@ export function PhotoHero({
   // now a dockless PhotoHero emitted neither class, so that rule had never fired for any hero
   // on the site and eight pages had hand-written the `pt-0` it exists to supply.
   const shape = facts ? 'mk-hero mk-hero-dock' : 'mk-hero overflow-hidden'
+  // The docked hero's `pb-36` is ROOM FOR AN OVERHANG, not a bottom pad — and below `sm` there
+  // is no overhang (the dock goes in flow; see the strip below). So the phone value drops to an
+  // ordinary content bottom and the strip occupies the room instead of hovering over it. The
+  // `sm:` values are untouched: nothing about the desktop hero moves.
   const padY = isScreen
     ? 'py-16 sm:py-28'
     : facts
-      ? 'pt-16 sm:pt-32 pb-36 sm:pb-40'
+      ? 'pt-16 pb-12 sm:pt-32 sm:pb-40'
       : 'py-16 sm:py-32'
   return (
     <section
@@ -121,14 +125,39 @@ export function PhotoHero({
         {children && <div className={isScreen ? 'mt-7' : 'mt-9'}>{children}</div>}
         {footer}
       </div>
+      {/* ── THE FACT DOCK, and what it does on a phone (DAWN 2026-08-11, Q5) ──────────────
+          FROM `sm` it is unchanged: absolute, overhanging by -bottom-8, three facts on ONE
+          row. BELOW `sm` it stops being a dock and becomes an in-flow STRIP at the foot of
+          the hero. That dissolves the problem rather than retuning it, and it is DAWN's own
+          narrow-screen escape (`ui_kits/marketing/operators.html` drops its dock to
+          `position: static` under its collapse line) promoted from a per-page override.
+
+          WHY NOT THE THREE OPTIONS THE BRIEF LISTED. Stack is 200px+ of chrome on a 390px
+          screen, at which point it is not a dock. Truncate is rejected on VOICE, not layout:
+          the facts are a claim, and a phone showing two of three makes a different claim than
+          the desktop page. And wrapping — what it did until now — grows the panel UPWARD,
+          because the panel was anchored by its bottom edge, so it quietly ate the hero's own
+          room and crowded the subtitle.
+
+          THE ARITHMETIC, at this app's 17px root. Overhanging at 390px the panel is
+          `max-w-[calc(100vw-2rem)]` = 356px, less px-6 (51) less two gap-6 (51) = 254px for
+          three columns, 84.7px each — which a 12-character eyebrow at 0.18em does not fit,
+          which is why it wrapped. In flow and full-bleed to the marketing gutter the box is
+          339px, and with px-4 (17) and gap-3 (12.75 x 2) each column gets 93.2px. That fits,
+          with the label allowed two lines.
+
+          `flex-wrap` is gone in both directions. DAWN's dock is `nowrap`, "three numbers,
+          never more" (ui_kits/marketing/sections.jsx); the wrap was a local addition. Below
+          `sm` the strip is a GRID, so it cannot grow upward at all. */}
       {facts && (
-        <div className="glass-ink lift-3 absolute -bottom-8 left-1/2 z-20 flex w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-wrap items-start justify-center gap-6 rounded-2xl px-6 py-4 sm:gap-10 sm:px-9">
+        <div className="glass-ink lift-3 relative z-20 mx-6 mt-6 grid grid-cols-3 items-start gap-3 rounded-2xl px-4 py-3 sm:absolute sm:-bottom-8 sm:left-1/2 sm:mx-0 sm:mt-0 sm:flex sm:w-max sm:max-w-[calc(100vw-2rem)] sm:-translate-x-1/2 sm:justify-center sm:gap-10 sm:px-9 sm:py-4">
           {facts.map(([value, label]) => (
-            <div key={label} className="text-center">
-              <div className="font-display text-page-title leading-none text-primary sm:text-3xl">
+            <div key={label} className="min-w-0 text-center">
+              {/* A numeral never wraps; the label may take two lines. */}
+              <div className="font-display text-lead leading-none whitespace-nowrap text-primary sm:text-3xl">
                 {value}
               </div>
-              <div className="mt-1.5 text-3xs font-bold uppercase tracking-eyebrow text-on-ink-muted">
+              <div className="mt-1.5 text-3xs font-bold uppercase tracking-eyebrow-soft text-on-ink-muted sm:tracking-eyebrow">
                 {label}
               </div>
             </div>

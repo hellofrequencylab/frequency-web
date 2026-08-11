@@ -250,10 +250,19 @@
      the RSVP bar both cleared the bar exactly, and the disc painted straight over them
      (9.25px and 22px of overlap respectively, on the primary conversion control of each page).
 
-     Use --tab-bar-h when you need the bar's own box (content padding, scroll offsets).
-     Use --tab-bar-clearance when you are PLACING something above it. */
+     Use --tab-bar-h when you need the bar's own box (the bar itself, a viewport-height calc).
+     Use --tab-bar-clearance when you are PLACING something above it — INCLUDING the content
+     column's own bottom pad, because rule 3 of the mobile stacking contract
+     (components/sidebar/game-stats-dock.tsx) is "clear 115.5px, not 93.5px": the catch's top
+     edge is the real top of the bar.
+
+     --tab-bar-lift IS THE CATCH'S OVERHANG, NAMED ONCE (DAWN 2026-08-11, Q6). It was a 22px
+     literal here AND a second `-translate-y-[22px]` literal in app-shell.tsx, so the disc's
+     position and the clearance it needs were two independent numbers that happened to agree.
+     One name, two readers. */
+  --tab-bar-lift:      22px;
   --tab-bar-h:         calc(3.5rem + env(safe-area-inset-bottom));
-  --tab-bar-clearance: calc(3.5rem + env(safe-area-inset-bottom) + 22px);
+  --tab-bar-clearance: calc(var(--tab-bar-h) + var(--tab-bar-lift));
   /* The sticky app header, same reasoning: 3.5rem plus the TOP inset under viewport-fit=cover. */
   --app-header-h:      calc(3.5rem + env(safe-area-inset-top));
 
@@ -466,6 +475,10 @@
   --tracking-tight:         -0.015em;
   --tracking-tight-display: -0.03em;
   --tracking-eyebrow:        0.18em;
+  /* The eyebrow's phone value. 0.18em is a desktop spacing: on a ~93px strip column it costs
+     roughly two characters of a label that only has twelve, which is what pushed the hero fact
+     dock's labels into a wrap (DAWN 2026-08-11, Q5). Same role, relaxed for a narrow measure. */
+  --tracking-eyebrow-soft:   0.08em;
 }
 
 /* Always-light lock. The cinematic beta induction is a branded cream experience
@@ -1465,6 +1478,7 @@
   --tracking-tight:         var(--tracking-tight);
   --tracking-tight-display: var(--tracking-tight-display);
   --tracking-eyebrow:       var(--tracking-eyebrow);
+  --tracking-eyebrow-soft:  var(--tracking-eyebrow-soft);
   --ease-out:               var(--ease-out);
 }
 
@@ -1550,12 +1564,39 @@
   /* Half-gaps: two stacked bands each contribute their own padding, so a token that looks
      right in isolation reads as a hole in a pair. The pair is corrected below (a section
      followed by another gives up a third of its bottom), and these values are tuned for
-     the corrected total. */
-  --space-section:        clamp(4.25rem, 8vw, 5.5rem); /* default content section */
-  --space-section-tight:  clamp(3rem, 5.5vw, 3.75rem); /* statements, banners     */
-  --space-section-loose:  clamp(5rem, 9.5vw, 7rem);    /* hero beats, dark band   */
+     the corrected total.
+
+     ── THE FLOORS ARE THE PHONE VALUES (DAWN 2026-08-11, Q4) ──────────────────────────────
+     At 390px every `vw` term is under its floor (9.5vw = 37.1px, 8vw = 31.2, 5.5vw = 21.5),
+     so a phone does not read the clamp — it reads whatever the desktop curve bottomed out at.
+     The old floors read 1.176 : 1 : 0.706, a FLATTENED version of the desktop ratio
+     1.273 : 1 : 0.682, and the band↔beat step at 390px came out at 12.75px: 3.3% of the
+     viewport, seen ~800px apart in a scroll, which is below noticing. The four roles were
+     still four roles in the CSS and about two on the screen.
+
+     Re-cut, the floors read 1.286 : 1 : 0.643 — the desktop ratio, restored — and the four
+     seams land at 113 / 96 / 75 / 37px instead of 130 / 117 / 96 / 45. More rhythm AND less
+     dead scroll, in the same edit. Ceilings and `vw` terms are deliberately untouched: they
+     are what makes the clamps unpin at 806 / 744 / 696px instead of 895 / 903 / 927, so the
+     tablet band gets a continuous ramp into the desktop values rather than a cliff. */
+  --space-section:        clamp(3.5rem, 8vw, 5.5rem);    /* default content section */
+  --space-section-tight:  clamp(2.25rem, 5.5vw, 3.75rem); /* statements, banners     */
+  --space-section-loose:  clamp(4.5rem, 9.5vw, 7rem);    /* hero beats, dark band   */
 }
-.mk-band, .mk-beat, .mk-cont, .mk-tight { padding-inline: 1.5rem; }
+/* THE GUTTER HOLDS AT 1.5rem, BY DECISION. It is the one spacing value in the marketing
+   system that ignores the viewport, and it should: 25.5px each side of 390px leaves 339px of
+   measure, ~46-52 characters at --text-body, inside the comfortable band. Cutting it to 1.25rem
+   buys 2.5% of measure and pushes body copy into iOS's ~20px edge-swipe region. It is a SAFETY
+   MARGIN, and a safety margin that tracks the viewport is not one.
+   But it must track the SAFE AREA, which it did not: the app runs viewport-fit=cover
+   (app/layout.tsx), the shell body has .px-safe, and marketing never got it — so in landscape
+   on a notched phone the copy ran under the notch. `max()` is the same shape .px-safe uses.
+   .mk-cont-soft WAS MISSING from this selector (same omission in DAWN's tokens/utilities.css),
+   so a hand-rolled .mk-cont-soft section rendered edge-to-edge; latent only because the
+   marketing <Section> also emits px-6. */
+.mk-band, .mk-beat, .mk-cont, .mk-cont-soft, .mk-tight {
+  padding-inline: max(1.5rem, env(safe-area-inset-left)) max(1.5rem, env(safe-area-inset-right));
+}
 .mk-band  { padding-block: var(--space-section-loose); }
 .mk-beat  { padding-block: var(--space-section); }
 .mk-cont  { padding-block: 0 var(--space-section); }
@@ -1610,12 +1651,26 @@
    (PageHero adds .mk-hero-dock when it is given facts), so no page has to remember
    this and no future dock can collide. The adjacency rule beats .mk-cont's zero.
    Clearance is HALF a beat plus the overhang: the hero's own bottom room is already
-   generous, and a full beat on top of it opened a 246px hole under every dock. */
-.mk-dock-clear,
-.mk-hero-dock + section,
-.mk-hero-dock + .mk-beat,
-.mk-hero-dock + .mk-band,
-.mk-hero-dock + .mk-cont { padding-top: calc(var(--space-section) / 2 + 3rem); }
+   generous, and a full beat on top of it opened a 246px hole under every dock.
+
+   BELOW `sm` THERE IS NO OVERHANG TO CLEAR (DAWN 2026-08-11, Q5). The fact dock leaves the
+   corner and becomes an in-flow strip at the foot of the hero (marketing-ui.tsx), so this
+   clearance would be 87px of hole under every dock on a phone. It is gated to 40rem — a MEDIA
+   QUERY, so 640 CSS px on the 16px basis, the same line as Tailwind's `sm` that the strip
+   switches on, even though every padding around it renders at this app's 17px root. Below it a
+   hero with a dock is an ordinary hero, which is the `.mk-hero:not(.mk-hero-dock)` rule above,
+   stated here for the docked arm because that rule excludes it by construction. */
+@media (max-width: 39.9375rem) {
+  .mk-hero-dock + .mk-beat,
+  .mk-hero-dock + .mk-band { padding-top: 0; }
+}
+@media (min-width: 40rem) {
+  .mk-dock-clear,
+  .mk-hero-dock + section,
+  .mk-hero-dock + .mk-beat,
+  .mk-hero-dock + .mk-band,
+  .mk-hero-dock + .mk-cont { padding-top: calc(var(--space-section) / 2 + 3rem); }
+}
 
 /* Text-shadow presets (ADR-569 C1) — the two shadow steps the block text-style control offers.
    Token-driven (the shadow rgba matches the soft in-app shadow set), so operator-authored text
