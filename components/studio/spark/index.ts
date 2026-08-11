@@ -10,3 +10,8 @@ export { SparkDropzone, type SparkDropzoneProps } from './spark-dropzone'
 export { SparkReview, type SparkReviewProps } from './spark-review'
 export { SparkSteer, type SparkSteerProps } from './spark-steer'
 export { FieldControl, type FieldControlProps, type FieldOptions } from './field/field-control'
+
+// The label row a field sits in. Re-exported so a consumer never has to reach across into
+// components/studio/kit to render a Spark field, which is how bespoke <label> markup creeps back in
+// (STUDIO.md §2: no hand-rolled label rows).
+export { StudioField, StudioNote } from '../kit/studio-field'

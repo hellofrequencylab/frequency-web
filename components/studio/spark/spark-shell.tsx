@@ -23,6 +23,13 @@ export interface SparkShellProps {
   /** The thing being made, shown as the eyebrow ("New Event"). */
   eyebrow: string
   title: string
+  /**
+   * The heading level for `title`. Defaults to 1 for a standalone Spark that owns its page. Pass 2
+   * when the Spark is mounted INSIDE a template that already rendered an h1 (an AdminTemplate page,
+   * for one), because two h1s on a page is a real navigation bug for a screen-reader user, not a
+   * style preference.
+   */
+  headingLevel?: 1 | 2
   description?: ReactNode
   /** 1-indexed step, and the total for THIS path (paths differ in length: an upload path is
    *  shorter than the question path, and the count must tell the truth about the path taken). */
@@ -49,6 +56,7 @@ export interface SparkShellProps {
 export function SparkShell({
   eyebrow,
   title,
+  headingLevel = 1,
   description,
   step,
   totalSteps,
@@ -109,12 +117,18 @@ export function SparkShell({
         className="mt-7 animate-[slideUp_0.35s_ease-out] outline-none motion-reduce:animate-none"
       >
         <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-primary-strong">{eyebrow}</p>
-        <h1 className="text-2xl font-bold text-text">{title}</h1>
+        {headingLevel === 1 ? (
+          <h1 className="text-2xl font-bold text-text">{title}</h1>
+        ) : (
+          <h2 className="text-2xl font-bold text-text">{title}</h2>
+        )}
         {description && <p className="mt-1 text-sm leading-relaxed text-muted">{description}</p>}
 
         <div className="mt-5">{children}</div>
 
-        {error && <p className="mt-4 text-sm text-warning">{error}</p>}
+        {/* A div, not a p: callers pass rich error content (a Banner is a div) and nesting one
+            inside a p is invalid HTML that React will silently reflow. */}
+        {error && <div className="mt-4 text-sm text-warning">{error}</div>}
 
         {(footer ?? standardFooter) && <div className="mt-7">{footer ?? standardFooter}</div>}
       </div>

@@ -57,6 +57,10 @@ export interface StartImportInput {
   socialHandles?: IntakeInputs['socialHandles']
   /** DIRECTIONS: a freeform steering modifier for the seed (Importer v2). Folded into the reframe. */
   directions?: string
+  /** The seed MOOD chosen up front (owner decision, 2026-08-11: moods are part of every wizard).
+   *  `IntakeInputs` always carried this; the start form had no way to send it, so the operator's
+   *  choice was silently dropped and mood only became reachable later, at the re-seed panel. */
+  mood?: SeedMood
   /** Structured content boxes (Importer v2) — labeled sections the operator pastes so the extractor can
    *  identify content more easily. All are folded (labeled) into the single pasted-content source. */
   overview?: string
@@ -113,6 +117,7 @@ export async function startBusinessImport(input: StartImportInput): Promise<Star
   if (websiteUrl) inputs.websiteUrl = websiteUrl
   if (pastedContent) inputs.pastedContent = pastedContent
   if (directions) inputs.directions = directions
+  if (input.mood) inputs.mood = normalizeSeedMood(input.mood)
   if (input.socialHandles) inputs.socialHandles = input.socialHandles
   const hints: NonNullable<IntakeInputs['hints']> = {}
   if (nameHint) hints.name = nameHint

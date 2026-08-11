@@ -54,6 +54,12 @@ export interface FieldControlProps {
   disabled?: boolean
   /** Rendered under the control (a hint, or a validation reason). */
   hint?: string
+  /**
+   * Ghost text inside the control. Deliberately a PROP, not a manifest field: a placeholder is an
+   * example tuned to the surface asking ("acme-yoga.com" reads right on the Seeder and wrong in a
+   * Space's own settings), whereas the manifest describes what the field IS, everywhere at once.
+   */
+  placeholder?: string
   id?: string
 }
 
@@ -108,9 +114,9 @@ const asList = (v: string | string[]): string[] => (Array.isArray(v) ? v : v ? [
  * exactly like the rest of the Studio kit, so this composes with autosave or with a staged wizard
  * without knowing which it is in.
  */
-export function FieldControl({ def, value, onChange, loaded, scopeKey, disabled, hint, id }: FieldControlProps) {
+export function FieldControl({ def, value, onChange, loaded, scopeKey, disabled, hint, placeholder, id }: FieldControlProps) {
   const describedBy = hint ? `${id ?? def.path}-hint` : undefined
-  const control = renderControl({ def, value, onChange, loaded, scopeKey, disabled, id, describedBy })
+  const control = renderControl({ def, value, onChange, loaded, scopeKey, disabled, placeholder, id, describedBy })
 
   return (
     <div>
@@ -131,10 +137,11 @@ function renderControl({
   loaded,
   scopeKey,
   disabled,
+  placeholder,
   id,
   describedBy,
 }: Omit<FieldControlProps, 'hint'> & { describedBy?: string }) {
-  const common = { id: id ?? def.path, disabled, 'aria-describedby': describedBy }
+  const common = { id: id ?? def.path, disabled, placeholder, 'aria-describedby': describedBy }
 
   switch (def.kind) {
     case 'longtext':
@@ -157,7 +164,11 @@ function renderControl({
         <select {...common} className={fieldClasses} value={asText(value)} onChange={(e) => onChange(e.target.value)}>
           {/* An optional field needs a way back to "unset", and a reference that has not loaded
               yet needs to say so rather than looking like an empty list of real choices. */}
-          {!def.required && <option value="">{def.kind === 'reference' ? 'None' : 'Not set'}</option>}
+          {/* A field that is required, or that computes a default through `read`, is never actually
+              unset, so offering an empty option would invite a state it cannot hold. */}
+          {!def.required && !def.read && (
+            <option value="">{def.kind === 'reference' ? 'None' : 'Not set'}</option>
+          )}
           {choices.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}

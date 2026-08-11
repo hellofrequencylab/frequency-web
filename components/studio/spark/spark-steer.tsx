@@ -31,9 +31,10 @@ export interface SparkSteerProps {
   onMood: (next: SeedMood) => void
   directions: string
   onDirections: (next: string) => void
-  /** The currently pinned lock keys (a subset of `steer.lock`). */
-  locked: readonly string[]
-  onLocked: (next: string[]) => void
+  /** The currently pinned lock keys (a subset of `steer.lock`). Optional: an entity that declares
+   *  no `steer.lock`, or a CREATE flow where no draft exists yet to protect, has nothing to pin. */
+  locked?: readonly string[]
+  onLocked?: (next: string[]) => void
   /** Label for a lock key. Falls back to the key itself. */
   lockLabel?: (key: string) => string
   disabled?: boolean
@@ -58,9 +59,12 @@ export function SparkSteer({
   redrawLabel = 'Draft it again',
   busy,
 }: SparkSteerProps) {
-  const lockKeys = steer.lock ?? []
+  // No handler means locking is not offered here, so the whole section stays out of the DOM rather
+  // than rendering pins that cannot be pressed.
+  const lockKeys = onLocked ? (steer.lock ?? []) : []
+  const pinned = locked ?? []
   const toggleLock = (key: string) =>
-    onLocked(locked.includes(key) ? locked.filter((k) => k !== key) : [...locked, key])
+    onLocked?.(pinned.includes(key) ? pinned.filter((k) => k !== key) : [...pinned, key])
 
   if (!steer.mood && !steer.directions && lockKeys.length === 0) return null
 
@@ -125,9 +129,9 @@ export function SparkSteer({
                 type="button"
                 onClick={() => toggleLock(key)}
                 disabled={disabled || busy}
-                aria-pressed={locked.includes(key)}
+                aria-pressed={pinned.includes(key)}
                 className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors disabled:opacity-60 ${
-                  locked.includes(key)
+                  pinned.includes(key)
                     ? 'border-primary/40 bg-primary-bg text-primary-strong'
                     : 'border-border bg-surface text-muted hover:text-text'
                 }`}
