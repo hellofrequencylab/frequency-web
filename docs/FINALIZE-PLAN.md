@@ -823,3 +823,95 @@ where the site is. Packages 1 (`raw-palette`) and 4 (`handrolled-tabs`) are **do
 
 *Living document. Update a row the same day its work lands; when this plan and the code disagree,
 the code wins and this doc gets fixed in the same pass.*
+
+---
+
+## 9 · Product + performance audit (2026-08-11)
+
+Two fan-out audits against the tree, every claim traced to a file:line. Recorded here rather than
+fixed in the same pass, with the reason each was left.
+
+### 9.1 — 🔴 Members pay Gems for things nothing renders
+
+`/crew/store` writes `profiles.profile_border`, `profile_flair`, `custom_title`
+(`app/(main)/crew/store/actions.ts:202-206`). The only reader is the Vault page itself
+(`components/widgets/vault/vault-summary.tsx:55-73`), which prints them as text chips.
+`app/(main)/people/[handle]/page.tsx:82-103` does not select any of the three, so a purchased
+border or title never appears on the profile it was bought for. The help centre states the
+opposite three times (`content/help/membership/the-gem-store.md:25,26,35`).
+
+Same doc `:28` advertises membership credits; `lib/store/fulfillment.ts:20-22` classifies them
+`refuse` and the action returns "Membership credits aren't redeemable yet."
+
+Any other SKU falls to `pending` (`fulfillment.ts:26`), charges the Gems, shows "Recorded ✓", and
+lands in `store_redemptions` — which **no operator surface lists**. `/admin/store` reads it as
+`{ count: 'exact', head: true }` only. A member pays for a perk no human is ever shown.
+
+**Owner call, not a code fix:** render the cosmetics, or stop selling them.
+
+### 9.2 — ⚠️ Notification links that land on `/feed`
+
+`components/layout/notification-bell.tsx:32-52` ends `return '/feed'`. Four types carry a usable
+`reference_id` and fall through it: `conversation_reply`, `crm_inbound_reply`, `gift_received`,
+`achievement` — plus `reference_type === 'post'`, which returns bare `/feed` despite having the id.
+Small, self-contained, and every one is a click a member makes and gets nothing from.
+
+### 9.3 — ⚠️ Truncation reported as a total
+
+`/search` caps people at 24 and posts at 20 with no cursor (`app/(main)/search/page.tsx:123,138`),
+then computes the tab count from the truncated arrays (`:218`, rendered `:271`). A common first name
+shows "People 24" as though that were the answer. Message threads hard-stop at 100 with no
+load-older control in either `components/messages/thread.tsx` or `components/rooms/room-thread.tsx`.
+
+### 9.4 — ⚠️ `/settings#payouts` is a dead link for every host while billing is off
+
+The menu item is gated on `canReceivePayouts` (`components/layout/app-shell.tsx:336`); the card it
+points at additionally requires `payoutsLive()` (`app/(main)/settings/billing/section.tsx:58`). With
+billing off the anchor does not exist in the DOM. The "Payouts aren't turned on yet" copy at `:116`
+is unreachable for the same reason.
+
+### 9.5 — 🔴 Eight Space sub-tabs canonicalize to the profile root
+
+`app/(main)/spaces/[slug]/layout.tsx:62,77` hardcodes `canonical = '/spaces/' + slug`, and no
+descendant defines its own `generateMetadata`. So `shop`, `reviews`, `calendar`, `community`,
+`book`, `collaborators`, `[page]` and `profile-preview` all emit the root canonical and the same
+title: they are self-declared duplicates and can never index. The shop/reviews/calendar tabs are
+exactly the content a LocalBusiness profile wants ranked. The same inherited *indexable* block also
+lands on `/manage`, `/settings/*` and `/crm/*`, which appear in neither `robots.ts` nor
+`PROTECTED_PATHS`.
+
+### 9.6 — ⚠️ Six discover pages declare `revalidate = 3600` and then void it
+
+`app/discover/{page,events/page,circles/page,places/[citySlug],cities/[citySlug],events/in/[city]/[category]}`
+each export `revalidate = 3600` and then call `supabase.auth.getUser()`, which is a dynamic API and
+opts the route out of static rendering. `app/discover/layout.tsx:17-22` diagnoses this exact bug and
+fixes it for the layout via `authMode="client"`; the pages were not converted.
+
+**Not a one-line fix, contrary to how it looks.** The `isAuthed` it computes is threaded into
+`CircleCard`/`EventRow`/`PostPreview` (`components/discover/cards.tsx:49,90,159`) where it selects
+the link DESTINATION through `communityHref`. There is no client auth hook in the repo, so removing
+the server read silently sends signed-in members to the anonymous destinations. It needs a client
+auth read built first.
+
+### 9.7 — ⚠️ `check:seo`'s coverage boundary, stated
+
+It is filesystem-only and reasons about the static hand-written surface. It does **not** check:
+dynamic `[slug]` routes at all · JSON-LD · canonical *correctness* (9.5 is invisible to it by
+design) · `openGraph`/`twitter` · runtime auth exceptions. It builds its private set from
+`robots.ts` ∪ `PROTECTED_PATHS` (`scripts/check-seo.mjs:425`), so `/events/calendar` — public via
+`proxy.ts:157-163`'s exception branch, indexable, and absent from the sitemap — reads as private and
+is skipped.
+
+### 9.8 — ⚠️ a11y beyond axe
+
+One genuine keyboard trap: `components/admin/messaging/messaging-console.tsx:330-337`, a `<tr>` with
+`onClick` and `aria-expanded` but no `tabIndex`, no `role`, no key handler — it announces an
+expandable control that cannot be operated. Six icon-only buttons of 297 lack an accessible name
+(the rest carry one). Six hand-rolled panels declare `role="dialog" aria-modal="true"` without using
+`components/ui/dialog.tsx`, so none traps focus or handles Escape though all promise it.
+
+### 9.9 — ⚠️ N+1 in the sitemap
+
+`app/sitemap.ts:386-388` issues one `listShowsForSpace` per networked Space, inside a route whose
+`try/catch` degrades to `[]` — so a timeout silently drops every podcast URL from the index. This is
+in the DB-driven section `check:seo` explicitly trusts without verifying (`check-seo.mjs:16-19`).
