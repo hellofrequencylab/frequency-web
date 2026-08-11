@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Hash, MessageSquare, Loader2, ArrowRight, Search, ChevronLeft, Info } from 'lucide-react'
+import { Hash, MessageSquare, Loader2, ArrowRight, Search, Sparkles, ChevronLeft, Info } from 'lucide-react'
 import { relativeTime } from '@/lib/utils'
 import {
   fetchMessagesSummary,
@@ -73,11 +73,16 @@ type RoomData = Awaited<ReturnType<typeof loadDockRoomThread>>
 // INLINE (no route change), so members chat without leaving the page they're on.
 export function DockChat({
   onNavigate,
+  onAskVera,
   requested,
   onRequestHandled,
   onThreadOpenChange,
 }: {
   onNavigate?: () => void
+  /** Switch the dock to Vera. The control lives HERE rather than in a strip of its own above the
+   *  action bar (owner, 2026-08-12), so the launcher hands down the tab switch instead of
+   *  rendering a second row for one button. */
+  onAskVera?: () => void
   /** A programmatic "open this thread" from the launcher (ADR-896). Before this prop the dock
    *  could ONLY be opened by clicking a row in its own inbox, so a Reconnect button had no way
    *  to reach it and had to navigate instead. */
@@ -418,16 +423,20 @@ export function DockChat({
               // the previous query's members under an empty box.
               if (!v.trim()) { setPeople([]); setSearching(false) }
             }}
-            placeholder="Message someone…"
+            placeholder="Find a member…"
             aria-label="Find a member by name or @handle"
             className="py-1.5 pl-9 text-body-sm"
           />
         </div>
-        {/* /messages/rooms holds only an actions.ts and no page.tsx, so this 404'd — on the one
-            surface the owner wants chat to live in. The rooms list is the inbox's Rooms filter. */}
-        <Link href="/messages?filter=rooms" onClick={onNavigate} className={buttonClasses('secondary', 'sm')}>
-          <Hash className="h-4 w-4" aria-hidden /> Rooms
-        </Link>
+        {/* ASK VERA, WHERE ROOMS USED TO BE (owner, 2026-08-12).
+            Rooms was a link OUT — /messages?filter=rooms — so the second control in a panel built
+            for staying put also closed it. Rooms themselves are not lost: the caller's rooms are
+            listed as rows in this very inbox, and "Open all messages" still opens the full one.
+            Vera is the thing worth reaching from here, and this is its only control now — the
+            strip that used to hold it is gone rather than duplicated. */}
+        <button type="button" onClick={onAskVera} className={buttonClasses('secondary', 'sm')}>
+          <Sparkles className="h-4 w-4" aria-hidden /> Ask Vera
+        </button>
       </div>
 
       {/* Results REPLACE the inbox while a query is live, rather than pushing it down: the panel

@@ -325,10 +325,27 @@ describe('the redundant Messages pill is gone and the title is not', () => {
   })
 
   it('does not leave a tablist of one behind', () => {
-    // A single `role="tab"` in a `role="tablist"` announces a tab set that does not exist. The
-    // remaining Ask Vera control is a plain button.
+    // A single `role="tab"` in a `role="tablist"` announces a tab set that does not exist.
     expect(code(launcher)).not.toContain('role="tablist"')
-    expect(launcher).toContain('Ask Vera')
+  })
+
+  it('Ask Vera moved into the action bar rather than being deleted', () => {
+    // 🔴 THIS ASSERTION USED TO READ `expect(launcher).toContain('Ask Vera')` AND IT WAS A LIE.
+    // When the control moved to DockChat the launcher kept the WORDS — in the comment explaining
+    // the move — so the test went on passing over a file that no longer renders that control.
+    //
+    // Its first replacement was wrong in the other direction: `not.toContain('Ask Vera')` on the
+    // launcher, which fails, because the HELP section still renders an Ask Vera row of its own
+    // (vera-launcher.tsx ~783) and always should. That is a different control in a different
+    // view. So the assertion is the HANDOFF — the launcher passes the switch down, DockChat
+    // renders the button — which is the thing that actually moved.
+    expect(code(launcher)).toContain('onAskVera={() => setTab(')
+    expect(code(dockChat)).toContain('Ask Vera')
+    expect(code(dockChat)).toContain('onClick={onAskVera}')
+  })
+
+  it('the strip that used to hold it is gone, not left empty', () => {
+    expect(code(launcher)).not.toContain('border-b border-chrome-border bg-surface px-2 pb-2 pt-1.5')
   })
 
   it('still surfaces unread, on the dock tab where it has a job', () => {
@@ -360,6 +377,19 @@ describe('the panel is a card, not a chipped one', () => {
 })
 
 describe('"Message someone" starts a DM without leaving the page', () => {
+  it('Rooms is gone from the action bar, and rooms are still reachable', () => {
+    // Rooms was a link OUT (/messages?filter=rooms), so the second control in a panel built for
+    // staying put also closed it. Removing it only costs a shortcut: the caller's rooms are
+    // listed as rows in this inbox, and "Open all messages" still opens the full one.
+    expect(code(dockChat)).not.toContain("/messages?filter=rooms")
+    expect(code(dockChat)).toContain('openRoom(r.id, r.name)')
+    expect(code(dockChat)).toContain('href="/messages"')
+  })
+
+  it('the field asks you to find a member, not to message someone', () => {
+    expect(code(dockChat)).toContain('placeholder="Find a member…"')
+  })
+
   it('is a live field, not a link to /people', () => {
     // As a Link it closed the dock and navigated away: the one control for starting a
     // conversation was also the one that ended your visit to the panel.
