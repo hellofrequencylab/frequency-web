@@ -399,3 +399,30 @@ describe('"Message someone" starts a DM without leaving the page', () => {
     expect(dockChat).toContain('ref={inboxFirstRef}')
   })
 })
+
+describe('the panel cannot grow wider than the box that clips it', () => {
+  it('the grid child releases the min-content floor on BOTH axes', () => {
+    // THE BUG, measured against the built stylesheet: with `min-h-0` alone the panel laid out at
+    // 596px inside its 442px wrapper the moment the inbox rendered a conversation list. The
+    // wrapper is a grid (the reveal animates grid-template-rows 0fr → 1fr) and an implicit `auto`
+    // column is floored at MIN-CONTENT, so the track grew past the wrapper's fixed width; the
+    // wrapper is overflow-hidden, so the extra 154px was cut off. Living in that 154px: the close
+    // button, the Rooms button, the right end of every row, and the panel's own right border.
+    //
+    // It looked FINE while loading — a spinner has no min-content width to push with — which is
+    // exactly what made it read as a rendering glitch rather than a layout bug.
+    expect(launcher).toContain('className="min-h-0 min-w-0"')
+  })
+
+  it('keeps the two axes together, since one without the other is the defect', () => {
+    // A future edit that drops either half restores the bug on that axis. They are a pair.
+    expect(code(launcher)).not.toContain('className="min-h-0"')
+    expect(code(launcher)).not.toContain('className="min-w-0"')
+  })
+
+  it('the wrapper still clips, which is what makes the overflow invisible rather than ugly', () => {
+    // Stated so the fix above is understood as "stop overflowing", not "start showing the
+    // overflow". The clip is correct and required by the reveal.
+    expect(launcher).toContain("'grid overflow-hidden transition-[grid-template-rows]")
+  })
+})
