@@ -21,6 +21,7 @@ import { IconButton } from '@/components/ui/icon-button'
 import { Avatar } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { buttonClasses } from '@/components/ui/button'
+import { Input } from '@/components/ui/field'
 import { EmptyState } from '@/components/ui/empty-state'
 
 // Module-level cache so reopening the dock is INSTANT (the summary is a few RPCs, which
@@ -207,13 +208,21 @@ export function DockChat({
   // Debounced typeahead against the shared handle endpoint — the same one the composer, the
   // room inviter and the cohost manager already use, so there is one member-search behaviour in
   // the app rather than a tenth. Prefix match, capped at 6 by the RPC.
+  //
+  // NO setState IN THE EFFECT BODY. The obvious shape — clear on empty, flip `searching` on, then
+  // schedule — puts two synchronous setState calls in an effect, which react-hooks flags as
+  // cascading renders and is a real extra render per keystroke. Both moved: the clear-on-empty is
+  // an event-handler concern (the input's onChange owns it, and an event handler is the right
+  // place for it anyway), and `searching` flips INSIDE the timeout. That also reads better —
+  // the spinner appears when a request is actually in flight, not during the 200ms of typing.
   useEffect(() => {
     const term = q.trim()
-    if (!term) { setPeople([]); setSearching(false); return }
+    if (!term) return
     let alive = true
     const ctrl = new AbortController()
-    setSearching(true)
     const t = setTimeout(async () => {
+      if (!alive) return
+      setSearching(true)
       try {
         const res = await fetch(`/api/search-handles?q=${encodeURIComponent(term)}`, { signal: ctrl.signal })
         const json = (await res.json()) as { profiles?: HandleHit[] }
@@ -392,14 +401,26 @@ export function DockChat({
             markup mirrors the launcher's own help-search field so the two in-panel searches match. */}
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
-          <input
+          {/* The kit's Input, not a raw <input>. check:adoption caught the raw one the moment it
+              landed (raw-input 119 → 120) and was right to: the primitive already carries the
+              field surface, the focus ring and the placeholder token, so hand-rolling them here
+              would drift from every other field the moment one of those changes. `pl-9` is the
+              only addition — room for the icon sitting inside the box. */}
+          <Input
             ref={inboxFirstRef}
             type="search"
             value={q}
-            onChange={(e) => { setQ(e.target.value); setPickError(null) }}
+            onChange={(e) => {
+              const v = e.target.value
+              setQ(v)
+              setPickError(null)
+              // Clearing the field clears its results, so reopening the search never shows
+              // the previous query's members under an empty box.
+              if (!v.trim()) { setPeople([]); setSearching(false) }
+            }}
             placeholder="Message someone…"
             aria-label="Find a member by name or @handle"
-            className="w-full rounded-control border border-border bg-surface-elevated py-1.5 pl-9 pr-3 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+            className="py-1.5 pl-9 text-body-sm"
           />
         </div>
         {/* /messages/rooms holds only an actions.ts and no page.tsx, so this 404'd — on the one
@@ -442,8 +463,11 @@ export function DockChat({
                   ) : (
                     /* The gate is server-side and unconditional, so saying so BEFORE the click is
                        the difference between a picker and a trap. */
+                    // `text-muted`, NOT `text-subtle`: subtle at text-3xs is sub-AA by
+                    // construction, and check:adoption tracks that exact pair as debt. This is
+                    // the size and tone the inbox rows below already use for their timestamps.
                     p.friend_status !== 'accepted' && (
-                      <span className="shrink-0 text-3xs text-subtle">Not connected</span>
+                      <span className="shrink-0 text-3xs text-muted">Not connected</span>
                     )
                   )}
                 </button>
