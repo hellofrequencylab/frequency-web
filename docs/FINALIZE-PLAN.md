@@ -74,7 +74,21 @@ themselves; the rest can be parallelised once the instruments are back.
 ## Phase 1 — Restore the instruments 🔴
 
 **Definition of done:** `pr-compare` is green on a PR that changes nothing, the shell a11y baselines
-exist, and all three gates are eligible to be flipped to required.
+exist, and `pr-compare` is eligible to be flipped to required.
+
+> ⚠️ **"All three gates" was wrong, corrected 2026-08-11.** `check:adoption` and `check:contrast`
+> are **not GitHub check runs and cannot be added as required contexts.** `.github/workflows/ci.yml`
+> declares exactly three jobs — `lint`, `test`, `checks` — and both of those guards are entries in
+> the `guards=(…)` array *inside* `checks` (`ci.yml:173`). GitHub gates on check runs, so a required
+> context naming either of them would match no job and gate on nothing, which is the failure the
+> ci.yml header already warns about for renamed jobs.
+>
+> **They are already required, transitively.** `checks` is one of the four required contexts, and a
+> failing guard fails that job. So both have been enforced since the split. Nothing to promote.
+>
+> The owner action is **one** context: `pr-compare`. This row said three across two places and both
+> are fixed. The lesson is the same one ADR-983 records for `platform_flags`: a promotable context is
+> a checkable fact, so check it rather than repeating a list.
 
 > ## ✅ Phase 1.1 is DONE — the 22px is explained, and the diagnosis found something worse
 >
@@ -119,7 +133,7 @@ exist, and all three gates are eligible to be flipped to required.
 | 1.8b | ~~Owner: two repo variables~~ | XS | The member shell photographs **2 of 4** surfaces. The missing two need a value only you can supply, because there is no safe default — the last default (`PW_ROOM_PATH` → `/channels`) is exactly what made four baselines photographs of the marketing home page. Settings → Secrets and variables → Actions → **Variables**: `PW_ROOM_PATH` = a room route the beta member can reach, `PW_SPACE_SLUG` = a Space slug that account can manage. Then re-run `e2e-manual.yml` with `capture_shell` + `update_baselines`. |
 | 1.4 | ✅ **Already resolved — it is a VARIABLE, not a secret** | — | Verified 2026-08-10 two ways. The Variables tab holds `PW_REQUIRE_SHELL = 1`; the Secrets tab does **not** (its six entries are `ANTHROPIC_API_KEY`, both Supabase keys, `PW_MEMBER_EMAIL`, `SUPABASE_SERVICE_ROLE_KEY`, `VERCEL_AUTOMATION_BYPASS_SECRET`). And the run log contains **zero** `***` redactions while printing figures full of the digit 1 (`117474 pixels`, `ratio 0.03`) — which is only possible if `1` is not a secret. The log-redaction problem this item describes is gone. |
 | 1.5 | ✅ **Already resolved — the account exists and the session mints** | — | `PW_MEMBER_EMAIL` is set (Secrets tab, checked 2026-08-10), and the proof it works is in the run itself: `app-feed` and `app-settings` were **photographed**, which is only possible behind a minted session. What is still missing is narrower than "an account": `app-room` has no baseline (Phase 1 deleted all four as wrong-page captures of the marketing home), and the Space console needs the **`PW_SPACE_SLUG`** repo variable, which is not set — the Variables tab holds only `PW_REQUIRE_SHELL`. Both are covered by one `update_baselines + capture_shell` run. |
-| 1.6 | ⚠️ **Owner: flip `pr-compare`, `check:adoption`, `check:contrast` to required — but `pr-compare` has a hole that must be closed FIRST** | S | Required contexts are now **four** (`checks` · `analyze` · `lint` · `test`). ⚠️ **A green `pr-compare` on a Dependabot PR means nothing was tested.** GitHub does not expose repo secrets to Dependabot runs, so `VERCEL_AUTOMATION_BYPASS_SECRET` is empty, and the job takes its documented skip path — *"Skipping is the honest result; a red X here would mean nothing about this PR"* — and **exits 0**. Verified on #2076 job `93578379589`: `BYPASS:` empty, `::notice ... Nothing was tested`, conclusion `success`. The reasoning is right and the skip is the correct behaviour; the problem is that it produces a checkmark **indistinguishable from a real pass** in the PR list, on exactly the PRs that bump the CI actions themselves. Promote it to required and every Dependabot PR satisfies it vacuously, forever. Fix before promoting: report the skip as **neutral** rather than success, or gate the required context on a job that cannot skip. |
+| 1.6 | ⚠️ **Owner: flip `pr-compare` to required. Only that one — `check:adoption` and `check:contrast` are already enforced and cannot be promoted, see below** | S | Required contexts are now **four** (`checks` · `analyze` · `lint` · `test`). ⚠️ **A green `pr-compare` on a Dependabot PR means nothing was tested.** GitHub does not expose repo secrets to Dependabot runs, so `VERCEL_AUTOMATION_BYPASS_SECRET` is empty, and the job takes its documented skip path — *"Skipping is the honest result; a red X here would mean nothing about this PR"* — and **exits 0**. Verified on #2076 job `93578379589`: `BYPASS:` empty, `::notice ... Nothing was tested`, conclusion `success`. The reasoning is right and the skip is the correct behaviour; the problem is that it produces a checkmark **indistinguishable from a real pass** in the PR list, on exactly the PRs that bump the CI actions themselves. Promote it to required and every Dependabot PR satisfies it vacuously, forever. Fix before promoting: report the skip as **neutral** rather than success, or gate the required context on a job that cannot skip. |
 
 > **Standing rule from the last thread, worth keeping:** on a GitHub `pull_request`-event outage,
 > add a bypass actor to ruleset `17640795` rather than toggling enforcement off.
@@ -738,7 +752,7 @@ Everything on this list is config or a decision — no code unblocks it.
 | Delete `PW_REQUIRE_SHELL` from **Secrets** | Diagnosing 1.1 (logs are redacted to `***`) |
 | Create the beta test account + `PW_STORAGE_STATE` secret | 44 of 84 a11y tests + the whole member-shell visual suite |
 | Create the Vercel Protection Bypass secret → `VERCEL_AUTOMATION_BYPASS_SECRET` | Preview e2e validity (suites currently test the interstitial) |
-| Flip `pr-compare` / `check:adoption` / `check:contrast` to required | Phase 1 sign-off |
+| Flip **`pr-compare`** to required (that is the whole list, see §1.6) | Phase 1 sign-off |
 | `/the-lab` + `/spaces` meta descriptions | 3.3 — a copy decision, not a trim |
 | **White-on-amber button text** | The DS artifact shows white on `#E2912F`; shipped is ink. Ink measures **7.35:1** (AA + AAA), white **2.52:1**. White cannot ship without failing `check:contrast` and degrading every primary button. Either darken the amber (~`#8A5410` puts white at 6.26:1 — a real brand shift) or correct the artifact |
 | Greyed-emoji tuning (`grayscale` vs `saturate-50`) | Reaction selector rest state |
