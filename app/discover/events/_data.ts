@@ -41,7 +41,7 @@ import {
 // + eventStatus; region/country round out the city-level Place.
 // The ONE ticket pricing authority, reused so this surface and the canonical /events/<slug> page
 // can never publish two different prices for the same event.
-import { ticketFromPriceCents } from '@/lib/commerce/ticket-projection'
+import { ticketFromPriceCents, ticketsSoldOut } from '@/lib/commerce/ticket-projection'
 
 export type EventEnrichment = {
   attendance_mode: 'in_person' | 'online' | 'hybrid'
@@ -49,10 +49,17 @@ export type EventEnrichment = {
   category: string
   region: string | null
   country: string | null
+  /** `events.currency` as stored (lower-case 'usd' by default). Carried so the Offer is
+   *  denominated in the event's own currency instead of a hardcoded USD. */
+  currency: string | null
   /** Cheapest active ticket tier in cents, or null when the event is tiered and free. ABSENT
    *  (undefined) when the event has no tiers, which is what keeps eventSchema falling back to
    *  events.price_cents. See the three-state note in lib/jsonld.ts. */
   ticket_from_cents?: number | null
+  /** Every active tier exhausted. ABSENT when the event has no tiers — this surface reads anon and
+   *  cannot see `event_rsvps`, so RSVP-capacity sold-out is knowable only on the canonical
+   *  /events/<slug> page, which supplies it there. Absent is the honest answer, not `false`. */
+  is_sold_out?: boolean
 }
 
 export type EnrichedPublicEvent = PublicEvent & EventEnrichment
@@ -73,10 +80,11 @@ type SafeEventRow = {
   is_cancelled: boolean | null
   category: string | null
   price_cents: number | null
+  currency: string | null
 }
 
 const SAFE_COLUMNS =
-  `id, slug, title, description, starts_at, ends_at, city, region, country, attendance_mode, is_cancelled, category, price_cents, ${SERIES_COLUMNS}`
+  `id, slug, title, description, starts_at, ends_at, city, region, country, attendance_mode, is_cancelled, category, price_cents, currency, ${SERIES_COLUMNS}`
 
 function normalizeMode(mode: string | null): EventEnrichment['attendance_mode'] {
   return mode === 'online' || mode === 'hybrid' ? mode : 'in_person'
@@ -101,6 +109,7 @@ function toEnriched(r: SafeEventRow): EnrichedPublicEvent {
     category: r.category ?? 'gathering',
     region: r.region,
     country: r.country,
+    currency: r.currency,
   }
 }
 
@@ -111,14 +120,14 @@ export async function getEventEnrichment(slug: string): Promise<EventEnrichment 
   const supabase = createPublicClient()
   const { data } = await supabase
     .from('events')
-    .select('id, attendance_mode, is_cancelled, category, region, country')
+    .select('id, attendance_mode, is_cancelled, category, region, country, currency')
     .eq('slug', slug)
     .limit(1)
     .maybeSingle()
   if (!data) return null
   const r = data as unknown as Pick<
     SafeEventRow,
-    'attendance_mode' | 'is_cancelled' | 'category' | 'region' | 'country'
+    'attendance_mode' | 'is_cancelled' | 'category' | 'region' | 'country' | 'currency'
   > & { id: string }
 
   // A ticketed event prices on its ACTIVE TIERS, not events.price_cents (null for them), so the
@@ -126,12 +135,15 @@ export async function getEventEnrichment(slug: string): Promise<EventEnrichment 
   // event_ticket_types' SELECT policy scopes rows to events the caller can already see, and this
   // returns only an aggregate price. FAIL-SOFT — no tiers (or an unreadable read) simply omits the
   // field, which restores the events.price_cents fallback rather than asserting a wrong price.
+  // `quantity`/`sold` ride along on the SAME read that prices the tiers, so knowing whether the
+  // event is still buyable costs no extra round trip on a route we want statically rendered.
   const { data: tierRows } = await supabase
     .from('event_ticket_types')
-    .select('pricing_mode, price_cents, min_cents, suggested_cents')
+    .select('pricing_mode, price_cents, min_cents, suggested_cents, quantity, sold')
     .eq('event_id', r.id)
     .eq('active', true)
-  const tiers = (tierRows ?? []) as unknown as Parameters<typeof ticketFromPriceCents>[0]
+  const tiers = (tierRows ?? []) as unknown as (Parameters<typeof ticketFromPriceCents>[0][number] &
+    Parameters<typeof ticketsSoldOut>[0][number])[]
 
   return {
     attendance_mode: normalizeMode(r.attendance_mode),
@@ -139,7 +151,10 @@ export async function getEventEnrichment(slug: string): Promise<EventEnrichment 
     category: r.category ?? 'gathering',
     region: r.region,
     country: r.country,
-    ...(tiers.length > 0 ? { ticket_from_cents: ticketFromPriceCents(tiers) } : {}),
+    currency: r.currency,
+    ...(tiers.length > 0
+      ? { ticket_from_cents: ticketFromPriceCents(tiers), is_sold_out: ticketsSoldOut(tiers) }
+      : {}),
   }
 }
 

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Search, X, Users, FileText, CalendarDays, Loader2, ArrowRight, ScanLine, Compass } from 'lucide-react'
-import { getInitials } from '@/lib/utils'
+import { getInitials, formatEventDate, eventDateBadge } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { paletteDestinations, type NavViewer } from '@/lib/nav/registry'
 import { railIconFor } from '@/components/layout/nav-icons'
@@ -215,7 +215,7 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
                 {results.events.map((e) => (
                   <ResultRow key={e.id} href={`/events/${e.slug}`} onNavigate={onClose}
                     dateIso={e.starts_at} title={e.title} dimmed={e.is_demo}
-                    subtitle={[new Date(e.starts_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }), e.location].filter(Boolean).join(' · ')}
+                    subtitle={[formatEventDate(e.starts_at), e.location].filter(Boolean).join(' · ')}
                     badge={e.is_cancelled ? 'Cancelled' : undefined} />
                 ))}
               </ResultGroup>
@@ -282,8 +282,11 @@ function ResultRow({
     >
       {dateIso ? (
         <span className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
-          <span className="text-3xs font-semibold uppercase leading-none">{new Date(dateIso).toLocaleDateString('en-US', { month: 'short' })}</span>
-          <span className="text-body-sm font-bold leading-tight">{new Date(dateIso).getDate()}</span>
+          {/* eventDateBadge, not a hand-rolled toLocaleDateString: this is a CLIENT component, so
+              formatting without an explicit UTC zone rendered the viewer's local day and could be
+              one behind the same event on /search and on the event page. See lib/utils.ts. */}
+          <span className="text-3xs font-semibold uppercase leading-none">{eventDateBadge(dateIso).month}</span>
+          <span className="text-body-sm font-bold leading-tight">{eventDateBadge(dateIso).day}</span>
         </span>
       ) : avatar ? (
         <Image src={avatarSrc(avatar)} alt="" width={40} height={40} style={avatarFocusStyle(avatar)} className="h-10 w-10 shrink-0 rounded-pill object-cover" />

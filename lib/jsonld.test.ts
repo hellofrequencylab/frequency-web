@@ -148,6 +148,58 @@ describe('eventSchema', () => {
     expect(result.offers).toMatchObject({ price: '15.00' })
   })
 
+  // ── Currency (meta-scan 10.18) ──────────────────────────────────────────────
+  // `priceCurrency` was the literal 'USD' for every event on earth, while `events.currency` has
+  // been a real per-event column (text, DEFAULT 'usd') the whole time — read elsewhere by
+  // lib/commerce/ticket-projection. A price published in the wrong denomination is worse than no
+  // price: it is a specific, confident, wrong number in the rich result.
+  it('denominates the offer in the event currency, upper-cased', () => {
+    const result = eventSchema({ ...makeEvent({ price_cents: 2500 }), currency: 'eur' })
+    expect(result.offers).toMatchObject({ price: '25.00', priceCurrency: 'EUR' })
+  })
+
+  it('falls back to USD on the column default, not on a hardcode', () => {
+    // Absent and explicit-null both mean "the column default", which IS 'usd'. The distinction
+    // from the old behaviour is that a supplied currency now wins — pinned by the case above.
+    expect(eventSchema(makeEvent()).offers.priceCurrency).toBe('USD')
+    expect(eventSchema({ ...makeEvent(), currency: null }).offers.priceCurrency).toBe('USD')
+  })
+
+  it('upper-cases an already-upper-case currency without mangling it', () => {
+    expect(eventSchema({ ...makeEvent(), currency: 'GBP' }).offers.priceCurrency).toBe('GBP')
+  })
+
+  // ── Availability (meta-scan 10.18) ──────────────────────────────────────────
+  // The only outright page-vs-schema CONTRADICTION the fan-out found: the page rendered "Sold
+  // out." / the full-capacity waitlist CTA while the structured data on the same response said
+  // InStock. `availability` reflected only is_cancelled and never capacity.
+  it('reports SoldOut when the caller says the event is sold out', () => {
+    const result = eventSchema({ ...makeEvent({ price_cents: 2500 }), is_sold_out: true })
+    expect(result.offers.availability).toBe('https://schema.org/SoldOut')
+  })
+
+  it('reports InStock when the caller positively says seats remain', () => {
+    const result = eventSchema({ ...makeEvent({ price_cents: 2500 }), is_sold_out: false })
+    expect(result.offers.availability).toBe('https://schema.org/InStock')
+  })
+
+  it('leaves availability on the cancellation rule when capacity is unknown', () => {
+    // THREE-STATE, as with ticket_from_cents: `undefined` means the caller could not determine
+    // this. It must read exactly as it did before the field existed, or every caller that cannot
+    // see capacity silently starts publishing "seats available" as a fact.
+    expect(eventSchema(makeEvent()).offers.availability).toBe('https://schema.org/InStock')
+    expect(eventSchema({ ...makeEvent(), is_cancelled: true }).offers.availability).toBe(
+      'https://schema.org/SoldOut',
+    )
+  })
+
+  it('keeps a cancelled event SoldOut even when seats are free', () => {
+    // is_cancelled wins: a cancelled event is not buyable regardless of capacity.
+    const result = eventSchema({ ...makeEvent(), is_cancelled: true, is_sold_out: false })
+    expect(result.offers.availability).toBe('https://schema.org/SoldOut')
+    expect(result.eventStatus).toBe('https://schema.org/EventCancelled')
+  })
+
   it('includes endDate when ends_at is provided', () => {
     const result = eventSchema(makeEvent({ ends_at: '2026-07-01T21:00:00Z' }))
     expect(result).toHaveProperty('endDate', '2026-07-01T21:00:00Z')

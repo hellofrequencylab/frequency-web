@@ -298,3 +298,27 @@ were right all along.
 **So:** before believing a single-surface visual failure that survives a retry, check
 whether its baseline is a size outlier among its own states. Recapturing costs one
 dispatch; hunting a layout bug that does not exist costs a lot more.
+
+## A visual failure that has nothing to do with your diff
+
+`pr-compare` judges the **merge result** against baselines taken from the **branch**. Vercel builds
+the preview from the PR's merge ref (your head + current `main`), while the `__screenshots__/` the
+suite compares against are whatever your branch happens to carry. Those two things drift apart the
+moment `main` lands a change that moves pixels.
+
+The signature is unmistakable once you have seen it: a large, *uniform* block of failures on
+surfaces your PR never touched — e.g. **32 failures, every one `[mobile]`, all 8 marketing surfaces
+× 4 states** — while every desktop and app-shell test passes.
+
+Worked example, PR #2089 (2026-08-11). It changed two server actions, four migrations and one
+`generateMetadata`. Nothing that renders. It reported exactly those 32 mobile failures, because it
+had branched before the DAWN mobile-grammar round merged: the preview rendered the **new** mobile
+layout, the branch carried the **old** mobile baselines.
+
+**The fix is always "update the branch from `main`", and never "recapture."** Recapturing here would
+freeze the merge result into a branch that has not merged yet, and quietly overwrite baselines the
+other change had just correctly established. One `Update branch` click cleared all 32 without
+touching a single PNG.
+
+Rule of thumb: if the failing set is *bigger than your diff could explain* and lands on whole
+surfaces rather than specific regions, check the base before you check your code.

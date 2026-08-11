@@ -415,6 +415,19 @@ export interface ManagedRoute {
   label: string
   /** Which area of the app this belongs to (groups the editor). */
   area: 'Member' | 'Focus surfaces' | 'Operator'
+  /**
+   * For a PARAMETERISED surface (`/spaces/_/crm`), the pattern that recognises the live pathname.
+   * The override is still STORED under `route` — this only teaches `mergeChrome` which concrete
+   * paths that stored key governs, so one saved row frames the surface for every Space.
+   *
+   * Omit it for a literal route; the exact-key lookup already handles those and is checked first.
+   *
+   * 🔴 NEVER give one of these the `g` flag. A global RegExp carries `lastIndex` across `.test()`
+   * calls, so a shared module-level pattern would match, then skip, then match — the rail would
+   * flicker between two answers on alternating renders of the same page. `page-chrome.test.ts`
+   * asserts the whole catalog is free of it, because that bug is invisible in any single test.
+   */
+  match?: RegExp
 }
 
 export const MANAGED_ROUTES: readonly ManagedRoute[] = [
@@ -423,30 +436,60 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   { route: '/circles', label: 'Circles', area: 'Member' },
   { route: '/channels', label: 'Channels', area: 'Member' },
   { route: '/events', label: 'Events', area: 'Member' },
-  { route: '/people', label: 'People', area: 'Member' },
+  // /network, NOT /people. `/people` is a redirect stub (app/(main)/people/page.tsx:17 -> /network,
+  // ADR-172) and mergeChrome is an EXACT-key lookup against the live pathname, so an override saved
+  // under the stub could never match the page the member is standing on: the operator reframed the
+  // Members hub, the row confirmed "Saved", and nothing changed. Same for the two below.
+  { route: '/network', label: 'Members', area: 'Member' },
   { route: '/spaces/directory', label: 'Spaces (directory)', area: 'Member' },
   // The "Spaces you run" hub (operator-context switcher): the personal list of every Space the
   // caller owns/admins, each linking to its /manage console. It keeps the GLOBAL community rail
   // like every other member browse surface (it falls through to 'global' in railFor); this catalog
   // entry registers it as an explicitly managed surface an operator can reframe.
   { route: '/spaces/operating', label: 'Spaces you run', area: 'Member' },
-  { route: '/spaces/_/crm', label: 'Space CRM board', area: 'Focus surfaces' },
+  // ✅ THE NEXT THREE ROWS CARRY A `match`, AND THAT IS WHAT MAKES THEM WORK (fan-out finding 10.13).
+  //
+  // They were INERT. `_` stands in for a Space slug, but mergeChrome was `overrides[route]` — an
+  // exact-key lookup against the live pathname, which is `/spaces/acme/crm`. `isSafeRoute` permits
+  // `_`, so setRouteChrome wrote the row and the UI rendered "Saved"; the override then matched
+  // nothing, forever. Three of this catalog's rows were controls that confirmed and did nothing.
+  //
+  // The fix had to be a MECHANISM, not a data edit — there is no literal string that matches every
+  // Space's CRM board. `mergeChrome` now falls back to these patterns after the exact-key miss, so
+  // one saved row frames the surface across every Space. Exact keys still win, so nothing that
+  // resolved before resolves differently now; see the ordering note on mergeChrome.
+  {
+    route: '/spaces/_/crm',
+    label: 'Space CRM board',
+    area: 'Focus surfaces',
+    match: /^\/spaces\/[^/]+\/crm$/,
+  },
   // The Mode and focus settings page (Space Modes M3, ADR-461/464): a centered Focus surface that
   // composes <FocusTemplate> inside the unified console. It falls through to 'global' in railFor (the
   // console manage root is full-width 'none', but its /manage/mode sub-page is a Focus form that keeps
   // the global rail beside its centered body); this catalog entry makes it an explicitly managed surface.
-  { route: '/spaces/_/manage/mode', label: 'Space mode and focus', area: 'Focus surfaces' },
+  {
+    route: '/spaces/_/manage/mode',
+    label: 'Space mode and focus',
+    area: 'Focus surfaces',
+    match: /^\/spaces\/[^/]+\/manage\/mode$/,
+  },
   // The Layout settings page (ADR-472): a centered Focus surface (the public-page layout picker + preview
   // gallery) inside the unified console. Like /manage/mode it falls through to 'global' in railFor (a
   // Focus form that keeps the global rail beside its centered body); this catalog entry makes it an
   // explicitly managed surface an operator can reframe.
-  { route: '/spaces/_/manage/layout', label: 'Space layout', area: 'Focus surfaces' },
+  {
+    route: '/spaces/_/manage/layout',
+    label: 'Space layout',
+    area: 'Focus surfaces',
+    match: /^\/spaces\/[^/]+\/manage\/layout$/,
+  },
   { route: '/practices', label: 'Practices', area: 'Member' },
   { route: '/practices/new', label: 'Practice builder', area: 'Member' },
   { route: '/journeys', label: 'Journeys', area: 'Member' },
   { route: '/messages', label: 'Messages (inbox)', area: 'Member' },
-  { route: '/connections', label: 'Connections (index)', area: 'Member' },
-  { route: '/friends', label: 'Friends', area: 'Member' },
+  { route: '/network/contacts', label: 'Connections (index)', area: 'Member' },
+  { route: '/network/friends', label: 'Friends', area: 'Member' },
   { route: '/search', label: 'Search', area: 'Member' },
   { route: '/broadcast', label: 'Broadcast', area: 'Member' },
   { route: '/crew', label: 'Crew', area: 'Member' },
@@ -519,12 +562,35 @@ export function isRail(value: unknown): value is Rail {
   return value === 'global' || value === 'scoped' || value === 'none'
 }
 
-/** Merge an operator override (exact-route match) over the code default. Pure — no
- *  Supabase/React — so it is trivially testable: a DB override for the exact `route`
- *  wins; otherwise the code answer (`codeRail`, i.e. railFor(route)) stands. */
+/** Merge an operator override over the code default. Pure — no Supabase/React — so it is
+ *  trivially testable.
+ *
+ *  RESOLUTION ORDER, and each step exists for a reason:
+ *   1. **Exact key.** A DB override stored under this literal pathname wins. Unchanged, and
+ *      checked first ON PURPOSE — every route that resolved before this function learned about
+ *      patterns still resolves to exactly the same rail, so the mechanism added below cannot
+ *      change any existing answer. A concrete `/spaces/acme/crm` row still beats the pattern row.
+ *   2. **Catalog pattern.** Then the parameterised MANAGED_ROUTES rows (`/spaces/_/crm` and
+ *      friends): the first whose `match` recognises this pathname contributes its own stored
+ *      override. Without this step those rows were inert — `isSafeRoute` let the operator save
+ *      them and the UI said "Saved", but an exact-key lookup could never match a live path
+ *      containing a real Space slug (fan-out finding 10.13).
+ *   3. **The code default** (`codeRail`, i.e. railFor(route)).
+ *
+ *  Catalog order breaks ties between two patterns that both match; the three shipped patterns are
+ *  mutually exclusive, and the test suite asserts that so an overlapping pair cannot be added
+ *  silently. */
 export function mergeChrome(codeRail: Rail, overrides: ChromeOverrides, route: string): Rail {
-  const override = overrides[route]
-  return override && isRail(override) ? override : codeRail
+  const exact = overrides[route]
+  if (exact && isRail(exact)) return exact
+
+  for (const managed of MANAGED_ROUTES) {
+    if (!managed.match?.test(route)) continue
+    const patterned = overrides[managed.route]
+    if (patterned && isRail(patterned)) return patterned
+  }
+
+  return codeRail
 }
 
 /** The EFFECTIVE rail for a route: the operator override if one exists, else the code

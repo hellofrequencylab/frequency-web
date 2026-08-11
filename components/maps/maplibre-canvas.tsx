@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-// Namespace import, NOT a default import: we are pinned to maplibre-gl 5, whose UMD dist
-// declares no `export default` in its .d.ts (the default form is a compile error). The form
-// was introduced for v6 and kept through the v5 pin; components/maps/maplibre-interop.test.ts
-// is the one test that imports the library for real and would catch it drifting again.
+// Namespace import, NOT a default import: maplibre-gl exports no `export default` in its .d.ts,
+// so the default form is a compile error. (An earlier note here said this was a concession to a
+// v5 pin — package.json has been ^6.x throughout, and v6 is ESM with named exports, which is the
+// form this matches.) components/maps/maplibre-interop.test.ts is the one test that imports the
+// library for real and would catch the import form drifting from the packaging again.
 import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { mapDiag } from '@/lib/maps/diagnostics'
@@ -19,20 +20,22 @@ import type { MapImplProps, MapPinTone } from './types'
 // Loaded only through <MapCanvas>, which mounts it via next/dynamic({ssr:false}) — maplibre
 // must never run on the server.
 
-// ESCAPE HATCH FOR MAPLIBRE 6 ONLY. WE ARE ON 5, SO THIS MUST STAY UNSET.
+// 🔴 THIS IS WHAT MAKES THE BASEMAP PAINT. It is not an escape hatch and it is not optional.
 //
-// v6 externalised its web worker and resolves it from `import.meta.url` via a template
-// literal that no bundler can statically emit, so under Turbopack the worker URL 404s, the
-// worker never starts, and the vector tiles never paint. Pointing `config.WORKER_URL` at a
-// self-hosted copy repairs that WITHOUT a dependency change.
+// The comment that stood here said "WE ARE ON 5, SO THIS MUST STAY UNSET". We are on 6
+// (package.json: ^6.2.0), and have been for this repo's whole history — so the var was empty,
+// this block was a no-op, and every keyless environment rendered a blank cream rectangle.
 //
-// ⚠️ It is inert on v5 only because the var is EMPTY, not because the feature check fails —
-// v5 does export `config` (dist/maplibre-gl.d.ts declares it), and its UMD intro already
-// calls `setWorkerUrl(URL.createObjectURL(new Blob([…])))` at module-eval time, so
-// `config.WORKER_URL` is truthy and the guard below declines to overwrite it. Setting this
-// var on v5 therefore does nothing at best and, if it ever pointed at a missing file, would
-// reproduce the exact blank-cream-basemap symptom it was written to cure. `mapDiag` reports
-// its value on failure precisely so that footgun names itself.
+// v6 splits the worker into two sibling modules. Turbopack rewrites the bundled reference to the
+// hashed worker asset correctly; what it cannot rewrite is the line INSIDE that copied asset,
+// which still imports the unhashed "./maplibre-gl-shared.mjs". Measured against a real build in
+// headless Chromium: the worker 404s on its own sibling and never starts. See the full trace in
+// scripts/copy-maplibre-worker.mjs, which self-hosts both files to public/maplibre/ so the
+// relative specifier resolves; MAPLIBRE_WORKER_URL now defaults to that copy.
+//
+// The `!config.WORKER_URL` guard stays because it is still correct: on v6 the field defaults to
+// '' so we set it, and on any build where MapLibre has already installed its own worker (v5's UMD
+// intro did this with a Blob at module-eval time) we decline to overwrite something that works.
 if (MAPLIBRE_WORKER_URL) {
   const config = (maplibregl as unknown as { config?: { WORKER_URL?: string } }).config
   if (config && !config.WORKER_URL) config.WORKER_URL = MAPLIBRE_WORKER_URL

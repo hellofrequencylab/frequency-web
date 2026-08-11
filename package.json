@@ -4,6 +4,8 @@
   "private": true,
   "packageManager": "pnpm@10.33.0",
   "scripts": {
+    "prebuild": "node scripts/copy-maplibre-worker.mjs",
+    "predev": "node scripts/copy-maplibre-worker.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

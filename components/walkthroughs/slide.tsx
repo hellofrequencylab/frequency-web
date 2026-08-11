@@ -50,8 +50,21 @@ export const ACCENT_CLASSES: Record<StepAccent, { solid: string; onSolid: string
   // measured 2.46:1 (gold) to 3.88:1 (stone), all under AA. The deep step runs 6.00:1 to 8.83:1
   // with the same hue. check-contrast never caught this because white-on-rank is not a pair it
   // models, so the gate was green over six failing chips.
-  // These are real utilities now rather than bg-[var(--rank-*)]: the deep/bright steps were
-  // bridged into @theme during the gamification pass, so the arbitrary-value form is obsolete.
+  // These are real utilities now: the deep/bright rank steps were bridged into @theme during the
+  // gamification pass, so the older arbitrary-value background utility that read a raw rank custom
+  // property is obsolete. Use the named utilities below.
+  //
+  // 🔴 THE PREVIOUS VERSION OF THIS COMMENT SPELLED THAT OBSOLETE UTILITY OUT, AND IT BROKE THE
+  // BUILD'S CSS. Tailwind v4 scans source TEXT for class-like strings and does NOT skip comments,
+  // so writing the arbitrary-value form here made Tailwind emit a real rule for it — with the
+  // placeholder still in the custom-property name. Every production build printed "Found 1 warning
+  // while optimizing generated CSS: Unexpected token Delim". Swapping the placeholder glyph does
+  // not help; the extractor takes whatever is inside the brackets, so `*` merely became `<`. The
+  // only fix is to DESCRIBE the utility in prose and never write its bracketed form.
+  //
+  // check:phantom stayed green throughout, and correctly: it asks whether a class EMITS CSS, and
+  // this one did — just invalid CSS. Naming a class in order to tell someone not to use it still
+  // writes that class into the stylesheet.
   'rank-gold': { solid: 'bg-rank-gold-deep', onSolid: 'text-on-ink', soft: 'bg-rank-gold-bright/30', text: 'text-rank-gold-deep' },
   'rank-jade': { solid: 'bg-rank-jade-deep', onSolid: 'text-on-ink', soft: 'bg-rank-jade-bright/30', text: 'text-rank-jade-deep' },
   'rank-teal': { solid: 'bg-rank-teal-deep', onSolid: 'text-on-ink', soft: 'bg-rank-teal-bright/30', text: 'text-rank-teal-deep' },

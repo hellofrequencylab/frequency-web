@@ -43,6 +43,13 @@ jobs:
           config: |
             paths-ignore:
               - design_handoff
+              # MapLibre's worker + shared chunk, copied verbatim out of node_modules by
+              # scripts/copy-maplibre-worker.mjs so the worker's relative sibling import
+              # resolves at runtime (docs/MAPS.md §4a). Minified third-party output we cannot
+              # patch — findings here would be unactionable, and CodeQL already skips
+              # node_modules, which is the same code. Freshness is enforced by
+              # scripts/copy-maplibre-worker.test.ts.
+              - public/maplibre
       - name: Analyze
         uses: github/codeql-action/analyze@v4.37.6
         with:

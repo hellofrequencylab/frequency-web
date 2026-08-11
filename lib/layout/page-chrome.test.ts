@@ -6,6 +6,9 @@ import {
   railArchetypeFor,
   isFullWidthEditor,
   isFullViewportEditor,
+  mergeChrome,
+  isSafeRoute,
+  MANAGED_ROUTES,
 } from './page-chrome'
 
 describe('railFor — the single source of truth for page chrome', () => {
@@ -342,5 +345,142 @@ describe('full-width editors — fullscreen builder, main header KEPT (ADR-508 U
     expect(isFullViewportEditor('/settings/profile/spotlight')).toBe(false)
     expect(isFullWidthEditor('/settings/profile/spotlight')).toBe(false)
     expect(railFor('/settings/profile/spotlight')).toBe('global')
+  })
+})
+
+// ── mergeChrome + the MANAGED_ROUTES catalog ────────────────────────────────────────────────────
+// Fan-out finding 10.13: six of 36 catalog rows were INERT. Three pointed at redirect stubs
+// (/people, /connections, /friends), and three used a `_` slug placeholder against an exact-key
+// lookup — so the operator reframed a surface, the row confirmed "Saved", and nothing changed.
+//
+// The class of bug matters more than the six rows. NOTHING here asserted that a catalog row was
+// matchable by mergeChrome AT ALL, so a row could rot the moment a route moved and no test would
+// notice. These cover the mechanism and the catalog's own integrity, in that order.
+
+describe('mergeChrome — exact keys, then catalog patterns, then the code default', () => {
+  it('falls through to the code default when no override exists', () => {
+    expect(mergeChrome('global', {}, '/feed')).toBe('global')
+    expect(mergeChrome('none', {}, '/admin')).toBe('none')
+  })
+
+  it('lets an exact-route override win over the code default', () => {
+    expect(mergeChrome('global', { '/feed': 'none' }, '/feed')).toBe('none')
+  })
+
+  it('ignores a stored value that is not a Rail rather than rendering it', () => {
+    // The override map is DB-shaped, so a stale/hand-edited row can hold anything. A junk value
+    // must degrade to the code default, never reach the shell as a class name.
+    expect(mergeChrome('global', { '/feed': 'sidebar' as never }, '/feed')).toBe('global')
+    expect(mergeChrome('global', { '/feed': '' as never }, '/feed')).toBe('global')
+  })
+
+  // The defect itself: one saved row must frame the surface for EVERY Space.
+  it('applies a `_` placeholder row to a real slug, which is the whole of finding 10.13', () => {
+    const overrides = { '/spaces/_/crm': 'none' as const }
+    expect(mergeChrome('global', overrides, '/spaces/acme/crm')).toBe('none')
+    expect(mergeChrome('global', overrides, '/spaces/some-other-space/crm')).toBe('none')
+  })
+
+  it('applies the two console Focus rows the same way', () => {
+    expect(mergeChrome('global', { '/spaces/_/manage/mode': 'none' }, '/spaces/acme/manage/mode')).toBe('none')
+    expect(mergeChrome('global', { '/spaces/_/manage/layout': 'none' }, '/spaces/acme/manage/layout')).toBe('none')
+  })
+
+  it('does not let a pattern row bleed onto neighbouring paths', () => {
+    // `[^/]+` is one segment, and the patterns are anchored at both ends. Without the `$` a CRM
+    // override would also reframe every page BENEATH the board; without the `^` it could match a
+    // path that merely ends the right way.
+    const overrides = { '/spaces/_/crm': 'none' as const }
+    for (const p of [
+      '/spaces/acme',
+      '/spaces/acme/crm/contacts',
+      '/spaces/acme/manage',
+      '/spaces/crm',
+      '/other/spaces/acme/crm',
+    ]) {
+      expect(mergeChrome('global', overrides, p), p).toBe('global')
+    }
+  })
+
+  it('prefers an exact override over a pattern that also matches', () => {
+    // Ordering is load-bearing: it is what makes the pattern fallback unable to change any answer
+    // that already resolved. A concrete row is the more specific statement and must win.
+    const overrides = { '/spaces/_/crm': 'none' as const, '/spaces/acme/crm': 'global' as const }
+    expect(mergeChrome('scoped', overrides, '/spaces/acme/crm')).toBe('global')
+    expect(mergeChrome('scoped', overrides, '/spaces/other/crm')).toBe('none')
+  })
+
+  it('ignores a matching pattern row that has no override saved', () => {
+    // Matching the path is not the same as being configured. An unset pattern row must leave the
+    // code default alone, or every Space CRM board would silently adopt some default rail.
+    expect(mergeChrome('global', {}, '/spaces/acme/crm')).toBe('global')
+  })
+})
+
+describe('the MANAGED_ROUTES catalog is internally consistent', () => {
+  it('every row is either an exactly-matchable route or carries a pattern', () => {
+    // THE TEST THAT WAS MISSING. A row whose `route` contains a `_` placeholder cannot be reached
+    // by an exact-key lookup, so it is only real if it also carries a `match`. Six rows rotted for
+    // want of this assertion.
+    for (const r of MANAGED_ROUTES) {
+      const isPlaceholder = r.route.split('/').includes('_')
+      expect(
+        isPlaceholder ? r.match !== undefined : true,
+        `${r.route} uses a _ placeholder but has no match pattern, so it can never resolve`,
+      ).toBe(true)
+    }
+  })
+
+  it('every pattern actually matches a concrete instance of its own route', () => {
+    // Derive a real path from the row itself rather than hardcoding one, so the pattern is checked
+    // against the route it claims to describe — a pattern and a route that drifted apart is
+    // exactly the silent failure this catalog keeps producing.
+    for (const r of MANAGED_ROUTES) {
+      if (!r.match) continue
+      const concrete = r.route.replace(/\/_(?=\/|$)/g, '/a-real-slug')
+      expect(r.match.test(concrete), `${r.route}: pattern does not match ${concrete}`).toBe(true)
+    }
+  })
+
+  it('no pattern carries the `g` flag', () => {
+    // A global RegExp keeps `lastIndex` between .test() calls, so a shared module-level pattern
+    // would alternate true/false on identical inputs and the rail would flicker between renders.
+    // Invisible in any single-call test, which is why it is asserted structurally.
+    for (const r of MANAGED_ROUTES) {
+      if (!r.match) continue
+      expect(r.match.global, `${r.route}: pattern must not use the g flag`).toBe(false)
+    }
+  })
+
+  it('no two patterns match the same path, so catalog order never decides the answer', () => {
+    const patterned = MANAGED_ROUTES.filter((r) => r.match)
+    for (const r of patterned) {
+      const concrete = r.route.replace(/\/_(?=\/|$)/g, '/a-real-slug')
+      const matching = patterned.filter((other) => other.match!.test(concrete))
+      expect(matching.map((m) => m.route), `${concrete} is claimed by more than one row`).toEqual([r.route])
+    }
+  })
+
+  it('every route is storable — isSafeRoute accepts it', () => {
+    // setRouteChrome refuses to persist an unsafe route, so a catalog row it rejects is a control
+    // that cannot save at all.
+    for (const r of MANAGED_ROUTES) {
+      expect(isSafeRoute(r.route), `${r.route} would be rejected by setRouteChrome`).toBe(true)
+    }
+  })
+
+  it('no row points at a known redirect stub', () => {
+    // The other half of 10.13: /people, /connections and /friends are redirect stubs, so an
+    // override saved under them could never match the page the member lands on (/network*).
+    // Those three were repointed; this keeps them from being reintroduced.
+    const STUBS = ['/people', '/connections', '/friends']
+    for (const r of MANAGED_ROUTES) {
+      expect(STUBS, `${r.route} is a redirect stub — point the row at its live target`).not.toContain(r.route)
+    }
+  })
+
+  it('has no duplicate route keys', () => {
+    const routes = MANAGED_ROUTES.map((r) => r.route)
+    expect(routes).toEqual([...new Set(routes)])
   })
 })
