@@ -1248,6 +1248,25 @@ Effective capacity `ceil(N/2)`, refusing at sale 7 while the card read "6 remain
 ### ✅ 10.6 — 🔴 Swallowed DM failures (FIXED, PR #2089)
 ### ✅ 10.7 — ⚠️ Store rank gate failed OPEN on an unknown rank (FIXED, PR #2089)
 
+### 📏 A note on 10.8, 10.10 and 10.11 — why these three are still open (2026-08-11)
+
+All three are BUNDLE-SIZE findings, and all three need the same thing to land safely: a
+route-level first-load measurement before and after. This session could not produce one, and the
+reason is worth recording rather than working around.
+
+`next build` in the agent container completes COMPILATION (client chunks are emitted, which is how
+§10.19 was diagnosed and verified) but fails during page-data collection: `/discover/cities/[citySlug]`
+reaches `createAdminClient()`, and the container has no `NEXT_PUBLIC_SUPABASE_URL` /
+`SUPABASE_SERVICE_ROLE_KEY`. Without a completed build there is no app-build-manifest, so chunks
+cannot be attributed to routes — and a bundle fix whose effect cannot be measured is exactly the
+kind of change that gets reported as a win and is not one. The `analyze` CI job is CodeQL, not
+bundle analysis, so it offers no substitute.
+
+**Deliberately NOT worked around by fetching production credentials into this container.** The
+remaining blocker is a measurement environment, not the fixes themselves; each fix already has a
+named pattern in-repo (`next/dynamic` for 10.8, a DSN gate for 10.10, and the dynamic-import-inside-
+an-effect that `marketing-header.tsx` already applies for 10.11).
+
 ### 🔴 10.8 — OPEN — The app shell statically imports the entire admin module registry
 **Measured, with the chain:** `app-shell.tsx:81` → `admin-bar.tsx:7` → `settings-panel.tsx:13` →
 `components/admin/modules/module-map.tsx` (`'use client'`, 38 static imports, and it has **no
@@ -1308,11 +1327,14 @@ Next 16 emits script tags for the route's whole client manifest regardless.
 `marketing-header.tsx:68-82` already documents and applies the correct fix (dynamic import inside
 an effect) for exactly this reason. ~17% of `/discover`'s first-load JS.
 
-### 🟠 10.12 — OPEN — Two Space tabs and the `(main)` layout
-`/spaces/[slug]/podcasts` is the one Space tab the §9.5 canonical fix missed (it sits outside the
-`(profile)` route group), and it is the one the **sitemap advertises** — a submitted URL that
-canonicalizes to a different page. Separately, `(main)/layout.tsx` still reads auth during render,
-forcing dynamic on the highest-value indexable routes in the repo.
+### 🟡 10.12 — HALF DONE — the podcasts canonical is fixed; the `(main)` layout is not
+✅ **The podcasts canonical is already fixed** — re-read 2026-08-11: the page's `generateMetadata`
+now routes through `spaceProfileMetadata(slug, { segment: 'podcasts', … })` like the other tabs, so
+it self-canonicals. This entry was stale; no work is owed.
+
+🔴 **Still open:** `(main)/layout.tsx` reads auth during render, forcing dynamic on the
+highest-value indexable routes in the repo. This is the same decision as §10.9 — it changes
+signed-out navigation — and is deliberately left for the owner.
 
 ### ✅ 10.13 — Six of 36 `MANAGED_ROUTES` rows were inert (FIXED, 2026-08-11)
 Three use a `_` placeholder (`/spaces/_/crm`) against an **exact-key** lookup in `mergeChrome`, so
