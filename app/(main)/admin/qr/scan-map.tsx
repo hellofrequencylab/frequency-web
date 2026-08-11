@@ -10,12 +10,22 @@ import * as maplibregl from 'maplibre-gl'
 // v6 no longer re-exports the GeoJSON type globals; import them explicitly.
 import type * as GeoJSON from 'geojson'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { MAPLIBRE_STYLE } from '@/lib/maps/provider'
+import { configureMaplibreWorker } from '@/components/maps/maplibre-worker'
 import type { ScanLocation } from '@/lib/qr/analytics'
 
 // Keyless vector tiles (same default as the circles/discover maps). Loaded via
 // next/dynamic({ssr:false}) — maplibre must never run on the server. Plots one dot
 // per ~city cluster, sized by scan count, with a popup. Coords are coarse IP-geo.
-const STYLE = process.env.NEXT_PUBLIC_MAP_STYLE || 'https://tiles.openfreemap.org/styles/positron'
+// The style comes from lib/maps/provider (MAPLIBRE_STYLE), not a fourth copy of the same
+// env-or-default expression. Identical value; one place to change it.
+// 🔴 THE WORKER CONFIG IS LOAD-BEARING HERE. This module builds its own maplibregl.Map rather
+// than going through <MapCanvas>, so it does NOT inherit the setup in maplibre-canvas.tsx — which
+// is exactly why this map painted blank while event venue maps worked. maps-wiring.test.ts fails
+// the build if a map module drops this call. See docs/MAPS.md §4a.
+configureMaplibreWorker()
+
+const STYLE = MAPLIBRE_STYLE
 
 export default function ScanMap({
   locations,

@@ -286,3 +286,116 @@ describe('the details panel imports no server action', () => {
     expect(details).toContain('onLeave: () => Promise<string | null>')
   })
 })
+
+// ── The dock's own controls (owner pass, 2026-08-11) ──────────────────────────────────────
+//
+// 🔴 THE NEGATIVE ASSERTIONS BELOW READ `code()`, NOT THE RAW SOURCE, and that is not fussiness.
+// Every "this control is gone" check here failed on its first run against strings sitting in the
+// COMMENTS that explain the removal — `md:rounded-br-none`, `href="/people"`, `TAB_COUNT`. A file
+// that documents what it deleted still contains the words, so a raw `not.toContain` makes good
+// documentation fail the build and pressures the next person to delete the explanation. Strip
+// comments, then assert on what actually ships.
+const code = (src: string) =>
+  src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1')
+// Four changes, each of which is invisible if it silently reverts: a redundant control comes
+// back, a live field degrades to a link, or a corner squares off. Source-level for the same
+// reason the rest of this file is — nothing renders the panel in a test.
+
+describe('the redundant Messages pill is gone and the title is not', () => {
+  it('no tab re-selects the view it is already on', () => {
+    // The pill was `onClick={() => setTab('chat')}` inside a role="tablist", and initialTab()
+    // defaults to 'chat' — so it could only ever be pressed when it did nothing. Two lines under
+    // a header that already said "Messages".
+    expect(code(launcher)).not.toMatch(/aria-selected=\{tab === 'chat'\}/)
+    expect(code(launcher)).not.toContain("onClick={() => setTab('chat')}")
+  })
+
+  it('keeps the header title and subtitle that name the view', () => {
+    expect(launcher).toContain('id="vera-launcher-title"')
+    expect(launcher).toMatch(/headerTitle = helpOpen \? 'Help & support' : tab === 'vera' \? 'Vera' : 'Messages'/)
+    expect(launcher).toContain("'Chat with members and your rooms.'")
+  })
+
+  it('leaves a way BACK from Vera, so removing the tab cannot strand anyone', () => {
+    // The deleted pill was the only return path from Vera. The header's Back now covers both
+    // pushed views; without this the panel would be a one-way door into Vera.
+    expect(launcher).toContain("helpOpen || tab === 'vera' ?")
+    expect(launcher).toContain("label={helpOpen ? 'Back' : 'Back to messages'}")
+    expect(launcher).toContain("setTab('chat')")
+  })
+
+  it('does not leave a tablist of one behind', () => {
+    // A single `role="tab"` in a `role="tablist"` announces a tab set that does not exist. The
+    // remaining Ask Vera control is a plain button.
+    expect(code(launcher)).not.toContain('role="tablist"')
+    expect(launcher).toContain('Ask Vera')
+  })
+
+  it('still surfaces unread, on the dock tab where it has a job', () => {
+    // TAB_COUNT went with the pill. The count has to survive somewhere a member can see it with
+    // the panel SHUT, which is the trigger — not a badge only visible once you are already reading.
+    expect(launcher).toContain('unread={unread}')
+    expect(code(launcher)).not.toContain('TAB_COUNT')
+    expect(code(launcher)).not.toContain('TAB_ON')
+  })
+})
+
+describe('the panel is a card, not a chipped one', () => {
+  it('rounds all four corners at md', () => {
+    // `md:rounded-br-none` squared the bottom-right for a tab that PANEL_GAP moved 8px away.
+    expect(code(launcher)).not.toContain('md:rounded-br-none')
+    expect(launcher).toContain('md:rounded-card')
+  })
+
+  it('clips on the same silhouette it paints', () => {
+    // The reveal wrapper is overflow-hidden with the panel's exact box. Square, it sheared the
+    // rounded corner and cut lift-3's shadow flat — which is what read as a filled-in corner.
+    expect(launcher).toContain("'rounded-t-card md:rounded-card',")
+  })
+
+  it('keeps the phone sheet square along the viewport edge', () => {
+    // Not an oversight: a bottom sheet flush to the bottom has no page behind its lower corners.
+    expect(launcher).toContain('rounded-t-card border border-chrome-border')
+  })
+})
+
+describe('"Message someone" starts a DM without leaving the page', () => {
+  it('is a live field, not a link to /people', () => {
+    // As a Link it closed the dock and navigated away: the one control for starting a
+    // conversation was also the one that ended your visit to the panel.
+    expect(code(dockChat)).not.toMatch(/href="\/people"/)
+    expect(dockChat).toContain('aria-label="Find a member by name or @handle"')
+    expect(dockChat).toContain('type="search"')
+  })
+
+  it('searches through the shared handle endpoint rather than a tenth implementation', () => {
+    expect(dockChat).toContain('/api/search-handles?q=')
+    expect(dockChat).toContain('setTimeout(')
+    expect(dockChat).toMatch(/\}, 200\)/)
+    expect(dockChat).toContain('ctrl.abort()')
+  })
+
+  it('opens the conversation in place through the shared action', () => {
+    expect(dockChat).toContain('openDirectConversation')
+    expect(dockChat).toContain('openDm(res.conversationId')
+  })
+
+  it('renders the friends-gate refusal instead of swallowing it', () => {
+    // openDirectConversation returns { ok: false, error } for a non-friend and never throws, so
+    // a caller that ignores the result fails silently — the picker would just do nothing.
+    expect(dockChat).toContain('setPickError(res.error)')
+    expect(dockChat).toMatch(/aria-live="polite"[\s\S]{0,120}?pickError|pickError[\s\S]{0,200}?aria-live="polite"/)
+  })
+
+  it('says a member is unreachable BEFORE the click, not after', () => {
+    expect(dockChat).toContain("friend_status !== 'accepted'")
+    expect(dockChat).toContain('Not connected')
+  })
+
+  it('keeps a focus target for the post-leave announcement', () => {
+    // inboxFirstRef used to point at the removed Link. Focus after a leave has to land somewhere
+    // named, or a keyboard member restarts their tab order at <body>.
+    expect(dockChat).toContain('const inboxFirstRef = useRef<HTMLInputElement>(null)')
+    expect(dockChat).toContain('ref={inboxFirstRef}')
+  })
+})

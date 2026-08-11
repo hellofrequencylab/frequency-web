@@ -10,6 +10,7 @@ import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { mapDiag } from '@/lib/maps/diagnostics'
 import { MAPLIBRE_STYLE, MAPLIBRE_WORKER_URL, WARM_FILTER } from '@/lib/maps/provider'
+import { configureMaplibreWorker } from './maplibre-worker'
 import { buildPopupContent } from './popup-content'
 import type { MapImplProps, MapPinTone } from './types'
 
@@ -20,26 +21,14 @@ import type { MapImplProps, MapPinTone } from './types'
 // Loaded only through <MapCanvas>, which mounts it via next/dynamic({ssr:false}) — maplibre
 // must never run on the server.
 
-// 🔴 THIS IS WHAT MAKES THE BASEMAP PAINT. It is not an escape hatch and it is not optional.
+// 🔴 THIS IS WHAT MAKES THE BASEMAP PAINT. Not an escape hatch, not optional — see
+// components/maps/maplibre-worker.ts for the mechanism and docs/MAPS.md §4a for the trace.
 //
-// The comment that stood here said "WE ARE ON 5, SO THIS MUST STAY UNSET". We are on 6
-// (package.json: ^6.2.0), and have been for this repo's whole history — so the var was empty,
-// this block was a no-op, and every keyless environment rendered a blank cream rectangle.
-//
-// v6 splits the worker into two sibling modules. Turbopack rewrites the bundled reference to the
-// hashed worker asset correctly; what it cannot rewrite is the line INSIDE that copied asset,
-// which still imports the unhashed "./maplibre-gl-shared.mjs". Measured against a real build in
-// headless Chromium: the worker 404s on its own sibling and never starts. See the full trace in
-// scripts/copy-maplibre-worker.mjs, which self-hosts both files to public/maplibre/ so the
-// relative specifier resolves; MAPLIBRE_WORKER_URL now defaults to that copy.
-//
-// The `!config.WORKER_URL` guard stays because it is still correct: on v6 the field defaults to
-// '' so we set it, and on any build where MapLibre has already installed its own worker (v5's UMD
-// intro did this with a Blob at module-eval time) we decline to overwrite something that works.
-if (MAPLIBRE_WORKER_URL) {
-  const config = (maplibregl as unknown as { config?: { WORKER_URL?: string } }).config
-  if (config && !config.WORKER_URL) config.WORKER_URL = MAPLIBRE_WORKER_URL
-}
+// It USED to be an inline assignment right here, which is how /discover, the Circles map and the
+// QR scan map stayed blank after the worker was "fixed": they build their own maplibregl.Map and
+// never imported this canvas, so they never ran it. It is a shared call now, and
+// maps-wiring.test.ts fails the build if a map module skips it.
+configureMaplibreWorker()
 
 const TONE_VAR: Record<MapPinTone, string> = {
   primary: '--color-primary',

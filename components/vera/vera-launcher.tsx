@@ -80,16 +80,15 @@ const UNREAD_BADGE =
  *  now, and furniture that shakes reads as broken rather than as a nudge. Full amber, because
  *  at rest it sits on the MUTED tile and a cream dot would disappear into it. */
 const WAITING_DOT = 'pointer-events-none absolute right-1.5 top-1.5 h-2 w-2 rounded-pill bg-primary-strong'
-/** Dock modes. Pills, not underlines — the panel is a popover, not a page. */
+/** The one mode control left in the strip (Ask Vera). Pill, not an underline — the panel is a
+ *  popover, not a page.
+ *
+ *  `TAB_ON` and `TAB_COUNT` were deleted with the Messages pill (owner, 2026-08-11). The count
+ *  is NOT lost: unread still lights the dock tab itself through `ChatTrigger`'s `unread` prop,
+ *  which is the mark a member sees with the panel shut — the only time a count has a job. */
 const TAB_BASE =
   'inline-flex flex-1 items-center justify-center gap-1.5 rounded-control px-3 py-1.5 text-body-sm font-medium transition-colors'
-const TAB_ON = 'bg-primary-bg text-primary-strong'
 const TAB_OFF = 'text-muted hover:text-text'
-/** The unread count on the Messages tab. Unread is a DANGER badge, not an amber one: amber is
- *  the brand accent and it is already carrying the tab's own on/off state two pixels away, so an
- *  amber-on-amber count says nothing. `bg-danger` + `text-on-danger` is the kit's minted pair. */
-const TAB_COUNT =
-  'inline-flex h-4 min-w-4 items-center justify-center rounded-pill bg-danger px-1 text-3xs font-bold text-on-danger'
 
 // ── THE RAIL'S END BELONGS TO THE VAULT NOW (owner, 2026-08-05) ──────────────────────────────
 //
@@ -603,6 +602,14 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
           'fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md md:mx-0 md:inset-x-auto md:bottom-6 md:right-6 md:z-30 md:w-96 md:max-w-none',
           // The reveal is unchanged: a grid row travelling 0fr → 1fr on `--motion-base`, which IS
           // the cue-pop beat the three docks arrive on, with `motion-reduce` collapsing it.
+          //
+          // 🔴 THE RADIUS HERE IS NOT DECORATION — this wrapper is what CLIPS the panel. It needs
+          // `overflow-hidden` for the 0fr → 1fr reveal, and its box is exactly the panel's box, so
+          // a SQUARE clip cut the panel's own rounded silhouette and sheared `lift-3`'s shadow off
+          // flat across each corner. The corner then read as filled-in rather than transparent.
+          // Matching the panel's radius makes the clip follow the silhouette, so the corner is
+          // genuinely empty and the shadow curves with it.
+          'rounded-t-card md:rounded-card',
           'grid overflow-hidden transition-[grid-template-rows] duration-[var(--motion-base)] ease-[var(--ease-out)] motion-reduce:transition-none print:hidden',
           open ? 'grid-rows-[1fr]' : 'pointer-events-none grid-rows-[0fr]',
         )}
@@ -633,11 +640,17 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
               // pinned at the very bottom with a band of empty canvas between them. The rail's top
               // is the CEILING the panel must not pass, not the size it must be.
               style={panelHeight ? { maxHeight: panelHeight } : undefined}
-              // TETHERED, NOT FLOATING FREE (owner, 2026-08-06). Three corners are rounded and
-              // the BOTTOM-RIGHT is square, because that is the corner sitting on the chat tab:
-              // a radius there would read as a separate card that happens to overlap the dock,
-              // which is the "old feel" being fixed. Square it, and the panel reads as lifted off
-              // the tab and still attached to it.
+              // ALL FOUR CORNERS ARE ROUNDED AT md (owner, 2026-08-11).
+              //
+              // `md:rounded-br-none` used to square the bottom-right, and the note here justified
+              // it as "that is the corner sitting on the chat tab". That stopped being true when
+              // PANEL_GAP replaced PANEL_TUCK: useDockAnchor now sets the panel's bottom to
+              // `innerHeight - rect.top + PANEL_GAP`, so the panel floats 8px ABOVE the tab and
+              // sits on nothing. A square corner with no tab under it is just a chipped card.
+              //
+              // The mobile branch still keeps `rounded-t-card` alone, and that is not an
+              // oversight: below md this is a bottom SHEET flush to the viewport edge, so its
+              // bottom corners have no page behind them to round against.
               //
               // `glass` is gone with it. Glass is the SHELL's material — the bar, the rails — and
               // wearing it here made the panel look like more chrome instead of a surface you
@@ -657,13 +670,22 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
               // is why the class cap can be a plain default rather than a second measurement. The
               // pair is still pinned as one contiguous run by dock-bar.test.ts, for the reason its
               // comment gives: a loose search would be satisfied by prose naming a deleted class.
-              className="lift-3 flex h-[68dvh] max-h-[37.5rem] w-full flex-col overflow-hidden rounded-t-card border border-chrome-border bg-canvas pb-[env(safe-area-inset-bottom)] outline-none md:rounded-card md:rounded-br-none md:h-auto md:max-h-[35rem] md:pb-2"
+              className="lift-3 flex h-[68dvh] max-h-[37.5rem] w-full flex-col overflow-hidden rounded-t-card border border-chrome-border bg-canvas pb-[env(safe-area-inset-bottom)] outline-none md:rounded-card md:h-auto md:max-h-[35rem] md:pb-2"
             >
               {/* Header — canvas, so it reads as the dock's own chrome rather than more
                   transcript. Reflects the active view; Help gets a Back affordance. */}
               <div className="flex shrink-0 items-center gap-2.5 border-b border-chrome-border bg-surface px-4 py-3">
-                {helpOpen ? (
-                  <IconButton label="Back" onClick={() => { setHelpOpen(false); setQ('') }}>
+                {/* Back covers BOTH pushed views now. Help still pops to wherever you were; Vera
+                    pops to Messages, which is the return path the removed Messages tab used to
+                    provide. Without this, deleting that tab would strand a member in Vera. */}
+                {helpOpen || tab === 'vera' ? (
+                  <IconButton
+                    label={helpOpen ? 'Back' : 'Back to messages'}
+                    onClick={() => {
+                      if (helpOpen) { setHelpOpen(false); setQ(''); return }
+                      setTab('chat')
+                    }}
+                  >
                     <ArrowLeft className="h-4 w-4" aria-hidden />
                   </IconButton>
                 ) : (
@@ -680,27 +702,25 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                 </IconButton>
               </div>
 
-              {/* Tabs — Messages front, Vera second. Hidden while the Help section is pushed. */}
-              {!helpOpen && (
-                <div className="flex shrink-0 gap-1 border-b border-chrome-border bg-surface px-2 pb-2 pt-1.5" role="tablist" aria-label="Dock modes">
+              {/* THE MESSAGES PILL IS GONE (owner, 2026-08-11: "remove the Messages button,
+                  non-functional / leave the Messages title").
+                  It was right, and for a precise reason: `initialTab()` defaults to 'chat', so by
+                  the time anyone SAW that pill the panel was already on Messages and pressing it
+                  re-selected the tab it was already on. A control that can only be pressed when it
+                  does nothing. It also sat two lines under the header's own "Messages" title,
+                  saying the same word twice.
+                  The title (`headerTitle`, in the header above) is untouched.
+                  What remains is the one thing the strip did that the header could not: reach
+                  Vera. As a lone control it is a button, not a `role="tab"` — a tablist of one is
+                  a lie to a screen reader — and it hides in Vera, where the header's Back returns. */}
+              {!helpOpen && tab === 'chat' && (
+                <div className="flex shrink-0 gap-1 border-b border-chrome-border bg-surface px-2 pb-2 pt-1.5">
                   <button
                     type="button"
-                    role="tab"
-                    aria-selected={tab === 'chat'}
-                    onClick={() => setTab('chat')}
-                    className={cn(TAB_BASE, tab === 'chat' ? TAB_ON : TAB_OFF)}
-                  >
-                    <MessageSquare className="h-4 w-4" aria-hidden /> Messages
-                    {unread > 0 && <span className={TAB_COUNT}>{unread > 9 ? '9+' : unread}</span>}
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={tab === 'vera'}
                     onClick={() => setTab('vera')}
-                    className={cn(TAB_BASE, tab === 'vera' ? TAB_ON : TAB_OFF)}
+                    className={cn(TAB_BASE, TAB_OFF)}
                   >
-                    <Sparkles className="h-4 w-4" aria-hidden /> Vera
+                    <Sparkles className="h-4 w-4" aria-hidden /> Ask Vera
                   </button>
                 </div>
               )}

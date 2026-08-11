@@ -1643,9 +1643,38 @@
   padding-bottom: calc(var(--space-section) * 0.62);
 }
 .mk-arc   { padding-top: calc(var(--space-section) + 1.5rem); }
+/* A SectionHeading closes with `mb-9` — the gap between the heading block and the content it
+   introduces. When a page adds its own intro <p> straight after it (16 sites across 8 pages:
+   /discover ×4, the three discover hubs, /pricing, /the-lab, /the-quest, /the-community), that
+   margin is CONSUMED as the gap to the paragraph, and the paragraph itself has none — so the
+   content below butted straight up against the copy. On /discover that was the map.
+   Restoring the same 2.25rem here means an intro column closes with one rhythm whether or not
+   the page added a paragraph, and no call site has to remember it. Adjacent sibling only, so a
+   paragraph deeper in the section is untouched.
+
+   IN `@layer components` ON PURPOSE, so it is a DEFAULT rather than a decree. Everything else in
+   this block of the file is unlayered, which beats `@layer utilities` outright — and two of those
+   16 sites (/the-community, /the-quest) already set `mb-9` by hand. Unlayered, this rule would
+   have silently overridden them, and any future page that wants a different closing gap. Layered,
+   an explicit `mb-*` utility still wins and this only fills in the 14 that say nothing. */
+@layer components {
+  .mk-section-heading + p { margin-bottom: 2.25rem; }
+}
 /* The hero already carries its own bottom room; a beat straight after it must not
-   add a second gap. */
-.mk-hero:not(.mk-hero-dock) + .mk-beat, .mk-hero:not(.mk-hero-dock) + .mk-band { padding-top: 0; }
+   add a second gap.
+
+   🔴 EXCEPT WHEN THE HERO IS A PHOTO, and that exception is the whole point of the third
+   `:not()`. This rule trades the beat's top padding for "the room the hero already carries" —
+   which is only a trade when that room is WHITESPACE. A PhotoHero's `pb` sits INSIDE the
+   image: it is space between the hero's copy and the bottom edge of the photograph, and it
+   contributes exactly nothing below that edge. So the next section's eyebrow landed flush
+   against the photo, on 22 of the 23 PhotoHero pages (every dockless one). Reported on
+   /discover; it was never one page.
+
+   A photo hero therefore tags itself `.mk-hero-photo` (marketing-ui.tsx) and keeps the full
+   beat. The plain text `Hero` still zeroes it, because ITS padding really is whitespace. */
+.mk-hero:not(.mk-hero-dock):not(.mk-hero-photo) + .mk-beat,
+.mk-hero:not(.mk-hero-dock):not(.mk-hero-photo) + .mk-band { padding-top: 0; }
 /* A hero with a fact dock overhangs its own bottom edge by 2rem, so whatever comes
    next has to clear the dock before its own rhythm starts. The HERO carries the tag
    (PageHero adds .mk-hero-dock when it is given facts), so no page has to remember
