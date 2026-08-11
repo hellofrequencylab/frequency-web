@@ -36,6 +36,15 @@ export const FIELD_KINDS = [
   'slug',
   'select',
   'tags',
+  // A pointer to another row (a Circle, a Space, a booking calendar), stored as an id and shown
+  // as a name. Distinct from `select`, whose options are a closed set known up front: a reference
+  // must be LOADED, so its control fetches. Three manifests reached for this independently.
+  'reference',
+  // A design token name or a hex value. Distinct from `text` so the control can offer swatches
+  // and a renderer never prints a raw token key at a member.
+  'color',
+  // An icon key (a lucide name or an emoji), not free text.
+  'icon',
   // contact + web
   'url',
   'email',
@@ -49,6 +58,10 @@ export const FIELD_KINDS = [
   'duration',
   // time + place
   'date',
+  // A wall-clock date AND time. Distinct from `date` because most things that happen (an event's
+  // start, a booking window) are meaningless without the time of day, and a `date` control would
+  // silently drop it. Added when the Event manifest hit exactly that.
+  'datetime',
   'daterange',
   'cadence',
   'place',
@@ -65,6 +78,34 @@ export type FieldKind = (typeof FIELD_KINDS)[number]
 export function isFieldKind(v: string): v is FieldKind {
   return (FIELD_KINDS as readonly string[]).includes(v)
 }
+
+/**
+ * Kinds that MUST say what they are choosing between. Deliberately just these two: `cadence` also
+ * has closed sets in some entities ("none / daily / weekly / monthly") but is genuinely free text
+ * in others ("Wednesdays, coffee after"), so forcing options on it would make the honest case
+ * unrepresentable. A closed recurrence is a `select`.
+ */
+const CHOICE_KINDS: readonly FieldKind[] = ['select', 'reference']
+
+/** One choice for a `select`. Value is what persists; label is what a human reads. */
+export interface FieldOption {
+  value: string
+  label: string
+}
+
+/**
+ * Where a choice field's options come from. Two cases, because they behave differently:
+ *  - `options`    — a CLOSED set known at declaration time (a Pillar, a visibility, a price model).
+ *                   Declared right here, so the control needs nothing else.
+ *  - `optionsFrom` — a named collection the SURFACE must load (Circles, Spaces, themes). The
+ *                   manifest says WHICH collection; the page supplies the rows, because they are
+ *                   queried, not literal.
+ * Exactly one is required on a choice field, which `validateManifest` enforces: 42 `select` fields
+ * arrived across the first manifests with no way to state their options at all.
+ */
+export type FieldChoices =
+  | { options: readonly FieldOption[]; optionsFrom?: never }
+  | { optionsFrom: string; options?: never }
 
 // ── Placement (the ADR-450 seam) ─────────────────────────────────────────────────────────
 
@@ -112,6 +153,14 @@ export interface FieldDef {
   veraDrafts?: boolean
   /** Drop the row entirely when the read value is empty. Default: keep it (so gaps are visible). */
   omitWhenEmpty?: boolean
+  /** A closed option set, for a `select`. Mutually exclusive with `optionsFrom`. */
+  options?: readonly FieldOption[]
+  /**
+   * The named collection a `select` or `reference` draws from when the options must be LOADED
+   * (Circles, Spaces, page themes). The surface resolves the name to rows and hands them to the
+   * control; the manifest never queries.
+   */
+  optionsFrom?: string
   /**
    * Derive the displayed string from the draft. Use for a composed value (a rating rendered
    * as "4.8 (126)") or a defaulted one. PURE. Absent === read the scalar at `path`.
@@ -223,6 +272,22 @@ export function validateManifest(m: EntityManifest): ManifestProblem[] {
     }
     if (f.section !== undefined && !sectionKeys.has(f.section)) {
       problems.push(`${ctx} field "${f.path}" points at section "${f.section}", which is not declared.`)
+    }
+    // A choice field with no source of choices renders an empty dropdown: the field exists, looks
+    // editable, and can never be set. Catch it at build time rather than in front of an operator.
+    if (CHOICE_KINDS.includes(f.kind)) {
+      const declared = [f.options ? 'options' : null, f.optionsFrom ? 'optionsFrom' : null].filter(Boolean)
+      if (declared.length === 0) {
+        problems.push(
+          `${ctx} field "${f.path}" is a ${f.kind} with no choices. Declare \`options\` for a closed set, or \`optionsFrom\` for one the surface loads.`,
+        )
+      } else if (declared.length > 1) {
+        problems.push(`${ctx} field "${f.path}" declares BOTH \`options\` and \`optionsFrom\`. Pick one.`)
+      } else if (f.options && f.options.length === 0) {
+        problems.push(`${ctx} field "${f.path}" declares an EMPTY \`options\` set, so it could never be set.`)
+      }
+    } else if (f.options || f.optionsFrom) {
+      problems.push(`${ctx} field "${f.path}" is a ${f.kind}, which has no dropdown to fill. Remove its options, or make it a select.`)
     }
   }
 

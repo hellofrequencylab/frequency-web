@@ -18,7 +18,15 @@
 // COMMERCIAL_FACT_PATHS, so the review board and the materializer's gate can never disagree.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { EntityManifest } from '@/lib/studio/kernel/manifest'
+import type { EntityManifest, FieldOption } from '@/lib/studio/kernel/manifest'
+
+/** The two member-facing Space designators. Mirrors `BusinessType` (lib/importer/schema.ts),
+ *  which is a union type with no runtime value to import. `root` is the hidden platform host and
+ *  is never a choice here. */
+const BUSINESS_TYPES: readonly FieldOption[] = [
+  { value: 'business', label: 'Business' },
+  { value: 'nonprofit', label: 'Nonprofit' },
+]
 
 /** Render a scalar as display text. Mirrors the kernel's own reader. PURE + total. */
 function str(v: unknown): string {
@@ -56,7 +64,7 @@ export const BUSINESS_MANIFEST: EntityManifest = {
     { path: 'name', label: 'Name', kind: 'text', section: 'identity', placement: 'spark', required: true },
     { path: 'brandName', label: 'Brand name', kind: 'text', section: 'identity', omitWhenEmpty: true },
     // Type defaults to 'business' when the draft leaves it unset (a nonprofit is the explicit choice).
-    { path: 'type', label: 'Type', kind: 'select', section: 'identity', placement: 'spark', read: (d) => str(d.type) || 'business' },
+    { path: 'type', label: 'Type', kind: 'select', section: 'identity', placement: 'spark', options: BUSINESS_TYPES, read: (d) => str(d.type) || 'business' },
     { path: 'slug', label: 'Slug', kind: 'slug', section: 'identity', omitWhenEmpty: true },
     { path: 'category', label: 'Category', kind: 'text', section: 'identity', placement: 'spark', omitWhenEmpty: true },
     { path: 'accent', label: 'Accent', kind: 'text', section: 'identity', omitWhenEmpty: true },

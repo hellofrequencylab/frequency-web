@@ -21,9 +21,32 @@
 
 import type { EntityManifest } from './kernel/manifest'
 import { BUSINESS_MANIFEST } from './entities/business'
+import { CIRCLE_MANIFEST } from './entities/circle'
+import { EVENT_MANIFEST } from './entities/event'
+import { JOURNEY_MANIFEST } from './entities/journey'
+import { LISTING_MANIFEST } from './entities/listing'
+import { PRACTICE_MANIFEST } from './entities/practice'
+import { PRODUCT_MANIFEST } from './entities/product'
+import { SERVICE_MANIFEST } from './entities/service'
+import { SPACE_MANIFEST } from './entities/space'
 
-/** Every entity the Studio knows how to create and review. */
-export const STUDIO_ENTITIES: readonly EntityManifest[] = [BUSINESS_MANIFEST]
+/** Every entity the Studio knows how to create and review, in catalog order. */
+export const STUDIO_ENTITIES: readonly EntityManifest[] = [
+  // The gathering + growth entities a member makes.
+  CIRCLE_MANIFEST,
+  EVENT_MANIFEST,
+  JOURNEY_MANIFEST,
+  PRACTICE_MANIFEST,
+  // The places a member or an operator runs. `business` is the RESEARCHED road (the Seeder, with a
+  // provenance ledger and an adversarial verifier); `space` is the member's own road, same product,
+  // no research pipeline behind it.
+  SPACE_MANIFEST,
+  BUSINESS_MANIFEST,
+  // Commerce.
+  LISTING_MANIFEST,
+  PRODUCT_MANIFEST,
+  SERVICE_MANIFEST,
+]
 
 const BY_ENTITY = new Map<string, EntityManifest>(STUDIO_ENTITIES.map((m) => [m.entity, m]))
 

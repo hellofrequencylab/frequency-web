@@ -9,7 +9,7 @@ import { describe, it, expect } from 'vitest'
 
 import { STUDIO_ENTITIES, studioEntityIds, studioManifest } from './registry'
 import { FIELD_KINDS, isFieldKind, validateManifest } from './kernel/manifest'
-import { buildFieldModel } from './kernel/review-kernel'
+import { buildFieldModel, sparkFields } from './kernel/review-kernel'
 
 describe('the Studio catalog', () => {
   it('declares at least one entity', () => {
@@ -44,6 +44,19 @@ describe.each(STUDIO_ENTITIES.map((m) => [m.entity, m] as const))('manifest: %s'
     for (const r of manifest.repeats ?? []) expect(keys.has(r.section)).toBe(true)
   })
 
+  it('gives every choice field a source of choices', () => {
+    const all = [...manifest.fields, ...(manifest.repeats ?? []).flatMap((r) => r.fields)]
+    for (const f of all.filter((x) => x.kind === 'select' || x.kind === 'reference')) {
+      expect(Boolean(f.options) !== Boolean(f.optionsFrom), `${manifest.entity}.${f.path}`).toBe(true)
+    }
+  })
+
+  it('asks the Spark for a SHORT list (a guided flow people abandon is worse than a form)', () => {
+    // Not a style rule: the research on guided creation is consistent that time-to-first-output is
+    // what decides completion. A Spark that asks twelve questions is a form wearing a costume.
+    expect(sparkFields(manifest).length).toBeLessThanOrEqual(8)
+  })
+
   it('builds a model from an EMPTY draft without throwing (the cold-start path)', () => {
     const model = buildFieldModel(manifest, {})
     expect(model.summary.blocked).toBe(false)
@@ -76,6 +89,59 @@ describe('validateManifest', () => {
       fields: [{ path: 'p', label: 'P', kind: 'text', section: 'nope' }],
     })
     expect(problems.join(' ')).toContain('not declared')
+  })
+
+  it('reports a choice field with no source of choices', () => {
+    const problems = validateManifest({
+      entity: 'broken',
+      label: 'Broken',
+      sections: [{ key: 'a', title: 'A', desc: 'x' }],
+      fields: [{ path: 'p', label: 'P', kind: 'select', section: 'a' }],
+    })
+    expect(problems.join(' ')).toContain('no choices')
+  })
+
+  it('reports a choice field that declares BOTH options and optionsFrom', () => {
+    const problems = validateManifest({
+      entity: 'broken',
+      label: 'Broken',
+      sections: [{ key: 'a', title: 'A', desc: 'x' }],
+      fields: [
+        { path: 'p', label: 'P', kind: 'select', section: 'a', options: [{ value: 'x', label: 'X' }], optionsFrom: 'things' },
+      ],
+    })
+    expect(problems.join(' ')).toContain('BOTH')
+  })
+
+  it('reports an EMPTY option set (a field that exists but could never be set)', () => {
+    const problems = validateManifest({
+      entity: 'broken',
+      label: 'Broken',
+      sections: [{ key: 'a', title: 'A', desc: 'x' }],
+      fields: [{ path: 'p', label: 'P', kind: 'select', section: 'a', options: [] }],
+    })
+    expect(problems.join(' ')).toContain('EMPTY')
+  })
+
+  it('reports options hung on a kind that has no dropdown', () => {
+    const problems = validateManifest({
+      entity: 'broken',
+      label: 'Broken',
+      sections: [{ key: 'a', title: 'A', desc: 'x' }],
+      fields: [{ path: 'p', label: 'P', kind: 'text', section: 'a', options: [{ value: 'x', label: 'X' }] }],
+    })
+    expect(problems.join(' ')).toContain('no dropdown')
+  })
+
+  it('accepts a reference that loads its choices from the surface', () => {
+    expect(
+      validateManifest({
+        entity: 'fine',
+        label: 'Fine',
+        sections: [{ key: 'a', title: 'A', desc: 'x' }],
+        fields: [{ path: 'p', label: 'P', kind: 'reference', section: 'a', optionsFrom: 'circles' }],
+      }),
+    ).toEqual([])
   })
 
   it('reports a commercial field that could never clear', () => {

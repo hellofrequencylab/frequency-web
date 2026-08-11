@@ -20176,3 +20176,56 @@ One intentional difference: a rating object present but entirely empty no longer
 adding a *capability* is a kernel change that reaches every entity at once. The follow-on phases (the Spark
 kit, the AI spark generalization, the commerce wizards, wizard autosave, the edit re-entry panel, an Event
 seeder) are sequenced in [STUDIO.md](STUDIO.md).
+
+### ADR-597 addendum: the first nine manifests, and what declaring them taught the kernel
+
+**Status:** Accepted · shipped with Phase 2 (the Spark kit + the entity catalog).
+
+Nine entities are now declared: **circle · event · journey · practice · space · business · listing ·
+product · service**. Declaring them in parallel was itself the test of the abstraction, and it moved
+the kernel three times. Each change reached every entity at once, which is the property the design
+exists for:
+
+| The kernel gained | Because | Reached |
+|---|---|---|
+| `datetime` kind | `date` silently drops time of day, and an event start without a time is useless | every entity |
+| `options` / `optionsFrom` on `FieldDef`, and the `reference` kind | **42 `select` fields** arrived with no way to say what they were choosing between. Three independent manifests hit this and named it the same way | every entity |
+| `color` + `icon` kinds | an accent token and an icon key were both being smuggled through `text` | every entity |
+
+**The distinction that matters: `options` vs `optionsFrom`.** A closed set known at declaration time
+(a visibility, a price model) is declared inline. A set that must be LOADED (Circles, Spaces, page
+themes) is named, and the surface supplies the rows, because a pure manifest cannot query. The
+`reference` kind is the second case with an id behind it. `validateManifest` requires exactly one,
+because a choice field with neither renders an empty dropdown: present, apparently editable, and
+impossible to set.
+
+**`cadence` is deliberately NOT a choice kind.** It is a closed set for an event's recurrence and
+genuinely free text for a Circle ("Wednesdays, coffee after"). Forcing options on it would make the
+honest case unrepresentable, so a closed recurrence is simply a `select`.
+
+**Purity beat reuse, repeatedly.** Most closed sets could not be imported from their real source:
+`lib/marketplace.ts`, `lib/practices.ts`, and `lib/pillars.ts` all open with the Supabase admin
+client, and the option arrays in the create forms live in `'use client'` components. Importing either
+would drag a framework into a module the contract requires to stay pure. Those sets are restated with
+a comment naming the file mirrored and, where possible, typed against the real union so adding a
+value fails the build until the manifest catches up. Two imports were verified clean and kept
+(`lib/spaces/profile-config.ts`, `lib/theme/space-themes.ts`).
+
+**Drift guards added** (`lib/studio/registry.test.ts`, now 74 assertions): every choice field has
+exactly one source; no non-choice kind carries options; no empty option set; and **every Spark asks
+at most 8 questions**, which is a research-backed rule rather than a style one (time-to-first-output
+decides completion, and a guided flow asking twelve questions is a form in a costume).
+
+**The Spark kit** (`components/studio/spark/*`) ships alongside: `SparkShell` (composing the page
+framework's `WizardProgress` and the shared button vocabulary rather than restating them),
+`SparkDoors` (the two equal-weight doors), `SparkDropzone` (one upload control, declared by
+`accepts`), and `field/field-control.tsx` (one control per KIND, composing `components/ui/field.tsx`
+so the Studio inherits the sitewide focus halo). `lib/studio/spark-actions.ts` replaces the two
+near-identical document-extraction actions that had grown independently in Journeys and Circles.
+
+**Known gaps, recorded rather than papered over.** A keyed-map repeat (Practice's per-Pillar
+`focus_details`) cannot expand into rows: `RepeatDef` walks arrays only. Circle agreements are a bare
+`string[]`, so `agreements[0].text` is a stable row key, not a persisted path (harmless under
+`verify: 'none'`, where nothing keys a ledger). Neither `commerce_products` nor `market_listings`
+has a cover-image column, so all three commerce manifests use `images` with first-as-cover; a real
+cover is a schema change, not a manifest one.
