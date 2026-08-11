@@ -1139,3 +1139,72 @@ Cosmetic only (the circle cards render one step roomier than intended), but it m
 visual baselines in every state, so it is deliberately **not** bundled into the CI-unblocking PR.
 Same family as the `Input` inset collision from the sweep round: the fix is a variant on the
 primitive, not a className override at the call site.
+
+### 9.12 — ⚠️ `Skeleton` is the second instance of the §9.11 collision, at 126 call sites
+
+`components/ui/skeleton.tsx:15` hardcodes a radius and joins `className` after it:
+
+```
+className={`animate-pulse rounded-control bg-border-strong ${className}`}
+```
+
+Of **329** `<Skeleton>` call sites, **126** pass a radius of their own, so on every one of them two
+`border-radius` utilities land on one element and the winner is whichever Tailwind emitted last:
+
+| Caller passes | Sites |
+| :--- | ---: |
+| `rounded-2xl` | 36 |
+| `rounded-pill` | 33 |
+| `rounded-xl` | 17 |
+| `rounded-lg` | 15 |
+| `rounded-card` | 10 |
+| `rounded-3xl` | 6 |
+| `rounded-none` | 6 |
+| `rounded-t` | 2 |
+| `rounded-md` | 1 |
+
+✅ **RESOLVED 2026-08-11 by measurement — it IS a bug, at 52 sites, not 126.**
+
+The built stylesheet emits `border-radius` utilities **alphabetically**:
+
+```
+rounded-2xl → rounded-3xl → rounded-card → rounded-control → rounded-full
+→ rounded-lg → rounded-md → rounded-none → rounded-pill → rounded-sm → rounded-xl
+```
+
+Later wins, so `rounded-control` beats exactly the three that sort before it — and only those:
+
+| Caller passes | Sites | Result |
+| :--- | ---: | :--- |
+| `rounded-2xl` | 36 | 🔴 paints 14px, not 24px |
+| `rounded-card` | 10 | 🔴 paints `--radius-control` |
+| `rounded-3xl` | 6 | 🔴 |
+| `lg` / `xl` / `md` / `pill` / `none` / `t` | 74 | ✅ sort after, caller wins |
+
+So **52 of 329** call sites paint a radius nobody asked for, and the other 74 were always fine.
+Visible cost: `app/(main)/lead/loading.tsx:17,23` and
+`components/spaces/dashboard/space-dashboard.tsx:292,299` render placeholders with tighter corners
+than the cards that replace them, so those surfaces **snap their corners on hydration**.
+
+**Still not fixed here, and now for a different reason.** The fix is the same shape as §9.11 (a
+`radius` prop on the primitive), but it changes rendering at 52 sites and would invalidate a
+baseline capture that was already in flight when this was settled. It wants its own PR and its own
+capture. Adopting `tailwind-merge` in `cn()` would close the entire class — `lib/utils.ts:4-6` is
+a plain `.filter(Boolean).join(' ')` — but that changes the semantics of a helper used in hundreds
+of places and is not a drive-by.
+
+The original reasoning, kept because it is why this was measured instead of swept: Unlike §9.11 — where `p-6` provably
+beat `p-5` because Tailwind orders the numeric padding scale ascending — the radius scale here
+mixes THEME tokens (`--radius-control/card/pill`, declared at `app/globals.css:195`) with built-in
+steps (`lg`/`xl`/`2xl`/`3xl`/`none`/`md`). Which side wins depends on emission order in the built
+stylesheet, which cannot be read off the source.
+
+Deciding it needs the production CSS: find the chunk carrying the `border-radius` utilities and
+compare the byte offset of `.rounded-control` against the others. If the callers win, this is a
+latent hazard to document and gate; if `rounded-control` wins, 126 loading skeletons are painting
+a radius nobody asked for. **Do not sweep it until that is measured** — a blind fix would change
+126 call sites' rendering on a guess.
+
+The durable fix in either case is the one §9.11 took: make the radius a prop on the primitive, so
+no caller's intent depends on stylesheet order. `cn()` in this repo is a plain join with no
+tailwind-merge semantics, so it cannot resolve this for you.

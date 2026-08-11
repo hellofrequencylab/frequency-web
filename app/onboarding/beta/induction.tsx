@@ -115,7 +115,7 @@ function accent(text: string): React.ReactNode {
   if (parts.length === 1) return text
   return parts.map((part, i) =>
     part.startsWith('*') && part.endsWith('*') && part.length > 2 ? (
-      <span key={i} className="text-primary">{part.slice(1, -1)}</span>
+      <span key={i} className="text-primary-strong">{part.slice(1, -1)}</span>
     ) : (
       <span key={i}>{part}</span>
     ),
@@ -614,7 +614,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
   const backLink = 'text-body-sm font-medium text-subtle underline-offset-4 transition-colors hover:text-muted hover:underline'
   // Primary action — the shared Wizard button (app register), used across the beats.
   const btnPrimary = wizardPrimaryClass
-  const eyebrow = 'text-body-sm font-semibold uppercase tracking-eyebrow text-primary'
+  const eyebrow = 'text-body-sm font-semibold uppercase tracking-eyebrow text-primary-strong'
   const heading = 'font-display uppercase leading-[1.0] text-text'
 
   const slide = reel[reelIndex]

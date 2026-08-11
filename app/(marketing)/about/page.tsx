@@ -161,7 +161,7 @@ function LegacyAbout() {
         eyebrow="Why we exist"
         line={
           <>
-            Somewhere to belong, <span className="text-primary">near you</span>.
+            Somewhere to belong, <span className="text-primary-strong">near you</span>.
           </>
         }
         note="We think the answer to the loneliest era in history is a folding chair with your name on it. We're not building a following. We're building infrastructure."

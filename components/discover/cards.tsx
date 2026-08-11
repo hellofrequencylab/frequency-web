@@ -49,7 +49,7 @@ export function ChannelCard({
 export function CircleCard({ circle, isAuthed = false }: { circle: PublicCircle; isAuthed?: boolean }) {
   return (
     <Link href={communityHref(`/circles/${circle.slug}`, isAuthed)} className="group block h-full">
-      <Card tone="feature" className="h-full p-5 hover:border-border-strong transition-colors flex flex-col">
+      <Card tone="feature" pad="p-5" className="h-full hover:border-border-strong transition-colors flex flex-col">
       <div className="flex items-start justify-between gap-3 mb-2">
         {/* min-w-0 + break-words: a flex child cannot shrink below its min-content width, and
             /discover renders OUTSIDE the app shell, which is the only thing in this codebase
@@ -120,7 +120,7 @@ export function EventRow({ event, isAuthed = false }: { event: PublicEvent; isAu
 export function JourneyCard({ journey }: { journey: JourneyPlan }) {
   return (
     <Link href={`/discover/journeys/${journey.slug}`} className="group block h-full">
-      <Card tone="feature" className="h-full p-5 hover:border-border-strong transition-colors flex flex-col">
+      <Card tone="feature" pad="p-5" className="h-full hover:border-border-strong transition-colors flex flex-col">
         <div className="flex items-start gap-3 mb-2">
           {journey.emoji ? (
             <span className="text-page-title leading-none shrink-0" aria-hidden>
@@ -233,7 +233,7 @@ export function SignInCta({
   href?: string
 }) {
   return (
-    <Card tone="feature" className="p-8 text-center">
+    <Card tone="feature" pad="p-8" className="text-center">
       <p className="text-body-lg font-bold text-text mb-2">{title}</p>
       <p className="text-body-sm text-muted leading-relaxed mb-6 max-w-sm mx-auto">{body}</p>
       <Button href={href} size="sm">
