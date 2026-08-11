@@ -496,7 +496,13 @@ export function Composer({
             onPointerDown={startResize}
             aria-label="Drag to resize"
             title="Drag to resize"
-            className="absolute -bottom-1 right-0 cursor-ns-resize p-1 text-border-strong hover:text-muted"
+            // 🔴 TOUCH TARGET (WCAG 2.5.5, 24px): axe measured this handle at 19.1 × 19.1 on
+            // /feed in both viewports — `p-1` + a `w-2.5` glyph at the app's 106.25% root. The
+            // box is grown to 24px+ WITHOUT moving the glyph: `h-6 w-6` with `items-end
+            // justify-end` keeps the icon pinned to the same bottom-right corner it already
+            // occupied, and the extra hit area grows up and left into the composer. The element
+            // is absolutely positioned, so nothing reflows and the handle looks identical.
+            className="absolute -bottom-1 right-0 flex h-6 w-6 items-end justify-end cursor-ns-resize p-1 text-border-strong hover:text-muted"
           >
             <svg viewBox="0 0 10 10" className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
               <path d="M9 3 3 9M9 6.5 6.5 9" />

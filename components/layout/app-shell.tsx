@@ -2053,13 +2053,22 @@ export default function AppShell({
             </kbd>
           </button>
 
-          {/* Search icon — opens the live overlay. Mobile */}
+          {/* Search icon — opens the live overlay. Mobile
+              🔴 `shrink-0` is a TOUCH TARGET fix, not a layout preference (WCAG 2.5.5, 24px).
+              This was the ONLY flex item in the header's right cluster without a size floor, so
+              at 390px it absorbed the whole row's deficit on its own and collapsed to its icon's
+              min-content width: axe measured it at 21.3 × 34 and failed it on /feed, /settings
+              and the Space console. 21.25px is exactly `w-5` (the icon) at the app's 106.25%
+              root, and 34px is exactly the `h-8` it kept — the button was being squeezed flat in
+              one axis while its declared size stayed honest in the other. The fix is to render
+              the size the design already chose (34px, the same as the Friends link beside it),
+              not to hardcode a new floor past the `--tap-min` axis. */}
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
             aria-label="Search"
             title="Search"
-            className="sm:hidden flex items-center justify-center w-8 h-8 rounded-pill text-muted hover:text-text hover:bg-chrome-hover transition-colors"
+            className="sm:hidden flex shrink-0 items-center justify-center w-8 h-8 rounded-pill text-muted hover:text-text hover:bg-chrome-hover transition-colors"
           >
             <Search className="w-5 h-5" />
           </button>

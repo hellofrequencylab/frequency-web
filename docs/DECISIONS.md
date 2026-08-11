@@ -19984,3 +19984,73 @@ that is deferred there for the same reason (FINALIZE §4.2). ⚠️ Recorded pla
 honest version: the fourth recurrence was mine, applied under a standing instruction to apply
 migrations as I went, and the production `update` that repaired it was made before reading the
 `DATABASE.md` caution that turned out to be describing a state that no longer existed.
+
+## ADR-982 — A decision is not debt, and a count cannot tell you which one it is holding (2026-08-11)
+
+**Decision.** The accessibility gate gets a **second instrument**. `test/e2e/a11y-baselines.json`
+keeps counting *debt nobody has decided about*; a new named list,
+`test/e2e/a11y-waivers.ts`, holds *decisions somebody with the authority already made*, matched at
+**rule + painted colour pair** and subtracted before the count is compared. Waiving a decided
+violation is legitimate; raising a count to swallow it is not.
+
+**Context.** Run `31453092474` reported **35 failed · 28 passed · 27 skipped** on the a11y suite,
+and the failures were two unrelated things wearing one colour of X:
+
+| | What it was | Right remedy |
+| :--- | :--- | :--- |
+| 15 marketing contexts | White label on the brand amber, in three states | **Waive** (already decided) |
+| 9 shell contexts | `/feed`, `/settings`, `/spaces/<slug>/manage` never had a baseline | **Seed** (FINALIZE §1.3) |
+| 3 elements | Touch targets under 24px | **Fix** |
+
+The amber is a closed owner call: on 2026-08-06 the owner was shown `#A06621`, which puts white at
+4.75:1, **rejected it**, and said *"roll it back to the original orange and leave the white."*
+`scripts/check-contrast.mjs` records that as a waiver with a frozen floor per state, which is why
+`check:contrast` was green while axe failed on the same pixels. One decision, two instruments, only
+one informed.
+
+**Why not just raise the counts.** `baselineFor(context)` returns a single integer. Raising nine
+marketing contexts to absorb the amber would also permit **any unrelated serious violation up to
+that number, on that surface, forever**, with nothing in the tree recording what was meant. That is
+the laundering ADR-980 named: the ratchet is normative, and a number raised to cover a known thing
+is indistinguishable from a number raised to cover an unknown one.
+
+**Why the match is a colour pair and not a selector.** The obvious granularity is rule + CSS
+selector, and it fails in both directions here. **Too loose:** axe names these nodes by Tailwind
+class fragments — `.px-4`, `.whitespace-nowrap`, `.gap-2.px-8.py-3\.5` — and `.px-4` is not the
+amber button, it is every element carrying `px-4`. **Too brittle:** the same button reports under a
+different selector on every page (`a[href$="start"]`, `button[aria-label="Create"]`,
+`.bg-primary.text-on-primary[aria-current="page"]`), and any markup edit re-rolls it. The painted
+pair — `#ffffff` on `#e2912f` — *is* the decision: it is the identity `check:contrast` already
+freezes at the token layer, it survives every markup change, and it cannot collide with a different
+violation because a different violation has different colours.
+
+Matching the **exact hex is also the freeze**, and it is stricter than the ratio floor
+`check:contrast` uses. A ratio floor keeps accepting a *different, darker, still-failing* amber. A
+hex stops matching the moment the palette moves in **either** direction, so the gate fails loudly
+and the decision gets re-made instead of inherited.
+
+**The property that matters most.** The mechanism only knows how to read a `color-contrast` check's
+colour data. There is no selector field, no rule wildcard, no count. It therefore **cannot** waive
+`target-size`, `label`, `aria-*` or anything else — by construction, not by policy. 27 unit tests
+hold that line without a browser, including that each entry's declared ratio really is the WCAG
+contrast of the two hexes it names (a typo'd hex fails CI), that the reversed pair is a *different*
+decision and stays failed, and that a fill entry never swallows the shadowed measurement of the same
+button.
+
+**Consequences.** ✅ Nine marketing baselines stayed frozen while their contexts went green, which is
+the outcome a raised count would have faked. ✅ Amber used as **display text** (`.text-primary`
+headlines at 2.18–2.86:1), the `.text-text/10` watermarks (1.3:1) and the tinted `/discover` chips
+are **not** waived and stay failed: the decision covers a white label on an amber *fill*, not the
+amber as ink. ✅ The three tap-target failures were fixed, not accepted — `.sm:hidden` was the mobile
+Search button, the only flex item in the header's right cluster without `shrink-0`, collapsing to
+its icon's min-content width (21.25px = `w-5` at the 106.25% root) while keeping its `h-8` (34px);
+`.-bottom-1` was the composer resize handle at 19.1px, grown to 24px+ without moving the glyph.
+⚠️ Three seeded shell contexts (`/feed` 12, `/settings` 7, `/manage` 8 on dawn-light desktop) are
+**ceilings, not readings**: the run log truncated each violation's node list at 5 and these had 11,
+7 and 8, so the post-waiver residual could not be computed. The node cap is now 40, so the next run
+prints every element and reports the real number as an `a11y-improved` annotation. Those three are
+the widest holes in this gate until it does. ⚠️ Two palette findings surfaced and were **not** fixed
+here because both move the token layer and the visual baselines: `.dark [data-skin="midnight"]` uses
+a descendant combinator while the bootstrap stamps `.dark` and `data-skin` on the **same** `<html>`
+element, so `#F0AD4E` never paints and midnight-dark renders a *mixture* of the dark and midnight
+palettes; and the amber-as-display-text debt is real and open.
