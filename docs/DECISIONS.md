@@ -16053,7 +16053,11 @@ The durable rule: **measure behind the words, not behind the header, and model a
 
 ## ADR-896 — The full-page DM retires behind a flag, not a delete (2026-07-28)
 
-**Status.** Accepted, shipped OFF. Phase 1 live; Phase 2 gated.
+**Status.** Accepted and **FULLY SHIPPED**. Phase 1 live; **Phase 2 flipped ON in production 2026-07-29 00:40 UTC** (`platform_flags.chat_dm_routes_retired = true`, verified against the live database 2026-08-11).
+
+> ⚠️ **This line read "shipped OFF" for six weeks after the flag went on**, and a matching comment at `app/(main)/messages/[id]/page.tsx` said "Ships OFF; see the flag for what still blocks it" when there was no blocker list and nothing blocking. Both were corrected 2026-08-11. The cost was not cosmetic: a scoping pass read the stale comment, reported the route as still live and still gated, and put a question to the owner on a false premise. **Read `platform_flags` from the database, not from a comment about it.**
+>
+> **Scope reaffirmed 2026-08-11, unchanged.** The owner re-confirmed the original ruling when asked: DMs and group messages live in the dock; **Rooms keep their own surface, and room administration belongs on an admin surface, not in a 26rem popover.** The *Alternatives considered* entry below stands, and `lib/platform-flags.ts:228-232` quotes the ruling correctly. A proposal to port room administration into the dock was raised and declined on the same reasoning it was declined on the first time.
 
 **Context.** The owner's directive was plain: "When I hit the Reconnect with button it took me to a chat page. That page should not exist. All chats happen in the pop up on the lower right." Reconnect submitted a navigating form to `startConversation`, and a second caller (`circle-members-list.tsx`) did the same, so the two could drift. But `app/(main)/messages/[id]/page.tsx` is not only a thread view: rename, leave, and the participant roster exist there and nowhere else. Deleting the route would have deleted those capabilities silently.
 
