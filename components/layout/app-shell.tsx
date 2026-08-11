@@ -1197,8 +1197,10 @@ function MobileLeftDrawer({
   operatesSpaces?: boolean
   /** The rail sections (DB-backed left_rail menu, else the legacy/code fallback). */
   sections?: NavSectionGroup[]
-  /** The member's own things for the My Frequency disclosure; forwarded to NavLinkList so
-   *  the drawer and the desktop rail render the SAME menu. */
+  /** The member's own things. The SAME menu the desktop rail renders, but mounted in this
+   *  drawer's identity card rather than inside its nav list, so "you, your standing, and what
+   *  you run" reads as one cluster on a phone (DAWN 2026-08-11, Q7). Exactly one mount per
+   *  viewport either way. */
   myFrequency?: MyFrequency | null
   /** Sections are DB-driven (mode-per-item); forwarded to NavLinkList. */
   menuDriven?: boolean
@@ -1373,15 +1375,42 @@ function MobileLeftDrawer({
           )}
 
           {/* Space switcher only (owner: no View-as-role, no streak up here by the identity
-              card — the score lives in the bottom cluster). Self-gates to null for members
+              card — the score lives in the disclosure above). Self-gates to null for members
               with a single context, so a regular member sees nothing extra. */}
           <div className="mt-2 space-y-0.5">
             <ContextSwitcher context={operatorContext ?? { kind: 'personal' }} available={availableContexts} />
+
+            {/* WHAT YOU RUN — the second disclosure (DAWN 2026-08-11, Q7).
+                The three-docks law's bottom-left region is ONE cluster: you, your standing, and
+                the things you run. On desktop the rail's foot is the anchor that makes it one.
+                On a phone there is no rail and no foot — the DRAWER is the popover, so the whole
+                surface is the dock — and the law's grouping was the half that did not survive
+                the translation: identity sat in this card, the score moved into it on 2026-08-06,
+                and *what you run* was still distributed through the nav list below. Three parts,
+                two clusters.
+                So the same menu mounts HERE instead of inside NavLinkList (which is why
+                `myFrequency` is not forwarded below). It is a MOVE, not an addition: DAWN's first
+                docks rule is "a control appears in exactly one dock", and this menu already
+                replaced the account dock's link list once for exactly that reason.
+                Keyed on `open` so it resets collapsed when the drawer leaves, like the Vault
+                disclosure above and for the same reason — a member who opened the menu to go
+                somewhere should meet the destination list, not last session's expansion pushing
+                it down. Resetting on LEAVE, never on arrival, so nothing animates shut in front
+                of a panel that is sliding in. */}
+            {myFrequency && (
+              <MyFrequencyMenu
+                key={open ? 'drawer-open' : 'drawer-closed'}
+                data={myFrequency}
+                isActive={isActive}
+                onNavigate={onClose}
+                label="What you run"
+              />
+            )}
           </div>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} operatesSpaces={operatesSpaces} sections={sections} menuDriven={menuDriven} myFrequency={myFrequency} />
+          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} operatesSpaces={operatesSpaces} sections={sections} menuDriven={menuDriven} />
         </nav>
 
         {/* Bottom cluster — About/legal, then a thumb-zone Close.
@@ -1514,8 +1543,13 @@ function MobileTabBar({
               it reads balanced against the flat tabs (its center is 6px below the
               line); the arch above drops to match, keeping the even 12px margin. */}
           <span aria-hidden className="h-[26px] w-[22px]" />
-          {/* The fully-rounded white catch the bolt sits in — a floating disc, not a bar bump. */}
-          <span aria-hidden className="absolute left-1/2 top-0 h-14 w-14 -translate-x-1/2 -translate-y-[22px] rounded-pill border border-border bg-surface" />
+          {/* The fully-rounded white catch the bolt sits in — a floating disc, not a bar bump.
+              The lift is `--tab-bar-lift`, not a 22px literal: this disc is slot 0a of the
+              mobile stacking contract (components/sidebar/game-stats-dock.tsx), and the same
+              number decides how far the content column has to pad to clear it
+              (`--tab-bar-clearance`). Two literals that happened to agree is how the teaser
+              pill and the RSVP bar each got painted over. */}
+          <span aria-hidden className="absolute left-1/2 top-0 h-14 w-14 -translate-x-1/2 -translate-y-[var(--tab-bar-lift)] rounded-pill border border-border bg-surface" />
           <span className="absolute left-1/2 top-0 flex h-12 w-12 -translate-x-1/2 -translate-y-[18px] items-center justify-center rounded-pill bg-primary shadow-pop">
             {/* the catch behind the glyph — a soft shadow under the bolt (flips with
                 the glyph so the carve always reads) */}

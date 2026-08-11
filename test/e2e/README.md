@@ -259,3 +259,42 @@ Two files, deliberately apart:
   it never appears as a permanently-"skipped" row on a PR: any URL, optional
   visual compare, optional baseline capture, optional a11y capture, optional
   `capture_shell`.
+
+## When a capture is the thing that's wrong
+
+A recaptured baseline is not automatically a correct baseline. `--update-snapshots`
+photographs whatever was on screen at that moment, so a transient frame — a late image,
+a not-yet-hydrated block, a race the settle helper did not catch — becomes the frozen
+truth, and every honest run afterwards fails against it. The failure looks exactly like
+a regression, and re-running does not clear it, because the render is stable and the
+*baseline* is the outlier.
+
+**How to tell the difference without opening a single PNG.** Compare the byte-size delta
+across a surface's four render states. A real layout change moves all four by roughly the
+same amount; a bad frame moves one.
+
+Worked example, PR #2086 (2026-08-11), the mobile grammar round:
+
+| Baseline | Δ from capture | |
+| :--- | ---: | :--- |
+| `the-quest--*-mobile` (all four states) | +135K … +140K | ✅ uniform: a real change |
+| `spaces--dawn-light-mobile` | +5.8K | |
+| `spaces--midnight-dark-mobile` | +3.1K | |
+| `spaces--midnight-light-mobile` | +3.8K | |
+| **`spaces--dawn-dark-mobile`** | **+143.4K** | 🔴 one state, 25× its siblings |
+
+`/spaces` dawn-dark then failed three consecutive runs at an identical 133,010 differing
+pixels **with no dimension change** — a different signature from the other 31 failures in
+that round, which were all size mismatches (`9707px → 9554px`). Consistent across retries
+rules out flake; identical pixel counts across separate runs mean the live render is
+steady and the stored frame is not.
+
+Re-dispatching `update_baselines` fixed it and proved the diagnosis: **one** file changed,
+`spaces--dawn-dark-mobile.png` 1,322,909 → 1,184,848 bytes, landing at +5.3K from the
+pre-round baseline — back in line with its three siblings. The other 31 came back
+byte-identical and were not committed, which is also the cheapest confirmation that they
+were right all along.
+
+**So:** before believing a single-surface visual failure that survives a retry, check
+whether its baseline is a size outlier among its own states. Recapturing costs one
+dispatch; hunting a layout bug that does not exist costs a lot more.
