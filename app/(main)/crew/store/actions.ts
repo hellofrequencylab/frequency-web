@@ -12,6 +12,7 @@ import { featureAllowed } from '@/lib/pricing/gates'
 import { featureGatesLive } from '@/lib/pricing/settings'
 import { classifyRedemption } from '@/lib/store/fulfillment'
 import { computeSpendableBalance, fetchGiftsSent } from '@/lib/store/balance'
+import { RANK_ORDER, rankIndex } from '@/lib/season-ranks'
 import { giftGems, type GiftGemsResult } from '@/lib/rewards/gifts'
 
 export async function redeemItem(itemId: string): Promise<ActionResult<{ pending: boolean }>> {
@@ -90,23 +91,35 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
   }
 
   // Rank-gated SKUs (e.g. Founders' Table requires Conduit or above).
+  //
+  // This used to re-declare the ladder as a local array and compare against `order.indexOf(...)`.
+  // An UNRECOGNISED requires_rank yields -1, and nothing is ever `< -1`, so the gate silently
+  // passed for everyone — it failed OPEN. That is not hypothetical: migration
+  // 20260630010000_fix_founders_table_rank_gate.sql exists only because the 6->4 rank collapse
+  // orphaned `requires_rank:'conduit'` and the Founders' Table seat became purchasable by any
+  // Ghost. The data was repaired; this code was not. Any future rank rename, or one typo in the
+  // free-text metadata editor at /admin/store, reproduces it exactly.
+  //
+  // Now: one shared ladder (lib/season-ranks RANK_ORDER, the same one the rest of the app reads)
+  // and it fails CLOSED on anything it does not recognise.
   const requiredRank = (item.metadata as { requires_rank?: string } | null)?.requires_rank
   if (requiredRank) {
-    const order = ['ghost', 'initiate', 'adept', 'master']
-    const have = order.indexOf((profile?.current_season_rank as string | null) ?? 'ghost')
-    if (have < order.indexOf(requiredRank)) {
+    const need = RANK_ORDER.indexOf(requiredRank as (typeof RANK_ORDER)[number])
+    if (need < 0) return fail('This item is not available right now')
+    if (rankIndex(profile?.current_season_rank as string | null) < need) {
       return fail(`Requires ${requiredRank.charAt(0).toUpperCase()}${requiredRank.slice(1)} rank or above`)
     }
   }
 
-  // Capped SKUs: stock is the TOTAL sellable count (e.g. 12 Listening Room seats).
-  if (item.stock !== null) {
-    const { count: sold } = await admin
-      .from('store_redemptions')
-      .select('id', { count: 'exact', head: true })
-      .eq('item_id', itemId)
-    if ((sold ?? 0) >= item.stock) return fail('Out of stock')
-  }
+  // Capped SKUs: `stock` is REMAINING, not a total. The after_store_redemption trigger
+  // (20260614210000:30) decrements it on every insert and store-grid.tsx renders it verbatim as
+  // "{stock} remaining", so the only question here is whether one is left.
+  //
+  // This used to count redemptions and compare `sold >= item.stock`, which double-counted every
+  // sale against a column that was itself being decremented per sale: a 12-seat SKU refused at
+  // sale 7 (sold=6, stock=6) while the card beside the disabled button said "6 remaining".
+  // Effective capacity was ceil(N/2). See migration store_stock_means_remaining_everywhere.
+  if (item.stock !== null && item.stock <= 0) return fail('Out of stock')
 
   // Spendable balance = gems earned (lifetime) − store spend − gifts sent. lifetime_gems
   // is monotonic; the two sinks (store redemptions + gifted Gems) are what draw it down.
