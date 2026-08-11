@@ -506,8 +506,26 @@ function run() {
   return { failures, warnings, coverageChecked, resolutionChecked, declarationChecked, noindexed, skippedPrivate, titlesChecked }
 }
 
+/** Scan D already fails when SITE_NAME is unreadable, and says why in its own words: "a scan that
+ *  silently checks nothing is worse than one that fails." Scans A, B, C and E had no equivalent —
+ *  they enumerate `page.tsx` files with no floor, so the summary line below would happily print
+ *  "checked 0 page(s)" and exit 0. Measured 35 forward-facing + 60 declaration-checked pages on
+ *  2026-08-10; the floors sit under those and far above zero. */
+const MIN_COVERAGE_PAGES = 15
+const MIN_DECLARATION_PAGES = 25
+
 function main() {
   const { failures, warnings, coverageChecked, resolutionChecked, declarationChecked, noindexed, skippedPrivate, titlesChecked } = run()
+
+  if (coverageChecked.length < MIN_COVERAGE_PAGES || declarationChecked.length < MIN_DECLARATION_PAGES) {
+    console.error(
+      `✗ check:seo enumerated only ${coverageChecked.length} forward-facing and ` +
+        `${declarationChecked.length} declaration-checked page(s), expected at least ` +
+        `${MIN_COVERAGE_PAGES} and ${MIN_DECLARATION_PAGES}.\n  The route walk is broken, so its ` +
+        'silence about coverage means nothing.',
+    )
+    process.exit(1)
+  }
 
   console.log(
     `SEO/sitemap coherence — checked ${coverageChecked.length} forward-facing page(s) for coverage, ` +

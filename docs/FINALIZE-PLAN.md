@@ -670,7 +670,26 @@ fully actionable list. This is far smaller than the raw counts suggest: repo-wid
 | 7.3 | **Add the missing superseded banners** | XS | `MASTER-PLAN.md`, `CHECKLIST.md`, `PATCH-LIST.md` have none. The other nine legacy plans do. |
 | 7.4 | **Re-derive the stale baseline tables** | XS | Both live plans quote numbers the ratchet has moved past (§8). Generate from `scripts/adoption-baselines.json`; never hand-maintain. |
 | 7.5 | **Fix the ADR record** | S | Seven numbers (088–094, 090 three times) each name two or more decisions; ADR-219 is still "Accepted" after ADR-305 retired it; `ARCHITECTURE.md` documents two cron endpoints deleted by ADR-305. |
-| 7.6 | **`tsconfig` excludes `scripts/`** | XS | The CI guard test files vitest runs are never typechecked. |
+| 7.6 | **`tsconfig` excludes `scripts/`** | ~~XS~~ **M** | The CI guard test files vitest runs are never typechecked. 🔴 **Re-scoped 2026-08-10 after attempting it: this is not a one-line change, and the rationale it was filed under is wrong.** See below. |
+
+**7.6, measured.** Deleting `"scripts"` from `tsconfig.json`'s `exclude` surfaces **46 errors across 12
+files**. Fourteen of them are `TS5097` in `scripts/*.mts` — those files import each other with explicit
+`.ts` extensions, which is legal under the `tsx` loader they actually run on and illegal under the app's
+config. That is a genuine incompatibility between two module systems, not a batch of small fixes, and it
+cannot be resolved by editing the test files.
+
+Scoping to `scripts/**/*.test.ts` through a separate `tsconfig.scripts.json` looked promising and was
+**abandoned deliberately**: of the 34 errors it reported, several were artifacts of that config rather
+than defects in the tests (`Cannot find name 'node:fs'`, `Unused '@ts-expect-error' directive`). Editing
+tests to satisfy a misconfigured checker is the same failure this plan keeps naming elsewhere, one level
+up: an instrument that reports something other than what it claims to measure. A correct version needs
+the `types`/module resolution settled first, and that is the M, not the edits.
+
+⚠️ **The stated benefit does not hold either.** This row was justified as what "would have caught the
+`check:gate-parity` regex bug at compile time". It would not. That bug was a regex matching zero rows —
+well-typed, and wrong at runtime. What caught it was the `MIN_ROWS` floor, and what generalises from it
+is more floors, not more typechecking. Keep the row for its real (smaller) benefit: guard tests are
+program code and should be typechecked like the rest.
 
 ### 7d. The two open product calls, with the evidence and a recommendation
 
