@@ -80,15 +80,16 @@ const UNREAD_BADGE =
  *  now, and furniture that shakes reads as broken rather than as a nudge. Full amber, because
  *  at rest it sits on the MUTED tile and a cream dot would disappear into it. */
 const WAITING_DOT = 'pointer-events-none absolute right-1.5 top-1.5 h-2 w-2 rounded-pill bg-primary-strong'
-/** The one mode control left in the strip (Ask Vera). Pill, not an underline — the panel is a
- *  popover, not a page.
+/* THE MODE STRIP IS GONE ENTIRELY, and with it TAB_BASE / TAB_OFF / TAB_ON / TAB_COUNT.
  *
- *  `TAB_ON` and `TAB_COUNT` were deleted with the Messages pill (owner, 2026-08-11). The count
- *  is NOT lost: unread still lights the dock tab itself through `ChatTrigger`'s `unread` prop,
- *  which is the mark a member sees with the panel shut — the only time a count has a job. */
-const TAB_BASE =
-  'inline-flex flex-1 items-center justify-center gap-1.5 rounded-control px-3 py-1.5 text-body-sm font-medium transition-colors'
-const TAB_OFF = 'text-muted hover:text-text'
+ * Messages went first (owner, 2026-08-11: a control only reachable in the state where it does
+ * nothing). Ask Vera followed (owner, 2026-08-12) — not deleted, MOVED, into DockChat's action
+ * bar where it replaces Rooms and sits beside the member search. Two controls in one row beat a
+ * row of one control above a row of two.
+ *
+ * The unread count is not lost with TAB_COUNT: it still lights the dock tab itself via
+ * ChatTrigger's `unread` prop, which is the mark a member sees with the panel SHUT — the only
+ * time a count has a job. */
 
 // ── THE RAIL'S END BELONGS TO THE VAULT NOW (owner, 2026-08-05) ──────────────────────────────
 //
@@ -729,17 +730,12 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                   What remains is the one thing the strip did that the header could not: reach
                   Vera. As a lone control it is a button, not a `role="tab"` — a tablist of one is
                   a lie to a screen reader — and it hides in Vera, where the header's Back returns. */}
-              {!helpOpen && tab === 'chat' && (
-                <div className="flex shrink-0 gap-1 border-b border-chrome-border bg-surface px-2 pb-2 pt-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setTab('vera')}
-                    className={cn(TAB_BASE, TAB_OFF)}
-                  >
-                    <Sparkles className="h-4 w-4" aria-hidden /> Ask Vera
-                  </button>
-                </div>
-              )}
+              {/* THE ASK VERA STRIP IS GONE, and Vera did not go with it (owner, 2026-08-12).
+                  It moved INTO the action bar below, where it replaces the Rooms button and sits
+                  beside the member search — see DockChat's `onAskVera`. Keeping the strip as well
+                  would put two Ask Vera controls two lines apart, which is the duplication the
+                  Messages pill was removed for. Rooms is still reachable: the inbox lists the
+                  caller's rooms as rows, and "Open all messages" opens the full inbox. */}
 
               {/* The body sits on `bg-surface`: glass is the SHELL's chrome, and a transcript
                   read through a blurred page is a transcript nobody reads (DAWN's own docks put
@@ -812,6 +808,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                 <div className="flex min-h-0 flex-1 flex-col bg-surface">
                   <DockChat
                     onNavigate={close}
+                    onAskVera={() => setTab('vera')}
                     requested={requested}
                     onRequestHandled={() => setRequested(null)}
                     onThreadOpenChange={setThreadOpen}

@@ -53,39 +53,75 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
   // RLS convergence surface 5 (migration 20260602195209): rooms + DMs read on the
   // user client (am_room_member / am_participant policies); DM participant profiles
   // come from the message_peer_profiles DEFINER RPC.
-  const { data: myProfile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
+  //
+  // ⏱️ THIS FUNCTION USED TO BE NINE SEQUENTIAL ROUND TRIPS and it is the dock's whole
+  // time-to-first-paint: DockChat holds a spinner until the summary resolves, so every hop is
+  // felt on a refresh (the module cache is empty then by construction). They were serial by
+  // habit, not by dependency — most of them need nothing from the one before.
+  //
+  // The real graph, and what it now runs as:
+  //
+  //   1. auth.getUser()
+  //   2. profiles ‖ message_peer_profiles        (the RPC keys off the SESSION, not myProfileId)
+  //   3. room_members ‖ conversation_participants (both keyed on myProfileId, nothing shared)
+  //   4. [rooms ‖ room_unread_counts] ‖ [other participants ‖ dm_conversation_summaries]
+  //
+  // Nine hops became four levels. Every await below that is NOT inside a Promise.all is there
+  // because the next read genuinely needs its result.
+  const [profileRes, peerRes] = await Promise.all([
+    supabase.from('profiles').select('id').eq('auth_user_id', user.id).maybeSingle(),
+    (supabase).rpc('message_peer_profiles'),
+  ])
+  const myProfile = profileRes.data
   if (!myProfile) return { totalUnread: 0, rooms: [], conversations: [] }
 
   const myProfileId = myProfile.id as string
 
-  const { data: peerRows } = await (supabase).rpc('message_peer_profiles')
   const peerMap = new Map(
-    ((peerRows ?? []) as { id: string; display_name: string; handle: string; avatar_url: string | null }[])
+    ((peerRes.data ?? []) as { id: string; display_name: string; handle: string; avatar_url: string | null }[])
       .map(p => [p.id, p]),
   )
 
-  // ── Rooms (top 5 by recent activity) ───────────────────────────────
-  const { data: myRoomMemberships } = await supabase
-    .from('room_members')
-    .select('room_id, last_read_at')
-    .eq('profile_id', myProfileId)
+  // ── Level 3: the two membership reads, in parallel ─────────────────
+  // room_members and conversation_participants are both keyed on myProfileId and share nothing
+  // else, so the rooms half and the DMs half of this summary are two independent chains from
+  // here down. They used to run end to end, one after the other.
+  const [roomMembershipRes, myPartsRes] = await Promise.all([
+    supabase.from('room_members').select('room_id, last_read_at').eq('profile_id', myProfileId),
+    (supabase)
+      .from('conversation_participants')
+      .select('conversation_id, last_read_at, conversations!conversation_id(id, name, migrated_to_room_id)')
+      .eq('profile_id', myProfileId),
+  ])
 
+  // ── Rooms (top 5 by recent activity) ───────────────────────────────
+  const myRoomMemberships = roomMembershipRes.data
   const roomIds = (myRoomMemberships ?? []).map(m => m.room_id as string)
 
   let rooms: MessagesSummary['rooms'] = []
   if (roomIds.length > 0) {
-    const { data: roomsData } = await supabase
-      .from('rooms')
-      .select('id, name, visibility, last_message_at')
-      .in('id', roomIds)
-      .order('last_message_at', { ascending: false, nullsFirst: false })
-      .limit(5)
+    // The unread counts fire ALONGSIDE the rooms read rather than after it. That costs the DB a
+    // few extra counts (all of the caller's rooms instead of just their five most recent) and
+    // saves a full round trip; the RPC is already scoped to the caller's own memberships via
+    // auth.uid(), so widening the id list cannot widen what it can see. Only the five that
+    // survive the `.limit(5)` below are ever read out of the map.
+    const rpcAll = supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: unknown; error: unknown }>
+    const [roomsRes, unreadRes] = await Promise.all([
+      supabase
+        .from('rooms')
+        .select('id, name, visibility, last_message_at')
+        .in('id', roomIds)
+        .order('last_message_at', { ascending: false, nullsFirst: false })
+        .limit(5),
+      rpcAll('room_unread_counts', { _rooms: roomIds }) as Promise<{
+        data: Array<{ room_id: string; unread_count: number }> | null
+      }>,
+    ])
 
-    const roomList = (roomsData ?? []) as Array<{ id: string; name: string; visibility: MessagesSummary['rooms'][number]['visibility']; last_message_at: string | null }>
+    const roomList = (roomsRes.data ?? []) as Array<{ id: string; name: string; visibility: MessagesSummary['rooms'][number]['visibility']; last_message_at: string | null }>
 
     // Unread per room in ONE grouped read. This used to be an N+1: a `count(*)` query per room,
     // fired on every dock open AND warmed on every page mount by prefetchDockSummary, so the
@@ -93,24 +129,14 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
     // already folds this into room_unread_counts (migration 20261012000000, scoped to the
     // caller's own memberships via auth.uid()); the dock now uses the same RPC.
     // FAIL-SAFE: an RPC error yields 0 unread, never a broken dock.
-    const rpc = supabase.rpc as unknown as (
-      fn: string,
-      args: Record<string, unknown>,
-    ) => Promise<{ data: unknown; error: unknown }>
-    const { data: unreadRows } = await (rpc('room_unread_counts', {
-      _rooms: roomList.map(r => r.id),
-    }) as Promise<{ data: Array<{ room_id: string; unread_count: number }> | null }>)
-    const unreadMap = new Map((unreadRows ?? []).map(r => [r.room_id, Number(r.unread_count) || 0]))
+    const unreadMap = new Map((unreadRes.data ?? []).map(r => [r.room_id, Number(r.unread_count) || 0]))
 
     rooms = roomList.map(r => ({ ...r, unread: unreadMap.get(r.id) ?? 0 }))
   }
 
   // ── DMs (top 5 by recent activity) — 1:1 only (Phase B) ────────────
   // Exclude migrated group threads (they live as private rooms now).
-  const { data: myPartsRaw } = await (supabase)
-    .from('conversation_participants')
-    .select('conversation_id, last_read_at, conversations!conversation_id(id, name, migrated_to_room_id)')
-    .eq('profile_id', myProfileId)
+  const myPartsRaw = myPartsRes.data
   const myParts = ((myPartsRaw ?? []) as unknown as Array<{
     conversation_id: string
     last_read_at: string | null
@@ -127,12 +153,26 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
 
   const conversations: MessagesSummary['conversations'] = []
   if (convIds.length > 0) {
-    // Get other participants
-    const { data: others } = await supabase
-      .from('conversation_participants')
-      .select('conversation_id, profile_id')
-      .in('conversation_id', convIds)
-      .neq('profile_id', myProfileId)
+    // The peer list and the per-conversation summaries are independent reads over the same
+    // convIds, so they go together rather than one after the other.
+    type ConvSummaryRow = {
+      conversation_id: string
+      last_body: string | null
+      last_created_at: string | null
+      unread_count: number
+    }
+    const [othersRes, summariesRes] = await Promise.all([
+      supabase
+        .from('conversation_participants')
+        .select('conversation_id, profile_id')
+        .in('conversation_id', convIds)
+        .neq('profile_id', myProfileId),
+      (supabase.rpc as unknown as (
+        fn: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ data: ConvSummaryRow[] | null; error: unknown }>)('dm_conversation_summaries', { _convs: convIds }),
+    ])
+    const others = othersRes.data
 
     const partsByConv: Record<string, MessagesSummary['conversations'][number]['participants']> = {}
     for (const o of others ?? []) {
@@ -144,17 +184,8 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
     }
 
     // Per-conversation newest message + unread count via the window RPC (no shared-budget
-    // starvation across busy threads; matches the inbox). Untyped RPC handle (ADR-246).
-    type ConvSummary = {
-      conversation_id: string
-      last_body: string | null
-      last_created_at: string | null
-      unread_count: number
-    }
-    const { data: summaries } = await (supabase.rpc as unknown as (
-      fn: string,
-      args: Record<string, unknown>,
-    ) => Promise<{ data: ConvSummary[] | null; error: unknown }>)('dm_conversation_summaries', { _convs: convIds })
+    // starvation across busy threads; matches the inbox). Fetched above, beside the peer read.
+    const summaries = summariesRes.data
 
     const lastMsgMap: Record<string, { body: string; created_at: string }> = {}
     const unreadCountMap: Record<string, number> = {}
