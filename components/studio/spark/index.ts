@@ -7,4 +7,6 @@
 export { SparkShell, type SparkShellProps } from './spark-shell'
 export { SparkDoors, type SparkDoor } from './spark-doors'
 export { SparkDropzone, type SparkDropzoneProps } from './spark-dropzone'
+export { SparkReview, type SparkReviewProps } from './spark-review'
+export { SparkSteer, type SparkSteerProps } from './spark-steer'
 export { FieldControl, type FieldControlProps, type FieldOptions } from './field/field-control'

@@ -67,14 +67,28 @@ export function SparkDoors({
   entityLabel,
   onVera,
   onManual,
+  veraLabel,
+  veraHint,
+  manualLabel,
+  manualHint,
   extraDoors = [],
   disabled,
   children,
 }: {
-  /** The thing being made, for the door copy ("Have Vera build your Event"). */
+  /** The thing being made, for the default door copy. */
   entityLabel: string
   onVera: () => void
   onManual: () => void
+  /**
+   * Per-entity door copy. The STRUCTURE is fixed (two doors, equal weight, Vera first) because
+   * that is the standard; the WORDS can be true to the entity, because "answer a few questions"
+   * is wrong for a research pipeline and "research it" is wrong for a Practice. Structure locked,
+   * copy adjustable, which is the same split the manifests use.
+   */
+  veraLabel?: string
+  veraHint?: string
+  manualLabel?: string
+  manualHint?: string
   /** Entity-specific doors (templates, blueprints), rendered after the two standard ones. */
   extraDoors?: SparkDoor[]
   disabled?: boolean
@@ -84,15 +98,15 @@ export function SparkDoors({
   const doors: SparkDoor[] = [
     {
       key: 'vera',
-      label: `Have Vera build it`,
-      hint: `Answer a few questions and Vera drafts your ${entityLabel.toLowerCase()} for you to edit.`,
+      label: veraLabel ?? 'Have Vera build it',
+      hint: veraHint ?? `Answer a few questions and Vera drafts your ${entityLabel.toLowerCase()} for you to edit.`,
       Icon: Sparkles,
       onSelect: onVera,
     },
     {
       key: 'manual',
-      label: 'Build it yourself',
-      hint: 'Go straight to the full form and fill it in your own way.',
+      label: manualLabel ?? 'Build it yourself',
+      hint: manualHint ?? 'Go straight to the full form and fill it in your own way.',
       Icon: PenLine,
       onSelect: onManual,
     },

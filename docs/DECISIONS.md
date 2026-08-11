@@ -20229,3 +20229,41 @@ near-identical document-extraction actions that had grown independently in Journ
 `verify: 'none'`, where nothing keys a ledger). Neither `commerce_products` nor `market_listings`
 has a cover-image column, so all three commerce manifests use `images` with first-as-cover; a real
 cover is a schema change, not a manifest one.
+
+## ADR-598: The Loom is the only image picker an operator sees
+
+**Status:** Accepted · shipped for the in-rail block editor and the Puck block library. Next free number
+after ADR-597. Standing product decision from the owner: "I ONLY want loom to pop up for images. No direct
+upload link anywhere."
+
+**Context.** Two competing image controls had grown side by side. The Loom picker
+(`lib/page-editor/loom-image-field.tsx`) lets an operator pick from their Space's own Loom unioned with the
+shared library, or upload, and an upload FILES INTO that Space's Loom so it is reusable afterwards. A second,
+direct uploader (`UploadButton` in `components/entity-blocks/block-edit-panel.tsx`) pushed a file straight to
+storage and handed back a public URL. The image never entered the Loom, so it could never be reused, and the
+operator got a plain file dialog beside a raw URL box where they expected their library. The owner hit this on
+a Zigzag block's Photo field.
+
+**Decision.** On any surface that knows which Space it is editing, the Loom is the ONLY way to choose an
+image. Every image field renders `LoomImageField`; the direct uploader is deleted, not hidden.
+
+- `LoomImageField` gained an optional `spaceSlug` prop that takes precedence over `useSpaceEditorSlug()`.
+  Surfaces inside the Puck editor keep passing nothing and read the context exactly as before; the in-rail
+  entity-blocks builder, which has no Puck provider, passes the slug it already holds. One component, two
+  ways in, no fork.
+- `BlockEditPanel` / `EntityPageBuilder` take `spaceSlug` instead of an injected `uploadImage`. An image
+  field on a Space is the Loom picker and nothing else: no link box, no file dialog. The gallery field adds
+  one photo at a time through the same picker held at an empty value.
+- The shared Puck `imgField` and the gallery field resolve per surface (`SpaceAwareImageField`): the Loom on
+  a Space editor, the legacy site-media control on the janitor-only marketing editor at `/edit/<slug>`,
+  which has no Space and therefore no Loom to file into.
+
+**Authorization is unchanged and un-loosened.** The slug is UX plumbing on every path. `listLoomImages` and
+`uploadToLoom` (`lib/page-editor/loom-field-actions.ts`) re-resolve the space from the slug and re-gate
+`caps.canEditProfile` server-side on every call, so a client that passes another Space's slug still fails
+unless the caller can actually edit that Space. No client-trusted identity was invented anywhere.
+
+**Known follow-ups.** The marketing editor needs a shared-library picker of its own before its fallback can
+go; `spotlightAssetField` stores a storage PATH rather than a URL, so it needs a Loom mode that returns a path
+before it can move; gallery adds are one at a time until `LoomImageField` grows a multi-select. The
+`uploadSpaceBlockImage` action is now unreferenced.

@@ -8,7 +8,7 @@
 // ink (dark). Never raw colors — selects compile to a fixed Tailwind set.
 
 import type { CSSProperties } from 'react'
-import { ImageField } from './image-field'
+import { SpaceAwareImageField } from './loom-image-field'
 import { SPOTLIGHT_FONTS, type SpotlightFontId } from '@/lib/spotlight/theme'
 
 // ── Header font (per-header display face) ─────────────────────────────────────
@@ -88,11 +88,14 @@ export const alignField = {
   ],
 }
 
-// Image picker (upload / pick / paste URL) — the project's custom control.
+// The shared image control for every block in the library. On a SPACE editor this is the LOOM picker (pick
+// from the space's own library plus the shared one, or upload, which files into that space's Loom) — the
+// only way a space operator chooses an image. On the platform marketing editor there is no space to file
+// into, so it falls back to the site-media control. See SpaceAwareImageField.
 export const imgField = {
   type: 'custom' as const,
   render: ({ value, onChange }: { value?: string; onChange: (v: string) => void }) => (
-    <ImageField value={value} onChange={onChange} />
+    <SpaceAwareImageField value={value} onChange={onChange} />
   ),
 }
 

@@ -19,8 +19,7 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { Input, Textarea, fieldClasses } from '@/components/ui/field'
-import { ImageUpload } from '@/components/ui/image-upload'
-import { MultiImageUpload } from '@/components/ui/multi-image-upload'
+import { LoomImageField } from '@/lib/page-editor/loom-image-field'
 import type { FieldDef, FieldKind } from '@/lib/studio/kernel/manifest'
 import { cn } from '@/lib/utils'
 
@@ -43,6 +42,17 @@ export interface FieldControlProps {
   onChange: (next: string | string[]) => void
   /** Collections the surface loaded, keyed by `optionsFrom` name. */
   loaded?: FieldOptions
+  /**
+   * The Space an image is chosen INSIDE (ADR-598: the Loom is the only image picker). Every pick
+   * or upload files into that Space's Loom, so it is reusable afterwards instead of being a
+   * one-off URL. Untrusted: the server re-resolves the space and re-gates edit permission.
+   *
+   * WITHOUT it there is no Loom to file into, and an `image` field renders DISABLED with a plain
+   * reason rather than falling back to a direct uploader, because a silent fallback is exactly how
+   * the two competing controls got established in the first place. Space-less entities (a Practice,
+   * a Journey) need a member-scoped Loom before they can carry image fields; see docs/STUDIO.md.
+   */
+  spaceSlug?: string
   disabled?: boolean
   /** Rendered under the control (a hint, or a validation reason). */
   hint?: string
@@ -100,9 +110,9 @@ const asList = (v: string | string[]): string[] => (Array.isArray(v) ? v : v ? [
  * exactly like the rest of the Studio kit, so this composes with autosave or with a staged wizard
  * without knowing which it is in.
  */
-export function FieldControl({ def, value, onChange, loaded, disabled, hint, id }: FieldControlProps) {
+export function FieldControl({ def, value, onChange, loaded, spaceSlug, disabled, hint, id }: FieldControlProps) {
   const describedBy = hint ? `${id ?? def.path}-hint` : undefined
-  const control = renderControl({ def, value, onChange, loaded, disabled, id, describedBy })
+  const control = renderControl({ def, value, onChange, loaded, spaceSlug, disabled, id, describedBy })
 
   return (
     <div>
@@ -121,6 +131,7 @@ function renderControl({
   value,
   onChange,
   loaded,
+  spaceSlug,
   disabled,
   id,
   describedBy,
@@ -192,25 +203,47 @@ function renderControl({
         </div>
       )
 
+    // ONE image control everywhere: the Loom (ADR-598). A pick or an upload lands in the Space's
+    // own library, so the next block can reuse it. There is deliberately no direct-upload fallback.
     case 'image':
-      return (
-        <ImageUpload
-          value={asText(value) || null}
-          onChange={(next) => onChange(next ?? '')}
-          label={def.label}
-          disabled={disabled}
-        />
-      )
+      if (!spaceSlug) return <NoLoom label={def.label} />
+      return <LoomImageField value={asText(value)} onChange={(next) => onChange(next)} spaceSlug={spaceSlug} />
 
-    case 'images':
+    case 'images': {
+      if (!spaceSlug) return <NoLoom label={def.label} />
+      const picked = asList(value)
       return (
-        <MultiImageUpload
-          value={asList(value)}
-          onChange={(next) => onChange(next)}
-          label={def.label}
-          disabled={disabled}
-        />
+        <div>
+          {picked.length > 0 && (
+            <ul className="mb-2 space-y-1.5">
+              {picked.map((url, i) => (
+                <li key={`${url}-${i}`} className="flex items-center gap-2">
+                  {/* A plain img, not next/image: these are operator-chosen Loom URLs at thumbnail
+                      size inside an editor, so optimization buys nothing and the domain allow-list
+                      would have to know every storage host. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt="" className="h-10 w-10 shrink-0 rounded-lg border border-border object-cover" />
+                  <span className="min-w-0 flex-1 truncate text-2xs text-muted">{url}</span>
+                  <button
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => onChange(picked.filter((_, j) => j !== i))}
+                    className="shrink-0 rounded-lg border border-border p-1 text-muted transition-colors hover:text-text disabled:opacity-50"
+                  >
+                    <X className="h-3 w-3" aria-hidden />
+                    <span className="sr-only">Remove image {i + 1}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {/* Held at an empty value so each pick APPENDS. One at a time is the current cost of
+              routing everything through the Loom; a multi-select mode on the picker is the fix,
+              not a second control. */}
+          <LoomImageField value="" onChange={(next) => next && onChange([...picked, next])} spaceSlug={spaceSlug} />
+        </div>
       )
+    }
 
     // `daterange` is two instants. The manifest declares one field; the control renders the pair
     // and stores them as an ISO tuple, so an entity never has to declare "start" and "end" twice.
@@ -234,6 +267,16 @@ function renderControl({
 }
 
 // ── Composite controls ───────────────────────────────────────────────────────────────────
+
+/** Shown for an image field with no Space behind it. Says what is missing instead of quietly
+ *  offering a direct upload, which is the failure mode ADR-598 exists to end. */
+function NoLoom({ label }: { label: string }) {
+  return (
+    <p className="rounded-lg border border-dashed border-border-strong bg-surface/50 px-3 py-2 text-2xs leading-snug text-muted">
+      {label} needs a Space to pick from. Images live in the Loom, and this surface is not inside one yet.
+    </p>
+  )
+}
 
 /** A chip list with a type-to-add box. Enter or comma commits; backspace on an empty box removes
  *  the last chip (the behaviour people expect from every tag input they have used). */
