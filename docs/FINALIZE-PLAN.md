@@ -1,8 +1,16 @@
 # Finalize plan — the run to a fully functional platform
 
 > **The answer, first.** The platform is built and green: `tsc` clean, **8,943 tests passing**,
-> **all 27 `check:*` gates exit 0**, CI green on `main`, and the migration ledger is an exact
-> bijection with the repo (594 ⇄ 594, ADR-963).
+> **all 27 `check:*` gates exit 0**, and CI is green on `main`.
+>
+> 🔴 **The ledger bijection claim that used to sit here is no longer true.** It read "an exact
+> bijection with the repo (594 ⇄ 594, ADR-963)". Re-checked 2026-08-11: the repo carries
+> `20270220000000_fk_indexes_and_billing_policy_merge.sql` and production holds the same file under
+> `20260811003019`. That is the **fourth** recurrence, and it is the direct consequence of §2.6
+> never being done: `check:migrations` verifies 598 unique, well-ordered filenames and has **no
+> ledger-head rule**, so it structurally cannot see this class. A gate that cannot fail on the
+> defect it was written for is the repo's own named failure mode. §2.5 (repair) and §2.6 (stop it
+> recurring) are both open, and doing 2.5 again without 2.6 buys nothing.
 > What is left is not features. It is **three instruments that stopped telling the truth**, one
 > **access-grant layer** that was never actually closed, and a **short, verified list of real
 > defects**. Nothing on this list is speculative: every item below was reproduced against the
@@ -37,8 +45,8 @@ Sizes: **XS** under an hour · **S** one PR · **M** 1 to 3 PRs · **L** a wave.
 | Help centre | ✅ | 55 articles, core coverage **36/36**, **0 orphan feature keys** (the 10 were added to `feature-keys.ts`; `check:help` now fails on an orphan in every mode). `--strict` is wired into `check:help` as of 2026-08-11, so a new `core: true` row without an article fails CI. Wiring it changed no outcome the day it landed (core was already 36/36) — it is a ratchet forward, not a fix. Both the article count and the registry size carry floors |
 | **Visual regression** | ✅ | **71 of 76**, was 10 of 72. `/feed`'s viewport capture WORKS (passes now). App shell coverage **3/3 surfaces, 12/12 checks**, from zero this morning. The 4 remaining failures are `/settings` × 4 and are a TRUE POSITIVE — see 1.10. |
 | **Accessibility ratchet** | 🔴 | first full run with a session (2026-08-10): **32 failed · 28 passed · 26 skipped** — 4 absent baselines, 28 real rises, **all 16 dark-mode contrast checks among them** (1.7, ADR-980) |
-| **Anon/authenticated grants** | 🔴 | **1,907 explicit grants across 273 tables** (2 worst RPCs closed, ADR-961) |
-| **Migration ledger numbering** | ✅ | **594 ⇄ 594, zero drift both directions** (ADR-963) — was 607 vs 594 |
+| **Anon/authenticated grants** | ⏳ | **1,556 across 195 tables**, down from 1,907 across 273 (Phase 2a swept 76 tables, ADR-965). This row said 1,907/273 until 2026-08-11: it was written before Phase 2 shipped and never updated when it did |
+| **Migration ledger numbering** | 🔴 | **Drift recurred**, fourth time. Repo `20270220000000_fk_indexes_and_billing_policy_merge.sql` ⇄ prod `20260811003019`. This row read "594 ⇄ 594, zero drift both directions" (ADR-963); that was true when written and is false now. See §2.5 and §2.6 |
 
 **The single most important sentence in this document:** six merges' worth of rendering changes have
 landed with no working visual gate, so *every* claim about how the site looks is currently unverified.
@@ -118,7 +126,7 @@ exist, and all three gates are eligible to be flipped to required.
 
 ---
 
-## Phase 2 — Close the access layer 🔴
+## Phase 2 — Close the access layer ⏳
 
 **Definition of done:** `anon` holds no grant it does not need, no `SECURITY DEFINER` function is
 anon-callable without a deliberate reason recorded, and the ledger stops diverging.
@@ -134,8 +142,8 @@ Measured against prod on 2026-08-10:
 
 | Measure | Value |
 | :--- | ---: |
-| Explicit table grants held by `anon` | **1,907** across **273** tables |
-| Same for `authenticated` | **1,907** across **273** tables |
+| Explicit table grants held by `anon` | **1,556** across **195** tables (was 1,907 / 273 before Phase 2a) |
+| Same for `authenticated` | **1,556** across **195** tables (was 1,907 / 273) |
 | Tables with RLS on and **zero** policies (fail-closed by RLS alone) | **77** |
 | `SECURITY DEFINER` functions in `public` | 112 |
 | …executable by `anon` | **34** |
@@ -272,9 +280,9 @@ review-friendly. **The live baselines are substantially better than either plan 
 | 6.1 | ✅ **Label contract — DONE, and the number was wrong twice (ADR-966)** | — | The plan's "103 of 229" was a line-scoped grep artifact; the real count of *that* pattern was 23. But scoping the re-count to the `Label` **component** was itself the error: the same bug in plain `<label className={lbl}>` form was more common and invisible to any search for `Label`. Asking about `<label>` **elements** instead found **39 sites across 16 files**, all fixed. `deal-form.tsx` (6), `profile-form.tsx` (5), `circle-settings-form.tsx` (5), `event-form.tsx` (4), `ticket-tiers-panel.tsx` (4), `broadcast-compose.tsx` (3), 12 more. Nine of those had papered over the symptom with a duplicate `aria-label`, which fixes the name and leaves click-to-focus broken. **`pnpm check:labels` is the 22nd guard** and holds it: 635 labels, every one naming exactly one control, none nested. Proven to exit 1 on the pre-fix tree (62 violations) and 0 now; 18 unit tests cover the five violation shapes *and* the seven correct shapes that must stay silent.
 | 6.2 | ✅ **Icon-button accessible names — CLOSED, the finding was false** | — | `IconButton` declares **`label: string` as required** and `Omit<…, 'aria-label'>`, so a site without a name would not typecheck. A brace-aware parse of every opening tag: **79 real call sites, 79 named, 0 missing** (the other 3 of 82 are `Record<IconButtonTone, string>` generics inside `icon-button.tsx` itself). 82 − 34-with-it-on-the-opening-line = 48, which reproduces the reported number exactly. All 79 label strings were audited against NAMING/CONTENT-VOICE: clean. Two consistency nits remain in `movement-session.tsx` ("Less"/"More" name the direction, not the object — `session.tsx` already says "One minute less"), which is a copy call, not an a11y gap. |
 | 6.3 | ✅ **Moved (ADR-971)** | — | Now `components/ui/underline-tabs.tsx`. **17** importers repointed (the plan said 22 — a stale count; `git grep` finds 17 files). `handrolled-tabs` was already **0**, so the sweep half was done and this closes the item. Owner-ruled 2026-08-03. |
-| 6.4 | **Kit state sweep (Lift 8b)** | M | ⚠️ **Do not measure this with a grep — I tried, and the numbers are meaningless.** Counting `hover:` / `active:` / `focus-visible:` / `disabled:` per file in `components/ui/` reports 52 of 56 primitives "missing focus" and 54 "missing pressed". Both figures are **false**: `app/globals.css:1784` rings every `button, a, select, [tabindex]` on `:focus-visible` and `:1788` covers `input, textarea`, while `:1668`/`:1673` supply `:active`. `INTERACTION-STATES.md` §2 says so in as many words ("focus-visible is mostly free"). A real audit has to ask, per primitive: which **class** is it, which states does that class require, and does it get them from its own utilities, from globals.css, **or** by rendering a native `<button>`. That is per-component judgement across **56** primitives (14 have tests today), which is what makes this M and not S. |
+| 6.4 | **Kit state sweep (Lift 8b)** | M | ⚠️ **Do not measure this with a grep — I tried, and the numbers are meaningless.** Counting `hover:` / `active:` / `focus-visible:` / `disabled:` per file in `components/ui/` reports 52 of 56 primitives "missing focus" and 54 "missing pressed". Both figures are **false**: `app/globals.css:1784` rings every `button, a, select, [tabindex]` on `:focus-visible` and `:1788` covers `input, textarea`, while `:1668`/`:1673` supply `:active`. `INTERACTION-STATES.md` §2 says so in as many words ("focus-visible is mostly free"). A real audit has to ask, per primitive: which **class** is it, which states does that class require, and does it get them from its own utilities, from globals.css, **or** by rendering a native `<button>`. That is per-component judgement across **42** primitives (14 have tests today), which is what makes this M and not S. ⚠️ This row said **56** until 2026-08-11; the live count is 42 (`find components/ui -name '*.tsx' -not -name '*.test.tsx'`). The 14 was and is correct. |
 | 6.5 | **Low-adoption primitives** | M | `RowCard` 5 consumers vs `bespoke-rows` 14 · `StreakMeter` 4 · `Meter` 6 · `GateNotice` 5. ⚠️ **Triage before sweeping**: the ratchet is a filename heuristic, and `ContactCard`/`GroupCard` carry docstrings saying they are deliberate variants. Separate "owed to the kit" from "filename collision" first — forced conversions to move a number are the exact failure the ratchets exist to prevent. |
-| 6.6 | **67 raw `<img>`** | S | → `next/image` on the LCP surfaces first. |
+| 6.6 | **Raw `<img>` → `next/image`** | S | ⚠️ **The "67" this row used to assert does not reproduce, under any scope tried.** Live 2026-08-11: **127 `<img` lines across 74 files** in `app` + `components`; **120** after excluding `print/`, `og/` and email templates, which legitimately cannot use `next/image`. The old figure cited no basis, so it cannot be reconciled — re-measure before scoping, and state the basis this time. Do the LCP surfaces first. |
 | 6.7 | **Remaining ratchet tails** | M | `raw-input` 186 (needs a borderless/inset variant on the primitive, not call-site swaps — see the induction note in BUILD-LIST §P8), `literal-display-type` 96, `raw-button-bg` 526 (replace the proximity-window pattern with the opening-tag form under a new basis fingerprint), `literal-radius` 2,450 (**spend inside screen passes, never as its own wave**). |
 
 ### 6.8 — The DAWN debt is TWO populations, and only one of them is a sweep
@@ -481,15 +489,21 @@ them is **product policy, not a defect with an obvious direction** — each need
 which side is right before the code moves. Do not "fix" them by making the numbers match. The
 script's own header splits them **8 catalog fixes / 3 page fixes**, with the recommendation per row.
 
-### 6.12 — Two fully-built admin pages nothing links to
+### 6.12 — Two fully-built admin pages nothing links to ✅ FIXED
 
 `/admin/marketing/automations` (rules engine) and `/admin/marketing/nurture` (per-persona sequence
-builder) are complete, gated, working pages with **zero** inbound references anywhere in the repo and
-no row in any catalog. `lib/nav/studio.ts:277` documents the intent — they were "rolled into the
+builder) are complete, gated, working pages that had **zero** inbound references anywhere in the repo
+and no row in any catalog. `lib/nav/studio.ts:277` documented the intent — they were "rolled into the
 Resonance CRM Marketing tab" — but `/admin/crm/marketing` has **no automations or nurture UI**. The
-menu rows were removed on the assumption the destination existed. It does not. Same shape, lower
-severity: `/admin/growth/funnels` and `/admin/marketing/funnels` are orphaned index pages whose
-*detail* routes are still linked, so a bookmark works but the list that would lead you there does not.
+menu rows were removed on the assumption the destination existed. It did not.
+
+**Both rows were restored in #2078** and are live at `lib/nav/studio.ts:302` (`marketing-automations`)
+and `:304` (`marketing-nurture`). This section still read as open until 2026-08-11; that was the doc
+lagging the fix, not a regression.
+
+Still open, same shape and lower severity: `/admin/growth/funnels` and `/admin/marketing/funnels` are
+orphaned index pages whose *detail* routes are still linked, so a bookmark works but the list that
+would lead you there does not.
 
 🔴 **Owner call:** finish the migration, restore the menu rows, or delete the pages. All three are
 defensible; leaving them is the only option that is not.
@@ -681,7 +695,7 @@ fully actionable list. This is far smaller than the raw counts suggest: repo-wid
 
 | # | Item | Size | Detail |
 | :--- | :--- | :---: | :--- |
-| 7.3 | **Add the missing superseded banners** | XS | `MASTER-PLAN.md`, `CHECKLIST.md`, `PATCH-LIST.md` have none. The other nine legacy plans do. |
+| 7.3 | ~~**Add the missing superseded banners**~~ ✅ **DONE** | XS | This row said `MASTER-PLAN.md`, `CHECKLIST.md` and `PATCH-LIST.md` have none. Verified 2026-08-11: **all twelve** legacy plans carry the banner, each added 2026-08-10 under ADR-960, including those three at line 3 of each file. The row was stale, not the tree. |
 | 7.4 | **Re-derive the stale baseline tables** | XS | Both live plans quote numbers the ratchet has moved past (§8). Generate from `scripts/adoption-baselines.json`; never hand-maintain. |
 | 7.5 | **Fix the ADR record** | S | Seven numbers (088–094, 090 three times) each name two or more decisions; ADR-219 is still "Accepted" after ADR-305 retired it; `ARCHITECTURE.md` documents two cron endpoints deleted by ADR-305. |
 | 7.6 | **`tsconfig` excludes `scripts/`** | ~~XS~~ **M** | The CI guard test files vitest runs are never typechecked. 🔴 **Re-scoped 2026-08-10 after attempting it: this is not a one-line change, and the rationale it was filed under is wrong.** See below. |
