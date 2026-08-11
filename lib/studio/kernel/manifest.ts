@@ -314,3 +314,15 @@ export function validateManifest(m: EntityManifest): ManifestProblem[] {
 
   return problems
 }
+
+/**
+ * Whether an entity is CATALOG-ONLY: declared so the catalog is complete, but with no guided flow.
+ * Derived from what the manifest declares rather than a separate flag, so the two cannot disagree:
+ * an entity with no source material to accept and nothing to steer has no wizard to build.
+ *
+ * A Channel or a Room is a name and a description on a modal that already works. Wrapping that in
+ * two doors and a mood dial would be ceremony, and the catalog would be the thing lying about it.
+ */
+export function isCatalogOnly(m: EntityManifest): boolean {
+  return (m.accepts?.length ?? 0) === 0 && !m.steer?.mood && !m.steer?.directions
+}

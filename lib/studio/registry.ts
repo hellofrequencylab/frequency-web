@@ -29,6 +29,13 @@ import { PRACTICE_MANIFEST } from './entities/practice'
 import { PRODUCT_MANIFEST } from './entities/product'
 import { SERVICE_MANIFEST } from './entities/service'
 import { SPACE_MANIFEST } from './entities/space'
+import {
+  BROADCAST_MANIFEST,
+  CHANNEL_MANIFEST,
+  HUB_MANIFEST,
+  NEXUS_MANIFEST,
+  ROOM_MANIFEST,
+} from './entities/catalog-only'
 
 /** Every entity the Studio knows how to create and review, in catalog order. */
 export const STUDIO_ENTITIES: readonly EntityManifest[] = [
@@ -46,6 +53,14 @@ export const STUDIO_ENTITIES: readonly EntityManifest[] = [
   LISTING_MANIFEST,
   PRODUCT_MANIFEST,
   SERVICE_MANIFEST,
+  // Catalog-only (owner decision, 2026-08-11): declared so the catalog is COMPLETE and the universal
+  // Create affordance can list them, but deliberately given no wizard. They declare no `accepts` and
+  // no `steer`, so nothing can render a drop zone or a mood dial for them. See entities/catalog-only.ts.
+  CHANNEL_MANIFEST,
+  ROOM_MANIFEST,
+  HUB_MANIFEST,
+  NEXUS_MANIFEST,
+  BROADCAST_MANIFEST,
 ]
 
 const BY_ENTITY = new Map<string, EntityManifest>(STUDIO_ENTITIES.map((m) => [m.entity, m]))

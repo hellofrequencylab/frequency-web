@@ -8,7 +8,7 @@ import { describe, it, expect } from 'vitest'
 // `pnpm check:studio`, because it is a filesystem property, not a runtime one.
 
 import { STUDIO_ENTITIES, studioEntityIds, studioManifest } from './registry'
-import { FIELD_KINDS, isFieldKind, validateManifest } from './kernel/manifest'
+import { FIELD_KINDS, isCatalogOnly, isFieldKind, validateManifest } from './kernel/manifest'
 import { buildFieldModel, sparkFields } from './kernel/review-kernel'
 
 describe('the Studio catalog', () => {
@@ -67,6 +67,30 @@ describe.each(STUDIO_ENTITIES.map((m) => [m.entity, m] as const))('manifest: %s'
     const hasCommercial =
       manifest.fields.some((f) => f.commercial) || (manifest.repeats ?? []).some((r) => r.fields.some((f) => f.commercial))
     if (hasCommercial) expect(manifest.verify ?? 'none').not.toBe('none')
+  })
+})
+
+describe('catalog-only vs wizard entities', () => {
+  it('splits the catalog on what a manifest DECLARES, not a separate flag', () => {
+    const catalogOnly = STUDIO_ENTITIES.filter(isCatalogOnly).map((m) => m.entity)
+    const withWizards = STUDIO_ENTITIES.filter((m) => !isCatalogOnly(m)).map((m) => m.entity)
+    // Owner decision 2026-08-11: these five get a catalog row so the universal Create affordance is
+    // complete, but no guided flow. A name and a description do not need two doors and a mood dial.
+    expect(catalogOnly.sort()).toEqual(['broadcast', 'channel', 'hub', 'nexus', 'room'])
+    expect(withWizards.length).toBeGreaterThan(0)
+  })
+
+  it('never lets a catalog-only entity declare wizard capabilities', () => {
+    for (const m of STUDIO_ENTITIES.filter(isCatalogOnly)) {
+      expect(m.accepts ?? [], m.entity).toEqual([])
+      expect(m.steer?.mood ?? false, m.entity).toBe(false)
+    }
+  })
+
+  it('gives every WIZARD entity the mood dial (owner decision: moods are in)', () => {
+    for (const m of STUDIO_ENTITIES.filter((x) => !isCatalogOnly(x))) {
+      expect(m.steer?.mood, m.entity).toBe(true)
+    }
   })
 })
 
