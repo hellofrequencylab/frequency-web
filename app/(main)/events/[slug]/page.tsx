@@ -15,7 +15,7 @@ import { createClient } from '@/lib/supabase/server'
 import { SITE_NAME, SITE_URL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { eventSchema, breadcrumbSchema } from '@/lib/jsonld'
-import { ticketFromPriceCents } from '@/lib/commerce/ticket-projection'
+import { ticketFromPriceCents, ticketsSoldOut } from '@/lib/commerce/ticket-projection'
 import { toggleRSVP } from '../actions'
 import { EventCheckInButton } from './check-in-button'
 import { TicketButton, type TicketTierView } from './ticket-button'
@@ -84,6 +84,9 @@ type EventDetail = {
   ends_at: string | null
   is_cancelled: boolean
   price_cents: number | null
+  /** ISO 4217 as stored (DEFAULT 'usd'). Read only to denominate the JSON-LD Offer — the page's
+   *  own price labels format through the commerce helpers, which already carry it. */
+  currency: string | null
   visibility: string | null
   scope_id: string
   scope_type: string
@@ -265,7 +268,7 @@ export default async function EventDetailPage({
   const { data: rawEvent } = await admin
     .from('events')
     .select(
-      `id, title, slug, description, location, starts_at, ends_at, is_cancelled, price_cents,
+      `id, title, slug, description, location, starts_at, ends_at, is_cancelled, price_cents, currency,
        visibility, scope_id, scope_type, recurrence_type, recurrence_until, parent_event_id,
        host:profiles!host_id ( id, display_name, handle, avatar_url )`
     )
@@ -1608,6 +1611,14 @@ export default async function EventDetailPage({
     attendance_mode: attendanceMode,
     is_cancelled: event.is_cancelled,
     region: extra?.region ?? null,
+    // The Offer's own currency, not a hardcoded USD.
+    currency: event.currency,
+    // SOLD OUT, from the two authorities this page already holds — so the structured data can no
+    // longer say InStock while the page renders "Sold out." / the full-capacity waitlist CTA.
+    // Both are read above at zero extra cost: `capacityInfo` (events.capacity vs confirmed RSVPs)
+    // backs the waitlist state, and `tierRows` backs the per-tier `soldOut` badges. Either one
+    // being exhausted means nothing is buyable, which is what `availability` reports.
+    is_sold_out: capacityInfo.isFull || (hasTiers && ticketsSoldOut(tierRows)),
   })
 
   return (

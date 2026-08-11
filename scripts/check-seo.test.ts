@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
 import {
   run,
   routeForFile,
@@ -43,6 +44,43 @@ describe('check-seo — reading the sources of truth', () => {
     for (const r of ['/market', '/housing', '/classifieds']) {
       expect(disallow, `${r} must stay crawlable so detail pages are reachable`).not.toContain(r)
     }
+  })
+
+  // ── The parity robots.ts claims in its own header ───────────────────────────
+  // "Mirror the PROTECTED_PATHS list in proxy.ts." That sentence was load-bearing prose with
+  // nothing enforcing it, and the 2026-08-11 fan-out filed the drift as finding 10.16
+  // (~30-48 routes behind). MEASURED, it is not: every protected prefix is covered, with exactly
+  // one exception the code itself implements. The finding is retired false — see FINALIZE-PLAN §7.
+  //
+  // Keeping the measurement as a TEST rather than a note is the point. The claim was true when
+  // written and could become true again the next time someone adds a prefix to proxy.ts; a comment
+  // asserting parity is precisely the thing that had already stopped being checked.
+  it('DISALLOW covers every PROTECTED_PATHS prefix, with /events the one deliberate exception', () => {
+    const disallow = parsePathList('app/robots.ts', 'DISALLOW')
+    const protectedPaths = parsePathList('proxy.ts', 'PROTECTED_PATHS')
+
+    // A trailing-slash rule ("/join/") is subtree-only, so it covers "/join/x" but not "/join".
+    const covered = (p: string) =>
+      disallow.some((d) =>
+        d.endsWith('/') ? p.startsWith(d) : p === d || p.startsWith(`${d}/`),
+      )
+
+    const uncovered = protectedPaths.filter((p) => !covered(p))
+    expect(
+      uncovered,
+      'a proxy-protected prefix that robots.txt still invites crawlers into burns crawl budget on a 307',
+    ).toEqual(['/events'])
+  })
+
+  it('the /events exception is real code, not an oversight that happens to look intentional', () => {
+    // The exemption has to exist in proxy.ts for the line above to be safe to allow. If someone
+    // deletes `isPublicEventView`, /events starts 307ing crawlers and the exception above becomes
+    // the bug it currently is not — so the two are asserted together, never apart.
+    const proxySrc = stripComments(readFileSync('proxy.ts', 'utf8'))
+    expect(proxySrc).toContain('isPublicEventView')
+    expect(proxySrc).toMatch(/!isPublicEventView\s*&&/)
+    // And the create flow, which is NOT public, must still be disallowed by name.
+    expect(parsePathList('app/robots.ts', 'DISALLOW')).toContain('/events/new')
   })
 
   it('throws rather than silently returning [] when it cannot find its input', () => {

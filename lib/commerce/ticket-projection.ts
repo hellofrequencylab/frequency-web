@@ -35,6 +35,10 @@ type TierRow = {
   suggested_cents: number | null
 }
 
+/** The active-tier fields that decide whether anything is still buyable. `quantity` is NULLABLE in
+ *  the schema and null means UNLIMITED, not zero — the distinction is the whole helper. */
+type TierStockRow = { quantity: number | null; sold: number | null }
+
 /** The event fields the projection reads. */
 type EventRow = {
   id: string
@@ -72,6 +76,28 @@ export function ticketFromPriceCents(
     )
     .filter((c): c is number => typeof c === 'number' && c > 0)
   return priced.length ? Math.min(...priced) : null
+}
+
+/**
+ * Is every ACTIVE tier exhausted — i.e. is there nothing left to buy? PURE, and the companion to
+ * `ticketFromPriceCents`: the same rows that price an event also say whether it can still be sold,
+ * so the two answers cannot drift apart the way a second hand-rolled check would.
+ *
+ * Three rules, and each one is a bug this returns `false` for rather than guessing:
+ *  - **No active tiers → `false`.** An untiered event is not "sold out", it is un-ticketed; its
+ *    capacity lives on `events.capacity` and only a caller holding the RSVP count can speak to it.
+ *  - **Any tier with `quantity === null` → `false`.** Null is UNLIMITED in `event_ticket_types`,
+ *    so one uncapped tier keeps the event buyable no matter how many capped ones ran out. Reading
+ *    null as 0 would publish "sold out" for the common uncapped case, which is the worse error:
+ *    a wrong SoldOut suppresses the rich result's ticket action entirely.
+ *  - Otherwise sold out only when EVERY capped tier has `sold >= quantity`.
+ *
+ * `sold` is NOT NULL in the schema; the `?? 0` is for callers holding a partial projection of the
+ * row, and matches how app/(main)/events/[slug] computes the same number for its own badges.
+ */
+export function ticketsSoldOut(tiers: TierStockRow[]): boolean {
+  if (tiers.length === 0) return false
+  return tiers.every((t) => t.quantity != null && (t.sold ?? 0) >= t.quantity)
 }
 
 /**

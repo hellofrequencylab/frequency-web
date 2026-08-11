@@ -403,7 +403,15 @@ export function Faq({ q, children }: { q: string; children: React.ReactNode }) {
     // shapes the FAQ card (ADR-578); everywhere else the token resolves exactly as before.
     <details className="group rounded-card border border-border bg-surface px-6 py-5 lift-1 [&_summary]:list-none">
       <summary className="flex cursor-pointer items-center justify-between gap-4 text-left select-none">
-        <span className="text-body-lg font-semibold text-text leading-snug">{q}</span>
+        {/* <h3>, not <span>. Ten pages emit FAQPage JSON-LD over this markup, and the questions
+            ARE the document's headings — CONTENT-VOICE §8a: "H2s are the literal questions people
+            ask". As a span they were invisible to a heading-outline scan, to a screen reader's
+            heading rotor, and to the answer engines the FAQPage block exists to feed. h3 because
+            every caller renders this list beneath the Section's <h2>, so the outline stays
+            contiguous; the sibling Steps primitive already settled on the same level.
+            Pixel-identical: Tailwind's preflight resets heading font-size/weight/margin to
+            inherit, and inside this flex summary a block and an inline box lay out the same. */}
+        <h3 className="text-body-lg font-semibold text-text leading-snug">{q}</h3>
         <ChevronDown
           className="h-5 w-5 shrink-0 text-subtle transition-transform group-open:rotate-180"
           aria-hidden

@@ -112,6 +112,21 @@ type EventSchemaEnrichment = {
    *  tier is free"; a number is the from-price. A plain `??` would collapse the middle case
    *  back onto `price_cents` and re-introduce the bug this field exists to fix. */
   ticket_from_cents?: number | null
+  /** ISO 4217, lower- or upper-case, as stored. `events.currency` is a real per-event column
+   *  (text, DEFAULT 'usd') that this schema hardcoded to USD for every event on earth — a
+   *  published price in the wrong denomination, which is worse than no price. Absent or null
+   *  falls back to 'usd', matching the column default rather than inventing one. */
+  currency?: string | null
+  /** Is the event genuinely unbuyable? THREE-STATE, for the same reason `ticket_from_cents` is:
+   *  `undefined` means "the caller could not determine this" and leaves availability on the
+   *  is_cancelled-only rule, while `false` positively asserts seats remain.
+   *
+   *  Capacity is NOT readable from this module. It lives in two places — `events.capacity`
+   *  against the confirmed-RSVP count (lib/events/capacity), and the per-tier `quantity`/`sold`
+   *  pair (lib/commerce/ticket-projection.ticketsSoldOut) — and only a caller that already holds
+   *  one can answer without buying a round trip on an SEO-critical page. So the caller decides
+   *  and this publishes; it never guesses `false` and calls that a fact. */
+  is_sold_out?: boolean | null
 }
 
 const ATTENDANCE_MODE_URL: Record<'in_person' | 'online' | 'hybrid', string> = {
@@ -187,10 +202,16 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
     offers: {
       '@type': 'Offer',
       price: priceCents && priceCents > 0 ? (priceCents / 100).toFixed(2) : '0.00',
-      priceCurrency: 'USD',
-      availability: event.is_cancelled
-        ? 'https://schema.org/SoldOut'
-        : 'https://schema.org/InStock',
+      // Upper-cased from the event's own column, mirroring productSchema below so the two Offer
+      // builders in this file cannot denominate the same money two ways.
+      priceCurrency: (event.currency ?? 'usd').toUpperCase(),
+      // A page that says "full" while its structured data says InStock is a direct page-vs-schema
+      // contradiction, and Google reads the mismatch as the page lying. `is_sold_out` is supplied
+      // by whichever caller can see capacity; see the three-state note on the field.
+      availability:
+        event.is_cancelled || event.is_sold_out
+          ? 'https://schema.org/SoldOut'
+          : 'https://schema.org/InStock',
       url,
       validFrom: event.starts_at,
     },
