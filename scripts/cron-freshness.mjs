@@ -398,7 +398,7 @@ export function renderText(a) {
   lines.push(`Coverage: ${coverageSentence(a)}.`)
   lines.push('')
   for (const line of findings(a)) lines.push(line)
-  lines.push('')
+  if (lines[lines.length - 1] !== '') lines.push('')
   lines.push('Fresh-by = 2 x schedule interval (the interval plus one interval of grace, §4a). A job')
   lines.push('whose last success ping is older than its fresh-by window is a §4 SLO breach.')
   return lines.join('\n')
@@ -415,13 +415,10 @@ export function renderMarkdown(a) {
       : `✅ Cron heartbeat wiring: all ${a.jobs.length} jobs are wrapped in \`withCronHeartbeat\` under their own name, and every schedule parses.`,
   )
   lines.push('')
-  lines.push(`Coverage: ${coverageSentence(a)}`)
+  lines.push(`Coverage: ${coverageSentence(a)}.`)
   lines.push('')
-  const found = findings(a)
-  if (found.length) {
-    for (const line of found) lines.push(line)
-    lines.push('')
-  }
+  for (const line of findings(a)) lines.push(line)
+  if (lines[lines.length - 1] !== '') lines.push('')
   lines.push(
     '_Fresh-by = 2 x the schedule interval (§4a). This step checks the wiring and the contract, ' +
       'not whether pings are arriving: that needs a read-only Healthchecks API key, which is not set. ' +
