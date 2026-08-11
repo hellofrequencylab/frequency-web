@@ -245,8 +245,25 @@ export function runCheck() {
   return { violations, known, stale, scanned: reachedBy.size, entries: entries.length }
 }
 
+/** `check:headers` already fails on a stale KNOWN_DELEGATED entry, which is real protection and is
+ *  why it exited 1 from an empty tree by accident. That is a side effect of allowlist-rot
+ *  detection, though, not a floor: tidy the allowlist to empty and an under-scan goes silent
+ *  again. Measured 305 route entries / 675 modules on 2026-08-10. */
+const MIN_ROUTE_ENTRIES = 150
+const MIN_SCANNED_MODULES = 300
+
 function main() {
   const { violations, known, stale, scanned, entries } = runCheck()
+
+  if (entries < MIN_ROUTE_ENTRIES || scanned < MIN_SCANNED_MODULES) {
+    console.error(
+      `✗ Header contract walked only ${entries} route entr(ies) and ${scanned} module(s), expected ` +
+        `at least ${MIN_ROUTE_ENTRIES} and ${MIN_SCANNED_MODULES}.\n  The route walk or the ` +
+        'delegation closure is broken, so its silence about hand-rolled headers means nothing.',
+    )
+    process.exit(1)
+  }
+
   console.log(
     `Header contract — ${entries} route entr${entries === 1 ? 'y' : 'ies'} under app/(main), ` +
       `${scanned} module(s) after following delegation.`,

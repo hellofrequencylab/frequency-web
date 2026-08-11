@@ -156,6 +156,22 @@ function stripComments(src) {
     .replace(/(^|[^:])\/\/[^\n]*/g, '$1') // // line (avoid matching https://)
 }
 const targets = [...new Set([...SRC_DIRS.flatMap(srcFiles), ...SRC_FILES])]
+
+/** A gate that scans nothing reports a clean bill of health. `srcFiles()` swallows a missing
+ *  directory (`try { readdirSync } catch { return out }`), so renaming `app/(marketing)` would drop
+ *  four of the five roots with no signal at all and this guard would print ✓ over an unscanned
+ *  tree. Measured ~130 targets on 2026-08-10; the floor sits well under that and far above zero.
+ *  Same pattern as MIN_ROWS in check-gate-parity.mjs. */
+const MIN_TARGETS = 60
+if (targets.length < MIN_TARGETS) {
+  console.error(
+    `✖ canon guard resolved only ${targets.length} target file(s), expected at least ${MIN_TARGETS}. ` +
+      'A source root moved or the walk is broken; a run that reads almost nothing must fail rather ' +
+      'than report the canon as held.',
+  )
+  process.exit(1)
+}
+
 for (const file of targets) {
   const raw = read(file)
   if (raw == null) continue
@@ -174,4 +190,4 @@ if (violations > 0) {
   console.error(`\n✖ canon guard: ${violations} violation(s). See docs/NAMING.md + docs/CONTENT-VOICE.md + ADR-811.`)
   process.exit(1)
 }
-console.log('✓ canon guard: content/ + marketing source on-canon (no em dashes/casing drift, no retired money model or taglines).')
+console.log(`✓ canon guard (${targets.length} file(s) scanned): content/ + marketing source on-canon (no em dashes/casing drift, no retired money model or taglines).`)

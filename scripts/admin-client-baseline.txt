@@ -27,7 +27,6 @@ app/(main)/admin/demo/page.tsx
 app/(main)/admin/demo/studio/actions.ts
 app/(main)/admin/dispatches/page.tsx
 app/(main)/admin/email-studio/actions.ts
-app/(main)/admin/email-studio/template-actions.ts
 app/(main)/admin/events/[id]/page.tsx
 app/(main)/admin/events/actions.ts
 app/(main)/admin/events/load-events.ts
@@ -482,7 +481,6 @@ lib/email-studio/analytics.ts
 lib/email-studio/loom-actions.ts
 lib/email-studio/product-block.ts
 lib/email-studio/send.ts
-lib/email-studio/templates.ts
 lib/engagement/capture.ts
 lib/engagement/events.ts
 lib/engagement/verify.ts
@@ -602,7 +600,6 @@ lib/page-editor/data.ts
 lib/page-editor/guard.ts
 lib/page-editor/loom-field-actions.ts
 lib/page-editor/member-search-action.ts
-lib/page-editor/upload-action.ts
 lib/page-settings/actions.ts
 lib/page-settings/store.test.ts
 lib/page-settings/store.ts

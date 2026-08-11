@@ -441,65 +441,6 @@ export async function updateEventField(id: string, slug: string, field: InlineFi
   revalidatePath('/feed')
 }
 
-// Cover image: upload to the PUBLIC `event-media` bucket and persist the storage
-// PATH in events.cover_image_path (resolved to a public URL at read time via
-// getPublicUrl — see index-data.ts), or clear it. Both re-check event.editSettings
-// (capabilities are law; the admin client bypasses RLS). Mirrors uploadCircleCover,
-// but events store a PATH, not the full URL, so the upload returns the resolved URL
-// for InlineCover to preview while the column keeps the path.
-export async function uploadEventCover(
-  id: string,
-  slug: string,
-  formData: FormData,
-): Promise<{ url: string } | { error: string }> {
-  const caps = await getEventCapabilities(id)
-  if (!caps.has('event.editSettings')) return { error: 'Unauthorized' }
-
-  const file = formData.get('file')
-  if (!(file instanceof File) || file.size === 0) return { error: 'No file selected.' }
-  if (file.size > 8 * 1024 * 1024) return { error: 'Image must be under 8MB.' }
-  // Safe raster types only (defense in depth: the event-media bucket constrains MIME, but the
-  // action should too). SVG excluded deliberately (it can carry script).
-  if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'].includes(file.type)) {
-    return { error: 'Use a JPEG, PNG, WebP, GIF, or AVIF image.' }
-  }
-
-  const admin = createAdminClient()
-  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')
-  const path = `${id}/cover-${Date.now()}.${ext}`
-  const bytes = new Uint8Array(await file.arrayBuffer())
-
-  const { error: upErr } = await admin.storage
-    .from('event-media')
-    .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: false })
-  if (upErr) return { error: upErr.message }
-
-  // Persist the PATH (not the public URL) — events resolve the URL at read time.
-  const { error: dbErr } = await admin
-    .from('events')
-    .update({ cover_image_path: path })
-    .eq('id', id)
-  if (dbErr) return { error: dbErr.message }
-
-  const { data } = admin.storage.from('event-media').getPublicUrl(path)
-
-  // The cover ALSO lands in the uploader's Loom (best-effort), so it is reusable later — same as the
-  // gallery upload. A Loom miss never fails the cover upload.
-  const coverUploaderId = await getMyProfileId().catch(() => null)
-  await copyEventMediaToProfileLoom({
-    profileId: coverUploaderId,
-    storagePath: path,
-    url: data.publicUrl,
-    title: file.name.replace(/\.[^.]+$/, '') || null,
-    mime: file.type || null,
-    bytes: file.size,
-  })
-
-  revalidatePath(`/events/${slug}`)
-  revalidatePath('/events')
-  revalidatePath('/feed')
-  return { url: data.publicUrl }
-}
 
 /** Set the event page's hero HEIGHT (Short / Standard / Tall). Stored on the events.theme jsonb
  *  bag under `heroHeight` (read-merge-write so other theme keys survive; the default is dropped so
@@ -552,21 +493,6 @@ export async function updateEventCoverFocus(
   return { ok: true }
 }
 
-export async function removeEventCover(id: string, slug: string) {
-  const caps = await getEventCapabilities(id)
-  if (!caps.has('event.editSettings')) throw new Error('Unauthorized')
-
-  const admin = createAdminClient()
-  const { error } = await admin
-    .from('events')
-    .update({ cover_image_path: null })
-    .eq('id', id)
-  if (error) throw new Error(error.message)
-
-  revalidatePath(`/events/${slug}`)
-  revalidatePath('/events')
-  revalidatePath('/feed')
-}
 
 /** Remove the original scanned poster image from the event (clears poster_path, so the
  *  header falls back to the uploaded cover or the date placeholder). Same capability gate. */
@@ -870,37 +796,6 @@ type PlaceTimeRow = {
   details: Record<string, unknown> | null
 }
 
-/** The when/where + booking-window inputs the Place & Time module edits. Returns null unless
- *  the caller holds event.editSettings (visibility is enforced here, not in the client). */
-export async function getEventPlaceTimeData(slug: string) {
-  const admin = createAdminClient()
-  // Typed read (ADR-246 closed); PlaceTimeRow keeps the app-facing shape (details as a plain record).
-  const { data } = await admin
-    .from('events')
-    .select(
-      'id, slug, starts_at, ends_at, location, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, geog, time_zone, recurrence_type, recurrence_until, details',
-    )
-    .eq('slug', slug)
-    .maybeSingle()
-  const event = data as PlaceTimeRow | null
-  if (!event) return null
-
-  const caps = await getEventCapabilities(event.id)
-  if (!caps.has('event.editSettings')) return null
-
-  const point = pointFromGeog(event.geog)
-  const window = readRsvpWindow(event.details)
-  const viewerHome = await getViewerHome()
-
-  return {
-    ...event,
-    lat: point?.lat ?? null,
-    lng: point?.lng ?? null,
-    rsvpOpensAt: window.opensAt,
-    rsvpClosesAt: window.closesAt,
-    viewerHome,
-  }
-}
 
 /** The booking window persisted in events.details.rsvpWindow, or a blank pair. */
 function readRsvpWindow(details: Record<string, unknown> | null): {
@@ -916,90 +811,6 @@ function readRsvpWindow(details: Record<string, unknown> | null): {
   }
 }
 
-export async function updateEventPlaceTime(id: string, slug: string, fd: FormData) {
-  const caps = await getEventCapabilities(id)
-  if (!caps.has('event.editSettings')) throw new Error('Unauthorized')
-
-  const admin = createAdminClient()
-
-  const startsAtRaw = fd.get('starts_at') as string
-  const endsAtRaw = fd.get('ends_at') as string
-  if (startsAtRaw && endsAtRaw && new Date(endsAtRaw) < new Date(startsAtRaw)) {
-    throw new Error('End time must be after the start time.')
-  }
-  const startsAtIso = startsAtRaw ? wallClockToIso(startsAtRaw) : null
-  const endsAtIso = endsAtRaw ? wallClockToIso(endsAtRaw) : null
-
-  // Recurrence: only a recognised cadence is written (the column is CHECK-constrained); the
-  // repeat-until is a date input, validated against the start so a series with zero occurrences
-  // can't be saved.
-  const recurrenceRaw = ((fd.get('recurrence_type') as string) ?? '').trim()
-  const recurrence = RECURRENCE_VALUES.has(recurrenceRaw) ? (recurrenceRaw as RecurrenceType) : 'none'
-  const untilIso = recurrence === 'none' ? null : dateToWallClockIso(fd.get('recurrence_until') as string)
-  const recurrenceError = validateRecurrenceUntil(recurrence, startsAtIso, untilIso)
-  if (recurrenceError) throw new Error(recurrenceError)
-
-  // Time zone: only a valid IANA zone is written, else the column is left unchanged.
-  const zoneRaw = ((fd.get('time_zone') as string) ?? '').trim()
-  const timeZone = isValidTimeZone(zoneRaw) ? zoneRaw : undefined
-
-  // Booking window (no dedicated column): read the current details, merge the window, write it
-  // back so the poster-harvest keys survive. Both blank clears the window.
-  const opensAt = wallClockToIso(fd.get('rsvp_opens_at') as string)
-  const closesAt = wallClockToIso(fd.get('rsvp_closes_at') as string)
-  const { data: current } = await admin.from('events').select('details').eq('id', id).maybeSingle()
-  const baseDetails = ((current as { details?: Record<string, unknown> | null } | null)?.details ?? {}) as Record<
-    string,
-    unknown
-  >
-  const nextDetails: Record<string, unknown> = { ...baseDetails }
-  if (opensAt || closesAt) nextDetails.rsvpWindow = { opensAt, closesAt }
-  else delete nextDetails.rsvpWindow
-
-  const { error } = await admin
-    .from('events')
-    .update({
-      // UTC-naive wall-clock kept literally (lib/events/datetime); an empty start leaves it.
-      starts_at: startsAtIso ?? undefined,
-      ends_at: endsAtIso,
-      recurrence_type: recurrence,
-      recurrence_until: untilIso,
-      ...(timeZone ? { time_zone: timeZone } : {}),
-      details: nextDetails as Json,
-    })
-    .eq('id', id)
-  if (error) throw new Error(error.message)
-
-  // Structured address + online link + attendance mode + manual pin go through the shared
-  // geocode-on-save hook (createEvent / updateEventSettings use the same). Best-effort, so a geo
-  // miss never fails the save.
-  const address: EventAddress = {
-    venueName: ((fd.get('venue_name') as string) ?? '').trim() || null,
-    street: ((fd.get('street') as string) ?? '').trim() || null,
-    city: ((fd.get('city') as string) ?? '').trim() || null,
-    region: ((fd.get('region') as string) ?? '').trim() || null,
-    country: ((fd.get('country') as string) ?? '').trim() || null,
-    postalCode: ((fd.get('postal_code') as string) ?? '').trim() || null,
-    query: ((fd.get('location') as string) ?? '').trim() || null,
-  }
-  const onlineUrl = ((fd.get('online_url') as string) ?? '').trim() || null
-  const attendanceMode = coerceAttendanceMode(fd.get('attendance_mode'))
-
-  const latRaw = ((fd.get('lat') as string) ?? '').trim()
-  const lngRaw = ((fd.get('lng') as string) ?? '').trim()
-  const latNum = latRaw ? Number(latRaw) : NaN
-  const lngNum = lngRaw ? Number(lngRaw) : NaN
-  const point =
-    Number.isFinite(latNum) && Number.isFinite(lngNum) && Math.abs(latNum) <= 90 && Math.abs(lngNum) <= 180
-      ? { lat: latNum, lng: lngNum }
-      : null
-
-  await saveEventLocation(id, { address, attendanceMode, onlineUrl, point, geocoder: nominatimGeocoder })
-
-  revalidatePath(`/events/${slug}`)
-  revalidatePath('/events')
-  revalidatePath('/feed')
-}
 
 // ─── People (the 'people' spine module) ────────────────────────────────────────
 // RSVP roster summary, the approval queue, waitlist, and capacity. Re-uses the host Manage
@@ -1066,29 +877,3 @@ export async function getEventCoreStats(slug: string): Promise<EventCoreStats | 
   return loadEventCoreStats(ev.id)
 }
 
-/** Set (or clear) the event's ticket price. Blank / 0 clears it back to a free RSVP event.
- *  Re-checks event.editSettings. Purchases still move only through the service-role checkout. */
-export async function updateEventPricing(
-  id: string,
-  slug: string,
-  fd: FormData,
-): Promise<{ ok: true } | { error: string }> {
-  const caps = await getEventCapabilities(id)
-  if (!caps.has('event.editSettings')) return { error: 'Unauthorized' }
-
-  // Price arrives in whole currency units; store cents. Blank / non-positive clears to free.
-  const raw = ((fd.get('price') as string) ?? '').trim()
-  const amount = raw ? Number(raw) : NaN
-  const priceCents = Number.isFinite(amount) && amount > 0 ? Math.round(amount * 100) : null
-
-  const admin = createAdminClient()
-  const { error } = await admin
-    .from('events')
-    .update({ price_cents: priceCents })
-    .eq('id', id)
-  if (error) return { error: error.message }
-
-  revalidatePath(`/events/${slug}`)
-  revalidatePath('/events')
-  return { ok: true }
-}

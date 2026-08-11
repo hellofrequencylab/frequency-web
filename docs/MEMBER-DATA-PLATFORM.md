@@ -138,7 +138,7 @@ governed tag, so origin is segmentable forever. One channel taxonomy lives in
 | `app/api/cron/refresh-traits/route.ts` | Vercel Cron entrypoint (02:30 daily; `CRON_SECRET`-guarded) |
 | `supabase/migrations/*_member_tags.sql` · `*_member_traits.sql` | tables + RLS + `member_engagement_stats` RPC + founding-cohort backfill |
 | `lib/traits/*.test.ts` | registry integrity, `isTagKey`, and the compute layer |
-| `lib/experiments/registry.ts` · `assign.ts` | experiment catalog + deterministic, storage-free variant assignment (holdout = `control`) |
+| ~~`lib/experiments/registry.ts` · `assign.ts`~~ **(deleted 2026-08-11)** | experiment catalog + deterministic, storage-free variant assignment (holdout = `control`) |
 | `lib/consent/scopes.ts` · `consent.ts` | consent scope registry + `latestByScope` / `recordConsent` / `hasConsent` (the harness) |
 | `lib/consent/retention.ts` · `app/api/cron/enforce-retention` | purge expired data nightly (`isExpired` pure-tested) |
 | `supabase/migrations/*_consent_records.sql` | append-only consent ledger + RLS |

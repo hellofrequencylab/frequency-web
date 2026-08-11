@@ -22,8 +22,17 @@
 // Server-only. Reads go through the untyped betaDb() handle (campaigns' new approval
 // columns + the nurture/automation tables aren't in the generated types yet, ADR-246).
 // The send loop reuses the studio machinery verbatim (resolveSegment, campaignEmail,
-// the unified send-gate). NOT a 'use server' module — the thin action entrypoints live
-// in app/(main)/admin/beta/email-actions.ts.
+// the unified send-gate). NOT a 'use server' module.
+//
+// 🔴 NO ACTION LAYER, AND NO SEND PATH. This header used to name
+// app/(main)/admin/beta/email-actions.ts as the entrypoint. That module was deleted
+// 2026-08-11 with all 13 of its exports unreferenced — the beta email UI
+// (components/admin/beta/email/beta-campaign-workspace.tsx) imports from
+// @/app/(main)/admin/email-studio/actions instead. So sendApprovedBetaCampaign, armFunnel
+// and pauseFunnel below have no caller anywhere: a beta campaign marked approved has
+// nothing that sends it. That is pre-existing, not caused by the deletion, and it is why
+// this file survived it — lintVoice is live in two test suites and enforces the em-dash
+// rule from CONTENT-VOICE, so the file is kept rather than emptied.
 
 import { revalidatePath } from 'next/cache'
 import { ok, fail, type ActionResult } from '@/lib/action-result'

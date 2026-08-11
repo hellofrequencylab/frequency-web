@@ -160,12 +160,22 @@ describe('inert tab rows', () => {
     `{ id: '${id}', href: '/admin/${id}', label: 'X', min: 'janitor' },\n`.padEnd(60, ' ')
   const noTabs = Array.from({ length: MIN_ROWS }, (_, i) => plainRow(`pad${i}`)).join('')
 
-  it('finds every ?tab= href in the real catalog, including the synthetic rows with no id', () => {
+  it('finds every ?tab= href in the real catalog, including rows rule 1 cannot see', () => {
     const tabs = tabRows(CATALOG)
     expect(tabs.length).toBeGreaterThanOrEqual(MIN_TAB_ROWS)
-    // The synthetic rows carry no `id:`, so rule 1's row regex cannot see them at all.
-    expect(tabs).toContain('/admin/programs?tab=content')
+    // All four survivors are vera-ai, the one page that does read searchParams.
     expect(tabs).toContain('/admin/vera-ai?tab=studio')
+    expect(tabs.every((t) => t.startsWith('/admin/vera-ai?'))).toBe(true)
+    // The four inert rows were dropped by owner decision; nothing should reintroduce them.
+    expect(tabs).not.toContain('/admin/programs?tab=content')
+  })
+
+  it('still parses a synthetic row, which rule 1\'s id-keyed regex cannot see', () => {
+    // The dropped rows had no `id:`. Keeping this proves the collector handles that shape, so a
+    // future synthetic row is caught rather than skipped.
+    const tabs = tabRows(`{ synthetic: { href: '/admin/thing?tab=x', label: 'X' } },`)
+    expect(tabs).toEqual(['/admin/thing?tab=x'])
+    expect(catalogRows(`{ synthetic: { href: '/admin/thing?tab=x', label: 'X' } },`)).toEqual([])
   })
 
   it('reads searchParams off a page that destructures it, and not off one that does not', () => {
@@ -197,11 +207,23 @@ describe('inert tab rows', () => {
   })
 
   it('reports a frozen row as HEALED once its page learns to read the tab', () => {
-    const f = io({
-      'app/(main)/admin/programs/page.tsx': 'export default async function P({ searchParams }) {}',
+    // FROZEN_TAB_DEBT is empty now that the four inert rows are gone, so this branch is
+    // unreachable against the real catalog. Seeding a frozen href through the test seam keeps the
+    // coverage rather than letting it be deleted along with the debt.
+    const src = CATALOG + `{ synthetic: { href: '/admin/newthing?tab=x', label: 'X' } },`
+    const base = io({
+      'app/(main)/admin/newthing/page.tsx': 'export default async function P({ searchParams }) {}',
     })
-    const r = evaluate(CATALOG, f)
-    expect(r.healedTabs.map((t: { href: string }) => t.href)).toContain('/admin/programs?tab=content')
+    const r = evaluate(src, { ...base, frozenTabs: ['/admin/newthing?tab=x'] })
+    expect(r.healedTabs.map((t: { href: string }) => t.href)).toContain('/admin/newthing?tab=x')
+    expect(r.inertTabs).toEqual([])
+  })
+
+  it('FROZEN_TAB_DEBT is empty because the debt was fixed, and the corpus is still real', () => {
+    // An empty frozen list is only meaningful next to a non-empty corpus. Together these say
+    // "four rows checked, none inert" rather than "nothing checked".
+    expect(FROZEN_TAB_DEBT).toEqual([])
+    expect(tabRows(CATALOG).length).toBeGreaterThanOrEqual(MIN_TAB_ROWS)
   })
 
   it('throws rather than passing when the tab regex matches almost nothing', () => {

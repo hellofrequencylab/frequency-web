@@ -62,6 +62,9 @@ import {
   Palette,
   LayoutPanelLeft,
   Workflow,
+  Sprout,
+  MessageSquare,
+  LayoutGrid,
   Images,
   ClipboardPaste,
   Send,
@@ -89,7 +92,8 @@ const ICONS: Record<string, LucideIcon> = {
   Bot, HelpCircle, Users, Shield, QrCode, Power, FileText, BadgeCheck, Lightbulb, ScrollText,
   LifeBuoy, ShoppingBag, Map, CreditCard, Gamepad2, SlidersHorizontal, TrendingUp, Rocket,
   Layers, Contact, Briefcase, Menu, GraduationCap, ToggleRight, Share2, Palette,
-  LayoutPanelLeft, Workflow, Images, ClipboardPaste, Send, Inbox, MessagesSquare, ListTodo, Star,
+  LayoutPanelLeft, Workflow, Sprout, Images, ClipboardPaste, Send, Inbox, MessagesSquare, ListTodo, Star,
+  MessageSquare, LayoutGrid,
 }
 function icon(name: string): LucideIcon {
   return ICONS[name] ?? LayoutDashboard

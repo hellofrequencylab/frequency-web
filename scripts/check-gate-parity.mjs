@@ -123,12 +123,17 @@ export const FROZEN_GATE_DEBT = [
  * two fixes to take (teach the pages tabs, re-point the rows, or drop them) is a nav decision for
  * an owner. Frozen with their numbers until then. What this refuses is a NINTH.
  */
-export const FROZEN_TAB_DEBT = [
-  { href: '/admin/programs?tab=content', why: 'programs is a single dashboard by design; the row renders it under a sub-page name' },
-  { href: '/admin/programs?tab=rewards', why: 'same page, second synthetic row: two menu entries, one screen' },
-  { href: '/admin/growth?tab=acquisition', why: 'growth takes no searchParams; the tab is inert' },
-  { href: '/admin/growth?tab=marketing', why: 'same page, second synthetic row' },
-]
+/** EMPTY, and that is the finished state rather than an unstarted one.
+ *
+ *  This list held four rows for about an hour: programs?tab=content, programs?tab=rewards,
+ *  growth?tab=acquisition, growth?tab=marketing. The owner's call (2026-08-10) was to drop the
+ *  four synthetic menu rows rather than teach two dashboards a tab strip they had each
+ *  deliberately declined. The `content` and `rewards` areas survive with their real leaves; only
+ *  their own landing href lost an inert query string.
+ *
+ *  Every remaining `?tab=` row points at /admin/vera-ai, which does read searchParams. So the rule
+ *  now guards a clean corpus, which is the only state in which a frozen list should be empty. */
+export const FROZEN_TAB_DEBT = []
 
 /** Every catalog href carrying a `?tab=`, including the `synthetic:` rows that have no `id`. */
 export function tabRows(src) {
@@ -190,9 +195,12 @@ const fmt = (min, domain) => `${min ?? '-'}+${domain ?? 'none'}`
  *  printed "0 of 0 ✓" and exited 0. */
 export const MIN_ROWS = 40
 
-/** Same reasoning for rule 2's corpus: 8 tab rows live in the catalog, so a collapse to a couple
- *  means the `?tab=` regex stopped matching, not that the menu shrank. */
-export const MIN_TAB_ROWS = 6
+/** Same reasoning for rule 2's corpus, with one lesson attached. This was 6, calibrated against
+ *  the 8 tab rows that existed when the rule was written. Dropping the four inert rows took the
+ *  corpus to 4 and the floor fired — correctly noticing the corpus had shrunk, on a shrink that
+ *  was the whole point of the change. A floor is calibrated to a corpus, so fixing the corpus is
+ *  a reason to re-calibrate it, not to remove it. Now 3, under the 4 live vera-ai rows. */
+export const MIN_TAB_ROWS = 3
 
 export function evaluate(src, io = {}) {
   const rows = catalogRows(src)
@@ -227,7 +235,11 @@ export function evaluate(src, io = {}) {
     }
   }
   // Rule 2: tab rows whose page cannot read a tab.
-  const frozenTabs = new Set(FROZEN_TAB_DEBT.map((d) => d.href))
+  // `io.frozenTabs` is a TEST SEAM. FROZEN_TAB_DEBT is empty now that the four inert rows are
+  // gone, which leaves the healed-detection branch unreachable against the real catalog — and an
+  // unreachable branch is an untested one. The override lets a test seed a frozen href and prove
+  // the branch still fires, rather than deleting the coverage along with the debt.
+  const frozenTabs = new Set(io.frozenTabs ?? FROZEN_TAB_DEBT.map((d) => d.href))
   const tabs = tabRows(src)
   if (tabs.length < MIN_TAB_ROWS) {
     throw new Error(

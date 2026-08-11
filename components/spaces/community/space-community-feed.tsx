@@ -7,6 +7,8 @@ import { Loader2, MessageCircle, Pin, Send } from 'lucide-react'
 import { REACTIONS, reactionLabel } from '@/lib/feed/reactions'
 import {
   createSpaceUpdate,
+  updateSpaceUpdate,
+  deleteSpaceUpdate,
   createMemberPost,
   reactToSpaceUpdate,
   commentOnSpaceUpdate,
@@ -22,6 +24,7 @@ import { ToggleRow } from '@/components/entity-blocks/controls/field-controls'
 import { isError } from '@/lib/action-result'
 import type { SpaceCommunityPost, SpaceUpdateComment, SpaceUpdateReactions } from '@/lib/spaces/content-data'
 import { Input, Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 // THE COMMUNITY FEED (business Community tab). Facebook/Yelp-style: the business posts Updates, FOLLOWERS
 // may also post (when the business allows it), and members react + comment. PUBLIC read; only followers (or
@@ -88,6 +91,7 @@ export function SpaceCommunityFeed({
             brandName={brandName}
             viewerId={viewerId}
             canModerate={canModerate}
+            canPost={canPost}
             post={post}
             canInteract={canInteract}
           />
@@ -209,6 +213,7 @@ function PostCard({
   brandName,
   viewerId,
   canModerate,
+  canPost,
   post,
   canInteract,
 }: {
@@ -216,6 +221,8 @@ function PostCard({
   brandName: string
   viewerId: string | null
   canModerate: boolean
+  /** The operator who posts brand Updates, and so the one who may edit or delete one. */
+  canPost: boolean
   post: SpaceCommunityPost
   canInteract: boolean
 }) {
@@ -227,9 +234,17 @@ function PostCard({
   const [removed, setRemoved] = useState(false)
   const [pinned, setPinned] = useState(post.pinned)
   const [pending, start] = useTransition()
+  // Brand-Update editing, and the delete confirm. `editing` holds the draft so a cancelled edit
+  // leaves the card exactly as it was.
+  const [editing, setEditing] = useState<{ title: string; body: string } | null>(null)
+  const [shown, setShown] = useState({ title: update.title ?? '', body: update.body ?? '' })
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   // A member post can be removed by an operator (moderation) or by its own author.
   const canRemove = post.kind === 'member' && (canModerate || (!!post.authorId && post.authorId === viewerId))
+  // A brand Update belongs to the Space, so the operator who can post one can edit or delete it.
+  // The server re-checks with authorizeEditor either way; this only decides what is offered.
+  const canManageUpdate = post.kind === 'brand' && canPost
   const authorLabel = post.kind === 'member' ? post.author?.name ?? 'Member' : brandName
 
   const toggleReaction = (emoji: string) => {
@@ -280,6 +295,38 @@ function PostCard({
     })
   }
 
+  const saveEdit = () => {
+    if (!editing) return
+    setError(null)
+    const next = { title: editing.title.trim(), body: editing.body.trim() }
+    if (!next.title && !next.body) {
+      setError('Add a title or some words first.')
+      return
+    }
+    start(async () => {
+      const res = await updateSpaceUpdate(slug, update.id, next)
+      if (isError(res)) {
+        setError(res.error)
+        return
+      }
+      setShown(next) // optimistic: the card shows what was saved without a refetch
+      setEditing(null)
+    })
+  }
+
+  const deleteUpdate = () => {
+    setError(null)
+    start(async () => {
+      const res = await deleteSpaceUpdate(slug, update.id)
+      if (isError(res)) {
+        setError(res.error)
+        setConfirmDelete(false)
+        return
+      }
+      setRemoved(true)
+    })
+  }
+
   if (removed) return null
 
   return (
@@ -316,10 +363,85 @@ function PostCard({
               Remove
             </button>
           )}
+          {canManageUpdate && !editing && (
+            <>
+              <button
+                type="button"
+                onClick={() => setEditing({ title: shown.title, body: shown.body })}
+                disabled={pending}
+                className="text-2xs font-semibold text-muted hover:text-primary-strong disabled:opacity-60"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => (comments.length > 0 ? setConfirmDelete(true) : deleteUpdate())}
+                disabled={pending}
+                className="text-2xs font-semibold text-muted hover:text-danger disabled:opacity-60"
+              >
+                Delete
+              </button>
+            </>
+          )}
         </span>
       </header>
-      {update.title && <h3 className="text-body-lg font-bold text-text">{update.title}</h3>}
-      {update.body && <PostBody body={update.body} className="text-body-sm leading-relaxed text-muted" />}
+      {/* Deleting an Update takes its interaction anchor, and posts.parent_id is ON DELETE
+          CASCADE, so the comment thread goes with it. The operator is told that ONLY when a
+          thread exists -- a confirm on every delete trains people to click through it, which is
+          exactly when the one that mattered gets clicked through too. */}
+      {confirmDelete && (
+        <div className="space-y-2 rounded-card border border-danger/40 bg-danger-bg px-3 py-2.5" role="alert">
+          <p className="text-body-sm font-medium text-danger">
+            Deleting this update also removes {comments.length === 1 ? 'its 1 comment' : `its ${comments.length} comments`}. That cannot be undone.
+          </p>
+          <div className="flex gap-2">
+            <Button type="button" variant="danger" size="sm" onClick={deleteUpdate} disabled={pending}>
+              Delete anyway
+            </Button>
+            <Button type="button" variant="secondary" size="sm" onClick={() => setConfirmDelete(false)} disabled={pending}>
+              Keep it
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {editing ? (
+        <div className="space-y-2">
+          <Input
+            value={editing.title}
+            onChange={(e) => setEditing({ ...editing, title: e.target.value })}
+            aria-label="Update title"
+            placeholder="Title (optional)"
+            maxLength={200}
+          />
+          <Textarea
+            value={editing.body}
+            onChange={(e) => setEditing({ ...editing, body: e.target.value })}
+            aria-label="Update text"
+            rows={4}
+            maxLength={20000}
+          />
+          <div className="flex gap-2">
+            <Button type="button" size="sm" onClick={saveEdit} disabled={pending} loading={pending}>
+              Save
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => { setEditing(null); setError(null) }}
+              disabled={pending}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {shown.title && <h3 className="text-body-lg font-bold text-text">{shown.title}</h3>}
+          {shown.body && <PostBody body={shown.body} className="text-body-sm leading-relaxed text-muted" />}
+        </>
+      )}
       {update.imageUrl && (
         <Image src={update.imageUrl} alt="" width={800} height={450} unoptimized className="w-full rounded-card object-cover" />
       )}

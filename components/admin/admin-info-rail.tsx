@@ -31,7 +31,12 @@ interface AttentionDef {
 const ATTENTION: AttentionDef[] = [
   { id: 'reports', label: 'Open reports', href: '/admin/moderation', Icon: ShieldAlert, weight: 5 },
   { id: 'tickets', label: 'Support tickets', href: '/admin/support', Icon: LifeBuoy, weight: 4 },
-  { id: 'reviews', label: 'Pending reviews', href: '/admin/programs?tab=content', Icon: ClipboardCheck, weight: 3 },
+  // /library/review, not /admin/programs. The card counts pendingReviewCount(), and the surface
+  // that actually WORKS that queue is the Library review page — it renders the review-queue
+  // widget through the string-keyed registry (lib/widgets/modules.ts LIBRARY_REVIEW_MODULE_IDS →
+  // lib/widgets/registry.tsx), which is why a grep for direct imports of the component finds
+  // nothing and makes it look unrendered. Programs only shows the number.
+  { id: 'reviews', label: 'Pending reviews', href: '/library/review', Icon: ClipboardCheck, weight: 3 },
   { id: 'helpgaps', label: 'Help gaps', href: '/admin/vera-ai?tab=help-gaps', Icon: HelpCircle, weight: 2 },
   { id: 'studio', label: 'Studio prompts', href: '/admin/vera-ai?tab=studio', Icon: Lightbulb, weight: 1 },
 ]

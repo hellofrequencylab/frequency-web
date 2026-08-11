@@ -292,6 +292,17 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
     adminGroups: [{ domain: 'marketing', section: 'Audience' }], adminNav: { section: 'growth', heading: 'Marketing' } },
   { id: 'marketing-analytics', href: '/admin/marketing/analytics', label: 'Marketing analytics', desc: 'Sends, opens, clicks, and bounces by type.', icon: 'PieChart', min: 'host', staffDomain: 'marketing',
     adminGroups: [{ domain: 'marketing', section: 'Analytics' }], adminNav: { section: 'growth', heading: 'Marketing' } },
+  // Automations + Persona nurture were built, gated by the marketing layout, and then never given
+  // a catalog row — so the only surfaces that can list, edit or DISABLE two engines that run in
+  // production were unreachable from every menu. `lib/automations.ts` fires from
+  // lib/engagement/events.ts and `lib/nurture/` from app/api/cron/nurture, enrolling members the
+  // whole time. Owner call 2026-08-10: a live engine with no off switch is the riskier state, so
+  // they get their rows rather than a deletion. Same axis as their marketing siblings; both pages
+  // inherit the layout's `staffCan(marketing, read)` gate rather than calling requireAdmin.
+  { id: 'marketing-automations', href: '/admin/marketing/automations', label: 'Automations', desc: 'Rules that watch the event backbone and act: a trigger, its conditions, and the send that follows.', icon: 'Workflow', min: 'host', staffDomain: 'marketing',
+    adminGroups: [{ domain: 'marketing', section: 'Audience' }], adminNav: { section: 'growth', heading: 'Marketing' } },
+  { id: 'marketing-nurture', href: '/admin/marketing/nurture', label: 'Persona nurture', desc: 'The timed sequences a captured lead is enrolled in, by persona. Consent-gated, every send carries an unsubscribe.', icon: 'Sprout', min: 'host', staffDomain: 'marketing',
+    adminGroups: [{ domain: 'marketing', section: 'Audience' }], adminNav: { section: 'growth', heading: 'Marketing' } },
   { id: 'marketing-deliverability', href: '/admin/marketing/deliverability', label: 'Deliverability', desc: 'Outbox health and the dead-letter queue, with one-tap recovery.', icon: 'Activity', min: 'host', staffDomain: 'marketing',
     adminGroups: [{ domain: 'marketing', section: 'Analytics' }] },
   { id: 'marketing-market-read', href: '/admin/marketing/market-read', label: 'Market read', desc: 'Demand, geography, and content performance.', icon: 'Telescope', min: 'host', staffDomain: 'marketing',
@@ -489,14 +500,12 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
     href: '/admin/programs', icon: 'Gamepad2', min: 'host', staffDomain: 'community',
     related: ['community', 'vera-ai'],
     links: [
-      { synthetic: { href: '/admin/programs?tab=content', label: 'Content', desc: 'Seasons, Journeys, Practices, and Challenges.', icon: 'Map', min: 'host', staffDomain: 'community', section: 'Workspaces' } },
-      { synthetic: { href: '/admin/programs?tab=rewards', label: 'Rewards & economy', desc: 'Gamification, the store, retroactive rewards, and crew tasks.', icon: 'Trophy', min: 'host', staffDomain: 'community', section: 'Workspaces' } },
     ],
   },
   {
     key: 'content', label: 'Content',
     blurb: 'The Quest content suite. Seasons, Journeys, Practices, Challenges, and creator tips.',
-    href: '/admin/programs?tab=content', icon: 'Map', min: 'host', staffDomain: 'community',
+    href: '/admin/programs', icon: 'Map', min: 'host', staffDomain: 'community',
     primary: false, related: ['programs', 'community'],
     links: [
       { leaf: 'content-seasons' }, { leaf: 'content-journeys' }, { leaf: 'content-practices' },
@@ -506,7 +515,7 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
   {
     key: 'rewards', label: 'Rewards & economy',
     blurb: 'The economy. Gamification, the Vault Store, retroactive grants, and crew tasks.',
-    href: '/admin/programs?tab=rewards', icon: 'Trophy', min: 'host', staffDomain: 'community',
+    href: '/admin/programs', icon: 'Trophy', min: 'host', staffDomain: 'community',
     primary: false, related: ['programs'],
     links: [{ leaf: 'gamification' }, { leaf: 'store' }, { leaf: 'crew-tasks' }],
   },
@@ -528,14 +537,12 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
     href: '/admin/growth', icon: 'TrendingUp', min: 'host', staffDomain: 'marketing',
     related: ['acquisition', 'crm', 'marketing'],
     links: [
-      { synthetic: { href: '/admin/growth?tab=acquisition', label: 'Acquisition', desc: 'How people first arrive and where to grow next.', icon: 'Rocket', min: 'host', staffDomain: 'marketing', section: 'Workspaces' } },
-      { synthetic: { href: '/admin/growth?tab=marketing', label: 'Marketing', desc: 'Campaigns, funnels, automations, and outbound.', icon: 'Megaphone', min: 'host', staffDomain: 'marketing', section: 'Workspaces' } },
     ],
   },
   {
     key: 'acquisition', label: 'Acquisition',
     blurb: 'How people first arrive, and where to open the next door.',
-    href: '/admin/growth?tab=acquisition', icon: 'Rocket', min: 'host', staffDomain: 'marketing',
+    href: '/admin/growth', icon: 'Rocket', min: 'host', staffDomain: 'marketing',
     primary: false, related: ['crm', 'marketing', 'community'],
     links: [
       { leaf: 'entry-points' }, { leaf: 'library', section: 'Assets' }, { leaf: 'qr' }, { leaf: 'referrals' },
@@ -558,7 +565,7 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
   {
     key: 'marketing', label: 'Marketing',
     blurb: 'Campaigns and outbound. Funnels, automations, broadcasts, and the read on how they land.',
-    href: '/admin/growth?tab=marketing', icon: 'Megaphone', min: 'host', staffDomain: 'marketing',
+    href: '/admin/growth', icon: 'Megaphone', min: 'host', staffDomain: 'marketing',
     primary: false, related: ['crm', 'vera-ai', 'acquisition'],
     links: [
       // Composing (Campaigns, Funnels, Automations, Nurture) retired to the Resonance CRM Marketing tab.

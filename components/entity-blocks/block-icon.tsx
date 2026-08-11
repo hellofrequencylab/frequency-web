@@ -1,5 +1,3 @@
-'use client'
-
 import {
   Activity, Anchor, AtSign, Award, Bell, Bike, Book, BookOpen, Bookmark, Brush, Building, Cake, Calendar,
   CalendarHeart, Camera, Car, ChartBar, ChartPie, Check, CircleCheck, Clock, Cloud, Coffee, Compass,
@@ -14,12 +12,21 @@ import {
 import { isLucideIconName } from '@/lib/entity-blocks/icon-tokens'
 
 // THE BLOCK ICON RESOLVER (email overhaul, 2026). A feature / card item stores a short `icon` TOKEN that is
-// EITHER a curated Lucide name (kebab-case) OR an emoji character. This client component turns that token
+// EITHER a curated Lucide name (kebab-case) OR an emoji character. This component turns that token
 // into the right node: a drawn Lucide icon when the token is one of the curated names, else the token printed
 // as text (an emoji glyph, or a legacy free-text token — back-compat). The curated NAME set is the single
 // source of truth in lib/entity-blocks/icon-tokens.ts; the map below mirrors it (a missing entry only
 // degrades an icon to its printed text, never breaks). Semantic tokens for color (currentColor via the
 // caller's text color); voice canon on any copy.
+
+// NOT a client component, deliberately. It carries no state, no effect, no handler and touches no
+// browser API — it is a switch. It used to be marked 'use client', which pulled all ~105 lucide
+// icons below into the CLIENT bundle of everything that rendered it, including its two Server
+// Component callers (content-block-view / design-block-view) that paint every public Space profile
+// and every Spotlight page. Without the directive those two render it on the server and ship none
+// of it; the three client callers pull it in exactly as before, because a module with no directive
+// joins whichever graph imports it. Do not re-add the directive to "make it work" in a client
+// component — it already does.
 
 /** kebab-case Lucide token → its component. Keys MUST match LUCIDE_ICON_NAMES (icon-tokens.ts). */
 const ICON_MAP: Record<string, LucideIcon> = {

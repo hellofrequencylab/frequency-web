@@ -396,7 +396,7 @@ is testable with a hand-authored `BusinessProfile` and **zero AI**.
 | 5. Team | `space_members` rows | `lib/spaces/membership.ts : addSpaceMember` |
 | 6. Events | `events` rows (space_id-stamped) | `lib/events/store.ts` |
 | 7. FAQ / reviews | `space_faqs` / `space_reviews` | `lib/spaces/content-data.ts` read side; admin insert |
-| 8. Media | logo/hero/gallery already in `site-media` | `lib/page-editor/upload-action.ts : uploadSiteMedia(Batch)` |
+| 8. Media | logo/hero/gallery already in `site-media` | ~~`lib/page-editor/upload-action.ts`~~ deleted 2026-08-11 — needs a writer; the Loom picker replaced it for the editor but not for the importer |
 | 9. Layout | `spaces.preferences.profileLayout` = an `EntityLayout` | shape in `lib/entity-blocks/layout.ts`; validate `sanitizeEntityLayout(raw,'space')` |
 | 10. Accent | `spaces.brand_accent` (token or hex) | `lib/spaces/accent.ts : isValidAccent` |
 
@@ -490,7 +490,7 @@ block-editor files owned by the concurrent effort (`components/entity-blocks/*`,
 
 | Phase | Deliverable | Extends / adds | AI? |
 |---|---|---|---|
-| **P0** | **Materializer core.** `applyIntake(draft)` -> seeded Space + function records + spotlight + accent, from a hand-authored `BusinessProfile`. Apply the real `business_intake` migration. | new `lib/business-import/materialize.ts`; calls `lib/spaces/provision.ts`, `lib/spaces/booking.ts`, `lib/spaces/memberships.ts`, `lib/spaces/membership.ts`, `lib/events/store.ts`, `lib/page-editor/upload-action.ts`; writes `spaces.preferences.profileLayout` (shape from `lib/entity-blocks/layout.ts`); new migration | ❌ zero AI |
+| **P0** | **Materializer core.** `applyIntake(draft)` -> seeded Space + function records + spotlight + accent, from a hand-authored `BusinessProfile`. Apply the real `business_intake` migration. | new `lib/business-import/materialize.ts`; calls `lib/spaces/provision.ts`, `lib/spaces/booking.ts`, `lib/spaces/memberships.ts`, `lib/spaces/membership.ts`, `lib/events/store.ts`, a NEW site-media writer (upload-action.ts was deleted 2026-08-11); writes `spaces.preferences.profileLayout` (shape from `lib/entity-blocks/layout.ts`); new migration | ❌ zero AI |
 | **P1** ✅ | **Harvest + Extract + Verify + ledger.** Shipped as `lib/importer/{harvest,extract,verify}/` (the P0 code landed under `lib/importer/`, not `lib/business-import/`) + `pipeline.ts`/`store.ts`/`queue.ts`, `lib/ai/web/`; uses `lib/ai/complete.ts`, `lib/queue/outbox.ts`, `lib/queue/handlers.ts` (`business-import-research` kind), `app/api/cron/process-queue`. Migration `20261022000000_business_intake.sql` (awaiting apply). | ✅ sonnet + opus |
 | **P2** ✅ | **Reframe + the confirmed 3-surface compose.** Shipped (ADR-576) as `lib/importer/reframe/*` (prompt/run/apply/voice-check) + `site-compose.ts`, wired into `pipeline.ts` after verify; `materialize.ts` now writes the Site Home Puck doc (`preferences.pageDocs.home`). Reframe grounds ONLY on the verified subset and tags its output `kind:'generated'` so the prose gate still governs it. Uses `lib/ai/voice.ts` (`withVoice`), `lib/ai/complete.ts`. | ✅ sonnet |
 | **P3** ✅ | **Operator Seeder console** (ADR-575). Landing (start form + status roll-up + intake list) + a per-import review board with field-by-field confidence (✅/⚠️/🔴), one-click provenance, marked AI copy, flagged WITHHELD commercial facts, inline edit/confirm/drop, and Approve -> Apply (unlisted demo default). | `app/(main)/admin/business-seeder/*` (page + `[id]` review board + `review-model.ts`, extends `actions.ts`); ONE row in `STUDIO_LEAVES` (`lib/nav/studio.ts`) — the operator-page nav, NOT `ADMIN_MODULES` (the scope RAIL); janitor + structure:write gated. | uses P1/P2 |
@@ -534,7 +534,7 @@ process (Supabase SQL Editor, additive + idempotent, `lib/database.types.ts` reg
 | Function records | `lib/spaces/booking.ts`, `memberships.ts`, `tickets.ts`, `membership.ts`, `lib/events/store.ts` |
 | Layout jsonb | `lib/entity-blocks/layout.ts` (read-only), `spaces.preferences.profileLayout` |
 | Accent | `lib/spaces/accent.ts` |
-| Image upload | `lib/page-editor/upload-action.ts : uploadSiteMedia / uploadSiteMediaBatch` (bucket `site-media`) |
+| Image upload | ~~`lib/page-editor/upload-action.ts`~~ deleted 2026-08-11 (zero callers). A materializer that uploads media will need a new server-side writer for the `site-media` bucket. |
 | Site surface | `app/sites/[slug]/page.tsx`, `lib/spaces/website.ts`, `lib/spaces/surface-visibility.ts` |
 | Spotlight | `app/spotlight/[handle]/page.tsx`, `app/(main)/settings/profile/spotlight-actions.ts`, `profiles.meta.spotlight` + `meta.entityGrid` + `spotlight_top_friends` |
 | AI core | `lib/ai/complete.ts`, `lib/ai/voice.ts`, `lib/ai/models.ts`, `lib/ai/budget.ts`, `lib/ai/events-ai.ts` (tool-use pattern) |

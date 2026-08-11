@@ -5,6 +5,7 @@ import {
   NOTIFICATION_CATEGORIES,
   normalizeFrequency,
   isFrequencyDeferred,
+  DIGEST_BATCHER_EXISTS,
   type NotificationChannel,
   type NotificationCategory,
   type NotificationPreferences,
@@ -91,9 +92,16 @@ describe('normalizeFrequency', () => {
 })
 
 describe('isFrequencyDeferred', () => {
-  it('defers a digest choice on email only', () => {
-    expect(isFrequencyDeferred('email', 'daily_digest')).toBe(true)
-    expect(isFrequencyDeferred('email', 'weekly_digest')).toBe(true)
+  // Deferring means "suppress the realtime send, a cron will batch it later". No such cron
+  // exists — /api/cron/weekly-digest is the COMMUNITY digest and reads none of the freq_*
+  // columns — so returning true here sent the member neither the realtime email nor the digest.
+  // Not "fewer emails": none, permanently, with no way for them to tell. The behaviour is now
+  // gated on DIGEST_BATCHER_EXISTS.
+
+  it('does NOT defer while there is no batcher, whatever the member chose', () => {
+    expect(DIGEST_BATCHER_EXISTS).toBe(false)
+    expect(isFrequencyDeferred('email', 'daily_digest')).toBe(false)
+    expect(isFrequencyDeferred('email', 'weekly_digest')).toBe(false)
   })
 
   it('never defers realtime', () => {
@@ -103,5 +111,16 @@ describe('isFrequencyDeferred', () => {
   it('never defers in-app / push (inherently realtime surfaces)', () => {
     expect(isFrequencyDeferred('inapp', 'daily_digest')).toBe(false)
     expect(isFrequencyDeferred('push', 'weekly_digest')).toBe(false)
+  })
+
+  it('keeps the channel+frequency rule intact for the day the batcher ships', () => {
+    // The logic below the flag is what the batcher will switch back on, so it is asserted
+    // directly rather than deleted with the behaviour. Mirrors the real function body.
+    const wouldDefer = (channel: string, frequency: string) =>
+      channel === 'email' && frequency !== 'realtime'
+    expect(wouldDefer('email', 'daily_digest')).toBe(true)
+    expect(wouldDefer('email', 'weekly_digest')).toBe(true)
+    expect(wouldDefer('email', 'realtime')).toBe(false)
+    expect(wouldDefer('inapp', 'daily_digest')).toBe(false)
   })
 })
