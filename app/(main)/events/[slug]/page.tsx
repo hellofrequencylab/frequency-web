@@ -797,7 +797,11 @@ export default async function EventDetailPage({
   }
   if (ticketedCents !== null) ownsTicket = true
   const priceLabel = `$${(flatPriceCents / 100).toFixed(2)}`
-  const allTiersSoldOut = hasTiers && tiers.every((t) => t.soldOut)
+  // Routed through the shared tier authority rather than re-derived here. The old inline form
+  // (`hasTiers && tiers.every((t) => t.soldOut)`) computed exactly this, and it stayed correct —
+  // but the JSON-LD needs the same answer, and two expressions of one predicate is how the page
+  // and its structured data drifted into contradicting each other in the first place.
+  const allTiersSoldOut = ticketsSoldOut(tierRows)
   // Checkout is live for this event only when the platform switch is on AND the event
   // is priced. While ticketing is off (lib/events/ticketing) a priced event keeps its
   // price header but behaves like a free event everywhere else: RSVP stays open and
@@ -1615,10 +1619,11 @@ export default async function EventDetailPage({
     currency: event.currency,
     // SOLD OUT, from the two authorities this page already holds — so the structured data can no
     // longer say InStock while the page renders "Sold out." / the full-capacity waitlist CTA.
-    // Both are read above at zero extra cost: `capacityInfo` (events.capacity vs confirmed RSVPs)
-    // backs the waitlist state, and `tierRows` backs the per-tier `soldOut` badges. Either one
-    // being exhausted means nothing is buyable, which is what `availability` reports.
-    is_sold_out: capacityInfo.isFull || (hasTiers && ticketsSoldOut(tierRows)),
+    // These are the SAME values those two branches render from: `allTiersSoldOut` is what prints
+    // "Sold out." and hides the ticket bar, and `capacityInfo.isFull` is what turns the RSVP CTA
+    // into "Join waitlist". Reusing them is the point — the schema cannot disagree with the page
+    // unless the page disagrees with itself.
+    is_sold_out: capacityInfo.isFull || allTiersSoldOut,
   })
 
   return (
