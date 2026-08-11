@@ -1,7 +1,7 @@
 # Finalize plan — the run to a fully functional platform
 
 > **The answer, first.** The platform is built and green: `tsc` clean, **8,943 tests passing**,
-> **all 25 `check:*` gates exit 0**, CI green on `main`, and the migration ledger is an exact
+> **all 27 `check:*` gates exit 0**, CI green on `main`, and the migration ledger is an exact
 > bijection with the repo (594 ⇄ 594, ADR-963).
 > What is left is not features. It is **three instruments that stopped telling the truth**, one
 > **access-grant layer** that was never actually closed, and a **short, verified list of real
@@ -26,15 +26,15 @@ Sizes: **XS** under an hour · **S** one PR · **M** 1 to 3 PRs · **L** a wave.
 | :--- | :--- | :--- |
 | Build + types | ✅ | `tsc --noEmit` rc=0 |
 | Tests | ✅ | 708 files, 8,943 tests, 0 failures |
-| Machine gates | ✅ | all 25 `check:*` scripts exit 0 (26 defined; `check:cron-freshness` is scheduled nowhere) |
+| Machine gates | ✅ | all 27 `check:*` scripts exit 0; CI runs 26 of them (`check:cron-freshness` is defined but scheduled nowhere) |
 | CI (`ci.yml`) | ✅ | green on `main` |
 | Migrations applied | ✅ | every repo migration is live in prod |
 | Cron wiring | ✅ | 27 `vercel.json` entries ⇄ 27 handlers, zero drift both ways |
 | Route reachability | ✅ | of 240 static routes, 8 have no inbound link and **all 8** are documented redirects or dev tools |
 | Marketing metadata | ✅ | the 15 pages without `generateMetadata` are all intentional 308 redirect stubs (spot-checked 4) |
-| Code hygiene | ✅ | **18** TODO markers in the entire `app` + `lib` + `components` tree |
+| Code hygiene | ✅ | **19** TODO markers and **0** FIXME in the entire `app` + `lib` + `components` tree (word-boundary `\bTODO\b`; a bare `TODO` substring match reads 25, because `AUTODOC_MARKER` contains the letters) |
 | SEO/AIO surface | ✅ | 14 OG-image routes, 25 JSON-LD emitters, `llms.txt` already carries live first-party stats |
-| Help centre | ✅ | 55 articles, core coverage 27/27, **0 orphan feature keys** (the 10 were added to `feature-keys.ts`; `check:help` now fails on an orphan in every mode) |
+| Help centre | ✅ | 55 articles, core coverage **36/36**, **0 orphan feature keys** (the 10 were added to `feature-keys.ts`; `check:help` now fails on an orphan in every mode). `--strict` is wired into `check:help` as of 2026-08-11, so a new `core: true` row without an article fails CI. Wiring it changed no outcome the day it landed (core was already 36/36) — it is a ratchet forward, not a fix. Both the article count and the registry size carry floors |
 | **Visual regression** | ✅ | **71 of 76**, was 10 of 72. `/feed`'s viewport capture WORKS (passes now). App shell coverage **3/3 surfaces, 12/12 checks**, from zero this morning. The 4 remaining failures are `/settings` × 4 and are a TRUE POSITIVE — see 1.10. |
 | **Accessibility ratchet** | 🔴 | first full run with a session (2026-08-10): **32 failed · 28 passed · 26 skipped** — 4 absent baselines, 28 real rises, **all 16 dark-mode contrast checks among them** (1.7, ADR-980) |
 | **Anon/authenticated grants** | 🔴 | **1,907 explicit grants across 273 tables** (2 worst RPCs closed, ADR-961) |
@@ -200,7 +200,7 @@ Every item reproduced in the working tree on 2026-08-10. Sorted worst-first.
 | 3.3 | ✅ | ~~**Meta descriptions over the ~155 snippet window.**~~ **FIXED — five, not four, plus one more only the gate could see** | Rewritten inside the canon (no em dashes, clean sentence boundaries): `/the-lab` **200→154**, `/spaces` **186→139**, `/beta` **158→148** (the plan missed this one), `/the-community` **158→142**, `/the-quest` **158→140**. `check:seo` **Scan E** now enforces it at **160** (155 is where truncation starts to bite, 160 is where it is certain; a gate at 155 would fail copy that renders fine). Scan E immediately found `/discover/journeys` at **163**, which no hand pass had recorded, and it is scoped to pages a crawler can actually reach so a private route's long copy is not a false failure |
 | 3.4 | ✅ | ~~**3 `MODULE_ROUTES` entries point at redirect-only pages**~~ **FIXED** — `/admin/crm/graph`, `/admin/crm/playbooks`, `/admin/crm/today`, all merged into `/admin/crm/intelligence`. The Layout panel is advertised on a route that immediately redirects | All three retired, from `MODULE_ROUTES` **and** `ROUTE_MODULE_IDS` (whose keys were also giving the App catalog route scopes that navigate away). Every one of their six block ids already lives on `/admin/crm/intelligence`. The two live outbound links, in the Vera owner-brief email and the dashboard worklist, now point at the merged page instead of through a redirect. A new test asserts **every** `MODULE_ROUTES` entry resolves to a page that really renders `<PageModules>` | `lib/widgets/module-routes.ts` · `lib/widgets/modules.ts` |
 | 3.5 | ✅ | ~~**13 serial awaits in the authed layout**~~ **The count was stale; two remained, both now folded in** | Re-measured 2026-08-10. The layout had already been refactored: the main wave (22 reads) and the theme wave (5) exist, and the whole onboarding tail (`nextStepsEnabled` → `getProfileChores` → `getOnboardingStatus` → `getFounderTasks` → `getActiveTraining`, plus `autoPopupsEnabled`) already streams behind `<Suspense>` in `VeraLauncherSlot` / `CoachOverlaySlot` / `AutoPopupsSlot`, off the critical path entirely. What was genuinely still serial between the main wave and the theme chain: **`getMyFrequency` and the janitor `openTicketCount`** — each one pushing first paint back a full round trip. Both folded into the existing wave as speculative reads, exactly like `getStaffMember` and the operator trio already were. The janitor read stays gated on the **true** `profile.web_role`, which is known before the wave, so it does not become a new read for everyone. The remaining serial steps are genuinely dependent: `createClient` → `getUser` → the profile row, and `theme` → `loadActiveThemeCss` | `app/(main)/layout.tsx` |
-| 3.6 | ✅ | ~~**10 orphan help feature keys**~~ **FIXED, and the direction was backwards** | The plan said they "point at articles that do not exist". It is the reverse: all ten are declared by **published** articles and had no row in `lib/help/feature-keys.ts`, so every in-product affordance that resolves by feature key found nothing while the article sat there. Added with routes **verified to exist** first: `on-air` · `journeys` · `challenges` · `achievements` · `leaderboard` · `profile` · `connections` · `location` · `resonance` · `billing`. Coverage **29/36 → 39/46**, core **36/36**, orphans **0**. `help:coverage` is now the 24th guard (`check:help`) and an orphan key **always** fails — it is a broken link, not a backlog item, unlike the undocumented-core list which stays behind `--strict` (ADR-970) | `lib/help/feature-keys.ts` · `scripts/help-coverage.mts` |
+| 3.6 | ✅ | ~~**10 orphan help feature keys**~~ **FIXED, and the direction was backwards** | The plan said they "point at articles that do not exist". It is the reverse: all ten are declared by **published** articles and had no row in `lib/help/feature-keys.ts`, so every in-product affordance that resolves by feature key found nothing while the article sat there. Added with routes **verified to exist** first: `on-air` · `journeys` · `challenges` · `achievements` · `leaderboard` · `profile` · `connections` · `location` · `resonance` · `billing`. Coverage **29/36 → 39/46**, core **36/36**, orphans **0**. `help:coverage` is now the 24th guard (`check:help`) and an orphan key **always** fails — it is a broken link, not a backlog item, unlike the undocumented-core list which sits behind `--strict` (ADR-970). ⚠️ Updated 2026-08-11: `--strict` is now passed by `check:help` itself, so undocumented **core** features do fail CI. The seven still-undocumented keys are all `core: false`, which is why turning it on changed nothing | `lib/help/feature-keys.ts` · `scripts/help-coverage.mts` |
 
 **Carried from the 2026-07-27 scan — now VERIFIED, 2026-08-10.** Every one was re-reproduced
 against current code rather than trusted from the old record. Two were not what the record said:
@@ -424,39 +424,48 @@ new/guided-client.tsx:19` does exactly the same thing and **says so**, with a re
 `lib/layout/page-chrome.ts` and the shell that reads it. No page toggles its own rail. `FOCUS_NONE_PREFIXES`
 being empty is the documented contract (§8.2), not a gap.
 
-⚠️ Arbitrary content type, the canon's own ban: **8 hits in 4 files** — `the-community/tour.tsx`
-(`text-[9px]` ×4, `text-[8px]`), `onboarding/beta/induction.tsx:962` (`text-[10px]`),
-`page-editor/desktop/desktop-editor.tsx:355` (`text-[0.7rem]`), `feed/post-body.tsx:41`
-(`text-[0.85em]`, inline `<code>` sizing). `text-2xs`/`text-3xs` already exist.
+✅ Arbitrary content type, the canon's own ban: **6 hits in 2 files, and every one of them is
+accounted for.** `app/(marketing)/the-community/tour.tsx` (`text-[9px]` ×4, `text-[8px]`) sits under
+the marketing allowlist, which is the separate brand design system rather than the in-app DAWN
+surface. `components/feed/post-body.tsx:46` (`text-[0.85em]`, inline `<code>` sizing) carries a
+`// token-ok:` annotation with its reason: the mark sizes relative to whatever text surrounds it,
+which is the one thing a fixed type role cannot do. The two sites this row used to name are gone —
+`onboarding/beta/induction.tsx` and `page-editor/desktop/desktop-editor.tsx` now hold no `text-[…]`
+at all. `text-2xs`/`text-3xs` already exist for anything new.
 
-🔴 **Re-measured 2026-08-10; the previous figure was wrong twice.** It read "6 hits in 4 files"
-while its own enumeration totalled 7 in 3, and it omitted `post-body.tsx` entirely. Method:
-`rg -o 'text-\[[^\]]*\]'` over `{app,components}` excluding tests, then re-run through
-`check-tokens.mjs`'s `stripComments` — that second pass is load-bearing, because
-`people/member-viewer/message-path.tsx:35` mentions `text-[10px]` in a header comment saying it
-deliberately does not use one, and a raw grep books it as a hit.
+**Re-measured 2026-08-11 (was "8 hits in 4 files"; before that, "6 hits in 4 files" over an
+enumeration totalling 7 in 3).** Method now matches the gate exactly rather than approximating it:
+`TEXT_ARBITRARY` from `scripts/check-tokens.mjs` run with `matchAll` over `{app,components,lib}`
+excluding tests, each file first passed through that script's own `stripComments`. That second pass
+is load-bearing, because `people/member-viewer/message-path.tsx:35` mentions `text-[10px]` in a
+header comment saying it deliberately does not use one, and a raw grep books it as a hit.
 
-**Two holes in `check:tokens` that this exposed, both still open:**
-- Its `TEXT_PX = /text-\[\d+px\]/` cannot see `rem`/`em` forms at all, and it `match`es without
-  `/g`, so it counts LINES rather than occurrences.
-- `app/onboarding/beta/induction.tsx` is allowlisted by exact path — an exemption granted for a
-  4-hex Google brand mark that silently also exempts that file's `text-[10px]`. A whole-file
-  waiver for one class quietly waives every other class in the file. Nobody decided that.
+✅ **Both holes this row opened in `check:tokens` are closed.**
+- The px-only `TEXT_PX = /text-\[\d+px\]/` is now `TEXT_ARBITRARY`, which matches
+  `px|rem|em|pt|ch|ex` and is consumed with `matchAll`, so two literals on one line count as two.
+  `clamp()` is left out on purpose: fluid display sizing is a different class with its own rules.
+- `app/onboarding/beta/induction.tsx` is no longer a whole-file waiver. It is scoped to
+  `kinds: ['hex color']` (as is `app/sign-in/`), so the exemption granted for a 4-hex Google brand
+  mark covers hex and nothing else. The allowlist supports both forms, and `isAllowed` documents
+  why a reason that names one class must not waive the rest.
 
 ### 6.11 — ⚠️ ELEVEN rows where the menu and the page disagree, now held by `check:gate-parity`
 
 Measured 2026-08-10 by walking every `STUDIO_LEAVES` row with an `/admin/*` href and comparing its
 `min`/`staffDomain` against the page's actual `requireAdmin(...)` call. **`pnpm check:menu` passes on
-all nine** — it validates that the catalog is the single source of menu *shape*, and has no way to
-reach into a page body and read its guard. That is the gap, not a bug in the gate.
+all eleven** — it validates that the catalog is the single source of menu *shape*, and has no way to
+reach into a page body and read its guard. That is the gap, not a bug in the gate. The eleven are
+`FROZEN_GATE_DEBT` in `scripts/check-gate-parity.mjs`; `pnpm check:gate-parity` prints the count on
+every run, so the heading and this list are both checkable against the script rather than each other.
 
 Two directions, and they fail differently:
 
-- **Menu promises, page denies** (a dead menu item — the user clicks and lands on `/feed`):
-  `connections`, `sms`, `nonprofit-verifications`, `content-tips`, `beta-command`, `crm-pipeline`.
+- **Menu promises, page denies** (a dead menu item — the user clicks and lands on `/feed`), seven:
+  `connections`, `sms`, `nonprofit-verifications`, `content-tips`, `beta-command`,
+  `marketing-control-panel`, `crm-pipeline`.
   `content-tips` is the widest: the catalog offers it to every `host`+ community leader and every
   `community`-domain staffer; the page admits **janitor only**.
-- **Page allows, menu hides** (a tool its authorized users can never find):
+- **Page allows, menu hides** (a tool its authorized users can never find), four:
   `page-layout`, `crm-marketing`, and `business-seeder`/`listing-seeder` — the last two carry **no
   `staffDomain` at all**, and `lib/nav-areas.ts:227` returns false when it is unset, so a
   `structure`-write staffer who is fully authorized never sees them.
@@ -467,8 +476,10 @@ pages still ran `requireAdmin('host', …)`. `'host'` reads the **community** la
 admitted anyone who cleared the staff-only `/admin` floor **in another domain** and happened to be a
 host. Pages aligned; a real qr-domain operator still passes on the `staff` branch.
 
-⚠️ The remaining eight are **product policy, not defects with an obvious direction** — each needs the
-owner to say which side is right before the code moves. Do not "fix" them by making the numbers match.
+⚠️ `qr` + `qr-stats` were never frozen, so the **eleven** above are all still open, and every one of
+them is **product policy, not a defect with an obvious direction** — each needs the owner to say
+which side is right before the code moves. Do not "fix" them by making the numbers match. The
+script's own header splits them **8 catalog fixes / 3 page fixes**, with the recommendation per row.
 
 ### 6.12 — Two fully-built admin pages nothing links to
 
@@ -584,12 +595,15 @@ the `bgAlpha` form once the real stack is identified.
 
 Proven both ways: the gate reports **4.45:1, short by 0.05** before the token change and passes after.
 
-### 6.16 — `check:gate-parity`, the 25th gate
+### 6.16 — `check:gate-parity`, the 25th gate to land (there are 27 now)
 
 `check:menu` is strict about the catalog's **shape** and cannot read a `requireAdmin()` inside a page
 body, so a row promising a tool to a population its page rejects passed every gate in the repo.
-Measured: **11 of 64** comparable rows disagree, in two asymmetric directions — *menu promises, page
+Measured: **11 of 61** comparable rows disagree, in two asymmetric directions — *menu promises, page
 denies* (a dead menu item) and *page allows, menu hides* (a tool its authorized users cannot find).
+"Comparable" is the gate's own `compared` counter, so the run line reads back the same pair: **61 of
+66 catalog row(s) compared**. The five it skips are rows whose href has no page or whose page makes
+no `requireAdmin()` call, which are other gates' jobs. Re-check with `pnpm check:gate-parity`.
 
 The gate does **not** pick a side; which is right is a product call. The eleven are frozen with
 today's numbers and a reason each, and it fails on a **twelfth** — or on a frozen row whose numbers

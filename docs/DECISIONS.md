@@ -19014,6 +19014,17 @@ two findings are not the same kind of thing:
   every build on it would make the gate something to route around, which is how a gate dies. It
   stays behind `--strict`.
 
+**Amended 2026-08-11.** `--strict` was defined but never passed: `package.json`'s `check:help`
+omitted it, so the core-coverage half of this ADR was decided and then not enforced. It is wired
+now. That changed no outcome the day it landed (core coverage was already **36/36**, so `--strict`
+exits 0), which is the point: it is a ratchet against the next core feature that ships without an
+article, not a fix for a present gap. The seven undocumented keys below are all `core: false` and
+remain the queue this gate does not block on. No allowlist was added — the registry's own `core`
+boolean IS the allowlist, declared on the row where the feature is declared, and a second list
+beside it would be a parallel registry that drifts. Both `check:help` and `check:docs-links` also
+gained corpus floors the same day: `loadCategoriesFromDisk` swallows a missing `content/help` and
+returns `[]`, which would have read as 100% core coverage of nothing.
+
 **Consequences.** ✅ Coverage 29/36 → **39/46**; core coverage **36/36**; orphans **0**. ✅ Probed:
 removing one key makes `check:help` exit 1 and name both articles that referenced it. ⚠️ Seven
 registry keys still have no article — `nexuses`, `store`, `crew`, `profiles`, `marketing`,
