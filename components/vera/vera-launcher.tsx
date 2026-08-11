@@ -614,7 +614,23 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
           open ? 'grid-rows-[1fr]' : 'pointer-events-none grid-rows-[0fr]',
         )}
       >
-        <div className="min-h-0">
+        {/* 🔴 `min-w-0` IS LOAD-BEARING, AND IT IS THE COLUMN TWIN OF `min-h-0`.
+            The wrapper above is a GRID (it has to be — the reveal animates grid-template-rows
+            0fr → 1fr). A grid's implicit column is `auto`, and an `auto` track's floor is
+            MIN-CONTENT, so the column is free to grow past the wrapper's own fixed width. The
+            wrapper is `overflow-hidden`, so everything past that width is simply cut off.
+
+            Empty, that never showed. Once the inbox rendered a conversation list the column blew
+            out and the panel laid out at 596px inside a 442px wrapper — measured, in that order.
+            The 154px hanging off the right edge contained the CLOSE BUTTON, the Rooms button and
+            the right-hand end of every row, which is why the owner saw a panel with no X, no
+            Rooms, text running off the edge, and "missing the stroke on the right" (the panel's
+            own border was out there too). It also explains why it looked correct while LOADING
+            and broke on load: the spinner has no min-content width to push with.
+
+            `min-h-0` was already here for the row axis, for the same reason. This is the other
+            half of that pair, and dock-parity.test.ts now keeps them together. */}
+        <div className="min-h-0 min-w-0">
           {render && (
             <div
               ref={panelRef}
