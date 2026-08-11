@@ -747,6 +747,36 @@ Everything on this list is config or a decision — no code unblocks it.
 | ~~Set `CRON_HEARTBEAT_BASE_URL`~~ ✅ **DONE 2026-08-11**, then ⏳ **upgrade Healthchecks** | See the note below: the free tier holds 20 checks and there are 27 jobs |
 | Submit `sitemap.xml` to Search Console + Bing | Crawl coverage |
 
+### 🔴 `.dark [data-skin="midnight"]` never matches on the `<html>` path
+
+Found 2026-08-11 while reconciling the a11y ratchet, and **verified two ways** rather than inferred.
+
+`app/globals.css:711` is a **descendant** selector: `.dark [data-skin="midnight"]`. `data-skin` is
+stamped in two places, and the selector only reaches one of them:
+
+| Where `data-skin` is set | Matches `.dark [data-skin=…]`? |
+| :--- | :--- |
+| `components/layout/app-shell.tsx:1961`, the shell root, a descendant of `<html>` | ✅ yes |
+| `app/layout.tsx:144`, the bootstrap script, on `document.documentElement` itself | 🔴 **no** |
+
+A descendant combinator cannot match an element against itself, so the `<html>`-level skin, which
+is how a skin is previewed globally including on marketing pages, **never gets its dark palette**.
+Light mode is unaffected: `:575` is the bare `[data-skin="midnight"]`, which matches both.
+
+⚠️ **The comment at `app/layout.tsx:142-143` asserts the opposite**, in as many words: *"the skin
+CSS selectors match both `<html>` and the shell div."* True of the light rule, false of the dark
+one, which is why this survived.
+
+**Consequence.** On the `<html>` path, midnight dark renders a *mixture*: the generic `.dark`
+palette with midnight's light-mode overrides layered under it. That is a plausible reason `/spaces`
+midnight-dark reports 6 axe violations where dawn-dark reports 2, though that link is **not proven**.
+
+**Not fixed here on purpose.** The fix is one selector, but it changes which colours paint on every
+midnight-dark surface, so it moves visual baselines and wants its own pass with a recapture. Do it
+as its own change, not folded into an unrelated one. `#f0ad4e` was deliberately left OUT of the a11y
+waiver list on the same reasoning: a waiver for a colour nothing currently paints is noise, and a
+test now asserts it stays out.
+
 ### ⏳ Upgrade Healthchecks.io, or 7 cron jobs go unmonitored
 
 **Owner action, carried 2026-08-11.** `CRON_HEARTBEAT_BASE_URL` is set in Vercel Production to a
