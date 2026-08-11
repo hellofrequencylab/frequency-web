@@ -1,30 +1,60 @@
 # The Studio: one creation tool for every entity
 
 > **What it is:** the single, familiar **make-something window** used everywhere on
-> the site. A journey today (ADR-142); circles, practices, and events next. This doc
-> is the **best-practice way to bring them all onto it**: the durable plan.
+> the site, plus the **kernel** every wizard, review board, and edit re-entry now
+> derives from. This doc is the durable plan and, from ADR-986, a **locked contract**.
 >
 > Authority: running code + `supabase/migrations/` > this doc. Companion: ADR-142,
-> ADR-143; [PAGE-FRAMEWORK.md](PAGE-FRAMEWORK.md) §9.
+> ADR-143, **ADR-986**; [PAGE-FRAMEWORK.md](PAGE-FRAMEWORK.md) §9,
+> [EDITING-SYSTEM.md](EDITING-SYSTEM.md) (ADR-450 §2 is this kernel's consumer).
+>
+> **Status legend:** ✅ built · ⏳ in progress · 📐 designed, not built · 🔴 gap.
 
 ## The answer up front
 
-**Compose, don't configure.** The Studio is *not* a generic form-engine driven by a
-schema. It's the same philosophy as the page framework (one shell · a few templates ·
-a kit of primitives): a **shared window shell** + a **kit of studio building blocks**,
-and each entity's builder is **composed** from those blocks, not described by a config
-object. Entities differ too much (events have dates + recurrence, circles have geo +
-topic, practices have pillar + cadence + a long body) for a one-size form schema to fit
-without becoming its own framework to maintain. Shared *look, feel, and interactions*;
-bespoke *fields*.
+**Declare the fields, compose the rest.** ADR-986 settled where the line sits, after a
+survey found four wizards sharing no code and eleven creatable entities with none:
 
-Three shared things make every builder feel identical:
+- **What a thing CONTAINS is data.** One manifest per entity (`lib/studio/entities/*`):
+  its sections, its fields, their kinds and flags. No render code.
+- **How a thing LOOKS and BEHAVES is composed**, from the kernel + the kit. One
+  renderer per field *kind*, never per entity.
+
+That split is what makes the standard hold: **change the kernel and every wizard
+changes; change a manifest and nothing else does.** The dependency arrow points one
+way only, and `pnpm check:studio` fails the build if it ever reverses.
 
 | Layer | What | State |
 |---|---|---|
+| **Kernel** | `lib/studio/kernel/*`: field kinds, the field model, provenance + the clearance gate, moods, the manifest type. PURE and entity-blind | ✅ built (ADR-986) |
+| **Catalog** | `lib/studio/registry.ts`: entity → manifest. The one place an entity is registered | ✅ built (ADR-986); business declared |
+| **Manifests** | `lib/studio/entities/*`: one declaration per entity | ⏳ business ✅; the rest follow |
 | **Shell** | `StudioWindow`: overlay panel, chrome, Esc/backdrop close, scroll-lock, sticky footer | ✅ built (ADR-142) |
-| **Kit** | the building blocks each builder composes (identity, fields, autosave, footer, launcher, sortable), in `components/studio/kit/` | ✅ built (ADR-143); journey composes it |
-| **Registry** | a thin map: entity → label · icon · launch · who-can-create. Powers a universal "Create" + one place for gating, via `lib/studio/registry.ts` | ✅ built (journey ready; others declared) |
+| **Builder kit** | identity, fields, autosave, footer, launcher, sortable, in `components/studio/kit/` | ✅ built (ADR-143) |
+| **Spark kit** | `components/studio/spark/*`: the two doors, the drop zone, the review board, one renderer per field kind | 📐 next |
+
+> **Correction (ADR-986).** This table previously marked the Registry "✅ built
+> (journey ready; others declared)". It did not exist. Neither did ADR-450 §3's
+> `lib/editing/schema.ts`. Both gaps are why every wizard hand-rolled its own shell;
+> the row above is now true, and the guard keeps it true.
+
+## 0. The contract (read before touching a wizard)
+
+- **To add or change an entity's fields:** edit its manifest row in
+  `lib/studio/entities/*`. That is the whole change.
+- **To add a capability every entity should get** (a new control, a new signal, a new
+  mood): change the **kernel**, and add a `FIELD_KIND` if it is a new control.
+- **Never** hand-roll a per-entity wizard, review screen, or field style. If you think
+  you need to, you need a field kind instead.
+- **The kernel stays pure and entity-blind.** No React, no Next, no Supabase, and never
+  an import from `lib/studio/entities/`. `pnpm check:studio` enforces all three, plus
+  the drift guards in `lib/studio/registry.test.ts`.
+
+### One field list, three planes (the ADR-450 seam)
+
+A field's `placement` decides where it is edited, so creation and editing can never
+drift apart: `spark` (guided creation) · `inline` (ADR-450's inline canvas) · `rail`
+(ADR-450's Inspector, the default). Same declaration, filtered three ways.
 
 ## 1. The shell (built, keep it)
 

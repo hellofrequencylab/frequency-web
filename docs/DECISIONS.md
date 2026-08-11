@@ -20108,3 +20108,71 @@ here because both move the token layer and the visual baselines: `.dark [data-sk
 a descendant combinator while the bootstrap stamps `.dark` and `data-skin` on the **same** `<html>`
 element, so `#F0AD4E` never paints and midnight-dark renders a *mixture* of the dark and midnight
 palettes; and the amber-as-display-text debt is real and open.
+## ADR-986: The Studio kernel — one manifest per entity, one renderer, a strict boundary
+
+**Status:** Accepted · Phase 1 (the kernel extraction) shipped. Supersedes [ADR-450](#adr-450-unified-editing-system--one-edit-two-planes) **§3 only**
+(the unbuilt `lib/editing/schema.ts` field schema); ADR-450 §2 (one `Edit` toggle, the inline canvas +
+Inspector rail) is unchanged and becomes this kernel's consumer. Fulfils the registry ADR-143 declared and
+never built. Next free number after ADR-596. Spec: [STUDIO.md](STUDIO.md).
+
+**Context.** A full survey of the creation surfaces (2026-08-11) found four good Vera wizards (Journey,
+Practice, Circle, Event) sharing **no code**, plus roughly eleven creatable entities with no wizard at all,
+including every commerce surface (`/market/sell` cannot attach a photo to a product; Classifieds collects
+image URLs in a textarea). The causes were structural, not cosmetic:
+
+- **`lib/studio/registry.ts` did not exist**, though STUDIO.md marked it "✅ built (journey ready; others
+  declared)" since ADR-143. With no catalog, every new entity had to hand-roll its own everything.
+- **`WizardShell` existed and no wizard used it.** All four sparks re-declared the shell, the progress
+  cue, and the field CSS. Nineteen files repo-wide declare a bespoke field constant.
+- **`lib/editing/schema.ts` (ADR-450 §3) did not exist either**, so creation and editing were on course to
+  grow two independent field abstractions — the exact fragmentation ADR-450 was written to end.
+- The **Business Seeder** had meanwhile solved the hard problems properly (a provenance ledger, an
+  adversarial verifier, moods, re-seed-with-directions, per-field lock) but only for itself.
+
+**Decision.** Standardize on the shape already proven three times in this codebase (SPACE_MODULES/ADR-553,
+ENTITY_BLOCKS/ADR-508, PLAYBOOK_REGISTRY/ADR-382): **a locked catalog of declarations, one renderer, a
+CI-enforced boundary.** Three layers, dependency arrow pointing one way only:
+
+| Layer | Holds | Change here reaches |
+|---|---|---|
+| `lib/studio/kernel/*` | field kinds, the field model, provenance + the clearance gate, moods, the manifest type | **every entity** |
+| `components/studio/spark/*` | the shell, the two doors, the drop zone, one renderer per field KIND | **every entity** |
+| `lib/studio/entities/*` | one manifest per entity: its sections, fields, flags | **that entity only** |
+
+**The load-bearing detail: `placement`.** ADR-450's `EditField` and the Seeder's `ReviewField` turned out to
+be the same field at two different moments — a declaration and its runtime projection. So there is ONE
+`FieldDef` list per entity, filtered three ways: `spark` (guided creation), `inline` (ADR-450's inline
+canvas), `rail` (ADR-450's Inspector). Creation and editing cannot drift because they read the same list.
+This is why ADR-450 §3 is superseded rather than built.
+
+**Strict boundary, mechanically enforced.** `pnpm check:studio` (`scripts/check-studio.mjs`, modelled on
+`check-menu.mjs`) fails the build when (a) anything in `lib/studio/kernel/` imports from
+`lib/studio/entities/` or the catalog, (b) the kernel imports React / Next / Supabase, or (c) a file inside
+the Studio surface declares a bespoke field CSS constant. The runtime half (every manifest is well formed,
+uses known field kinds, and can clear its own commercial facts) is asserted in `lib/studio/registry.test.ts`.
+Rule (c) is scoped to `lib/studio` + `components/studio` on purpose: ~19 further copies live in legacy admin
+and settings surfaces, and widening the rule would turn every Studio PR into an app-wide restyle, which is
+how a guard gets bypassed instead of obeyed. Those are tracked separately.
+
+**Phase 1, shipped (behaviour-neutral).** The Business Seeder is the reference entity: if the kernel carries
+the most demanding surface we own, it carries the rest.
+
+- `kernel/manifest.ts` — `FieldDef` / `RepeatDef` / `EntityManifest`, the closed `FIELD_KINDS` set, and
+  `validateManifest`. A closed kind set is deliberate: a manifest cannot invent a control, so adding a kind
+  is one kernel change every entity then inherits.
+- `kernel/ledger.ts` — provenance, signals, `isCleared`. Generalized from `lib/importer/schema.ts`.
+- `kernel/review-kernel.ts` — `buildFieldModel(manifest, draft, ledger)`, the generic half of the Seeder's
+  old `review-model.ts`, plus the `sparkFields` / `inlineFields` / `railFields` placement filters.
+- `kernel/moods.ts` — the mood taxonomy, promoted verbatim. `moodToSpaceTheme` deliberately stayed in
+  `lib/importer/moods.ts` (which now re-exports the rest): `SpaceThemeId` is a Space type and the kernel
+  declares no entity types. The boundary earning its keep on day one.
+- `entities/business.ts` — the field list that used to be the hardcoded `extractFields` + `SECTION_META`.
+- `registry.ts` + `registry.test.ts` — the catalog, and its drift guards.
+
+**Consequences.** `buildReviewModel(draft, ledger)` keeps its exact signature, so the Seeder's review board
+is untouched and its **eight existing tests pass unmodified** — the proof the extraction was behaviour-neutral.
+One intentional difference: a rating object present but entirely empty no longer emits a blank row (it is
+`omitWhenEmpty`), which no test covered either way. Adding an entity is now a manifest plus a catalog row;
+adding a *capability* is a kernel change that reaches every entity at once. The follow-on phases (the Spark
+kit, the AI spark generalization, the commerce wizards, wizard autosave, the edit re-entry panel, an Event
+seeder) are sequenced in [STUDIO.md](STUDIO.md).
