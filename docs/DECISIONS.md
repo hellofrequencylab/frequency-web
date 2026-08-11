@@ -19985,7 +19985,61 @@ honest version: the fourth recurrence was mine, applied under a standing instruc
 migrations as I went, and the production `update` that repaired it was made before reading the
 `DATABASE.md` caution that turned out to be describing a state that no longer existed.
 
-## ADR-982 — A decision is not debt, and a count cannot tell you which one it is holding (2026-08-11)
+## ADR-984 — A resolver that agrees with the code on 1 of 17 answers is not unwired, it is superseded (2026-08-11)
+
+**Decision.** Delete `lib/crm/capabilities.ts` and `lib/crm/capabilities.test.ts`. Supersede point 3
+of **ADR-372**: CRM authorization stays **per-surface**, with `pnpm check:authz` as the contract that
+every one of them carries a real gate.
+
+**Why this needed an ADR and not a commit message.** The module was pure, tested 12/12, and had zero
+callers. Every scan that finds it reaches the same conclusion, that a well-designed orphan is a
+missing import. The owner reached it too and instructed "wire it up" over "delete it". The
+information that changes the answer is not visible from the file: **of its 17 capabilities, exactly
+one still matches what the code does.**
+
+**The four live authorities it would have become a fifth of.**
+
+| Surface | Live gate |
+| :--- | :--- |
+| Personal contacts | `contactsOwnerId()`, any authenticated caller, rows private by owner-scoped RLS |
+| Space CRM | `spaceFunctionAccessLive(...)`, **async**, role resolver plus the plan ladder behind `featureGatesLive()` |
+| Platform CRM | `requireAdmin('janitor')`, **async**, an additive union of `web_role`, the `team_members` staff matrix, and owner-editable capability overrides |
+| Leader CRM | `circle.moderate` / `hub.manage` / `nexus.manage` (ADR-827) |
+
+**Where it disagrees, concretely.** The staff axis is wrong in **both directions at once**.
+`capabilities.ts:123` grants `crm.root.allContacts` on `webIsStaff`, which `lib/core/roles.ts:77`
+defines as `admin || janitor`, while the live page is `requireAdmin('janitor')`. So a Site Admin is
+told **yes** by the resolver and **redirected to `/feed`** by the gate. Its own comment states the
+divergence as intent: *"Admin + janitor read the unified hub."* Simultaneously it under-grants: it
+has no vocabulary for the staff matrix that `requireAdmin` admits via `staffCan(...)`, so the
+marketing staffer who legitimately uses `/admin/crm/contacts` today holds **zero** CRM capabilities
+in its model. Neither gap is fixable inside it, because both need async IO and purity is its
+entire stated reason to exist.
+
+**And five of its eight Space capabilities encode a pricing model this repo deliberately
+dismantled.** ADR-917 Phase 3b deleted the `space_team` and `space_multi_pipeline` gates as
+decorative, and resolved `space_crm`/`space_email` in favour of the meter because they were both
+gated and metered. Re-introducing `if (spaceHasEntitlement(space,'email'))` recreates exactly the
+contradiction that phase spent its budget removing: a check that takes the whole feature away
+instead of capping how much of it you use. The live pages that still read those keys use them to
+pick the locked-state *message*, and say so in the code.
+
+**One more property worth naming.** `crm.space.view` is a **sync copy of an async gate**. It uses
+`spaceFunctionAccess` where live uses `spaceFunctionAccessLive`. They agree today only because
+`featureGatesLive()` is false. The day the gates go live they diverge silently, and the pure one is
+the **permissive** branch.
+
+**Consequences.** ✅ Two files deleted, `tsc` clean, no importers (verified before deletion, not
+assumed). ✅ `check:authz` and `check:crm-parity` stay green and remain the contract. ⚠️ The module
+had already been **patched once, under ADR-517 Phase F, to track an upstream change it had no caller
+for**. That is the tell this ADR exists to record: an orphan that accrues maintenance is not inert,
+it is a slow tax plus a trap for the next reader. ⚠️ If a unified CRM policy layer is genuinely
+wanted later, it is an **async** loader over the four authorities above, modelled on
+`lib/core/load-capabilities.ts`, with all four surfaces migrated in one pass and a drift guard in the
+`check:crm-parity` style. That is a feature with real regression surface, not a cleanup, and it needs
+its own build item.
+
+## ADR-985 — A decision is not debt, and a count cannot tell you which one it is holding (2026-08-11)
 
 **Decision.** The accessibility gate gets a **second instrument**. `test/e2e/a11y-baselines.json`
 keeps counting *debt nobody has decided about*; a new named list,

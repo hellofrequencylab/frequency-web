@@ -43,7 +43,7 @@
     "",
     "A number here no longer counts every serious+ element axe finds. It counts every one",
     "NOBODY HAS DECIDED ABOUT. Elements matching a named entry in test/e2e/a11y-waivers.ts",
-    "are subtracted first and printed as `a11y-waived` annotations instead. See ADR-982.",
+    "are subtracted first and printed as `a11y-waived` annotations instead. See ADR-985.",
     "",
     "That change is why the marketing numbers below did NOT move even though run 31453092474",
     "reported 15 marketing contexts over their baselines. Every one of those rises was the",

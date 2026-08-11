@@ -17,7 +17,7 @@
 // painted colour pairs somebody with the authority has already accepted, each with its citation.
 // They are not interchangeable. A count cannot say "this one known thing"; a waiver cannot say
 // "and N other things I have not looked at". Waived elements are subtracted before the count is
-// compared, so the ratchet only ever measures what nobody has decided about. ADR-982.
+// compared, so the ratchet only ever measures what nobody has decided about. ADR-985.
 //
 // ── Why it runs in the DEFAULT smoke run ──────────────────────────────────────
 // `pnpm test:e2e` is `playwright test --grep-invert @visual`, i.e. everything that is not
@@ -165,6 +165,9 @@ function report(
   // a hand-typed number is a guess, and a guessed ratchet is a lie with a version history.
   // Each worker appends one JSON line; scripts/a11y-baselines.mjs merges them. Append is
   // used rather than a shared write because workers run in parallel.
+  //
+  // `total` here is the POST-waiver count, deliberately: a capture should freeze what the ratchet
+  // will compare, so a re-freeze never silently re-imports a decision as debt.
   if (process.env.PW_A11Y_UPDATE) {
     appendFileSync(
       join(process.cwd(), 'test', 'e2e', '.a11y-observed.jsonl'),
