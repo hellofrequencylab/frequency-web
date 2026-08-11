@@ -34,14 +34,30 @@ export const MAPLIBRE_STYLE =
   process.env.NEXT_PUBLIC_MAP_STYLE || 'https://tiles.openfreemap.org/styles/positron'
 
 /**
- * Escape hatch for the MapLibre 6 worker. v6 stopped inlining its web worker and resolves
- * `dist/maplibre-gl-worker.mjs` from `import.meta.url` through a template literal, which no
- * bundler can statically emit — so under Turbopack the worker never starts and the vector
- * tiles never paint (the blank cream basemap). Point this at a self-hosted copy of that
- * worker to repair it without a dependency change. Empty (the default) leaves MapLibre's
- * own resolution alone, which is correct on v5.
+ * Where MapLibre's web worker is served from. **This is load-bearing on maplibre-gl 6, which is
+ * what we are actually on** (`^6.2.0`; #2076 bumped 6.1.0 → 6.2.0). Earlier notes in this file
+ * and in `.env.example` claimed a v5 pin and described this as an inert escape hatch. Both were
+ * wrong, and the map has been blank on every keyless environment as a result.
+ *
+ * v6 splits the worker into two sibling ES modules. Turbopack rewrites the FIRST hop correctly —
+ * the bundled chunk asks for the hashed `maplibre-gl-worker.<hash>.mjs` and gets it — but the
+ * emitted worker asset is a byte copy whose own `import … from "./maplibre-gl-shared.mjs"` was
+ * never rewritten, so it resolves to a URL that does not exist. Measured against a real build in
+ * headless Chromium: `worker onerror: load failed`, `404 /_next/static/media/maplibre-gl-shared.mjs`.
+ * No worker means no tile is ever decoded, and the canvas paints blank cream with the marker
+ * still drawn on top.
+ *
+ * `scripts/copy-maplibre-worker.mjs` (a `prebuild`/`predev` hook) copies BOTH files, unhashed and
+ * beside each other, into `public/maplibre/` — which is the only thing that makes that relative
+ * specifier resolve. The default below points at them.
+ *
+ * 🔴 SETTING `NEXT_PUBLIC_MAPLIBRE_WORKER_URL` NOW OVERRIDES A WORKING DEFAULT. It stays as an
+ * override for a self-hosted/CDN copy, but pointing it at a file that is not there reproduces the
+ * exact blank basemap it once existed to cure. `lib/maps/diagnostics.ts` reports its value on
+ * failure for that reason.
  */
-export const MAPLIBRE_WORKER_URL = (process.env.NEXT_PUBLIC_MAPLIBRE_WORKER_URL ?? '').trim()
+export const MAPLIBRE_WORKER_URL =
+  (process.env.NEXT_PUBLIC_MAPLIBRE_WORKER_URL ?? '').trim() || '/maplibre/maplibre-gl-worker.mjs'
 
 /**
  * Warm filter so the cool OpenFreeMap tiles sit on the cream palette. Applied to the

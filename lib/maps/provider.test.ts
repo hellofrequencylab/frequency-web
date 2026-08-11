@@ -63,10 +63,37 @@ describe('mapProvider', () => {
     expect(MAPLIBRE_STYLE).toBe('https://example.test/style.json')
   })
 
-  it('leaves the MapLibre worker URL empty unless explicitly configured', async () => {
+  // 🔴 THIS EXPECTATION WAS INVERTED, AND IT PINNED THE BUG IN PLACE.
+  //
+  // It used to read "leaves the MapLibre worker URL empty unless explicitly configured", and
+  // asserted ''. That was written believing the project was on maplibre-gl 5, where the library
+  // installs its own Blob worker at module-eval time and an empty value is correct. package.json
+  // has declared ^6.x throughout. On v6 an empty value means NO worker: the bundled reference
+  // resolves to the hashed worker asset fine, but that asset's own unhashed
+  // `import … from "./maplibre-gl-shared.mjs"` 404s, so the worker never starts and the basemap
+  // paints blank. The test passed the whole time — it was asserting the defect.
+  it('defaults the worker URL to the self-hosted copy, because v6 has no worker without one', async () => {
     vi.stubEnv('NEXT_PUBLIC_MAPLIBRE_WORKER_URL', '')
     const { MAPLIBRE_WORKER_URL } = await freshProvider()
-    expect(MAPLIBRE_WORKER_URL).toBe('')
+    expect(MAPLIBRE_WORKER_URL).toBe('/maplibre/maplibre-gl-worker.mjs')
+  })
+
+  it('still honours an explicit worker override', async () => {
+    // The env var keeps its original job (a CDN or differently-served copy); it is now an
+    // override of a working default rather than the only thing standing between us and a blank map.
+    vi.stubEnv('NEXT_PUBLIC_MAPLIBRE_WORKER_URL', 'https://cdn.example.test/maplibre-gl-worker.mjs')
+    const { MAPLIBRE_WORKER_URL } = await freshProvider()
+    expect(MAPLIBRE_WORKER_URL).toBe('https://cdn.example.test/maplibre-gl-worker.mjs')
+  })
+
+  it('never resolves to an empty worker URL, whatever the env does', async () => {
+    // The one value that must be unreachable: '' is what silently disables the worker. Whitespace
+    // is trimmed to '' first, so it has to fall through to the default too.
+    for (const v of ['', '   ']) {
+      vi.stubEnv('NEXT_PUBLIC_MAPLIBRE_WORKER_URL', v)
+      const { MAPLIBRE_WORKER_URL } = await freshProvider()
+      expect(MAPLIBRE_WORKER_URL, `env=${JSON.stringify(v)}`).not.toBe('')
+    }
   })
 })
 

@@ -1820,6 +1820,29 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.01em;
 }
 
+/* Opt a heading OUT of the display treatment above, so it renders as ordinary text.
+   ────────────────────────────────────────────────────────────────────────────────
+   🔴 THE TRAP THIS EXISTS FOR, because it costs a CI run to rediscover: the rule above is
+   UNLAYERED. `@import "tailwindcss"` puts every utility in `@layer utilities`, and an unlayered
+   rule beats ANY layered one regardless of specificity — so `font-semibold` and `leading-snug`
+   on a heading are silently ignored while the same classes work perfectly on a <span>. Nothing
+   errors; the text just comes out 800-weight at 1.2 and re-wraps.
+
+   That is fine for every display heading in the kit (they WANT this, and only ever set
+   font-family/size, which does not collide). It is wrong when an element is a heading by
+   SEMANTICS and body text by DESIGN — a FAQ question inside a <summary> being the case that
+   found this. Promoting that <span> to an <h3> for the heading outline moved /pricing and
+   /the-quest 46px on mobile.
+
+   Utilities still cannot win against this rule, so DO NOT pair this class with font-weight or
+   leading utilities on the same element: it inherits them. Set them on the PARENT and let the
+   heading take them, which is what components/marketing/marketing-ui.tsx Faq does. */
+.heading-as-text {
+  font-weight: inherit;
+  line-height: inherit;
+  letter-spacing: normal;
+}
+
 /* Global focus ring. Load-bearing accessibility default. Brand amber lights up
    actionable chrome (buttons, links, tabbable controls); text fields get a
    calmer, neutral ring so typing never glows orange. Keyboard users still get a

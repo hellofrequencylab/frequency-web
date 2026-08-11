@@ -1314,14 +1314,14 @@ an effect) for exactly this reason. ~17% of `/discover`'s first-load JS.
 canonicalizes to a different page. Separately, `(main)/layout.tsx` still reads auth during render,
 forcing dynamic on the highest-value indexable routes in the repo.
 
-### 🟠 10.13 — OPEN — Six of 36 `MANAGED_ROUTES` rows are inert
+### ✅ 10.13 — Six of 36 `MANAGED_ROUTES` rows were inert (FIXED, 2026-08-11)
 Three use a `_` placeholder (`/spaces/_/crm`) against an **exact-key** lookup in `mergeChrome`, so
 they never match a live path. Three more point at redirect stubs (`/people`, `/connections`,
 `/friends`) whose live targets (`/network*`) have no row at all. The operator sets a rail
 override, the row confirms "Saved", and nothing changes. `page-chrome.test.ts` has no test that a
 `MANAGED_ROUTES.route` is matchable at all.
 
-### ⚠️ 10.14 — OPEN — Event dates render in two timezones on two search surfaces
+### ✅ 10.14 — Event dates rendered in two timezones (FIXED, PR #2090)
 `lib/time/zone.ts` fixes the convention (wall-clock kept as UTC parts) and the event page obeys it.
 `lib/utils.ts` `formatEventDate`/`eventDateBadge` omit `timeZone`, so they resolve in the runtime's
 zone — invisible on the server, wrong in the browser. A 6:00 AM Aug 15 event reads **"Thu, Aug 14"**
@@ -1335,24 +1335,70 @@ routes every one to `pending` — including five whose copy promises a visible p
 No fulfillment queue exists in the operator surface. One correction to §9.1: the *receipt* does
 appear on the profile via `lib/profile/awards.ts`; the *effect* never does.
 
-### ⚠️ 10.16 — OPEN — `robots.ts` has drifted ~30-48 routes behind the app
-Its own header states the contract ("mirror the PROTECTED_PATHS list"); it mirrors a stale copy.
-Every missing route 307s a crawler, which reads as a soft-404 farm. Derive it from one source.
+### ❌ 10.16 — RETIRED FALSE — `robots.ts` has NOT drifted
+**Measured with the gate's own parser, not by eye: 32 DISALLOW entries vs 17 PROTECTED_PATHS, and
+the set of protected prefixes NOT covered by a robots rule is exactly `['/events']`** — which
+`app/robots.ts` documents as deliberate and `proxy.ts` implements in code (`isPublicEventView`
+exempts `/events` and `/events/<slug>` from the redirect, so no crawler is 307'd there).
 
-### ⚠️ 10.17 — OPEN — FAQ questions render with no heading element
+Since `proxy.ts` only ever redirects on a `PROTECTED_PATHS` prefix match, and every such prefix is
+covered, there is no route that 307s a compliant crawler. The "~30-48 routes" figure counted
+individual app routes rather than the prefix rules that already cover them.
+
+What was true: the parity was asserted only in a comment. It is now a test in
+`scripts/check-seo.test.ts` that computes the uncovered set and pins it to `['/events']`, plus a
+companion asserting the exemption still exists in `proxy.ts` — so the two can never be changed
+apart. The claim was always checkable; it simply was not being checked.
+
+### ✅ 10.17 — FAQ questions rendered with no heading element (FIXED, 2026-08-11)
 `marketing-ui.tsx:374-384` wraps each question in a `<span>` inside `<summary>`. Ten pages emit
 `FAQPage` JSON-LD over a DOM with zero heading structure, against `CONTENT-VOICE.md` §8a ("H2s are
 the literal questions people ask"). The sibling `Steps` primitive already uses `<h3>`. One line,
 and the highest-leverage AIO fix on the list.
 
-### ⚠️ 10.18 — OPEN — `eventSchema` hardcodes USD and never says sold out
+### ✅ 10.18 — `eventSchema` hardcoded USD and never said sold out (FIXED, 2026-08-11)
 `lib/jsonld.ts:190-193`. `events.currency` is a real per-event column that neither the schema nor
 its two callers pass, and `availability` reflects only `is_cancelled`, never capacity — so the page
 renders "full" while the structured data says `InStock`. **The only outright page-vs-schema
 contradiction found**, on the entity type answer engines quote most. The correct implementation is
 730 lines away in the same file (`:924`).
 
-### 📌 10.19 — `.env.example` and `package.json` disagree about MapLibre
-The doc says the project is pinned to MapLibre 5 and that v6 "stopped inlining its web worker… the
-basemap paints as a blank cream rectangle." `package.json` declares `^6.2.0` and 6.2.0 is
-installed. Either the warning is stale or the maps are broken; both are worth one check.
+### ✅ 10.19 — 🔴 THE MAPS WERE BROKEN (FIXED + VERIFIED, 2026-08-11)
+
+The finding asked: "either the warning is stale or the maps are broken; both are worth one check."
+**The maps were broken.** Every keyless environment — local dev, previews, CI, self-host, and any
+production deploy without `NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY` — painted a blank cream rectangle
+with the marker still drawn on top.
+
+It hid behind a version claim that was never true. Three source comments and `.env.example` all
+said the project was "pinned to MapLibre 5"; `package.json` has declared `^6.x` for this repo's
+whole history (#2076 bumped 6.1.0 → 6.2.0). Because everyone believed v5, the v6 escape hatch that
+was needed read as an inert one that must stay unset — and `lib/maps/provider.test.ts` **asserted
+the empty value**, so a test was pinning the defect in place while passing.
+
+**The mechanism, corrected.** The notes blamed `import.meta.url`. That hop is fine:
+
+| Hop | Resolver | Result |
+| :--- | :--- | :--- |
+| bundled code → worker | Turbopack rewrites `new URL('./maplibre-gl-worker.mjs', import.meta.url)` to the hashed asset | ✅ `import.meta.url` appears **0** times in the shipped chunk |
+| worker → its sibling | nothing: the emitted worker is a byte copy, so its own `import … from "./maplibre-gl-shared.mjs"` is never rewritten | 🔴 **404** — the file ships as `maplibre-gl-shared.<hash>.mjs` |
+
+Measured in headless Chromium against a real `next build`, serving the actual output:
+`worker onerror: load failed`, `404 /_next/static/media/maplibre-gl-shared.mjs`.
+
+**The fix**, and why not a downgrade: `scripts/copy-maplibre-worker.mjs` self-hosts both files,
+unhashed and adjacent, into `public/maplibre/`, which is the only thing that makes that relative
+specifier resolve. Downgrading to v5 was rejected — package.json was never on 5, Dependabot would
+re-bump it, and nothing in `components/maps` needs a v6 API (the whole surface is
+Map/Marker/Popup/LngLatBounds/NavigationControl/GeolocateControl/GeoJSONSource). CSP needed no
+change: `worker-src 'self' blob:` already covers a same-origin worker.
+
+**Verified after the fix, same harness:** both files `200`, worker starts, zero 4xx.
+
+Committed rather than gitignored, so a deploy whose build command skips lifecycle hooks still
+ships a working worker; `scripts/copy-maplibre-worker.test.ts` then owns the staleness risk that
+creates, and fails a Dependabot bump until the copy is refreshed. Full write-up: `docs/MAPS.md` §4a.
+
+**The lesson worth keeping:** the audit's own note repeated the repo's version claim instead of
+reading `package.json`, and nearly filed a real outage as a documentation nit. Both halves of an
+"either/or" finding have to be checked against the running system, not against the prose.

@@ -23,6 +23,12 @@ const eslintConfig = defineConfig([
     // oxlint adherence config). Reading material, never shippable code — the
     // repo's lint has no jurisdiction (design_handoff/dawn/ASSETS.md).
     "design_handoff/**",
+    // MapLibre's web worker + its shared chunk, copied verbatim out of node_modules by
+    // scripts/copy-maplibre-worker.mjs so the worker's own relative import resolves at
+    // runtime (docs/MAPS.md §4a). Minified third-party output we must not modify — linting
+    // it would add ~1,000 warnings we can never act on, which is how a warning count stops
+    // meaning anything. Freshness is enforced by scripts/copy-maplibre-worker.test.ts.
+    "public/maplibre/**",
   ]),
   // ADR-246: ban the untyped admin-client cast. Use the typed `createAdminClient()`
   // and cast the specific payload/value if a column/table needs it. Genuinely-untyped

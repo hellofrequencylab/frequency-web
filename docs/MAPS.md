@@ -46,7 +46,7 @@ access is replaced (`node_modules/next/dist/docs/01-app/02-guides/environment-va
 | --- | --- | --- |
 | `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` | unset | Optional Cloud-styled Map ID so the Google basemap matches the cream palette. |
 | `NEXT_PUBLIC_MAP_STYLE` | OpenFreeMap positron | Only to point MapLibre at a different style. A bad value blanks the basemap. |
-| `NEXT_PUBLIC_MAPLIBRE_WORKER_URL` | empty | 🔴 **Leave empty.** v6-only escape hatch; we are on v5. See §6. |
+| `NEXT_PUBLIC_MAPLIBRE_WORKER_URL` | `/maplibre/maplibre-gl-worker.mjs` | 🔴 **Leave unset.** Empty now resolves to the self-hosted worker, which the basemap requires. Overriding it with a path that 404s blanks every MapLibre map. See §4a. |
 
 ---
 
@@ -93,7 +93,8 @@ and notifies every mounted canvas so they fall back in place.
 | `fonts.gstatic.com` | `font-src` | The font files that stylesheet references |
 | `tiles.openfreemap.org` | `connect-src` | MapLibre style JSON, TileJSON and `.pbf` vector tiles |
 | (any `https:`) | `img-src` | Raster tiles and sprites, both engines |
-| `blob:` | `worker-src` | MapLibre 5 inlines its worker as a Blob |
+| `'self'` | `worker-src` | MapLibre 6's worker is self-hosted at `/maplibre/maplibre-gl-worker.mjs` (see below) |
+| `blob:` | `worker-src` | Retained: MapLibre falls back to a Blob shim for a cross-origin worker URL |
 
 Google creates no iframe (`frame-src` not involved) and calls neither `eval()` nor
 `new Function()`, so production's lack of `'unsafe-eval'` is fine.
@@ -106,6 +107,36 @@ rejection to fall back on.
 
 Every CSP block on production is already recorded: `report-uri /api/csp-report` →
 `log.info('csp.violation', …)` → Vercel Logs, filterable on `csp.violation`.
+
+---
+
+## 4a. The self-hosted MapLibre worker (why `public/maplibre/` exists)
+
+**Without this, every keyless map paints a blank cream rectangle with the marker still on top.**
+That was the live state until 2026-08-11, and it survived because three separate source comments
+claimed the project was "pinned to MapLibre 5". It never was — `package.json` has declared `^6.x`
+throughout (#2076 bumped 6.1.0 → 6.2.0).
+
+maplibre-gl 6 splits its worker into two sibling ES modules. The two hops fail differently:
+
+| Hop | What resolves it | Result |
+| --- | --- | --- |
+| bundled code → worker | Turbopack rewrites `new URL('./maplibre-gl-worker.mjs', import.meta.url)` to the hashed asset | ✅ works (`import.meta.url` appears **0** times in the shipped chunk) |
+| worker → its sibling | nothing — the emitted worker is a byte copy, so its own `import … from "./maplibre-gl-shared.mjs"` is never rewritten | 🔴 404, because the file ships as `maplibre-gl-shared.<hash>.mjs` |
+
+Measured in headless Chromium against a real `next build`: `worker onerror: load failed`,
+`404 /_next/static/media/maplibre-gl-shared.mjs`. No worker means no tile is ever decoded.
+
+**The fix.** `scripts/copy-maplibre-worker.mjs` copies both files, unhashed and beside each other,
+into `public/maplibre/` — the only thing that makes that relative specifier resolve. It runs as a
+`prebuild`/`predev` hook **and the copy is committed**, so a deploy whose build command skips
+lifecycle hooks still ships a working worker. `lib/maps/provider.ts` defaults `MAPLIBRE_WORKER_URL`
+to it. Verified after: both files `200`, worker starts, zero 4xx.
+
+`scripts/copy-maplibre-worker.test.ts` pins the assumptions the fix rests on — that maplibre still
+ships both files, that the worker still imports its sibling by an unhashed relative specifier, that
+the sibling has no imports of its own, and that the committed copy matches the installed package.
+A Dependabot bump fails that last one until someone re-runs the script.
 
 ---
 
