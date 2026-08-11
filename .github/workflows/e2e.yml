@@ -65,23 +65,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Runs only on pull_request, and only for the paths filter above. Three outcomes:
-  #   · bypass secret missing        → SKIP, green, with a notice + step summary (never red)
-  #   · no successful Vercel preview → SKIP, green, with a notice (a PR can legitimately
-  #                                    have no preview: forks, skipped builds, build failure
-  #                                    which the Vercel check reports on its own)
-  #   · preview resolved             → smoke + @a11y, then the @visual compare
-  pr-compare:
+  # PREFLIGHT: does the Vercel bypass secret exist?
+  #
+  # This job exists for one reason: a job that runs and takes no action reports `success`, which
+  # is indistinguishable from a job that ran and passed. pr-compare used to do exactly that — the
+  # gate step set ready=false, every later step was `if: ready == 'true'`, and the job ended green
+  # having tested nothing. That is why it could never be promoted to a required check: on a fork or
+  # a Dependabot PR (neither of which gets repo secrets) the green was vacuous.
+  #
+  # A job skipped by its own `if:` reports conclusion `skipped`, which IS distinguishable from
+  # `success` in the API and the UI, and which branch protection treats as not-satisfied rather
+  # than as a pass. `secrets` is not available in a job-level `if:`, so the check has to happen in
+  # a job that CAN read it and be passed down as an output. Hence a preflight rather than a
+  # one-line condition.
+  preflight:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
-    # Narrower than the workflow default (which is only `contents: write` for the
-    # maintainer-triggered baseline commit). This job never writes.
-    permissions:
-      contents: read
-      deployments: read
-      statuses: read
+    outputs:
+      ready: ${{ steps.gate.outputs.ready }}
     steps:
-      - name: Gate on the Vercel bypass secret
+      - name: Is the Vercel bypass secret set?
         id: gate
         env:
           BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
@@ -89,15 +91,16 @@ jobs:
           set -euo pipefail
           if [ -z "${BYPASS}" ]; then
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Visual/a11y compare skipped::VERCEL_AUTOMATION_BYPASS_SECRET is not set, so every preview route would serve Vercel's Deployment Protection interstitial instead of the app. Nothing was tested."
+            echo "::notice title=Visual/a11y compare will be SKIPPED::VERCEL_AUTOMATION_BYPASS_SECRET is not set, so every preview route would serve Vercel's Deployment Protection interstitial instead of the app. The compare job is skipped rather than passed, so this cannot read as a green test run."
             {
-              echo "### e2e compare skipped"
+              echo "### e2e compare skipped (not passed)"
               echo
               echo "\`VERCEL_AUTOMATION_BYPASS_SECRET\` is not configured for this repository."
               echo
               echo "Vercel Deployment Protection serves an auth interstitial to Playwright, so the"
-              echo "suite would compare baselines against the wall rather than the app. Skipping is"
-              echo "the honest result; a red X here would mean nothing about this PR."
+              echo "suite would compare baselines against the wall rather than the app. The job is"
+              echo "**skipped**, which is honest: a green here would claim a test run that did not"
+              echo "happen, and a red X would claim a failure this PR did not cause."
               echo
               echo "**To enable:** Vercel → project → Settings → Deployment Protection →"
               echo "*Protection Bypass for Automation* → generate, then add the value as the GitHub"
@@ -107,9 +110,28 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
 
+  # Runs only on pull_request, and only for the paths filter above. Three outcomes:
+  #   · bypass secret missing        → the job is SKIPPED (see preflight above), never green
+  #   · no successful Vercel preview → SKIP, green, with a notice (a PR can legitimately
+  #                                    have no preview: forks, skipped builds, build failure
+  #                                    which the Vercel check reports on its own)
+  #   · preview resolved             → smoke + @a11y, then the @visual compare
+  pr-compare:
+    needs: preflight
+    if: needs.preflight.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    # Narrower than the workflow default (which is only `contents: write` for the
+    # maintainer-triggered baseline commit). This job never writes.
+    permissions:
+      contents: read
+      deployments: read
+      statuses: read
+    steps:
+      # No gate step here any more. The `preflight` job above decides, and this job's `if:`
+      # consumes it — so a missing secret SKIPS this job rather than running it to a vacuous green.
       - name: Resolve the PR's Vercel preview URL
         id: preview
-        if: steps.gate.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -312,6 +334,9 @@ jobs:
   # Same skip-green semantics as pr-compare: no bypass secret or no successful deployment
   # means nothing was tested, said out loud in a notice, never a red X.
   lighthouse:
+    # Same reasoning as pr-compare: skipped rather than vacuously green when the secret is absent.
+    needs: preflight
+    if: needs.preflight.outputs.ready == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -319,35 +344,9 @@ jobs:
       deployments: read
       statuses: read
     steps:
-      - name: Gate on the Vercel bypass secret
-        id: gate
-        env:
-          BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-        run: |
-          set -euo pipefail
-          if [ -z "${BYPASS}" ]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Visual/a11y compare skipped::VERCEL_AUTOMATION_BYPASS_SECRET is not set, so every preview route would serve Vercel's Deployment Protection interstitial instead of the app. Nothing was tested."
-            {
-              echo "### e2e compare skipped"
-              echo
-              echo "\`VERCEL_AUTOMATION_BYPASS_SECRET\` is not configured for this repository."
-              echo
-              echo "Vercel Deployment Protection serves an auth interstitial to Playwright, so the"
-              echo "suite would compare baselines against the wall rather than the app. Skipping is"
-              echo "the honest result; a red X here would mean nothing about this PR."
-              echo
-              echo "**To enable:** Vercel → project → Settings → Deployment Protection →"
-              echo "*Protection Bypass for Automation* → generate, then add the value as the GitHub"
-              echo "Actions secret \`VERCEL_AUTOMATION_BYPASS_SECRET\`."
-            } >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          fi
-
+      # No gate step: `preflight` decides and this job's `if:` consumes it.
       - name: Resolve the PR's Vercel preview URL
         id: preview
-        if: steps.gate.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
