@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2450,
+      "baseline": 2440,
       "frozen": {
-        "at": "2026-08-06",
-        "value": 2450,
+        "at": "2026-08-11",
+        "value": 2440,
         "direction": "lowered",
         "basis": "6a00b952da5c",
-        "reason": "The components/** sweep finishing the four-territory pass: 3005 -> 2450. Value-identical conversions only -- so this is a theming fix with no rendering delta on the default skin. Frozen once against a settled tree with tsc rc=0 and vitest 698/8797 green over the result. AMENDED 2026-08-10: this reason used to state the values as 'rounded-2xl -> rounded-card is 1rem, rounded-lg -> rounded-control is 0.5rem'. Those were the STOCK Tailwind steps the role tokens had drifted to; the literals render 24px and 14px, and app/globals.css now sets the roles to match (ADR pending in the radius correction). The COUNT is unaffected -- the sweep was value-identical at the time and still is -- but the numbers quoted here described a tree that no longer exists. Recorded rather than deleted, because a baseline exists to account for itself and the prose is the one part of that the fingerprint does not cover.",
-        "from": 3005
+        "reason": "Incidental fall from the field/control variant sweep: converted call sites took their radius from the primitive rather than a literal. 2450 to 2440. No radius pass has run; the four missing roles are still unwritten.",
+        "from": 2450
       },
       "history": [
         {
@@ -168,6 +168,13 @@
           "to": 2450,
           "direction": "lowered",
           "reason": "The components/** sweep finishing the four-territory pass: 3005 -> 2450. Value-identical conversions only -- so this is a theming fix with no rendering delta on the default skin. Frozen once against a settled tree with tsc rc=0 and vitest 698/8797 green over the result. AMENDED 2026-08-10: this reason used to state the values as 'rounded-2xl -> rounded-card is 1rem, rounded-lg -> rounded-control is 0.5rem'. Those were the STOCK Tailwind steps the role tokens had drifted to; the literals render 24px and 14px, and app/globals.css now sets the roles to match (ADR pending in the radius correction). The COUNT is unaffected -- the sweep was value-identical at the time and still is -- but the numbers quoted here described a tree that no longer exists. Recorded rather than deleted, because a baseline exists to account for itself and the prose is the one part of that the fingerprint does not cover."
+        },
+        {
+          "at": "2026-08-11",
+          "from": 2450,
+          "to": 2440,
+          "direction": "lowered",
+          "reason": "Incidental fall from the field/control variant sweep: converted call sites took their radius from the primitive rather than a literal. 2450 to 2440. No radius pass has run; the four missing roles are still unwritten."
         }
       ]
     },
@@ -416,13 +423,13 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 526,
+      "baseline": 524,
       "frozen": {
-        "at": "2026-08-06",
-        "value": 526,
-        "direction": "rebased",
+        "at": "2026-08-11",
+        "value": 524,
+        "direction": "lowered",
         "basis": "9bcf47d8a607",
-        "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it.",
+        "reason": "Incidental fall from the field/control variant sweep, not a button pass of its own. 526 to 524.",
         "from": 526
       },
       "history": [
@@ -488,6 +495,13 @@
           "to": 526,
           "direction": "rebased",
           "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it."
+        },
+        {
+          "at": "2026-08-11",
+          "from": 526,
+          "to": 524,
+          "direction": "lowered",
+          "reason": "Incidental fall from the field/control variant sweep, not a button pass of its own. 526 to 524."
         }
       ]
     },
@@ -935,13 +949,13 @@
         "**/*.{test,spec}.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 6,
+      "baseline": 3,
       "frozen": {
-        "at": "2026-08-06",
-        "value": 6,
-        "direction": "rebased",
+        "at": "2026-08-11",
+        "value": 3,
+        "direction": "lowered",
         "basis": "772c3e554a45",
-        "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it.",
+        "reason": "Tinted/selected variant added to IconButton. 6 to 3. The two app-shell sites are deliberately untouched: MENU-CONTRACT governed and visual-snapshot sensitive.",
         "from": 6
       },
       "history": [
@@ -986,6 +1000,13 @@
           "to": 6,
           "direction": "rebased",
           "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it."
+        },
+        {
+          "at": "2026-08-11",
+          "from": 6,
+          "to": 3,
+          "direction": "lowered",
+          "reason": "Tinted/selected variant added to IconButton. 6 to 3. The two app-shell sites are deliberately untouched: MENU-CONTRACT governed and visual-snapshot sensitive."
         }
       ]
     },
@@ -1003,7 +1024,7 @@
         "**/*.{test,spec}.tsx",
         "components/ui/select.tsx"
       ],
-      "baseline": 6,
+      "baseline": 3,
       "history": [
         {
           "at": "2026-08-05",
@@ -1025,15 +1046,22 @@
           "to": 6,
           "direction": "lowered",
           "reason": "51 -> 6. The last raw <select> elements outside two chip-filter sites moved onto the Select primitive. The 6 that remain are deliberate: chip filters whose ACTIVE state is a border/bg swap, and cn() is a plain join rather than tailwind-merge, so a tint passed to Select would land beside the primitive's own border-border and emit order would decide the winner. They need a tone prop on Select, not a call-site hack."
+        },
+        {
+          "at": "2026-08-11",
+          "from": 6,
+          "to": 3,
+          "direction": "lowered",
+          "reason": "tone prop added to Select, for chip filters whose active state is a border/bg swap. 6 to 3."
         }
       ],
       "frozen": {
-        "at": "2026-08-06",
-        "value": 6,
+        "at": "2026-08-11",
+        "value": 3,
         "direction": "lowered",
         "basis": "08ace42d7483",
-        "reason": "51 -> 6. The last raw <select> elements outside two chip-filter sites moved onto the Select primitive. The 6 that remain are deliberate: chip filters whose ACTIVE state is a border/bg swap, and cn() is a plain join rather than tailwind-merge, so a tint passed to Select would land beside the primitive's own border-border and emit order would decide the winner. They need a tone prop on Select, not a call-site hack.",
-        "from": 51
+        "reason": "tone prop added to Select, for chip filters whose active state is a border/bg swap. 6 to 3.",
+        "from": 6
       }
     },
     {
@@ -1051,7 +1079,7 @@
         "components/ui/field.tsx",
         "components/ui/checkbox.tsx"
       ],
-      "baseline": 186,
+      "baseline": 119,
       "history": [
         {
           "at": "2026-08-05",
@@ -1087,15 +1115,22 @@
           "to": 186,
           "direction": "raised",
           "reason": "Three new form controls in the beta induction (ADR-959): the Beat 1 email capture, and First/Last replacing one Display name field. The field primitives cannot serve this surface as it stands - Input is bg-surface px-3 py-2 rounded-control, and these sit inside a bg-surface card where the induction uses an inset bg-canvas field, so the primitive would render them invisible. Passing the inset string as className emits two bg-* and two rounded-* utilities and cn is a plain join, which is the collision field.tsx documents. Owed: convert induction.tsx wholesale, not one beat."
+        },
+        {
+          "at": "2026-08-11",
+          "from": 186,
+          "to": 119,
+          "direction": "lowered",
+          "reason": "Borderless/inset variant added to Input, then the call sites swept. The blocker was never the sites: Input was bg-surface px-3 py-2 rounded-control, and cn is a plain join, so passing an inset className emitted two bg-* and two rounded-* utilities. 186 to 119."
         }
       ],
       "frozen": {
-        "at": "2026-08-07",
-        "value": 186,
-        "direction": "raised",
+        "at": "2026-08-11",
+        "value": 119,
+        "direction": "lowered",
         "basis": "23c25a5145a1",
-        "reason": "Three new form controls in the beta induction (ADR-959): the Beat 1 email capture, and First/Last replacing one Display name field. The field primitives cannot serve this surface as it stands - Input is bg-surface px-3 py-2 rounded-control, and these sit inside a bg-surface card where the induction uses an inset bg-canvas field, so the primitive would render them invisible. Passing the inset string as className emits two bg-* and two rounded-* utilities and cn is a plain join, which is the collision field.tsx documents. Owed: convert induction.tsx wholesale, not one beat.",
-        "from": 184
+        "reason": "Borderless/inset variant added to Input, then the call sites swept. The blocker was never the sites: Input was bg-surface px-3 py-2 rounded-control, and cn is a plain join, so passing an inset className emitted two bg-* and two rounded-* utilities. 186 to 119.",
+        "from": 186
       }
     },
     {
@@ -1112,7 +1147,7 @@
         "**/*.{test,spec}.tsx",
         "components/ui/field.tsx"
       ],
-      "baseline": 6,
+      "baseline": 1,
       "history": [
         {
           "at": "2026-08-05",
@@ -1134,15 +1169,22 @@
           "to": 6,
           "direction": "lowered",
           "reason": "120 -> 6. Raw <textarea> is now effectively retired across the product; the 6 remaining sit inside already-bordered containers where the box owns the field chrome and Textarea would draw a border inside a border."
+        },
+        {
+          "at": "2026-08-11",
+          "from": 6,
+          "to": 1,
+          "direction": "lowered",
+          "reason": "Borderless variant added to Textarea, for auto-grow composers sitting inside already-bordered cards. 6 to 1."
         }
       ],
       "frozen": {
-        "at": "2026-08-06",
-        "value": 6,
+        "at": "2026-08-11",
+        "value": 1,
         "direction": "lowered",
         "basis": "42a90640e4e9",
-        "reason": "120 -> 6. Raw <textarea> is now effectively retired across the product; the 6 remaining sit inside already-bordered containers where the box owns the field chrome and Textarea would draw a border inside a border.",
-        "from": 120
+        "reason": "Borderless variant added to Textarea, for auto-grow composers sitting inside already-bordered cards. 6 to 1.",
+        "from": 6
       }
     }
   ]
