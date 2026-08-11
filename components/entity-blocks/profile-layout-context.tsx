@@ -82,6 +82,13 @@ interface EntityLayoutContextValue {
    *  closure drop: rapid field edits each merge over the latest bag, so no earlier field is clobbered).
    *  Passing an empty/undefined bag clears the block's content. */
   applyContent: (blockId: string, props: Record<string, unknown> | undefined) => void
+  /** Merge a PARTIAL field patch into one block's authored content, folded over the FRESHEST stored bag.
+   *  Use this — not applyContent — whenever a caller is writing SOME of a block's fields: applyContent
+   *  REPLACES the block's bag, so a caller that rebuilds the whole bag from a render-time snapshot silently
+   *  drops any sibling field written earlier in the same tick (the on-canvas photo popup writes `image` then
+   *  `alt`, and the alt write used to erase the photo). A key whose value is empty (undefined / '' / []) is
+   *  DELETED, so the stored bag stays sparse; a patch that empties the last key clears the block. */
+  patchContent: (blockId: string, patch: Record<string, unknown>) => void
   /** Merge one block's style against the FRESHEST store state (same stale-closure fix as applyContent). */
   applyStyle: (blockId: string, style: BlockStyle | undefined) => void
   /** Seed the store from the persisted layout. Idempotent — only the FIRST seed wins per mount. */
@@ -212,6 +219,24 @@ export function EntityLayoutProvider({
     },
     [apply],
   )
+  // The FIELD-level merge. applyContent takes a WHOLE bag, so a caller that assembles that bag from its
+  // render-time `store.content` snapshot loses any field written earlier in the same tick — React has not
+  // re-rendered yet, so the snapshot is a beat behind. That is exactly what dropped the on-canvas photo:
+  // the popup commits `image` and then `alt`, and the alt write handed back a bag with the OLD photo.
+  // patchContent folds the patch over `latest.current` (the freshest bag, updated synchronously by apply),
+  // so each field lands on top of the last one no matter how fast they arrive.
+  const patchContent = useCallback(
+    (blockId: string, patch: Record<string, unknown>) => {
+      const next = { ...(latest.current.content?.[blockId] ?? {}) }
+      for (const [key, value] of Object.entries(patch)) {
+        const empty = value === undefined || value === '' || (Array.isArray(value) && value.length === 0)
+        if (empty) delete next[key]
+        else next[key] = value
+      }
+      apply(setBlockContent(latest.current, blockId, Object.keys(next).length ? next : undefined))
+    },
+    [apply],
+  )
   const applyStyle = useCallback(
     (blockId: string, s: BlockStyle | undefined) => {
       apply(setBlockStyle(latest.current, blockId, s && Object.keys(s).length ? s : undefined))
@@ -270,7 +295,7 @@ export function EntityLayoutProvider({
 
   return (
     <EntityLayoutCtx.Provider
-      value={{ kind, seeded, rows, hidden, content, style, selectedId, select, selectedItemIndex, selectItem, bench, apply, undo, canUndo, applyContent, applyStyle, seed, saving, dirty, error }}
+      value={{ kind, seeded, rows, hidden, content, style, selectedId, select, selectedItemIndex, selectItem, bench, apply, undo, canUndo, applyContent, patchContent, applyStyle, seed, saving, dirty, error }}
     >
       {children}
     </EntityLayoutCtx.Provider>
