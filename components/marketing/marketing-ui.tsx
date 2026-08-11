@@ -69,13 +69,14 @@ export function PhotoHero({
   // on the site and eight pages had hand-written the `pt-0` it exists to supply.
   const shape = facts ? 'mk-hero mk-hero-dock' : 'mk-hero overflow-hidden'
   // The docked hero's `pb-36` is ROOM FOR AN OVERHANG, not a bottom pad — and below `sm` there
-  // is no overhang (the dock goes in flow; see the strip below). So the phone value drops to an
-  // ordinary content bottom and the strip occupies the room instead of hovering over it. The
-  // `sm:` values are untouched: nothing about the desktop hero moves.
+  // is no overhang (the dock goes in flow; see the strip below). So on a phone this becomes an
+  // ordinary content bottom, 42.5px, and it is the gap between the copy and the strip; the
+  // hero's own closing room moves onto the strip as `mb-16`, the same 68px a dockless hero
+  // ends with. The `sm:` values are untouched: nothing about the desktop hero moves.
   const padY = isScreen
     ? 'py-16 sm:py-28'
     : facts
-      ? 'pt-16 pb-12 sm:pt-32 sm:pb-40'
+      ? 'pt-16 pb-10 sm:pt-32 sm:pb-40'
       : 'py-16 sm:py-32'
   return (
     <section
@@ -150,7 +151,7 @@ export function PhotoHero({
           never more" (ui_kits/marketing/sections.jsx); the wrap was a local addition. Below
           `sm` the strip is a GRID, so it cannot grow upward at all. */}
       {facts && (
-        <div className="glass-ink lift-3 relative z-20 mx-6 mt-6 grid grid-cols-3 items-start gap-3 rounded-2xl px-4 py-3 sm:absolute sm:-bottom-8 sm:left-1/2 sm:mx-0 sm:mt-0 sm:flex sm:w-max sm:max-w-[calc(100vw-2rem)] sm:-translate-x-1/2 sm:justify-center sm:gap-10 sm:px-9 sm:py-4">
+        <div className="glass-ink lift-3 relative z-20 mx-6 mb-16 grid grid-cols-3 items-start gap-3 rounded-2xl px-4 py-3 sm:absolute sm:-bottom-8 sm:left-1/2 sm:mx-0 sm:mb-0 sm:flex sm:w-max sm:max-w-[calc(100vw-2rem)] sm:-translate-x-1/2 sm:justify-center sm:gap-10 sm:px-9 sm:py-4">
           {facts.map(([value, label]) => (
             <div key={label} className="min-w-0 text-center">
               {/* A numeral never wraps; the label may take two lines. */}
