@@ -169,8 +169,29 @@ export const A11Y_WAIVERS: readonly ContrastWaiver[] = [
       'Embossed white label over a second dark-mode amber composite. Two shadow values appear in ' +
       'the dark states because the emboss is a translucent black over fills of different depth.',
   },
+  // The two composites the SMALLER button paints (`py-2.5`, 14.875px bold). The four above were
+  // frozen off the large CTA; a shorter label at a smaller size shifts the blur weighting, so the
+  // composite axe rounds to lands a channel or two away from the large button's. Same element
+  // family, same finish, same decision — a different measurement, listed rather than folded in,
+  // for the reason the `#b8863b` entry states directly above.
+  {
+    rule: 'color-contrast',
+    fg: '#ffffff',
+    shadow: '#c07b28',
+    ratio: 3.43,
+    decision: OWNER_PALETTE_DECISION,
+    why: 'Embossed white label on the small button over the DAWN light amber fill (2.52:1 waived above).',
+  },
+  {
+    rule: 'color-contrast',
+    fg: '#ffffff',
+    shadow: '#b97124',
+    ratio: 3.84,
+    decision: OWNER_PALETTE_DECISION,
+    why: 'Embossed white label on the small button over the Midnight light amber fill (2.86:1 waived above).',
+  },
 
-  // ── The success chip ───────────────────────────────────────────────────────
+  // ── The tinted status chips ────────────────────────────────────────────────
   {
     rule: 'color-contrast',
     fg: '#11827a',
@@ -183,6 +204,21 @@ export const A11Y_WAIVERS: readonly ContrastWaiver[] = [
       'Tinted success chip text at 3.87:1 against 4.5. Already a declared, frozen pair at the ' +
       'token layer; axe was reporting the same debt a second time under a different name. The ' +
       'stated fix is a -strong step for the tinted chips in light mode, which is a palette change.',
+  },
+  {
+    rule: 'color-contrast',
+    fg: '#b07515',
+    bg: '#f6ecd8',
+    ratio: 3.31,
+    decision:
+      'Frozen WAIVER in scripts/check-contrast.mjs (--color-warning on --color-warning-bg), ' +
+      'floor 3.32 in every light state.',
+    why:
+      'The warning chip, sibling of the success entry above and the weakest of the chip set. It ' +
+      'was missed when the success chip was frozen, which is the whole reason /discover failed: ' +
+      'the two `bg-warning-bg text-warning` chips on the Channel cards are a decided pair at the ' +
+      'token layer and were still being counted as undecided debt by axe. Same fix, same palette ' +
+      'change: the tinted chips want a -strong step in light mode.',
   },
 ]
 

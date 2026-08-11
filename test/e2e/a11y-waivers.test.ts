@@ -185,8 +185,8 @@ describe('a11y waivers · partitioning', () => {
     const result = partitionWaived([
       violation('color-contrast', [
         fillNode('#ffffff', '#e2912f'), // waived
-        fillNode('#e2912f', '#ffffff'), // real: amber as display text
-        fillNode('#b07515', '#f6ecd8'), // real: tinted chip
+        fillNode('#e2912f', '#ffffff'), // real: amber as display text, on white
+        fillNode('#e2912f', '#f5eee2'), // real: amber as display text, on the canvas band
       ]),
     ])
     expect(result.waivedCount).toBe(1)

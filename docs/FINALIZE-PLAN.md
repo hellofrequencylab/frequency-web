@@ -755,6 +755,7 @@ Everything on this list is config or a decision — no code unblocks it.
 | Flip **`pr-compare`** to required (that is the whole list, see §1.6) | Phase 1 sign-off |
 | `/the-lab` + `/spaces` meta descriptions | 3.3 — a copy decision, not a trim |
 | **White-on-amber button text** | The DS artifact shows white on `#E2912F`; shipped is ink. Ink measures **7.35:1** (AA + AAA), white **2.52:1**. White cannot ship without failing `check:contrast` and degrading every primary button. Either darken the amber (~`#8A5410` puts white at 6.26:1 — a real brand shift) or correct the artifact |
+| 🔴 **Amber as DISPLAY TEXT** (new, 2026-08-11) | ~30 marketing sites render `<span className="text-primary">` as the accent word inside a display heading. Measured: **2.18–2.86:1 against a 3:1 bar** — it fails the *large-text* floor, so no size or weight rescues it. This is NOT covered by the 2026-08-06 white-on-amber ruling: that waiver is scoped in words to a "decorative fill", and `--color-primary-strong` (`#965C12`) already exists as the ink-safe amber and is already used for the links directly beneath these headings on the same pages (5.19:1 on white, 4.50:1 on the canvas band). Either swap the heading accents to `-strong` (a visible but consistent brand change that moves every marketing visual baseline) or waive it explicitly. Until then it stays counted as debt inside the a11y baselines |
 | Greyed-emoji tuning (`grayscale` vs `saturate-50`) | Reaction selector rest state |
 | ~~Recruit 5 test users per quarter~~ 🅿️ **PARKED by the owner 2026-08-11** | Lift 1. Not dropped: see the note below for the resume condition |
 | Re-run the two Stripe pricing syncs | Collective/Independent checkouts currently dead-end |
@@ -1097,3 +1098,44 @@ baseline is descriptive, and recapture is the whole fix for a described change).
 ⚠️ **After that, `pr-compare` is promotable to a required context.** The vacuous-green hole that
 blocked promotion is closed — a missing bypass secret now SKIPS the job rather than passing it. The
 secret is demonstrably set, since this run executed rather than skipping.
+
+---
+
+### 9.10 — 🔴 `pr-compare`'s first red run as a required context was an incomplete waiver list, not a regression
+
+Run `31456580742` failed exactly three tests, all `/discover`, each **1 over baseline**. The visual
+half passed completely (`76 passed`, `3/3 surfaces, 12/12 checks`).
+
+| Element | Painted pair | Ratio / bar | Verdict |
+| :--- | :--- | :--- | :--- |
+| 2 × status chip (`CircleCard`) | `#b07515` on `#f6ecd8` | 3.31 / 4.5 | ✅ waived — already a frozen `check:contrast` pair at floor 3.32 |
+| 1 × embossed small button | `#ffffff` on shadow `#c07b28` / `#b97124` | 3.43 / 3.84 vs 4.5 | ✅ waived — same button family, a composite the large-CTA entries missed |
+| 2–3 × `.text-primary` heading accent | `#e2912f`/`#d9852a` on white / canvas | 2.18–2.86 / 3.0 | 🔴 **still counted** — see the owner action in §7c |
+
+**The cause was one sentence.** `a11y-baselines.json` closed with "NOT WAIVED, and staying failed on
+purpose: amber as DISPLAY TEXT …, the watermark numerals …, **and the tinted chips on /discover**.
+The owner's decision covers a white label on an amber FILL." The first two clauses are right. The
+third grouped an unlike thing under a justification that does not govern it: the chips are
+`--color-warning` on `--color-warning-bg`, and their sibling the **success** chip had already been
+admitted to the waiver list on exactly the `check-contrast.mjs`-frozen-pair citation. Two identical
+things, two different rules.
+
+The test that settled it — *does waiving it let anything escape?* No: the pair is already ratcheted
+in the instrument that owns token pairs. Counting it a second time here bought no accountability.
+Net −2 chips and −1 emboss per context, **with no baseline re-frozen**. PR #2087.
+
+### 9.11 — ⚠️ `CircleCard` asks for `p-5` and paints `p-6`
+
+`components/discover/cards.tsx:51` passes `className="h-full p-5 …"` to `Card`, whose own template is
+`` `rounded-2xl p-6 ${tones[tone]} ${className}` `` — a plain string join, not `cn`. Both utilities
+land on one element, Tailwind emits `p-5` before `p-6`, so **`p-6` wins and the author's `p-5` does
+nothing.** axe's selector for the chip inside it shows the collision directly: `.p-5.p-6`.
+
+The component's own comment, four lines up, names this exact hazard for the `highlight` tone: *"A
+tone rather than a className override, so the border width cannot depend on which utility Tailwind
+happened to emit last."* A caller two files over walked straight into it.
+
+Cosmetic only (the circle cards render one step roomier than intended), but it moves `/discover`'s
+visual baselines in every state, so it is deliberately **not** bundled into the CI-unblocking PR.
+Same family as the `Input` inset collision from the sweep round: the fix is a variant on the
+primitive, not a className override at the call site.
