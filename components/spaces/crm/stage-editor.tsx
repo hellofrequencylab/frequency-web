@@ -294,7 +294,7 @@ export function StageEditor({
 
       {/* Add a stage */}
       <div className="mt-3 flex flex-wrap items-center gap-2 rounded-card border border-dashed border-border p-2 sm:flex-nowrap">
-        <input
+        <Input
           type="text"
           value={newName}
           placeholder="New stage name"
@@ -307,7 +307,7 @@ export function StageEditor({
               addStage()
             }
           }}
-          className="min-w-0 flex-1 rounded-control border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
+          className="min-w-0 flex-1 px-2.5 py-1.5"
         />
         <label className="sr-only" htmlFor="new-stage-kind">
           New stage type

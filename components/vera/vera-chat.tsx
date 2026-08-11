@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import type { TeaseGate } from '@/lib/pricing/upsell-tease'
 import type { ProposedToolCall } from '@/lib/ai/vera/concierge'
 import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
+import { Input } from '@/components/ui/field'
 
 // The headless Vera conversation — the multi-turn chat with propose-and-confirm
 // writes, extracted so the onboarding lightbox AND the persistent companion

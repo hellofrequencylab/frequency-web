@@ -14,7 +14,7 @@ import { TYPE_LABELS, type SupportContext, type TicketType } from '@/lib/support
 import type { HelpCitation } from '@/lib/ai/help-rag'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
-import { Textarea } from '@/components/ui/field'
+import { Input, Textarea } from '@/components/ui/field'
 
 const TYPE_META: { key: TicketType; icon: typeof Bug }[] = [
   { key: 'bug', icon: Bug },

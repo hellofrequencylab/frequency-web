@@ -13,6 +13,7 @@ import { DEFAULT_STYLE, withCenterLogo, type QrStyle } from '@/lib/qr/style'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { isError } from '@/lib/action-result'
 import { relativeTime } from '@/lib/utils'
+import { Input } from '@/components/ui/field'
 
 // The on-page QR creator (ADR-179) — the COMPACT variant that lives in a page's
 // Settings panel. The creator (title + a trimmed visual editor) takes the left 2/3;

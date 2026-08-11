@@ -26,6 +26,7 @@ import {
   reorderSpacePages,
   deleteSpacePage,
 } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
+import { Input } from '@/components/ui/field'
 
 // THE PAGE quick-edit panel (the compact Manage surface, NO Puck runtime). A compact panel in Manage
 // for FAST tweaks: it manages the operator-defined PAGES (create / rename / reorder / delete + pick the

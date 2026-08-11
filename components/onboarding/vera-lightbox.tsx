@@ -9,6 +9,7 @@ import type { ProposedToolCall } from '@/lib/ai/vera/concierge'
 import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
 import type { DeckSlide, VeraOpening } from '@/lib/onboarding/vera-welcome'
 import { WelcomeArt } from '@/components/onboarding/welcome-art'
+import { Input } from '@/components/ui/field'
 
 // Vera's onboarding lightbox (ADR-066 Phase D). It opens OVER the feed the moment
 // a Founder lands from induction (?welcome=vera). Two beats: a short, personalized

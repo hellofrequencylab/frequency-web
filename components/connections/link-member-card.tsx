@@ -8,6 +8,7 @@ import { Search, UserRoundCheck, Link2Off, ExternalLink } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { mergeWithMember, unmergeFromMember, searchMembersToLink } from '@/app/(main)/connections/actions'
+import { Input } from '@/components/ui/field'
 
 interface MemberHit {
   id: string

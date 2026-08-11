@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation'
 import { Loader2, PenLine, Send } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { isError, type ActionResult } from '@/lib/action-result'
-import { Textarea } from '@/components/ui/field'
+import { Input, Textarea } from '@/components/ui/field'
 
 type StartAction = (input: { email: string; subject: string; body: string }) => Promise<ActionResult<{ ref: string }>>
 

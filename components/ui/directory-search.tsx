@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { Search, X } from 'lucide-react'
+import { Input } from '@/components/ui/field'
 
 // Standardized free-text search for the directories — the primary way to find a
 // specific person/circle by name. Debounced, URL-driven (writes the `q` param and

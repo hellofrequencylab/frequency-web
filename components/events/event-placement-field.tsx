@@ -310,7 +310,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
         </div>
       ) : (
         <div className="mt-2">
-          <input
+          <Input
             type="text"
             value={query}
             onChange={(e) => {
@@ -319,7 +319,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
             }}
             placeholder="New host by name or @handle"
             disabled={pending}
-            className="w-full rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle outline-none focus:border-border-strong disabled:opacity-60"
+            className="py-1.5"
           />
           {hits.length > 0 && (
             <div className="mt-1 overflow-hidden rounded-card border border-border bg-surface py-1 lift-3">

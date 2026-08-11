@@ -6,6 +6,7 @@ import { ImagePlus, X, Trash2 } from 'lucide-react'
 import { uploadEventMedia, deleteEventMedia } from '@/app/(main)/events/[slug]/social-actions'
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
+import { Input } from '@/components/ui/field'
 
 export type RecapPhoto = {
   id: string

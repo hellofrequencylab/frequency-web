@@ -6,6 +6,7 @@ import { Sparkles, Check, X, Send, ArrowRight } from 'lucide-react'
 import { conciergeTurn, confirmProposal } from '@/app/onboarding/vera-actions'
 import type { ProposedToolCall } from '@/lib/ai/vera/concierge'
 import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
+import { Input } from '@/components/ui/field'
 
 // Vera's onboarding concierge (ADR-066 Phase D). A bounded, paced conversation that
 // gets the member toward a real circle/person, then steps back. Runs the deterministic

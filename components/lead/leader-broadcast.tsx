@@ -12,7 +12,7 @@ import { Loader2, Send, Users } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { isError } from '@/lib/action-result'
 import { sendLeaderBroadcast } from '@/app/(main)/lead/inbox/actions'
-import { Textarea } from '@/components/ui/field'
+import { Input, Textarea } from '@/components/ui/field'
 
 export function LeaderBroadcast({ reach }: { reach: number }) {
   const router = useRouter()

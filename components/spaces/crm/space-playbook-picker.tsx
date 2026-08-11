@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { Check, Loader2, Pencil, Sparkles, X } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { runSpacePlaybookAction, dismissSpacePlaybook } from '@/app/(main)/spaces/[slug]/crm/playbook-actions'
-import { Textarea } from '@/components/ui/field'
+import { Input, Textarea } from '@/components/ui/field'
 
 // THE NEXT-BEST-ACTION PLAYBOOK PICKER on the Space contact detail (Resonance Engine · ADR-382 ·
 // docs/NEXT-GEN-CRM.md Altitude 3 "Action: next-best-action playbook picker"). The one-tap move for

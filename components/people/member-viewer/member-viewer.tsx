@@ -20,6 +20,7 @@ import {
 import { MemberDetailCard } from './member-detail-card'
 import { CrmMemberDetailPane } from './crm-member-detail'
 import type { CrmMemberDetail, ListView, MemberViewerProps, SortOption } from './types'
+import { Input } from '@/components/ui/field'
 
 // THE MEMBER-VIEWER BLOCK: a reusable master-detail member browser (list left, viewer right).
 // One presentation-neutral client island (ADR-017/018) reused/reconfigured by many surfaces, not a

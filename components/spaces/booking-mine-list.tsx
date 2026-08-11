@@ -7,6 +7,7 @@ import { isError } from '@/lib/action-result'
 import { cancelBooking, listOpenSlotsForService } from '@/lib/spaces/booking-actions'
 import type { MyBooking, OpenSlot } from '@/lib/spaces/booking'
 import { BookingPicker } from '@/components/spaces/booking-picker'
+import { Input } from '@/components/ui/field'
 
 // MEMBER SELF-SERVE BOOKINGS (client, P3, ADR-605). The member's own upcoming bookings with a Space,
 // each with Cancel (optional reason) and Reschedule. Reschedule loads the same service's open times and
