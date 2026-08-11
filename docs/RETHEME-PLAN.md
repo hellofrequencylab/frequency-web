@@ -16,7 +16,7 @@
 >
 > | Figure this doc quotes | Live 2026-08-11 | How |
 > | :--- | ---: | :--- |
-> | `4,722` literal `rounded-*` | **2,450** | `check:adoption` → `literal-radius`, `✅ held`, frozen 2026-08-06 `lowered` |
+> | `4,722` literal `rounded-*` | **2,450** | `check:adoption` → `literal-radius` frozen baseline, frozen 2026-08-06 `lowered` |
 > | `1,000` `rounded-full` | **1** | `git ls-files 'app/**/*.tsx' 'components/**/*.tsx' 'lib/**/*.tsx' \| xargs rg -o --no-filename 'rounded-full' \| wc -l`. The codemod ran; `rounded-full` → `rounded-pill` is done |
 > | `~18` raw `<button bg-primary>` | **526** | `check:adoption` → `raw-button-bg`. Off by ~29×, and in the direction that under-scopes P3 |
 

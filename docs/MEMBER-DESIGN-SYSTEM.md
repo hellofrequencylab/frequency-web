@@ -165,7 +165,7 @@ Pages never toggle it.
   `components/ui/streak-meter.tsx`, **3** files) · `StatCard` (a single game tile, **116**
   files) · `JourneyBoard` (the feed's graduated home, **3** files). Rank ALWAYS from
   `lib/season-ranks`. These are the only "tiles with numbers" a member sees.
-  (Counts re-measured 2026-08-11.)
+  (Counts re-measured 2026-08-11 at `334c3ec`; they are greps, so re-run before quoting.)
 - **`EmptyState`**: never a blank pane; teach the next step + one CTA. Fill the gaps
   (on-air/dispatches, library/review, support, some detail sub-pages).
 - 📋 **`RoleActions`**: the resolver-fed header action menu (primary + overflow, gate-aware);

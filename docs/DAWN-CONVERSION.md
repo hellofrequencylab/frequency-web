@@ -15,9 +15,15 @@
 > not. Re-derive counts from `node scripts/check-adoption.mjs` (the live ratchet) and adoption
 > claims from a grep, never from the column below.
 >
-> **Last re-derived: 2026-08-11.** Every correction in this pass carries the prior value and the
-> command or `file:line` that establishes the new one, so the next reader can re-check the
-> correction rather than trust it.
+> **Last re-derived: 2026-08-11 against `334c3ec`.** Every correction in this pass carries the
+> prior value and the command or `file:line` that establishes the new one, so the next reader can
+> re-check the correction rather than trust it.
+>
+> **Raw greps are anchored to a SHA on purpose.** They moved twice during this pass alone, with
+> six agent workstreams in flight. Where a **frozen ratchet baseline** exists
+> (`scripts/adoption-baselines.json`) prefer it: it is the durable contract, it only moves with a
+> recorded `--update` and a reason, and AGENTS.md names it the live design-debt scoreboard. A
+> bare grep is a snapshot; the baseline is the number.
 
 Status legend: ✅ done · ⏳ in progress · 📋 specced, not built · ⚠️ needs a ruling · 🔴 not
 started · 🅿️ out of scope.
@@ -27,18 +33,18 @@ started · 🅿️ out of scope.
 ## 1. The denominator
 
 > **The form-control rows below are the 2026-08-05 census and are now HISTORY, not status.**
-> Re-measured 2026-08-11 on the ratchet's own basis (`{app,components,lib}/**/*.tsx`, the
-> `include` glob in `scripts/adoption-baselines.json`). The three raw-control populations have
+> Re-measured 2026-08-11 at **`334c3ec`** on the ratchet's own basis (`{app,components,lib}/**/*.tsx`,
+> the `include` glob in `scripts/adoption-baselines.json`). The three raw-control populations have
 > collapsed by ~95%. The census column is kept so the size of the win is visible; read the
-> **Live** column for what is true.
+> **Live** column for what is true, and re-run the command before quoting it.
 
 | Population | Census 2026-08-05 | **Live 2026-08-11** | Note |
 | :--- | ---: | ---: | :--- |
 | Raw `<button>` not composing `Button` | 1,887 | *(not re-measured this pass)* | the single largest population in the product. The `raw-button-bg` ratchet reads **526**, which measures opening tags carrying a background, not every `<button>` |
-| Raw `<input>` not composing `Input` | 808 | **250** | `git ls-files 'app/**/*.tsx' 'components/**/*.tsx' 'lib/**/*.tsx' \| xargs rg -o --no-filename '<input\b' \| wc -l`. `ui/field.tsx` now has **252** importers, not 80. Ratchet `raw-input` = **186** |
-| Raw `<select>` | 267 | **15** | same command, `<select\b`. The primitive **exists** (`components/ui/select.tsx`, **144** importers). Ratchet `raw-select` = **6** |
-| Raw `<textarea>` | 162 | **9** | same command, `<textarea\b`. Ratchet `raw-textarea` = **6** |
-| **Raw markup subtotal** | **3,124** | n/a | the census subtotal. The three control rows in it are now **274**, not 1,237 |
+| Raw `<input>` not composing `Input` | 808 | **204** @`334c3ec` | `git ls-files 'app/**/*.tsx' 'components/**/*.tsx' 'lib/**/*.tsx' \| xargs rg -o --no-filename '<input\b' \| wc -l`. `ui/field.tsx` now has **274** importers, not 80. **Frozen ratchet `raw-input` = 186** (quote this one) |
+| Raw `<select>` | 267 | **13** @`334c3ec` | same command, `<select\b`. The primitive **exists** (`components/ui/select.tsx`, **147** importers). **Frozen ratchet `raw-select` = 6** |
+| Raw `<textarea>` | 162 | **4** @`334c3ec` | same command, `<textarea\b`. **Frozen ratchet `raw-textarea` = 6** |
+| **Raw markup subtotal** | **3,124** | n/a | the census subtotal. The three control rows in it are now **221**, not 1,237 |
 | Duplicate implementations of a DAWN concept | 52 | n/a | 32 bespoke card shells · 6 tab strips · 5 badges · 3 meters · 2 avatars · 2 modals · 2 toasts |
 | **Element total** | **~3,176** | n/a | |
 | DAWN primitives missing or orphaned | **10** of 30 | **2** | Badge · RankBadge · Stat · Select · Checkbox · CounterRow · Toast · Avatar all shipped AND adopted (see Phase 2). Only `GateNotice` and `StreakMeter` (3 call sites) are still thin. **Glyph was struck, see below** |
@@ -156,7 +162,7 @@ line count and unblocks the largest phase in the plan.
 
 | Primitive | Census 2026-08-05 | Action / **live** |
 | :--- | :--- | :--- |
-| **Select** | none, 267 raw `<select>` | ✅ built. `components/ui/select.tsx`, **144** importers; raw `<select\b` is **15**, ratchet `raw-select` **6** |
+| **Select** | none, 267 raw `<select>` | ✅ built. `components/ui/select.tsx`, **147** importers; raw `<select\b` is **13**, ratchet `raw-select` **6** |
 | **Checkbox** | none | ✅ built and adopted by the select sweep |
 | **Badge** | 5 one-off pill components | one `Badge` with a tone prop; retire the five |
 | ~~**Glyph**~~ | ~~raw `lucide-react` everywhere~~ | **Struck.** `components/ui/icon.tsx` already is it (ADR-505); a Glyph would be a third icon entry point |
@@ -172,10 +178,10 @@ line count and unblocks the largest phase in the plan.
 | Sweep | Sites | Size | Ratchet | State |
 | :--- | ---: | :---: | :--- | :--- |
 | `<button>` → `Button` / `IconButton` | 1,887 | L | `raw-button-bg` 528 → **526** · `handrolled-icon-button` 37 → **6** | ⏳ icon buttons largely done |
-| `<input>` / `<textarea>` → field primitives | ~~970~~ → **259** | ~~L~~ **M** | `raw-input` **186** · `raw-textarea` **6** | ⏳ **the bulk is retired.** `<input\b` is **250** and `<textarea\b` is **9** on the ratchet basis (see §1), and `ui/field.tsx` has **252** importers. The row said 🔴 "not started"; the residue is the long tail §"Sweepable, deliberately stopped" in `BUILD-LIST` describes |
-| `<select>` → `Select` | ~~267~~ → **15** | ~~M~~ **S** | `raw-select` **6** | ✅ **effectively done, not "spaces+admin only."** `components/ui/select.tsx` has **144** importers; 15 raw `<select\b` remain repo-wide |
+| `<input>` / `<textarea>` → field primitives | ~~970~~ → **208** @`334c3ec` | ~~L~~ **M** | `raw-input` **186** · `raw-textarea` **6** | ⏳ **the bulk is retired.** `<input\b` is **204** and `<textarea\b` is **4** on the ratchet basis (see §1), and `ui/field.tsx` has **274** importers. The row said 🔴 "not started"; the residue is the long tail §"Sweepable, deliberately stopped" in `BUILD-LIST` describes |
+| `<select>` → `Select` | ~~267~~ → **13** @`334c3ec` | ~~M~~ **S** | `raw-select` **6** | ✅ **effectively done, not "spaces+admin only."** `components/ui/select.tsx` has **147** importers; 13 raw `<select\b` remain repo-wide |
 | `<input type=checkbox>` → `Checkbox` | 14 | S | — | ✅ **0 remaining in those two trees** |
-| bespoke cards / rows → `EntityCard` / `RowCard` | 37 | M | `bespoke-cards` 24 · `bespoke-rows` 14 | ⚠️ **needs triage before a sweep.** A large fraction of the ratchet's population are action clusters, not cards (`BUILD-LIST` §"Needs a triage pass") |
+| bespoke cards / rows → `EntityCard` / `RowCard` | 37 | M | `bespoke-cards` **0** · `bespoke-rows` **0** | ✅ **the triage pass RAN, 2026-08-11.** Both ratchets rebased 24 → 0 and 14 → 0. Four sites were genuinely owed to the kit and converged (`app/discover/practices/practice-card.tsx` → `EntityCard`; `components/journeys/journey-manage-card.tsx`, `components/events/upcoming-event-rows.tsx` and `components/spaces/space-practice-row.tsx` → `RowCard`). The other 34 are named in each entry's `exclude` list with a one-line reason, because the classes key off the FILENAME (`*-card.tsx`, `*row*.tsx`) and were counting QR panels, settings forms, action clusters, rail chrome, and `grow-network.tsx` (which matched only because "grow" contains "row"). **At baseline 0 the ratchet is STRICTER than at 24/14**: the next uncategorised file fails CI instead of hiding inside an undifferentiated count |
 | hand-rolled tabs → `UnderlineTabs` | 3 + 6 strips | S | `handrolled-tabs` **0** | ✅ |
 | hand-rolled bars → `ProgressTrack` | 14 | S | `adhoc-progress` 14 → **8** | ⏳ `ProgressTrack` is in **44** files; 4 of the 8 remaining are false positives |
 | hand-rolled rank badges → `RankBadge` | ~~23~~ → **0** | ~~M~~ **XS** | `bespoke-cards` | ✅ **adopted.** The row said 🔴 "primitive shipped with 0 adopters": live it has **12** importers (`rg -l "from '@/components/ui/rank-badge'" app components lib`), and a hand-rolled `className="rank-badge"` outside the primitive returns **one** match (`lib/community-roles.tsx:57`), and it is a **comment** saying the file no longer hand-rolls one |

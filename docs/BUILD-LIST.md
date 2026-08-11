@@ -213,16 +213,17 @@ pages still plain), the copy cascade (`page_content` is header-only), and per-Sp
 Enforced by CI gates so new drift fails a PR. **Sequence: tokens (P1–P3) → headers (P4–P5) → copy (P6)
 → operator theming + safety net (P7–P8).** Lift: S ≈ 1 day · M ≈ 2–4 days · L ≈ 1–2 weeks.
 
-**Kit adoption map, audited 2026-08-03 for the DAWN round, RE-MEASURED 2026-08-11.** Every
-number below moved, all in the same direction. Basis: `rg -l "\bNAME\b" app components lib`
-minus `*.test.*` files, run 2026-08-11.
+**Kit adoption map, audited 2026-08-03 for the DAWN round, RE-MEASURED 2026-08-11 at `334c3ec`.**
+Every number below moved, all in the same direction. Basis: `rg -l "\bNAME\b" app components lib`
+minus `*.test.*` files. ⚠️ These are greps, not frozen baselines, so they drift with every merge;
+re-run before quoting.
 
 | Primitive | 2026-08-03 | **2026-08-11** | Note |
 | :--- | ---: | ---: | :--- |
 | `SectionHeader` | 141 | **143** | landed |
 | `StatCard` | 102 | **116** | landed. The audit that fed this pass said 106; the grep says 116 |
-| `EntityCard` | 32 | **43** | was "32 uses vs 44 bespoke `*-card.tsx`". See the triage note below before treating the bespoke number as debt |
-| `RowCard` | 4 | **5** | still the thinnest, and still "vs ~15 hand-rolled rows" |
+| `EntityCard` | 32 | **44** | was "32 uses vs 44 bespoke `*-card.tsx`". ✅ The bespoke number is no longer debt: the 2026-08-11 triage rebased `bespoke-cards` to **0** (see below) |
+| `RowCard` | 4 | **8** | still the thinnest. ✅ The "~15 hand-rolled rows" resolved in the 2026-08-11 triage: `bespoke-rows` rebased to **0**, three sites converged onto `RowCard` |
 | `PersonCard` | 17 | **22** | |
 | `UnderlineTabs` | 15 | **23** | ✅ now at `components/ui/underline-tabs.tsx` (moved 2026-08-10, [ADR-971](DECISIONS.md)); the "move it during the sweep" instruction below is **done**. `handrolled-tabs` reads **0** |
 | `ProgressTrack` | ~0 ("missing entirely") | **44** | ✅ built AND adopted. The row said it did not exist |
@@ -240,7 +241,7 @@ ADR-828 pill convention.
 | P0 | **Headers + enforcement.** One `PageHero` for browse/commerce; `check:tokens` + `check:headers` hard gates; the protocol doc. | — | ✅ ADR-781 (PR #1805) |
 | P1 | **Radius tokens.** ✅ The codemod shipped (`ecd8f52`): `rounded-full` → `rounded-pill` site-wide plus role adoption, `literal-radius` 5,543 → ~~3,824~~ → **2,450** (re-measured 2026-08-11, `node scripts/check-adoption.mjs`, `✅ held`, frozen 2026-08-06 `lowered`), **1,719** role usages, tokens at `app/globals.css` + per-skin scopes. The radius ROLES also moved in #2077: `--radius-control` 8px → 14px, `--radius-card` 16px → 24px (`app/globals.css:195-197`). ⏳ The second half is genuinely outstanding — `check:tokens` still has zero occurrences of `rounded`; the `literal-radius` ratchet holds the line instead. | L | ⏳ |
 | P2 | **Type + weight contract.** ✅ Shipped across ADR-941/942/943 + pass 2a: named roles, paired line-heights (a Tailwind v4 trap — `text-*` emits BOTH size and `line-height`, so the companion must live in `@theme`), `literal-type` at **0**. Display sizes (`text-3xl`…`9xl`) are the remaining ~~301~~ **96** (re-measured 2026-08-11, `node scripts/check-adoption.mjs`), ratcheted as `literal-display-type`. | M | ✅ |
-| P3 | **Control + card consolidation.** ~~~18~~ **526** raw styled buttons → `Button` (ratchet `raw-button-bg`, re-measured 2026-08-11; the "~18" was off by ~29×, and note the ratchet counts opening tags carrying a background, not every `<button>`); hand-rolled cards → `EntityCard`/`ModuleCard`; unify badges/empties; lint flags raw styled buttons/cards. ⚠️ The card half needs the triage pass below before it is swept: `bespoke-cards` (**24**) and `bespoke-rows` (**14**) are filename heuristics whose population is largely action clusters, not cards. | M | ⏳ |
+| P3 | **Control + card consolidation.** ~~~18~~ **526** raw styled buttons → `Button` (ratchet `raw-button-bg`, re-measured 2026-08-11; the "~18" was off by ~29×, and note the ratchet counts opening tags carrying a background, not every `<button>`); hand-rolled cards → `EntityCard`/`ModuleCard`; unify badges/empties; lint flags raw styled buttons/cards. ✅ The card half's **triage pass RAN on 2026-08-11**: `bespoke-cards` and `bespoke-rows` are both rebased to **0** (see the section below). | M | ⏳ |
 | P4 | **Universal browse hero.** The 24 plain `IndexTemplate` pages adopt `heroOverlay` (section-default covers) so the hero is everywhere. | M | 📋 |
 | P5 | **Entity headers → `PageHero`.** Fold the 43 `DetailTemplate` band pages onto the one `PageHero` grammar (entity + index = one component). | M–L | 📋 |
 | P6 | **Copy cascade.** Generalize `page_content` into `site → section → page` inherit-cascade; widen editable fields to body copy + images; extend `check:canon` to `.tsx`. | L | 📋 |
@@ -1209,20 +1210,34 @@ left rather than a to-do list of things nobody got to.
 | `handrolled-icon-button` 6 | S | Two are `app-shell` (MENU-CONTRACT territory, snapshot-sensitive). Four need a **tinted/selected** variant (`bg-primary-bg + ring`), not the `filled` variant just added. Stopped rather than add a second speculative variant mid-flight |
 | `adhoc-progress` ~~7~~ **8** | S | Re-measured 2026-08-11 (`node scripts/check-adoption.mjs`, `✅ held`, frozen 2026-08-06). **4 are false positives**: `rounded-pill object-cover` avatars the pattern cannot distinguish from bars. The real ones each need something `ProgressTrack` lacks: a dual-layer buffered+played scrubber, confetti dots, and a runtime hex with no `ProgressTone`. `ProgressTrack` itself is in **44** files |
 
-### ⚠️ Needs a triage pass BEFORE anyone sweeps it
+### ✅ The triage pass RAN (2026-08-11) — this section is now its record, not a to-do
 
-**`bespoke-cards` (24) and `bespoke-rows` (14) — zero retired, and the reason matters more than the
-number.** The ratchet is a filename heuristic and a large fraction of its population are not browse
-cards or list rows at all: `row-controls`, `practice-row-actions`, `member-row-actions`,
-`route-chrome-row` are action clusters; `space-credit-row` is a logo-tile credit line. Of the ones
-that genuinely are cards, the two read carry docstrings saying they are **deliberate** variants —
-`ContactCard` calls itself the portrait counterpart to `PersonCard`, and `GroupCard` is byte-matched
-on purpose to the ChaptersNearMe card so the two can never drift. Converting either is a design
-ruling, not a substitution, and `upcoming-event-rows` has a dimension-matched `h-16` skeleton a
-`RowCard` swap would desynchronise.
+> **Both ratchets rebased to 0.** `bespoke-cards` 24 → **0**, `bespoke-rows` 14 → **0**, recorded
+> with reasons in `scripts/adoption-baselines.json`. Re-derived 2026-08-11 at `334c3ec`.
 
-**Separate "owed to the kit" from "filename collision" first.** Sweeping this as-is guarantees
-forced conversions to move a number, which is the failure mode the ratchets exist to prevent.
+**Four sites were genuinely owed to the kit, and all four converged:**
+`app/discover/practices/practice-card.tsx` now composes `EntityCard`;
+`components/journeys/journey-manage-card.tsx` and `components/spaces/space-practice-row.tsx`
+compose `RowCard` with their lifecycle bars in the new footer slot; and
+`components/events/upcoming-event-rows.tsx` composes `RowCard` in link mode **with its
+dimension-matched skeleton moved alongside it** (the flat `h-16` was matched to the markup that
+was replaced and would now be 12px short, which is exactly the desynchronisation the old text
+below warned about, handled rather than avoided).
+
+**The other 34 were filename collisions and are now named in each entry's `exclude` list with a
+one-line reason.** That was the whole finding: the classes key off the FILENAME (`*-card.tsx` and
+the substring `*row*.tsx`), so they were counting `row-controls`, `practice-row-actions`,
+`member-row-actions` and `route-chrome-row` (action clusters), `space-credit-row` (a logo-tile
+credit line), QR panels, settings forms, feed prompts, detail panes, the `ModuleCard` chrome
+primitive itself, and `grow-network.tsx`, which matched only because the word **grow** contains
+**row**. `ContactCard` and `GroupCard` stay excluded on their own docstrings: `ContactCard` is the
+deliberate portrait counterpart to `PersonCard`, and `GroupCard` is byte-matched on purpose to the
+ChaptersNearMe card so the two can never drift.
+
+**The rebase makes the ratchet STRICTER, not weaker.** At 24 and 14 an uncategorised `*-card.tsx`
+could hide inside an undifferentiated count; at **0** the next one fails CI. That is the payoff of
+"separate owed-to-the-kit from filename-collision first," and it is why the sweep was never run
+as-is: forced conversions to move a number are the failure mode the ratchets exist to prevent.
 
 ### Instrument gaps (Phase 9 queue, recorded not fixed)
 
