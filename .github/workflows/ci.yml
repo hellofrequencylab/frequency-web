@@ -170,7 +170,7 @@ jobs:
           )
           # RUN IN PARALLEL, REPORT IN ORDER. The guards are independent node processes that only
           # read the tree, so nothing about them needed to be sequential — it just was. Run wall
-          # clock was the SUM of 25 guards plus 25 pnpm startups; it is now bounded by the
+          # clock was the SUM of 26 guards plus 26 pnpm startups; it is now bounded by the
           # slowest single guard (check:tokens, ~2.5s locally).
           #
           # Output still reads exactly as before. Each guard's stdout+stderr goes to its own file
@@ -179,7 +179,7 @@ jobs:
           # price of parallelising a loop like this, and it is the whole reason the loop is
           # readable when something breaks.
           #
-          # Concurrency is capped: the runner has 2 cores, and 25 concurrent node processes trade
+          # Concurrency is capped: the runner has 2 cores, and 26 concurrent node processes trade
           # a fast pass for an OOM on the one run that matters.
           out=$(mktemp -d)
           maxp=6

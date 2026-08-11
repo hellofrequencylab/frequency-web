@@ -529,14 +529,43 @@ seeded (a non-default menu), so it is unchanged pre-seed. Tables are not in
 
 **Prod is MCP-apply-only. Never `supabase db push` against prod (ADR-496).** The repo
 `supabase/migrations/*.sql` files are the authored SOURCE; the applied set in the prod
-`schema_migrations` table is prod TRUTH. Their stamps deliberately DIVERGE (prod stamps are
-apply-time wall-clock; repo stamps are logical/rounded), so `db push` would see ~300 already-applied
-files as "unapplied" and try to **re-run** them, several destructively (e.g. re-running
-`pricing_plan_collapse` mangles the billing namespace). Do not try to "fix" that divergence by pushing.
+`schema_migrations` table is prod TRUTH.
+
+> ⚠️ **Re-measured 2026-08-11: the stamps do NOT diverge, and this section used to say they did.**
+> It read "their stamps deliberately DIVERGE (prod stamps are apply-time wall-clock; repo stamps are
+> logical/rounded), so `db push` would see ~300 already-applied files as unapplied". Measured against
+> the live ledger, the two sets are **byte-identical** on both columns:
+>
+> | | repo | prod ledger |
+> | :--- | :--- | :--- |
+> | rows | 598 | 598 |
+> | `md5` of sorted `version` | `57b47400…` | `57b47400…` |
+> | `md5` of sorted `version\tname` | `10c840b6…` | `10c840b6…` |
+>
+> That means **zero** stamp divergence and **zero** name variants, so the "~300 unapplied" hazard
+> does not exist in the current state. The old text was accurate when written and was made obsolete
+> by the ADR-963 reconciliation, which nobody came back to record here. **Keep the `db push` ban
+> anyway** — it rests on ADR-496 and on the destructive re-run risk, neither of which depends on the
+> divergence claim. Verify with the two md5s above before citing this block; do not assume.
 
 - **Apply a new migration to prod** via the Supabase MCP `apply_migration` tool (or, if scripting, a
   reviewed one-off) — never `db push`. Ship the migration as a repo file first with a monotonic
   logical stamp later than every existing file.
+- 🔴 **Then reconcile the ledger row, in the same sitting.** `apply_migration` stamps the ledger with
+  **apply-time wall-clock** and ignores the filename's version prefix. A file named
+  `20270220000000_fk_indexes_and_billing_policy_merge.sql` landed as version `20260811003019`. This
+  is the mechanism behind all four "ledger drift" recurrences: each one leaves exactly one repo file
+  with no ledger row and one ledger row with no repo file, **sharing a `name`**. That shared name is
+  the signature, and the repair is one statement:
+
+  ```sql
+  update supabase_migrations.schema_migrations
+  set version = '<repo filename prefix>'
+  where version = '<wall-clock stamp>' and name = '<shared name>';
+  ```
+
+  Nothing re-runs and no DDL is involved. Skipping it is what makes `db push` see the file as
+  unapplied, which is the hazard the ban above exists to avoid. Reconcile, then re-check parity.
 - **Author + review** happen on the repo file. Local/branch/CI ephemeral databases build from the
   repo files on a clean slate (there is no prod history to collide with there), so `db push` is fine
   *only* against a throwaway DB, never the linked prod project.
@@ -552,12 +581,16 @@ npx supabase gen types typescript --linked > lib/database.types.ts  # regenerate
 If prod ever needs filename-stamp parity for a tool that only reads filenames, do a deliberate,
 one-time `migration repair --status applied <id>` reconciliation, not an ad-hoc rename or a `db push`.
 
-### Name-variant bookkeeping (verified 2026-07-26, harmless)
+### Name-variant bookkeeping — ✅ resolved, none remain
 
-Beyond the stamp divergence above, about 35 migrations with logical stamps before `202611*`
-also carry **name variants**: the repo filename and the name recorded in prod's
-`schema_migrations` differ (renames during authoring, dashboard-side applies, and parallel
-MCP applies). All of the objects those migrations create were verified present in prod on
-2026-07-26 — this is bookkeeping drift only, not schema drift. Treat these entries exactly
-like the stamp divergence: they are expected, they are harmless, and **do not re-apply** the
-repo files to "fix" the names (re-running several of them is destructive).
+This section used to say that about 35 migrations with logical stamps before `202611*` carried
+**name variants** (repo filename and prod `schema_migrations` name differing, from renames during
+authoring, dashboard-side applies, and parallel MCP applies), verified harmless on 2026-07-26.
+
+Re-measured 2026-08-11: **there are none.** The `version\tname` md5 matches on both sides
+(`10c840b6…`), so every one of the 598 rows agrees with its repo filename on both columns. The
+variants were reconciled at some point after 2026-07-26 and the note was never retired.
+
+The standing advice survives the correction and still holds: **do not re-apply repo files to "fix"
+bookkeeping**, because re-running several of them is destructive. Reconcile the ledger row with an
+`update` (see the migration workflow above), never with a re-apply or a `db push`.

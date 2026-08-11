@@ -23,6 +23,15 @@
 // compliant just for that). Direct-or-ancestor is the floor measurement: every page it reports
 // cannot reach a shell by any route a reader would call composition.
 //
+// It also matches the shell by its LITERAL TAG NAME, so every indirection is invisible to it:
+// an aliased import (`import { DetailTemplate as Shell }`), a shell held in a variable or chosen
+// by a ternary, a namespace form (`<T.DetailTemplate>`), a renamed default import,
+// `createElement(DetailTemplate)`, and `dynamic(() => import(...))`. A page composing a shell
+// through any of those reads as BARE and inflates the count. That direction is deliberate: the
+// error can only over-report debt, never certify a hand-rolled layout as compliant, so the
+// baseline stays a safe ceiling. If a real page trips this, compose the tag directly rather than
+// teaching the regex to chase indirection.
+//
 // Usage: `node scripts/check-templates.mjs` (or `pnpm check:templates`). Exits 1 when the count
 // RISES above the frozen baseline. Falling is reported and asks you to re-freeze.
 
@@ -32,11 +41,22 @@ import { pathToFileURL } from 'node:url'
 
 const ROOT = 'app'
 
-/** Route groups that are NOT governed by the template kit, mirroring check-headers.mjs's SKIP_DIRS
- *  exactly so the two guards cannot disagree about what "in-app" means. PAGE-FRAMEWORK is explicit
- *  that templates govern "App routes behind auth (app/(main)/*)" and that the public marketing
- *  routes are a separate system with their own conventions (§ the Loom/module split table). A
- *  marketing page hand-rolling its own hero is following ITS system, not violating this one. */
+/** Route groups that are NOT governed by the template kit. PAGE-FRAMEWORK is explicit that
+ *  templates govern "App routes behind auth (app/(main)/*)" and that the public marketing routes
+ *  are a separate system with their own conventions (§ the Loom/module split table). A marketing
+ *  page hand-rolling its own hero is following ITS system, not violating this one.
+ *
+ *  ⚠️ This is NOT the same set as check-headers.mjs's SKIP_DIRS, and an earlier version of this
+ *  comment claimed it was. Two real differences, both deliberate:
+ *    · CONTENTS — check-headers skips 4 names ('(marketing)', 'sites', 'print', 'discover'); this
+ *      skips 8, adding '(capture)', 'dev', 'for', 'spotlight'.
+ *    · DEPTH — check-headers matches a skipped name at ANY path segment (check-headers.mjs:104
+ *      in the walk, :142 in isRouteModule); this matches only at the top level (`dir === ROOT`),
+ *      so a nested directory that happens to share a name is still governed.
+ *  The observable consequence: app/(main)/settings/profile/spotlight/page.tsx IS governed here
+ *  (its 'spotlight' is nested, not top-level) and is NOT governed by check:headers (which drops
+ *  any path containing that segment). Widening either set is a scope change to that gate's
+ *  baseline, so do not "unify" them without re-freezing both numbers. */
 const SKIP_DIRS = new Set(['(marketing)', '(capture)', 'sites', 'print', 'discover', 'dev', 'for', 'spotlight'])
 
 /** The real shells. A page composing any of these has a layout; anything else does not. */
@@ -97,7 +117,11 @@ export function ancestorComposes(pagePath, read = (f) => readFileSync(f, 'utf8')
   }
 }
 
-/** Pages that render JSX at all. A redirect/notFound stub owes no shell. */
+/** Does this file contain anything that could be a JSX tag? A redirect/notFound stub does not, and
+ *  owes no shell. Deliberately OVER-inclusive: `<[A-Za-z]` also matches `a < b` and `Array<string>`,
+ *  so a stub with either would be considered and could land in `bare`. That direction is the safe
+ *  one — it can only make the reported number too HIGH, never hide a real bare page — but it is why
+ *  the success line says "considered" rather than claiming these pages render markup. */
 export function rendersJsx(src) {
   return /<[A-Za-z]/.test(src)
 }
@@ -119,9 +143,13 @@ export function evaluate(io = {}) {
   return { total: list.length, considered, bare: bare.sort() }
 }
 
-/** A gate that scans nothing reports a clean bill of health. 383 page.tsx files live under app/ on
- *  2026-08-11; the floor sits well under that and far above zero. Same pattern as MIN_ROWS in
- *  check-gate-parity.mjs, which shipped after that gate printed "0 of 0 ✓" and exited 0. */
+/** A gate that scans nothing reports a clean bill of health. Same pattern as MIN_ROWS in
+ *  check-gate-parity.mjs, which shipped after that gate printed "0 of 0 ✓" and exited 0.
+ *
+ *  Compare the floor against the right number: `pages()` returns the SKIP_DIRS-filtered walk, which
+ *  is **313** on 2026-08-11, not the 383 page.tsx files that exist under app/ in total. 150 leaves
+ *  roughly half the filtered corpus as headroom for legitimate route deletion while still catching
+ *  a walk that silently collapses. */
 export const MIN_PAGES = 150
 
 /** Frozen 2026-08-11 at the measured value: 313 in-app page.tsx, 290 rendering JSX, 58 of those
@@ -175,7 +203,7 @@ function main() {
   }
 
   console.log(
-    `✓ Template contract: ${considered} of ${total} page(s) render JSX; ${considered - bare.length} ` +
+    `✓ Template contract: ${considered} of ${total} page(s) are considered (not redirect stubs); ${considered - bare.length} ` +
       `compose a kit shell directly or through an ancestor layout, ${bare.length} do not ` +
       `(baseline ${BASELINE}, may only fall).`,
   )

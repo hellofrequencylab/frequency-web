@@ -19014,6 +19014,17 @@ two findings are not the same kind of thing:
   every build on it would make the gate something to route around, which is how a gate dies. It
   stays behind `--strict`.
 
+**Amended 2026-08-11.** `--strict` was defined but never passed: `package.json`'s `check:help`
+omitted it, so the core-coverage half of this ADR was decided and then not enforced. It is wired
+now. That changed no outcome the day it landed (core coverage was already **36/36**, so `--strict`
+exits 0), which is the point: it is a ratchet against the next core feature that ships without an
+article, not a fix for a present gap. The seven undocumented keys below are all `core: false` and
+remain the queue this gate does not block on. No allowlist was added — the registry's own `core`
+boolean IS the allowlist, declared on the row where the feature is declared, and a second list
+beside it would be a parallel registry that drifts. Both `check:help` and `check:docs-links` also
+gained corpus floors the same day: `loadCategoriesFromDisk` swallows a missing `content/help` and
+returns `[]`, which would have read as 100% core coverage of nothing.
+
 **Consequences.** ✅ Coverage 29/36 → **39/46**; core coverage **36/36**; orphans **0**. ✅ Probed:
 removing one key makes `check:help` exit 1 and name both articles that referenced it. ⚠️ Seven
 registry keys still have no article — `nexuses`, `store`, `crew`, `profiles`, `marketing`,
@@ -19921,3 +19932,51 @@ view-as -> supabase/server` and a client bundle cannot take it. ⚠️ Search is
 a Space exists. ⚠️ It excludes anyone already seated, so the picker never offers someone who is
 already on the team; the empty state says so, since "no members match" would otherwise read as a
 claim about the search.
+
+## ADR-983 — The ledger drift has one cause, and it is the apply tool (2026-08-11)
+
+**Decision.** After applying a migration through the Supabase MCP `apply_migration` tool, reconcile
+the ledger row's `version` to the repo filename prefix in the same sitting, with an `update`. The
+reconciliation is part of applying, not a separate cleanup someone gets to later.
+
+**The cause, which four "repairs" never named.** `apply_migration` stamps
+`supabase_migrations.schema_migrations.version` with **apply-time wall-clock** and ignores the
+version prefix in the filename it was given. The file
+`20270220000000_fk_indexes_and_billing_policy_merge.sql` landed in the ledger as `20260811003019`,
+which is the wall-clock minute it was applied. Every other migration in this repo reached prod by a
+path that preserved the filename version, which is why each recurrence has the same shape: exactly
+one repo file with no ledger row, one ledger row with no repo file, **sharing a `name`**. That
+shared name is the signature. `docs/FINALIZE-PLAN.md` recorded the drift four times and called §2.6
+"stop it recurring" without ever isolating the mechanism, so each repair fixed an instance and left
+the generator running.
+
+**Two doc claims this disproves, both in `docs/DATABASE.md`, both corrected.** That file told the
+reader the stamps "deliberately DIVERGE (prod stamps are apply-time wall-clock; repo stamps are
+logical/rounded)" and that ~300 files would therefore read as unapplied, and separately that ~35
+migrations carry name variants. Measured against the live ledger on 2026-08-11, both are false:
+
+| | repo | prod ledger |
+| :--- | :--- | :--- |
+| rows | 598 | 598 |
+| `md5` of sorted `version` | `57b47400…` | `57b47400…` |
+| `md5` of sorted `version\tname` | `10c840b6…` | `10c840b6…` |
+
+Byte-identical on both columns: zero stamp divergence, zero name variants. Both notes were accurate
+when written and were made obsolete by the ADR-963 reconciliation, which nobody returned to record.
+The danger was not that they were stale but that they were **load-bearing in the wrong direction**:
+a reader following them would treat live drift as expected and leave it, which is how a defect
+recurs four times without anyone being wrong on their own terms.
+
+**The `db push` ban survives unchanged.** It rests on ADR-496 and on the destructive re-run risk,
+neither of which depended on the divergence claim. Nothing here relaxes it.
+
+**Consequences.** ✅ The outstanding drift is repaired: the one wall-clock row was `update`d to
+`20270220000000`, restoring exact 598 ⇄ 598 parity on both columns. No DDL ran and nothing re-ran;
+the row's `name` and `statements` were untouched. ✅ `DATABASE.md` now carries the mechanism, the
+one-statement repair, and the two md5s to verify against, rather than the claim they refute.
+⚠️ The verification cannot live in `check:migrations`: CI has no database credentials, so a
+ledger-parity check belongs in the scheduled maintenance sweep, alongside the menu presence guard
+that is deferred there for the same reason (FINALIZE §4.2). ⚠️ Recorded plainly because it is the
+honest version: the fourth recurrence was mine, applied under a standing instruction to apply
+migrations as I went, and the production `update` that repaired it was made before reading the
+`DATABASE.md` caution that turned out to be describing a state that no longer existed.

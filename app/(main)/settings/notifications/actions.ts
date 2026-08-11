@@ -13,11 +13,16 @@ import { CONSENT_SCOPES, type ConsentScope } from '@/lib/consent/scopes'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // Saves the notification preferences form. Upserts (lazy-create on first save).
-// The payload now carries the full Phase 6 settings: the channel × category grid
-// (including the `comments` topic) PLUS the per-category `freq_*` cadence. Push
-// columns are accepted as-is (the UI toggles them live). Unknown frequency values
-// are coerced to 'realtime' server-side so a tampered payload can never widen
-// delivery. RLS covers both operations: profiles self-read + notification_preferences
+// The payload is the full Phase 6 settings object, but only ONE half of it is
+// authored by the member today: the channel × category grid (including the
+// `comments` topic), which the form toggles live. The per-category `freq_*`
+// cadence has no UI control any more — the form's Frequency column was removed —
+// so those values ride along unchanged from `initial`, which section.tsx merges
+// over DEFAULT_SETTINGS before rendering. Sending the whole object is what keeps
+// that round-trip lossless: a partial payload would blank the columns on save.
+// Unknown frequency values are still coerced to 'realtime' server-side, so a
+// tampered payload can never widen delivery even though nothing legitimate sets
+// them. RLS covers both operations: profiles self-read + notification_preferences
 // owner INSERT/UPDATE (see ADR-174).
 export async function saveNotificationPreferences(
   settings: NotificationSettings,

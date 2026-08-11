@@ -259,7 +259,7 @@ function main() {
   }
   const violations = runCheck()
   if (violations.length === 0) {
-    console.log('✓ Token guard: in-app UI uses DAWN tokens + the named type scale (no raw hex, no text-[Npx], no inline rgb()).')
+    console.log('✓ Token guard: in-app UI uses DAWN tokens + the named type scale (no raw hex, no arbitrary text size in text-[N(px|rem|em|pt|ch|ex)], no inline rgb()).')
     return
   }
   console.error(`\n✗ Token guard failed — ${violations.length} hardcoded-style violation(s). Colors are DAWN tokens only; type uses the named scale:\n`)

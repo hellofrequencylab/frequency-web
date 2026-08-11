@@ -92,11 +92,19 @@ describe('the ratchet and its floor', () => {
   })
 
   it('the scope excludes the systems that are not template-governed', () => {
-    // PAGE-FRAMEWORK: templates govern "App routes behind auth (app/(main)/*)". Mirrors
-    // check-headers' SKIP_DIRS so the two guards cannot disagree about what in-app means.
+    // PAGE-FRAMEWORK: templates govern "App routes behind auth (app/(main)/*)".
     const list: string[] = pages()
     expect(list.some((p) => p.includes('(marketing)'))).toBe(false)
     expect(list.some((p) => p.startsWith('app/discover'))).toBe(false)
     expect(list.some((p) => p.startsWith('app/(main)'))).toBe(true)
+  })
+
+  it('SKIP_DIRS applies at the TOP LEVEL only, so a nested namesake stays governed', () => {
+    // This is where this guard's scope genuinely differs from check:headers', which drops a
+    // skipped name at any depth. Pinned as a test because the difference used to be described
+    // wrongly in a comment, and a comment cannot fail.
+    const list: string[] = pages()
+    expect(list).not.toContain('app/spotlight/[handle]/page.tsx')
+    expect(list).toContain('app/(main)/settings/profile/spotlight/page.tsx')
   })
 })
