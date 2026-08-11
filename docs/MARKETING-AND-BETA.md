@@ -71,7 +71,7 @@ member/circle/event/post data via Puck `metadata`, fetched in
 
 **Infra:** `pages` table + public `site-media` bucket (migration
 `20240226000000_pages_cms.sql`). Image uploads → `site-media` via
-`lib/page-editor/upload-action.ts` (8 MB cap, `marketer`+). Publish/draft actions
+~~`lib/page-editor/upload-action.ts`~~ (deleted 2026-08-11; the Puck image fields moved to the Loom picker and stopped calling it). Publish/draft actions
 in `app/edit/actions.ts`. Current content is **seeded** into the DB so the editor
 opens on the real design.
 

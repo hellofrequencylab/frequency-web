@@ -321,8 +321,10 @@ export async function setCircleChannelAction(
 }
 
 // Cover image: upload to the public `site-media` bucket and persist image_url, or
-// clear it. Both re-check circle.editSettings (capabilities are law). Mirrors the
-// Puck uploader (lib/page-editor/upload-action.ts) but gated per-circle, not staff.
+// clear it. Both re-check circle.editSettings (capabilities are law).
+// (This used to cite lib/page-editor/upload-action.ts as the model. That uploader was
+// deleted 2026-08-11: the Puck image fields moved to the Loom picker and stopped calling
+// it, leaving it with zero callers. This is now the reference implementation, not a copy.)
 export async function uploadCircleCover(
   id: string,
   slug: string,
