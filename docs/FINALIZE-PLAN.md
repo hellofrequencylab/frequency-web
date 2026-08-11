@@ -744,8 +744,56 @@ Everything on this list is config or a decision — no code unblocks it.
 | Greyed-emoji tuning (`grayscale` vs `saturate-50`) | Reaction selector rest state |
 | Recruit 5 test users per quarter | Lift 1 — see below |
 | Re-run the two Stripe pricing syncs | Collective/Independent checkouts currently dead-end |
-| Set `CRON_HEARTBEAT_BASE_URL` | 27 cron jobs are paging-blind |
+| ~~Set `CRON_HEARTBEAT_BASE_URL`~~ ✅ **DONE 2026-08-11**, then ⏳ **upgrade Healthchecks** | See the note below: the free tier holds 20 checks and there are 27 jobs |
 | Submit `sitemap.xml` to Search Console + Bing | Crawl coverage |
+
+### ⏳ Upgrade Healthchecks.io, or 7 cron jobs go unmonitored
+
+**Owner action, carried 2026-08-11.** `CRON_HEARTBEAT_BASE_URL` is set in Vercel Production to a
+Healthchecks.io **ping key** URL (`https://hc-ping.com/<ping-key>`), so each job auto-creates its own
+check on first ping. `lib/observability/cron-heartbeat.ts:49` resolves `${base}/${jobName}` on
+success and `${monitorUrl}/fail` on failure, which is Healthchecks' slug convention exactly.
+
+🔴 **The account is on the free tier, which caps at 20 checks. `vercel.json` declares 27 cron jobs.**
+The first 20 to ping win the slots and the remaining 7 are rejected. Which 7 lose is decided by
+schedule order, not by importance, so today the outcome is arbitrary.
+
+Two ways to close it:
+
+1. **Upgrade** to the paid tier (~$5/mo at time of writing) and all 27 fit. Simplest.
+2. **Choose deliberately** with per-job overrides. `CRON_HEARTBEAT_URL_<SLUG>` (SLUG = job name
+   upper-snake, e.g. `CRON_HEARTBEAT_URL_PROCESS_QUEUE`) takes precedence over the base, so the
+   20 that matter can be pinned and the rest left unmonitored on purpose rather than by accident.
+
+⚠️ **Auto-created checks arrive with a 1 day / 1 hour period**, which is wrong for most of these.
+`process-queue` runs every 2 minutes, so a 1-day period means it can be dead for the best part of a
+day before anyone is paged. Set each period from the real schedule:
+
+| Job | Schedule | Period |
+| :--- | :--- | :--- |
+| `process-queue` | `*/2 * * * *` | 2 min |
+| `space-campaigns` · `space-drips` · `conversation-batches` · `publish-scheduled` | `*/5 * * * *` | 5 min |
+| `season-go-live` · `embed-room-messages` | `*/10 * * * *` | 10 min |
+| `nurture` · `event-reminders` · `space-follower-event-reminders` | `*/15 * * * *` | 15 min |
+| `referral-release` · `embed-events` | `*/30 * * * *` | 30 min |
+| `journey-drips` | `15,45 * * * *` | 30 min |
+| `practice-lifecycle` | `5 * * * *` | 1 hour |
+| the eight daily jobs | various | 1 day |
+| `weekly-digest` | `0 14 * * 0` | 7 days |
+
+**Suggested 20 if you take option 2**, ordered by what a silent death costs: `process-queue` ·
+`billing-renewals` · `weekly-digest` · `season-go-live` · `lifecycle-triggers` · `event-reminders` ·
+`space-follower-event-reminders` · `publish-scheduled` · `nurture` · `space-campaigns` ·
+`space-drips` · `conversation-batches` · `journey-drips` · `journey-prompt` · `referral-release` ·
+`enforce-retention` · `practice-lifecycle` · `event-occurrences` · `refresh-traits` ·
+`summarize-vera-memory`. The seven left out are the embed jobs plus `demo-decay` and
+`vera-owner-brief`: a late embedding degrades search quality, it does not lose money or break trust.
+
+🔴 **A second half of this is still open and is not owner config.** `check:cron-freshness` is the
+guard that would notice heartbeats going stale, and it **runs in no workflow at all** (`ci.yml`
+says so out loud). Arming the pings without scheduling the guard means the monitors are watched by
+a human remembering to look. Wiring it belongs in the maintenance sweep, next to the ledger-parity
+check.
 
 ---
 
