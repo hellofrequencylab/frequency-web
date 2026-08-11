@@ -1140,7 +1140,7 @@ visual baselines in every state, so it is deliberately **not** bundled into the 
 Same family as the `Input` inset collision from the sweep round: the fix is a variant on the
 primitive, not a className override at the call site.
 
-### 9.12 — ⚠️ `Skeleton` is the second instance of the §9.11 collision, at 126 call sites
+### 9.12 — ⚠️ `Skeleton` is the second instance of the §9.11 collision, at 52 of 329 call sites
 
 `components/ui/skeleton.tsx:15` hardcodes a radius and joins `className` after it:
 
@@ -1208,3 +1208,121 @@ a radius nobody asked for. **Do not sweep it until that is measured** — a blin
 The durable fix in either case is the one §9.11 took: make the radius a prop on the primitive, so
 no caller's intent depends on stylesheet order. `cn()` in this repo is a plain join with no
 tailwind-merge semantics, so it cannot resolve this for you.
+---
+
+## 10 · Fan-out audit, 2026-08-11 (five parallel auditors, cross-artifact technique)
+
+Deliberately a **different technique** from every earlier pass, which used source grep and gate
+scripts. This one compared what each registry *declares* against what the build *emits* and what
+the database *actually enforces* — because every real defect found tonight lived in exactly that gap.
+
+Fixed in this round: §10.1, §10.2, §10.5, §10.6, §10.7 and the `Skeleton`/`Card` collisions.
+Everything below that is **not** marked FIXED is open, with the evidence needed to act.
+
+### ✅ 10.1 — 🔴 Forged friendships (FIXED, PR #2089)
+`friendships_update_addressee_accept` declared an explicit `WITH CHECK`, which **replaces** the
+USING-fallback for the new row. Identity columns were unconstrained; any member holding a pending
+incoming request could rewrite it into an accepted friendship with any victim, which opens a DM
+channel because `lib/messages/actions.ts` reads that row through the service-role client.
+Fixed with a `BEFORE UPDATE` trigger (RLS cannot reference `OLD`, so no policy can express it).
+
+### ✅ 10.2 — 🟠 Six browser-reachable `SECURITY DEFINER` RPCs (FIXED, PR #2089)
+`members_near` (directory enumeration, unbounded radius, no auth check — 7 rows to anon while
+`profiles` correctly returned 0), `record_qr_scan` (unauthenticated write, caller-supplied
+`p_profile`, no rate limit), `profile_zap_total`, `match_/similar_library_assets`,
+`search_handles_public`. **The first revoke did not work** — Postgres grants EXECUTE to `PUBLIC`
+by default, so revoking from `anon`/`authenticated` was a no-op for four of six. Both migrations
+kept, in order, as the record.
+
+### ✅ 10.5 — 🔴 A 12-seat SKU could sell 6 (FIXED, PR #2089)
+`store_items.stock` meant REMAINING to the trigger and the UI, TOTAL to both purchase gates.
+Effective capacity `ceil(N/2)`, refusing at sale 7 while the card read "6 remaining".
+
+### ✅ 10.6 — 🔴 Swallowed DM failures (FIXED, PR #2089)
+### ✅ 10.7 — ⚠️ Store rank gate failed OPEN on an unknown rank (FIXED, PR #2089)
+
+### 🔴 10.8 — OPEN — The app shell statically imports the entire admin module registry
+**Measured, with the chain:** `app-shell.tsx:81` → `admin-bar.tsx:7` → `settings-panel.tsx:13` →
+`components/admin/modules/module-map.tsx` (`'use client'`, 38 static imports, and it has **no
+hooks, no handlers, no browser APIs** — a pure registry marked client). That reaches
+`lib/journey-plans` → `lib/practices` → `lib/automations` → `lib/unsubscribe-tokens` → `crypto`,
+pulling a **406 kB raw / 121 kB gzip** chunk of `crypto-browserify`/`stream-browserify` polyfills
+onto **every authed page**, verified as a blocking `<script src>` in served HTML.
+
+**Fix:** make `module-map` lazy (`next/dynamic` per module, resolved when the admin bar opens);
+have `settings-panel` import module *ids*, not components. Add `import 'server-only'` to
+`lib/journey-plans` and `lib/practices` so this class of leak fails the build. The repo already
+uses that guard in 10+ libs.
+
+### 🔴 10.9 — OPEN — `revalidate = 3600` is dead on 8 public `/discover` routes
+Verified against `prerender-manifest.json`: 207 of 221 caching declarations match the shipped
+disposition; the 8 that don't are all SEO-critical. Three index pages call `createClient()` →
+`cookies()` purely to compute an `isAuthed` boolean, which kills ISR **and** adds an auth round
+trip per crawl. Four detail routes simply lack `generateStaticParams` — the correlation is exact:
+every `/discover/[param]` route that has it lands in `dynamicRoutes` and works.
+
+`app/discover/layout.tsx:17-22` documents this exact bug and fixed **itself** with
+`authMode="client"`. The layout was fixed; the pages were not. `lib/supabase/public.ts` exists,
+is cookieless, and is documented for precisely this.
+
+### 🔴 10.10 — OPEN — Sentry ships on all 385 routes whether or not a DSN is set
+`instrumentation-client.ts:9` imports `@sentry/nextjs` at module scope. The file's comment says a
+DSN-less deploy ships no Sentry payload — true of *network* traffic, false of *bytes*. ~150 kB of
+a 233 kB baseline chunk, on every route including every preview. Gate the import behind
+`NEXT_PUBLIC_SENTRY_DSN`.
+
+### 🟠 10.11 — OPEN — `@supabase/supabase-js` (223 kB raw / 58 kB gz) on 122 public pages, for a switched-off feature
+`support-chat-widget.tsx:19` statically imports `@/lib/supabase/client`, and the marketing, help
+and discover layouts all import the widget. It is env-gated and **never rendered in this build** —
+Next 16 emits script tags for the route's whole client manifest regardless.
+`marketing-header.tsx:68-82` already documents and applies the correct fix (dynamic import inside
+an effect) for exactly this reason. ~17% of `/discover`'s first-load JS.
+
+### 🟠 10.12 — OPEN — Two Space tabs and the `(main)` layout
+`/spaces/[slug]/podcasts` is the one Space tab the §9.5 canonical fix missed (it sits outside the
+`(profile)` route group), and it is the one the **sitemap advertises** — a submitted URL that
+canonicalizes to a different page. Separately, `(main)/layout.tsx` still reads auth during render,
+forcing dynamic on the highest-value indexable routes in the repo.
+
+### 🟠 10.13 — OPEN — Six of 36 `MANAGED_ROUTES` rows are inert
+Three use a `_` placeholder (`/spaces/_/crm`) against an **exact-key** lookup in `mergeChrome`, so
+they never match a live path. Three more point at redirect stubs (`/people`, `/connections`,
+`/friends`) whose live targets (`/network*`) have no row at all. The operator sets a rail
+override, the row confirms "Saved", and nothing changes. `page-chrome.test.ts` has no test that a
+`MANAGED_ROUTES.route` is matchable at all.
+
+### ⚠️ 10.14 — OPEN — Event dates render in two timezones on two search surfaces
+`lib/time/zone.ts` fixes the convention (wall-clock kept as UTC parts) and the event page obeys it.
+`lib/utils.ts` `formatEventDate`/`eventDateBadge` omit `timeZone`, so they resolve in the runtime's
+zone — invisible on the server, wrong in the browser. A 6:00 AM Aug 15 event reads **"Thu, Aug 14"**
+in the ⌘K overlay and **"Fri, Aug 15"** on the full search page and the event page itself.
+
+### ⚠️ 10.15 — OPEN — §9.1 confirmed and understated
+All 5 borders, 5 flairs and 4 titles have exactly one reader: a text chip in the Vault summary.
+Worse, the **13 SKUs actually on today's shelf** carry `metadata = '{}'`, so `classifyRedemption`
+routes every one to `pending` — including five whose copy promises a visible profile change
+(`waveform-border`, `callsign-plate`, `animated-banner`, `custom-title-slot`, `s1-flair-set`).
+No fulfillment queue exists in the operator surface. One correction to §9.1: the *receipt* does
+appear on the profile via `lib/profile/awards.ts`; the *effect* never does.
+
+### ⚠️ 10.16 — OPEN — `robots.ts` has drifted ~30-48 routes behind the app
+Its own header states the contract ("mirror the PROTECTED_PATHS list"); it mirrors a stale copy.
+Every missing route 307s a crawler, which reads as a soft-404 farm. Derive it from one source.
+
+### ⚠️ 10.17 — OPEN — FAQ questions render with no heading element
+`marketing-ui.tsx:374-384` wraps each question in a `<span>` inside `<summary>`. Ten pages emit
+`FAQPage` JSON-LD over a DOM with zero heading structure, against `CONTENT-VOICE.md` §8a ("H2s are
+the literal questions people ask"). The sibling `Steps` primitive already uses `<h3>`. One line,
+and the highest-leverage AIO fix on the list.
+
+### ⚠️ 10.18 — OPEN — `eventSchema` hardcodes USD and never says sold out
+`lib/jsonld.ts:190-193`. `events.currency` is a real per-event column that neither the schema nor
+its two callers pass, and `availability` reflects only `is_cancelled`, never capacity — so the page
+renders "full" while the structured data says `InStock`. **The only outright page-vs-schema
+contradiction found**, on the entity type answer engines quote most. The correct implementation is
+730 lines away in the same file (`:924`).
+
+### 📌 10.19 — `.env.example` and `package.json` disagree about MapLibre
+The doc says the project is pinned to MapLibre 5 and that v6 "stopped inlining its web worker… the
+basemap paints as a blank cream rectangle." `package.json` declares `^6.2.0` and 6.2.0 is
+installed. Either the warning is stale or the maps are broken; both are worth one check.

@@ -187,7 +187,12 @@ export async function sendMessage(conversationId: string, formData: FormData) {
     .eq('conversation_id', conversationId)
 
   const memberIds = (participants ?? []).map((p) => p.profile_id as string)
-  if (!memberIds.includes(myProfileId)) return
+  // THROW, do not return. components/messages/thread.tsx rolls the optimistic bubble back
+  // only inside `catch`, and a server action that returns normally never rejects — so a silent
+  // return here left the sender looking at a message that was never written, with the composer
+  // cleared and no error. It only reappears as missing on reload. `sendRoomMessage` throws in
+  // the same situation; this is the sibling that didn't.
+  if (!memberIds.includes(myProfileId)) throw new Error('You are not part of this conversation')
 
   // Blocking gate (parity with startConversation): startConversation refuses to OPEN a
   // thread when either party blocked the other, but a thread that pre-dates the block was
@@ -198,7 +203,11 @@ export async function sendMessage(conversationId: string, formData: FormData) {
     throw new Error('You cannot message this member')
   }
 
-  const { data: inserted } = await admin
+  // The error was previously not destructured at all, so RLS refusals, constraint violations and
+  // transient DB errors all produced a normal return: the optimistic bubble stayed on screen, the
+  // realtime INSERT echo never arrived because no row existed, and the member believed the message
+  // had sent. `sendRoomMessage` (messages/rooms/actions.ts:186) has always checked this.
+  const { data: inserted, error: insertError } = await admin
     .from('messages')
     .insert({
       conversation_id: conversationId,
@@ -207,6 +216,7 @@ export async function sendMessage(conversationId: string, formData: FormData) {
     })
     .select('id')
     .single()
+  if (insertError) throw new Error(insertError.message)
 
   // Fold the DM onto the CRM timeline (fire-safe, idempotent). 1:1 only — `conversations` is
   // 1:1-only, so there is exactly one counterpart; a room (group) send is a separate path and is

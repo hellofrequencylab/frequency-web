@@ -1,3 +1,4 @@
+import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getSpaceBySlug } from '@/lib/spaces/store'
@@ -20,15 +21,24 @@ async function resolveSpace(slug: string) {
   return { space, shows }
 }
 
+// This tab lives OUTSIDE the `(profile)` route group, which is why the ADR-925 canonical fix for
+// the eight profile sub-tabs never reached it. It returned title+description only, so metadata
+// inheritance handed it the layout's canonical — `/spaces/<slug>` — while `app/sitemap.ts:394`
+// submits this exact URL and it renders 200 for anonymous visitors (isAnonSpaceProfile).
+//
+// That combination is the worst one available: the only route in the tree that is simultaneously
+// sitemap-advertised, publicly rendered, and canonicalised onto a DIFFERENT page. Google reports it
+// as "Alternate page with proper canonical tag" and drops it. Routed through the same helper the
+// other tabs use, so it self-canonicals like they do.
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
   const resolved = await resolveSpace(slug)
   if (!resolved || resolved.shows.length === 0) return { title: 'Shows' }
-  const name = resolved.space.brandName ?? resolved.space.name
-  return {
-    title: `Shows by ${name}`,
-    description: `Listen to podcasts from ${name}.`,
-  }
+  return spaceProfileMetadata(slug, {
+    segment: 'podcasts',
+    label: 'Shows',
+    describe: (brandName) => `Podcasts and recordings published by ${brandName}.`,
+  })
 }
 
 async function ShowCard({ slug, show }: { slug: string; show: Show }) {

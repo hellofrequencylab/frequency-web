@@ -48,10 +48,14 @@ describe('exact parity is the target state, and it passes', () => {
     // sha256 of the same bytes, so the number in the report is directly comparable to a hand-run
     // `encode(sha256(convert_to(string_agg(version, E'\n' order by version),'UTF8')),'hex')` against production. Pinned against the
     // live values measured 2026-08-11, which the repo filenames alone reproduce.
+    // Re-frozen 2026-08-11 after the security sweep added four migrations (598 -> 602). Both
+    // digests below were read back from PRODUCTION and matched the repo byte for byte before
+    // being pinned here — re-freezing from the repo alone would assert that the repo agrees with
+    // itself, which is the one thing this test must not be allowed to mean.
     const { rows } = repoRows()
-    expect(rows.length).toBe(598)
-    expect(versionsDigest(rows)).toBe('0d4bf8158bbc53a972a760f7c9d590bd3193d848a2146bde37d3c92ff6411818')
-    expect(pairsDigest(rows)).toBe('c9f8be0151783b08a20e0451e79f49f01df0e6d986e1a9c8f21bfa9dedb64f19')
+    expect(rows.length).toBe(602)
+    expect(versionsDigest(rows)).toBe('2f2c5adbb05c294c9c87309042caab9ce3de1b97d974afb9316ecfab82e45dd6')
+    expect(pairsDigest(rows)).toBe('d2e46a3729597eede7346cd275ae6818bad1f5ed6c463fce440bf6ff62df9a14')
   })
 
   it('order is by version as text, so an unsorted ledger payload still matches', () => {
