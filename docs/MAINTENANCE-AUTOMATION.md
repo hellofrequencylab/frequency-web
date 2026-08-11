@@ -24,8 +24,9 @@ Maturity is real — the gap is *cadence*, not tooling.
 | AI-in-CI pattern | `help-autodoc` = Node `.mts` + Anthropic API (`ANTHROPIC_API_KEY` secret) | ✅ (reused below) |
 
 **The core gap:** the powerful pieces (advisor sweeps, meta-scan, RLS tests) run only when a human
-asks. (`cron-freshness` did too until 2026-08-11; it is now weekly in `maintenance.yml`, see §7a.) Automating "the entire experience" = a scheduler + a stateful diff
-(surface only *new* findings) + a codified autonomy policy (what auto-fixes vs escalates).
+asks. (`cron-freshness` did too until 2026-08-11; it is now weekly in `maintenance.yml`, see §7a.)
+Automating "the entire experience" = a scheduler + a stateful diff (surface only *new* findings) +
+a codified autonomy policy (what auto-fixes vs escalates).
 
 ## 2. The architecture — four tiers by blast radius
 

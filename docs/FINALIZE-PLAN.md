@@ -742,10 +742,39 @@ Everything on this list is config or a decision — no code unblocks it.
 | `/the-lab` + `/spaces` meta descriptions | 3.3 — a copy decision, not a trim |
 | **White-on-amber button text** | The DS artifact shows white on `#E2912F`; shipped is ink. Ink measures **7.35:1** (AA + AAA), white **2.52:1**. White cannot ship without failing `check:contrast` and degrading every primary button. Either darken the amber (~`#8A5410` puts white at 6.26:1 — a real brand shift) or correct the artifact |
 | Greyed-emoji tuning (`grayscale` vs `saturate-50`) | Reaction selector rest state |
-| Recruit 5 test users per quarter | Lift 1 — see below |
+| ~~Recruit 5 test users per quarter~~ 🅿️ **PARKED by the owner 2026-08-11** | Lift 1. Not dropped: see the note below for the resume condition |
 | Re-run the two Stripe pricing syncs | Collective/Independent checkouts currently dead-end |
 | ~~Set `CRON_HEARTBEAT_BASE_URL`~~ ✅ **DONE 2026-08-11**, then ⏳ **upgrade Healthchecks** | See the note below: the free tier holds 20 checks and there are 27 jobs |
 | Submit `sitemap.xml` to Search Console + Bing | Crawl coverage |
+
+### 🅿️ The moderated research round is parked, and Lift 1 stays at zero until it is not
+
+**Owner decision, 2026-08-11.** The quarterly round (`docs/research/PROTOCOL.md`, UX-MATURITY Lift
+1b) is deferred. Recorded here rather than dropped, per ADR-921's rule that deferred work lives on
+the list with its prerequisites attached or it is not deferred, it is lost.
+
+**What it is, so the next reader does not have to go looking.** Five members, one hour each, once a
+quarter, against the Vercel preview of a `design-sync/*` branch. Never production, never localhost.
+The owner's part is §2 and the protocol calls it "the only genuinely human step in this lift":
+pull the pool from `/admin/beta`, check each member's `analytics` consent scope, send **8 invites to
+land 5 sessions**, aim for 3 members + 2 operators so J5 gets observed twice, and grant Zaps within
+24 hours with the reason `Research round YYYY-QN`. Roughly two hours per quarter.
+
+**Resume condition:** the owner calls it. There is no engineering prerequisite and nothing else
+blocks on it being scheduled.
+
+**What stays true while it is parked, and is not a defect:**
+
+- ⏳ **Lift 1 sits at literal zero.** `docs/research/findings/` holds only its `README.md`. No
+  engineering closes this one, which is why it is a decision rather than a task.
+- ✅ **`check:research-freshness` is built and advisory**, so the staleness is visible on every run
+  rather than being something someone has to remember. It exits 0 by design: failing a build on a
+  recruiting decision is how a gate becomes something people route around (same reasoning as
+  ADR-970).
+- ⚠️ **The DAWN handoff carries the gap honestly.** `design_handoff/SYNC.md` standing rule 1 requires
+  every outbound handoff to carry a "What users tripped on" section and never omit the heading. The
+  gate emits the exact line for it: *"No moderated round has run yet. See docs/research/PROTOCOL.md."*
+  So the handoff stays complete under the contract while the round is parked.
 
 ### 🔴 `.dark [data-skin="midnight"]` never matches on the `<html>` path
 
