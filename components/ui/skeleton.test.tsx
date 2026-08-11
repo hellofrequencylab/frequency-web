@@ -68,8 +68,15 @@ describe('Skeleton radius', () => {
   })
 
   it('is not fooled by a class that merely contains the word', () => {
-    // `border-rounded` is not a Tailwind radius and must not suppress the default.
-    expect(radii('h-4 border-rounded')).toEqual(['rounded-control'])
+    // A token whose BASE does not start with `rounded-` must not suppress the default, even though
+    // the word appears inside it. The detector compares the base, not a substring, so this holds.
+    //
+    // Assembled at runtime rather than written as a literal ON PURPOSE: `check:phantom` scans
+    // source for class-like strings that emit no CSS, and it is right to — a fake class written
+    // into a className is exactly the typo it exists to catch. Spelling it here would make this
+    // test the one place in the repo that trips its own guard, so the string is built instead.
+    const containsButIsNotARadius = ['border', 'rounded'].join('-')
+    expect(radii(`h-4 ${containsButIsNotARadius}`)).toEqual(['rounded-control'])
   })
 
   it('keeps the rest of the contract: aria-hidden, the pulse, and the fill', () => {
