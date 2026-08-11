@@ -166,7 +166,7 @@ jobs:
           # while 24 guards ran — a drift that a guard suite of all things should not carry.
           guards=(
             authz canon menu gate-parity workflows elements labels render-path help tokens phantom bridge contrast adoption
-            headers seo collective crm-parity vocab rls grants admin-client migrations adr docs-links
+            headers seo collective crm-parity vocab rls grants admin-client migrations adr docs-links templates
           )
           # RUN IN PARALLEL, REPORT IN ORDER. The guards are independent node processes that only
           # read the tree, so nothing about them needed to be sequential — it just was. Run wall
