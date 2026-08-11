@@ -385,12 +385,13 @@ export function JourneyEditor({
       )}
       <div className="mb-2 flex items-center gap-2">
         <Search className="h-4 w-4 shrink-0 text-subtle" />
-        <input
+        <Input
+          variant="seamless"
           autoFocus
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search practices…"
-          className="w-full bg-transparent text-body-sm text-text outline-none placeholder:text-subtle"
+          className="w-full text-body-sm text-text"
         />
         <button type="button" onClick={onClose} aria-label="Close" className="rounded p-1 text-subtle hover:text-text"><X className="h-4 w-4" /></button>
       </div>

@@ -6,6 +6,7 @@ import { searchNetworkMembers, resolveNetworkMembers, type MemberPick } from './
 import { useSpaceEditorSlug } from './space-editor-context'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
+import { Input } from '@/components/ui/field'
 
 // The Team block's NETWORK MEMBER PICKER — a Puck custom field that lets a space operator pick real
 // Frequency members from the directory (search by name or handle) instead of typing names by hand.
@@ -126,13 +127,14 @@ function MemberPickerField({
 
       <div className="flex items-center gap-2 rounded-control border border-border bg-surface px-2">
         <Search className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
-        <input
+        <Input
+          variant="seamless"
           type="text"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={slug ? 'Search members by name or @handle' : 'Open this from your space editor'}
           disabled={!slug}
-          className="w-full bg-transparent py-1.5 text-body-sm outline-none disabled:opacity-60"
+          className="w-full py-1.5 text-body-sm"
         />
       </div>
 

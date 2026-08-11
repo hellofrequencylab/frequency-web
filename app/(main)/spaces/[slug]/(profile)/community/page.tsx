@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
@@ -14,11 +15,24 @@ import { readProfileData } from '@/lib/spaces/profile-data'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { SpaceCommunityFeed } from '@/components/spaces/community/space-community-feed'
 import { SpaceCommunityRail } from '@/components/spaces/community/space-community-rail'
+import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 
 // THE COMMUNITY TAB (business Community feed). Best-practice business-page layout: the FEED on the left, a
 // right rail with core business info + DYNAMIC feature cards (events, practices/journeys, circles, booking)
 // that appear only when the business has that feature on. PUBLIC read; only followers (or the operator) may
 // react + comment + post. The identity Hero + tab chrome come from the (profile) layout; this is the body.
+
+// Its OWN canonical + title. Without this the tab inherits the Space ROOT's metadata and declares
+// itself a duplicate of a page it is not (FINALIZE-PLAN §9.5).
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  return spaceProfileMetadata(slug, {
+    segment: 'community',
+    label: 'Community',
+    describe: (brandName) => `Posts and updates from ${brandName}, with replies from members.`,
+  })
+}
+
 export default async function SpaceCommunityPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const caller = await getCallerProfile()

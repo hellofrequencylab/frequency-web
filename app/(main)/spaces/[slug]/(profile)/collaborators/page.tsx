@@ -1,14 +1,28 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getMyProfileId } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { listAcceptedCollaborations } from '@/lib/spaces/collaborations'
+import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 
 // THE PUBLIC COLLABORATORS TAB (ADR-799 B1-UI). Lists the businesses that operate together with this
 // space, both directions (its collaborators + who it operates under), each linking to their space. The
 // identity hero + tab chrome come from the (profile) layout; this is the body. Gated into the nav by
 // spaceHasCollaborators, so the tab only appears when there is at least one accepted collaboration.
+
+// Its OWN canonical + title. Without this the tab inherits the Space ROOT's metadata and declares
+// itself a duplicate of a page it is not (FINALIZE-PLAN §9.5).
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  return spaceProfileMetadata(slug, {
+    segment: 'collaborators',
+    label: 'Collaborators',
+    describe: (brandName) => `The businesses that operate together with ${brandName}.`,
+  })
+}
+
 export default async function SpaceCollaboratorsProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const viewerProfileId = await getMyProfileId()

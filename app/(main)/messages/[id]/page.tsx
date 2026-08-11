@@ -24,7 +24,15 @@ export default async function ConversationPage({
   // exist." When the flag is on, this route stops rendering a chat page and hands the
   // conversation to the dock instead. The route FILE stays: /messages/* is a registered iOS
   // universal-link path (public/.well-known/apple-app-site-association), and a link that 404s
-  // is worse than one that opens the dock. Ships OFF; see the flag for what still blocks it.
+  // is worse than one that opens the dock.
+  //
+  // 🔴 THE FLAG IS ON. `platform_flags.chat_dm_routes_retired` has been TRUE in production
+  // since 2026-07-29, which means everything below this line is DEAD on the live site and only
+  // renders if someone flips the row back. This comment used to end "Ships OFF; see the flag
+  // for what still blocks it", which was true on the day it was written and has been wrong for
+  // months — the flag's own note in lib/platform-flags.ts records the owner flipping it, and
+  // there is no blocker list there to go and read. Anyone reasoning about this page's
+  // behaviour from the old sentence was reasoning about a surface no member has seen.
   //
   // The request travels in the URL, not in an event. An event dispatched before the launcher
   // mounts is lost with no trace, and after a full page load the launcher has not mounted yet.

@@ -8,6 +8,7 @@ import { Search, UserRoundCheck, Link2Off, ExternalLink } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { mergeWithMember, unmergeFromMember, searchMembersToLink } from '@/app/(main)/connections/actions'
+import { Input } from '@/components/ui/field'
 
 interface MemberHit {
   id: string
@@ -124,11 +125,12 @@ export function LinkMemberCard({
           </p>
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-subtle" />
-            <input
+            <Input
+              surface="inset"
               value={q}
               onChange={(e) => onQuery(e.target.value)}
               placeholder="Search members by name or @handle…"
-              className="w-full rounded-lg border border-border bg-canvas py-2 pl-8 pr-3 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+              className="pl-8 pr-3"
             />
           </div>
           {error && <p className="text-meta text-danger">{error}</p>}

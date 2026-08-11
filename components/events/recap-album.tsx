@@ -6,6 +6,7 @@ import { ImagePlus, X, Trash2 } from 'lucide-react'
 import { uploadEventMedia, deleteEventMedia } from '@/app/(main)/events/[slug]/social-actions'
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
+import { Input } from '@/components/ui/field'
 
 export type RecapPhoto = {
   id: string
@@ -143,14 +144,14 @@ export function RecapAlbum({
 
           {imageFile && (
             <div className="mt-2 flex items-center gap-2">
-              <input
+              <Input
                 type="text"
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}
                 placeholder="Add a caption (optional)"
                 maxLength={280}
                 disabled={pending}
-                className="min-w-0 flex-1 rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle outline-none focus:border-border-strong disabled:opacity-60"
+                className="min-w-0 flex-1 py-1.5"
               />
               <button
                 type="button"

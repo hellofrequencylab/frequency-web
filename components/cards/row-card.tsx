@@ -11,6 +11,11 @@ import Link from 'next/link'
 //   • Actions row: pass `actions` (buttons/links, their own client components) and the
 //     row becomes a plain surface with only the TITLE linked, so interactive controls
 //     never nest inside an anchor (same rule as EntityCard's floating `action`).
+//   • Managed row: pass `footer` for a FULL-WIDTH control bar under a divider — the shape a
+//     manager list wants when a row carries more lifecycle actions (Edit · Make live · Add to
+//     library · Delete) than fit beside the title, plus the note/error line they write back.
+//     Mirrors EntityCard's `footer` slot, and switches the row out of anchor mode for the same
+//     reason `actions` does: those controls must not nest inside the row's own link.
 //
 //   <RowCard href={`/partners/${slug}`} title={offer.title}
 //     trailing={<StatusChip … />} description={offer.description}
@@ -30,6 +35,7 @@ export function RowCard({
   meta,
   trailing,
   actions,
+  footer,
   dimmed = false,
 }: {
   href: string
@@ -49,14 +55,21 @@ export function RowCard({
   /** Interactive controls on the right — switches the row to actions mode
    *  (only the title is linked, so controls never nest inside an anchor). */
   actions?: React.ReactNode
+  /** Full-width control bar below a divider (lifecycle buttons, and the note/error line they
+   *  write back). Like `actions`, it takes the row out of anchor mode. */
+  footer?: React.ReactNode
   dimmed?: boolean
 }) {
+  // Anchor mode is the DEFAULT, and any interactive slot cancels it: a control bar inside the
+  // row's own <Link> would nest interactive elements in an anchor.
+  const managed = Boolean(actions || footer)
+
   const body = (
     <>
       {anchor && <div className={`shrink-0 ${dimmed ? 'grayscale-[0.5]' : ''}`}>{anchor}</div>}
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          {actions ? (
+          {managed ? (
             <Link href={href} className="text-body font-bold leading-tight text-text hover:text-primary-strong hover:underline">
               {title}
             </Link>
@@ -78,24 +91,30 @@ export function RowCard({
     </>
   )
 
-  const surface = `rounded-2xl border border-border bg-surface px-5 py-4 lift-1 transition-colors hover:border-primary-bg motion-reduce:transition-none ${
+  // The surface carries no padding of its own, so a `footer` divider can run edge to edge while
+  // every content zone keeps the same px-5 inset.
+  const surface = `rounded-2xl border border-border bg-surface lift-1 transition-colors hover:border-primary-bg motion-reduce:transition-none ${
     dimmed ? 'opacity-[0.72]' : ''
   }`
+  const pad = 'px-5 py-4'
 
-  if (actions) {
+  if (managed) {
     // Mobile-first: the text content takes the full width and the controls drop to
     // their own row below, so a long title never gets squeezed beside the buttons.
     // From `sm` up we return to the side-by-side row.
     return (
-      <div className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 ${surface}`}>
-        <div className="flex min-w-0 flex-1 items-start gap-3">{body}</div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
+      <div className={surface}>
+        <div className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 ${pad}`}>
+          <div className="flex min-w-0 flex-1 items-start gap-3">{body}</div>
+          {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
+        </div>
+        {footer && <div className="border-t border-border px-5 py-3">{footer}</div>}
       </div>
     )
   }
 
   return (
-    <Link href={href} className={`flex items-start gap-3 ${surface}`}>
+    <Link href={href} className={`flex items-start gap-3 ${surface} ${pad}`}>
       {body}
       {trailing && <div className="shrink-0">{trailing}</div>}
     </Link>

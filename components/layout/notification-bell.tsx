@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Bell } from 'lucide-react'
 import { getMyNotifications, markAllRead } from '@/app/(main)/notifications/actions'
 import type { NotificationItem } from '@/lib/notifications-map'
+import { notificationHref } from '@/lib/notifications/href'
 import { relativeTime } from '@/lib/utils'
 
 const TYPE_ICON: Record<string, string> = {
@@ -29,27 +30,7 @@ const TYPE_ICON: Record<string, string> = {
   journey_phase_unlocked:   '🗺️',
 }
 
-function notifHref(n: NotificationItem): string {
-  if (n.type === 'friend_request') return '/network/friends'
-  if (n.type === 'friend_accepted' && n.reference_type === 'profile' && n.reference_id) {
-    return '/network/friends'
-  }
-  if (n.reference_type === 'post' && n.reference_id) return `/feed`
-  // A Space Community post: reference_id carries the Space slug, linking to its Community tab.
-  if (n.reference_type === 'space' && n.reference_id) return `/spaces/${n.reference_id}/community`
-  if (n.reference_type === 'dispatch' && n.reference_id) return `/broadcast/${n.reference_id}`
-  if (n.reference_type === 'support_ticket' && n.reference_id) return `/support/${n.reference_id}`
-  // Posted-event notes (event_claimed / event_removed) reference the event by id;
-  // the events index is the stable landing spot.
-  if (n.reference_type === 'event') return '/events'
-  // A practice notice lands on the practice itself: the completion's "Go again" and the
-  // reminder's fastest start both live there (ADR-920 Phase 3).
-  if (n.reference_type === 'practice' && n.reference_id) return `/practices/${n.reference_id}`
-  // Journey notices (next step, phase unlocked) land on the library index; the learn
-  // player needs the slug, which the notice does not carry.
-  if (n.reference_type === 'journey') return '/journeys'
-  return '/feed'
-}
+// Routing lives in lib/notifications/href (pure + unit-tested); the bell only renders it.
 
 export function NotificationBell({ initialUnread }: { initialUnread: number }) {
   const [open, setOpen] = useState(false)
@@ -143,7 +124,7 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
             {notifications.map(n => (
               <Link
                 key={n.id}
-                href={notifHref(n)}
+                href={notificationHref(n)}
                 onClick={() => setOpen(false)}
                 className={`flex items-start gap-3 px-4 py-3 hover:bg-surface transition-colors ${
                   !n.read_at ? 'bg-primary-bg/50' : ''

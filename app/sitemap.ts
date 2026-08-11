@@ -16,7 +16,7 @@ import { listNetworkedSpaces } from "@/lib/spaces/discovery";
 import { listShopProducts, listMarketListings } from "@/lib/commerce/products";
 import { listHousingListings } from "@/lib/listings/housing";
 import { listListings as listClassifieds } from "@/lib/marketplace";
-import { listShowsForSpace } from "@/lib/airwaves/shows";
+import { listPublicShowsBySpace } from "@/lib/airwaves/shows";
 import { DIRECTORY_TYPES } from "@/components/spaces/space-type";
 import { createPublicClient } from "@/lib/supabase/public";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -378,31 +378,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Podcast Show pages + the per-Space Shows index (/spaces/<slug>/podcasts[/<showSlug>]). Only
     // PUBLISHED, public-feed Shows are advertised (the same filter both podcast pages render, which
     // 404 otherwise), and the index is advertised only when a Space has ≥1 such Show — so an empty
-    // podcasts index (which itself 404s) never enters the crawl. Fail-safe: any per-Space error yields
-    // no entries rather than breaking the sitemap.
+    // podcasts index (which itself 404s) never enters the crawl.
+    //
+    // ONE query for every Space, not one per Space (FINALIZE-PLAN §9.9). The old loop issued a read
+    // per networked Space inside this route's degrading try/catch, so a slow database dropped the
+    // entire podcast surface out of the index without a word. Failure behaviour is unchanged and
+    // now lives in the reader: listPublicShowsBySpace returns an empty Map rather than throwing, so
+    // a failure costs the podcast entries and nothing else in the sitemap.
     let podcastRoutes: MetadataRoute.Sitemap = [];
     try {
-      const perSpace = await Promise.all(
-        spaces.map(async (s) => {
-          const shows = (await listShowsForSpace(s.id).catch(() => [])).filter(
-            (sh) => sh.status === "published" && sh.feedVisibility === "public",
-          );
-          if (shows.length === 0) return [] as MetadataRoute.Sitemap;
-          const index = {
-            url: `${SITE_URL}/spaces/${s.slug}/podcasts`,
-            changeFrequency: "weekly" as const,
-            priority: 0.6,
-          };
-          const showEntries: MetadataRoute.Sitemap = shows.map((sh) => ({
-            url: `${SITE_URL}/spaces/${s.slug}/podcasts/${sh.slug}`,
-            ...((sh.updatedAt) ? { lastModified: new Date(sh.updatedAt) } : {}),
-            changeFrequency: "weekly" as const,
-            priority: 0.6,
-          }));
-          return [index, ...showEntries];
-        }),
-      );
-      podcastRoutes = perSpace.flat();
+      const showsBySpace = await listPublicShowsBySpace(spaces.map((s) => s.id));
+      podcastRoutes = spaces.flatMap((s) => {
+        const shows = showsBySpace.get(s.id) ?? [];
+        if (shows.length === 0) return [] as MetadataRoute.Sitemap;
+        const index = {
+          url: `${SITE_URL}/spaces/${s.slug}/podcasts`,
+          changeFrequency: "weekly" as const,
+          priority: 0.6,
+        };
+        const showEntries: MetadataRoute.Sitemap = shows.map((sh) => ({
+          url: `${SITE_URL}/spaces/${s.slug}/podcasts/${sh.slug}`,
+          ...((sh.updatedAt) ? { lastModified: new Date(sh.updatedAt) } : {}),
+          changeFrequency: "weekly" as const,
+          priority: 0.6,
+        }));
+        return [index, ...showEntries];
+      });
     } catch {
       podcastRoutes = [];
     }

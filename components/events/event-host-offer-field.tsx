@@ -13,6 +13,7 @@ import {
   revokeEventHostTransfer,
   type HostTransferView,
 } from '@/app/(main)/events/host-transfer-actions'
+import { Input } from '@/components/ui/field'
 
 // ── "Hand hosting to another Space" (ADR-911) ──────────────────────────────────────────────
 //
@@ -221,7 +222,8 @@ function HostSpaceSearch({ pending, onPick }: { pending: boolean; onPick: (space
     <div className="mt-1.5" ref={boxRef} onKeyDown={onKeyDown}>
       <div className="flex items-center gap-2 rounded-control border border-border bg-surface px-3 py-1.5">
         <Crown className="h-4 w-4 shrink-0 text-subtle" />
-        <input
+        <Input
+          variant="seamless"
           type="text"
           value={query}
           onChange={(e) => {
@@ -230,7 +232,7 @@ function HostSpaceSearch({ pending, onPick }: { pending: boolean; onPick: (space
           }}
           placeholder="Search Spaces by name"
           disabled={pending}
-          className="min-w-0 flex-1 bg-transparent text-body-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
+          className="min-w-0 flex-1 text-body-sm text-text"
         />
       </div>
 

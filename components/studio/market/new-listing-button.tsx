@@ -79,21 +79,23 @@ export function NewListingButton({ className }: { className?: string }) {
           <Store className="h-7 w-7" />
         </div>
         <div className="min-w-0 flex-1">
-          <input
+          <Input
+            variant="seamless"
             autoFocus
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') create() }}
             maxLength={120}
             placeholder="What are you offering or looking for?"
-            className="w-full bg-transparent text-page-title font-bold text-text outline-none placeholder:text-subtle"
+            className="w-full text-page-title font-bold text-text"
           />
-          <input
+          <Input
+            variant="seamless"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             maxLength={40}
             placeholder="Optional category (e.g. furniture, tools, lessons)"
-            className="mt-1 w-full bg-transparent text-body-sm text-muted outline-none placeholder:text-subtle"
+            className="mt-1 w-full text-body-sm text-muted"
           />
         </div>
       </div>

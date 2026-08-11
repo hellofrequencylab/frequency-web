@@ -12,6 +12,7 @@ import { ArrowRight, Check } from 'lucide-react'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { IconButton } from '@/components/ui/icon-button'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { promoteTagAction, mergeTagsAction } from '@/app/(main)/admin/content/actions'
 
@@ -67,20 +68,21 @@ function MergeControl({
       <label className="sr-only" htmlFor={`merge-${tag.id}`}>
         Merge {tag.label} into
       </label>
-      <select
+      {/* `h-8` keeps the control level with the IconButton beside it; the kit's `py-2` is a
+          padding, so a stated height wins outright and the row does not grow. The focus halo now
+          comes from the primitive, which means this field stops painting the amber CHROME ring it
+          had been asking for by hand (`focus:ring-primary/40`) and takes the calm neutral one that
+          every other field on the site wears. */}
+      <Select
         id={`merge-${tag.id}`}
         value={intoId}
         disabled={disabled}
         onChange={(e) => setIntoId(e.target.value)}
-        className="h-8 max-w-36 rounded-lg border border-border bg-surface px-2 text-meta text-text focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
-      >
-        <option value="">Merge into…</option>
-        {choices.map((t) => (
-          <option key={t.id} value={t.id}>
-            {t.label}
-          </option>
-        ))}
-      </select>
+        emptyLabel="Merge into…"
+        options={choices.map((t) => ({ value: t.id, label: t.label }))}
+        wrapperClassName="inline-block w-max max-w-36"
+        className="h-8 text-meta"
+      />
       {/* `title` is passed explicitly and deliberately: it names the CHOSEN target
           ("into Breathwork"), which the accessible name cannot, because the select
           sits right beside it and a screen reader would read the target twice. The

@@ -12,7 +12,7 @@ import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { safeImageSrc, safeUploadPreviewSrc } from '@/lib/safe-image-src'
-import { Input } from '@/components/ui/field'
+import { Input, Textarea } from '@/components/ui/field'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB (post-prep; HEIC is converted and big photos shrink first)
 
@@ -282,7 +282,8 @@ export function EventActivity({
             />
           )}
 
-          <textarea
+          <Textarea
+            variant="seamless"
             value={body}
             onChange={(e) => setBody(e.target.value)}
             onKeyDown={(e) => {
@@ -297,7 +298,7 @@ export function EventActivity({
             }
             rows={2}
             disabled={pending}
-            className="w-full resize-none bg-transparent text-body-sm leading-relaxed text-text/90 placeholder:text-subtle outline-none disabled:opacity-60"
+            className="w-full text-body-sm leading-relaxed text-text/90"
           />
 
           {/* Both arms guarded. gifUrl was validated at its setter, but the blob arm was not,

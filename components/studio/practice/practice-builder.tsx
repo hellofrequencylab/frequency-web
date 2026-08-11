@@ -15,6 +15,7 @@ import { SaveStatus, StudioFooter } from '../kit/studio-footer'
 import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+import { IconButton } from '@/components/ui/icon-button'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { isError } from '@/lib/action-result'
@@ -338,22 +339,24 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
               <div className="grid grid-cols-5 gap-1">
                 {/* Every one of these shipped with NO accessible name: icon-only, the glyph
                     marked nothing, so a screen reader read ten buttons called "button" and the
-                    picker was unusable without sight. `label` names each one. It stays
-                    hand-rolled rather than composing IconButton because the chosen icon carries
-                    a tinted fill and a ring, which the primitive has no variant for. */}
-                {ICONS.map(({ key, label, Icon }) => (
-                  <button
-                    key={key}
-                    type="button"
-                    aria-label={label}
-                    title={label}
-                    aria-pressed={icon === key && !headerImage}
-                    onClick={() => { setIcon(key); setIconOpen(false); queueSave({ icon: key }) }}
-                    className={`tap-target flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${icon === key && !headerImage ? 'bg-primary-bg text-primary-strong ring-2 ring-primary' : 'text-muted hover:bg-surface-elevated'}`}
-                  >
-                    <Icon className="h-4 w-4" aria-hidden />
-                  </button>
-                ))}
+                    picker was unusable without sight. `label` names each one, and it is also the
+                    tooltip. `tinted` is the variant this grid asked for in prose and now has: the
+                    chosen icon keeps its tinted fill and primary ring, and the cells pick up the
+                    press affordance and the focus ring they never had. */}
+                {ICONS.map(({ key, label, Icon }) => {
+                  const chosen = icon === key && !headerImage
+                  return (
+                    <IconButton
+                      key={key}
+                      label={label}
+                      variant={chosen ? 'tinted' : 'plain'}
+                      aria-pressed={chosen}
+                      onClick={() => { setIcon(key); setIconOpen(false); queueSave({ icon: key }) }}
+                    >
+                      <Icon className="h-4 w-4" aria-hidden />
+                    </IconButton>
+                  )
+                })}
               </div>
               <div className="mt-3 border-t border-border pt-3">
                 <ImageUpload
@@ -369,19 +372,21 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <input
+          <Input
+            variant="seamless"
             value={title}
             onChange={(e) => { setTitle(e.target.value); queueSave({ title: e.target.value }) }}
             maxLength={80}
             placeholder="Name your practice"
-            className="w-full bg-transparent text-page-title font-bold text-text outline-none placeholder:text-subtle"
+            className="w-full text-page-title font-bold text-text"
           />
-          <input
+          <Input
+            variant="seamless"
             value={summary}
             onChange={(e) => { setSummary(e.target.value); queueSave({ summary: e.target.value }) }}
             maxLength={140}
             placeholder="A short hook shown on the card"
-            className="mt-1 w-full bg-transparent text-body-sm text-muted outline-none placeholder:text-subtle"
+            className="mt-1 w-full text-body-sm text-muted"
           />
           <p className="mt-1 text-2xs text-muted">Click the icon, name, and hook to edit.</p>
         </div>

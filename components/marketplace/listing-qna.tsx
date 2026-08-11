@@ -12,6 +12,7 @@ import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
+import { Textarea } from '@/components/ui/field'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB (post-prep; HEIC is converted and big photos shrink first)
 
@@ -153,7 +154,8 @@ export function ListingQna({
 
       {canPost ? (
         <div className="mb-4 rounded-card border border-border bg-surface p-3">
-          <textarea
+          <Textarea
+            variant="seamless"
             value={body}
             onChange={(e) => setBody(e.target.value)}
             onKeyDown={(e) => {
@@ -162,7 +164,7 @@ export function ListingQna({
             placeholder={isOwner ? 'Answer a question or add more detail.' : 'Ask about condition, pickup, availability.'}
             rows={2}
             disabled={pending}
-            className="w-full resize-none bg-transparent text-body-sm leading-relaxed text-text/90 outline-none placeholder:text-subtle disabled:opacity-60"
+            className="w-full text-body-sm leading-relaxed text-text/90"
           />
 
           {safeUploadPreviewSrc(imagePreview) && (

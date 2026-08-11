@@ -27,6 +27,7 @@ import type { Facet } from '@/lib/people/member-viewer'
 import { assignRelationship, removeRelationship } from '../relationship-actions'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 
 // THE CONTACTS ROSTER ISLAND: the thin interactive shell over the pure core (lib/crm/contacts-roster).
 // It mirrors the member-viewer's HERO toolbar (live search + a prominent sort selector + facets) but
@@ -171,25 +172,20 @@ export function ContactsRosterClient({
               </label>
             ))}
             {facets.map((f) => (
-              <select
+              // `tone` rather than a className tint: `cn` is a plain join, so a `border-primary`
+              // passed in would land BESIDE the primitive's own `border-border` and Tailwind's
+              // emit order — not this call site — would pick the winner.
+              <Select
                 key={f.key}
                 id={`facet-${f.key}`}
                 value={facetSel[f.key] ?? ''}
                 onChange={(e) => setFacet(f.key, e.target.value)}
-                className={cn(
-                  'rounded-lg border px-2.5 py-1.5 text-meta font-medium transition-colors focus:outline-none',
-                  facetSel[f.key]
-                    ? 'border-primary bg-primary-bg text-primary-strong'
-                    : 'border-border bg-surface text-muted hover:border-primary',
-                )}
-              >
-                <option value="">{f.label}</option>
-                {f.options.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+                tone={facetSel[f.key] ? 'active' : 'default'}
+                emptyLabel={f.label}
+                options={f.options}
+                wrapperClassName="inline-block w-max max-w-full"
+                className="text-meta font-medium"
+              />
             ))}
             {activeFacetCount > 0 && (
               <button

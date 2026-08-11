@@ -488,12 +488,13 @@ export function LinkForm({
         <Field label="Custom link (optional)">
           <div className="flex items-center rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm">
             <span className="text-subtle">/q/</span>
-            <input
+            <Input
+              variant="seamless"
               aria-label="Custom link slug"
               value={form.slug ?? ''}
               onChange={(e) => set('slug', e.target.value || null)}
               placeholder="auto"
-              className="flex-1 min-w-0 bg-transparent text-text outline-none"
+              className="flex-1 min-w-0 text-text"
             />
           </div>
         </Field>

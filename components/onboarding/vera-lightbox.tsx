@@ -9,6 +9,7 @@ import type { ProposedToolCall } from '@/lib/ai/vera/concierge'
 import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
 import type { DeckSlide, VeraOpening } from '@/lib/onboarding/vera-welcome'
 import { WelcomeArt } from '@/components/onboarding/welcome-art'
+import { Input } from '@/components/ui/field'
 
 // Vera's onboarding lightbox (ADR-066 Phase D). It opens OVER the feed the moment
 // a Founder lands from induction (?welcome=vera). Two beats: a short, personalized
@@ -288,12 +289,11 @@ export function VeraLightbox({
 
               {!done ? (
                 <div className="flex items-center gap-2">
-                  <input
+                  <Input
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') send() }}
                     placeholder="Say something to Vera…"
-                    className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
                   />
                   <button type="button" onClick={send} disabled={pending || !input.trim()} aria-label="Send message" className="rounded-xl bg-primary p-2 text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50">
                     <Send className="h-4 w-4" aria-hidden />

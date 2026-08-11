@@ -1,12 +1,40 @@
 # The Quest: UI/UX Redesign Strategy & Plan
 
-> **Status: PROPOSAL (not yet approved).** A ground-up redesign of The Quest, covering
-> both the **member experience** (Journeys, Practices, Challenges, ranks, streaks,
-> leaderboard) and the **operator experience** (a no-SQL way to add, edit, and manage
-> all of it). Grounded in two codebase audits + two multi-source best-practices research
-> briefs (peer-reviewed where it matters). Built on our existing page framework
-> (`PAGE-FRAMEWORK.md`), the Studio, the module system, and DAWN tokens, evolved, not
-> replaced. No code ships until the direction is approved.
+> **Status: PARTLY SHIPPED. Phases 0-2 are largely built; Phases 3-4 and §7's open
+> decisions are still proposal.** A ground-up redesign of The Quest, covering both the
+> **member experience** (Journeys, Practices, Challenges, ranks, streaks, leaderboard) and the
+> **operator experience** (a no-SQL way to add, edit, and manage all of it). Grounded in two
+> codebase audits + two multi-source best-practices research briefs (peer-reviewed where it
+> matters). Built on our existing page framework (`PAGE-FRAMEWORK.md`), the Studio, the module
+> system, and DAWN tokens, evolved, not replaced.
+>
+> ⚠️ **This header used to read "Status: PROPOSAL (not yet approved) … No code ships until the
+> direction is approved."** That was false for six days and it is the dangerous kind of false:
+> it invites a reader to re-propose, or re-build, what is already in the tree. Re-measured
+> 2026-08-11 (`rg -l "\bNAME\b" app components lib`, minus `*.test.*`):
+>
+> | §5 primitive | Files | Where it lives |
+> | :--- | ---: | :--- |
+> | `SeasonMap` | **6** | `components/quest/season-map.tsx` (+ `lib/quest/season-map-data.ts`) |
+> | `HeroMoment` | **4** | `components/quest/hero-moment.tsx` |
+> | `StateBadge` | **6** | `app/(main)/admin/content/seasons/state-badge.tsx` |
+> | `TrophyCase` | **2** | `components/quest/trophy-case.tsx` |
+> | `CollectiveGoalBar` | **1** | shipped as `components/quest/collective-goal.tsx`, consumed by `/crew/leaderboard` |
+> | `StandingHero` | **5** | ⏳ still renders 5×; the "consolidate to the hub" move (§3.1) is **not** done |
+> | `JourneyArc` · `RankLadder` · `WeightClassPicker` · `ReorderList` · `SeasonComposer` | **0** | 📋 still proposal under those names |
+>
+> **Phase 0 (operator unblock) shipped**, though not as one `SeasonComposer` shell: the surfaces
+> are `admin/content/seasons/[id]/season-editor.tsx`, `assign-journey.tsx`, `season-create.tsx`,
+> `season-clone.tsx`, `seasons/[id]/preview/`, and `admin/content/challenges/challenge-editor.tsx`,
+> with `weight_class` in `components/studio/practice/practice-builder.tsx` and
+> `app/(main)/practices/[id]/edit/`. Season 2 no longer needs an engineer, which was the phase's
+> stated goal. **Phase 3's "one-surface compose flow" and clone/templates are therefore partly
+> pre-empted; re-scope against what exists before building.**
+>
+> **What is still genuinely proposal and still needs the owner:** Phase 3's consolidated Composer,
+> Phase 4 polish, the `StandingHero` 5× consolidation, and **all six open decisions in §7** (they
+> are unanswered, so read §3.5's cooperative-leaderboard direction as a recommendation, not a
+> ruling, even though `collective-goal.tsx` shipped).
 
 ---
 

@@ -61,8 +61,24 @@ const iconControlBase =
 // affirmative icon action in a composer row (send). Both are "this control is the answer", which
 // is why one variant serves them. It does NOT replace `Button` — a filled icon-only control is
 // still an icon affordance at icon density, not a small primary button.
+// FOUR VARIANTS. `tinted` is the fourth, added 2026-08-11, and like `filled` it was asked for in
+// prose by the sites that could not adopt the kit: `studio/practice/practice-builder.tsx` says the
+// icon picker "stays hand-rolled rather than composing IconButton because the chosen icon carries a
+// tinted fill and a ring, which the primitive has no variant for", and
+// `entity-blocks/controls/field-controls.tsx` renders the same picker cell one file over.
+//
+// It is `filled`'s quiet sibling and the two are not interchangeable. `filled` is the loud answer:
+// one affirmative action in a row (send), or the selected half of a two-or-three-way segmented
+// toggle where the fill IS the control. `tinted` is the selected cell of a GRID — sixty icons, one
+// of them chosen — where a solid primary block would turn a picker into a scoreboard. The tint plus
+// the primary ring says "this one" at a glance without out-shouting the sixty it sits among.
+//
+// It carries a ring rather than a border because the grids it serves are `gap-1` at 32px: a border
+// is a colour change on an edge the neighbours also have, and a 2px ring reads as selection at that
+// density. Both existing sites already draw exactly this pair (`bg-primary-bg text-primary-strong`),
+// one with a ring and one with a border; the ring is the one that survives a dense grid.
 export type IconButtonTone = 'default' | 'danger' | 'warning' | 'success'
-export type IconButtonVariant = 'plain' | 'bordered' | 'filled'
+export type IconButtonVariant = 'plain' | 'bordered' | 'filled' | 'tinted'
 
 // Quiet at rest, one step louder on hover -- so a cluster of these never shouts. `plain`
 // rests one step quieter than `bordered` because it has no border to carry the affordance.
@@ -90,9 +106,21 @@ const FILLED_TONE: Record<IconButtonTone, string> = {
   success: 'bg-success text-on-primary hover:bg-success/90',
 }
 
+// Tinted is loud at rest like `filled`, so tone is the tint itself rather than a hover step. The
+// ring is the selection mark; the hover step deepens the fill so a selected cell still answers the
+// pointer (INTERACTION-STATES §2 requires hover on an action control, and a selected control that
+// goes inert on hover reads as disabled).
+const TINTED_TONE: Record<IconButtonTone, string> = {
+  default: 'bg-primary-bg text-primary-strong ring-2 ring-primary hover:bg-primary-bg/70',
+  danger: 'bg-danger-bg text-danger ring-2 ring-danger hover:bg-danger-bg/70',
+  warning: 'bg-warning-bg text-warning ring-2 ring-warning hover:bg-warning-bg/70',
+  success: 'bg-success-bg text-success ring-2 ring-success hover:bg-success-bg/70',
+}
+
 function iconControl(variant: IconButtonVariant = 'plain', tone: IconButtonTone = 'default') {
   if (variant === 'bordered') return cn(iconControlBase, 'border border-border text-muted', BORDERED_TONE[tone])
   if (variant === 'filled') return cn(iconControlBase, FILLED_TONE[tone])
+  if (variant === 'tinted') return cn(iconControlBase, TINTED_TONE[tone])
   return cn(iconControlBase, 'text-subtle hover:bg-surface-elevated', PLAIN_TONE[tone])
 }
 

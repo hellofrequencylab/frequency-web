@@ -454,13 +454,14 @@ export function ItemForm({
                 </button>
               </span>
             ))}
-            <input
+            <Input
+              variant="seamless"
               id={`tag-input-${mode}-${product?.id ?? 'new'}`}
               value={tagDraft}
               onChange={(e) => setTagDraft(e.target.value)}
               onKeyDown={onTagKeyDown}
               onBlur={() => tagDraft.trim() && commitTags(tagDraft)}
-              className="min-w-[6rem] flex-1 bg-transparent px-1 py-0.5 text-body-sm text-text outline-none"
+              className="min-w-[6rem] flex-1 px-1 py-0.5 text-body-sm text-text"
               placeholder={tags.length ? 'Add another' : 'e.g. ceramic, handmade'}
             />
           </div>

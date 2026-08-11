@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Radio, MessageSquare, Smartphone, Megaphone, Mail } from 'lucide-react'
 import { postEventDispatch } from '@/app/(main)/events/[slug]/social-actions'
+import { Input, Textarea } from '@/components/ui/field'
 
 // EventDispatchCompose (ADR-255 / EVENTS-DESIGN B2) — the host's "post an update"
 // box on the event page. The base action ALWAYS posts to the event page; the host
@@ -76,25 +77,28 @@ export function EventDispatchCompose({
         Post an update
       </p>
 
-      <input
+      <Input
         type="text"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Title (optional)"
+        aria-label="Update title"
         disabled={pending}
-        className="mb-2 w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
+        className="mb-2"
       />
 
-      <textarea
+      <Textarea
+        variant="seamless"
         value={body}
         onChange={(e) => setBody(e.target.value.slice(0, MAX_BODY))}
         onKeyDown={(e) => {
           if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') submit()
         }}
         placeholder="What should guests know? Parking, a time change, what to bring."
+        aria-label="Update body"
         rows={3}
         disabled={pending}
-        className="w-full resize-none rounded-control bg-transparent px-1 text-body-sm leading-relaxed text-text/90 outline-none placeholder:text-subtle disabled:opacity-60"
+        className="w-full px-1 text-body-sm leading-relaxed text-text/90"
       />
 
       {/* Channel toggles. Page post is always on (the base action). */}

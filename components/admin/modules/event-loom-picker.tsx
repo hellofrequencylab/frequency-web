@@ -5,6 +5,7 @@ import { ImageIcon, Search, X } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { listMyLoomImages, addEventImageFromLoom } from '@/app/(main)/events/admin-actions'
 import type { LibraryImagePick } from '@/lib/library/store'
+import { Input } from '@/components/ui/field'
 
 // "Select from Loom" for the event image editor. A link under the photos opens a centered popup (the
 // shared Dialog) showing the host's Loom images (their space's library plus the shared/public one).
@@ -81,12 +82,13 @@ export function EventLoomPicker({
 
           <div className="mb-3 flex items-center gap-2 rounded-lg border border-border bg-surface px-2">
             <Search className="h-3.5 w-3.5 text-subtle" aria-hidden />
-            <input
+            <Input
+              variant="seamless"
               type="text"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search the Loom"
-              className="w-full bg-transparent py-2 text-body-sm outline-none"
+              className="w-full py-2 text-body-sm"
             />
           </div>
 

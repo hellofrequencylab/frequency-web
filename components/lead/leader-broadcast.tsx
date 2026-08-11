@@ -12,7 +12,7 @@ import { Loader2, Send, Users } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { isError } from '@/lib/action-result'
 import { sendLeaderBroadcast } from '@/app/(main)/lead/inbox/actions'
-import { Textarea } from '@/components/ui/field'
+import { Input, Textarea } from '@/components/ui/field'
 
 export function LeaderBroadcast({ reach }: { reach: number }) {
   const router = useRouter()
@@ -41,8 +41,6 @@ export function LeaderBroadcast({ reach }: { reach: number }) {
     })
   }
 
-  const field =
-    'w-full rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
   return (
     <>
@@ -86,12 +84,12 @@ export function LeaderBroadcast({ reach }: { reach: number }) {
             </div>
           ) : (
             <>
-              <input
+              <Input
+                surface="inset"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="Subject"
                 aria-label="Subject"
-                className={field}
               />
               <Textarea
                 value={body}

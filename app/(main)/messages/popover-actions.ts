@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { dmTitle } from '@/lib/messages/dm-title'
+import { canPostToRoom, type RoomVisibility } from '@/lib/messages/room-access'
 
 export interface MessagesSummary {
   totalUnread: number
@@ -246,9 +247,22 @@ export async function loadDockDmThread(conversationId: string): Promise<
   return { myProfileId, participants, messages, title, name }
 }
 
-/** Load a room for inline rendering in the dock. RoomThread marks itself read on mount. */
+/** Load a room for inline rendering in the dock. RoomThread marks itself read on mount.
+ *
+ *  `canPost` used to be `!!memberRes.data` — a `room_members` row. That is the wrong question
+ *  for a Channel room, which carries no room_members rows at all (you tune into the Channel),
+ *  so every Channel room in the dock was read-only for everybody including the people entitled
+ *  to post. It now runs the same rule the page and `sendRoomMessage` run
+ *  (lib/messages/room-access.ts), and `visibility` travels with it so the composer's gate
+ *  sentence can name the right door. */
 export async function loadDockRoomThread(roomId: string): Promise<
-  { myProfileId: string; messages: DockRoomMessage[]; canPost: boolean; name: string } | null
+  {
+    myProfileId: string
+    messages: DockRoomMessage[]
+    canPost: boolean
+    name: string
+    visibility: RoomVisibility
+  } | null
 > {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -258,11 +272,29 @@ export async function loadDockRoomThread(roomId: string): Promise<
   const myProfileId = myProfile.id as string
 
   const [roomRes, memberRes, msgRes] = await Promise.all([
-    supabase.from('rooms').select('id, name').eq('id', roomId).maybeSingle(),
+    // visibility + scope_id, because the post gate below asks a Channel room a different
+    // question from every other kind, and the tune-in row is keyed on scope_id.
+    supabase.from('rooms').select('id, name, visibility, scope_id').eq('id', roomId).maybeSingle(),
     supabase.from('room_members').select('room_id').eq('room_id', roomId).eq('profile_id', myProfileId).maybeSingle(),
     supabase.from('room_messages').select('id, room_id, author_id, body, created_at').eq('room_id', roomId).order('created_at', { ascending: false }).limit(100),
   ])
   if (!roomRes.data) return null // am_room_member / open-read gate
+
+  const visibility = ((roomRes.data.visibility as string) ?? 'public') as RoomVisibility
+  const scopeId = (roomRes.data.scope_id as string | null) ?? null
+
+  // Tune-in, read only when it can matter. `tcm: read own` scopes it to the caller's own row
+  // on the user client, so this adds no round trip for the rooms where it is irrelevant.
+  let isTunedIn = false
+  if (visibility === 'channel' && scopeId) {
+    const { data: tuned } = await supabase
+      .from('topical_channel_memberships')
+      .select('profile_id')
+      .eq('topical_channel_id', scopeId)
+      .eq('profile_id', myProfileId)
+      .maybeSingle()
+    isTunedIn = !!tuned
+  }
 
   const raw = ((msgRes.data ?? []) as Array<Omit<DockRoomMessage, 'author'>>).reverse()
   const authorIds = Array.from(new Set(raw.map((m) => m.author_id)))
@@ -273,5 +305,11 @@ export async function loadDockRoomThread(roomId: string): Promise<
   }
   const messages: DockRoomMessage[] = raw.map((m) => ({ ...m, author: authorMap.get(m.author_id) ?? null }))
 
-  return { myProfileId, messages, canPost: !!memberRes.data, name: (roomRes.data.name as string) ?? 'Room' }
+  return {
+    myProfileId,
+    messages,
+    canPost: canPostToRoom({ visibility, isMember: !!memberRes.data, isTunedIn }),
+    name: (roomRes.data.name as string) ?? 'Room',
+    visibility,
+  }
 }

@@ -10,6 +10,7 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { useTypingIndicator } from '@/lib/realtime/use-typing'
 import { TypingIndicator } from '@/components/messages/typing-indicator'
 import { Textarea } from '@/components/ui/field'
+import { roomPostGateReason, type RoomVisibility } from '@/lib/messages/room-access'
 
 export type RoomMessage = {
   id: string
@@ -52,11 +53,18 @@ export function RoomThread({
   initialMessages,
   myProfileId,
   canPost,
+  visibility,
 }: {
   roomId: string
   initialMessages: RoomMessage[]
   myProfileId: string
+  /** Resolved by the caller through `canPostToRoom` (lib/messages/room-access.ts), never
+   *  re-derived here: the page and the dock must not be able to answer it differently. */
   canPost: boolean
+  /** Required, not optional, and that is the point: the sentence shown to someone who cannot
+   *  post depends on it, and a defaulted prop is how a Channel visitor ends up being told to
+   *  "join the room" — a door that does not exist for a Channel. */
+  visibility: RoomVisibility
 }) {
   const [messages, setMessages] = useState<RoomMessage[]>(initialMessages)
   const [body, setBody] = useState('')
@@ -265,7 +273,7 @@ export function RoomThread({
         )
       ) : (
         <div className="px-5 py-4 border-t border-border bg-surface/50 dark:bg-canvas/50 text-center">
-          <p className="text-meta text-muted">Join this room to send messages.</p>
+          <p className="text-meta text-muted">{roomPostGateReason(visibility)}</p>
         </div>
       )}
     </div>

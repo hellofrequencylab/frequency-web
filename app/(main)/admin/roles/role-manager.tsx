@@ -11,6 +11,7 @@ import { ROLE_LABEL, RoleBadge } from '@/lib/community-roles'
 import { nextRole } from '@/lib/roles-meta'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
+import { Input } from '@/components/ui/field'
 
 export type RoleMember = {
   id: string
@@ -65,12 +66,13 @@ export function RoleManager({ members }: { members: RoleMember[] }) {
         </div>
         <div className="mt-3 flex items-center gap-2 rounded-card border border-border bg-surface-elevated px-3 py-2">
           <Search className="h-4 w-4 text-subtle" />
-          <input
+          <Input
+            variant="seamless"
             aria-label="Search members"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search members by name or @handle…"
-            className="w-full bg-transparent text-body-sm text-text placeholder:text-subtle outline-none"
+            className="w-full text-body-sm text-text"
           />
         </div>
         {error && <p className="mt-2 text-body-sm text-danger">{error}</p>}

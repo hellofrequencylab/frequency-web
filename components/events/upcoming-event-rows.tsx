@@ -1,10 +1,15 @@
-import Link from 'next/link'
 import { MapPin } from 'lucide-react'
+import { RowCard } from '@/components/cards/row-card'
 import { Skeleton } from '@/components/ui/skeleton'
 
 // The shared row list every "upcoming events" block renders: a date chip, the title, the when
-// line, and the place. Extracted from upcoming-widget.tsx (unchanged markup) so the Channel
-// widget and the Circle page's Upcoming events module read identically instead of drifting.
+// line, and the place. Extracted from upcoming-widget.tsx so the Channel widget and the Circle
+// page's Upcoming events module read identically instead of drifting.
+//
+// The row itself is the kit's RowCard in LINK mode (docs/PAGE-FRAMEWORK.md: compose, never
+// hand-roll): one event per row, the date chip as its `anchor`, the when/where line as its
+// `meta`, and the chevron as the passive `trailing` figure. The skeleton below is
+// dimension-matched to that composition, not to the markup this replaced.
 
 export interface UpcomingEventRow {
   id: string
@@ -53,40 +58,51 @@ export function UpcomingEventRows({ events }: { events: UpcomingEventRow[] }) {
   return (
     <div className="space-y-2">
       {events.map((event) => (
-        <Link
+        <RowCard
           key={event.id}
           href={`/events/${event.slug}`}
-          className="flex items-center gap-3 rounded-control border border-border bg-surface px-3 py-3 hover:border-primary-bg dark:hover:border-primary hover:bg-primary-bg/30 dark:hover:bg-primary-bg transition-colors"
-        >
-          <DateChip iso={event.starts_at} />
-          <div className="flex-1 min-w-0">
-            <p className="text-body-sm font-semibold text-text truncate">{event.title}</p>
-            <div className="flex items-center gap-2 flex-wrap mt-0.5">
-              <span className="text-meta text-subtle">
+          anchor={<DateChip iso={event.starts_at} />}
+          title={event.title}
+          meta={
+            <>
+              <span>
                 {formatShort(event.starts_at)} · {formatTime(event.starts_at)}
               </span>
               {event.location && (
-                <span className="flex items-center gap-0.5 text-meta text-subtle">
-                  <MapPin className="w-3 h-3" />
+                <span className="flex items-center gap-0.5">
+                  <MapPin className="h-3 w-3" />
                   {event.location}
                 </span>
               )}
-            </div>
-          </div>
-          <span className="text-meta text-subtle shrink-0">→</span>
-        </Link>
+            </>
+          }
+          trailing={<span className="text-meta text-subtle">→</span>}
+        />
       ))}
     </div>
   )
 }
 
 /** A dimension-matched placeholder for a streaming row list (PAGE-FRAMEWORK §5.4): the same
- *  row height and rhythm as `UpcomingEventRows`, so nothing shifts when the real rows arrive. */
+ *  row height and rhythm as `UpcomingEventRows`, so nothing shifts when the real rows arrive.
+ *
+ *  It mirrors RowCard's LINK-mode box rather than guessing a single height, because the height
+ *  is a composition: `px-5 py-4` on the surface, a 36px anchor beside a text column of
+ *  `text-body leading-tight` (20px) + `mt-1.5` (6px) + `text-meta` (16px). A flat `h-16` was
+ *  matched to the hand-rolled row this replaced, and would now be 12px short on every row —
+ *  which is the whole failure mode a dimension-matched skeleton exists to prevent. Keep the
+ *  placeholder blocks in step with RowCard if its zone rhythm ever changes. */
 export function UpcomingEventRowsSkeleton({ rows = 3 }: { rows?: number }) {
   return (
     <div className="space-y-2" aria-hidden>
       {Array.from({ length: rows }, (_, i) => (
-        <Skeleton key={i} className="h-16 rounded-card" />
+        <div key={i} className="flex items-start gap-3 rounded-2xl border border-border bg-surface px-5 py-4">
+          <Skeleton className="h-9 w-9 shrink-0 rounded-control" />
+          <div className="min-w-0 flex-1">
+            <Skeleton className="h-5 w-2/5 rounded-control" />
+            <Skeleton className="mt-1.5 h-4 w-3/5 rounded-control" />
+          </div>
+        </div>
       ))}
     </div>
   )

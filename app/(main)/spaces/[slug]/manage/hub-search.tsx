@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Search, ArrowRight } from 'lucide-react'
+import { Input } from '@/components/ui/field'
 
 // The Space hub SEARCH bar (ADR-785): a fast finder over every tool + setting in the Manage hub, sitting
 // under the header rule. Client-side + instant — type part of a name ("tickets", "email", "plan") and jump
@@ -29,7 +30,8 @@ export function HubSearch({ items }: { items: HubSearchItem[] }) {
     <div className="relative">
       <div className="flex items-center gap-2 rounded-card border border-border bg-surface px-3 py-2.5 lift-1 focus-within:border-border-strong">
         <Search className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-        <input
+        <Input
+          variant="seamless"
           type="search"
           inputMode="search"
           enterKeyHint="search"
@@ -38,7 +40,7 @@ export function HubSearch({ items }: { items: HubSearchItem[] }) {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search this space's tools and settings"
           aria-label="Search this space's tools and settings"
-          className="w-full bg-transparent text-body text-text outline-none placeholder:text-subtle sm:text-body-sm"
+          className="w-full text-body text-text sm:text-body-sm"
         />
       </div>
       {q && (

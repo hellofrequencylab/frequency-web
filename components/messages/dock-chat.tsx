@@ -289,7 +289,7 @@ export function DockChat({
             ) : open.kind === 'dm' && dm ? (
               <MessageThread conversationId={open.id} initialMessages={dm.messages} myProfileId={dm.myProfileId} participants={dm.participants} autoFocus={autoFocusComposer} />
             ) : open.kind === 'room' && room ? (
-              <RoomThread roomId={open.id} initialMessages={room.messages} myProfileId={room.myProfileId} canPost={room.canPost} />
+              <RoomThread roomId={open.id} initialMessages={room.messages} myProfileId={room.myProfileId} canPost={room.canPost} visibility={room.visibility} />
             ) : (
               <div className="flex h-full items-center justify-center px-6 text-center text-body-sm text-muted">Could not load this conversation.</div>
             )}

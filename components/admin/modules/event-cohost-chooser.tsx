@@ -11,7 +11,7 @@ import {
   type EditorCohostRow,
 } from '@/app/(main)/events/[slug]/social-actions'
 import { isError } from '@/lib/action-result'
-import { labelClasses } from '@/components/ui/field'
+import { Input, labelClasses } from '@/components/ui/field'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
@@ -102,7 +102,8 @@ export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: s
 
       <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5">
         <UserPlus className="h-4 w-4 shrink-0 text-subtle" />
-        <input
+        <Input
+          variant="seamless"
           type="text"
           value={query}
           onChange={(e) => {
@@ -113,7 +114,7 @@ export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: s
           }}
           placeholder="Invite a cohost by name or @handle"
           disabled={pending}
-          className="min-w-0 flex-1 bg-transparent text-body-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
+          className="min-w-0 flex-1 text-body-sm text-text"
         />
       </div>
 

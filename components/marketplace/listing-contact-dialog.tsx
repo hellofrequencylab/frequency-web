@@ -20,7 +20,7 @@ import { Dialog } from '@/components/ui/dialog'
 import { submitListingContact, type OfferTargetKind } from '@/lib/marketplace/listing-offers'
 import { openDockThread } from '@/lib/messages/dock-open'
 import { cn } from '@/lib/utils'
-import { Textarea } from '@/components/ui/field'
+import { Input, Textarea } from '@/components/ui/field'
 
 /** Cents to a plain USD label, e.g. 29900 -> "$299", 29950 -> "$299.50". Whole dollars drop the cents. */
 function formatCents(cents: number): string {
@@ -198,14 +198,15 @@ export function ListingContactDialog({
                   <div className="flex items-center gap-2 rounded-control border border-border bg-surface-elevated/50 px-3 py-2 focus-within:border-primary">
                     <Tag className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
                     <span className="text-body-sm text-muted">$</span>
-                    <input
+                    <Input
+                      variant="seamless"
                       id="listing-contact-offer"
                       type="text"
                       inputMode="decimal"
                       value={offer}
                       onChange={(e) => setOffer(e.target.value)}
                       placeholder="0"
-                      className="w-full bg-transparent text-body-sm text-text placeholder:text-subtle focus:outline-none"
+                      className="w-full text-body-sm text-text"
                     />
                   </div>
                   {highestOfferCents != null && (

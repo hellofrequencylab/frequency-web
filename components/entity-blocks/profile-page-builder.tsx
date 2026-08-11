@@ -58,6 +58,7 @@ import { BlockPicker } from './block-picker'
 import { BlockEditPanel, type UploadImage } from './block-edit-panel'
 import type { BlockPickerData } from './controls/field-controls'
 import { uploadSpaceBlockImage } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
+import { Input } from '@/components/ui/field'
 
 // THE IN-RAIL ENTITY PAGE BUILDER (ADR-516 Phase C member; Phase D generalized to Space; ADR-526 split the
 // two kinds). An OUTLINE editor, not a mini-canvas: the live profile/space page behind this same-route
@@ -855,13 +856,14 @@ export function EntityPageBuilder({
                 {/* Row TITLE (Fix 5): an always-visible editable name so the operator can identify the row.
                     Placeholder shows the positional "Row N" until they name it. The eye toggle beside it
                     controls whether this title ALSO renders as a header on the live page (default off). */}
-                <input
+                <Input
+                  variant="seamless"
                   type="text"
                   value={row.title ?? ''}
                   placeholder={`Row ${index + 1}`}
                   aria-label={`Title for row ${index + 1}`}
                   onChange={(e) => onRowTitle(row.id, e.target.value)}
-                  className="min-w-0 flex-1 truncate rounded border border-transparent bg-transparent px-1 py-0.5 text-2xs text-text placeholder:text-muted hover:border-border focus:border-primary focus:outline-none"
+                  className="min-w-0 flex-1 truncate rounded border border-transparent px-1 py-0.5 text-2xs text-text hover:border-border focus:border-primary"
                 />
                 <button
                   type="button"

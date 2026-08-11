@@ -22,7 +22,7 @@ Add new patterns here as they emerge, one example per element.
 
 | Use | Classes |
 |---|---|
-| Eyebrow | `text-sm font-bold uppercase tracking-[0.25em]` · `text-primary-strong` (light) / `text-primary` (ink) |
+| Eyebrow | the **`eyebrow` utility** (`0.75rem` · **`0.18em`** · bold · uppercase) · `text-primary-strong` (light) / `text-primary` (ink). ⚠️ **Corrected 2026-08-11:** this row said ~~`text-sm font-bold uppercase tracking-[0.25em]`~~. The shipped role is `--tracking-eyebrow: 0.18em` (`app/globals.css:468`), locked by owner delegation 2026-08-05 and guarded by `lib/theme/eyebrow-role.test.ts`. The utility is sufficient alone: no `font-bold` and no literal `tracking-[…]` beside it |
 | Hero H1 | `font-display uppercase` · `text-6xl sm:text-7xl lg:text-8xl` (home/screen) / `text-5xl sm:text-6xl lg:text-7xl` |
 | Section H2 | `font-display uppercase text-4xl sm:text-5xl` |
 | Statement / PullQuote | `font-display uppercase` · `text-4xl sm:text-5xl lg:text-6xl` / `text-3xl sm:text-4xl lg:text-5xl` |

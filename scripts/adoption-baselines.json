@@ -23,7 +23,19 @@
     "  · frozen.basis     — fingerprint of mode + patterns + absent + include + exclude. Change any of",
     "                       them and the gate FAILS rather than compare across incomparable numbers.",
     "  · frozen.reason    — one sentence, printed on every run",
-    "`raised` and `rebased` are flagged ⚠️ on every run until a sweep brings the number back down."
+    "`raised` and `rebased` are flagged ⚠️ on every run until a sweep brings the number back down.",
+    "",
+    "ALLOWLIST (`exclude` + `excludeReasons`, added 2026-08-11). Two classes here are FILENAME heuristics -",
+    "bespoke-cards keys off `*-card.tsx`, bespoke-rows off `*row*.tsx` - so they cannot tell debt from a",
+    "deliberate variant, and they never could: `*-row-actions.tsx` is an action cluster, `grow-network.tsx`",
+    "matched because \"grow\" contains \"row\", and ContactCard is the documented portrait counterpart to",
+    "PersonCard. Neither ever moved because nobody could tell which sites were owed to the kit. The ruling",
+    "(2026-08-11) is: allowlist the deliberate ones WITH A REASON, converge the rest. The mechanism is the",
+    "existing one - a path in `exclude` - and because `exclude` is a flat glob list with no per-site slot,",
+    "each excluded path carries its one-line reason in the sibling `excludeReasons` map, keyed by the same",
+    "string. A reason that no longer reads true is an allowlist entry to delete, not a line to reword.",
+    "`excludeReasons` is documentation only: it is NOT part of `frozen.basis` (which hashes mode + patterns +",
+    "absent + include + exclude), so rewording a reason can never move a number."
   ],
   "roots": [
     "app",
@@ -49,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2450,
+      "baseline": 2440,
       "frozen": {
-        "at": "2026-08-06",
-        "value": 2450,
+        "at": "2026-08-11",
+        "value": 2440,
         "direction": "lowered",
         "basis": "6a00b952da5c",
-        "reason": "The components/** sweep finishing the four-territory pass: 3005 -> 2450. Value-identical conversions only -- so this is a theming fix with no rendering delta on the default skin. Frozen once against a settled tree with tsc rc=0 and vitest 698/8797 green over the result. AMENDED 2026-08-10: this reason used to state the values as 'rounded-2xl -> rounded-card is 1rem, rounded-lg -> rounded-control is 0.5rem'. Those were the STOCK Tailwind steps the role tokens had drifted to; the literals render 24px and 14px, and app/globals.css now sets the roles to match (ADR pending in the radius correction). The COUNT is unaffected -- the sweep was value-identical at the time and still is -- but the numbers quoted here described a tree that no longer exists. Recorded rather than deleted, because a baseline exists to account for itself and the prose is the one part of that the fingerprint does not cover.",
-        "from": 3005
+        "reason": "Incidental fall from the field/control variant sweep: converted call sites took their radius from the primitive rather than a literal. 2450 to 2440. No radius pass has run; the four missing roles are still unwritten.",
+        "from": 2450
       },
       "history": [
         {
@@ -156,6 +168,13 @@
           "to": 2450,
           "direction": "lowered",
           "reason": "The components/** sweep finishing the four-territory pass: 3005 -> 2450. Value-identical conversions only -- so this is a theming fix with no rendering delta on the default skin. Frozen once against a settled tree with tsc rc=0 and vitest 698/8797 green over the result. AMENDED 2026-08-10: this reason used to state the values as 'rounded-2xl -> rounded-card is 1rem, rounded-lg -> rounded-control is 0.5rem'. Those were the STOCK Tailwind steps the role tokens had drifted to; the literals render 24px and 14px, and app/globals.css now sets the roles to match (ADR pending in the radius correction). The COUNT is unaffected -- the sweep was value-identical at the time and still is -- but the numbers quoted here described a tree that no longer exists. Recorded rather than deleted, because a baseline exists to account for itself and the prose is the one part of that the fingerprint does not cover."
+        },
+        {
+          "at": "2026-08-11",
+          "from": 2450,
+          "to": 2440,
+          "direction": "lowered",
+          "reason": "Incidental fall from the field/control variant sweep: converted call sites took their radius from the primitive rather than a literal. 2450 to 2440. No radius pass has run; the four missing roles are still unwritten."
         }
       ]
     },
@@ -404,13 +423,13 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 526,
+      "baseline": 524,
       "frozen": {
-        "at": "2026-08-06",
-        "value": 526,
-        "direction": "rebased",
+        "at": "2026-08-11",
+        "value": 524,
+        "direction": "lowered",
         "basis": "9bcf47d8a607",
-        "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it.",
+        "reason": "Incidental fall from the field/control variant sweep, not a button pass of its own. 526 to 524.",
         "from": 526
       },
       "history": [
@@ -476,6 +495,13 @@
           "to": 526,
           "direction": "rebased",
           "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it."
+        },
+        {
+          "at": "2026-08-11",
+          "from": 526,
+          "to": 524,
+          "direction": "lowered",
+          "reason": "Incidental fall from the field/control variant sweep, not a button pass of its own. 526 to 524."
         }
       ]
     },
@@ -558,16 +584,62 @@
       "exclude": [
         "components/cards/*.tsx",
         "components/ui/*.tsx",
-        "**/*.{test,spec}.tsx"
+        "**/*.{test,spec}.tsx",
+        "app/(main)/admin/studio/recommendation-card.tsx",
+        "app/(main)/events/drafts/[id]/outreach-card.tsx",
+        "app/(main)/spaces/[slug]/settings/profile-completeness-card.tsx",
+        "components/admin/admin-module-card.tsx",
+        "components/admin/modules/surface-summary-card.tsx",
+        "components/channels/group-card.tsx",
+        "components/connections/link-member-card.tsx",
+        "components/feed/host-prompt-card.tsx",
+        "components/feed/local-corner-card.tsx",
+        "components/feed/post-card.tsx",
+        "components/marketplace/listing-details-card.tsx",
+        "components/modules/module-card.tsx",
+        "components/people/contact-card.tsx",
+        "components/people/member-viewer/member-detail-card.tsx",
+        "components/quest/journey-progress-card.tsx",
+        "components/settings/email-signature-card.tsx",
+        "components/settings/location-timezone-card.tsx",
+        "components/settings/profile-qr-card.tsx",
+        "components/spaces/checkin-code-card.tsx",
+        "components/spaces/email/email-enable-card.tsx",
+        "components/spaces/membership-join-card.tsx",
+        "components/walkthroughs/walkthrough-card.tsx"
       ],
-      "baseline": 24,
+      "excludeReasons": {
+        "app/(main)/admin/studio/recommendation-card.tsx": "An advisory panel, not a browse card: a severity chip, a finding, and a propose-then-confirm apply button. There is no entity and no href for EntityCard to link to.",
+        "app/(main)/events/drafts/[id]/outreach-card.tsx": "A post-publish callout: the one-time claim link plus a prewritten note with copy buttons. Nothing in it is a distinct object you would browse a grid of.",
+        "app/(main)/spaces/[slug]/settings/profile-completeness-card.tsx": "A readiness meter plus a what-is-left checklist, already composing ProgressTrack. The subject is a score, not an entity.",
+        "components/admin/admin-module-card.tsx": "Already composes the shared SidebarCard base. It is the page admin dock setting box (EMBEDDED-ADMIN §2), and the primitive it owes itself to is the one it uses.",
+        "components/admin/modules/surface-summary-card.tsx": "Rail chrome: a link row plus an inline stat and usage meter, whose loading skeleton is dimension-matched to SurfaceLinkRow and which degrades to that exact row on any failed read.",
+        "components/channels/group-card.tsx": "Deliberately byte-matched to the ChaptersNearMe card (same surface string, same mode chip) so the Channel body directory and the scope rail can never drift, and sized for the rail column that EntityCard p-5 grid card would overflow.",
+        "components/connections/link-member-card.tsx": "A search-and-link workflow panel on the contact detail page: query field, member results, link and unlink controls. It renders a task, not an entity.",
+        "components/feed/host-prompt-card.tsx": "Composes the shared HostPromptCardShell; the only markup this file owns is its two CTA buttons.",
+        "components/feed/local-corner-card.tsx": "Two feed nudges (turn location on / be a founder in your corner). Prompts with actions and no href, so there is no entity for a browse card to carry.",
+        "components/feed/post-card.tsx": "The feed post composite: attribution line, body, media, reactions and replies. A post is not a browse tile and EntityCard has no zone for any of that.",
+        "components/marketplace/listing-details-card.tsx": "A label/value <dl> of the seller-entered detail chips in the listing detail rail. A definition list module, not a card in a grid.",
+        "components/modules/module-card.tsx": "This IS a kit primitive: the shared module chrome every right-rail and page module wears (PAGE-FRAMEWORK §4.5). Excluded on the same grounds as components/ui/*.",
+        "components/people/contact-card.tsx": "The portrait counterpart to PersonCard, as its own docstring says: a centered 72px avatar tile scanned in a directory grid, against PersonCard landscape row. A second deliberate people shape, not a missing one.",
+        "components/people/member-viewer/member-detail-card.tsx": "The member-viewer right PANE: contact, active funnels, pipeline, engagement stats and recent interactions rendered from a MemberDetail. A detail surface, not a tile.",
+        "components/quest/journey-progress-card.tsx": "A progress panel for one active Journey (the 14-day bar, the window dates, the Expression capstone) already composing SectionHeader and ProgressTrack.",
+        "components/settings/email-signature-card.tsx": "A settings form panel: the Textarea field primitive plus a save row and its saved/error states.",
+        "components/settings/location-timezone-card.tsx": "A settings prompt panel: the current timezone plus one share-location action and the messages for a denied or unavailable geolocation.",
+        "components/settings/profile-qr-card.tsx": "A QR panel: the server-rendered SVG preview plus copy and download controls. The QR box is the content, and it fits no card zone.",
+        "components/spaces/checkin-code-card.tsx": "The same QR panel shape for a Space check-in node, including the true-white quiet zone a scanner requires behind the modules.",
+        "components/spaces/email/email-enable-card.tsx": "An enable gate: the plain-language anti-spam acknowledgment that must be ticked before the campaign composer appears.",
+        "components/spaces/membership-join-card.tsx": "One membership tier as price, interval, benefits and a Join button. A pricing panel with no entity page behind it to link.",
+        "components/walkthroughs/walkthrough-card.tsx": "A dismissible in-feed prompt: name, description, Start (opens the lightbox) and Not now. No href, so there is nothing for a browse card to link."
+      },
+      "baseline": 0,
       "frozen": {
-        "at": "2026-08-05",
-        "value": 24,
+        "at": "2026-08-11",
+        "value": 0,
         "direction": "rebased",
-        "basis": "027f9491b495",
-        "reason": "A RISE, and a correct one: comment-blanking (strip-comments@1) revealed debt the gate was crediting to prose. This entry disqualifies a file when an 'absent' pattern names a kit primitive, and a file that merely MENTIONED EntityCard in a comment was satisfying that disqualifier without composing it. Blanking comments removes the false alibi, so one more file now counts as the bespoke card it actually is. 23 -> 24 is the instrument getting more honest, not the debt growing - no card was added.",
-        "from": 23
+        "basis": "5d34a406051a",
+        "reason": "Rebased 24 -> 0 by the 2026-08-11 triage, and both halves of that move are in this diff. TWO sites were owed to the kit and converged: app/discover/practices/practice-card.tsx now composes EntityCard, and components/journeys/journey-manage-card.tsx composes RowCard with its lifecycle bar in the new footer slot. The other 22 are named in the entry's `exclude` list, each with a one-line reason in `excludeReasons`, because this class keys off the FILENAME *-card.tsx and cannot tell a browse card from a QR panel, a settings form, a feed prompt, a detail pane, or the ModuleCard chrome primitive itself. That blindness is exactly why the number never moved in either direction since it was seeded. At baseline 0 the ratchet is STRICTER than it was at 24: the next uncategorised *-card.tsx fails CI instead of hiding inside an undifferentiated count.",
+        "from": 24
       },
       "history": [
         {
@@ -583,6 +655,13 @@
           "to": 24,
           "direction": "rebased",
           "reason": "A RISE, and a correct one: comment-blanking (strip-comments@1) revealed debt the gate was crediting to prose. This entry disqualifies a file when an 'absent' pattern names a kit primitive, and a file that merely MENTIONED EntityCard in a comment was satisfying that disqualifier without composing it. Blanking comments removes the false alibi, so one more file now counts as the bespoke card it actually is. 23 -> 24 is the instrument getting more honest, not the debt growing - no card was added."
+        },
+        {
+          "at": "2026-08-11",
+          "from": 24,
+          "to": 0,
+          "direction": "rebased",
+          "reason": "Rebased 24 -> 0 by the 2026-08-11 triage, and both halves of that move are in this diff. TWO sites were owed to the kit and converged: app/discover/practices/practice-card.tsx now composes EntityCard, and components/journeys/journey-manage-card.tsx composes RowCard with its lifecycle bar in the new footer slot. The other 22 are named in the entry's `exclude` list, each with a one-line reason in `excludeReasons`, because this class keys off the FILENAME *-card.tsx and cannot tell a browse card from a QR panel, a settings form, a feed prompt, a detail pane, or the ModuleCard chrome primitive itself. That blindness is exactly why the number never moved in either direction since it was seeded. At baseline 0 the ratchet is STRICTER than it was at 24: the next uncategorised *-card.tsx fails CI instead of hiding inside an undifferentiated count."
         }
       ]
     },
@@ -601,15 +680,41 @@
       ],
       "exclude": [
         "components/cards/*.tsx",
-        "**/*.{test,spec}.tsx"
+        "**/*.{test,spec}.tsx",
+        "app/(main)/admin/appearance/row-actions.tsx",
+        "app/(main)/admin/demo/grow-network.tsx",
+        "app/(main)/admin/page-layout/apps/app-override-row.tsx",
+        "app/(main)/admin/segments/segment-row-actions.tsx",
+        "app/(main)/admin/walkthroughs/row-actions.tsx",
+        "app/(main)/network/friends/friend-row-actions.tsx",
+        "components/admin/circle-templates/row-controls.tsx",
+        "components/admin/modules/surface-link-row.tsx",
+        "components/admin/page-layout/route-chrome-row.tsx",
+        "components/practice/practice-row-actions.tsx",
+        "components/rooms/member-row-actions.tsx",
+        "components/widgets/events/space-credit-row.tsx"
       ],
-      "baseline": 14,
+      "excludeReasons": {
+        "app/(main)/admin/appearance/row-actions.tsx": "An action cluster, not a row: only IconButton/IconLink controls for the Theme Studio list. The row itself belongs to the table that renders it.",
+        "app/(main)/admin/demo/grow-network.tsx": "A pure filename false positive: the include glob is *row*.tsx and \"grow\" contains \"row\". The file is two demo-seeding form panels and has no row in it.",
+        "app/(main)/admin/page-layout/apps/app-override-row.tsx": "A settings row of FORM CONTROLS (shown checkbox, order input, min-role select, reset) with autosave state. RowCard renders content zones, not a control strip.",
+        "app/(main)/admin/segments/segment-row-actions.tsx": "An action cluster: an edit link plus a delete confirm modal for a segments-index row the table owns.",
+        "app/(main)/admin/walkthroughs/row-actions.tsx": "An action cluster: the on/off switch plus Edit, Duplicate and Delete, alongside two standalone header buttons.",
+        "app/(main)/network/friends/friend-row-actions.tsx": "Five exported BUTTONS (accept, decline, cancel, connect, unfriend). There is no row markup in the file at all.",
+        "components/admin/circle-templates/row-controls.tsx": "Two client leaves for a SERVER-rendered DataTable cell: an active toggle and up/down reorder. Controls, not a row.",
+        "components/admin/modules/surface-link-row.tsx": "Rail chrome at rail density (h-7 icon tile, px-2.5 py-2), and the exact box surface-summary-card loading skeleton is dimension-matched to. RowCard px-5 py-4 card would desynchronise that skeleton and overflow the rail column.",
+        "components/admin/page-layout/route-chrome-row.tsx": "A settings row: a route label plus a rail Select and a Reset, autosaving with visible state. A control strip, not content.",
+        "components/practice/practice-row-actions.tsx": "An action cluster for the practices list (log button, view link, owner overflow menu) that collapses to a \"Logged today\" line. State and controls, not a row.",
+        "components/rooms/member-row-actions.tsx": "A hover-revealed overflow menu (promote, demote, remove) inside a room member row that the caller renders.",
+        "components/widgets/events/space-credit-row.tsx": "A BORDERLESS credit line inside the event Host and Co Hosts section (p-1, hover tint, two sizes). RowCard is always a bordered surface, which would box every co-host."
+      },
+      "baseline": 0,
       "frozen": {
-        "at": "2026-08-05",
-        "value": 14,
+        "at": "2026-08-11",
+        "value": 0,
         "direction": "rebased",
-        "basis": "3d158978716c",
-        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
+        "basis": "b7ae5f8e6193",
+        "reason": "Rebased 14 -> 0 by the 2026-08-11 triage, and both halves of that move are in this diff. TWO sites were owed to the kit and converged: components/events/upcoming-event-rows.tsx now composes RowCard in link mode, with its dimension-matched skeleton moved alongside it (the flat h-16 was matched to the markup that was replaced and would now be 12px short), and components/spaces/space-practice-row.tsx composes RowCard with its lifecycle bar in the new footer slot. The other 12 are named in the entry's `exclude` list, each with a one-line reason in `excludeReasons`: this class keys off the FILENAME SUBSTRING *row*.tsx, so it was counting action clusters (*-row-actions, row-controls), form-control settings strips, rail chrome, a borderless credit line, and grow-network.tsx, which matched only because the word grow contains row. At baseline 0 the ratchet is STRICTER than it was at 14: the next uncategorised row fails CI instead of hiding inside an undifferentiated count.",
         "from": 14
       },
       "history": [
@@ -626,6 +731,13 @@
           "to": 14,
           "direction": "rebased",
           "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
+        },
+        {
+          "at": "2026-08-11",
+          "from": 14,
+          "to": 0,
+          "direction": "rebased",
+          "reason": "Rebased 14 -> 0 by the 2026-08-11 triage, and both halves of that move are in this diff. TWO sites were owed to the kit and converged: components/events/upcoming-event-rows.tsx now composes RowCard in link mode, with its dimension-matched skeleton moved alongside it (the flat h-16 was matched to the markup that was replaced and would now be 12px short), and components/spaces/space-practice-row.tsx composes RowCard with its lifecycle bar in the new footer slot. The other 12 are named in the entry's `exclude` list, each with a one-line reason in `excludeReasons`: this class keys off the FILENAME SUBSTRING *row*.tsx, so it was counting action clusters (*-row-actions, row-controls), form-control settings strips, rail chrome, a borderless credit line, and grow-network.tsx, which matched only because the word grow contains row. At baseline 0 the ratchet is STRICTER than it was at 14: the next uncategorised row fails CI instead of hiding inside an undifferentiated count."
         }
       ]
     },
@@ -837,13 +949,13 @@
         "**/*.{test,spec}.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 6,
+      "baseline": 3,
       "frozen": {
-        "at": "2026-08-06",
-        "value": 6,
-        "direction": "rebased",
+        "at": "2026-08-11",
+        "value": 3,
+        "direction": "lowered",
         "basis": "772c3e554a45",
-        "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it.",
+        "reason": "Tinted/selected variant added to IconButton. 6 to 3. The two app-shell sites are deliberately untouched: MENU-CONTRACT governed and visual-snapshot sensitive.",
         "from": 6
       },
       "history": [
@@ -888,6 +1000,13 @@
           "to": 6,
           "direction": "rebased",
           "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it."
+        },
+        {
+          "at": "2026-08-11",
+          "from": 6,
+          "to": 3,
+          "direction": "lowered",
+          "reason": "Tinted/selected variant added to IconButton. 6 to 3. The two app-shell sites are deliberately untouched: MENU-CONTRACT governed and visual-snapshot sensitive."
         }
       ]
     },
@@ -905,7 +1024,7 @@
         "**/*.{test,spec}.tsx",
         "components/ui/select.tsx"
       ],
-      "baseline": 6,
+      "baseline": 3,
       "history": [
         {
           "at": "2026-08-05",
@@ -927,15 +1046,22 @@
           "to": 6,
           "direction": "lowered",
           "reason": "51 -> 6. The last raw <select> elements outside two chip-filter sites moved onto the Select primitive. The 6 that remain are deliberate: chip filters whose ACTIVE state is a border/bg swap, and cn() is a plain join rather than tailwind-merge, so a tint passed to Select would land beside the primitive's own border-border and emit order would decide the winner. They need a tone prop on Select, not a call-site hack."
+        },
+        {
+          "at": "2026-08-11",
+          "from": 6,
+          "to": 3,
+          "direction": "lowered",
+          "reason": "tone prop added to Select, for chip filters whose active state is a border/bg swap. 6 to 3."
         }
       ],
       "frozen": {
-        "at": "2026-08-06",
-        "value": 6,
+        "at": "2026-08-11",
+        "value": 3,
         "direction": "lowered",
         "basis": "08ace42d7483",
-        "reason": "51 -> 6. The last raw <select> elements outside two chip-filter sites moved onto the Select primitive. The 6 that remain are deliberate: chip filters whose ACTIVE state is a border/bg swap, and cn() is a plain join rather than tailwind-merge, so a tint passed to Select would land beside the primitive's own border-border and emit order would decide the winner. They need a tone prop on Select, not a call-site hack.",
-        "from": 51
+        "reason": "tone prop added to Select, for chip filters whose active state is a border/bg swap. 6 to 3.",
+        "from": 6
       }
     },
     {
@@ -953,7 +1079,7 @@
         "components/ui/field.tsx",
         "components/ui/checkbox.tsx"
       ],
-      "baseline": 186,
+      "baseline": 119,
       "history": [
         {
           "at": "2026-08-05",
@@ -989,15 +1115,22 @@
           "to": 186,
           "direction": "raised",
           "reason": "Three new form controls in the beta induction (ADR-959): the Beat 1 email capture, and First/Last replacing one Display name field. The field primitives cannot serve this surface as it stands - Input is bg-surface px-3 py-2 rounded-control, and these sit inside a bg-surface card where the induction uses an inset bg-canvas field, so the primitive would render them invisible. Passing the inset string as className emits two bg-* and two rounded-* utilities and cn is a plain join, which is the collision field.tsx documents. Owed: convert induction.tsx wholesale, not one beat."
+        },
+        {
+          "at": "2026-08-11",
+          "from": 186,
+          "to": 119,
+          "direction": "lowered",
+          "reason": "Borderless/inset variant added to Input, then the call sites swept. The blocker was never the sites: Input was bg-surface px-3 py-2 rounded-control, and cn is a plain join, so passing an inset className emitted two bg-* and two rounded-* utilities. 186 to 119."
         }
       ],
       "frozen": {
-        "at": "2026-08-07",
-        "value": 186,
-        "direction": "raised",
+        "at": "2026-08-11",
+        "value": 119,
+        "direction": "lowered",
         "basis": "23c25a5145a1",
-        "reason": "Three new form controls in the beta induction (ADR-959): the Beat 1 email capture, and First/Last replacing one Display name field. The field primitives cannot serve this surface as it stands - Input is bg-surface px-3 py-2 rounded-control, and these sit inside a bg-surface card where the induction uses an inset bg-canvas field, so the primitive would render them invisible. Passing the inset string as className emits two bg-* and two rounded-* utilities and cn is a plain join, which is the collision field.tsx documents. Owed: convert induction.tsx wholesale, not one beat.",
-        "from": 184
+        "reason": "Borderless/inset variant added to Input, then the call sites swept. The blocker was never the sites: Input was bg-surface px-3 py-2 rounded-control, and cn is a plain join, so passing an inset className emitted two bg-* and two rounded-* utilities. 186 to 119.",
+        "from": 186
       }
     },
     {
@@ -1014,7 +1147,7 @@
         "**/*.{test,spec}.tsx",
         "components/ui/field.tsx"
       ],
-      "baseline": 6,
+      "baseline": 1,
       "history": [
         {
           "at": "2026-08-05",
@@ -1036,15 +1169,22 @@
           "to": 6,
           "direction": "lowered",
           "reason": "120 -> 6. Raw <textarea> is now effectively retired across the product; the 6 remaining sit inside already-bordered containers where the box owns the field chrome and Textarea would draw a border inside a border."
+        },
+        {
+          "at": "2026-08-11",
+          "from": 6,
+          "to": 1,
+          "direction": "lowered",
+          "reason": "Borderless variant added to Textarea, for auto-grow composers sitting inside already-bordered cards. 6 to 1."
         }
       ],
       "frozen": {
-        "at": "2026-08-06",
-        "value": 6,
+        "at": "2026-08-11",
+        "value": 1,
         "direction": "lowered",
         "basis": "42a90640e4e9",
-        "reason": "120 -> 6. Raw <textarea> is now effectively retired across the product; the 6 remaining sit inside already-bordered containers where the box owns the field chrome and Textarea would draw a border inside a border.",
-        "from": 120
+        "reason": "Borderless variant added to Textarea, for auto-grow composers sitting inside already-bordered cards. 6 to 1.",
+        "from": 6
       }
     }
   ]

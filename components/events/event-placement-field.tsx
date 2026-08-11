@@ -13,7 +13,7 @@ import {
 } from '@/app/(main)/events/placement-actions'
 import { transferEventHost } from '@/app/(main)/events/[slug]/social-actions'
 import { isError } from '@/lib/action-result'
-import { labelClasses } from '@/components/ui/field'
+import { Input, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
@@ -310,7 +310,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
         </div>
       ) : (
         <div className="mt-2">
-          <input
+          <Input
             type="text"
             value={query}
             onChange={(e) => {
@@ -319,7 +319,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
             }}
             placeholder="New host by name or @handle"
             disabled={pending}
-            className="w-full rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle outline-none focus:border-border-strong disabled:opacity-60"
+            className="py-1.5"
           />
           {hits.length > 0 && (
             <div className="mt-1 overflow-hidden rounded-card border border-border bg-surface py-1 lift-3">
@@ -436,7 +436,8 @@ function ScopeSearch({
     <div>
       <div className="flex items-center gap-2 rounded-control border border-border bg-surface px-3 py-1.5">
         <MapPin className="h-4 w-4 shrink-0 text-subtle" />
-        <input
+        <Input
+          variant="seamless"
           type="text"
           value={query}
           onChange={(e) => {
@@ -445,7 +446,7 @@ function ScopeSearch({
           }}
           placeholder="Search Spaces and Circles by name"
           disabled={pending}
-          className="min-w-0 flex-1 bg-transparent text-body-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
+          className="min-w-0 flex-1 text-body-sm text-text"
         />
       </div>
 

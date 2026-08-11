@@ -95,12 +95,13 @@ function LinkResultRow({ url, error }: { url: string | null; error: string | nul
   if (!url) return null
   return (
     <div className="mt-4 flex items-center gap-2 rounded-card border border-border bg-canvas p-3">
-      <input
+      <Input
+        variant="seamless"
         readOnly
         value={url}
         aria-label="Your capture link"
         onFocus={(e) => e.currentTarget.select()}
-        className="min-w-0 flex-1 bg-transparent text-body-sm text-muted outline-none"
+        className="min-w-0 flex-1 text-body-sm text-muted"
       />
       <button
         type="button"

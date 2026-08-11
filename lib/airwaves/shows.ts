@@ -109,6 +109,48 @@ export async function listShowsForSpace(spaceId: string): Promise<Show[]> {
   }
 }
 
+/**
+ * PUBLIC-FEED Shows for MANY Spaces in ONE query, grouped by space id.
+ *
+ * The sitemap advertises `/spaces/<slug>/podcasts[/<showSlug>]` for every networked Space, and used
+ * to do it with one `listShowsForSpace` per Space (FINALIZE-PLAN §9.9): an N+1 inside a route whose
+ * catch degrades to an empty sitemap section, so on a slow database the whole podcast surface
+ * silently left the index. This is the same read as one round trip.
+ *
+ * Gated to `status = 'published'` AND `feed_visibility = 'public'` in SQL, which is exactly what the
+ * public podcast pages render (they 404 otherwise), so a draft or private feed can never be
+ * advertised. FAIL-SAFE: an empty Map on any error or on an empty input, never a throw, so the
+ * caller degrades to "no podcast URLs" rather than to no sitemap.
+ */
+export async function listPublicShowsBySpace(spaceIds: string[]): Promise<Map<string, Show[]>> {
+  const ids = [...new Set((spaceIds ?? []).map((id) => (id ?? '').trim()).filter(Boolean))]
+  const grouped = new Map<string, Show[]>()
+  if (ids.length === 0) return grouped
+  try {
+    const { data } = await db()
+      .from('podcast_shows')
+      .select(SHOW_SELECT)
+      .in('space_id', ids)
+      .eq('status', 'published')
+      .eq('feed_visibility', 'public')
+      .order('created_at', { ascending: false })
+      // The per-Space reader caps at 200; keep the same ceiling per Space across the batch.
+      .limit(Math.min(ids.length * 200, 5000))
+    for (const row of (data as Array<Record<string, unknown>> | null) ?? []) {
+      const show = mapShow(row)
+      // Belt-and-braces: the SQL already filters, but the mapper coerces unknown values, so a row
+      // that does not survive normalisation is dropped rather than advertised.
+      if (show.status !== 'published' || show.feedVisibility !== 'public') continue
+      const bucket = grouped.get(show.spaceId)
+      if (bucket) bucket.push(show)
+      else grouped.set(show.spaceId, [show])
+    }
+    return grouped
+  } catch {
+    return new Map()
+  }
+}
+
 /** One Show by id (no Space scope). null on a miss. */
 export async function getShowById(id: string): Promise<Show | null> {
   const sid = (id ?? '').trim()

@@ -2,6 +2,24 @@
 
 *Design Director audit + unification spec. Built ON the existing DAWN tokens + editorial/ink/photo-hero layer. Nothing here throws the system out. It codifies it and removes the drift.*
 
+> ⚠️ **Eyebrow tracking correction, 2026-08-11.** Four places in this doc (§Executive summary 6,
+> §2 type table, §3 SectionHeading pattern, §P1 backlog) told you to **lock eyebrow tracking to
+> `0.25em`**. **The shipped role is `0.18em`** and has been since 2026-08-05: `--tracking-eyebrow:
+> 0.18em` at `app/globals.css:468`, consumed by the `eyebrow` utility at `:1527`, locked by owner
+> delegation and guarded by `lib/theme/eyebrow-role.test.ts`. All four have been corrected in
+> place; the old value is struck rather than deleted so the change is visible.
+>
+> **Why 0.18em won.** DAWN disagreed with itself on all three axes of this one role: its readme §4
+> said "locked at 0.25em" while its own `.eyebrow` class read the token and painted 0.18em. The
+> class body, what DAWN's components have actually rendered all along, won over the prose. The
+> reasoning beyond precedent: 0.25em spaces letters faster than words at this size, so a two-word
+> eyebrow reads as two words, and it does not fit inside a `px-2.5` pill. Full record in
+> [`DAWN-CONVERSION.md`](DAWN-CONVERSION.md) §Phase 4.
+>
+> **Do not use `tracking-[0.25em]` or `tracking-[0.18em]` as a literal.** The role is the
+> `eyebrow` utility, and it is **sufficient alone**: no `font-bold` beside it. Reaching for the
+> literal is the habit that was quietly rebuilding a hand-rolled eyebrow at every call site.
+
 ---
 
 ## Executive summary (~12 lines)
@@ -11,7 +29,7 @@
 3. **Vertical rhythm is improvised per page.** `Section` defaults to `py-20 sm:py-24`, but pages hand-pass `py-16 sm:py-20`, `py-16`, and a wild zoo of `pt-4 pb-20`, `pt-20 pb-10` overrides. There is no rhythm scale, so the site breathes unevenly.
 4. **Container widths are inconsistent for the same job.** Marketing content lives at `max-w-3xl`; Discover index sections use raw `max-w-6xl`/`max-w-2xl` bare `<section>`s that bypass `Section` entirely.
 5. **Discover is a second design system pretending to be the first.** It hand-rolls `<section className="bg-... px-6 py-16">` everywhere instead of using `Section`, uses a `py-16` rhythm the marketing pages never use, and introduces a `success`/green tone the rest of the site doesn't.
-6. **Eyebrow color is a coin-flip:** `text-primary` (on dark), `text-primary-strong` (on light), correct, but the home page hero uses a different tracking (`0.3em` vs the standard `0.25em`) and the rules aren't written down.
+6. **Eyebrow color is a coin-flip:** `text-primary` (on dark), `text-primary-strong` (on light), correct, but the home page hero uses a different tracking (`0.3em` vs the standard ~~`0.25em`~~ **`0.18em`**, the shipped role) and the rules aren't written down. ✅ The rules **are** written down now: `--tracking-eyebrow` at `app/globals.css:468`, tested in `lib/theme/eyebrow-role.test.ts`.
 7. **Cards have ~5 radii and 2 elevations for the same role:** `rounded-2xl` vs `rounded-3xl`, `shadow-sm` vs `shadow-md` vs `shadow-2xl` vs hover-`shadow-pop`, chosen ad hoc.
 8. **Buttons are re-declared inline on every page** (primary pill `rounded-2xl bg-primary…`, ghost-on-dark, outline-on-light) with px/py that wobble (`py-3` vs `py-3.5` vs `py-4`). No Button component exists.
 9. **Stat rows, FAQ accordions, and step cards are re-implemented per page** with slightly different markup each time (home `Faq` uses `ChevronDown`; pricing `Faq` uses a `+` rotation).
@@ -45,7 +63,7 @@ One face split into two voices: **`font-display`** (Anton, uppercase, tight) for
 | **Sub-section / minor H2** | `font-display uppercase text-3xl sm:text-4xl` | live-data sections, founding-cohort card | Add as `SectionHeading size="sm"`. |
 | **Card title (display)** | `font-display uppercase text-2xl` | Step/SpaceCard/Tier/RoleNote | Pick ONE (see §3.5). |
 | **Card title (sans)** | `text-lg font-bold` | Value/Hold/Assurance/Discover cards | Currently competes with the display variant: consolidate. |
-| **Eyebrow** | `text-sm font-bold uppercase tracking-[0.25em]` | all | Color rule in §2.4. **Lock tracking at `0.25em` everywhere** (home hero's `0.3em` is the outlier). |
+| **Eyebrow** | ~~`text-sm font-bold uppercase tracking-[0.25em]`~~ → the **`eyebrow` utility** (`0.75rem` · **`0.18em`** · bold · uppercase) | all | Color rule in §2.4. ✅ **Locked 2026-08-05 at `0.18em`, not `0.25em`** (`app/globals.css:468`, guarded by `lib/theme/eyebrow-role.test.ts`). The utility is sufficient alone; do not add `font-bold` or a literal `tracking-[…]` beside it. |
 | **Kicker (italic)** | `text-xl italic text-muted` | SectionHeading kicker | The editorial "deck." |
 | **Lead** | `text-xl text-text/85 leading-relaxed` | `Lead` | Intro paragraph. |
 | **Body** | `text-lg text-muted leading-relaxed` (`text-base` inside cards) | `Body` / cards | |
@@ -146,7 +164,7 @@ Full-bleed image + warm ink wash + `amber-glow` + bottom `light-strip` seam, cen
 
 ### 3.2 Section header: **`SectionHeading`**
 
-`eyebrow` (locked `tracking-[0.25em]`, color by tone) → `font-display uppercase text-4xl sm:text-5xl` H2 → optional italic `kicker`. Props to add: `size?: 'default' | 'sm'` (for the 3xl/4xl sub-headings currently inlined on home/demo/pricing), `align?: 'left' | 'center'`, `tone?: 'light' | 'ink'`. **Every page heading routes through this.**
+`eyebrow` (the **`eyebrow` utility**, locked at ~~`0.25em`~~ **`0.18em`**, color by tone) → `font-display uppercase text-4xl sm:text-5xl` H2 → optional italic `kicker`. Props to add: `size?: 'default' | 'sm'` (for the 3xl/4xl sub-headings currently inlined on home/demo/pricing), `align?: 'left' | 'center'`, `tone?: 'light' | 'ink'`. **Every page heading routes through this.**
 
 ### 3.3 Content section: **`Section`**
 
@@ -239,7 +257,7 @@ Hero (`PhotoHero wide` + stat line or founding line + CTA) → **every section i
 - **Consolidate cards** into one `Card` (feature/list/step variants) + standardize the icon chip (`w-11 h-11 rounded-2xl bg-primary-bg text-primary-strong`). Refactor Step/Layer/Hold (`how-it-works`), Value/Milestone (`about`), Tier/RoleNote/Assurance (`pricing`), SpaceCard/DayBeat (`demo`), Step (`page.tsx`).
 - **Promote `Stat`/`StatRow`, `Faq`/`FaqList`, `PullQuote`, `EventRow`** into marketing-ui; delete the per-page copies (home `Faq`, pricing `Faq`, discover `<dl>` FAQ; home `Stat`).
 - **De-green the marketing chrome:** remove `tone="success"` from Discover `SectionHeading` usage and recolor `EventRow`'s green chip to the amber/primary language (`cards.tsx`, `app/discover/page.tsx`). Keep `success` for in-app status only.
-- **Lock eyebrow tracking to `0.25em`** — fix the home hero's `0.3em` (`app/page.tsx`).
+- ✅ ~~**Lock eyebrow tracking to `0.25em`**~~ **DONE 2026-08-05, and at `0.18em`, not `0.25em`.** `--tracking-eyebrow: 0.18em` (`app/globals.css:468`) + the `eyebrow` utility (`:1527`), locked by owner delegation and guarded by `lib/theme/eyebrow-role.test.ts`. Remaining under this bullet: the home hero's `0.3em` literal (`app/page.tsx`) still needs to adopt the utility.
 - **Collapse elevation:** swap `shadow-2xl` (home `Pillar`) and `shadow-xl` (pricing featured) for `shadow-pop`/`shadow-pop-lg`; pick one card-hover convention.
 
 ### P2 — polish & guardrails

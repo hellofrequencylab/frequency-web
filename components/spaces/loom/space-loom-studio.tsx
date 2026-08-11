@@ -16,6 +16,7 @@ import { loomImages, uploadLoomImage, deleteSpaceLoomImage } from '@/lib/loom/pi
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 import { looksLikeImage } from '@/lib/library/upload-kinds'
 import type { LoomPickAsset } from '@/lib/library/store'
+import { Input } from '@/components/ui/field'
 
 export function SpaceLoomStudio({
   spaceId,
@@ -151,11 +152,12 @@ export function SpaceLoomStudio({
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-control border border-border px-2.5 py-1.5">
           <Search className="h-3.5 w-3.5 shrink-0 text-subtle" />
-          <input
+          <Input
+            variant="seamless"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search this library"
-            className="min-w-0 flex-1 bg-transparent text-body-sm text-text outline-none placeholder:text-subtle"
+            className="min-w-0 flex-1 text-body-sm text-text"
           />
         </div>
         {tag && (

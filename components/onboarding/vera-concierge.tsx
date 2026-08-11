@@ -6,6 +6,7 @@ import { Sparkles, Check, X, Send, ArrowRight } from 'lucide-react'
 import { conciergeTurn, confirmProposal } from '@/app/onboarding/vera-actions'
 import type { ProposedToolCall } from '@/lib/ai/vera/concierge'
 import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
+import { Input } from '@/components/ui/field'
 
 // Vera's onboarding concierge (ADR-066 Phase D). A bounded, paced conversation that
 // gets the member toward a real circle/person, then steps back. Runs the deterministic
@@ -130,13 +131,12 @@ export function VeraConcierge() {
             </div>
           )}
           <div className="flex items-center gap-2">
-            <input
+            <Input
               value={input}
               aria-label="Message Vera"
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') send() }}
               placeholder="Say something to Vera…"
-              className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
             />
             <button type="button" aria-label="Send" onClick={send} disabled={pending || !input.trim()} className="rounded-xl bg-primary p-2 text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50">
               <Send className="h-4 w-4" aria-hidden />

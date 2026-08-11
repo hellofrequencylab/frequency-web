@@ -13,6 +13,7 @@ import { Counter, CounterRow } from '@/components/ui/counter'
 import { GateNotice } from '@/components/ui/gate-notice'
 import { joinRoom, leaveRoom } from '../../rooms/actions'
 import { RoomThread } from '@/components/rooms/room-thread'
+import { canReadRoom, canPostToRoom, type RoomVisibility } from '@/lib/messages/room-access'
 import { RoomSearch } from '@/components/rooms/room-search'
 import { InviteToRoomButton } from '@/components/rooms/invite-to-room-button'
 import { MemberRowActions } from '@/components/rooms/member-row-actions'
@@ -52,7 +53,9 @@ export default async function RoomPage({
   type MemberProfile = { id: string; display_name: string; handle: string; avatar_url: string | null }
   const weekAgoIso = new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
   const [roomRes, membershipRes, memberRowsRes, rawMessagesRes, weekCountRes] = await Promise.all([
-    supabase.from('rooms').select('id, name, description, visibility, member_count, created_at').eq('id', roomId).maybeSingle(),
+    // `scope_id` joins the wave because a Channel room's POST gate is tune-in, not membership
+    // (see lib/messages/room-access.ts) and the tune-in row is keyed on it.
+    supabase.from('rooms').select('id, name, description, visibility, member_count, created_at, scope_id').eq('id', roomId).maybeSingle(),
     supabase.from('room_members').select('room_id, is_admin').eq('room_id', roomId).eq('profile_id', myProfileId).maybeSingle(),
     (supabase).rpc('visible_room_member_profiles', { _room_id: roomId }),
     // Newest 100 descending (reversed to chronological below) — ascending + limit would pin busy
@@ -82,18 +85,35 @@ export default async function RoomPage({
     id: string
     name: string
     description: string | null
-    visibility: 'public' | 'private' | 'circle' | 'hub' | 'nexus' | 'outpost' | 'channel'
+    visibility: RoomVisibility
     member_count: number
     created_at: string
+    scope_id: string | null
   }
 
   const { data: membership } = membershipRes
   const isMember = !!membership
   const isAdmin = !!membership?.is_admin
-  // Channel open rooms (Phase B) are read-open to anyone; posting is gated by
-  // tune-in (server-side). So "can read the thread" = a member OR a channel room.
   const isChannel = r.visibility === 'channel'
-  const canRead = isMember || isChannel
+  // Reading and posting are DIFFERENT questions and this page used to collapse them
+  // (`canPost={canRead}`). A Channel room is read-open to anyone; posting into one asks for
+  // tune-in, which is exactly what sendRoomMessage checks. The shared rule lives in
+  // lib/messages/room-access.ts so the dock's inline thread cannot answer differently.
+  const canRead = canReadRoom({ visibility: r.visibility, isMember })
+
+  // Tune-in, read only when it can matter. `tcm: read own` (migration 20260613000050) scopes
+  // this to the caller's own row on the user client, so it leaks nothing about who else is here.
+  let isTunedIn = false
+  if (isChannel && r.scope_id) {
+    const { data: tuned } = await supabase
+      .from('topical_channel_memberships')
+      .select('profile_id')
+      .eq('topical_channel_id', r.scope_id)
+      .eq('profile_id', myProfileId)
+      .maybeSingle()
+    isTunedIn = !!tuned
+  }
+  const canPost = canPostToRoom({ visibility: r.visibility, isMember, isTunedIn })
 
   // Defense in depth (RLS already hides private rooms from non-members)
   if (r.visibility === 'private' && !isMember) {
@@ -269,7 +289,8 @@ export default async function RoomPage({
             roomId={roomId}
             initialMessages={messages}
             myProfileId={myProfileId}
-            canPost={canRead}
+            canPost={canPost}
+            visibility={r.visibility}
           />
         ) : (
           // Non-member previewing a public room: messages are members-only. The gate is

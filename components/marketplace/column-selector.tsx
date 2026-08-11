@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore, type ReactNode } from 'react'
 import { Columns2, Columns3, Columns4, Square, type LucideIcon } from 'lucide-react'
+import { IconButton } from '@/components/ui/icon-button'
 
 // Card COLUMN density for every Marketplace surface. A member picks how many cards sit across a row;
 // the choice PERSISTS (localStorage) and applies INSTANTLY with no server round-trip. The grid is driven
@@ -151,24 +152,24 @@ function Segment<T extends number>({
         const Icon: LucideIcon = icons[n]
         const on = n === value
         return (
-          <button
+          // `filled` IS the checked radio's bg-primary fill — the variant this control's own
+          // comment used to say the kit was missing. The one thing still stated here is the
+          // radius: the cells sit inside a `rounded-pill` track, so they are round rather than
+          // the kit's `rounded-control`. That override is safe and measured, not hopeful —
+          // `.rounded-pill` is emitted after `.rounded-control` in the compiled sheet, so the
+          // call site wins. Everything else (the 32px density floor, the 44px coarse-pointer
+          // target, the press and the focus ring) now comes from the primitive.
+          <IconButton
             key={n}
-            type="button"
             role="radio"
             aria-checked={on}
-            aria-label={`${n} ${n === 1 ? 'column' : 'columns'}`}
-            title={`${n} ${n === 1 ? 'column' : 'columns'}`}
+            label={`${n} ${n === 1 ? 'column' : 'columns'}`}
             onClick={() => onChange(n)}
-            // Same call as the calendar view toggle: the checked radio carries a bg-primary
-            // fill, which IconButton has no variant for, so this stays hand-rolled and takes
-            // the kit's `tap-target` instead. 32px cleared the density floor but not the 44px
-            // coarse-pointer one, and this is a phone-first storefront control.
-            className={`tap-target inline-flex h-8 w-8 items-center justify-center rounded-pill transition-colors motion-reduce:transition-none ${
-              on ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated hover:text-text'
-            }`}
+            variant={on ? 'filled' : 'plain'}
+            className="rounded-pill"
           >
             <Icon className="h-4 w-4" aria-hidden />
-          </button>
+          </IconButton>
         )
       })}
     </div>

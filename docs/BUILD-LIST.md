@@ -155,8 +155,21 @@ cross-tenant proof) — neither phase starts until that is verified in prod. **U
 ([ADR-923](DECISIONS.md)): the walls are UP** — 26 tables policied and applied to prod (17 full
 quads + 9 scoped read arms + the `app_instances` Phase-2 set, with its draft-leak arm corrected),
 pgTAP four-seat cross-tenant matrix in `supabase/tests/space_tenancy_walls.test.sql`, and the
-`check:admin-client` ratchet freezing the 736 service-role importers so RLS-bypass usage only
-shrinks. Remaining before the phases resume: run the pgTAP suite green in `db-tests` CI.
+`check:admin-client` ratchet freezing the ~~736~~ **733** service-role importers so RLS-bypass usage
+only shrinks (`node scripts/check-admin-client.mjs` → `✓ 733 importer(s) … baseline 733`,
+re-measured 2026-08-11).
+
+> ✅ **The resume CONDITION IS MET. Only the owner's call remains.**
+> This paragraph used to end "Remaining before the phases resume: run the pgTAP suite green in
+> `db-tests` CI," which read as outstanding engineering work. It is not. The `db-tests` workflow
+> **succeeded at 2026-08-11T00:37:38Z** on `claude/site-scan-todo-list-z8d5cf`
+> ([run 31446692797](https://github.com/hellofrequencylab/frequency-web/actions/runs/31446692797)),
+> and the eight runs before it on the same branch were green too. The pgTAP four-seat cross-tenant
+> matrix in `supabase/tests/space_tenancy_walls.test.sql` is passing in CI.
+>
+> So both parked phases are **🅿️ owner-gated, not 🔴 blocked**. Nothing technical stands between
+> here and A1/E10; what is missing is the decision to schedule them. Do not re-list "run the pgTAP
+> suite" as work.
 
 ### App Platform (packaged tenant apps) — 🔴 deferred
 
@@ -200,25 +213,35 @@ pages still plain), the copy cascade (`page_content` is header-only), and per-Sp
 Enforced by CI gates so new drift fails a PR. **Sequence: tokens (P1–P3) → headers (P4–P5) → copy (P6)
 → operator theming + safety net (P7–P8).** Lift: S ≈ 1 day · M ≈ 2–4 days · L ≈ 1–2 weeks.
 
-**Kit adoption map — 2026-08-03 (audited for the DAWN round, feeds P3/P4 + the fabric phase):**
-SectionHeader (141 uses) and StatCard (102) are landed; PageHeading lands indirectly through the
-template layer (~266 consumers). The gaps: **UnderlineTabs** (15 uses vs 4 byte-identical pill
-manage-consoles per ADR-828 + 3 hand-rolled underline strips — the pill consoles are sanctioned
-but are a 4-way copy-paste; **owner ruling 2026-08-03: UnderlineTabs everywhere** — the consoles
+**Kit adoption map, audited 2026-08-03 for the DAWN round, RE-MEASURED 2026-08-11 at `334c3ec`.**
+Every number below moved, all in the same direction. Basis: `rg -l "\bNAME\b" app components lib`
+minus `*.test.*` files. ⚠️ These are greps, not frozen baselines, so they drift with every merge;
+re-run before quoting.
+
+| Primitive | 2026-08-03 | **2026-08-11** | Note |
+| :--- | ---: | ---: | :--- |
+| `SectionHeader` | 141 | **143** | landed |
+| `StatCard` | 102 | **116** | landed. The audit that fed this pass said 106; the grep says 116 |
+| `EntityCard` | 32 | **44** | was "32 uses vs 44 bespoke `*-card.tsx`". ✅ The bespoke number is no longer debt: the 2026-08-11 triage rebased `bespoke-cards` to **0** (see below) |
+| `RowCard` | 4 | **8** | still the thinnest. ✅ The "~15 hand-rolled rows" resolved in the 2026-08-11 triage: `bespoke-rows` rebased to **0**, three sites converged onto `RowCard` |
+| `PersonCard` | 17 | **22** | |
+| `UnderlineTabs` | 15 | **23** | ✅ now at `components/ui/underline-tabs.tsx` (moved 2026-08-10, [ADR-971](DECISIONS.md)); the "move it during the sweep" instruction below is **done**. `handrolled-tabs` reads **0** |
+| `ProgressTrack` | ~0 ("missing entirely") | **44** | ✅ built AND adopted. The row said it did not exist |
+| `Counter` | 2 | **11** | |
+| `Meter` | 1 | **4** | |
+| `StreakMeter` | 0 | **3** | thin but non-zero |
+
+`PageHeading` still lands indirectly through the template layer (~266 consumers). The **owner
+ruling of 2026-08-03 stands**: UnderlineTabs everywhere, the 4 byte-identical pill manage-consoles
 adopt it in the fabric-phase sweep via its `activeHref` query-param support, superseding the
-ADR-828 pill convention), **EntityCard** (32 uses vs 44 bespoke `*-card.tsx`), **RowCard** (4 uses vs ~15
-hand-rolled rows — the worst), **PersonCard** (17 uses). **ProgressTrack was missing entirely**
-(~30 ad-hoc `rounded-full` + inline-width bars) — built with the DAWN §5 primitives (Counter,
-StreakMeter, Meter, GateNotice) in the 2026-08-03 design-sync round; adoption sweeps are the
-fabric phase. UnderlineTabs ✅ now lives at `components/ui/underline-tabs.tsx` (moved 2026-08-10, ADR-971); it used to sit under `components/admin/`, hurting discoverability — move
-to `components/ui/` during the sweep.
+ADR-828 pill convention.
 
 | # | Scope | Lift | Status |
 |---|---|---|---|
 | P0 | **Headers + enforcement.** One `PageHero` for browse/commerce; `check:tokens` + `check:headers` hard gates; the protocol doc. | — | ✅ ADR-781 (PR #1805) |
-| P1 | **Radius tokens.** ✅ The codemod shipped (`ecd8f52`): `rounded-full` → `rounded-pill` site-wide plus role adoption, `literal-radius` 5,543 → **3,824**, **1,719** role usages, tokens at `app/globals.css` + per-skin scopes. ⏳ The second half is genuinely outstanding — `check:tokens` still has zero occurrences of `rounded`; the `literal-radius` ratchet holds the line instead. | L | ⏳ |
-| P2 | **Type + weight contract.** ✅ Shipped across ADR-941/942/943 + pass 2a: named roles, paired line-heights (a Tailwind v4 trap — `text-*` emits BOTH size and `line-height`, so the companion must live in `@theme`), `literal-type` at **0**. Display sizes (`text-3xl`…`9xl`) are the remaining 301, now ratcheted as `literal-display-type`. | M | ✅ |
-| P3 | **Control + card consolidation.** ~18 raw `<button bg-primary>` → `Button`; hand-rolled cards → `EntityCard`/`ModuleCard`; unify badges/empties; lint flags raw styled buttons/cards. | M | 📋 |
+| P1 | **Radius tokens.** ✅ The codemod shipped (`ecd8f52`): `rounded-full` → `rounded-pill` site-wide plus role adoption, `literal-radius` 5,543 → ~~3,824~~ → **2,450** (re-measured 2026-08-11, `node scripts/check-adoption.mjs`, `✅ held`, frozen 2026-08-06 `lowered`), **1,719** role usages, tokens at `app/globals.css` + per-skin scopes. The radius ROLES also moved in #2077: `--radius-control` 8px → 14px, `--radius-card` 16px → 24px (`app/globals.css:195-197`). ⏳ The second half is genuinely outstanding — `check:tokens` still has zero occurrences of `rounded`; the `literal-radius` ratchet holds the line instead. | L | ⏳ |
+| P2 | **Type + weight contract.** ✅ Shipped across ADR-941/942/943 + pass 2a: named roles, paired line-heights (a Tailwind v4 trap — `text-*` emits BOTH size and `line-height`, so the companion must live in `@theme`), `literal-type` at **0**. Display sizes (`text-3xl`…`9xl`) are the remaining ~~301~~ **96** (re-measured 2026-08-11, `node scripts/check-adoption.mjs`), ratcheted as `literal-display-type`. | M | ✅ |
+| P3 | **Control + card consolidation.** ~~~18~~ **526** raw styled buttons → `Button` (ratchet `raw-button-bg`, re-measured 2026-08-11; the "~18" was off by ~29×, and note the ratchet counts opening tags carrying a background, not every `<button>`); hand-rolled cards → `EntityCard`/`ModuleCard`; unify badges/empties; lint flags raw styled buttons/cards. ✅ The card half's **triage pass RAN on 2026-08-11**: `bespoke-cards` and `bespoke-rows` are both rebased to **0** (see the section below). | M | ⏳ |
 | P4 | **Universal browse hero.** The 24 plain `IndexTemplate` pages adopt `heroOverlay` (section-default covers) so the hero is everywhere. | M | 📋 |
 | P5 | **Entity headers → `PageHero`.** Fold the 43 `DetailTemplate` band pages onto the one `PageHero` grammar (entity + index = one component). | M–L | 📋 |
 | P6 | **Copy cascade.** Generalize `page_content` into `site → section → page` inherit-cascade; widen editable fields to body copy + images; extend `check:canon` to `.tsx`. | L | 📋 |
@@ -301,7 +324,7 @@ bigger lift (storage + moderation), captured here as the build queue:
 
 | Item | Scope | Status |
 |---|---|---|
-| **Top Friends** | The MySpace "Top 8": pick N friends to feature in a grid on your Spotlight. Reuses the existing friends/friendships data — no moderation needed. **Build first.** | 📋 specced, not built |
+| **Top Friends** | The MySpace "Top 8": pick N friends to feature in a grid on your Spotlight. Reuses the existing friends/friendships data, no moderation needed. ~~**Build first.**~~ | ✅ **SHIPPED** (row said 📋 "specced, not built"). Verified 2026-08-11: `lib/spotlight/top-friends.ts` + `top-friends.types.ts` + `top-friends.test.ts`, migration `supabase/migrations/20260903000000_spotlight_top_friends.sql`, block type `'topfriends'` in the Spotlight `BlockType` union, renderer `components/widgets/member-profile/topfriends.tsx` |
 | **Guestbook** | Visitors leave a note on your Spotlight. Needs a `spotlight_guestbook` table (RLS: owner reads all, anyone-signed-in writes), moderation (hide/report, owner delete), rate-limit + anti-spam, and the read-side render. | 📋 specced, not built |
 | **Stickers / decals** | A playful decorative layer — place emoji/earned stickers on the page (absolute-positioned, validated coordinates + an allowlisted sticker set). | 📋 specced, not built |
 
@@ -346,11 +369,11 @@ on prod** (`azsqfeonabsbmemvddqd`): `decrement_commerce_stock_atomic`, `qr_stats
 |---|---|---|
 | **P-SEC** | **Caller-row double-fetch dedup** — collapse the duplicate caller read | Owner-gated: touches the shared `cache()`-wrapped auth boundary used app-wide for a single-row-SELECT upside. `lib/auth.ts` caller resolution. |
 | **P-DX** | **Re-run `supabase gen types`** + drop the two untyped RPC casts | `decrement_commerce_stock_atomic` / `qr_stats_summary` are reached via `as unknown as { rpc … }` until `lib/database.types.ts` is regenerated. Mechanical cleanup. `lib/commerce/checkout.ts`, `app/(main)/admin/qr/stats/page.tsx`. |
-| **P-PERF** | **QR Studio + per-Space QR settings still load `qr_scans` unbounded** | The stats page is fixed; the Studio (`app/(main)/admin/qr/page.tsx`) + per-Space QR settings have the same full-table smell. Reuse the `qr_stats_summary` group-by pattern. |
-| **P-COMMERCE** | **Variant-level stock not enforced** | `commerce_variants.stock` + `order_items.variant_id` are untouched — only `commerce_products.stock` decrements. Extend the RPC if/when variants sell. |
+| ✅ ~~P-PERF~~ | ~~QR Studio + per-Space QR settings still load `qr_scans` unbounded~~ | **CLOSED by [ADR-969](DECISIONS.md)** (#2071, 2026-08-10). Verified 2026-08-11: `app/(main)/admin/qr/page.tsx:57,62` now calls `db.rpc('node_capture_counts')` and `db.rpc('qr_stats_summary', { p_days: 30 })`, the exact group-by pattern this row prescribed. The ADR also records **why it mattered beyond speed**: PostgREST caps a response at `max_rows` (1,000), so past a thousand captures the page silently UNDER-counted with no error. |
+| ✅ ~~P-COMMERCE~~ | ~~Variant-level stock not enforced~~ | **CLOSED.** Verified 2026-08-11: `supabase/migrations/20261132000000_commerce_variants.sql:70-77` adds `commerce_order_items.variant_id` and supersedes the product-only decrement with a two-pass `decrement_commerce_stock_atomic` (variant-tracked items decrement the variant, variant-less items decrement the product, untracked rows stay unlimited), still raising `out_of_stock` (P0001) under the per-order lock so concurrent checkouts cannot oversell. The writer is `lib/commerce/checkout.ts:240-242`. |
 | **P-UX** | **Fast-fail stock pre-check in `createCommerceCheckout`** | The atomic RPC is the oversell source of truth, but a pre-check avoids charging a buyer then failing soft at settle. `lib/commerce/checkout.ts`. |
 | **P-SCALE** | **Real pagination on `/network` + `/circles`** | Both render a capped slice with a "showing first N" notice; true pagination/infinite-scroll is the follow-up when the community outgrows the 500 fetch cap. |
-| **P-SEO** | **CSP `connect-src` GA4 regional collect endpoint** | Dormant until GA4 is configured; add the endpoint when analytics goes live. |
+| ✅ ~~P-SEO~~ | ~~CSP `connect-src` GA4 regional collect endpoint~~ | **CLOSED.** Verified 2026-08-11: `next.config.ts:47` lists both `https://www.google-analytics.com` and the region-routed `https://region1.google-analytics.com` in `connect-src`, and the comment above it names "GA4's region-routed /g/collect endpoint" explicitly. |
 | 🔵 opt | **Resonance: run embeddings BEFORE edges for same-night effect** | Embeddings currently run after edges (tonight's edges use last night's embeddings — converges over nights). A product call, not a bug. |
 
 ## 🟢 CRM contacts import + go-live owner actions (2026-06-23)
@@ -498,15 +521,15 @@ private profile card (#516, migration `20260610060000`).
 
 | Pri | Item | Why | Where |
 |---|---|---|---|
-| **P-SEO.1** | **Enrich `public/llms.txt`** with a first-party **Frequency Stats** block (WAM, circle count, top practices, return-rate) | CONTENT-VOICE §8c — original data is the AIO citation lever; `llms.txt` is currently bare | `public/llms.txt` (+ a tiny stats read) |
-| **P-SEO.2** | **Public `/discover/practices`** (list + detail, HowTo/Article JSON-LD) | Practices are high-intent search terms (breathwork, meditation…) with **no public mirror** — the one missing discover surface | new route + `public_practices()` RPC |
+| ✅ ~~P-SEO.1~~ | ~~Enrich `llms.txt` with a first-party **Frequency Stats** block~~ | **CLOSED, and the file moved.** Verified 2026-08-11: it is not a static `public/llms.txt` any more but a daily-ISR route, `app/llms.txt/route.ts`, whose `statsSection()` (`:119-160`) emits a `## Frequency Stats` heading over live counts of members, circles, practices, events and pillars. A null count drops its own line, so a partial DB hiccup degrades to fewer stats rather than a 500, and the block only ever states real numbers. `app/llms-full.txt/route.ts` ships beside it. | `app/llms.txt/route.ts` |
+| ✅ ~~P-SEO.2~~ | ~~Public `/discover/practices`~~ | **CLOSED. The route exists**, in three parts, verified 2026-08-11: `app/discover/practices/page.tsx` (list), `app/discover/practices/[id]/page.tsx` (detail) and `app/discover/practices/pillar/[slug]/page.tsx` (the pillar facet this row did not ask for). | `app/discover/practices/**` |
 | **P-SEO.3** | **Dynamic OG images** for marketing pillars + discover detail (`/the-lab`, `/the-community`, `/the-quest`, `/discover/circles/[id]`, `/discover/journeys/[slug]`) | Only 1/23 public routes has a content OG image; the rest fall back to the generic root card | reuse the event OG template |
 | **P-SEO.4** | **Schema gaps:** Circle schema on `/discover/circles/[id]`, Person on event organizer, Article/Course on journeys | Rich-result + AIO coverage; Event/HowTo/ItemList already strong | `lib/jsonld.ts` |
 | ✅ ~~P-SEO.5~~ | **Seeker-track article layer** (5 pain-first pillar pieces, FAQ schema, internal links) | DONE — all five CONTENT-VOICE §7a pain clusters now have a pillar page: `/loneliness`, `/friendship-as-an-adult`, `/life-after-the-feed` (PRs #1036/#1062), plus `/calm-down-fast` (always-wired stress) and `/meet-people-new-city` (new-city connection). Answer-first question H2s, Article + FAQPage + BreadcrumbList JSON-LD, in-cluster internal links to each pillar's `find-your-people` help article and into `/the-community` + `/discover`. Registered in `app/sitemap.ts`. Supporting help articles live under `content/help/find-your-people/`. | `app/(marketing)/*` |
 | **P-SEC.1** | **RLS perf debt:** wrap `auth.uid()` → `(select auth.uid())` (advisor `auth_rls_initplan` ×59) + consolidate `multiple_permissive_policies` (×92) | Per-row re-eval at scale; pre-launch noise but a clean, mechanical migration | RLS policies |
 | **P-SEC.2** | **Index hygiene:** add covering indexes for `unindexed_foreign_keys` (×39); review/drop `unused_index` (×130, carefully) | Advisor perf; FK indexes are safe wins | migration |
 | **P-SEC.3** | **Rate-limit `requestBetaAccess`** (open signup, no throttle) + tighten `public_bucket_allows_listing` on avatars/posts/event-media/site-media | Abuse surface; object-name enumeration | `beta/actions.ts`, bucket policy |
-| **P-SEC.4** | **CSP report-only → enforce** (nonces) · remove `as unknown as SupabaseClient` casts now types are regenerated · purge retired `'crew'` role refs (`@deprecated`) | Hardening + tech-debt the regen unblocked | `csp`, lib casts, `roles.ts` |
+| ⏳ **P-SEC.4** | ~~CSP report-only → enforce~~ ✅ · **remove `as unknown as SupabaseClient` casts** ⏳ · ~~purge retired `'crew'` role refs~~ ✅ | **Two of three closed; re-scope this row to the casts alone.** ✅ **CSP is ENFORCED, not report-only** (verified 2026-08-11): `next.config.ts:4` opens "An ENFORCED Content-Security-Policy (P8 hardening, ADR-170). Graduated from report-only after the report-only pass confirmed the real source set," and `:83` emits the header under the `Content-Security-Policy` key, not `-Report-Only`. ✅ **The `'crew'` refs are gone**: `lib/roles.ts` no longer exists and `'crew'` returns zero matches there. ⏳ **The casts remain**: `rg -l 'as unknown as SupabaseClient' app components lib` returns **23** files (airwaves ×5, events ×2, library ×2, onboarding, and others). | lib casts |
 
 > Migration note: prod's `schema_migrations` versions are stamped at apply-time (MCP) so they differ
 > from the repo filenames (e.g. canon batch `20260613*` files ↔ `20260610*` applied), but **every repo
@@ -545,12 +568,12 @@ capability_permissions `20260614300000`, journeys_v2) is **LIVE in prod** — th
 |---|---|---|---|
 | ✅ ~~P0~~ | **Execute ADR-253** — retire the legacy season reward/progress engine | **DONE (verified prod 2026-06-29).** All 5 steps shipped: grant firing removed from `logPractice` (no double-earn — a practice log no longer grants journey rewards, `lib/practices.ts`); displays repointed to the v2 reader (`lib/journeys/progress.ts`); the orphaned engine files deleted (`journey-rewards`/`journey-coop-rewards`/`journey-grants`/`journey-quest-clock` gone, `CompletionRuleBlock` retired); the dead columns (`season_locked`/`min_practices_per_day`/`target_weeks`) **dropped in prod** (migration `20260624000000`, confirmed absent + zero code refs). Residual: a full `database.types.ts` regen to drop the last `as unknown as` casts (tracked as H0-3/H5-1). | done |
 | **P1** | Hardening tails | Add plan-ownership checks on journey insert/checkoff actions (low sev); "// caller must enforce host gate" contracts on untyped `lib/journeys/runs.ts`/`store.ts`. | journeys edit/learn actions |
-| **P1** | `lib/experiments/*` is orphaned | Zero importers, yet PI claims it's part of the owned spine — wire it (PI.4 needs it) or stop claiming it. | `lib/experiments/*` |
-| **P2** | Segment builder UI | Eval is pure+tested; admin page is read-only. Add a predicate-form + `createSegment`. | `lib/traits/segments.ts`, `/admin/segments` |
-| **P2** | Push actions for Automations | `lib/push.ts` exists; add a `push_actor` action type + evaluator branch + form fields. | `lib/automations.ts`, automations rule-form |
+| 🔴 **P1** | `lib/experiments/*` **does not exist** | ⚠️ **This row and the PI preamble are BOTH false, in opposite directions.** The row said "orphaned, zero importers, wire it or stop claiming it"; the PI preamble says "we already own the spine (`lib/experiments`)." Re-measured 2026-08-11: `ls lib/experiments` returns *no such file or directory*, and `rg -l 'lib/experiments' --glob '!docs/**'` returns **zero** files. The directory was deleted, so there is nothing to wire and nothing to stop claiming. **PI.4's experiment-spawn is blocked on infrastructure that no longer exists** and needs a build-from-zero decision, not an adoption. | *(nothing on disk)* |
+| ✅ ~~P2~~ | Segment builder UI | **SHIPPED** (row said the admin page is read-only). Verified 2026-08-11: `app/(main)/admin/segments/segment-composer.tsx` is the predicate form, and `app/(main)/admin/segments/actions.ts:53` exports `createSegment`. `field-ops.ts` + `picker-options.ts` + `actions.test.ts` + `field-ops.test.ts` ship with it. | `lib/traits/segments.ts`, `/admin/segments` |
+| ⏳ **P2** | ~~Push~~ **SMS** actions for Automations | **The push half SHIPPED.** Verified 2026-08-11: `lib/automations.ts:29` declares `AUTOMATION_ACTION_TYPES = ['email_actor', 'push_actor']`, `:125` documents the `push_actor` `action_config` shape, and the evaluator branch is at `:222`. **The genuinely remaining action type is SMS**, which §4.9 below also asks for. Re-scope this row to SMS. | `lib/automations.ts`, automations rule-form |
 | **P2** | Role-promotion coachmark tours (P1.8) | The one in-product "Coming soon" card with real backlog behind it. | `/pages/sequences` |
 | **P3** | FK covering indexes on the new restructure tables | Clean advisor perf win (~13 indexes on `journey_runs`/`journey_enrollments`/`journey_lesson_progress`/`spaces`/`menu_config`/`platform_settings`/`walkthrough`). | new migration |
-| **P3** | Vera memory cron · Practices+Library merge · warm-demo action surface | P6 §2.3 / P7 10.4 / P6 §2.4 — buildable, no owner config. | per BACKLOG |
+| **P3** | ~~Vera memory cron~~ · Practices+Library merge · warm-demo action surface | ✅ **The Vera memory cron SHIPPED** (`vercel.json:96` → `/api/cron/summarize-vera-memory`, verified 2026-08-11); strike it from this row. P7 10.4 and P6 §2.4 remain buildable with no owner config. | per BACKLOG |
 
 > **Process note (migration ledger):** 22 repo migrations dated ≥`20260615` are applied to prod but
 > never stamped in `schema_migrations` (apply-on-merge keeps the schema correct, but the ledger is
@@ -645,7 +668,7 @@ registry files — `lib/widgets/modules.ts` (`LAYOUT_MODULES` + `ROUTE_MODULE_ID
 and *can* be authored in parallel; the registry wiring + page swap must be serialized.
 
 **Pages WITHOUT it today** (hand-authored): `/feed`, `/events`(+detail), `/circles`(+detail),
-`/channels`(+detail), `/practices`(+detail), `/journeys/[slug]` detail, `/messages`, `/programs`,
+`/channels`(+detail), `/practices`(+detail), `/journeys/[slug]` detail, `/messages`, ~~`/programs`~~ (**route retired, see 4.1**),
 `/admin/circles`, `/admin/events`, `/admin/channels`, `/admin/content/practices`,
 `/admin/content/seasons`, `/crew/challenges`. **Risk tier:** the faceted member libraries
 (`/practices`, `/events`, `/circles`) carry URL search + Pillar/tag facets + pagination — decomposing
@@ -808,7 +831,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 |---|---|---|---|
 | 3.1 | `profile_personas` + per-persona dashboards | ⏳ | ✅ **foundation:** `profile_personas` migration (applied) + `lib/personas.ts` reader threaded into `getViewerHats` (matrix partner columns now activate per active persona) + self-serve `/partners/join` claim. ✅ **3.2:** `/crm` + `/growth` open to Business/Org personas. ✅ **3.3:** Business/Org self-serve **directory listing** (`/partners/listing` → the `/partners` directory). ✅ **3.4:** Collaborator featured directory (`/partners/collaborators`). **Remaining (mostly need Stripe/infra):** website builder · Hook sub-community · Collaborator affiliate kickbacks · Practitioner paywalled Programs. |
 | 3.2 | Collaborator | 📋 | Featured Practices/Journeys directory + influencer/affiliate kickbacks + Earnings view. |
-| 3.3 | Practitioner | 📋 | Paywalled Programs + client gamification + private Channel/Circles (Frequency-branded) + Connect. |
+| 3.3 | Practitioner | ⚠️ | ~~Paywalled Programs~~ **needs a re-scope before it is built**: Programs was retired (see 4.1 below; `content/programs/` is gone and `20261113000000` dropped it from the catalog RPC), so "Paywalled Programs" names a feature with no substrate. Decide whether the paywall attaches to Journeys/Practices instead. Client gamification + private Channel/Circles (Frequency-branded) + Connect are unaffected and stay 📋. |
 | 3.4 | Business | 📋 | Listing + network integration + loyalty + CRM + **website builder** (Studio › Website stub). |
 | 3.5 | Organization + Hook federation | 🔴 | XL — white-label sub-communities; identity link + Hook membership rollover (§8.1); points rollup, idempotent+capped (§8.2); community federation / lead-funnel bubble (§8.3); isolated tenant admin (ADR-158). |
 
@@ -820,7 +843,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 
 | # | Item | Status |
 |---|---|---|
-| 4.1 | **Programs library** — ✅ **already built**: 4 frameworks live in `content/programs/`, page renders them (the "coming soon" is the empty-state fallback). Sweep false positive. | ✅ done |
+| 4.1 | **Programs library.** ⚠️ **RETIRED, needs a re-scope. This row is stale in the dangerous direction.** It said "✅ already built: 4 frameworks live in `content/programs/`, page renders them." Re-measured 2026-08-11: **`content/programs/` does not exist** (`ls content/` → `help`, `leader-training`), there is **no member `/programs` route** (`find app -type d -name programs` → only `app/(main)/admin/programs`, an operator dashboard), and migration `supabase/migrations/20261113000000_community_library_drop_programs.sql` **removed the `program` arm from the `community_library` catalog RPC**, with `20261114000000_drop_programs_tables.sql` dropping the tables. The feature was retired AFTER this row was written, so "already built" now reads as "do not schedule" for a thing that no longer exists. | ⚠️ re-scope |
 | 4.3 | **Outreach member-send** — ✅ **completed**: `sendOutreach` fans a steward's direct note to the members of the scope(s) they lead, via the email+push spine. | ✅ done |
 | 4.2 | Help-center articles — ✅ **expanded 2026-06**: 7 new member articles (season challenges · achievements · leaderboard · Circle Current · gem store · partners · location privacy), each verified against the code, + 2 extensions. 32 articles across 7 categories. Further coverage = ongoing authoring. | ✅ expanded |
 | 4.9 | Nurture/Automations — per the operator audit these are **wired** (Nurture complete; Automations email-only). Add SMS/push actions + segment builder. | ⏳ |
@@ -835,7 +858,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 
 **Member & Community** (BACKLOG §G/§H, STUDIO-REVIEW): Network hub unification (`/people`+`/connections`+`/marketing/contacts`) · ✅ directory filters (topic/location/role — ADR-204, on `/network`) · ✅ friend suggestions ("People you may know", real signals only — ADR-204) · ✅ My Contacts CRM P1-P3 (the personal keep-in-touch CRM + in-person QR capture + graduation into the paid Spaces CRM — [ADR-361](DECISIONS.md), [CRM-STRATEGY.md](CRM-STRATEGY.md), [NETWORK-CRM.md](NETWORK-CRM.md); follow-ups in [REMAINING-WORK.md](REMAINING-WORK.md)) · circle-discovery map layer · circle lineage + "nearly full → seed a new circle" flywheel · multi-topic circles · hub/nexus-scoped events · two-way message inbox · richer profile header + privacy-safe public profile schema · (later) Postgres sync-engine pilot.
 
-**Practice / Quest / Gamification** (BACKLOG §F): ✅ daily-streak achievement badges (2026-06 — `practice_streak` criteria over `profiles.current_streak`, evaluated on each log, pays zaps; 3 badges seeded: Week of Devotion 7d · Moon Cycle 30d · 100 Days 100d) · stage-driven disclosure (apply `stageIndex` to dashboard/profile/rails) · `practice.verified` host/peer verification + device attestation/P2P mutual-confirm · realtime reward feedback via Broadcast · Programs content depth (>4 frameworks) + program-as-template "Add to Circle" · community-library moderation + promote-to-tracked Journey · seasonal-Journey authoring surface + content (link to season + Pillar).
+**Practice / Quest / Gamification** (BACKLOG §F): ✅ daily-streak achievement badges (2026-06 — `practice_streak` criteria over `profiles.current_streak`, evaluated on each log, pays zaps; 3 badges seeded: Week of Devotion 7d · Moon Cycle 30d · 100 Days 100d) · stage-driven disclosure (apply `stageIndex` to dashboard/profile/rails) · `practice.verified` host/peer verification + device attestation/P2P mutual-confirm · realtime reward feedback via Broadcast · ~~Programs content depth (>4 frameworks) + program-as-template "Add to Circle"~~ ⚠️ **inherits 4.1's retirement, re-scope rather than build: Programs no longer exists** (`content/programs/` absent; `20261113000000` dropped the catalog arm) · community-library moderation + promote-to-tracked Journey · seasonal-Journey authoring surface + content (link to season + Pillar).
 
 **Operator: Growth Studio / CRM / Marketing** (ONBOARDING-BUILD-LIST §9, BACKLOG §I): visual entry-point/flyer designer (9.2) · live QR style preview (9.3) · unified link generator (9.4) · lead-flow customization UI (9.6) · A/B builder + scheduled publish (9.7) · segment builder + Kanban pipelines + React-Email templates · per-campaign/automation performance drill-down · live Claude Studio operator (gated on consent harness) · funnel/acquisition/cohort analytics.
 
@@ -844,7 +867,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 > Detail + status in [ONBOARDING-BUILD-LIST.md](ONBOARDING-BUILD-LIST.md).
 
 - **§0 Pre-test enablement (config, not code):** `ANTHROPIC_API_KEY`, flip `ai_enabled`, build help index, run pending migrations, prod env, verify funnel.
-- **§1.5 live-loop suggestion chips** ⏳ · **§2.1 welcome post** ✅(tweaks) · **§2.2 finish `draft_intro`** ⏳ · **§2.3 memory summarization cron** 📋 · **§2.4 warm demo content** 📋 · Vera matriarch/coach tweaks ⏳.
+- **§1.5 live-loop suggestion chips** ⏳ · **§2.1 welcome post** ✅(tweaks) · **§2.2 finish `draft_intro`** ⏳ · **§2.3 memory summarization cron** ✅ **SHIPPED** (was 📋; `vercel.json:96` schedules `/api/cron/summarize-vera-memory`, verified 2026-08-11) · **§2.4 warm demo content** 📋 · Vera matriarch/coach tweaks ⏳.
 - **§6 Capture Phases 2–4** 📋 (richer kinds; Quest pipeline + sponsor rewards) · journal framing (3.1).
 - **§3 Proactive Vera** 🔴 gated on the consent harness (ADR-028) · **AI core** governance kernel (router, RAG, caps, kill switch) 📋.
 
@@ -876,10 +899,19 @@ down is an audit that gets run again from scratch.
   Worth weighing **passkeys** first — they are in the Supabase sidebar, and they beat passwords on
   both of the owner's stated priorities, ease of use and retention.
 
-**Owner actions, Supabase dashboard** (config, not code): min password length **6 → 8** ·
-**Secure password change → ON** · **Require current password when updating → ON**. Leaked-password
-protection is already ON and password requirements are correctly unset. 🔴 **Leave Captcha OFF** —
-the client sends no captcha token, so enabling it breaks sign-in immediately.
+~~**Owner actions, Supabase dashboard**~~ ✅ **ALL DONE, verified in the dashboard 2026-08-11.**
+Min password length is **8** · **Secure password change ON** · **Require current password when
+updating ON** · leaked-password protection ON · password requirements correctly unset. The Save
+button showed no pending change, so these were saved some time before this check, not just now.
+
+🔴 **Leave Captcha OFF** — the client sends no captcha token, so enabling it breaks sign-in
+immediately. This is the only line in this block still doing work.
+
+> ⚠️ This row sat as an open owner action after it had been done, and it was handed to the owner
+> as a to-do on that basis. It is the third of its kind found on 2026-08-11: `PW_REQUIRE_SHELL`
+> (a Variable, never a Secret) and `PW_SPACE_SLUG` (already set) were the other two. **A dashboard
+> or repo setting is checkable. Check it before listing it, the same way ADR-983 now requires
+> reading `platform_flags` from the database rather than from a comment about it.**
 
 ### 🔴 The visual baselines are stale — `pr-compare` is red on every branch (2026-08-07)
 
@@ -946,7 +978,16 @@ re-do of the capture.
 
 > [IA-RESTRUCTURE.md](IA-RESTRUCTURE.md) §10. The unified-site refactor (P1.3) and this converge.
 
-- 10.1 Quest tabbed dashboard ✅ · 10.6 widget-free rail ✅ · 10.2 Marketing→Growth ✅ — **remaining:** 10.2 operator dashboards (`/admin` suites → Community Studio/Insights/Platform) · 10.3 Network hub · 10.4 Practices+Library merge · 10.5 Settings hub · 10.7 `NAV_AREAS` rewrite → later **data-driven Site Navigation admin suite** (BACKLOG §J).
+- 10.1 Quest tabbed dashboard ✅ · 10.6 widget-free rail ✅ · 10.2 Marketing→Growth ✅ · **10.3 Network hub ✅** · **10.5 Settings hub ✅** — **remaining:** 10.2 operator dashboards (`/admin` suites → Community Studio/Insights/Platform) · 10.4 Practices+Library merge · 10.7 `NAV_AREAS` rewrite → later **data-driven Site Navigation admin suite** (BACKLOG §J).
+
+  > ✅ **10.3 and 10.5 moved out of "remaining" on 2026-08-11, and this file already knew.**
+  > The **"Status corrections"** paragraph in the audit-backlog section above has listed both as
+  > shipped since it was written ("P7 10.3 Network hub · P7 10.5 Settings hub"), while this line
+  > kept listing them as work. One file, two opposite answers, which is exactly the failure the
+  > re-derivation pass exists to catch. Confirmed against the tree: `app/(main)/network/` is the
+  > unified hub (`page.tsx` + `contacts/` + `friends/`), and `app/(main)/settings/` is the
+  > one-pager hub (`page.tsx` + `account/` · `appearance/` · `billing/` · `connections/` ·
+  > `notifications/` · `profile/`).
 - Polish: soften newcomer breadcrumb · milestone wake-up gating map · reconcile "Interests" vs "Topics" · "tune in" verb decision.
 
 ## P8 — Infra · Data · Security · Hardening (BACKLOG §A/§B/§C/§D/§I/§O)
@@ -992,10 +1033,17 @@ Designed, sequenced after Stage C2: **D1 The Collective** (contributor verificat
 > for better member engagement, and build future rewards based on past behaviors."* The full spec
 > is the **6th layer** of [MEMBER-DATA-PLATFORM.md](MEMBER-DATA-PLATFORM.md) (ADR-166). **We already
 > own the spine** — `engagement_events` (append-only, idempotent), `member_traits`/`member_tags`,
-> `segments`, the nightly rollup crons, `lib/experiments` (variant assignment + holdouts), the
+> `segments`, the nightly rollup crons, ~~`lib/experiments` (variant assignment + holdouts)~~, the
 > consent ledger, and the Vera/Claude kernel (router, budget, kill switch). This track adds the
 > two things you **cannot retrofit** (raw width + immutable history), then *composes* the rest on
 > what exists.
+>
+> 🔴 **Correction 2026-08-11: `lib/experiments` is NOT part of the owned spine. It does not
+> exist.** `ls lib/experiments` returns *no such file or directory*, and
+> `rg -l 'lib/experiments' --glob '!docs/**'` returns **zero** files. Variant assignment and
+> holdouts are unbuilt, so **PI.4's experiment-spawn is blocked on deleted infrastructure** and
+> must be scoped as a build, not a wiring. The P1 audit row above said the opposite ("orphaned,
+> zero importers"); both statements were written against a tree that no longer matches.
 
 **The one rule that prevents re-developing later: capture wide and immutable NOW.** Every future
 metric, reward, or model must be a *read* over data we already banked — never a backfill we can't
@@ -1107,9 +1155,21 @@ Filerobot in-browser editor · on-the-fly transforms · **editing saves a new ve
 space-scoped · **backfill everything** · full privacy system but built later.
 
 **Spine shipped (S0):** the catalog (`library_assets`, ADR-478, migration `20260919000000`) + the
-DAM tables — `library_renditions` / `library_versions` / `library_collections(+items)` /
-`library_usages` + richer asset metadata + `space_id` NOT NULL (root = shared) — (ADR-480, migration
-`20260920000000`). Typed contract `lib/library/types.ts`; rendition/crop presets
+DAM tables: `library_renditions` / `library_versions` / `library_collections(+items)` /
+~~`library_usages`~~ + richer asset metadata + `space_id` NOT NULL (root = shared), (ADR-480,
+migration `20260920000000`).
+
+> 🔴 **`library_usages` is NOT part of the shipped spine. It was created and then dropped.**
+> Corrected 2026-08-11. Created at `supabase/migrations/20260920000000_library_dam.sql:101`,
+> **dropped at `supabase/migrations/20260925000000_retire_orphaned_tables_and_functions.sql:17`**
+> five days later, and [ADR-979](DECISIONS.md) deleted every reader (the `usagesBy*` maps, both
+> `<Field label="Used in">` blocks, and `splashUsageHref` with its six tests) after finding the
+> read discarded its error and silently returned `[]`. [`LOOM-PLATFORM.md`](LOOM-PLATFORM.md)
+> already carries this correction in four places; this line did not.
+>
+> **Consequence for D4 below: the usage index is a build from zero, not a wiring.** The
+> replacement is `block_usage` per [ADR-975](DECISIONS.md), derived from an `app_instances`
+> trigger plus a periodic JSONB scan and treated as disposable. Typed contract `lib/library/types.ts`; rendition/crop presets
 `lib/library/renditions.ts`. Service-role only; not yet applied to a DB. Best practice baked in:
 blocks store an **asset reference** (not a raw URL), one master → many renditions, non-destructive
 edits, every upload ingests, a usage index for safe delete + global swap.
@@ -1120,7 +1180,7 @@ edits, every upload ingests, a usage index for safe delete + global swap.
 | D1 | **Loom Studio + gallery** (the standard site image gallery). `/admin/library` = **Loom Studio**: janitor-gated upload, search + type filter + sort, a stat row, and a per-asset **detail drawer** (view / edit title·alt·tags·category / copy URL / open / archive / delete). Role-aware scope seam (`lib/library/scope.ts`) — staff manage the Frequency master today. | ⏳ shipped; ingest extras (checksum dedupe · EXIF strip · dims/colors/blurhash · rendition set) + FTS-ranked/trigram search still pending |
 | D2 | **AssetField seam.** One `Upload / Pick from library / Paste URL` control replacing `ImageField` everywhere; blocks store an **asset reference** (+ URL cache); render resolves reference → CDN url; **backfill** existing `site-media` URLs into the catalog + rewrite references. | 📋 |
 | D3 | **Editor + versions.** Filerobot image editor (crop frames, rotate, adjust, compress); **edit saves a new `library_versions` row** (non-destructive); rollback via `is_current`; on-the-fly rendition resolver. | 📋 |
-| D4 | **Organization at scale.** Collections ("sales funnel" sets), saved views, tag governance; the **usage index** wired (scan Puck data) → "used on N pages", archive-not-destroy, **global swap**. | 📋 |
+| D4 | **Organization at scale.** Collections ("sales funnel" sets), saved views, tag governance; the **usage index** ~~wired~~ **built from zero** (scan Puck data) → "used on N pages", archive-not-destroy, **global swap**. ⚠️ **Re-scoped 2026-08-11:** "wired" assumed `library_usages` existed. It does not (created `20260920000000:101`, dropped `20260925000000:17`, all readers deleted by [ADR-979](DECISIONS.md)), so D4 must build the **write path** as `block_usage` per [ADR-975](DECISIONS.md). Size grows accordingly. | 📋 |
 | D5 | **Per-space Looms.** Space-scoped libraries + upload-to-library, fork-on-edit, quotas, per-space `/spaces/[slug]/manage/library` console, client-facing RLS, capability keys (`library.view`/`library.manage`), entitlements `library.*`, feature flags. | 📋 |
 | D6 | **Privacy system** (full build, later). `library-private` bucket, signed URLs, storage RLS, download gating + audit, EXIF strip enforced, optional watermark/proofing. Hooks (`is_protected` / `download_policy` / `expires_at`) already in the schema. | 📋 |
 | D7 | **Semantic + AI.** Populate `embedding`, hybrid FTS+vector ranking (RRF), AI auto-tag + color extraction, background removal / upscale. Later: the Weave generative composer. | 📋 |
@@ -1135,14 +1195,19 @@ Four agents swept `app/(main)/admin/**`, `app/(main)/**`, `components/**` and
 floors re-frozen against a settled tree. What follows is the residue, with the reason each item was
 left rather than a to-do list of things nobody got to.
 
-### 🔴 Owed to the owner (nothing else can proceed past these)
+### ⏳ Owed to the owner (one item, down from four)
 
-| Item | Size | Why |
+> ⚠️ **This section was headed "🔴 nothing else can proceed past these" while THREE of its four
+> rows were already closed.** A blocker list that is 75% stale is worse than no list: it makes
+> everything downstream look gated. Re-derived 2026-08-11; the closed rows are kept with their
+> evidence so the next pass can re-check rather than re-open them.
+
+| Item | Size | Status + why |
 | :--- | :---: | :--- |
-| Delete `PW_REQUIRE_SHELL` from the **Secrets** tab | XS | The Variables copy is set and the workflow reads either, so the ratchet is armed. But a one-character *secret* makes GitHub redact that character everywhere in the run log — with `1` as a secret, every height, test count and line number came back as `***`. The stale copy is what keeps logs unreadable |
-| Recapture the marketing pixel baselines | S | Phase 7 **intentionally** tightened marketing rhythm. A mid-page `Statement` loses ~22px at 390 and ~77px at 1280 (`py-14 sm:py-24` → `.mk-tight`, plus the double-count correction it can now participate in). The committed baselines are genuinely stale. `e2e-manual.yml` → `update_baselines`. Read the diffs first: recapturing before reading is how a real regression gets frozen into the reference and stops being catchable |
-| Seed the shell a11y baselines | S | `/feed` and `/settings` are held to zero serious+ violations against debt that predates the gate, because their baselines were never captured. `e2e-manual.yml` → `capture_shell` + `update_a11y`. Named as a prerequisite in ADR-948's sequencing |
-| `/the-lab` (200 chars) and `/spaces` (186) meta descriptions | XS | Both over the ~155 snippet window this repo caps at elsewhere. Neither has a clean sentence boundary under the cap, so shortening is a **copy decision**, not a trim. `/about` was fixed (326 → 149) because its trailing sentence subtracted cleanly |
+| Seed the shell a11y baselines | S | 🔴 **STILL OWED, and it is the only one.** `/feed` and `/settings` are held to zero serious+ violations against debt that predates the gate, because their baselines were never captured. Confirmed 2026-08-11: `test/e2e/a11y-baselines.json` holds **40** surface entries and **not one** is an `app-*` key, against `$defaultMax: 0`. `e2e-manual.yml` → `capture_shell` + `update_a11y`. Named as a prerequisite in ADR-948's sequencing |
+| ~~Delete `PW_REQUIRE_SHELL` from the **Secrets** tab~~ | XS | ✅ **CLOSED.** The row assumed a stale Secrets copy was redacting run logs. It is a **Variable, not a Secret**. Verified two ways on 2026-08-10 and recorded at [`FINALIZE-PLAN.md`](FINALIZE-PLAN.md) item 1.4: the Secrets tab's six entries are `ANTHROPIC_API_KEY`, both Supabase keys, `PW_MEMBER_EMAIL`, `SUPABASE_SERVICE_ROLE_KEY` and `VERCEL_AUTOMATION_BYPASS_SECRET` (no `PW_REQUIRE_SHELL`), and the run log prints figures full of the digit 1 (`117474 pixels`, `ratio 0.03`) with **zero** `***` redactions, which is only possible if `1` is not a secret. The workflow reads `vars.PW_REQUIRE_SHELL \|\| secrets.PW_REQUIRE_SHELL` (`.github/workflows/e2e.yml:290,303`) so the ratchet is armed either way |
+| ~~Recapture the marketing pixel baselines~~ | S | ✅ **CLOSED.** Done in **#2071** (`8c345df`, 2026-08-10), which rewrote the marketing PNGs across `/the-lab`, `/the-quest`, `/the-community` and `/spaces` in all four theme states × both viewports. `git log -- test/e2e/__screenshots__/` shows the commit |
+| ~~`/the-lab` (200 chars) and `/spaces` (186) meta descriptions~~ | XS | ✅ **CLOSED. Both are now under the ~155 cap**: `/the-lab` is **154** chars (`app/(marketing)/the-lab/page.tsx:32`) and `/spaces` is **139** (`app/(marketing)/spaces/page.tsx:40`), measured 2026-08-11. The copy decision this row described was taken |
 
 ### ⏳ Sweepable, deliberately stopped
 
@@ -1150,24 +1215,38 @@ left rather than a to-do list of things nobody got to.
 | :--- | :---: | :--- |
 | `raw-input` **186** (this row said 184; the class RAISED under ADR-959) | M | ~30 are structurally un-primitivable (range, file, radio, colour, honeypot). Most of the rest is a long tail of 1–2 per file across ~70 files, heavily weighted to bare search inputs **inside a composed box** — `Input` would draw a border inside a border. Needs a borderless variant on the primitive, not call-site swaps |
 | `raw-select` 6 · `raw-textarea` 6 | S | Same shape. The selects are chip filters whose ACTIVE state is a border/fill swap; the textareas are borderless auto-growing composers inside a card. `cn()` is a plain join, not `tailwind-merge`, so a tint or a height passed to the primitive lands *beside* its default and emit order decides — converting could silently kill the affordance. Both need a `tone`/borderless variant |
-| `literal-radius` 2450 | L | Only value-identical conversions were taken (`rounded-2xl`→`rounded-card` at 1rem, `rounded-lg`→`rounded-control` at 0.5rem). The rest are genuine resizes: `rounded-2xl`→`rounded-card` is 24px→16px elsewhere, `rounded-xl`/`3xl`/`md` have no 0.75/1.5rem role at all. DAWN §Phase 5 says spend this inside screen passes, never as its own wave |
+| `literal-radius` **2450** (re-confirmed 2026-08-11) | L | Only value-identical conversions were taken (`rounded-2xl`→`rounded-card` at 1rem, `rounded-lg`→`rounded-control` at 0.5rem). The rest are genuine resizes: `rounded-2xl`→`rounded-card` is 24px→16px elsewhere, `rounded-xl`/`3xl`/`md` have no 0.75/1.5rem role at all. DAWN §Phase 5 says spend this inside screen passes, never as its own wave |
 | `handrolled-icon-button` 6 | S | Two are `app-shell` (MENU-CONTRACT territory, snapshot-sensitive). Four need a **tinted/selected** variant (`bg-primary-bg + ring`), not the `filled` variant just added. Stopped rather than add a second speculative variant mid-flight |
-| `adhoc-progress` 7 | S | **4 are false positives** — `rounded-pill object-cover` avatars the pattern cannot distinguish from bars. The 3 real ones each need something `ProgressTrack` lacks: a dual-layer buffered+played scrubber, confetti dots, and a runtime hex with no `ProgressTone` |
+| `adhoc-progress` ~~7~~ **8** | S | Re-measured 2026-08-11 (`node scripts/check-adoption.mjs`, `✅ held`, frozen 2026-08-06). **4 are false positives**: `rounded-pill object-cover` avatars the pattern cannot distinguish from bars. The real ones each need something `ProgressTrack` lacks: a dual-layer buffered+played scrubber, confetti dots, and a runtime hex with no `ProgressTone`. `ProgressTrack` itself is in **44** files |
 
-### ⚠️ Needs a triage pass BEFORE anyone sweeps it
+### ✅ The triage pass RAN (2026-08-11) — this section is now its record, not a to-do
 
-**`bespoke-cards` (24) and `bespoke-rows` (14) — zero retired, and the reason matters more than the
-number.** The ratchet is a filename heuristic and a large fraction of its population are not browse
-cards or list rows at all: `row-controls`, `practice-row-actions`, `member-row-actions`,
-`route-chrome-row` are action clusters; `space-credit-row` is a logo-tile credit line. Of the ones
-that genuinely are cards, the two read carry docstrings saying they are **deliberate** variants —
-`ContactCard` calls itself the portrait counterpart to `PersonCard`, and `GroupCard` is byte-matched
-on purpose to the ChaptersNearMe card so the two can never drift. Converting either is a design
-ruling, not a substitution, and `upcoming-event-rows` has a dimension-matched `h-16` skeleton a
-`RowCard` swap would desynchronise.
+> **Both ratchets rebased to 0.** `bespoke-cards` 24 → **0**, `bespoke-rows` 14 → **0**, recorded
+> with reasons in `scripts/adoption-baselines.json`. Re-derived 2026-08-11 at `334c3ec`.
 
-**Separate "owed to the kit" from "filename collision" first.** Sweeping this as-is guarantees
-forced conversions to move a number, which is the failure mode the ratchets exist to prevent.
+**Four sites were genuinely owed to the kit, and all four converged:**
+`app/discover/practices/practice-card.tsx` now composes `EntityCard`;
+`components/journeys/journey-manage-card.tsx` and `components/spaces/space-practice-row.tsx`
+compose `RowCard` with their lifecycle bars in the new footer slot; and
+`components/events/upcoming-event-rows.tsx` composes `RowCard` in link mode **with its
+dimension-matched skeleton moved alongside it** (the flat `h-16` was matched to the markup that
+was replaced and would now be 12px short, which is exactly the desynchronisation the old text
+below warned about, handled rather than avoided).
+
+**The other 34 were filename collisions and are now named in each entry's `exclude` list with a
+one-line reason.** That was the whole finding: the classes key off the FILENAME (`*-card.tsx` and
+the substring `*row*.tsx`), so they were counting `row-controls`, `practice-row-actions`,
+`member-row-actions` and `route-chrome-row` (action clusters), `space-credit-row` (a logo-tile
+credit line), QR panels, settings forms, feed prompts, detail panes, the `ModuleCard` chrome
+primitive itself, and `grow-network.tsx`, which matched only because the word **grow** contains
+**row**. `ContactCard` and `GroupCard` stay excluded on their own docstrings: `ContactCard` is the
+deliberate portrait counterpart to `PersonCard`, and `GroupCard` is byte-matched on purpose to the
+ChaptersNearMe card so the two can never drift.
+
+**The rebase makes the ratchet STRICTER, not weaker.** At 24 and 14 an uncategorised `*-card.tsx`
+could hide inside an undifferentiated count; at **0** the next one fails CI. That is the payoff of
+"separate owed-to-the-kit from filename-collision first," and it is why the sweep was never run
+as-is: forced conversions to move a number are the failure mode the ratchets exist to prevent.
 
 ### Instrument gaps (Phase 9 queue, recorded not fixed)
 

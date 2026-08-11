@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import type { TeaseGate } from '@/lib/pricing/upsell-tease'
 import type { ProposedToolCall } from '@/lib/ai/vera/concierge'
 import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
+import { Input } from '@/components/ui/field'
 
 // The headless Vera conversation — the multi-turn chat with propose-and-confirm
 // writes, extracted so the onboarding lightbox AND the persistent companion
@@ -172,13 +173,13 @@ export function VeraChat({ opening, veraTease }: { opening: VeraOpeningSeed; ver
           </div>
         )}
         <div className="flex items-center gap-2">
-          <input
+          <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') send() }}
             placeholder="Say something to Vera…"
             aria-label="Message Vera"
-            className="w-full rounded-pill border border-border bg-surface px-4 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+            className="rounded-pill px-4"
           />
           <Button type="button" size="sm" onClick={send} disabled={pending || !input.trim()} aria-label="Send" className="shrink-0 rounded-pill px-3 py-2">
             <Send className="h-4 w-4" aria-hidden />
