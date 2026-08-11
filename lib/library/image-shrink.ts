@@ -34,7 +34,69 @@ const SHRINK_STEPS: readonly [number, number][] = [
   [1280, 0.68],
 ]
 
-async function encodeAt(bitmap: ImageBitmap, maxDim: number, quality: number): Promise<Blob | null> {
+/** The encode target for a shrink. JPEG is smaller, but it has NO ALPHA CHANNEL, so it may only be
+ *  used for a source that has none. See `pickEncodeType`. */
+type EncodeType = 'image/jpeg' | 'image/webp'
+
+/**
+ * Whether the decoded image actually carries a TRANSPARENT pixel. Reads the alpha channel rather than
+ * trusting the file type, because most PNGs are fully opaque and would needlessly lose JPEG's better
+ * compression if we assumed otherwise.
+ *
+ * Cost control: the scan runs on a downscaled copy (at most SCAN_DIM on the long edge), so it is a few
+ * hundred KB of reads regardless of whether the source is 1 MP or 50 MP.
+ *
+ * FAIL-SAFE, and note which way: any failure (a tainted canvas, no 2d context) returns TRUE, i.e. it
+ * assumes transparency and takes the lossless-alpha path. Guessing "opaque" wrongly destroys an image;
+ * guessing "transparent" wrongly only costs a few KB.
+ */
+function hasTransparentPixels(bitmap: ImageBitmap): boolean {
+  const SCAN_DIM = 256
+  try {
+    const scale = Math.min(1, SCAN_DIM / Math.max(bitmap.width, bitmap.height))
+    const w = Math.max(1, Math.round(bitmap.width * scale))
+    const h = Math.max(1, Math.round(bitmap.height * scale))
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    if (!ctx) return true
+    ctx.drawImage(bitmap, 0, 0, w, h)
+    const { data } = ctx.getImageData(0, 0, w, h)
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] < 255) return true
+    }
+    return false
+  } catch {
+    return true
+  }
+}
+
+/**
+ * The format to re-encode into. WebP whenever the source has any transparency (it keeps the alpha
+ * channel and is still far smaller than PNG); JPEG otherwise.
+ *
+ * WHY THIS EXISTS: this function used to encode unconditionally to JPEG. A transparent PNG over the
+ * shrink threshold was therefore flattened onto the canvas's transparent black, arriving as a photo on
+ * a BLACK background, and the owner reasonably concluded the export was at fault. The image never had
+ * a chance: the alpha was destroyed in the browser before the upload ever started.
+ */
+function pickEncodeType(bitmap: ImageBitmap): EncodeType {
+  return hasTransparentPixels(bitmap) ? 'image/webp' : 'image/jpeg'
+}
+
+/** The file extension for an encode target. Exported so the naming can be pinned in a unit test
+ *  without a browser (the encode itself needs a real canvas). PURE. */
+export function encodeTypeExtension(type: EncodeType): 'webp' | 'jpg' {
+  return type === 'image/webp' ? 'webp' : 'jpg'
+}
+
+async function encodeAt(
+  bitmap: ImageBitmap,
+  maxDim: number,
+  quality: number,
+  type: EncodeType = 'image/jpeg',
+): Promise<Blob | null> {
   const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height))
   const w = Math.max(1, Math.round(bitmap.width * scale))
   const h = Math.max(1, Math.round(bitmap.height * scale))
@@ -44,7 +106,7 @@ async function encodeAt(bitmap: ImageBitmap, maxDim: number, quality: number): P
   const ctx = canvas.getContext('2d')
   if (!ctx) return null
   ctx.drawImage(bitmap, 0, 0, w, h)
-  return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality))
+  return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality))
 }
 
 /**
@@ -59,16 +121,19 @@ export async function shrinkImageForUpload(file: File): Promise<File> {
   if (!decodable || file.size <= SHRINK_TARGET_BYTES) return file
   try {
     const bitmap = await createImageBitmap(file)
+    // Choose the format BEFORE encoding: a source with any transparency must not become a JPEG.
+    const type = pickEncodeType(bitmap)
     let best: Blob | null = null
     for (const [maxDim, quality] of SHRINK_STEPS) {
-      const blob = await encodeAt(bitmap, maxDim, quality)
+      const blob = await encodeAt(bitmap, maxDim, quality, type)
       if (blob && blob.size > 0 && (!best || blob.size < best.size)) best = blob
       if (best && best.size <= SHRINK_TARGET_BYTES) break
     }
     bitmap.close?.()
     if (!best || best.size >= file.size) return file
     const base = file.name.replace(/\.[^.]+$/, '') || 'image'
-    return new File([best], `${base}.jpg`, { type: 'image/jpeg' })
+    const ext = encodeTypeExtension(type)
+    return new File([best], `${base}.${ext}`, { type })
   } catch {
     return file
   }

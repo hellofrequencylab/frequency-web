@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isHeicFile, prepareImageForUpload, SHRINK_TARGET_BYTES } from './image-shrink'
+import { encodeTypeExtension, isHeicFile, prepareImageForUpload, shrinkImageForUpload, SHRINK_TARGET_BYTES } from './image-shrink'
 
 // Pure/branch coverage only: the decode/encode paths need a real browser (createImageBitmap, canvas,
 // heic2any's wasm), so they are exercised manually. What CAN be pinned here is the detection seam —
@@ -30,5 +30,37 @@ describe('prepareImageForUpload', () => {
     expect(file.size).toBeLessThanOrEqual(SHRINK_TARGET_BYTES)
     const res = await prepareImageForUpload(file)
     expect('file' in res && res.file).toBe(file)
+  })
+})
+
+// ── Alpha preservation (the black-background bug) ────────────────────────────────────────────────
+// A transparent PNG over the shrink threshold used to be re-encoded to JPEG in the browser. JPEG has
+// no alpha channel, so the canvas's transparent black came through as a solid BLACK background, and
+// the image arrived ruined before the upload had even started. These pin the two halves that CAN be
+// checked without a browser: the format-to-extension contract, and the fail-safe direction.
+
+describe('encodeTypeExtension', () => {
+  it('names a WebP encode .webp and a JPEG encode .jpg', () => {
+    expect(encodeTypeExtension('image/webp')).toBe('webp')
+    expect(encodeTypeExtension('image/jpeg')).toBe('jpg')
+  })
+})
+
+describe('shrinkImageForUpload — fail-safe', () => {
+  // Under vitest there is no createImageBitmap, so the decode throws and the catch returns the
+  // ORIGINAL file. That is the behaviour that matters: when we cannot inspect an image, we must not
+  // guess at its format. A silent JPEG here is exactly how the alpha was lost.
+  it('returns an oversized PNG untouched when it cannot be decoded', async () => {
+    const big = new File([new Uint8Array(SHRINK_TARGET_BYTES + 1024)], 'cutout.png', { type: 'image/png' })
+    const out = await shrinkImageForUpload(big)
+    expect(out).toBe(big)
+    expect(out.type).toBe('image/png')
+    expect(out.name.endsWith('.png')).toBe(true)
+  })
+
+  it('leaves an oversized PNG as a PNG through prepareImageForUpload too', async () => {
+    const big = new File([new Uint8Array(SHRINK_TARGET_BYTES + 1024)], 'cutout.png', { type: 'image/png' })
+    const res = await prepareImageForUpload(big)
+    expect('file' in res && res.file.type).toBe('image/png')
   })
 })
