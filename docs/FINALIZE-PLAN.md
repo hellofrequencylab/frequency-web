@@ -1139,3 +1139,42 @@ Cosmetic only (the circle cards render one step roomier than intended), but it m
 visual baselines in every state, so it is deliberately **not** bundled into the CI-unblocking PR.
 Same family as the `Input` inset collision from the sweep round: the fix is a variant on the
 primitive, not a className override at the call site.
+
+### 9.12 — ⚠️ `Skeleton` is the second instance of the §9.11 collision, at 126 call sites
+
+`components/ui/skeleton.tsx:15` hardcodes a radius and joins `className` after it:
+
+```
+className={`animate-pulse rounded-control bg-border-strong ${className}`}
+```
+
+Of **329** `<Skeleton>` call sites, **126** pass a radius of their own, so on every one of them two
+`border-radius` utilities land on one element and the winner is whichever Tailwind emitted last:
+
+| Caller passes | Sites |
+| :--- | ---: |
+| `rounded-2xl` | 36 |
+| `rounded-pill` | 33 |
+| `rounded-xl` | 17 |
+| `rounded-lg` | 15 |
+| `rounded-card` | 10 |
+| `rounded-3xl` | 6 |
+| `rounded-none` | 6 |
+| `rounded-t` | 2 |
+| `rounded-md` | 1 |
+
+🔴 **Not yet resolved, and deliberately not "fixed" blind.** Unlike §9.11 — where `p-6` provably
+beat `p-5` because Tailwind orders the numeric padding scale ascending — the radius scale here
+mixes THEME tokens (`--radius-control/card/pill`, declared at `app/globals.css:195`) with built-in
+steps (`lg`/`xl`/`2xl`/`3xl`/`none`/`md`). Which side wins depends on emission order in the built
+stylesheet, which cannot be read off the source.
+
+Deciding it needs the production CSS: find the chunk carrying the `border-radius` utilities and
+compare the byte offset of `.rounded-control` against the others. If the callers win, this is a
+latent hazard to document and gate; if `rounded-control` wins, 126 loading skeletons are painting
+a radius nobody asked for. **Do not sweep it until that is measured** — a blind fix would change
+126 call sites' rendering on a guess.
+
+The durable fix in either case is the one §9.11 took: make the radius a prop on the primitive, so
+no caller's intent depends on stylesheet order. `cn()` in this repo is a plain join with no
+tailwind-merge semantics, so it cannot resolve this for you.
