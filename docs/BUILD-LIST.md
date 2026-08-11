@@ -899,10 +899,19 @@ down is an audit that gets run again from scratch.
   Worth weighing **passkeys** first — they are in the Supabase sidebar, and they beat passwords on
   both of the owner's stated priorities, ease of use and retention.
 
-**Owner actions, Supabase dashboard** (config, not code): min password length **6 → 8** ·
-**Secure password change → ON** · **Require current password when updating → ON**. Leaked-password
-protection is already ON and password requirements are correctly unset. 🔴 **Leave Captcha OFF** —
-the client sends no captcha token, so enabling it breaks sign-in immediately.
+~~**Owner actions, Supabase dashboard**~~ ✅ **ALL DONE, verified in the dashboard 2026-08-11.**
+Min password length is **8** · **Secure password change ON** · **Require current password when
+updating ON** · leaked-password protection ON · password requirements correctly unset. The Save
+button showed no pending change, so these were saved some time before this check, not just now.
+
+🔴 **Leave Captcha OFF** — the client sends no captcha token, so enabling it breaks sign-in
+immediately. This is the only line in this block still doing work.
+
+> ⚠️ This row sat as an open owner action after it had been done, and it was handed to the owner
+> as a to-do on that basis. It is the third of its kind found on 2026-08-11: `PW_REQUIRE_SHELL`
+> (a Variable, never a Secret) and `PW_SPACE_SLUG` (already set) were the other two. **A dashboard
+> or repo setting is checkable. Check it before listing it, the same way ADR-983 now requires
+> reading `platform_flags` from the database rather than from a comment about it.**
 
 ### 🔴 The visual baselines are stale — `pr-compare` is red on every branch (2026-08-07)
 
