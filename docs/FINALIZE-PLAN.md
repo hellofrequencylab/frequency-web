@@ -1272,6 +1272,29 @@ every `/discover/[param]` route that has it lands in `dynamicRoutes` and works.
 `authMode="client"`. The layout was fixed; the pages were not. `lib/supabase/public.ts` exists,
 is cookieless, and is documented for precisely this.
 
+**🔴 DO NOT "just remove the auth read" — I checked, and it silently breaks sign-in destinations.**
+
+That is the obvious fix and it is wrong. The `isAuthed` boolean feeds `communityHref`
+(`lib/community-href.ts:10`), which returns either `/circles/x` or `/sign-in?next=/circles/x`. The
+tempting argument is that `/circles/*` is in `PROTECTED_PATHS` anyway, so a bare link would be
+bounced to sign-in regardless and the `?next=` is redundant. **It is not.**
+
+`proxy.ts:172-173` builds its redirect as `request.nextUrl.clone()` then `signInUrl.pathname =
+'/sign-in'`. It rewrites the pathname and **never sets `next`**, so the destination is gone. The
+capture-on-arrival cookie at `:91` is *first-touch attribution* (`fq_ref`, campaign, referrer) —
+not the post-sign-in destination. `communityHref` is the only thing preserving it.
+
+So restoring ISR on the three index pages needs one of two real decisions, neither a drive-by:
+
+| Option | Shape | Note |
+| :--- | :--- | :--- |
+| **(a)** Make the proxy set `next=` on its sign-in redirect | small diff, but changes where **every** signed-out deep-link lands across 122 protected routes | strictly better product behaviour — today a signed-out visitor deep-linking anywhere loses their destination, not just from `/discover` — but it is an auth-navigation change and wants the owner's eyes |
+| **(b)** Resolve `isAuthed` client-side | the `authMode="client"` pattern `app/discover/layout.tsx` already uses | no auth-behaviour change, but the cards are Server Components today and the boolean threads through `components/discover/cards.tsx` |
+
+The four **detail** routes (`circles/[id]`, `events/[slug]`, `events/organizer/[handle]`,
+`journeys/[slug]`) are independent of all this — they simply lack `generateStaticParams` and can be
+fixed on their own, without touching auth.
+
 ### 🔴 10.10 — OPEN — Sentry ships on all 385 routes whether or not a DSN is set
 `instrumentation-client.ts:9` imports `@sentry/nextjs` at module scope. The file's comment says a
 DSN-less deploy ships no Sentry payload — true of *network* traffic, false of *bytes*. ~150 kB of
