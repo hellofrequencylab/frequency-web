@@ -423,13 +423,29 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   { route: '/circles', label: 'Circles', area: 'Member' },
   { route: '/channels', label: 'Channels', area: 'Member' },
   { route: '/events', label: 'Events', area: 'Member' },
-  { route: '/people', label: 'People', area: 'Member' },
+  // /network, NOT /people. `/people` is a redirect stub (app/(main)/people/page.tsx:17 -> /network,
+  // ADR-172) and mergeChrome is an EXACT-key lookup against the live pathname, so an override saved
+  // under the stub could never match the page the member is standing on: the operator reframed the
+  // Members hub, the row confirmed "Saved", and nothing changed. Same for the two below.
+  { route: '/network', label: 'Members', area: 'Member' },
   { route: '/spaces/directory', label: 'Spaces (directory)', area: 'Member' },
   // The "Spaces you run" hub (operator-context switcher): the personal list of every Space the
   // caller owns/admins, each linking to its /manage console. It keeps the GLOBAL community rail
   // like every other member browse surface (it falls through to 'global' in railFor); this catalog
   // entry registers it as an explicitly managed surface an operator can reframe.
   { route: '/spaces/operating', label: 'Spaces you run', area: 'Member' },
+  // 🔴 THE NEXT THREE ROWS ARE INERT, and this is written here rather than in a plan doc because
+  // this is where someone will look. `_` is a placeholder for a Space slug, but mergeChrome
+  // (:526) is `overrides[route]` — an EXACT-key lookup against the live pathname, which is
+  // `/spaces/acme/crm`. `isSafeRoute` permits `_`, so setRouteChrome writes the row and the UI
+  // renders "Saved"; the override then never matches anything. Three of this catalog's rows are
+  // controls that confirm and do nothing.
+  //
+  // Fixing it needs a mechanism, not a data edit: an optional `match?: RegExp` on ManagedRoute
+  // and a pattern fallback in mergeChrome after the exact-key miss. That changes rail resolution
+  // for EVERY page, so it wants its own change with tests — page-chrome.test.ts currently has no
+  // test that a MANAGED_ROUTES.route is matchable by mergeChrome at all, which is precisely why
+  // six rows could rot here unnoticed.
   { route: '/spaces/_/crm', label: 'Space CRM board', area: 'Focus surfaces' },
   // The Mode and focus settings page (Space Modes M3, ADR-461/464): a centered Focus surface that
   // composes <FocusTemplate> inside the unified console. It falls through to 'global' in railFor (the
@@ -445,8 +461,8 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   { route: '/practices/new', label: 'Practice builder', area: 'Member' },
   { route: '/journeys', label: 'Journeys', area: 'Member' },
   { route: '/messages', label: 'Messages (inbox)', area: 'Member' },
-  { route: '/connections', label: 'Connections (index)', area: 'Member' },
-  { route: '/friends', label: 'Friends', area: 'Member' },
+  { route: '/network/contacts', label: 'Connections (index)', area: 'Member' },
+  { route: '/network/friends', label: 'Friends', area: 'Member' },
   { route: '/search', label: 'Search', area: 'Member' },
   { route: '/broadcast', label: 'Broadcast', area: 'Member' },
   { route: '/crew', label: 'Crew', area: 'Member' },

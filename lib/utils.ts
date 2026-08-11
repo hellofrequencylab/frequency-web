@@ -58,17 +58,34 @@ export function slugify(s: string): string {
 // ── Event date formatting ─────────────────────────────────────────────────────
 // Shared by the discover UI, the feed event cards, and the marketing event row,
 // so an event date reads identically everywhere.
+//
+// 🔴 `timeZone: 'UTC'` IS LOAD-BEARING ON EVERY ONE OF THESE. It is not a default and it is not
+// cosmetic. lib/time/zone.ts states the storage convention: an event's `starts_at` holds the
+// wall-clock the host entered, kept as UTC PARTS (7:00 PM -> …T19:00:00Z), and "to render in the
+// event's zone: show the stored UTC parts". Formatting without an explicit zone resolves in the
+// RUNTIME's zone instead, which is invisible on the server (Vercel runs UTC) and wrong in every
+// browser west of Greenwich.
+//
+// What that cost: a 6:00 AM Aug 15 event read "Thu, Aug 14" in the ⌘K overlay
+// (components/search/search-overlay.tsx, a client component) and "Fri, Aug 15" on /search (a
+// server component) and on the event page — three surfaces, one event, two dates. Any stored hour
+// under the viewer's UTC offset flips the day. The comment above already claimed these read
+// "identically everywhere"; that claim is what this fix makes true.
+//
+// components/events/event-calendar.tsx got this right and says why, which is the proof the
+// convention was known — it just never reached the shared helper.
 
-/** Short date line, e.g. "Fri, Jun 24". */
+/** Short date line, e.g. "Fri, Jun 24". Rendered in UTC: see the note above. */
 export function formatEventDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
+    timeZone: 'UTC',
   })
 }
 
-/** Full date + time, e.g. "Friday, June 24, 2026 at 3:00 PM". */
+/** Full date + time, e.g. "Friday, June 24, 2026 at 3:00 PM". Rendered in UTC: see the note above. */
 export function formatEventDateTime(iso: string): string {
   return new Date(iso).toLocaleString('en-US', {
     weekday: 'long',
@@ -77,6 +94,7 @@ export function formatEventDateTime(iso: string): string {
     year: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    timeZone: 'UTC',
   })
 }
 
@@ -84,7 +102,9 @@ export function formatEventDateTime(iso: string): string {
 export function eventDateBadge(iso: string): { month: string; day: number } {
   const d = new Date(iso)
   return {
-    month: d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase(),
-    day: d.getDate(),
+    month: d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }).toUpperCase(),
+    // getUTCDate(), not getDate(): the local-time getter was the other half of the same bug, and
+    // it is the one that put a wrong NUMBER in the calendar chip rather than a wrong weekday.
+    day: d.getUTCDate(),
   }
 }
