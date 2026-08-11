@@ -262,3 +262,64 @@ describe('the CSP carries every host the Google path needs', () => {
     expect(directive('connect-src')).toContain('https://tiles.openfreemap.org')
   })
 })
+
+// ── Every map module installs the worker ────────────────────────────────────────────────────
+// THE BUG THIS EXISTS FOR, reported by the owner as "/discover isn't working, events with venue
+// maps are". Both halves were true, and the split is the whole diagnosis: maps that render
+// through <MapCanvas> inherited the worker config that lived at module scope inside
+// maplibre-canvas.tsx, and the three modules that construct their own `maplibregl.Map`
+// (/discover's locator, the Circles map, the QR scan map) never ran it. Those three painted a
+// blank cream rectangle — the exact symptom the worker fix was supposed to have cured.
+//
+// A blank basemap throws nothing, fails no gate, and looks like a tile or style problem. So the
+// invariant is asserted structurally: if you build a map, you install the worker.
+describe('every module that builds a MapLibre map installs the worker first', () => {
+  // Match CODE, not prose. The first version of this guard scanned raw source and flagged
+  // maplibre-interop.test.ts, whose only hit was a comment reading "every `new maplibregl.Map(...)`
+  // call site" — the same trap that made a Tailwind class in a comment emit invalid CSS earlier in
+  // this sweep. Strip comments first, and skip tests: a spec file renders no basemap.
+  const decomment = (src: string) =>
+    src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1')
+
+  const buildsAMap = (f: { path: string; src: string }) =>
+    !/\.test\.tsx?$/.test(f.path) &&
+    f.path !== 'components/maps/maplibre-worker.ts' &&
+    /new\s+maplibregl\.Map\s*\(/.test(decomment(f.src))
+
+  const BUILDERS = FILES.filter(buildsAMap)
+
+  it('finds the map builders, so this never passes by scanning nothing', () => {
+    // Non-triviality first (house archetype). If a rename empties this list, the suite must fail
+    // loudly rather than report a clean bill of health over zero files.
+    expect(BUILDERS.length).toBeGreaterThanOrEqual(4)
+  })
+
+  it.each(FILES.filter(buildsAMap).map((f) => f.path))(
+    '%s calls configureMaplibreWorker()',
+    (path) => {
+    const src = readFileSync(path, 'utf8')
+      expect(
+        /configureMaplibreWorker\s*\(\s*\)/.test(src),
+        `${path} constructs a maplibregl.Map without installing the worker — the basemap will render blank on every keyless environment. Import configureMaplibreWorker from components/maps/maplibre-worker and call it at module scope.`,
+      ).toBe(true)
+    },
+  )
+
+  it('nobody assigns config.WORKER_URL outside the shared module', () => {
+    // A second assignment would re-create the split this fixed: one module configured, the rest
+    // silently not. The shared module is idempotent, so there is never a reason to inline it.
+    const offenders = FILES.filter(
+      (f) =>
+        /config\s*\.\s*WORKER_URL\s*=/.test(f.src) && f.path !== 'components/maps/maplibre-worker.ts',
+    ).map((f) => f.path)
+    expect(offenders).toEqual([])
+  })
+
+  it('the shared module actually sets WORKER_URL from the provider', () => {
+    // Guards the other direction: a worker module that imports cleanly and configures nothing
+    // would satisfy every call site above while restoring the blank map.
+    const src = readFileSync('components/maps/maplibre-worker.ts', 'utf8')
+    expect(src).toMatch(/config\s*\.\s*WORKER_URL\s*=\s*MAPLIBRE_WORKER_URL/)
+    expect(src).toContain("from '@/lib/maps/provider'")
+  })
+})

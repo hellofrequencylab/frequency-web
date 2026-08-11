@@ -10,11 +10,21 @@ import * as maplibregl from 'maplibre-gl'
 // v6 no longer re-exports the GeoJSON type globals; import them explicitly.
 import type * as GeoJSON from 'geojson'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { MAPLIBRE_STYLE } from '@/lib/maps/provider'
+import { configureMaplibreWorker } from '@/components/maps/maplibre-worker'
 import { distanceKm } from '@/lib/distance'
 
 // Default to OpenFreeMap (free vector tiles, no API key) so the map works out of
 // the box. Override with a Mapbox/MapTiler style URL via NEXT_PUBLIC_MAP_STYLE.
-const STYLE = process.env.NEXT_PUBLIC_MAP_STYLE || 'https://tiles.openfreemap.org/styles/positron'
+// The style comes from lib/maps/provider (MAPLIBRE_STYLE), not a fourth copy of the same
+// env-or-default expression. Identical value; one place to change it.
+// 🔴 THE WORKER CONFIG IS LOAD-BEARING HERE. This module builds its own maplibregl.Map rather
+// than going through <MapCanvas>, so it does NOT inherit the setup in maplibre-canvas.tsx — which
+// is exactly why this map painted blank while event venue maps worked. maps-wiring.test.ts fails
+// the build if a map module drops this call. See docs/MAPS.md §4a.
+configureMaplibreWorker()
+
+const STYLE = MAPLIBRE_STYLE
 
 // Escape user-controlled text before it goes into popup HTML (setHTML).
 function escapeHtml(s: string): string {

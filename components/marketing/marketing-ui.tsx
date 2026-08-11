@@ -67,7 +67,13 @@ export function PhotoHero({
   // after a hero does not add a second gap on top of the room the hero already carries. Until
   // now a dockless PhotoHero emitted neither class, so that rule had never fired for any hero
   // on the site and eight pages had hand-written the `pt-0` it exists to supply.
-  const shape = facts ? 'mk-hero mk-hero-dock' : 'mk-hero overflow-hidden'
+  // `.mk-hero-photo` on BOTH arms: this hero's vertical padding is measured INSIDE the
+  // photograph, so unlike the text `Hero` below it carries no whitespace past its own bottom
+  // edge. The globals.css adjacency rule reads that tag to keep the next beat's top padding
+  // instead of trading it away for room that is not there — see the note beside the rule.
+  const shape = facts
+    ? 'mk-hero mk-hero-dock mk-hero-photo'
+    : 'mk-hero mk-hero-photo overflow-hidden'
   // The docked hero's `pb-36` is ROOM FOR AN OVERHANG, not a bottom pad — and below `sm` there
   // is no overhang (the dock goes in flow; see the strip below). So on a phone this becomes an
   // ordinary content bottom, 42.5px, and it is the gap between the copy and the strip; the
@@ -293,7 +299,10 @@ export function SectionHeading({
   const isInk = tone === 'ink'
   const centered = align === 'center'
   return (
-    <div className={`mb-9 ${centered ? 'text-center' : ''}`}>
+    // `mk-section-heading` is a HOOK, not a style: it carries no rules of its own. globals.css
+    // uses it to restore this block's closing gap when a page adds its own <p> straight after
+    // the heading — see the adjacency rule there. Removing the class silently re-opens that bug.
+    <div className={`mk-section-heading mb-9 ${centered ? 'text-center' : ''}`}>
       {eyebrow && (
         <p
           className={`text-body-sm font-bold uppercase tracking-eyebrow mb-4 ${
