@@ -51,8 +51,6 @@ export function SpaceConversationCompose({
     })
   }
 
-  const field =
-    'w-full rounded-control border border-border bg-canvas px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
   return (
     <>
@@ -90,8 +88,8 @@ export function SpaceConversationCompose({
             </div>
           ) : (
             <>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Recipient email" aria-label="Recipient email" className={field} />
-              <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" aria-label="Subject" className={field} />
+              <Input surface="inset" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Recipient email" aria-label="Recipient email" />
+              <Input surface="inset" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" aria-label="Subject" />
               <Textarea
                 value={body}
                 onChange={(e) => setBody(e.target.value)}

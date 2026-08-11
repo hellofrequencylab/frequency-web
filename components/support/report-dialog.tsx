@@ -206,12 +206,11 @@ export function ReportDialog({
 
             <label className="block">
               <span className="mb-1 block text-meta font-medium text-subtle">Summary</span>
-              <input
+              <Input
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder={type === 'bug' ? 'e.g. Capture button does nothing on the feed' : 'A short summary'}
                 maxLength={160}
-                className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
               />
             </label>
 

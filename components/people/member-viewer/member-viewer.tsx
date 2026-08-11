@@ -331,12 +331,12 @@ export function MemberViewer({
           {search && (
             <div className="relative min-w-0 flex-1 basis-64">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
-              <input
+              <Input
                 value={text}
                 onChange={(e) => setSearchText(e.target.value)}
                 placeholder={search.placeholder ?? 'Search members'}
                 aria-label={search.placeholder ?? 'Search members'}
-                className="w-full rounded-control border border-border bg-surface py-2.5 pl-10 pr-9 text-body-sm text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none"
+                className="py-2.5 pl-10 pr-9"
               />
               {text && (
                 <button

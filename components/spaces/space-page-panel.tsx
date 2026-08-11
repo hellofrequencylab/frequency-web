@@ -244,14 +244,15 @@ function PageRow({
             saveRename()
           }}
         >
-          <input
+          <Input
+            surface="inset"
             autoFocus
             value={draft}
             maxLength={40}
             onChange={(e) => setDraft(e.target.value)}
             onBlur={saveRename}
             aria-label={`Rename ${page.label}`}
-            className="min-w-0 flex-1 rounded-control border border-border bg-canvas px-2 py-1 text-body-sm font-medium text-text"
+            className="min-w-0 flex-1 px-2 py-1 font-medium"
           />
           <IconButton variant="bordered" label="Save name" disabled={pending} onClick={saveRename}>
             <Check className="h-4 w-4" aria-hidden />
@@ -360,13 +361,13 @@ function AddPageRow({
         submit()
       }}
     >
-      <input
+      <Input
         value={label}
         maxLength={40}
         placeholder="New page name"
         onChange={(e) => setLabel(e.target.value)}
         aria-label="New page name"
-        className="min-w-0 flex-1 rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle"
+        className="min-w-0 flex-1 py-1.5"
       />
       <Button type="submit" variant="secondary" size="sm" disabled={pending || label.trim().length === 0}>
         {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Plus className="h-3.5 w-3.5" aria-hidden />}

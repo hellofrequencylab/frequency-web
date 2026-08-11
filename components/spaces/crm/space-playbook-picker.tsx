@@ -104,12 +104,12 @@ export function SpacePlaybookPicker({
 
         {tweaking && card.isOutbound && (
           <div className="mt-3 space-y-2">
-            <input
+            <Input
+              surface="inset"
               type="text"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="Subject"
-              className="w-full rounded-control border border-border bg-canvas px-3 py-2 text-body-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             />
             <Textarea
               value={body}

@@ -49,13 +49,13 @@ export function DirectorySearch({
   return (
     <div className="relative">
       <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
-      <input
+      <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
         disabled={disabled}
-        className="w-full rounded-control border border-border bg-surface py-2.5 pl-10 pr-9 text-body-sm text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+        className="py-2.5 pl-10 pr-9"
       />
       {value && (
         <button

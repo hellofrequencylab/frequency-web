@@ -130,12 +130,12 @@ function BookingMineRow({
           <label htmlFor={`reason-${booking.id}`} className="text-meta font-medium text-muted">
             Reason (optional)
           </label>
-          <input
+          <Input
             id={`reason-${booking.id}`}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             maxLength={500}
-            className="w-full rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm"
+            className="py-1.5"
           />
           <div className="flex items-center gap-2">
             <button

@@ -253,14 +253,14 @@ export function SpaceCirclesManager({
               Name this circle
             </label>
             <div className="flex flex-wrap items-center gap-2">
-              <input
+              <Input
                 id="new-circle-name"
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Tuesday morning group"
                 disabled={pending}
-                className="min-w-0 flex-1 rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
+                className="min-w-0 flex-1 py-1.5"
               />
               <button
                 type="button"
@@ -505,14 +505,14 @@ export function SpaceCirclesManager({
                     <label htmlFor={`handoff-${c.id}`} className="block text-2xs font-semibold uppercase tracking-wide text-muted">
                       Or hand it to someone
                     </label>
-                    <input
+                    <Input
                       id={`handoff-${c.id}`}
                       type="text"
                       value={handoffQuery}
                       onChange={(e) => searchPeople(e.target.value)}
                       placeholder="Search by name or @handle"
                       disabled={pending}
-                      className="w-full rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
+                      className="py-1.5"
                     />
                     {handoffHits.length > 0 && (
                       <div className="overflow-hidden rounded-card border border-border bg-surface">

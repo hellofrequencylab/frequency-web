@@ -77,14 +77,15 @@ export function PageQrManager({
 
         <label className="block">
           <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Title</span>
-          <input
+          <Input
+            surface="inset"
             value={title}
             onChange={(e) => {
               setTitle(e.target.value)
               setError(null)
             }}
             placeholder="e.g. Front desk flyer"
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-meta text-text"
+            className="rounded-md px-2.5 py-1.5 text-meta"
           />
         </label>
 

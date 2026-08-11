@@ -219,92 +219,92 @@ export function JourneyManageCard({ plan }: { plan: ManagePlan }) {
         }
         footer={
           <>
-      <div className="flex flex-wrap items-center gap-1.5">
-        <Link href={`/journeys/${plan.slug}/edit`} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover">
-          <Pencil className="h-3.5 w-3.5" /> Edit
-        </Link>
-        <Link href={`/journeys/${plan.slug}`} className={btn}>
-          <Eye className="h-3.5 w-3.5" /> View
-        </Link>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Link href={`/journeys/${plan.slug}/edit`} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover">
+                <Pencil className="h-3.5 w-3.5" /> Edit
+              </Link>
+              <Link href={`/journeys/${plan.slug}`} className={btn}>
+                <Eye className="h-3.5 w-3.5" /> View
+              </Link>
 
-        {/* Visibility — draft / live in your space (unlisted) / listed in the library (public). */}
-        <Menu
-          open={visOpen}
-          onClose={() => setVisOpen(false)}
-          trigger={
-            <button type="button" disabled={pending} onClick={() => { setVisOpen((o) => !o); setNote(null) }} className={btn}>
-              {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Vis.Icon className="h-3.5 w-3.5" />}
-              Visibility <ChevronDown className="h-3 w-3 text-subtle" />
-            </button>
-          }
-        >
-          {VIS_OPTIONS.map((o) => {
-            const active = o.value === plan.visibility
-            return (
-              <button
-                key={o.value}
-                type="button"
-                role="menuitem"
-                disabled={pending}
-                onClick={() => setVisibility(o.value)}
-                className={`flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-surface-elevated disabled:opacity-60 ${active ? 'bg-surface-elevated' : ''}`}
+              {/* Visibility — draft / live in your space (unlisted) / listed in the library (public). */}
+              <Menu
+                open={visOpen}
+                onClose={() => setVisOpen(false)}
+                trigger={
+                  <button type="button" disabled={pending} onClick={() => { setVisOpen((o) => !o); setNote(null) }} className={btn}>
+                    {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Vis.Icon className="h-3.5 w-3.5" />}
+                    Visibility <ChevronDown className="h-3 w-3 text-subtle" />
+                  </button>
+                }
               >
-                <o.Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5 text-body-sm font-medium text-text">
-                    {o.label} {active && <Check className="h-3.5 w-3.5 text-success" aria-hidden />}
-                  </span>
-                  <span className="block text-2xs text-muted">{o.hint}</span>
-                </span>
-              </button>
-            )
-          })}
-        </Menu>
+                {VIS_OPTIONS.map((o) => {
+                  const active = o.value === plan.visibility
+                  return (
+                    <button
+                      key={o.value}
+                      type="button"
+                      role="menuitem"
+                      disabled={pending}
+                      onClick={() => setVisibility(o.value)}
+                      className={`flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-surface-elevated disabled:opacity-60 ${active ? 'bg-surface-elevated' : ''}`}
+                    >
+                      <o.Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-1.5 text-body-sm font-medium text-text">
+                          {o.label} {active && <Check className="h-3.5 w-3.5 text-success" aria-hidden />}
+                        </span>
+                        <span className="block text-2xs text-muted">{o.hint}</span>
+                      </span>
+                    </button>
+                  )
+                })}
+              </Menu>
 
-        {/* Move — reassign the owner between the caller's personal account and a Space they run. */}
-        <Menu
-          open={moveOpen}
-          onClose={() => setMoveOpen(false)}
-          trigger={
-            <button type="button" disabled={pending} onClick={openMove} className={btn}>
-              <ArrowLeftRight className="h-3.5 w-3.5" /> Move <ChevronDown className="h-3 w-3 text-subtle" />
-            </button>
-          }
-        >
-          <p className="px-2.5 py-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Show this journey on</p>
-          {targetsLoading && (
-            <p className="flex items-center gap-2 px-2.5 py-2 text-body-sm text-muted"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading</p>
-          )}
-          {targets?.targets.map((t) => {
-            const active = t.id === targets.current
-            const TIcon = t.kind === 'personal' ? User : Building2
-            return (
-              <button
-                key={t.id}
-                type="button"
-                role="menuitem"
-                disabled={pending}
-                onClick={() => move(t.id)}
-                className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-body-sm transition-colors hover:bg-surface-elevated disabled:opacity-60 ${active ? 'bg-surface-elevated' : ''}`}
+              {/* Move — reassign the owner between the caller's personal account and a Space they run. */}
+              <Menu
+                open={moveOpen}
+                onClose={() => setMoveOpen(false)}
+                trigger={
+                  <button type="button" disabled={pending} onClick={openMove} className={btn}>
+                    <ArrowLeftRight className="h-3.5 w-3.5" /> Move <ChevronDown className="h-3 w-3 text-subtle" />
+                  </button>
+                }
               >
-                <TIcon className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
-                <span className="min-w-0 flex-1 truncate font-medium text-text">{t.label}</span>
-                {active && <Check className="h-3.5 w-3.5 shrink-0 text-success" aria-hidden />}
-              </button>
-            )
-          })}
-          {targets && targets.targets.length <= 1 && (
-            <p className="px-2.5 py-2 text-2xs text-muted">Run a Space to move this journey onto its page.</p>
-          )}
-        </Menu>
+                <p className="px-2.5 py-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Show this journey on</p>
+                {targetsLoading && (
+                  <p className="flex items-center gap-2 px-2.5 py-2 text-body-sm text-muted"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading</p>
+                )}
+                {targets?.targets.map((t) => {
+                  const active = t.id === targets.current
+                  const TIcon = t.kind === 'personal' ? User : Building2
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      role="menuitem"
+                      disabled={pending}
+                      onClick={() => move(t.id)}
+                      className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-body-sm transition-colors hover:bg-surface-elevated disabled:opacity-60 ${active ? 'bg-surface-elevated' : ''}`}
+                    >
+                      <TIcon className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+                      <span className="min-w-0 flex-1 truncate font-medium text-text">{t.label}</span>
+                      {active && <Check className="h-3.5 w-3.5 shrink-0 text-success" aria-hidden />}
+                    </button>
+                  )
+                })}
+                {targets && targets.targets.length <= 1 && (
+                  <p className="px-2.5 py-2 text-2xs text-muted">Run a Space to move this journey onto its page.</p>
+                )}
+              </Menu>
 
-        <button type="button" disabled={pending} onClick={duplicate} className={btn}>
-          <Copy className="h-3.5 w-3.5" /> Duplicate
-        </button>
-        <button type="button" disabled={pending} onClick={() => setConfirmDelete(true)} className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-danger/30 px-3 py-1.5 text-body-sm font-medium text-danger transition-colors hover:bg-danger-bg/40 disabled:opacity-60">
-          <Trash2 className="h-3.5 w-3.5" /> Delete
-        </button>
-      </div>
+              <button type="button" disabled={pending} onClick={duplicate} className={btn}>
+                <Copy className="h-3.5 w-3.5" /> Duplicate
+              </button>
+              <button type="button" disabled={pending} onClick={() => setConfirmDelete(true)} className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-danger/30 px-3 py-1.5 text-body-sm font-medium text-danger transition-colors hover:bg-danger-bg/40 disabled:opacity-60">
+                <Trash2 className="h-3.5 w-3.5" /> Delete
+              </button>
+            </div>
             {note && <p className="mt-2 text-meta text-muted">{note}</p>}
           </>
         }
