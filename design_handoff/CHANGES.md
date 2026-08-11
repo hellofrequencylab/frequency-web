@@ -396,3 +396,409 @@ last two, so anything needing rank-coloured TEXT reached for a raw palette class
 the whole reason `lib/gamification.ts` carried the repo's last 48 raw Tailwind palette classes.
 Production has bridged all three steps now. Worth saying in the spec that the ladder is meant to be
 reachable by callers, not only by the badge primitive.
+
+
+## 2026-08-11 · the mobile grammar (answering `BRIEF-07-MOBILE-GRAMMAR.md` §6)
+
+**How to read the numbers below.** Every px value is stated at **this app's 17px root**
+(`--density-root: 106.25%`, `app/globals.css:217` + `:1752`), because a `rem` class does not
+render at its Tailwind name here: `bottom-32` is 136px, not 128; `w-72` is 306px, not 288.
+The brief's §1-§5 were computed at 16px, so several of its figures are restated rather than
+repeated. **Media queries are the exception and it is load-bearing** — a media query resolves
+`rem` against 16px, not against the root (globals.css:323-324 already says so). Breakpoints and
+paddings therefore run on two different unit bases in the same layout. That fact decides Q3.
+
+**Three of §1-§5's facts no longer hold.** The brief was read 2026-08-04; the owner shipped
+against it on 08-05 and 08-06. Per `AGENTS.md` ("when the code and a plan doc disagree, the code
+wins"), the answers below are written against the code:
+
+| Brief says | Live |
+|---|---|
+| Vault dock needs `lg`, mounted inside the right-rail column (§1, §2) | `DockBar` is a shell sibling at `fixed bottom-0 right-3 z-40 hidden … md:flex` — it renders **from 768** (`dock-bar.tsx:633`, `app-shell.tsx:2486-2489`) |
+| Two toasts disagree; `zap-toast` at `bottom-4` (§2) | One lane. `TOAST_LANE_CLASS` = `fixed bottom-32 right-4 z-[60] … md:bottom-24` (`components/toast-lane.tsx:47`); both stacks are children of it |
+| Chat edge pill at `bottom-20`, part of the bottom stack (§2) | `fixed top-1/2 -translate-y-1/2 z-40` (`edge-pill.tsx:107`) — a mid-right object, off the bottom edge entirely |
+| Score at the drawer's **foot** (§3) | Inside the identity card at the drawer's **head**, as a collapsed disclosure capped `max-h-[50dvh]` (`app-shell.tsx:1333-1370`, owner 2026-08-06) |
+
+### Q1 — What the bottom edge means on a phone
+
+**The tab bar is the sole owner of the phone's bottom edge, and the score does not get a home
+there.** DAWN's docks card states the bottom-right dock as a popover on one shared shell that
+"opens toward the interior"; a 306px tab, a seven-slot bar and a centred raised action cannot all
+own the same 93.5px. The score's phone home is the drawer (Q7). `game-stats-dock.tsx:98` already
+writes the invariant — *score once per viewport* — and it is correct.
+
+**THE MOBILE STACKING CONTRACT**, from the safe-area edge up, measured on 390×844 with a 34px
+home-indicator inset. It is the mobile half of the block at `components/sidebar/game-stats-dock.tsx:70-98`,
+and it belongs beside the desktop one in that same comment.
+
+| Slot | What | Geometry (from the viewport bottom) | z |
+|---|---|---|---|
+| **0** | The tab bar. Nothing else may be `bottom-0`. | `[0, 93.5]` — `var(--tab-bar-h)` = `3.5rem + env(safe-area-inset-bottom)` = 59.5 + 34 | 40 |
+| **0a** | The raised Zap catch, a child of slot 0 breaking upward. `h-14` (59.5px disc) at `top-0` translated −22px. | spans `[34, 115.5]`; the exposed band above the bar is `[93.5, 115.5]`, 59.5px wide, centred | 40 |
+| **1** | The toast lane. One lane, one definition. | `bottom-32` = **136px**, `right-4` = 17px. Clears slot 0a's top by **20.5px** | 60 |
+| **2** | A bottom sheet (Vera `h-[68dvh]`, the capture composer). Takes the edge *from* slot 0 while open and pads its own inset. **One at a time.** | `inset-x-0 bottom-0`, `max-w-md` | 50 |
+| **3** | **RETIRED.** The chat edge pill left the corner when the Vault and the chat became one bar. There is no second floating object to keep away. | — | — |
+
+**The rule for any new fixed element.** Six lines, and they are the answer to "what must a new
+fixed element do":
+
+1. **Name your slot before you pick a number.** If it is not a tab bar, a toast or a sheet, it
+   does not belong at the phone's bottom edge. Put it in the drawer or in the flow.
+2. **Measure from `var(--tab-bar-h)`, never from a literal.** The bottom inset is 0 on one phone
+   and 34px on the next; a literal is right on exactly one device.
+3. **Clear 115.5px, not 93.5px.** The raised Zap's catch is the real top of the bar. This is the
+   one number every prior comment in this area got wrong.
+4. **Two fixed boxes that must not overlap is not a thing you fix with better offsets — it is one
+   box.** `toast-lane.tsx` is the precedent and it was written after two lanes drifted into being
+   byte-identical.
+5. **The z-ladder is fixed: bar 40 · sheets 50 · toasts 60.** A toast is transient and
+   `pointer-events-none`, so it deliberately outranks the sheet it briefly overlaps.
+6. **State the arithmetic at a 17px root in the comment.** Every `bottom-*` in this app is 6.25%
+   larger than its class name.
+
+**Change, and where §7 already sends it** → `components/sidebar/game-stats-dock.tsx`, the `< 768`
+half of the contract comment. Two figures in it are corrected in the same pass: the catch top is
+**115.5px** (not 112), and `bottom-32` is **136px clearing by 20.5** (not 128 clearing by 16).
+`components/toast-lane.tsx:38-44` carries the same 16px arithmetic and gets the same correction.
+The zap-toast position the brief asked us to fix against the contract **is already fixed** — both
+stacks are children of the one lane.
+
+### Q2 — Where the score lives between 768 and 1023
+
+**Nowhere new: it is already the anchored bar, and that is the right answer.** The 🔴 hole closed
+on 2026-08-05, before this round. `DockBar` is `hidden … md:flex` (`dock-bar.tsx:633`) and is
+mounted as a **shell sibling**, not inside the rail column (`app-shell.tsx:2486`). Its own comment
+names why: *"the rail column is lg:flex and this must render from md."*
+
+**DAWN's files already required this and the repo's old mount broke a stated law.** The docks card
+closes with **"Rails are not docks. The rails carry content. Controls belong to the docks."**
+DAWN's own `VaultDock` is `position: fixed; bottom: 16; right: 16; z-index: 65`
+(`ui_kits/app/docks.jsx:205`) and the shell renders it **with no breakpoint gate at all**
+(`ui_kits/screens/frame.jsx:212`) — while the right rail beside it strips at `w < 1100` and
+auto-closes at `w < 1400`. So in DAWN the Vault has never been rail-conditional. The 768-1023 hole
+was never a design gap; it was one mount inheriting a neighbour's breakpoint.
+
+The band today: left rail present, right rail absent, the Vault bar present carrying zaps/gems/streak
+(the `lg:hidden` on the Vault segment is a *fold* rule and cannot fire below `lg`), chat segment
+present. Score once per viewport holds: **< 768 the drawer's identity card · ≥ 768 this bar.**
+
+**Change** → **none in `app-shell.tsx`.** §7 budgeted "two breakpoint edits" for Q2/Q3 and this
+round spends **zero**. One doc edit is owed: `docs/DAWN-CONVERSION.md:300` still carries this as
+🔴 with a fix that shipped.
+
+**One divergence we are declining, with the reason.** DAWN says *"a folded rail is a visible
+strip, never a missing track"*; the repo's right rail is `hidden lg:flex` — genuinely missing
+below 1024, not stripped. We are keeping that. At 768-1023 the bar already carries the rail's
+most-read content, and spending 2.375rem of a 768px canvas on a reopen affordance buys a member
+nothing they cannot get from the bar. Stated so it is a decision rather than an oversight.
+
+### Q3 — Is the number 1000 or 768?
+
+**768, and DAWN's 1000 is re-scoped rather than overruled — because the two numbers were never
+measuring the same thing.**
+
+**DAWN does not actually run one line.** `ui_kits/screens/frame.jsx:150-158` runs four:
+`overlayMenu: w < 1000` · `autoLeft: w < 1180 ? 'icons' : 'open'` · `forceRightStrip: w < 1100` ·
+`autoRight: w < 1400 ? 'closed' : 'open'`. `readme.md:404` and `:513` compress that to "under
+1000px the menu leaves the layout", which is true of DAWN's *menu mode* and not of its shell. So
+the law text is a simplification of DAWN's own code, and the brief's ⚠️ ("one of the two numbers
+is wrong") has a third answer: **both are right about different jobs.**
+
+- **1000 is a menu-mode line.** In DAWN the menu can overlay at 1000 because `<TopBar
+  onToggleNav>` is always on screen — the overlay always has an opener.
+- **768 is the repo's input-mode line.** Below it the shell becomes touch chrome: tab bar in, rail
+  out, drawer in. The drawer's **only** opener is the tab bar (`app-shell.tsx:1487-1497`), and the
+  tab bar is `md:hidden` (`:1481`).
+
+**Which is why the "contained fix" is not contained.** `docs/DAWN-CONVERSION.md:300` proposes
+`--breakpoint-rail: 62.5rem` plus "swap only the five rail/menu classes". Move the rail to 1000
+and 768-999 has no rail, no tab bar and therefore **no way to open the menu at all**. It is five
+classes plus a new header control plus a second drawer trigger — and it buys a band that is not
+broken today.
+
+Three more reasons, all measurable:
+
+1. **Cost.** `rg -oE '\b(md|lg):' components app lib` → **870** sites (DAWN-CONVERSION quotes 629
+   for the same class). Either figure is three orders of magnitude past the five it would fix.
+   **`--breakpoint-md` is not redefined. `--breakpoint-rail` is not added.**
+2. **Two unit bases in one decision.** `--breakpoint-rail: 62.5rem` lands at **1000 CSS px**
+   (media queries resolve `rem` against 16px) while every rem in the layout it governs renders at
+   17px. A permanent footgun for a five-class win.
+3. **DAWN's real ladder is not a breakpoint anyway.** `autoLeft`/`autoRight`/`forceRightStrip` are
+   *auto-fold* thresholds — they change a rail's **position on the ladder**, not whether it is in
+   the layout. The repo has that ladder (`lib/layout/rail-fold.ts`, ADR shipped 2026-08-05) but
+   `autoStrip` is keyed on the **route** (`railStartsCollapsed(pathname)`), never on the room. So
+   DAWN's "Auto follows the room" is the half the repo has not built, and it is the half 1000
+   belongs to.
+
+**What 768-1023 shows: unchanged.** Left rail open, no right rail, the Vault bar. What is owed is
+above 768, not below it.
+
+**Change** → **DAWN-side, one sentence.** `readme.md:404` and `:513` are corrected to say the
+menu leaves the layout at the consumer's **touch line**, and that 1000/1100/1180/1400 are the
+desktop auto-fold ladder. Repo-side, `lib/layout/rail-fold.ts:35-38` already states this as an
+open question and its parenthetical is updated to record the ruling. **A viewport-driven `auto`
+(DAWN's 1180 / 1400) is a separate, larger item — see "Not answered" below.**
+
+### Q4 — Do the four marketing roles survive at 390px
+
+**They survive as four, but only after the floors are re-cut. Today two of them are 12.75px
+apart and that is below noticing.**
+
+**First, a structural finding the brief did not make: the four roles are four TOP paddings.**
+The adjacency correction (`globals.css:1601-1603`) is `padding-bottom: calc(var(--space-section)
+* 0.62)` on **all five** role classes, so **every non-final section on the page has the same
+bottom**. Half of every gap is a constant. That is the real reason the rhythm reads weakly
+long before you get to the phone.
+
+**Measured now, at 390px and 17px root** (the brief's table is the same values at 16px):
+
+| Token | Formula | **390px** | 1440px |
+|---|---|---|---|
+| `--space-section-loose` (`.mk-band`) | `clamp(5rem, 9.5vw, 7rem)` | **85px** (floor; 9.5vw = 37.1) | 119px |
+| `--space-section` (`.mk-beat`) | `clamp(4.25rem, 8vw, 5.5rem)` | **72.25px** (floor; 8vw = 31.2) | 93.5px |
+| `--space-section-tight` (`.mk-tight`) | `clamp(3rem, 5.5vw, 3.75rem)` | **51px** (floor; 5.5vw = 21.5) | 63.75px |
+| adjacency bottom (`× 0.62`) | `--space-section × 0.62` | **44.8px** | 57.97px |
+| gutter | fixed `1.5rem` (twice: the role class **and** `Section`'s `px-6`) | **25.5px** | 25.5px |
+
+**The gaps that produces** — a gap is *upper's bottom + lower's top*, so these are the numbers a
+reader actually sees:
+
+| Seam | **390px today** | 1440px | **390px proposed** |
+|---|---|---|---|
+| → `.mk-band` (a tone change) | 129.8 | 177.0 | **113.4** |
+| → `.mk-beat` (the workhorse) | 117.1 | 151.5 | **96.4** |
+| → `.mk-tight` (a statement) | 95.8 | 121.7 | **75.1** |
+| → `.mk-cont` (one argument, two blocks) | 44.8 | 58.0 | **36.9** |
+| **loudest − quietest spread** | **34.0** | **55.3** | **38.3** |
+
+The three clamps unpin at **895 / 903 / 927px** respectively. DAWN's own marketing kit collapses
+to one column at **900px** (`templates/marketing-site/MarketingSite.dc.html:21`, and the same
+number in `about.html`, `operators.html`, `circles.html`). So DAWN's phone/tablet line and the
+point where the rhythm starts breathing are already the same number, by accident. Below it, the
+page gets whatever the desktop clamp bottomed out at — which is the brief's charge, upheld.
+
+**Answer 1 — four roles, still four.** Do not drop to three. `.mk-cont` at 36.9px is the most
+useful of the four (it is the "these two are one argument" seam) and would be the one dropped.
+The problem is not the count, it is that the band↔beat step at 390 is **12.75px** — 3.3% of the
+viewport width, seen ~800px apart in a scroll. Re-cut, that step is **17px** (a 28.6% relative
+step) and the four gaps land at 113 / 96 / 75 / 37: four separated values.
+
+**Answer 2 — the phone values, as three floor edits.** Ceilings and `vw` terms untouched, so this
+is exactly what §7 budgeted (*"new floors on the three `--space-section-*` clamps, one file"*):
+
+| Token | Floor now | **Floor proposed** | Why |
+|---|---|---|---|
+| `--space-section-loose` | `5rem` (85px) | **`4.5rem`** (76.5px) | |
+| `--space-section` | `4.25rem` (72.25px) | **`3.5rem`** (59.5px) | |
+| `--space-section-tight` | `3rem` (51px) | **`2.25rem`** (38.25px) | |
+
+The ratio is the point. Desktop reads **1.273 : 1 : 0.682**; today's floors read **1.176 : 1 :
+0.706** (flattened); the proposal reads **1.286 : 1 : 0.643** — the desktop ratio, restored.
+**And every gap gets smaller**: 129.8→113.4, 117.1→96.4, 95.8→75.1. More rhythm and less dead
+scroll, in the same edit. Side effect, stated: the clamps unpin at 806 / 744 / 696px instead of
+895 / 903 / 927, so the tablet band gets a continuous ramp instead of a cliff — at 768px a beat
+goes 72.25 → 61.4px, ~15% tighter. That is correct for a tablet and it is the reason to keep the
+`vw` terms exactly as they are.
+
+**Answer 3 — the ×0.62 holds, unchanged.** It is a proportion of a proportion: it has no viewport
+term and cannot scale wrong. It is also not the thing that is broken (see the structural finding).
+
+**Answer 4 — the gutter holds at 1.5rem, and stops being an accident.** Measured: 25.5px each
+side of 390px leaves **339px** of measure, which at `--text-body` (1rem = 17px) runs roughly 46-52
+characters per line — inside the comfortable band. Cutting to `1.25rem` buys 8.5px of measure
+(2.5%) and pushes body copy into iOS's ~20px edge-swipe region. It is not a rhythm value; it is a
+**safety margin**, and a safety margin that tracks the viewport is not a safety margin. So it holds
+by decision rather than by omission. **But it should track the safe area**, which it does not:
+`app/layout.tsx:81` sets `viewportFit: "cover"` and the `.mk-*` gutter is a bare `1.5rem`, so in
+landscape on a notched phone marketing copy runs under the notch. `.px-safe` exists
+(`globals.css:1716`) and the app shell uses it; marketing never got it.
+
+**Bug found in the same rule.** `globals.css:1558` reads `.mk-band, .mk-beat, .mk-cont, .mk-tight
+{ padding-inline: 1.5rem; }` — **`.mk-cont-soft` is missing**, in the repo and in DAWN's
+`tokens/utilities.css:84` identically. Any hand-rolled `.mk-cont-soft` section renders edge-to-edge.
+It is latent only because `Section` also emits `px-6`.
+
+**Change** → `app/globals.css`, one block: the three floors, `.mk-cont-soft` added to the gutter
+selector, and the gutter becomes `padding-inline: max(1.5rem, env(safe-area-inset-left)) max(1.5rem,
+env(safe-area-inset-right))`. DAWN-side, `tokens/spacing.css:33-35` and `tokens/utilities.css:84`
+take the same edits.
+
+### Q5 — Hero fact docks: strip, and it stops overhanging
+
+**Neither stack, nor truncate, nor a smaller wrap. Below `sm` the dock leaves the overhang and
+becomes an in-flow strip at the foot of the hero.** DAWN's answer is in its files and it is a
+fourth option the brief did not list:
+
+- DAWN's dock is `whiteSpace: 'nowrap'`, `gap: 34`, *"Three numbers, never more"*
+  (`ui_kits/marketing/sections.jsx:264-274`). **DAWN's dock does not wrap.** The repo's
+  `flex-wrap` (`marketing-ui.tsx:125`) is a local addition.
+- DAWN's own narrow-screen escape is `@media (max-width: 900px) { .op-dock { position: static
+  !important; } }` (`ui_kits/marketing/operators.html:20`) — the dock **stops being absolutely
+  positioned** and goes in flow.
+
+That dissolves the problem instead of retuning it. Truncate is rejected on voice, not layout: the
+facts are a claim, and a phone showing two of three reads a different claim than desktop. Stack is
+rejected on arithmetic: three rows at the current numeral size is 200px+ of chrome on a 390px
+screen, at which point it is not a dock.
+
+**The arithmetic, so the strip is specified and not vibed.** Today at 390px the panel is
+`max-w-[calc(100vw-2rem)]` = **356px**, minus `px-6` (25.5 × 2 = 51) minus two `gap-6` (25.5 × 2
+= 51) = **254px for three columns, 84.7px each**. A label at `--text-3xs` (10.625px) with
+`--tracking-eyebrow` (0.18em) exceeds that at roughly twelve characters, which is why it wraps.
+In flow and full-bleed to the gutter the box is **339px**, and with `px-4` (17px) and `gap-3`
+(12.75px) each column gets **93.2px** — enough, with the label allowed two lines.
+
+**The rule:**
+
+| Width | The dock |
+|---|---|
+| **≥ 640px (`sm`)** | Unchanged. Absolute, `-bottom-8`, `nowrap`, three facts on one row. |
+| **< 640px** | In flow: the last child of the hero, inside the hero's own bottom room. Full-bleed to the marketing gutter, `grid-cols-3`, `gap-3`, `px-4 py-3`. Numerals step `--text-page-title` (1.5rem) → `--text-lead` (1.25rem). Labels stay `--text-3xs`, tracking relaxes `0.18em` → `0.08em`, and may take **two lines**; a numeral never wraps. `flex-wrap` is dropped — the strip is a grid, so it cannot grow upward into the subtitle. |
+
+**And the clearance follows it.** `.mk-hero-dock + *` is
+`calc(var(--space-section)/2 + 3rem)` = **87.1px at 390px**, computed for a one-row overhanging
+dock. Below `sm` the overhang is **zero**, so that clearance is 87px of hole. It collapses to the
+ordinary no-dock treatment: wrap the `.mk-hero-dock + *` rule in `@media (min-width: 40rem)` and
+let `.mk-hero:not(.mk-hero-dock) + *`'s zero apply below it. (`40rem` here is a media query, so it
+is **640 CSS px** — the same line as `sm`, on the 16px basis. Stated because the paddings around
+it are 17px-based.)
+
+**Change** → `components/marketing/marketing-ui.tsx:124-135` (the dock) and `app/globals.css:1615-1619`
+(the clearance), exactly as §7 names them.
+
+### Q6 — Thumb-zone rules for the docks and the raised action
+
+**Minimum target: 44 × 44 CSS px for anything `fixed`. Established here, not imported.**
+`globals.css:1655-1657` sets `@media (pointer: coarse) { :root { --tap-min: 44px; } }`, consumed
+by `@utility tap-target` (`:1673-1676`). WCAG **2.5.5** (AAA) is 44×44; **2.5.8** (AA, 2.2) is
+24×24. The adoption ratchet allowlists `min-h-[44px]` by name and its entry cites 2.5.5
+(`scripts/adoption-baselines.json:818`), and the header's search button was fixed this month
+after axe measured it at **21.3 × 34** on `/feed` (`app-shell.tsx:2055-2064`). So 44 is the
+house number and it is machine-enforced.
+
+**One new rule, and it is ours, not DAWN's: a fixed control takes the coarse-pointer 44px and
+never the per-generation dip.** `--tap-min` is non-monotonic by design — `bold` dips to 26px
+(`globals.css:904`). That dip is a density choice for controls **in flow**, which have neighbours
+to borrow slack from and a scroll that can reposition them. A fixed control has neither.
+
+**The bar clears it with room, and here is the ceiling that keeps it clearing.** Seven `flex-1`
+slots at 390px = **55.71 × 59.5px**. At 320px (the narrowest supported phone) seven slots are
+**45.7px** — still over 44. **Eight slots at 320px would be 40px and fail 2.5.5, so seven is a
+hard cap on the tab bar, not a preference.** The drawer's foot Close is ~50px tall (`py-3` plus a
+`text-body-sm` line) and passes.
+
+**Minimum gap between two fixed controls — two numbers, because there are two failures:**
+
+| Rule | Value | Grounding |
+|---|---|---|
+| Never closer than | **12.75px** (`--space-3`) | the overlap floor |
+| Two separately-actionable fixed controls are **either ≥ 40px apart or joined into one object** | 40px | `game-stats-dock.tsx:57-60`: the Vault chip and the chat pill never overlapped — there was 12px of clearance — and *"two floating, right-aligned, click-to-open pills 12px apart read as ONE cluster"*. The repo's own resolution was to **join them**, which is the better half of this rule. |
+
+**The reachable band: `bottom-0` to `35dvh` — 295px on a 390×844 phone.** ⚠️ **This is a judgement
+call. DAWN has no thumb-zone guidance of any kind** — no media queries in `tokens/`, nothing in
+the docks card, nothing in `readme.md`. It is anchored to the numbers the repo has already
+committed to rather than to a heatmap: slot 0 ends at 93.5, the toast lane at 136, and the
+drawer's Vault disclosure is capped `max-h-[50dvh]` (`app-shell.tsx:1364`) precisely so the
+drawer's foot Close stays reachable. 35dvh is the smallest band that contains all three with the
+Close inside it. Anything a member touches more than once a session goes in the band; anything
+they touch once a month does not have to.
+
+**What may pass beneath a floating control — the answer is "content, never a control", and there
+is a live defect.** The raised Zap's catch breaks **22px** into the content column across a 59.5px
+disc (Q1, slot 0a). The content column pads by `var(--tab-bar-h)` (`app-shell.tsx:1935`) but
+**not** by the catch's overhang, so the final 22px of a page's last element sits under the disc
+with nothing below it to scroll. That is the concrete rule and the concrete fix:
+
+- A floating control may overlap **scrolling content that can be scrolled clear of it**.
+- It may never overlap **a control** — no submit button, no link, no input.
+- Therefore the content column's bottom pad grows by the overhang, and the overhang stops being a
+  literal in two files: add `--tab-bar-lift: 22px` beside `--tab-bar-h`, and the column pads
+  `calc(var(--tab-bar-h) + var(--tab-bar-lift))`.
+
+**Change** → `components/sidebar/game-stats-dock.tsx` (these rules ride with the Q1 contract, in
+the same comment), plus the `--tab-bar-lift` token and the column pad in `app/globals.css` /
+`app-shell.tsx:1935`. **The 44px floor and the seven-slot cap need no code change today** — both
+already hold; they are being written down so the next fixed element cannot break them quietly.
+
+### Q7 — "You and yours" when there is no rail
+
+**The drawer does not read foot-first, and it should not. The premise the brief was written on
+changed on 2026-08-06 and the law was never inverted.**
+
+**Why the law's geometry does not transfer.** The docks card puts *you and what you run* at the
+rail's foot because the dock is a **popover** and the foot is its **anchor** — "opening toward the
+interior" is the sentence right beside it. It is not a claim that identity is the last thing a
+member reads. On a phone the drawer **is** the popover: the whole surface is the dock, so there is
+no foot to anchor to and no anchor to invert. What transfers is the law's *grouping* — identity,
+standing and the things you run are **one cluster, offered once** — and the owner's 2026-08-06
+change satisfies exactly that by folding the score into the identity card as a disclosure
+(`app-shell.tsx:1333-1370`). Its own comment gives the measurement that forced it: the old foot
+cluster capped stats at 40dvh while the nav was `flex-1` with a min-height of 0, so on a 568px
+screen the site nav resolved to about **58px — two rows**.
+
+**The residual, and it is real.** *What you run* is still distributed through the nav list rather
+than clustered with identity, so the bottom-left dock's three parts are two clusters on a phone.
+**Change:** the identity card takes a second collapsed disclosure, **"What you run"** (My Circles,
+events, listings, Spaces, QR studio, payouts, orders), built the same way as the Vault one — same
+`grid-rows-[0fr] → [1fr]` row, same `--motion-base`, collapsed by default so the nav keeps its
+height. → `app-shell.tsx`, `MobileLeftDrawer`.
+
+**The foot-mounted Close stays, and it stops being an exception.** `readme.md:497` frames it as
+"the one exception" for overlays. Restate the law by mechanism and the exception disappears:
+**a dismiss goes where the hand is.**
+
+- The app drawer is full-height and opened dozens of times a day, so its **near edge is the
+  bottom** → Close at the foot, in the 35dvh band (Q6). Correct as built.
+- The marketing overlay is anchored `inset-x-0 top-0` and a visitor opens it once or twice, so its
+  **near edge is the top** → Close at the top (`marketing-mobile-menu.tsx:84-92`). Also correct.
+
+Same rule, two answers, no exception to remember. **Change** → DAWN's `readme.md:497` sentence;
+no repo code.
+
+### What this round is NOT answering, and why
+
+- **Mobile reference frames per screen.** §7's first row asks for them and this round does not
+  ship them. This round answers the seven questions, which is what gates the floors, the dock rule
+  and the contract; the five highest-traffic screens need the Lift 4b baselines rendered beside
+  them to be worth drawing, and drawing them blind is how a frame ships a value nobody measured.
+- **Making `.mk-*`'s adjacency correction role-aware.** The structural finding in Q4 — every
+  non-final section shares one bottom, so half of every gap is constant — is the deeper cause of
+  the weak rhythm. Changing it moves **desktop** too, and §7 scoped Q4 to floors in one file.
+  Named here so it is a deferral rather than a miss. It is the next marketing question.
+- **A viewport-driven `auto` on the rail ladder** (DAWN's `autoLeft: w < 1180`, `autoRight: w <
+  1400`, `forceRightStrip: w < 1100`). The repo's `autoStrip` is route-keyed
+  (`railStartsCollapsed(pathname)`), so "Auto follows the room" is unbuilt. It is a real gap and
+  it is not a breakpoint edit: a viewport-driven fold is *markup*, and the server cannot know the
+  viewport, which is the same reason `rail-fold.ts:26-38` keeps the narrow-window yield in CSS.
+  Solving it needs a container-query or a cookie-mirrored width, and that is its own round.
+- **The right rail missing rather than stripped below 1024.** Declined this round with the reason
+  stated in Q2, not deferred.
+- **Marketing's 23 categorised header children unreachable on a phone**
+  (`docs/FINALIZE-PLAN.md:239`). Owner-deferred; it is a menu-contract item, not a grammar item,
+  and naming it here would blur the two.
+
+### Repo → DAWN, out of this round
+
+1. **`readme.md:404` and `:513`** say "under 1000px the menu leaves the layout" as a single law.
+   DAWN's own `frame.jsx:150-158` runs four thresholds. Please restate: 1000 is the **menu-mode**
+   line for DAWN's kit, and 1100/1180/1400 are the desktop auto-fold ladder. A consumer whose
+   overlay opener lives in touch chrome reads that sentence and moves the wrong number.
+2. **`readme.md:497`'s overlay exception** is better stated as *the dismiss goes where the hand
+   is* (Q7). One rule, two correct answers, nothing to remember.
+3. **`tokens/utilities.css:84` omits `.mk-cont-soft`** from the gutter selector, so a hand-rolled
+   `.mk-cont-soft` section renders edge-to-edge. Same bug in the repo; both fixed in the same pass.
+4. **DAWN's fact dock has no phone value.** `sections.jsx:264` is `nowrap` with three facts and no
+   narrow-screen rule; only `operators.html` has one, as a per-page `!important`. Please promote
+   `position: static` below the marketing collapse line into `tokens/utilities.css` as a real rule,
+   with the matching `.mk-hero-dock + *` collapse, so it is not per-page.
+5. **DAWN has no thumb-zone or tap-target guidance at all** — `tokens/` carries no media query
+   except `prefers-reduced-motion` and `scripting: none`. The 44px floor, the seven-slot cap, the
+   two-gap rule and the reachable band in Q6 are the repo's, written here so DAWN can adopt or
+   overrule them. This is the one place the design system genuinely did not cover the ask.
+
+### Verify
+
+`pnpm check:docs-links` · `pnpm check:canon`. Nothing in `app/`, `components/`, `lib/` or
+`app/globals.css` was touched by this round — every change above is named for the file §7 commits
+it to and lands in a separate `sync DAWN` pass with its own PR (`SYNC.md` step 5).
