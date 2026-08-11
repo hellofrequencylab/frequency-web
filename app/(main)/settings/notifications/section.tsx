@@ -8,6 +8,8 @@ import {
 import { hasConsent } from '@/lib/consent/consent'
 import { NotificationsForm } from './form'
 import { SmsForm, type SmsFormState } from './sms-form'
+import { SubjectMutesForm } from './mutes-form'
+import { listMuteSubjects } from './mute-subjects'
 import { ConsentScopesForm, type ConsentScopeState } from '@/components/settings/consent-scopes-form'
 import type { SmsPreferences } from './sms-actions'
 
@@ -96,6 +98,11 @@ export async function NotificationsSection() {
       ).data
     : null
 
+  // The Spaces + Circles this member belongs to, each carrying its current mute state
+  // (lib/notification-preferences `listSubjectMutes` merged over the membership reads).
+  // Fail-safe to [] inside the helper, which renders the card's empty state.
+  const muteSubjects = await listMuteSubjects(profile.id)
+
   const optedIn = consentRow?.status === 'opted_in' && !!consentRow?.phone
   const smsInitial: SmsFormState = {
     optedIn,
@@ -110,6 +117,9 @@ export async function NotificationsSection() {
           consent ledger actually existing (smsTableReady). Pass the combined boolean so
           the client form renders a "Coming soon" state until BOTH are true. */}
       <SmsForm initial={smsInitial} smsProvisioned={isSmsProvisioned() && smsTableReady} />
+      {/* One Mute switch per Space/Circle the member belongs to. Scoped to that subject
+          only: the grid above is untouched by anything this card writes. */}
+      <SubjectMutesForm initial={muteSubjects} />
       <div className="pt-2" />
       <ConsentScopesForm initial={consentInitial} />
     </div>

@@ -3,7 +3,7 @@ title: Your settings
 description: Where to update your profile, preferences, and account.
 category: getting-started
 order: 12
-updated: 2026-08-04
+updated: 2026-08-11
 audience: member
 featureKeys: [settings, notifications]
 status: published
@@ -40,6 +40,7 @@ Under **Settings → Notifications** you decide exactly what Frequency sends and
 
 - **Topics**: turn each kind on or off on its own, and per place (in-app, email, push). Topics include Dispatches, events, mentions, replies and comments on your own posts, **practice reminders**, and the occasional marketing note about Frequency.
 - **Practice reminders**: one nudge a day at most, at the time you usually practice, and only on days a practice is still waiting. It also carries the note when a commitment completes. On for the app by default; push is opt-in and it never comes by email.
+- **Mute one Circle or Space**: quiet a single [Circle](/help/getting-started/what-is-a-circle) or Space without leaving it. There is one switch per place you belong to, and it silences that place on every channel. You stay a member and see everything when you open the app; you just stop hearing from that one. Your topic switches above are not affected.
 - **Marketing and memory**: separate switches control marketing email and whether Vera remembers your details between chats. Both are yours to turn off any time.
 
 Everything sends as it happens. There is no digest option today.
