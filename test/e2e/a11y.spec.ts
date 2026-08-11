@@ -11,6 +11,14 @@
 // a developer can fix the violation from the CI log alone — no report artifact download,
 // which matters because artifact downloads are unreachable from agent sandboxes.
 //
+// ── Two instruments, and the two different things they hold ───────────────────
+// `test/e2e/a11y-baselines.json` is a per-context COUNT: how much serious+ debt a surface is
+// allowed to carry today. `test/e2e/a11y-waivers.ts` is a named list of DECISIONS: specific
+// painted colour pairs somebody with the authority has already accepted, each with its citation.
+// They are not interchangeable. A count cannot say "this one known thing"; a waiver cannot say
+// "and N other things I have not looked at". Waived elements are subtracted before the count is
+// compared, so the ratchet only ever measures what nobody has decided about. ADR-985.
+//
 // ── Why it runs in the DEFAULT smoke run ──────────────────────────────────────
 // `pnpm test:e2e` is `playwright test --grep-invert @visual`, i.e. everything that is not
 // the snapshot suite. @a11y deliberately stays IN that default run and the invert pattern
@@ -35,6 +43,7 @@ import { join } from 'node:path'
 import { AxeBuilder } from '@axe-core/playwright'
 import { test, type TestInfo, type Page } from '@playwright/test'
 import type { Result } from 'axe-core'
+import { describeWaived, partitionWaived } from './a11y-waivers'
 import {
   DEFAULT_STATE,
   RENDER_STATES,
@@ -69,8 +78,16 @@ function describeNode(node: Result['nodes'][number]): string {
   return [`      · ${selector}`, ...summary].join('\n')
 }
 
+// Every failing element gets printed, up to a cap that only exists so a catastrophically broken
+// page cannot bury the log. The cap used to be 5, and that was too tight to work with: when the
+// member shell first reported 12 elements on /feed, the log showed 5 and "… and 6 more", so the
+// only way to tell an accepted palette pair from a live defect was to download the report
+// artifact — which is unreachable from an agent sandbox, the exact constraint the file header
+// says these messages exist to route around. A number you cannot decompose is not a finding.
+const MAX_NODES_PRINTED = 40
+
 function describeViolation(violation: Result, index: number): string {
-  const nodes = violation.nodes.slice(0, 5).map(describeNode)
+  const nodes = violation.nodes.slice(0, MAX_NODES_PRINTED).map(describeNode)
   const overflow =
     violation.nodes.length > nodes.length
       ? [`      … and ${violation.nodes.length - nodes.length} more element(s)`]
@@ -117,8 +134,24 @@ function report(
   context: string,
   testInfo: TestInfo,
 ): void {
-  const blocking = violations.filter((v) => BLOCKING_IMPACTS.has(v.impact ?? ''))
+  const serious = violations.filter((v) => BLOCKING_IMPACTS.has(v.impact ?? ''))
   const advisory = violations.filter((v) => !BLOCKING_IMPACTS.has(v.impact ?? ''))
+
+  // WAIVERS come off BEFORE the count, and they are the only thing that does.
+  //
+  // A waiver is a decision that was already made and recorded elsewhere (the owner's 2026-08-06
+  // palette call, frozen in scripts/check-contrast.mjs). The ratchet below is a measure of DEBT,
+  // and a decision is not debt — leaving it in the count would have meant raising nine marketing
+  // baselines to absorb it, which is what ADR-980 forbids: a raised count also permits any
+  // unrelated serious violation up to that number, forever, with nothing recording what was
+  // meant. See test/e2e/a11y-waivers.ts for why the match is on the painted colour pair rather
+  // than on a selector, and for the guarantee that this mechanism cannot waive anything but a
+  // colour (the tap-target failures on the member shell were fixed, not waived).
+  const { kept: blocking, keptCount: total, waived, waivedCount } = partitionWaived(serious)
+
+  for (const group of waived) {
+    testInfo.annotations.push({ type: 'a11y-waived', description: `${context} — ${describeWaived(group)}` })
+  }
 
   for (const violation of advisory) {
     const first = violation.nodes[0]?.target?.[0]
@@ -128,12 +161,13 @@ function report(
     })
   }
 
-  const total = blocking.reduce((sum, v) => sum + v.nodes.length, 0)
-
   // CAPTURE MODE. The baselines have to come from a real run against a real deployment —
   // a hand-typed number is a guess, and a guessed ratchet is a lie with a version history.
   // Each worker appends one JSON line; scripts/a11y-baselines.mjs merges them. Append is
   // used rather than a shared write because workers run in parallel.
+  //
+  // `total` here is the POST-waiver count, deliberately: a capture should freeze what the ratchet
+  // will compare, so a re-freeze never silently re-imports a decision as debt.
   if (process.env.PW_A11Y_UPDATE) {
     appendFileSync(
       join(process.cwd(), 'test', 'e2e', '.a11y-observed.jsonl'),
@@ -160,7 +194,12 @@ function report(
       })
     }
     // A fall is news: say so, so the baseline gets tightened instead of drifting upward.
-    if (blocking.length > 0 && total < allowed) {
+    //
+    // This deliberately does NOT require `blocking.length > 0`. The waivers land most of the
+    // marketing contexts on exactly zero remaining elements against a non-zero baseline, and a
+    // fall all the way to clean is the most re-freezable news there is — the old shape would
+    // have printed nothing precisely then.
+    if (total < allowed) {
       testInfo.annotations.push({
         type: 'a11y-improved',
         description: `${context} is now ${total} (baseline ${allowed}) — lower the baseline in test/e2e/a11y-baselines.json.`,
@@ -172,6 +211,9 @@ function report(
   throw new Error(
     [
       `Accessibility REGRESSION on ${context}: ${total} serious+ element(s), baseline allows ${allowed}.`,
+      waivedCount > 0
+        ? `(${waivedCount} further element(s) matched a named waiver and are NOT counted above — see the a11y-waived annotations.)`
+        : '',
       '',
       ...blocking.map(describeViolation),
       '',
@@ -179,8 +221,14 @@ function report(
         ? `(plus ${advisory.length} moderate/minor violation(s) recorded as annotations — not failing this run.)`
         : '(no moderate/minor violations.)',
       '',
-      'If this is deliberate and understood, raise the entry in test/e2e/a11y-baselines.json',
-      'in the SAME commit, with a reason. Baselines are debt, and debt gets a name.',
+      'Three remedies, in the order you should reach for them:',
+      '  1. FIX the element. Always first. Everything above is a real barrier until proven otherwise.',
+      '  2. WAIVE it, if and only if it is a decision somebody with the authority already made and',
+      '     recorded. Add a named entry to test/e2e/a11y-waivers.ts with the ADR/decision reference',
+      '     and the reason. A waiver names WHAT is accepted; it cannot hide anything else.',
+      '  3. Raise the entry in test/e2e/a11y-baselines.json — LAST, and only for a surface being',
+      '     measured for the first time. Raising it to swallow a known thing also permits every',
+      '     unknown thing up to that number (ADR-980). Baselines are debt, and debt gets a name.',
     ].join('\n'),
   )
 }

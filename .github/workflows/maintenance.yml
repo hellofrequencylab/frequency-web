@@ -4,6 +4,10 @@
 #
 # What runs with NO secrets (always):
 #   - pnpm audit (dependency vulnerabilities are disclosed over time, not tied to a PR)
+#   - cron heartbeat coverage: every job in vercel.json has a handler, that handler is wrapped in
+#     withCronHeartbeat under its own name, and every schedule parses to a real fresh-by window.
+#     Strict about those (they are facts about the tree), advisory about whether a monitor URL is
+#     configured (that lives in Vercel Production, which this runner is not).
 # What runs WHEN the owner adds SUPABASE_ACCESS_TOKEN (arms the DB-credentialed checks):
 #   - fetch Supabase security + performance advisors, diff against the accepted-risk allowlist
 #     (scripts/maintenance/accepted-advisories.json), report only new findings.
@@ -114,13 +118,46 @@ jobs:
           echo "$REPORT" > ledger.txt
           echo "code=$CODE" >> "$GITHUB_OUTPUT"
 
+      # ── Cron heartbeat coverage (docs/MAINTENANCE-AUTOMATION.md item 7) ──────────────────────
+      #
+      # WHY HERE. This is the one guard the repo defines that ran in no workflow at all, so 27 cron
+      # jobs were watched by a human remembering to type `pnpm check:cron-freshness`. It belongs in
+      # the sweep and not in the ci.yml guard array for two reasons: it measures live operational
+      # state, so a red build on it would fail for something no pull request can fix (ADR-970, and
+      # check:research-freshness for the same split), and its monitor half depends on deployment env
+      # CI does not have, so on a PR it could only ever report NOT ESTABLISHED, for every author,
+      # every time. That is how a gate becomes something to route around.
+      #
+      # NOT SKIPPED WHEN THE SECRET IS ABSENT, and that is deliberate. The other two steps here have
+      # nothing to compute without their token; this one has plenty: it proves from the tree alone
+      # that every cron has a route handler, that the handler composes withCronHeartbeat under the
+      # same job name, and that every schedule parses to a real fresh-by window. Those are strict.
+      # It is only the coverage VERDICT that needs env, and that half degrades to the same ℹ️ line
+      # and exit 0 the credentialed steps use.
+      #
+      # CRON_HEARTBEAT_BASE_URL is optional and presence-only: the value is never read or printed.
+      # Set it as a repo secret to mirror what Vercel Production holds; without it the report says
+      # coverage is not established rather than guessing in either direction.
+      - name: Cron heartbeat coverage
+        id: cron
+        env:
+          CRON_HEARTBEAT_BASE_URL: ${{ secrets.CRON_HEARTBEAT_BASE_URL }}
+        run: |
+          set +e
+          REPORT=$(node scripts/cron-freshness.mjs --markdown 2>&1)
+          CODE=$?
+          echo "$REPORT"
+          { echo "## Cron heartbeat coverage"; echo "$REPORT"; echo ""; } >> "$GITHUB_STEP_SUMMARY"
+          echo "$REPORT" > cron.txt
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+
       # ── AI triage (Phase 4) — optional, uses the existing ANTHROPIC_API_KEY. Advises only;
       #    never edits code. Non-fatal, so the deterministic report always ships.
       #
-      #    ⚠️ sweep.mts reads audit.txt + advisors.txt only, so ledger drift is NOT triaged by the
-      #    model — it goes straight into the issue body below. That is acceptable because the
-      #    ledger report already states the exact repair, and it is the reason this step's `if`
-      #    does not gate on steps.ledger. ──────────────────────────────────────────────────────
+      #    ⚠️ sweep.mts reads audit.txt + advisors.txt only, so ledger drift and cron wiring are NOT
+      #    triaged by the model. They go straight into the issue body below. That is acceptable
+      #    because both reports already state the exact repair, and it is the reason this step's
+      #    `if` does not gate on steps.ledger or steps.cron. ────────────────────────────────────
       - name: AI triage
         if: steps.audit.outputs.code != '0' || steps.advisors.outputs.code == '1'
         continue-on-error: true
@@ -129,8 +166,11 @@ jobs:
         run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/maintenance/sweep.mts
 
       # ── Open / update one tracking issue only when there's something to act on ──
+      #    `steps.cron.outputs.code != '0'` rather than `== '1'`: that step's script exits 1 for a
+      #    broken wiring contract and 0 for the advisory coverage verdict, so any OTHER code means
+      #    node itself died and a dead instrument is exactly what this sweep must not swallow.
       - name: Report to a tracking issue on delta
-        if: steps.audit.outputs.code != '0' || steps.advisors.outputs.code == '1' || steps.ledger.outputs.code == '1'
+        if: steps.audit.outputs.code != '0' || steps.advisors.outputs.code == '1' || steps.ledger.outputs.code == '1' || steps.cron.outputs.code != '0'
         uses: actions/github-script@v9
         with:
           script: |
@@ -143,6 +183,7 @@ jobs:
               read('audit.txt') && ('### Dependency audit\n```\n' + read('audit.txt').split('\n').slice(-40).join('\n') + '\n```'),
               read('advisors.txt') && ('### Supabase advisors (new)\n' + read('advisors.txt')),
               read('ledger.txt') && ('### Migration ledger parity\n' + read('ledger.txt')),
+              read('cron.txt') && ('### Cron heartbeat coverage\n' + read('cron.txt')),
             ].filter(Boolean).join('\n')
             const title = '🔧 Weekly maintenance sweep'
             const { data: open } = await github.rest.issues.listForRepo({

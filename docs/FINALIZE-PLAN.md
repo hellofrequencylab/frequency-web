@@ -74,7 +74,21 @@ themselves; the rest can be parallelised once the instruments are back.
 ## Phase 1 — Restore the instruments 🔴
 
 **Definition of done:** `pr-compare` is green on a PR that changes nothing, the shell a11y baselines
-exist, and all three gates are eligible to be flipped to required.
+exist, and `pr-compare` is eligible to be flipped to required.
+
+> ⚠️ **"All three gates" was wrong, corrected 2026-08-11.** `check:adoption` and `check:contrast`
+> are **not GitHub check runs and cannot be added as required contexts.** `.github/workflows/ci.yml`
+> declares exactly three jobs — `lint`, `test`, `checks` — and both of those guards are entries in
+> the `guards=(…)` array *inside* `checks` (`ci.yml:173`). GitHub gates on check runs, so a required
+> context naming either of them would match no job and gate on nothing, which is the failure the
+> ci.yml header already warns about for renamed jobs.
+>
+> **They are already required, transitively.** `checks` is one of the four required contexts, and a
+> failing guard fails that job. So both have been enforced since the split. Nothing to promote.
+>
+> The owner action is **one** context: `pr-compare`. This row said three across two places and both
+> are fixed. The lesson is the same one ADR-983 records for `platform_flags`: a promotable context is
+> a checkable fact, so check it rather than repeating a list.
 
 > ## ✅ Phase 1.1 is DONE — the 22px is explained, and the diagnosis found something worse
 >
@@ -119,7 +133,7 @@ exist, and all three gates are eligible to be flipped to required.
 | 1.8b | ~~Owner: two repo variables~~ | XS | The member shell photographs **2 of 4** surfaces. The missing two need a value only you can supply, because there is no safe default — the last default (`PW_ROOM_PATH` → `/channels`) is exactly what made four baselines photographs of the marketing home page. Settings → Secrets and variables → Actions → **Variables**: `PW_ROOM_PATH` = a room route the beta member can reach, `PW_SPACE_SLUG` = a Space slug that account can manage. Then re-run `e2e-manual.yml` with `capture_shell` + `update_baselines`. |
 | 1.4 | ✅ **Already resolved — it is a VARIABLE, not a secret** | — | Verified 2026-08-10 two ways. The Variables tab holds `PW_REQUIRE_SHELL = 1`; the Secrets tab does **not** (its six entries are `ANTHROPIC_API_KEY`, both Supabase keys, `PW_MEMBER_EMAIL`, `SUPABASE_SERVICE_ROLE_KEY`, `VERCEL_AUTOMATION_BYPASS_SECRET`). And the run log contains **zero** `***` redactions while printing figures full of the digit 1 (`117474 pixels`, `ratio 0.03`) — which is only possible if `1` is not a secret. The log-redaction problem this item describes is gone. |
 | 1.5 | ✅ **Already resolved — the account exists and the session mints** | — | `PW_MEMBER_EMAIL` is set (Secrets tab, checked 2026-08-10), and the proof it works is in the run itself: `app-feed` and `app-settings` were **photographed**, which is only possible behind a minted session. What is still missing is narrower than "an account": `app-room` has no baseline (Phase 1 deleted all four as wrong-page captures of the marketing home), and the Space console needs the **`PW_SPACE_SLUG`** repo variable, which is not set — the Variables tab holds only `PW_REQUIRE_SHELL`. Both are covered by one `update_baselines + capture_shell` run. |
-| 1.6 | ⚠️ **Owner: flip `pr-compare`, `check:adoption`, `check:contrast` to required — but `pr-compare` has a hole that must be closed FIRST** | S | Required contexts are now **four** (`checks` · `analyze` · `lint` · `test`). ⚠️ **A green `pr-compare` on a Dependabot PR means nothing was tested.** GitHub does not expose repo secrets to Dependabot runs, so `VERCEL_AUTOMATION_BYPASS_SECRET` is empty, and the job takes its documented skip path — *"Skipping is the honest result; a red X here would mean nothing about this PR"* — and **exits 0**. Verified on #2076 job `93578379589`: `BYPASS:` empty, `::notice ... Nothing was tested`, conclusion `success`. The reasoning is right and the skip is the correct behaviour; the problem is that it produces a checkmark **indistinguishable from a real pass** in the PR list, on exactly the PRs that bump the CI actions themselves. Promote it to required and every Dependabot PR satisfies it vacuously, forever. Fix before promoting: report the skip as **neutral** rather than success, or gate the required context on a job that cannot skip. |
+| 1.6 | ⚠️ **Owner: flip `pr-compare` to required. Only that one — `check:adoption` and `check:contrast` are already enforced and cannot be promoted, see below** | S | Required contexts are now **four** (`checks` · `analyze` · `lint` · `test`). ⚠️ **A green `pr-compare` on a Dependabot PR means nothing was tested.** GitHub does not expose repo secrets to Dependabot runs, so `VERCEL_AUTOMATION_BYPASS_SECRET` is empty, and the job takes its documented skip path — *"Skipping is the honest result; a red X here would mean nothing about this PR"* — and **exits 0**. Verified on #2076 job `93578379589`: `BYPASS:` empty, `::notice ... Nothing was tested`, conclusion `success`. The reasoning is right and the skip is the correct behaviour; the problem is that it produces a checkmark **indistinguishable from a real pass** in the PR list, on exactly the PRs that bump the CI actions themselves. Promote it to required and every Dependabot PR satisfies it vacuously, forever. Fix before promoting: report the skip as **neutral** rather than success, or gate the required context on a job that cannot skip. |
 
 > **Standing rule from the last thread, worth keeping:** on a GitHub `pull_request`-event outage,
 > add a bypass actor to ruleset `17640795` rather than toggling enforcement off.
@@ -738,14 +752,121 @@ Everything on this list is config or a decision — no code unblocks it.
 | Delete `PW_REQUIRE_SHELL` from **Secrets** | Diagnosing 1.1 (logs are redacted to `***`) |
 | Create the beta test account + `PW_STORAGE_STATE` secret | 44 of 84 a11y tests + the whole member-shell visual suite |
 | Create the Vercel Protection Bypass secret → `VERCEL_AUTOMATION_BYPASS_SECRET` | Preview e2e validity (suites currently test the interstitial) |
-| Flip `pr-compare` / `check:adoption` / `check:contrast` to required | Phase 1 sign-off |
+| Flip **`pr-compare`** to required (that is the whole list, see §1.6) | Phase 1 sign-off |
 | `/the-lab` + `/spaces` meta descriptions | 3.3 — a copy decision, not a trim |
 | **White-on-amber button text** | The DS artifact shows white on `#E2912F`; shipped is ink. Ink measures **7.35:1** (AA + AAA), white **2.52:1**. White cannot ship without failing `check:contrast` and degrading every primary button. Either darken the amber (~`#8A5410` puts white at 6.26:1 — a real brand shift) or correct the artifact |
 | Greyed-emoji tuning (`grayscale` vs `saturate-50`) | Reaction selector rest state |
-| Recruit 5 test users per quarter | Lift 1 — see below |
+| ~~Recruit 5 test users per quarter~~ 🅿️ **PARKED by the owner 2026-08-11** | Lift 1. Not dropped: see the note below for the resume condition |
 | Re-run the two Stripe pricing syncs | Collective/Independent checkouts currently dead-end |
-| Set `CRON_HEARTBEAT_BASE_URL` | 27 cron jobs are paging-blind |
+| ~~Set `CRON_HEARTBEAT_BASE_URL`~~ ✅ **DONE 2026-08-11**, then ⏳ **upgrade Healthchecks** | See the note below: the free tier holds 20 checks and there are 27 jobs |
 | Submit `sitemap.xml` to Search Console + Bing | Crawl coverage |
+
+### 🅿️ The moderated research round is parked, and Lift 1 stays at zero until it is not
+
+**Owner decision, 2026-08-11.** The quarterly round (`docs/research/PROTOCOL.md`, UX-MATURITY Lift
+1b) is deferred. Recorded here rather than dropped, per ADR-921's rule that deferred work lives on
+the list with its prerequisites attached or it is not deferred, it is lost.
+
+**What it is, so the next reader does not have to go looking.** Five members, one hour each, once a
+quarter, against the Vercel preview of a `design-sync/*` branch. Never production, never localhost.
+The owner's part is §2 and the protocol calls it "the only genuinely human step in this lift":
+pull the pool from `/admin/beta`, check each member's `analytics` consent scope, send **8 invites to
+land 5 sessions**, aim for 3 members + 2 operators so J5 gets observed twice, and grant Zaps within
+24 hours with the reason `Research round YYYY-QN`. Roughly two hours per quarter.
+
+**Resume condition:** the owner calls it. There is no engineering prerequisite and nothing else
+blocks on it being scheduled.
+
+**What stays true while it is parked, and is not a defect:**
+
+- ⏳ **Lift 1 sits at literal zero.** `docs/research/findings/` holds only its `README.md`. No
+  engineering closes this one, which is why it is a decision rather than a task.
+- ✅ **`check:research-freshness` is built and advisory**, so the staleness is visible on every run
+  rather than being something someone has to remember. It exits 0 by design: failing a build on a
+  recruiting decision is how a gate becomes something people route around (same reasoning as
+  ADR-970).
+- ⚠️ **The DAWN handoff carries the gap honestly.** `design_handoff/SYNC.md` standing rule 1 requires
+  every outbound handoff to carry a "What users tripped on" section and never omit the heading. The
+  gate emits the exact line for it: *"No moderated round has run yet. See docs/research/PROTOCOL.md."*
+  So the handoff stays complete under the contract while the round is parked.
+
+### 🔴 `.dark [data-skin="midnight"]` never matches on the `<html>` path
+
+Found 2026-08-11 while reconciling the a11y ratchet, and **verified two ways** rather than inferred.
+
+`app/globals.css:711` is a **descendant** selector: `.dark [data-skin="midnight"]`. `data-skin` is
+stamped in two places, and the selector only reaches one of them:
+
+| Where `data-skin` is set | Matches `.dark [data-skin=…]`? |
+| :--- | :--- |
+| `components/layout/app-shell.tsx:1961`, the shell root, a descendant of `<html>` | ✅ yes |
+| `app/layout.tsx:144`, the bootstrap script, on `document.documentElement` itself | 🔴 **no** |
+
+A descendant combinator cannot match an element against itself, so the `<html>`-level skin, which
+is how a skin is previewed globally including on marketing pages, **never gets its dark palette**.
+Light mode is unaffected: `:575` is the bare `[data-skin="midnight"]`, which matches both.
+
+⚠️ **The comment at `app/layout.tsx:142-143` asserts the opposite**, in as many words: *"the skin
+CSS selectors match both `<html>` and the shell div."* True of the light rule, false of the dark
+one, which is why this survived.
+
+**Consequence.** On the `<html>` path, midnight dark renders a *mixture*: the generic `.dark`
+palette with midnight's light-mode overrides layered under it. That is a plausible reason `/spaces`
+midnight-dark reports 6 axe violations where dawn-dark reports 2, though that link is **not proven**.
+
+**Not fixed here on purpose.** The fix is one selector, but it changes which colours paint on every
+midnight-dark surface, so it moves visual baselines and wants its own pass with a recapture. Do it
+as its own change, not folded into an unrelated one. `#f0ad4e` was deliberately left OUT of the a11y
+waiver list on the same reasoning: a waiver for a colour nothing currently paints is noise, and a
+test now asserts it stays out.
+
+### ⏳ Upgrade Healthchecks.io, or 7 cron jobs go unmonitored
+
+**Owner action, carried 2026-08-11.** `CRON_HEARTBEAT_BASE_URL` is set in Vercel Production to a
+Healthchecks.io **ping key** URL (`https://hc-ping.com/<ping-key>`), so each job auto-creates its own
+check on first ping. `lib/observability/cron-heartbeat.ts:49` resolves `${base}/${jobName}` on
+success and `${monitorUrl}/fail` on failure, which is Healthchecks' slug convention exactly.
+
+🔴 **The account is on the free tier, which caps at 20 checks. `vercel.json` declares 27 cron jobs.**
+The first 20 to ping win the slots and the remaining 7 are rejected. Which 7 lose is decided by
+schedule order, not by importance, so today the outcome is arbitrary.
+
+Two ways to close it:
+
+1. **Upgrade** to the paid tier (~$5/mo at time of writing) and all 27 fit. Simplest.
+2. **Choose deliberately** with per-job overrides. `CRON_HEARTBEAT_URL_<SLUG>` (SLUG = job name
+   upper-snake, e.g. `CRON_HEARTBEAT_URL_PROCESS_QUEUE`) takes precedence over the base, so the
+   20 that matter can be pinned and the rest left unmonitored on purpose rather than by accident.
+
+⚠️ **Auto-created checks arrive with a 1 day / 1 hour period**, which is wrong for most of these.
+`process-queue` runs every 2 minutes, so a 1-day period means it can be dead for the best part of a
+day before anyone is paged. Set each period from the real schedule:
+
+| Job | Schedule | Period |
+| :--- | :--- | :--- |
+| `process-queue` | `*/2 * * * *` | 2 min |
+| `space-campaigns` · `space-drips` · `conversation-batches` · `publish-scheduled` | `*/5 * * * *` | 5 min |
+| `season-go-live` · `embed-room-messages` | `*/10 * * * *` | 10 min |
+| `nurture` · `event-reminders` · `space-follower-event-reminders` | `*/15 * * * *` | 15 min |
+| `referral-release` · `embed-events` | `*/30 * * * *` | 30 min |
+| `journey-drips` | `15,45 * * * *` | 30 min |
+| `practice-lifecycle` | `5 * * * *` | 1 hour |
+| the eight daily jobs | various | 1 day |
+| `weekly-digest` | `0 14 * * 0` | 7 days |
+
+**Suggested 20 if you take option 2**, ordered by what a silent death costs: `process-queue` ·
+`billing-renewals` · `weekly-digest` · `season-go-live` · `lifecycle-triggers` · `event-reminders` ·
+`space-follower-event-reminders` · `publish-scheduled` · `nurture` · `space-campaigns` ·
+`space-drips` · `conversation-batches` · `journey-drips` · `journey-prompt` · `referral-release` ·
+`enforce-retention` · `practice-lifecycle` · `event-occurrences` · `refresh-traits` ·
+`summarize-vera-memory`. The seven left out are the embed jobs plus `demo-decay` and
+`vera-owner-brief`: a late embedding degrades search quality, it does not lose money or break trust.
+
+🔴 **A second half of this is still open and is not owner config.** `check:cron-freshness` is the
+guard that would notice heartbeats going stale, and it **runs in no workflow at all** (`ci.yml`
+says so out loud). Arming the pings without scheduling the guard means the monitors are watched by
+a human remembering to look. Wiring it belongs in the maintenance sweep, next to the ledger-parity
+check.
 
 ---
 

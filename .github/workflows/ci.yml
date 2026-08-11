@@ -145,17 +145,22 @@ jobs:
       # One step, every guard, all failures reported. Each is grouped in the log so a red run
       # reads as a list of what to fix rather than a single stop-the-world exit.
       #
-      # NOTE: check:cron-freshness is intentionally absent — it is a runtime/ops SLO check
-      # (inspects live cron heartbeat state, env-dependent, advisory exit 0), not a
-      # deterministic code gate. Excluding it from CI is correct.
+      # NOTE: check:cron-freshness is intentionally absent, and as of 2026-08-11 it now runs
+      # WEEKLY in .github/workflows/maintenance.yml (the "Cron heartbeat coverage" step), which
+      # is the destination this comment previously claimed while it was true of nothing.
       #
-      # 🔴 But its stated destination does not exist. This comment used to end "It runs in the
-      # scheduled /maintenance sweep instead." It does not: maintenance.yml runs only
-      # advisor-diff.mjs and sweep.mts, and `cron-freshness` appears nowhere under
-      # scripts/maintenance/. docs/MAINTENANCE-AUTOMATION.md item 7 still lists scheduling it as
-      # 📋 not-done. So it is the one guard in the repo that runs only if a human types it, which
-      # compounds the unset CRON_HEARTBEAT_BASE_URL: 27 cron jobs are paging-blind AND the
-      # instrument that would notice is unscheduled. Owner action, tracked in FINALIZE-PLAN §7c.
+      # Why there and not here. Half of what it measures is deployment state: whether
+      # CRON_HEARTBEAT_BASE_URL is set in Vercel Production. CI is not that environment, so on a
+      # PR that half can only ever report NOT ESTABLISHED, for every author, every time, and a
+      # red build on it would fail for something no pull request can fix. Same reasoning as
+      # ADR-970 and check:research-freshness: an advisory finding forced through a blocking gate
+      # teaches everyone to route around the gate.
+      #
+      # The other half IS deterministic (every cron has a handler, wrapped in withCronHeartbeat
+      # under its own name, with a schedule that parses), and the scheduled step is strict about
+      # exactly that half, opening the weekly tracking issue when it breaks. Do NOT add
+      # `cron-freshness` to the guards array below: with no deployment env its coverage verdict
+      # would be noise, and the wiring half is already gated where the finding has an owner.
       - name: Contract guards (all run; every failure reported)
         if: ${{ !cancelled() }}
         run: |
