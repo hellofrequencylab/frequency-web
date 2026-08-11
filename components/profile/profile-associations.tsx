@@ -24,30 +24,87 @@ import {
 // a zero — null means the read failed, and printing "Circles 0" would publish a false statement
 // about the member off a transient DB hiccup.
 
+// `noun` / `verb` / `dest` build the tile's assistive sentence. They exist as data rather than as
+// one interpolated template because the template could only produce "1 spaces Ada running", and
+// because Circle, Space, Event, Journey and Practice are PROPER NOUNS (docs/NAMING.md) that a
+// `.toLowerCase()` on the tile label would quietly demote in member-readable copy.
 const KIND: Record<
   AssociationKind,
-  { label: string; detail: string; icon: LucideIcon; chip: string; href: string }
+  {
+    label: string
+    detail: string
+    icon: LucideIcon
+    chip: string
+    href: string
+    noun: { one: string; many: string }
+    verb: { they: string; you: string }
+    dest: string
+  }
 > = {
   // `href` is the browse index each tile drills into. Deliberately NOT a `?host=` facet: no index
   // reads one, and a filtered link nothing honours is a dead link wearing a live one's clothes. The
   // peek rows carry the real per-item destinations. A real `?host=` facet is a separate workstream.
-  circles: { label: 'Circles', detail: 'Hosting', icon: CircleDot, chip: 'Circle', href: '/circles' },
+  circles: {
+    label: 'Circles', detail: 'Hosting', icon: CircleDot, chip: 'Circle', href: '/circles',
+    noun: { one: 'Circle', many: 'Circles' }, verb: { they: 'hosts', you: 'host' },
+    dest: 'the Circles directory',
+  },
   // 🔴 /spaces has NO page.tsx — the index is /spaces/directory. Linking /spaces 404s the tile.
-  spaces: { label: 'Spaces', detail: 'Running', icon: Building2, chip: 'Space', href: '/spaces/directory' },
-  events: { label: 'Events', detail: 'Upcoming', icon: CalendarDays, chip: 'Event', href: '/events' },
-  journeys: { label: 'Journeys', detail: 'Published', icon: BookOpen, chip: 'Journey', href: '/journeys' },
-  practices: { label: 'Practices', detail: 'Published', icon: Sparkles, chip: 'Practice', href: '/practices' },
+  spaces: {
+    label: 'Spaces', detail: 'Running', icon: Building2, chip: 'Space', href: '/spaces/directory',
+    noun: { one: 'Space', many: 'Spaces' }, verb: { they: 'runs', you: 'run' },
+    dest: 'the Spaces directory',
+  },
+  events: {
+    label: 'Events', detail: 'Upcoming', icon: CalendarDays, chip: 'Event', href: '/events',
+    noun: { one: 'upcoming Event', many: 'upcoming Events' }, verb: { they: 'hosts', you: 'host' },
+    // Overridden below: Events is the one kind whose tile links to a real per-host index.
+    dest: 'the Events calendar',
+  },
+  journeys: {
+    label: 'Journeys', detail: 'Published', icon: BookOpen, chip: 'Journey', href: '/journeys',
+    noun: { one: 'Journey', many: 'Journeys' }, verb: { they: 'has published', you: 'have published' },
+    dest: 'the Journeys directory',
+  },
+  practices: {
+    label: 'Practices', detail: 'Published', icon: Sparkles, chip: 'Practice', href: '/practices',
+    noun: { one: 'Practice', many: 'Practices' }, verb: { they: 'has published', you: 'have published' },
+    dest: 'the Practices directory',
+  },
   classifieds: {
     label: 'Classifieds',
     detail: 'Active',
     icon: Tag,
     chip: 'Classifieds listing',
     href: '/classifieds',
+    noun: { one: 'active Classifieds listing', many: 'active Classifieds listings' },
+    verb: { they: 'has', you: 'have' },
+    dest: 'the Classifieds board',
   },
 }
 
 /** Total peek rows under the grid, across all kinds. Six is a glance, not a second index. */
 const PEEK_ROWS = 6
+
+/** The tile's hover / assistive sentence. A stat tile is three terse fragments ("3 · Circles ·
+ *  Hosting") pointing at a directory, so on its own it reads as "3 Circles live in there". This says
+ *  whose number it is and where the link goes, in one plain sentence.
+ *
+ *  `approximate` becomes "at least", never a silent exact-looking number: the Events read is capped,
+ *  and a confident count above the ceiling would be a claim the data does not support. */
+function tileSentence(
+  stat: AssociationStat & { count: number },
+  firstName: string,
+  isOwner: boolean,
+): string {
+  const k = KIND[stat.kind]
+  const who = isOwner ? 'You' : firstName
+  const verb = isOwner ? k.verb.you : k.verb.they
+  const amount = stat.approximate ? `at least ${stat.count}` : `${stat.count}`
+  const noun = stat.count === 1 && !stat.approximate ? k.noun.one : k.noun.many
+  const dest = stat.kind === 'events' ? (isOwner ? 'your Events' : 'their Events') : k.dest
+  return `${who} ${verb} ${amount} ${noun}. Opens ${dest}.`
+}
 
 export async function ProfileAssociations({
   profileId,
@@ -119,11 +176,7 @@ export async function ProfileAssociations({
                 // The tile reads "3 / Circles / Hosting" and links to the directory, which without
                 // this says "3 Circles live in there". Name whose number it is and where the link
                 // goes; only the Events tile has a genuinely per-person destination.
-                title={
-                  stat.kind === 'events'
-                    ? `${stat.approximate ? 'At least ' : ''}${stat.count} upcoming ${stat.count === 1 ? 'event' : 'events'} ${isOwner ? 'you are' : `${firstName} is`} hosting. Opens their events.`
-                    : `${stat.count} ${k.label.toLowerCase()} ${isOwner ? 'you' : firstName} ${k.detail.toLowerCase()}. Opens the ${k.label.toLowerCase()} directory.`
-                }
+                title={tileSentence(stat, firstName, isOwner)}
               />
             )
           })}

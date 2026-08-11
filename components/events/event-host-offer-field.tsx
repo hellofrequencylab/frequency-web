@@ -6,7 +6,6 @@ import { Crown, Loader2 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { isError, type ActionResult } from '@/lib/action-result'
 import {
-import { Input } from '@/components/ui/field'
   loadPendingHostTransfer,
   offerEventHost,
   acceptEventHostTransfer,
@@ -14,6 +13,7 @@ import { Input } from '@/components/ui/field'
   revokeEventHostTransfer,
   type HostTransferView,
 } from '@/app/(main)/events/host-transfer-actions'
+import { Input } from '@/components/ui/field'
 
 // ── "Hand hosting to another Space" (ADR-911) ──────────────────────────────────────────────
 //

@@ -163,7 +163,7 @@ async function view(opts: {
 
 /** Everything above tier B. Tiers B and C both open with `mt-4`, and the owner's copy legitimately
  *  differs from a visitor's, so the byte-identical claim is made about the tier-A region only. */
-const tierA = (html: string) => html.split('<div class="mt-4')[0]!
+const tierA = (html: string) => html.split('<div class="mt-4')[0]!.replace(/<\/section>$/, '')
 
 beforeEach(() => {
   failing.clear()
@@ -251,20 +251,20 @@ describe('the count is tiered as strictly as the list', () => {
 
     // The target HOSTS two Circles and is a MEMBER of three. A visitor is entitled to the first
     // number and not the second, so "2" is the only Circles figure that may appear.
-    expect(html).toContain('2 circles Ada hosting.')
-    expect(html).not.toContain('3 circles')
+    expect(html).toContain('Ada hosts 2 Circles.')
+    expect(html).not.toContain('3 Circles')
 
     // The Events tile counts gatherings, not dates: four rows, two upcoming Events.
-    expect(html).toContain('2 upcoming events Ada is hosting.')
-    expect(html).not.toContain('4 upcoming events')
+    expect(html).toContain('Ada hosts 2 upcoming Events.')
+    expect(html).not.toContain('4 upcoming Events')
   })
 
   it('does not inflate a tier-A count with the viewer-scoped tier', async () => {
     const sharer = await view({ viewerProfileId: SHARER })
     // The shared Circle is a tier-B fact. Rolling it into the Circles tile would republish it to
     // anyone the viewer shows their screen to, and would make the tile disagree with a stranger's.
-    expect(sharer).toContain('2 circles Ada hosting.')
-    expect(sharer).not.toContain('3 circles')
+    expect(sharer).toContain('Ada hosts 2 Circles.')
+    expect(sharer).not.toContain('3 Circles')
   })
 
   it('offers no "and N more" affordance, which would count what it will not name', async () => {
@@ -283,17 +283,17 @@ describe('the count is tiered as strictly as the list', () => {
     const html = await view({ viewerProfileId: null })
     // "Practices 0" would be a false statement about the member, produced by a DB hiccup.
     expect(html).not.toContain('Box Breathing')
-    expect(html).not.toContain('practices Ada published')
+    expect(html).not.toContain('Practices.')
     // The other five kinds are untouched: one bad table shrinks the panel, it does not empty it.
-    expect(html).toContain('2 circles Ada hosting.')
+    expect(html).toContain('Ada hosts 2 Circles.')
     expect(html).toContain('Wayfarer')
   })
 
   it('omits a genuinely-zero kind instead of rendering a grid of zeroes', async () => {
     const html = await view({ viewerProfileId: null })
     // Journeys and Classifieds have no rows here.
-    expect(html).not.toContain('journeys Ada published')
-    expect(html).not.toContain('classifieds Ada active')
+    expect(html).not.toContain('Journeys.')
+    expect(html).not.toContain('Classifieds listings.')
   })
 })
 
@@ -316,8 +316,8 @@ describe('the empty states', () => {
     expect(html).toContain('Publish a Journey')
     expect(html).toContain('Drafts and private items stay off this list.')
     // No tiles, so no zeroes.
-    expect(html).not.toContain('circles Ada hosting.')
-    expect(html).not.toContain('circles you hosting.')
+    expect(html).not.toContain('Circles.')
+    expect(html).not.toContain('Circle.')
   })
 })
 
