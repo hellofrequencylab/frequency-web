@@ -539,14 +539,14 @@ seeded (a non-default menu), so it is unchanged pre-seed. Tables are not in
 > | | repo | prod ledger |
 > | :--- | :--- | :--- |
 > | rows | 598 | 598 |
-> | `md5` of sorted `version` | `57b47400…` | `57b47400…` |
-> | `md5` of sorted `version\tname` | `10c840b6…` | `10c840b6…` |
+> | `sha256` of sorted `version` | `0d4bf815…` | `0d4bf815…` |
+> | `sha256` of sorted `version\tname` | `c9f8be01…` | `c9f8be01…` |
 >
 > That means **zero** stamp divergence and **zero** name variants, so the "~300 unapplied" hazard
 > does not exist in the current state. The old text was accurate when written and was made obsolete
 > by the ADR-963 reconciliation, which nobody came back to record here. **Keep the `db push` ban
 > anyway** — it rests on ADR-496 and on the destructive re-run risk, neither of which depends on the
-> divergence claim. Verify with the two md5s above before citing this block; do not assume.
+> divergence claim. Verify with the two digests above before citing this block; do not assume.
 
 - **Apply a new migration to prod** via the Supabase MCP `apply_migration` tool (or, if scripting, a
   reviewed one-off) — never `db push`. Ship the migration as a repo file first with a monotonic
@@ -587,8 +587,8 @@ This section used to say that about 35 migrations with logical stamps before `20
 **name variants** (repo filename and prod `schema_migrations` name differing, from renames during
 authoring, dashboard-side applies, and parallel MCP applies), verified harmless on 2026-07-26.
 
-Re-measured 2026-08-11: **there are none.** The `version\tname` md5 matches on both sides
-(`10c840b6…`), so every one of the 598 rows agrees with its repo filename on both columns. The
+Re-measured 2026-08-11: **there are none.** The `version\tname` digest matches on both sides
+(`c9f8be01…`), so every one of the 598 rows agrees with its repo filename on both columns. The
 variants were reconciled at some point after 2026-07-26 and the note was never retired.
 
 The standing advice survives the correction and still holds: **do not re-apply repo files to "fix"

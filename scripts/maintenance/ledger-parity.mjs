@@ -29,10 +29,21 @@
 // testable without a live database.
 //
 // VERIFIED PARITY, 2026-08-11. 598 repo files, 598 ledger rows, byte-identical on both columns:
-//   versions  md5 = 57b474003aa9be6bb254555815acae03
-//   version+name  = 10c840b64034164cd23627ef51dfdcf2
+//   versions      sha256 = 0d4bf8158bbc53a972a760f7c9d590bd3193d848a2146bde37d3c92ff6411818
+//   version+name  sha256 = c9f8be0151783b08a20e0451e79f49f01df0e6d986e1a9c8f21bfa9dedb64f19
 // Both reproduce from the filenames alone, which is what makes exact parity the correct target
 // rather than an approximation.
+//
+// WHY SHA-256 AND NOT MD5. This is a CHECKSUM, not a security control: there is no adversary
+// choosing migration filenames, and a collision would only mean a missed drift report. MD5 was
+// the obvious pick because Postgres has a bare md5() and the digests then match a hand-run query
+// character for character. CodeQL flagged it (js/weak-cryptographic-algorithm, high) because the
+// digest derives from database rows, and it is right that the RULE cannot tell a checksum from a
+// signature. Rather than dismiss the alert, this uses sha256, which Postgres also has. The
+// comparability that motivated md5 survives intact, just with a longer query:
+//   encode(sha256(convert_to(string_agg(version, E'\n' order by version), 'UTF8')), 'hex')
+// Suppressing a scanner because you are sure you are fine is the same move as trusting a gate
+// because it is green, which is the failure mode this whole script exists to answer.
 //
 // Usage:
 //   node scripts/maintenance/ledger-parity.mjs --print-query   # emit the SQL for the fetch step
@@ -135,14 +146,14 @@ function normalizeLedger(rows) {
     .sort(byVersion)
 }
 
-/** md5 of `string_agg(version, E'\n' order by version)` — identical bytes, so it reproduces the
+/** sha256 of `string_agg(version, E'\n' order by version)` — identical bytes, so it reproduces the
  *  value Postgres computes and a human can compare the two sides in one line. */
-export const versionsMd5 = (rows) => md5(rows.map((r) => r.version).join('\n'))
+export const versionsDigest = (rows) => sha256(rows.map((r) => r.version).join('\n'))
 
-/** md5 of `string_agg(version || E'\t' || name, E'\n' order by version)`. */
-export const pairsMd5 = (rows) => md5(rows.map((r) => `${r.version}\t${r.name}`).join('\n'))
+/** sha256 of `string_agg(version || E'\t' || name, E'\n' order by version)`. */
+export const pairsDigest = (rows) => sha256(rows.map((r) => `${r.version}\t${r.name}`).join('\n'))
 
-const md5 = (s) => createHash('md5').update(s, 'utf8').digest('hex')
+const sha256 = (s) => createHash('sha256').update(s, 'utf8').digest('hex')
 
 /**
  * Compare the two sets on BOTH columns.
@@ -203,11 +214,11 @@ export function compare(repo, ledger, { min = MIN_ROWS } = {}) {
     unpairedRepo,
     unpairedLedger,
     nameMismatches,
-    md5: {
-      repoVersions: versionsMd5(repo),
-      ledgerVersions: versionsMd5(ledger),
-      repoPairs: pairsMd5(repo),
-      ledgerPairs: pairsMd5(ledger),
+    digest: {
+      repoVersions: versionsDigest(repo),
+      ledgerVersions: versionsDigest(ledger),
+      repoPairs: pairsDigest(repo),
+      ledgerPairs: pairsDigest(ledger),
     },
     inParity:
       repoOnly.length === 0 && ledgerOnly.length === 0 && nameMismatches.length === 0,
@@ -222,7 +233,7 @@ export function formatReport(r, { malformed = [] } = {}) {
       `✅ Migration ledger parity: ${r.repoCount} repo file(s) ⇄ ${r.ledgerCount} applied row(s), ` +
         'identical on version and name.',
     )
-    lines.push(`   versions md5 \`${r.md5.repoVersions}\` · version+name md5 \`${r.md5.repoPairs}\``)
+    lines.push(`   versions sha256 \`${r.digest.repoVersions}\` · version+name sha256 \`${r.digest.repoPairs}\``)
     if (malformed.length) {
       lines.push('', `⚠️ ${malformed.length} filename(s) did not parse and were not compared (see \`pnpm check:migrations\`):`)
       for (const f of malformed) lines.push(`- \`${f}\``)
@@ -233,10 +244,10 @@ export function formatReport(r, { malformed = [] } = {}) {
   lines.push(
     `🔴 Migration ledger DRIFT: ${r.repoCount} repo file(s) vs ${r.ledgerCount} applied row(s).`,
     '',
-    '| side | count | versions md5 | version+name md5 |',
+    '| side | count | versions sha256 | version+name sha256 |',
     '| --- | --- | --- | --- |',
-    `| repo | ${r.repoCount} | \`${r.md5.repoVersions}\` | \`${r.md5.repoPairs}\` |`,
-    `| ledger | ${r.ledgerCount} | \`${r.md5.ledgerVersions}\` | \`${r.md5.ledgerPairs}\` |`,
+    `| repo | ${r.repoCount} | \`${r.digest.repoVersions}\` | \`${r.digest.repoPairs}\` |`,
+    `| ledger | ${r.ledgerCount} | \`${r.digest.ledgerVersions}\` | \`${r.digest.ledgerPairs}\` |`,
     '',
   )
 

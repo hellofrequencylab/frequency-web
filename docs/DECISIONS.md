@@ -19958,8 +19958,8 @@ migrations carry name variants. Measured against the live ledger on 2026-08-11, 
 | | repo | prod ledger |
 | :--- | :--- | :--- |
 | rows | 598 | 598 |
-| `md5` of sorted `version` | `57b47400…` | `57b47400…` |
-| `md5` of sorted `version\tname` | `10c840b6…` | `10c840b6…` |
+| `sha256` of sorted `version` | `0d4bf815…` | `0d4bf815…` |
+| `sha256` of sorted `version\tname` | `c9f8be01…` | `c9f8be01…` |
 
 Byte-identical on both columns: zero stamp divergence, zero name variants. Both notes were accurate
 when written and were made obsolete by the ADR-963 reconciliation, which nobody returned to record.
@@ -19973,7 +19973,7 @@ neither of which depended on the divergence claim. Nothing here relaxes it.
 **Consequences.** ✅ The outstanding drift is repaired: the one wall-clock row was `update`d to
 `20270220000000`, restoring exact 598 ⇄ 598 parity on both columns. No DDL ran and nothing re-ran;
 the row's `name` and `statements` were untouched. ✅ `DATABASE.md` now carries the mechanism, the
-one-statement repair, and the two md5s to verify against, rather than the claim they refute.
+one-statement repair, and the two digests to verify against, rather than the claim they refute.
 ⚠️ The verification cannot live in `check:migrations`: CI has no database credentials, so a
 ledger-parity check belongs in the scheduled maintenance sweep, alongside the menu presence guard
 that is deferred there for the same reason (FINALIZE §4.2). ⚠️ Recorded plainly because it is the

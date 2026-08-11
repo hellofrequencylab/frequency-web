@@ -4,8 +4,8 @@ import {
   formatReport,
   parseLedger,
   repoRows,
-  versionsMd5,
-  pairsMd5,
+  versionsDigest,
+  pairsDigest,
   LEDGER_QUERY,
   MIN_ROWS,
 } from './ledger-parity.mjs'
@@ -39,19 +39,19 @@ describe('exact parity is the target state, and it passes', () => {
     expect(r.repoOnly).toEqual([])
     expect(r.ledgerOnly).toEqual([])
     expect(r.nameMismatches).toEqual([])
-    expect(r.md5.repoVersions).toBe(r.md5.ledgerVersions)
-    expect(r.md5.repoPairs).toBe(r.md5.ledgerPairs)
+    expect(r.digest.repoVersions).toBe(r.digest.ledgerVersions)
+    expect(r.digest.repoPairs).toBe(r.digest.ledgerPairs)
     expect(formatReport(r)).toContain('✅')
   })
 
-  it('the md5s reproduce what Postgres computes for string_agg', () => {
-    // md5 of the same bytes, so the number in the report is directly comparable to a hand-run
-    // `md5(string_agg(version, E'\n' order by version))` against production. Pinned against the
+  it('the digests reproduce what Postgres computes for string_agg', () => {
+    // sha256 of the same bytes, so the number in the report is directly comparable to a hand-run
+    // `encode(sha256(convert_to(string_agg(version, E'\n' order by version),'UTF8')),'hex')` against production. Pinned against the
     // live values measured 2026-08-11, which the repo filenames alone reproduce.
     const { rows } = repoRows()
     expect(rows.length).toBe(598)
-    expect(versionsMd5(rows)).toBe('57b474003aa9be6bb254555815acae03')
-    expect(pairsMd5(rows)).toBe('10c840b64034164cd23627ef51dfdcf2')
+    expect(versionsDigest(rows)).toBe('0d4bf8158bbc53a972a760f7c9d590bd3193d848a2146bde37d3c92ff6411818')
+    expect(pairsDigest(rows)).toBe('c9f8be0151783b08a20e0451e79f49f01df0e6d986e1a9c8f21bfa9dedb64f19')
   })
 
   it('order is by version as text, so an unsorted ledger payload still matches', () => {
@@ -133,10 +133,10 @@ describe('a name-only difference', () => {
     expect(r.nameMismatches).toEqual([
       { version: '20270220000000', repo: 'add_billing_policy', ledger: 'add_billing_policies' },
     ])
-    // The version md5s agree; only the version+name md5s diverge. That is the whole reason both
+    // The version digests agree; only the version+name digests diverge. That is the whole reason both
     // are reported.
-    expect(r.md5.repoVersions).toBe(r.md5.ledgerVersions)
-    expect(r.md5.repoPairs).not.toBe(r.md5.ledgerPairs)
+    expect(r.digest.repoVersions).toBe(r.digest.ledgerVersions)
+    expect(r.digest.repoPairs).not.toBe(r.digest.ledgerPairs)
     expect(formatReport(r)).toContain('applied under a DIFFERENT NAME')
   })
 })
