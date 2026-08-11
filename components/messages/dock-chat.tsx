@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Hash, MessageSquare, Loader2, ArrowRight, Users, ChevronLeft, Info } from 'lucide-react'
+import { Hash, MessageSquare, Loader2, ArrowRight, Search, ChevronLeft, Info } from 'lucide-react'
 import { relativeTime } from '@/lib/utils'
 import {
   fetchMessagesSummary,
@@ -10,7 +10,7 @@ import {
   loadDockRoomThread,
   type MessagesSummary,
 } from '@/app/(main)/messages/popover-actions'
-import { renameConversation, leaveConversationInPlace } from '@/app/(main)/messages/actions'
+import { renameConversation, leaveConversationInPlace, openDirectConversation } from '@/app/(main)/messages/actions'
 import { isError } from '@/lib/action-result'
 import { MessageThread } from '@/components/messages/thread'
 import { RoomThread } from '@/components/rooms/room-thread'
@@ -56,6 +56,15 @@ export function refreshDockSummary(): Promise<MessagesSummary> {
 }
 
 type OpenThread = { kind: 'dm' | 'room'; id: string; title: string }
+/** One hit from /api/search-handles. Structurally typed rather than imported so this component
+ *  stays independent of the route module; the route is the contract. */
+type HandleHit = {
+  id: string
+  handle: string
+  display_name: string
+  avatar_url: string | null
+  friend_status: 'none' | 'pending_outgoing' | 'pending_incoming' | 'accepted'
+}
 type DmData = Awaited<ReturnType<typeof loadDockDmThread>>
 type RoomData = Awaited<ReturnType<typeof loadDockRoomThread>>
 
@@ -102,7 +111,20 @@ export function DockChat({
   // Set after a successful leave so the inbox can announce it and take focus. Without a named
   // target, focus lands on <body> and a keyboard member restarts their tab order.
   const [leftNotice, setLeftNotice] = useState<string | null>(null)
-  const inboxFirstRef = useRef<HTMLAnchorElement>(null)
+  // The post-leave focus target. It is the SEARCH FIELD now rather than a link, because the
+  // "Message someone" link it used to point at is gone (see the action bar below).
+  const inboxFirstRef = useRef<HTMLInputElement>(null)
+
+  // ── Member search (owner, 2026-08-11) ───────────────────────────────────────────────────
+  // "Message someone" was a link to /people: it CLOSED the dock and navigated away, which is the
+  // opposite of what a dock is for. It is a live field now, so starting a DM never leaves the page.
+  const [q, setQ] = useState('')
+  const [people, setPeople] = useState<HandleHit[]>([])
+  const [searching, setSearching] = useState(false)
+  const [picking, setPicking] = useState<string | null>(null)
+  // DMs are friends-gated server-side (openDirectConversation). The refusal is a sentence meant
+  // for a member, so it is rendered rather than swallowed.
+  const [pickError, setPickError] = useState<string | null>(null)
 
   useEffect(() => {
     let alive = true
@@ -180,6 +202,42 @@ export function DockChat({
     setLeftNotice('You left the conversation.')
     void refreshDockSummary().then(setData).catch(() => {})
     return null
+  }
+
+  // Debounced typeahead against the shared handle endpoint — the same one the composer, the
+  // room inviter and the cohost manager already use, so there is one member-search behaviour in
+  // the app rather than a tenth. Prefix match, capped at 6 by the RPC.
+  useEffect(() => {
+    const term = q.trim()
+    if (!term) { setPeople([]); setSearching(false); return }
+    let alive = true
+    const ctrl = new AbortController()
+    setSearching(true)
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search-handles?q=${encodeURIComponent(term)}`, { signal: ctrl.signal })
+        const json = (await res.json()) as { profiles?: HandleHit[] }
+        if (alive) setPeople(Array.isArray(json.profiles) ? json.profiles : [])
+      } catch {
+        /* aborted, offline, or rate-limited — leave the last results up rather than blanking */
+      } finally {
+        if (alive) setSearching(false)
+      }
+    }, 200)
+    return () => { alive = false; clearTimeout(t); ctrl.abort() }
+  }, [q])
+
+  /** Open (or create) the DM with a picked member, in place. */
+  async function startDm(p: HandleHit) {
+    setPicking(p.id)
+    setPickError(null)
+    const res = await openDirectConversation(p.id)
+    setPicking(null)
+    if (!res.ok) { setPickError(res.error); return }
+    // Clear the field FIRST: openDm pushes the thread view over this one, and coming back to a
+    // stale query with stale results reads as the search having failed.
+    setQ(''); setPeople([])
+    openDm(res.conversationId, p.display_name || `@${p.handle}`)
   }
 
   // Focus the inbox after a leave, and clear the announcement once it has been read.
@@ -328,15 +386,77 @@ export function DockChat({
           the bordered neighbour. That also takes the pair off the literal `rounded-lg` step and
           onto the skinnable role radius, which is what the rest of the panel is on. */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
-        <Link ref={inboxFirstRef} href="/people" onClick={onNavigate} className={buttonClasses('primarySoft', 'sm', 'flex-1')}>
-          <Users className="h-4 w-4" aria-hidden /> Message someone
-        </Link>
+        {/* A LIVE FIELD, not a link out (owner, 2026-08-11). This was `<Link href="/people">
+            Message someone</Link>`, which closed the dock and navigated away — so the one control
+            for starting a conversation was also the one that ended your visit to the panel. The
+            markup mirrors the launcher's own help-search field so the two in-panel searches match. */}
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
+          <input
+            ref={inboxFirstRef}
+            type="search"
+            value={q}
+            onChange={(e) => { setQ(e.target.value); setPickError(null) }}
+            placeholder="Message someone…"
+            aria-label="Find a member by name or @handle"
+            className="w-full rounded-control border border-border bg-surface-elevated py-1.5 pl-9 pr-3 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+          />
+        </div>
         {/* /messages/rooms holds only an actions.ts and no page.tsx, so this 404'd — on the one
             surface the owner wants chat to live in. The rooms list is the inbox's Rooms filter. */}
         <Link href="/messages?filter=rooms" onClick={onNavigate} className={buttonClasses('secondary', 'sm')}>
           <Hash className="h-4 w-4" aria-hidden /> Rooms
         </Link>
       </div>
+
+      {/* Results REPLACE the inbox while a query is live, rather than pushing it down: the panel
+          is short, and a member who is searching is not reading their inbox. */}
+      {q.trim() && (
+        <div className="min-h-0 shrink-0 max-h-64 overflow-y-auto border-b border-border">
+          {searching && people.length === 0 && (
+            <div className="flex items-center justify-center py-6 text-subtle">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            </div>
+          )}
+          {!searching && people.length === 0 && (
+            <p className="px-3 py-4 text-meta text-muted">No members match “{q.trim()}”.</p>
+          )}
+          <ul className="divide-y divide-border">
+            {people.map((p) => (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  onClick={() => startDm(p)}
+                  disabled={picking !== null}
+                  className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-elevated disabled:opacity-60"
+                >
+                  <Avatar src={p.avatar_url} name={p.display_name || p.handle} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <span className="block truncate text-body-sm font-medium text-text">
+                      {p.display_name || p.handle}
+                    </span>
+                    <span className="block truncate text-meta text-muted">@{p.handle}</span>
+                  </div>
+                  {picking === p.id ? (
+                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-subtle" aria-hidden />
+                  ) : (
+                    /* The gate is server-side and unconditional, so saying so BEFORE the click is
+                       the difference between a picker and a trap. */
+                    p.friend_status !== 'accepted' && (
+                      <span className="shrink-0 text-3xs text-subtle">Not connected</span>
+                    )
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+          {pickError && (
+            <p role="status" aria-live="polite" className="px-3 py-2 text-meta text-danger">
+              {pickError}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Leaving happens in the details layer, which unmounts on success, so without this the
           action would complete in silence for anyone not watching the list. */}
