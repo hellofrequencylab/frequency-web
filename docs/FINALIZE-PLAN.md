@@ -1163,7 +1163,37 @@ Of **329** `<Skeleton>` call sites, **126** pass a radius of their own, so on ev
 | `rounded-t` | 2 |
 | `rounded-md` | 1 |
 
-🔴 **Not yet resolved, and deliberately not "fixed" blind.** Unlike §9.11 — where `p-6` provably
+✅ **RESOLVED 2026-08-11 by measurement — it IS a bug, at 52 sites, not 126.**
+
+The built stylesheet emits `border-radius` utilities **alphabetically**:
+
+```
+rounded-2xl → rounded-3xl → rounded-card → rounded-control → rounded-full
+→ rounded-lg → rounded-md → rounded-none → rounded-pill → rounded-sm → rounded-xl
+```
+
+Later wins, so `rounded-control` beats exactly the three that sort before it — and only those:
+
+| Caller passes | Sites | Result |
+| :--- | ---: | :--- |
+| `rounded-2xl` | 36 | 🔴 paints 14px, not 24px |
+| `rounded-card` | 10 | 🔴 paints `--radius-control` |
+| `rounded-3xl` | 6 | 🔴 |
+| `lg` / `xl` / `md` / `pill` / `none` / `t` | 74 | ✅ sort after, caller wins |
+
+So **52 of 329** call sites paint a radius nobody asked for, and the other 74 were always fine.
+Visible cost: `app/(main)/lead/loading.tsx:17,23` and
+`components/spaces/dashboard/space-dashboard.tsx:292,299` render placeholders with tighter corners
+than the cards that replace them, so those surfaces **snap their corners on hydration**.
+
+**Still not fixed here, and now for a different reason.** The fix is the same shape as §9.11 (a
+`radius` prop on the primitive), but it changes rendering at 52 sites and would invalidate a
+baseline capture that was already in flight when this was settled. It wants its own PR and its own
+capture. Adopting `tailwind-merge` in `cn()` would close the entire class — `lib/utils.ts:4-6` is
+a plain `.filter(Boolean).join(' ')` — but that changes the semantics of a helper used in hundreds
+of places and is not a drive-by.
+
+The original reasoning, kept because it is why this was measured instead of swept: Unlike §9.11 — where `p-6` provably
 beat `p-5` because Tailwind orders the numeric padding scale ascending — the radius scale here
 mixes THEME tokens (`--radius-control/card/pill`, declared at `app/globals.css:195`) with built-in
 steps (`lg`/`xl`/`2xl`/`3xl`/`none`/`md`). Which side wins depends on emission order in the built
