@@ -1163,7 +1163,14 @@ Of **329** `<Skeleton>` call sites, **126** pass a radius of their own, so on ev
 | `rounded-t` | 2 |
 | `rounded-md` | 1 |
 
-✅ **RESOLVED 2026-08-11 by measurement — it IS a bug, at 52 sites, not 126.**
+✅ **RESOLVED and FIXED 2026-08-11 (PR #2090).** Measured first — it IS a bug, at 52 sites,
+not 126 — then fixed by making the default radius CONDITIONAL in `components/ui/skeleton.tsx`
+rather than by adding a `radius` prop. Suppressing the default when the caller names one
+repairs all 52 and leaves all 74 working sites byte-identical, with zero call-site churn; a
+prop would have meant editing 126 call sites and would still lose silently for anyone who
+kept using `className`. Pinned by `components/ui/skeleton.test.tsx`, 13 assertions drawn from
+BOTH sides of `rounded-control` in the emission order — a test against one caller had a
+coin-flip chance of catching this.
 
 The built stylesheet emits `border-radius` utilities **alphabetically**:
 
