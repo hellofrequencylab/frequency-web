@@ -58,16 +58,16 @@ export default async function CircleEventsPage({
 
   return (
     <section aria-labelledby="circle-events-heading" className="space-y-4">
-      <SectionHeader
-        id="circle-events-heading"
-        title="Coming up"
-        count={events.length || undefined}
-        description={
-          isMember || canManage
-            ? 'Every gathering this circle has booked, soonest first. A repeating event shows its next date.'
-            : 'The gatherings this circle has booked, soonest first.'
-        }
-      />
+      <div>
+        <SectionHeader id="circle-events-heading" title="Coming up" count={events.length || undefined} />
+        {events.length > 0 && (
+          <p className="-mt-2 text-body-sm text-muted">
+            {isMember || canManage
+              ? 'Every gathering this circle has booked, soonest first. A repeating event shows its next date.'
+              : 'The gatherings this circle has booked, soonest first.'}
+          </p>
+        )}
+      </div>
 
       {events.length === 0 ? (
         canManage ? (

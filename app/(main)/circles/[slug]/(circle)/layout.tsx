@@ -81,6 +81,40 @@ import { circleEventInsider, loadCircleContentFacts } from './tab-facts'
 // cover"): the 16:6 crop, or the neutral token gradient when a Circle has no photo yet. It carries
 // no copy, which is what lets the identity lockup below it be the one heading on the page.
 //
+// 🔴 THE COVER CANNOT BE A <PageHero> UNTIL THE KIT GIVES IT A WAY TO NOT BE A HEADING, and that is
+// the one thing blocking the operator's cover controls on this page. PageHero renders an `<h1>` in
+// EVERY variant — `minimal` still emits `<h1 className="sr-only">{title}</h1>`
+// (components/templates/page-hero.tsx:227) — so a PageHero above a template-owned lockup ships two
+// h1s with the same text, which a screen reader reads out as a duplicated page heading. The owner's
+// ruling is that the TEMPLATE owns the single h1, so the hero had to go, and three operator
+// controls went with it:
+//
+//   · hero HEIGHT      — readCircleHeroHeight / hasCircleHeroHeight (lib/circles/hero.ts), still
+//                        written by components/admin/modules/circle-settings-module.tsx.
+//   · cover FOCAL POINT— readCircleCoverFocus (same file, same writer).
+//   · cover SCRIM      — the None / Shade / Blend control being added for Circles, stored on the
+//                        same `circles.theme` blob and read with `readCoverScrim`
+//                        (app/(main)/spaces/[slug]/manage/layout/preferences.ts).
+//
+// `theme` IS available here — loadCircleShell selects it and returns it on the shell — so the read
+// side is not the problem; the SINK is. The fix is one of two small changes in a file this brief
+// does not own, and the second is the better one because it restores all three at once:
+//
+//   A. `components/templates/page-hero.tsx` — a prop that suppresses the heading (e.g.
+//      `heading={false}`), so a PageHero can be a pure cover band under a template-owned h1.
+//   B. `components/templates/detail-template.tsx` — let the standard `coverImage` path take
+//      `coverFocus`, `coverSize` and `coverOverlayStyle` and render through PageHero `minimal`
+//      internally (with the heading suppressed). One passthrough, every Detail page benefits.
+//
+// The call site here is then exactly:
+//
+//   coverOverlayStyle={circleHeroOverlayStyle(theme)}   // 'none' | 'shadow' | 'fade'
+//
+// where `circleHeroOverlayStyle(theme: unknown): HeroOverlayStyle` is the ONE mapping from the
+// operator vocabulary (none / shade / blend) to PageHero's (none / shadow / fade), and it belongs
+// in `lib/circles/hero.ts` beside the other circle-theme readers. It is deliberately NOT written
+// here: a second copy of that mapping is exactly the drift that bites later.
+//
 // ── SPEED (PAGE-FRAMEWORK §5) ────────────────────────────────────────────────────────────────────
 // This file used to run FOUR serial awaits before it returned any JSX, which is §5.3's named
 // anti-pattern: nothing can stream until the last one lands. It is now two rounds, and the second

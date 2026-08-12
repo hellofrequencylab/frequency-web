@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { isPlatformStaff } from '@/lib/auth'
+import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
 import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
@@ -147,13 +147,18 @@ export interface RunnableJourneyOption {
  *
  * Returns an empty list when the viewer may not start a Run at all, so the picker cannot show
  * options to someone the action would refuse either.
+ *
+ * `viewerProfileId` OMITTED resolves the signed-in caller, which is what a picker read wants;
+ * passing `null` explicitly means anonymous and denies. That distinction is deliberate: a caller
+ * that has no id to hand can only ever get the fail-closed answer.
  */
 export async function runnableJourneysForCircle(
   circleId: string,
-  viewerProfileId: string | null,
+  viewerProfileId?: string | null,
   limit = 50,
 ): Promise<RunnableJourneyOption[]> {
-  const gate = await resolveRunGate(circleId, viewerProfileId)
+  const viewer = viewerProfileId === undefined ? await getMyProfileId() : viewerProfileId
+  const gate = await resolveRunGate(circleId, viewer)
   if (!gate.allowed) return []
   const plans = gate.spaceId ? await journeysOfferedBySpace(gate.spaceId) : await listPublicPlans()
   return plans

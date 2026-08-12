@@ -16,10 +16,14 @@ let circleRow: { host_id: string | null; slug: string; space_id: string | null }
 let editSettings = false
 let spaceCanEdit = false
 let staff = false
+let signedInProfileId: string | null = null
 let offeredPlans: Record<string, unknown>[] = []
 let publicPlans: { id: string; title: string; slug: string; emoji: string | null }[] = []
 
-vi.mock('@/lib/auth', () => ({ isPlatformStaff: async () => staff }))
+vi.mock('@/lib/auth', () => ({
+  isPlatformStaff: async () => staff,
+  getMyProfileId: async () => signedInProfileId,
+}))
 
 vi.mock('@/lib/spaces/store', () => ({
   loadRootSpaceId: async () => ROOT_SPACE,
@@ -63,6 +67,7 @@ beforeEach(() => {
   editSettings = false
   spaceCanEdit = false
   staff = false
+  signedInProfileId = null
   offeredPlans = []
   publicPlans = []
 })
@@ -131,6 +136,20 @@ describe('runnableJourneysForCircle — every option offered is an option the ac
   it('offers nothing to a viewer who may not start a run', async () => {
     publicPlans = [{ id: 'plan-library', title: 'Some Library Journey', slug: 'library', emoji: null }]
     expect(await runnableJourneysForCircle('circle-1', 'plain-member')).toEqual([])
+  })
+
+  it('resolves the signed-in caller when no profile id is passed (the picker read)', async () => {
+    signedInProfileId = 'host-1'
+    editSettings = true
+    publicPlans = [{ id: 'plan-library', title: 'Some Library Journey', slug: 'library', emoji: null }]
+    expect(await runnableJourneysForCircle('circle-1')).toHaveLength(1)
+  })
+
+  it('offers nothing when nobody is signed in', async () => {
+    signedInProfileId = null
+    editSettings = true
+    publicPlans = [{ id: 'plan-library', title: 'Some Library Journey', slug: 'library', emoji: null }]
+    expect(await runnableJourneysForCircle('circle-1')).toEqual([])
   })
 
   it('caps the list', async () => {

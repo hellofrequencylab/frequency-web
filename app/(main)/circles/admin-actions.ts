@@ -18,6 +18,7 @@ import { isValidTimeZone } from '@/lib/time/zone'
 import { getCircleEarnedZaps } from '@/lib/circles/earned'
 import { setCircleChannel } from '@/lib/channels/programs'
 import { writeCircleCoverFocus, writeCircleHeroHeight } from '@/lib/circles/hero'
+import { writeCoverScrimSetting, type CoverScrim } from '@/lib/layout/cover-scrim'
 import type { Database, Json } from '@/lib/database.types'
 
 /** A small {id, title, href} entry for one of the circle's adopted Quest items. */
@@ -450,6 +451,39 @@ export async function updateCircleHeroHeight(
   if (!caps.has('circle.editSettings')) return { error: 'Unauthorized' }
 
   const next = writeCircleHeroHeight(await readCircleTheme(id), height)
+  const { error } = await createAdminClient()
+    .from('circles')
+    .update({ theme: next as Json })
+    .eq('id', id)
+  if (error) return { error: error.message }
+
+  revalidatePath(`/circles/${slug}`)
+  revalidatePath('/circles')
+}
+
+/**
+ * Set the Circle hero's OVERLAY (None / Shade / Blend) — the third header setting beside the focal
+ * point and the height, and the same shape as both: the SAME circle.editSettings gate, the SAME
+ * `theme` jsonb bag, the same read-modify-write so a blind write can never clobber `coverFocus` or
+ * `heroHeight` sitting beside it.
+ *
+ * The value, its key (`coverScrim`), its validation and its non-destructive merge are the ones
+ * Space profiles already ship (lib/layout/cover-scrim.ts re-exports the pure helpers), so a Circle
+ * and a Space store the same word for the same choice. An unrecognized value is refused here rather
+ * than written and quietly ignored at render.
+ */
+export async function updateCircleCoverScrim(
+  id: string,
+  slug: string,
+  scrim: CoverScrim,
+): Promise<{ error: string } | void> {
+  const caps = await getCircleCapabilities(id)
+  if (!caps.has('circle.editSettings')) return { error: 'Unauthorized' }
+  if (scrim !== 'none' && scrim !== 'shade' && scrim !== 'blend') return { error: 'Pick an overlay.' }
+
+  const theme = await readCircleTheme(id)
+  const base = theme && typeof theme === 'object' && !Array.isArray(theme) ? (theme as Record<string, unknown>) : {}
+  const next = writeCoverScrimSetting(base, scrim)
   const { error } = await createAdminClient()
     .from('circles')
     .update({ theme: next as Json })
