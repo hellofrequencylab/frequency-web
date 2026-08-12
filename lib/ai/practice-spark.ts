@@ -13,6 +13,7 @@ import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage, featureOverBudget } from './usage'
 import { withVoice } from './voice'
+import type { SeedMood } from '@/lib/studio/kernel/moods'
 import { withPracticeShape } from './practice-shape'
 import { COMPOSE_PILLARS, type ComposePillar } from './journey-composition'
 
@@ -36,6 +37,8 @@ export interface PracticeSparkAnswers {
   cadence: PracticeCadenceHint
   /** Roughly how much time one session takes. */
   pace: PracticePace
+  /** The MOOD dial (ADR-986): steers TONE only. It never changes what is true, just how it reads. */
+  mood?: SeedMood
 }
 
 /** The cadence options the wizard offers, kept tight so they line up with the builder's select. */
@@ -181,7 +184,7 @@ export async function draftPracticeSpark(
       tier: SPARK_TIER,
       maxTokens: written ? 1200 : 800,
       thinking: { type: 'disabled' },
-      system: withVoice(withPracticeShape(SYSTEM)),
+      system: withVoice(withPracticeShape(SYSTEM), input.mood),
       tools: [TOOL],
       toolChoice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: userText }],

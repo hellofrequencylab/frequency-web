@@ -432,6 +432,18 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'listing-seeder', href: '/admin/listing-seeder', label: 'Listing Seeder', desc: 'Paste a classifieds or housing listing and get a reviewed, published listing to claim.', icon: 'ClipboardPaste', min: 'janitor',
     world: 'platform', worldLabel: 'Listing Seeder', worldOrder: 12,
     adminGroups: [{ domain: 'operations', section: 'System' }], adminNav: { section: 'operations', heading: 'Configuration' } },
+  // Event Seeder (ADR-989, docs/DECISIONS.md). The third seeder, for events: the WhatsApp chat
+  // importer and the flyer scan stage what they read on event_intake, and this console reviews it
+  // field by field (from the EVENT manifest, through the Studio kernel) before it is seeded as an
+  // UNLISTED event draft the operator publishes. Registered here (STUDIO_LEAVES) beside its two
+  // siblings, not in ADMIN_MODULES — a top-level /admin operator PAGE is a Studio leaf. Its page
+  // gates community:write (requireAdmin), the same rung as Import from chat, which feeds it.
+  // The row states the SAME gate the page runs (admin + community:write), so the community team
+  // who own this tool can both see it and open it. Its two siblings are frozen gate debt for
+  // exactly the mismatch this avoids (scripts/check-gate-parity.mjs).
+  { id: 'event-seeder', href: '/admin/event-seeder', label: 'Event Seeder', desc: 'Review the events a chat export or a flyer scan found, then seed them as unlisted drafts.', icon: 'CalendarDays', min: 'admin', staffDomain: 'community',
+    world: 'platform', worldLabel: 'Event Seeder', worldOrder: 13,
+    adminGroups: [{ domain: 'operations', section: 'System' }], adminNav: { section: 'operations', heading: 'Configuration' } },
   { id: 'audit', href: '/admin/audit', label: 'Audit log', desc: 'Sensitive admin actions. The security trail.', icon: 'ScrollText', min: 'admin',
     world: 'platform', worldLabel: 'Audit', worldOrder: 11,
     adminGroups: [{ domain: 'operations', section: 'System' }], adminNav: { section: 'operations', heading: 'Platform' } },
@@ -592,7 +604,7 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
     links: [
       { leaf: 'menu' }, { leaf: 'pages' }, { leaf: 'payments' }, { leaf: 'pricing' }, { leaf: 'appearance' }, { leaf: 'spaces' }, { leaf: 'page-layout' },
       { leaf: 'marketplace' }, { leaf: 'marketplace-orders' }, { leaf: 'marketplace-reports' }, { leaf: 'marketplace-disputes' }, { leaf: 'marketplace-reviews' },
-      { leaf: 'demo' }, { leaf: 'business-seeder' }, { leaf: 'listing-seeder' }, { leaf: 'audit' },
+      { leaf: 'demo' }, { leaf: 'business-seeder' }, { leaf: 'listing-seeder' }, { leaf: 'event-seeder' }, { leaf: 'audit' },
     ],
   },
 ] as const
@@ -671,7 +683,7 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
     href: '/admin/operations', label: 'Operations', min: 'janitor', staffDomain: 'platform',
     groups: [
       { heading: 'Platform', leaves: [{ leaf: 'audit', label: 'Audit' }, { leaf: 'payments' }, { leaf: 'pricing' }, { leaf: 'roles', label: 'Roles' }, { leaf: 'support' }, { leaf: 'spaces' }] },
-      { heading: 'Configuration', leaves: [{ leaf: 'onboarding-controls', label: 'Onboarding' }, { leaf: 'walkthroughs' }, { leaf: 'page-layout' }, { leaf: 'menu', label: 'Menu' }, { leaf: 'appearance', label: 'Appearance' }, { leaf: 'demo', label: 'Demo' }, { leaf: 'business-seeder', label: 'Business Seeder' }, { leaf: 'listing-seeder', label: 'Listing Seeder' }] },
+      { heading: 'Configuration', leaves: [{ leaf: 'onboarding-controls', label: 'Onboarding' }, { leaf: 'walkthroughs' }, { leaf: 'page-layout' }, { leaf: 'menu', label: 'Menu' }, { leaf: 'appearance', label: 'Appearance' }, { leaf: 'demo', label: 'Demo' }, { leaf: 'business-seeder', label: 'Business Seeder' }, { leaf: 'listing-seeder', label: 'Listing Seeder' }, { leaf: 'event-seeder', label: 'Event Seeder' }] },
     ],
   },
   {

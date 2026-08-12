@@ -14,6 +14,7 @@ import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage, featureOverBudget } from './usage'
 import { withVoice } from './voice'
+import type { SeedMood } from '@/lib/studio/kernel/moods'
 import type { PillarSlug } from '@/lib/pillars'
 
 const FEATURE = 'circle-spark'
@@ -32,6 +33,8 @@ export interface CircleSparkAnswers {
   primaryPillar: PillarSlug | null
   /** Optional free text on when/how it meets ("Wednesdays, coffee after"). */
   cadence?: string
+  /** The MOOD dial (ADR-986): steers TONE only. It never changes what is true, just how it reads. */
+  mood?: SeedMood
 }
 
 export interface CircleSparkDraft {
@@ -126,7 +129,7 @@ export async function draftCircleSpark(
       tier: TIER,
       maxTokens: 900,
       thinking: { type: 'disabled' },
-      system: withVoice(SYSTEM),
+      system: withVoice(SYSTEM, input.mood),
       tools: [TOOL],
       toolChoice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: userText }],

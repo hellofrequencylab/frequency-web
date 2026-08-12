@@ -37,6 +37,7 @@ entry_template_settings
 event_blurb_cache
 event_embeddings
 event_host_transfers
+event_intake
 event_placement_requests
 financial_transactions
 founding_members

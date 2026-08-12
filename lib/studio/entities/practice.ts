@@ -30,7 +30,7 @@
 // fields below are reward tuning, not a price.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { EntityManifest } from '@/lib/studio/kernel/manifest'
+import type { EntityManifest, FieldOption } from '@/lib/studio/kernel/manifest'
 
 /** Render a scalar as display text. Mirrors the kernel's own reader. PURE + total. */
 function str(v: unknown): string {
@@ -54,6 +54,14 @@ function str(v: unknown): string {
  *  earlier pass read the canon backwards and labelled the timer itself "Be Still". Mirrors
  *  TIMER_KINDS (lib/practices.ts): the stored value `mindless` is the Be Still mode, kept for
  *  back-compat with every existing row. */
+/** Mirrors `PracticeCadenceHint` (lib/ai/practice-spark.ts), a union with no runtime value to
+ *  import. These are the only three the Spark prompt understands. */
+const CADENCE_HINTS: readonly FieldOption[] = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'few-times-week', label: 'A few times a week' },
+  { value: 'weekly', label: 'Weekly' },
+]
+
 const TIMER_KINDS = [
   { value: 'mindless', label: 'Be Still' },
   { value: 'movement', label: 'Get Moving' },
@@ -107,7 +115,11 @@ export const PRACTICE_MANIFEST: EntityManifest = {
     // The `cadence` control owns its own set, so this needs no options. Note the value space: the
     // Spark hint is 'daily' | 'few-times-week' | 'weekly' (`PracticeCadenceHint`), which the create
     // action writes to the `cadence` column as its label ('Daily', 'A few times a week', 'Weekly').
-    { path: 'answers.cadence', label: 'How often', kind: 'cadence', section: 'brief', placement: 'spark', read: (d) => str((d.answers as Record<string, unknown> | undefined)?.cadence) || 'daily' },
+    // A `select`, NOT a `cadence`. This value feeds `PracticeCadenceHint` (lib/ai/practice-spark.ts),
+    // a closed set of three, and anything outside it degrades silently in the prompt
+    // (`CADENCE_LABEL[x] ?? 'Daily'`). A free-text control here invited exactly that. The kernel's
+    // own rule applies: cadence stays free text only where the value genuinely is.
+    { path: 'answers.cadence', label: 'How often', kind: 'select', section: 'brief', placement: 'spark', options: CADENCE_HINTS, read: (d) => str((d.answers as Record<string, unknown> | undefined)?.cadence) || 'daily' },
     // Pace is the session ask; it lands on the row as duration_min. Mirrors `PracticePace`
     // (lib/ai/practice-spark.ts); the hints beside each choice are the Spark's own wording.
     {

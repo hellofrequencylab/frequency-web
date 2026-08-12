@@ -13,6 +13,7 @@ import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage, featureOverBudget } from './usage'
 import { withVoice } from './voice'
+import type { SeedMood } from '@/lib/studio/kernel/moods'
 import { withJourneyShape } from './journey-shape'
 
 const FEATURE = 'journey-spark'
@@ -34,6 +35,8 @@ export interface SparkAnswers {
   weeks: number
   /** Roughly how much time a day. */
   pace: JourneyPace
+  /** The MOOD dial (ADR-986): steers TONE only. It never changes what is true, just how it reads. */
+  mood?: SeedMood
 }
 
 /** One week of the arc: a short focus title + a one-line description. */
@@ -174,7 +177,7 @@ export async function draftJourneySpark(
       tier: SPARK_TIER,
       maxTokens: 600,
       thinking: { type: 'disabled' },
-      system: withVoice(withJourneyShape(SYSTEM)),
+      system: withVoice(withJourneyShape(SYSTEM), input.mood),
       tools: [TOOL],
       toolChoice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: userText }],

@@ -20177,7 +20177,7 @@ adding a *capability* is a kernel change that reaches every entity at once. The 
 kit, the AI spark generalization, the commerce wizards, wizard autosave, the edit re-entry panel, an Event
 seeder) are sequenced in [STUDIO.md](STUDIO.md).
 
-### ADR-597 addendum: the first nine manifests, and what declaring them taught the kernel
+### Addendum to the above: the first nine manifests, and what declaring them taught the kernel
 
 **Status:** Accepted · shipped with Phase 2 (the Spark kit + the entity catalog).
 
@@ -20230,40 +20230,223 @@ near-identical document-extraction actions that had grown independently in Journ
 has a cover-image column, so all three commerce manifests use `images` with first-as-cover; a real
 cover is a schema change, not a manifest one.
 
-## ADR-598: The Loom is the only image picker an operator sees
 
-**Status:** Accepted · shipped for the in-rail block editor and the Puck block library. Next free number
-after ADR-597. Standing product decision from the owner: "I ONLY want loom to pop up for images. No direct
-upload link anywhere."
+## ADR-987: The Loom is the only image picker an operator sees
 
-**Context.** Two competing image controls had grown side by side. The Loom picker
-(`lib/page-editor/loom-image-field.tsx`) lets an operator pick from their Space's own Loom unioned with the
-shared library, or upload, and an upload FILES INTO that Space's Loom so it is reusable afterwards. A second,
-direct uploader (`UploadButton` in `components/entity-blocks/block-edit-panel.tsx`) pushed a file straight to
-storage and handed back a public URL. The image never entered the Loom, so it could never be reused, and the
-operator got a plain file dialog beside a raw URL box where they expected their library. The owner hit this on
-a Zigzag block's Photo field.
+**Status:** Accepted · shipped for the in-rail block editor, the on-canvas photo slot, both Puck
+editors, and the Studio field kit. Standing product decision from the owner (2026-08-11): "I ONLY
+want loom to pop up for images. No direct upload link anywhere."
 
-**Decision.** On any surface that knows which Space it is editing, the Loom is the ONLY way to choose an
-image. Every image field renders `LoomImageField`; the direct uploader is deleted, not hidden.
+**Context.** Two image controls had grown side by side. The Loom picker filed a pick into a real
+library, so it was reusable afterwards. A direct `UploadButton` went straight to storage, so the
+image never entered the Loom and could never be found again. The owner hit the second one on a
+Zigzag block's photo field and got a URL box and a file dialog where the Loom belonged.
 
-- `LoomImageField` gained an optional `spaceSlug` prop that takes precedence over `useSpaceEditorSlug()`.
-  Surfaces inside the Puck editor keep passing nothing and read the context exactly as before; the in-rail
-  entity-blocks builder, which has no Puck provider, passes the slug it already holds. One component, two
-  ways in, no fork.
-- `BlockEditPanel` / `EntityPageBuilder` take `spaceSlug` instead of an injected `uploadImage`. An image
-  field on a Space is the Loom picker and nothing else: no link box, no file dialog. The gallery field adds
-  one photo at a time through the same picker held at an empty value.
-- The shared Puck `imgField` and the gallery field resolve per surface (`SpaceAwareImageField`): the Loom on
-  a Space editor, the legacy site-media control on the janitor-only marketing editor at `/edit/<slug>`,
-  which has no Space and therefore no Loom to file into.
+The two were not equally good options. A direct upload is strictly lossier: same bytes, same bucket,
+but nothing catalogued, nothing searchable, and nothing reusable by the next block. The only thing it
+saved was one click.
 
-**Authorization is unchanged and un-loosened.** The slug is UX plumbing on every path. `listLoomImages` and
-`uploadToLoom` (`lib/page-editor/loom-field-actions.ts`) re-resolve the space from the slug and re-gate
-`caps.canEditProfile` server-side on every call, so a client that passes another Space's slug still fails
-unless the caller can actually edit that Space. No client-trusted identity was invented anywhere.
+**Decision.** `components/loom/loom-picker.tsx` is the single control. `UploadImage` is deleted from
+the entity-blocks chain and replaced by a `loomScope`; the panel, the canvas editor, the canvas block,
+the live grid, and both builders thread a scope instead of a gated upload function.
 
-**Known follow-ups.** The marketing editor needs a shared-library picker of its own before its fallback can
-go; `spotlightAssetField` stores a storage PATH rather than a URL, so it needs a Loom mode that returns a path
-before it can move; gallery adds are one at a time until `LoomImageField` grows a multi-select. The
-`uploadSpaceBlockImage` action is now unreferenced.
+- **Scope, not a fork.** `LoomPicker` takes a `scopeKey`, and `'mine'` is a real scope, so a member
+  always has a Loom of their own. That is what let the Studio field kit route `image`/`images` through
+  it with **no direct-upload fallback**: a space-less entity (a Practice, a Journey) is not a surface
+  that needs an escape hatch, it is a surface with a member scope. A silent fallback is how two
+  competing controls got established in the first place.
+- **Authorization unchanged.** `resolveScope` still requires `canEditProfile` for a Space scope and
+  returns the resolved Space's real id, so a slug cannot widen anything. The scope key is UX
+  plumbing; a client naming a Space it cannot manage gets an empty, unwritable picker.
+
+**Consequences.** Pasting an external image URL into a block is no longer possible. That is the
+directive, and the clean answer is an "add by link" action *inside* the Loom, so the Loom stays the
+one entry point rather than regrowing a second one beside it. Gallery photos add one at a time
+through the picker; if bulk matters the fix is a multi-select mode on the picker, not a second
+control. Non-block imagery (avatars, event covers, seeder review images, scanners, onboarding) keeps
+its own flows and is tracked separately.
+
+## ADR-988: Creating a thing is a governed write, so it goes through the tool registry
+
+**Status:** Accepted · Server layer shipped; wizard adoption is per-surface and follows. Extends
+[ADR-066](#adr-066-vera-integration--the-bridge-doctrine-a-memory-table-one-conciergehelp-voice) and
+[ADR-028](#adr-028-the-ai-agent-acts-only-through-the-spine--a-bounded-tool-surface) (bounded typed tools,
+propose-and-confirm, the consent/test harness) to the Studio catalog of
+[ADR-986](#adr-986-the-studio-kernel--one-manifest-per-entity-one-renderer-a-strict-boundary).
+Reuses the autonomy vocabulary of
+[ADR-382](#adr-382-resonance-engine-phase-1---the-predictionplaybookaction-loop-playbook-registry--vera-today).
+Next free number after ADR-987.
+Code: `lib/ai/vera/create-tools.ts` (pure) + `lib/ai/vera/create-entity.ts` (server).
+
+**Context.** Every creation wizard called its own server action directly. That is the single
+highest-volume write on the platform, and it was the one write with no governance in front of it:
+nothing reached the audit log, so the autonomy ladder had no evidence to graduate against; the
+propose-and-confirm gate that every other AI-adjacent write passes was simply not in the path; and
+the create capability was checked once, wherever each wizard happened to check it, with no shared
+statement of which authority decides.
+
+The gap was about to widen, not close. Vera now drafts the contents of four wizards and is being
+wired into five more. A model that can fill in a Circle and a member who taps Create on it is a
+governed write by any reading of ADR-066, and it was running through a path that recorded nothing.
+
+**Decision.** One governed create tool, derived from the Studio catalog, at the `suggest` tier,
+with the commit still owned by the entity.
+
+**1. The surface is derived, not listed.** `create_entity` is a single tool whose entity parameter
+is generated from `STUDIO_ENTITIES`: adding a manifest widens the tool, removing one narrows it.
+A tool able to name an entity the catalog does not know is exactly the drift ADR-986 exists to
+kill, so there is no second list to keep in step. Catalog-only entities (Channel, Room, Hub,
+Nexus, Broadcast) are excluded, and the exclusion is derived too: `isCatalogOnly` already says
+they accept no source material and steer nothing, so nothing drafts them. A human typing two
+fields into a modal and tapping Create IS the propose-and-confirm gate, performed by the person.
+
+**2. `auto` is unrepresentable, not merely unset.** `CreateAutonomyTier` is
+`Exclude<AutonomyTier, 'auto'>`. Grading creation `auto` does not fail a test, it fails to
+compile. This is the same structural move as ADR-382's "an outbound action cannot sit in an auto
+playbook", and it uses that ADR's vocabulary rather than inventing a second one. Two further locks
+sit behind it: `create_entity` is absent from `PlaybookActionTool`, so the one path that can
+execute a governed tool without a human tap cannot name it; and `effectiveCreateTier` runs the
+shared slider decision, so a `safe_auto` Space raises playbooks and still never raises creation.
+Creating a Circle is publicly visible and not trivially reversible. Deleting a thing a member did
+not mean to make is not an Undo, it is an apology.
+
+**3. The model can only propose.** `create_entity` resolves, in `executeConfirmedTool`, to
+`proposeCreate` and stops. There is no confirm tool, and no `approvedSend`-style graduation flag
+for creation, so no sequence of model output commits an entity. The member opens the draft and
+taps Create in their own session, which calls `confirmCreate` directly, from a surface no tool key
+names. That is the whole of the propose-and-confirm gate, expressed as reachability rather than as
+an instruction in a prompt.
+
+**4. The gate is declared once and re-checked twice.** `CREATE_GATES` names the authority for
+every creatable entity: a global creation capability (`circle.create`, `event.create`,
+`journey.create`, `practice.create`) that this layer re-checks itself through `canCreate`, or a
+`scoped` authority (a Space plan limit, a per-Space role ladder, a seller gate) that the entity's
+own commit enforces and that this layer records rather than duplicates. The tool layer adds
+governance; it does not become a second authority. A drift-guard test requires every creatable
+entity to appear, so a new manifest cannot land with no gate at all. The capability gate runs at
+propose AND again at the moment of the write, because a capability can lapse in between and the
+only check that matters is the last one.
+
+**5. The commit stays with the entity.** `confirmCreate` takes the entity's existing create path
+as a callback. Nine correct, tested create paths, each with its own slug rules, meters and side
+effects, are not worth re-implementing inside a governance layer, and re-implementing them is
+how the governance layer would become the bug. Adoption is therefore a small change at each call
+site rather than a rewrite, and the existing actions keep working untouched until each wizard
+moves.
+
+**6. The audit row is the point.** Both phases write to `agent_actions` under one kind,
+`studio_create`: `proposed` at the draft, `approved` at the claim, then `executed` or `failed`.
+The claim is a conditional update on `status = 'proposed'`, so a double tap, a double submit or a
+replay commits exactly once. A proposal belongs to the member who made it, expires after 24 hours,
+and is validated again on confirm against the draft as edited, so what a member approved is what
+gets written.
+
+**7. Governance is not an AI feature.** Nothing in this path consults `aiAvailable()`, a model or
+a prompt. With the kill switch off, a member creates exactly what they created before, by exactly
+the same commit, and the audit row is still written. The one AI-conditional rule is a cap of 20
+AI-drafted proposals per member per day, so a runaway loop cannot bury someone in drafts; human
+proposals are uncapped, because a member filling in wizards all afternoon is a good day and
+throttling the deterministic path would be a governance layer breaking the product it governs.
+
+**Consequences.** Creation gains an audit trail the autonomy ladder can actually be earned
+against, and the answer to "could this ever fire on its own?" is now a type error rather than a
+policy claim. The cost is a second server round trip per create (propose, then confirm) and a
+small change at each wizard's Create button. Wizards that have not adopted it yet are unchanged
+and unaffected; the layer is inert until called.
+
+**Not decided here.** Whether creation ever graduates above `suggest`. On the evidence available
+today, it should not: `Exclude<AutonomyTier, 'auto'>` is deliberately a wall rather than a dial,
+and moving it would be its own ADR with the audit log as its argument.
+
+## ADR-989: The Event Seeder — the events counterpart to the Business Seeder, rendered from the manifest
+
+**Status:** Accepted · shipped behind the operator console. Next free number after ADR-988. Builds on
+[ADR-986](#adr-986-the-studio-kernel--one-manifest-per-entity-one-renderer-a-strict-boundary) (the Studio
+kernel) and mirrors ADR-569 (the Business Seeder's `business_intake` staging design). Migration:
+`supabase/migrations/20270222000000_event_intake.sql`.
+
+**Context.** Spaces had a seeder. Events had none, and yet events already owned both halves of the raw
+material, each one half-built:
+
+- `app/(main)/admin/import/` parsed a WhatsApp group export, classified every message with AI, showed the
+  operator a rich preview of the events and housing it found, and then **wrote nothing at all**. The header
+  said it plainly: "the writer is a separate, deliberate step that lands after the operator trusts the
+  preview." It never landed. Every run was thrown away.
+- `app/(main)/events/scan/` reads a photographed flyer into a rich `ExtractedEvent`, but only for the
+  member who took the photo, and only into their own draft.
+
+There was no staging table, no review board, and no writer. So a community team could see fifty real events
+sitting in a chat export and had no way to get any of them onto the platform except by retyping them.
+
+**Decision.** Build the events counterpart of the Business Seeder, mirroring its design rather than inventing
+a second one, and render its review board from the EVENT manifest through the Studio kernel.
+
+**1. `event_intake`, a mirror of `business_intake`.** One row per staged event. Same columns
+(`inputs` / `raw_sources` / `draft` / `ledger` / `budget_spent` / `error`), same status machine, same
+posture: **RLS ENABLED with NO policies, service-role only, fail closed**, plus the default grants revoked
+(ADR-964). A staged row can hold third-party contact details lifted out of a private group chat by a
+classifier, with nobody's consent yet, so it must never be world- or member-readable. The only shape change
+is the materialized target: `target_event_id` rather than `target_space_id`. The migration is purely
+additive: one new table, three indexes, its RLS. It ALTERs and DROPs nothing.
+
+**2. One status machine, not two.** `intake -> researching -> review -> applied`, with `failed` as the
+recoverable side state, imported from `lib/importer/intake.ts` rather than restated. That module is pure and
+framework-free, and a second copy of a five-state machine is a drift waiting to happen. A staged chat event
+lands directly in `review`: the classifier already ran, so parking it at `intake` would be a lie on the board.
+`failed` doubles as "set aside", carrying its reason, so an operator can clear the chatter a classifier
+mis-read as an event without losing it.
+
+**3. The review board renders the manifest.** `/admin/event-seeder/[id]` calls
+`buildFieldModel(EVENT_MANIFEST, draft, ledger)` (ADR-986) and renders the result. There is no hand-written
+field walker anywhere in the console: every label, kind, section, order, and signal comes from
+`lib/studio/entities/event.ts`. This is the first surface built on the kernel that is not the entity the
+kernel was extracted from, which is the only real test of whether the boundary holds. It did: the console is
+about 250 lines of presentation and knows nothing about what an event contains.
+
+**The one honest exception, single-sourced.** The event manifest declares the WHOLE entity, because it also
+serves the Spark and the edit rail — reach, cadence, the structured address, the cover. A seeded event
+carries less, because it goes through the existing draft writer. Rather than let the board offer rows whose
+edits the apply would silently drop, `SEEDED_FIELD_PATHS` (`lib/events/seed/draft.ts`) declares what this
+door carries, and `seededFieldsOnly` narrows the kernel's model to it. ONE list, read by the ledger seeding,
+the board, and the apply. A filter over the model is not a second walker; showing an operator a "Who can see
+it" row that goes nowhere is exactly the dishonesty a review board exists to prevent.
+
+**4. The WhatsApp writer stages, it does not publish.** The dry run stays the default and is unchanged.
+`stageEventsForReview` is an explicit operator action that copies what the preview found onto `event_intake`
+and nowhere else. The items round-trip through the browser, so nothing in them is trusted: each extraction is
+re-coerced through `coerceEventExtraction`, and the ledger snippet is not taken from the client at all — the
+chat text is re-parsed server-side (deterministic, no AI, no cost) and each item's cited message is read out
+of that. A staged draft's receipt is therefore the real message, whatever the client sent. Capped at 50 per
+run: a review board nobody can finish is worse than a second run.
+
+**5. The ledger is for honesty here, not for gating.** The event manifest declares `verify: 'none'` and no
+commercial fields, so nothing on this board can block an apply, and that is correct: an event is the host's
+own gathering, not a researched third-party claim. What the ledger does carry is where each value came from.
+A seeded entry is `inferred` (a model reasoning off a chat message), never `fact`; prose is `generated`; and
+nothing is `verifiedBy` anything. So every field opens amber, "needs a look", which is the honest starting
+position for material lifted out of a private chat. An operator's edit or confirm promotes it to a
+human-verified fact, and only then does the board show ✅.
+
+**6. Apply writes through the EXISTING event writer, as an unlisted draft.**
+`createEventDraft` (`lib/events/event-drafts.ts`) — the writer the poster scan has always used. Not
+`createEvent`, which publishes immediately. This is the demo posture in the events vocabulary: an `events`
+row at `status='draft'` with `host_id` NULL and `posted_by_profile_id` = the operator is in no catalog, no
+feed, and no search. The operator flips it live from `/events/drafts/<id>` through the existing publish path,
+which mints the one-time claim token so the real organizer can take the event over. Demo posture and the
+claim handshake both come free from the writer that already existed, and the apply is idempotent on
+`target_event_id`, so a double-approve cannot create a second event.
+
+Deliberately NOT setting `events.is_demo`: that column marks generated demo content the Demo Studio can
+purge, and a real event read out of a real chat must never be swept up by a purge. `consent.isDemo` on the
+intake drives the unlisted posture, exactly as it does for a seeded Space.
+
+**Consequences.** The chat importer stops throwing its work away. The gate on the new console
+(`admin` + `community:write`) is declared identically in the catalog row and the page, so it is the first
+seeder row that is not gate debt (`scripts/check-gate-parity.mjs`; Business and Listing Seeder are both
+frozen debt for exactly the mismatch this avoids). `lib/events/seed/*` is pure enough to unit test the whole
+read-to-draft-to-ledger path without a database.
+
+**Not built, on purpose.** The flyer scan does not yet stage into `event_intake` (the table and the board
+accept a `scan` source; only the wiring from `/events/scan` is absent). Photos posted alongside a chat event
+are carried as filenames for the operator to attach on the draft, not uploaded. Neither is a design gap; both
+are the next increment.

@@ -116,7 +116,7 @@ export const LISTING_MANIFEST: EntityManifest = {
     { path: 'images', label: 'Photos', kind: 'images', section: 'photos', placement: 'spark', veraDrafts: false, read: (d) => photoCount(d.images) },
 
     // ── Details (prose: Vera can draft it, the member owns it) ──
-    { path: 'description', label: 'Details', kind: 'longtext', section: 'details', placement: 'inline', prose: true, veraDrafts: true },
+    { path: 'description', label: 'Details', kind: 'longtext', section: 'details', placement: 'spark', prose: true, veraDrafts: true },
 
     // ── Price or terms. FREE TEXT on purpose: a trade, a favour, and "make me an offer" are all
     // valid answers on the peer board, so this is not an amount. ──

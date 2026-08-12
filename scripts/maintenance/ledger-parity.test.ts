@@ -52,10 +52,20 @@ describe('exact parity is the target state, and it passes', () => {
     // digests below were read back from PRODUCTION and matched the repo byte for byte before
     // being pinned here — re-freezing from the repo alone would assert that the repo agrees with
     // itself, which is the one thing this test must not be allowed to mean.
+    //
+    // Re-frozen again 2026-08-11 (602 -> 603) for 20270222000000_event_intake (ADR-989). Read back
+    // from PRODUCTION after applying, per the rule above, and matched the repo byte for byte.
+    //
+    // Worth knowing for the next apply: the Supabase MCP's apply_migration stamps the ledger with a
+    // WALL-CLOCK version, and this project's versions run AHEAD of the calendar (2027 dates), so it
+    // recorded 20260811232907 and sorted the row before the repo file it came from. Same table,
+    // divergent ledger, and a later `db push` would have re-run the file. The ledger row was
+    // corrected to the repo's own version before these digests were taken. Apply, then always
+    // re-read the ledger rather than trusting the version the tool chose.
     const { rows } = repoRows()
-    expect(rows.length).toBe(602)
-    expect(versionsDigest(rows)).toBe('2f2c5adbb05c294c9c87309042caab9ce3de1b97d974afb9316ecfab82e45dd6')
-    expect(pairsDigest(rows)).toBe('d2e46a3729597eede7346cd275ae6818bad1f5ed6c463fce440bf6ff62df9a14')
+    expect(rows.length).toBe(603)
+    expect(versionsDigest(rows)).toBe('c6ad0df0ddd350920dc9a9296cc4ffceb463a7117e5bbd33856a1212f0de3bc1')
+    expect(pairsDigest(rows)).toBe('1e17fadbad46f818c5f01c97bdc33325fb1706db91221de247360b4d192d75c5')
   })
 
   it('order is by version as text, so an unsorted ledger payload still matches', () => {

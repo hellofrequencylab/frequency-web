@@ -255,9 +255,17 @@ export function sparkFields(manifest: EntityManifest): FieldDef[] {
   return manifest.fields.filter((f) => f.placement === 'spark' || f.required)
 }
 
-/** The fields edited in place on the live entity (ADR-450 inline canvas). */
+/**
+ * The fields edited in place on the live entity (ADR-450 inline canvas).
+ *
+ * Includes PROSE fields the Spark asks for. A description is captured at creation AND is content
+ * that belongs on the page afterwards, and forcing one property to express both meant an entity had
+ * to choose between "the guided flow asks for it" and "the author can edit it in place" — so the
+ * three commerce manifests picked `inline` and silently dropped Details from their own wizard.
+ * Where a field is EDITED is derivable from what it is; it does not need a second declaration.
+ */
 export function inlineFields(manifest: EntityManifest): FieldDef[] {
-  return manifest.fields.filter((f) => f.placement === 'inline')
+  return manifest.fields.filter((f) => f.placement === 'inline' || (f.placement === 'spark' && f.prose))
 }
 
 /** The fields edited in the Inspector rail (ADR-450 rail plane). The default placement. */

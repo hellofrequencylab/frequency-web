@@ -250,6 +250,9 @@ async function runExtraction(opts: {
   system: string
   content: Anthropic.MessageParam['content']
   profileId?: string | null
+  /** The MOOD dial (ADR-986). Steers tone only; the vision scan passes none, because reading a
+   *  flyer is extraction and a mood must never colour what a poster is claimed to say. */
+  mood?: unknown
 }): Promise<ExtractedEvent | null> {
   // Kill switch + per-feature daily cap (lib/ai/budget.ts). Both surfaces (Sonnet vision scan +
   // Haiku text assist) gate here, so AI off / over budget falls back to plain manual entry and
@@ -267,7 +270,7 @@ async function runExtraction(opts: {
       tier: opts.tier,
       maxTokens: 1024,
       thinking: { type: 'disabled' },
-      system: withVoice(datedSystem),
+      system: withVoice(datedSystem, opts.mood),
       tools: [EXTRACTION_TOOL],
       toolChoice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: opts.content }],
@@ -389,6 +392,7 @@ export async function draftEventSpark(input: {
     feature: 'event-spark',
     system: SPARK_SYSTEM,
     profileId: input.profileId,
+    mood: input.answers.mood,
     content: [{ type: 'text', text: composeSparkText(input.answers, input.sourceText) }],
   })
 }

@@ -138,7 +138,10 @@ export const SERVICE_MANIFEST: EntityManifest = {
     { path: 'images', label: 'Photos', kind: 'images', section: 'photos', placement: 'spark', veraDrafts: false, read: (d) => photoCount(d.images) },
 
     // ── Details (prose: Vera can draft it, the Space owns it) ──
-    { path: 'description', label: 'Details', kind: 'longtext', section: 'details', placement: 'inline', prose: true, veraDrafts: true },
+    // The column is live and a member has no other surface to author these on, so leaving it
+    // undeclared would make tagging unreachable rather than merely unwizarded.
+    { path: 'tags', label: 'Tags', kind: 'tags', section: 'details', veraDrafts: true, omitWhenEmpty: true },
+    { path: 'description', label: 'Details', kind: 'longtext', section: 'details', placement: 'spark', prose: true, veraDrafts: true },
 
     // ── Price. The price MODEL comes first because it decides whether a number is even asked for:
     // 'fixed' and 'from' quote one, 'free' and 'contact' do not, and 'contact' routes the buyer to
