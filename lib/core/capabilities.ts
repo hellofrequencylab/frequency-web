@@ -21,6 +21,7 @@
 import { type CommunityRole, type WebRole, isStaff as webIsStaff, isJanitor as webIsJanitor, atLeastRole } from './roles'
 import { isPaid, type EntitlementTier } from './access-matrix'
 import { type ScopeType } from './stewardship'
+import { circleRoleFromStoredValue } from './circle-roles'
 
 export type Capability =
   // circle
@@ -30,6 +31,12 @@ export type Capability =
   | 'circle.moderate'
   | 'circle.assignTask'
   | 'circle.broadcast'
+  // Who may SET another member's circle role (ADR-1014). Deliberately the OWNER's own
+  // capability and not an Admin's: the owner ruling is "roles the owner can set up", and a
+  // rung that could re-rank its peers is not a rung. Held by whoever LEADS the circle (the
+  // host FK / a stewardship edge / platform staff / the parent hub's guide) and by nobody
+  // who holds it through `volunteer_role`.
+  | 'circle.manageRoles'
   // event
   | 'event.editSettings'
   // practice
@@ -267,15 +274,38 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
       // staff (admin/janitor), or the guide/mentor who manages its parent hub/nexus
       // (caller-computed to avoid granting every guide rights on every circle).
       const leads = isHost || isStaff || scope.viewerManagesParent === true
-      const activeMember = scope.membership?.status === 'active' || leads
+      const isActiveMembership = scope.membership?.status === 'active'
+      const activeMember = isActiveMembership || leads
+
+      // The circle's OWN role ladder (ADR-1014), read off the membership the caller loaded.
+      // Two conditions before a stored value grants anything, both fail-closed:
+      //   • the viewer must be SIGNED IN (`profileId`) — a scope is caller-supplied data,
+      //     and an anonymous viewer must never inherit somebody's row, and
+      //   • the membership must be ACTIVE — a pending, left, or removed membership keeps
+      //     its `volunteer_role` in the row, and a departed Admin is not an Admin.
+      // `circleRoleFromStoredValue` fails closed on every value it does not recognise, so an
+      // unknown or future `volunteer_role` reads as a plain Member and adds nothing here.
+      const scopedRole =
+        profileId && isActiveMembership
+          ? circleRoleFromStoredValue(scope.membership?.volunteerRole)
+          : 'member'
+
+      // Admin = the Host's full management set MINUS the two acts that are ownership itself
+      // (setting roles, and handing the circle on). Moderator = the room, not the settings.
+      const manages = leads || scopedRole === 'admin'
+      const moderates = manages || scopedRole === 'moderator'
 
       if (activeMember) caps.add('circle.post')
-      if (leads) {
+      if (moderates) caps.add('circle.moderate')
+      if (manages) {
         caps.add('circle.editSettings')
-        caps.add('circle.moderate')
         caps.add('circle.assignTask')
         caps.add('circle.broadcast')
       }
+      // Roles are the OWNER's to set. An Admin holds every management capability above and
+      // provably not this one, which is what keeps the ladder a ladder: `manages` is true for
+      // a `volunteer_role` Admin, `leads` never is.
+      if (leads) caps.add('circle.manageRoles')
 
       // Paid (Crew) active members can take on host-assigned tasks when any are open.
       // Task volunteering is a membership perk → gate on the TIER, not the role.

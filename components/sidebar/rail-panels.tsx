@@ -11,6 +11,7 @@ import {
   type SeriesFields,
 } from '@/lib/events/series'
 import { circleEventVisibilities } from '@/lib/events/circle-upcoming'
+import { DISCOVERABLE_CIRCLE_VISIBILITY, LINKABLE_CIRCLE_VISIBILITY } from '@/lib/circles/visibility'
 import { relativeTime } from '@/lib/utils'
 import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 import { Avatar } from '@/components/ui/avatar'
@@ -417,10 +418,14 @@ export async function WhoOnlinePanel({ profileId }: { profileId: string }) {
 // ── Nearby / popular circles to explore ───────────────────────────────────────
 export async function CirclesPanel({ circleIds }: { circleIds: string[] }) {
   const admin = createAdminClient()
+  // Admin client = no RLS, so the visibility filter is written by hand (ADR-1015). "Circles to
+  // explore" is a discovery rail: unlisted and private both drop out. This read had NO visibility
+  // filter at all before, so it was surfacing unlisted circles too.
   const { data } = await admin
     .from('circles')
     .select('id, name, slug, neighborhood, member_count')
     .eq('is_demo', false)
+    .in('visibility', [...DISCOVERABLE_CIRCLE_VISIBILITY])
     .order('member_count', { ascending: false })
     .limit(12)
   const rows = ((data ?? []) as { id: string; name: string; slug: string; neighborhood: string | null; member_count: number | null }[])
@@ -468,6 +473,7 @@ export async function NewCirclesPanel({ circleIds }: { circleIds: string[] }) {
     .select('id, name, slug, neighborhood, member_count, created_at')
     .eq('is_demo', false)
     .eq('status', 'active')
+    .in('visibility', [...DISCOVERABLE_CIRCLE_VISIBILITY])
     .not('created_at', 'is', null)
     .order('created_at', { ascending: false })
     .limit(12)
@@ -486,6 +492,7 @@ export async function NewCirclesPanel({ circleIds }: { circleIds: string[] }) {
       .select('id, name, slug, neighborhood, member_count, created_at')
       .eq('is_demo', false)
       .eq('status', 'active')
+      .in('visibility', [...DISCOVERABLE_CIRCLE_VISIBILITY])
       .order('member_count', { ascending: false })
       .limit(12)
     rows = ((popular ?? []) as CircleRow[]).filter((c) => !circleIds.includes(c.id)).slice(0, 4)
@@ -609,7 +616,8 @@ export async function PulsePanel() {
   const weekAhead = new Date(nowDate.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
   const [membersRes, circlesRes, eventsRes] = await Promise.all([
     admin.from('profiles').select('id', { count: 'exact', head: true }).eq('is_active', true).eq('is_system', false),
-    admin.from('circles').select('id', { count: 'exact', head: true }).eq('status', 'active').eq('is_demo', false),
+    admin.from('circles').select('id', { count: 'exact', head: true }).eq('status', 'active').eq('is_demo', false)
+      .in('visibility', [...LINKABLE_CIRCLE_VISIBILITY]),
     admin.from('events').select('id', { count: 'exact', head: true }).eq('is_cancelled', false).gte('starts_at', now).lte('starts_at', weekAhead),
   ])
   const members = membersRes.count ?? 0

@@ -14,6 +14,7 @@ import type { StarterSeed } from '@/lib/circles/starter-projection'
 import type { CircleCardData } from '@/components/circles/circle-card'
 import type { CircleBase } from '@/lib/types/circle'
 import type { PillarSlug } from '@/lib/pillars'
+import { asCircleVisibility, isDiscoverableCircle } from '@/lib/circles/visibility'
 
 // Coded defaults for the operator-editable content (ADR-180) — shared by the page
 // header and the SEO metadata (generateMetadata).
@@ -46,6 +47,7 @@ type CircleRow = CircleBase & {
   featured_at: string | null
   is_demo: boolean
   unlisted: boolean
+  visibility: string | null
   topical_channel_id: string | null
   channel: { name: string; pillar_id: string | null } | null
   hub: {
@@ -196,7 +198,7 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
         .from('circles')
         .select(
           `id, name, slug, about, type, member_count, member_cap, status, created_at,
-           latitude, longitude, neighborhood, image_url, is_demo, unlisted, featured_at, topical_channel_id,
+           latitude, longitude, neighborhood, image_url, is_demo, unlisted, visibility, featured_at, topical_channel_id,
            channel:topical_channels!topical_channel_id ( name, pillar_id ),
            hub:hubs!hub_id (
              id, name, slug,
@@ -232,11 +234,19 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
       (await templatesEnabled()) ? getActiveTemplates() : [])(),
   ])
 
-  // Unlisted circles are hidden from every discovery surface below (cards, map, browse rails,
-  // counts) — but a member still sees their OWN unlisted circle in the "my circles" band, and the
-  // detail page always resolves by direct link. So drop unlisted circles up front unless the viewer
-  // belongs to one; everything downstream (facets, map, rollups) then reads the already-filtered set.
-  const all = rawCircles.filter((c) => !c.unlisted || myCircleIds.includes(c.id))
+  // Non-public circles are hidden from every discovery surface below (cards, map, browse rails,
+  // counts) — but a member still sees their OWN unlisted or private circle in the "my circles"
+  // band. So drop them up front unless the viewer belongs to one; everything downstream (facets,
+  // map, rollups) then reads the already-filtered set.
+  //
+  // Reads `visibility` rather than the `unlisted` boolean (ADR-1015). The two agree today — the
+  // boolean is a derived mirror the database holds true — but the boolean is deprecated and gets
+  // dropped in the contract migration, and this filter must not need editing again when it does.
+  // The private half is belt-and-braces here: this page uses the SESSION client, so
+  // `circles_visibility_restrictive` has already removed any private circle the viewer cannot read.
+  const all = rawCircles.filter(
+    (c) => isDiscoverableCircle(asCircleVisibility(c.visibility)) || myCircleIds.includes(c.id),
+  )
   // Cap check reads the RAW fetch, not the post-filter set: dropping unlisted circles must not make
   // a truncated 500-row fetch look complete (else the "refine to see more" notice would hide).
   const hitFetchCap = rawCircles.length === CIRCLES_FETCH_LIMIT

@@ -5,8 +5,18 @@
 // `stewardships` table + `profiles.community_level` aren't in the generated types yet, so
 // the queries use the untyped-client cast (repo convention — see lib/personas.ts).
 //
-// FOUNDATION ONLY: nothing consumes these reads yet (getViewerHats / load-capabilities
-// still read the leader FKs + community_role). Reads flip in P1.6 (the unified resolver).
+// STATUS (corrected 2026-08-12 — this block used to read "FOUNDATION ONLY: nothing consumes
+// these reads yet … reads flip in P1.6"). P1.6 SHIPPED. `getStewardships` is called by
+// lib/core/load-capabilities.ts `currentViewer`, which turns the edges into the `leadsScope`
+// predicate the resolver ORs with the leader FK, and by `viewerEdgeLevel`, which widens the
+// hub/nexus parent walk (ADR-221). The stale note mattered: a reader taking it at face value
+// would conclude this table is inert and that a change here is free.
+//
+// WHAT THESE EDGES STILL DO NOT DO (ADR-1014). `leadsScope` is a BINARY — one active edge on
+// `circle:<id>` means full circle leadership. It cannot express a rung, so the circle's own
+// role ladder (Admin / Moderator / Member) lives on `memberships.volunteer_role` instead; see
+// lib/core/circle-roles.ts. There is still no WRITE path to this table in app code, only a
+// DELETE, so every edge today came from the ADR-218 backfill.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import {

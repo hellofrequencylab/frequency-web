@@ -322,7 +322,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
       .eq('id', code.circle_id)
       .maybeSingle()
     if (!circle) return unavailable
-    if (profileId) await joinCircle(code.circle_id, circle.slug).catch(() => {})
+    // `invited: true` — a QR code with a circle destination was minted by the Host or an operator
+    // for exactly this purpose, so scanning it IS the invite. It is the one caller that may open a
+    // private circle's join (ADR-1015); every other path goes through the default deny.
+    if (profileId) await joinCircle(code.circle_id, circle.slug, { invited: true }).catch(() => {})
     return withReferral(to(`/circles/${circle.slug}`))
   }
 

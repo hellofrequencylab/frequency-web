@@ -6,6 +6,7 @@ import {
   FOUNDING_PLACE,
 } from '@/lib/site'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { LINKABLE_CIRCLE_VISIBILITY } from '@/lib/circles/visibility'
 import { funnelSlugs, getFunnelConfig } from '@/lib/marketing/funnel-config'
 import { pricingLadderSummary, offeringLadderLabel } from '@/lib/pricing/pricing-page'
 import { getPricingValues } from '@/lib/pricing/settings'
@@ -127,8 +128,11 @@ async function statsSection(): Promise<string[]> {
     ),
     // Live Circles: forming or active (not archived/inactive/draft), excluding demo.
     headCount(() =>
+      // Excludes PRIVATE circles (ADR-1015): a public stat block must not move when somebody
+      // creates a private room. Unlisted still counts, matching public_active_circle_count.
       admin.from('circles').select('*', { head: true, count: 'exact' })
-        .in('status', ['forming', 'active']).eq('is_demo', false),
+        .in('status', ['forming', 'active']).eq('is_demo', false)
+        .in('visibility', [...LINKABLE_CIRCLE_VISIBILITY]),
     ),
     // Practices in the public library, excluding demo seeds.
     headCount(() =>

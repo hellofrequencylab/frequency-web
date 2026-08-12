@@ -1,5 +1,6 @@
 import { Users, CircleDot } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { LINKABLE_CIRCLE_VISIBILITY } from '@/lib/circles/visibility'
 
 // A page-layout module (ADR-270): community totals at a glance. Self-fetching RSC; returns
 // null when there's nothing to show. Aggregate counts only — no individual/private data.
@@ -7,7 +8,9 @@ export async function CommunityPulse() {
   const db = createAdminClient()
   const [{ count: members }, { count: circles }] = await Promise.all([
     db.from('profiles').select('id', { count: 'exact', head: true }),
-    db.from('circles').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+    // Private circles are excluded from the public pulse count (ADR-1015).
+    db.from('circles').select('id', { count: 'exact', head: true }).eq('status', 'active')
+      .in('visibility', [...LINKABLE_CIRCLE_VISIBILITY]),
   ])
   if (!members && !circles) return null
 

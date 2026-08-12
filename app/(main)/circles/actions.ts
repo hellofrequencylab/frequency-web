@@ -4,7 +4,8 @@ import { randomBytes } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getMyProfileId } from '@/lib/auth'
+import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
+import { asCircleVisibility } from '@/lib/circles/visibility'
 import { processGamificationEvent } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
 import { sendInviteEmail } from '@/lib/email'
@@ -40,20 +41,65 @@ export async function suggestCircle(
   return ai ?? fallbackCircleSuggestion(interest, safeType)
 }
 
-export async function joinCircle(circleId: string, circleSlug: string): Promise<ActionResult> {
+/**
+ * Join a circle.
+ *
+ * 🔴 THIS ACTION IS A SERVICE-ROLE PATH BY DESIGN, so RLS guards none of it (ADR-1015). The admin
+ * client is used because the `memberships` insert policy only lets crew+ self-join, while an
+ * ordinary member joining a circle is the single most common thing in the product — so every rule
+ * that would have been a policy has to be written here instead. Capacity was already such a rule.
+ * Visibility is now another: a PRIVATE circle is invite-only, and this is the one place that can
+ * enforce it, because the RESTRICTIVE read policy is invisible to the service role.
+ *
+ * `invited` is passed ONLY by a caller that actually holds an invite — the QR route (`/q/[slug]`,
+ * where the code was minted by the Host) is the one such caller today. The invite-link redemption
+ * path (`joinViaInviteLink`) writes its own membership row and never comes through here. Default
+ * `false`, so a new call site cannot acquire the right by forgetting the argument.
+ */
+export async function joinCircle(
+  circleId: string,
+  circleSlug: string,
+  opts?: { invited?: boolean },
+): Promise<ActionResult> {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return fail('Sign in to join a circle.')
 
   const admin = createAdminClient()
 
-  // Check circle capacity
-  const { data: circle } = await admin
+  // Check circle capacity + visibility. `circles.visibility` is newer than the generated types,
+  // so the row is read through the sanctioned untyped seam (ADR-246) and narrowed below.
+  const { data: circleRaw } = await (admin as unknown as {
+    from: (t: string) => {
+      select: (c: string) => {
+        eq: (col: string, val: string) => { maybeSingle: () => Promise<{ data: Record<string, unknown> | null }> }
+      }
+    }
+  })
     .from('circles')
-    .select('member_count, member_cap, hub_id')
+    .select('member_count, member_cap, hub_id, visibility, space_id, host_id')
     .eq('id', circleId)
     .maybeSingle()
 
-  if (!circle) return fail('This circle is no longer available.')
+  if (!circleRaw) return fail('This circle is no longer available.')
+  const circle = circleRaw as unknown as { member_count: number; member_cap: number; hub_id: string | null }
+
+  // THE PRIVACY GATE. A private circle is not self-serve: without an invite, an existing
+  // membership, or authority over it, the answer is the same one a non-existent circle gets, so
+  // the refusal never confirms that this circle is real.
+  const row = circleRaw as { visibility?: unknown; space_id?: string | null; host_id?: string | null }
+  if (asCircleVisibility(row.visibility) === 'private' && opts?.invited !== true) {
+    const alreadyIn = await admin
+      .from('memberships')
+      .select('id')
+      .eq('circle_id', circleId)
+      .eq('profile_id', myProfileId)
+      .eq('status', 'active')
+      .maybeSingle()
+    if (!alreadyIn.data && (row.host_id ?? null) !== myProfileId && !(await isPlatformStaff())) {
+      return fail('This circle is no longer available.')
+    }
+  }
+
   if (circle.member_count >= circle.member_cap) return fail('This circle is full.') // full
 
   // Nexus capacity only applies when the circle belongs to a hub → nexus. A

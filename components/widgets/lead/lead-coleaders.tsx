@@ -3,7 +3,9 @@ import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SectionHeader } from '@/components/ui/section-header'
 import { PersonCard } from '@/components/cards/person-card'
-import { RoleBadge, type CommunityRole } from '@/lib/community-roles'
+import { type CommunityRole } from '@/lib/community-roles'
+import { CircleRoleChip } from '@/components/circles/circle-role-chip'
+import { circleRoleFromStoredValue } from '@/lib/core/circle-roles'
 import { getLedCircles } from '@/app/(main)/lead/load-led-circles'
 
 // Leadership dashboard layout module (ADR-270): "Your co-leaders" — the leaderful, not
@@ -24,9 +26,16 @@ import { getLedCircles } from '@/app/(main)/lead/load-led-circles'
 // it shares the one read with the other lead blocks. The block self-hides (returns null) when none
 // of the leader's circles have any co-leaders — there is nothing to manage, so there is no block.
 
-// The volunteer_role values that count as helping LEAD a circle. The operational staff axis
-// (admin/janitor) is not in-circle leadership, so it is excluded; a null role is a plain member.
-const LEADERSHIP_ROLES = new Set<CommunityRole>(['host', 'crew', 'guide', 'mentor'])
+// Who counts as helping LEAD a circle. This USED to be the set {host, crew, guide, mentor}, on
+// the reasoning that any non-null volunteer_role marks a leader. That held while the column
+// granted nothing. Since ADR-1014 it grants specific capabilities, and only two of its values
+// do: 'guide' (the circle's Admin) and 'host' (its Moderator). 'crew' and 'mentor' resolve to a
+// plain Member in `circleRoleFromStoredValue` and can moderate nothing, so keeping them here
+// would list people as co-leaders who hold no authority in the circle at all.
+function circleLeadershipRung(value: CommunityRole | null): 'admin' | 'moderator' | null {
+  const rung = circleRoleFromStoredValue(value)
+  return rung === 'member' ? null : rung
+}
 
 type CoLeaderRow = {
   volunteer_role: CommunityRole | null
@@ -65,7 +74,7 @@ export async function LeadCoLeaders(): Promise<React.ReactElement | null> {
   for (const row of rows) {
     if (!row.profile) continue
     if (row.profile.id === me.id) continue
-    if (!row.volunteer_role || !LEADERSHIP_ROLES.has(row.volunteer_role)) continue
+    if (!circleLeadershipRung(row.volunteer_role)) continue
     const list = byCircle.get(row.circle_id) ?? []
     list.push(row)
     byCircle.set(row.circle_id, list)
@@ -99,13 +108,14 @@ export async function LeadCoLeaders(): Promise<React.ReactElement | null> {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {coLeaders.map((row) => {
                   const p = row.profile!
+                  const rung = circleLeadershipRung(row.volunteer_role)
                   return (
                     <PersonCard
                       key={`${circle.id}:${p.id}`}
                       handle={p.handle}
                       displayName={p.display_name}
                       avatarUrl={p.avatar_url}
-                      meta={row.volunteer_role && <RoleBadge role={row.volunteer_role} />}
+                      meta={rung && <CircleRoleChip role={rung} />}
                     />
                   )
                 })}
@@ -115,8 +125,8 @@ export async function LeadCoLeaders(): Promise<React.ReactElement | null> {
         })}
       </div>
       <p className="mt-3 text-body-sm text-muted">
-        Roles and handoff live on each circle. Open one and use the Settings control to add a
-        co-leader or pass the lead along.
+        Roles live on each circle. Open one, go to Members, and set anyone to Admin or Moderator
+        from their card.
       </p>
     </section>
   )

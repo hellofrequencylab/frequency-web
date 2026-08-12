@@ -29,9 +29,15 @@ export interface CircleTabFacts {
  * The tabs a Circle offers, in order. EMPTY means "render no strip": the circle has not crossed
  * ADR-089's threshold and reads as a single page.
  *
- * Home and Members are the two tabs with real content today. Chat and a leaderboard are later
- * phases and are deliberately absent — a tab pointing at a surface that does not exist is worse
- * than no tab.
+ * Home, Members and Leaderboard are the three tabs with real content today. Chat is a later phase
+ * and is deliberately absent — a tab pointing at a surface that does not exist is worse than no tab.
+ *
+ * THE LEADERBOARD TAB RIDES THE SAME THRESHOLD as the strip itself, and does not get a higher one
+ * of its own. It leads with the circle's SHARED total, which is real content at any size, and its
+ * own ~6-contributor gate (lib/quest/effort.ts) decides whether a list of individuals appears
+ * beneath that. So the small circle this guardrail is about gets the shared bar and a straight
+ * answer about why there is no list yet, rather than a tab that vanishes and leaves the question
+ * unasked. One rule at the strip, one rule inside the page.
  */
 export function circleTabs(facts: CircleTabFacts): UnderlineTabLink[] {
   if (!facts.slug) return []
@@ -42,5 +48,8 @@ export function circleTabs(facts: CircleTabFacts): UnderlineTabLink[] {
     // The count IS the affordance: it tells a visitor whether the roster is worth a click before
     // they spend one, which matters most on exactly the small circles this guardrail is about.
     { href: `${base}/members`, label: 'Members', count: facts.memberCount },
+    // No count here on purpose. A number beside "Leaderboard" would be read as a score or a
+    // standing before the page had a chance to explain that there is neither.
+    { href: `${base}/leaderboard`, label: 'Leaderboard' },
   ]
 }

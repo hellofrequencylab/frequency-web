@@ -13,6 +13,8 @@
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadRootSpaceId } from '@/lib/spaces/store'
+import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
+import { asCircleVisibility, canViewCircle } from './visibility'
 import type { CircleDetail, MemberRow } from './detail-types'
 
 /** A circle as the by-space read returns it (the columns the community module needs). */
@@ -97,6 +99,74 @@ export async function listCirclesHostedBy(profileId: string, limit = 50): Promis
   }
 }
 
+// ── THE PRIVATE-CIRCLE VIEWER GATE (ADR-1015) ───────────────────────────────────────────────────
+
+/**
+ * May the CURRENT caller read this PRIVATE circle? The app-layer twin of `private.can_view_circle`,
+ * needed because every read in this module goes through the admin client and therefore never sees
+ * the RESTRICTIVE policy that answers the same question at the database.
+ *
+ * Arm for arm identical to the SQL function, in the same order, so a reader can diff the two:
+ * active member → host → steward of the owning Space → platform staff. FAIL-CLOSED: any error
+ * reads as "no", so a hiccup hides a private circle rather than publishing one.
+ *
+ * Only ever called for a circle already known to be private, so the cost lands on the rare path.
+ */
+async function viewerMayReadPrivateCircle(
+  circleId: string,
+  spaceId: string | null,
+  hostId: string | null,
+): Promise<boolean> {
+  try {
+    const viewerProfileId = await getMyProfileId()
+    if (!viewerProfileId) return false
+
+    const admin = createAdminClient()
+    const [membership, staff] = await Promise.all([
+      admin
+        .from('memberships')
+        .select('id')
+        .eq('circle_id', circleId)
+        .eq('profile_id', viewerProfileId)
+        .eq('status', 'active')
+        .maybeSingle(),
+      isPlatformStaff(),
+    ])
+
+    // A steward of the owning Space: its owner, or an active editor/moderator/admin. Mirrors
+    // `private.can_write_space_content` — someone who can move or delete the Circle can read it.
+    // For a PERSONAL circle the owning Space is ROOT, whose owner_profile_id is unset, so this arm
+    // is false and only the staff arm can open it. That asymmetry is the whole reason the DB
+    // policy could not be built on the space predicate.
+    let isSpaceSteward = false
+    if (spaceId) {
+      const [owned, seat] = await Promise.all([
+        admin.from('spaces').select('id').eq('id', spaceId).eq('owner_profile_id', viewerProfileId).maybeSingle(),
+        admin
+          .from('space_members')
+          .select('role')
+          .eq('space_id', spaceId)
+          .eq('profile_id', viewerProfileId)
+          .eq('status', 'active')
+          .maybeSingle(),
+      ])
+      const role = (seat.data as { role?: string } | null)?.role ?? null
+      isSpaceSteward = !!owned.data || role === 'editor' || role === 'moderator' || role === 'admin'
+    }
+
+    return canViewCircle({
+      visibility: 'private',
+      hostId,
+      viewerProfileId,
+      isMember: !!membership.data,
+      isSpaceSteward,
+      isPlatformStaff: staff,
+    })
+  } catch {
+    return false
+  }
+}
+
 // ── THE CIRCLE DETAIL SHELL READ (the tabbed detail route, PAGE-FRAMEWORK §3) ───────────────────
 
 /** Everything the circle detail SHELL and every tab under it open on: the entity, the raw theme
@@ -122,6 +192,23 @@ export interface CircleShell {
  * Archived circles resolve to null (the caller 404s), matching the filter the page has always
  * applied. FAIL-SAFE to null on any read error, so a hiccup reads as "not found" rather than a
  * half-painted page.
+ *
+ * 🔴 PRIVACY IS ENFORCED HERE, NOT IN THE ROUTE (ADR-1015). This read uses the ADMIN client, which
+ * holds BYPASSRLS — `circles_visibility_restrictive` is completely invisible to it. So the whole
+ * circle detail surface (the shell layout, the Home tab, the Members tab, every tab beneath) would
+ * render a PRIVATE circle to a stranger if the gate lived only in the database. Putting it in this
+ * function rather than in the layout is deliberate: the layout is one of four callers, and a fifth
+ * would arrive ungated. A viewer who may not read the circle gets `null`, which every caller
+ * already turns into a 404 — the same answer a non-existent slug gets, so the 404 does not confirm
+ * that the circle exists.
+ *
+ * 🔴 THEREFORE VIEWER-SCOPED, and never `unstable_cache`-able. React `cache()` is per-request, so
+ * one viewer's shell can never be served to another. A cross-request cache keyed on the slug alone
+ * would hand a private circle to the next visitor — cache poisoning, not a performance trade
+ * (the same rule `lib/people/associations.ts` tier B carries, for the same reason).
+ *
+ * The gate costs NOTHING on the common path: `visibility <> 'private'` short-circuits before any
+ * viewer read is issued, so a public circle is exactly as many round trips as it was.
  */
 export const loadCircleShell = cache(async (slug: string): Promise<CircleShell | null> => {
   if (!slug) return null
@@ -131,7 +218,7 @@ export const loadCircleShell = cache(async (slug: string): Promise<CircleShell |
       .from('circles')
       .select(
         `id, name, slug, about, image_url, type, member_count, member_cap, status, is_demo, resonance_public,
-         latitude, longitude, neighborhood, city, sidebar_order, theme,
+         latitude, longitude, neighborhood, city, sidebar_order, theme, visibility, space_id, host_id,
          host:profiles!host_id ( id, display_name, handle, avatar_url ),
          hub:hubs!hub_id (
            id, name, slug,
@@ -148,6 +235,13 @@ export const loadCircleShell = cache(async (slug: string): Promise<CircleShell |
       .neq('status', 'archived')
       .maybeSingle()
     if (!rawCircle) return null
+
+    // THE PRIVACY GATE (see the header). Reached only for a private circle.
+    const raw = rawCircle as unknown as { id: string; visibility?: unknown; space_id?: string | null; host_id?: string | null }
+    if (asCircleVisibility(raw.visibility) === 'private') {
+      const allowed = await viewerMayReadPrivateCircle(raw.id, raw.space_id ?? null, raw.host_id ?? null)
+      if (!allowed) return null
+    }
 
     const circle = rawCircle as unknown as CircleDetail
     const { data: rawMembers } = await admin
