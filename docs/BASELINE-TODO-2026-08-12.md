@@ -226,7 +226,29 @@ After the named fixes the build lands near **6.7 GB**, of which ~1.5 GB is merge
 
 ## 4. Correctness and product landmines
 
-### B-1 · `graduateBeta()` is unreachable, so the referral contest prizes can never fire ⚠️🔴 · **M** — *highest-severity non-critical-path item*
+### B-1 · `graduateBeta()` is unreachable, so the referral contest prizes can never fire ✅ **CLOSED — owner ruling, 2026-08-12: the promise came down, not the mechanism up**
+
+> **Resolution (supersedes the "Decide: (a)/(b)" below, which is kept for the record).** Neither option
+> was taken. The beta program is over: `billing_live` has been on for three weeks, and the contest board
+> was empty (0 referrals, 0 founding grants), so no member was owed anything. Rather than wire a payout
+> path for a finished program, the owner ruled that **the page may only claim what the code does**.
+>
+> | What | State |
+> |---|---|
+> | `lib/beta/graduation.ts` (`graduateBeta`, `GRADUATE_CONFIRM`) | 🔴 deleted |
+> | `awardReferralWinners` + `WINNER_PRIZE_MONTHS` (`lib/beta/referral-contest.ts`) | 🔴 deleted, with the podium test assertions |
+> | `/referral` prize copy ("the top referrers win free membership") | 🔴 removed; the page now states the Zaps it actually pays |
+> | Referral + Circle-starter scoring, Zaps, leaderboard | ✅ unchanged and live |
+>
+> ⚠️ **One promise is still standing and needs its own ruling:** `/referral` still offers
+> **Founding-Member perks at 3 activated referrals** (`FOUNDING_PERK_MIN_REFERRALS`). Its only grant
+> path was the `reward_kind: 'founding_perk'` insert inside the deleted `awardReferralWinners`;
+> `founding_perk` now has zero consumers repo-wide, and `grantFoundingStatus()` serves *reserved*
+> founders (beta onboarding + the Stripe webhook), never referrers. The beta contest emails
+> (`lib/beta/email-templates.ts:118,128`, `lib/beta/launch-emails.ts:246,270`) repeat it. Same defect
+> class as the prize, left in place pending the owner's call.
+
+*Original finding, for the record:*
 
 `lib/beta/graduation.ts:33` exports `graduateBeta(confirm)`. A repo-wide grep for `graduateBeta|GRADUATE_CONFIRM` outside that file returns **only prose** (`referral-contest.ts:458,470`, `founding/status.ts:12,312`, `beta/audit.ts:18`). No route, action, admin UI or cron imports the module. `awardReferralWinners` (`lib/beta/referral-contest.ts:473`) has exactly one caller repo-wide — `graduation.ts:68` — so it is transitively unreachable.
 

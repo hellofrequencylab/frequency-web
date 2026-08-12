@@ -1,7 +1,8 @@
 'use server'
 
 // Server actions for the Poster Events capture UI (the client islands in
-// app/(main)/events/scan + /events/drafts call these). Mirrors the card-scan
+// app/(main)/events/scan, the per-event editor at /events/drafts/<id>, and the
+// captured-event rows on /drafts call these). Mirrors the card-scan
 // actions (app/(main)/connections/actions.ts): the client uploads downscaled
 // images to the PRIVATE network-contacts bucket under its own auth-user folder,
 // the server gates AI on availability + budget, runs ONE vision call, and every
@@ -297,7 +298,7 @@ export async function saveDraft(input: DraftFormInput): Promise<{ id: string } |
   })
   if (!created) return { error: 'Could not save the draft. Try again.' }
 
-  revalidatePath('/events/drafts')
+  revalidatePath('/drafts')
   return { id: created.id }
 }
 
@@ -322,7 +323,7 @@ export async function updateDraft(
   })
   if (!ok) return { error: 'Could not save. The draft may already be published.' }
 
-  revalidatePath('/events/drafts')
+  revalidatePath('/drafts')
   revalidatePath(`/events/drafts/${id}`)
   return { ok: true }
 }
@@ -355,7 +356,7 @@ export async function publishDraft(id: string, ownership: DraftOwnership): Promi
   if (!res) return { ok: false, error: 'Could not publish. The draft may already be live.' }
 
   revalidatePath('/events')
-  revalidatePath('/events/drafts')
+  revalidatePath('/drafts')
   revalidatePath(`/events/drafts/${id}`)
   if (res.slug) revalidatePath(`/events/${res.slug}`)
   return {
@@ -388,6 +389,6 @@ export async function deleteDraft(id: string): Promise<{ ok: true } | { error: s
   if (draft.posterPath) void removeObject(draft.posterPath)
   for (const p of detailsMediaPaths(draft.details as EventDetailsWithMedia)) void removeObject(p)
 
-  revalidatePath('/events/drafts')
+  revalidatePath('/drafts')
   return { ok: true }
 }

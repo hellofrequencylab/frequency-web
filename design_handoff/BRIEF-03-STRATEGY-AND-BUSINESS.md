@@ -104,9 +104,10 @@ physical reality neither has (brief 02 §5).
 |---|---|
 | Now (free beta) | "Summer of Frequency" — everyone gets Crew free, all billing CTAs preview-only |
 | Sept 1, 2026 | **Graduation:** billing turns on, founding pricing ends. Beta runs to this date |
-| Pre-graduation build order | Graduation prompts → invite-gate waves → metered clock → referral/Circle-starter prizes (1yr / 6mo / 3mo free paid membership) → Founding Business concierge |
+| Pre-graduation build order | Graduation prompts → invite-gate waves → metered clock → referral/Circle-starter scoring (Zaps + leaderboard) → Founding Business concierge |
 | Held phases | Real money verticals (The Collective first), white-label micro-sites, native mobile apps |
 
 Design-relevant: campaign assets for the graduation arc (founding member framing,
-"here while it's still wet paint," charter badges, referral prizes) are the next
-marketing wave.
+"here while it's still wet paint," charter badges) are the next marketing wave.
+The free-membership referral prize was retired with the beta program (owner ruling,
+2026-08-12), so no asset may offer it: referrals pay Zaps and a leaderboard place.

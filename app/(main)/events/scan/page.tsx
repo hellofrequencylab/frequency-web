@@ -10,6 +10,8 @@ export const dynamic = 'force-dynamic'
 
 // Poster capture — the entry to the Poster Events flow: photograph a town
 // poster, ONE vision call turns it into an event draft, the editor opens next.
+// The header link goes to /drafts, the ONE Drafts surface (owner ruling 2026-08-12,
+// docs/NAMING.md): a captured event is a row kind there, beside the wizard drafts.
 // Focus chrome (lib/layout/page-chrome.ts); the heavy lifting is the client
 // island (downscale, deskew, crops all happen on-device).
 export default async function ScanPosterPage() {
@@ -31,8 +33,8 @@ export default async function ScanPosterPage() {
       description="Snap a poster you spot around town. Vera reads it and builds an event draft you can tidy and post."
       back={{ href: '/events', label: 'Events' }}
       actions={
-        <Link href="/events/drafts" className="text-body-sm font-medium text-primary-strong hover:underline">
-          My drafts
+        <Link href="/drafts" className="text-body-sm font-medium text-primary-strong hover:underline">
+          Drafts
         </Link>
       }
     >
