@@ -3,7 +3,7 @@ title: How to start a Circle
 description: Pick one thing, set a standing time, recruit a co-host, and run a simple first night. You do not build a community. You host one Circle, and we hand you the format.
 category: leading
 order: 1
-updated: 2026-07-27
+updated: 2026-08-12
 audience: host
 role: host
 featureKeys: [circles, events]
@@ -140,6 +140,29 @@ your name on them, and the people you invite can RSVP without an account. Text i
 to a few friends, one at a time, and ask them plainly to come. Guests who RSVP,
 show up, or join land in your Contacts and earn you **Zaps** as a Connector, so the
 work of filling the room counts. See [Events & RSVPs](/help/groups/events).
+
+### Who gets to find it, and who gets to come in
+
+Two separate settings, both under **Settings** on your Circle, and they do
+different jobs. Getting them mixed up is the usual reason a Circle is quieter than
+its Host expected.
+
+**Unlisted** decides whether people can FIND it. Leave it off and your Circle shows
+up in the directory, on the map, and in search. Turn it on and it disappears from
+all three, but anyone you send the link to can still open it.
+
+**Who can join** decides whether people can COME IN.
+
+- **Anyone can join** is the default, and it is the right one while you are filling
+  the room.
+- **Members only** means you add people yourself. Nobody else sees inside.
+- **By invite only** means a link or a QR code is the only way in.
+- Circles a Space owns get two more: **Space members only**, and **Included with a
+  membership** if that Space sells one.
+
+The useful pairing most Hosts miss: leave the Circle **listed** and set who can
+join to **Members only**. Strangers find it by name, read what it is about, and ask
+to come. You keep the room shut until you say otherwise.
 
 ### Does it have to meet in person?
 

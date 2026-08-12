@@ -3,7 +3,7 @@ title: What is a Circle?
 description: A Circle is a small local group built around one thing you practice, with a standing time to meet. It is the basic unit of Frequency.
 category: getting-started
 order: 5
-updated: 2026-06-24
+updated: 2026-08-12
 audience: member
 featureKeys: [circles, community]
 status: published
@@ -66,6 +66,23 @@ A **Host**: a member who volunteers to hold the standing time and keep the group
 going. Hosts are not appointed from above and the role is earned, never bought.
 Anyone can [start a Circle](/help/leading/how-to-start-a-circle) when they are
 ready.
+
+### Why can I see some Circles but not join them?
+
+Because finding a Circle and getting into one are two separate things, and a Host
+sets them separately.
+
+Some Circles are open, and you can join on the spot. Others you can see in the
+directory, read about, and see how many people are in, but the door is shut until
+the Host lets you in or you use an invite. A few are attached to a Space
+membership. The Circle will tell you which it is when you open it.
+
+A Circle you cannot see at all is one its Host has taken out of the directory. It
+still exists and its members still use it, you just reach it by a link somebody
+sends you.
+
+None of this is a judgement about you. A Host who keeps a Circle small is usually
+protecting the thing that makes it work.
 
 ### What if there is no Circle near me?
 
