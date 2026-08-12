@@ -10,10 +10,6 @@ begin;
 select plan(8);
 
 -- ── Fixture ──────────────────────────────────────────────────────────────────────────────────
-insert into public.entities (id, key, name) values
-  ('00000000-0000-4000-d200-000000000001', 'aud-labs', 'Aud Labs')
-on conflict do nothing;
-
 insert into public.profiles (id, display_name, handle, is_active) values
   ('00000000-0000-4000-b200-000000000001', 'Aud Owner',  'aud-owner',  true),
   ('00000000-0000-4000-b200-000000000002', 'Aud Staff',  'aud-staff',  true),
@@ -22,7 +18,8 @@ insert into public.profiles (id, display_name, handle, is_active) values
 
 insert into public.spaces (id, slug, name, type, entity_id, owner_profile_id, status, visibility, plan) values
   ('00000000-0000-4000-c200-000000000001', 'aud-space', 'Aud Space', 'business',
-   '00000000-0000-4000-d200-000000000001', '00000000-0000-4000-b200-000000000001',
+   (select id from public.entities where key = 'labs' limit 1),
+   '00000000-0000-4000-b200-000000000001',
    'active', 'network', 'business');
 
 -- The STAFF ladder: what the mode used to admit, and must still admit.
@@ -30,8 +27,16 @@ insert into public.space_members (space_id, profile_id, role, status) values
   ('00000000-0000-4000-c200-000000000001', '00000000-0000-4000-b200-000000000002', 'viewer', 'active');
 
 -- The PAYING member: what the label always promised and the mode never delivered.
-insert into public.space_memberships (space_id, member_profile_id, status) values
-  ('00000000-0000-4000-c200-000000000001', '00000000-0000-4000-b200-000000000003', 'active');
+-- `space_memberships.tier_id` is NOT NULL, so the membership needs a tier to belong to. The tier
+-- is deliberately UNLINKED (no circle_id): trg_membership_tier_circle_link returns early on a null
+-- circle_id, so this fixture cannot accidentally exercise the tier-link rules, which are
+-- circle_privacy.test.sql's subject rather than this file's.
+insert into public.space_membership_tiers (id, space_id, name, price_cents) values
+  ('00000000-0000-4000-f200-000000000001', '00000000-0000-4000-c200-000000000001', 'Aud Tier', 2900);
+
+insert into public.space_memberships (space_id, member_profile_id, tier_id, status) values
+  ('00000000-0000-4000-c200-000000000001', '00000000-0000-4000-b200-000000000003',
+   '00000000-0000-4000-f200-000000000001', 'active');
 
 insert into public.circles (id, name, slug, type, status, space_id, unlisted, access) values
   ('00000000-0000-4000-e200-000000000001', 'Aud Circle', 'aud-circle', 'online', 'active',
