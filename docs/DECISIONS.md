@@ -23064,3 +23064,64 @@ lockfile. `DEPLOY-SAFETY.md` §9 records the same shape from the other direction
 `fonts.gstatic.com` returning 404 — and reaches the same durable answer: **vendor it, or pin it.**
 The difference is that a font flake wastes a redeploy while this one silently produces a red required
 check on a PR that is fine.
+
+## ADR-1019: The browser read grants were never in the repo, and a fresh rebuild proved it (2026-08-12)
+
+**Status:** accepted · **Touches:** `supabase/migrations/20270228000000_state_the_browser_read_grants.sql`
+· **Found by:** `supabase/tests/circle_privacy.test.sql` (ADR-1015) on the first `db-tests` run that
+reached the suite (ADR-1018).
+
+### The finding
+
+Two true statements that should not both be true:
+
+| Question | Production | Fresh apply of `supabase/migrations/` |
+|---|---|---|
+| `set role anon; select count(*) from public.circles` | **4 rows** | 🔴 `permission denied for table circles` |
+
+`public.circles` was created by `20240102000000_hierarchy_v2.sql`, when Supabase's `ALTER DEFAULT
+PRIVILEGES IN SCHEMA public` still stamped `anon`/`authenticated` onto every new table. **The live
+grant is a side effect of the environment at creation time. No file in this repository grants it** —
+verified by grepping every migration, which turns up EXECUTE on four functions and nothing else.
+
+So the tree could not rebuild production, and nothing noticed for two and a half years, because
+until ADR-1015's suite there had never been a test that read a table as `anon` on a fresh database.
+
+### Why the grant, and not a change to the test
+
+The direct read is shipped behaviour. The permissive read policy on `circles` is `TO PUBLIC` and its
+base branch (`status <> archived and status <> draft`) does not reference the caller, so a signed-out
+visitor is *meant* to reach the table and be filtered by RLS — that is the design both RESTRICTIVE
+policies were written against. Routing the assertion through `public_circles()` instead would have
+turned the board green while leaving the rebuild broken, and deleted the only coverage of the path a
+real browser takes.
+
+### What was restated, and what deliberately was not
+
+`grant select` for `anon, authenticated` on **`circles`, `memberships`, `profiles`, `entities`** —
+every one of them a grant production already holds, so applying it changed nothing live.
+
+- **Not the write grants.** Production also carries ambient INSERT/UPDATE/DELETE for `anon` on these
+  tables from the same accident, held back by RLS alone. That is the posture [ADR-959](DECISIONS.md)
+  and `20270218000000_close_default_grants_on_internal_tables.sql` exist to retire. Restating them
+  would launder an accident into an intention.
+- **Not `spaces`.** It is the one table here without a plain table-level grant in production:
+  `20270217000000` revoked two columns from `anon`, and Postgres converts the table grant into
+  per-column grants when you do that. `grant select on table public.spaces` would hand
+  `stripe_customer_id` and `stripe_subscription_id` back to every visitor.
+
+### ⚠️ What is NOT established
+
+**Why** the fresh apply ends up without the grant when tables created by later migrations
+(`app_instances`, `contacts`) clearly do have it in the same run. The mechanism is unidentified, and
+the migration's header says so rather than inventing one. What is established is enough to act on:
+production has the grants, the repo grants none of them, and the fresh apply demonstrably lacks them
+for `circles`. Whoever identifies the mechanism should amend this ADR instead of deleting the note.
+
+### The rule
+
+This is [`DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md) §1 in the schema: **every gate measured the source
+tree; none measured a rebuild.** `check:migrations` compares repo filenames to ledger rows, which
+proves both sides ran the same *files* and nothing about whether those files can produce the same
+*database*. Only an actual fresh apply can answer that, which is what `db-tests` now does on every PR
+touching `supabase/`.
