@@ -111,13 +111,14 @@ export function LiveProfileGrid({
 
   // Merge one content field into the shared store (sparse: an empty value clears the key). Repaints the page
   // instantly and debounce-saves through the same action the rail arranger uses — persistence is unchanged.
+  //
+  // 🔴 This MUST go through patchContent, never applyContent with a bag rebuilt from `store.content`. That
+  // bag is a render snapshot, so two writes in the SAME tick both read the pre-edit value and the second one
+  // wins: the photo popup commits `image` then `alt`, and the alt write silently put the OLD photo back. The
+  // pick looked like it worked and the page never changed. patchContent folds each field over the store's
+  // freshest bag, so both land.
   const setField = (blockId: string, key: string, value: unknown) => {
-    if (!store) return
-    const props = { ...(store.content[blockId] ?? {}) }
-    const empty = value === undefined || value === '' || (Array.isArray(value) && value.length === 0)
-    if (empty) delete props[key]
-    else props[key] = value
-    store.applyContent(blockId, Object.keys(props).length ? props : undefined)
+    store?.patchContent(blockId, { [key]: value })
   }
 
   // Render each block, applying its STYLE frame here (client-side) so a background / spacing / alignment

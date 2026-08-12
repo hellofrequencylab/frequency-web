@@ -147,13 +147,13 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
     if (selectedId === id) setSelectedId(null)
   }
 
-  // Merge one content field against the freshest store bag (sparse: an empty value clears the key).
+  // Merge one content field against the freshest store bag (sparse: an empty value clears the key). It goes
+  // through patchContent, not applyContent: rebuilding the whole bag from the render-time `store.content`
+  // snapshot loses every field but the last when several land in the SAME tick — which is exactly what the
+  // product picker does (product / title / price / image / url, back to back) and what the photo popup does
+  // (image then alt). See the note in components/entity-blocks/live-profile-grid.tsx.
   const setField = (blockId: string, key: string, value: unknown) => {
-    const props = { ...(store.content[blockId] ?? {}) }
-    const empty = value === undefined || value === '' || (Array.isArray(value) && value.length === 0)
-    if (empty) delete props[key]
-    else props[key] = value
-    store.applyContent(blockId, Object.keys(props).length ? props : undefined)
+    store.patchContent(blockId, { [key]: value })
   }
 
   return (

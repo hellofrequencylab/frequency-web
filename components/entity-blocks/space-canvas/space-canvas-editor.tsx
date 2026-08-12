@@ -143,13 +143,12 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
   const layout: BuilderLayout = { rows: store.rows, hidden: store.hidden, content: store.content, style: store.style }
   const mutate = (next: BuilderLayout) => store.apply(next)
 
-  // Merge one content field against the freshest store bag (sparse: an empty value clears the key).
+  // Merge one content field against the freshest store bag (sparse: an empty value clears the key). It goes
+  // through patchContent, not applyContent: rebuilding the whole bag from the render-time `store.content`
+  // snapshot loses any field written earlier in the same tick, which is how the photo popup's `alt` write
+  // used to erase the photo the operator had just chosen (see live-profile-grid).
   const setField = (blockId: string, key: string, value: unknown) => {
-    const props = { ...(store.content[blockId] ?? {}) }
-    const empty = value === undefined || value === '' || (Array.isArray(value) && value.length === 0)
-    if (empty) delete props[key]
-    else props[key] = value
-    store.applyContent(blockId, Object.keys(props).length ? props : undefined)
+    store.patchContent(blockId, { [key]: value })
   }
 
   // ── Section (row) ops ──
