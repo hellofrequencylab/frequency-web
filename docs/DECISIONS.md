@@ -22066,3 +22066,106 @@ first open and shows a dimension-matched `Skeleton` with an `sr-only` status lin
 is `aria-hidden` and cannot announce itself. ⚠️ `BUDGET_GB` is still 13 against a measured 6.45 —
 ratcheting it down is available and wants its own reason. ⚠️ The largest remaining line is
 `libvips-cpp.so` at 1,440 MB (17.4 MB × 83 segment-inherited OG cards).
+
+## ADR-1009: A bundle seat is offered and accepted, never assigned (amends ADR-370)
+
+**Decision.** The Household / Circle bundle's post-purchase seat management is an **invite**: the
+owner offers a seat, the invitee accepts. `household_bundle_invites` holds one row per offer.
+[ADR-370](DECISIONS.md) specified the purchase and the seating; it did not say how a seat gets
+filled after checkout, and this is that answer.
+
+**Why an offer and not an assignment.** A seat writes `profiles.household_bundle_id` **and takes
+over the member's `membership_tier`**. That is someone else's account state, so it needs their
+agreement — the same reasoning [ADR-845](DECISIONS.md) applied to circle handoff, where a thing
+carrying members cannot be pushed onto a person who never agreed. The precedent was followed
+deliberately rather than re-derived.
+
+**It targets a profile id, not an email, and the two precedents disagree for good reasons.**
+`space_invites` targets an **email** because a Space teammate may not have an account yet and the
+invite *is* the acquisition path. `circle_transfer_offers` targets a **profile id** because only an
+existing member can accept. A bundle seat is a `profiles` column, and `public.profiles` carries no
+email at all — addresses live in `auth.users` — so an email-targeted invite would have to reach
+across schemas to resolve the very id it needs. `createBundleCheckout` already made the same call
+in the other direction by refusing a seat id that is not a real profile. ⚠️ The cost, stated
+plainly: **you cannot invite someone who has not signed up yet.** An email path is additive later.
+
+**🔴 The amendment that fixes a real bug.** ADR-370's `apply_bundle_seating_atomic` computed the
+roster from the Stripe metadata alone and unseated anyone absent from it. Correct while checkout
+was the only way to fill a seat; a **silent eviction** the moment an invite could fill one — the
+invitee accepts, the next renewal arrives carrying the same `seat_ids`, and unseats them. The live
+roster is now the **union** of the stamped list with whoever accepted an invite.
+
+Unioning the *accepted invites* rather than *whoever is currently seated* is the load-bearing
+detail: removing someone from the stamped seat list still unseats them exactly as before, because a
+checkout seat leaves no invite row behind. Only a seat somebody agreed to survives a renewal. All
+14 of the original pgTAP assertions pass unchanged, which is the evidence that the amendment added
+a case rather than changing one.
+
+**🔴 Acceptance must not advance `household_bundle_event_at`.** That column is the webhook's
+event-ordering guard: the seating function drops any Stripe event created at-or-before it. If
+accepting an invite pushed it to now, the real `customer.subscription.deleted` would arrive looking
+stale, get dropped, and **a cancelled bundle would stay seated with everyone on a paid tier for
+free**. Acceptance therefore runs through a *separate* function, `accept_bundle_invite_atomic`,
+rather than a flag on the existing one, so the two writes cannot be confused at a call site. Three
+tests fail if that changes, including one asserting no UPDATE in the module names that column.
+
+**Overselling is prevented in the database, not the UI.** A pending invite **holds** a seat:
+`create_bundle_invite_atomic` counts filled seats plus live pending invites against the purchased
+count, inside one transaction under the same per-bundle advisory lock the webhook takes, so two
+sends racing for the last seat cannot both win. Elapsed invites are swept to `expired` first, so an
+unanswered offer returns its seat after 14 days. The purchased terms moved onto `profiles`
+(`household_bundle_seats`, `household_bundle_tier`) because they previously lived **only** in Stripe
+metadata, where no in-app surface could read them without a round trip on a member's click.
+
+**Consequences.** ✅ Applied to production 2026-08-12; repo ⇄ ledger verified at **609** with both
+digests matching from two independent derivations. ✅ Service-role only, RLS enabled with no
+policies, verified against the catalog rather than assumed: `anon` and `authenticated` can neither
+read the table nor execute any of the three functions. ✅ Gated behind `billingLive()` AND
+`bundle_household_enabled`, both fail-safe false, so none of it is reachable yet. ⚠️ The seat
+picker is owner-driven only — there is no "request a seat" from the other side, and no email path.
+
+## ADR-1010: The `public/` glob is closed, and the fourth call site is the lesson
+
+**Decision.** The four `localImage()` helpers that read a placeholder out of `public/` by a
+**variable** path are replaced by seven named literal readers behind
+`coverPlaceholderDataUrl()` / `siteMarkDataUrl()` in `lib/og/local-image.ts`. Measured:
+**6.19 GB → 5.59 GB**, a **612 MB** cut, on two real builds.
+
+**The set was derived, not guessed.** `coverPlaceholderFor()` is a pure hash into a fixed
+`as const` array with no other return path, so the closed set is provably complete: 7 files,
+1,817,415 bytes. The map is typed `Record<CoverPlaceholderPath, …>` against a union exported from
+`cover-placeholder.ts`, so **adding a placeholder without adding its reader is now a type error**
+rather than a silent return to globbing.
+
+**🔴 There were FOUR call sites, and the scan said three.**
+`app/events/claim/[token]/opengraph-image.tsx:57` carried its own copy of the same helper. Its call
+site passes a literal — which makes no difference, because nft reads the **emitted chunk**, not the
+call site. That function was in the 62 carrying the glob, so fixing the three named files would
+have left the same `public/` prefix globbed and the measurement would barely have moved.
+
+This is the third time today a fan-out fix had a second door nobody listed: `components/ui/icon.tsx`
+for the icon collections ([ADR-1008](DECISIONS.md)), the `image-shrink` importers for HEIC, and now
+this. **The rule that generalises: find the doors by measuring the trace, never by reading the
+import list.** A grep finds what a human wrote; only the `.nft.json` set says what the build did.
+
+**The guard is a property, not a list.** `scripts/build-fanout.test.ts` now asserts that **no
+non-test module passes a non-literal to `join(process.cwd(), …)`** — depth-counted argument
+extraction with comment lines stripped, because the fixing modules quote the broken call in their
+own headers. A list of four files would go stale the moment someone writes a fifth.
+
+Proven non-vacuous against the pre-change trace, which is the only evidence that matters for a test
+like this:
+```
+× no function carries a file from public/ that nothing reads from disk
+    expected [ 'public/file.svg', …(22) ] to deeply equal []
+× no function carries more than a handful of public/ files
+    expected 69 to be less than or equal to 14
+```
+
+**Consequences.** ✅ `public/maplibre` and `public/icons` now reach **0** functions, down from 62
+each. ✅ The worst single function went from 69 traced `public/` files to 10. ✅ The claim card still
+renders a real photographic cover under 400 KB as JPEG — the assertion that exists because a 1.7 MB
+PNG was timing out in Apple Mail. ⚠️ `BUDGET_GB` is still **13** against a measured **5.59**, down
+from 16.73 before [ADR-1002](DECISIONS.md); ratcheting it down is now available and wants its own
+reason rather than being done in passing. ⚠️ The largest remaining line is unchanged and known:
+`libvips-cpp.so` at 1,440 MB (17.4 MB × 83 segment-inherited OG cards), 26% of the build.
