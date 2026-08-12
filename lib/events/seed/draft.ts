@@ -305,6 +305,12 @@ function moneyToCents(raw: string): number | null {
  * a ticket tier that was already dropped), so the caller can report it instead of writing a
  * new nested object out of thin air. PURE (mutates the draft it is handed).
  */
+const UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
+
+function isUnsafeObjectKey(key: string): boolean {
+  return UNSAFE_OBJECT_KEYS.has(key)
+}
+
 export function setDraftValue(draft: Record<string, unknown>, path: string, raw: string): boolean {
   const parts = segments(path)
   if (parts.length === 0) return false
@@ -318,6 +324,7 @@ export function setDraftValue(draft: Record<string, unknown>, path: string, raw:
 
   const container = cur as Record<string, unknown>
   const leaf = String(parts[parts.length - 1])
+  if (isUnsafeObjectKey(leaf)) return false
   const value = raw.trim()
 
   if (LIST_PATHS.has(path)) {
