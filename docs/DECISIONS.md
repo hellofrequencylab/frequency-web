@@ -21577,3 +21577,48 @@ wrapper, which `Avatar` places for it. ✅ Three hover states carrying the same 
 outlived the gate. ⚠️ The rail discs step 32px → 36px (`Avatar`'s `sm`, the documented compact-list
 step) and the comment disc 28px → 24px (`xs`, matching `post-replies.tsx`). Using the shared scale
 is the point; a caller-supplied box would have reintroduced the fork.
+
+## ADR-1001: The build cache grew bigger than the machine it builds on
+
+**Decision.** `experimental.turbopackFileSystemCacheForBuild` is pinned to `false` in
+`next.config.ts`. Turbopack keeps its dev cache; `next build` writes none.
+
+**Context.** On 2026-08-12 every production deploy started failing. The failure looked like a
+code failure and was not one: the build compiled clean in ~3 minutes, then sat in
+"Deploying outputs" for nineteen more and died. The build system report named it:
+
+```
+It's very likely that the build container ran out of disk space ("ENOSPC")
+  Output files:   873 MB
+  Node modules:   948 MB
+  1171 MB : /vercel/build_cache_init-a95jQU/buildcache.squashfs
+   132 MB : .next/cache/turbopack/v16.3.0-d73f5622/00000371.sst
+   125 MB : .next/cache/turbopack/v16.3.0-d73f5622/00000375.sst
+```
+
+Builds that took 1m54s the previous day were failing at 22m.
+
+**Root cause.** Next **16.3.0** flipped `turbopackFileSystemCacheForBuild` to default-`true`
+(see its own docs, `05-config/01-next-config-js/turbopackFileSystemCache.md` — the version
+history records the flip). Nothing in this repo asked for it. Turbopack then wrote its build
+graph to `.next/cache/turbopack`, which for an app this size reaches ~1.4GB in segments over
+100MB each. Vercel restores `.next/cache` into the container as a squashfs image, so each
+build carried ~1.2GB of restored cache *plus* ~950MB of node_modules *plus* ~870MB of output.
+That sum crossed the container's disk, and it crossed it at upload time, which is why the
+compile kept passing and the deploy kept failing.
+
+It is worth naming the shape of this, because it will happen again with some other default: a
+minor framework bump turned on a feature whose cost scales with the size of the app, and the
+first symptom was a red X on a deploy whose diff had nothing to do with it. The two red
+production rows that day (the Studio merge and the CodeQL fix) were bystanders.
+
+**Why off rather than bigger.** Enhanced Build machines would buy disk, and a warm Turbopack
+cache is genuinely fast. But a cold build here is ~3 minutes, which is not the bottleneck
+worth 1.2GB of container disk and a class of failure that reads as "your merge broke
+production". Correct and boring beats warm and fragile. Turn it back on only together with
+Enhanced Builds, and only after re-reading the folder sizes in the build system report.
+
+**Consequences.** Production builds start cold, costing a couple of minutes. `next dev` is
+untouched (`turbopackFileSystemCacheForDev` stays default-on), so local iteration is the same.
+Anyone whose local `.next/cache/turbopack` already grew can reclaim the disk with
+`rm -rf .next/cache/turbopack`.

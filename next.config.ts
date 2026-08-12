@@ -104,6 +104,22 @@ const nextConfig: NextConfig = {
     // full RSC payload, re-running the (main) layout's fetch wave. 30s lets the
     // router reuse a just-visited dynamic segment; static keeps the 5-min default.
     staleTimes: { dynamic: 30, static: 300 },
+    // Turbopack's build cache is OFF for `next build`, and must stay off.
+    //
+    // Next 16.3.0 flipped `turbopackFileSystemCacheForBuild` to default-true. It writes
+    // Turbopack's work to .next/cache/turbopack, which for this app grows to ~1.4GB (single
+    // .sst segments over 130MB each). Vercel restores .next/cache into the build container as
+    // a squashfs image, so every build then carried ~1.2GB of restored cache ON TOP of ~950MB
+    // of node_modules and ~870MB of output. On 2026-08-12 that crossed the container's disk:
+    // builds compiled fine in ~3min and then died with ENOSPC 19 minutes into "Deploying
+    // outputs", taking production deploys down with them. Builds that took 1m54s the day
+    // before were failing at 22m.
+    //
+    // The cache buys a warm start we never actually get value from at this size — the disk it
+    // costs is worth more than the minutes it saves. Turn it back on only alongside Enhanced
+    // Build machines (bigger disk), and re-check the folder sizes in the build system report.
+    // Docs: 05-config/01-next-config-js/turbopackFileSystemCache.md ("Build environments").
+    turbopackFileSystemCacheForBuild: false,
   },
   // Keep the wasm rasterizer (styled QR PNG export, lib/qr/raster.ts) external so the
   // bundler doesn't try to bundle its .wasm — it's loaded from node_modules at runtime.
