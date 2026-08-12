@@ -43,8 +43,8 @@ const ACCENT_BY_TYPE: Record<string, string> = {
 
 // Build-time assets under public/ are inlined through lib/og/local-image.ts (Satori needs bytes,
 // not a relative URL). ⚠️ NOT a `readFile` in this file: a path built from a variable is
-// unresolvable to @vercel/nft, which then globs the whole of public/ into all 50 functions under
-// this segment. Measured at 12.25 MB each before that module existed. See its header.
+// unresolvable to @vercel/nft, which then globs the whole of public/ into every function under
+// this segment — measured at 12.25 MB apiece, against 2.37 MB now. See that module's header.
 
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params

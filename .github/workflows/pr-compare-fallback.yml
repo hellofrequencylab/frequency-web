@@ -49,21 +49,37 @@ jobs:
     name: pr-compare fallback (docs-only PRs)
     runs-on: ubuntu-latest
     steps:
+      # Depth 1: the only repo files this job reads are e2e.yml and scripts/pixel-paths.mjs. The
+      # changed-file list comes from the API below rather than a `git diff`, so no history is
+      # needed. An earlier draft cloned the full history for that diff, which is a real cost to
+      # pay on every pull request for a job that usually posts nothing.
       - uses: actions/checkout@v4
         with:
-          # Need the base commit to diff against. Depth 0 is the simple correct answer for a repo
-          # this size; a shallow fetch plus merge-base arithmetic saves seconds and costs clarity.
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Decide whether e2e already owns this PR
         id: decide
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          base="${{ github.event.pull_request.base.sha }}"
-          head="${{ github.event.pull_request.head.sha }}"
 
-          # The PR's own changed files, which is exactly the set GitHub applies `paths:` to.
-          git diff --name-only "${base}...${head}" > /tmp/changed.txt
+          # The PR's own changed files — exactly the set GitHub applies `paths:` to. Paginated,
+          # because a large PR exceeds one page and a truncated list would silently look
+          # docs-only and post a green status over a pixel-moving change.
+          page=1
+          : > /tmp/changed.txt
+          while : ; do
+            body=$(curl -sS --fail-with-body \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files?per_page=100&page=${page}")
+            count=$(printf '%s' "$body" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(len(d)); [print(f["filename"]) for f in d]' | tee /tmp/page.txt | head -1)
+            tail -n +2 /tmp/page.txt >> /tmp/changed.txt
+            [ "$count" -lt 100 ] && break
+            page=$((page + 1))
+          done
+
           echo "Changed files in this pull request:"
           sed 's/^/  /' /tmp/changed.txt
 

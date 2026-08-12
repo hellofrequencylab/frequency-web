@@ -393,9 +393,13 @@ describe.skipIf(!HAS_BUILD)('the traced artifact agrees (needs a `pnpm build`)',
 
   it('no function carries more than a handful of public/ files', () => {
     // The blunt instrument, and the one that cannot be fooled by a rename: a glob shows up as a
-    // file COUNT no set of literal reads would produce. Measured before: 72 in the claim-link
-    // functions. The ceiling is the 5 fonts + 6 covers + the mark + hero.jpg, with a little room.
-    const worst = Math.max(...carried.map((c) => c.files.filter((f) => f.includes('/public/')).length))
+    // file COUNT no set of literal reads would produce. Measured before: 69 distinct files in the
+    // claim-link functions; after: 10 (3 faces + 6 covers + the mark). A trace can list the same
+    // file twice, so count what a function actually CARRIES. The ceiling is 5 fonts + 6 covers +
+    // the mark + hero.jpg, with a little room.
+    const worst = Math.max(
+      ...carried.map((c) => new Set(c.files.filter((f) => f.includes('/public/'))).size),
+    )
     expect(worst).toBeLessThanOrEqual(14)
   })
 })
