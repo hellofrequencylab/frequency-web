@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ArrowRight, Check, Wallet } from 'lucide-react'
@@ -11,6 +12,7 @@ import { resolveMemberPaymentState } from '@/lib/pricing/dunning'
 import { PastDueBanner } from '@/components/billing/past-due-banner'
 import { ManageBillingButton } from './manage-button'
 import { StartPayoutButton, ManagePayoutButton } from './payout-controls'
+import { BundleSeatsSection } from './bundle-seats-section'
 
 // The Plan and billing SECTION of the unified Settings page (DAWN 2 screen pass). This
 // is the server half that used to be app/(main)/settings/billing/page.tsx, unchanged in
@@ -155,6 +157,12 @@ export async function PlanSection({
           )}
         </div>
       )}
+
+      {/* Household bundle seats (ADR-370). Its own <Suspense> so the plan card never waits on the
+          seat roster, and it renders nothing at all while the bundle flag is off. */}
+      <Suspense fallback={null}>
+        <BundleSeatsSection />
+      </Suspense>
     </div>
   )
 }
