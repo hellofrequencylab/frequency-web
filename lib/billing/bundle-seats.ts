@@ -156,6 +156,13 @@ export interface BundleSeatingResult {
 export async function reconcileBundleSubscription(
   sub: Stripe.Subscription,
   eventCreated: number,
+  opts?: {
+    /** Force the terminal (empty the bundle) branch. The customer.subscription.deleted event IS the
+     *  cancellation, so it must never depend on reading `status` back off the payload: a deleted
+     *  subscription that arrived without one would otherwise be read as "no confirmed change" and
+     *  leave a household seated on a subscription that no longer exists. */
+    terminal?: boolean
+  },
 ): Promise<BundleSeatingResult> {
   if (!isBundleMetadata(sub.metadata)) return { handled: false }
 
@@ -167,7 +174,7 @@ export async function reconcileBundleSubscription(
     return { handled: true, applied: false, reason: 'no_owner_id' }
   }
 
-  const action = bundleSeatingAction(sub.status)
+  const action = opts?.terminal === true ? 'unseat' : bundleSeatingAction(sub.status)
   // incomplete / paused: no confirmed entitlement change. Leave the seats exactly as they are, and do
   // NOT advance the ordering stamp (that would make the real event that follows look stale).
   if (action === 'skip') return { handled: true, applied: false, reason: 'skipped' }

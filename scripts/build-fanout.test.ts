@@ -108,10 +108,11 @@ describe('the icon collections are reachable from a route handler, not from ever
   it('the client-side module stays light (nothing heavy may ride along with the picker)', () => {
     const client = FILES.find((f) => f.path === 'lib/loom/site-icons-client.ts')
     expect(client).toBeDefined()
-    expect(client!.src).not.toContain('@iconify')
-    // No imports at all today. If that ever changes, whatever is added is copied into every
-    // function that can open the picker.
-    expect(/^\s*import\s/m.test(client!.src)).toBe(false)
+    // NO imports at all today, which is the strongest form of "light" and the easiest to check
+    // (a substring test for '@iconify' would trip over this file's own comments). Anything added
+    // here is copied into every function that can open the picker, so adding one is a measurement,
+    // not a refactor.
+    expect(/^\s*(import|const\s.*=\s*require\()/m.test(client!.src)).toBe(false)
   })
 })
 

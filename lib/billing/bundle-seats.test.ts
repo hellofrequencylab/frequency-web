@@ -348,6 +348,14 @@ describe('bundle seating — routing and failure', () => {
     expect(H.calls).toHaveLength(0)
   })
 
+  it('empties the bundle on an explicitly terminal event, whatever status the payload carries', async () => {
+    await reconcileBundleSubscription(sub({}), 1000)
+    // customer.subscription.deleted IS the cancellation; the branch must not depend on `status`.
+    const res = await reconcileBundleSubscription(sub({ status: undefined }), 2000, { terminal: true })
+    expect(res).toMatchObject({ applied: true, unseated: 3 })
+    expect(H.rows.filter((r) => r.household_bundle_id === OWNER)).toHaveLength(0)
+  })
+
   it('does not advance the ordering stamp for an unconfirmed (incomplete) subscription', async () => {
     const res = await reconcileBundleSubscription(sub({ status: 'incomplete' }), 1000)
     expect(res).toMatchObject({ handled: true, applied: false, reason: 'skipped' })

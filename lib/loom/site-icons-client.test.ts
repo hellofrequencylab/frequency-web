@@ -14,7 +14,7 @@ afterEach(() => {
 
 describe('fetchSiteIcons', () => {
   it('asks the route for the query and returns what it sends back', async () => {
-    const fetchMock = vi.fn(async () =>
+    const fetchMock = vi.fn(async (_url: string) =>
       jsonRes({ icons: [{ name: 'lucide:zap', label: 'zap', dataUrl: 'data:image/svg+xml,x' }] }),
     )
     vi.stubGlobal('fetch', fetchMock)
@@ -30,7 +30,7 @@ describe('fetchSiteIcons', () => {
   })
 
   it('sends no q at all for the default (house palette) view', async () => {
-    const fetchMock = vi.fn(async () => jsonRes({ icons: [] }))
+    const fetchMock = vi.fn(async (_url: string) => jsonRes({ icons: [] }))
     vi.stubGlobal('fetch', fetchMock)
 
     await fetchSiteIcons('   ')
@@ -39,7 +39,7 @@ describe('fetchSiteIcons', () => {
   })
 
   it('clamps the page size so a caller cannot ask for the whole set', async () => {
-    const fetchMock = vi.fn(async () => jsonRes({ icons: [] }))
+    const fetchMock = vi.fn(async (_url: string) => jsonRes({ icons: [] }))
     vi.stubGlobal('fetch', fetchMock)
 
     await fetchSiteIcons('a', 100_000)
@@ -50,17 +50,17 @@ describe('fetchSiteIcons', () => {
   // FAIL-SAFE, all three ways. A picker showing no site icons still lists the caller's uploaded
   // ones; an exception inside the picker's transition would blank the popup instead.
   it('returns [] when the request fails', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('offline') }))
+    vi.stubGlobal('fetch', vi.fn(async (_url: string) => { throw new Error('offline') }))
     expect(await fetchSiteIcons('zap')).toEqual([])
   })
 
   it('returns [] on a non-OK response', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => jsonRes({}, false)))
+    vi.stubGlobal('fetch', vi.fn(async (_url: string) => jsonRes({}, false)))
     expect(await fetchSiteIcons('zap')).toEqual([])
   })
 
   it('returns [] when the body is not the shape it promised', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => jsonRes({ icons: 'nope' })))
+    vi.stubGlobal('fetch', vi.fn(async (_url: string) => jsonRes({ icons: 'nope' })))
     expect(await fetchSiteIcons('zap')).toEqual([])
   })
 })

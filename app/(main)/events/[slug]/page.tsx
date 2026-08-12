@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ClaimButton } from '@/app/events/claim/[token]/claim-button'
-import { ClaimRequestCard } from './claim-request-card'
+import { ClaimRequestCta } from './claim-request-cta'
 import { CalendarDays, MapPin, Check, Ticket, Clock, Zap, Video, Globe, LayoutDashboard, Settings } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadSeriesDates } from '@/lib/events/series-dates'
@@ -1681,7 +1681,7 @@ export default async function EventDetailPage({
           {/* No claim banner in NOTICES. The banner that lived here was retired on 2026-07-13 (#1751)
               because it surfaced the claim PATH to every visitor; the seeder hands the listing off
               privately via "Send to host" in the QR and Share popup, and that is unchanged.
-              What an unclaimed listing shows instead is <ClaimRequestCard> in `bodyLead` below: it
+              What an unclaimed listing shows instead is <ClaimRequestCta> in `bodyLead` below: it
               carries no token, and pressing it only re-sends the one-time link to the organizer
               contact already on the row. See the bodyLead comment. */}
         </>
@@ -1977,7 +1977,7 @@ export default async function EventDetailPage({
           // published the claim path itself, this one publishes nothing and mails the one-time
           // token to the address already on the row. Hidden from anyone who can already manage the
           // event (the seeder and staff use "Send to host" in QR & Share instead).
-          <ClaimRequestCard eventId={event.id} organizerName={extra?.organizer_name ?? null} />
+          <ClaimRequestCta eventId={event.id} organizerName={extra?.organizer_name ?? null} />
         ) : null
       }
       // Photo gallery (item 5) — the FIRST gallery image is the header/cover, already rendered

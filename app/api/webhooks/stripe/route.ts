@@ -246,8 +246,9 @@ export async function POST(req: Request) {
         // event.created keeps the deletion in the same ordering stream as the updates.
         if (await routeSpaceSubscription(sub, event.created)) break
         // A deleted bundle subscription EMPTIES the bundle: every seat is restored to what it held
-        // before the bundle seated it (never below), and the household link is cleared.
-        if ((await reconcileBundleSubscription(sub, event.created)).handled) break
+        // before the bundle seated it (never below), and the household link is cleared. `terminal`
+        // because THIS EVENT is the cancellation; it must not depend on reading a status back.
+        if ((await reconcileBundleSubscription(sub, event.created, { terminal: true })).handled) break
         const profileId = sub.metadata?.profile_id
         if (profileId) {
           await setTier(profileId, 'free', null, 'canceled', event.created)

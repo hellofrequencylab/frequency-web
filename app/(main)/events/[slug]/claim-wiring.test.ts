@@ -11,10 +11,10 @@ import { readFileSync } from 'node:fs'
 // graph reaches a real route (same shape as components/events/discovery-wiring.test.ts).
 //
 // Every assertion here FAILS on the pre-mount tree: before this mount the page contained no
-// ClaimRequestCard, no `isClaimable`, and claim-request-card.tsx did not exist.
+// ClaimRequestCta, no `isClaimable`, and claim-request-cta.tsx did not exist.
 
 const PAGE = 'app/(main)/events/[slug]/page.tsx'
-const CARD = 'app/(main)/events/[slug]/claim-request-card.tsx'
+const CARD = 'app/(main)/events/[slug]/claim-request-cta.tsx'
 const ACTION = 'app/(main)/events/[slug]/claim-actions.ts'
 const STORE = 'lib/events/event-drafts.ts'
 
@@ -27,8 +27,8 @@ describe('requestClaimLink is reachable from the event detail page', () => {
   })
 
   it('the event detail page mounts the card', () => {
-    expect(page).toContain("from './claim-request-card'")
-    expect(page, 'requestClaimLink is orphaned again').toContain('<ClaimRequestCard')
+    expect(page).toContain("from './claim-request-cta'")
+    expect(page, 'requestClaimLink is orphaned again').toContain('<ClaimRequestCta')
   })
 
   it('the client boundary is the leaf, not the page', () => {
@@ -67,7 +67,7 @@ describe('the CTA only appears for an event the action would actually serve', ()
   it('the token banner still wins when the URL carries a matching claim token', () => {
     // The two are one ternary in bodyLead: token branch first, request CTA as the fallback.
     const lead = page.slice(page.indexOf('bodyLead={'), page.indexOf('// Photo gallery'))
-    expect(lead.indexOf('claim === extra.claim_token')).toBeLessThan(lead.indexOf('<ClaimRequestCard'))
+    expect(lead.indexOf('claim === extra.claim_token')).toBeLessThan(lead.indexOf('<ClaimRequestCta'))
   })
 })
 
@@ -75,7 +75,7 @@ describe('the CTA never publishes the claim path', () => {
   it('the card is handed no token', () => {
     expect(card).not.toContain('claim_token')
     expect(card).not.toContain('token=')
-    expect(page).not.toMatch(/<ClaimRequestCard[^>]*token/)
+    expect(page).not.toMatch(/<ClaimRequestCta[^>]*token/)
   })
 
   it('the action only ever resends to the contact on file', () => {

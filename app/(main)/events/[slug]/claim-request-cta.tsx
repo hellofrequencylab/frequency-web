@@ -5,7 +5,7 @@
 // WHY THIS EXISTS AGAIN. A public claim banner shipped in June 2026 and was dropped on
 // 2026-07-13 (#1751, "drop claim banner") because the seeder now hands the listing off
 // privately through the "Send to host" link in the QR & Share popup. That directive was about
-// the CLAIM LINK being surfaced to every visitor. This card never carries the link: pressing it
+// the CLAIM LINK being surfaced to every visitor. This CTA never carries the link: pressing it
 // calls `requestClaimLink`, which re-sends the one-time token to the organizer contact ALREADY
 // ON FILE and to nobody else. A stranger pressing it learns nothing and gains nothing; the
 // organizer gets the mail they were always supposed to get. That is the whole reason
@@ -22,7 +22,7 @@ import { requestClaimLink } from './claim-actions'
 
 type State = 'idle' | 'sent' | 'sign_in' | 'no_email_on_file' | 'already_claimed' | 'unavailable'
 
-export function ClaimRequestCard({
+export function ClaimRequestCta({
   eventId,
   organizerName,
 }: {
