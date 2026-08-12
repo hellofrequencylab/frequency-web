@@ -1472,6 +1472,7 @@ export type Database = {
       circles: {
         Row: {
           about: string | null
+          access: string
           city: string | null
           created_at: string | null
           featured_at: string | null
@@ -1502,6 +1503,7 @@ export type Database = {
         }
         Insert: {
           about?: string | null
+          access?: string
           city?: string | null
           created_at?: string | null
           featured_at?: string | null
@@ -1532,6 +1534,7 @@ export type Database = {
         }
         Update: {
           about?: string | null
+          access?: string
           city?: string | null
           created_at?: string | null
           featured_at?: string | null

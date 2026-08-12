@@ -23125,3 +23125,63 @@ tree; none measured a rebuild.** `check:migrations` compares repo filenames to l
 proves both sides ran the same *files* and nothing about whether those files can produce the same
 *database*. Only an actual fresh apply can answer that, which is what `db-tests` now does on every PR
 touching `supabase/`.
+
+## ADR-1021: A Circle's Space mode admits the AUDIENCE; the CRM predicate stays where it is (2026-08-12)
+
+**Status:** accepted · **Touches:** `supabase/migrations/20270229000000_circle_space_audience.sql`,
+`lib/circles/space-audience.ts`, `app/(main)/circles/actions.ts` · **Amends:** [ADR-1015](DECISIONS.md) §access modes
+
+### The bug
+
+`circles.access = 'space_members'` is labelled **"Space members only"** and its member-facing hint
+reads *"Anyone with an active membership in your Space can join themselves."* It resolved through
+`private.is_space_member`, which reads `public.space_members`.
+
+`space_members` is not the audience. It is the **staff ladder** — viewer < editor < moderator <
+admin. Measured on production:
+
+| Table | Rows | Who they are |
+|---|---:|---|
+| `space_members` | **26, every one `admin`** | The people who *operate* the Space |
+| `space_memberships` | 2 (both active) | The people **paying** |
+| `space_follows` | 7 | Followers |
+
+So the mode admitted the operator's staff and shut out their members. The label has been wrong
+since the mode shipped, and the help article written the same day repeated it.
+
+### 🔴 Why this is a new predicate, not a wider `is_space_member`
+
+The obvious fix is to teach `is_space_member` about paid memberships. **It is also a data leak**,
+because that function is not a Circle predicate: **sixteen RLS policies** depend on it.
+
+`client_notes` · `crm_deals` · `crm_activities` · `crm_stages` · `lead_entry_points` ·
+`lead_touchpoints` · `commerce_orders` · `commerce_order_items` · `commerce_disputes` ·
+`commerce_products` · `commerce_variants` · `app_instances` · `space_faqs` · `space_reviews` ·
+`space_updates` · `spaces`
+
+Widening it would hand every paying member read access to that Space's **CRM pipeline, private
+client notes, order history and disputes**. "Who may enter a Circle" and "who may read the CRM" are
+the same question today only by accident of implementation. This ADR is what separates them.
+
+### The decision
+
+`private.is_space_audience(uuid)` = the staff ladder **OR** an active `space_memberships` row.
+Called from **exactly one arm** of `private.can_enter_circle`. `is_space_member` is untouched, and
+its body was digest-checked after the migration to prove it.
+
+**Verified additive against live data** before and after: across every (space, active profile) pair,
+**0** would be shut out who could enter before, **1** newly admitted. The staff arm is preserved
+verbatim *inside* the new predicate, so nothing that was open closes.
+
+`space_follows` is deliberately excluded. A follow is free and one click; treating it as equivalent
+to a paid membership would make the paid mode meaningless.
+
+### ⚠️ Two things this cost, recorded so the next person does not repeat them
+
+1. **The first version named the wrong column.** `space_memberships` keys the member on
+   `member_profile_id`, not `profile_id`. Production refused it outright, which is the good outcome
+   — but it is the kind of thing only the real schema tells you, so read the columns first.
+2. **It was applied to production while its file lived on an unmerged branch**, which put a ledger
+   row in front of a tree that did not carry it and failed `check:migrations` on *every other
+   branch*, including `main`. The guard was right and the sequencing was wrong: land the file on a
+   mergeable path first, or accept that every open PR goes red until it does.

@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
 import { asCircleAccess, canJoinCircle } from '@/lib/circles/visibility'
+import { isSpaceAudience } from '@/lib/circles/space-audience'
 import { processGamificationEvent } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
 import { sendInviteEmail } from '@/lib/email'
@@ -111,13 +112,7 @@ export async function joinCircle(
       // Only 'space_members' can be opened by a Space seat, so the lookup is skipped otherwise —
       // Space membership is not a general key to a Space's Circles.
       access === 'space_members' && spaceId
-        ? admin
-            .from('space_members')
-            .select('role')
-            .eq('space_id', spaceId)
-            .eq('profile_id', myProfileId)
-            .eq('status', 'active')
-            .maybeSingle()
+        ? isSpaceAudience(admin, spaceId, myProfileId).then((data) => ({ data }))
         : Promise.resolve({ data: null }),
     ])
 

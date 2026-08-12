@@ -11,6 +11,13 @@ import { InlineCover } from '@/components/admin/inline/inline-cover'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
+import {
+  asCircleAccess,
+  CIRCLE_ACCESS_HINT,
+  CIRCLE_ACCESS_LABEL,
+  CIRCLE_ACCESS_MODES,
+  type CircleAccess,
+} from '@/lib/circles/visibility'
 
 export interface CircleSettingsInitial {
   name: string
@@ -22,6 +29,7 @@ export interface CircleSettingsInitial {
   neighborhood: string
   resonancePublic: boolean
   unlisted: boolean
+  access: CircleAccess
 }
 
 // The label TEXT class. Fields wrap their control in a native <label> (HTML's implicit
@@ -34,10 +42,14 @@ export function CircleSettingsForm({
   circleId,
   slug,
   initial,
+  accessModes,
 }: {
   circleId: string
   slug: string
   initial: CircleSettingsInitial
+  /** The modes this Circle may actually be set to, from availableAccessModes(). A personal Circle
+   *  gets three; a business Space on a selling plan gets all five. */
+  accessModes: readonly CircleAccess[]
 }) {
   const [name, setName] = useState(initial.name)
   const [about, setAbout] = useState(initial.about)
@@ -48,7 +60,9 @@ export function CircleSettingsForm({
   const [neighborhood, setNeighborhood] = useState(initial.neighborhood)
   const [resonancePublic, setResonancePublic] = useState(initial.resonancePublic)
   const [unlisted, setUnlisted] = useState(initial.unlisted)
+  const [access, setAccess] = useState<CircleAccess>(initial.access)
   const [pending, start] = useTransition()
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [confirmArchive, setConfirmArchive] = useState(false)
   const [archiving, startArchive] = useTransition()
   const [archiveError, setArchiveError] = useState<string | null>(null)
@@ -81,8 +95,18 @@ export function CircleSettingsForm({
     fd.set('neighborhood', neighborhood)
     fd.set('resonance_public', resonancePublic ? 'on' : 'off')
     fd.set('unlisted', unlisted ? 'on' : 'off')
+    fd.set('access', access)
+    setSaveError(null)
     start(async () => {
-      await updateCircleSettings(circleId, fd)
+      // The access trigger refuses two combinations the form tries not to offer, and it fires on
+      // the service role too. Without this catch its message would surface as an unhandled error
+      // and the save would look like it silently did nothing.
+      try {
+        await updateCircleSettings(circleId, fd)
+      } catch (e) {
+        setSaveError(e instanceof Error ? e.message : 'Could not save those changes.')
+        return
+      }
       router.push(`/circles/${slug}`)
       router.refresh()
     })
@@ -145,7 +169,11 @@ export function CircleSettingsForm({
         <Input type="text" value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} placeholder="e.g. Leucadia" disabled={pending} />
       </label>
 
-      <div className="rounded-lg border border-border bg-surface-elevated/40 p-3 sm:col-span-2">
+      {/* THE TWO AXES, TOGETHER (ADR-1015). They are independent, and the pairing is the point:
+          a listed circle with a closed door is a shopfront, a hidden circle that anyone can join
+          is a quiet room. Keeping them in one panel is what makes that legible instead of two
+          unrelated switches in different parts of a long form. */}
+      <div className="rounded-lg border border-border bg-surface-elevated/40 p-3 sm:col-span-2 space-y-4">
         <Checkbox
           checked={unlisted}
           onChange={(e) => setUnlisted(e.target.checked)}
@@ -154,6 +182,26 @@ export function CircleSettingsForm({
           hint="Keep this circle off the Circles directory, map, and search. Anyone with the link can still open it, and your members always see it. Great for a private group you invite by hand."
           wrapperClassName="flex"
         />
+
+        <label className="block border-t border-border pt-4">
+          <span className={lbl}>Who can join</span>
+          <Select
+            value={access}
+            onChange={(e) => setAccess(asCircleAccess(e.target.value))}
+            disabled={pending}
+          >
+            {accessModes.map((mode) => (
+              <option key={mode} value={mode}>{CIRCLE_ACCESS_LABEL[mode]}</option>
+            ))}
+          </Select>
+          <span className="mt-1 block text-meta text-subtle">{CIRCLE_ACCESS_HINT[access]}</span>
+          {accessModes.length < CIRCLE_ACCESS_MODES.length && (
+            <span className="mt-1 block text-meta text-subtle">
+              Space member access and paid membership tiers are available to circles a Space owns,
+              on the Business plan.
+            </span>
+          )}
+        </label>
       </div>
 
       <div className="sm:col-span-2">
@@ -165,6 +213,10 @@ export function CircleSettingsForm({
           wrapperClassName="flex"
         />
       </div>
+
+      {saveError && (
+        <p role="alert" className="text-body-sm text-danger sm:col-span-2">{saveError}</p>
+      )}
 
       <div className="flex items-center gap-3 pt-1 sm:col-span-2">
         <button
