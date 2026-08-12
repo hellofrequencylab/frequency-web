@@ -236,6 +236,8 @@ function segments(path: string): (string | number)[] {
   return out
 }
 
+/** Keys that must never be used from untrusted paths (prototype-pollution guard). */
+const UNSAFE_PATH_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
 /** The paths whose value is a LIST rendered (and edited) as a comma-separated line. */
 const LIST_PATHS = new Set(['tags', 'details.features', 'details.sponsors'])
 /** The paths whose value is whole CENTS, edited as plain money ("25", "$12.50"). */
@@ -299,6 +301,7 @@ function moneyToCents(raw: string): number | null {
 export function setDraftValue(draft: Record<string, unknown>, path: string, raw: string): boolean {
   const parts = segments(path)
   if (parts.length === 0) return false
+  if (parts.some((p) => typeof p === 'string' && UNSAFE_PATH_KEYS.has(p))) return false
 
   let cur: unknown = draft
   for (const part of parts.slice(0, -1)) {
