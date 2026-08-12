@@ -530,6 +530,33 @@ Collision guards:
 - **"Store"**: retired as the per-Space services label (now **Shop**) and reserved for **Frequency
   Store** (first-party) only. The **Vault Store** (Gems, unchanged) is a separate proper noun.
 
+## Drafts: one surface, every unfinished thing (owner ruling, August 2026)
+
+**Drafts** (capital D) = the member's own page at `/drafts`, and it is the ONLY member surface
+that may carry the name. It holds everything a member has started and not finished, whatever
+started it:
+
+- a **proposal** Vera drew up for them to look at (nothing is created until they confirm it),
+- a **staged wizard draft** they typed into a Spark and stepped away from,
+- a **captured event** they photographed off a poster and have not posted yet.
+
+Rules:
+- **One page, one word.** `/events/drafts` used to be a second member surface titled "My drafts",
+  about captured posters only. It folded in as the third row kind and now redirects to `/drafts`.
+  Never build a second Drafts list for a new entity; add a row kind. The per-entity EDITOR keeps
+  its own route (`/events/drafts/<id>` is the event draft editor, not a list).
+- **Never "My drafts".** The page's H1, its metadata title, the nav row, the ⌘K entry, and every
+  link to it read **Drafts**. A menu row that renames its destination makes a member wonder if
+  they landed somewhere else.
+- **Unfinished is the test.** A thing leaves Drafts the moment it is made: a posted event lists on
+  `/events`, a created Circle on `/circles`. The page states this in its own words ("Nothing here
+  is made yet"), so a finished thing on it is a copy defect, not a filter preference.
+- **The kinds are told apart by a badge, never by a separate page**: "Vera drafted this" ·
+  "You started this" · "You captured this".
+- **The lowercase common noun is unaffected.** `status='draft'` is a Circle lifecycle (below), a
+  Loom asset can be drafted, and an operator email campaign has a drafts state. Those are states of
+  a thing, not the surface. Only the member-facing page is capital-D Drafts.
+
 ## Retired: zero hits allowed outside this list and ADR-208
 
 Spark/Current/Deep (tiers) · Runner/Operative/Agent (ranks) ·
