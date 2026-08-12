@@ -65,10 +65,23 @@ describe('exact parity is the target state, and it passes', () => {
     // Re-frozen again 2026-08-11 (603 -> 604) for 20270223000000_studio_steer (ADR-996). Read back
     // from PRODUCTION after applying and matched the repo byte for byte, per the rule above. The
     // wall-clock stamping trap noted below bit again and was corrected BEFORE these were taken.
+    //
+    // Re-frozen 2026-08-12 (602 -> 605) for the Studio re-land: 20270222000000_event_intake and
+    // 20270223000000_studio_steer come back with #2098 (they were only ever removed from the REPO by
+    // the #2102 revert; production kept them applied throughout), plus 20270224000000_studio_draft
+    // (ADR-1001), applied today. Read back from PRODUCTION and matched the repo byte for byte.
+    //
+    // ⚠️ THE WALL-CLOCK TRAP BIT A THIRD TIME, and the note below is why it was caught in minutes.
+    // apply_migration stamped studio_draft as 20260812134657 — sorted 400 rows before the file it
+    // came from — AND an explicit ledger row at the repo's own version had also been inserted, so
+    // production briefly carried the same migration twice (606 rows against the repo's 605). The
+    // stray wall-clock row was deleted before these digests were taken. Apply, then ALWAYS re-read
+    // the ledger; never trust the version the tool chose, and check for a duplicate as well as a
+    // mis-sorted one.
     const { rows } = repoRows()
-    expect(rows.length).toBe(604)
-    expect(versionsDigest(rows)).toBe('711a4506c457057087771413e52c57063e9a1edef7e1baed9b46e9fc459e2de5')
-    expect(pairsDigest(rows)).toBe('6c54fc3b84b7798087d7a38b9b4797ee878c97aa2f690e8bfe443c4525a61957')
+    expect(rows.length).toBe(605)
+    expect(versionsDigest(rows)).toBe('9cc13852582b3c2681dd1c3e0baeae6df0cca5ca19430d55bb946186d6366411')
+    expect(pairsDigest(rows)).toBe('566a6e9ff1b5fdd8ff92d1571891f88e2cb21e4f823e8ddd4210e76f09453738')
   })
 
   it('order is by version as text, so an unsorted ledger payload still matches', () => {
