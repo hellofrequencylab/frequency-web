@@ -90,9 +90,8 @@ create table if not exists public.household_bundle_invites (
   owner_profile_id  uuid not null references public.profiles(id) on delete cascade,
   -- Who is invited. Only this profile may accept or decline.
   to_profile_id     uuid not null references public.profiles(id) on delete cascade,
-  -- pending -> accepted | declined | revoked | expired. Free text with a check, matching
-  -- space_invites: a new state is a check change, not a type change.
-  -- pending -> accepted -> ended, or pending -> declined | revoked | expired.
+  -- Free text with a check, matching space_invites: a new state is a check change, not a type
+  -- change. pending -> accepted -> ended, or pending -> declined | revoked | expired.
   --   accepted = the seat is live and rides every later Stripe event (see §4)
   --   ended    = the seat was live and the bundle itself ended, so it must NOT be re-seated
   --              if the owner ever subscribes again
@@ -203,18 +202,25 @@ begin
   end if;
 
   if _active then
-    -- The target roster: the owner first, then the seat ids stamped at checkout, then anyone
-    -- an accepted invite has since seated in this bundle — first occurrence of each, ids that
-    -- are not real profiles dropped, capped at the seat count the bundle was BOUGHT with.
-    -- Still deterministic (the invited tail is ordered by id, not by clock), so a replay
-    -- computes the identical roster.
+    -- The target roster: the owner first, then the seat ids stamped at checkout, then whoever
+    -- ACCEPTED an invite into this bundle — first occurrence of each, ids that are not real
+    -- profiles dropped, capped at the seat count the bundle was BOUGHT with. Deterministic
+    -- (the invited tail is ordered by the answer it recorded, not by clock-at-read), so a
+    -- replay computes the identical roster.
+    --
+    -- Reading the ACCEPTED INVITES rather than "whoever is seated right now" is deliberate:
+    -- taking someone off the stamped seat list still unseats them on the next event, exactly
+    -- as before, because a checkout seat leaves no invite row behind. Only a seat somebody
+    -- agreed to survives, which is the one thing this migration adds.
     with stamped as (
       select c.id, c.ord::bigint as ord
         from unnest(array[_owner] || coalesce(_seat_ids, '{}'::uuid[])) with ordinality as c(id, ord)
     ), invited as (
-      select p.id, 1000000 + row_number() over (order by p.id) as ord
-        from public.profiles p
-       where p.household_bundle_id = _owner
+      select i.to_profile_id as id,
+             1000000 + row_number() over (order by i.responded_at, i.id) as ord
+        from public.household_bundle_invites i
+       where i.owner_profile_id = _owner
+         and i.status = 'accepted'
     ), candidate as (
       select u.id, min(u.ord) as ord
         from (select id, ord from stamped union all select id, ord from invited) u
@@ -262,6 +268,15 @@ begin
        set membership_tier = _tier
      where household_bundle_id = _owner
        and coalesce(membership_tier, 'free') = 'free';
+
+    -- 4d. An accepted invite whose member is no longer on the roster (the seat count shrank
+    --     under them) is CLOSED, not left accepted. Otherwise the very union above would
+    --     re-seat them on the next event and the unseat would never stick.
+    update public.household_bundle_invites
+       set status = 'ended', responded_at = now()
+     where owner_profile_id = _owner
+       and status = 'accepted'
+       and not (to_profile_id = any(v_roster));
   else
     -- Terminal: the subscription ended. Empty the bundle, restoring each seat.
     update public.profiles
@@ -275,13 +290,15 @@ begin
     get diagnostics v_unseated = row_count;
     v_roster := '{}'::uuid[];
 
-    -- Nothing may be invited into a bundle that no longer exists. Withdraw the outstanding
-    -- offers in the same transaction that empties it, so a stale acceptance cannot arrive
-    -- against a canceled subscription.
+    -- Nothing may be invited into a bundle that no longer exists, and no seat may outlive it.
+    -- Close BOTH in the same transaction that empties the bundle: an outstanding offer cannot
+    -- be accepted against a canceled subscription, and an accepted invite cannot re-seat
+    -- anybody through the union above if the owner ever subscribes again.
     update public.household_bundle_invites
-       set status = 'expired', responded_at = now()
+       set status = case when status = 'pending' then 'expired' else 'ended' end,
+           responded_at = now()
      where owner_profile_id = _owner
-       and status = 'pending';
+       and status in ('pending', 'accepted');
   end if;
 
   -- Advance the ordering stamp, adopt the Stripe customer id (so the owner can reach the

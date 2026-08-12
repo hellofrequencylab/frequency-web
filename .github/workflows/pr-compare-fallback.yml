@@ -1,0 +1,104 @@
+# Posts the REQUIRED `pr-compare` context for the pull requests e2e.yml deliberately skips.
+#
+# 🔴 THE DEADLOCK THIS CLOSES. `pr-compare` is a required status context (ruleset 17640795) and it
+# is posted by a job in `e2e.yml`, which is path-filtered to the things that can move pixels. A pull
+# request touching none of those paths never triggers that workflow, so the context is never posted.
+# GitHub renders a required-but-never-posted context as "Expected — Waiting for status to be
+# reported" and blocks the merge FOREVER. Not slowly. Not until a retry. Forever.
+#
+# PR #2107 (two files, both under `docs/`) hit it on 2026-08-12 and could not be merged by ANY
+# means: `bypass_actors` is null on that ruleset, so rulesets do not exempt repo admins either. The
+# only exits were to pollute a clean docs PR with an unrelated code touch, or to un-require the gate
+# for everybody. This workflow is the third exit.
+#
+# ⚠️ WHY THIS IS NOT A VACUOUS GREEN. `e2e.yml` goes to real trouble to make sure a job that tested
+# nothing reports `skipped` rather than `success` — its `preflight` job exists for exactly that, and
+# its header says so. This does not reintroduce that failure. The claim being made here is narrow
+# and true: a pull request that changes NO input to rendering cannot change rendering. The status
+# text says which paths were checked, so nobody reads it as "the visual suite passed".
+#
+# ⚠️ WHY A COMMIT STATUS AND NOT A JOB NAMED `pr-compare`. The obvious implementation is a second
+# workflow with `paths-ignore:` and a job named `pr-compare`. It is wrong, and dangerously so.
+# GitHub's `paths-ignore` fires when ANY changed file falls outside the list — so a PR touching
+# BOTH `docs/x.md` and `app/y.tsx` matches `paths` AND `paths-ignore`. Both workflows run, two check
+# runs share the name `pr-compare`, the latest one wins, and a RED visual gate can be overwritten by
+# a stub that tested nothing. This job instead runs on every PR, decides for itself whether e2e ran,
+# and posts ONLY when it did not — so the two can never both speak.
+#
+# The path list is READ OUT OF e2e.yml by scripts/pixel-paths.mjs, never restated here. A second
+# copy would drift, and it would drift silently in the direction that matters: a path missing from
+# the copy means a pixel-moving PR gets a free green.
+name: pr-compare-fallback
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: pr-compare-fallback-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Deliberately NOT named `pr-compare` — see the header. This job's own check run is advisory and
+  # is not a required context; the thing branch protection consumes is the status it POSTS.
+  fallback:
+    name: pr-compare fallback (docs-only PRs)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Need the base commit to diff against. Depth 0 is the simple correct answer for a repo
+          # this size; a shallow fetch plus merge-base arithmetic saves seconds and costs clarity.
+          fetch-depth: 0
+
+      - name: Decide whether e2e already owns this PR
+        id: decide
+        run: |
+          set -euo pipefail
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+
+          # The PR's own changed files, which is exactly the set GitHub applies `paths:` to.
+          git diff --name-only "${base}...${head}" > /tmp/changed.txt
+          echo "Changed files in this pull request:"
+          sed 's/^/  /' /tmp/changed.txt
+
+          # Exit 0 = at least one file can move pixels, so e2e ran and will post pr-compare itself.
+          # Exit 1 = none can, so e2e was skipped and this job must post it.
+          # Any OTHER failure (an unparseable e2e.yml) propagates and fails this job, which is the
+          # intended behaviour — see the 🔴 note in scripts/pixel-paths.mjs.
+          if xargs -a /tmp/changed.txt node scripts/pixel-paths.mjs; then
+            echo "e2e=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::A changed file can move pixels. e2e.yml owns pr-compare for this PR; posting nothing."
+          else
+            rc=$?
+            if [ "$rc" -ne 1 ]; then
+              echo "::error::pixel-paths.mjs failed with ${rc}. Refusing to post a status on a guess."
+              exit "$rc"
+            fi
+            echo "e2e=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No changed file can move pixels. Posting pr-compare on e2e's behalf."
+          fi
+
+      - name: Post pr-compare
+        if: steps.decide.outputs.e2e == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          curl -sS -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/statuses/${{ github.event.pull_request.head.sha }}" \
+            -d '{
+              "state": "success",
+              "context": "pr-compare",
+              "description": "No rendering input changed, so the visual suite was not run.",
+              "target_url": "'"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"'"
+            }' \
+            --fail-with-body
+          echo "::notice::Posted pr-compare=success. This asserts only that no rendering input changed."

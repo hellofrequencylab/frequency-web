@@ -42,6 +42,12 @@ event_placement_requests
 financial_transactions
 founding_members
 help_chunks
+# Bundle seat invites (ADR-370). Deliberately deny-all, following circle_transfer_offers: both
+# sides are read and written ONLY through the gated server actions in lib/billing/bundle-invites.ts
+# (owner-only send/revoke, invitee-only accept/decline), and the seat write itself is a
+# service-role SECURITY DEFINER function. A client policy would have to expose an invite row to
+# the anon key, and the surface that renders it is a Server Component that already has the data.
+household_bundle_invites
 invite_links
 journey_drip_sends
 journey_enrollments
