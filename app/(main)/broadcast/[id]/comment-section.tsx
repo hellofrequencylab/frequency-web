@@ -1,13 +1,12 @@
 'use client'
 
 import { useState, useTransition, useRef } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Loader2, Trash2, MessageCircle } from 'lucide-react'
 import { Textarea } from '@/components/ui/field'
+import { Avatar } from '@/components/ui/avatar'
 import { addDispatchComment, deleteDispatchComment } from '../actions'
-import { getInitials, relativeTime } from '@/lib/utils'
-import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
+import { relativeTime } from '@/lib/utils'
 
 type Comment = {
   id: string
@@ -78,13 +77,7 @@ export function CommentSection({
         <div className="space-y-4 mb-6">
           {comments.map(c => (
             <div key={c.id} className="flex gap-3 group">
-              {c.author.avatar_url ? (
-                <Image src={avatarSrc(c.author.avatar_url)} alt={c.author.display_name} width={28} height={28} className="w-7 h-7 rounded-pill object-cover shrink-0 mt-0.5" style={avatarFocusStyle(c.author.avatar_url)} />
-              ) : (
-                <div className="w-7 h-7 rounded-pill bg-border-strong flex items-center justify-center text-3xs font-bold text-muted shrink-0 mt-0.5 select-none">
-                  {getInitials(c.author.display_name)}
-                </div>
-              )}
+              <Avatar src={c.author.avatar_url} name={c.author.display_name} size="xs" className="mt-0.5" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2 flex-wrap">
                   <Link

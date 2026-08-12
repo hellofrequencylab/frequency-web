@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import { MapPin, Megaphone, Zap, Gem, Compass, ArrowRight, Users, Sparkles, CalendarDays, CircleDot } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
@@ -12,9 +11,9 @@ import {
   type SeriesFields,
 } from '@/lib/events/series'
 import { circleEventVisibilities } from '@/lib/events/circle-upcoming'
-import { getInitials, relativeTime } from '@/lib/utils'
-import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
+import { relativeTime } from '@/lib/utils'
 import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
+import { Avatar } from '@/components/ui/avatar'
 import { RankBadge } from '@/components/ui/rank-badge'
 import { isOnline, ONLINE_MS, RECENT_MS } from '@/lib/presence'
 import { getRecentDispatchesForProfile } from '@/lib/dispatches'
@@ -206,18 +205,7 @@ export async function MembersPanel({ profileId, circleIds }: { profileId: string
               href={`/people/${m.profile.handle}`}
               className="flex items-center gap-3 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
             >
-              <div className="relative shrink-0">
-                {m.profile.avatar_url ? (
-                  <Image src={avatarSrc(m.profile.avatar_url)} alt={m.profile.display_name} width={32} height={32} style={avatarFocusStyle(m.profile.avatar_url)} className="w-8 h-8 rounded-pill object-cover" />
-                ) : (
-                  <div className="w-8 h-8 rounded-pill bg-border-strong flex items-center justify-center text-meta font-bold text-muted dark:text-subtle select-none">
-                    {getInitials(m.profile.display_name ?? '')}
-                  </div>
-                )}
-                {online && (
-                  <span aria-label="Online now" className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-pill bg-success ring-2 ring-surface" />
-                )}
-              </div>
+              <Avatar src={m.profile.avatar_url} name={m.profile.display_name ?? ''} size="sm" online={online} />
               <span className="text-body-sm font-medium text-text truncate flex-1">{m.profile.display_name}</span>
             </Link>
           )
@@ -294,13 +282,7 @@ export async function LeaderboardPanel() {
             className="flex items-center gap-2.5 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
           >
             <span className={`text-body-sm font-bold w-4 shrink-0 tabular-nums ${rankColors[i]}`}>{i + 1}</span>
-            {member.avatar_url ? (
-              <Image src={avatarSrc(member.avatar_url)} alt={member.display_name} width={32} height={32} style={avatarFocusStyle(member.avatar_url)} className="w-8 h-8 rounded-pill object-cover shrink-0" />
-            ) : (
-              <div className="w-8 h-8 rounded-pill bg-border-strong flex items-center justify-center text-meta font-bold text-muted shrink-0">
-                {getInitials(member.display_name ?? '')}
-              </div>
-            )}
+            <Avatar src={member.avatar_url} name={member.display_name ?? ''} size="sm" />
             <span className="text-body-sm flex-1 truncate text-text">{member.display_name}</span>
             <div className="flex items-center gap-1 shrink-0">
               {/* `dot={false}`: five names deep in a 288px rail, already paired with a Counter. */}
@@ -414,13 +396,11 @@ export async function WhoOnlinePanel({ profileId }: { profileId: string }) {
       <div className="flex flex-wrap gap-1.5 px-1 py-1">
         {people.slice(0, 10).map((p) => (
           <Link key={p.id} href={`/people/${p.handle}`} title={p.display_name} className="relative shrink-0">
-            {p.avatar_url ? (
-              <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={32} height={32} style={avatarFocusStyle(p.avatar_url)} className="h-8 w-8 rounded-pill object-cover" />
-            ) : (
-              <div className="flex h-8 w-8 items-center justify-center rounded-pill bg-border-strong text-2xs font-bold text-muted">
-                {getInitials(p.display_name ?? '')}
-              </div>
-            )}
+            <Avatar src={p.avatar_url} name={p.display_name ?? ''} size="sm" />
+            {/* The dot stays hand-rolled and aria-hidden HERE, unlike the list panels above: every
+                face in this grid is online by definition, so Avatar's labelled PresenceDot would
+                append "Active now" to all ten link names for information the panel title already
+                gave. Decorative here, semantic there. */}
             <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-pill bg-success ring-2 ring-surface" aria-hidden />
           </Link>
         ))}
@@ -596,18 +576,7 @@ export async function ActiveNowPanel({ profileId }: { profileId: string }) {
               href={`/people/${p.handle}`}
               className="flex items-center gap-3 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
             >
-              <div className="relative shrink-0">
-                {p.avatar_url ? (
-                  <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={32} height={32} style={avatarFocusStyle(p.avatar_url)} className="h-8 w-8 rounded-pill object-cover" />
-                ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-pill bg-border-strong text-meta font-bold text-muted dark:text-subtle select-none">
-                    {getInitials(p.display_name ?? '')}
-                  </div>
-                )}
-                {online && (
-                  <span aria-label="Online now" className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-pill bg-success ring-2 ring-surface" />
-                )}
-              </div>
+              <Avatar src={p.avatar_url} name={p.display_name ?? ''} size="sm" online={online} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-body-sm font-medium text-text">{p.display_name}</p>
                 <p className="text-meta text-subtle">

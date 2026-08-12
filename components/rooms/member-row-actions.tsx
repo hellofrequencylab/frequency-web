@@ -40,7 +40,7 @@ export function MemberRowActions({
     <div ref={ref} className="relative shrink-0">
       <button
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(v => !v) }}
-        className="p-1 rounded text-subtle hover:text-muted hover:bg-border-strong transition-colors opacity-0 group-hover:opacity-100"
+        className="p-1 rounded text-subtle hover:text-text hover:bg-border-strong transition-colors opacity-0 group-hover:opacity-100"
         aria-label="Member actions"
       >
         {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MoreVertical className="w-3.5 h-3.5" />}
