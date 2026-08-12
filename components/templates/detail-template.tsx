@@ -20,6 +20,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ChevronLeft, ImageIcon } from 'lucide-react'
 import { PageAdminBar } from '@/components/layout/page-admin-bar'
+import { PageHero, type PageHeroSize, type HeroOverlayStyle } from './page-hero'
 
 export interface DetailTab {
   href: string
@@ -30,6 +31,9 @@ export interface DetailTab {
 export function DetailTemplate({
   hero,
   coverImage,
+  coverFocus,
+  coverSize,
+  coverOverlayStyle,
   title,
   subtitle,
   badges,
@@ -50,6 +54,14 @@ export function DetailTemplate({
    *  placeholder; omit it entirely for no cover (existing pages are unchanged). Ignored when
    *  `hero` is set. */
   coverImage?: string | null
+  /** Focal point ("x% y%") from the operator's focal picker, so the crop keeps the subject in frame.
+   *  Setting any of the three cover controls routes the standard cover through PageHero `minimal`. */
+  coverFocus?: string | null
+  /** Cover band height, from the operator's height control. */
+  coverSize?: PageHeroSize
+  /** Overlay treatment over the cover: 'none' (clean photo) · 'shadow' (ink scrim) · 'fade' (melts
+   *  into the page). Circles map their None/Shade/Blend setting onto this. */
+  coverOverlayStyle?: HeroOverlayStyle
   title: React.ReactNode
   subtitle?: React.ReactNode
   /** Status / mode chips (e.g. the in-person designator). */
@@ -106,10 +118,30 @@ export function DetailTemplate({
       ) : coverImage !== undefined ? (
         <div className="mb-4">
           {coverImage ? (
-            <div className="relative aspect-[16/6] w-full overflow-hidden rounded-2xl bg-surface-elevated">
-              {/* Above the fold -> preload for LCP (this fork uses `preload`, not `priority`). */}
-              <Image src={coverImage} alt="" fill sizes="(max-width: 1024px) 100vw, 1344px" preload className="object-cover" />
-            </div>
+            coverFocus || coverSize || coverOverlayStyle ? (
+              // OPERATOR-CONTROLLED COVER. The plain <Image> below is the right default, but it can
+              // only ever render one fixed crop with no overlay, so a page whose operator has set a
+              // focal point, a band height or an overlay treatment had nowhere to put them. Routing
+              // through PageHero `minimal` gives every Detail page the same cover controls the
+              // Space profile already had, from ONE passthrough rather than a bespoke hero per page.
+              //
+              // `heading={false}` is load-bearing: the band below owns this page's single <h1>, and
+              // PageHero's minimal variant otherwise emits an sr-only h1 with the same text.
+              <PageHero
+                variant="minimal"
+                heading={false}
+                title={title}
+                coverImage={coverImage}
+                coverFocus={coverFocus}
+                size={coverSize}
+                overlayStyle={coverOverlayStyle}
+              />
+            ) : (
+              <div className="relative aspect-[16/6] w-full overflow-hidden rounded-2xl bg-surface-elevated">
+                {/* Above the fold -> preload for LCP (this fork uses `preload`, not `priority`). */}
+                <Image src={coverImage} alt="" fill sizes="(max-width: 1024px) 100vw, 1344px" preload className="object-cover" />
+              </div>
+            )
           ) : (
             <div className="flex aspect-[16/6] w-full items-center justify-center rounded-2xl bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong">
               <ImageIcon className="h-8 w-8 opacity-60" aria-hidden />

@@ -3,9 +3,8 @@ import type { Metadata } from 'next'
 import { getMyProfileId } from '@/lib/auth'
 import { isPaidViewer, surfaceAccess } from '@/lib/core/viewer-hats'
 import { insightAffordance } from '@/lib/core/scoped-surface-ui'
-import { getCircleActivePractice } from '@/lib/practices'
-import { listPublicPlans } from '@/lib/journey-plans'
 import { isoDaysAgo } from '@/lib/utils'
+import { loadCirclePractice } from './tab-facts'
 import { getCircleHealth } from '@/lib/circles/earned'
 import { loadCircleShell } from '@/lib/circles/store'
 import { circleCapabilities } from '@/lib/circles/detail-access'
@@ -20,16 +19,44 @@ import { PageModules } from '@/components/widgets/page-modules'
 import { setCircleContext } from '@/lib/circles/active-circle'
 import { circleTextOverride, resolveCircleText } from '@/lib/circles/circle-text'
 
-// ── THE HOME TAB ────────────────────────────────────────────────────────────────────────────────
-// A BODY, not a shell. The identity — cover, title, badges, facts, capacity bar, tabs — belongs to
-// the route-segment layout beside this file, which owns the single page <h1>. Composing a template
+// ── THE FEED TAB (the default tab) ──────────────────────────────────────────────────────────────
+// A BODY, not a shell. The identity — cover, title, badges, facts, tabs — belongs to the
+// route-segment layout beside this file, which owns the single page <h1>. Composing a template
 // here would emit a second one and trip `check:headers`; the shell is already composed above us
 // (`check:templates` calls that the ancestor-layout form, and names this exact tree as its
 // precedent).
+//
+// FEED IS THE DEFAULT TAB AND IT CARRIES THE REASON PEOPLE CAME (owner ruling, 2026-08-12), so it
+// keeps the operator-arranged body — MINUS the four blocks that now have tabs of their own. Events,
+// the Journey Run, the practice and the roster each got a dedicated surface in this redesign, and a
+// block that also renders here would mean a member reads the same list twice in one scroll and
+// never learns which copy is the real one.
+//
+// THE SUBSET IS PASSED AS `moduleIds`, which is PageModules' documented override for exactly this
+// ("Override the route's module set"), and it is the caller-side version of what
+// `moduleIdsForScope` does per route in lib/widgets/modules.ts. The blocks are NOT deleted: they
+// stay registered and every one of them still renders, just on the tab that owns it. See the note
+// in the report about folding these sets into the route-scoped registry, which is where they
+// belong once the tab routes are known to lib/widgets.
 
 // ── Anonymous share-card metadata (logged-in link unfurls; correct-by-construction
 // for any future anon carve). Reads the SAME request-memoized shell load the page body uses, so the
 // card costs no extra query, with the same archived filter the body applies.
+// The Feed tab's module set: every circle-detail block EXCEPT the four that now own a tab
+// ('circle-events' → /events, 'circle-journey-run' → /journey, 'circle-practice' → /practice,
+// 'circle-members' → /members). Order here does not decide layout; the saved '/circles/*' layout
+// still does, and this only filters what it may place.
+const FEED_TAB_MODULE_IDS = [
+  'circle-feed',
+  'circle-health',
+  'circle-momentum',
+  'circle-challenges',
+  'circle-map',
+  'circle-meeting',
+  'circle-invite',
+  'circle-text',
+] as const
+
 export async function generateMetadata({
   params,
 }: {
@@ -122,21 +149,10 @@ export default async function CircleHomePage({
     ? await getCircleHealth(circle.id, memberProfileIds, isoDaysAgo(7))
     : { earnedZaps: 0, activeStreaks: 0, newThisWeek: 0 }
 
-  // This week's practice (host-assigned). The practice LIBRARY is no longer read here: the only
-  // consumer was the demo-claim card, which now lives in the shell layout with the rest of the
-  // identity-level notices, so this tab stopped paying for a list it never rendered.
-  const circlePractice = await getCircleActivePractice(circle.id)
-
-  // Journeys the host can start a run of (ADR-252) — only loaded for a manager (the
-  // journey-run block self-gates to managers, so a visitor never triggers this read).
-  const runnableJourneys = canManage
-    ? (await listPublicPlans()).slice(0, 50).map((p) => ({
-        id: p.id,
-        title: p.title,
-        slug: p.slug,
-        emoji: p.emoji ?? null,
-      }))
-    : []
+  // This week's practice, from the memoized loader the shell already used to decide whether the
+  // Practice tab exists — a memo hit, not a second query. It stays on the context because the
+  // context type carries it; the block that renders it now lives on the Practice tab.
+  const circlePractice = await loadCirclePractice(circle.id)
 
   // The movable Page-text block's copy: this circle's override, else the network default ('' when
   // neither is set → the block renders nothing). One platform_settings read (request-memoized) only
@@ -161,7 +177,6 @@ export default async function CircleHomePage({
     activeStreaks: health.activeStreaks,
     newThisWeek: health.newThisWeek,
     circlePractice,
-    runnableJourneys,
     layoutText,
   })
 
@@ -176,10 +191,15 @@ export default async function CircleHomePage({
         </div>
       )}
 
-      {/* ── The arrangeable body: feed + info-rail as layout modules, shared across every
-              /circles/<slug> via the '/circles/*' scope (default: feed MAIN, rail SIDE).
-              Operators rearrange it from Settings → Layout. */}
-      <PageModules route={`/circles/${circle.slug}`} />
+      {/* ── The arrangeable body: the feed + the info-rail blocks that did not become tabs, shared
+              across every /circles/<slug> via the '/circles/*' scope. Operators rearrange it from
+              Settings → Layout.
+
+              `#circle-post` is the header's ONE primary action for a member. The composer is the
+              first thing in the feed block, so the anchor lands on it from any tab. */}
+      <div id="circle-post" className="scroll-mt-24">
+        <PageModules route={`/circles/${circle.slug}`} moduleIds={FEED_TAB_MODULE_IDS} />
+      </div>
     </>
   )
 }

@@ -2,7 +2,8 @@
 
 // Journeys v2 — start a Run (ADR-252, J2). A Run is one Circle going through one Journey
 // together; the Circle's active members are enrolled. Gated through lib/journeys/run-gate
-// (ADR-842): the Circle's host, a steward of the Space that owns the Circle, or platform staff.
+// (ADR-842): whoever manages the Circle (`circle.editSettings`), a steward of the Space that owns
+// the Circle, or platform staff.
 
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
@@ -34,11 +35,12 @@ export async function startJourneyRunAction(input: {
   const caller = await getCallerProfile()
   if (!caller) return fail('Sign in first.')
 
-  // WHO may start it (ADR-842): the Circle's host, a steward of the Space that owns the Circle,
-  // or platform staff. One shared seam so the Space Circles surface and the Circle page agree.
+  // WHO may start it (ADR-842): whoever manages the Circle (its host, its admins, the guide or
+  // mentor who leads the parent area), a steward of the Space that owns the Circle, or platform
+  // staff. One shared seam so the Space Circles surface and the Circle page agree.
   const gate = await resolveRunGate(input.circleId, caller.id)
   if (!gate.circleSlug) return fail('Circle not found.')
-  if (!gate.allowed) return fail('Only the circle host or the space team can start a run.')
+  if (!gate.allowed) return fail('Only the circle team or the space team can start a run.')
 
   // WHAT they may pick, for a SPACE Circle: only a Journey that Space offers. Checked here and
   // not just in the picker, so a smuggled plan id is refused rather than quietly run.
@@ -89,7 +91,7 @@ export async function endJourneyRunAction(input: {
   if (!run) return fail('Run not found.')
 
   const gate = await resolveRunGate(run.circleId, caller.id)
-  if (!gate.allowed) return fail('Only the circle host or the space team can end a run.')
+  if (!gate.allowed) return fail('Only the circle team or the space team can end a run.')
 
   if (!(await setRunEndState(input.runId, input.state))) {
     return fail('That run has already ended.')

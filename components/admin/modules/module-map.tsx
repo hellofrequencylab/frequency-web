@@ -10,6 +10,7 @@ import { CirclePlaceTimeModule } from './circle-place-time-module'
 import { CirclePeopleModule } from './circle-people-module'
 import { CircleEngageModule } from './circle-engage-module'
 import { CirclePracticeModule } from './circle-practice-module'
+import { CircleJourneyRunModule } from './circle-journey-run-module'
 import { CircleInsightsModule } from './circle-insights-module'
 import { HubSettingsModule } from './hub-settings-module'
 import { HubPeopleModule } from './hub-people-module'
@@ -47,11 +48,20 @@ import { PersonalAppearanceModule } from './personal-appearance-module'
 // authority (circle.assignTask) for the same subject — what the circle is doing together — so the
 // seven-box core-entity shape gives Engage one box. The `circle.practice` catalog row is gone; its picker
 // is NOT (it renders right here), mirroring how SpaceProfileSettingsModule stacks three section editors.
+//
+// Start a Run joins them (circle rail trim). It was the `circle-journey-run` block in the member-facing
+// side column: a host write action taxing the column everyone else reads, and unlike the invite block it
+// had nowhere else to go. A Run is one Circle going through one Journey together, which is the same
+// subject Engage already holds, so it stacks here on the SAME reasoning ADR-846 used rather than adding
+// an eighth box. Its own read keeps its original circle.editSettings gate, which the same people hold as
+// this module's circle.assignTask (both are granted together to whoever manages the circle), so nothing
+// widened and nothing narrowed.
 function CircleEngageAndPracticeModule() {
   return (
     <>
       <CircleEngageModule />
       <CirclePracticeModule />
+      <CircleJourneyRunModule />
     </>
   )
 }

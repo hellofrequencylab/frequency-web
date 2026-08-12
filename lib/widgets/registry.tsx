@@ -123,8 +123,6 @@ import { CircleEvents } from '@/components/widgets/circles/circle-events'
 import { CircleMapBlock } from '@/components/widgets/circles/circle-map'
 import { CircleMeeting } from '@/components/widgets/circles/circle-meeting'
 import { CircleChallengesBlock } from '@/components/widgets/circles/circle-challenges'
-import { CircleInvite } from '@/components/widgets/circles/circle-invite'
-import { CircleJourneyRun } from '@/components/widgets/circles/circle-journey-run'
 import { CircleText } from '@/components/widgets/circles/circle-text'
 import { EventDescription } from '@/components/widgets/events/event-description'
 import {
@@ -320,8 +318,6 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'circle-map': CircleMapBlock,
   'circle-meeting': CircleMeeting,
   'circle-challenges': CircleChallengesBlock,
-  'circle-invite': CircleInvite,
-  'circle-journey-run': CircleJourneyRun,
   'circle-text': CircleText,
   // Event detail (/events/<slug>) — the FULL arrangeable interior, every section its own movable
   // block (post area + the former Join aside + the per-poster-section blocks).

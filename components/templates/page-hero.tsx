@@ -53,6 +53,11 @@ export interface PageHeroProps {
   leading?: React.ReactNode
   /** The layout variant (see the file header). Defaults to the shipped centered `overlay`. */
   variant?: PageHeroVariant
+  /** Does this hero own the page's `<h1>`? Default TRUE, which is right everywhere the hero IS the
+   *  page heading. Pass `false` ONLY when an ancestor template already renders the single h1 and
+   *  wants the hero as a cover renderer alone (DetailTemplate's standard `coverImage` path).
+   *  `minimal` is the only variant that honours this — the other two exist to display the title. */
+  heading?: boolean
   /** Band height. `large` is the taller directory hero; `standard` the shorter one; `short` / `tall`
    *  extend the ladder for entity headers. */
   size?: PageHeroSize
@@ -152,6 +157,7 @@ export function PageHero({
   actions,
   leading,
   variant = 'overlay',
+  heading = true,
   size,
   rawImg = false,
   dimmed = false,
@@ -222,9 +228,16 @@ export function PageHero({
       )}
 
       {variant === 'minimal' ? (
-        // Cover + scrim only. The page still needs its heading, so keep an sr-only h1 (a11y + SEO).
+        // Cover + scrim only. Normally the page still needs its heading, so an sr-only h1 carries it
+        // (a11y + SEO) — PageHero IS the page heading on those surfaces.
+        //
+        // ⚠️ `heading={false}` is for the one case where it is NOT: a template that owns the page's
+        // single <h1> in its own band and wants this component purely as a cover renderer. Emitting
+        // the sr-only h1 there ships TWO h1s with the same text, which is why DetailTemplate could
+        // not use PageHero for its standard cover and every operator cover control (height, focal
+        // point, overlay) was unreachable on Detail pages.
         <div className={`relative z-10 ${HEADER_MIN_H[resolvedSize]}`}>
-          <h1 className="sr-only">{title}</h1>
+          {heading ? <h1 className="sr-only">{title}</h1> : null}
         </div>
       ) : variant === 'identity' ? (
         // Entity header: the lockup anchored bottom-left, an optional leading chip beside the title.
