@@ -14,6 +14,7 @@ import {
   createConfirmLabel,
   createEntityToolDef,
   createEverAutoExecutes,
+  createGateFor,
   creatableEntities,
   creatableEntityIds,
   effectiveCreateTier,
@@ -74,6 +75,18 @@ describe('the create gate', () => {
   it('names no entity the catalog does not know', () => {
     const registered = new Set(studioEntityIds())
     for (const id of Object.keys(CREATE_GATES)) expect(registered.has(id)).toBe(true)
+  })
+
+  // The DRAFTS BADGE depends on this one. `countMyCreateProposals` (create-entity.ts) narrows its
+  // SQL count to the CREATE_GATES keys that still resolve through `createGateFor`, because that is
+  // the exact predicate `listMyCreateProposals` applies row-by-row in JS. If a declared gate ever
+  // stopped being a creatable entity, `createGateFor` would return null for it and the entity would
+  // silently drop out of BOTH — which is consistent, but the badge counting a set the page cannot
+  // show (or vice versa) is the failure worth naming. Keys and creatables must stay the same set.
+  it('resolves through createGateFor for every key, so the drafts count and the drafts page agree', () => {
+    for (const id of Object.keys(CREATE_GATES)) {
+      expect(createGateFor(id), `${id} declares a gate but is not a creatable entity`).toBeTruthy()
+    }
   })
 
   it('makes a scoped gate say which authority holds the line', () => {
