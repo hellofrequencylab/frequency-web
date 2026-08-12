@@ -23008,3 +23008,59 @@ Six Vera Sparks: `/circles/new` · `/practices/new` · `/journeys/new` · `/even
 console itself), the Business Seeder (`/admin/*`, its own workspace with no member rail), and the
 three non-Spark create forms (`/housing/new`, `/spaces/new`, `/spaces/new/business`). Adding one is
 a new folder under `@wizard`; the tests discover routes rather than listing them.
+
+## ADR-1018: `db-tests` installs the Supabase CLI from our own lockfile, not from GitHub releases (2026-08-12)
+
+**Status:** accepted · **Supersedes:** nothing · **Touches:** `.github/workflows/db-tests.yml`
+
+### What broke
+
+PR #2110's `db-tests` job failed twice in a row without running a single test. Neither failure was in
+the tree. `supabase/setup-cli@v3` downloads **Bun** from GitHub *releases* before it does anything
+else, and that download failed:
+
+```
+Downloading a new version of Bun: .../bun-v1.3.10/bun-linux-x64.zip
+socket hang up          → waiting 14 seconds
+socket hang up          → waiting 20 seconds
+Error: Unexpected HTTP response: 503
+```
+
+The action's own retry (14 s, 20 s) exhausted itself inside 34 seconds. That is the whole job: the
+CLI was never installed, the stack never booted, the pgTAP suite never ran. The first time this
+happened it was called an infrastructure flake and the job was re-run; the second time, on a
+different SHA, made it a dependency we do not control failing a gate we do.
+
+### The decision
+
+Drop `supabase/setup-cli` from the workflow. The repo **already pins the CLI as a devDependency**
+(`supabase@2.112.0`), whose bin shim resolves `@supabase/cli-linux-x64@2.112.0` — an optional
+dependency in `pnpm-lock.yaml`, served by the **npm registry**. The job now does the same
+`pnpm/action-setup` + `setup-node` + `pnpm install --frozen-lockfile` prelude as `checks`, `lint` and
+`test`, then calls `pnpm exec supabase db start` / `pnpm exec supabase test db`.
+
+| | Before | After |
+|---|---|---|
+| CLI source | GitHub releases (via a Bun download) | npm registry, via `pnpm-lock.yaml` |
+| Version | `version: latest` — unpinned | `2.112.0` — pinned by the lockfile |
+| New network dependency | Bun + the CLI tarball | 🟢 **none** — every other CI job already installs it |
+| Matches what a developer runs | no | yes (`pnpm test:rls` is `supabase test db`) |
+
+### Why this is not just swapping one download for another
+
+`@supabase/cli-linux-x64` is **already in every CI job's `node_modules`** — it is the 106 MB binary
+named in [`DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md) §3. `checks`, `lint` and `test` each pull it today as
+part of `pnpm install`. So this removes two fetches and adds zero, and the fetch it keeps is the one
+already covered by pnpm's store cache (`cache: pnpm`).
+
+The second gain is the one that will matter later: **`version: latest` was an unpinned input into a
+gate.** A CLI release could change the behaviour of a required check with no commit in this repo. It
+now moves only when the lockfile moves, in a reviewable diff.
+
+### The general rule this is an instance of
+
+A gate may not depend on a third party's CDN when the same artifact is already pinned in our
+lockfile. `DEPLOY-SAFETY.md` §9 records the same shape from the other direction — a build killed by
+`fonts.gstatic.com` returning 404 — and reaches the same durable answer: **vendor it, or pin it.**
+The difference is that a font flake wastes a redeploy while this one silently produces a red required
+check on a PR that is fine.
