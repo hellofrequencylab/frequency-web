@@ -86,7 +86,9 @@ export const ELEMENTS: readonly ElementDef[] = [
   },
   {
     // QR Studio — the one QR design editor (app/(main)/admin/qr/style-editor.tsx, StyleEditor). One
-    // canonical, un-forked component mounted on every code surface; client-mountable via <AppElement>.
+    // canonical, un-forked component imported directly by each of its 7 surfaces. (It read
+    // "client-mountable via <AppElement>" until 2026-08-12; there is no such mounter and no component
+    // map — see the note at the head of scripts/check-elements.mjs.)
     // The features declare the design controls + who may use each (role-gated); consuming them per-viewer
     // is the resolveQrStudio() follow-up (mirrors resolveHeaderElement). See docs/EMBEDDABLE-ELEMENTS.md.
     key: 'qr-studio',

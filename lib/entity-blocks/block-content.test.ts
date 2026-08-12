@@ -33,9 +33,14 @@ import {
 
 describe('safeUrl', () => {
   it('keeps http(s) / mailto / tel / relative', () => {
+    // An absolute URL is validated by parsing and returned as authored: sanitizeBlockContent stores
+    // this value and a links row shows it as the label, so the guard must not rewrite copy.
     expect(safeUrl('https://x.com')).toBe('https://x.com')
+    expect(safeUrl('https://x.com/a?b=1#c')).toBe('https://x.com/a?b=1#c')
     expect(safeUrl('mailto:a@b.com')).toBe('mailto:a@b.com')
+    expect(safeUrl('tel:+15551234567')).toBe('tel:+15551234567')
     expect(safeUrl('/spaces/x')).toBe('/spaces/x')
+    expect(safeUrl('/spaces/x?tab=events#top')).toBe('/spaces/x?tab=events#top')
     expect(safeUrl('#anchor')).toBe('#anchor')
   })
   it('drops javascript: / data: / garbage', () => {
@@ -43,6 +48,14 @@ describe('safeUrl', () => {
     expect(safeUrl('data:text/html,x')).toBe('')
     expect(safeUrl('  ')).toBe('')
     expect(safeUrl(42)).toBe('')
+  })
+  // The hole the comment above safeUrl always claimed was closed: a leading slash is not proof of
+  // same-origin. Both of these used to be returned verbatim to an href.
+  it('drops protocol-relative and backslash-folded off-origin paths', () => {
+    expect(safeUrl('//evil.com/x')).toBe('')
+    expect(safeUrl('/\\evil.com')).toBe('')
+    expect(safeUrl('/\\/evil.com/x')).toBe('')
+    expect(safeUrl('\\\\evil.com')).toBe('')
   })
 })
 

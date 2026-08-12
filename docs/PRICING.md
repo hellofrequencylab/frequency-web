@@ -439,7 +439,7 @@ server. Unit-tested (`lib/pricing/loadout.test.ts`).
 |---|---|---|---|
 | **Admin catalog console** (C1) | `app/(main)/admin/pricing/` (`pricing-console.tsx`, `actions.ts`, `load.ts`) | edit every catalog list/founding amount, the per-add-on enable toggles, the seat floor, the Supporter PWYW config; the "Sync the catalog to Stripe" button (env-gated, safe no-op when unconfigured) | the catalog sync writes the Phase B Products/Prices; `billing_live` flip goes live |
 | **Space Pro plan + add-on picker** (C2) | `app/(main)/spaces/[slug]/settings/billing/` (`loadout-picker.tsx`, `actions.ts` `startSpaceLoadoutCheckout`) | a disabled preview ("available soon"): the base + four add-on toggles, a live total, the monthly/yearly switch, the founding-under-list anchor, trial badges, "founding price held" when the space holds a locked base price | the buy CTA → `createSpaceLoadoutCheckout` (double-gated: `canManage` server-side + `billingLive` + the per-plan switch) |
-| **Crew upgrade + PWYW badge** (C3) | `app/(main)/upgrade/page.tsx` + `supporter-badge.tsx` | the free-beta toggle (unchanged) + the Crew list→founding price + the mission-framing line; the Supporter badge opt-in (writes `profiles.is_supporter`, the only live mutation) | a live Crew Stripe checkout via `createMembershipCheckout` |
+| **Crew upgrade + PWYW badge** (C3) | `app/(main)/upgrade/page.tsx` (`upgrade-toggle.tsx` + `pwyw-picker.tsx`) | the free-beta toggle (unchanged) + the Crew list→founding price + the mission-framing line; the Supporter badge is **earned through the PWYW picker** (`earnsSupporterMark` → `confirmSupporterContribution`, which writes `profiles.is_supporter`, the only live mutation) | a live Crew Stripe checkout via `createMembershipCheckout` |
 
 The **Crew list anchor** is an optional `TierPrice.list_cents` (jsonb-additive, no migration), seeded Crew
 list $12 / founding $9. **Supporter is retired as a tier** and is now the PWYW badge; the contribution
@@ -485,7 +485,7 @@ All writes are admin-gated server actions (`actions.ts`) that audit flag flips v
 | Pricing display shaping (pure, P3) | `lib/pricing/display.ts` |
 | Catalog config overlay (pure + IO, Phase C) | `lib/pricing/catalog-config.ts` |
 | Loadout total math (pure, Phase C) | `lib/pricing/loadout.ts` · tests `lib/pricing/loadout.test.ts` |
-| Member upgrade surface + PWYW badge (P3/C3) | `app/(main)/upgrade/page.tsx` · `supporter-badge.tsx` |
+| Member upgrade surface + PWYW badge (P3/C3) | `app/(main)/upgrade/page.tsx` · `pwyw-picker.tsx` · the display pill `components/supporter-badge.tsx`. (`app/(main)/upgrade/supporter-badge.tsx`, the separate opt-in box, was deleted 2026-08-12 — it had no importer after the box was folded into `PwywPicker`.) |
 | Space plan + loadout picker + white-label lead (P3/C2) | `app/(main)/spaces/[slug]/settings/billing/` (`page.tsx`, `plan-picker.tsx`, `loadout-picker.tsx`, `whitelabel-request.tsx`, `actions.ts`) |
 | Space membership join CTA (P3) | `components/spaces/membership-join.tsx` · `membership-join-card.tsx` · `lib/spaces/memberships-actions.ts` (`startSpaceMembershipCheckout`) |
 | Vault cash-in gate wiring (P3) | `app/(main)/crew/store/actions.ts` (`redeemItem`) |

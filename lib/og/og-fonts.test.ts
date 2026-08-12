@@ -68,8 +68,25 @@ describe('loading them touches no network', () => {
     // weight 700 to Satori, so a fallback render was silently the wrong weight.
     // Quote-agnostic: prettier owns the quote style in that file and a literal match would break
     // on a reformat rather than on a real regression.
-    expect(code).toMatch(/read\(\s*["']LiberationSans-Bold\.ttf["']\s*\)/)
+    expect(code).toMatch(/["']LiberationSans-Bold\.ttf["']/)
+    expect(code).toMatch(/\.catch\(\s*\(\)\s*=>\s*readLiberationBold\(\)\s*\)/)
     expect(code).not.toContain('LiberationSans-Regular.ttf')
+  })
+
+  it('builds every font path from LITERALS, never from a parameter', () => {
+    // 🔴 THE ~300MB BUG. The three reads used to share one `read(file)` helper. @vercel/nft cannot
+    // resolve a path assembled from a variable, so it globbed the deepest prefix it could resolve —
+    // the whole `public/fonts` directory — into all 69 functions reaching this module, shipping
+    // LiberationSans-Regular (410,820 bytes) and the licence text to each. Same failure as ADR-1004's
+    // `join(process.cwd(), ...rubricPath)`, which swept the repo root into ~300 functions.
+    //
+    // Nothing about the glob is visible at runtime: the cards render fine, the deploy just grows.
+    // This assertion is the only thing that notices, so it checks the SHAPE, not the outcome.
+    const args = [...code.matchAll(/public\/fonts["'],\s*([^)]+)\)/g)].map((m) =>
+      m[1].trim(),
+    )
+    expect(args.length).toBeGreaterThanOrEqual(3) // Nunito Bold + Black, and the Liberation fallback
+    for (const arg of args) expect(arg).toMatch(/^["'][A-Za-z-]+\.ttf["']$/)
   })
 
   it('returns real bytes for both weights, fast', async () => {
@@ -95,12 +112,16 @@ describe('loading them touches no network', () => {
 
 describe('the faces reach the serverless runtime', () => {
   const cfg = readFileSync('next.config.ts', 'utf8')
+  const block = cfg.match(/outputFileTracingIncludes:\s*\{([\s\S]*?)\n {2}\}/)?.[1] ?? ''
+  // The route keys that carry the faces as belt-and-braces. Substring matches (picomatch runs these
+  // in `contains` mode), so they cover the hash-suffixed metadata routes too.
+  const CARD_KEYS = ["'/opengraph-image'", "'/twitter-image'", "'/dev/og-root-card'"]
 
-  it('every face load-nunito can open is in outputFileTracingIncludes', () => {
-    // Next's tracer follows JS imports, NOT a path built inside a function with join(process.cwd()).
-    // This repo already had to do this explicitly for the resvg .wasm, with a comment describing the
-    // same failure. An OG card that cannot load a font does not degrade politely: Satori throws on
-    // an empty `fonts` array, so a missed include swaps a SLOW card for a BROKEN one.
+  it('every face load-nunito can open is named for the card routes', () => {
+    // Belt-and-braces, not the delivery mechanism: the literal-path assertion above is what actually
+    // gets the faces into the bundle. These keys exist because the failure is invisible — Satori
+    // throws on an empty `fonts` array and `deliverCard` swallows it, so a missing face reads as a
+    // broken preview in someone else's mail client (DEPLOY-SAFETY rule 6).
     //
     // Derived from the loader rather than hardcoded, so adding a weight there without shipping it
     // here fails HERE instead of at request time on a route nobody opens in development.
@@ -108,17 +129,24 @@ describe('the faces reach the serverless runtime', () => {
     const faces = [...loader.matchAll(/["']([A-Za-z-]+\.ttf)["']/g)].map((m) => m[1])
     expect(faces.length).toBeGreaterThanOrEqual(3) // Nunito Bold + Black, and the Liberation fallback
     for (const face of new Set(faces)) expect(cfg).toContain(`'./public/fonts/${face}'`)
+    for (const key of CARD_KEYS) expect(block).toContain(`${key}: OG_CARD_FONTS`)
+  })
+
+  it('and they are OFF the catch-all key, which is what cost 284MB', () => {
+    // 🔴 The faces used to sit on '/**': 650KB × 482 functions, for the 10 routes that rasterise.
+    // They ship on their own now because load-nunito's reads are literal-pathed. Putting them back
+    // on the catch-all would be silent — nothing renders differently, the deploy just grows by a
+    // quarter of a gigabyte, which is the shape of failure ADR-1003's budget gate exists to catch.
+    const catchAll = block.match(/'\/\*\*':\s*\[([\s\S]*?)\]/)?.[1] ?? ''
+    expect(catchAll).not.toContain('public/fonts')
   })
 
   it('and does NOT sweep in the faces nothing reads', () => {
     // 🔴 The first version used './public/fonts/*.ttf', which also shipped LiberationSans-Regular
     // (410,820 bytes) into EVERY lambda in the app. Nothing opens it from disk — flyer-raster.ts
     // fetches its faces over HTTP — so it was pure weight on every cold start.
-    // Asserted on the tracing BLOCK, not the whole file: the comment beside the key names the face
-    // it deliberately excludes, and a whole-file match would fail on the explanation.
-    const block = cfg.match(/outputFileTracingIncludes:\s*\{([\s\S]*?)\n {2}\}/)?.[1] ?? ''
-    expect(block).not.toContain("'./public/fonts/*.ttf'")
-    expect(block).not.toContain("'./public/fonts/LiberationSans-Regular.ttf'")
+    expect(cfg).not.toContain("'./public/fonts/*.ttf'")
+    expect(cfg).not.toContain("'./public/fonts/LiberationSans-Regular.ttf'")
   })
 
   it('and it did not displace the help content on the same key', () => {

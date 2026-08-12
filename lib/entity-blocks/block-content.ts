@@ -807,15 +807,49 @@ export function resolvePickedIds(selected: readonly string[], liveIds: readonly 
 
 // ── URL safety ────────────────────────────────────────────────────────────────────────────────────────
 
+/** A base that cannot resolve, used only to turn a relative path into a parsed URL. `.invalid` is
+ *  reserved by RFC 2606, so nothing is fetchable from it even if one ever leaked into an href.
+ *  Same constant, same reasoning, as lib/safe-image-src.ts — and FIXED rather than
+ *  window.location.origin, so this helper answers identically on the server and in the browser. */
+const RELATIVE_BASE = 'https://relative.invalid'
+
 /** Keep only a safe href: http(s), mailto, tel, or a same-origin relative path (`/` or `#`). Everything
- *  else (javascript:, data:, vbscript:, protocol-relative) becomes '' so it never reaches an href/src. */
+ *  else (javascript:, data:, vbscript:, protocol-relative) becomes '' so it never reaches an href/src.
+ *
+ *  PARSED, not prefix-matched. A leading `/` is not proof of same-origin: `//evil.com/x` is
+ *  protocol-relative and `/\evil.com` folds into the same thing under the URL parser's backslash
+ *  fix-up. The `startsWith('/')` test this function used to open with returned both verbatim, which
+ *  made the sentence above a guarantee the body did not keep — and a shared helper that documents an
+ *  origin guarantee it does not provide is wrong for the next caller, not just for this one. Resolving
+ *  against a base that cannot exist and keeping the value only while the origin is still that base is
+ *  the shape lib/safe-image-src.ts uses for <img src>. What comes back from that branch is the
+ *  parser's own path, not the caller's string — the check and the returned value have to agree, or
+ *  the caller gets back the exact text the check just refused to trust.
+ *
+ *  The absolute branch parses too (the scheme comes from the URL parser, not from reading the first
+ *  characters) but hands back the caller's string, NOT `u.toString()`. It is the one place this
+ *  deliberately differs from safe-image-src: an allowlisted scheme has no origin left to hide, and
+ *  sanitizeBlockContent WRITES this value to storage and defaults a links row's label to it — so
+ *  normalising here would rewrite what an operator typed and publish `https://x.com/` as the visible
+ *  label of a link they entered as `https://x.com`. A cosmetic edit to member-visible copy is not
+ *  something a URL guard should be making on its own.
+ *
+ *  `#...` is returned untouched on purpose: a fragment carries no origin, and resolving it would
+ *  rewrite an in-page `#section` into `/#section`, which is a different page anywhere but the root. */
 export function safeUrl(raw: unknown): string {
   if (typeof raw !== 'string') return ''
   const v = raw.trim()
   if (!v) return ''
-  if (v.startsWith('/') || v.startsWith('#')) return v
-  if (/^(https?:|mailto:|tel:)/i.test(v)) return v
-  return ''
+  if (v.startsWith('#')) return v
+  try {
+    if (v.startsWith('/')) {
+      const u = new URL(v, RELATIVE_BASE)
+      return u.origin === RELATIVE_BASE ? `${u.pathname}${u.search}${u.hash}` : ''
+    }
+    return /^(?:https?|mailto|tel):$/.test(new URL(v).protocol) ? v : ''
+  } catch {
+    return ''
+  }
 }
 
 // ── Inline rich text (Email Studio canvas, Slice A) ─────────────────────────────────────────────────────
