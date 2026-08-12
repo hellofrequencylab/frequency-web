@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2288,
+      "baseline": 2284,
       "frozen": {
         "at": "2026-08-12",
-        "value": 2288,
+        "value": 2284,
         "direction": "lowered",
         "basis": "6a00b952da5c",
-        "reason": "Catching up to PR #2106's kit sweep, which merged to main without a re-freeze, plus a small contribution from this branch. Measured attribution: of the -152, this branch's own diff accounts for -4 (deleting crm-snapshot, studio-launch-button, profile-cover and the /events/drafts delete-button and page, net of the three new /drafts rows and the claim CTA, which compose RowCard rather than hand-rolling a radius). The remaining -148 was already on main from #2106's RowCard/EntityCard adoption work. Verified by diffing rounded-* occurrences per changed file between origin/main and HEAD.",
-        "from": 2440
+        "reason": "The Circle redesign's two new loading skeletons and the Journey tab moved from literal rounded-2xl/rounded-xl to the rounded-card role token. --radius-card is 24px, exactly rounded-2xl, so the paint is identical and the token additionally follows the per-theme radius scales the literal ignores. New files paying their way in, not a sweep.",
+        "from": 2288
       },
       "history": [
         {
@@ -182,6 +182,13 @@
           "to": 2288,
           "direction": "lowered",
           "reason": "Catching up to PR #2106's kit sweep, which merged to main without a re-freeze, plus a small contribution from this branch. Measured attribution: of the -152, this branch's own diff accounts for -4 (deleting crm-snapshot, studio-launch-button, profile-cover and the /events/drafts delete-button and page, net of the three new /drafts rows and the claim CTA, which compose RowCard rather than hand-rolling a radius). The remaining -148 was already on main from #2106's RowCard/EntityCard adoption work. Verified by diffing rounded-* occurrences per changed file between origin/main and HEAD."
+        },
+        {
+          "at": "2026-08-12",
+          "from": 2288,
+          "to": 2284,
+          "direction": "lowered",
+          "reason": "The Circle redesign's two new loading skeletons and the Journey tab moved from literal rounded-2xl/rounded-xl to the rounded-card role token. --radius-card is 24px, exactly rounded-2xl, so the paint is identical and the token additionally follows the per-theme radius scales the literal ignores. New files paying their way in, not a sweep."
         }
       ]
     },
@@ -445,14 +452,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 513,
+      "baseline": 512,
       "frozen": {
         "at": "2026-08-12",
-        "value": 513,
+        "value": 512,
         "direction": "lowered",
         "basis": "9bcf47d8a607",
-        "reason": "Same #2106 kit sweep catching up, plus the four components this branch deleted. The deleted files (studio-launch-button, crm-snapshot, the /events/drafts delete-button, profile-cover) each hand-rolled their own button surface; their replacements compose the kit Button, which reads its background from a token.",
-        "from": 524
+        "reason": "The two new circle header-control toggle groups (hero height, cover overlay) stopped hand-rolling a bg-primary fill on a raw <button> and compose the Button primitive instead, with primarySoft as the selected state. That is the token pair the kit already carries for a control that is present without shouting, it matches the Space branding form's treatment of the same control, and it brings the primitive's 44px touch floor with it.",
+        "from": 513
       },
       "history": [
         {
@@ -531,6 +538,13 @@
           "to": 513,
           "direction": "lowered",
           "reason": "Same #2106 kit sweep catching up, plus the four components this branch deleted. The deleted files (studio-launch-button, crm-snapshot, the /events/drafts delete-button, profile-cover) each hand-rolled their own button surface; their replacements compose the kit Button, which reads its background from a token."
+        },
+        {
+          "at": "2026-08-12",
+          "from": 513,
+          "to": 512,
+          "direction": "lowered",
+          "reason": "The two new circle header-control toggle groups (hero height, cover overlay) stopped hand-rolling a bg-primary fill on a raw <button> and compose the Button primitive instead, with primarySoft as the selected state. That is the token pair the kit already carries for a control that is present without shouting, it matches the Space branding form's treatment of the same control, and it brings the primitive's 44px touch floor with it."
         }
       ]
     },

@@ -2,23 +2,34 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { labelClasses } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 import { ImageFocalPicker } from '@/components/ui/image-focal-picker'
-import { updateCircleCoverFocus, updateCircleHeroHeight } from '@/app/(main)/circles/admin-actions'
+import {
+  updateCircleCoverFocus,
+  updateCircleHeroHeight,
+  updateCircleCoverScrim,
+} from '@/app/(main)/circles/admin-actions'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { CIRCLE_HERO_HEIGHTS, type CircleHeroHeight } from '@/lib/circles/hero'
+import { COVER_SCRIM_OPTIONS, type CoverScrim } from '@/lib/layout/cover-scrim'
 
 // The Circle HEADER controls, the twin of ChannelHeaderControls (and EventHeaderControls before
-// it): the cover FOCAL POINT (where the image sits inside its cropped hero window) beside the hero
-// HEIGHT (Short / Standard / Tall). Both save into the circles.theme jsonb bag, the same shape
-// events and Channels use, so there is no column per setting and an untouched Circle stores {}.
+// it): the cover FOCAL POINT (where the image sits inside its cropped hero window), the hero
+// HEIGHT (Short / Standard / Tall), and the OVERLAY over the photo (None / Shade / Blend). All
+// three save into the circles.theme jsonb bag, the same shape events and Channels use, so there is
+// no column per setting and an untouched Circle stores {}.
 //
 // This exists because a Circle's cover (circles.image_url) renders as a plain center crop on the
 // page hero, and a host had no control when the crop cut the part of the photo that matters — the
 // same gap the owner called out on Channels ("basic setting for focus picker"), now closed here.
 //
-// Height saves optimistically. Focus fires onChange continuously while dragging, so its write is
-// DEBOUNCED: the marker tracks the pointer live and the save lands once the host settles. The
-// focus picker only appears when there is a cover to reposition, since positioning a gradient is
+// THE OVERLAY is the Space control brought over unchanged (owner ask): the same three options, the
+// same words for them, the same `coverScrim` key, read and merged through the same pure helpers
+// (lib/layout/cover-scrim.ts). A host who has set up a Space already knows this control.
+//
+// Height and overlay save optimistically. Focus fires onChange continuously while dragging, so its
+// write is DEBOUNCED: the marker tracks the pointer live and the save lands once the host settles.
+// The focus picker only appears when there is a cover to reposition, since positioning a gradient is
 // meaningless.
 export function CircleHeaderControls({
   circleId,
@@ -26,6 +37,7 @@ export function CircleHeaderControls({
   imageUrl,
   initialFocus = DEFAULT_OBJECT_POSITION,
   initialHeight,
+  initialScrim,
 }: {
   circleId: string
   slug: string
@@ -33,10 +45,13 @@ export function CircleHeaderControls({
   imageUrl: string | null
   initialFocus?: string
   initialHeight: CircleHeroHeight
+  initialScrim: CoverScrim
 }) {
   const [focus, setFocus] = useState(initialFocus)
   const [height, setHeight] = useState<CircleHeroHeight>(initialHeight)
+  const [scrim, setScrim] = useState<CoverScrim>(initialScrim)
   const [heightPending, startHeight] = useTransition()
+  const [scrimPending, startScrim] = useTransition()
   const [, startFocus] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -67,6 +82,20 @@ export function CircleHeaderControls({
     })
   }
 
+  function onScrimChange(next: CoverScrim) {
+    const previous = scrim
+    setScrim(next) // optimistic, same as height
+    startScrim(async () => {
+      const res = await updateCircleCoverScrim(circleId, slug, next)
+      if (res && 'error' in res) {
+        setScrim(previous)
+        setError(res.error)
+      } else {
+        setError(null)
+      }
+    })
+  }
+
   return (
     <div className="space-y-3 rounded-card border border-border bg-surface-elevated/40 p-3">
       <span className={labelClasses}>Header</span>
@@ -88,27 +117,60 @@ export function CircleHeaderControls({
             {CIRCLE_HERO_HEIGHTS.map((h) => {
               const on = h.value === height
               return (
-                <button
+                <Button
                   key={h.value}
                   type="button"
+                  size="sm"
+                  // The selected state of a segmented control, not a call to action: primarySoft is
+                  // the token pair the kit already carries for "present, not shouting". Composing
+                  // the primitive rather than hand-rolling the fill is what the adoption ratchet
+                  // asks for, and it brings the 44px touch floor with it.
+                  variant={on ? 'primarySoft' : 'secondary'}
                   disabled={heightPending}
                   aria-pressed={on}
                   onClick={() => onHeightChange(h.value)}
-                  className={
-                    'rounded-control px-2.5 py-1.5 text-meta font-semibold transition-colors disabled:opacity-40 ' +
-                    (on
-                      ? 'bg-primary text-on-primary'
-                      : 'border border-border bg-surface text-text hover:border-border-strong')
-                  }
                 >
                   {h.label}
-                </button>
+                </Button>
               )
             })}
           </div>
           <p className="text-2xs text-muted">How tall the band is on the circle page.</p>
         </div>
       </div>
+
+      {/* Overlay — what sits between the photo and the circle name on top of it. Only meaningful
+          once there is a photo: with no cover the hero draws its token gradient and there is
+          nothing to shade. */}
+      {imageUrl && (
+        <div className="space-y-1.5">
+          <span className={labelClasses} id="circle-overlay-label">
+            Overlay
+          </span>
+          <div className="flex flex-wrap gap-1.5" role="group" aria-labelledby="circle-overlay-label">
+            {COVER_SCRIM_OPTIONS.map((o) => {
+              const on = o.value === scrim
+              return (
+                <Button
+                  key={o.value}
+                  type="button"
+                  size="sm"
+                  variant={on ? 'primarySoft' : 'secondary'}
+                  disabled={scrimPending}
+                  aria-pressed={on}
+                  title={o.tagline}
+                  onClick={() => onScrimChange(o.value)}
+                >
+                  {o.label}
+                </Button>
+              )
+            })}
+          </div>
+          <p className="text-2xs text-muted">
+            {COVER_SCRIM_OPTIONS.find((o) => o.value === scrim)?.tagline}
+          </p>
+        </div>
+      )}
 
       {error && (
         <p role="alert" className="text-meta font-medium text-danger">

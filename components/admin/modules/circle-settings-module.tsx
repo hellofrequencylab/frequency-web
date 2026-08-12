@@ -18,6 +18,7 @@ import {
 import { DangerDelete } from '@/components/admin/danger-delete'
 import { CircleHeaderControls } from '@/components/admin/modules/circle-header-controls'
 import { readCircleCoverFocus, readCircleHeroHeight } from '@/lib/circles/hero'
+import { readCoverScrimSetting } from '@/lib/layout/cover-scrim'
 
 // In-place "Circle settings" (EMBEDDED-ADMIN.md / ADR-133), rendered inside the page admin rail on a
 // /circles/[slug] page. The rail section header is the single title. The main fields autosave and reflect
@@ -114,14 +115,16 @@ export function CircleSettingsModule() {
       </div>
 
       {/* HEADER controls, mirroring the Event/Channel settings flow (ADR-886): the cover, then how
-          it is framed. Only meaningful once there is an image, and the component itself hides the
-          focal picker when there is not. */}
+          it is framed and what sits over it. Only meaningful once there is an image, and the
+          component itself hides the focal picker and the overlay buttons when there is not. All
+          three read out of the one `theme` bag this module already loads. */}
       <CircleHeaderControls
         circleId={data.id}
         slug={data.slug}
         imageUrl={data.image_url ?? null}
         initialFocus={readCircleCoverFocus(data.theme)}
         initialHeight={readCircleHeroHeight(data.theme)}
+        initialScrim={readCoverScrimSetting(data.theme)}
       />
 
       <RailAutosaveForm action={updateCircleSettings.bind(null, data.id, data.slug)}>
