@@ -748,6 +748,20 @@ export async function getVeraReview(planId: string): Promise<StoredVeraReview | 
 
 // --- Adopt / fork (acting on a community journey) --------------------------
 
+/** How many members are currently ON this Journey (active adoptions), optionally
+ *  excluding one profile (e.g. the author's own adoption) so the count reflects
+ *  OTHER people. Powers the unpublish "N members are on this Journey" warning. */
+export async function countActiveAdopters(planId: string, excludeProfileId?: string): Promise<number> {
+  let query = db()
+    .from('journey_plan_adoptions')
+    .select('id', { count: 'exact', head: true })
+    .eq('plan_id', planId)
+    .eq('active', true)
+  if (excludeProfileId) query = query.neq('profile_id', excludeProfileId)
+  const { count } = await query
+  return count ?? 0
+}
+
 /** Is this plan currently adopted by the member? */
 export async function isPlanAdopted(profileId: string, planId: string): Promise<boolean> {
   const { data } = await db()
