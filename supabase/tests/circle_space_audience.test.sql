@@ -10,6 +10,14 @@ begin;
 select plan(8);
 
 -- ── Fixture ──────────────────────────────────────────────────────────────────────────────────
+-- The auth rows first: profiles.auth_user_id carries a FOREIGN KEY to auth.users, so a profile
+-- cannot exist without one. Same shape as circle_privacy.test.sql's fixture.
+insert into auth.users (id, email) values
+  ('00000000-0000-4000-a200-000000000001', 'aud-owner@test.local'),
+  ('00000000-0000-4000-a200-000000000002', 'aud-staff@test.local'),
+  ('00000000-0000-4000-a200-000000000003', 'aud-payer@test.local'),
+  ('00000000-0000-4000-a200-000000000004', 'aud-nobody@test.local');
+
 -- ⚠️ `auth_user_id` is the join that makes private.get_my_profile_id() resolve: the JWT `sub` is
 -- the AUTH id, NOT the profile id. Omitting it (or setting `sub` to the profile id) makes every
 -- identity-dependent predicate quietly answer false, which reads as the feature being broken
