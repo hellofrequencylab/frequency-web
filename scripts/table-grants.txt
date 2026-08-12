@@ -276,6 +276,7 @@ store_items                          public
 store_redemptions                    authenticated
 streaks                              authenticated
 stripe_webhook_events                internal
+studio_draft                         internal
 studio_site_changes                  authenticated
 studio_steer                         internal
 subject_topic_preferences            authenticated

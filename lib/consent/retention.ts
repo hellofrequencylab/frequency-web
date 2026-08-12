@@ -7,6 +7,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { purgeExpiredStudioDrafts } from '@/lib/studio/draft-store'
 
 /** How long raw interaction_events rows are kept before purge (PI.1). The durable
  *  signal lives in the PI.2 rollups; the raw firehose is a short-window working set. */
@@ -23,9 +24,12 @@ function db(): SupabaseClient {
   return createAdminClient()
 }
 
-/** Delete data past its window: expired member tags + raw interaction_events older than
- *  INTERACTION_RETENTION_DAYS. Returns how many of each were purged. */
-export async function enforceRetention(now: Date = new Date()): Promise<{ tagsPurged: number; interactionsPurged: number }> {
+/** Delete data past its window: expired member tags, raw interaction_events older than
+ *  INTERACTION_RETENTION_DAYS, and staged Spark drafts past their seven-day life
+ *  (docs/adr-drafts/1001-draft-sync.md). Returns how many of each were purged. */
+export async function enforceRetention(
+  now: Date = new Date(),
+): Promise<{ tagsPurged: number; interactionsPurged: number; studioDraftsPurged: number }> {
   const { data: tags } = await db()
     .from('member_tags')
     .delete()
@@ -40,5 +44,14 @@ export async function enforceRetention(now: Date = new Date()): Promise<{ tagsPu
     .lt('created_at', cutoff.toISOString())
     .select('id')
 
-  return { tagsPurged: (tags ?? []).length, interactionsPurged: (interactions ?? []).length }
+  // Unfinished Spark answers live seven days, matching the copy in the author's own browser. The
+  // read path filters on the same window, so a missed night changes nothing an author can see;
+  // this is what stops abandoned drafts accumulating.
+  const studioDraftsPurged = await purgeExpiredStudioDrafts(now.getTime())
+
+  return {
+    tagsPurged: (tags ?? []).length,
+    interactionsPurged: (interactions ?? []).length,
+    studioDraftsPurged,
+  }
 }

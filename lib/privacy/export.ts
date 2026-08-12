@@ -20,6 +20,7 @@
 //   • gem_transactions .... profile_id = me        (gamification ledger I own)
 //   • member_tags ......... profile_id = me        (tags assigned TO me)
 //   • ai_member_context ... profile_id = me        (Vera's memory of me)
+//   • studio_draft ........ profile_id = me        (my unfinished Spark answers)
 //   • consent_records ..... profile_id = me        (my consent history)
 //   • network_contacts .... owner_id = me          (CRM rows I own)
 //   • network_contact_notes/tags ... contact_id IN (my own contacts)
@@ -30,6 +31,7 @@
 // scoped to `profileId`. Do not add a query here without an owner filter.
 
 import 'server-only'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 /** The assembled export. `meta` documents provenance; `data` holds the rows. */
@@ -59,6 +61,8 @@ export type MemberExport = {
     networkContactNotes: Record<string, unknown>[]
     networkContactTags: Record<string, unknown>[]
     aiMemberContext: Record<string, unknown> | null
+    /** Unfinished Spark wizard answers, staged so a draft follows the author across devices. */
+    studioDrafts: Record<string, unknown>[]
     consentRecords: Record<string, unknown>[]
   }
 }
@@ -77,6 +81,7 @@ export const MEMBER_EXPORT_SECTIONS = [
   'networkContactNotes',
   'networkContactTags',
   'aiMemberContext',
+  'studioDrafts',
   'consentRecords',
 ] as const
 
@@ -93,6 +98,11 @@ type Rows = Record<string, unknown>[]
  */
 export async function buildMemberExport(profileId: string): Promise<MemberExport> {
   const db = createAdminClient()
+  // `studio_draft` is newer than the generated types (its migration ships unapplied, by design),
+  // so its read goes through an untyped handle. The owner filter is identical and is still the
+  // whole access control.
+  // eslint-disable-next-line no-restricted-syntax -- studio_draft isn't in lib/database.types.ts yet (untyped seam, ADR-246)
+  const untyped = db as unknown as SupabaseClient
 
   // Each read is independently owner-scoped; run them in parallel. A failed read
   // surfaces as an empty section rather than poisoning the whole export — the
@@ -116,6 +126,7 @@ export async function buildMemberExport(profileId: string): Promise<MemberExport
     memberTags,
     networkContacts,
     aiContextRes,
+    studioDrafts,
     consentRecords,
   ] = await Promise.all([
     db.from('profiles').select('*').eq('id', profileId).maybeSingle(),
@@ -129,6 +140,7 @@ export async function buildMemberExport(profileId: string): Promise<MemberExport
     rows(db.from('member_tags').select('*').eq('profile_id', profileId)),
     rows(db.from('network_contacts').select('*').eq('owner_id', profileId)),
     db.from('ai_member_context').select('*').eq('profile_id', profileId).maybeSingle(),
+    rows(untyped.from('studio_draft').select('*').eq('profile_id', profileId)),
     rows(db.from('consent_records').select('*').eq('profile_id', profileId)),
   ])
 
@@ -168,6 +180,7 @@ export async function buildMemberExport(profileId: string): Promise<MemberExport
       networkContactNotes,
       networkContactTags,
       aiMemberContext: (aiContextRes.data as Record<string, unknown> | null) ?? null,
+      studioDrafts,
       consentRecords,
     },
   }
