@@ -1,12 +1,23 @@
-// The provider-agnostic map contract (ADR-901).
+// The provider-agnostic map contract (ADR-901, extended by ADR-1022).
 //
 // Every map in the app is described with these props and rendered by <MapCanvas>, which
 // picks Google or MapLibre. A component that wants a map describes WHAT to plot; it never
 // touches a map library. The drift guard (components/maps/maps-wiring.test.ts) enforces that.
+//
+// ADR-1022 added the four capabilities a browsing map needs — pin click, clustering,
+// fullscreen, and pin kinds — WITHOUT letting the two engines answer them differently. Every
+// decision they could have disagreed about (which colour a kind paints, which pins merge at
+// which zoom, how far a cluster tap zooms, what the bubble says) is computed by a pure module
+// under lib/maps/ that both canvases call. components/maps/map-capabilities.test.ts asserts
+// they expose the same prop surface and reach for the same shared helpers.
 
-/** Which token drives a pin's colour. Map DOM lives outside Tailwind, so the canvas resolves
- *  the CSS custom property at mount rather than taking a raw colour from the caller. */
-export type MapPinTone = 'primary' | 'secondary'
+import type { MapClusterOptions } from '@/lib/maps/cluster'
+import type { MapPinKind, MapPinTone } from '@/lib/maps/pin-kinds'
+
+// Re-exported so a surface keeps importing its map vocabulary from one place. The definitions
+// live under lib/maps/ because they are pure data a page can read to draw a legend without
+// pulling a map engine into its bundle (docs/DEPLOY-SAFETY.md §1).
+export type { MapClusterOptions, MapPinKind, MapPinTone }
 
 export type MapPin = {
   id: string
@@ -19,7 +30,14 @@ export type MapPin = {
   /** Optional link at the foot of the popup. */
   href?: string | null
   hrefLabel?: string | null
+  /** Explicit colour override. Predates `kind` and still wins over it. */
   tone?: MapPinTone
+  /** Which layer this pin belongs to: Event, Circle, Space, or the neutral `place` default.
+   *  Drives the marker colour through lib/maps/pin-kinds.ts, so a page's legend and the map
+   *  can never disagree. */
+  kind?: MapPinKind
+  /** Accessible name and tooltip for the marker. Falls back to `title`. */
+  label?: string | null
 }
 
 /** A geographic area drawn instead of (or alongside) a pin — the privacy circle. */
@@ -38,7 +56,11 @@ export type MapFit = {
   singleZoom?: number | null
 }
 
-export type MapCanvasProps = {
+/** What BOTH engines implement. Every key here is destructured by both canvases, and
+ *  components/maps/map-capabilities.test.ts fails if one of them grows or drops a key —
+ *  which is how a capability that works on Google and quietly does nothing on the MapLibre
+ *  fallback gets caught before a member ever sees it. */
+export type MapEngineProps = {
   /** [lng, lat] — GeoJSON order, matching the rest of the map stack. */
   center: [number, number]
   zoom: number
@@ -53,7 +75,29 @@ export type MapCanvasProps = {
   onMove?: (lat: number, lng: number) => void
   /** When set, the view eases here whenever it changes (viewer geolocation arriving). */
   recenterTo?: [number, number] | null
+  /** Marker click, so a pin can open a card the page owns.
+   *
+   *  ⚠️ When this is set the canvas does NOT open its own popup. Two cards for one tap is
+   *  worse than either alone, and the caller that wants a card is the caller that knows how
+   *  it should look. Both engines honour that rule identically. */
+  onPinClick?: (pin: MapPin) => void
+  /** Density handling: pins that overlap on screen merge into one bubble, which splits as the
+   *  member zooms in. Omit for one marker per pin (every pre-ADR-1022 caller).
+   *
+   *  Ignored in `draggable` picker mode, where there is exactly one pin to place. */
+  cluster?: MapClusterOptions | null
   className?: string
+}
+
+export type MapCanvasProps = MapEngineProps & {
+  /** Render an expand control that reopens this same map full screen.
+   *
+   *  The overlay is components/ui/dialog.tsx with `align="sheet"`, which already owns the
+   *  backdrop, ESC, scroll-lock, focus trap and focus restore. The seam composes it; it does
+   *  not re-solve any of that. */
+  expandable?: boolean
+  /** Copy for the expand control. Defaults to "Expand map". */
+  expandLabel?: string
 }
 
 /** Props the two implementations receive. `onProviderError` is how the Google canvas asks
@@ -63,4 +107,4 @@ export type MapCanvasProps = {
  *  script blocked, no API surface, auth rejected, watchdog timeout, server render) and the
  *  seam logs whichever one it was — an argument-less callback threw all six away, which is
  *  how a deterministic loader bug survived three rounds of debugging unseen. */
-export type MapImplProps = MapCanvasProps & { onProviderError?: (reason: string) => void }
+export type MapImplProps = MapEngineProps & { onProviderError?: (reason: string) => void }

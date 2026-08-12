@@ -1,7 +1,16 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import {
+  clusterAccessibleLabel,
+  clusterDiameterPx,
+  clusterLabel,
+  clusterPoints,
+  shouldRecluster,
+  zoomIntoCluster,
+} from '@/lib/maps/cluster'
 import { loadGoogleMaps, onGoogleMapsAuthFailure } from '@/lib/maps/google-loader'
+import { MAP_CLUSTER_PAINT, MAP_PIN_KINDS, resolvePinPaint } from '@/lib/maps/pin-kinds'
 import { googleMapsMapId } from '@/lib/maps/provider'
 import { buildPopupContent } from './popup-content'
 import type {
@@ -12,11 +21,17 @@ import type {
   GoogleMapsApi,
   GoogleMarker,
 } from '@/lib/maps/google-types'
-import type { MapImplProps, MapPinTone } from './types'
+import type { MapImplProps, MapPin } from './types'
 
 // THE Google implementation of the map contract (ADR-901). Mounted by <MapCanvas> only when
 // a browsable key is configured; a load failure calls `onProviderError` so the seam swaps in
 // the MapLibre canvas rather than leaving a dead box.
+//
+// ⚠️ THIS FILE IS ONE HALF OF A PAIR. components/maps/maplibre-canvas.tsx implements the same
+// props, and components/maps/map-capabilities.test.ts fails if the two prop lists diverge by a
+// single key. Every judgement the two could have made differently — a pin's colour, which pins
+// merge, how far a cluster tap zooms, what the bubble says — is imported from lib/maps/ rather
+// than decided here.
 //
 // NO WARM FILTER HERE. The MapLibre canvas wears a sepia filter so OpenFreeMap's cool tiles
 // sit on the cream palette. Google's terms forbid altering their logo and attribution, and a
@@ -26,21 +41,14 @@ import type { MapImplProps, MapPinTone } from './types'
 // CLASSIC Marker, not AdvancedMarkerElement: the advanced marker requires a Map ID on every
 // deployment, and we need the keyed path to work the moment the key is set, with no second
 // piece of Cloud configuration. The classic marker is still served and still supports a
-// token-coloured symbol.
+// token-coloured symbol, plus the text label the cluster bubble prints its count into.
 
-const TONE_VAR: Record<MapPinTone, string> = {
-  primary: '--color-primary',
-  secondary: '--color-info',
-}
-
-// Last-resort literals only. Unlike MapLibre, whose Marker accepts `undefined` and falls back
+// Last-resort literal only. Unlike MapLibre, whose Marker accepts `undefined` and falls back
 // internally, a Google Symbol needs a concrete colour string, so `tokenColor` cannot return
-// undefined here. Both values mirror the LIGHT-theme token of the same name; they are reached
-// only if the custom property is missing (map mounted before the stylesheet resolves).
+// undefined here. Pin and cluster colours carry their own fallbacks in lib/maps/pin-kinds.ts;
+// this one covers the marker RING, which is not a pin colour.
 // token-ok: mirrors --color-surface; Google Symbol requires a concrete colour string
 const PIN_STROKE_FALLBACK = '#FFFFFF'
-// token-ok: mirrors --color-primary; Google Symbol requires a concrete colour string
-const PIN_FALLBACK = '#E2912F'
 
 /** Resolve a DAWN token to its computed colour. Map DOM sits outside Tailwind. */
 function tokenColor(name: string, fallback: string): string {
@@ -58,6 +66,8 @@ export default function GoogleCanvas({
   draggable = false,
   onMove,
   recenterTo = null,
+  onPinClick,
+  cluster = null,
   className = 'h-full w-full',
   onProviderError,
 }: MapImplProps) {
@@ -74,6 +84,11 @@ export default function GoogleCanvas({
   useEffect(() => {
     onMoveRef.current = onMove
   }, [onMove])
+
+  const onPinClickRef = useRef(onPinClick)
+  useEffect(() => {
+    onPinClickRef.current = onPinClick
+  }, [onPinClick])
 
   const onErrorRef = useRef(onProviderError)
   useEffect(() => {
@@ -107,7 +122,7 @@ export default function GoogleCanvas({
   // position is excluded so dragging never re-creates the map.
   const initKey = draggable
     ? JSON.stringify({ picker: true, interactive })
-    : JSON.stringify({ pins, area, fit, interactive })
+    : JSON.stringify({ pins, area, fit, interactive, cluster })
 
   useEffect(() => {
     const container = containerRef.current
@@ -116,6 +131,7 @@ export default function GoogleCanvas({
     let cancelled = false
     let map: GoogleMap | null = null
     const markers: GoogleMarker[] = []
+    const markerListeners: GoogleListener[] = []
     const listeners: GoogleListener[] = []
     let circle: GoogleCircle | null = null
     let info: GoogleInfoWindow | null = null
@@ -136,23 +152,35 @@ export default function GoogleCanvas({
           keyboardShortcuts: interactive,
         })
         mapRef.current = map
+        const live = map
 
         // Read from the token, not pinned to white: on a dark theme --color-surface is dark,
         // so the pin ring follows the palette instead of burning a white halo into the map.
         const stroke = tokenColor('--color-surface', PIN_STROKE_FALLBACK)
         info = new maps.InfoWindow()
 
-        pins.forEach((pin, index) => {
-          const isDraggablePin = draggable && index === 0
+        // Clustering never applies in picker mode: there is exactly one pin and the member is
+        // placing it. The MapLibre canvas makes the same exclusion for the same reason.
+        const clustering = cluster && !draggable ? cluster : null
+
+        const clearMarkers = () => {
+          for (const l of markerListeners.splice(0)) l.remove()
+          for (const m of markers.splice(0)) m.setMap(null)
+          info?.close()
+        }
+
+        const addPin = (pin: MapPin, isDraggablePin: boolean) => {
+          const paint = resolvePinPaint(pin)
+          const label = pin.label?.trim() || pin.title?.trim() || null
           const marker = new maps.Marker({
-            map: map as GoogleMap,
+            map: live,
             position: { lat: pin.lat, lng: pin.lng },
             draggable: isDraggablePin,
-            ...(pin.title ? { title: pin.title } : {}),
+            ...(label ? { title: label } : {}),
             icon: {
               path: maps.SymbolPath.CIRCLE,
               scale: 8,
-              fillColor: tokenColor(TONE_VAR[pin.tone ?? 'primary'], PIN_FALLBACK),
+              fillColor: tokenColor(paint.token, paint.fallback),
               fillOpacity: 1,
               strokeColor: stroke,
               strokeWeight: 2,
@@ -163,7 +191,7 @@ export default function GoogleCanvas({
           if (isDraggablePin) {
             pinRef.current = marker
             appliedRef.current = `${pin.lat},${pin.lng}`
-            listeners.push(
+            markerListeners.push(
               marker.addListener('dragend', () => {
                 const pos = marker.getPosition()
                 if (pos) onMoveRef.current?.(pos.lat(), pos.lng())
@@ -171,15 +199,87 @@ export default function GoogleCanvas({
             )
           }
 
-          const content = buildPopupContent(pin)
-          if (content && info && map) {
-            const openInfo = () => {
-              info?.setContent(content)
-              info?.open({ map: map as GoogleMap, anchor: marker })
-            }
-            listeners.push(marker.addListener('click', openInfo))
+          // A caller that wants to open its own card gets the click and NO popup. Two cards for
+          // one tap is worse than either alone. The MapLibre canvas applies the identical rule.
+          if (onPinClickRef.current) {
+            markerListeners.push(
+              marker.addListener('click', () => onPinClickRef.current?.(pin)),
+            )
+            return
           }
-        })
+
+          const content = buildPopupContent(pin)
+          if (content) {
+            markerListeners.push(
+              marker.addListener('click', () => {
+                info?.setContent(content)
+                info?.open({ map: live, anchor: marker })
+              }),
+            )
+          }
+        }
+
+        const addCluster = (lat: number, lng: number, count: number) => {
+          // Same diameter curve and same label text as the MapLibre bubble, read from the same
+          // two functions. `scale` on a CIRCLE symbol is a RADIUS, hence the halving.
+          const marker = new maps.Marker({
+            map: live,
+            position: { lat, lng },
+            title: clusterAccessibleLabel(count),
+            zIndex: 10,
+            icon: {
+              path: maps.SymbolPath.CIRCLE,
+              scale: clusterDiameterPx(count) / 2,
+              fillColor: tokenColor(MAP_CLUSTER_PAINT.token, MAP_CLUSTER_PAINT.fallback),
+              fillOpacity: 1,
+              strokeColor: tokenColor(MAP_CLUSTER_PAINT.ringToken, MAP_CLUSTER_PAINT.ringFallback),
+              strokeWeight: 2,
+            },
+            label: {
+              text: clusterLabel(count),
+              color: tokenColor(MAP_CLUSTER_PAINT.textToken, MAP_CLUSTER_PAINT.textFallback),
+              fontSize: '13px',
+              fontWeight: '600',
+            },
+          })
+          markers.push(marker)
+          markerListeners.push(
+            marker.addListener('click', () => {
+              // Identical to the MapLibre canvas: the same shared step, the same shared cap.
+              live.panTo({ lat, lng })
+              live.setZoom(zoomIntoCluster(live.getZoom() ?? zoom))
+            }),
+          )
+        }
+
+        const renderMarkers = () => {
+          clearMarkers()
+          if (!clustering) {
+            // Picker mode's draggable pin is the FIRST one, by contract (see MapCanvasProps).
+            pins.forEach((pin, index) => addPin(pin, draggable && index === 0))
+            return
+          }
+          for (const group of clusterPoints(pins, live.getZoom() ?? zoom, clustering)) {
+            if (group.type === 'cluster') addCluster(group.lat, group.lng, group.count)
+            else addPin(group.point, false)
+          }
+        }
+
+        renderMarkers()
+
+        // Re-group as the member zooms. `shouldRecluster` is the shared guard, so a pan (which
+        // also fires `idle`) does no work — and so both engines redraw at the same threshold.
+        let lastZoom = live.getZoom() ?? zoom
+        if (clustering) {
+          listeners.push(
+            live.addListener('idle', () => {
+              const next = live.getZoom() ?? lastZoom
+              if (!shouldRecluster(lastZoom, next)) return
+              lastZoom = next
+              renderMarkers()
+            }),
+          )
+        }
 
         // Close the async gap: if the parent moved the pin while the loader was in flight,
         // adopt the latest position now. Saving the event would otherwise store the stale one.
@@ -189,14 +289,15 @@ export default function GoogleCanvas({
           if (appliedRef.current !== latestKey) {
             appliedRef.current = latestKey
             pinRef.current.setPosition({ lat: latest.lat, lng: latest.lng })
-            map.setCenter({ lat: latest.lat, lng: latest.lng })
+            live.setCenter({ lat: latest.lat, lng: latest.lng })
           }
         }
 
         if (area) {
-          const paint = tokenColor('--color-primary', PIN_FALLBACK)
+          const place = MAP_PIN_KINDS.place
+          const paint = tokenColor(place.token, place.fallback)
           circle = new maps.Circle({
-            map,
+            map: live,
             center: { lat: area.lat, lng: area.lng },
             radius: area.radiusM,
             fillColor: paint,
@@ -211,18 +312,23 @@ export default function GoogleCanvas({
         if (fit && pins.length > 1) {
           const bounds = new maps.LatLngBounds()
           for (const p of pins) bounds.extend({ lat: p.lat, lng: p.lng })
-          map.fitBounds(bounds, fit.padding ?? 60)
+          live.fitBounds(bounds, fit.padding ?? 60)
           const cap = fit.maxZoom ?? 13
-          const current = map.getZoom()
-          if (current != null && current > cap) map.setZoom(cap)
+          const current = live.getZoom()
+          if (current != null && current > cap) live.setZoom(cap)
         } else if (fit && pins.length === 1 && fit.singleZoom != null) {
-          map.setCenter({ lat: pins[0].lat, lng: pins[0].lng })
-          map.setZoom(fit.singleZoom)
+          live.setCenter({ lat: pins[0].lat, lng: pins[0].lng })
+          live.setZoom(fit.singleZoom)
+        }
+        // Framing moves the zoom, so the grouping the markers were built at is now stale.
+        if (clustering && fit) {
+          lastZoom = live.getZoom() ?? lastZoom
+          renderMarkers()
         }
 
-        if (draggable && map) {
+        if (draggable) {
           listeners.push(
-            map.addListener('click', (e) => {
+            live.addListener('click', (e) => {
               if (!e.latLng) return
               const lat = e.latLng.lat()
               const lng = e.latLng.lng()
@@ -243,6 +349,7 @@ export default function GoogleCanvas({
 
     return () => {
       cancelled = true
+      for (const l of markerListeners) l.remove()
       for (const l of listeners) l.remove()
       for (const m of markers) m.setMap(null)
       circle?.setMap(null)
