@@ -149,9 +149,26 @@ $$;
 
 -- ── update_signup_lead: later beats, keyed on the id the capture handed back ─────────────────────
 --
--- The id is the capability. It is a v4 uuid the caller only ever holds in an httpOnly `fq_lead`
--- cookie, so it is neither guessable nor readable from script — the same posture the invite tokens
--- carry (20270210000000). Returns void: knowing an id must not reveal whose row it is.
+-- THE ID IS NOT A CAPABILITY, and an earlier version of this comment said it was. It claimed the id
+-- was "neither guessable nor readable from script — the same posture the invite tokens carry
+-- (20270210000000)". Half of that is true: it is a v4 uuid, so it cannot be guessed, and the app only
+-- ever holds it in an httpOnly `fq_lead` cookie, so no script reads it back. But capture_signup_lead
+-- above is anon-callable and ends `on conflict ((lower(email))) do update ... returning l.id`, so
+-- anyone who supplies an address already in the table is HANDED that row's id. An id is one known
+-- email away. Nothing here may rest on holding it, and an invite token — which is unguessable AND has
+-- no second door that dispenses it — is not the posture this carries.
+--
+-- WHAT ACTUALLY BOUNDS THIS, and why it is still fine. This function reaches exactly the field set the
+-- capture door already reaches: first/last/display name, handle, a bounded payload merge, and a
+-- monotonic step. A caller who knows the email can do all of it through capture_signup_lead without
+-- ever seeing an id. So the leaked id grants nothing the open door does not, and it stays void-
+-- returning for the separate reason below.
+--
+-- If anon tampering with half-finished signups is worth closing, the change belongs in
+-- capture_signup_lead's do-update branch (fill NULL columns only, never overwrite). Suppressing the
+-- returned id would close nothing and break the funnel, which needs it for the later beats.
+--
+-- Returns void: knowing an id must not reveal whose row it is.
 create or replace function public.update_signup_lead(
   p_lead_id      uuid,
   p_step         integer default null,

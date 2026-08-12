@@ -141,8 +141,8 @@ together into a single operator view, and the people you have a real connection 
 |---|---|
 | Resolve a person | `lib/crm/person.ts#resolvePerson(contactId)`: gathers the `contacts` anchor + member `profile` + every capture with that email + the trail (`qr_scans`, `engagement_events`) + pipeline (`crm_deals`, `crm_activities`). Groups **by email at read time**, so it works before the backfill. |
 | Auto-group (backfill) | `supabase/migrations/20260606170000_person_identity_stitch.sql` fills `contacts.profile_id`, `network_contacts.linked_contact_id`, `network_contacts.linked_profile_id` by email (idempotent; **✅ applied to `Frequency Community` 2026-06-05**, recorded `person_identity_stitch`). |
-| User Stats page | `app/(main)/marketing/contacts/[id]` (DetailTemplate): stats + a **Grouped records** panel + **the path through the system**: one timeline grouped into funnel phases (Arrival → Outreach → In the app → CRM), built by the pure, tested `lib/crm/journey.ts`. The contacts list is searchable (`searchContacts`) and every row links here. |
-| Invite to join | `app/(main)/marketing/contacts/[id]/actions.ts#inviteContactToJoin`: reuses the gated one-time scan-intro (ADR-099). No capturing steward ⇒ no intro to send, by design. |
+| ~~User Stats page~~ | 🔴 **RETIRED (ADR-459).** `app/(main)/admin/marketing/contacts/[id]/page.tsx` is now a redirect, and its implementation (stats, the **Grouped records** panel, and the funnel timeline) was deleted 2026-08-12 once the redirect had made it unreachable. `lib/crm/journey.ts` — the pure, tested phase-grouping the timeline was built on — is untouched and still available to whatever surface wants it next. The contacts list is still searchable (`searchContacts`); its rows no longer link to a detail page. |
+| ~~Invite to join~~ | 🔴 **GONE with the same delete.** `inviteContactToJoin` lived only in that page's action module and had no other caller, so it went with it. The capability (a gated one-time scan-intro, ADR-099) is **not** re-homed anywhere — if invite-a-contact is still wanted it needs a home on `/admin/crm` first. |
 
 ### Searchable by connection + locality (not blanket exposure)
 

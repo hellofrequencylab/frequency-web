@@ -378,7 +378,8 @@ function footerNodes(): NavNode[] {
  *  Gated items are HIDDEN unless the viewer qualifies (canSeeMenuItem's role/staff union):
  *  Receive payments + My storefront ride `host` as the earner/seller proxy (the menu viewer
  *  carries no seller/payout capability, so the trust tier is the closest available gate),
- *  My orders is member+, Entry points is crew+. */
+ *  My orders is member+, Entry points is crew+. Drafts is member+ because the page itself
+ *  redirects a signed-out visitor to /sign-in, so a visitor row would be a dead link. */
 type ProfileSectionLabel = 'You' | 'Membership' | 'Commerce' | 'Community' | 'Support'
 
 const PROFILE_LINK_SEEDS: readonly {
@@ -388,8 +389,39 @@ const PROFILE_LINK_SEEDS: readonly {
   icon: string
   section: ProfileSectionLabel
   minAccess?: MenuAccess
+  /** Also project this seed onto ⌘K. OFF by default because the account menu is mostly
+   *  SETTINGS — a member searching the palette wants a place, not a form. A seed that is a
+   *  real member DESTINATION opts in. */
+  palette?: true
 }[] = [
   // You (View profile + Appearance are fixed chrome woven in by the renderer)
+  // DRAFTS IS A DESTINATION, NOT A SETTING, and it leads the section for that reason: it is
+  // the one row here a member comes back FOR. It shipped reachable-by-nothing — ADR-998 gave
+  // Vera's create proposals a place to be confirmed and ADR-1001 added the wizard answers
+  // staged across devices, and both are reachability-dependent by construction (an unreachable
+  // proposal expires in silence, which is the exact defect ADR-998 exists to close, and an
+  // unreachable staged answer is data we hold that the member cannot erase).
+  //
+  // ONE WORD, "Drafts", because that is the page's own H1 and metadata title, and a menu row
+  // that renames its destination makes the member wonder if they landed somewhere else. It is
+  // NOT "My drafts": /events/drafts already carries that title for poster-captured events.
+  // Two member surfaces saying "drafts" about different things is real, pre-existing, and an
+  // owner call to resolve (docs/NAMING.md defines no term for either) — not something to
+  // invent canon for here.
+  //
+  // 🔴 THE INTENDED LONG-TERM HOME IS MY FREQUENCY, beside Journal and My Contacts: DAWN files
+  // a member's own content under "You, and what you run" (chrome-docks.card.html), and the
+  // 2026-08-06 regroup already moved those two out of the rail for exactly that reason. The
+  // account menu is the honest interim because it is the only editable, every-page "you" list
+  // that a data row alone can reach — My Frequency's rows are literal EntryRows in
+  // components/layout/my-frequency-menu.tsx, so landing there is a render edit plus a count on
+  // getMyFrequency, not a seed. When that moves, delete this row in the same pass: DAWN's dock
+  // law is "a control appears in exactly one dock", so it must not live in both.
+  //
+  // `icon` is a lucide NAME here (profile seeds resolve through nav-icons' LUCIDE_BY_NAME,
+  // unlike spine nodes which key AREA_ICONS by area key). FileText is the glyph the page's own
+  // empty state already draws, so the row and the page agree.
+  { id: 'drafts', label: 'Drafts', href: '/drafts', icon: 'FileText', section: 'You', minAccess: 'member', palette: true },
   { id: 'settings', label: 'Settings', href: '/settings', icon: 'SlidersHorizontal', section: 'You' },
   { id: 'notifications', label: 'Notifications', href: '/settings/notifications', icon: 'BellRing', section: 'You' },
   // Membership
@@ -421,7 +453,10 @@ function profileNodes(): NavNode[] {
     // way every other grouped surface does (childrenOf / the /admin/menu editor).
     parent: l.section,
     mode: 'calm' as const,
-    surfaces: ['profile'] as NavSurface[],
+    // A `palette` seed rides BOTH surfaces off ONE declaration rather than a second node
+    // with the same href — paletteDestinations dedupes by href, so a twin would be a silent
+    // no-op that still had to be kept in sync.
+    surfaces: (l.palette ? ['profile', 'palette'] : ['profile']) as NavSurface[],
     gate: { minAccess: (l.minAccess ?? 'visitor') as MenuAccess },
   }))
 }
@@ -496,8 +531,10 @@ export function childrenOf(parent: string | null | undefined): NavNode[] {
 // (Calm + Studio), so an operator can jump straight to a Studio surface from a Calm page
 // without a mode switch. It is the one `surface:'palette'` projection — the same registry,
 // the same canSee gate every other surface uses — never a second, hand-maintained page
-// list. Marketing header/footer/profile nodes are a visitor context (not palette-tagged),
-// so they stay out of the in-app power-nav by construction.
+// list. Marketing header/footer nodes are a visitor context (not palette-tagged), so they
+// stay out of the in-app power-nav by construction. Account-menu nodes are NOT visitor
+// context, so they are palette-tagged one at a time (`palette` on the seed): the ones that
+// are member DESTINATIONS opt in, the settings forms stay out.
 
 /** One palette destination: a registry node flattened to what the ⌘K row renders. */
 export type PaletteDestination = {

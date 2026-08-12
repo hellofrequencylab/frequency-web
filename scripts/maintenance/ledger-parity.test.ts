@@ -97,6 +97,26 @@ describe('exact parity is the target state, and it passes', () => {
     expect(pairsDigest(rows)).not.toBe(versionsDigest(rows))
   })
 
+  // ── ⚠️ HOW TO APPLY A MIGRATION HERE, kept from the pin this file replaced ──────────────────
+  //
+  // The hand-pinned corpus that used to live above was re-frozen FIVE times (598 -> 602 -> 603 ->
+  // 604 -> 605 -> 606) and still could not see the drift that `check:migrations` caught on its
+  // first run: 606 repo files against 606 ledger rows with two MISMATCHED members. A count is not
+  // a set. That is why the pin is gone and the comparison moved to a run-time set difference on
+  // both columns.
+  //
+  // The operational lesson underneath it is still true and still costs an afternoon when ignored:
+  //
+  //   Do NOT apply migrations with apply_migration. It stamps a WALL-CLOCK version. On 2026-08-12
+  //   it stamped studio_draft as 20260812134657 — sorting ~400 rows before the file it came from —
+  //   and, because an explicit row at the repo's own version had also been inserted, production
+  //   briefly carried the same migration TWICE (606 rows against a 605-file repo). The trap bit
+  //   three times in one day.
+  //
+  //   Apply the DDL with execute_sql and insert the ledger row explicitly at the REPO's version.
+  //   Then re-read the ledger. Never trust the version the tool chose, and check for a duplicate
+  //   as well as a mis-sorted one.
+
   it('order is by version as text, so an unsorted ledger payload still matches', () => {
     const rows = corpus()
     const shuffled = [...rows].reverse()

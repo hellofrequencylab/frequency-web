@@ -34,7 +34,7 @@ Sizes: **XS** under an hour · **S** one PR · **M** 1 to 3 PRs · **L** a wave.
 | :--- | :--- | :--- |
 | Build + types | ✅ | `tsc --noEmit` rc=0 |
 | Tests | ✅ | 708 files, 8,943 tests, 0 failures |
-| Machine gates | ✅ | all 27 `check:*` scripts exit 0; CI runs 26 of them (`check:cron-freshness` is defined but scheduled nowhere) |
+| Machine gates | ✅ | all 27 `check:*` scripts exit 0; CI runs 26 of them, and the 27th now runs **weekly** — `.github/workflows/maintenance.yml:147` calls `node scripts/cron-freshness.mjs --markdown` in the "Cron heartbeat coverage" step (2026-08-11). This row read *"defined but scheduled nowhere"* until 2026-08-12, which was the **second** copy of that claim to outlive the wiring; `.github/workflows/ci.yml:148-150` documents why the gate lives there and not in CI |
 | CI (`ci.yml`) | ✅ | green on `main` |
 | Migrations applied | ✅ | every repo migration is live in prod |
 | Cron wiring | ✅ | 27 `vercel.json` entries ⇄ 27 handlers, zero drift both ways |
@@ -163,16 +163,31 @@ Measured against prod on 2026-08-10:
 | …executable by `anon` | **34** |
 | …executable by `authenticated` | **54** |
 
-**Two functions prove the idiom is still failing today.** Migration `20270207000000` writes
-`revoke all on function public.journey_funnel(...) from public;` then grants only `service_role`.
-Against prod, `has_function_privilege('anon', 'journey_funnel(...)', 'EXECUTE')` returns **true**.
-Same for `vitals_p75`. These are operator analytics RPCs added for Lift 1/7 and they are readable
-by the anon key that ships in the browser bundle.
+~~**Two functions prove the idiom is still failing today.**~~ ✅ **CLOSED 2026-08-12 — both are
+locked.** The claim was that migration `20270207000000` revokes from `public`, grants only
+`service_role`, and that prod nonetheless answered **true** for `anon`. Re-run against prod on
+2026-08-12, the same `has_function_privilege` query, both signatures:
+
+| Function | `anon` EXECUTE | `authenticated` EXECUTE |
+| :--- | :---: | :---: |
+| `journey_funnel(text, jsonb, integer)` | **false** | **false** |
+| `vitals_p75(integer, text, text)` | **false** | **false** |
+
+Neither is reachable from the anon key in the browser bundle. Recorded here rather than deleted,
+per this document's own rule at the top: already-fixed items get written down so nobody re-audits
+them.
+
+⚠️ **This closes 2.2 and nothing else, and the table above it has moved.** Re-counted against prod
+on 2026-08-12: **114** `SECURITY DEFINER` functions in `public` (was 112), **29** executable by
+`anon` (was 34), **48** by `authenticated` (was 54). The grant and RLS rows were **not**
+re-measured. So 2.3's *"the other 32"* is now the other **29 minus whatever the `public_*` family
+accounts for** — re-derive 2.1, 2.3 and 2.4 before working them, and do not read the 2026-08-10
+column as current.
 
 | # | Item | Size | Detail |
 | :--- | :--- | :---: | :--- |
 | 2.1 | **Audit by privilege, never by reading SQL** | S | The SQL reads correct. Use `has_function_privilege('anon', …)` and `information_schema.role_table_grants` against prod. Produce the full inventory as a committed artifact under `docs/maintenance/`. |
-| 2.2 | **Lock the two proven leaks** | XS | `journey_funnel`, `vitals_p75` → `service_role` only, with an explicit `revoke … from anon, authenticated`. |
+| 2.2 | ✅ **Lock the two proven leaks — DONE** | XS | `journey_funnel`, `vitals_p75` → `service_role` only. Verified against prod 2026-08-12: `has_function_privilege` answers **false** for both roles on both signatures. See the closed paragraph above. |
 | 2.3 | **Triage the other 32 anon-callable definers** | M | The `public_*` family is deliberate and stays. Needing a decision each: `ensure_calendar_token`, `members_near`, `my_orbit`, `near_misses`, `profile_zap_total`, `node_within_range`, `match_help_chunks`, `capture_signup_lead`. Record the verdict per function so this is never re-litigated. |
 | 2.4 | **Retire the broken idiom** | S | One migration that revokes the default-privilege grants where they are not wanted, plus a `check:grants` guard so a new table cannot ship anon-writable. The 77 RLS-no-policy tables are second-order today, but a grant held back only by RLS is one policy mistake from being live. |
 
@@ -219,7 +234,7 @@ Every item reproduced in the working tree on 2026-08-10. Sorted worst-first.
 | :--- | :---: | :--- | :--- | :--- |
 | 3.1 | ✅ | ~~**Spotlight titles double-brand.**~~ **FIXED, and a second instance the scan missed.** `app/layout.tsx` sets `template: '%s · Frequency'`; the page sets `title: '${name} · Frequency'`, so every Spotlight renders **"Name · Frequency · Frequency"** | Suffix dropped. Made durable as **`check:seo` Scan D**, which walks brace depth so it can tell a top-level `title` (gets the template) from `openGraph.title` / `twitter.title` (do not, and correctly carry the brand on 14 marketing pages). It immediately found `journeys/[slug]`'s private fallback, which the plan had not recorded | `app/spotlight/[handle]/page.tsx` · `app/(main)/journeys/[slug]/page.tsx` |
 | 3.2 | ✅ | ~~**QR Studio reads whole tables on every load.**~~ **FIXED, and one of them was silently wrong** | Three whole-table reads retired (ADR-969). `captures` now goes through a new `node_capture_counts()` RPC — it was not only unbounded but **truncating**: PostgREST caps a response at `max_rows` (1,000), so past that the per-node count was quietly under-reported with no error, the same class as the CRM import dedupe. `qr_scans` now reuses the existing `qr_stats_summary` RPC that `/admin/qr/stats` already calls; the numbers are identical because the RPC's totals and per-code aggregates carry no date filter and its `daily` is the trailing 30 UTC buckets, exactly what `summarizeScans(scans, 30)` produced. `qr_codes` was read twice, the second time only for `page_path`; it is one selection now. Migration applied to prod and ledger-repaired (**597 ⇄ 597**, proven by md5 of both version sets) | `app/(main)/admin/qr/page.tsx` · `supabase/migrations/20270219000000` |
-| 3.3 | ✅ | ~~**Meta descriptions over the ~155 snippet window.**~~ **FIXED — five, not four, plus one more only the gate could see** | Rewritten inside the canon (no em dashes, clean sentence boundaries): `/the-lab` **200→154**, `/spaces` **186→139**, `/beta` **158→148** (the plan missed this one), `/the-community` **158→142**, `/the-quest` **158→140**. `check:seo` **Scan E** now enforces it at **160** (155 is where truncation starts to bite, 160 is where it is certain; a gate at 155 would fail copy that renders fine). Scan E immediately found `/discover/journeys` at **163**, which no hand pass had recorded, and it is scoped to pages a crawler can actually reach so a private route's long copy is not a false failure |
+| 3.3 | ✅ | ~~**Meta descriptions over the ~155 snippet window.**~~ **FIXED — five, not four, plus one more only the gate could see** | Rewritten inside the canon (no em dashes, clean sentence boundaries): `/the-lab` **200→154**, `/spaces` **186→139**, `/beta` **158→148** (the plan missed this one), `/the-community` **158→142**, `/the-quest` **158→140**. `check:seo` **Scan E** now enforces it at **160** (155 is where truncation starts to bite, 160 is where it is certain; a gate at 155 would fail copy that renders fine). Scan E immediately found `/discover/journeys` at **163**, which no hand pass had recorded, and it is scoped to pages a crawler can actually reach so a private route's long copy is not a false failure | `app/(marketing)/**/page.tsx` · `scripts/check-seo.mjs` |
 | 3.4 | ✅ | ~~**3 `MODULE_ROUTES` entries point at redirect-only pages**~~ **FIXED** — `/admin/crm/graph`, `/admin/crm/playbooks`, `/admin/crm/today`, all merged into `/admin/crm/intelligence`. The Layout panel is advertised on a route that immediately redirects | All three retired, from `MODULE_ROUTES` **and** `ROUTE_MODULE_IDS` (whose keys were also giving the App catalog route scopes that navigate away). Every one of their six block ids already lives on `/admin/crm/intelligence`. The two live outbound links, in the Vera owner-brief email and the dashboard worklist, now point at the merged page instead of through a redirect. A new test asserts **every** `MODULE_ROUTES` entry resolves to a page that really renders `<PageModules>` | `lib/widgets/module-routes.ts` · `lib/widgets/modules.ts` |
 | 3.5 | ✅ | ~~**13 serial awaits in the authed layout**~~ **The count was stale; two remained, both now folded in** | Re-measured 2026-08-10. The layout had already been refactored: the main wave (22 reads) and the theme wave (5) exist, and the whole onboarding tail (`nextStepsEnabled` → `getProfileChores` → `getOnboardingStatus` → `getFounderTasks` → `getActiveTraining`, plus `autoPopupsEnabled`) already streams behind `<Suspense>` in `VeraLauncherSlot` / `CoachOverlaySlot` / `AutoPopupsSlot`, off the critical path entirely. What was genuinely still serial between the main wave and the theme chain: **`getMyFrequency` and the janitor `openTicketCount`** — each one pushing first paint back a full round trip. Both folded into the existing wave as speculative reads, exactly like `getStaffMember` and the operator trio already were. The janitor read stays gated on the **true** `profile.web_role`, which is known before the wave, so it does not become a new read for everyone. The remaining serial steps are genuinely dependent: `createClient` → `getUser` → the profile row, and `theme` → `loadActiveThemeCss` | `app/(main)/layout.tsx` |
 | 3.6 | ✅ | ~~**10 orphan help feature keys**~~ **FIXED, and the direction was backwards** | The plan said they "point at articles that do not exist". It is the reverse: all ten are declared by **published** articles and had no row in `lib/help/feature-keys.ts`, so every in-product affordance that resolves by feature key found nothing while the article sat there. Added with routes **verified to exist** first: `on-air` · `journeys` · `challenges` · `achievements` · `leaderboard` · `profile` · `connections` · `location` · `resonance` · `billing`. Coverage **29/36 → 39/46**, core **36/36**, orphans **0**. `help:coverage` is now the 24th guard (`check:help`) and an orphan key **always** fails — it is a broken link, not a backlog item, unlike the undocumented-core list which sits behind `--strict` (ADR-970). ⚠️ Updated 2026-08-11: `--strict` is now passed by `check:help` itself, so undocumented **core** features do fail CI. The seven still-undocumented keys are all `core: false`, which is why turning it on changed nothing | `lib/help/feature-keys.ts` · `scripts/help-coverage.mts` |
@@ -294,15 +309,22 @@ review-friendly. **The live baselines are substantially better than either plan 
 | 6.1 | ✅ **Label contract — DONE, and the number was wrong twice (ADR-966)** | — | The plan's "103 of 229" was a line-scoped grep artifact; the real count of *that* pattern was 23. But scoping the re-count to the `Label` **component** was itself the error: the same bug in plain `<label className={lbl}>` form was more common and invisible to any search for `Label`. Asking about `<label>` **elements** instead found **39 sites across 16 files**, all fixed. `deal-form.tsx` (6), `profile-form.tsx` (5), `circle-settings-form.tsx` (5), `event-form.tsx` (4), `ticket-tiers-panel.tsx` (4), `broadcast-compose.tsx` (3), 12 more. Nine of those had papered over the symptom with a duplicate `aria-label`, which fixes the name and leaves click-to-focus broken. **`pnpm check:labels` is the 22nd guard** and holds it: 635 labels, every one naming exactly one control, none nested. Proven to exit 1 on the pre-fix tree (62 violations) and 0 now; 18 unit tests cover the five violation shapes *and* the seven correct shapes that must stay silent.
 | 6.2 | ✅ **Icon-button accessible names — CLOSED, the finding was false** | — | `IconButton` declares **`label: string` as required** and `Omit<…, 'aria-label'>`, so a site without a name would not typecheck. A brace-aware parse of every opening tag: **79 real call sites, 79 named, 0 missing** (the other 3 of 82 are `Record<IconButtonTone, string>` generics inside `icon-button.tsx` itself). 82 − 34-with-it-on-the-opening-line = 48, which reproduces the reported number exactly. All 79 label strings were audited against NAMING/CONTENT-VOICE: clean. Two consistency nits remain in `movement-session.tsx` ("Less"/"More" name the direction, not the object — `session.tsx` already says "One minute less"), which is a copy call, not an a11y gap. |
 | 6.3 | ✅ **Moved (ADR-971)** | — | Now `components/ui/underline-tabs.tsx`. **17** importers repointed (the plan said 22 — a stale count; `git grep` finds 17 files). `handrolled-tabs` was already **0**, so the sweep half was done and this closes the item. Owner-ruled 2026-08-03. |
-| 6.4 | **Kit state sweep (Lift 8b)** | M | ⚠️ **Do not measure this with a grep — I tried, and the numbers are meaningless.** Counting `hover:` / `active:` / `focus-visible:` / `disabled:` per file in `components/ui/` reports 52 of 56 primitives "missing focus" and 54 "missing pressed". Both figures are **false**: `app/globals.css:1784` rings every `button, a, select, [tabindex]` on `:focus-visible` and `:1788` covers `input, textarea`, while `:1668`/`:1673` supply `:active`. `INTERACTION-STATES.md` §2 says so in as many words ("focus-visible is mostly free"). A real audit has to ask, per primitive: which **class** is it, which states does that class require, and does it get them from its own utilities, from globals.css, **or** by rendering a native `<button>`. That is per-component judgement across **42** primitives (14 have tests today), which is what makes this M and not S. ⚠️ This row said **56** until 2026-08-11; the live count is 42 (`find components/ui -name '*.tsx' -not -name '*.test.tsx'`). The 14 was and is correct. |
+| 6.4 | **Kit state sweep (Lift 8b)** | M | ⚠️ **Do not measure this with a grep — I tried, and the numbers are meaningless.** Counting `hover:` / `active:` / `focus-visible:` / `disabled:` per file in `components/ui/` reports 52 of 56 primitives "missing focus" and 54 "missing pressed". Both figures are **false**: `app/globals.css:1784` rings every `button, a, select, [tabindex]` on `:focus-visible` and `:1788` covers `input, textarea`, while `:1668`/`:1673` supply `:active`. `INTERACTION-STATES.md` §2 says so in as many words ("focus-visible is mostly free"). A real audit has to ask, per primitive: which **class** is it, which states does that class require, and does it get them from its own utilities, from globals.css, **or** by rendering a native `<button>`. That is per-component judgement across **42** primitives (**17** have tests today), which is what makes this M and not S. ⚠️ This row said **56** until 2026-08-11; the live count is 42 (`find components/ui -name '*.tsx' -not -name '*.test.tsx'`), re-confirmed 2026-08-12. The test count was 14 when written and is **17** now (`ls components/ui/*.test.tsx`). ⚠️ **And the sweep itself has largely run**: [`INTERACTION-STATES.md`](INTERACTION-STATES.md) §5, re-measured 2026-08-12, reads **7 of 10** action + field controls at full required-state coverage, so this row is down to four controls. |
 | 6.5 | **Low-adoption primitives** | M | `RowCard` 5 consumers vs `bespoke-rows` 14 · `StreakMeter` 4 · `Meter` 6 · `GateNotice` 5. ⚠️ **Triage before sweeping**: the ratchet is a filename heuristic, and `ContactCard`/`GroupCard` carry docstrings saying they are deliberate variants. Separate "owed to the kit" from "filename collision" first — forced conversions to move a number are the exact failure the ratchets exist to prevent. |
 | 6.6 | **Raw `<img>` → `next/image`** | S | ⚠️ **The "67" this row used to assert does not reproduce, under any scope tried.** Live 2026-08-11: **127 `<img` lines across 74 files** in `app` + `components`; **120** after excluding `print/`, `og/` and email templates, which legitimately cannot use `next/image`. The old figure cited no basis, so it cannot be reconciled — re-measure before scoping, and state the basis this time. Do the LCP surfaces first. |
-| 6.7 | **Remaining ratchet tails** | M | `raw-input` 186 (needs a borderless/inset variant on the primitive, not call-site swaps — see the induction note in BUILD-LIST §P8), `literal-display-type` 96, `raw-button-bg` 526 (replace the proximity-window pattern with the opening-tag form under a new basis fingerprint), `literal-radius` 2,450 (**spend inside screen passes, never as its own wave**). |
+| 6.7 | **Remaining ratchet tails** | M | Re-derived 2026-08-12 (`node scripts/check-adoption.mjs`, baseline / current): `raw-input` **119 / 118** (the borderless variant this row asked for **shipped** — `components/ui/field.tsx:105` `FieldVariant = 'boxed' \| 'seamless'`, so what is left is call-site work), `literal-display-type` **96 / 96**, `raw-button-bg` **524 / 513** (still replace the proximity-window pattern with the opening-tag form under a new basis fingerprint), `literal-radius` **2,440 / 2,288** (**spend inside screen passes, never as its own wave**). The 186 and 526 this row carried were quoted from a column, not a run. |
 
 ### 6.8 — The DAWN debt is TWO populations, and only one of them is a sweep
 
 Measured 2026-08-10 with `check:adoption`'s **own** `countEntry`, run per file, so the distribution
 and the score cannot disagree. `top25` is the share of a class's total carried by its 25 worst files.
+
+> ℹ️ **This table is a dated distribution, not a live count — read it for shape, not for totals.**
+> The finding it carries (three long-tail classes, eleven concentrated ones) is what it is for, and
+> that finding still holds. The totals have moved since: at 2026-08-12 the ratchet holds **17**
+> classes, not 14, and `literal-radius` is 2,288, `raw-button-bg` 513, `raw-input` 118,
+> `subtle-tiny-type` 22, `bespoke-cards` and `bespoke-rows` both **0**. Re-run per file before
+> sequencing off the distribution; the shares above were never re-derived.
 
 | Class | Total | Files | top10 | top25 | Median/file | Instrument |
 | :--- | ---: | ---: | ---: | ---: | ---: | :--- |
@@ -694,8 +716,8 @@ fully actionable list. This is far smaller than the raw counts suggest: repo-wid
 | `unlocked` (banned) | 2 | `crm/leads/leads-view.tsx`, `gamification-stats.tsx` |
 | `Marketplace` (retired noun) | 1 | `marketplace/facet-nav.tsx` `aria-label` |
 
-| # | Item | Size |
-| :--- | :--- | :---: |
+| # | Item | Size | Detail |
+| :--- | :--- | :---: | :--- |
 | 7.1 | ⚠️ **The 26 is not reproducible; a scoped re-scan finds ~8** | S | Re-measured 2026-08-10 over `app/` + `components/`, operator paths excluded, comments stripped. A raw pass returns **97**, but the overwhelming majority are import specifiers (`@/lib/gems`), routes (`/broadcast`), and DOM ids (`broadcast-scope`, `achievement-unlocked`) — identifiers, not copy. Filtering those leaves **16**, of which about half are the scanner matching CODE through a `>…<` JSX-text pattern. The genuinely member-readable set is roughly **eight**: `invite-launcher` "the zaps are yours" · `claim-button` "Offer unlocked:" · `upgrade` "All features are unlocked" · `achievement-toast` "Achievement Unlocked" · `journey-export` "a Hook cohort" · two in `pages/sequences` (a `cohort` and an em dash) · and one more. ⚠️ `broadcast/actions.ts:38` "Only staff can broadcast globally" is the **verb** and is correct copy. Several of the rest sit on `/pages/sequences` and `/upgrade`, where member-vs-operator is a judgement call per string, not a sweep. |
 | 7.2 | ⚠️ **Needs an AST, not a regex — measured** | M | The 97→16→~8 funnel above is the evidence. A regex scan cannot tell `@/lib/gems` from "the zaps are yours", nor JSX text from code that happens to sit between `>` and `<`. Three filters (drop `@/`-and-`/`-prefixed, require a space, drop all-lowercase token runs) got the noise from 97 to 16 and no further — the residue needs real JSX parsing to separate text nodes and string literals from expressions. Sizing raised from S to **M**. Until it exists, `lib/menus/canon.ts` (ADR-957) remains the only enforced canon on the write path, and `check:canon` still covers `content/**` and marketing source. |
 
@@ -863,11 +885,16 @@ day before anyone is paged. Set each period from the real schedule:
 `summarize-vera-memory`. The seven left out are the embed jobs plus `demo-decay` and
 `vera-owner-brief`: a late embedding degrades search quality, it does not lose money or break trust.
 
-🔴 **A second half of this is still open and is not owner config.** `check:cron-freshness` is the
-guard that would notice heartbeats going stale, and it **runs in no workflow at all** (`ci.yml`
-says so out loud). Arming the pings without scheduling the guard means the monitors are watched by
-a human remembering to look. Wiring it belongs in the maintenance sweep, next to the ledger-parity
-check.
+✅ **The second half of this is CLOSED — the guard is wired.** `check:cron-freshness` is what would
+notice heartbeats going stale, and this paragraph said it *"runs in no workflow at all"* until
+2026-08-12. It runs **weekly** in `.github/workflows/maintenance.yml:147` (the "Cron heartbeat
+coverage" step, `node scripts/cron-freshness.mjs --markdown`), landed 2026-08-11 — which is exactly
+where this text said it belonged, next to the ledger-parity check. `.github/workflows/ci.yml:148-150`
+records why it is not in CI: half of what it measures is Vercel Production state, so on a PR that
+half can only report NOT ESTABLISHED, for every author, every time.
+
+⚠️ What is left is the owner half above: the pings themselves. A scheduled guard over unarmed
+monitors reports coverage it does not have.
 
 ---
 
