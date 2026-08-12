@@ -15,6 +15,12 @@ import { buttonClasses } from '@/components/ui/button'
 import { UnderlineTabs } from '@/components/ui/underline-tabs'
 import { loadCircleShell } from '@/lib/circles/store'
 import { circleTabs } from '@/lib/circles/tabs'
+import {
+  circleHeroOverlayStyle,
+  hasCircleHeroHeight,
+  readCircleCoverFocus,
+  readCircleHeroHeight,
+} from '@/lib/circles/hero'
 import { ClaimCircle } from '@/components/circles/claim-circle'
 import { listPublicPractices } from '@/lib/practices'
 import { circleEventInsider, loadCircleContentFacts } from './tab-facts'
@@ -81,39 +87,26 @@ import { circleEventInsider, loadCircleContentFacts } from './tab-facts'
 // cover"): the 16:6 crop, or the neutral token gradient when a Circle has no photo yet. It carries
 // no copy, which is what lets the identity lockup below it be the one heading on the page.
 //
-// 🔴 THE COVER CANNOT BE A <PageHero> UNTIL THE KIT GIVES IT A WAY TO NOT BE A HEADING, and that is
-// the one thing blocking the operator's cover controls on this page. PageHero renders an `<h1>` in
-// EVERY variant — `minimal` still emits `<h1 className="sr-only">{title}</h1>`
-// (components/templates/page-hero.tsx:227) — so a PageHero above a template-owned lockup ships two
-// h1s with the same text, which a screen reader reads out as a duplicated page heading. The owner's
-// ruling is that the TEMPLATE owns the single h1, so the hero had to go, and three operator
-// controls went with it:
+// THE OPERATOR'S THREE COVER CONTROLS, and how they got back (resolved 2026-08-12).
 //
-//   · hero HEIGHT      — readCircleHeroHeight / hasCircleHeroHeight (lib/circles/hero.ts), still
-//                        written by components/admin/modules/circle-settings-module.tsx.
-//   · cover FOCAL POINT— readCircleCoverFocus (same file, same writer).
-//   · cover SCRIM      — the None / Shade / Blend control being added for Circles, stored on the
-//                        same `circles.theme` blob and read with `readCoverScrim`
-//                        (app/(main)/spaces/[slug]/manage/layout/preferences.ts).
+// PageHero renders an `<h1>` in EVERY variant — `minimal` still emitted `<h1 className="sr-only">`
+// — so a PageHero above a template-owned lockup shipped two h1s with the same text, which a screen
+// reader reads out as a duplicated page heading. Since the ruling is that the TEMPLATE owns the
+// single h1, the hero had to go, and three operator controls went with it: hero HEIGHT, cover FOCAL
+// POINT, and the cover SCRIM (None / Shade / Blend), all three still written by
+// components/admin/modules and all three suddenly writing to nothing.
 //
-// `theme` IS available here — loadCircleShell selects it and returns it on the shell — so the read
-// side is not the problem; the SINK is. The fix is one of two small changes in a file this brief
-// does not own, and the second is the better one because it restores all three at once:
+// FIXED IN THE KIT, ONCE, FOR EVERY DETAIL PAGE rather than per page:
+//   · page-hero.tsx gained `heading={false}`, so a PageHero can be a pure cover band.
+//   · detail-template.tsx's standard `coverImage` path now accepts `coverFocus`, `coverSize` and
+//     `coverOverlayStyle` and renders through PageHero `minimal` with the heading suppressed.
+// The call site is the three props below. Exactly one h1 still ships (check:headers proves it).
 //
-//   A. `components/templates/page-hero.tsx` — a prop that suppresses the heading (e.g.
-//      `heading={false}`), so a PageHero can be a pure cover band under a template-owned h1.
-//   B. `components/templates/detail-template.tsx` — let the standard `coverImage` path take
-//      `coverFocus`, `coverSize` and `coverOverlayStyle` and render through PageHero `minimal`
-//      internally (with the heading suppressed). One passthrough, every Detail page benefits.
-//
-// The call site here is then exactly:
-//
-//   coverOverlayStyle={circleHeroOverlayStyle(theme)}   // 'none' | 'shadow' | 'fade'
-//
-// where `circleHeroOverlayStyle(theme: unknown): HeroOverlayStyle` is the ONE mapping from the
-// operator vocabulary (none / shade / blend) to PageHero's (none / shadow / fade), and it belongs
-// in `lib/circles/hero.ts` beside the other circle-theme readers. It is deliberately NOT written
-// here: a second copy of that mapping is exactly the drift that bites later.
+// The scrim mapping is NOT written here and must never be: `lib/layout/cover-scrim.ts` holds the
+// one operator-vocabulary → PageHero-prop mapping (none/shade/blend → none/shadow/fade), shared
+// with Spaces, and `circleHeroOverlayStyle` in lib/circles/hero.ts only says "read it off a
+// Circle's theme blob". A second copy is how Spaces and Circles drift into disagreeing about what
+// "Blend" looks like.
 //
 // ── SPEED (PAGE-FRAMEWORK §5) ────────────────────────────────────────────────────────────────────
 // This file used to run FOUR serial awaits before it returned any JSX, which is §5.3's named
@@ -141,7 +134,7 @@ export default async function CircleDetailLayout({
   // calls the same loaders and gets memo hits, so the shell costs no extra reads.
   const [shell, myProfileId] = await Promise.all([loadCircleShell(slug), getMyProfileId()])
   if (!shell) notFound()
-  const { circle, members } = shell
+  const { circle, members, theme } = shell
 
   const isMember = !!myProfileId && members.some((m) => m.profile?.id === myProfileId)
   const isHost = !!myProfileId && circle.host?.id === myProfileId
@@ -235,6 +228,12 @@ export default async function CircleDetailLayout({
 
       <DetailTemplate
         coverImage={circle.image_url ?? null}
+        // The three operator cover controls, restored (see the block at the top of this file). They
+        // route the standard cover through PageHero `minimal` inside the template, with its heading
+        // suppressed so this page still ships exactly one h1 — the one the band below owns.
+        coverFocus={readCircleCoverFocus(theme)}
+        coverSize={hasCircleHeroHeight(theme) ? readCircleHeroHeight(theme) : undefined}
+        coverOverlayStyle={circleHeroOverlayStyle(theme)}
         title={circle.name}
         badges={
           <>

@@ -2,7 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
-import { listPublicPlans } from '@/lib/journey-plans'
+import { runnableJourneysForCircle } from '@/lib/journeys/run-gate'
 import type { JourneyOption } from '@/components/journey/v2/start-run-button'
 
 // The read behind the "Start a Run" control in the circle admin rail (the `circle.engage` module).
@@ -16,9 +16,15 @@ import type { JourneyOption } from '@/components/journey/v2/start-run-button'
 // does this. The read is fail-safe (a missing circle or a caller without the capability gets null,
 // so the module renders nothing), and startJourneyRunAction still re-checks its OWN gate
 // (lib/journeys/run-gate.ts) on every start. The gate here is UX; the action is law.
-
-/** Mirrors the page block: offer the first slice of the public library, not the whole table. */
-const RUNNABLE_JOURNEY_LIMIT = 50
+//
+// THE PICKER OFFERS EXACTLY WHAT THE ACTION ACCEPTS. The page block filled the dropdown from the
+// whole public library while startJourneyRunAction only takes a Journey the OWNING SPACE offers, so
+// on a Space circle most of the list was guaranteed to come back "Pick a Journey this space offers."
+// `runnableJourneysForCircle` is the one seam that answers both questions the same way.
+//
+// The capability check stays even though that helper returns [] for a viewer who may not start a
+// run: an empty list renders "No published journeys yet", and telling a member the library is empty
+// is worse than not showing them a host control at all.
 
 export interface CircleJourneyRunData {
   circleId: string
@@ -33,11 +39,8 @@ export async function getCircleJourneyRunData(slug: string): Promise<CircleJourn
   const caps = await getCircleCapabilities(circle.id)
   if (!caps.has('circle.editSettings')) return null
 
-  const journeys = (await listPublicPlans()).slice(0, RUNNABLE_JOURNEY_LIMIT).map((p) => ({
-    id: p.id,
-    title: p.title,
-    slug: p.slug,
-    emoji: p.emoji ?? null,
-  }))
+  // No profile id: the helper resolves the signed-in caller itself (passing null would mean
+  // anonymous, and deny). Its default limit is the 50 the page block used.
+  const journeys: JourneyOption[] = await runnableJourneysForCircle(circle.id)
   return { circleId: circle.id, journeys }
 }
