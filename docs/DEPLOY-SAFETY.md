@@ -56,6 +56,41 @@ Both theories that ate the evening were plausible and both were dead ends, recor
 nobody re-runs them: the Turbopack build cache (a build with the cache disabled at the platform level
 failed identically) and an unpaid invoice (another project on the same account deployed throughout).
 
+#### ⚠️ Retracted: the `node_modules` theory (2026-08-12)
+
+A third theory outlived the other two because it was never written down as a theory. #2102's commit
+message (`3a4436762`) offered, as the cache-free report's measured deltas, *"node_modules at 1073MB
+against 948MB on the last healthy build, and 408 serverless functions against 403."* **The dependency
+half is refuted, and nothing in the tree ever supported it.**
+
+| Half of the claim | Verdict | Command |
+|---|---|---|
+| `node_modules` grew 125 MB | 🔴 **False** — the lockfile never changed | `git diff --numstat 3f8d62b89 origin/main -- pnpm-lock.yaml` → **empty** |
+| 403 → 408 functions | ✅ True, and not a cause | `git diff --name-status 3f8d62b89 97443260d -- 'app/**/page.tsx' 'app/**/route.ts'` → **5 additions** |
+
+`pnpm-lock.yaml` is byte-identical from `3f8d62b89` — the last tree that reached production — through
+today's `main`, across the entire #2098 + #2099 + #2100 range. No dependency was added, removed or
+bumped anywhere in the window. The reported growth was **self-inflicted measurement noise**: with
+`VERCEL_FORCE_NO_BUILD_CACHE` set, pnpm re-materialises `.pnpm-store` on disk and the 106 MB
+`@supabase/cli-linux-x64` binary is counted twice. That variable was removed again for this reason.
+
+The five new functions are real, and they are the last straw rather than the weight — the build was
+already ~1.5× over budget. **The two real causes, both found by measuring the artifact:**
+
+1. **A root metadata image.** `app/opengraph-image.tsx` sat at the root of `app/`, Next inherits
+   metadata images into every page's metadata module, that module imports `next/og`, and `next/og`
+   loads `sharp` — putting `libvips-cpp.so` (17.7 MB) into **403 functions**: 6.99 GB, 42% of the
+   build, for a codec 18 routes use ([ADR-1002](DECISIONS.md)).
+2. **A path the tracer could not resolve.** `lib/ai/quality-gate.ts` called
+   `join(process.cwd(), ...standard.rubricPath)`. `@vercel/nft` cannot resolve a spread of a runtime
+   array, so it globbed the only thing it could — the repo root — into every function reaching that
+   module, ~300 of them. The Studio tree measured **57.23 GB** with it ([ADR-1004](DECISIONS.md),
+   which corrects ADR-1002's "no commit crossed the disk"; the gate that caught it is
+   [ADR-1003](DECISIONS.md)).
+
+Neither cause is a dependency. Left standing, the retracted half reads as evidence against the Studio
+work in the permanent record, and it is the first thing the next reader would find.
+
 ### 4. Let builds finish. 🔴 No gate — and it cost the most
 
 At least one cancelled production build might have completed. **Cancelling mid-flight destroys the
