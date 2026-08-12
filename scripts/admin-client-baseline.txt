@@ -393,6 +393,12 @@ lib/beta/db.ts
 lib/beta/referral-contest.ts
 lib/beta/stats.ts
 lib/billing/bundle-checkout.ts
+# lib/billing/bundle-seats.ts (added 2026-08-12, ADR-370): the Stripe webhook seating branch for the
+# Household / Circle bundle. There is no session to run under — the caller is Stripe, and the write is
+# apply_bundle_seating_atomic, a SECURITY DEFINER function granted to service_role ONLY (migration
+# 20270225000000 revokes anon + authenticated). Converging it onto the session client is not possible
+# by construction. Same posture as lib/billing/bundle-checkout.ts directly above.
+lib/billing/bundle-seats.ts
 lib/billing/checkout.ts
 lib/billing/connect.ts
 lib/billing/manual-agreements.ts
