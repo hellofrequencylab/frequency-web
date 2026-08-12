@@ -75,12 +75,23 @@ export type GoogleSymbol = {
   strokeWeight?: number
 }
 
+/** Text drawn INSIDE a marker. This is how the Google canvas prints a cluster count: a classic
+ *  Marker takes no DOM element, and AdvancedMarkerElement (which does) would force a Cloud Map
+ *  ID onto every deployment — the trade the canvas header already rejects for ordinary pins. */
+export type GoogleMarkerLabel = {
+  text: string
+  color?: string
+  fontSize?: string
+  fontWeight?: string
+}
+
 export type GoogleMarkerOptions = {
   map: GoogleMap
   position: GoogleLatLngLiteral
   title?: string
   draggable?: boolean
   icon?: GoogleSymbol
+  label?: GoogleMarkerLabel
   zIndex?: number
 }
 

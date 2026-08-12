@@ -8,11 +8,14 @@ import { useEffect, useRef } from 'react'
 // library for real and would catch the import form drifting from the packaging again.
 import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { clusterPoints, shouldRecluster, zoomIntoCluster } from '@/lib/maps/cluster'
 import { mapDiag } from '@/lib/maps/diagnostics'
+import { resolvePinPaint } from '@/lib/maps/pin-kinds'
 import { MAPLIBRE_STYLE, MAPLIBRE_WORKER_URL, WARM_FILTER } from '@/lib/maps/provider'
+import { buildClusterMarker, makeMarkerActivatable, onMarkerActivate } from './cluster-marker'
 import { configureMaplibreWorker } from './maplibre-worker'
 import { buildPopupContent } from './popup-content'
-import type { MapImplProps, MapPinTone } from './types'
+import type { MapImplProps, MapPin } from './types'
 
 // THE MapLibre implementation of the map contract (ADR-901). Every keyless environment
 // renders through this file: local dev, previews, CI, self-host, and any production deploy
@@ -20,6 +23,13 @@ import type { MapImplProps, MapPinTone } from './types'
 //
 // Loaded only through <MapCanvas>, which mounts it via next/dynamic({ssr:false}) — maplibre
 // must never run on the server.
+//
+// ⚠️ THIS FILE IS ONE HALF OF A PAIR. components/maps/google-canvas.tsx implements the same
+// props, and components/maps/map-capabilities.test.ts fails if the two prop lists diverge by a
+// single key. Every judgement the two could have made differently — a pin's colour, which pins
+// merge, how far a cluster tap zooms, what the bubble says — is imported from lib/maps/ rather
+// than decided here. A capability implemented on Google and forgotten here would be invisible:
+// the fallback is the engine nobody with a key ever loads.
 
 // 🔴 THIS IS WHAT MAKES THE BASEMAP PAINT. Not an escape hatch, not optional — see
 // components/maps/maplibre-worker.ts for the mechanism and docs/MAPS.md §4a for the trace.
@@ -29,11 +39,6 @@ import type { MapImplProps, MapPinTone } from './types'
 // never imported this canvas, so they never ran it. It is a shared call now, and
 // maps-wiring.test.ts fails the build if a map module skips it.
 configureMaplibreWorker()
-
-const TONE_VAR: Record<MapPinTone, string> = {
-  primary: '--color-primary',
-  secondary: '--color-info',
-}
 
 /** How long a map may show zero tiles before that is worth one line in the console. Long
  *  enough that a cold cache on a slow phone is not reported as a failure. */
@@ -73,6 +78,8 @@ export default function MapLibreCanvas({
   draggable = false,
   onMove,
   recenterTo = null,
+  onPinClick,
+  cluster = null,
   className = 'h-full w-full',
 }: MapImplProps) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -81,11 +88,15 @@ export default function MapLibreCanvas({
   // Picker mode: the pin position the map has already been moved to. Seeded where the marker
   // is created, so the sync effect below can tell a real move from a re-render. See its note.
   const appliedRef = useRef<string | null>(null)
-  // Keep the latest onMove without retriggering the init effect (it must run once per map).
+  // Keep the latest callbacks without retriggering the init effect (it must run once per map).
   const onMoveRef = useRef(onMove)
   useEffect(() => {
     onMoveRef.current = onMove
   }, [onMove])
+  const onPinClickRef = useRef(onPinClick)
+  useEffect(() => {
+    onPinClickRef.current = onPinClick
+  }, [onPinClick])
 
   // What a REBUILD depends on. Serialised, not object identity, so a caller passing an
   // inline `pins`/`fit` literal does not tear the map down on every render.
@@ -95,7 +106,7 @@ export default function MapLibreCanvas({
   // the interaction state. The sync effect below moves the marker instead.
   const initKey = draggable
     ? JSON.stringify({ picker: true, interactive })
-    : JSON.stringify({ pins, area, fit, interactive })
+    : JSON.stringify({ pins, area, fit, interactive, cluster })
 
   useEffect(() => {
     const container = containerRef.current
@@ -164,12 +175,34 @@ export default function MapLibreCanvas({
     // Added SYNCHRONOUSLY, not on 'load': a marker is DOM, not a style layer, so it needs
     // no loaded style — and in picker mode the click handler below must find `pinRef`
     // populated even if the member taps before the tiles arrive.
-    pins.forEach((pin, index) => {
-      const color = tokenColor(TONE_VAR[pin.tone ?? 'primary'])
-      const isDraggablePin = draggable && index === 0
-      const marker = new maplibregl.Marker({ color, draggable: isDraggablePin })
+    //
+    // Clustering never applies in picker mode: there is exactly one pin and the member is
+    // placing it. The Google canvas makes the same exclusion for the same reason.
+    const clustering = cluster && !draggable ? cluster : null
+    const markers: maplibregl.Marker[] = []
+    const teardowns: (() => void)[] = []
+
+    const clearMarkers = () => {
+      for (const t of teardowns.splice(0)) t()
+      for (const m of markers.splice(0)) m.remove()
+    }
+
+    const addPin = (pin: MapPin, isDraggablePin: boolean) => {
+      const paint = resolvePinPaint(pin)
+      const marker = new maplibregl.Marker({
+        color: tokenColor(paint.token) ?? paint.fallback,
+        draggable: isDraggablePin,
+      })
         .setLngLat([pin.lng, pin.lat])
         .addTo(map)
+      markers.push(marker)
+
+      const el = marker.getElement()
+      const label = pin.label?.trim() || pin.title?.trim() || null
+      if (label) {
+        el.setAttribute('aria-label', label)
+        el.setAttribute('title', label)
+      }
 
       if (isDraggablePin) {
         pinRef.current = marker
@@ -180,13 +213,60 @@ export default function MapLibreCanvas({
         })
       }
 
+      // A caller that wants to open its own card gets the click and NO popup. Two cards for
+      // one tap is worse than either alone. The Google canvas applies the identical rule.
+      if (onPinClickRef.current) {
+        makeMarkerActivatable(el, label)
+        teardowns.push(onMarkerActivate(el, () => onPinClickRef.current?.(pin)))
+        return
+      }
+
       const content = buildPopupContent(pin)
       if (content) {
         marker.setPopup(
           new maplibregl.Popup({ offset: 14, closeButton: false }).setDOMContent(content),
         )
       }
-    })
+    }
+
+    const addCluster = (lat: number, lng: number, count: number) => {
+      const el = buildClusterMarker(count)
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map)
+      markers.push(marker)
+      teardowns.push(
+        onMarkerActivate(el, () => {
+          // Identical to the Google canvas: the same shared step, the same shared cap.
+          map.easeTo({ center: [lng, lat], zoom: zoomIntoCluster(map.getZoom()), duration: 400 })
+        }),
+      )
+    }
+
+    const renderMarkers = () => {
+      clearMarkers()
+      if (!clustering) {
+        // Picker mode's draggable pin is the FIRST one, by contract (see MapCanvasProps).
+        pins.forEach((pin, index) => addPin(pin, draggable && index === 0))
+        return
+      }
+      for (const group of clusterPoints(pins, map.getZoom(), clustering)) {
+        if (group.type === 'cluster') addCluster(group.lat, group.lng, group.count)
+        else addPin(group.point, false)
+      }
+    }
+
+    renderMarkers()
+
+    // Re-group as the member zooms. `shouldRecluster` is the shared guard, so a pinch does not
+    // fire dozens of full marker rebuilds — and so both engines redraw at the same threshold.
+    let lastZoom = map.getZoom()
+    if (clustering) {
+      map.on('zoomend', () => {
+        const next = map.getZoom()
+        if (!shouldRecluster(lastZoom, next)) return
+        lastZoom = next
+        renderMarkers()
+      })
+    }
 
     map.on('load', () => {
       // ── Area (the privacy circle) ─────────────────────────────────────────────
@@ -229,6 +309,11 @@ export default function MapLibreCanvas({
       } else if (fit && pins.length === 1 && fit.singleZoom != null) {
         map.easeTo({ center: [pins[0].lng, pins[0].lat], zoom: fit.singleZoom, duration: 0 })
       }
+      // Framing moves the zoom, so the grouping the markers were built at is now stale.
+      if (clustering) {
+        lastZoom = map.getZoom()
+        renderMarkers()
+      }
     })
 
     // Tapping the map moves the pin (faster than dragging from far away).
@@ -241,6 +326,7 @@ export default function MapLibreCanvas({
 
     return () => {
       clearTimeout(tileWatchdog)
+      clearMarkers()
       map.remove()
       mapRef.current = null
       pinRef.current = null
