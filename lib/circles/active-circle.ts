@@ -13,7 +13,7 @@
 // detail route reads `null` and renders nothing, exactly like every other null-returning module.
 
 import { cache } from 'react'
-import type { CircleDetail, MemberRow, CirclePractice, RunnableJourney } from './detail-types'
+import type { CircleDetail, MemberRow, CirclePractice } from './detail-types'
 
 export interface CircleDetailContext {
   circle: CircleDetail
@@ -36,7 +36,6 @@ export interface CircleDetailContext {
   newThisWeek: number
   circlePractice: CirclePractice | null
   /** Journeys the host can start a run of (empty for non-managers). */
-  runnableJourneys: RunnableJourney[]
   /** The resolved movable Page-text block copy (per-circle override ?? network default); '' = none. */
   layoutText: string
 }

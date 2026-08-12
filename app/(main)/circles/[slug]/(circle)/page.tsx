@@ -154,11 +154,6 @@ export default async function CircleHomePage({
   // context type carries it; the block that renders it now lives on the Practice tab.
   const circlePractice = await loadCirclePractice(circle.id)
 
-  // The journey-run block moved to the Journey tab, so this tab no longer reads the whole public
-  // Journey library to fill a picker it does not render (it was a 50-row read on every manager's
-  // visit to the feed).
-  const runnableJourneys: never[] = []
-
   // The movable Page-text block's copy: this circle's override, else the network default ('' when
   // neither is set → the block renders nothing). One platform_settings read (request-memoized) only
   // when there's no per-circle override.
@@ -182,7 +177,6 @@ export default async function CircleHomePage({
     activeStreaks: health.activeStreaks,
     newThisWeek: health.newThisWeek,
     circlePractice,
-    runnableJourneys,
     layoutText,
   })
 
