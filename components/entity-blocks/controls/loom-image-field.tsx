@@ -19,9 +19,18 @@ function toSafeImageSrc(value: string): string {
   const trimmed = value.trim()
   if (!trimmed) return ''
   if (trimmed.startsWith('//')) return ''
-  if (trimmed.startsWith('/')) return trimmed
+  if (/[\u0000-\u001F\u007F]/.test(trimmed)) return ''
+
+  const base =
+    typeof window !== 'undefined' && window.location?.origin ? window.location.origin : 'http://localhost'
+
   try {
-    const url = new URL(trimmed)
+    const url = new URL(trimmed, base)
+
+    if (trimmed.startsWith('/')) {
+      return url.origin === base ? `${url.pathname}${url.search}${url.hash}` : ''
+    }
+
     return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : ''
   } catch {
     return ''
