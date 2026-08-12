@@ -10,6 +10,7 @@ const base = {
   currentHostId: 'host-1',
   toProfileId: 'someone-else',
   staff: false,
+  linkedTierCount: 0,
 }
 
 describe('canOfferCircle', () => {
@@ -54,5 +55,25 @@ describe('canOfferCircle', () => {
   it('refuses anonymous callers, staff flag or not', () => {
     expect(canOfferCircle({ ...base, viewerProfileId: null }).allowed).toBe(false)
     expect(canOfferCircle({ ...base, viewerProfileId: null, staff: true }).allowed).toBe(false)
+  })
+})
+
+// THE TIER LOCK (see lib/circles/transfer.test.ts). An accepted offer runs the same ownership
+// write, so the same pin applies here: a circle a Space is minting paid-member rows into may not be
+// offered away while the link stands. Refusing at OFFER time beats a recipient accepting something
+// that cannot complete. Fails on the pre-guard tree, where every case below was allowed.
+describe('canOfferCircle: the tier lock (cross-tenant membership leak)', () => {
+  it('refuses to offer away a circle a membership tier is linked to', () => {
+    const d = canOfferCircle({ ...base, linkedTierCount: 1 })
+    expect(d.allowed).toBe(false)
+    expect(d.reason).toContain('linked to a membership tier')
+  })
+
+  it('refuses for platform staff too: it is an integrity rule, not a permission', () => {
+    expect(canOfferCircle({ ...base, staff: true, linkedTierCount: 1 }).allowed).toBe(false)
+  })
+
+  it('allows the offer once the operator unlinks', () => {
+    expect(canOfferCircle({ ...base, linkedTierCount: 0 }).allowed).toBe(true)
   })
 })

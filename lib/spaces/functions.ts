@@ -59,6 +59,7 @@ export type SpaceFunctionKey =
   | 'airwaves'
   | 'practices'
   | 'journeys'
+  | 'circles'
   | 'loom'
   | 'collaborators'
   | 'events'
@@ -233,6 +234,17 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
     key: 'journeys',
     label: 'Journeys',
     description: 'Build multi week programs from your practices. Free spaces publish one.',
+    entitlement: null,
+    defaultMinRole: 'editor',
+    types: ['*'],
+  },
+  {
+    // Circles used to ride the `journeys` switch, from when a Space Circle existed only to run a
+    // Journey. A Space that never runs a program still gathers people, so the two are separate
+    // switches now: turning Journeys off must not take the Circles menu row with it.
+    key: 'circles',
+    label: 'Circles',
+    description: 'The circles your space runs, and who is in each one.',
     entitlement: null,
     defaultMinRole: 'editor',
     types: ['*'],

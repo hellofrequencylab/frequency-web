@@ -64,7 +64,18 @@
 // genuinely none of the five classifications. Prefer classifying it in ENTITY_WRITES — the whole
 // value of this gate is the census being readable in one place.
 //
-// Usage: `node scripts/check-creates.mjs` (or `pnpm check:creates`). Exits 1 on violation.
+// ⚠️ WHERE THIS RUNS (changed 2026-08-12). No longer a `check:*` entry in the CI guards array: it is
+// enforced by scripts/check-creates.test.ts, whose "the live repo" block already called runCheck()
+// against the real tree. Vitest AUTO-DISCOVERS `*.test.ts`, so unlike an array entry it cannot be
+// forgotten — which is how THIS guard, shipped in PR #2098, ran nowhere for that PR's whole life.
+//
+// It stays BLOCKING, deliberately, and that is a judgement worth stating: its 18 unrouted creates
+// are a NAMED SET (UNROUTED), not a count, so this gate is green today and only fires when a NEW
+// ungoverned create appears. An unrelated PR cannot trip it, and the two ways out — route it, or
+// add a dated line to UNROUTED — are both one edit. That is a ratchet, not a tracker.
+//
+// Still runnable by hand for the friendly report: `node scripts/check-creates.mjs`. Exits 1 on
+// violation.
 // Model: scripts/check-menu.mjs (the ratchet + integrity shape) and scripts/check-headers.mjs
 // (KNOWN_DELEGATED — a named, dated, shrink-only allowlist).
 

@@ -19,14 +19,40 @@ import path from 'node:path'
 const ROOT = path.join(import.meta.dirname, '..')
 const WORKFLOW_DIR = path.join(ROOT, '.github', 'workflows')
 
-/** Scripts that deliberately run nowhere. Every entry needs a REASON, and the list should shrink. */
-const UNWIRED: Record<string, string> = {
-  // Audited 2026-08-12: runs in no workflow, and its own output ends "Nothing a PR can fix, which
-  // is why this exits 0" — so it cannot fail. Meanwhile docs/FINALIZE-PLAN.md, UX-MATURITY-PLAN.md
-  // and docs/research/PROTOCOL.md all claim it "warns in CI". Three docs describing a guard that
-  // does not run is worse than no guard. Delete it or wire it; do not leave it here indefinitely.
-  'check:research-freshness':
-    'Advisory-only and structurally unable to fail. Slated for deletion — see the CI audit.',
+/** Scripts that deliberately run nowhere. Every entry needs a REASON, and the list should shrink.
+ *
+ *  ✅ EMPTY as of 2026-08-12, and that is the intended steady state. Its only occupant was
+ *  `check:research-freshness`, which ran in no workflow and whose own output ended "Nothing a PR
+ *  can fix, which is why this exits 0" — it could not fail — while FOUR docs claimed it warned in
+ *  CI. It was deleted rather than wired (ADR-1011). Prefer that outcome to a long-lived entry
+ *  here: a guard nobody runs is a claim nobody checks. */
+const UNWIRED: Record<string, string> = {}
+
+/** ── THE FOURTH HOME: enforced by a vitest test (ADR-1011) ────────────────────────────────────
+ *
+ *  Six guards left ci.yml's `guards=( )` array on 2026-08-12 because each only READS SOURCE FILES
+ *  AND ASSERTS A WIRING PROPERTY — which is a vitest test. The point is not tidiness: vitest
+ *  AUTO-DISCOVERS `*.test.ts`, so a guard that is a test cannot be forgotten in an array, which is
+ *  exactly how `check:studio` came to enforce nothing for the whole life of PR #2098. They also
+ *  inherit the `test` context, which branch protection already requires.
+ *
+ *  Their `package.json` scripts STAY: a dozen docs cite `pnpm check:vocab` and friends as the local
+ *  command, the CLI prints the friendly report with the fix instructions, and deleting an alias to
+ *  tidy a list would break every one of those instructions. So this map is what tells the meta-guard
+ *  their absence from the array is deliberate.
+ *
+ *  ⚠️ IT IS A DECLARATION, NOT A HEURISTIC, and that is on purpose. "Some test file imports this
+ *  script" would be too weak: several guards have sibling tests that only exercise pure classifiers
+ *  against fixtures and never touch the real tree, so dropping one from the array would silently
+ *  still pass. Naming the file here is a deliberate, reviewable act; the test below then checks the
+ *  named file EXISTS and actually imports the script, so the claim cannot rot into a lie. */
+const VITEST_ENFORCED: Record<string, string> = {
+  'check:crm-parity': 'scripts/check-crm-parity.test.ts',
+  'check:vocab': 'scripts/check-vocab.test.ts',
+  'check:studio': 'scripts/check-studio.test.ts',
+  'check:elements': 'scripts/check-elements.test.ts',
+  'check:render-path': 'scripts/check-render-path.test.ts',
+  'check:creates': 'scripts/check-creates.test.ts',
 }
 
 function packageScripts(): Record<string, string> {
@@ -35,12 +61,15 @@ function packageScripts(): Record<string, string> {
 
 /** Every workflow file, with COMMENT LINES STRIPPED.
  *
- *  ⚠️ Stripping comments is load-bearing, and this test found out the hard way. `ci.yml:164` and
- *  `maintenance.yml:127` both MENTION `check:research-freshness` in prose explaining why advisory
- *  findings should not block a merge. A naive substring search over the raw YAML therefore reported
- *  it as wired, and the first version of this test passed it. It runs nowhere. A guard being
- *  *discussed* in a comment is the opposite of it being wired, and a meta-guard that cannot tell
- *  those apart is itself the vacuous-pass bug it was written to prevent. */
+ *  ⚠️ Stripping comments is load-bearing, and this test found out the hard way. Both `ci.yml` and
+ *  `maintenance.yml` MENTION guards by name in prose explaining why advisory findings should not
+ *  block a merge — `check:research-freshness` was named in both while running nowhere, and a naive
+ *  substring search over the raw YAML reported it as wired. The first version of this test passed
+ *  it. A guard being *discussed* in a comment is the opposite of it being wired, and a meta-guard
+ *  that cannot tell those apart is itself the vacuous-pass bug it was written to prevent.
+ *
+ *  ci.yml still names the seven guards that MOVED to vitest, in the comment explaining why the
+ *  array is 20 and not 28 — so this stripping is what keeps those mentions from reading as wiring. */
 function workflowText(): string {
   return readdirSync(WORKFLOW_DIR)
     .filter((f) => f.endsWith('.yml') || f.endsWith('.yaml'))
@@ -59,6 +88,17 @@ describe('every check:* script is wired somewhere', () => {
     // The non-triviality control. Without it, a package.json that failed to parse into scripts
     // would make the loop below iterate zero times and report success — the exact "I never looked"
     // vs "I looked and it was fine" confusion this whole file exists to remove.
+    //
+    // ⚠️ REVIEWED 2026-08-12 and DELIBERATELY LEFT AT 25. The CI reshuffle that day removed exactly
+    // one `check:*` script — check:research-freshness, deleted (ADR-1011) — taking the inventory
+    // 32 -> 31. The other seven that changed only changed WHERE they run: six moved to vitest and
+    // collective moved to maintenance.yml, and all seven KEPT their package.json scripts, because a
+    // dozen docs cite `pnpm check:vocab` and friends and the CLIs print the friendly report. So the
+    // floor still sits six below the real count and needed no edit.
+    //
+    // What this floor is for: catching a package.json this test could not READ, which would make
+    // the loop below iterate zero times and report success. It is not an inventory to freeze —
+    // lower it only alongside a real deletion, and name the deletion. Never to make a run green.
     expect(names.length).toBeGreaterThanOrEqual(25)
   })
 
@@ -84,6 +124,22 @@ describe('every check:* script is wired somewhere', () => {
     const inPostbuild = runsFile ? (scripts.postbuild ?? '').includes(runsFile) : false
     const inAnyWorkflow = wf.includes(name) || (runsFile ? wf.includes(runsFile) : false)
 
+    // 4. a declared vitest home, verified: the named test must exist AND import the guard module,
+    //    so a stale declaration fails here rather than quietly standing in for enforcement.
+    let inVitest = false
+    if (VITEST_ENFORCED[name]) {
+      const testPath = path.join(ROOT, VITEST_ENFORCED[name])
+      const src = (() => { try { return readFileSync(testPath, 'utf8') } catch { return '' } })()
+      const moduleName = path.basename(runsFile ?? '')
+      expect(src.length, `${name}: VITEST_ENFORCED names ${VITEST_ENFORCED[name]}, which does not exist.`).toBeGreaterThan(0)
+      expect(
+        src.includes(`./${moduleName}`),
+        `${name}: ${VITEST_ENFORCED[name]} exists but does not import ./${moduleName}, so it cannot be enforcing this guard.`,
+      ).toBe(true)
+      inVitest = true
+    }
+    if (inVitest) return
+
     if (UNWIRED[name]) {
       // A declared exception must ALSO still be genuinely unwired. If someone wires it and forgets
       // to remove the entry, the list rots into a lie about what runs — the same class of stale
@@ -104,6 +160,9 @@ describe('every check:* script is wired somewhere', () => {
         `    · add "${guard}" to the guards=( ) array in .github/workflows/ci.yml\n` +
         `    · add it to the postbuild script, if it must measure the built ARTIFACT\n` +
         `    · invoke "pnpm ${name}" from another workflow\n` +
+        `    · give it a sibling *.test.ts that asserts against the REAL TREE and declare it in\n` +
+        `      VITEST_ENFORCED in this file — the preferred home for a guard that only reads\n` +
+        `      source and asserts a wiring property, because vitest auto-discovers tests\n` +
         `    · add it to UNWIRED in this file WITH a reason, if it genuinely should not run`,
     ).toBe(true)
   })

@@ -36,7 +36,17 @@ pnpm check:collective  # ← the Community Collective drift guard (scripts/check
 # migrations/advisors: scripts/maintenance/sweep.mts (repo-vs-applied drift + Supabase advisors)
 ```
 
-**`pnpm check:collective`** is the purpose-built guard (`scripts/check-collective.mjs`). It reads the
+**`pnpm check:collective`** is the purpose-built guard (`scripts/check-collective.mjs`).
+
+> ⚠️ **Where it runs (changed 2026-08-12, ADR-1011).** It left `ci.yml`'s per-PR guard array and now
+> runs **weekly** in `.github/workflows/maintenance.yml`, feeding the tracking issue when it finds a
+> real inconsistency. Everything else in that array asserts a property of the *code*; this one grades
+> a *build plan* against the tree and reports ⏳ for phases nobody has started. Off-plan document
+> state is not a merge blocker, and a PR that touches none of it can neither cause nor fix a finding
+> here — the same reasoning that put `check:cron-freshness` in the weekly sweep (ADR-970). Run it by
+> hand after each phase, exactly as this checklist says.
+
+It reads the
 strategy doc as the north star and reports, per phase:
 
 - **Wiring / connections** — a new tier (`collective` / `independent`) must be wired across *every* pricing

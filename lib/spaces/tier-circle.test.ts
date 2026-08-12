@@ -126,7 +126,12 @@ vi.mock('./entitlements', () => ({
   getSpaceCapabilities: async () => ({ canEditProfile: true, isAdmin: true }),
 }))
 
-import { syncTierCircleAccess, setTierCircle, hasActiveSpaceMembership } from './tier-circle'
+import {
+  syncTierCircleAccess,
+  setTierCircle,
+  hasActiveSpaceMembership,
+  tierLinksForCircle,
+} from './tier-circle'
 
 beforeEach(() => {
   state.tiers = [
@@ -237,6 +242,56 @@ describe('syncTierCircleAccess: grant (the provenance stamp)', () => {
     await expect(
       syncTierCircleAccess({ spaceId: SPACE, profileId: MEMBER, tierId: TIER_A, action: 'grant' }),
     ).resolves.toEqual({ granted: false, reason: 'circle_full' })
+  })
+})
+
+// ── THE TENANCY RE-CHECK (the cross-tenant membership leak) ─────────────────────────────────────
+// The tier belongs to this Space; that says nothing about the CIRCLE, and a circle can be moved
+// (lib/circles/transfer.ts, lib/circles/handoff.ts). Both of these FAIL on the pre-guard tree: the
+// grant went through and stamped a row on another tenant's roster.
+describe('syncTierCircleAccess: grant refuses a circle the space no longer owns', () => {
+  it('(e) grants nothing once the linked circle has been transferred away', async () => {
+    state.circles = [{ id: CIRCLE_A, space_id: OTHER_SPACE }] // transferred out from under the tier
+    const res = await syncTierCircleAccess({
+      spaceId: SPACE,
+      profileId: MEMBER,
+      tierId: TIER_A,
+      action: 'grant',
+    })
+    expect(res).toEqual({ granted: false, reason: 'circle_moved' })
+    expect(state.inserts).toHaveLength(0)
+    expect(state.circleMemberships).toHaveLength(0)
+  })
+
+  it('(e2) grants nothing when the linked circle is gone entirely (fail-closed)', async () => {
+    state.circles = []
+    const res = await syncTierCircleAccess({
+      spaceId: SPACE,
+      profileId: MEMBER,
+      tierId: TIER_A,
+      action: 'grant',
+    })
+    expect(res).toEqual({ granted: false, reason: 'circle_moved' })
+    expect(state.inserts).toHaveLength(0)
+  })
+})
+
+describe('tierLinksForCircle (the reader behind the transfer lock)', () => {
+  it('(f) reports every tier pointed at a circle, whatever it costs or whether it is retired', async () => {
+    state.tiers = [
+      { id: TIER_A, space_id: SPACE, circle_id: CIRCLE_A, name: 'Studio pass', price_cents: 4500, is_active: true },
+      { id: TIER_B, space_id: SPACE, circle_id: CIRCLE_A, name: 'Retired free tier', price_cents: 0, is_active: false },
+    ]
+    const res = await tierLinksForCircle(CIRCLE_A)
+    expect(res.ok).toBe(true)
+    expect(res.tiers.map((t) => t.id).sort()).toEqual([TIER_A, TIER_B].sort())
+  })
+
+  it('(f2) reports no links for an unlinked circle, so a normal transfer stays free', async () => {
+    const res = await tierLinksForCircle(CIRCLE_B)
+    expect(res).toEqual({ ok: true, tiers: [{ id: TIER_B, name: 'a membership tier', spaceId: SPACE }] })
+    const none = await tierLinksForCircle('circle-nobody-links')
+    expect(none).toEqual({ ok: true, tiers: [] })
   })
 })
 

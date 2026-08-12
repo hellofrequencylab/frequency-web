@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { isPlatformStaff } from '@/lib/auth'
 import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { tierLinksForCircle } from '@/lib/spaces/tier-circle'
 
 // CIRCLE OWNERSHIP TRANSFER (ADR-843): move a Circle between Spaces, or out of a Space to a
 // person. A Circle's ownership is two fields, and a transfer is a coherent move of both:
@@ -40,6 +41,9 @@ export interface TransferGateFacts {
   target: TransferTarget
   /** Platform staff on the STAFF axis (web_role admin/janitor), preview-aware. */
   staff: boolean
+  /** How many membership tiers currently point at this Circle
+   *  (space_membership_tiers.circle_id). Anything above zero LOCKS the move — see TIER_LINKED. */
+  linkedTierCount: number
 }
 
 export interface TransferDecision {
@@ -53,6 +57,8 @@ const NOT_YOURS = 'Only the team that owns this circle can move it.'
 const NOT_THEIRS = 'You can only move a circle into a space you help run.'
 const NEEDS_ACCEPTANCE =
   'You can move a circle to a space you run, or take it as your own. Handing it to someone else is not available yet.'
+export const TIER_LINKED =
+  'This circle is linked to a membership tier. Unlink it in the space membership settings first, then move it.'
 
 /**
  * May this viewer move this Circle to this destination? PURE.
@@ -60,9 +66,24 @@ const NEEDS_ACCEPTANCE =
  * Source authority: the Space's team for a Space Circle, the host for a personal one, or staff.
  * Destination authority: the viewer must steward the target Space, or the target person must BE
  * the viewer. Staff pass both sides. Anonymous never passes, staff flag or not.
+ *
+ * THE TIER LOCK sits ABOVE all of that, staff included, because it is not an authority question.
+ * A Space links a membership tier to one of its circles (space_membership_tiers.circle_id) and the
+ * billing lifecycle then mints provenance-stamped `memberships` rows into it forever
+ * (lib/spaces/tier-circle.ts). Move the circle out and the link survives the move: the old Space
+ * keeps granting paid members a seat on a roster that now belongs to somebody else. That is a
+ * cross-tenant membership leak, so the linked circle is PINNED until an operator unlinks it.
+ *
+ * WHY PIN RATHER THAN UNLINK-ON-TRANSFER. Auto-unlinking would make a transfer silently revoke the
+ * circle access every paying member of that tier bought, as a side effect of an ownership edit
+ * nobody framed as a billing change; it would also split one invariant across two writes, and a
+ * failure between them recreates exactly this leak. Refusing costs the operator one deliberate
+ * click in the surface that owns the commercial consequence, and it keeps the invariant a single
+ * fact instead of a two-step dance.
  */
 export function canTransferCircle(facts: TransferGateFacts): TransferDecision {
   if (!facts.viewerProfileId) return { allowed: false, reason: NOT_SIGNED_IN }
+  if (facts.linkedTierCount > 0) return { allowed: false, reason: TIER_LINKED }
   if (facts.staff) return { allowed: true, reason: '' }
 
   const ownsSource =
@@ -146,6 +167,13 @@ export async function transferCircle(
       }
     }
 
+    // The tier lock's one fact. A read MISS is fatal, not permissive: "we could not tell" must
+    // never resolve to "no links", or a transient error reopens the leak the gate exists to close.
+    const links = await tierLinksForCircle(circleId)
+    if (!links.ok) {
+      return { ok: false, reason: 'Could not move that circle. Please try again.', slug: circle.slug }
+    }
+
     const staff = await isPlatformStaff().catch(() => false)
     const decision = canTransferCircle({
       viewerProfileId,
@@ -154,6 +182,7 @@ export async function transferCircle(
       targetSpaceCanEdit,
       target,
       staff,
+      linkedTierCount: links.tiers.length,
     })
     if (!decision.allowed) return { ok: false, reason: decision.reason, slug: circle.slug }
 

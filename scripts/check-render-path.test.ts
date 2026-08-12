@@ -1,11 +1,19 @@
 import { describe, it, expect } from 'vitest'
+// @ts-expect-error — plain .mjs guard script, no types
 import {
   codedComponents,
   rendersBlocks,
   gatedSlugs,
   parseLedger,
   stripComments,
+  runCheck,
+  MIN_SLUGS,
 } from './check-render-path.mjs'
+
+// ⚠️ 2026-08-12: this file is now the ENFORCEMENT, not just the parser coverage. `check:render-path`
+// left the CI guards array; the live-tree block at the bottom is what CI runs. Vitest auto-discovers
+// `*.test.ts`, so unlike an array entry it cannot be forgotten — which is how check:studio came to
+// enforce nothing for the whole life of PR #2098.
 
 // The ONE RENDER PATH gate (ADR-967). It watches for a gated marketing slug that either stops
 // rendering its Puck document or grows more coded body beside it. Every assertion here is about
@@ -81,5 +89,18 @@ describe('stripComments', () => {
   it('preserves length, so line numbers survive', () => {
     const src = 'a /* x */ b\n// tail\n'
     expect(stripComments(src)).toHaveLength(src.length)
+  })
+})
+
+describe('check-render-path · the live tree', () => {
+  it('parsed a real slug list, so silence means something (the non-triviality floor)', () => {
+    // `gatedSlugs()` returns [] the moment its regex stops matching EDITABLE_PAGES, and an empty
+    // slug list means an empty loop and a green gate that checked nothing. Assert the corpus first.
+    expect(runCheck().slugs.length).toBeGreaterThanOrEqual(MIN_SLUGS)
+  })
+
+  it('every gated slug renders <BlockRender>, and the coded-body ledger matches the tree', () => {
+    const { problems } = runCheck()
+    expect(problems, `\n${problems.join('\n\n')}\n`).toEqual([])
   })
 })

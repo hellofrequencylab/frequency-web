@@ -22,8 +22,12 @@
 // admin-menu twin, ADR-553).
 //
 // Escape hatch: an inline `// element-ok: <reason>` comment on the flagged line, or add the file to an
-// ALLOWLIST below WITH a reason. Usage: `node scripts/check-elements.mjs` (or `pnpm check:elements`).
-// Exits 1 on violation.
+// ALLOWLIST below WITH a reason.
+//
+// ⚠️ WHERE THIS RUNS (changed 2026-08-12). No longer a `check:*` entry in the CI guards array: it is
+// enforced by scripts/check-elements.test.ts, which vitest AUTO-DISCOVERS, so it cannot be forgotten
+// in an array the way check:studio was for the whole life of PR #2098. Still runnable by hand —
+// `node scripts/check-elements.mjs` — for the friendly report. Exits 1 on violation.
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -76,6 +80,12 @@ export function elementViolations(file, src) {
   return out
 }
 
+/** The scanned corpus. Exported so the vitest guard asserts the SAME number the CLI floors on,
+ *  rather than a re-derived approximation of it. */
+export function scannedFiles() {
+  return ROOTS.flatMap(walk)
+}
+
 export function runCheck() {
   const files = ROOTS.flatMap(walk)
   const violations = []
@@ -92,7 +102,7 @@ export function runCheck() {
 export const MIN_SCANNED_FILES = 1500
 
 function main() {
-  const scanned = ROOTS.flatMap(walk).length
+  const scanned = scannedFiles().length
   if (scanned < MIN_SCANNED_FILES) {
     console.error(
       `✗ check:elements scanned only ${scanned} file(s), expected at least ${MIN_SCANNED_FILES}. ` +

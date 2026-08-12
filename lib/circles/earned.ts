@@ -49,3 +49,41 @@ export async function getCircleEarnedZaps(circleId: string): Promise<number> {
     return 0
   }
 }
+
+/**
+ * The circle HEALTH signals the manager/Insight panel reads, in ONE batch beside the earned total.
+ *
+ * Honest, circle-scoped numbers only: "zaps earned here" is what was earned THROUGH this circle
+ * (see above), never members' personal season totals; streaks + new-this-week are this circle's own
+ * member activity. Lifted out of the circle page when the detail route became a shell + tabs
+ * (PAGE-FRAMEWORK §3) so the Home tab reads it without reaching for the service-role client itself.
+ *
+ * Only ever called for a viewer who can SEE the panel — a visitor never triggers these reads.
+ * Fail-safe to zeros like its neighbor: a health number is never worth breaking the page over.
+ */
+export async function getCircleHealth(
+  circleId: string,
+  memberProfileIds: string[],
+  joinedSince: string,
+): Promise<{ earnedZaps: number; activeStreaks: number; newThisWeek: number }> {
+  try {
+    const [earnedZaps, streakRes, recentRes] = await Promise.all([
+      getCircleEarnedZaps(circleId),
+      memberProfileIds.length > 0
+        ? db().from('profiles').select('current_streak').in('id', memberProfileIds)
+        : Promise.resolve({ data: [] as { current_streak: number | null }[] }),
+      db()
+        .from('memberships')
+        .select('id')
+        .eq('circle_id', circleId)
+        .eq('status', 'active')
+        .gte('joined_at', joinedSince),
+    ])
+    const activeStreaks = ((streakRes.data ?? []) as { current_streak: number | null }[]).filter(
+      (p) => (p.current_streak ?? 0) > 0,
+    ).length
+    return { earnedZaps, activeStreaks, newThisWeek: recentRes.data?.length ?? 0 }
+  } catch {
+    return { earnedZaps: 0, activeStreaks: 0, newThisWeek: 0 }
+  }
+}

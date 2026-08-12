@@ -18,12 +18,17 @@
 //   1. Only ACTIVATED invites count. Dedupe per invitee (beta_referrals.invitee UNIQUE).
 //   2. The whole contest is INERT behind platform_flags.beta_referral_contest (FALSE by
 //      default). Every write path no-ops when the flag is off.
-//   3. This module SCORES the contest; it never grants paid time. Billing went live on
-//      2026-07-10, and the automated prize-award path was retired with the beta program.
-//      The published free-membership prize came down with it (owner ruling, 2026-08-12):
-//      awardReferralWinners and its WINNER_PRIZE_MONTHS terms are deleted, and
-//      app/(main)/referral no longer states a prize. The rewards this module still pays
-//      are Zaps, on the live ledger, and they are the only rewards the copy may claim.
+//   3. This module SCORES the contest; it never grants paid time or founder status.
+//      Billing went live on 2026-07-10, and the automated prize-award path was retired
+//      with the beta program. Both published prizes came down with it (owner ruling,
+//      2026-08-12): awardReferralWinners and its WINNER_PRIZE_MONTHS terms are deleted,
+//      and so are FOUNDING_PERK_MIN_REFERRALS and the foundingPerkEarned /
+//      toFoundingPerk fields, whose only writer of reward_kind 'founding_perk' lived
+//      inside awardReferralWinners. app/(main)/referral no longer states either prize.
+//      The rewards this module still pays are Zaps, on the live ledger, and they are
+//      the only rewards the copy may claim. (grantFoundingStatus in lib/founding/status
+//      is a DIFFERENT, live path: reserved founders via beta onboarding and the Stripe
+//      webhook. It was never the referrer path and is untouched.)
 //
 // The beta_* tables lag the generated Database types (ADR-246), so writes reach
 // beta_referrals through the loose service-role handle (lib/beta/db.betaDb); the
@@ -46,9 +51,6 @@ export const CIRCLE_STARTER_THRESHOLD = 10
  *  the Zaps ledger (awardZaps) with a contest-specific action label; the per-activated
  *  invite payout reuses the existing 'referral_activated' zap_config action instead. */
 export const CIRCLE_STARTER_ZAPS = 150
-
-/** Activated-referral threshold that earns Founding-Member perks at graduation. */
-export const FOUNDING_PERK_MIN_REFERRALS = 3
 
 // reward_grants rule_key prefixes (the idempotency keys for each contest payout).
 const CIRCLE_START_RULE = 'beta_contest.circle_start:' // + circleId
@@ -368,9 +370,6 @@ export interface MemberContestProgress {
   score: number
   /** 1-based rank on the leaderboard, or null if not on the board. */
   rank: number | null
-  /** How many more activated referrals to earn Founding-Member perks (0 once earned). */
-  toFoundingPerk: number
-  foundingPerkEarned: boolean
 }
 
 const EMPTY_PROGRESS: MemberContestProgress = {
@@ -380,8 +379,6 @@ const EMPTY_PROGRESS: MemberContestProgress = {
   circleStarts: 0,
   score: 0,
   rank: null,
-  toFoundingPerk: FOUNDING_PERK_MIN_REFERRALS,
-  foundingPerkEarned: false,
 }
 
 /** One member's own contest standing, for the referral hub. Fail-safe to an empty,
@@ -410,7 +407,6 @@ export async function getMemberContestProgress(profileId: string): Promise<Membe
     const pendingReferrals = Math.max(0, (attributedTotal ?? 0) - activatedReferrals)
     const score = activatedReferrals + circleStarts
     const mine = board.find((r) => r.profileId === profileId)
-    const foundingPerkEarned = activatedReferrals >= FOUNDING_PERK_MIN_REFERRALS
 
     return {
       enabled: true,
@@ -419,8 +415,6 @@ export async function getMemberContestProgress(profileId: string): Promise<Membe
       circleStarts,
       score,
       rank: mine?.rank ?? null,
-      toFoundingPerk: Math.max(0, FOUNDING_PERK_MIN_REFERRALS - activatedReferrals),
-      foundingPerkEarned,
     }
   } catch {
     return EMPTY_PROGRESS

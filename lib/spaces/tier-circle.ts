@@ -78,6 +78,47 @@ export async function hasActiveSpaceMembership(
   }
 }
 
+// ── The tenancy invariant: a linked tier and the circle it feeds live in the SAME Space ─────────
+
+/**
+ * The membership tiers currently pointed at this circle (space_membership_tiers.circle_id), newest
+ * read first. THE reader behind the transfer guard (ADR-859 amendment): a circle a Space is minting
+ * paid-member rows into may not leave that Space while the link stands, because
+ * syncTierCircleAccess would keep granting into a circle the Space no longer owns.
+ *
+ * It reports EVERY link, not just the priced or still-`is_active` ones, on purpose. The grant path
+ * reads `circle_id` and nothing else: it never consults price_cents and never consults is_active. A
+ * guard that filtered on either would be a SECOND rule that has to stay in step with the grant path
+ * by hand, which is the exact drift that opened this hole. One fact, read the same way on both
+ * sides. FAIL-SAFE is NOT an option here: a read miss returns the honest error the caller turns into
+ * a refusal, because "we could not tell" must never read as "no links".
+ */
+export async function tierLinksForCircle(
+  circleId: string,
+): Promise<{ ok: boolean; tiers: { id: string; name: string; spaceId: string }[] }> {
+  if (!circleId) return { ok: true, tiers: [] }
+  try {
+    const { data, error } = await table('space_membership_tiers')
+      .select('id, name, space_id')
+      .eq('circle_id', circleId)
+    if (error) {
+      console.error('[tier-circle] tierLinksForCircle read failed', error.message)
+      return { ok: false, tiers: [] }
+    }
+    return {
+      ok: true,
+      tiers: (data ?? []).map((r) => ({
+        id: String(r.id),
+        name: String(r.name ?? 'a membership tier'),
+        spaceId: String(r.space_id),
+      })),
+    }
+  } catch (err) {
+    console.error('[tier-circle] tierLinksForCircle failed', err)
+    return { ok: false, tiers: [] }
+  }
+}
+
 // ── Internal grant / revoke primitives (both non-throwing) ──────────────────────────────────────
 
 /** The cap trigger (enforce_circle_member_cap) raises 'circle_full' with errcode P0001. */
@@ -194,7 +235,7 @@ export interface TierCircleSyncInput {
 
 export interface TierCircleSyncResult {
   granted: boolean
-  reason?: 'revoked' | 'no_circle' | 'already_member' | 'circle_full' | 'error'
+  reason?: 'revoked' | 'no_circle' | 'already_member' | 'circle_full' | 'error' | 'circle_moved'
 }
 
 /**
@@ -231,6 +272,33 @@ export async function syncTierCircleAccess(
     const circleId = (tier?.circle_id as string | null) ?? null
     if (!tier || tier.space_id !== input.spaceId || !circleId) {
       return { granted: false, reason: 'no_circle' }
+    }
+
+    // TENANCY RE-CHECK, the second half of the cross-tenant guard. The check above proves the TIER
+    // is this Space's; it says nothing about the CIRCLE, and the circle can move (lib/circles/
+    // transfer.ts, lib/circles/handoff.ts). setTierCircle validated same-Space at LINK time, but
+    // that fact is only true as of then. Without this line a Space that transferred a linked circle
+    // away keeps minting paid-member rows into another tenant's circle at every renewal, every
+    // upgrade, and every webhook reconcile — durable rows, on someone else's roster, feeding
+    // get_my_circle_ids() and the comms audience.
+    //
+    // The transfer gate refuses to move a linked circle at all, so in a healthy tree this never
+    // fires. It is the belt to that gate's braces: an unlink that half-applied, a direct SQL move,
+    // or a future ownership path that forgets the rule lands HERE instead of in another tenant's
+    // roster. Fail-CLOSED (grant nothing) — the opposite of this module's usual fail-soft, because
+    // the failure being avoided is a leak, not a miss, and a miss self-heals on the next lifecycle
+    // event once the operator re-links.
+    const { data: circle } = await table('circles')
+      .select('id, space_id')
+      .eq('id', circleId)
+      .maybeSingle()
+    if (!circle || circle.space_id !== input.spaceId) {
+      console.error('[tier-circle] refused a grant into a circle this space no longer owns', {
+        spaceId: input.spaceId,
+        tierId: input.tierId,
+        circleId,
+      })
+      return { granted: false, reason: 'circle_moved' }
     }
     return await grantCircleRow(circleId, input.profileId, input.tierId)
   } catch (err) {

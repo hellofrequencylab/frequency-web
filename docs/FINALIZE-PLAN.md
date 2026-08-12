@@ -817,14 +817,16 @@ blocks on it being scheduled.
 
 - ⏳ **Lift 1 sits at literal zero.** `docs/research/findings/` holds only its `README.md`. No
   engineering closes this one, which is why it is a decision rather than a task.
-- ✅ **`check:research-freshness` is built and advisory**, so the staleness is visible on every run
-  rather than being something someone has to remember. It exits 0 by design: failing a build on a
-  recruiting decision is how a gate becomes something people route around (same reasoning as
-  ADR-970).
+- 🔴 **There is no gate, and this bullet used to claim there was.** It read "`check:research-freshness`
+  is built and advisory, so the staleness is visible on every run". The script existed but ran in
+  **no** workflow, and its output ended *"Nothing a PR can fix, which is why this exits 0"* — it was
+  structurally unable to fail. Deleted 2026-08-12 (ADR-1011). Failing a build on a recruiting
+  decision is how a gate becomes something people route around (ADR-970), but the answer to that is
+  no gate, not a gate that cannot fire and four docs that say it does.
 - ⚠️ **The DAWN handoff carries the gap honestly.** `design_handoff/SYNC.md` standing rule 1 requires
-  every outbound handoff to carry a "What users tripped on" section and never omit the heading. The
-  gate emits the exact line for it: *"No moderated round has run yet. See docs/research/PROTOCOL.md."*
-  So the handoff stays complete under the contract while the round is parked.
+  every outbound handoff to carry a "What users tripped on" section and never omit the heading.
+  While the round is parked, that section reads: *"No moderated round has run yet. See
+  docs/research/PROTOCOL.md."* It is a fixed line now rather than one a script emits.
 
 ### 🔴 `.dark [data-skin="midnight"]` never matches on the `<html>` path
 
@@ -914,7 +916,9 @@ monitors reports coverage it does not have.
 ## 3. The one gap no phase closes
 
 **Lift 1, the user-evidence loop, is at literal zero.** `docs/research/findings/` contains only a
-`README.md` — no moderated round has ever run — and `check:research-freshness` was never written.
+`README.md` — no moderated round has ever run — and it has no machine gate (a
+`check:research-freshness` script was written, ran in no workflow, could not fail, and was deleted
+on 2026-08-12; ADR-1011).
 The UX plan scores this dimension **40/100** and calls it "the single largest distance from
 world-class", and it is the only item on any list that **no amount of engineering can close**. Five
 users per quarter, on the Vercel preview, running the five named journeys.

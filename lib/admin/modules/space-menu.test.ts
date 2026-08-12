@@ -41,6 +41,24 @@ describe('resolveSpaceMenu gating', () => {
     }
   })
 
+  it('keeps the Circles row when a space switches Journeys off', () => {
+    // 🔴 THE DEFECT (fixed 2026-08-12, fails on the pre-fix tree): `space.circles` was gated on
+    // `journeys`, from when a Space Circle only existed to run a Journey. A Space that runs no
+    // program still gathers people, so turning Journeys off used to take the whole Circles menu row
+    // with it. The two are separate switches now.
+    const menu = resolveSpaceMenu({ canUse: (fn) => fn !== 'journeys', canManageMenu: true }, {})
+    const ids = idsOf(menu)
+    expect(ids).toContain('space.circles')
+    expect(ids).not.toContain('space.journeys') // the Journeys row itself still goes, as it should
+
+    // ...and the converse: switching Circles off drops ONLY the Circles row.
+    const noCircles = idsOf(
+      resolveSpaceMenu({ canUse: (fn) => fn !== 'circles', canManageMenu: true }, {}),
+    )
+    expect(noCircles).not.toContain('space.circles')
+    expect(noCircles).toContain('space.journeys')
+  })
+
   it('honors the owner hide + order overrides (delegated to spaceModuleManifest)', () => {
     const menu = resolveSpaceMenu(
       { canUse: allOn, canManageMenu: true },

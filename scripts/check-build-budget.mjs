@@ -33,11 +33,33 @@ const ROOT = process.cwd()
 const SERVER_DIR = path.join(ROOT, '.next', 'server')
 
 // ── THE BUDGET ──────────────────────────────────────────────────────────────────────────────
-// Measured 2026-08-12, immediately after ADR-1002: 9.80 GB across 481 functions.
-// The container died somewhere north of ~16.7 GB. 13 GB sits clear of today's number with room for
-// ordinary growth, and well under the cliff. It is a RATCHET in spirit: it may fall, and raising it
-// is a decision that needs a reason in the commit, not a reflex.
-const BUDGET_GB = 13
+// It is a RATCHET in spirit: it may FALL, and raising it is a decision that needs a reason in the
+// commit, not a reflex. It has now fallen once, and the reasoning is recorded here because the
+// number matters far less than the next person understanding why it is what it is.
+//
+// The measured artifact, in order:
+//   16.73 GB   before ADR-1002 — the container died somewhere north of this
+//    9.80 GB   after the root share card went static (ADR-1002); the budget was set to 13 here
+//    6.45 GB   after the icon and HEIC doors closed (ADR-1008)
+//    5.59 GB   today, 485 functions, after the public/ glob closed (ADR-1010)
+//
+// 13 → 8 on 2026-08-12. Why 8, and not 7 and not 13:
+//   · 13 was set against a 9.80 GB artifact. Against 5.59 GB it is a ceiling nothing can plausibly
+//     reach by accident, which makes it decorative — and a gate that cannot fire is not a gate.
+//   · 8 leaves ~2.4 GB of headroom over the measured number: room for ordinary feature growth
+//     without a false alarm.
+//   · It still fires long before disk does on the failure that actually happened. The measured
+//     escalation ladder (ADR-1007): a share card at the ROOT reaches 484 functions, one at
+//     app/(main) reaches 303. Either blows past 8 GB immediately.
+//   · 7 would be tighter but is likelier to trip on a legitimate large feature and need raising
+//     with a reason — and a budget that gets raised routinely stops being a budget.
+//   · Headroom is real, not nominal: ADR-1008 records an irreducible vendor floor near 1.5 GB, and
+//     the largest single remaining line is libvips-cpp.so at 1,440 MB (17.4 MB × 83
+//     segment-inherited OG cards, 26% of the build). 8 GB is nowhere near that floor.
+//
+// This lowering was an agent's engineering call under a "do whatever is best practice" instruction,
+// not an owner decision — recorded as such so nobody re-derives it as a requirement.
+const BUDGET_GB = 8
 // Print anything that costs more than this on its own, so a failure names its cause immediately.
 const REPORT_OVER_MB = 100
 

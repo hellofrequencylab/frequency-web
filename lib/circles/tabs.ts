@@ -1,0 +1,46 @@
+// THE CIRCLE DETAIL TAB STRIP — pure, so the one rule that decides whether a Circle gets tabs at
+// all is unit-testable without a database or a render (the lib/circles/*-gate idiom, ADR-841/843).
+//
+// ADR-089's EMPTY-CIRCLE GUARDRAIL is the whole reason this is a function rather than a constant.
+// The ADR mitigates the thin-circle risk by DEFERRING a Circle's heavier surfaces until it crosses
+// a small size threshold: founding stays easy, ghost circles stay lightweight. A tab strip is one
+// of those heavier surfaces. Splitting a circle of one into Home and Members does not organize
+// anything; it just adds chrome to an empty room and makes it read emptier. So a circle nobody has
+// joined yet renders as ONE page, exactly as it did before the shell existed, and grows tabs the
+// moment a second person is in it.
+//
+// A MANAGER always gets the strip, whatever the size. A host setting up a brand-new circle needs
+// to see where the roster lives before anyone arrives, and they are the one viewer for whom the
+// empty state is a to-do rather than a disappointment.
+//
+// Production's largest circle today holds 2 members. That is the size this is designed for.
+
+import type { UnderlineTabLink } from '@/components/ui/underline-tabs'
+
+export interface CircleTabFacts {
+  slug: string
+  /** ACTIVE members on the roster (the host counts as one). */
+  memberCount: number
+  /** Holds circle.editSettings — host, scope leader, or admin of THIS circle. */
+  canManage: boolean
+}
+
+/**
+ * The tabs a Circle offers, in order. EMPTY means "render no strip": the circle has not crossed
+ * ADR-089's threshold and reads as a single page.
+ *
+ * Home and Members are the two tabs with real content today. Chat and a leaderboard are later
+ * phases and are deliberately absent — a tab pointing at a surface that does not exist is worse
+ * than no tab.
+ */
+export function circleTabs(facts: CircleTabFacts): UnderlineTabLink[] {
+  if (!facts.slug) return []
+  if (facts.memberCount <= 1 && !facts.canManage) return []
+  const base = `/circles/${facts.slug}`
+  return [
+    { href: base, label: 'Home' },
+    // The count IS the affordance: it tells a visitor whether the roster is worth a click before
+    // they spend one, which matters most on exactly the small circles this guardrail is about.
+    { href: `${base}/members`, label: 'Members', count: facts.memberCount },
+  ]
+}

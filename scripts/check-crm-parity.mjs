@@ -23,7 +23,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 // ── The three conversation reply/AI surfaces that must stay in lock-step. Adding a NEW CRM surface means
 // adding it here (and wiring it to the shared modules) — that is the contract. ──
-const SURFACES = [
+export const SURFACES = [
   'app/(main)/admin/crm/conversations/actions.ts',
   'app/(main)/spaces/[slug]/crm/conversations-actions.ts',
   'app/(main)/lead/inbox/actions.ts',
@@ -97,6 +97,27 @@ function importsAll(src, module, symbols, anyOf = false) {
   return anyOf ? symbols.some((s) => imported.has(s)) : symbols.every((s) => imported.has(s))
 }
 
+/** ── NON-TRIVIALITY FLOOR ────────────────────────────────────────────────────────────────────
+ *  🔴 Without this, running from a tree where the surfaces do not exist printed "✓ all N CRM
+ *  surfaces route through the shared comms modules" and exited 0. Measured 2026-08-12 by running
+ *  this script with cwd set to an EMPTY DIRECTORY: it reported a clean bill of health over nothing
+ *  at all. A guard that cannot fail is not a guard, and this one could not, because "no surface
+ *  read" and "every surface correct" produced the same output.
+ *
+ *  Returned as a MESSAGE rather than an exit so the CLI and scripts/check-crm-parity.test.ts
+ *  enforce the identical floor. Null when the corpus is real. */
+export function surfaceFloorFailure() {
+  const missing = SURFACES.filter((s) => !existsSync(join(ROOT, s)))
+  if (SURFACES.length > 0 && missing.length === 0) return null
+  return (
+    `\n✗ check:crm-parity — refusing to pass over a corpus it could not read.\n` +
+    `    surfaces declared: ${SURFACES.length}\n` +
+    `    surfaces missing:  ${missing.length}${missing.length ? ` (${missing.join(', ')})` : ''}\n` +
+    `  Either a surface moved and this guard's list is stale, or it is running from the wrong\n` +
+    `  directory. Both are real problems; neither is a pass.\n`
+  )
+}
+
 /** Run every check. Returns { violations: string[] } — pure, so a test can assert on it. */
 export function checkCrmParity() {
   const violations = []
@@ -146,21 +167,9 @@ if (isMain || process.argv[1]?.endsWith('check-crm-parity.mjs')) {
   const { violations } = checkCrmParity()
   console.log('CRM / comms parity guard (ADR-817)\n')
 
-  // ── NON-TRIVIALITY FLOOR ──────────────────────────────────────────────────────────────────
-  // 🔴 Without this, running from a tree where the surfaces do not exist printed
-  // "✓ all N CRM surfaces route through the shared comms modules" and exited 0. Measured
-  // 2026-08-12 by running this script with cwd set to an EMPTY DIRECTORY: it reported a clean
-  // bill of health over nothing at all. A guard that cannot fail is not a guard, and this one
-  // could not, because "no surface read" and "every surface correct" produced the same output.
-  const missing = SURFACES.filter((s) => !existsSync(join(ROOT, s)))
-  if (SURFACES.length === 0 || missing.length > 0) {
-    console.error(
-      `\n✗ check:crm-parity — refusing to pass over a corpus it could not read.\n` +
-        `    surfaces declared: ${SURFACES.length}\n` +
-        `    surfaces missing:  ${missing.length}\n` +
-        `  Either a surface moved and this guard's list is stale, or it is running from the wrong\n` +
-        `  directory. Both are real problems; neither is a pass.\n`,
-    )
+  const floor = surfaceFloorFailure()
+  if (floor) {
+    console.error(floor)
     process.exit(1)
   }
 

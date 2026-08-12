@@ -223,7 +223,10 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   { id: 'space.journeys', label: 'Journeys', desc: 'Build multi week programs from your practices.', Icon: Route, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'journeys' }, featureKey: 'journeys', render: 'link', deepLink: (s) => `${base(s)}/journeys`, order: 57, tier: 'primary', priority: 33.6, access: 'freemium', freeNote: '1 published free, then unlimited', parent: 'space.content' },
   // Circles moved from under Journeys to under Content (ADR-846): nesting is one level deep, and Journeys
   // is itself a tool inside the Content box now, so Circles takes its place as a sibling there.
-  { id: 'space.circles', label: 'Circles', desc: 'The circles your space runs, and the Journey each one is moving through together.', Icon: UsersRound, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'journeys' }, featureKey: 'journeys', render: 'link', deepLink: (s) => `${base(s)}/circles`, order: 57.5, tier: 'primary', priority: 33.7, access: 'included', parent: 'space.content' },
+  // Gated on its OWN function since 2026-08-12. It rode `journeys`, from when a Space Circle only
+  // existed to run a Journey, so a Space with Journeys switched off lost its Circles menu row
+  // entirely. A Space that runs no program still gathers people: one switch each.
+  { id: 'space.circles', label: 'Circles', desc: 'The circles your space runs, and who is in each one.', Icon: UsersRound, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'circles' }, featureKey: 'circles', render: 'link', deepLink: (s) => `${base(s)}/circles`, order: 57.5, tier: 'primary', priority: 33.7, access: 'included', parent: 'space.content' },
   // Program (Programs on Channels): run the space's model as a Program — the flagship circle becomes the
   // Chapter blueprint (topical_channels.template_id) and members anywhere start Chapters from it. A TOOL
   // inside the Content box (parent keeps the ADR-846 twelve-box lock intact), ordered right after Circles:
