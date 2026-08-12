@@ -36,15 +36,41 @@ const cache = new Map<number, ArrayBuffer>();
 /** In-flight reads, so N concurrent cards do not each start their own. Cleared on settle. */
 const inflight = new Map<number, Promise<ArrayBuffer>>();
 
-function read(file: string): Promise<ArrayBuffer> {
-  return readFile(join(process.cwd(), "public/fonts", file)).then(
-    (buf) =>
-      buf.buffer.slice(
-        buf.byteOffset,
-        buf.byteOffset + buf.byteLength,
-      ) as ArrayBuffer,
-  );
+/** Detach the exact bytes. `readFile` hands back a Buffer that is a VIEW into a shared pool slab, so
+ *  passing `buf.buffer` straight to Satori would hand it megabytes of unrelated memory. */
+function detach(buf: Buffer): ArrayBuffer {
+  return buf.buffer.slice(
+    buf.byteOffset,
+    buf.byteOffset + buf.byteLength,
+  ) as ArrayBuffer;
 }
+
+// ── ONE LITERAL PATH PER FACE, AND IT HAS TO STAY THAT WAY ────────────────────────────────
+//
+// 🔴 These three reads used to share one `read(file)` helper, and that single parameter cost ~300MB
+// of deploy disk. @vercel/nft cannot resolve a path assembled from a variable, so it falls back to
+// globbing the deepest prefix it CAN resolve — the whole `public/fonts` directory — into every
+// function whose graph reaches this module. Measured off the real `.next` trace: 69 functions each
+// carrying all five files, including LiberationSans-Regular (410,820 bytes, which nothing in this
+// repo ever opens from disk) and the licence text. ADR-1004 is the same failure one layer up, where
+// `join(process.cwd(), ...rubricPath)` swept the repo ROOT into ~300 functions.
+//
+// Written out as literals, nft resolves each read exactly and ships these three faces and nothing
+// else — WITHOUT help from next.config.ts, which is why the catch-all include key there could be
+// narrowed to the card routes. Verified with nodeFileTrace over both shapes before landing: the
+// parameterised form emits all five files in the directory, the literal form emits exactly three.
+//
+// ⚠️ Reintroducing a `read(name)` helper — or hoisting "public/fonts" into a shared const and
+// building the path from it — silently restores the glob. Nothing fails; the deploy just gets
+// bigger. `og-fonts.test.ts` fails instead, which is the only reason that stays visible.
+const readNunitoBlack = () =>
+  readFile(join(process.cwd(), "public/fonts", "Nunito-Black.ttf")).then(detach);
+const readNunitoBold = () =>
+  readFile(join(process.cwd(), "public/fonts", "Nunito-Bold.ttf")).then(detach);
+const readLiberationBold = () =>
+  readFile(join(process.cwd(), "public/fonts", "LiberationSans-Bold.ttf")).then(
+    detach,
+  );
 
 /**
  * Load a Nunito face for an OG `ImageResponse`. Weight >= 800 gets Black, otherwise Bold.
@@ -57,8 +83,9 @@ function read(file: string): Promise<ArrayBuffer> {
  * That is the honest behaviour and it is the right one: an OG route that throws returns a 500 and
  * the previewer falls back to a text card, which is recoverable. Swallowing the error and handing
  * Satori an empty `fonts` array crashes it on `fontFamily.split(...)` with a far worse message.
- * next.config.ts names each of these faces in outputFileTracingIncludes so they do ship; this doc
- * exists so the next person does not trust a promise the code cannot keep.
+ * The faces ship because the reads above are literal-pathed, so the tracer resolves them; the
+ * narrowed keys in next.config.ts name them a second time for the card routes. This doc exists so
+ * the next person does not trust a promise the code cannot keep.
  */
 export async function loadNunito(weight: number): Promise<ArrayBuffer> {
   const key = weight >= 800 ? 900 : 700;
@@ -68,11 +95,11 @@ export async function loadNunito(weight: number): Promise<ArrayBuffer> {
   const pending = inflight.get(key);
   if (pending) return pending;
 
-  const attempt = read(key === 900 ? "Nunito-Black.ttf" : "Nunito-Bold.ttf")
+  const attempt = (key === 900 ? readNunitoBlack() : readNunitoBold())
     // Same-directory sibling: covers one corrupt/absent FILE, not an absent directory. Weight is
     // preserved (Bold->Bold), unlike the earlier version which quietly demoted 700 to Regular
     // while callers still declared weight 700 to Satori.
-    .catch(() => read("LiberationSans-Bold.ttf"))
+    .catch(() => readLiberationBold())
     .then((bytes) => {
       cache.set(key, bytes);
       return bytes;

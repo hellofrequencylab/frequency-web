@@ -3,17 +3,23 @@
 //
 // Every reusable in-product element (the Loom picker today; QR Studio / Email editor / CRM board
 // next) is ONE canonical app: its features + role gates live in the SINGLE catalog
-// lib/elements/registry.ts (ELEMENTS: ElementDef[]), it is mounted through the SINGLE component map
-// components/elements/registry.tsx (ELEMENT_COMPONENTS) via <AppElement>, and its config table
-// element_settings is read/written through the SINGLE store lib/elements/store.ts. No surface may
-// hand-roll a parallel catalog or reach the config table directly.
+// lib/elements/registry.ts (ELEMENTS: ElementDef[]), and its config table element_settings is
+// read/written through the SINGLE store lib/elements/store.ts. No surface may hand-roll a parallel
+// catalog or reach the config table directly.
+//
+// ⚠️ THERE IS NO COMPONENT MAP AND NO <AppElement> MOUNTER, and this header used to say there was.
+// Both were deleted 2026-08-12 (the mounter had been gone for longer; components/elements/registry.tsx
+// and its vitest drift guard went with it), because nothing ever imported them — every consumer
+// imports the pure catalog directly and mounts its own component. The invariant they were built to
+// hold is holding anyway without them: LoomPicker has one definition across 8 surfaces and
+// StyleEditor one across 7, zero forks. Do not re-add a map on the strength of this comment; read
+// docs/EMBEDDABLE-ELEMENTS.md §2, which records the decision.
 //
 // This coarse, FILE-LEVEL static guard fails a PR that (a) declares a SECOND ElementDef[] catalog
-// outside the registry, or (b) touches the element_settings table outside the store. It is the cheap
-// always-on floor; the RUNTIME lock that the pure catalog (features) and the component map (mounts)
-// stay in lock-step lives in the vitest drift guard (components/elements/registry.test.ts). Together:
-// this catches "someone forked the catalog / bypassed the store", the test catches "the two registries
-// diverged". Mirrors scripts/check-menu.mjs (the admin-menu twin, ADR-553).
+// outside the registry, or (b) touches the element_settings table outside the store. That is the
+// whole of the mechanical enforcement now — there is no runtime lock-step test behind it, so a
+// catalog entry with no component anywhere is invisible to CI. Mirrors scripts/check-menu.mjs (the
+// admin-menu twin, ADR-553).
 //
 // Escape hatch: an inline `// element-ok: <reason>` comment on the flagged line, or add the file to an
 // ALLOWLIST below WITH a reason. Usage: `node scripts/check-elements.mjs` (or `pnpm check:elements`).
@@ -110,10 +116,9 @@ function main() {
   }
   console.error(
     '\nDo NOT fork the element catalog or bypass the store. Add an element by editing ELEMENTS\n' +
-      '(lib/elements/registry.ts) + the component map (components/elements/registry.tsx); mount it via\n' +
-      '<AppElement name="…" />; read/write its config only through lib/elements/store.ts. If this is a\n' +
-      'genuine exception, add `// element-ok: <reason>` on the line. See docs/EMBEDDABLE-ELEMENTS.md +\n' +
-      'ADR-792.\n',
+      '(lib/elements/registry.ts), then import and mount its one canonical component directly;\n' +
+      'read/write its config only through lib/elements/store.ts. If this is a genuine exception, add\n' +
+      '`// element-ok: <reason>` on the line. See docs/EMBEDDABLE-ELEMENTS.md + ADR-792.\n',
   )
   process.exit(1)
 }

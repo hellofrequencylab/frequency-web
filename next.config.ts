@@ -83,6 +83,18 @@ const securityHeaders = [
   { key: 'Content-Security-Policy', value: csp },
 ]
 
+// The faces lib/og/load-nunito.ts opens from disk at RUNTIME: the Nunito pair every share card draws
+// with, and LiberationSans-Bold, its same-directory fallback.
+//
+// ⚠️ NAMED, not `./public/fonts/*.ttf`. That glob also swept in LiberationSans-Regular (410,820
+// bytes), which nothing reads from disk — lib/entry-points/flyer-raster.ts fetches its faces over
+// HTTP — so every lambda in the app carried it for nothing.
+const OG_CARD_FONTS = [
+  './public/fonts/Nunito-Bold.ttf',
+  './public/fonts/Nunito-Black.ttf',
+  './public/fonts/LiberationSans-Bold.ttf',
+]
+
 const nextConfig: NextConfig = {
   // TYPECHECKING IS CI'S JOB, NOT THE BUILD'S (2026-07-28). `next build` ran a FULL
   // TypeScript pass on top of the compile, and as the repo grew that second pass began
@@ -122,30 +134,34 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/api/cron/embed-help': ['./content/help/**/*'],
     '/admin/vera-ai': ['./content/help/**/*'],
-    // Also the OG share-card fonts (lib/og/load-nunito.ts), read from public/fonts at RUNTIME with
-    // readFile — the same derived-path shape as the .wasm below. Next's tracer follows the JS entry
-    // but not a path built inside the function, and an OG card that cannot load a font does not
-    // degrade politely: Satori throws on an empty `fonts` array.
+    '/**': ['./content/help/**/*'],
+    // The share-card fonts, on the routes that rasterise. Belt-and-braces, not the delivery
+    // mechanism: load-nunito's reads are literal-pathed, so the tracer already resolves each face
+    // into every function that reaches the module. These keys re-state them because an OG card that
+    // cannot load a font does not degrade politely — Satori throws on an empty `fonts` array — and
+    // `deliverCard` is fail-safe, so the damage would show up as broken previews in someone else's
+    // mail client rather than as a red build (DEPLOY-SAFETY rule 6).
     //
-    // Belt-and-braces rather than a known break (five OG routes already read from public/ this way),
-    // but these fonts exist specifically to stop Apple Mail timing out on the claim card, and
-    // shipping a fix that swapped a slow card for a broken one would be worse than not shipping it.
+    // 🔴 THESE USED TO SIT ON '/**' — 650KB of faces × 482 functions, for the 10 image routes that
+    // draw with them. Narrowing here, plus the literal-pathed reads in load-nunito, takes the fonts
+    // from 333MB of per-function output to 49MB. Measured against the real .next trace, not estimated.
     //
-    // ⚠️ FOLDED INTO THIS KEY, not added as a second '/**'. A duplicate key is a TS error and, worse,
-    // the later one silently wins — which would have dropped the help content above and left
-    // "Ask Vera" deflecting every question, the exact failure its own comment warns about.
+    // Route keys match with picomatch in `contains` mode (next/dist/build/collect-build-traces.js),
+    // against a route string that KEEPS its `app/` prefix — normalizeAppPath only strips groups and a
+    // trailing /page|/route. So '/opengraph-image' is a SUBSTRING test, and that is what makes it
+    // safe: it catches '/app/opengraph-image-12g5h9' (the help group's card, whose suffix is a build
+    // hash nobody can hardcode), '/app/spaces/[slug]/opengraph-image-tt3pwa', and
+    // '/app/events/claim/[token]/opengraph-image' alike. Deliberately coarse — it also reaches the
+    // seven discover/spotlight cards, which draw with no custom face, for ~4.7MB. Under-matching
+    // breaks a card silently; over-matching costs bytes the budget gate prints.
     //
-    // ⚠️ NAMED, not `*.ttf`. The glob also swept in LiberationSans-Regular (410,820 bytes), which
-    // nothing reads from disk — lib/entry-points/flyer-raster.ts fetches its faces over HTTP — so
-    // every lambda in the app carried it for nothing. The two faces below are the ones load-nunito
-    // actually opens: the Nunito pair it draws with, and LiberationSans-Bold, its same-directory
-    // fallback (~665KB total, down from ~1.05MB).
-    '/**': [
-      './content/help/**/*',
-      './public/fonts/Nunito-Bold.ttf',
-      './public/fonts/Nunito-Black.ttf',
-      './public/fonts/LiberationSans-Bold.ttf',
-    ],
+    // ⚠️ The help content above must stay on its own '/**' entry. A duplicate key is a TS error and,
+    // worse, the later one silently wins — which would drop the help content and leave "Ask Vera"
+    // deflecting every question, the exact failure its own comment warns about.
+    '/opengraph-image': OG_CARD_FONTS,
+    '/twitter-image': OG_CARD_FONTS,
+    // The root card's generator (ADR-1002) is a plain route handler, so neither key above reaches it.
+    '/dev/og-root-card': OG_CARD_FONTS,
     // The resvg WASM rasterizer (lib/qr/raster.ts) reads index_bg.wasm from node_modules at
     // RUNTIME via fs (the package is in serverExternalPackages, so it is never bundled). Next's
     // tracer follows the JS entry but NOT that derived `readFile` path, so without an explicit

@@ -20,50 +20,45 @@ already true for the Loom picker (`components/loom/loom-picker.tsx` + `lib/loom/
 the Email editor (`EmailCanvasEditor`), QR Studio (`app/(main)/admin/qr/style-editor.tsx`), and the
 Space CRM board. The rule: a surface may only MOUNT the canonical element; it may not fork it.
 
-### 2. The element registry — `lib/elements/registry.ts`
+### 2. The element registry — `lib/elements/registry.ts` (one catalog, no render half)
 
-The single catalog mapping an element key to its canonical mount + config + gate:
+ONE pure catalog, and only one. `lib/elements/registry.ts` holds the `ElementKey` union plus
+`ELEMENTS`: per element, its label, its `studioHref`, and its FEATURES (functions + settings) each
+with a `defaultRole` gate. No React, no components, no lazy imports; it is client-safe and safe to
+import anywhere. Its consumers are the elements admin (`app/(main)/admin/elements/*`), the previews
+(`components/elements/previews.tsx`), and `lib/loom/picker-actions.ts`.
 
 ```ts
-ELEMENTS = {
-  'loom-picker': { label, component (lazy), defaults, gate },
-  'qr-studio':   { … },
-  'email-editor':{ … },
-  'crm-board':   { … },
-}
+ELEMENTS: ElementDef[] = [
+  { key: 'loom-picker', label, description, studioHref, features: [ { key: 'tab.images', defaultRole, … } ] },
+  { key: 'header',      … },
+  { key: 'qr-studio',   … },
+]
 ```
 
-A page "requests" an element by key (a thin `<AppElement name="loom-picker" … />` mounter, or the
-element's own thin wrapper that resolves from the registry). Because the registry is the only door,
-every occurrence is identical. This mirrors the admin MENU-CONTRACT (`APPS` / `SPACE_MODULES`), now
-extended from menu items to embeddable UI.
+A page mounts an element by importing the ONE canonical component directly (`LoomPicker`,
+`StyleEditor`, …) and reading its resolved config through the store. Because there is one component
+per element, every occurrence is identical. This mirrors the admin MENU-CONTRACT (`APPS` /
+`SPACE_MODULES`), now extended from menu items to embeddable UI.
 
-**Two registries, kept in lock-step.** The framework splits into a PURE half and a RENDER half so the
-catalog stays client-safe and testable:
+**The registered-but-unbuilt keys are deliberate.** `ElementKey` carries `email-editor` and
+`crm-board` with no `ELEMENTS` entry: a key may be reserved before its features are declared, so
+`ElementKey ⊇ catalog keys` is expected, not drift.
 
-- `lib/elements/registry.ts` — the **pure catalog**: the `ElementKey` union + `ELEMENTS` (each
-  element's features + `defaultRole` gates). No React, no components; safe to import anywhere.
-- `components/elements/registry.tsx` — the **component map**: `ELEMENT_COMPONENTS` (key → the one
-  canonical component) + `ElementPropsMap` (each element's props, which type `<AppElement>`).
-
-🔴 **`components/elements/app-element.tsx` does not exist** (verified 2026-08-10). This paragraph
-described the generic mounter — `<AppElement name="loom-picker" …/>`, where `name` discriminates the
-props so a wrong or missing prop is a compile error. The file is gone; `AppElement` now survives only
-as four comment references (`lib/elements/registry.ts:89`, `components/elements/registry.tsx:5,17`,
-`registry.test.ts:10`) pointing at a component with **zero call sites and no definition**. The pieces
-that *do* exist — `ELEMENT_COMPONENTS` and `ElementPropsMap` in `components/elements/registry.tsx` —
-are exactly the two halves a mounter needs, so this is a re-add, not a redesign. Rebuild it or delete
-the references; leaving both is how a reader concludes the framework is wired when it is not.
-
-The typed-wrapper sugar the paragraph also described (`const LoomElement = (p: ElementProps<'loom-picker'>)
-=> <AppElement name="loom-picker" {...p} />`) depends on the mounter and is equally hypothetical
-today. It was never a licence for a second implementation, and still is not.
+**There is no generic mounter, and no component map** (resolved 2026-08-12; the 🔴 that stood here
+is closed on the delete branch the doc itself offered). The design once called for a render half:
+`components/elements/registry.tsx` (`ELEMENT_COMPONENTS` + `ElementPropsMap`) behind a generic
+`<AppElement name="loom-picker" …/>` whose `name` discriminated the props. `app-element.tsx` was
+deleted long before, leaving the component map with zero importers, so the map and its drift test
+(`components/elements/registry.test.ts`) were deleted too rather than left as scaffolding that reads
+as wired. **The invariant they were meant to protect already holds without them**: `LoomPicker` has
+one definition imported by eight surfaces and `StyleEditor` one imported by seven, with zero forks,
+and `ElementDef.key: ElementKey` is compile-checked by `tsc`. If a future element genuinely needs
+key-discriminated mounting, re-add both halves together; a component map with no mounter buys nothing.
 
 **Enforcement (hard, in CI).** `pnpm check:elements` (`scripts/check-elements.mjs`, wired into the
 `checks` job) fails a PR that (a) declares a second `ElementDef[]` catalog outside the registry, or
-(b) reaches the `element_settings` table outside `lib/elements/store.ts`. The vitest drift guard
-(`components/elements/registry.test.ts`) locks the two registries in lock-step: every mountable key is
-a registered `ElementKey` with a catalog entry, and the component map + props map agree. Escape hatch:
+(b) reaches the `element_settings` table outside `lib/elements/store.ts`. Escape hatch:
 `// element-ok: <reason>` on the line. This is the elements twin of `check:menu` (ADR-553).
 
 ### 3. The shared config layer — `element_settings` (with role gating)
@@ -111,9 +106,8 @@ default), `identity` (cover + scrim with the lockup anchored bottom-left + an op
 `minimal` (cover only) — and the SAME editing functions everywhere (height · focal point · header links ·
 darken-cover), each a role-gated `ElementFeature`. It shows that not every element is client-mounted: the
 header is server-rendered (its `<h1>` must stay server-side for SEO), so it is registered for config +
-role-gating but is deliberately absent from the component map — templates import the canonical `PageHero`
-directly, which is still the one mount. The drift guard permits this (a registered `ElementKey` need not
-be in `ElementPropsMap`); `MountableElementKey` narrows to the client-mountable subset.
+role-gating only — templates import the canonical `PageHero` directly, which is still the one mount.
+Registration buys the config layer and the role gates; it never implied a client component.
 
 A surface resolves its header config with `resolveHeaderElement({ spaceId?, defaults })`
 (`lib/elements/header.ts`): it reads the `element_settings` layers and folds them with the surface's own

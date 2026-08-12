@@ -18,12 +18,17 @@ point of the guards is that a conversion can't regress the architecture.
 
 ### Phase 0 — Foundation & guardrails ⬤⬤ M · architectural — ✅ DONE
 - Elements **registry + `element_settings` config + role gates** — ✅ (#1819, ADR-792).
-- The generic **`<AppElement name=… />` mounter** (`components/elements/app-element.tsx`) + the
-  **component map** (`components/elements/registry.tsx`) + the **typed-wrapper** convention — ✅.
+- ~~The generic **`<AppElement name=… />` mounter** (`components/elements/app-element.tsx`) + the
+  **component map** (`components/elements/registry.tsx`) + the **typed-wrapper** convention.~~
+  🔴 **DELETED 2026-08-12, not shipped-and-kept.** Nothing ever imported the map, and the mounter had
+  already gone; every consumer imports the pure catalog and mounts its own component. The invariant
+  they existed for holds without them (LoomPicker: one definition, 8 surfaces; StyleEditor: one, 7;
+  zero forks), which is the reason the delete branch was taken. See `docs/EMBEDDABLE-ELEMENTS.md` §2.
 - **`check:elements`** hard CI guard (`scripts/check-elements.mjs`, mirrors `check:menu`; wired into
-  the `checks` job) + **drift test** (`components/elements/registry.test.ts`: registry ↔ component map
-  in lock-step) + classifier test + **CODEOWNERS** on `lib/elements/**` · `components/elements/**` ·
+  the `checks` job) + classifier test + **CODEOWNERS** on `lib/elements/**` · `components/elements/**` ·
   `scripts/check-*.mjs` + the **PR-template review block** + `docs/REVIEWING-CHANGES.md` — ✅.
+  ~~+ **drift test** (`components/elements/registry.test.ts`: registry ↔ component map in lock-step)~~
+  — deleted with the map it read. There is no runtime lock-step check now.
 - **Apply** the `element_settings` migration (via the migration workflow) — ⏳ deferred (one shared DB;
   code fail-safes to registry defaults until it lands).
 - **Ships:** the contract is real and un-mergeable to violate; Loom is the reference app.
