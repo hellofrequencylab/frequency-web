@@ -223,6 +223,11 @@ export function seededFieldsOnly(model: FieldModel): FieldModel {
 
 // ── 3. Reading and writing one path ───────────────────────────────────────────────
 
+/** Keys a path may never contain. `__proto__`, `constructor` and `prototype` all reach the object
+ *  prototype, and the segment regex below happily matches them, so a path from a staged intake
+ *  could otherwise write there. Checked in `segments()` rather than at one call site, so EVERY
+ *  reader and writer of a path inherits the guard: a second copy beside one caller protects one
+ *  caller. Flagged by CodeQL on this branch. */
 const FORBIDDEN_PATH_KEYS = new Set(['__proto__', 'prototype', 'constructor'])
 
 /** Split a ledger path into its segments: 'details.tickets[0].label' -> ['details','tickets',0,'label'].
@@ -240,8 +245,6 @@ function segments(path: string): (string | number)[] {
   return out
 }
 
-/** Keys that must never be used from untrusted paths (prototype-pollution guard). */
-const UNSAFE_PATH_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
 /** The paths whose value is a LIST rendered (and edited) as a comma-separated line. */
 const LIST_PATHS = new Set(['tags', 'details.features', 'details.sponsors'])
 /** The paths whose value is whole CENTS, edited as plain money ("25", "$12.50"). */
@@ -305,7 +308,6 @@ function moneyToCents(raw: string): number | null {
 export function setDraftValue(draft: Record<string, unknown>, path: string, raw: string): boolean {
   const parts = segments(path)
   if (parts.length === 0) return false
-  if (parts.some((p) => typeof p === 'string' && UNSAFE_PATH_KEYS.has(p))) return false
 
   let cur: unknown = draft
   for (const part of parts.slice(0, -1)) {

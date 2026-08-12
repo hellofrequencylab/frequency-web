@@ -4,9 +4,24 @@ import { useState } from 'react'
 import { ImagePlus, X } from 'lucide-react'
 import { LoomPicker } from '@/components/loom/loom-picker'
 
+/**
+ * Only let a value reach `<img src>` when its scheme is safe. Flagged by CodeQL: an operator-stored
+ * string rendered straight into `src` can carry `javascript:` or a hostile `data:` payload.
+ *
+ * Relative paths are allowed deliberately. The first version of this guard used `new URL(value)`
+ * alone, which THROWS on a relative path and so returned '' for it — and because the preview is
+ * rendered behind `safeValue ? …`, a legitimate relative value would have silently shown the empty
+ * state, reading to an operator as "my photo vanished". A leading-slash path is same-origin and
+ * carries no scheme, so it is safe by construction. A protocol-relative `//host` is NOT: it inherits
+ * the page scheme and points off-origin, so it is refused.
+ */
 function toSafeImageSrc(value: string): string {
+  const trimmed = value.trim()
+  if (!trimmed) return ''
+  if (trimmed.startsWith('//')) return ''
+  if (trimmed.startsWith('/')) return trimmed
   try {
-    const url = new URL(value)
+    const url = new URL(trimmed)
     return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : ''
   } catch {
     return ''

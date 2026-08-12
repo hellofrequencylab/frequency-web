@@ -198,3 +198,25 @@ describe('the scan door folds in the links only a browser can read', () => {
     expect(mergePosterLinks(base, many).links).toHaveLength(10)
   })
 })
+
+// ── Prototype pollution (CodeQL, ADR-989 branch) ─────────────────────────────────────────────────
+// A staged intake's field paths come from a chat export, so a path is untrusted input. The segment
+// regex matches `__proto__` happily, which would have let a write reach the object prototype.
+
+describe('setDraftValue — a path may never reach the prototype', () => {
+  it('refuses __proto__, constructor and prototype anywhere in the path', () => {
+    for (const path of ['__proto__', '__proto__.polluted', 'details.__proto__.x', 'constructor', 'details.prototype.y']) {
+      const draft: Record<string, unknown> = {}
+      expect(setDraftValue(draft, path, 'x'), path).toBe(false)
+    }
+    // The real assertion: nothing landed on the prototype of a plain object.
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined()
+    expect(Object.prototype.hasOwnProperty.call(Object.prototype, 'polluted')).toBe(false)
+  })
+
+  it('still writes an ordinary path', () => {
+    const draft: Record<string, unknown> = {}
+    expect(setDraftValue(draft, 'title', 'Sound bath')).toBe(true)
+    expect(draft.title).toBe('Sound bath')
+  })
+})
