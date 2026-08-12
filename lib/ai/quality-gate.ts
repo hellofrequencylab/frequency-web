@@ -78,8 +78,22 @@ export interface QualityStandard {
   passScore: number
   /** One plain line naming what this verdict actually decides. Goes into the prompt. */
   stakes: string
-  /** The doc that IS the standard, as path segments under the repo root. Loaded once per process. */
-  rubricPath?: readonly string[]
+  /**
+   * The doc that IS the standard: a FILENAME under `content/leader-training/authoring`, loaded once
+   * per process.
+   *
+   * ⚠️ A FILENAME, not a path, and that is load-bearing rather than tidy. This was
+   * `rubricPath: readonly string[]` spread into `join(process.cwd(), ...segments)`. @vercel/nft
+   * cannot resolve a spread of a runtime array, so it fell back to globbing everything under the
+   * value it COULD resolve — the repo root — and traced the result into every serverless function
+   * whose graph reaches this module. Measured on the re-land build: **57.23 GB** of function
+   * payload, with `docs/DECISIONS.md`, the e2e screenshot baselines and `public/tracks/*.mp3` all
+   * being copied into ~300 lambdas that have no use for any of them.
+   *
+   * Keeping the directory a static literal (RUBRIC_DIR below) bounds that glob to one small folder.
+   * See docs/DEPLOY-SAFETY.md rule 2 and ADR-1003; `pnpm check:build-budget` is the gate.
+   */
+  rubricFile?: string
   /** The compact standard used when there is no doc, or the doc cannot be read. Always required. */
   fallbackRubric: string
   /** Extra shaping for the model (a master template, a house format). Optional. */
@@ -147,10 +161,17 @@ Always call ${TOOL_NAME}. Do not answer in prose.`
 // so only the guidance reaches the model.
 const rubricCache = new Map<string, string>()
 
+/**
+ * The ONE directory authoring standards live in. A STATIC literal on purpose: it is the bound on
+ * what Next's file tracer sweeps into a serverless bundle when it meets the dynamic filename below.
+ * Do not rebuild this from parts of the standard.
+ */
+const RUBRIC_DIR = join(process.cwd(), 'content', 'leader-training', 'authoring')
+
 /** Load a standard's rubric doc, falling back to its compact inline standard. Never throws. */
 export async function loadRubric(standard: QualityStandard): Promise<string> {
-  if (!standard.rubricPath?.length) return standard.fallbackRubric
-  const path = join(process.cwd(), ...standard.rubricPath)
+  if (!standard.rubricFile) return standard.fallbackRubric
+  const path = join(RUBRIC_DIR, standard.rubricFile)
   const cached = rubricCache.get(path)
   if (cached !== undefined) return cached
   try {
@@ -326,7 +347,7 @@ export const QUALITY_STANDARDS: Record<string, QualityStandard> = {
     passScore: DEFAULT_PASS_SCORE,
     stakes:
       'Publishing is already open. You are NOT deciding whether it can be shared. You are only deciding whether it is good enough to count toward RANK, which must stay meaningful.',
-    rubricPath: ['content', 'leader-training', 'authoring', 'how-to-create-a-journey.md'],
+    rubricFile: 'how-to-create-a-journey.md',
     guidance: `The Master Template the strong Journeys follow: a problem-first premise; a four-week arc, each week with an Anchor practice (a small daily through-line) plus one weekly practice each for Mind, Body, and Spirit that complement the Anchor, a weekly Expression Challenge, and a Reflection; two weekly touchpoints (a Circle Meetup mid-week and a Weekend Gathering on the weekend); and a heavy capstone Expression Challenge at the Close. A Journey need not match it exactly, but coach toward it. A Journey that ignores the standard does not pass, however nice it sounds.
 
 Read it as: approved means the premise names a real shift, the practices range across effort and pillar and could be done on a bad day, and the whole thing could plausibly carry someone for four weeks. Rejected means a vague or hype premise, too few or all-same-weight practices, no daily-doable floor, or nothing that pays off in the first week.`,

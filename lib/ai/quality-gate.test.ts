@@ -70,7 +70,7 @@ describe('the standards catalog (the opt-in)', () => {
     expect(journey.feature).toBe('journey-review')
     expect(journey.tier).toBe('opus')
     expect(journey.passScore).toBe(70)
-    expect(journey.rubricPath?.join('/')).toContain('how-to-create-a-journey.md')
+    expect(journey.rubricFile).toBe('how-to-create-a-journey.md')
   })
 
   it('gives any other entity a usable default standard on the shared key', () => {
