@@ -77,7 +77,7 @@ function builder(name: string) {
 
   const run = (): { data: Record<string, unknown>[] | null; error: { code?: string } | null } => {
     if (pending?.kind === 'insert') {
-      const row = { id: `id-${++H.seq}`, ...pending.payload }
+      const row: Record<string, unknown> = { id: `id-${++H.seq}`, ...pending.payload }
       // The one-pending partial unique index, modelled: it is the race guard the SQL relies on.
       if (
         name === 'household_bundle_invites' &&
@@ -418,7 +418,7 @@ describe('only the invitee accepts', () => {
     const invite = H.invites[0] as { id: string }
 
     expect((await respondToBundleSeatInvite(invite.id, 'accept', ADA)).ok).toBe(true)
-    const ada = H.profiles.find((p) => p.id === ADA) as Profile
+    const ada = H.profiles.find((p) => p.id === ADA) as unknown as Profile
     expect(ada.household_bundle_id).toBe(OWNER)
     expect(ada.membership_tier).toBe('crew')
     expect(ada.household_bundle_prior_tier).toBe('free')
@@ -429,7 +429,7 @@ describe('only the invitee accepts', () => {
     const invite = H.invites[0] as { id: string }
 
     expect((await respondToBundleSeatInvite(invite.id, 'decline', ADA)).ok).toBe(true)
-    const ada = H.profiles.find((p) => p.id === ADA) as Profile
+    const ada = H.profiles.find((p) => p.id === ADA) as unknown as Profile
     expect(ada.household_bundle_id).toBeUndefined()
     expect(ada.membership_tier).toBe('free')
     expect((await loadBundleSeatBoard(OWNER)).seatsOpen).toBe(2)
@@ -440,11 +440,11 @@ describe('🔴 accepting an invite must not advance household_bundle_event_at', 
   it('leaves the Stripe event-ordering stamp exactly where it was', async () => {
     await sendBundleSeatInvite('ada', OWNER)
     const invite = H.invites[0] as { id: string }
-    const before = (H.profiles.find((p) => p.id === OWNER) as Profile).household_bundle_event_at
+    const before = (H.profiles.find((p) => p.id === OWNER) as unknown as Profile).household_bundle_event_at
 
     expect((await respondToBundleSeatInvite(invite.id, 'accept', ADA)).ok).toBe(true)
 
-    const after = (H.profiles.find((p) => p.id === OWNER) as Profile).household_bundle_event_at
+    const after = (H.profiles.find((p) => p.id === OWNER) as unknown as Profile).household_bundle_event_at
     expect(after).toBe(before)
     expect(after).toBe(STAMP)
   })
@@ -483,7 +483,7 @@ describe('accepting twice seats once', () => {
     expect(second.ok).toBe(false)
     expect(second.reason).toMatch(/already been answered/i)
 
-    const ada = H.profiles.find((p) => p.id === ADA) as Profile
+    const ada = H.profiles.find((p) => p.id === ADA) as unknown as Profile
     expect(ada.household_bundle_id).toBe(OWNER)
     // If the second run had re-recorded it, this would now be 'crew' and leaving the bundle
     // would hand out a paid tier for free.
