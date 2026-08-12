@@ -1,85 +1,168 @@
 'use client'
 
-import { useRef, useState, useTransition } from 'react'
+// ─────────────────────────────────────────────────────────────────────────────
+// THE CIRCLE SPARK (/circles/new), composed from the Studio Spark kit (docs/STUDIO.md §0).
+//
+// Nothing here declares a shell, a progress cue, a door, an upload box, or a field style. The
+// screens are `SparkShell`, the first screen is `SparkDoors` + `SparkDropzone`, and every field
+// on the review step is a row from the CIRCLE manifest rendered by `FieldControl`. Change the
+// manifest and this screen changes; change the kit and every wizard changes.
+//
+// The four ways in are unchanged, they are just no longer four hand-built cards:
+//   1. Start from a Starter Circle  → an extra door, linking to the gallery (/circles/templates)
+//   2. Upload or paste an outline   → the shared drop zone, which serves BOTH standard doors
+//   3. Answer a few questions       → the standard Vera door → the brief → review → create
+//   4. Start from scratch           → the standard manual door → a blank draft → the builder
+//
+// The server actions are untouched. Paths 2 + 3 still meet at one review step holding an
+// editable `CircleSparkDraft`; committing still runs createDraftFromSparkAction and pushes into
+// the builder, and nothing persists until that commit. With Vera off, the manual door and the
+// "start from scratch" exit still make a blank Circle by hand.
+// ─────────────────────────────────────────────────────────────────────────────
+
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { ArrowLeft, LayoutTemplate } from 'lucide-react'
+import { wizardSecondaryClass } from '@/components/templates'
+import { Input } from '@/components/ui/field'
+import { StudioField } from '@/components/studio/kit/studio-field'
 import {
-  Sparkles,
-  ArrowLeft,
-  Loader2,
-  Upload,
-  LayoutTemplate,
-  MessageCircleQuestion,
-  PenLine,
-} from 'lucide-react'
-import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/components/templates'
+  FieldControl,
+  SparkDoors,
+  SparkDropzone,
+  SparkOffers,
+  SparkShell,
+  SparkSteer,
+  draftText,
+  useQualityCheck,
+} from '@/components/studio/spark'
+import { CIRCLE_MANIFEST } from '@/lib/studio/entities/circle'
+import { sparkFields } from '@/lib/studio/kernel/review-kernel'
+import { DEFAULT_SEED_MOOD, type SeedMood } from '@/lib/studio/kernel/moods'
+import type { FieldDef } from '@/lib/studio/kernel/manifest'
 import type { PillarSlug } from '@/lib/pillars'
-import { PILLAR_SLUGS } from '@/lib/pillars'
-import { Input, Textarea } from '@/components/ui/field'
 import type { CircleSparkDraft } from '@/lib/ai/circle-spark'
 import {
   sparkPreviewAction,
   createDraftFromSparkAction,
   createBlankDraftAction,
-  extractOutlineAction,
 } from '@/app/(main)/circles/builder-actions'
 
-// The four-entry Circle builder wizard (Stage 4, decision #8). A centered,
-// rail-less Focus surface mirroring the Journey Spark. Four ways in:
-//   1. Start from a Starter Circle  → link to the gallery (/circles/templates)
-//   2. Upload an outline            → extract → Vera spark → review → create
-//   3. Answer a few questions (Vera)→ small form → spark → review → create
-//   4. Start from scratch           → blank draft → straight into the builder
-// Paths 2 + 3 share the review step (an editable CircleSparkDraft); committing
-// runs createDraftFromSparkAction and pushes into the builder. Nothing persists
-// until that commit.
+// ── What the manifest says a Circle's Spark asks for ──────────────────────────────────────
+// name · about · primaryPillar. Declared once (lib/studio/entities/circle.ts), filtered by the
+// kernel, rendered by the kit. Adding a fourth is a manifest edit, not an edit here.
+const SPARK_FIELDS = sparkFields(CIRCLE_MANIFEST)
 
-const PILLAR_LABELS: Record<PillarSlug, string> = {
-  mind: 'Mind',
-  body: 'Body',
-  spirit: 'Spirit',
-  expression: 'Expression',
+const FIELD_BY_PATH = new Map(CIRCLE_MANIFEST.fields.map((f) => [f.path, f]))
+
+/** The lean, asked BEFORE the draft (it steers what Vera writes) and confirmable after. */
+const PILLAR_FIELD = FIELD_BY_PATH.get('primaryPillar')
+
+/** Only a value the manifest itself declares counts as a Pillar. Keeps the Pillar list in one
+ *  place (the manifest) rather than re-importing lib/pillars.ts into a client bundle. */
+function asPillar(value: string): PillarSlug | null {
+  const known = PILLAR_FIELD?.options?.some((o) => o.value === value)
+  return known ? (value as PillarSlug) : null
 }
 
-type Mode = 'choose' | 'upload' | 'questions' | 'review'
+/**
+ * The manifest's dials, minus `lock`. Lock pins only mean something next to a redraw ("anything
+ * pinned here survives a redraw untouched"), and the create path has none: `SparkSteer` renders
+ * them whenever they are declared, so the create path narrows the capability instead.
+ */
+const CREATE_STEER = { mood: CIRCLE_MANIFEST.steer?.mood, directions: CIRCLE_MANIFEST.steer?.directions }
+const NO_LOCKS: readonly string[] = []
+
+/** The Vera path: the doors, the brief, the review. */
+type Mode = 'choose' | 'questions' | 'review'
+const TOTAL_STEPS = 3
+
+/** A control's value comes back as a string or a list; every field here is scalar. */
+const scalar = (v: string | string[]): string => (Array.isArray(v) ? v[0] ?? '' : v)
+
+// ── The manifest ⇄ spark-draft seam ───────────────────────────────────────────────────────
+//
+// The manifest's paths mirror `CircleDraft` (what the builder autosaves), but this screen holds
+// a `CircleSparkDraft` (what Vera returns and what createDraftFromSparkAction takes), and the two
+// shapes name one field differently: the Circle's About is the spark's `oneLiner`. Two small pure
+// functions bridge them so the field list can still come straight from the manifest.
+
+function readSpark(spark: CircleSparkDraft, path: string): string {
+  switch (path) {
+    case 'name':
+      return spark.name
+    case 'about':
+      return spark.oneLiner
+    case 'primaryPillar':
+      return spark.primaryPillar ?? ''
+    default:
+      return ''
+  }
+}
+
+function writeSpark(spark: CircleSparkDraft, path: string, next: string): CircleSparkDraft {
+  switch (path) {
+    case 'name':
+      return { ...spark, name: next }
+    case 'about':
+      return { ...spark, oneLiner: next }
+    case 'primaryPillar':
+      return { ...spark, primaryPillar: asPillar(next) }
+    default:
+      return spark
+  }
+}
+
+/** One declared field, labeled. `toggle` prints its own label inside a `<label>`, so it is never
+ *  wrapped in a second one. */
+function Row({ def, value, onChange }: { def: FieldDef; value: string; onChange: (next: string) => void }) {
+  const control = <FieldControl def={def} value={value} onChange={(v) => onChange(scalar(v))} />
+  if (def.kind === 'toggle') return control
+  return <StudioField label={def.label}>{control}</StudioField>
+}
 
 export function CircleWizard() {
   const router = useRouter()
   const [mode, setMode] = useState<Mode>('choose')
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
-  const fileRef = useRef<HTMLInputElement>(null)
-  const [extracting, setExtracting] = useState(false)
 
-  // Question-path answers.
+  // The brief. These are QUESTIONS, not Circle fields: they steer what Vera writes and are
+  // thrown away once the draft exists, so they are not in the manifest and never will be.
   const [topic, setTopic] = useState('')
   const [who, setWho] = useState('')
-  const [primaryPillar, setPrimaryPillar] = useState<PillarSlug | null>(null)
   const [cadence, setCadence] = useState('')
-  // Upload-path source text.
+  const [primaryPillar, setPrimaryPillar] = useState<PillarSlug | null>(null)
+
+  // Source material from the shared drop zone (an uploaded outline, a paste, or both).
   const [sourceText, setSourceText] = useState('')
 
-  // Vera's drafted frame (review step, editable).
+  // Vera's drafted frame (the review step, editable).
   const [spark, setSpark] = useState<CircleSparkDraft | null>(null)
 
-  const onFile = (file: File) => {
-    setError(null)
-    setExtracting(true)
-    const fd = new FormData()
-    fd.append('file', file)
-    start(async () => {
-      try {
-        const res = await extractOutlineAction(fd)
-        setSourceText((prev) => (prev.trim() ? `${prev}\n\n${res.text}` : res.text))
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Could not read that file. Paste the text instead.')
-      } finally {
-        setExtracting(false)
-      }
-    })
-  }
+  // The steer dials. Captured on review so they never add a question to the flow.
+  const [mood, setMood] = useState<SeedMood>(DEFAULT_SEED_MOOD)
+  const [directions, setDirections] = useState('')
 
-  const generate = (fromUpload: boolean) => {
+  // ── The pre-publish read (ADR-993 / ADR-995) ──
+  //
+  // ADVICE, never a gate: nothing is stored and "Create the draft" never waits on it.
+  //
+  // NO COVER OFFER HERE, and not by omission: the Circle manifest declares no image field, so
+  // `coverOffer` would return null anyway, and `createDraftFromSparkAction` takes a frame with no
+  // image to put one on. Declare a cover on the Circle and this is where it joins.
+  const qualityState = useQualityCheck({
+    entity: CIRCLE_MANIFEST.entity,
+    read: () =>
+      draftText([
+        ['Name', spark?.name],
+        ['About', spark?.oneLiner],
+        ['Focus', spark?.primaryPillar],
+      ]),
+  })
+
+  const generate = () => {
     setError(null)
     start(async () => {
       try {
@@ -88,7 +171,7 @@ export function CircleWizard() {
           who,
           primaryPillar,
           cadence: cadence.trim() || undefined,
-          sourceText: fromUpload ? sourceText : undefined,
+          sourceText: sourceText.trim() || undefined,
         })
         if (!res) {
           setError('Vera is offline right now. Start from scratch and write it yourself.')
@@ -127,284 +210,161 @@ export function CircleWizard() {
     })
   }
 
-  // ── Header copy + progress per mode ──
-  const total = mode === 'questions' ? 2 : 1
-  const current = mode === 'review' ? total : 1
-  const stepLabel =
-    mode === 'choose'
-      ? 'Start'
-      : mode === 'upload'
-        ? 'Your outline'
-        : mode === 'questions'
-          ? 'A few questions'
-          : 'Review'
+  // ── 1. The doors ──────────────────────────────────────────────────────────────────────
+  if (mode === 'choose') {
+    return (
+      <SparkShell
+        eyebrow="New Circle"
+        title="Start a Circle"
+        description="Four ways in. Pick the one that fits how you like to build."
+        step={1}
+        totalSteps={TOTAL_STEPS}
+        stepLabel="Start"
+        error={error}
+        footer={
+          <Link href="/circles" className={`${wizardSecondaryClass} w-full gap-1.5`}>
+            <ArrowLeft className="h-4 w-4" aria-hidden /> Back to Circles
+          </Link>
+        }
+      >
+        <SparkDoors
+          entityLabel="Circle"
+          onVera={() => setMode('questions')}
+          veraLabel="Answer a few questions"
+          veraHint="Tell Vera the basics and she drafts the whole Circle for you to edit."
+          onManual={scratch}
+          manualLabel="Start from scratch"
+          manualHint="A blank Circle. Write every field yourself."
+          extraDoors={[
+            {
+              key: 'starter',
+              label: 'Start from a Starter Circle',
+              hint: 'Remix a staff-made blueprint, then make it yours.',
+              Icon: LayoutTemplate,
+              href: '/circles/templates',
+            },
+          ]}
+          disabled={pending}
+        >
+          {/* The old "upload an outline" door. It serves both doors now, which is what the
+              manifest's `accepts: ['document', 'paste']` declares. */}
+          <SparkDropzone
+            accepts={CIRCLE_MANIFEST.accepts ?? []}
+            sourceText={sourceText}
+            onSourceText={setSourceText}
+            disabled={pending}
+          />
+        </SparkDoors>
+      </SparkShell>
+    )
+  }
 
-  const heading =
-    mode === 'choose'
-      ? { title: 'Start a Circle', description: 'Four ways in. Pick the one that fits how you like to build.' }
-      : mode === 'upload'
-        ? { title: 'Upload your outline', description: 'Drop in your own write-up and Vera drafts the Circle from it. PDF, Word, or text.' }
-        : mode === 'questions'
-          ? { title: 'Tell Vera the basics', description: 'A few answers and Vera drafts the whole frame for you to edit.' }
-          : { title: 'Here is your Circle', description: "Vera's draft. Edit anything, then create it." }
+  // ── 2. The brief ──────────────────────────────────────────────────────────────────────
+  if (mode === 'questions') {
+    const fromOutline = sourceText.trim().length > 0
+    return (
+      <SparkShell
+        eyebrow="New Circle"
+        title="Tell Vera the basics"
+        description={
+          fromOutline
+            ? 'Vera has your outline. Add anything it does not say, then draft it.'
+            : 'A few answers and Vera drafts the whole frame for you to edit.'
+        }
+        step={2}
+        totalSteps={TOTAL_STEPS}
+        stepLabel="A few questions"
+        onBack={() => setMode('choose')}
+        onNext={generate}
+        nextLabel="Draft with Vera"
+        nextDisabled={!topic.trim() && !fromOutline}
+        busy={pending}
+        error={error}
+        exits={[{ label: 'Start from scratch instead', onSelect: scratch }]}
+      >
+        <div className="space-y-3">
+          <StudioField label="What is it about">
+            <Input
+              autoFocus
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="e.g. Trail running and coffee after"
+            />
+          </StudioField>
+          <StudioField label="Who is it for">
+            <Input
+              value={who}
+              onChange={(e) => setWho(e.target.value)}
+              placeholder="e.g. Busy adults who want real friends"
+            />
+          </StudioField>
+          {PILLAR_FIELD && (
+            <Row
+              def={PILLAR_FIELD}
+              value={primaryPillar ?? ''}
+              onChange={(next) => setPrimaryPillar(asPillar(next))}
+            />
+          )}
+          <StudioField label="How it meets (optional)">
+            <Input
+              value={cadence}
+              onChange={(e) => setCadence(e.target.value)}
+              placeholder="e.g. Wednesdays evening, Saturday mornings"
+            />
+          </StudioField>
+        </div>
+      </SparkShell>
+    )
+  }
 
+  // ── 3. Review ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="mx-auto w-full max-w-lg px-4 py-10">
-      <WizardProgress current={current} total={total} label={stepLabel} />
+    <SparkShell
+      eyebrow="New Circle"
+      title="Here is your Circle"
+      description="Vera's draft. Edit anything, then create it."
+      step={3}
+      totalSteps={TOTAL_STEPS}
+      stepLabel="Review"
+      onBack={() => setMode('choose')}
+      backLabel="Start over"
+      onNext={create}
+      nextLabel="Create the draft"
+      nextDisabled={!spark?.name.trim()}
+      busy={pending}
+      error={error}
+    >
+      {spark && (
+        <div className="space-y-3">
+          {SPARK_FIELDS.map((def) => (
+            <Row
+              key={def.path}
+              def={def}
+              value={readSpark(spark, def.path)}
+              onChange={(next) => setSpark(writeSpark(spark, def.path, next))}
+            />
+          ))}
 
-      <div className="mt-7">
-        <p className="mb-1.5 text-meta font-semibold uppercase tracking-widest text-primary-strong">New Circle</p>
-        <h1 className="text-page-title font-bold text-text">{heading.title}</h1>
-        <p className="mt-1 text-body-sm leading-relaxed text-muted">{heading.description}</p>
+          <p className="text-2xs leading-relaxed text-muted">
+            Vera also drafted the four Pillars inside, the rhythm, the agreements, and more. Create the draft to edit
+            all of it in the builder.
+          </p>
 
-        <div className="mt-5">
-          {/* ── CHOOSE ── */}
-          {mode === 'choose' && (
-            <div className="space-y-2.5">
-              <Link
-                href="/circles/templates"
-                className="flex w-full items-start gap-3 rounded-control border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated"
-              >
-                <LayoutTemplate className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
-                <span className="min-w-0">
-                  <span className="block text-body-sm font-semibold text-text">Start from a Starter Circle</span>
-                  <span className="block text-meta leading-snug text-muted">
-                    Remix a staff-made blueprint, then make it yours.
-                  </span>
-                </span>
-              </Link>
+          {/* Optional and skippable: a read before it goes out. */}
+          <SparkOffers quality={qualityState.check} disabled={pending} />
 
-              <button
-                type="button"
-                onClick={() => setMode('upload')}
-                className="flex w-full items-start gap-3 rounded-control border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated"
-              >
-                <Upload className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
-                <span className="min-w-0">
-                  <span className="block text-body-sm font-semibold text-text">Upload an outline</span>
-                  <span className="block text-meta leading-snug text-muted">
-                    Have it written already? Paste or upload it and Vera builds the frame.
-                  </span>
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setMode('questions')}
-                className="flex w-full items-start gap-3 rounded-control border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated"
-              >
-                <MessageCircleQuestion className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
-                <span className="min-w-0">
-                  <span className="block text-body-sm font-semibold text-text">Answer a few questions</span>
-                  <span className="block text-meta leading-snug text-muted">
-                    Tell Vera the basics and she drafts the whole Circle.
-                  </span>
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={scratch}
-                disabled={pending}
-                className="flex w-full items-start gap-3 rounded-control border border-dashed border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-surface-elevated disabled:opacity-60"
-              >
-                {pending ? (
-                  <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-primary-strong" aria-hidden />
-                ) : (
-                  <PenLine className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
-                )}
-                <span className="min-w-0">
-                  <span className="block text-body-sm font-semibold text-text">Start from scratch</span>
-                  <span className="block text-meta leading-snug text-muted">A blank Circle. Write every field yourself.</span>
-                </span>
-              </button>
-            </div>
-          )}
-
-          {/* ── UPLOAD ── */}
-          {mode === 'upload' && (
-            <div className="space-y-3">
-              <Textarea
-                autoFocus
-                value={sourceText}
-                onChange={(e) => setSourceText(e.target.value)}
-                rows={8}
-                aria-label="Your Circle outline, write-up, or notes"
-                placeholder="Paste your Circle outline, write-up, or notes here…"
-              />
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  disabled={extracting || pending}
-                  className={`${wizardSecondaryClass} !px-3 !py-2 text-body-sm`}
-                >
-                  {extracting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Upload className="h-4 w-4" aria-hidden />}{' '}
-                  Upload a file
-                </button>
-                <span className="text-meta text-subtle">PDF, Word, or plain text</span>
-                <Input
-                  ref={fileRef}
-                  type="file"
-                  aria-label="Circle outline file"
-                  accept=".txt,.md,.pdf,.docx,.doc,application/pdf,text/plain"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0]
-                    if (f) onFile(f)
-                    e.target.value = ''
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* ── QUESTIONS ── */}
-          {mode === 'questions' && (
-            <div className="space-y-3">
-              <label className="block">
-                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">What is it about</span>
-                <Input
-                  autoFocus
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  placeholder="e.g. Trail running and coffee after"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Who is it for</span>
-                <Input
-                  value={who}
-                  onChange={(e) => setWho(e.target.value)}
-                  placeholder="e.g. Busy adults who want real friends"
-                />
-              </label>
-              <div>
-                <span className="mb-1.5 block text-2xs font-semibold uppercase tracking-wide text-muted">
-                  Primary Pillar (optional)
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {PILLAR_SLUGS.map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      aria-pressed={primaryPillar === p}
-                      onClick={() => setPrimaryPillar((cur) => (cur === p ? null : p))}
-                      className={`rounded-pill border px-3.5 py-1.5 text-body-sm font-medium transition-colors ${
-                        primaryPillar === p
-                          ? 'border-primary/50 bg-primary-bg text-primary-strong'
-                          : 'border-border bg-surface text-muted hover:text-text'
-                      }`}
-                    >
-                      {PILLAR_LABELS[p]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <label className="block">
-                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
-                  How it meets (optional)
-                </span>
-                <Input
-                  value={cadence}
-                  onChange={(e) => setCadence(e.target.value)}
-                  placeholder="e.g. Wednesdays evening, Saturday mornings"
-                />
-              </label>
-            </div>
-          )}
-
-          {/* ── REVIEW ── */}
-          {mode === 'review' && spark && (
-            <div className="space-y-3">
-              <label className="block">
-                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Name</span>
-                <Input
-                  value={spark.name}
-                  onChange={(e) => setSpark({ ...spark, name: e.target.value })}
-                  className="font-semibold"
-                  placeholder="Name your Circle"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">The Card</span>
-                <Input
-                  value={spark.card}
-                  onChange={(e) => setSpark({ ...spark, card: e.target.value })}
-                  placeholder="The hook, under a dozen words"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">About</span>
-                <Textarea
-                  value={spark.oneLiner}
-                  onChange={(e) => setSpark({ ...spark, oneLiner: e.target.value })}
-                  rows={3}
-                  placeholder="Who it is for and what they get"
-                />
-              </label>
-              <p className="text-2xs leading-relaxed text-muted">
-                Vera also drafted the four Pillars inside, the rhythm, the agreements, and more. Create the draft to edit
-                all of it in the builder.
-              </p>
-            </div>
-          )}
+          <SparkSteer
+            steer={CREATE_STEER}
+            mood={mood}
+            onMood={setMood}
+            directions={directions}
+            onDirections={setDirections}
+            locked={NO_LOCKS}
+            onLocked={() => undefined}
+            disabled={pending}
+          />
         </div>
-
-        {error && <p className="mt-4 text-body-sm text-warning">{error}</p>}
-
-        <div className="mt-7 flex gap-3">
-          {mode === 'choose' ? (
-            <Link href="/circles" className={`${wizardSecondaryClass} w-full`}>
-              <ArrowLeft className="mr-1.5 h-4 w-4" aria-hidden /> Back to Circles
-            </Link>
-          ) : mode === 'upload' ? (
-            <>
-              <button type="button" onClick={() => setMode('choose')} disabled={pending} className={`${wizardSecondaryClass} flex-1`}>
-                <ArrowLeft className="mr-1.5 h-4 w-4" aria-hidden /> Back
-              </button>
-              <button
-                type="button"
-                onClick={() => generate(true)}
-                disabled={pending || extracting || !sourceText.trim()}
-                className={`${wizardPrimaryClass} flex-1`}
-              >
-                {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}{' '}
-                Draft with Vera
-              </button>
-            </>
-          ) : mode === 'questions' ? (
-            <>
-              <button type="button" onClick={() => setMode('choose')} disabled={pending} className={`${wizardSecondaryClass} flex-1`}>
-                <ArrowLeft className="mr-1.5 h-4 w-4" aria-hidden /> Back
-              </button>
-              <button
-                type="button"
-                onClick={() => generate(false)}
-                disabled={pending || !topic.trim()}
-                className={`${wizardPrimaryClass} flex-1`}
-              >
-                {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}{' '}
-                Draft with Vera
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => setMode('choose')}
-                disabled={pending}
-                className={`${wizardSecondaryClass} flex-1`}
-              >
-                <ArrowLeft className="mr-1.5 h-4 w-4" aria-hidden /> Start over
-              </button>
-              <button type="button" onClick={create} disabled={pending || !spark?.name.trim()} className={`${wizardPrimaryClass} flex-1`}>
-                {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null} Create the draft
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+      )}
+    </SparkShell>
   )
 }

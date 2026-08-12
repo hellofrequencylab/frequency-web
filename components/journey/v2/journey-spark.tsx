@@ -1,35 +1,127 @@
 'use client'
 
+// ─────────────────────────────────────────────────────────────────────────────
+// THE JOURNEY SPARK, composed from the Spark kit (docs/STUDIO.md §0, ADR-986 · ADR-302).
+//
+// This file used to be the wizard every other wizard was copied from: its own centered column,
+// its own progress cue, its own heading block, its own field styling, and a manual door that was
+// an 11px grey text link under the card. It now DECLARES nothing about how a field looks and
+// composes the kit instead:
+//
+//   SparkShell     the staged surface, the progress cue, the footer vocabulary
+//   SparkDoors     screen one: two doors at EQUAL weight, plus the entity's extra doors
+//   SparkDropzone  one drop zone under BOTH doors (source material is source material either way)
+//   FieldControl   one control per field KIND, rendered from JOURNEY_MANIFEST
+//   SparkSteer     the mood dial, on review, so it costs no extra step
+//
+// EVERY ENTRY PATH IS KEPT. What was buried is now first-class:
+//   • Vera drafts it, from four questions                     (door 1)
+//   • Build it yourself, in the full builder                  (door 2, was a text link)
+//   • The recommended Master Framework, no AI                 (extra door)
+//   • A ready-made template                                   (extra door, then the picker)
+//   • Bring your own write-up, pasted or uploaded             (the drop zone, on screen one)
+//
+// DEFERRED CREATION IS UNCHANGED: nothing persists until the author commits a reviewed title.
+// The server actions (sparkJourneyAction, createJourneyFromSparkAction, createMasterFrameworkAction,
+// createJourneyFromTemplateAction, extractOverviewFilesAction) keep their exact signatures and
+// payloads. This is a front-door rebuild, not a pipeline change.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles, ArrowLeft, Loader2, Upload, Video, MapPin, Users, Compass, LayoutTemplate, PenLine } from 'lucide-react'
-import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/components/templates'
+import { ArrowLeft, Compass, FileStack, LayoutTemplate, Loader2, Sparkles } from 'lucide-react'
+import { wizardSecondaryClass } from '@/components/templates'
+import {
+  SparkDoors,
+  SparkDropzone,
+  SparkOffers,
+  SparkShell,
+  SparkSteer,
+  FieldControl,
+  StudioField,
+  draftText,
+  useCoverOffer,
+  useQualityCheck,
+  type SparkDoor,
+} from '@/components/studio/spark'
 import { InfoTip } from '@/components/ui/info-tip'
-import { Input, Textarea } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
-import { sparkJourneyAction, createJourneyFromSparkAction, extractOverviewFilesAction, createMasterFrameworkAction, createJourneyFromTemplateAction } from '@/app/(main)/journeys/create-actions'
+import { JOURNEY_MANIFEST } from '@/lib/studio/entities/journey'
+import { sparkFields } from '@/lib/studio/kernel/review-kernel'
+import { DEFAULT_SEED_MOOD, type SeedMood } from '@/lib/studio/kernel/moods'
+import type { FieldDef } from '@/lib/studio/kernel/manifest'
+import {
+  sparkJourneyAction,
+  createJourneyFromSparkAction,
+  extractOverviewFilesAction,
+  createMasterFrameworkAction,
+  createJourneyFromTemplateAction,
+} from '@/app/(main)/journeys/create-actions'
 import type { JourneyPace, ArcWeek, SparkSettings, SparkMeeting } from '@/lib/ai/journey-spark'
+import type { GeneratedCover } from '@/lib/loom/cover-actions'
 import { JourneyBuilder } from './journey-builder'
-
-// Meeting formats (ADR-302) — matches the editor's Settings panel so the chips read the same.
-const MEETING_FORMATS = [
-  ['virtual', Video, 'Virtual'],
-  ['in_person', MapPin, 'In person'],
-  ['hybrid', Users, 'Hybrid'],
-] as const
 
 const EMPTY_MEETING: SparkMeeting = { format: null, schedule: null, timezone: null, location: null, link: null }
 
-// The guided Journey builder, Step 1 "Spark" (ADR-302). Two ways in:
-//   • QUESTIONS — a short stepped form (who / about / outcome / shape), or
-//   • OVERVIEW  — paste or upload your own write-up (PDF / Word / text) and let Vera rebuild it.
-// Either way Vera drafts the identity + weekly arc for review, then committing creates the Journey
-// (+ one Phase per week, opening week's practices) and drops into the editor. Nothing persists until
-// that commit. "Build it myself" hands off to the manual draft editor.
+/** Every declared field, by path. The wizard renders the MANIFEST; it never restates a field. */
+const FIELD = new Map<string, FieldDef>(JOURNEY_MANIFEST.fields.map((f) => [f.path, f]))
 
-const WEEK_CHOICES = [2, 4, 6, 8] as const
+/** The fields a Spark asks for (`placement: 'spark'` plus anything required), by path. `title` is
+ *  in here because it is required; it is asked on the review step, where the author names what
+ *  Vera drafted, which is the one question that cannot be asked before there is a draft. */
+const ASKED = new Map<string, FieldDef>(sparkFields(JOURNEY_MANIFEST).map((f) => [f.path, f]))
 
-/** Client-safe template metadata for the "Start from a template" picker (the full template trees
+/**
+ * The question sequence. The FIELDS come from the manifest; only the framing (which paths share a
+ * screen, and the example that helps someone answer) lives here, because an example tuned to the
+ * question being asked is copy, not schema.
+ */
+const QUESTIONS: { label: string; title: string; description: string; paths: string[]; requires?: string }[] = [
+  {
+    label: 'Who',
+    title: 'Tell us about this Journey',
+    description: 'Who is it for, and what do you want them to get out of it?',
+    paths: ['answers.who'],
+    requires: 'answers.who',
+  },
+  {
+    label: 'About',
+    title: 'What is it about?',
+    description: 'A topic, or just general wellbeing. Either works.',
+    paths: ['answers.topic'],
+    requires: 'answers.topic',
+  },
+  {
+    label: 'Outcome',
+    title: 'What should people walk away with?',
+    description: 'The outcome, in plain words. Lead with the feeling.',
+    paths: ['answers.outcome'],
+    requires: 'answers.outcome',
+  },
+  {
+    label: 'Shape',
+    title: 'How long, and how much a day?',
+    description: 'One Phase per week. Keep the daily ask honest.',
+    paths: ['answers.weeks', 'answers.pace'],
+  },
+]
+
+/** The ghost example in each question's control. A placeholder is tuned to the question being
+ *  asked, which is why the kit takes it as a prop rather than reading it off the manifest. */
+const PLACEHOLDER: Record<string, string> = {
+  'answers.who':
+    'e.g. Busy parents who feel wired and tired. By the end they keep a ten minute evening wind down and get their evenings back.',
+  'answers.topic': 'e.g. Sleep and screen habits. Or: general wellbeing.',
+  'answers.outcome': 'e.g. Fall asleep easier and wake up clearer, most days.',
+}
+
+/** A line under the control, where the answer needs a bound rather than an example. */
+const HINT: Record<string, string> = {
+  'answers.weeks': 'One Phase per week. Anything from one to twelve.',
+  'answers.pace': 'The honest daily ask. It sets the minutes shown on the card.',
+}
+
+/** Client-safe template metadata for the "Start from a template" door (the full template trees
  *  in lib/journeys/templates.ts pull server-only compose code, so the page maps to this shape). */
 export interface JourneyTemplateMeta {
   id: string
@@ -38,6 +130,12 @@ export interface JourneyTemplateMeta {
   emoji: string
   phases: number
   lessons: number
+}
+
+/** Weeks is a plain number field: keep it inside what createJourneyFromSparkAction will honour. */
+function clampWeeks(raw: string): number {
+  const n = Math.floor(Number(raw))
+  return Number.isFinite(n) && n > 0 ? Math.min(12, n) : 4
 }
 
 export function JourneySpark({
@@ -50,20 +148,20 @@ export function JourneySpark({
   spaceSlug?: string | null
 }) {
   const router = useRouter()
-  const [mode, setMode] = useState<'wizard' | 'manual'>('wizard')
-  const [usingOverview, setUsingOverview] = useState(false)
-  const [picking, setPicking] = useState(false)
-  const [step, setStep] = useState(1)
+  // 'doors' is screen one for every entity. 'questions' and 'source' are the two lengths the
+  // guided path comes in; 'templates' is this entity's own extra door; 'manual' leaves the Spark.
+  const [stage, setStage] = useState<'doors' | 'questions' | 'source' | 'templates' | 'review' | 'manual'>('doors')
+  const [fromSource, setFromSource] = useState(false)
+  const [qIndex, setQIndex] = useState(0)
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
-  const fileRef = useRef<HTMLInputElement>(null)
 
   const [who, setWho] = useState('')
   const [topic, setTopic] = useState('')
   const [outcome, setOutcome] = useState('')
-  const [weeks, setWeeks] = useState(4)
+  const [weeksText, setWeeksText] = useState('4')
   const [pace, setPace] = useState<JourneyPace>('light')
-  const [sourceText, setSourceText] = useState('') // the pasted / uploaded overview
+  const [sourceText, setSourceText] = useState('') // the pasted / uploaded write-up
   const [extracting, setExtracting] = useState(false)
   const [skipped, setSkipped] = useState<string[]>([]) // files Vera could not read (surfaced honestly)
 
@@ -77,18 +175,107 @@ export function JourneySpark({
   // confirm or edit. Stays all-null when nothing is set, so the Journey persists no meeting.
   const [meeting, setMeeting] = useState<SparkMeeting>(EMPTY_MEETING)
   const patchMeeting = (patch: Partial<SparkMeeting>) => setMeeting((m) => ({ ...m, ...patch }))
+  // The mood dial (kernel/moods.ts), shown on review so it costs no extra step.
+  const [mood, setMood] = useState<SeedMood>(DEFAULT_SEED_MOOD)
+  // A cover Vera drew, once the author has kept it. Held here rather than on a draft object because
+  // this Spark has no draft object: the review step IS the state, and creation is deferred.
+  const [cover, setCover] = useState<GeneratedCover | null>(null)
 
-  if (mode === 'manual') return <JourneyBuilder draft spaceSlug={spaceSlug} />
+  // ── The two review-step offers (ADR-993 / ADR-995) ──
+  //
+  // KEPT BESPOKE: this review edits a weekly arc, a conditional meeting block, and three prose
+  // fields against a draft that is not manifest-shaped, so it renders the two OFFER CARDS rather
+  // than the whole review board. Neither may block Create Journey, and neither does.
+  //
+  // The draft handed to `coverOffer` is empty until a cover is kept, which is the truth: nothing
+  // in this Spark sets `cover_image`. The path is never written out here, it comes back from the
+  // action, so adding a second image field to the manifest needs no edit in this file.
+  const coverState = useCoverOffer({
+    entity: JOURNEY_MANIFEST.entity,
+    manifest: JOURNEY_MANIFEST,
+    draft: cover ? { [cover.path]: cover.url } : {},
+    subject: { title, summary: promise, mood, directions: null },
+    // Inside a Space's Journeys manager the asset belongs to that Space's Loom, so the next author
+    // there can reuse it. Otherwise it lands in the member's own.
+    scopeKey: spaceSlug,
+    onApply: setCover,
+    onRemove: () => setCover(null),
+  })
 
-  const onReview = step === 5
-  const total = picking ? 1 : usingOverview ? 2 : 5
-  const current = picking ? 1 : onReview ? total : usingOverview ? 1 : step
-  const label = picking ? 'Template' : onReview ? 'Review' : usingOverview ? 'Your overview' : ['Who', 'About', 'Outcome', 'Shape'][step - 1]
+  // ADVICE, never a gate. The Journey standard is the same Opus rank rubric the library gate uses
+  // (lib/ai/quality-gate.ts), so an author can hear it BEFORE they publish rather than after.
+  const qualityState = useQualityCheck({
+    entity: JOURNEY_MANIFEST.entity,
+    read: () =>
+      [
+        draftText([
+          ['Title', title],
+          ['Promise', promise],
+          ['Overview', overview],
+        ]),
+        arc.length
+          ? ['The weekly arc', ...arc.map((w, i) => `Week ${i + 1}: ${w.title}${w.focus ? `. ${w.focus}` : ''}`)].join('\n')
+          : '',
+      ]
+        .filter(Boolean)
+        .join('\n\n'),
+  })
+
+  if (stage === 'manual') return <JourneyBuilder draft spaceSlug={spaceSlug} />
+
+  const weeks = clampWeeks(weeksText)
+  const source = sourceText.trim()
+
+  // One binding per asked field. The control comes from the manifest; the value stays in the
+  // exact shape createJourneyFromSparkAction already takes.
+  const bound: Record<string, { value: string; set: (next: string) => void }> = {
+    'answers.who': { value: who, set: setWho },
+    'answers.topic': { value: topic, set: setTopic },
+    'answers.outcome': { value: outcome, set: setOutcome },
+    'answers.weeks': { value: weeksText, set: setWeeksText },
+    'answers.pace': { value: pace, set: (next) => setPace(next === 'medium' ? 'medium' : 'light') },
+  }
+
+  const askField = (path: string) => {
+    const def = ASKED.get(path)
+    const bind = bound[path]
+    if (!def || !bind) return null
+    return (
+      <StudioField key={path} label={def.label}>
+        <FieldControl
+          def={def}
+          value={bind.value}
+          onChange={(next) => bind.set(Array.isArray(next) ? next.join(', ') : next)}
+          disabled={pending}
+          placeholder={PLACEHOLDER[path]}
+          hint={HINT[path]}
+        />
+      </StudioField>
+    )
+  }
+
+  const reviewField = (path: string, value: string, set: (next: string) => void, placeholder?: string) => {
+    const def = FIELD.get(path)
+    if (!def) return null
+    return (
+      <StudioField label={def.label}>
+        <FieldControl
+          def={def}
+          value={value}
+          onChange={(next) => set(Array.isArray(next) ? next.join(', ') : next)}
+          disabled={pending}
+          placeholder={placeholder}
+        />
+      </StudioField>
+    )
+  }
+
+  // ── The actions. Signatures and payloads are exactly as they were. ──
 
   const generate = () => {
     setError(null)
     start(async () => {
-      const res = await sparkJourneyAction({ who, topic, outcome, weeks, pace }, usingOverview ? sourceText : undefined)
+      const res = await sparkJourneyAction({ who, topic, outcome, weeks, pace }, source || undefined)
       if (isError(res)) {
         setError(res.error)
       } else {
@@ -99,7 +286,7 @@ export function JourneySpark({
         setSettings(res.data.settings ?? null)
         setMeeting(res.data.meeting ?? EMPTY_MEETING)
       }
-      setStep(5)
+      setStage('review')
     })
   }
 
@@ -107,16 +294,22 @@ export function JourneySpark({
     if (!title.trim()) return
     setError(null)
     start(() =>
-      createJourneyFromSparkAction({
-        title,
-        promise,
-        overview,
-        answers: { who, topic, outcome, weeks, pace },
-        arc,
-        settings: settings ?? undefined,
-        meeting,
-        sourceText: usingOverview ? sourceText : undefined,
-      }, spaceSlug),
+      createJourneyFromSparkAction(
+        {
+          title,
+          promise,
+          overview,
+          answers: { who, topic, outcome, weeks, pace },
+          arc,
+          settings: settings ?? undefined,
+          meeting,
+          sourceText: source || undefined,
+          // Already a real asset in the author's Loom (ADR-987). Null when they never asked for one,
+          // which stays a first-class outcome: a Journey with no cover publishes fine.
+          coverImage: cover?.url ?? null,
+        },
+        spaceSlug,
+      ),
     )
   }
 
@@ -159,388 +352,343 @@ export function JourneySpark({
     })
   }
 
-  const next = () => {
-    if (usingOverview || step === 4) generate()
-    else setStep((s) => Math.min(5, s + 1))
+  // The drop zone, plus this entity's batch upload. The kit's zone takes one document at a time
+  // (it appends), and "drop in your whole course at once" is the Journey's own promise, so the
+  // multi-file picker rides beside it on the unchanged extractOverviewFilesAction.
+  const sourceZone = (
+    <>
+      <SparkDropzone
+        accepts={JOURNEY_MANIFEST.accepts ?? []}
+        sourceText={sourceText}
+        onSourceText={setSourceText}
+        disabled={pending}
+      />
+      <BatchUpload onFiles={onFiles} extracting={extracting} disabled={pending} skipped={skipped} />
+    </>
+  )
+
+  // ── Screen one: the doors ──
+
+  if (stage === 'doors') {
+    const extraDoors: SparkDoor[] = [
+      {
+        key: 'framework',
+        label: 'Use the recommended framework',
+        hint: 'The proven shape, with no AI: a welcome, weekly practices across the Pillars, an Expression Challenge each week, and a capstone.',
+        Icon: Compass,
+        onSelect: framework,
+      },
+    ]
+    if (templates.length > 0) {
+      extraDoors.push({
+        key: 'templates',
+        label: 'Start from a template',
+        hint: `${templates.length} ready-made shapes. We create it as a private draft and open the editor so you can make it yours.`,
+        Icon: LayoutTemplate,
+        onSelect: () => setStage('templates'),
+      })
+    }
+
+    return (
+      <SparkShell
+        eyebrow="New Journey"
+        title="How do you want to start?"
+        description="Every way here makes the same Journey. Pick whichever suits what you already have."
+        step={1}
+        totalSteps={QUESTIONS.length + 2}
+        stepLabel="Start"
+        error={error}
+      >
+        <SparkDoors
+          entityLabel={JOURNEY_MANIFEST.label}
+          onVera={() => {
+            setFromSource(!!source)
+            setStage(source ? 'source' : 'questions')
+            setQIndex(0)
+          }}
+          onManual={() => setStage('manual')}
+          veraLabel="Have Vera draft it"
+          veraHint="Answer four short questions and Vera drafts the name, the promise, and the weekly arc for you to edit."
+          manualLabel="Build it yourself"
+          manualHint="Go straight to the builder and shape the Phases, modules, and lessons your own way."
+          extraDoors={extraDoors}
+          disabled={pending}
+        >
+          {sourceZone}
+        </SparkDoors>
+      </SparkShell>
+    )
   }
-  const back = () => setStep((s) => Math.max(1, s - 1))
 
-  const canNext = usingOverview
-    ? sourceText.trim().length > 0
-    : (step === 1 && who.trim().length > 0) ||
-      (step === 2 && topic.trim().length > 0) ||
-      (step === 3 && outcome.trim().length > 0) ||
-      step === 4
+  // ── The template picker (this entity's extra door) ──
 
-  const heading = picking
-    ? { title: 'Start from a proven structure', description: 'Pick a shape. We create it as a private draft and open the editor so you can make it yours.' }
-    : onReview
-    ? { title: 'Here is your Journey', description: "Vera's draft. Edit anything, then create it." }
-    : usingOverview
-      ? { title: 'Upload your course', description: 'Drop in your outline and any supporting documents, all at once, and Vera builds the whole Journey from them. Or paste it below.' }
-      : [
-          { title: 'Tell us about this journey', description: "Who's it for, and what do you want them to get out of it?" },
-          { title: 'What is it about?', description: 'A topic, or just general wellbeing. Either works.' },
-          { title: 'What should people walk away with?', description: 'The outcome, in plain words. Lead with the feeling.' },
-          { title: 'How long, and how much a day?', description: 'One Phase per week. Keep the daily ask honest.' },
-        ][step - 1]
+  if (stage === 'templates') {
+    return (
+      <SparkShell
+        eyebrow="New Journey"
+        title="Start from a proven structure"
+        description="Pick a shape. We create it as a private draft and open the editor so you can make it yours."
+        step={2}
+        totalSteps={2}
+        stepLabel="Template"
+        error={error}
+        footer={
+          <button type="button" onClick={() => setStage('doors')} disabled={pending} className={`${wizardSecondaryClass} w-full`}>
+            <ArrowLeft className="h-4 w-4" aria-hidden /> Back
+          </button>
+        }
+      >
+        <ul className="space-y-2.5">
+          {templates.map((t) => (
+            <li key={t.id}>
+              <button
+                type="button"
+                onClick={() => chooseTemplate(t.id)}
+                disabled={pending}
+                className="flex w-full items-start gap-3 rounded-control border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated disabled:opacity-60"
+              >
+                <span className="text-page-title leading-none" aria-hidden>
+                  {t.emoji}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-body-sm font-semibold text-text">{t.name}</span>
+                  <span className="block text-meta leading-snug text-muted">{t.description}</span>
+                  <span className="mt-1 block text-2xs font-medium uppercase tracking-wide text-muted">
+                    {t.phases} {t.phases === 1 ? 'phase' : 'phases'} · {t.lessons} {t.lessons === 1 ? 'lesson' : 'lessons'}
+                  </span>
+                </span>
+                {pending ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary-strong" aria-hidden /> : null}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </SparkShell>
+    )
+  }
+
+  // ── The source path: one screen, because the write-up already came in on screen one ──
+
+  if (stage === 'source') {
+    return (
+      <SparkShell
+        eyebrow="New Journey"
+        title="Your course, and how long it runs"
+        description="Vera builds the whole Journey from what you brought. Tell her how many weeks to lay it out over."
+        step={2}
+        totalSteps={3}
+        stepLabel="Your course"
+        onBack={() => setStage('doors')}
+        onNext={generate}
+        nextLabel="Draft with Vera"
+        nextDisabled={!source}
+        busy={pending}
+        error={error}
+        exits={[
+          {
+            label: 'Answer the questions instead',
+            onSelect: () => {
+              setFromSource(false)
+              setQIndex(0)
+              setStage('questions')
+            },
+          },
+          { label: 'Build it yourself', onSelect: () => setStage('manual') },
+        ]}
+      >
+        <div className="space-y-4">
+          {sourceZone}
+          {/* Weeks, and only weeks: the same one question this path has always asked. The daily
+              ask comes from what Vera reads in the write-up. */}
+          {askField('answers.weeks')}
+        </div>
+      </SparkShell>
+    )
+  }
+
+  // ── The question path ──
+
+  if (stage === 'questions') {
+    const q = QUESTIONS[qIndex]
+    const last = qIndex === QUESTIONS.length - 1
+    const answered = !q.requires || (bound[q.requires]?.value.trim().length ?? 0) > 0
+
+    return (
+      <SparkShell
+        eyebrow="New Journey"
+        title={q.title}
+        description={
+          qIndex === 0 ? (
+            <>
+              {q.description}{' '}
+              <InfoTip
+                side="bottom"
+                label="Describe the person and the change. For example: busy parents who want calmer mornings, and by the end they keep a ten minute routine that sticks. The more specific you are, the sharper Vera's draft."
+              />
+            </>
+          ) : (
+            q.description
+          )
+        }
+        step={2 + qIndex}
+        totalSteps={QUESTIONS.length + 2}
+        stepLabel={q.label}
+        onBack={() => (qIndex === 0 ? setStage('doors') : setQIndex((i) => i - 1))}
+        onNext={() => (last ? generate() : setQIndex((i) => i + 1))}
+        nextLabel={last ? 'Draft with Vera' : 'Continue'}
+        nextDisabled={!answered}
+        busy={pending}
+        error={error}
+        exits={[{ label: 'Build it yourself', onSelect: () => setStage('manual') }]}
+      >
+        <div className="space-y-5">{q.paths.map((path) => askField(path))}</div>
+      </SparkShell>
+    )
+  }
+
+  // ── Review. Vera's draft, editable, with the mood dial. Nothing has persisted yet. ──
+
+  const drafting = pending && !title
 
   return (
-    <div className="mx-auto w-full max-w-lg px-4 py-10">
-      <WizardProgress current={current} total={total} label={label} />
+    <SparkShell
+      eyebrow="New Journey"
+      title="Here is your Journey"
+      description="Vera's draft. Edit anything, then create it."
+      step={fromSource ? 3 : QUESTIONS.length + 2}
+      totalSteps={fromSource ? 3 : QUESTIONS.length + 2}
+      stepLabel="Review"
+      onBack={() => {
+        if (fromSource) setStage('source')
+        else {
+          setQIndex(QUESTIONS.length - 1)
+          setStage('questions')
+        }
+      }}
+      onNext={create}
+      nextLabel="Create Journey"
+      nextDisabled={!title.trim()}
+      busy={pending}
+      error={error}
+    >
+      {drafting ? (
+        <p className="flex items-center gap-2 rounded-card border border-border bg-canvas px-4 py-3 text-body-sm text-muted">
+          <Sparkles className="h-4 w-4 shrink-0 animate-pulse text-primary-strong" aria-hidden /> Vera is drafting your Journey…
+        </p>
+      ) : (
+        <div className="space-y-4">
+          {reviewField('title', title, setTitle, 'Name your Journey')}
+          {reviewField('summary', promise, setPromise, "What they'll walk away with")}
+          {reviewField('intro', overview, setOverview, "What this is and who it's for.")}
 
-      <div className="mt-7">
-        <p className="mb-1.5 text-meta font-semibold uppercase tracking-widest text-primary-strong">New Journey</p>
-        <h1 className="flex items-center gap-1.5 text-page-title font-bold text-text">
-          {heading.title}
-          {!picking && !onReview && !usingOverview && step === 1 && (
-            <InfoTip
-              side="bottom"
-              label="Describe the person and the change. For example: busy parents who want calmer mornings, and by the end they keep a ten minute routine that sticks. The more specific you are, the sharper Vera's draft."
-            />
-          )}
-        </h1>
-        <p className="mt-1 text-body-sm leading-relaxed text-muted">{heading.description}</p>
-
-        <div className="mt-5">
-          {/* Combined structure picker (ADR-252, J4): the recommended framework, the ready-made
-              templates, and a section by section scratch build, in one place. */}
-          {picking && (
-            <div className="space-y-2.5">
-              {/* The recommended framework — the proven shape, no AI, filled as you go. */}
-              <button
-                type="button"
-                onClick={framework}
-                disabled={pending}
-                className="flex w-full items-start gap-3 rounded-xl border border-primary/40 bg-primary-bg/30 px-4 py-3 text-left transition-colors hover:bg-primary-bg/50 disabled:opacity-60"
-              >
-                {pending ? <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-primary-strong" /> : <Compass className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />}
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
-                    Recommended framework
-                    <span className="rounded-pill bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong">Best start</span>
-                  </span>
-                  <span className="block text-meta leading-snug text-muted">The proven shape: a welcome, weekly practices across the Pillars, an Expression Challenge each week, and a capstone.</span>
-                </span>
-              </button>
-
-              {/* Ready-made template skeletons. */}
-              {templates.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => chooseTemplate(t.id)}
-                  disabled={pending}
-                  className="flex w-full items-start gap-3 rounded-control border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated disabled:opacity-60"
-                >
-                  <span className="text-page-title leading-none" aria-hidden>{t.emoji}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-body-sm font-semibold text-text">{t.name}</span>
-                    <span className="block text-meta leading-snug text-muted">{t.description}</span>
-                    <span className="mt-1 block text-2xs font-medium uppercase tracking-wide text-muted">
-                      {t.phases} {t.phases === 1 ? 'phase' : 'phases'} · {t.lessons} {t.lessons === 1 ? 'lesson' : 'lessons'}
-                    </span>
-                  </span>
-                  {pending ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary-strong" /> : null}
-                </button>
-              ))}
-
-              {/* Start from scratch — a blank draft with the three seeded phases, built section by section. */}
-              <button
-                type="button"
-                onClick={() => setMode('manual')}
-                disabled={pending}
-                className="flex w-full items-start gap-3 rounded-control border border-dashed border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-surface-elevated disabled:opacity-60"
-              >
-                <PenLine className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-body-sm font-semibold text-text">Start from scratch</span>
-                  <span className="block text-meta leading-snug text-muted">A blank Journey. Add phases, modules, and lessons section by section, at your own pace.</span>
-                </span>
-              </button>
-            </div>
-          )}
-
-          {/* OVERVIEW path */}
-          {!picking && usingOverview && !onReview && (
-            <div className="space-y-3">
-              <Textarea
-                autoFocus
-                value={sourceText}
-                onChange={(e) => setSourceText(e.target.value)}
-                rows={8}
-                aria-label="Your course overview, outline, or notes"
-                placeholder="Paste your course overview, outline, or notes here…"
-              />
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  disabled={extracting || pending}
-                  className={`${wizardSecondaryClass} !px-3 !py-2 text-body-sm`}
-                >
-                  {extracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Upload files
-                </button>
-                <span className="inline-flex items-center gap-1 text-meta text-subtle">
-                  Add them all at once
-                  <InfoTip
-                    side="top"
-                    label="Select your outline and every supporting document together. Vera reads PDF, Word, and plain text and weaves them into one Journey. A zip or an image is accepted but not read yet, so unzip first for now."
-                  />
-                </span>
-                <Input
-                  ref={fileRef}
-                  type="file"
-                  multiple
-                  aria-label="Course documents"
-                  accept=".txt,.md,.pdf,.docx,.doc,.rtf,.pages,.zip,application/pdf,text/plain,application/zip"
-                  className="hidden"
-                  onChange={(e) => { onFiles(e.target.files); e.target.value = '' }}
-                />
-              </div>
-
-              {/* Vera AI note — set the expectation that a model drafts from what they upload. */}
-              <p className="flex items-center gap-1 text-2xs text-muted">
-                <Sparkles className="h-3 w-3 text-primary-strong" aria-hidden /> Vera reads your files and drafts the Journey. You review and edit everything before it is created.
+          {arc.length > 0 && (
+            <div>
+              <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-muted">
+                Your {arc.length} {arc.length === 1 ? 'week' : 'weeks'}
               </p>
-
-              {/* Honest report of anything Vera could not read from the batch. */}
-              {skipped.length > 0 && (
-                <p className="rounded-lg border border-border bg-canvas px-3 py-2 text-2xs text-muted">
-                  Could not read: {skipped.join(', ')}. Vera reads PDF, Word, and plain text.
-                </p>
-              )}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Weeks</span>
-                {WEEK_CHOICES.map((w) => (
-                  <button key={w} type="button" onClick={() => setWeeks(w)} aria-pressed={weeks === w}
-                    className={`rounded-pill border px-3 py-1 text-meta font-medium transition-colors ${weeks === w ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}>
-                    {w}
-                  </button>
+              <ol className="space-y-1.5">
+                {arc.map((w, i) => (
+                  <li key={i} className="rounded-lg border border-border bg-surface px-3 py-2">
+                    <span className="block text-body-sm font-medium text-text">
+                      Week {i + 1}: {w.title}
+                    </span>
+                    {w.focus && <span className="block text-meta leading-snug text-muted">{w.focus}</span>}
+                  </li>
                 ))}
-              </div>
+              </ol>
+              <p className="mt-1.5 text-2xs text-muted">Vera lays these out as weekly Phases. Edit them in the next step.</p>
             </div>
           )}
 
-          {/* QUESTIONS path — step 1 landing: the "about" box + the two other ways in. */}
-          {!picking && !usingOverview && step === 1 && (
-            <>
-              <Textarea autoFocus value={who} onChange={(e) => setWho(e.target.value)} rows={4} aria-label={heading.title} placeholder="e.g. Busy parents who feel wired and tired. By the end they keep a ten minute evening wind down and get their evenings back." />
+          {/* How the group meets (ADR-302). Optional and pre-filled from Vera's read of the
+              outline; the full editor lives in the Journey's Settings panel later. */}
+          <div className="space-y-3 rounded-card border border-border bg-canvas px-3.5 py-3">
+            <p className="text-2xs font-semibold uppercase tracking-wide text-muted">How will you meet?</p>
+            {reviewField('meeting.format', meeting.format ?? '', (next) =>
+              patchMeeting({ format: (next || null) as SparkMeeting['format'] }),
+            )}
+            {reviewField('meeting.schedule', meeting.schedule ?? '', (next) => patchMeeting({ schedule: next || null }), 'e.g. Sundays 7pm')}
+            {reviewField('meeting.timezone', meeting.timezone ?? '', (next) => patchMeeting({ timezone: next || null }), 'e.g. ET')}
+            {(meeting.format === 'in_person' || meeting.format === 'hybrid') &&
+              reviewField('meeting.location', meeting.location ?? '', (next) => patchMeeting({ location: next || null }), 'e.g. The community hall')}
+            {(meeting.format === 'virtual' || meeting.format === 'hybrid') &&
+              reviewField('meeting.link', meeting.link ?? '', (next) => patchMeeting({ link: next || null }), 'https://')}
+            <p className="text-2xs text-muted">Optional. You can fine-tune this in Settings later.</p>
+          </div>
 
-              <p className="mt-5 mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Or start another way</p>
+          {/* Both optional, both skippable: a cover Vera can draw, and a read before it goes out. */}
+          <SparkOffers cover={coverState.offer} quality={qualityState.check} disabled={pending} />
 
-              {/* Second path: drop in a WHOLE stack of course docs at once and let Vera build it. */}
-              <button
-                type="button"
-                onClick={() => { setUsingOverview(true); setStep(1) }}
-                className="flex w-full items-center gap-3 rounded-xl border border-dashed border-primary/40 bg-primary-bg/20 px-4 py-3 text-left transition-colors hover:bg-primary-bg/40"
-              >
-                <Upload className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1 text-body-sm font-semibold text-text">
-                    Upload your course
-                    <span className="rounded-pill bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong">Vera AI</span>
-                  </span>
-                  <span className="block text-meta leading-snug text-muted">Already have a course written? Upload your outline and any supporting documents, all at once, and let Vera sort it out.</span>
-                </span>
-              </button>
-
-              {/* Combined "proven structure": the recommended framework, the templates, and a section by
-                  section scratch build, all in one picker. */}
-              <button
-                type="button"
-                onClick={() => setPicking(true)}
-                disabled={pending}
-                className="mt-3 flex w-full items-center gap-3 rounded-control border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-surface-elevated disabled:opacity-60"
-              >
-                <LayoutTemplate className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-body-sm font-semibold text-text">Start from a proven structure</span>
-                  <span className="block text-meta leading-snug text-muted">The recommended framework, a ready-made template, or a blank build you shape section by section.</span>
-                </span>
-              </button>
-            </>
-          )}
-          {!usingOverview && step === 2 && (
-            <Textarea autoFocus value={topic} onChange={(e) => setTopic(e.target.value)} rows={3} aria-label={heading.title} placeholder="e.g. Sleep and screen habits. Or: general wellbeing." />
-          )}
-          {!usingOverview && step === 3 && (
-            <Textarea autoFocus value={outcome} onChange={(e) => setOutcome(e.target.value)} rows={3} aria-label={heading.title} placeholder="e.g. Fall asleep easier and wake up clearer, most days." />
-          )}
-          {!usingOverview && step === 4 && (
-            <div className="space-y-5">
-              <div>
-                <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Weeks</p>
-                <div className="flex flex-wrap items-center gap-2">
-                  {WEEK_CHOICES.map((w) => (
-                    <button key={w} type="button" onClick={() => setWeeks(w)} aria-pressed={weeks === w}
-                      className={`rounded-pill border px-3.5 py-1.5 text-body-sm font-medium transition-colors ${weeks === w ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}>
-                      {w} weeks
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Time a day</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {([['light', 'Light', 'A few minutes'], ['medium', 'Medium', 'Ten to twenty minutes']] as const).map(([key, lbl, hint]) => (
-                    <button key={key} type="button" onClick={() => setPace(key)} aria-pressed={pace === key}
-                      className={`rounded-control border px-3 py-2.5 text-left transition-colors ${pace === key ? 'border-primary/50 bg-primary-bg' : 'border-border bg-surface hover:bg-surface-elevated'}`}>
-                      <span className="block text-body-sm font-semibold text-text">{lbl}</span>
-                      <span className="block text-meta text-muted">{hint}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* REVIEW */}
-          {onReview && (
-            <div className="space-y-3">
-              {pending && !title ? (
-                <p className="flex items-center gap-2 rounded-card border border-border bg-canvas px-4 py-3 text-body-sm text-muted">
-                  <Sparkles className="h-4 w-4 shrink-0 animate-pulse text-primary-strong" aria-hidden /> Vera is drafting your Journey…
-                </p>
-              ) : (
-                <>
-                  <label className="block">
-                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Title</span>
-                    <Input value={title} onChange={(e) => setTitle(e.target.value)} className="font-semibold" placeholder="Name your Journey" />
-                  </label>
-                  <label className="block">
-                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">One-line promise</span>
-                    <Input value={promise} onChange={(e) => setPromise(e.target.value)} placeholder="What they'll walk away with" />
-                  </label>
-                  <label className="block">
-                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Overview</span>
-                    <Textarea value={overview} onChange={(e) => setOverview(e.target.value)} rows={4} placeholder="What this is and who it's for." />
-                  </label>
-                  {arc.length > 0 && (
-                    <div>
-                      <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Your {arc.length} {arc.length === 1 ? 'week' : 'weeks'}</span>
-                      <ol className="space-y-1.5">
-                        {arc.map((w, i) => (
-                          <li key={i} className="rounded-lg border border-border bg-surface px-3 py-2">
-                            <span className="block text-body-sm font-medium text-text">Week {i + 1}: {w.title}</span>
-                            {w.focus && <span className="block text-meta leading-snug text-muted">{w.focus}</span>}
-                          </li>
-                        ))}
-                      </ol>
-                      <p className="mt-1.5 text-2xs text-muted">Vera lays these out as weekly Phases. Edit them in the next step.</p>
-                    </div>
-                  )}
-
-                  {/* How the group meets (ADR-302). Optional and pre-filled from Vera's read of the
-                      outline; the full editor lives in the Journey's Settings panel later. */}
-                  <div className="rounded-card border border-border bg-canvas px-3 py-3">
-                    <span className="mb-1.5 block text-2xs font-semibold uppercase tracking-wide text-muted">How will you meet?</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {MEETING_FORMATS.map(([value, Icon, lbl]) => (
-                        <button
-                          key={value}
-                          type="button"
-                          onClick={() => patchMeeting({ format: meeting.format === value ? null : value })}
-                          aria-pressed={meeting.format === value}
-                          className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-meta font-medium transition-colors ${meeting.format === value ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}
-                        >
-                          <Icon className="h-3.5 w-3.5" /> {lbl}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                      <Input
-                        value={meeting.schedule ?? ''}
-                        onChange={(e) => patchMeeting({ schedule: e.target.value || null })}
-                        maxLength={120}
-                        placeholder="When, e.g. Sundays 7pm"
-                        aria-label="When you meet"
-                        className="sm:col-span-2"
-                      />
-                      <Input
-                        value={meeting.timezone ?? ''}
-                        onChange={(e) => patchMeeting({ timezone: e.target.value || null })}
-                        maxLength={40}
-                        placeholder="Timezone, e.g. ET"
-                        aria-label="Timezone"
-                      />
-                    </div>
-
-                    {(meeting.format === 'in_person' || meeting.format === 'hybrid') && (
-                      <Input
-                        value={meeting.location ?? ''}
-                        onChange={(e) => patchMeeting({ location: e.target.value || null })}
-                        maxLength={200}
-                        placeholder="Where you meet, e.g. The community hall"
-                        aria-label="Where you meet"
-                        className="mt-2"
-                      />
-                    )}
-                    {(meeting.format === 'virtual' || meeting.format === 'hybrid') && (
-                      <Input
-                        type="url"
-                        value={meeting.link ?? ''}
-                        onChange={(e) => patchMeeting({ link: e.target.value || null })}
-                        maxLength={500}
-                        placeholder="Join link, https://"
-                        aria-label="Join link"
-                        className="mt-2"
-                      />
-                    )}
-
-                    <p className="mt-1.5 text-2xs text-muted">Optional. You can fine-tune this in Settings later.</p>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
+          {/* The mood dial (kernel/moods.ts). On review, so it costs no extra step. */}
+          <SparkSteer
+            steer={{ mood: JOURNEY_MANIFEST.steer?.mood }}
+            mood={mood}
+            onMood={setMood}
+            directions=""
+            onDirections={() => {}}
+            disabled={pending}
+          />
         </div>
+      )}
+    </SparkShell>
+  )
+}
 
-        {error && <p className="mt-4 text-body-sm text-warning">{error}</p>}
+/**
+ * The Journey's batch upload, beside the shared drop zone. The kit's zone reads one document at a
+ * time; "bring your whole course at once" is this entity's own promise, so the multi-file picker
+ * stays, on the same server action it always used, reporting honestly what it could not read.
+ */
+function BatchUpload({
+  onFiles,
+  extracting,
+  disabled,
+  skipped,
+}: {
+  onFiles: (files: FileList | null) => void
+  extracting: boolean
+  disabled?: boolean
+  skipped: string[]
+}) {
+  const fileRef = useRef<HTMLInputElement>(null)
 
-        <div className="mt-7 flex gap-3">
-          {picking ? (
-            <button type="button" onClick={() => setPicking(false)} disabled={pending} className={`${wizardSecondaryClass} w-full`}>
-              <ArrowLeft className="h-4 w-4" /> Back
-            </button>
-          ) : (
-          <>
-          {(step > 1 || (usingOverview && !onReview)) && (
-            <button type="button" onClick={usingOverview && !onReview ? () => setUsingOverview(false) : back} disabled={pending} className={`${wizardSecondaryClass} flex-1`}>
-              <ArrowLeft className="h-4 w-4" /> Back
-            </button>
-          )}
-          {!onReview ? (
-            <button type="button" onClick={next} disabled={!canNext || pending} className={`${wizardPrimaryClass} ${step > 1 || usingOverview ? 'flex-1' : 'w-full'}`}>
-              {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : usingOverview || step === 4 ? <Sparkles className="h-4 w-4" /> : null}
-              {usingOverview || step === 4 ? 'Draft with Vera' : 'Continue'}
-            </button>
-          ) : (
-            <button type="button" onClick={create} disabled={!title.trim() || pending} className={`${wizardPrimaryClass} flex-1`}>
-              {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Create Journey
-            </button>
-          )}
-          </>
-          )}
-        </div>
+  return (
+    <div className="mt-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={disabled || extracting}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+        >
+          {extracting ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <FileStack className="h-3.5 w-3.5" aria-hidden />}
+          {extracting ? 'Reading…' : 'Add several files at once'}
+        </button>
+        <span className="inline-flex items-center gap-1 text-2xs text-muted">
+          Your outline and every handout
+          <InfoTip
+            side="top"
+            label="Select your outline and every supporting document together. Vera reads PDF, Word, and plain text and weaves them into one Journey. A zip or an image is accepted but not read yet, so unzip first for now."
+          />
+        </span>
+        <input
+          ref={fileRef}
+          type="file"
+          multiple
+          aria-label="Course documents"
+          accept=".txt,.md,.pdf,.docx,.doc,.rtf,.pages,.zip,application/pdf,text/plain,application/zip"
+          className="sr-only"
+          onChange={(e) => {
+            onFiles(e.target.files)
+            e.target.value = ''
+          }}
+        />
       </div>
 
-      <p className="mt-8 text-center text-meta text-subtle">
-        {!onReview && !usingOverview && !picking && (
-          <button type="button" onClick={() => { setUsingOverview(true); setStep(1) }} className="underline-offset-4 transition-colors hover:text-muted hover:underline">
-            Have an overview already? Paste or upload it
-          </button>
-        )}
-        {!onReview && !picking && (
-          <>
-            {!usingOverview && <span className="px-1.5 text-border" aria-hidden>·</span>}
-            <button type="button" onClick={() => setMode('manual')} className="underline-offset-4 transition-colors hover:text-muted hover:underline">
-              Skip, I&apos;ll build it myself
-            </button>
-          </>
-        )}
-      </p>
+      {skipped.length > 0 && (
+        <p className="mt-2 rounded-lg border border-border bg-canvas px-3 py-2 text-2xs text-muted">
+          Could not read: {skipped.join(', ')}. Vera reads PDF, Word, and plain text.
+        </p>
+      )}
     </div>
   )
 }

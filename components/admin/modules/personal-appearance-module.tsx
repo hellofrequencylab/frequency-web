@@ -156,7 +156,7 @@ export function PersonalAppearanceModule() {
   }
 
   if (loading) {
-    return <div className="h-40 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
+    return <div className="h-40 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
   }
   // Signed out / no profile, or the member cannot turn Spotlight on → no chrome (fail-safe).
   if (!data || !data.canEnableSpotlight || !theme || !background) return null
@@ -186,7 +186,7 @@ export function PersonalAppearanceModule() {
                 disabled={pending}
                 aria-pressed={active}
                 title={s.description}
-                className={`rounded-lg border px-3 py-1.5 text-body-sm font-medium transition-colors disabled:opacity-50 motion-reduce:transition-none ${
+                className={`rounded-control border px-3 py-1.5 text-body-sm font-medium transition-colors disabled:opacity-50 motion-reduce:transition-none ${
                   active
                     ? 'border-primary bg-primary-bg text-primary-strong'
                     : 'border-border text-text hover:bg-surface-elevated'
@@ -202,7 +202,7 @@ export function PersonalAppearanceModule() {
       {/* Spotlight header + fonts */}
       <div>
         <SectionHeader title="Header" />
-        <div className="space-y-4 rounded-2xl border border-border bg-surface-elevated/40 p-4">
+        <div className="space-y-4 rounded-card border border-border bg-surface-elevated/40 p-4">
           {/* Row order is preserved by reversing the flex, so the text stays on the left of the
               box the way every other row in this panel reads. */}
           <Checkbox
@@ -256,7 +256,7 @@ export function PersonalAppearanceModule() {
       {/* Background */}
       <div>
         <SectionHeader title="Background" />
-        <div className="space-y-4 rounded-2xl border border-border bg-surface-elevated/40 p-4">
+        <div className="space-y-4 rounded-card border border-border bg-surface-elevated/40 p-4">
           {background.assetPath ? (
             <div className="relative overflow-hidden rounded-card border border-border">
               {/* Unoptimized: the background lives in the public avatars bucket, not a next/image domain. */}
@@ -274,7 +274,7 @@ export function PersonalAppearanceModule() {
                   type="button"
                   onClick={() => fileRef.current?.click()}
                   disabled={pending || uploading}
-                  className="rounded-lg bg-canvas/90 px-2.5 py-1 text-meta font-medium text-text lift-1 backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60"
+                  className="rounded-control bg-canvas/90 px-2.5 py-1 text-meta font-medium text-text lift-1 backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60"
                 >
                   {uploading ? 'Uploading' : 'Replace'}
                 </button>
@@ -283,7 +283,7 @@ export function PersonalAppearanceModule() {
                   onClick={() => saveBackground({ ...background, assetPath: null })}
                   disabled={pending || uploading}
                   aria-label="Remove background"
-                  className="rounded-lg bg-canvas/90 p-1 text-subtle lift-1 backdrop-blur transition-colors hover:text-danger disabled:opacity-60"
+                  className="rounded-control bg-canvas/90 p-1 text-subtle lift-1 backdrop-blur transition-colors hover:text-danger disabled:opacity-60"
                 >
                   <X className="h-4 w-4" aria-hidden />
                 </button>
@@ -358,7 +358,7 @@ export function PersonalAppearanceModule() {
       {/* Top Friends */}
       <div>
         <SectionHeader title="Top Friends" count={topFriends.length} />
-        <div className="space-y-3 rounded-2xl border border-border bg-surface-elevated/40 p-4">
+        <div className="space-y-3 rounded-card border border-border bg-surface-elevated/40 p-4">
           {topFriends.length === 0 ? (
             <p className="text-body-sm text-muted">Feature the friends you want front and center.</p>
           ) : (
@@ -374,7 +374,7 @@ export function PersonalAppearanceModule() {
                     onClick={() => moveFriend(i, -1)}
                     disabled={pending || i === 0}
                     aria-label={`Move ${f.displayName || f.handle} up`}
-                    className="rounded-md p-1 text-subtle transition-colors hover:text-text disabled:opacity-40"
+                    className="rounded-control p-1 text-subtle transition-colors hover:text-text disabled:opacity-40"
                   >
                     <ChevronUp className="h-4 w-4" aria-hidden />
                   </button>
@@ -383,7 +383,7 @@ export function PersonalAppearanceModule() {
                     onClick={() => moveFriend(i, 1)}
                     disabled={pending || i === topFriends.length - 1}
                     aria-label={`Move ${f.displayName || f.handle} down`}
-                    className="rounded-md p-1 text-subtle transition-colors hover:text-text disabled:opacity-40"
+                    className="rounded-control p-1 text-subtle transition-colors hover:text-text disabled:opacity-40"
                   >
                     <ChevronDown className="h-4 w-4" aria-hidden />
                   </button>
@@ -392,7 +392,7 @@ export function PersonalAppearanceModule() {
                     onClick={() => dropFriend(f.profileId)}
                     disabled={pending}
                     aria-label={`Remove ${f.displayName || f.handle}`}
-                    className="rounded-md p-1 text-subtle transition-colors hover:text-danger disabled:opacity-40"
+                    className="rounded-control p-1 text-subtle transition-colors hover:text-danger disabled:opacity-40"
                   >
                     <X className="h-4 w-4" aria-hidden />
                   </button>
@@ -411,7 +411,7 @@ export function PersonalAppearanceModule() {
                       type="button"
                       onClick={() => addFriend(f.profileId)}
                       disabled={pending}
-                      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-surface-elevated disabled:opacity-50"
+                      className="flex w-full items-center gap-2 rounded-control px-2 py-1.5 text-left transition-colors hover:bg-surface-elevated disabled:opacity-50"
                     >
                       <Avatar friend={f} />
                       <span className="min-w-0 flex-1 truncate text-body-sm text-text">

@@ -29,6 +29,13 @@ Names defer to docs/NAMING.md and are capitalized exactly: Zaps, Gems, Quest, Jo
 /** Prepend the Frequency voice primer to a system prompt. Additive only:
  *  it reinforces voice before the prompt's own task-specific rules, which keep
  *  precedence on contracts (length, no-fabrication, structured output, etc.). */
-export function withVoice(systemPrompt: string): string {
-  return `${VOICE_PRIMER}\n\n---\n\n${systemPrompt}`
+import { moodToneDirective } from '@/lib/studio/kernel/moods'
+
+export function withVoice(systemPrompt: string, mood?: unknown): string {
+  const base = `${VOICE_PRIMER}\n\n---\n\n${systemPrompt}`
+  // The MOOD dial (ADR-986). Every AI drafting path in the product already funnels through this one
+  // function, so threading mood here is what makes one control actually steer every wizard, rather
+  // than each entity remembering to fold it in. Absent mood changes the prompt byte-for-byte not at
+  // all, so a caller that never passes one behaves exactly as before.
+  return mood ? `${base}\n\n${moodToneDirective(mood)}` : base
 }

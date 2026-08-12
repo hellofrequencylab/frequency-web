@@ -204,7 +204,7 @@ export function EventSettingsModule() {
 
   if (!slug) return null
   if (loading) {
-    return <div className="h-64 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
+    return <div className="h-64 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
   }
   if (!data) return null
 
@@ -334,7 +334,7 @@ export function EventSettingsModule() {
                       type="button"
                       onClick={handleUsePosterAsCover}
                       disabled={pending}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-50"
                     >
                       <ImagePlus className="h-3.5 w-3.5" /> Use it as the header photo
                     </button>
@@ -402,7 +402,7 @@ export function EventSettingsModule() {
         {/* TICKET PRICE — blank keeps the event a free RSVP. */}
         <label className="block space-y-1.5">
           <span className={fieldLabel}>Ticket price</span>
-          <span className="flex items-center rounded-lg border border-border bg-surface px-3 text-body-sm text-subtle">
+          <span className="flex items-center rounded-control border border-border bg-surface px-3 text-body-sm text-subtle">
             <span className="shrink-0 uppercase">{data.currency ?? 'usd'}</span>
             <Input
               variant="seamless"
@@ -659,7 +659,7 @@ export function EventSettingsModule() {
       <div className="space-y-1.5">
         <span className={fieldLabel}>Permalink</span>
         <div className="flex items-center gap-2">
-          <span className="flex flex-1 items-center rounded-lg border border-border bg-surface px-3 text-body-sm text-subtle">
+          <span className="flex flex-1 items-center rounded-control border border-border bg-surface px-3 text-body-sm text-subtle">
             <span className="shrink-0">/events/</span>
             <Input
               variant="seamless"
@@ -673,7 +673,7 @@ export function EventSettingsModule() {
             type="button"
             onClick={handlePermalink}
             disabled={permaPending || !permalink.trim() || permalink.trim() === data.slug}
-            className="inline-flex shrink-0 items-center rounded-lg border border-border bg-surface px-3 py-2 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
+            className="inline-flex shrink-0 items-center rounded-control border border-border bg-surface px-3 py-2 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
           >
             {permaPending ? 'Saving…' : 'Update'}
           </button>

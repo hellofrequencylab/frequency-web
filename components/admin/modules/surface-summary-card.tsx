@@ -45,10 +45,10 @@ export function SurfaceSummaryCard({
   if (loading && slug) {
     return (
       <div
-        className="flex items-center gap-2.5 rounded-lg border border-border bg-surface px-2.5 py-2"
+        className="flex items-center gap-2.5 rounded-control border border-border bg-surface px-2.5 py-2"
         aria-hidden
       >
-        <span className="h-7 w-7 shrink-0 animate-pulse rounded-md bg-surface-elevated" />
+        <span className="h-7 w-7 shrink-0 animate-pulse rounded-control bg-surface-elevated" />
         <span className="h-4 flex-1 animate-pulse rounded bg-surface-elevated" />
       </div>
     )
@@ -83,14 +83,14 @@ export function SurfaceSummaryCard({
   // main row is a single Link to the surface's page; the optional usage meter (with its own Upgrade link)
   // is a SIBLING below it, so no anchor is ever nested inside another.
   return (
-    <div className="rounded-lg border border-border bg-surface">
+    <div className="rounded-control border border-border bg-surface">
       <Link
         href={href}
         title={app.description}
-        className="group flex items-center gap-2.5 rounded-lg px-2.5 py-2 outline-none transition-colors hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 motion-reduce:transition-none"
+        className="group flex items-center gap-2.5 rounded-control px-2.5 py-2 outline-none transition-colors hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 motion-reduce:transition-none"
       >
         {Icon && (
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary-bg text-primary-strong">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
             <Icon className="h-3.5 w-3.5" aria-hidden />
           </span>
         )}

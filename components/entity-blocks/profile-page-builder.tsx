@@ -55,9 +55,8 @@ import { getSpaceLayoutRailData } from '@/app/(main)/spaces/[slug]/manage/rail-g
 import { useProfileLayout } from './profile-layout-context'
 import { setSpaceEditMode } from './space-edit-mode'
 import { BlockPicker } from './block-picker'
-import { BlockEditPanel, type UploadImage } from './block-edit-panel'
+import { BlockEditPanel } from './block-edit-panel'
 import type { BlockPickerData } from './controls/field-controls'
-import { uploadSpaceBlockImage } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 import { Input } from '@/components/ui/field'
 
 // THE IN-RAIL ENTITY PAGE BUILDER (ADR-516 Phase C member; Phase D generalized to Space; ADR-526 split the
@@ -110,7 +109,6 @@ export function EntityPageBuilder({
   loadRailData,
   seed,
   editHrefFor,
-  uploadImage,
 }: {
   /** The page this builder edits (member handle / space slug); guarded against the seed's matchId. */
   pageId: string
@@ -124,8 +122,6 @@ export function EntityPageBuilder({
   seed?: BuilderRailData | null
   /** For a DATA block, the href of that feature's own manager (the edit panel's "Manage" link). */
   editHrefFor?: (blockId: string) => string | null
-  /** Gated image upload for the block editor's image fields (SPACE only; ADR-542). */
-  uploadImage?: UploadImage
 }) {
   const store = useProfileLayout()
   const router = useRouter()
@@ -601,7 +597,9 @@ export function EntityPageBuilder({
         hidden={layout.hidden.includes(id)}
         editHref={editHrefFor?.(id) ?? null}
         pickerData={pickerData[id]}
-        uploadImage={uploadImage}
+        // Every image field in this panel opens the ONE Loom picker, locked to the library being edited: the
+        // Space (by slug — the Loom re-resolves + re-gates it server-side) or the member's own uploads.
+        loomScope={kind === 'space' ? pageId : 'mine'}
         // A Space's page is the live editing canvas, so its rail is SETTINGS-ONLY: the block's text + single
         // photos are edited on the page, not here (the isCoreField split). The member rail keeps text inline.
         contentOnCanvas={kind === 'space'}
@@ -1093,23 +1091,14 @@ export function SpacePageBuilder({
         }
       : null
   }, [slug])
-  // The block editor's image fields (Callout image, Image gallery) upload through the SAME owner-gated,
-  // service-role path as the space cover/logo (event-media bucket), so no browser Storage session is needed.
-  const uploadImage = useCallback<UploadImage>(
-    (file) => {
-      const fd = new FormData()
-      fd.append('file', file)
-      return uploadSpaceBlockImage(slug, fd)
-    },
-    [slug],
-  )
+  // The block editor's image fields (Callout image, Image gallery) all open the Loom, scoped to this Space
+  // (EntityPageBuilder derives that from `kind` + `pageId`), so there is no upload path to inject here.
   return (
     <EntityPageBuilder
       pageId={slug}
       kind="space"
       loadRailData={load}
       seed={seed}
-      uploadImage={uploadImage}
       // A DATA block's "Manage" link points at that FEATURE's own admin area (ADR-529 item 4) — its content
       // + settings live there. Unmapped data blocks fall back to the Space console; content blocks get none.
       editHrefFor={(blockId) => spaceBlockAdminHref(slug, blockId)}

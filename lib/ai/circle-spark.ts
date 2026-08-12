@@ -1,20 +1,24 @@
-// Vera's "Spark" for the Circle builder. From a few light answers (what the club
-// is, who it is for, the primary Pillar, optional cadence) OR a pasted outline,
-// Vera drafts the whole Circle frame: name, Card, one-liner, identity, the four
-// Pillars inside it, the standing rhythm (Meetup + Gathering + Thread), format,
-// size, agreements, and remix ideas. A starting point the Host edits, never a
-// commit. Mirrors lib/ai/journey-spark.ts: forced-tool structured output + the
-// voice primer + the usage ledger, never trusting the raw shape. Degrades to null
-// when AI is off (the wizard then lets the Host type it by hand).
+// Vera's Circle drafting, two declared sparks (ADR-990) over one shared runner.
+//
+//   • CIRCLE_SPARK ('circle-spark', Sonnet) — the Circle builder's opening step. From a few
+//     light answers (what the club is, who it is for, the primary Pillar, optional cadence) OR
+//     a pasted outline, Vera drafts the whole frame: name, Card, one-liner, identity, the four
+//     Pillars inside it, the standing rhythm (Meetup + Gathering + Thread), format, size,
+//     agreements, and remix ideas. A starting point the Host edits, never a commit.
+//   • CIRCLE_SUGGEST ('circle-create', Haiku) — the small start-a-circle assist on the modal:
+//     an Interest goes in, a name and a short about blurb come back. This was
+//     lib/ai/circle-wizard.ts, which predated the sparks and hand-rolled the same preamble;
+//     retired into this declaration, with its deterministic fallback beside it.
+//
+// The kill switch, the per-feature budget cap, the forced-tool call, the voice + mood primers,
+// the usage ledger, and the degrade-to-null all live in runSpark (lib/ai/spark.ts). Both paths
+// return null when AI is off, so the builder falls back to hand entry and the modal falls back
+// to fallbackCircleSuggestion.
 
 import type Anthropic from '@anthropic-ai/sdk'
-import { completeRaw } from './complete'
-import { aiEnabled } from './client'
-import { MODELS } from './models'
-import { estimateCostUsd } from './budget'
-import { recordAiUsage, featureOverBudget } from './usage'
-import { withVoice } from './voice'
+import type { SeedMood } from '@/lib/studio/kernel/moods'
 import type { PillarSlug } from '@/lib/pillars'
+import { defineSpark, runSpark, sparkStr, sparkStrArray } from './spark'
 
 const FEATURE = 'circle-spark'
 // Drafting plain copy across a fixed set of fields is structured but not deep
@@ -32,6 +36,8 @@ export interface CircleSparkAnswers {
   primaryPillar: PillarSlug | null
   /** Optional free text on when/how it meets ("Wednesdays, coffee after"). */
   cadence?: string
+  /** The MOOD dial (ADR-986): steers TONE only. It never changes what is true, just how it reads. */
+  mood?: SeedMood
 }
 
 export interface CircleSparkDraft {
@@ -99,12 +105,21 @@ PRECEDENCE: if the member pasted their own outline, follow THEM. Draft from it, 
 
 How to write: plain language, short sentences, lead with the problem or the feeling. Specific and honest, never promise transformation. No jargon, no mysticism, no emoji, no em dashes. Always call the ${TOOL_NAME} tool.`
 
+/** The declared Circle spark. The primary Pillar rides along as the coercer's context: the Host
+ *  picked it, so it is carried through rather than read back off the model. */
+export const CIRCLE_SPARK = defineSpark<CircleSparkDraft, PillarSlug | null>({
+  entity: 'circle',
+  feature: FEATURE,
+  tier: TIER,
+  maxTokens: 900,
+  tool: TOOL,
+  system: SYSTEM,
+  coerce,
+})
+
 export async function draftCircleSpark(
   input: CircleSparkAnswers & { profileId?: string | null; sourceText?: string },
 ): Promise<CircleSparkDraft | null> {
-  if (!aiEnabled()) return null
-  if (await featureOverBudget(FEATURE)) return null
-
   const src = input.sourceText?.trim().slice(0, 8000)
   const pillar = input.primaryPillar && (PILLARS as readonly string[]).includes(input.primaryPillar) ? input.primaryPillar : null
   const userText = [
@@ -121,69 +136,130 @@ export async function draftCircleSpark(
     .filter(Boolean)
     .join('\n')
 
-  try {
-    const res = await completeRaw({
-      tier: TIER,
-      maxTokens: 900,
-      thinking: { type: 'disabled' },
-      system: withVoice(SYSTEM),
-      tools: [TOOL],
-      toolChoice: { type: 'tool', name: TOOL_NAME },
-      messages: [{ role: 'user', content: userText }],
-    })
-    void recordAiUsage({
-      feature: FEATURE,
-      model: MODELS[TIER],
-      usage: res.usage,
-      costUsd: estimateCostUsd(TIER, res.usage),
-      profileId: input.profileId ?? null,
-    })
-    const block = res.content.find(
-      (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === TOOL_NAME,
-    )
-    return block ? coerce(block.input, pillar) : null
-  } catch {
-    return null
-  }
+  return runSpark(CIRCLE_SPARK, {
+    content: userText,
+    context: pillar,
+    mood: input.mood,
+    profileId: input.profileId,
+  })
 }
 
-function str(v: unknown, max: number): string {
-  return typeof v === 'string' ? v.trim().slice(0, max) : ''
-}
-
-function strArray(v: unknown, max: number, cap: number): string[] {
-  return Array.isArray(v)
-    ? v.filter((t): t is string => typeof t === 'string').map((t) => t.trim().slice(0, max)).filter(Boolean).slice(0, cap)
-    : []
-}
-
-function coerce(raw: unknown, primaryPillar: PillarSlug | null): CircleSparkDraft | null {
+/** Re-coerce every field. Never trust the raw model shape. */
+export function coerce(raw: unknown, primaryPillar: PillarSlug | null): CircleSparkDraft | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Record<string, unknown>
-  const name = str(r.name, 60).replace(/^["']+|["']+$/g, '')
+  const name = sparkStr(r.name, 60).replace(/^["']+|["']+$/g, '')
   if (!name) return null
 
   const pi = r.pillars_inside && typeof r.pillars_inside === 'object' ? (r.pillars_inside as Record<string, unknown>) : {}
   const pillarsInside: Partial<Record<PillarSlug, string>> = {}
   for (const p of PILLARS) {
-    const line = str(pi[p], 240)
+    const line = sparkStr(pi[p], 240)
     if (line) pillarsInside[p] = line
   }
 
   return {
     name,
     primaryPillar,
-    card: str(r.card, 100),
-    oneLiner: str(r.one_liner, 280),
-    identity: str(r.identity, 280),
-    audience: str(r.audience, 280),
+    card: sparkStr(r.card, 100),
+    oneLiner: sparkStr(r.one_liner, 280),
+    identity: sparkStr(r.identity, 280),
+    audience: sparkStr(r.audience, 280),
     pillarsInside,
-    meetup: str(r.meetup, 600),
-    gathering: str(r.gathering, 600),
-    thread: str(r.thread, 400),
-    format: str(r.format, 400),
-    sizeLabel: str(r.size_label, 60),
-    agreements: strArray(r.agreements, 160, 5),
-    remixOptions: strArray(r.remix_options, 160, 8),
+    meetup: sparkStr(r.meetup, 600),
+    gathering: sparkStr(r.gathering, 600),
+    thread: sparkStr(r.thread, 400),
+    format: sparkStr(r.format, 400),
+    sizeLabel: sparkStr(r.size_label, 60),
+    agreements: sparkStrArray(r.agreements, 160, 5),
+    remixOptions: sparkStrArray(r.remix_options, 160, 8),
   }
+}
+
+// ── The start-a-circle assist, retired from lib/ai/circle-wizard.ts ───────────────────────────
+
+export interface CircleSuggestion {
+  name: string
+  about: string
+}
+
+const SUGGEST_TOOL_NAME = 'suggest_circle'
+
+const SUGGEST_TOOL: Anthropic.Tool = {
+  name: SUGGEST_TOOL_NAME,
+  description: 'Return a suggested name and about blurb for a new local circle.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      name: {
+        type: 'string',
+        description: 'A short, inviting circle name (≤ 50 chars). Evokes the practice + gathering regularly. No surrounding quotes.',
+      },
+      about: {
+        type: 'string',
+        description: 'One or two warm, plain sentences (≤ 240 chars), second person: what they do together and that newcomers are welcome.',
+      },
+    },
+    required: ['name', 'about'],
+  },
+}
+
+const SUGGEST_SYSTEM = `You are Vera, Frequency's warm, encouraging guide. A member is starting a CIRCLE, a small local crew (up to ~50 people) who meet regularly around one shared practice. Suggest a name and a short "about" for their circle.
+
+Rules:
+- name: short and inviting, evocative of the practice and of gathering regularly. Avoid a generic "X Group"; prefer something a person would want to join. No surrounding quotes.
+- about: one or two warm, plain sentences on what they do together and that all levels / newcomers are welcome. Second person, no hype, no emoji.
+- Never invent a specific place, day, or any fact you weren't given.
+- Always call the suggest_circle tool.`
+
+/** The declared suggest spark. Its own budget key ('circle-create', $1) and its own tier (Haiku:
+ *  one short draft per start). Both unchanged from lib/ai/circle-wizard.ts. */
+export const CIRCLE_SUGGEST = defineSpark<CircleSuggestion>({
+  entity: 'circle',
+  feature: 'circle-create',
+  tier: 'haiku',
+  maxTokens: 300,
+  tool: SUGGEST_TOOL,
+  system: SUGGEST_SYSTEM,
+  coerce: coerceSuggestion,
+})
+
+export async function suggestCircleDraft(input: {
+  interest: string
+  type: 'in-person' | 'online'
+  profileId?: string | null
+}): Promise<CircleSuggestion | null> {
+  const interest = input.interest.trim().slice(0, 120)
+  if (!interest) return null
+
+  const userText = [
+    `Interest / practice: ${interest}`,
+    `Format: ${input.type === 'online' ? 'Online (meets virtually)' : 'In-person (meets locally)'}`,
+    '',
+    `Suggest a name and about for this circle and call ${SUGGEST_TOOL_NAME}.`,
+  ].join('\n')
+
+  return runSpark(CIRCLE_SUGGEST, { content: userText, profileId: input.profileId })
+}
+
+/** Re-coerce every field. Never trust the raw model shape. */
+export function coerceSuggestion(raw: unknown): CircleSuggestion | null {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Record<string, unknown>
+  const name = sparkStr(r.name, 60).replace(/^["']+|["']+$/g, '')
+  const about = sparkStr(r.about, 280)
+  if (!name) return null
+  return { name, about }
+}
+
+/** Deterministic, still-useful suggestion for when Vera (AI) is off or over budget,
+ *  so the "Suggest" affordance always returns something the host can edit. */
+export function fallbackCircleSuggestion(interest: string, type: 'in-person' | 'online'): CircleSuggestion {
+  const i = interest.trim() || 'this practice'
+  const name = `${type === 'online' ? 'Online ' : ''}${i} Circle`
+  const about =
+    type === 'online'
+      ? `A crew who gather online to practice ${i.toLowerCase()} together, regularly. Newcomers welcome. You just have to show up.`
+      : `A local crew who meet regularly to practice ${i.toLowerCase()} together. Newcomers welcome. You just have to show up.`
+  return { name, about }
 }

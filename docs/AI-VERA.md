@@ -218,6 +218,16 @@ Vera acts **only** through a small, typed tool registry, so consent, safety, and
 | `surface_help` | Pull the relevant help article(s) (RAG) | read-only |
 | `introduce_to_human` | Offer/route a warm intro to a host/guide | **confirm** |
 | `flag_for_human` | Route cruelty/crisis to moderation / a person | act (audited) |
+| `create_entity` | Draft any entity in the Studio catalog (ADR-986) for the member to review | propose-only (human creates) |
+
+**Creation (ADR-988).** `create_entity` is one tool for every creatable entity, and its entity list is
+**derived** from `lib/studio/registry.ts` rather than restated, so it can never name something the catalog
+does not know. It PROPOSES and stops: there is no confirm tool, so no model output creates anything. The
+member taps Create in their own session, which calls `confirmCreate` on a surface no tool key names. Its
+tier is `Exclude<AutonomyTier, 'auto'>`, so grading creation `auto` is a compile error, not a review catch.
+Both phases land in `agent_actions` under `studio_create`, which is the audit log the ladder is earned
+against. Governance here is not an AI feature: with the kill switch off, creating things works exactly as
+before, through the same commit, and still records the row.
 
 **Autonomy policy (ADR-066):** start **propose-and-confirm** everywhere; the *only* act-and-undo
 cases are trivially reversible (a fact she just heard you say, with an undo). Autonomy graduates

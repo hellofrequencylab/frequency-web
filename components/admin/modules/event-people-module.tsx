@@ -43,7 +43,7 @@ export function EventPeopleModule() {
 
   if (!slug) return null
   if (loading) {
-    return <div className="h-48 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
+    return <div className="h-48 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
   }
   if (!data) return null
 
@@ -77,7 +77,7 @@ export function EventPeopleModule() {
             { label: 'Maybe', value: analytics.maybe },
             { label: 'Waitlist', value: analytics.waitlist },
           ].map((s) => (
-            <div key={s.label} className="rounded-lg border border-border bg-surface px-2.5 py-1.5">
+            <div key={s.label} className="rounded-control border border-border bg-surface px-2.5 py-1.5">
               <div className="text-body-sm font-bold leading-tight text-text">{s.value}</div>
               <div className="text-2xs font-medium uppercase tracking-wide text-muted">{s.label}</div>
             </div>
@@ -122,7 +122,7 @@ export function EventPeopleModule() {
                     type="button"
                     onClick={() => handleApprove(p.profileId)}
                     disabled={pending}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                    className="inline-flex shrink-0 items-center gap-1 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
                   >
                     <Check className="h-3.5 w-3.5" /> Approve
                   </button>

@@ -39,6 +39,8 @@
     "check:grants": "node scripts/check-grants.mjs",
     "check:admin-client": "node scripts/check-admin-client.mjs",
     "check:seo": "node scripts/check-seo.mjs",
+    "check:studio": "node scripts/check-studio.mjs",
+    "check:creates": "node scripts/check-creates.mjs",
     "check:collective": "node scripts/check-collective.mjs",
     "check:crm-parity": "node scripts/check-crm-parity.mjs",
     "check:vocab": "node scripts/check-vocab.mjs",

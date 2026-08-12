@@ -98,7 +98,7 @@ export function ListingBuilder(props: ListingBuilderProps) {
       <a href={`/classifieds/${props.id}`} className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated">
         <Eye className="h-4 w-4" /> View
       </a>
-      <button type="button" onClick={close} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover">
+      <button type="button" onClick={close} className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover">
         Done
       </button>
     </StudioFooter>
@@ -107,7 +107,7 @@ export function ListingBuilder(props: ListingBuilderProps) {
   return (
     <StudioWindow open onClose={close} eyebrow="Studio · Edit listing" footer={footer}>
       <div className="flex items-start gap-3">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-card bg-primary-bg text-primary-strong">
           <Store className="h-7 w-7" />
         </div>
         <div className="min-w-0 flex-1">
@@ -148,7 +148,7 @@ export function ListingBuilder(props: ListingBuilderProps) {
       </div>
 
       <div className="mt-3 flex items-center gap-2">
-        <button type="button" onClick={useMyLocation} disabled={locating} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60">
+        <button type="button" onClick={useMyLocation} disabled={locating} className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60">
           {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : hasGeo ? <Check className="h-4 w-4 text-success" /> : <MapPin className="h-4 w-4" />}
           {hasGeo ? 'Location pinned' : 'Use my location'}
         </button>
@@ -227,13 +227,13 @@ export function ListingBuilder(props: ListingBuilderProps) {
                       className="flex-1"
                     />
                   )}
-                  <button type="button" onClick={() => removeDetail(i)} aria-label="Remove detail" className="shrink-0 rounded-lg border border-border p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text">
+                  <button type="button" onClick={() => removeDetail(i)} aria-label="Remove detail" className="shrink-0 rounded-control border border-border p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text">
                     <X className="h-4 w-4" />
                   </button>
                 </div>
               )
             })}
-            <button type="button" onClick={addDetail} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated">
+            <button type="button" onClick={addDetail} className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated">
               <Plus className="h-4 w-4" /> Add detail
             </button>
           </div>
