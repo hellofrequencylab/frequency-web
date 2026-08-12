@@ -6,7 +6,8 @@ otherwise, and it falls back to MapLibre on any Google failure. A surface descri
 plot**; it never touches a map library.
 
 Decisions: [ADR-901](DECISIONS.md) (the seam) · [ADR-904](DECISIONS.md) (the loader handshake
-and the diagnostic). This file is the operating reference.
+and the diagnostic) · [ADR-1022](DECISIONS.md) (pin click, clustering, fullscreen, pin kinds).
+This file is the operating reference.
 
 ---
 
@@ -214,15 +215,83 @@ in `PENDING_MIGRATION` in the drift guard; deleting a row is how the debt gets p
 
 ---
 
-## 8. Tests
+## 8. The prop contract, and how the two engines are kept in step
+
+`components/maps/types.ts`. **`MapEngineProps` is what BOTH canvases implement** — `MapCanvasProps`
+adds only the seam-level `expandable` / `expandLabel`, and `MapImplProps` adds only Google's
+`onProviderError`. A surface describes what to plot; it never names an engine.
+
+| Prop | Does | Added |
+| --- | --- | --- |
+| `center` · `zoom` · `pins` · `area` · `fit` | What to plot, and how to frame it | ADR-901 |
+| `interactive` · `draggable` · `onMove` · `recenterTo` | Still map, picker mode, viewer geolocation | ADR-901 |
+| `onPinClick(pin)` | Marker click, so a page can open its own card | ADR-1022 |
+| `cluster: { radiusPx?, maxZoom? }` | Density: overlapping pins merge into a bubble that splits on zoom | ADR-1022 |
+| `pin.kind` (`event` / `circle` / `space` / `place`) · `pin.label` | Which layer a pin belongs to; its accessible name | ADR-1022 |
+| `expandable` · `expandLabel` | An expand control that reopens the map full screen | ADR-1022 |
+
+### The rule that makes the fallback trustworthy
+
+🔴 **A capability that works on Google and quietly does nothing on MapLibre is invisible.** Nothing
+throws, no gate fires, and the only people who see it are the ones without a key — local dev,
+previews, CI, self-host, and production the day the key is rotated or the referrer list is wrong.
+That is [`DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md) rule 6 applied to a seam whose fail-safe is an entire
+second renderer.
+
+So **every judgement the two engines could answer differently is imported, not decided locally**:
+
+| Question | Answered once in | Both canvases call |
+| --- | --- | --- |
+| Which pins merge, at which zoom | `lib/maps/cluster.ts` | `clusterPoints()` |
+| How far a cluster tap zooms | `lib/maps/cluster.ts` | `zoomIntoCluster()` |
+| When to re-group during a pinch | `lib/maps/cluster.ts` | `shouldRecluster()` |
+| Bubble size, count text, accessible name | `lib/maps/cluster.ts` | `clusterDiameterPx()` · `clusterLabel()` · `clusterAccessibleLabel()` |
+| What colour a kind paints | `lib/maps/pin-kinds.ts` | `resolvePinPaint()` |
+
+Both pure modules import **nothing** — no React, no DOM, no map library — so a page may read
+`MAP_PIN_KINDS` to draw its legend without pulling a map engine into its bundle.
+
+### Clustering: ours, not either engine's
+
+MapLibre clusters inside a **GeoJSON source** (`cluster: true`), which turns pins from DOM markers
+into style layers and changes the popup, click and lifecycle story. Google ships **no** clustering
+at all; it is a separate library with its own grid and its own weight against the 8 GB budget. Two
+implementations means two behaviours, and the one that drifts is the fallback. One pure algorithm,
+two dumb renderers.
+
+⚠️ `cluster` is **ignored in `draggable` picker mode** on both engines: one pin, being placed by hand.
+
+### Fullscreen composes the dialog
+
+`expandable` renders an expand control; the overlay is `components/ui/dialog.tsx` with
+`align="sheet"`, which already owns the backdrop, ESC, body scroll-lock, focus trap, focus restore,
+the portal out of any transformed ancestor, and the notch safe areas. The expanded map is a
+**second engine instance**, mounted only while the dialog is open (both engines size to their
+container at construction, so reusing the thumbnail's instance would stretch it). Do not hand-roll
+this; `MapBanner` (`components/circles/circles-map.tsx`) is the prior art that re-solved ESC by hand
+and got none of the rest.
+
+### What is deliberately NOT in the contract
+
+**A visible on-map text label beside a pin.** Google draws marker text natively; MapLibre does not.
+Matching it would mean a custom DOM element per pin on one engine, or `AdvancedMarkerElement` and a
+Cloud Map ID on every deployment for the other — the same trade the Google canvas already rejects
+for ordinary pins. `pin.label` is the accessible name and tooltip instead, which both engines render.
+The cluster bubble is the one exception, and only because its text is a number we computed.
+
+---
+
+## 9. Tests
 
 | File | Guards |
 | --- | --- |
 | `lib/maps/google-loader.test.ts` | The callback handshake, the watchdog, `gm_authFailure`, the second-mount path. Written to fail against the pre-ADR-904 loader. |
 | `lib/maps/diagnostics.test.ts` | Dedupe, and that the key never reaches the line |
 | `lib/maps/provider.test.ts` | The provider decision under every key state |
+| `lib/maps/cluster.test.ts` | The clustering BEHAVIOUR both engines render: what merges, what splits, determinism, the shared tap and bubble |
 | `components/maps/maplibre-interop.test.ts` | The only map test that **imports** maplibre-gl |
 | `components/maps/maps-wiring.test.ts` | The seam, the CSP host set, popup DOM safety, the loader drift guards |
+| `components/maps/map-capabilities.test.ts` | **Parity.** The two canvases destructure the same prop list key for key, and neither re-implements a shared decision |
 
 ⚠️ Every test except `maplibre-interop` is a source-text grep. "The map tests pass" has never
 been evidence that a map can be constructed, which is why the interop test exists.

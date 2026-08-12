@@ -23185,6 +23185,7 @@ to a paid membership would make the paid mode meaningless.
    row in front of a tree that did not carry it and failed `check:migrations` on *every other
    branch*, including `main`. The guard was right and the sequencing was wrong: land the file on a
    mergeable path first, or accept that every open PR goes red until it does.
+
 ---
 
 ## ADR-1020: `/broadcast` becomes `/nearby`, and the URL and the label are allowed to differ (2026-08-12)
@@ -23286,3 +23287,69 @@ grepping for the bare key `broadcast:` after the first failure taught what shape
 Anything keyed on a nav key, a URL segment, or a route string is a rename site, and a quoted-string
 search finds none of them.
 
+---
+
+## ADR-1022: The map seam grew four capabilities, and one shared brain so the two engines cannot disagree (2026-08-12)
+
+**Status:** accepted · **Extends:** [ADR-901](DECISIONS.md) (the seam), [ADR-904](DECISIONS.md)
+(the loader handshake) · **Touches:** `components/maps/types.ts`, both canvases,
+`components/maps/map-canvas.tsx`, `lib/maps/cluster.ts`, `lib/maps/pin-kinds.ts` ·
+**Guarded by:** `components/maps/map-capabilities.test.ts`, `lib/maps/cluster.test.ts`
+
+### Context
+
+The seam expressed nine props (center · zoom · pins · area · fit · interactive · draggable ·
+onMove · recenterTo). A browsing map — "Around You", one page that plots Events, Circles and
+Spaces near a member — needs four things none of them can say: **which pin was tapped**, **what
+to do when forty pins overlap**, **an expanded view**, and **a pin that knows what layer it
+belongs to**.
+
+### Decision
+
+Add exactly those four to the contract, and put every judgement the two engines could answer
+differently into a pure module both of them import.
+
+| Capability | Prop | Where the behaviour is decided |
+|---|---|---|
+| Marker click | `onPinClick?: (pin) => void` | Both canvases; setting it **suppresses the built-in popup** |
+| Density | `cluster?: { radiusPx?, maxZoom? }` | `lib/maps/cluster.ts` — ours, not either engine's |
+| Fullscreen | `expandable?`, `expandLabel?` | `components/maps/map-canvas.tsx`, composing `components/ui/dialog.tsx` `align="sheet"` |
+| Layers | `pin.kind`, `pin.label` | `lib/maps/pin-kinds.ts` — one colour table, one legend |
+
+### Why clustering is ours and not the engines'
+
+The two native stories are incompatible. MapLibre clusters inside a **GeoJSON source**
+(`cluster: true`), which turns pins from DOM markers into style layers and brings a different
+popup story, a different click story, a `load`-gated lifecycle and supercluster's geometry.
+Google ships **no** clustering: it is a separate library (`@googlemaps/markerclusterer`) with
+its own grid, its own defaults, and its own weight against a build budget already at ~5.7 GB of
+an 8 GB ceiling ([DEPLOY-SAFETY.md](DEPLOY-SAFETY.md) §1).
+
+Two implementations means two behaviours, and **the one that drifts is the fallback** — the
+engine nobody with a Google key ever loads. So the grouping is computed once, from the pins and
+the zoom, by a pure function each canvas only *draws* the output of. Greedy, in input order,
+over a spatial hash whose cell is the cluster radius; deterministic; every pin appears exactly
+once. Parity is a property of the code, not a promise in a comment.
+
+### Why a parity guard, and not a review
+
+This is [DEPLOY-SAFETY.md](DEPLOY-SAFETY.md) rule 6 — *every fail-safe needs a gate that notices
+it fired* — applied to a seam whose fail-safe is a whole second renderer. A capability built
+with a key in your env works; ship it, and every keyless environment renders a map with no
+clustering, no card on tap, and pins that are all one colour under a legend claiming three.
+**Nothing throws.** `map-capabilities.test.ts` therefore asserts the two canvases destructure
+the *same prop list, key for key*, and that neither re-implements a shared decision locally.
+
+### Consequences
+
+- `MapEngineProps` is the contract both engines implement; `MapCanvasProps` adds only the
+  seam-level `expandable`. An engine that grows a prop the other lacks fails `pnpm test`.
+- Fullscreen **composes** the shared dialog. It re-solves no backdrop, ESC, scroll-lock, focus
+  trap, focus restore or safe-area inset. The nearest prior art (`MapBanner` in
+  `components/circles/circles-map.tsx`) hand-rolled the ESC listener and got none of the rest.
+- `lib/maps/cluster.ts` and `lib/maps/pin-kinds.ts` import nothing. A page can read the legend
+  table without pulling a map engine into its bundle.
+- One capability is deliberately **not** in the contract: a visible on-map text label beside a
+  pin. Google draws marker text natively, MapLibre does not, and matching it would mean a
+  custom DOM element per pin on one engine and a Cloud Map ID on the other. `pin.label` is the
+  accessible name and tooltip instead, which both engines do render.
