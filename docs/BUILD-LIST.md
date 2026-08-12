@@ -5,7 +5,8 @@
 > suite has been red on every run since 2026-08-06) · close the access layer (1,907 anon/authenticated
 > grants across 273 tables) · the verified defect sweep · finish the menu system · one render path ·
 > kit + a11y · voice and docs. It also **re-derives the adoption baselines**, which this file and the
-> UX plan both quote from an older column — `literal-radius` is 2,450, not 3,824.
+> UX plan both quote from an older column — `literal-radius` is baseline **2,440**, current **2,298**
+> (`node scripts/check-adoption.mjs`, read 2026-08-12), not 3,824 and not the 2,450 this line carried.
 
 > **Active companion (2026-08-04): [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md)** ([ADR-925](DECISIONS.md)) —
 > the eight gated lifts (user-evidence loop · adoption ratchets · a11y gates · mobile grammar ·
@@ -239,7 +240,7 @@ ADR-828 pill convention.
 | # | Scope | Lift | Status |
 |---|---|---|---|
 | P0 | **Headers + enforcement.** One `PageHero` for browse/commerce; `check:tokens` + `check:headers` hard gates; the protocol doc. | — | ✅ ADR-781 (PR #1805) |
-| P1 | **Radius tokens.** ✅ The codemod shipped (`ecd8f52`): `rounded-full` → `rounded-pill` site-wide plus role adoption, `literal-radius` 5,543 → ~~3,824~~ → **2,450** (re-measured 2026-08-11, `node scripts/check-adoption.mjs`, `✅ held`, frozen 2026-08-06 `lowered`), **1,719** role usages, tokens at `app/globals.css` + per-skin scopes. The radius ROLES also moved in #2077: `--radius-control` 8px → 14px, `--radius-card` 16px → 24px (`app/globals.css:195-197`). ⏳ The second half is genuinely outstanding — `check:tokens` still has zero occurrences of `rounded`; the `literal-radius` ratchet holds the line instead. | L | ⏳ |
+| P1 | **Radius tokens.** ✅ The codemod shipped (`ecd8f52`): `rounded-full` → `rounded-pill` site-wide plus role adoption, `literal-radius` 5,543 → ~~3,824~~ → ~~2,450~~ → baseline **2,440**, current **2,298** (re-measured 2026-08-12, `node scripts/check-adoption.mjs`, `✅ shrank −142`, frozen 2026-08-11 `lowered`), **1,719** role usages, tokens at `app/globals.css` + per-skin scopes. The radius ROLES also moved in #2077: `--radius-control` 8px → 14px, `--radius-card` 16px → 24px (`app/globals.css:195-197`). ⏳ The second half is genuinely outstanding — `check:tokens` still has zero occurrences of `rounded`; the `literal-radius` ratchet holds the line instead. | L | ⏳ |
 | P2 | **Type + weight contract.** ✅ Shipped across ADR-941/942/943 + pass 2a: named roles, paired line-heights (a Tailwind v4 trap — `text-*` emits BOTH size and `line-height`, so the companion must live in `@theme`), `literal-type` at **0**. Display sizes (`text-3xl`…`9xl`) are the remaining ~~301~~ **96** (re-measured 2026-08-11, `node scripts/check-adoption.mjs`), ratcheted as `literal-display-type`. | M | ✅ |
 | P3 | **Control + card consolidation.** ~~~18~~ **526** raw styled buttons → `Button` (ratchet `raw-button-bg`, re-measured 2026-08-11; the "~18" was off by ~29×, and note the ratchet counts opening tags carrying a background, not every `<button>`); hand-rolled cards → `EntityCard`/`ModuleCard`; unify badges/empties; lint flags raw styled buttons/cards. ✅ The card half's **triage pass RAN on 2026-08-11**: `bespoke-cards` and `bespoke-rows` are both rebased to **0** (see the section below). | M | ⏳ |
 | P4 | **Universal browse hero.** The 24 plain `IndexTemplate` pages adopt `heroOverlay` (section-default covers) so the hero is everywhere. | M | 📋 |
@@ -913,7 +914,23 @@ immediately. This is the only line in this block still doing work.
 > or repo setting is checkable. Check it before listing it, the same way ADR-983 now requires
 > reading `platform_flags` from the database rather than from a comment about it.**
 
-### 🔴 The visual baselines are stale — `pr-compare` is red on every branch (2026-08-07)
+### ~~🔴 The visual baselines are stale — `pr-compare` is red on every branch (2026-08-07)~~ · SUPERSEDED 2026-08-11
+
+> ✅ **The recapture shipped. Kept as history; do not act on the standing order below.**
+> PR **#2071** (`8c345df`, 2026-08-10) rewrote the baselines — 68 of 72 recaptured, and
+> `pr-compare` went from **62 failures to 1** on the next PR through ([`EDITOR-ARCHITECTURE.md`
+> §7.1](EDITOR-ARCHITECTURE.md), and the closed row in §"Owed to the owner" below).
+> `test/e2e/__screenshots__/visual.spec.ts/` holds **76** PNGs.
+>
+> ⚠️ **Not zero failures.** The one that remains is `/feed` refusing to settle between consecutive
+> captures — a live content surface, 2 of 3 runs passed on retry. So a red `pr-compare` on `/feed`
+> is a known flake, and a red `pr-compare` anywhere else is a real diff worth reading.
+>
+> 🔴 **The line that had to go is the standing order.** *"Do not re-record the baselines until the
+> 22px is explained"* outlived the recapture that settled it, and left live it costs the next
+> person either a genuinely stale baseline they refuse to fix or a session hunting a drift that
+> #2071 already absorbed. (`pr-compare` needs a deployment and was not re-run when this banner was
+> written, 2026-08-12.)
 
 `e2e.yml` → `pr-compare` fails **66 of 76** visual snapshot tests, and it is not any one branch's
 fault: it failed three times on `claude/frequency-menu-audit-33skn4` on 2026-08-06, before the
@@ -1005,6 +1022,23 @@ re-do of the capture.
   against prod rather than by reading the SQL, because the SQL reads correct. Where RLS-on-no-policy
   is also in force the exposure is second-order, but a grant held back only by RLS is one policy
   mistake from being live.
+- **Build headroom — the two lines [ADR-1002](DECISIONS.md) named and assigned to nobody.** Its
+  closing paragraph reads *"a 7MB vendor SSR chunk in 331 functions (2.27 GB) and 823 MB of
+  `public/tracks/*.mp3` in 61 are the next two lines, neither touched here"*, and until 2026-08-12
+  no ADR, plan row or script owned either. [ADR-1003](DECISIONS.md) exists because the build sat
+  over budget for months with a green board, so an unowned multi-GB line is the exact shape of
+  problem this list is for. Both now have a row:
+  - ✅ **`public/tracks` out of tracing** — `next.config.ts:178` sets
+    `outputFileTracingExcludes: { '/**': ['./public/tracks/**'] }`. Safe by construction: the only
+    server reference is `lib/on-air.ts:338-340` emitting URL strings for the browser player, and no
+    server code opens the files. **S**
+  - ⏳ **`searchSiteIcons` behind a route handler** — the largest single line in the artifact.
+    `lib/loom/site-icons.ts:14-16` statically imports the `lucide` / `ph` / `tabler` `icons.json`
+    sets (~7 MB), `components/loom/loom-picker.tsx:19` imports the search fn, and LoomPicker is
+    statically imported by ten components, so the sets fan out across hundreds of functions.
+    **Do not stop at one importer:** `components/ui/icon.tsx:3-5` pulls the same three collections
+    for two RSC consumers, so the floor after the fix is ~3 functions, not 1. Verify with
+    `node scripts/check-build-budget.mjs`, never by inspecting the client bundle. **M**
 - **CI / quality:** ✅ gate `tsc`+`eslint`+`vitest` in CI (`ci.yml`) · ✅ Dependabot (`dependabot.yml`, grouped weekly) + CodeQL (`codeql.yml`, JS/TS security-and-quality) · *remaining:* enable secret-scanning push-protection (repo setting) · vitest consent harness · lint debt (`pnpm lint` is now clean repo-wide) · doc fixes.
 - **Comms infra:** notification router/registry + migrate email/push onto the outbox queue · deliverability hardening (SPF/DKIM/DMARC subdomain) · verify `frequencylocal.com` in Resend + OAuth redirect URLs · submit sitemap/robots.
 - **Scale (Phase 4, when measured):** paginate People/Circles · `force-dynamic`→ISR on CMS pages · profile zap-sum via SQL · `<img>`→`next/image` · Supavisor/read-replicas/denormalized feed read-model/partitioning/Broadcast realtime.
@@ -1022,6 +1056,11 @@ re-do of the capture.
   than the call site (the trap `components/ui/field.tsx` documents in its own header). So this needs
   either an inset surface variant on the primitive or a full re-style of the flow — a design
   decision, not a mechanical swap.
+  ✅ **The variant half of that blocker is gone (verified 2026-08-12).** `components/ui/field.tsx:66`
+  exports `FieldSurface = 'default' | 'post' | 'inset'` and `:71` maps `inset` to `bg-canvas`,
+  chosen *inside* the component for exactly the two-`bg-*` reason this bullet describes. `Input` and
+  `Textarea` both take `surface` (`:128`, `:135`). So the induction is now a call-site sweep, not a
+  primitive build.
 
 ## PM — Money verticals (gated on PMF + legal entity)
 
@@ -1195,28 +1234,39 @@ Four agents swept `app/(main)/admin/**`, `app/(main)/**`, `components/**` and
 floors re-frozen against a settled tree. What follows is the residue, with the reason each item was
 left rather than a to-do list of things nobody got to.
 
-### ⏳ Owed to the owner (one item, down from four)
+### ✅ Owed to the owner — the list is now empty (was one item, down from four)
 
 > ⚠️ **This section was headed "🔴 nothing else can proceed past these" while THREE of its four
 > rows were already closed.** A blocker list that is 75% stale is worse than no list: it makes
 > everything downstream look gated. Re-derived 2026-08-11; the closed rows are kept with their
 > evidence so the next pass can re-check rather than re-open them.
+>
+> ⚠️ **And then the fourth row went the same way.** Re-measured 2026-08-12: the shell baselines
+> were seeded on 2026-08-11 and the row went on reading 🔴 for a day. Four rows out of four have
+> now gone stale by the same mechanism, which is the argument for deriving this section from the
+> files rather than maintaining it by hand.
 
 | Item | Size | Status + why |
 | :--- | :---: | :--- |
-| Seed the shell a11y baselines | S | 🔴 **STILL OWED, and it is the only one.** `/feed` and `/settings` are held to zero serious+ violations against debt that predates the gate, because their baselines were never captured. Confirmed 2026-08-11: `test/e2e/a11y-baselines.json` holds **40** surface entries and **not one** is an `app-*` key, against `$defaultMax: 0`. `e2e-manual.yml` → `capture_shell` + `update_a11y`. Named as a prerequisite in ADR-948's sequencing |
+| ~~Seed the shell a11y baselines~~ | S | ✅ **CLOSED, with a caveat that stays open.** `test/e2e/a11y-baselines.json` holds **49** surface entries, **9** of them shell keys — `/feed` ×3, `/settings` ×3, `/spaces/danieltyack/manage` ×3 — seeded 2026-08-11 and described in the file's own header as *"THE NINE NEW KEYS ARE A FIRST FLOOR, NOT AN ABSORBED REGRESSION."* ⚠️ The row's **test** was also wrong: the registry keys by path, so *"not one is an `app-*` key"* would have read true even after seeding. **The caveat:** three of the nine (`/feed` 12, `/settings` 7, `/spaces/…/manage` 8, all dawn-light desktop) are marked *"CEILING, not a reading"* — raw totals seeded without subtracting waivers, because the run log truncated at 5 nodes. The node cap is now 40, so the next run prints the real number. Tighten those three then; until then they are the widest holes in the gate |
 | ~~Delete `PW_REQUIRE_SHELL` from the **Secrets** tab~~ | XS | ✅ **CLOSED.** The row assumed a stale Secrets copy was redacting run logs. It is a **Variable, not a Secret**. Verified two ways on 2026-08-10 and recorded at [`FINALIZE-PLAN.md`](FINALIZE-PLAN.md) item 1.4: the Secrets tab's six entries are `ANTHROPIC_API_KEY`, both Supabase keys, `PW_MEMBER_EMAIL`, `SUPABASE_SERVICE_ROLE_KEY` and `VERCEL_AUTOMATION_BYPASS_SECRET` (no `PW_REQUIRE_SHELL`), and the run log prints figures full of the digit 1 (`117474 pixels`, `ratio 0.03`) with **zero** `***` redactions, which is only possible if `1` is not a secret. The workflow reads `vars.PW_REQUIRE_SHELL \|\| secrets.PW_REQUIRE_SHELL` (`.github/workflows/e2e.yml:290,303`) so the ratchet is armed either way |
 | ~~Recapture the marketing pixel baselines~~ | S | ✅ **CLOSED.** Done in **#2071** (`8c345df`, 2026-08-10), which rewrote the marketing PNGs across `/the-lab`, `/the-quest`, `/the-community` and `/spaces` in all four theme states × both viewports. `git log -- test/e2e/__screenshots__/` shows the commit |
 | ~~`/the-lab` (200 chars) and `/spaces` (186) meta descriptions~~ | XS | ✅ **CLOSED. Both are now under the ~155 cap**: `/the-lab` is **154** chars (`app/(marketing)/the-lab/page.tsx:32`) and `/spaces` is **139** (`app/(marketing)/spaces/page.tsx:40`), measured 2026-08-11. The copy decision this row described was taken |
 
 ### ⏳ Sweepable, deliberately stopped
 
+> ⚠️ **Re-derived 2026-08-12 (`node scripts/check-adoption.mjs`, exit 0).** Three of the five rows
+> had gone stale the same way the section above did, and worse: each stalled row named a missing
+> primitive as its blocker, and **all three of those primitives have since shipped**. The old
+> numbers are struck rather than deleted so the size of the drift stays visible. #2084 rewrote two
+> rows of this table and left three at their #2080 values.
+
 | Item | Size | Why it stopped where it did |
 | :--- | :---: | :--- |
-| `raw-input` **186** (this row said 184; the class RAISED under ADR-959) | M | ~30 are structurally un-primitivable (range, file, radio, colour, honeypot). Most of the rest is a long tail of 1–2 per file across ~70 files, heavily weighted to bare search inputs **inside a composed box** — `Input` would draw a border inside a border. Needs a borderless variant on the primitive, not call-site swaps |
-| `raw-select` 6 · `raw-textarea` 6 | S | Same shape. The selects are chip filters whose ACTIVE state is a border/fill swap; the textareas are borderless auto-growing composers inside a card. `cn()` is a plain join, not `tailwind-merge`, so a tint or a height passed to the primitive lands *beside* its default and emit order decides — converting could silently kill the affordance. Both need a `tone`/borderless variant |
-| `literal-radius` **2450** (re-confirmed 2026-08-11) | L | Only value-identical conversions were taken (`rounded-2xl`→`rounded-card` at 1rem, `rounded-lg`→`rounded-control` at 0.5rem). The rest are genuine resizes: `rounded-2xl`→`rounded-card` is 24px→16px elsewhere, `rounded-xl`/`3xl`/`md` have no 0.75/1.5rem role at all. DAWN §Phase 5 says spend this inside screen passes, never as its own wave |
-| `handrolled-icon-button` 6 | S | Two are `app-shell` (MENU-CONTRACT territory, snapshot-sensitive). Four need a **tinted/selected** variant (`bg-primary-bg + ring`), not the `filled` variant just added. Stopped rather than add a second speculative variant mid-flight |
+| `raw-input` ~~186~~ baseline **119**, current **118** | M | ~30 are structurally un-primitivable (range, file, radio, colour, honeypot). Most of the rest is a long tail of 1–2 per file across ~70 files, heavily weighted to bare search inputs **inside a composed box** — `Input` would draw a border inside a border. ✅ **The blocker is gone**: `components/ui/field.tsx:105` exports `FieldVariant = 'boxed' \| 'seamless'` and branches on it at `:120`, with a docstring at `:78-92` naming the ~45 borderless inputs it was built for. What is left is call-site work, not primitive work |
+| `raw-select` ~~6~~ **3** · `raw-textarea` ~~6~~ **1** | S | Same shape. The selects are chip filters whose ACTIVE state is a border/fill swap; the textareas are borderless auto-growing composers inside a card. `cn()` is a plain join, not `tailwind-merge`, so a tint or a height passed to the primitive lands *beside* its default and emit order decides — converting could silently kill the affordance. ✅ **Both blockers are gone**: `seamless` covers the borderless half and `Select`'s `tone` prop covers the chip half (`field.tsx:29`) |
+| `literal-radius` ~~2450~~ baseline **2440**, current **2298** | L | Only value-identical conversions were taken (`rounded-2xl`→`rounded-card` at 1rem, `rounded-lg`→`rounded-control` at 0.5rem). The rest are genuine resizes: `rounded-2xl`→`rounded-card` is 24px→16px elsewhere, `rounded-xl`/`3xl`/`md` have no 0.75/1.5rem role at all. DAWN §Phase 5 says spend this inside screen passes, never as its own wave — which is exactly where the unclaimed −142 came from |
+| `handrolled-icon-button` ~~6~~ **3** | S | Two are `app-shell` (MENU-CONTRACT territory, snapshot-sensitive). ✅ **The blocker is gone**: the tinted/selected variant shipped — `components/ui/icon-button.tsx:81` `'tinted'`, `:113` `TINTED_TONE`, `:123` the branch. The row stopped rather than add a second speculative variant mid-flight; the variant is no longer speculative |
 | `adhoc-progress` ~~7~~ **8** | S | Re-measured 2026-08-11 (`node scripts/check-adoption.mjs`, `✅ held`, frozen 2026-08-06). **4 are false positives**: `rounded-pill object-cover` avatars the pattern cannot distinguish from bars. The real ones each need something `ProgressTrack` lacks: a dual-layer buffered+played scrubber, confetti dots, and a runtime hex with no `ProgressTone`. `ProgressTrack` itself is in **44** files |
 
 ### ✅ The triage pass RAN (2026-08-11) — this section is now its record, not a to-do

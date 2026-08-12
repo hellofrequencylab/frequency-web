@@ -395,7 +395,7 @@ The lifts are not a new track; they mount onto the waves already running.
 | ✅ **Shipped, unplanned** — the whole type-role program | **ADR-941/942/943 + pass 2a**: 7,578 type literals onto the roles, paired display line-heights, `literal-type` to 0. This was three of six consecutive merges and appeared in NO row of this table until now. | (new) |
 | ✅ **Shipped, unplanned** — gate correctness | **ADR-944** the lockup · **ADR-945** Engine 3 retired · four gates corrected + three added (`literal-display-type`, `raw-palette`, `handrolled-icon-button`) · `check:bridge` · the focus ring at full strength | (new) |
 | **Now** | 🔴 **Corrected 2026-08-11 — this row and the one below had gone stale in three separate ways.** Baselines: RECAPTURED (PR #2071, `pr-compare` 62 failures → 1). Display literals: **96**, not 301 — 204 were bought across `6056d0a82`, `959ddb678`, `77bb066e5`. What is actually now: **5c coded-body retirement**, in the order already committed to `scripts/render-path-bodies.txt` — `about` → `spaces` → `the-lab` → `the-quest` → `the-community` → `pricing` (partial). One slug per PR. | 5c |
-| **Next** | **8b kit state sweep** — 0 of 10 action + field controls carry their required states, the largest single UX gap on this plan · **ADR-980's 16 dark-mode contrast failures** (one systemic cause, all eight public surfaces, cheapest points on the board) · first moderated test round (🔴 recruiting). ⚠️ Two items removed from this row because they were DONE while it still asked for them: `check:render-path` exists (`scripts/check-render-path.mjs`, in CI, and §5c of this same document says so), and UnderlineTabs moved to `components/ui/` under ADR-971 — `handrolled-tabs` went 3 → 0. | 8b · 3a · 1b |
+| **Next** | **8b kit state sweep, re-scoped 2026-08-12 to four controls** — RowCard's surface (no ring, no `.press`), a `loading` prop on IconButton, a visible busy state on ConfirmSubmitButton, an in-flight cue on DirectorySearch · **the contrast residue**: amber used as *display text* (2.18–2.86:1) and the `.text-text/10` watermark numerals in the dark skins, which is what the `/spaces` (2) and `/the-community` (3) dark baselines count · first moderated test round (🔴 recruiting). ⚠️ Four items removed from this row because they were DONE while it still asked for them: `check:render-path` exists (`scripts/check-render-path.mjs`, in CI, and §5c of this same document says so); UnderlineTabs moved to `components/ui/` under ADR-971 — `handrolled-tabs` went 3 → 0; **8b's "0 of 10" was 7 of 10 by the time this row was read** (PR #2084, `ec80e693c`, shipped five of INTERACTION-STATES §5's six sweep items); and **ADR-980's 16 dark-mode contrast failures are closed** — the palette pair carries the owner's 2026-08-06 waiver in `test/e2e/a11y-waivers.ts`, ADR-1000 closed the last dawn-dark shell failure, and `node scripts/check-contrast.mjs` exits 0. | 8b · 3a · 1b |
 | **After** | Seeker articles (HowTo block) · home + pricing-partial conversion · RowCard/EntityCard sweeps · mobile implementation wave (gated on DAWN's mobile round) · focus/reduced-motion audit | 5d · 2b · 4c · 3c/3d |
 | **Standing, every DAWN round** | Vitals table + research findings in the outbound handoff; mobile behavior stated per screen pass; ratchet counts only shrink | 7c · 1c · 4-rule · 2 |
 
@@ -433,9 +433,11 @@ held by a gate rather than a memory.
 > prints it on every run. **Verdicts below are what the numbers can support, not what we hoped.**
 
 > ⚠️ **STALE as of 2026-08-10 — re-derived in [`FINALIZE-PLAN.md`](FINALIZE-PLAN.md) §8.** The
-> four-territory sweep moved nine of these rows after this table was written. `literal-radius` is
-> **2,450** (not 3,824), `literal-display-type` **96** (not 301), `white-black-literals` **27**,
-> `handrolled-icon-button` **6**, and `raw-palette` + `handrolled-tabs` are both at **0** — meaning
+> four-territory sweep moved nine of these rows after this table was written. Live at 2026-08-12
+> (`node scripts/check-adoption.mjs`, baseline / current): `literal-radius` **2,440 / 2,298** (not
+> 3,824, and not the 2,450 this banner carried until now), `literal-display-type` **96 / 96** (not
+> 301), `white-black-literals` **27 / 27**,
+> `handrolled-icon-button` **3 / 3**, and `raw-palette` + `handrolled-tabs` are both at **0** — meaning
 > §3 packages 1 and 4 are DONE and package 9 is two-thirds done. The scorecard's 80.0/100 therefore
 > understates the site. **Re-derive from `scripts/adoption-baselines.json` before sequencing off
 > this table**; the numbers below are kept only as the provenance record of how each floor was set.
@@ -527,8 +529,9 @@ Done: dead utilities + keyframes and the ADR-922 stale CSP entry removed; bundle
 `design_handoff` root duplicates dropped for the canonical `dawn/tokens/`; RETHEME-PLAN gains
 its historical banner. Carried: 6 zero-reference images in `public/images/site` (possible
 DB-authored page-doc references — verify against published Puck docs before deleting);
-`va.vercel-scripts.com` in script-src looks stale but is an owner CSP call; `.mk-cream`/`.mk-ink`
-/`.rank-dot`/`tap-target`/`text-scaled-*` stay as await-adoption contract classes.
+`va.vercel-scripts.com` in script-src looks stale but is an owner CSP call; `.rank-dot` /
+`tap-target` / `text-scaled-*` stay as await-adoption contract classes. (`.mk-cream` / `.mk-ink`
+were on that list until 2026-08-12. They are adopted — §4 finding 2.)
 
 ### Primitive adoption scoreboard (the round's truth of "implemented globally")
 
@@ -568,10 +571,10 @@ column is the model; the score column is measured. **Total: 80.0 / 100.**
 | 4 | **Kit primitives** (13 pieces) | 15 | 85% | 12.75 | All 13 exist. ~609 adopter sites vs ~91 hand-rolled equivalents still standing |
 | 5 | **Page framework** (5 templates + chrome map) | 10 | 75% | 7.50 | 250 / 382 `page.tsx` compose a template. `PageHero` / `PageHeading` is a single edit |
 | 6 | **Rails + docks + chrome** | 10 | 70% | 7.00 | Three-docks law ✅, foot-mounted rail control ✅, mini-strip ✅. Missing: the three-position ladder, persistence, any desktop left-rail fold |
-| 7 | **Marketing rhythm + page spine** | 10 | 70% | 7.00 | `Section` defaults to the four `mk-*` roles ✅. 23 / 38 marketing pages route through it; the tone-adjacency half is unadopted |
+| 7 | **Marketing rhythm + page spine** | 10 | 70% | 7.00 | `Section` defaults to the four `mk-*` roles ✅, and the tone-adjacency half **is** adopted — `mk-cream` / `mk-ink` on every `<Section>` (see §4 finding 2). 21 of the 38 marketing pages route through it and 15 of the other 17 are redirect stubs. Both of the deductions behind this 70% are gone; the score has not been re-derived, so read it as a floor |
 | 8 | **Type roles** (body ✅ · display ⏳ · eyebrow 🔴) | 10 | 60% | 6.00 | `literal-type` at a defended **0** (7,578 sites swept). `literal-display-type` **96**; the eyebrow is split ten ways across ~698 sites |
-| 9 | **Radius roles** | 5 | 45% | 2.25 | Role tokens shipped and bridged; `literal-radius` **2,450** (corrected 2026-08-11; was quoted as 3,824). The roles now EQUAL the steps as of the radius correction, so 1,816 of those are value-identical conversions |
-| 10 | **Contrast · a11y · interaction states** | 5 | 85% | 4.25 | Focus ring 1.75:1 → 3.87:1, alpha-aware contrast script, axe baselines, ×5 render states. `subtle-tiny-type` 23 open; the kit state sweep (8b) has not run |
+| 9 | **Radius roles** | 5 | 45% | 2.25 | Role tokens shipped and bridged; `literal-radius` baseline **2,440**, current **2,298** (`node scripts/check-adoption.mjs`, 2026-08-12; was quoted 3,824, then 2,450). The roles now EQUAL the steps as of the radius correction, so 1,816 of those are value-identical conversions |
+| 10 | **Contrast · a11y · interaction states** | 5 | 85% | 4.25 | Focus ring 1.75:1 → 3.87:1, alpha-aware contrast script, axe baselines, ×5 render states. `subtle-tiny-type` baseline **23**, current **22** (2026-08-12). The kit state sweep (8b) is **7 of 10 done** — five of six sweep items landed in PR #2084; the score column has not been re-derived since, so read it as a floor |
 | | **Total** | **100** | | **80.0** | |
 
 ### 2. What is genuinely finished (do not re-do it)
@@ -586,7 +589,7 @@ column is the model; the score column is measured. **Total: 80.0 / 100.**
 | ✅ Three-docks law | top-right system · rail-foot account · bottom-right Vault/page. Nothing offered twice |
 | ✅ Rail-control law | 26px borderless glyph at the **foot**, subtle → muted, sticky |
 | ✅ Marketing four-role rhythm | `Section` derives `mk-band` / `mk-beat` and the double-count correction is live |
-| ✅ The ratchet itself | 14 debt classes, provenance-stamped, rises refused, basis fingerprinted |
+| ✅ The ratchet itself | **17** debt classes, provenance-stamped, rises refused, basis fingerprinted. Read 2026-08-12: *"17 debt class(es) held or shrank — 4 shrank, −153 sites retired."* The three added since this row was written are `raw-select`, `raw-input` and `raw-textarea` |
 
 ### 3. What is left, ordered by payoff per unit of effort
 
@@ -596,14 +599,14 @@ Sizes: **S** one PR · **M** 1 to 3 PRs · **L** a wave. "Gain" is points on the
 | :--- | :--- | :---: | ---: | :--- |
 | 1 | ✅ **`raw-palette` — DONE, 48 → 0** | S | +1.5 | Every one is in `lib/gamification.ts` (`TIER_CONFIG` / `DIFFICULTY_CONFIG`), exported, so raw Tailwind palette classes propagate into every achievement surface and **ignore every skin, occasion and generation**. Best ratio on the board: one file, whole-app effect |
 | 2 | **R3 — the radius ladder** | S | +2.0 | `sm`…`2xl` authored in `px`, `xs`/`3xl`/`4xl` left at Tailwind's `rem`: the top rung is a 1.5px step and the only part of the scale that ignores the density lever. Touches 1,317 sites' *meaning*, so it owes a baseline recapture. (The `--radius-cover` half of this row was retracted — see §4.1) |
-| 3 | **`subtle-tiny-type` AA rule + 23 sites** (was 24) | S | +1.0 | The rule is the valuable half; the population is 23, not the 832 the audit implied |
+| 3 | **`subtle-tiny-type` AA rule + 22 sites** (baseline 23, current **22**, read 2026-08-12) | S | +1.0 | The rule is the valuable half; the population is 22, not the 832 the audit implied |
 | 4 | **Adopt or retire `edge-light` · `scanlines` · `vignette`** | XS | +0.5 | Three effect classes at zero adopters. Either give them a home or delete them; a contract class nobody calls is a lie in the stylesheet |
 | 5 | **R7 — unify the eyebrow** | M | +3.0 | Split **ten** ways: `tracking-wide` 484 · `wider` 77 · `widest` 75 · 62 arbitrary values, against **3** adopters of the `eyebrow` utility. The dominant hand-rolled value is 7.2× tighter than `--tracking-eyebrow`. Largely mechanical, and it is the single most visible type tell |
-| 6 | **Kit sweeps** (`bespoke-cards` 24 · `bespoke-rows` 14 · `handrolled-icon-button` **6** · `adhoc-progress` **8** · `handrolled-tabs` **0, done**) | M×5 | +4.0 | 52 sites (24 + 14 + 6 + 8 + 0; the row used to total 91 against an older set of baselines). `components/events/rsvp-controls.tsx` ships a **28px** stepper, under both the 32px density floor and the 44px tap target; `components/gamification/standing-hero.tsx` is a five-line copy of `ProgressTrack`'s own render |
+| 6 | **Kit sweeps** (`bespoke-cards` **0, done** · `bespoke-rows` **0, done** · `handrolled-icon-button` **3** · `adhoc-progress` **8** · `handrolled-tabs` **0, done**) | S | +4.0 | **11 sites, ~7 real** (`node scripts/check-adoption.mjs`, 2026-08-12): 0 + 0 + 3 + 8 + 0, and 4 of the `adhoc-progress` 8 are the `rounded-pill object-cover` avatars BUILD-LIST records as false positives. This row read **52 sites · M×5** until 2026-08-12, which mis-sized a +4.0 package by 7× and mis-ordered everything under it. Both named exemplars are already fixed: `components/events/rsvp-controls.tsx:13,326,337` renders `<IconButton>` (no `h-7` left in the file), and `components/gamification/standing-hero.tsx:9,107` composes `ProgressTrack`, with the past-tense note at `:95` |
 | 7 | **The rail ladder** (Auto / Open / Strip, persisted; a desktop left-rail fold) | M | +3.0 | Today the right rail is binary, its state lives in `useState` keyed on `pathname` so it resets on navigation, and the left rail has a `compact` mode with **no user control at all**. DAWN's law is a three-position standing instruction honoured until the window is too narrow |
-| 8 | **Marketing: the last 15 pages + tone tagging** | M | +3.0 | 15 of 38 marketing pages bypass `Section`. `.mk-cream` / `.mk-ink` have **0** adopters, so the same-tone-halving rule never fires and the thing that makes a tone change read as a change is inert |
+| 8 | ✅ **Marketing: tone tagging — DONE. The "last 15 pages" half was never real** | S | +3.0 | Both halves of this row are closed, re-checked 2026-08-12. **Tone tagging:** `components/marketing/marketing-ui.tsx:276` sets `const toneClass = tone === 'ink' ? 'mk-ink' : 'mk-cream'` and emits it on **every** `<Section>` (`:278`, plus `:707` and `:1047`), with the adoption explained at `:261-274` and asserted in a committed snapshot (`lib/page-editor/block-render.test.tsx:170`). The same-tone-halving rule fires. **The 15 pages:** 17 of the 38 `app/(marketing)/**/page.tsx` carry no `<Section>`, and **15 of those 17 are `permanentRedirect()` stubs** with no layout to bypass; the other two (`rsvp/[token]`, `subscribe/confirm`) are single-section transactional surfaces. [`DAWN-CONVERSION.md`](DAWN-CONVERSION.md) §Phase 7 opened all 38 one by one on 2026-08-05 and reached the same result. **Residue, and it is a note not a package:** `.mk-hero:not(.mk-hero-dock) + .mk-beat` in `app/globals.css` is still dead, because no hero emits `.mk-hero` unconditionally |
 | 9 | **Pass 2b — 96 display literals** | M/L | +4.0 | `text-3xl`…`9xl` onto the display roles across 37 files (was quoted 301 across 67; 204 were bought across `6056d0a82`, `959ddb678`, `77bb066e5`, and the Lift 5c **Now** row already carries the correction). Per-site design judgment (*which role is this heading?*), not a codemod |
-| 10 | **`literal-radius` — 2,450** (was quoted 3,824) | L | +2.0 | Biggest number, worst ratio. The plan's own advice stands: **spend it inside screen passes, never as its own wave** |
+| 10 | **`literal-radius` — baseline 2,440, current 2,298** (read 2026-08-12; was quoted 3,824, then 2,450) | L | +2.0 | Biggest number, worst ratio. The −142 between baseline and current is unclaimed sweep credit, which is the advice working: **spend it inside screen passes, never as its own wave** |
 
 **Reaching 100 is packages 1 to 9 (~24 points, capping at 100); packages 1 to 4 are a single
 afternoon and buy 5 of them.** Package 10 is not a project, it is a habit.
@@ -621,10 +624,17 @@ afternoon and buy 5 of them.** Package 10 is not a project, it is a habit.
    comment in `app/spaces/claim/[token]/page.tsx` is **accurate**.
    *Kept visible rather than deleted, per this plan's own rule that audits are leads and corrections
    get recorded. Two documents asserted it before anyone checked.*
-2. **`.mk-cream` / `.mk-ink` at zero adopters is a silent half-system.** The four-role rhythm
-   landed; the tone-adjacency correction that pairs with it did not. The rhythm is therefore
-   uniform again wherever two same-tone sections stack, which is the exact failure the round was
-   written to fix.
+2. ~~**`.mk-cream` / `.mk-ink` at zero adopters is a silent half-system.**~~ ✅ **CLOSED — `Section`
+   emits the tone class on every render** (`components/marketing/marketing-ui.tsx:276-278`, plus
+   `:707` and `:1047`), so the same-tone-halving rule fires and the tone-adjacency correction is
+   live. Verified 2026-08-12 against a committed snapshot, not by grep alone:
+   `lib/page-editor/block-render.test.tsx:170` asserts the rendered
+   `<section class="bg-marketing-canvas mk-cream px-6 mk-tight ">`.
+   *Kept rather than deleted for the same reason as finding 1 — and because the claim outlived its
+   own fix in three places. The third copy is the one that can still cost a session:
+   `app/globals.css:1625-1627` tells the reader the halving rule "has never fired", so a spacing
+   bug the rule causes would be diagnosed against a comment saying it cannot happen. That comment
+   is owned by whoever next edits the stylesheet.*
 3. **Four tokens where production is ahead of DAWN, and DAWN does not know.** `SYNC.md` §"Going
    the other way" requires these go back on the next round:
 

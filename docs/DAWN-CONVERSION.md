@@ -276,14 +276,16 @@ before trusting it to measure this sweep.
 | Item | Sites | Size |
 | :--- | ---: | :---: |
 | `h-[…]` / `w-[…]` arbitrary | 442 | M |
-| `literal-radius` → role tokens | ~~3,687~~ → **2,450** | L. **Spend inside screen passes, never as its own wave** |
+| `literal-radius` → role tokens | ~~3,687~~ → ~~2,450~~ → **2,298** | L. **Spend inside screen passes, never as its own wave** |
 | R3: the radius ladder (`sm`…`2xl` in px, `xs`/`3xl`/`4xl` left at Tailwind's rem, so the top rung is a 1.5px step and ignores the density lever) | ~1,319 | S |
 | `rounded-[…]` 20 · `shadow-[…]` 2 · `border-[…]` 1 | 23 | XS |
 
-> **`literal-radius` was 3,824, then 3,687 here, and is 2,450 live** (`node
-> scripts/check-adoption.mjs`, `✅ held`, frozen 2026-08-06 `lowered`). Both older figures were
+> **`literal-radius` was 3,824, then 3,687 here, then 2,450, and is baseline 2,440 / current
+> 2,298 live** (`node scripts/check-adoption.mjs`, read 2026-08-12, `✅ shrank −142`, frozen
+> 2026-08-11 `lowered`). Every older figure was
 > quoted from a column, not a run, and three commit messages on this branch cited a floor that
-> was already stale when written. The radius ROLES also moved under it: `--radius-control` 8px →
+> was already stale when written. The 2,450 in this banner is the fourth instance of the same
+> habit and was itself stale within a day. The radius ROLES also moved under it: `--radius-control` 8px →
 > 14px and `--radius-card` 16px → 24px in #2077 (`app/globals.css:195-197`), so a
 > value-identical conversion today is a different conversion than the one this row was scoped
 > against. Re-derive before spending against this number.
@@ -314,7 +316,7 @@ the rail shows everywhere by design). Fix the doc, do not "fix" the code.
 >
 > | Residual item | Then | **Live** | Evidence |
 > | :--- | :--- | :--- | :--- |
-> | `Section` emits `.mk-cream` / `.mk-ink` | 🔴 zero adopters | ✅ emitted | `components/marketing/marketing-ui.tsx:240`, `const toneClass = tone === 'ink' ? 'mk-ink' : 'mk-cream'`, plus `:633` and `:972` |
+> | `Section` emits `.mk-cream` / `.mk-ink` | 🔴 zero adopters | ✅ emitted | `components/marketing/marketing-ui.tsx:276`, `const toneClass = tone === 'ink' ? 'mk-ink' : 'mk-cream'`, applied at `:278`, plus `:707` and `:1047` (line refs re-taken 2026-08-12; the file has grown since) |
 > | `role` has no `'cont-soft'` member, so `about` needs the `pad=` escape hatch | 🔴 component gap | ✅ closed | `marketing-ui.tsx:210`, `role?: 'band' \| 'beat' \| 'cont' \| 'cont-soft' \| 'tight'`, documented at `:208` as "a ROLE, not a `pad` string" |
 > | `pad=` opt-outs under `app/(marketing)/**` | 1 remaining ("22 retired but one") | ✅ **0** | `rg -n 'pad=' 'app/(marketing)' \| wc -l` → `0` |
 >
@@ -333,7 +335,7 @@ finding is a lead, not a fact; this one survived unverified until someone opened
 same-tone-halving rule never fires and the thing that makes a tone change read as a change is inert.
 That is not 15 stubborn pages — it is **one line in `Section`**
 (`components/marketing/marketing-ui.tsx`), which must emit the class before any page can adopt it.~~
-✅ **Done.** That one line is `marketing-ui.tsx:240`, and the rule fires. See the table above the
+✅ **Done.** That one line is `marketing-ui.tsx:276`, and the rule fires. See the table above the
 strikethrough for what each of the three residual items reads today.
 
 A second dead rule found in the same pass: `.mk-hero:not(.mk-hero-dock) + .mk-beat { padding-top: 0 }`

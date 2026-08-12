@@ -68,8 +68,25 @@ describe('loading them touches no network', () => {
     // weight 700 to Satori, so a fallback render was silently the wrong weight.
     // Quote-agnostic: prettier owns the quote style in that file and a literal match would break
     // on a reformat rather than on a real regression.
-    expect(code).toMatch(/read\(\s*["']LiberationSans-Bold\.ttf["']\s*\)/)
+    expect(code).toMatch(/["']LiberationSans-Bold\.ttf["']/)
+    expect(code).toMatch(/\.catch\([^)]*Liberation[A-Za-z]*Bold/)
     expect(code).not.toContain('LiberationSans-Regular.ttf')
+  })
+
+  it('builds every font path from LITERALS, never from a parameter', () => {
+    // 🔴 THE ~300MB BUG. The three reads used to share one `read(file)` helper. @vercel/nft cannot
+    // resolve a path assembled from a variable, so it globbed the deepest prefix it could resolve —
+    // the whole `public/fonts` directory — into all 69 functions reaching this module, shipping
+    // LiberationSans-Regular (410,820 bytes) and the licence text to each. Same failure as ADR-1004's
+    // `join(process.cwd(), ...rubricPath)`, which swept the repo root into ~300 functions.
+    //
+    // Nothing about the glob is visible at runtime: the cards render fine, the deploy just grows.
+    // This assertion is the only thing that notices, so it checks the SHAPE, not the outcome.
+    const args = [...code.matchAll(/public\/fonts["'],\s*([^)]+)\)/g)].map((m) =>
+      m[1].trim(),
+    )
+    expect(args.length).toBeGreaterThanOrEqual(3) // Nunito Bold + Black, and the Liberation fallback
+    for (const arg of args) expect(arg).toMatch(/^["'][A-Za-z-]+\.ttf["']$/)
   })
 
   it('returns real bytes for both weights, fast', async () => {

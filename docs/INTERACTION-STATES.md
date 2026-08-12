@@ -114,60 +114,62 @@ prerequisite, not something this contract can assume.
 
 ## 5. Coverage today — the metric Lift 8 tracks
 
-Measured against §2 by reading every file, 2026-08-04. This table is the scoreboard;
-update it in the same PR as each sweep.
+Measured against §2 by reading every file, **re-measured 2026-08-12** against `origin/main`.
+This table is the scoreboard; update it in the same PR as each sweep.
 
-**Headline: 15 of 29 kit entries (52%) are at full required-state coverage — and 0 of the
-10 action + field controls are.** The cards, readings and state surfaces carry the score;
-every single thing a member clicks or types into is missing a required state.
+**Headline: 25 of 29 kit entries (86%) are at full required-state coverage, and 7 of the 10
+action + field controls are.** The 2026-08-04 reading of this table was *"0 of 10"*; PR #2084
+(`ec80e693c`) shipped five of the six sweep items below and it went unrecorded here for a week.
+The four entries still short are named in the sweep list at the end of this section, and they
+are what Lift 8b is now scoped to.
 
-### Action controls — 0 / 5 ✅
+### Action controls — 3 / 5 ✅
 
 | Component | rest | hover | pressed | focus | loading | disabled | Verdict |
 |---|---|---|---|---|---|---|---|
-| `ui/button.tsx` Button | ✅ | ✅ | 🔴 | ✅ global | 🔴 | ✅ | ⚠️ no `.press`, no busy state |
-| `ui/icon-button.tsx` IconButton / IconLink | ✅ | ✅ | 🔴 | ✅ explicit | 🔴 | ✅ | ⚠️ no `.press` |
-| `ui/confirm-submit-button.tsx` | ✅ | ✅ | 🔴 | ✅ global | 🔴 | ✅ | ⚠️ inherits Button's gaps |
-| `ui/staff-edit-button.tsx` | ✅ | ✅ | 🔴 | ✅ global | ➖ | ➖ | ⚠️ no `.press` |
-| `ui/switch.tsx` Switch | ✅ | 🔴 | 🔴 | ✅ explicit | 🔴 | ✅ | 🔴 no hover, no press, no pending |
+| `ui/button.tsx` Button | ✅ | ✅ | ✅ `.press` (`:69`) | ✅ global | ✅ `loading` prop (`:95`, `aria-busy`) | ✅ | ✅ |
+| `ui/icon-button.tsx` IconButton / IconLink | ✅ | ✅ | ✅ `.press` (`:51`) | ✅ explicit | 🔴 | ✅ `disabled:` + `aria-disabled:` | ⚠️ no `loading` prop |
+| `ui/confirm-submit-button.tsx` | ✅ | ✅ | ✅ inherits `buttonClasses()` | ✅ global | ⚠️ `useRef` re-entrancy guard only (`:25-39`) | ✅ | ⚠️ blocks the double-fire but shows nothing |
+| `ui/staff-edit-button.tsx` | ✅ | ✅ | ✅ `.press` (`:23`) | ✅ global | ➖ | ➖ | ✅ |
+| `ui/switch.tsx` Switch | ✅ | ✅ gated on `inert` (`:49`) | ✅ `.press` (`:45`) | ✅ explicit | ✅ `pending` → `aria-busy` + `.dimmed` | ✅ | ✅ |
 
-### Fields — 0 / 5 ✅
+### Fields — 4 / 5 ✅
 
 | Component | rest | focus | error | disabled | Verdict |
 |---|---|---|---|---|---|
-| `ui/field.tsx` Input | ✅ | ✅ neutral halo | 🔴 | ✅ | 🔴 no `aria-invalid` styling |
-| `ui/field.tsx` Textarea | ✅ | ✅ | 🔴 | ✅ | 🔴 same |
-| `ui/field.tsx` Field | ✅ | ➖ | 🔴 | ➖ | 🔴 `hint` slot only, no error slot |
-| `ui/directory-search.tsx` | ✅ | ✅ | ➖ | 🔴 | ⚠️ no disabled, no in-flight cue |
-| `ui/facet-dropdown.tsx` | ✅ | ✅ + Esc | ➖ | 🔴 | ⚠️ no disabled |
+| `ui/field.tsx` Input | ✅ | ✅ neutral halo | ✅ `aria-[invalid=true]:border-danger` (`:33`) | ✅ | ✅ |
+| `ui/field.tsx` Textarea | ✅ | ✅ | ✅ same `fieldClasses` | ✅ | ✅ |
+| `ui/field.tsx` Field | ✅ | ➖ | ✅ `error` slot in an `aria-live` region (`:186`, `:197`) | ➖ | ✅ |
+| `ui/directory-search.tsx` | ✅ | ✅ | ➖ | ✅ (`:14`, `:57`, `:65`) | ⚠️ no in-flight cue; it fetches, so §1 "loading" applies even though the Field class does not require it |
+| `ui/facet-dropdown.tsx` | ✅ | ✅ + Esc | ➖ | ✅ (`:21`, `:85-86`) | ✅ |
 
-### Cards — 3 / 5 ✅
+### Cards — 4 / 5 ✅
 
 | Component | rest | hover | pressed | focus | Verdict |
 |---|---|---|---|---|---|
 | `cards/entity-card.tsx` | ✅ | ✅ | ✅ `.press` | ✅ `has-[:focus-visible]` | ✅ **the exemplar** |
 | `cards/person-card.tsx` | ✅ | ✅ | ✅ | ✅ | ✅ inherits EntityCard |
-| `cards/row-card.tsx` | ✅ | ✅ | 🔴 | ⚠️ inner link only | ⚠️ surface never rings or presses |
-| `ui/stat-card.tsx` | ✅ | ✅ linked variant | 🔴 | ✅ global | ⚠️ no `.press` |
+| `cards/row-card.tsx` | ✅ | ✅ | 🔴 | ⚠️ inner link only | ⚠️ surface never rings or presses (`:100`) |
+| `ui/stat-card.tsx` | ✅ | ✅ linked variant | ✅ `.press` on the linked variant (`:127`) | ✅ global | ✅ the unlinked tile is inert on purpose, so it owes neither |
 | `ui/sidebar-card.tsx` | ✅ | ➖ | ➖ | ➖ | ✅ non-interactive container |
 
-### Readings — 3 / 4 ✅
+### Readings — 4 / 4 ✅
 
 | Component | rest | empty | Verdict |
 |---|---|---|---|
 | `ui/counter.tsx` | ✅ | ✅ renders `0` | ✅ |
 | `ui/meter.tsx` | ✅ | ✅ guards `cap === 0` | ✅ |
 | `ui/progress-track.tsx` | ✅ | ✅ clamps 0-100 | ✅ |
-| `ui/streak-meter.tsx` | ✅ | ⚠️ `days: []` reads "0 of the last 0 days done" | ⚠️ needs a real no-streak-yet reading |
+| `ui/streak-meter.tsx` | ✅ | ✅ `days: []` reads "No days logged yet" (`:43-46`) | ✅ |
 
-### State surfaces — 3 / 4 ✅
+### State surfaces — 4 / 4 ✅
 
 | Component | Verdict |
 |---|---|
 | `ui/empty-state.tsx` | ✅ five variants: first-use · no-results · cleared · error · permission |
 | `ui/gate-notice.tsx` | ✅ four kinds: preview · gated · dormant · hold |
 | `ui/route-error.tsx` | ✅ error + retry + escape hatch |
-| `ui/skeleton.tsx` | ⚠️ animates, but carries no `aria-hidden` and no `aria-busy` convention for its region |
+| `ui/skeleton.tsx` | ✅ `aria-hidden` (`:53`); `aria-busy` on the region stays the caller's job, stated in the file header |
 
 ### Navigation, overlay, display — 6 / 6 ✅
 
@@ -182,14 +184,20 @@ every single thing a member clicks or types into is missing a required state.
 
 ### The sweep list, in payoff order
 
-| # | Fix | Reach |
-|---|---|---|
-| 1 | `.press` on Button + IconButton | Every clickable control in the app inherits a pressed state from two files. |
-| 2 | `aria-invalid` + danger border in `fieldClasses`, and an `error` slot on `Field` | Every form on the site gains an error state from one file. |
-| 3 | A `loading` prop on Button (`aria-busy`, label unchanged, fixed width) | Removes the "did my tap register" gap on every submit. |
-| 4 | Switch: hover, `.press`, and a pending look | The settings surfaces are all switches. |
-| 5 | RowCard: ring + `.press` on the surface | Brings the third card primitive level with EntityCard. |
-| 6 | StreakMeter empty reading, Skeleton `aria-hidden` | Small, and both are visible to a screen reader today. |
+Five of the six shipped in PR #2084 (`ec80e693c`). What is left is item 5 plus the three
+control-level gaps the tables above mark ⚠️.
+
+| # | Fix | Reach | State |
+|---|---|---|---|
+| 1 | `.press` on Button + IconButton | Every clickable control in the app inherits a pressed state from two files. | ✅ shipped |
+| 2 | `aria-invalid` + danger border in `fieldClasses`, and an `error` slot on `Field` | Every form on the site gains an error state from one file. | ✅ shipped |
+| 3 | A `loading` prop on Button (`aria-busy`, label unchanged, fixed width) | Removes the "did my tap register" gap on every submit. | ✅ shipped |
+| 4 | Switch: hover, `.press`, and a pending look | The settings surfaces are all switches. | ✅ shipped |
+| 5 | RowCard: ring + `.press` on the surface | Brings the third card primitive level with EntityCard. | ⏳ open |
+| 6 | StreakMeter empty reading, Skeleton `aria-hidden` | Small, and both are visible to a screen reader today. | ✅ shipped |
+| 7 | A `loading` prop on IconButton, matching Button's | Icon-only controls are the ones where a tap leaves no other evidence it landed. | ⏳ open |
+| 8 | A visible busy state on `ConfirmSubmitButton` | The ref guard already blocks the second fire; nothing tells the member the first one took. | ⏳ open |
+| 9 | An in-flight cue on `DirectorySearch` | It fetches. Until it says so, an empty result and a pending one look identical. | ⏳ open |
 
 ## 6. The gate
 
@@ -197,9 +205,17 @@ every single thing a member clicks or types into is missing a required state.
 ship a colocated `*.test.tsx` that names the state strings its class requires (§2), else CI
 fails. Machine-checkable proxy, deliberately: the test file exists and mentions the states.
 
-Six primitives carry colocated tests today — `counter`, `dialog`, `gate-notice`, `meter`,
-`progress-track`, `streak-meter`. None of the five action controls or five fields do, which
-is exactly the population that fails §5.
+**Seventeen** primitives carry colocated tests today (`ls components/ui/*.test.tsx`, read
+2026-08-12 and identical on `origin/main`), and they name states rather than just rendering:
+`button.test.tsx` has `describe` blocks for rest+hover, pressed, disabled and loading;
+`icon-button.test.tsx` walks every variant's required states; `switch.test.tsx` covers
+hover, pressed and focus; `field.test.tsx` covers the error, disabled and focus looks for
+Input, Textarea and Field.
+
+Against §5's own populations that is **3 of 5 action controls** (`button`, `icon-button`,
+`switch`) and **3 of 5 fields** (the three `field.tsx` rows). The gate's remaining
+population is `confirm-submit-button`, `staff-edit-button`, `directory-search` and
+`facet-dropdown` — so 8d costs four test files plus the check, not fourteen.
 
 ---
 

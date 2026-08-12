@@ -1,0 +1,54 @@
+-- Take friendships_freeze_identity() off the REST surface — the one trigger function
+-- 20261231000000 missed, and the reason it missed it.
+--
+-- WHAT IS OPEN. Asked of the production catalog rather than of the migrations (2026-08-12): every
+-- SECURITY DEFINER function in `public` returning `trigger`, filtered to those where
+-- has_function_privilege('anon', oid, 'EXECUTE') is true. Exactly one row comes back —
+-- friendships_freeze_identity, proacl
+-- {=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}.
+-- Every other trigger function in the schema is correctly revoked.
+--
+-- WHY THAT ONE. 20261231000000_revoke_trigger_fn_rest_execute.sql is a `do $$` loop over pg_proc, and
+-- its header states an invariant it cannot hold: that "a trigger function added later by another
+-- migration is covered on the next `db reset` replay". Replay is VERSION-ORDERED. The loop runs at
+-- 20261231000000; this function is created at 20270221000000, which sorts after it. So a fresh replay
+-- walks a catalog the function is not in yet, and on the applied database the loop had already run
+-- (2026-07-27, per its own header) before the function existed at all. A catalog-driven sweep only
+-- ever sees the catalog as it stands the moment it runs — it is a one-shot, and every trigger
+-- function added after it needs its own revoke, exactly like this one.
+--
+-- 🔴 That sentence still stands in 20261231000000 and is worth correcting in place; a migration file
+-- is history, but a false stated invariant in a SECURITY migration is what the next author reads and
+-- believes. Recorded here so the correction is on the record even if the older file is left alone.
+--
+-- WHAT THIS WAS WORTH, stated honestly. Close to nothing on its own. A plpgsql function returning
+-- `trigger` raises "trigger functions can only be called as triggers" outside trigger context, and
+-- PostgREST does not expose that return type as an RPC at all. The trigger is unaffected either way:
+-- Postgres checks EXECUTE when a trigger is CREATED, not when it fires (proven in 20261231000000).
+-- The value here is the invariant, not the exposure.
+--
+-- WHAT IS NOT CLOSED BY THIS FILE. The class it belongs to has no repo-side gate. scripts/
+-- check-grants.mjs covers TABLES; nothing in scripts/ references has_function_privilege or asserts
+-- over `grant execute`, and supabase/migrations/fail-open-guards.test.ts checks the SHAPE of a
+-- revoke, not whether a function has one. The catalog held 29 anon-executable SECURITY DEFINER
+-- functions in `public` when this was measured (2026-08-12), and the ones that RETURN DATA — unlike
+-- this one — rest on the Supabase advisor and a human reading it. The durable fix is a function-grant
+-- sibling to check-grants.mjs that replays
+-- the create-function statements out of this directory and demands a verdict per function.
+--
+-- BOTH REVOKES, IN THIS FILE. `revoke ... from public` alone removes nothing when Supabase's ALTER
+-- DEFAULT PRIVILEGES has already issued explicit per-role grants, and revoking from the roles alone
+-- leaves the PUBLIC grant still satisfying has_function_privilege() — either half on its own reports
+-- success and locks nothing (ADR-959, and the 20270221000100 / 20270221000200 pair that learned it
+-- the expensive way). Naming both in one statement is the only shape that is correct on its own
+-- under a fresh replay, and fail-open-guards.test.ts enforces it.
+--
+-- service_role KEEPS its grant, matching every other trigger function: it is the server-side key, is
+-- not reachable from a browser, and backfills and admin scripts run under it.
+--
+-- ADDITIVE + IDEMPOTENT. No body, table, policy or trigger is touched, and re-revoking a privilege
+-- that is already gone is a no-op, so a replay costs nothing.
+--
+-- REVERSIBLE: `grant execute on function public.friendships_freeze_identity() to anon, authenticated;`
+
+revoke execute on function public.friendships_freeze_identity() from public, anon, authenticated;
