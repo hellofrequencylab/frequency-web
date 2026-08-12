@@ -7,6 +7,11 @@ import {
   seedMoodSpec,
   moodToneDirective,
   moodToSpaceTheme,
+  moodToAccent,
+  moodImageStyle,
+  moodLook,
+  isAccentKey,
+  DEFAULT_ACCENT,
 } from './moods'
 import { isSpaceThemeId } from '@/lib/theme/space-themes'
 
@@ -54,5 +59,45 @@ describe('seed moods', () => {
     // Total + safe: garbage falls back to the default mood's theme, always a real theme id.
     expect(isSpaceThemeId(moodToSpaceTheme('garbage'))).toBe(true)
     expect(moodToSpaceTheme('garbage')).toBe(moodToSpaceTheme(DEFAULT_SEED_MOOD))
+  })
+
+  // ── The mood drives the LOOK, not just the words (ADR-993) ────────────────────────────────
+
+  it('moodToAccent maps every mood to a real Studio accent, and leaves the house default free', () => {
+    expect(moodToAccent('warm')).toBe('clay')
+    expect(moodToAccent('bold')).toBe('indigo')
+    expect(moodToAccent('calm')).toBe('teal')
+    expect(moodToAccent('playful')).toBe('gold')
+    for (const m of SEED_MOODS) {
+      expect(isAccentKey(moodToAccent(m.key))).toBe(true)
+      // 'jade' stays reserved: "no mood chosen" must not look identical to a chosen mood.
+      expect(moodToAccent(m.key)).not.toBe(DEFAULT_ACCENT)
+    }
+    // Total + safe: garbage falls back to the default mood's accent, always a real key.
+    expect(moodToAccent('garbage')).toBe(moodToAccent(DEFAULT_SEED_MOOD))
+  })
+
+  it('every mood has distinct image style words, plain and em-dash free', () => {
+    const seen = new Set<string>()
+    for (const m of SEED_MOODS) {
+      const style = moodImageStyle(m.key)
+      expect(style.length).toBeGreaterThan(10)
+      expect(style).not.toContain('—')
+      seen.add(style)
+    }
+    expect(seen.size).toBe(SEED_MOODS.length)
+    expect(moodImageStyle('garbage')).toBe(moodImageStyle(DEFAULT_SEED_MOOD))
+  })
+
+  it('moodLook answers theme, accent, emphasis and image style in one call', () => {
+    const look = moodLook('calm')
+    expect(look.theme).toBe('classic')
+    expect(look.accent).toBe('teal')
+    expect(look.emphasis).toBe(seedMoodSpec('calm').accent)
+    expect(look.imageStyle).toBe(moodImageStyle('calm'))
+    // Total: an unknown value still returns a complete, real look.
+    const fallback = moodLook(null)
+    expect(isSpaceThemeId(fallback.theme)).toBe(true)
+    expect(isAccentKey(fallback.accent)).toBe(true)
   })
 })

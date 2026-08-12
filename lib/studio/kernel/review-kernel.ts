@@ -17,7 +17,7 @@
 // withhold, because both read the same predicate over the same ledger.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { EntityManifest, FieldDef, FieldKind, FieldPlacement } from './manifest'
+import { REPEAT_ITEM_SELF, type EntityManifest, type FieldDef, type FieldKind, type FieldPlacement, type RepeatDef } from './manifest'
 import {
   deriveSignal,
   isCleared,
@@ -62,6 +62,17 @@ export interface FieldState {
   blocksApply: boolean
   /** Whether the value is editable inline. */
   editable: boolean
+  /**
+   * The value this field held BEFORE the change being reviewed, when the model was built against a
+   * previous draft. Absent means "nothing to compare", not "unchanged".
+   *
+   * A review board that cannot say what MOVED is only useful the first time. On a redraw the
+   * author's job changes from "is this right?" to "is this better?", and they can only answer that
+   * if the change is visible without hunting for it.
+   */
+  previous?: string
+  /** True when `previous` was supplied and differs from `value`. */
+  changed: boolean
 }
 
 /** A group of resolved fields. */
@@ -107,9 +118,56 @@ function at(scope: Record<string, unknown>, path: string): unknown {
   return cur
 }
 
-/** The display value for one field: its `read` override, else the scalar at its path. PURE. */
+/**
+ * The display value for one field: its `read` override, else the scalar at its path. PURE.
+ * A field at `REPEAT_ITEM_SELF` reads the scope ITSELF, because for a collection of bare scalars
+ * the item is the value and there is no sub-key to walk to.
+ */
 function readValue(def: Pick<FieldDef, 'path' | 'read'>, scope: Record<string, unknown>): string {
-  return def.read ? def.read(scope) : str(at(scope, def.path))
+  if (def.read) return def.read(scope)
+  return def.path === REPEAT_ITEM_SELF ? str(scope) : str(at(scope, def.path))
+}
+
+// ── Walking a repeated collection ────────────────────────────────────────────────────────
+
+/** One item of a repeat, with the KEY its rows are addressed by (an index, or a map key). */
+interface RepeatItem {
+  key: string
+  item: Record<string, unknown>
+}
+
+/**
+ * The items of a repeat, in a STABLE order. PURE + total: anything that is not the declared
+ * shape reads as no items, so a half-built draft renders an empty section rather than throwing.
+ *
+ * An array keeps its own order (it is the author's). A map has no author order, so its keys are
+ * sorted, which is what makes a review board render the same rows in the same order twice.
+ *
+ * `item` is typed as a record for the common case; for a collection of bare scalars it is the
+ * scalar itself, which `readValue` and `itemLabel` both handle.
+ */
+function repeatItems(raw: unknown, over: RepeatDef['over']): RepeatItem[] {
+  if (over === 'map') {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return []
+    return Object.keys(raw as Record<string, unknown>)
+      .sort()
+      .map((key) => ({ key, item: ((raw as Record<string, unknown>)[key] ?? {}) as Record<string, unknown> }))
+  }
+  if (!Array.isArray(raw)) return []
+  return raw.map((item, index) => ({ key: String(index), item: (item ?? {}) as Record<string, unknown> }))
+}
+
+/**
+ * The fully expanded path one repeat row is keyed by: the REAL location of the value on the
+ * draft, which is what lets the board and the server agree on a ledger key (ADR-992).
+ *   array + named  ->  offerings[0].price
+ *   array + self   ->  agreements[0]
+ *   map + named    ->  focus_details.<pillarId>.timing
+ *   map + self     ->  links.<key>
+ */
+function repeatPath(repeat: RepeatDef, key: string, fieldPath: string): string {
+  const base = repeat.over === 'map' ? `${repeat.arrayPath}.${key}` : `${repeat.arrayPath}[${key}]`
+  return fieldPath === REPEAT_ITEM_SELF ? base : `${base}.${fieldPath}`
 }
 
 // ── Resolving one field ──────────────────────────────────────────────────────────────────
@@ -126,6 +184,7 @@ function resolveField(
   ledgerPath: string,
   scope: Record<string, unknown>,
   ledger: ProvenanceLedger,
+  previousScope?: Record<string, unknown>,
 ): FieldState {
   const entries = ledger[ledgerPath]
   const entry = strongestEntry(entries)
@@ -145,6 +204,10 @@ function resolveField(
       ? !entries?.length || isCleared(entries)
       : true
 
+  // Read the prior value through the SAME reader, so a composed field (a rating rendered as
+  // "4.8 (126)") compares as the author sees it rather than field by field underneath.
+  const previous = previousScope ? readValue(def, previousScope) : undefined
+
   return {
     path: ledgerPath,
     label,
@@ -160,6 +223,8 @@ function resolveField(
     withheld: (commercial || prose) && !cleared && !!value,
     blocksApply: commercial && signal === 'red',
     editable: true,
+    ...(previous !== undefined ? { previous } : {}),
+    changed: previous !== undefined && previous !== value,
     ...(entry
       ? {
           provenance: {
@@ -190,6 +255,12 @@ export function buildFieldModel(
   manifest: EntityManifest,
   draft: Record<string, unknown>,
   ledger: ProvenanceLedger = {},
+  /**
+   * The PREVIOUS draft, when reviewing a redraw rather than a first draft. Supplying it fills each
+   * field's `previous` / `changed`, which is what lets one board serve both moments instead of a
+   * separate diff surface growing beside it.
+   */
+  previousDraft?: Record<string, unknown>,
 ): FieldModel {
   const bySection = new Map<string, FieldState[]>()
   const push = (state: FieldState) => {
@@ -200,22 +271,29 @@ export function buildFieldModel(
 
   // Top-level fields, in declaration order.
   for (const def of manifest.fields) {
-    const state = resolveField(def, def.section, def.label, def.path, draft, ledger)
+    const state = resolveField(def, def.section, def.label, def.path, draft, ledger, previousDraft)
     if (def.omitWhenEmpty && !state.value) continue
     push(state)
   }
 
-  // Repeat groups: one row set per item, with indexed ledger paths so each item's own gated
-  // facts (a price) clear independently of its siblings.
+  // Repeat groups: one row set per item, with fully expanded ledger paths so each item's own
+  // gated facts (a price) clear independently of its siblings. An array is walked by index and a
+  // keyed map by its keys; either way the path a row carries is the value's real location.
   for (const repeat of manifest.repeats ?? []) {
-    const raw = at(draft, repeat.arrayPath)
-    const items = Array.isArray(raw) ? raw : []
-    items.forEach((rawItem, index) => {
-      const item = (rawItem ?? {}) as Record<string, unknown>
-      const itemLabel = repeat.itemLabel(item, index)
+    const items = repeatItems(at(draft, repeat.arrayPath), repeat.over)
+    items.forEach(({ key, item }, index) => {
+      const itemLabel = repeat.itemLabel(item, index, key)
       for (const def of repeat.fields) {
-        const ledgerPath = `${repeat.arrayPath}[${index}].${def.path}`
-        const state = resolveField(def, repeat.section, `${itemLabel} · ${def.label}`, ledgerPath, item, ledger)
+        const ledgerPath = repeatPath(repeat, key, def.path)
+        // The prior item is matched by KEY for a map and by INDEX for an array, which is the only
+        // pairing each shape supports: a map row keeps its identity when siblings are added, an
+        // array row does not. Absent prior item means the row is new, not unchanged.
+        const previousItem = previousDraft
+          ? repeatItems(at(previousDraft, repeat.arrayPath), repeat.over).find((p, i) =>
+              repeat.over === 'map' ? p.key === key : i === index,
+            )?.item
+          : undefined
+        const state = resolveField(def, repeat.section, `${itemLabel} · ${def.label}`, ledgerPath, item, ledger, previousItem)
         if (def.omitWhenEmpty && !state.value) continue
         push(state)
       }

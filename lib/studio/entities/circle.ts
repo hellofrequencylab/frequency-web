@@ -22,7 +22,7 @@
 // commercial fact, by design: a Circle has no price, no hours, and no address to gate.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { EntityManifest, FieldOption } from '@/lib/studio/kernel/manifest'
+import { REPEAT_ITEM_SELF, type EntityManifest, type FieldOption } from '@/lib/studio/kernel/manifest'
 
 /** Render a scalar as display text. Mirrors the kernel's own reader. PURE + total. */
 function str(v: unknown): string {
@@ -118,22 +118,26 @@ export const CIRCLE_MANIFEST: EntityManifest = {
   // The two lists a Host adds to and removes from one row at a time. Each row is its own
   // reviewable, individually-editable line rather than one blob of text.
   //
-  // SHAPE NOTE: both are stored as bare `string[]` (lib/circles/draft.ts `asStrArray`), so an
-  // item has no named sub-field to point at. The per-item field reads the item ITSELF, and its
-  // relative path `text` follows the convention the rhythm beats already use for "one line of
-  // prose". Nothing is keyed by it here (no ledger under `verify: 'none'`).
+  // SHAPE NOTE: both are stored as bare `string[]` (lib/circles/draft.ts `asStrArray`), so an item
+  // has no named sub-field to point at. `REPEAT_ITEM_SELF` is how the kernel says exactly that
+  // (ADR-992): the row reads the item ITSELF and is keyed by the item's own path, `agreements[0]`.
+  //
+  // This used to declare a made-up sub-key, `text`, which produced `agreements[0].text`: a stable
+  // row key that was not a path anything is stored at. Harmless while `verify: 'none'` means no
+  // ledger keys anything here, and wrong the first day a Circle grew one. The kernel now models the
+  // shape instead of the manifest working around it.
   repeats: [
     {
       arrayPath: 'agreements',
       section: 'agreements',
       itemLabel: (_item, index) => `Agreement ${index + 1}`,
-      fields: [{ path: 'text', label: 'wording', kind: 'text', placement: 'inline', veraDrafts: true, read: (a) => str(a) }],
+      fields: [{ path: REPEAT_ITEM_SELF, label: 'wording', kind: 'text', placement: 'inline', veraDrafts: true }],
     },
     {
       arrayPath: 'remixOptions',
       section: 'remix',
       itemLabel: (_item, index) => `Remix idea ${index + 1}`,
-      fields: [{ path: 'text', label: 'wording', kind: 'text', veraDrafts: true, read: (r) => str(r) }],
+      fields: [{ path: REPEAT_ITEM_SELF, label: 'wording', kind: 'text', veraDrafts: true }],
     },
   ],
 }

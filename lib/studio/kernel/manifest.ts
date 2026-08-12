@@ -127,7 +127,8 @@ export type FieldPlacement = 'spark' | 'inline' | 'rail'
  *
  * `path` is the draft field path the provenance ledger is also keyed by ('contact.phone').
  * Inside a `RepeatDef` it is RELATIVE to the item ('price'), and the kernel expands it to the
- * indexed form ('offerings[0].price') so the ledger key and the rendered row always agree.
+ * item's real location ('offerings[0].price', 'focus_details.<key>.timing') so the ledger key and
+ * the rendered row always agree. A repeat over bare scalars declares `REPEAT_ITEM_SELF`.
  */
 export interface FieldDef {
   path: string
@@ -172,17 +173,59 @@ export interface FieldDef {
 // ── Repeat groups ────────────────────────────────────────────────────────────────────────
 
 /**
- * A repeated child collection (a Space's offerings, an Event's ticket tiers). The kernel walks
- * the array at `arrayPath` and emits `fields` once per item with indexed paths, so each item's
- * individually-gated facts (a price!) get their own reviewable, individually-cleared row.
+ * HOW a repeated collection is stored, and therefore how its rows are keyed (ADR-992):
+ *  - `array` is an ordered list. Row keys are indexed: `offerings[0].price`.
+ *  - `map` is an object keyed by an id, one entry per key (a Practice's `focus_details`, one
+ *    entry per Pillar). Row keys are dotted: `focus_details.<pillarId>.instructions`.
+ * Both forms produce the REAL persisted path, which is the whole point: the row key a board
+ * shows and the ledger key a server re-checks have to be the same string.
+ */
+export type RepeatOver = 'array' | 'map'
+
+/**
+ * The `path` a repeat field uses to mean THE ITEM ITSELF, for a collection of bare scalars
+ * (a Circle's `agreements`, stored as `string[]`). Its row key is the item's own path with no
+ * suffix (`agreements[0]`), because there is no sub-key to name (ADR-992).
+ *
+ * Before this existed the only way to declare such a field was to invent a sub-key
+ * (`agreements[0].text`), which reads like a path and is not one. That was harmless only while
+ * nothing keyed a ledger by it, and would have mis-keyed every entry the day one did.
+ *
+ * A repeat that uses it declares exactly ONE field, which `validateManifest` enforces: a scalar
+ * item has one value, so a second field would have nowhere to live.
+ */
+export const REPEAT_ITEM_SELF = ''
+
+/**
+ * A repeated child collection (a Space's offerings, an Event's ticket tiers, a Practice's
+ * per-Pillar instructions). The kernel walks the collection at `arrayPath` and emits `fields`
+ * once per item with fully expanded paths, so each item's individually-gated facts (a price!)
+ * get their own reviewable, individually-cleared row.
+ *
+ * Three shapes, one declaration, all four combinations legal:
+ *   array of records  ->  `offerings[0].price`
+ *   array of scalars  ->  `agreements[0]`            (a field at REPEAT_ITEM_SELF)
+ *   map of records    ->  `focus_details.<key>.timing`
+ *   map of scalars    ->  `links.<key>`
  */
 export interface RepeatDef {
-  /** The array's path on the draft, e.g. 'offerings'. */
+  /**
+   * The collection's path on the draft, e.g. 'offerings' or 'focus_details'. Named `arrayPath`
+   * for the array case it was born for; it addresses a keyed map just as well (see `over`).
+   */
   arrayPath: string
+  /** Whether the collection is an ordered array (the default) or an object keyed by an id. */
+  over?: RepeatOver
   section: string
-  /** A human name for one item, used to prefix its field labels. PURE. */
-  itemLabel: (item: Record<string, unknown>, index: number) => string
-  /** The per-item fields. Their `path` is relative to the item; `section` is inherited. */
+  /**
+   * A human name for one item, used to prefix its field labels. PURE. `key` is the array index
+   * as a string, or the map key. For a scalar item, `item` IS the scalar.
+   */
+  itemLabel: (item: Record<string, unknown>, index: number, key: string) => string
+  /**
+   * The per-item fields. Their `path` is relative to the item, or `REPEAT_ITEM_SELF` for a
+   * collection of bare scalars; `section` is inherited.
+   */
   fields: Omit<FieldDef, 'section'>[]
 }
 
@@ -265,8 +308,14 @@ export function validateManifest(m: EntityManifest): ManifestProblem[] {
   }
 
   const seenPaths = new Set<string>()
-  const checkField = (f: Omit<FieldDef, 'section'> & { section?: string }, ctx: string) => {
-    if (!f.path.trim()) problems.push(`${ctx} has a field with an empty \`path\`.`)
+  const checkField = (
+    f: Omit<FieldDef, 'section'> & { section?: string },
+    ctx: string,
+    // A repeat over bare scalars declares its one field at REPEAT_ITEM_SELF, which IS the empty
+    // path. Everywhere else an empty path is a field with nowhere to read from or write to.
+    allowSelfPath = false,
+  ) => {
+    if (!f.path.trim() && !allowSelfPath) problems.push(`${ctx} has a field with an empty \`path\`.`)
     if (!isFieldKind(f.kind)) {
       problems.push(`${ctx} field "${f.path}" uses unknown kind "${f.kind}". Add it to FIELD_KINDS with a renderer, or pick an existing kind.`)
     }
@@ -298,11 +347,33 @@ export function validateManifest(m: EntityManifest): ManifestProblem[] {
   }
 
   for (const r of m.repeats ?? []) {
+    const rwhere = `${where} repeat "${r.arrayPath}"`
     if (!sectionKeys.has(r.section)) {
-      problems.push(`${where} repeat "${r.arrayPath}" points at section "${r.section}", which is not declared.`)
+      problems.push(`${rwhere} points at section "${r.section}", which is not declared.`)
     }
-    if (r.fields.length === 0) problems.push(`${where} repeat "${r.arrayPath}" declares no fields.`)
-    for (const f of r.fields) checkField(f, `${where} repeat "${r.arrayPath}"`)
+    if (!r.arrayPath.trim()) problems.push(`${where} declares a repeat with an empty \`arrayPath\`.`)
+    if (r.over !== undefined && r.over !== 'array' && r.over !== 'map') {
+      problems.push(`${rwhere} declares \`over: "${r.over}"\`. It walks an 'array' or a 'map', and nothing else.`)
+    }
+    if (r.fields.length === 0) problems.push(`${rwhere} declares no fields.`)
+
+    // A SCALAR repeat: the item has one value, so it gets exactly one row. A second field would
+    // have nowhere to read from, and would silently key a ledger entry at the same path twice.
+    const selfFields = r.fields.filter((f) => f.path === REPEAT_ITEM_SELF)
+    if (selfFields.length > 0 && r.fields.length > 1) {
+      problems.push(
+        `${rwhere} mixes a REPEAT_ITEM_SELF field with ${r.fields.length - selfFields.length} named one(s). A collection of bare scalars has one value per item, so it declares exactly one field.`,
+      )
+    }
+
+    const seenRepeatPaths = new Set<string>()
+    for (const f of r.fields) {
+      if (seenRepeatPaths.has(f.path)) {
+        problems.push(`${rwhere} declares field path "${f.path}" twice, so both rows would key the same ledger entry.`)
+      }
+      seenRepeatPaths.add(f.path)
+      checkField(f, rwhere, selfFields.length > 0)
+    }
   }
 
   // A commercial fact with no verification mode can never be cleared, so the board would

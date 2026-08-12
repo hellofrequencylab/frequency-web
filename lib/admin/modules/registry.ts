@@ -14,7 +14,7 @@
 // render each module's Component. The catalog + filter are the durable seam.
 
 import type { LucideIcon } from 'lucide-react'
-import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Users, MapPin, Trophy, BarChart3, Archive, Palette, UserCircle, Bell, Radar, ShieldCheck, CreditCard, LayoutGrid, MessageCircle, Pencil } from 'lucide-react'
+import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Users, MapPin, Trophy, BarChart3, Archive, Palette, UserCircle, Bell, Radar, ShieldCheck, CreditCard, LayoutGrid, MessageCircle, Pencil, Wand2 } from 'lucide-react'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 
 /** The Scope union's discriminant — where a module can attach. */
@@ -459,6 +459,27 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     order: 10,
     tier: 'primary',
     priority: 8,
+  },
+  // EDIT RE-ENTRY (ADR-450 §2 · ADR-994): the "Guided" section of the Inspector rail — the last
+  // unbuilt half of the one-Edit model. An author who built a practice through the Spark can come
+  // back to the same three dials (mood · directions · lock) and draft it again over the live page,
+  // instead of the wizard being a one-way door. Declared FIRST and at order/priority 5 so it leads
+  // the practice rail, per ADR-450's fixed section order (Guided → Layout → Settings → … → Danger).
+  // It rides the `basics` slot rather than inventing a spine cell: the 9-category spine is a locked
+  // contract of its own, and Guided edits exactly what Basics holds.
+  {
+    id: 'practice.guided',
+    label: 'Guided',
+    desc: 'Re-steer this practice with Vera: set the mood, say how to approach it, pin what to keep, and draft it again.',
+    Icon: Wand2,
+    scopes: ['practice'],
+    requiredCapability: 'practice.editSettings',
+    slot: 'basics',
+    surface: 'sidebar',
+    render: 'inline',
+    order: 5,
+    tier: 'standard',
+    priority: 5,
   },
   {
     id: 'practice.settings',

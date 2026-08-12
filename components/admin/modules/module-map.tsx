@@ -20,6 +20,7 @@ import { NexusInsightsModule } from './nexus-insights-module'
 import { NexusDangerModule } from './nexus-danger-module'
 import { EventSettingsModule } from './event-settings-module'
 import { EventPeopleModule } from './event-people-module'
+import { PracticeGuidedModule } from './practice-guided-module'
 import { PracticeSettingsModule } from './practice-settings-module'
 import { PracticeInsightsModule } from './practice-insights-module'
 import { ChannelSettingsModule } from './channel-settings-module'
@@ -98,6 +99,10 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   // overhaul), so the host edits the whole event in one flow. People stays its own module.
   'event.settings': EventSettingsModule,
   'event.people': EventPeopleModule,
+  // Edit re-entry (ADR-450 §2 · ADR-994): the Guided section leads the practice rail — the Spark's
+  // own steer dials (mood · directions · lock) run over the LIVE practice, with the diff shown after
+  // each redraw and a one-tap put-it-back.
+  'practice.guided': PracticeGuidedModule,
   'practice.settings': PracticeSettingsModule,
   'practice.insights': PracticeInsightsModule,
   'channel.settings': ChannelSettingsModule,

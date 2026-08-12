@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState } from 'react'
-import { Check, ExternalLink, Pencil, ShieldQuestion, Sparkles, X } from 'lucide-react'
+import { Check, ExternalLink, ImageIcon, Pencil, ShieldQuestion, Sparkles, X } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
 import { SIGNAL_GLYPH, type ReviewSignal } from '@/lib/studio/kernel/ledger'
 import type { FieldModel, FieldState } from '@/lib/studio/kernel/review-kernel'
@@ -38,8 +38,27 @@ const SIGNAL_LABEL: Record<ReviewSignal, string> = {
   red: 'Contradicted',
 }
 
+/** The "Vera can draw one" offer, when the entity declares a cover field and the draft has none.
+ *  Omit it and no offer renders. It is an OFFER: publishing with no image stays a real outcome. */
+export interface SparkCoverOffer {
+  label: string
+  busy?: boolean
+  /** Runs the generation. The surface owns applying the returned URL to the draft. */
+  onGenerate: () => void
+}
+
+/** The optional pre-publish read. A verdict is advice, never a gate: the entity that knows what a
+ *  verdict COSTS decides that, not this board. */
+export interface SparkQualityCheck {
+  busy?: boolean
+  onCheck: () => void
+  verdict?: { status: string; score: number; notes: readonly string[] } | null
+}
+
 export interface SparkReviewProps {
   model: FieldModel
+  cover?: SparkCoverOffer | null
+  quality?: SparkQualityCheck | null
   /** Commit an edited value. The surface owns persistence. */
   onEdit: (path: string, value: string) => Promise<void> | void
   /**
@@ -51,7 +70,7 @@ export interface SparkReviewProps {
   disabled?: boolean
 }
 
-export function SparkReview({ model, onEdit, onConfirm, disabled }: SparkReviewProps) {
+export function SparkReview({ model, cover, quality, onEdit, onConfirm, disabled }: SparkReviewProps) {
   const s = model.summary
 
   return (
@@ -68,6 +87,56 @@ export function SparkReview({ model, onEdit, onConfirm, disabled }: SparkReviewP
           </span>
         )}
       </div>
+
+      {cover && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface px-4 py-3">
+          <ImageIcon className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+          <span className="min-w-0 flex-1 text-xs text-muted">
+            No {cover.label.toLowerCase()} yet. Vera can draw one, or you can add your own later.
+          </span>
+          <button
+            type="button"
+            onClick={cover.onGenerate}
+            disabled={disabled || cover.busy}
+            className="shrink-0 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+          >
+            {cover.busy ? 'Drawing…' : 'Vera can draw one'}
+          </button>
+        </div>
+      )}
+
+      {quality && (
+        <div className="mt-3 rounded-xl border border-border bg-surface px-4 py-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <ShieldQuestion className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+            <span className="min-w-0 flex-1 text-xs text-muted">
+              Want a second read before this goes out?
+            </span>
+            <button
+              type="button"
+              onClick={quality.onCheck}
+              disabled={disabled || quality.busy}
+              className="shrink-0 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+            >
+              {quality.busy ? 'Reading…' : 'Check it over'}
+            </button>
+          </div>
+          {quality.verdict && (
+            <div className="mt-2 border-t border-border pt-2">
+              <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">
+                {quality.verdict.status} · {quality.verdict.score}
+              </p>
+              {quality.verdict.notes.length > 0 && (
+                <ul className="mt-1 space-y-0.5">
+                  {quality.verdict.notes.map((n, i) => (
+                    <li key={i} className="text-xs leading-snug text-muted">{n}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {s.blocked && (
         <p className="mt-3 rounded-xl border border-danger/30 bg-danger-bg px-4 py-3 text-xs text-danger">
@@ -145,7 +214,8 @@ function Row({
             <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">{field.label}</span>
             {field.generated && (
               <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-elevated px-1.5 py-0.5 text-3xs text-muted">
-                <Sparkles className="h-2.5 w-2.5" aria-hidden /> Written by Vera
+                <Sparkles className="h-2.5 w-2.5" aria-hidden />{' '}
+                {field.kind === 'image' || field.kind === 'images' ? 'Made by Vera' : 'Written by Vera'}
               </span>
             )}
             {field.withheld && (

@@ -151,21 +151,8 @@ export const PRACTICE_MANIFEST: EntityManifest = {
     // develop more than one Pillar, which is what focus_details below holds.
     // A pointer to a `pillars` row, stored as its id and shown as its name, so it must be loaded.
     { path: 'domain_id', label: 'Pillar', kind: 'reference', section: 'pillars', veraDrafts: true, optionsFrom: 'pillars' },
-    // A MAP keyed by Pillar id, each holding the author's instructions and timing for that
-    // Pillar. Not an array, so it cannot expand as a repeat; the read reports the coverage.
-    {
-      path: 'focus_details',
-      label: 'Per-Pillar instructions',
-      kind: 'longtext',
-      section: 'pillars',
-      omitWhenEmpty: true,
-      read: (d) => {
-        const fd = d.focus_details
-        if (!fd || typeof fd !== 'object') return ''
-        const n = Object.keys(fd as Record<string, unknown>).length
-        return n ? `${n} ${n === 1 ? 'Pillar' : 'Pillars'} with their own instructions` : ''
-      },
-    },
+    // `focus_details` is a MAP keyed by Pillar id, so it expands as a keyed-map repeat below
+    // rather than sitting here as one collapsed line (ADR-992).
     // A pointer to a `practice_subcategories` row. The surface loads the ones under the Pillar.
     { path: 'subcategory_id', label: 'Sub focus', kind: 'reference', section: 'pillars', omitWhenEmpty: true, optionsFrom: 'practice-subcategories' },
     // The values are Channel slugs. Mirrors the CATEGORIES list in the Practice builder (six of
@@ -252,7 +239,32 @@ export const PRACTICE_MANIFEST: EntityManifest = {
     { path: 'is_template', label: 'Starter practice', kind: 'toggle', section: 'publishing', veraDrafts: false },
   ],
 
-  // No repeats: a Practice is an atom. Its only many-valued shapes are `tags` (a flat list, the
-  // `tags` kind) and `focus_details` (a keyed map, not an array), and neither is a child with
-  // its own reviewable per-item fields.
+  // ── Per-Pillar instructions, one row set per Pillar (ADR-992) ────────────────────────────
+  //
+  // `focus_details` is the one shape in the catalog that is a keyed MAP rather than a list:
+  // `Record<pillarId, { instructions, timing }>` (lib/practices.ts `FocusDetails`), where the
+  // presence of a key IS the statement that the Practice develops that Pillar. `over: 'map'` is
+  // what lets it expand, and the row paths it produces are the real persisted ones
+  // (`focus_details.<pillarId>.instructions`), not a display convention.
+  //
+  // The label is positional because it honestly can be: the keys are `pillars` row ids, and a
+  // pure manifest cannot load a Pillar's name to read it back (the same reason `domain_id` is a
+  // `reference` with `optionsFrom: 'pillars'`). A surface that has already loaded that collection
+  // can relabel the rows; the manifest never pretends to know.
+  //
+  // A Practice has no other repeat. `tags` is a flat list carried by the `tags` kind, not a child
+  // with fields of its own.
+  repeats: [
+    {
+      arrayPath: 'focus_details',
+      over: 'map',
+      section: 'pillars',
+      itemLabel: (_item, index) => `Pillar ${index + 1}`,
+      fields: [
+        { path: 'instructions', label: 'instructions', kind: 'longtext', placement: 'inline', prose: true, veraDrafts: true },
+        // Capped at 80 characters by cleanFocusDetails; a short note like "after the warm-up".
+        { path: 'timing', label: 'timing', kind: 'text', veraDrafts: true, omitWhenEmpty: true },
+      ],
+    },
+  ],
 }

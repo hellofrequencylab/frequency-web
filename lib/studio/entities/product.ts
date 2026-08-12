@@ -124,7 +124,17 @@ export const PRODUCT_MANIFEST: EntityManifest = {
     { path: 'category', label: 'Category', kind: 'text', section: 'identity', placement: 'spark', omitWhenEmpty: true },
 
     // ── Photos. The gap this manifest exists to close: the column takes up to 8 and no creation
-    // surface has ever written to it. Never omitWhenEmpty, so "no photos" reads as a to-do. ──
+    // surface has ever written to it. Never omitWhenEmpty, so "no photos" reads as a to-do.
+    //
+    // FIRST IS THE COVER, and that is the model, not a shortcut (ADR-992). `commerce_products`
+    // has no cover column and is not getting one: `images` is an ordered `text[]`, every reader
+    // already takes `images[0]` as the cover (the Market grid, the product card, the detail hero,
+    // the email product block, the claim page's OG image), and `MultiImageUpload` is reorderable
+    // and labels its first tile as the cover. So the seller already designates a cover, by putting
+    // it first. A `cover_image` column would add a second source of truth for the same picture and
+    // force every one of those readers to reconcile the two. An Event is the honest counterexample:
+    // its poster is a different THING from its gallery, so it has a real `coverImagePath`. A
+    // product's cover is just its best photo. ONE field, no `image` beside it. ──
     { path: 'images', label: 'Photos', kind: 'images', section: 'photos', placement: 'spark', veraDrafts: false, read: (d) => photoCount(d.images) },
 
     // ── Details (prose: Vera can draft it, the seller owns it) ──

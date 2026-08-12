@@ -279,6 +279,13 @@ export async function insertSpaceLibraryImage(input: {
    *  importer content, 'event-claim' for images that arrived with a claimed event. Drives the Loom
    *  "My uploads" filter (only real uploads surface). Omitted = NULL = treated as a real upload. */
   source?: 'upload' | 'seed' | 'import' | 'event-claim' | 'recraft' | 'vera' | 'generated' | 'curated' | null
+  /** Facets for the Loom's Tags view. A GENERATED asset must carry 'generated' here: it is what
+   *  `toPickAsset` reads to mark an image as AI-made, so an unlabelled generation is not possible
+   *  through this path. Omitted = no tags = a plain upload (ADR-993). */
+  tags?: readonly string[] | null
+  /** How the asset was made (the generator, the prompt, the entity it was drawn for). Stored as-is
+   *  on library_assets.config, which is also a provenance signal `toPickAsset` reads. Omitted = {}. */
+  config?: Record<string, unknown> | null
 }): Promise<string | null> {
   const { data, error } = await db()
     .from('library_assets')
@@ -296,6 +303,8 @@ export async function insertSpaceLibraryImage(input: {
       bytes: input.bytes,
       ...(input.createdBy ? { created_by: input.createdBy } : {}),
       ...(input.source ? { source: input.source } : {}),
+      ...(input.tags?.length ? { tags: [...input.tags] } : {}),
+      ...(input.config ? { config: input.config } : {}),
     })
     .select('id')
     .maybeSingle()

@@ -11,6 +11,12 @@ export { SparkReview, type SparkReviewProps } from './spark-review'
 export { SparkSteer, type SparkSteerProps } from './spark-steer'
 export { FieldControl, type FieldControlProps, type FieldOptions } from './field/field-control'
 
+// Autosave (ADR-991). The shell already runs this; these are exported for the two things a surface
+// outside the stage may legitimately need: naming its own draft scope, and discarding a draft after
+// a commit that does NOT leave the Spark (the shell handles the ones that navigate).
+export { draftScope, DRAFT_TTL_MS, type SparkDraft } from './draft/draft-store'
+export { clearSparkDraft } from './draft/use-spark-draft'
+
 // The label row a field sits in. Re-exported so a consumer never has to reach across into
 // components/studio/kit to render a Spark field, which is how bespoke <label> markup creeps back in
 // (STUDIO.md §2: no hand-rolled label rows).

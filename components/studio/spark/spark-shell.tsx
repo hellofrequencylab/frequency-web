@@ -9,6 +9,11 @@
 // components/templates and NOT ONE wizard used it (only onboarding did), so each re-declared the
 // centered column, the progress cue, the heading block, and the Back/Continue row.
 //
+// It also carries AUTOSAVE for every Spark at once (ADR-991, ./draft/*): what the author types is
+// kept on their own device as they go, and reopening the Spark offers to restore it or to start
+// fresh. Nothing is sent to the server before the commit each wizard already gates on, so deferred
+// creation is unchanged. No wizard wires any of this; composing the shell IS the wiring.
+//
 // `WizardShell` itself is not reused directly because it supplies its own full-screen canvas for
 // onboarding, which renders OUTSIDE the app shell. A Spark runs INSIDE the app shell, so it takes
 // that file's vocabulary (the exported button classes + WizardProgress) and supplies its own
@@ -16,8 +21,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useRef, type ReactNode } from 'react'
+import { usePathname } from 'next/navigation'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/components/templates'
+import { draftScope } from './draft/draft-store'
+import { useSparkDraft } from './draft/use-spark-draft'
+import { SparkDraftCue, SparkResumeOffer } from './draft/spark-resume'
 
 export interface SparkShellProps {
   /** The thing being made, shown as the eyebrow ("New Event"). */
@@ -50,6 +59,15 @@ export interface SparkShellProps {
   error?: ReactNode
   /** Quiet links under the card (the manual escape hatch, once past the doors). */
   exits?: { label: string; onSelect: () => void }[]
+  /**
+   * Where this Spark's autosaved answers are filed. Defaults to the route plus the eyebrow, which is
+   * stable per surface and says nothing about which entity it is (the kit stays entity-blind).
+   *
+   * Pass `null` to turn autosave off for a surface where a resumed draft would be wrong. Pass a
+   * string to make the scope narrower than the route can (two Sparks on one page, or a per-Space
+   * flow that should not hand one Space's typing to another).
+   */
+  draftScopeKey?: string | null
   children: ReactNode
 }
 
@@ -70,6 +88,7 @@ export function SparkShell({
   footer,
   error,
   exits,
+  draftScopeKey,
   children,
 }: SparkShellProps) {
   // Move focus to the top of each step as it mounts, so keyboard and screen-reader users land on
@@ -84,6 +103,13 @@ export function SparkShell({
     }
     stageRef.current?.focus()
   }, [step])
+
+  // Autosave, for every Spark at once (ADR-991). The shell owns it because the shell is the one
+  // thing all of them compose; a wizard adds nothing and inherits it. `draftScopeKey === null`
+  // opts a surface out entirely.
+  const pathname = usePathname()
+  const scope = draftScopeKey === null ? null : (draftScopeKey ?? draftScope([pathname, eyebrow]))
+  const draft = useSparkDraft({ scope, step, stageRef, busy })
 
   const standardFooter = onNext && (
     <div className={onBack ? 'flex gap-3' : ''}>
@@ -106,7 +132,12 @@ export function SparkShell({
 
   return (
     <div className="mx-auto w-full max-w-lg px-4 py-10">
+      {draft.phase === 'offer' && (
+        <SparkResumeOffer savedLabel={draft.savedLabel} onRestore={draft.restore} onDiscard={draft.discard} />
+      )}
+
       <WizardProgress current={step} total={totalSteps} label={stepLabel} />
+      <SparkDraftCue saveState={draft.saveState} restored={draft.restored} />
 
       <div
         key={step}

@@ -20450,3 +20450,491 @@ read-to-draft-to-ledger path without a database.
 accept a `scan` source; only the wiring from `/events/scan` is absent). Photos posted alongside a chat event
 are carried as filenames for the operator to attach on the draft, not uploaded. Neither is a design gap; both
 are the next increment.
+
+## ADR-990: One Spark, declared per entity, instead of five copies of the same preamble
+
+**Status:** Accepted, shipped. Next free number after ADR-989. Builds on
+[ADR-986](DECISIONS.md#adr-986-the-studio-kernel--one-manifest-per-entity-one-renderer-a-strict-boundary)
+(the Studio kernel) and applies its law to the AI side of creation.
+
+**DRAFT.** This entry lives in `docs/adr-drafts/` only because concurrent work was in flight on
+`docs/DECISIONS.md` when it was written. Move it into the ledger verbatim. Until it lands there,
+`pnpm check:adr` reports every `ADR-990` citation in `lib/ai/*` as dangling, because the guard
+resolves cited numbers against the ledger's headings.
+
+**Context.** ADR-986 gave every creatable entity ONE declaration and one renderer, so a wizard is
+data now, not a hand-built screen. The AI half never got the same treatment. Five modules under
+`lib/ai/` each opened a guided draft, and each had typed out the same twelve-line preamble by hand:
+
+```
+aiEnabled() -> featureOverBudget(FEATURE) -> completeRaw(forced tool)
+  -> withVoice(system, mood) -> recordAiUsage(...) -> find the tool_use block
+  -> re-coerce every field -> catch -> null
+```
+
+`journey-spark.ts`, `practice-spark.ts`, `circle-spark.ts`, and the three event paths in
+`events-ai.ts` carried a copy each. Two older modules, `circle-wizard.ts` and `practice-wizard.ts`,
+predated the sparks entirely and carried an older copy of the same thing.
+
+The duplication was not cosmetic. Each copy is a **spend gate**, and every one of them is load
+bearing: the kill switch, the per-feature daily cap, and the ledger row that makes the cap
+meaningful. Six independent transcriptions of a spend gate is six places for a spend gate to rot,
+and the rot is invisible in review because every copy looks correct on its own. The mood dial
+proved the point: when moods landed (ADR-986), `withVoice(system, mood)` had to be threaded through
+every copy by hand, and a copy that was missed simply stopped steering, silently and with no error.
+
+**Decision.** One runner, `lib/ai/spark.ts`. An entity DECLARES a `SparkSpec` and calls `runSpark`.
+Nothing about the surrounding machinery is written per entity again.
+
+**1. The spec is data.** A `SparkSpec` says what to ask the model for and how to distrust the
+answer: `entity`, `feature` (the budget key), `tier`, `maxTokens`, `tool` (the forced-tool schema),
+`system`, and `coerce`. It says nothing about how to gate spend, thread the voice, or record usage,
+because `runSpark` does all three the same way for everybody. The entity modules are now
+declarations plus a prompt builder plus a coercer, which is exactly what they always should have
+been.
+
+**2. It leans on the kernel rather than restating entity knowledge.** `spec.entity` must resolve in
+the Studio registry, and the MOOD dial is threaded only when that manifest DECLARES it
+(`steer.mood`). One control, declared once, steering every wizard is the whole point of ADR-986; a
+wizard with no dial can now never be silently steered by one. The alternative, letting each spark
+decide for itself whether it has a mood, is how the dial got missed in the first place.
+
+**3. Every budget key, tier, and fallback is unchanged.** This is a refactor of the plumbing, not a
+retune of the caps. The caps in `lib/ai/budget.ts` are cost control tuned per surface, so a spec
+QUOTES a key and never coins, merges, or renames one. Tiers stay where they were declared: Sonnet
+for structured drafting, Haiku for the small one-shot assists, Opus nowhere it was not already. AI
+off or over budget still returns the same `null`, and every wizard degrades to hand entry exactly as
+before. `lib/ai/spark.test.ts` pins all of it: each declared spark's entity, feature key, and tier,
+plus the exact dollar value of every migrated cap.
+
+**4. Re-coercion stays, and got shared bounds.** Never trust the raw model shape. Each spec still
+supplies its own coercer and it still runs on every field. What moved is the five helpers all of
+them had inlined slightly differently (`sparkStr`, `sparkStrOrNull`, `sparkStrArray`, `sparkInt`,
+`sparkEnum`), so a clamp is written once rather than four times with three sets of bounds.
+
+**5. Two legacy modules retired.** `lib/ai/circle-wizard.ts` and `lib/ai/practice-wizard.ts` are
+deleted. They were the pre-spark generation of the same idea, and keeping them would have meant
+maintaining two generations of one pattern side by side. Each became a declaration beside its
+entity's other spark:
+
+| Retired | Now | Key | Tier |
+| --- | --- | --- | --- |
+| `circle-wizard.suggestCircleDraft` | `circle-spark.CIRCLE_SUGGEST` | `circle-create` | Haiku |
+| `practice-wizard.personalizePractice` | `practice-spark.PRACTICE_CLAIM` | `practice-claim` | Haiku |
+
+`fallbackCircleSuggestion` (the deterministic draft the modal shows when Vera is off) moved with it,
+unchanged, and sits beside the spark it backstops.
+
+**What an entity declares now.** Eight sparks across four entities:
+
+| Entity | Spark | Budget key | Tier |
+| --- | --- | --- | --- |
+| Journey | `JOURNEY_SPARK` | `journey-spark` | Sonnet |
+| Practice | `PRACTICE_SPARK` · `PRACTICE_CLAIM` | `practice-spark` · `practice-claim` | Sonnet · Haiku |
+| Circle | `CIRCLE_SPARK` · `CIRCLE_SUGGEST` | `circle-spark` · `circle-create` | Sonnet · Haiku |
+| Event | `EVENT_SPARK` · `EVENT_POSTER_SCAN` · `EVENT_TEXT_ASSIST` | `event-spark` · `event-poster-scan` (both) | Sonnet · Sonnet · Haiku |
+
+The three event sparks share ONE tool schema and ONE coercer, which is why a sparked draft, a
+scanned poster, and a tidied note are identical in shape and the same draft editor consumes all
+three. What differs between them is exactly what should: the brief, the tier, and the budget key.
+
+**Two seams the runner keeps, deliberately.**
+
+- A **lazy system prompt** (`system: () => string`). The event sparks anchor the model to today's
+  date, which is only knowable at call time. Without this the model resolves "the next occurrence"
+  against its training-cutoff year and every scanned event lands in the past.
+- A **per-call `maxTokens`**. Structuring a Practice the member already wrote has to carry their
+  content through, so it needs more room than drafting one from five short answers. It is the same
+  draft on the same budget key. A different key is always a different spec, never a call parameter.
+
+**Known gap, named not fixed.** `circle-spark` is missing from `FEATURE_DAILY_CAP_USD`, so it rides
+the $1 `dailyCapFor` fallback, which is the exact failure that file's own comment warns about. It
+predates this change and its effective cap is left untouched here, because retuning a cap during a
+plumbing refactor is how a cap quietly changes meaning. Register it explicitly at its own value.
+
+**Consequences.** A new capability for every guided draft (a retry, a cache, a per-Space cap, a
+second ledger dimension) is one edit to `runSpark`. A new entity's Spark is a declaration, not a
+module. And the mood regression cannot recur: the dial is threaded in one place, gated by the
+manifest, and covered by a test that asserts the tone directive reaches the system prompt.
+
+## ADR-991: Wizard autosave lives on the device, because a server draft would mean creating the thing
+
+**Status:** Accepted · shipped in `components/studio/spark/draft/*`, inherited by all six Sparks with
+no wizard edited. Follows ADR-986 (the Spark kit).
+
+**Context.** `useStudioDraft` is the platform's autosave engine and NO wizard used it, so a refresh
+part-way through any Spark lost everything the author had typed. Research on creation flows splits
+cleanly on the two obvious remedies: save-and-resume measurably reduces abandonment, and completion
+meters do not. So this builds the first and deliberately omits the second.
+
+**The constraint that decided the design.** Journey, Practice and Circle all guarantee that NOTHING
+persists until the author commits a reviewed title. A server-side draft needs a row, and a row is the
+entity existing before that commit, which is exactly what those wizards forbid. So the draft lives in
+`localStorage` on the author's own device, keyed by route plus the shell's eyebrow. No network call
+was added; the first byte still reaches the server at the same commit the wizards already gate on.
+`sessionStorage` was rejected because it dies with the tab, which loses the "come back this evening"
+case that motivates the feature.
+
+**How it stays entity-blind.** The shell reads the controls mounted in its own stage and keys each
+value by control identity. The Studio kit already gives every declared control an `id` of its manifest
+path, so a field keys itself. The kit never learns what a Journey is, which is what bought zero wizard
+edits. The accepted cost: non-DOM state (Vera's returned draft object, staged files, the step machine)
+is not captured. The answers are the expensive thing, and Vera's draft regenerates from them.
+
+**Refusals, because a draft store is a place secrets go to leak.** Never stored: password / hidden /
+file / submit inputs, radio groups, credential and payment `autocomplete` (`cc-*`,
+`current-password`, `one-time-code`), anything named like a secret, anything marked
+`data-spark-draft="off"`. Capped at 20k chars per value and 100k per draft, so a pasted course outline
+is refused rather than blowing the quota and taking the small answers down with it. Blocked or full
+storage fails quietly.
+
+**Expiry + commit.** Seven days from the LAST write, so a flow picked up daily never expires under the
+author. Opening any Spark prunes every expired draft. A `savedAt` in the future counts as stale. On
+commit the shell treats unmount-while-busy as the commit and discards; leaving any other way keeps the
+draft, and a refresh or crash runs no cleanup at all, which is precisely the case the feature exists
+for.
+
+**Known limit, recorded not hidden.** The store is per-BROWSER, not per-account: two people sharing one
+signed-in profile could be offered each other's typing inside the seven-day window. The TTL and the
+refusal list bound the exposure. Folding an account id into the scope key needs an identity the kit
+cannot see today, and is the follow-up.
+
+## ADR-992: The three modelling gaps ADR-986 recorded, closed or consciously left
+
+**Status:** Accepted · shipped. Extends
+[ADR-986](#) (the Studio kernel) and its addendum, which listed these three honestly
+rather than papering over them. Next free number after ADR-991. Spec: [STUDIO.md](STUDIO.md).
+Code: `lib/studio/kernel/manifest.ts`, `lib/studio/kernel/review-kernel.ts`,
+`lib/studio/entities/{practice,circle,product,listing,service}.ts`.
+
+> **Draft note.** Written to `docs/adr-drafts/` rather than appended to `docs/DECISIONS.md`
+> because several agents were editing that file in the same session. Fold it in verbatim.
+
+**Context.** Declaring the first nine manifests moved the kernel three times, and left three
+things the kernel could not yet say. ADR-986's addendum wrote them down instead of hiding them:
+
+1. `RepeatDef` walked arrays only (`Array.isArray`), so a Practice's per-Pillar `focus_details`
+   (a keyed object, one entry per Pillar) could not expand into rows.
+2. A Circle's `agreements` and `remixOptions` are bare `string[]`, so `RepeatDef`'s
+   `${arrayPath}[i].${path}` convention produced `agreements[0].text`, a stable row key that is
+   not a path anything is stored at.
+3. Neither `commerce_products` nor `market_listings` has a cover-image column, so product,
+   listing, and service all declare `images` with the first item as the de facto cover.
+
+The first two are the same fault seen twice: the kernel modelled ONE container shape (an ordered
+array of records) and every other shape had to be bent to fit it. The bend in (1) was visible (a
+map collapsed to one summary line, so a Pillar's instructions were unreviewable and uneditable).
+The bend in (2) was invisible, which is worse. `agreements[0].text` is harmless only while
+`verify: 'none'` means nothing keys a ledger by it. The day a Circle grew one, every entry would
+have keyed a path the draft does not have, and the failure mode of a mis-keyed ledger is a field
+that looks unverified, or worse, one that looks cleared.
+
+**Decision.**
+
+**Gaps 1 and 2: the kernel learns the shape, rather than the manifest working around it.** Two
+additions, both general capabilities every entity inherits, neither a special case:
+
+| Kernel gains | What it says | Row key it produces |
+|---|---|---|
+| `RepeatDef.over: 'array' \| 'map'` (default `'array'`) | the collection is an object keyed by an id, not an ordered list | `focus_details.<pillarId>.instructions` |
+| `REPEAT_ITEM_SELF` as a field `path` | the item IS the value; there is no sub-key to name | `agreements[0]` |
+
+They are orthogonal, so all four combinations are legal: an array of records, an array of scalars,
+a map of records, a map of scalars. `itemLabel` now receives the key as a third argument (the array
+index as a string, or the map key), which is additive and leaves the six existing declarations
+untouched.
+
+**The rule both serve is PATH FIDELITY:** the string a review row carries is the ledger key the
+server re-checks before anything publishes, so it has to be the real location of the value on the
+draft. Everything else follows from that. A map has no author order, so the kernel sorts its keys,
+because a board that renders the same rows in a different order twice is not a board.
+
+Enforced, not just intended. `validateManifest` now rejects a `REPEAT_ITEM_SELF` field sitting
+beside named siblings (a scalar item has one value, so it gets one field), two repeat fields at the
+same path, an empty `arrayPath`, and an `over` that is neither shape. An empty field path is still
+an error everywhere else. `lib/studio/registry.test.ts` asserts the same properties over every real
+manifest, and `lib/studio/kernel/review-kernel.test.ts` covers all four combinations against a toy
+manifest, including that a map repeat handed an array, a null, or a scalar renders no rows rather
+than throwing.
+
+**Practice** drops its collapsed `focus_details` longtext for a real `over: 'map'` repeat with
+`instructions` and `timing` per Pillar. **Circle** drops the invented `text` sub-key for
+`REPEAT_ITEM_SELF`, and its per-item `read` shims go with it, because the kernel reads the scalar.
+
+One honest limit stays: a Practice's map keys are `pillars` row ids, and a pure manifest cannot
+load a Pillar's name, so the rows are labelled positionally (`Pillar 1`). That is the same reason
+`domain_id` is a `reference` with `optionsFrom: 'pillars'`. A surface that has already loaded that
+collection can relabel; the manifest never pretends to know. Giving the kernel a channel for
+surface-supplied key labels is a separable capability, and is recorded here rather than half-built.
+
+**Gap 3: no cover column. First-as-cover is the model, not a shortcut.** Assessed and declined,
+for reasons that hold in both directions:
+
+- `images` is an ordered `text[]`, and the order is already meaningful. Every reader takes
+  `images[0]` as the cover: the Market grid, the product and listing cards, the detail hero,
+  the email product block, the claim page's OG image.
+- `MultiImageUpload` is already `reorderable` and already labels its first tile as the cover. The
+  seller designates a cover today, by putting it first. There is no missing capability.
+- A `cover_image` column would be a second source of truth for the same picture. Is it also in
+  `images`? Duplicated, or excluded? Every one of those readers would have to reconcile the two,
+  and a backfill would have to guess.
+- An Event is the honest counterexample, and it is why the temptation is worth naming. Its poster
+  is a different THING from its gallery, so it has a real `coverImagePath` beside
+  `galleryImagePaths`. A product's cover is not a different thing. It is its best photo.
+
+So the constraint is documented where it can be acted on: in all three commerce manifests, and as
+a drift guard asserting each commerce entity declares exactly one media field, the gallery. The
+guard fails if a cover field appears beside it, which forces this decision to be revisited
+deliberately rather than drifted past. **No migration was written.**
+
+**Consequences.** `buildFieldModel(manifest, draft, ledger)` keeps its exact signature, so every
+consumer (the commerce Spark, Vera's create tools, the Event seeder, the Business Seeder review
+board) is untouched and their tests pass unmodified. `RepeatDef.arrayPath` keeps its name though it
+now addresses maps too; renaming it is churn across six manifests for no behaviour, and is left for
+whenever the kit next touches repeats.
+
+Two follow-ups fall out, neither blocking:
+
+- **The Spark kit does not render repeat rows yet** (`components/studio/spark/field/*` renders one
+  control per KIND, and repeats reach it only through `buildFieldModel`). When it grows repeat
+  editing, a scalar repeat's control edits the item in place rather than a sub-key, and a map
+  repeat's rows are added and removed by KEY, not by position.
+- **A Practice's Pillar rows read `Pillar 1`, `Pillar 2`** until a surface relabels them from the
+  `pillars` collection it already loads for `domain_id`.
+
+## ADR-993: Three shipped AI assets, generalized: a drawn cover, a mood that sets the look, and one pre-publish quality gate
+
+**Status:** Accepted, shipped (server side). Builds on
+[ADR-986](DECISIONS.md#adr-986-the-studio-kernel--one-manifest-per-entity-one-renderer-a-strict-boundary)
+(the Studio kernel), ADR-488 (the Loom's Recraft engine), ADR-987 (the Loom is the only image path),
+and ADR-Quest (the Journey rank gate). Sibling to the in-flight ADR-990 (one Spark runner): same
+law, applied to the three assets that were built, governed, budgeted, and then wired to exactly one
+surface each.
+
+**DRAFT.** This entry lives in `docs/adr-drafts/` only because concurrent work was in flight on
+`docs/DECISIONS.md` when it was written. Move it into the ledger verbatim.
+
+**Context.** Three capabilities were already paid for and already governed, and each reached one
+surface:
+
+| Asset | Built for | Reached |
+|---|---|---|
+| Recraft image + vector generation (`lib/loom/recraft.ts`, ADR-488) | the Loom | the admin Library, and nowhere else |
+| `moodToSpaceTheme()` (`lib/importer/moods.ts`) | the Business Seeder | Spaces, and nothing else |
+| The Journey rank gate (`lib/ai/journey-review.ts`) | Journeys | Journeys, and nothing else |
+
+None of this is new capability. The generalization is the work, and the reason it matters is that
+each of the three answers a question every entity has: what does it look like when the author has
+no picture, what does the mood dial actually change, and what stops an AI-drafted library filling
+with slop.
+
+---
+
+### 1. A drawn cover, offered on any review step
+
+**Decision.** An author who reaches a review step with no cover image may be OFFERED one. The rule
+for who qualifies is derived from the manifest, not from a second list.
+
+`coverFieldFor(manifest)` (`lib/loom/cover.ts`) takes the first `image` / `images` field an entity
+declares, **skipping any field marked `veraDrafts: false`**. That flag already means "only a human
+or a source may fill this", which is exactly the right line: a Space logo, a product photo, and a
+listing's photos are claims about a real thing, and a drawing is not one. A Journey cover, a
+Practice header, and an Event poster carry no such claim. So today the offer reaches
+`journey.cover_image`, `practice.header_image`, and `event.coverImagePath`, and reaches nothing
+else, with no per-entity opt-in written anywhere. Declare a coverable image field on a new entity
+and it qualifies; declare `veraDrafts: false` and it never will.
+
+**It is an offer, never a default.** Nothing generates on save, on publish, or on draft.
+`generateEntityCoverAction` runs when a person presses a button, and it returns a URL: it does not
+touch the entity. Putting the image on the draft is the surface's job, which is the seam that keeps
+this from becoming an autonomous write. Finishing with no image at all stays a first-class outcome.
+
+**It files into the Loom** (ADR-987), through `insertSpaceLibraryImage`, into the author's own Loom
+('mine' → the root library stamped `created_by`) or into a Space's Loom when the caller manages that
+Space (`canEditProfile`, the same authority the picker uses). It is a real `library_assets` row:
+catalogued, searchable, reusable, deletable. Not a loose vendor URL that expires. `insertSpaceLibraryImage`
+gained two optional fields (`tags`, `config`) so a generation can be filed through the same one write
+path as an upload instead of growing a second one; every existing caller is byte-identical.
+
+**It is labelled as AI four times over** (docs/AI-VERA.md §10): `source: 'recraft'`; the tag
+`generated`, which is exactly what `toPickAsset` reads to badge an image in the Loom picker; the
+asset title, which says "made by Vera" in plain words; and a returned provenance entry
+(`{ kind: 'generated' }`) the surface drops into the draft's ledger, so the review board's existing
+"Written by Vera" badge lights up from the kernel with no new render code.
+
+**Prompt rules, baked in and not per-call:** no text (diffusion lettering is the fastest way to look
+cheap, and the title is set in real type over the image anyway), no human faces (a generated face
+reads as a real person who was never there), and an illustration rather than a photo (a generated
+photo is a claim about something that happened).
+
+**Budget: `entity-cover`, $2/day.** At Recraft's $0.04 per raster generation that is 50 covers a day
+platform-wide, which is well above expected beta volume for a control that only fires on a press,
+and low enough that a UI bug that loops cannot cost real money. It is a NEW key rather than a reuse
+of `recraft` ($10) deliberately: `recraft` is the operator studio, and an operator's bulk asset run
+and a member's one cover should not be able to eat each other's headroom or hide each other in the
+ledger. Raster, not vector: a cover is a picture, and the vector lane costs double.
+
+### 2. The mood drives the look, not just the words
+
+**Decision.** `lib/importer/moods.ts` becomes the mood-to-LOOK mapping for every entity, not just the
+Space page theme. One call, `moodLook(mood)`, returns the page theme, the accent colour, the kernel's
+accent emphasis, and the image style words.
+
+| Mood | Page theme | Accent | Generated image |
+|---|---|---|---|
+| warm | editorial | clay | warm earthy palette, soft natural light |
+| bold | bold | indigo | high contrast, saturated, strong shapes |
+| calm | classic | teal | muted, negative space, soft even light |
+| playful | playful | gold | bright friendly colour, rounded shapes |
+
+`jade` (the house default accent) is deliberately unmapped, the same way `accessible` is deliberately
+unmapped as a theme: "no mood chosen" must not look identical to a chosen mood.
+
+**`SpaceThemeId` and `AccentKey` stay out of the kernel**, which is why this mapping lives here and
+not in `lib/studio/kernel/moods.ts`. The kernel says what a mood MEANS (tone words, CTA posture,
+accent emphasis) and declares no entity types. This file says what a mood LOOKS LIKE in the concrete
+controls the product actually has. The arrow still points one way.
+
+**Wired:** the Journey Spark now sets `journey_plans.accent` from the chosen mood at creation
+(`createJourneyFromSparkAction`), and only when a mood was actually chosen, mirroring the Space seed's
+`if (mood)` guard. The Space seed's existing `preferences.theme` mapping is unchanged. Both are
+starting points the author can override, never locks.
+
+### 3. One pre-publish quality gate, any entity can opt into
+
+**Decision.** The Journey rank gate is split into an entity-agnostic engine (`lib/ai/quality-gate.ts`)
+and a Journey-shaped caller (`lib/ai/journey-review.ts`, which now only loads the plan and renders it
+as text). The engine owns the prompt, the rubric loading, the kill switch, the budget check, the
+forced-tool call, and the coercion. A standard is DATA:
+
+```ts
+{ entity, label, feature, tier, passScore, stakes, rubricPath?, fallbackRubric, guidance?, pending }
+```
+
+**The Journey's behaviour is unchanged**, on purpose: the same `journey-review` budget key, the same
+Opus tier, the same 70 bar, the same rubric doc, the same three member-facing fail-closed lines.
+`PASS_SCORE`, `REVIEW_FEATURE`, `coerce`, and `reviewJourneyForLibrary` all keep their signatures, so
+every caller and every existing test is untouched.
+
+**Opting in is one call**, not a declaration. `qualityStandardFor(entity, label)` returns the entity's
+declared standard if it has one, and otherwise builds a default from the voice canon plus the plain
+test of whether a draft says something SPECIFIC. That default is enough to catch generated slop
+(generic promises, hype, copy that could describe anything), which is the actual job. So
+`QUALITY_STANDARDS` stays short: it holds the entities whose bar is genuinely different, not every
+entity.
+
+**Fail-closed is still the law, and it generalized with the gate.** AI off, over budget, unconfigured,
+erroring, or an untrustworthy shape all return `status: 'pending'` with score 0. `pending` is NEVER a
+pass. The score bar sits UNDER the model's verdict, so a model "approved" below `passScore` is
+downgraded, and a pass cannot drift no matter what the model says.
+
+**It is a read, never a writer.** `reviewEntityDraftAction` returns a verdict and persists nothing.
+Deciding what a verdict COSTS stays with the entity that knows (a Journey's `ranked_eligible` is still
+set in `app/(main)/journeys/actions.ts`). A `rejected` verdict on any other entity is advice; the
+author still decides. Nothing runs the gate on a timer or on save.
+
+**Budget: `entity-review`, $4/day, Sonnet.** One shared key for every entity that has not declared its
+own, so a generalized capability costs one cap rather than one per entity. At roughly $0.02 a read
+that is about 200 reads a day. Sonnet rather than Opus is a deliberate new choice, not a downgrade of
+anything: the generic read judges COPY against a written voice standard, which Sonnet does reliably.
+The Journey gate stays Opus because it decides RANK, a scarce resource people will try to game.
+
+---
+
+**Invariants held across all three.** Every path keeps its `lib/ai/budget.ts` cap, its kill-switch
+fallback (`aiAvailable()`), and a deliberate model tier. Both new feature keys are registered with a
+stated reason for the number. Every AI output is labelled as AI. Nothing added here writes on its own:
+each of the three returns a value to a surface, and a person decides what happens to it.
+
+**What is not done yet.** The two surfaces that would let a member SEE any of this are kit components
+owned elsewhere: the review board needs a "draw one" affordance for `coverOffer(...)` and a "check it
+over" affordance for `reviewEntityDraftAction`, and the board's `generated` badge should read "Made by
+Vera" on an `image` row rather than "Written by Vera". The server halves are complete and tested; the
+kit change is one row each.
+
+## ADR-994: Edit re-entry — the Guided section of the Inspector rail
+
+**Status:** Accepted · shipped on Practice, the pattern proved. Builds out the unbuilt half of
+[ADR-450](#) §2 (the one Edit toggle, two planes) on top of the Studio kernel
+([ADR-986](#), ADR-992). Menu contract:
+[ADR-553](#). Specs: [EDITING-SYSTEM.md](EDITING-SYSTEM.md) §2,
+[STUDIO.md](STUDIO.md) §0, [MENU-CONTRACT.md](MENU-CONTRACT.md).
+Code: `lib/admin/modules/registry.ts` (the catalog row), `components/admin/modules/
+practice-guided-module.tsx`, `lib/studio/redraw.ts`, `app/(main)/practices/actions.ts`.
+
+> **Draft note.** Written to `docs/adr-drafts/` rather than appended to `docs/DECISIONS.md`
+> because several agents were editing that file in the same session. Fold it in verbatim.
+
+**Context.** The owner's ask was plain: users should be able to go back to the wizard and edit
+the core info. ADR-450 §2 had already designed the answer (an entity page in Edit Mode is an
+inline canvas plus an Inspector rail, and the rail's first section is Guided), and ADR-986 had
+already built the parts (`SparkSteer`, `SparkReview`, `railFields` / `inlineFields`). None of it
+was mounted anywhere. So creation had a guided flow and editing had none, and the Spark was a
+one-way door: an author who wanted a different angle on a practice they had already made had to
+retype it, or ask Vera in the composer and hope.
+
+The reason nobody built it is worth naming, because it is the whole design problem. A redraw over
+a LIVE entity is not the same act as a draft over nothing. There is already something good in
+there. Without a way to protect it, "draft it again" is a coin flip an author will not take, and
+an AI editing surface that nobody dares press is not a feature.
+
+**Decision.** Mount `SparkSteer` as a rail module named **Guided**, first on the entity's rail,
+and make its redraw safe by construction and legible after the fact.
+
+**1. The rail row is a catalog row, not a render edit.** One row in `ADMIN_MODULES`
+(`lib/admin/modules/registry.ts`) plus one line in `MODULE_COMPONENTS`
+(`components/admin/modules/module-map.tsx`). Nothing in the rail render changed.
+
+| Field | Value | Why |
+|---|---|---|
+| `id` | `practice.guided` | one module id per entity, so the pattern extends by row |
+| `slot` | `basics` | Guided edits exactly what Basics holds, and the 9-category spine is its own locked contract. Inventing a `guided` cell would be a spine change for a header |
+| `order` / `priority` | `5` / `5` | below `practice.settings` (10), so Guided leads the rail. ADR-450's fixed section order, expressed in data |
+| `tier` | `standard` | the identity band, inline at the top |
+| `requiredCapability` | `practice.editSettings` | the same gate the settings module holds, re-checked by every action |
+
+**2. Lock is enforced by removal, never by asking.** `SparkSteer` renders lock pins only when an
+`onRedraw` handler exists, which is deliberate: pins that survive nothing would be a lie. This
+surface honours that literally. A manifest's `steer.lock` names section keys or field paths;
+`lib/studio/redraw.ts` resolves a pin to concrete field paths and **deletes them from the patch**
+before anything is compared or written. The prompt is also told what to leave alone, but the
+prompt is the courtesy and the delete is the guarantee: a pin holds even when the model ignores
+it. Pins the manifest never offered are dropped, so a client cannot invent protection the server
+did not agree to.
+
+For a Practice, `steer.lock: ['content']` is one pin covering hook, description, and guide. That
+is the point of resolving pins through the manifest rather than listing paths in the UI: an author
+pins "The practice", and the section decides what that means.
+
+**3. The diff is shown, not left to be found.** A redraw returns the fields that moved, each with
+its manifest label, its previous value, and its new one, plus the names of the pins that were
+honoured. The rail renders old beside new and offers one tap to put it back (the previous values
+come back with the diff, so the undo is `updatePracticeAction` with the same record). Fields that
+did not move never reach the database, so "Vera kept this one as it is" is an honest answer rather
+than a silent no-op write.
+
+**4. One entity end to end.** Practice, because it already had every part: a manifest with
+`steer`, an owner-gated rail, and an existing Vera edit path (`planPracticeEdits`) that rewrites
+fields on a built practice rather than drafting a new one. Circle, Event, and Journey are one
+catalog row plus one action each and are deliberately NOT wired here. A single working re-entry is
+worth more than four half-wired ones, and the second entity will show whether the redraw action
+generalizes before it is copied four times.
+
+**Consequences.**
+
+- `lib/studio/redraw.ts` is pure and entity-blind (it takes a manifest as an argument and knows
+  nothing about which one), so it is a file move away from being kernel code. It sits beside the
+  kernel rather than inside it only because the kernel was owned by another change in flight.
+  Fold it into `lib/studio/kernel/` when convenient; `pnpm check:studio` already passes either way.
+- **Mood and directions are not persisted.** They are dials on a control, not settings on a
+  practice, and no column holds them. An author who redraws twice re-picks the mood. Storing the
+  last steer per entity is a real improvement and a separate decision, because it needs a column.
+- **`SparkReview` stays unwired, on purpose.** It renders a `FieldModel`, which has no concept of
+  a field having CHANGED, and its signals come from a provenance ledger a Practice does not have
+  (`verify: 'none'`), so every row would paint the same amber. Using it as the diff would have
+  meant either a bespoke second board or a kernel change (a `changed` flag on `FieldState`, or a
+  `previous` value). Recorded rather than half-built: the kernel is the right home for a diff
+  model, and this surface's diff panel is the honest interim.
+- The `practice.guided` row is asserted in `lib/admin/modules/registry.test.ts` (it leads the
+  practice rail on both `modulesFor` and `modulesForScopeKind`), and the lock and diff rules in
+  `lib/studio/redraw.test.ts`, against a toy manifest AND against the real Practice one.

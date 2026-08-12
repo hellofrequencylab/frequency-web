@@ -84,8 +84,13 @@ describe('admin module registry', () => {
 
   it('surfaces the practice spine only on a practice scope, only with practice.editSettings', () => {
     const caps = new Set<Capability>(['practice.editSettings'])
-    // Practice now carries Basics + Insights (ADMIN-RAIL Phase 7), both gated practice.editSettings.
-    expect(modulesFor(practiceScope, caps).map((m) => m.id)).toEqual(['practice.settings', 'practice.insights'])
+    // Practice carries Guided + Basics + Insights, all gated practice.editSettings. Guided (ADR-994,
+    // the ADR-450 §2 edit re-entry) sorts FIRST on `order` 5, so the rail leads with the steer dials.
+    expect(modulesFor(practiceScope, caps).map((m) => m.id)).toEqual([
+      'practice.guided',
+      'practice.settings',
+      'practice.insights',
+    ])
     expect(modulesFor(practiceScope, new Set<Capability>())).toHaveLength(0)
     expect(modulesFor(circleScope, caps)).toHaveLength(0)
   })
@@ -263,7 +268,9 @@ describe('admin module registry', () => {
       'event.people',
       'event.crm',
     ])
+    // Guided leads (order 5), then Basics (10), then Insights (10, declared after).
     expect(modulesForScopeKind('practice', 'sidebar').map((m) => m.id)).toEqual([
+      'practice.guided',
       'practice.settings',
       'practice.insights',
     ])

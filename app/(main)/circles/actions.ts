@@ -12,7 +12,7 @@ import { SITE_URL } from '@/lib/site'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { track } from '@/lib/analytics/track'
 import { type ActionResult, fail } from '@/lib/action-result'
-import { suggestCircleDraft, fallbackCircleSuggestion, type CircleSuggestion } from '@/lib/ai/circle-wizard'
+import { suggestCircleDraft, fallbackCircleSuggestion, type CircleSuggestion } from '@/lib/ai/circle-spark'
 import { recordCircleStarterMilestone } from '@/lib/beta/referral-contest'
 
 // Vera's start-a-circle assist: suggest a name + about from the chosen Interest.

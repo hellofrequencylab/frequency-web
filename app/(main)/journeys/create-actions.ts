@@ -18,6 +18,7 @@ import { getTemplate, templateToBlocks, MASTER_FRAMEWORK, masterFrameworkToBlock
 import { pillarIdsBySlug } from '@/lib/journeys/compose'
 import { draftJourneySpark, type SparkAnswers, type JourneySpark, type ArcWeek, type SparkSettings, type SparkMeeting } from '@/lib/ai/journey-spark'
 import { normalizeJourneyMeeting } from '@/lib/journey-plans'
+import { isSeedMood, moodToAccent } from '@/lib/importer/moods'
 import { composeJourneyAction } from '@/app/(main)/journeys/[slug]/edit/actions'
 import { composeIntoPhase } from '@/lib/journeys/compose'
 import { extractOverviewText } from '@/lib/journeys/extract-text'
@@ -205,6 +206,12 @@ export async function createJourneyFromSparkAction(input: {
   }
   if (overview) planUpdate.intro = overview
   if (source) planUpdate.source_overview = source.slice(0, 20000)
+  // THE MOOD DRIVES THE LOOK, not just the copy tone (ADR-993). The same dial that steers Vera's
+  // words picks the Journey's accent colour, so a "calm and trustworthy" Journey reads calm AND looks
+  // it. Only when a mood was actually chosen, mirroring the Space seed (lib/importer/materialize.ts):
+  // an author who skipped the dial keeps the house default accent rather than being silently themed.
+  // The author can still change it in the editor; this is a starting point, never a lock.
+  if (isSeedMood(a.mood)) planUpdate.accent = moodToAccent(a.mood)
   if (s?.difficulty) planUpdate.difficulty = s.difficulty
   if (s?.category) planUpdate.category = s.category
   if (s?.tags?.length) planUpdate.tags = s.tags

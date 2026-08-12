@@ -112,7 +112,14 @@ export const LISTING_MANIFEST: EntityManifest = {
 
     // ── Photos. The gap this manifest exists to close: stored as a string[] (capped at 6 by
     // cleanImages) and collected today as URLs in a textarea. Never omitWhenEmpty, so "no photos"
-    // reads as a to-do. ──
+    // reads as a to-do.
+    //
+    // FIRST IS THE COVER, and that is the model, not a shortcut (ADR-992). `market_listings` has
+    // no cover column and is not getting one: the list is ordered, every reader already takes
+    // `images[0]` (the Market grid, the listing card, the detail hero, the claim page's OG image),
+    // and the picker is reorderable, so a member designates a cover by putting it first. A second
+    // column for the same picture would have to be reconciled at every one of those reads. ONE
+    // field, no `image` beside it. ──
     { path: 'images', label: 'Photos', kind: 'images', section: 'photos', placement: 'spark', veraDrafts: false, read: (d) => photoCount(d.images) },
 
     // ── Details (prose: Vera can draft it, the member owns it) ──

@@ -134,7 +134,12 @@ export const SERVICE_MANIFEST: EntityManifest = {
     { path: 'category', label: 'Category', kind: 'text', section: 'identity', placement: 'spark', omitWhenEmpty: true },
 
     // ── Photos. Same column as a product (capped at 8 by createProduct), same gap: no service
-    // editor writes it today. Never omitWhenEmpty, so "no photos" reads as a to-do. ──
+    // editor writes it today. Never omitWhenEmpty, so "no photos" reads as a to-do.
+    //
+    // FIRST IS THE COVER, the same model as a product and for the same reason (ADR-992):
+    // `commerce_products.images` is ordered, every reader takes `images[0]`, and the picker is
+    // reorderable, so the Space designates a cover by putting it first. ONE field, no `image`
+    // beside it. ──
     { path: 'images', label: 'Photos', kind: 'images', section: 'photos', placement: 'spark', veraDrafts: false, read: (d) => photoCount(d.images) },
 
     // ── Details (prose: Vera can draft it, the Space owns it) ──
