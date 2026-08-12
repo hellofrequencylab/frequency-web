@@ -1,18 +1,23 @@
-// Vera's "Spark" — the opening step of the guided Practice builder (mirrors lib/ai/journey-spark.ts,
-// ADR-358). From a few light answers (who it's for, what the act is, the outcome, how often, how
-// long), Vera drafts the WHOLE Practice: a name, a card hook, a one-line description, a full guide
-// (the steps), plus the Pillar it fits and a cadence/time suggestion. A Practice is an atom (no
-// weekly arc), so unlike the Journey spark this drafts the full content in one pass. Forced-tool
-// structured output + the voice + Practice-shape primers + the usage ledger, never trusting the raw
-// shape. Degrades to null when AI is off (the wizard then lets the author type it by hand).
+// Vera's Practice drafting, two declared sparks (ADR-990) over one shared runner.
+//
+//   • PRACTICE_SPARK ('practice-spark', Sonnet) — the guided builder's opening step (ADR-358).
+//     From a few light answers (who it's for, what the act is, the outcome, how often, how long),
+//     Vera drafts the WHOLE Practice: a name, a card hook, a one-line description, a full guide,
+//     the Pillar it fits, a cadence/time suggestion, and the timer. A Practice is an atom (no
+//     weekly arc), so unlike the Journey spark this drafts the full content in one pass.
+//   • PRACTICE_CLAIM ('practice-claim', Haiku) — the claim wizard (ADR-116): a member is taking a
+//     starter TEMPLATE and making it theirs, so Vera personalizes the title, cadence, steps, and
+//     the "why" to their goal and their real schedule. This was lib/ai/practice-wizard.ts, which
+//     predated the sparks and hand-rolled the same preamble; retired into this declaration.
+//
+// The kill switch, the per-feature budget cap, the forced-tool call, the voice + mood primers, the
+// usage ledger, and the degrade-to-null all live in runSpark (lib/ai/spark.ts). Both paths return
+// null when AI is off, so the builder falls back to hand entry and the claim wizard falls back to
+// the template's own content.
 
 import type Anthropic from '@anthropic-ai/sdk'
-import { completeRaw } from './complete'
-import { aiEnabled } from './client'
-import { MODELS } from './models'
-import { estimateCostUsd } from './budget'
-import { recordAiUsage, featureOverBudget } from './usage'
-import { withVoice } from './voice'
+import type { SeedMood } from '@/lib/studio/kernel/moods'
+import { defineSpark, runSpark, sparkStr, sparkStrArray, sparkInt, sparkEnum } from './spark'
 import { withPracticeShape } from './practice-shape'
 import { COMPOSE_PILLARS, type ComposePillar } from './journey-composition'
 
@@ -36,6 +41,8 @@ export interface PracticeSparkAnswers {
   cadence: PracticeCadenceHint
   /** Roughly how much time one session takes. */
   pace: PracticePace
+  /** The MOOD dial (ADR-986): steers TONE only. It never changes what is true, just how it reads. */
+  mood?: SeedMood
 }
 
 /** The cadence options the wizard offers, kept tight so they line up with the builder's select. */
@@ -141,13 +148,20 @@ How to write:
 - No jargon, no mysticism, no emoji, no em dashes. Never use the word "Mission".
 - Always call the ${TOOL_NAME} tool.`
 
+/** The declared Practice spark. */
+export const PRACTICE_SPARK = defineSpark<PracticeSpark>({
+  entity: 'practice',
+  feature: FEATURE,
+  tier: SPARK_TIER,
+  maxTokens: 800,
+  tool: TOOL,
+  system: withPracticeShape(SYSTEM),
+  coerce,
+})
+
 export async function draftPracticeSpark(
   input: PracticeSparkAnswers & { profileId?: string | null; sourceText?: string | null },
 ): Promise<PracticeSpark | null> {
-  if (!aiEnabled()) return null
-  // Per-feature daily cap (lib/ai/budget.ts): over budget => fall back to hand-entry, never bill on.
-  if (await featureOverBudget(FEATURE)) return null
-
   // Two modes: structure a Practice the member ALREADY WROTE (sourceText), or draft one from
   // their short answers. The written path preserves their content and only tidies + structures it.
   const written = input.sourceText?.trim().slice(0, 6000) ?? ''
@@ -176,53 +190,41 @@ export async function draftPracticeSpark(
         `Draft the Practice and call ${TOOL_NAME}.`,
       ].join('\n')
 
-  try {
-    const res = await completeRaw({
-      tier: SPARK_TIER,
-      maxTokens: written ? 1200 : 800,
-      thinking: { type: 'disabled' },
-      system: withVoice(withPracticeShape(SYSTEM)),
-      tools: [TOOL],
-      toolChoice: { type: 'tool', name: TOOL_NAME },
-      messages: [{ role: 'user', content: userText }],
-    })
-    void recordAiUsage({
-      feature: FEATURE,
-      model: MODELS[SPARK_TIER],
-      usage: res.usage,
-      costUsd: estimateCostUsd(SPARK_TIER, res.usage),
-      profileId: input.profileId ?? null,
-    })
-    const block = res.content.find(
-      (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === TOOL_NAME,
-    )
-    return block ? coerce(block.input) : null
-  } catch {
-    return null
-  }
+  return runSpark(PRACTICE_SPARK, {
+    content: userText,
+    mood: input.mood,
+    profileId: input.profileId,
+    // Structuring a Practice the member ALREADY WROTE has to carry their content through, so it
+    // needs more room than drafting one from five short answers. Same draft, same budget key.
+    maxTokens: written ? 1200 : undefined,
+  })
 }
 
-function coerce(raw: unknown): PracticeSpark | null {
+/** Re-coerce every field. Never trust the raw model shape. */
+export function coerce(raw: unknown): PracticeSpark | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Record<string, unknown>
-  const title = typeof r.title === 'string' ? r.title.trim().slice(0, 80) : ''
-  const summary = typeof r.summary === 'string' ? r.summary.trim().slice(0, 140) : ''
-  const description = typeof r.description === 'string' ? r.description.trim().slice(0, 280) : ''
-  const body = typeof r.body === 'string' ? r.body.trim().slice(0, 8000) : ''
+  const title = sparkStr(r.title, 80)
+  const summary = sparkStr(r.summary, 140)
+  const description = sparkStr(r.description, 280)
+  const body = sparkStr(r.body, 8000)
   if (!title) return null
 
-  const pillarRaw = typeof r.pillar === 'string' ? r.pillar.trim().toLowerCase() : ''
-  const pillar = COMPOSE_PILLARS.includes(pillarRaw as ComposePillar) ? (pillarRaw as ComposePillar) : null
+  const pillar = sparkEnum(r.pillar, COMPOSE_PILLARS as readonly ComposePillar[])
 
-  const cadenceRaw = typeof r.cadence === 'string' ? r.cadence.trim() : ''
+  const cadenceRaw = sparkStr(r.cadence, 40)
   const cadence = ['Daily', 'A few times a week', 'Weekly'].includes(cadenceRaw) ? cadenceRaw : 'Daily'
 
-  const dm =
-    typeof r.duration_min === 'number' && Number.isFinite(r.duration_min)
-      ? Math.max(1, Math.min(600, Math.floor(r.duration_min)))
-      : null
-
-  return { title, summary, description, body, pillar, cadence, durationMin: dm, timer: coerceTimer(r) }
+  return {
+    title,
+    summary,
+    description,
+    body,
+    pillar,
+    cadence,
+    durationMin: sparkInt(r.duration_min, 1, 600),
+    timer: coerceTimer(r),
+  }
 }
 
 /** Narrow the timer half against the REAL enums (never trust the raw shape). Anything off the
@@ -249,4 +251,105 @@ function coerceTimer(r: Record<string, unknown>): PracticeSparkTimer {
   const warmupMessage =
     typeof r.warmup_message === 'string' && r.warmup_message.trim() ? r.warmup_message.trim().slice(0, 140) : null
   return { timerKind, mindlessMode, breathPattern, movementMode, warmupMessage }
+}
+
+// ── The claim wizard (ADR-116), retired from lib/ai/practice-wizard.ts ────────────────────────
+
+export interface PracticeSuggestion {
+  title: string
+  cadence: string
+  steps: string[]
+  why: string
+}
+
+const CLAIM_TOOL_NAME = 'personalize_practice'
+
+const CLAIM_TOOL: Anthropic.Tool = {
+  name: CLAIM_TOOL_NAME,
+  description: 'Return a personalized version of the practice for this member.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      title: { type: 'string', description: 'A short, motivating name for THEIR version (≤ 60 chars).' },
+      cadence: {
+        type: 'string',
+        description: "How often, in their words, e.g. 'Daily', 'Weekday mornings', '3× a week'.",
+      },
+      steps: {
+        type: 'array',
+        items: { type: 'string' },
+        description: '3–5 short, concrete steps tailored to their goal + schedule, in second person.',
+      },
+      why: {
+        type: 'string',
+        description: 'One warm sentence on why this version will work for them specifically.',
+      },
+    },
+    required: ['title', 'cadence', 'steps', 'why'],
+  },
+}
+
+const CLAIM_SYSTEM = `You are Vera, Frequency's warm, encouraging guide. A member is claiming a starter PRACTICE TEMPLATE and making it their own. Personalize it to THEM.
+
+Rules:
+- Keep the spirit of the template, but adapt the title, cadence, and steps to the member's stated goal and realistic schedule.
+- steps: 3–5 short, concrete, doable actions in second person ("Lay your shoes by the door"). No fluff, no preamble.
+- cadence: match what they can realistically sustain; undercommit rather than over-promise.
+- title: a short, motivating name for their version.
+- why: one genuine sentence on why this fits them. Never invent facts about them.
+- Always call the personalize_practice tool.`
+
+/** The declared claim spark. Its own budget key ('practice-claim', $1) and its own tier (Haiku:
+ *  one short draft, high enough volume that Sonnet would not earn its price). Both unchanged
+ *  from lib/ai/practice-wizard.ts. */
+export const PRACTICE_CLAIM = defineSpark<PracticeSuggestion>({
+  entity: 'practice',
+  feature: 'practice-claim',
+  tier: 'haiku',
+  maxTokens: 700,
+  tool: CLAIM_TOOL,
+  system: CLAIM_SYSTEM,
+  coerce: coerceClaim,
+})
+
+export async function personalizePractice(input: {
+  template: { title: string; summary: string | null; body: string | null; cadence: string | null }
+  goal: string
+  schedule: string
+  profileId?: string | null
+}): Promise<PracticeSuggestion | null> {
+  const goal = input.goal.trim().slice(0, 1000)
+  if (!goal) return null
+
+  const t = input.template
+  const userText = [
+    'TEMPLATE',
+    `Title: ${t.title}`,
+    t.summary ? `Summary: ${t.summary}` : '',
+    t.cadence ? `Suggested cadence: ${t.cadence}` : '',
+    t.body ? `Guide:\n${t.body.slice(0, 1500)}` : '',
+    '',
+    'MEMBER',
+    `Their goal: ${goal}`,
+    input.schedule.trim() ? `Their realistic schedule: ${input.schedule.trim().slice(0, 300)}` : '',
+    '',
+    `Personalize this practice for them and call ${CLAIM_TOOL_NAME}.`,
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  return runSpark(PRACTICE_CLAIM, { content: userText, profileId: input.profileId })
+}
+
+/** Re-coerce every field. A version with no steps is not a personalized practice, so it is null
+ *  and the wizard keeps the template's own content. */
+export function coerceClaim(raw: unknown): PracticeSuggestion | null {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Record<string, unknown>
+  const title = sparkStr(r.title, 80)
+  const cadence = sparkStr(r.cadence, 40)
+  const why = sparkStr(r.why, 200)
+  const steps = sparkStrArray(r.steps, 400, 6)
+  if (!title || steps.length === 0) return null
+  return { title, cadence: cadence || 'Daily', steps, why }
 }

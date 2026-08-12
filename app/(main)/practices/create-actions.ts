@@ -91,6 +91,12 @@ export async function createPracticeFromSparkAction(input: {
     movementMode?: string | null
     warmupMessage?: string | null
   } | null
+  /**
+   * A header image the author kept from Vera's draw on the review step (ADR-993). It is already a
+   * real asset in their Loom (generateEntityCoverAction files it there), so this only records
+   * WHICH image the Practice wears. Absent is the normal case and stays perfectly fine.
+   */
+  headerImage?: string | null
 }): Promise<void> {
   const gate = await authorizeCreatePractice()
   if ('error' in gate) redirect('/practices')
@@ -120,6 +126,10 @@ export async function createPracticeFromSparkAction(input: {
   if (input.body?.trim()) patch.body = input.body.trim()
   if (input.cadence?.trim()) patch.cadence = input.cadence.trim()
   if (input.durationMin != null) patch.duration_min = input.durationMin
+  // Only an http(s) URL is accepted: the column feeds an <img src>, and a client-sent string is
+  // never trusted to be one just because our own UI sent it. updatePractice caps it at 500.
+  const headerImage = input.headerImage?.trim() ?? ''
+  if (/^https?:\/\//i.test(headerImage)) patch.header_image = headerImage
   // The timer half (ADR-920 Phase 5): before this, every Vera-drafted practice shipped as a
   // default silent sit and the author had to find ~350 lines of nested controls unprompted.
   const t = input.timer

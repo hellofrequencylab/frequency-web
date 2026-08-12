@@ -35,6 +35,9 @@ export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   'room-search': 1,            // semantic search over room history (free embeddings; cap is a safety net)
   'vera-chat': 5,              // Vera's live companion loop (Haiku, high-volume member-facing)
   'journey-review': 3,         // Vera's rank quality gate on member-built Journeys (Opus; low-volume, fail-closed)
+  // ── Shared Studio surfaces (ADR-993): one key per generalized capability, not one per entity ──
+  'entity-review': 4,          // the pre-publish quality read ANY entity opts into (Sonnet; ~$0.02/read, so ~200 reads/day)
+  'entity-cover': 2,           // Recraft cover offered on a review step with no image ($0.04/raster, so 50 covers/day)
   'space-copilot': 2,          // per-Space owner profile drafting (bio/tagline/offering blurb, Haiku)
   // ── Journey builder (member-facing, low-volume authoring) ─────────────────────────────────────
   'journey-spark': 3,          // draft a Journey's identity + weekly arc (Sonnet; structured, on-demand)

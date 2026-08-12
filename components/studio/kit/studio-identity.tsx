@@ -26,7 +26,7 @@ export function IconAccentFace({
   const dim = size === 'lg' ? 'h-16 w-16' : 'h-11 w-11'
   const glyph = size === 'lg' ? 'h-7 w-7' : 'h-5 w-5'
   const style = { backgroundColor: accentTint(accent, 16), color: accentColor(accent) }
-  const cls = `flex ${dim} shrink-0 items-center justify-center rounded-2xl`
+  const cls = `flex ${dim} shrink-0 items-center justify-center rounded-card`
   if (onClick) {
     return (
       <button type="button" onClick={onClick} aria-label="Choose an icon" className={`${cls} transition-transform hover:scale-105`} style={style}>

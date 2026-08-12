@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useMemo, useEffect, useTransition } from 'react'
+import Link from 'next/link'
 import { CalendarDays, Home, MapPin, ShieldCheck, Users } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/field'
-import { previewImport } from './actions'
+import { previewImport, stageEventsForReview } from './actions'
 import type { ClassifiedItem, ImportPreview } from '@/lib/whatsapp/types'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 
@@ -69,9 +70,11 @@ export function ImportClient() {
       <div className="flex items-start gap-2 rounded-card border border-border bg-surface-elevated/60 p-3 text-body-sm text-muted">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         <p>
-          Dry run. Nothing here is saved or posted, and your photos stay in this browser. You are
-          reading what the importer found, so you can trust it before anything goes live. Phone
-          numbers and emails in housing posts are held back until a listing is claimed.
+          Dry run by default. Reading the chat saves and posts nothing, and your photos stay in this
+          browser. You are reading what the importer found, so you can trust it before anything goes
+          live. Once you trust it you can send the events on for review in the Event Seeder, which is
+          still not a post: you check each one, then flip it live yourself. Phone numbers and emails in
+          housing posts are held back until a listing is claimed.
         </p>
       </div>
 
@@ -134,7 +137,7 @@ export function ImportClient() {
         {error && <p className="text-body-sm text-danger">{error}</p>}
       </div>
 
-      {preview && <PreviewResult preview={preview} listings={listings} images={images} />}
+      {preview && <PreviewResult preview={preview} listings={listings} images={images} chatText={text} />}
     </div>
   )
 }
@@ -143,10 +146,13 @@ function PreviewResult({
   preview,
   listings,
   images,
+  chatText,
 }: {
   preview: ImportPreview
   listings: ClassifiedItem[]
   images: ImageMap
+  /** The exported chat the preview was read from, so staging can cite the real messages. */
+  chatText: string
 }) {
   const { parse, counts, aiSkipped, truncated } = preview
 
@@ -184,6 +190,8 @@ function PreviewResult({
         <p className="text-body-sm text-muted">No events or listings stood out in this export.</p>
       )}
 
+      {counts.event > 0 && <StageEvents preview={preview} chatText={chatText} />}
+
       <div className="space-y-3">
         {listings.slice(0, MAX_RENDER).map((item, i) => (
           <ItemCard key={`${item.refs.join('-')}-${i}`} item={item} images={images} />
@@ -195,6 +203,67 @@ function PreviewResult({
           </p>
         )}
       </div>
+    </div>
+  )
+}
+
+// The one WRITE on this page, and it is opt-in (ADR-989). Staging copies the events the dry
+// run found onto the Event Seeder's staging table for review. It publishes nothing: each
+// staged event is reviewed field by field, then seeded as an unlisted draft an operator flips
+// live. The dry run above is unchanged and stays the default.
+function StageEvents({ preview, chatText }: { preview: ImportPreview; chatText: string }) {
+  const [result, setResult] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null)
+  const [pending, startTransition] = useTransition()
+  const events = preview.counts.event
+
+  function stage() {
+    setResult(null)
+    startTransition(async () => {
+      const res = await stageEventsForReview(chatText, preview.items)
+      if (!res.ok) {
+        setResult({ tone: 'err', text: res.error })
+        return
+      }
+      setResult({
+        tone: 'ok',
+        text:
+          `Staged ${res.staged} event${res.staged === 1 ? '' : 's'} for review` +
+          (res.skipped > 0 ? `, skipped ${res.skipped} with too little to go on.` : '.'),
+      })
+    })
+  }
+
+  return (
+    <div className="rounded-card border border-border bg-surface p-4">
+      <p className="text-body-sm font-semibold text-text">Send the events to the Event Seeder</p>
+      <p className="mt-0.5 text-body-sm text-muted">
+        Copies the {events} event{events === 1 ? '' : 's'} above into the review board, with the message
+        each one was read from attached. Nothing is posted: you check every field, then seed each one as
+        an unlisted draft you flip live when you are ready.
+      </p>
+      {/* Say what does NOT travel, right where the operator is looking at thumbnails of it. */}
+      <p className="mt-1.5 text-body-sm text-muted">
+        The photos above stay in this browser. They are not uploaded, so a staged event carries their
+        filenames and you add the real images on the draft once you seed it.
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={stage}
+          disabled={pending}
+          className={`${buttonClasses('secondary', 'sm')} disabled:opacity-50`}
+        >
+          {pending ? 'Staging…' : `Stage ${events} event${events === 1 ? '' : 's'} for review`}
+        </button>
+        <Link href="/admin/event-seeder" className="text-body-sm font-medium text-info hover:underline">
+          Open the Event Seeder
+        </Link>
+      </div>
+      {result && (
+        <p className={`mt-2 text-body-sm ${result.tone === 'ok' ? 'text-success' : 'text-danger'}`} role="status">
+          {result.text}
+        </p>
+      )}
     </div>
   )
 }

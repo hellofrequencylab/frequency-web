@@ -169,9 +169,18 @@ jobs:
           # Keep this list and the summary count in sync WITHOUT hand-counting: the total is
           # derived below from the array itself. It used to be hardcoded, and read "All 21"
           # while 24 guards ran — a drift that a guard suite of all things should not carry.
+          # ⚠️ A guard that is not in this array does not run. #2098 shipped check:studio and
+          # check:creates as package.json scripts and never added them here, so the Studio
+          # contract — the thing AGENTS.md calls "machine-enforced" — was enforced by nothing for
+          # the whole life of that PR. Adding a check:* script is two edits, not one.
+          #
+          # This array is for SOURCE-only guards. The two ARTIFACT gates (check:build-budget,
+          # check:og-trace) deliberately live in `postbuild` instead, because CI never builds —
+          # Vercel does. See docs/DEPLOY-SAFETY.md and ADR-1003.
           guards=(
             authz canon menu gate-parity workflows elements labels render-path help tokens phantom bridge contrast adoption
             headers seo collective crm-parity vocab rls grants admin-client migrations adr docs-links templates
+            studio creates
           )
           # RUN IN PARALLEL, REPORT IN ORDER. The guards are independent node processes that only
           # read the tree, so nothing about them needed to be sequential — it just was. Run wall

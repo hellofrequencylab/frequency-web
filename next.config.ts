@@ -157,6 +157,27 @@ const nextConfig: NextConfig = {
     '/api/entry-points/*/flyer': ['./node_modules/@resvg/resvg-wasm/index_bg.wasm'],
 
   },
+  // 877MB of meditation audio that NO server code ever opens (ADR-1003 follow-up).
+  //
+  // Three OG modules read `join(process.cwd(), 'public', <variable>)` — the spaces and events share
+  // cards and lib/og/claim-card.tsx. Next's tracer cannot resolve a path built inside a function, so
+  // it falls back to globbing `public/` wholesale, and the whole folder lands in the 62 functions
+  // under those segments: 877MB of `public/tracks`, 686MB of `public/images`, ~1.6GB in total.
+  //
+  // The mp3s are the safe half to cut, and the reason is checkable rather than a judgement call:
+  // their ONLY reference anywhere is `lib/on-air.ts:338-340`, which emits the URL STRINGS
+  // ('/tracks/forest.mp3') for the browser's audio player to fetch over HTTP. Nothing server-side
+  // opens them, so a function that cannot see them behaves identically.
+  //
+  // ⚠️ EXCLUDES BEAT INCLUDES, and Next matches these route keys with picomatch in `contains` mode
+  // (next/dist/build/collect-build-traces.js), so `'/**'` is every route and a negation would match
+  // everything too. Only ever list something here that NO route may read from disk.
+  //
+  // The rest of that 1.6GB needs the tracer to stop globbing at source — turning the three variable
+  // reads into literal-pathed ones — which is a code change, not a config line. Tracked in ADR-1003.
+  outputFileTracingExcludes: {
+    '/**': ['./public/tracks/**'],
+  },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }]
   },

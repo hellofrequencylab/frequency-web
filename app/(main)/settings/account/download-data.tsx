@@ -19,7 +19,7 @@ export function DownloadData() {
       <p className="mt-1 text-body-sm text-muted">
         Get a copy of the data we hold for you: your profile, posts, practice logs,
         event RSVPs, circle memberships, your Zaps and Gems history, your contacts,
-        what Vera remembers, and your consent settings. We put it in one JSON file
+        what Vera remembers, your unfinished drafts, and your consent settings. We put it in one JSON file
         and your browser saves it. It only includes your own data.
       </p>
       <div className="mt-3 flex items-center gap-3 flex-wrap">

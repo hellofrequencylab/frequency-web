@@ -66,7 +66,7 @@ export function ChannelDangerZone() {
   }
 
   return (
-    <div className="space-y-4 rounded-2xl border border-danger/30 bg-danger-bg/20 p-4">
+    <div className="space-y-4 rounded-card border border-danger/30 bg-danger-bg/20 p-4">
       {error && <p className="text-meta font-medium text-danger">{error}</p>}
 
       <div>
@@ -84,7 +84,7 @@ export function ChannelDangerZone() {
             type="button"
             disabled={pending}
             onClick={() => setActive(true)}
-            className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
+            className="mt-2.5 inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
           >
             Set it live
           </button>
@@ -93,7 +93,7 @@ export function ChannelDangerZone() {
             type="button"
             disabled={pending}
             onClick={() => setConfirmingArchive(true)}
-            className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-danger/40 bg-surface px-3 py-1.5 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-40"
+            className="mt-2.5 inline-flex items-center gap-1.5 rounded-control border border-danger/40 bg-surface px-3 py-1.5 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-40"
           >
             Archive Channel
           </button>
@@ -104,14 +104,14 @@ export function ChannelDangerZone() {
               type="button"
               disabled={pending}
               onClick={() => setActive(false)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-danger px-3 py-1.5 text-meta font-semibold text-on-danger transition-colors hover:opacity-90 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-control bg-danger px-3 py-1.5 text-meta font-semibold text-on-danger transition-colors hover:opacity-90 disabled:opacity-50"
             >
               Yes, archive it
             </button>
             <button
               type="button"
               onClick={() => setConfirmingArchive(false)}
-              className="rounded-lg px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:text-text"
+              className="rounded-control px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:text-text"
             >
               Keep it live
             </button>

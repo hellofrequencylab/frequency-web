@@ -71,7 +71,7 @@ export function StudioWindow({
       <div
         ref={panelRef}
         tabIndex={-1}
-        className="flex h-full w-full flex-col overflow-hidden bg-canvas lift-3 outline-none sm:h-auto sm:max-h-[86vh] sm:max-w-3xl sm:rounded-3xl sm:border sm:border-border"
+        className="flex h-full w-full flex-col overflow-hidden bg-canvas lift-3 outline-none sm:h-auto sm:max-h-[86vh] sm:max-w-3xl sm:rounded-card sm:border sm:border-border"
       >
         {/* Chrome bar — skipped when the entity owns its own header (hideChrome). Esc still closes. */}
         {!hideChrome && (

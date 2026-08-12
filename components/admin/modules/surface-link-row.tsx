@@ -17,10 +17,10 @@ export function SurfaceLinkRow({ app, href }: { app: App; href: string }) {
     <Link
       href={href}
       title={app.description}
-      className="group flex items-center gap-2.5 rounded-lg border border-border bg-surface px-2.5 py-2 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 motion-reduce:transition-none"
+      className="group flex items-center gap-2.5 rounded-control border border-border bg-surface px-2.5 py-2 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 motion-reduce:transition-none"
     >
       {Icon && (
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary-bg text-primary-strong">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
           <Icon className="h-3.5 w-3.5" aria-hidden />
         </span>
       )}

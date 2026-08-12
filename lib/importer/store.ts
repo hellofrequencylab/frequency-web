@@ -23,6 +23,16 @@ import {
 
 const TABLE = 'business_intake'
 
+/** A filtered select over the untyped table. `eq` returns the same shape, so filters CHAIN:
+ *  a caller-bound read narrows on the row id AND `created_by` in one query. */
+interface IntakeSelect {
+  eq: (c: string, v: string) => IntakeSelect
+  maybeSingle: () => Promise<{ data: Record<string, unknown> | null; error: unknown }>
+  order: (c: string, o: { ascending: boolean }) => {
+    limit: (n: number) => Promise<{ data: Record<string, unknown>[] | null; error: unknown }>
+  }
+}
+
 /** The untyped admin handle for business_intake (table not in database.types yet, ADR-246). */
 function intakeTable() {
   const db = createAdminClient() as unknown as {
@@ -31,12 +41,7 @@ function intakeTable() {
         select: (cols: string) => { maybeSingle: () => Promise<{ data: Record<string, unknown> | null; error: unknown }> }
       }
       update: (v: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> }
-      select: (cols: string) => {
-        eq: (c: string, v: string) => {
-          maybeSingle: () => Promise<{ data: Record<string, unknown> | null; error: unknown }>
-          order: (c: string, o: { ascending: boolean }) => { limit: (n: number) => Promise<{ data: Record<string, unknown>[] | null; error: unknown }> }
-        }
-      }
+      select: (cols: string) => IntakeSelect
     }
   }
   return db.from(TABLE)
@@ -121,6 +126,24 @@ export async function createMasterProfile(input: {
 }
 
 /** Read one intake row by id. Bound to the row's own id (the scope). Returns null when absent. */
+/**
+ * Read one intake **bound to the operator who created it**. The list view is already scoped to
+ * `created_by`, so an id-only read let a per-row action reach a row the list would never show:
+ * any authorized operator holding another operator's row id could open and seed it. The gate says
+ * "you may use this console", not "you may act on that row", and those are different questions.
+ *
+ * Returns null on a miss, which every caller already renders as an honest empty state.
+ */
+export async function getIntakeForOperator(id: string, operatorId: string): Promise<BusinessIntakeRow | null> {
+  try {
+    const { data, error } = await intakeTable().select('*').eq('id', id).eq('created_by', operatorId).maybeSingle()
+    if (error || !data) return null
+    return mapRow(data)
+  } catch {
+    return null
+  }
+}
+
 export async function getIntake(id: string): Promise<BusinessIntakeRow | null> {
   try {
     const { data, error } = await intakeTable().select('*').eq('id', id).maybeSingle()

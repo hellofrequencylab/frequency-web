@@ -95,7 +95,7 @@ export function ChannelHeaderControls({
                   aria-pressed={on}
                   onClick={() => onHeightChange(h.value)}
                   className={
-                    'rounded-lg px-2.5 py-1.5 text-meta font-semibold transition-colors disabled:opacity-40 ' +
+                    'rounded-control px-2.5 py-1.5 text-meta font-semibold transition-colors disabled:opacity-40 ' +
                     (on
                       ? 'bg-primary text-on-primary'
                       : 'border border-border bg-surface text-text hover:border-border-strong')

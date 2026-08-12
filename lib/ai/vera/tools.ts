@@ -8,6 +8,8 @@
 // member must approve. There are NO autonomous writes: the model proposes, the human
 // confirms, the code executes. This file is the contract that makes that enforceable.
 
+import { createEntityToolDef } from './create-tools'
+
 export type ToolMode = 'read' | 'write'
 export type ParamType = 'string' | 'number' | 'boolean'
 
@@ -179,6 +181,17 @@ export const VERA_TOOLS: readonly VeraToolDef[] = [
       { name: 'body', type: 'string', required: true, description: 'The full drafted intro, in voice, including the plain WHY. The human reads and approves exactly this.' },
     ],
   },
+
+  // ── Studio creation (ADR-988) ────────────────────────────────────────────────
+  // The ONE governed create tool, BUILT from the Studio catalog (lib/studio/registry.ts) rather
+  // than re-listed here: a tool that could name an entity the catalog does not know is exactly
+  // the drift ADR-986 exists to kill, so the entity list is derived and the tool widens when a
+  // manifest lands. See lib/ai/vera/create-tools.ts for the autonomy law behind it.
+  //
+  // It is a PROPOSE, and only a propose. Vera drafts a thing; the member opens it, changes what
+  // they like, and taps Create in their own session. There is no confirm tool and no graduation
+  // flag, so no sequence of model output creates anything (lib/ai/vera/create-entity.ts).
+  createEntityToolDef(),
 ] as const
 
 const BY_KEY = new Map(VERA_TOOLS.map((t) => [t.key, t]))

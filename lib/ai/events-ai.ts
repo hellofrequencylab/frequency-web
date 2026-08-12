@@ -1,23 +1,22 @@
 // AI extraction for the Poster Events engine: capture a town poster, the model
-// turns it into an event draft. Two surfaces, one structured-extraction tool
+// turns it into an event draft. Three surfaces, one structured-extraction tool
 // (mirrors lib/ai/connections-ai.ts):
 //   • scanEventPoster  — vision: photo(s) of a poster → event fields, a clean
 //     description, a Domain + tags, and a normalized cover-image crop box.
 //   • assistEventFromText — text assist on manual entry: free text → the same shape.
+//   • draftEventSpark — the create wizard's guided first draft.
 //
-// Per the cost-tiering doctrine (lib/ai/models.ts, AI-STRATEGY): vision OCR runs
-// on Sonnet (quality), the text assist on Haiku (cheap). Both degrade to null (the
-// UI falls back to plain manual entry) when AI is off or the call fails — the
-// product never depends on the model being up. Every word the model writes is
-// voice-canon via withVoice(); every field is re-validated by coerceEventExtraction.
+// All three are DECLARED sparks (ADR-990) over the shared runner in lib/ai/spark.ts, which
+// owns the kill switch, the per-feature budget cap, the forced-tool call, the voice + mood
+// primers, the usage ledger, and the degrade-to-null. Per the cost-tiering doctrine
+// (lib/ai/models.ts, AI-STRATEGY): vision OCR runs on Sonnet (quality), the text assist on
+// Haiku (cheap). Every one degrades to null (the UI falls back to plain manual entry) when
+// AI is off or the call fails, because the product never depends on the model being up, and
+// every field is re-validated by coerceEventExtraction.
 
 import type Anthropic from '@anthropic-ai/sdk'
-import { completeRaw } from './complete'
-import { aiEnabled } from './client'
-import { MODELS, type ModelTier } from './models'
-import { estimateCostUsd } from './budget'
-import { recordAiUsage, featureOverBudget } from './usage'
-import { withVoice } from './voice'
+import type { ModelTier } from './models'
+import { defineSpark, runSpark } from './spark'
 import { coerceEventExtraction } from '@/lib/events/normalize'
 import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 import type { ExtractedEvent, EventSparkAnswers } from '@/lib/events/types'
@@ -244,52 +243,42 @@ const SPARK_SYSTEM = `You are Vera, Frequency's assistant. A community member an
 - details: capture any extra structure they give (a lineup, set times, ticket tiers, sponsors) into the details fields, and anything else as other label/value pairs. Capture EVERY link or handle they include (registration, tickets, website, social) into details.links with the right kind, since a pasted write-up is where those live. Do not invent details.
 - There is no image, so set cover.found=false and omit corners, imageBox, and imageRegions.`
 
-async function runExtraction(opts: {
-  tier: ModelTier
-  feature: string
-  system: string
-  content: Anthropic.MessageParam['content']
-  profileId?: string | null
-}): Promise<ExtractedEvent | null> {
-  // Kill switch + per-feature daily cap (lib/ai/budget.ts). Both surfaces (Sonnet vision scan +
-  // Haiku text assist) gate here, so AI off / over budget falls back to plain manual entry and
-  // never bills on. event-poster-scan is the vision path, so its cap is the higher one.
-  if (!aiEnabled()) return null
-  if (await featureOverBudget(opts.feature)) return null
-  try {
-    // Anchor the model to TODAY. Without this, a poster that prints only a month + day (no year) makes
-    // the model resolve "the next future occurrence" against its training-cutoff year (2025) instead of
-    // the real current year, so every scanned event landed a year in the past. dayInZone() is the
-    // community HOME zone (America/Los_Angeles), matching how event wall-clock is stored.
-    const today = dayInZone(undefined, HOME_TZ)
-    const datedSystem = `Today's date is ${today} (${HOME_TZ}). When a date gives only a month and day with no year, resolve it to the next occurrence of that date that is ON OR AFTER today; never choose a year in the past.\n\n${opts.system}`
-    const res = await completeRaw({
-      tier: opts.tier,
-      maxTokens: 1024,
-      thinking: { type: 'disabled' },
-      system: withVoice(datedSystem),
-      tools: [EXTRACTION_TOOL],
-      toolChoice: { type: 'tool', name: TOOL_NAME },
-      messages: [{ role: 'user', content: opts.content }],
-    })
-
-    void recordAiUsage({
-      feature: opts.feature,
-      model: MODELS[opts.tier],
-      usage: res.usage,
-      costUsd: estimateCostUsd(opts.tier, res.usage),
-      profileId: opts.profileId ?? null,
-    })
-
-    const block = res.content.find(
-      (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === TOOL_NAME,
-    )
-    if (!block) return null
-    return coerceEventExtraction(block.input)
-  } catch {
-    return null
-  }
+/**
+ * Anchor the model to TODAY. Without this, a poster that prints only a month + day (no year) makes
+ * the model resolve "the next future occurrence" against its training-cutoff year (2025) instead of
+ * the real current year, so every scanned event landed a year in the past. dayInZone() is the
+ * community HOME zone (America/Los_Angeles), matching how event wall-clock is stored. Evaluated per
+ * call (runSpark takes a lazy system), so a long-lived process never anchors to a stale day.
+ */
+function dated(system: string): string {
+  const today = dayInZone(undefined, HOME_TZ)
+  return `Today's date is ${today} (${HOME_TZ}). When a date gives only a month and day with no year, resolve it to the next occurrence of that date that is ON OR AFTER today; never choose a year in the past.\n\n${system}`
 }
+
+/**
+ * The three declared event sparks (ADR-990). All three share ONE tool schema and ONE coercer, so a
+ * sparked draft, a scanned poster, and a tidied note are identical in shape and the same draft
+ * editor consumes all of them. What differs is exactly what should: the brief, the tier, and the
+ * budget key. Every key and tier below is unchanged from the hand-rolled runExtraction:
+ *   • the vision scan is Sonnet on 'event-poster-scan', the costlier surface
+ *   • the text assist is Haiku, and deliberately shares 'event-poster-scan' (it is the same
+ *     manual-entry surface, and its cap was tuned for the pair)
+ *   • the wizard spark is Sonnet on its own 'event-spark' key
+ */
+const eventSpark = (feature: string, tier: ModelTier, system: string) =>
+  defineSpark<ExtractedEvent>({
+    entity: 'event',
+    feature,
+    tier,
+    maxTokens: 1024,
+    tool: EXTRACTION_TOOL,
+    system: () => dated(system),
+    coerce: (raw) => coerceEventExtraction(raw),
+  })
+
+export const EVENT_POSTER_SCAN = eventSpark('event-poster-scan', 'sonnet', SCAN_SYSTEM)
+export const EVENT_TEXT_ASSIST = eventSpark('event-poster-scan', 'haiku', ASSIST_SYSTEM)
+export const EVENT_SPARK = eventSpark('event-spark', 'sonnet', SPARK_SYSTEM)
 
 /** Vision harvest: one or more photos of the SAME poster → a single event draft
  *  (Sonnet). Returns null when AI is off or the call fails (UI falls back to
@@ -311,13 +300,9 @@ export async function scanEventPoster(input: {
     })),
     { type: 'text' as const, text: buildScanPrompt(imgs.length, pasted) },
   ]
-  return runExtraction({
-    tier: 'sonnet',
-    feature: 'event-poster-scan',
-    system: SCAN_SYSTEM,
-    profileId: input.profileId,
-    content,
-  })
+  // No mood: reading a flyer is extraction, and a mood must never colour what a poster is
+  // claimed to say.
+  return runSpark(EVENT_POSTER_SCAN, { content, profileId: input.profileId })
 }
 
 /** The user instruction for a scan. Merges multiple shots, and when a pasted write-up
@@ -345,12 +330,9 @@ export async function assistEventFromText(input: {
 }): Promise<ExtractedEvent | null> {
   const text = input.text.trim().slice(0, 2000)
   if (!text) return null
-  return runExtraction({
-    tier: 'haiku',
-    feature: 'event-poster-scan',
-    system: ASSIST_SYSTEM,
-    profileId: input.profileId,
+  return runSpark(EVENT_TEXT_ASSIST, {
     content: [{ type: 'text', text }],
+    profileId: input.profileId,
   })
 }
 
@@ -384,11 +366,9 @@ export async function draftEventSpark(input: {
   sourceText?: string | null
   profileId?: string | null
 }): Promise<ExtractedEvent | null> {
-  return runExtraction({
-    tier: 'sonnet',
-    feature: 'event-spark',
-    system: SPARK_SYSTEM,
-    profileId: input.profileId,
+  return runSpark(EVENT_SPARK, {
     content: [{ type: 'text', text: composeSparkText(input.answers, input.sourceText) }],
+    mood: input.answers.mood,
+    profileId: input.profileId,
   })
 }

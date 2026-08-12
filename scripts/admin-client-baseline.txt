@@ -3,6 +3,17 @@
 # importer fails CI unless added here in the same PR; converge files onto the session
 # client and regenerate with `node scripts/check-admin-client.mjs --update` so this list
 # only shrinks. Do not add entries by hand without a reason the reviewer can see.
+#
+# Added 2026-08-11 (ADR-986..999). Four files, each the ONLY path to a table that is
+# deliberately unreachable any other way:
+#   lib/events/seed/store.ts   event_intake — RLS enabled, ZERO policies, service-role only
+#   lib/studio/steer-store.ts  studio_steer — same posture; holds an author private note to Vera
+#   lib/ai/vera/create-entity.ts  writes the agent_actions audit trail the autonomy ladder is
+#                                 earned against; a caller must not be able to edit its own audit
+#   lib/loom/cover-actions.ts     files a generated cover into library_assets, re-gating
+#                                 canEditProfile itself before it writes
+# The session client cannot reach a zero-policy table by construction, so converging these is
+# not a matter of effort: it would mean giving those tables client-readable policies.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -353,6 +364,7 @@ lib/ai/vera/autonomous-send.ts
 lib/ai/vera/autonomy-config.ts
 lib/ai/vera/circuit-breaker.ts
 lib/ai/vera/config.ts
+lib/ai/vera/create-entity.ts
 lib/ai/vera/execute.ts
 lib/ai/vera/feature-posts.ts
 lib/ai/vera/owner-brief.ts
@@ -516,6 +528,7 @@ lib/events/poster-quality.ts
 lib/events/questions.ts
 lib/events/reactions.ts
 lib/events/rsvp-depth.ts
+lib/events/seed/store.ts
 lib/events/series-dates.ts
 lib/events/series-seo.ts
 lib/events/space-event-access.ts
@@ -564,6 +577,7 @@ lib/listing-seeder/seed-owner.ts
 lib/listings-shared/detail-view.ts
 lib/listings/housing.ts
 lib/listings/index.ts
+lib/loom/cover-actions.ts
 lib/loom/picker-actions.ts
 lib/marketing/content.ts
 lib/marketing/market-read.ts
@@ -719,7 +733,13 @@ lib/studio/agent.ts
 lib/studio/analytics.ts
 lib/studio/campaigns.ts
 lib/studio/contacts.ts
+# studio_draft is RLS-on-no-policy (zero policies, grants revoked from anon/authenticated), so the
+# session client cannot reach it at all: staged wizard answers are unfinished writing and the table
+# is deliberately unreachable except through this one owner-scoped file. Every query filters on a
+# session-derived profile_id, which IS the access control (ADR-1001, mirrors lib/studio/steer-store.ts).
+lib/studio/draft-store.ts
 lib/studio/recommendations.ts
+lib/studio/steer-store.ts
 lib/support/store.ts
 lib/suppression.ts
 lib/system-line.ts

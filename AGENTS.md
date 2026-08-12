@@ -4,6 +4,23 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
+# Deploy safety — read BEFORE merging anything structural, and before debugging a failed deploy
+
+`main` is protected and **merging deploys to production**, so a merge is a deploy. On 2026-08-11 a
+215-file PR passed 26 contract guards, 9,000+ tests, lint and typecheck, and then killed every
+production deploy with `ENOSPC` for a day: every gate measured the SOURCE, none measured the
+ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAFETY.md)
+([ADR-1002](docs/DECISIONS.md), [ADR-1003](docs/DECISIONS.md)).
+
+- **The artifact is gated in `postbuild`, not CI** — CI never builds, Vercel does. `check:build-budget`
+  (total per-function output under 13 GB) and `check:og-trace` run on the real build and fail it.
+- **When the budget gate fires, fix the fan-out, do not raise the budget.** Anything reachable from a
+  root layout, a ROOT metadata file, or a shared server module is multiplied by every route beneath it.
+- **Run the control before theorising** — redeploying the last known-good tree took three minutes and
+  excluded platform, region, container and account in one shot. **Let builds finish**; cancelling
+  destroys the evidence.
+- **Every fail-safe needs a gate that notices it fired.** A swallowed error is an invisible regression.
+
 # Which plan is live — read this before picking up "what's next"
 
 The repo carries years of planning documents, and **five of them describe themselves as the
@@ -89,6 +106,22 @@ One shell, five templates, one chrome map. Full spec:
   `EmptyState`. No `text-[10/11px]` content type; semantic tokens only.
 - **Speed is structural:** Server Components by default; never block the shell on slow
   awaits — push them behind per-section `<Suspense>` (PAGE-FRAMEWORK §5).
+
+# Creation wizards — a locked, machine-enforced contract (declare a manifest, never build a wizard)
+
+Every creation wizard, review board, and edit re-entry derives from ONE source. Do NOT hand-roll a
+per-entity wizard, review screen, or field style. Full spec: [`docs/STUDIO.md`](docs/STUDIO.md)
+(ADR-986). Enforced in CI by `pnpm check:studio` + `lib/studio/registry.test.ts`.
+
+- **To add or change an entity's fields:** edit its manifest in `lib/studio/entities/*.ts` and
+  register it in `lib/studio/registry.ts`. That is the whole change: the Spark, the review board,
+  and the edit rail all derive from it.
+- **To add a capability every entity should get** (a new control, signal, or mood): change
+  `lib/studio/kernel/*`, adding a `FIELD_KIND` if it is a new control. Kernel change ⇒ every wizard.
+- **The kernel is pure and entity-blind.** No React/Next/Supabase, and never an import from
+  `lib/studio/entities/`. If you want to reach sideways, you want a field kind instead.
+- A field's `placement` (`spark` / `inline` / `rail`) is the ONE seam between creating and editing
+  (ADR-450 §2), so the two can never drift.
 
 # Admin menu — a locked, machine-enforced contract (extend the catalog, never rewrite the rail)
 
