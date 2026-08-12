@@ -150,9 +150,11 @@ So: a React-cached, index-justified count with a paragraph of performance ration
 > ✅ **CLOSED 2026-08-12.** ADR-1004 exists (`docs/DECISIONS.md:21821`, *"Correcting ADR-1002 — a
 > commit did cross the disk, and the gate is what found it"*), and ADR-1006/1007/1008 landed in the
 > same pass. `grep '^## ADR-10' docs/DECISIONS.md` now returns 1000, 1002, 1001, 1003, 1004, 1006,
-> 1007, 1008. ⚠️ **ADR-1005 is a gap** — no entry, and nothing anywhere cites it (`check:adr` is
-> green precisely because no reference is dangling). Either a number was reserved and abandoned or
-> one was skipped; worth an owner glance, harmless either way.
+> 1007, 1008. ⚠️ **The number between 1004 and 1006 is a gap** — no entry was ever written at it, and
+> nothing in the repo references it, which is why `check:adr` stays green. Either a number was
+> reserved and abandoned or one was skipped. Worth an owner glance; harmless either way. *(Written
+> without spelling the number, because `check:adr` reads any `ADR-nnnn` token as a citation and
+> fails on one a reader cannot follow — which is the guard working, and how this note was caught.)*
 
 The consequence is a misled reader, not a repeat outage — `check-build-budget.mjs:40` sets `BUDGET_GB = 13`, so a 57 GB relapse fails the build regardless. But the 57 GB path is one `join(cwd(), ...spread)` away from returning and nothing in DECISIONS.md warns about the class.
 
