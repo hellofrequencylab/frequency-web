@@ -20109,7 +20109,7 @@ a descendant combinator while the bootstrap stamps `.dark` and `data-skin` on th
 element, so `#F0AD4E` never paints and midnight-dark renders a *mixture* of the dark and midnight
 palettes; and the amber-as-display-text debt is real and open.
 
-## ADR-986 — An edge token used as a fill is invisible to a gate that only measures it as ink (2026-08-11)
+## ADR-1000: An edge token used as a fill is invisible to a gate that only measures it as ink
 
 **Decision.** The four rail avatar-initial pills and the Dispatch comment pill stop hand-rolling
 `bg-border-strong` + bold initials and render `components/ui/avatar.tsx`, whose fallback disc is
