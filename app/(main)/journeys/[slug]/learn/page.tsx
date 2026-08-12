@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getJourneyPlayerView } from '@/lib/journeys/store'
 import { getMemberRunForPlan, getCohortProgress, getSoloEnrollmentStart, getKickoffEvent, getPhaseEvents, type KickoffEvent } from '@/lib/journeys/runs'
 import { HostSchedule } from '@/components/journey/v2/learn/host-schedule'
-import { getPlanAuthor, isPlanAdopted } from '@/lib/journey-plans'
+import { getPlanAuthor, isPlanAdopted, countActiveAdopters } from '@/lib/journey-plans'
 import { getJourneyLearnExtras, getLinkedEvent, getLoggedTodayPracticeIds, pillarsById } from '@/lib/journeys/learn'
 import { getPartialMapToday, type PartialToday } from '@/lib/practices'
 import { LearnPlayer } from '@/components/journey/v2/learn/learn-player'
@@ -141,6 +141,11 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   const journeyCaps = await getJourneyCapabilities(plan.id)
   const canManageJourney = journeyCaps.has('journey.editSettings')
 
+  // Members currently ON this Journey (excluding the author's own adoption), named in the unpublish
+  // confirmation so a creator knows how many people taking it down affects. One `head: true` count,
+  // and only for an author looking at a PUBLISHED Journey — nobody else pays for it.
+  const adopterCount = isAuthor && plan.visibility === 'public' ? await countActiveAdopters(plan.id, profileId) : 0
+
   // Pre-render the rich practice detail ONCE per practice step (server-rendered markdown, no client
   // cost) and the per-step Pillar names — the player looks both up by the selected lesson id (the
   // RSC interleaving pattern: a Server Component handed to a Client Component as a node map).
@@ -217,7 +222,12 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
               />
             )}
             {isAuthor && (
-              <JourneyAuthorActions slug={slug} planId={plan.id} visibility={plan.visibility} />
+              <JourneyAuthorActions
+                slug={slug}
+                planId={plan.id}
+                visibility={plan.visibility}
+                adopterCount={adopterCount}
+              />
             )}
           </div>
         ) : (
