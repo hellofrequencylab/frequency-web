@@ -55,7 +55,7 @@ export function PracticeComposer({ id, isEmpty }: { id: string; isEmpty: boolean
   }
 
   return (
-    <section className="rounded-card border border-primary/30 bg-primary-bg/20 p-4">
+    <section className="rounded-2xl border border-primary/30 bg-primary-bg/20 p-4">
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center gap-2 text-left">
         <Sparkles className="h-5 w-5 shrink-0 text-primary-strong" />
         <h2 className="flex-1 text-body font-bold text-text">{isEmpty ? 'Build with Vera' : 'Edit with Vera'}</h2>
@@ -80,7 +80,7 @@ export function PracticeComposer({ id, isEmpty }: { id: string; isEmpty: boolean
           {error && <p className="mt-1 text-meta text-danger">{error}</p>}
           {note && <p className="mt-1 text-meta text-muted">{note}</p>}
           <div className="mt-3">
-            <button type="button" disabled={pending || !build.trim()} onClick={runBuild} className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">
+            <button type="button" disabled={pending || !build.trim()} onClick={runBuild} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">
               <Wand2 className="h-4 w-4" /> {pending ? 'Building…' : 'Build with Vera'}
             </button>
           </div>
@@ -88,7 +88,7 @@ export function PracticeComposer({ id, isEmpty }: { id: string; isEmpty: boolean
             <p className="text-2xs font-semibold uppercase tracking-wide text-muted">What you&apos;ll get</p>
             <ul className="mt-2 grid gap-2 sm:grid-cols-2">
               {PREVIEW.map((p, i) => (
-                <li key={i} className="flex items-start gap-2 rounded-control border border-border bg-surface px-3 py-2">
+                <li key={i} className="flex items-start gap-2 rounded-lg border border-border bg-surface px-3 py-2">
                   <span className="shrink-0 rounded-pill bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">{p.tag}</span>
                   <span className="text-body-sm text-muted">{p.text}</span>
                 </li>
@@ -111,7 +111,7 @@ export function PracticeComposer({ id, isEmpty }: { id: string; isEmpty: boolean
           {error && <p className="mt-1 text-meta text-danger">{error}</p>}
           {note && <p className="mt-1 text-meta text-muted">{note}</p>}
           <div className="mt-3">
-            <button type="button" disabled={pending || !change.trim()} onClick={apply} className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">
+            <button type="button" disabled={pending || !change.trim()} onClick={apply} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">
               <Wand2 className="h-4 w-4" /> {pending ? 'Applying…' : 'Apply with Vera'}
             </button>
           </div>

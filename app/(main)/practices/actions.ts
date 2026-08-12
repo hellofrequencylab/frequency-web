@@ -28,18 +28,9 @@ import {
   type UnlogPracticeResult,
 } from '@/lib/practices'
 import { rateLimitOk } from '@/lib/rate-limit'
-import { draftPracticeSpark, personalizePractice, type PracticeSuggestion } from '@/lib/ai/practice-spark'
+import { personalizePractice, type PracticeSuggestion } from '@/lib/ai/practice-wizard'
+import { draftPracticeSpark } from '@/lib/ai/practice-spark'
 import { planPracticeEdits } from '@/lib/ai/practice-edit'
-import { PRACTICE_MANIFEST } from '@/lib/studio/entities/practice'
-import {
-  applyLock,
-  declaredLockKeys,
-  displayRecord,
-  redrawBrief,
-  settleRedraw,
-  type FieldChange,
-} from '@/lib/studio/kernel/redraw'
-import { saveSteer } from '@/lib/studio/steer-store'
 import { pillarIdsBySlug } from '@/lib/journeys/compose'
 import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
@@ -439,126 +430,6 @@ export async function applyVeraPracticeChangeAction(
   revalidatePath('/practices')
   revalidatePath(`/practices/${id}/edit`)
   return ok({ applied })
-}
-
-// ── Edit re-entry: the redraw (ADR-450 §2 · ADR-994) ──────────────────────────────────────────
-//
-// "Users should be able to go back to the wizard and edit the core info." The Guided section of
-// the Inspector rail carries the same three dials the Spark had (mood, directions, lock), and
-// this is the action behind its one button.
-//
-// TWO THINGS MAKE IT SAFE TO PRESS:
-//   • LOCK is enforced by REMOVAL. Whatever Vera returns, every field path the author pinned is
-//     deleted from the patch before it is written (applyLock). The prompt is also told, but the
-//     prompt is the courtesy and the delete is the guarantee. Without that, liking one thing
-//     about a draft means never daring to regenerate.
-//   • The BEFORE values come back with the diff, so the rail can show what moved and put it
-//     back in one tap (updatePracticeAction with the same record).
-//
-// It reuses the existing Vera edit path (planPracticeEdits) rather than re-drafting from
-// scratch: a redraw on a LIVE entity is a rewrite of what is there, not a new practice.
-//
-// GENERALIZED (ADR-996): the brief, the lock, and the diff moved into the kernel
-// (redrawBrief / applyLock / settleRedraw) and three more entities now walk the same four
-// steps. What stays here is what is genuinely a Practice's own: the owner gate, the Vera
-// planner, and the fact that a Practice's manifest paths ARE its column names, so the
-// planner's vocabulary needs no translation. (A Circle's does. See redrawCircleAction.)
-
-/** The fields a Practice redraw may touch. Exactly what `planPracticeEdits` can return, named
- *  once so the patch, the before-record, and the diff all walk the same list. */
-const REDRAW_KEYS = ['title', 'summary', 'description', 'body', 'cadence'] as const
-type RedrawKey = (typeof REDRAW_KEYS)[number]
-
-function isRedrawKey(path: string): path is RedrawKey {
-  return (REDRAW_KEYS as readonly string[]).includes(path)
-}
-
-/** What one redraw did: the fields that moved, what the pins protected, and the values to
- *  restore if the author would rather have their old draft back. */
-export interface PracticeRedrawResult {
-  changes: FieldChange[]
-  /** The human names of the pins that were honoured, for the "kept as is" line. */
-  kept: string[]
-  /** The previous values of exactly the changed fields. Feed straight back to
-   *  updatePracticeAction to undo. */
-  before: PracticeEdit
-}
-
-/** Re-steer a practice that already exists: pick a mood, say how to approach it, pin what to
- *  keep, and draft it again. Owner-gated (authorPractice), and every pinned field is stripped
- *  from the patch before anything is written. */
-export async function redrawPracticeAction(
-  id: string,
-  input: { mood?: string | null; directions?: string | null; locked?: readonly string[] },
-): Promise<ActionResult<PracticeRedrawResult>> {
-  const gate = await authorPractice(id)
-  if ('error' in gate) return fail(gate.error)
-  const { practice, profileId } = gate
-  if (!practice) return fail('Practice not found')
-
-  // 1. Only pins the manifest actually offers count. A client-invented lock key would otherwise
-  //    read as protection the server never agreed to.
-  const pins = declaredLockKeys(PRACTICE_MANIFEST, input.locked ?? [])
-  // Remember the dials (ADR-996) so a second redraw opens where this one left off. Fail-soft.
-  await saveSteer('practice', id, profileId, {
-    mood: input.mood,
-    directions: input.directions,
-    locked: pins,
-  })
-
-  const current: Record<RedrawKey, string> = {
-    title: practice.title ?? '',
-    summary: practice.summary ?? '',
-    description: practice.description ?? '',
-    body: practice.body ?? '',
-    cadence: practice.cadence ?? '',
-  }
-
-  const edits = await planPracticeEdits({
-    request: redrawBrief({
-      manifest: PRACTICE_MANIFEST,
-      lead: 'Draft this practice again, keeping every fact it already states true.',
-      mood: input.mood,
-      directions: input.directions,
-      locked: pins,
-    }),
-    practice: current,
-    profileId,
-  })
-  if (!edits) return fail('Vera is offline right now. Try again in a moment, or edit by hand.')
-
-  // 2. The pins, enforced. Everything the author kept is DELETED from the patch here, before any
-  //    comparison or write, so a locked field cannot even appear in the diff.
-  const safe = applyLock(PRACTICE_MANIFEST, pins, { ...edits })
-
-  // 3. Only what genuinely moved reaches the database, so "nothing changed" is an honest answer
-  //    rather than a silent no-op write.
-  const settled = settleRedraw({
-    manifest: PRACTICE_MANIFEST,
-    locked: pins,
-    current,
-    proposed: displayRecord(safe),
-  })
-  if (settled.changes.length === 0) {
-    return fail('Vera kept this one as it is. Give her a direction, or unpin a field, and try again.')
-  }
-
-  // 4. Write exactly the paths that moved. A pinned path cannot be among them.
-  const patch: PracticeEdit = {}
-  const before: PracticeEdit = {}
-  for (const change of settled.changes) {
-    if (!isRedrawKey(change.path)) continue
-    patch[change.path] = change.after
-    before[change.path] = change.before
-  }
-
-  const saved = await updatePractice(id, patch)
-  if (!saved) return fail('Could not save the redraw.')
-  revalidatePath('/practices')
-  revalidatePath(`/practices/${id}`)
-  revalidatePath(`/practices/${id}/edit`)
-
-  return ok({ changes: settled.changes, kept: settled.kept, before })
 }
 
 // Set the author tags on a practice you created (hybrid model: new labels become

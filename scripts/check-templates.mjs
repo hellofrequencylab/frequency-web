@@ -67,9 +67,6 @@ export const SHELLS = [
   'EventDetailTemplate',
   'FocusTemplate',
   'WizardShell',
-  // The Studio's wizard shell (ADR-986). The direct analogue of WizardShell for a Spark: it owns
-  // the centered column, the progress cue, the heading lockup, and the Back/Continue footer.
-  'SparkShell',
   'DashboardTemplate',
   'AdminTemplate',
   // Aliases: AdminPage re-exports AdminTemplate (components/admin/admin-page.tsx); the listing
@@ -168,14 +165,7 @@ export const MIN_PAGES = 150
  *    · evidence — those counted an IMPORT of a shell; this requires the shell to be RENDERED
  *      (`<AdminTemplate`). A page that imports one and never uses it is not composing it.
  *  Re-measure with `node scripts/check-templates.mjs`, never by grep. */
-// Re-frozen 58 -> 60 (ADR-986). The two new Spark routes, app/(main)/classifieds/new/page.tsx and
-// app/(main)/spaces/[slug]/settings/services/new/page.tsx, are SERVER pages that gate and then
-// delegate to a client Spark which composes SparkShell. They are compliant, but the shell tag lives
-// in the delegated component, and this gate matches literal tags in the page file by design (see the
-// note above: it over-reports rather than certifying a hand-rolled layout). Raising the ceiling for a
-// page that genuinely composes a shell is the sanctioned move; raising it for a hand-rolled layout is
-// not. Both routes are named here so the reason is reviewable rather than implied by a number.
-export const BASELINE = 60
+export const BASELINE = 58
 
 function main() {
   const list = pages()

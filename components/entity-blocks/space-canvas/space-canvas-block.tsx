@@ -13,6 +13,7 @@ import {
   isFeatureDataSource,
   type FieldDef,
 } from '@/lib/entity-blocks/block-content'
+import type { UploadImage } from '@/components/entity-blocks/block-edit-panel'
 import { ContentBlockView, hasContent } from '../content-block-view'
 import { BlockIcon } from '../block-icon'
 import { useProfileLayout } from '../profile-layout-context'
@@ -99,19 +100,18 @@ function str(props: Record<string, unknown>, key: string): string {
 }
 
 /** A clickable photo slot on the canvas: shows the current image (or a placeholder) and opens the photo popup
- *  to pick from the Loom and write alt text. Empty value clears the slot. */
+ *  to upload / paste / alt. Empty value clears the slot. Mirrors the email canvas ImageSlot + Loom popup. */
 function ImageSlot({
   url,
   alt,
-  loomScope,
+  uploadImage,
   onChange,
   className,
   fill,
 }: {
   url: string
   alt: string
-  /** The Loom library the popup opens into (a Space id or slug, or 'mine'). */
-  loomScope?: string
+  uploadImage?: UploadImage
   onChange: (url: string, alt: string) => void
   /** Extra classes on the trigger (e.g. an aspect / rounding to match the published crop). */
   className?: string
@@ -155,7 +155,7 @@ function ImageSlot({
         open={open}
         currentUrl={url}
         currentAlt={alt}
-        loomScope={loomScope}
+        uploadImage={uploadImage}
         onClose={() => setOpen(false)}
         onSelect={onChange}
       />
@@ -608,7 +608,7 @@ export function SpaceCanvasBlock({
   id,
   props,
   node,
-  loomScope,
+  uploadImage,
   onField,
 }: {
   id: string
@@ -617,8 +617,8 @@ export function SpaceCanvasBlock({
    *  read-only so the edit surface is identical to the live page; absent (the /manage/layout editor) it falls
    *  back to a note. */
   node?: ReactNode
-  /** The Loom library each on-canvas photo popup opens into (a Space id or slug, or 'mine'). */
-  loomScope?: string
+  /** The Space-scoped gated upload, threaded to each on-canvas photo popup. */
+  uploadImage?: UploadImage
   /** Persist one content field; an empty value clears it. */
   onField: (key: string, value: unknown) => void
 }) {
@@ -683,7 +683,7 @@ export function SpaceCanvasBlock({
         key={key}
         url={str(props, key)}
         alt={altKey ? str(props, altKey) : ''}
-        loomScope={loomScope}
+        uploadImage={uploadImage}
         className={opts?.className}
         fill={opts?.fill}
         onChange={(u, a) => {

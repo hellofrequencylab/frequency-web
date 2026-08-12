@@ -8,8 +8,7 @@ import { createProduct, setProductStatus, deleteProduct, productOwnerProfileId }
 import { createCommerceCheckout } from '@/lib/commerce/checkout'
 import { canListNew } from '@/lib/commerce/selling'
 import { normalizeCategory, normalizeTags } from '@/lib/commerce/categories'
-import { draftListingCopy, type ListingCopy } from '@/lib/ai/listing-copy'
-import type { ProductKind, ProductStatus } from '@/lib/commerce/types'
+import type { ProductStatus } from '@/lib/commerce/types'
 
 /** Parse a JSON string[] posted in a hidden form field (image paths, tags), tolerating a blank or
  *  malformed value by returning []. Every element is coerced to a trimmed string. */
@@ -46,16 +45,9 @@ export async function createMakerProductAction(formData: FormData): Promise<void
   // everything an individual lists stores as 'used'. canListNew is the single source of truth.
   if (String(formData.get('condition') ?? 'used') === 'new' && !canListNew('profile')) redirect('/spaces/new')
 
-  // What kind of thing it is, per the Product manifest's two options (lib/studio/entities/product.ts):
-  // something you ship, or something they download. Default-deny to 'physical', which is what
-  // createProduct assumed before the Spark could ask. Both land in the Market's `products` group
-  // (marketGroupForKind), so this changes what the row SAYS it is, not where it shows.
-  const productKind: ProductKind = formData.get('productKind') === 'digital' ? 'digital' : 'physical'
-
   const product = await createProduct({
     ownerKind: 'profile',
     ownerProfileId: profileId,
-    productKind,
     vertical: 'maker',
     title,
     description: (formData.get('description') as string) || null,
@@ -64,9 +56,8 @@ export async function createMakerProductAction(formData: FormData): Promise<void
     images: parseStringArray(formData.get('images')),
     tags: normalizeTags(parseStringArray(formData.get('tags'))),
     priceCents: Math.round(priceDollars * 100),
-    // Individuals list used items (R3); New is a Business feature, rejected above. A download has no
-    // condition at all, so it stores null rather than claiming to be second hand.
-    condition: productKind === 'digital' ? null : 'used',
+    // Individuals list used items (R3); New is a Business feature, rejected above.
+    condition: 'used',
     // A member product IS a Market listing (the maker path implicitly opts into the umbrella, ADR-596).
     marketPublished: true,
   })
@@ -77,28 +68,6 @@ export async function createMakerProductAction(formData: FormData): Promise<void
   await setProductStatus(product.id, 'active')
   revalidatePath('/market')
   redirect(`/market/${product.id}`)
-}
-
-/**
- * Draft the name + details for a member's product with Vera (the Spark's first door, ADR-986). The
- * member-side twin of the Space console's `draftListingCopyAction`: same generator, same voice primer,
- * same usage ledger, gated to the SAME paid tier that may create the product at all, on the REAL
- * (never beta-overridden) tier per the creation-gate convention (auth.ts, ADR-414).
- *
- * NEVER throws and never blocks: draftListingCopy falls back to a deterministic draft when Vera is off
- * or over budget, and an ungated caller gets empty copy (the Spark then leaves its fields alone).
- */
-export async function draftMakerProductCopyAction(input: {
-  productKind?: ProductKind | null
-  seed?: string | null
-}): Promise<ListingCopy> {
-  const profile = await getCallerProfile()
-  if (!profile || !isPaid(profile.realMembershipTier)) return { title: '', description: '' }
-  return draftListingCopy({
-    kind: input.productKind === 'digital' ? 'digital' : 'physical',
-    seed: input.seed ?? null,
-    profileId: profile.id,
-  })
 }
 
 /** Start a one-item checkout for a product (optionally a specific variant). Returns the Stripe Checkout

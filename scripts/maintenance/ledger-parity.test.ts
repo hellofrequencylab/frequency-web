@@ -52,23 +52,10 @@ describe('exact parity is the target state, and it passes', () => {
     // digests below were read back from PRODUCTION and matched the repo byte for byte before
     // being pinned here — re-freezing from the repo alone would assert that the repo agrees with
     // itself, which is the one thing this test must not be allowed to mean.
-    //
-    // Re-frozen again 2026-08-11 (602 -> 603) for 20270222000000_event_intake (ADR-989). Read back
-    // from PRODUCTION after applying, per the rule above, and matched the repo byte for byte.
-    //
-    // Worth knowing for the next apply: the Supabase MCP's apply_migration stamps the ledger with a
-    // WALL-CLOCK version, and this project's versions run AHEAD of the calendar (2027 dates), so it
-    // recorded 20260811232907 and sorted the row before the repo file it came from. Same table,
-    // divergent ledger, and a later `db push` would have re-run the file. The ledger row was
-    // corrected to the repo's own version before these digests were taken. Apply, then always
-    // re-read the ledger rather than trusting the version the tool chose.
-    // Re-frozen again 2026-08-11 (603 -> 604) for 20270223000000_studio_steer (ADR-996). Read back
-    // from PRODUCTION after applying and matched the repo byte for byte, per the rule above. The
-    // wall-clock stamping trap noted below bit again and was corrected BEFORE these were taken.
     const { rows } = repoRows()
-    expect(rows.length).toBe(604)
-    expect(versionsDigest(rows)).toBe('711a4506c457057087771413e52c57063e9a1edef7e1baed9b46e9fc459e2de5')
-    expect(pairsDigest(rows)).toBe('6c54fc3b84b7798087d7a38b9b4797ee878c97aa2f690e8bfe443c4525a61957')
+    expect(rows.length).toBe(602)
+    expect(versionsDigest(rows)).toBe('2f2c5adbb05c294c9c87309042caab9ce3de1b97d974afb9316ecfab82e45dd6')
+    expect(pairsDigest(rows)).toBe('d2e46a3729597eede7346cd275ae6818bad1f5ed6c463fce440bf6ff62df9a14')
   })
 
   it('order is by version as text, so an unsorted ledger payload still matches', () => {

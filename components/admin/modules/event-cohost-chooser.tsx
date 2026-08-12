@@ -100,7 +100,7 @@ export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: s
         Cohosts <span className="font-normal text-subtle">(invite someone to help host)</span>
       </span>
 
-      <div className="flex items-center gap-2 rounded-control border border-border bg-surface px-3 py-1.5">
+      <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5">
         <UserPlus className="h-4 w-4 shrink-0 text-subtle" />
         <Input
           variant="seamless"
@@ -130,7 +130,7 @@ export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: s
       {current.length > 0 && (
         <ul className="space-y-1">
           {current.map((c) => (
-            <li key={c.profileId} className="flex items-center gap-2 rounded-control bg-surface px-2 py-1.5">
+            <li key={c.profileId} className="flex items-center gap-2 rounded-lg bg-surface px-2 py-1.5">
               {c.avatarUrl ? (
                 <Image
                   src={avatarSrc(c.avatarUrl)}
@@ -157,7 +157,7 @@ export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: s
                 onClick={() => remove(c)}
                 disabled={pending}
                 aria-label={c.status === 'accepted' ? `Remove ${c.displayName}` : `Cancel invite to ${c.displayName}`}
-                className="shrink-0 rounded-control p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-danger disabled:opacity-40"
+                className="shrink-0 rounded-md p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-danger disabled:opacity-40"
               >
                 <X className="h-3.5 w-3.5" />
               </button>

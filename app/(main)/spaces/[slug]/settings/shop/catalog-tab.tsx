@@ -1,5 +1,4 @@
-import Link from 'next/link'
-import { CalendarClock, Package } from 'lucide-react'
+import { Package } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
 import { ConfirmSubmitButton } from '@/components/ui/confirm-submit-button'
@@ -79,28 +78,10 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
   return (
     <div className="mt-4 space-y-6">
       {!readOnly && (
-        <div className="space-y-3">
-          {/* A bookable service now has its own guided way in: the Service Spark (docs/STUDIO.md §0,
-              ADR-986), which derives its fields from SERVICE_MANIFEST and files photos into this
-              Space's Loom. The full item form below still creates products and tickets. */}
-          <Link
-            href={`/spaces/${slug}/settings/services/new`}
-            className="flex items-start gap-3 rounded-2xl border border-primary/30 bg-primary-bg/10 p-4 transition-colors hover:bg-primary-bg/20"
-          >
-            <CalendarClock className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
-            <span className="min-w-0">
-              <span className="block text-body-sm font-semibold text-text">Add a bookable service</span>
-              <span className="block text-meta text-muted">
-                A session, a class, a job. Photos, how you price it, and how long it runs, one step at a time.
-              </span>
-            </span>
-          </Link>
-
-          <details className="rounded-2xl border border-border bg-surface p-4">
-            <summary className="cursor-pointer text-body-sm font-semibold text-text">+ New item</summary>
-            <ItemForm slug={slug} mode="create" />
-          </details>
-        </div>
+        <details className="rounded-2xl border border-border bg-surface p-4">
+          <summary className="cursor-pointer text-body-sm font-semibold text-text">+ New item</summary>
+          <ItemForm slug={slug} mode="create" />
+        </details>
       )}
 
       {items.length > 0 && !readOnly && (

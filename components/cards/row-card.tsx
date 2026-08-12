@@ -38,11 +38,7 @@ export function RowCard({
   footer,
   dimmed = false,
 }: {
-  /** Where the row points. Optional, and only for a row that has NO destination yet — a managed
-   *  row whose object does not exist as a page (a pending draft). Omit it and the title renders
-   *  as plain heading text instead of a link; a row with no `href` and no `actions`/`footer` has
-   *  nothing to click at all, so pass one unless a control bar is carrying the row. */
-  href?: string
+  href: string
   /** Avatar / icon chip on the left. */
   anchor?: React.ReactNode
   title: React.ReactNode
@@ -73,7 +69,7 @@ export function RowCard({
       {anchor && <div className={`shrink-0 ${dimmed ? 'grayscale-[0.5]' : ''}`}>{anchor}</div>}
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          {managed && href ? (
+          {managed ? (
             <Link href={href} className="text-body font-bold leading-tight text-text hover:text-primary-strong hover:underline">
               {title}
             </Link>
@@ -117,21 +113,10 @@ export function RowCard({
     )
   }
 
-  const linkRow = (
-    <>
+  return (
+    <Link href={href} className={`flex items-start gap-3 ${surface} ${pad}`}>
       {body}
       {trailing && <div className="shrink-0">{trailing}</div>}
-    </>
-  )
-  const rowClass = `flex items-start gap-3 ${surface} ${pad}`
-
-  // A destination-less row is still a row: render the same surface as a plain box rather than an
-  // anchor to nowhere.
-  if (!href) return <div className={rowClass}>{linkRow}</div>
-
-  return (
-    <Link href={href} className={rowClass}>
-      {linkRow}
     </Link>
   )
 }

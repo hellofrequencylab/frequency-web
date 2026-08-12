@@ -1,13 +1,13 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { ImagePlus, X, GripVertical } from 'lucide-react'
+import { ImagePlus, X, GripVertical, Plus } from 'lucide-react'
 import { LoomPicker } from '@/components/loom/loom-picker'
 
-// A Puck custom field for the Image block's GALLERY mode: an ORDERED list of images. Images are added from
-// the Loom (browse your library, or upload into it there, via the shared picker), removed, and reordered by
-// drag. The Loom is the only way in (owner directive): no file dialog, no paste-a-URL box. The stored value
-// is `{ src: string }[]`, so the block renders the images in the operator's chosen order.
+// A Puck custom field for the Image block's GALLERY mode: an ORDERED list of images. Images are added
+// from the Loom (browse your library + upload multi / drag-drop, via the shared picker) or by URL,
+// removed, and reordered by drag. The stored value is `{ src: string }[]`, so the block renders the
+// images in the operator's chosen order.
 
 export type GalleryImage = { src: string }
 
@@ -19,12 +19,20 @@ function GalleryImagesField({
   onChange: (value: GalleryImage[]) => void
 }) {
   const images = value ?? []
+  const [url, setUrl] = useState('')
   const [loomOpen, setLoomOpen] = useState(false)
   const dragIndex = useRef<number | null>(null)
 
   function addUrls(srcs: string[]) {
     if (srcs.length === 0) return
     onChange([...images, ...srcs.map((src) => ({ src }))])
+  }
+
+  function addUrl() {
+    const src = url.trim()
+    if (!src) return
+    addUrls([src])
+    setUrl('')
   }
 
   function remove(i: number) {
@@ -74,6 +82,32 @@ function GalleryImagesField({
         </ul>
       )}
 
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              addUrl()
+            }
+          }}
+          placeholder="Image URL"
+          className="flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-body-sm"
+        />
+        <button
+          type="button"
+          onClick={addUrl}
+          disabled={!url.trim()}
+          aria-label="Add image by URL"
+          className="shrink-0 inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-body-sm transition-colors hover:bg-surface-elevated disabled:opacity-50"
+        >
+          <Plus className="h-3.5 w-3.5" aria-hidden />
+          Add
+        </button>
+      </div>
+
       <button
         type="button"
         onClick={() => setLoomOpen(true)}
@@ -82,19 +116,12 @@ function GalleryImagesField({
         <ImagePlus className="h-3.5 w-3.5" aria-hidden />
         Choose from your Loom
       </button>
-      <LoomPicker
-        open={loomOpen}
-        onClose={() => setLoomOpen(false)}
-        multiple
-        onSelectMany={addUrls}
-        title="Add images"
-        kinds={['image']}
-      />
+      <LoomPicker open={loomOpen} onClose={() => setLoomOpen(false)} multiple onSelectMany={addUrls} title="Add images" />
     </div>
   )
 }
 
-/** The Puck custom field: an ordered gallery image list (Loom multi-pick + drag to reorder). */
+/** The Puck custom field: an ordered gallery image list (Loom multi-pick + URL + reorder). */
 export const galleryImagesField = {
   type: 'custom' as const,
   label: 'Gallery images',

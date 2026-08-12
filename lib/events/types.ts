@@ -144,6 +144,4 @@ export interface EventSparkAnswers {
   where: string
   /** Who it is for, plus anything else worth knowing (price, host, what to bring). */
   details: string
-  /** The MOOD dial (ADR-986): steers TONE only. It never changes what is true, just how it reads. */
-  mood?: 'warm' | 'bold' | 'calm' | 'playful'
 }

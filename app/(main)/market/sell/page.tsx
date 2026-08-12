@@ -5,16 +5,12 @@ import { FocusTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { getCallerProfile } from '@/lib/auth'
 import { isPaid } from '@/lib/core/entitlement'
-import { ProductSpark } from './product-spark'
+import { SellForm } from './sell-form'
 
 // List a product in the Market (ADR-596). The seller ladder: free members trade in
 // Classifieds, PAID members list products here (limited: one product at a time, no
 // storefront), and Business Spaces get the full Shop. Creating a product lists it to browse
 // right away; getting PAID needs a connected payout account + billing on.
-//
-// The form is now the Product SPARK (docs/STUDIO.md §0, ADR-986): two doors, the shared drop zone,
-// and the fields PRODUCT_MANIFEST declares. The Spark brings its own centered column + heading, so
-// this page renders it directly; the upgrade wall below still composes FocusTemplate.
 
 export const metadata = { title: 'List a product' }
 
@@ -65,7 +61,29 @@ export default async function MarketSellPage() {
     )
   }
 
-  // The upgrade path to a full Shop rides on the Spark's first screen (its `aside`), where a seller is
-  // still deciding how to start, rather than under a half-filled form.
-  return <ProductSpark />
+  return (
+    <FocusTemplate
+      title="List a product"
+      description="List a product and it shows up in the Market right away. Set up payouts to start taking orders."
+      back={{ href: '/market', label: 'Market' }}
+    >
+      <SellForm />
+
+      {/* Upgrade path: the member editor is thin on purpose. A Business Space unlocks the full Shop. */}
+      <div className="mt-8 rounded-2xl border border-primary/30 bg-primary-bg/10 p-5">
+        <div className="mb-2 flex items-center gap-2">
+          <Store className="h-5 w-5 text-primary-strong" aria-hidden />
+          <h2 className="text-body font-bold text-text">Want a full shop?</h2>
+        </div>
+        <p className="mb-4 text-body-sm text-muted">
+          A Business Space gets a real storefront: products, bookable services, tickets, collections,
+          and a lower fee. This member listing is the quick way to sell one thing.
+        </p>
+        <Link href="/spaces/new" className={buttonClasses('secondary', 'md')}>
+          Start a Business Space
+          <ArrowUpRight className="h-4 w-4" aria-hidden />
+        </Link>
+      </div>
+    </FocusTemplate>
+  )
 }

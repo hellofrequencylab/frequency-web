@@ -33,13 +33,6 @@ export interface ListingCopyInput {
   priceModel?: ServicePriceModel | null
   /** The Space/maker brand or name, if the author wants the copy to name it. */
   brandName?: string | null
-  /**
-   * Override the one sentence that tells Vera WHAT KIND of thing this is. The default framing comes
-   * from `kind` and is commerce-shaped ("a physical product for sale"), which is wrong on the peer
-   * board: a Classifieds listing takes no payment, and half of them are a giveaway, a loan, or a
-   * request (docs/NAMING.md). A caller that is not selling passes its own true sentence instead.
-   */
-  framing?: string | null
   /** The actor + Space, for the usage ledger + the per-Space daily cap (never blocks). */
   profileId?: string | null
   spaceId?: string | null
@@ -92,7 +85,7 @@ function factsFor(input: ListingCopyInput): string {
     contact: 'The buyer contacts the seller for pricing (no set price).',
   }
   return [
-    `This listing is ${clean(input.framing, 160) || KIND_NOUN[input.kind] || 'a commerce listing'}.`,
+    `This listing is ${KIND_NOUN[input.kind] ?? 'a commerce listing'}.`,
     input.brandName ? `Sold by: ${clean(input.brandName, 80)}.` : '',
     input.seed ? `Working name / keywords the author gave: ${clean(input.seed, 200)}.` : '',
     input.priceModel ? priceLine[input.priceModel] : '',
@@ -171,13 +164,6 @@ export function fallbackListingCopy(input: ListingCopyInput): ListingCopy {
   const isService = input.kind === 'service' || input.kind === 'booking'
   const title = seed || (isService ? 'New service' : input.kind === 'ticket' ? 'Event ticket' : 'New listing')
   const who = brand ? ` from ${brand}` : ''
-  // A caller that overrode the framing is not selling, so the fallback must not say "buyers".
-  if (input.framing) {
-    return {
-      title: stripEmDashes(title).slice(0, 120),
-      description: stripEmDashes(`${seed || 'A new listing'}${who}. Add a few details so people know what it is.`).slice(0, 400),
-    }
-  }
   const description = isService
     ? `A ${clean(input.seed, 60) || 'session'} you can book${who}. Add the details and pick your times.`
     : input.kind === 'ticket'

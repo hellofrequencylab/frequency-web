@@ -38,7 +38,7 @@ type ChannelData = NonNullable<Awaited<ReturnType<typeof getChannelAdminData>>>
 const fieldLabel = labelClasses
 
 const LINK_ROW =
-  'group flex items-center gap-2.5 rounded-control border border-border bg-surface px-2.5 py-2 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 motion-reduce:transition-none'
+  'group flex items-center gap-2.5 rounded-lg border border-border bg-surface px-2.5 py-2 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 motion-reduce:transition-none'
 
 export function ChannelSettingsModule() {
   const pathname = usePathname()
@@ -69,7 +69,7 @@ export function ChannelSettingsModule() {
 
   if (!id) return null
   if (loading) {
-    return <div className="h-48 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
+    return <div className="h-48 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
   }
   if (!data) return null // not staff / not found → no chrome
 
@@ -206,7 +206,7 @@ export function ChannelSettingsModule() {
       <div className="space-y-1.5">
         <span className={fieldLabel}>URL</span>
         <div className="flex items-center gap-2">
-          <span className="flex flex-1 items-center rounded-control border border-border bg-surface px-3 text-body-sm text-subtle">
+          <span className="flex flex-1 items-center rounded-lg border border-border bg-surface px-3 text-body-sm text-subtle">
             <span className="shrink-0">/channels/</span>
             <Input
               variant="seamless"
@@ -220,7 +220,7 @@ export function ChannelSettingsModule() {
             type="button"
             onClick={handleSlug}
             disabled={slugPending || !urlSlug.trim() || urlSlug.trim() === data.slug}
-            className="inline-flex shrink-0 items-center rounded-control border border-border bg-surface px-3 py-2 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
+            className="inline-flex shrink-0 items-center rounded-lg border border-border bg-surface px-3 py-2 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
           >
             {slugPending ? 'Saving…' : 'Update'}
           </button>
@@ -244,7 +244,7 @@ export function ChannelSettingsModule() {
             { href: `${manage}?section=program`, label: 'Program and owner Space', Icon: Radio },
           ].map(({ href, label, Icon }) => (
             <Link key={href} href={href} className={LINK_ROW}>
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary-bg text-primary-strong">
                 <Icon className="h-3.5 w-3.5" aria-hidden />
               </span>
               <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-text">{label}</span>

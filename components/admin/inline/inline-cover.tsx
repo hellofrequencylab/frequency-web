@@ -1,22 +1,23 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
 import { ImagePlus, X, Loader2 } from 'lucide-react'
 import { useEditMode } from '@/lib/admin/use-edit-mode'
 import { LoomPicker } from '@/components/loom/loom-picker'
+import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 
 // Inline cover-image editor for the tuning layer (ADR-138). Out of Edit Mode it
 // just shows the cover (or nothing). In Edit Mode — and only for someone who can
-// edit (`canEdit`) — it adds Add / Change / Remove. Picking opens the ONE Loom
-// picker (owner directive: no file dialog anywhere), and `setUrl` persists the
-// chosen URL, re-checking the capability server-side. A non-manager who URL-hacks
-// `?edit=1` never sees the controls (canEdit is server-derived), and the actions
-// reject them anyway.
+// edit (`canEdit`) — it adds Upload / Change / Remove; the upload action stores the
+// file and persists the URL, re-checking the capability server-side. A non-manager
+// who URL-hacks `?edit=1` never sees the controls (canEdit is server-derived), and
+// the actions reject them anyway.
 export function InlineCover({
   value,
   alt,
   canEdit = false,
+  upload,
   setUrl,
   remove,
   forceEdit = false,
@@ -25,15 +26,16 @@ export function InlineCover({
   value: string | null
   alt: string
   canEdit?: boolean
-  /** The Change/Add controls open the Loom picker; the chosen URL is persisted through this action,
-   *  which validates it and writes the column (re-checking the capability server-side). Without it the
-   *  cover is read-only: there is deliberately no file-upload fallback. */
+  upload?: (fd: FormData) => Promise<{ url: string } | { error: string }>
+  /** When present, the Change/Add controls open the Loom picker; the chosen URL is persisted through
+   *  this action (which validates + writes the column) instead of a raw file upload. Preferred over
+   *  `upload` (owner directive: every image upload opens the Loom). */
   setUrl?: (url: string) => Promise<{ error: string } | void>
   remove?: () => Promise<void>
   /** Show the edit controls without requiring page Edit Mode — for surfaces that
    *  are themselves an explicit editor (e.g. the Settings panel hero). */
   forceEdit?: boolean
-  /** Optional notify-up after a successful pick (the new URL) or remove (null) — for a parent
+  /** Optional notify-up after a successful upload (the new URL) or remove (null) — for a parent
    *  form that ALSO persists the URL on its own Save and needs to track the latest value. */
   onChange?: (url: string | null) => void
 }) {
@@ -43,9 +45,11 @@ export function InlineCover({
   const [err, setErr] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const [pickerOpen, setPickerOpen] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
-  // ONE way in: the Loom picker.
-  const openSource = () => setPickerOpen(true)
+  // Prefer the Loom picker (a URL-only `setUrl` persister); fall back to the raw file input only for
+  // callers that still pass `upload` and no `setUrl`.
+  const openSource = () => (setUrl ? setPickerOpen(true) : fileRef.current?.click())
 
   if (!url && !showEdit) return null
 
@@ -57,6 +61,37 @@ export function InlineCover({
       if (res && 'error' in res) { setErr(res.error); return }
       setLocalUrl(picked)
       onChange?.(picked)
+    })
+  }
+
+  function pick(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.files?.[0]
+    e.target.value = ''
+    if (!raw || !upload) return
+    setErr(null)
+    startTransition(async () => {
+      // Prep in the browser first (the shared seam): an iPhone HEIC is converted to JPEG (a raw HEIC
+      // stores fine but renders broken in every browser but Safari), then a big photo is downscaled so
+      // the upload action stays under the platform body limit. An unconvertible HEIC gets an inline
+      // message instead of a broken upload.
+      const prepared = await prepareImageForUpload(raw)
+      if ('error' in prepared) {
+        setErr(prepared.error)
+        return
+      }
+      const file = prepared.file
+      if (file.size > SERVER_MAX_BYTES) {
+        setErr(`That image is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Try a smaller one.`)
+        return
+      }
+      const fd = new FormData()
+      fd.set('file', file)
+      const res = await upload(fd)
+      if ('error' in res) setErr(res.error)
+      else {
+        setLocalUrl(res.url)
+        onChange?.(res.url)
+      }
     })
   }
 
@@ -79,7 +114,7 @@ export function InlineCover({
         <button
           type="button"
           onClick={openSource}
-          disabled={pending || !setUrl}
+          disabled={pending}
           className="flex h-40 w-full items-center justify-center gap-2 text-body-sm text-muted transition-colors hover:text-text disabled:opacity-50 sm:h-52"
         >
           {pending ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImagePlus className="h-5 w-5" />}
@@ -92,7 +127,7 @@ export function InlineCover({
           <button
             type="button"
             onClick={openSource}
-            disabled={pending || !setUrl}
+            disabled={pending}
             className="inline-flex items-center gap-1 rounded-lg bg-surface/90 px-2.5 py-1 text-meta font-medium text-text lift-1 backdrop-blur transition-colors hover:bg-surface disabled:opacity-50"
           >
             {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
@@ -110,13 +145,13 @@ export function InlineCover({
         </div>
       )}
 
+      {showEdit && !setUrl && <input ref={fileRef} type="file" accept="image/*" hidden onChange={pick} />}
       {setUrl && (
         <LoomPicker
           open={pickerOpen}
           onClose={() => setPickerOpen(false)}
           onSelect={onPick}
           title="Choose a cover image"
-          kinds={['image']}
         />
       )}
       {err && <p className="px-3 py-1.5 text-meta text-danger">{err}</p>}

@@ -9,7 +9,9 @@ import {
   useProfileLayout,
   type SaveLayout,
 } from '@/components/entity-blocks/profile-layout-context'
+import type { UploadImage } from '@/components/entity-blocks/block-edit-panel'
 import { saveSpaceGridLayout } from '@/app/(main)/spaces/[slug]/settings/profile/actions'
+import { uploadSpaceBlockImage } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 import { SpaceCanvasEditor } from './space-canvas-editor'
 
 // THE MOUNT for the on-canvas WYSIWYG Space editor (the space analogue of the email EditorPane). It mounts
@@ -57,12 +59,19 @@ export function SpaceCanvasEditorMount({
   style?: Record<string, BlockStyle>
 }) {
   const save = useCallback<SaveLayout>((payload: BuilderLayout) => saveSpaceGridLayout(slug, payload), [slug])
+  // The rail's image fields upload through the SAME owner-gated, service-role path as the space cover / logo.
+  const uploadImage = useCallback<UploadImage>(
+    (file) => {
+      const fd = new FormData()
+      fd.append('file', file)
+      return uploadSpaceBlockImage(slug, fd)
+    },
+    [slug],
+  )
   return (
     <EntityLayoutProvider kind="space" save={save}>
       <Seeder rows={rows} hidden={hidden} content={content} style={style} />
-      {/* Every image field + photo slot on this canvas opens the ONE Loom picker, locked to THIS Space's
-          library. The slug is UX plumbing: the Loom re-resolves + re-gates the scope server-side. */}
-      <SpaceCanvasEditor loomScope={slug} />
+      <SpaceCanvasEditor uploadImage={uploadImage} />
     </EntityLayoutProvider>
   )
 }

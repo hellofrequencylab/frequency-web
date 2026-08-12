@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Archive, Check } from 'lucide-react'
 import { archiveCircle, updateCircleSettings } from '@/app/(main)/admin/actions'
-import { setCircleCoverUrl, removeCircleCover } from '@/app/(main)/circles/admin-actions'
+import { uploadCircleCover, removeCircleCover } from '@/app/(main)/circles/admin-actions'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { InlineCover } from '@/components/admin/inline/inline-cover'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -128,7 +128,7 @@ export function CircleSettingsForm({
           alt={name || 'Circle cover'}
           canEdit
           forceEdit
-          setUrl={setCircleCoverUrl.bind(null, circleId, slug)}
+          upload={uploadCircleCover.bind(null, circleId, slug)}
           remove={removeCircleCover.bind(null, circleId, slug)}
           onChange={(url) => setImageUrl(url ?? '')}
         />

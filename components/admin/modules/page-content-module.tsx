@@ -43,7 +43,7 @@ export function PageContentModule() {
   }, [pathname])
 
   if (loading) {
-    return <div className="h-32 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
+    return <div className="h-32 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
   }
   if (!data) return null
 
@@ -66,7 +66,7 @@ export function PageContentModule() {
       <form onSubmit={submit} className="space-y-3">
         <div className="block space-y-1">
           <span className={labelClasses}>Headline (not editable)</span>
-          <p className="rounded-control border border-border bg-surface-elevated/50 px-3 py-2 text-body-sm text-muted">
+          <p className="rounded-lg border border-border bg-surface-elevated/50 px-3 py-2 text-body-sm text-muted">
             {data.title || 'Default headline'}
           </p>
           <input type="hidden" name="title" value={data.title} />
@@ -126,7 +126,7 @@ export function PageContentModule() {
           <button
             type="submit"
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
           >
             {pending ? 'Saving…' : 'Save'}
           </button>

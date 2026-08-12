@@ -26,12 +26,10 @@ describe('gate parity — surfacesFor(editor) reproduces modulesFor', () => {
     // Order guarantee, editSettings-gated cells only (Place & Time + Insights share the gate; People +
     // Engage + This week's practice need circle.moderate / circle.assignTask, so a plain editSettings
     // holder omits them). Insights (order 14, ADR-515 Phase 4) sorts between Place & Time and Page text.
-    // Guided (ADR-996) shares the editSettings gate and is order 5, so it LEADS the rail: the redraw
-    // is an edit of what Settings holds, and ADR-450 fixes Guided as the rail's first section.
     const ids = surfacesFor(APPS, { on: 'scopeKind', kind: 'circle' }, viewer(['circle.editSettings']), 'editor').map(
       (a) => a.id,
     )
-    expect(ids).toEqual(['circle.guided', 'circle.settings', 'circle.placeAndTime', 'circle.insights', 'circle.text'])
+    expect(ids).toEqual(['circle.settings', 'circle.placeAndTime', 'circle.insights', 'circle.text'])
   })
 
   it('circle non-manager sees no editor modules', () => {

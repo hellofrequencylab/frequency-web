@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, type DragEvent, type ReactNode } from 'react'
+import { useRef, useState, type DragEvent, type ReactNode } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, GripVertical, ImagePlus, Plus, X } from 'lucide-react'
+import { ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, GripVertical, Loader2, Plus, Upload, X } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
 import {
@@ -44,9 +44,12 @@ import {
   type ShadowValue,
 } from './controls/field-controls'
 import { RecordingPickerControl } from '@/components/airwaves/recording-picker-control'
-import { LoomImageField } from './controls/loom-image-field'
-import { LoomPicker } from '@/components/loom/loom-picker'
+import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { useProfileLayout } from './profile-layout-context'
+
+/** A gated server upload: returns the uploaded image's public URL, or a plain error. Injected by the
+ *  SPACE builder (wired to the space-scoped upload action); absent on surfaces without an upload path. */
+export type UploadImage = (file: File) => Promise<{ url: string } | { error: string }>
 
 // THE INLINE BLOCK EDIT PANEL — redesigned control surface (ADR-528 → ADR-569). Expands under a block in the
 // in-rail builder when the operator clicks it. A TIGHT, modern inspector (Framer/Webflow/Notion density): the
@@ -58,12 +61,6 @@ import { useProfileLayout } from './profile-layout-context'
 // switch + their real eyebrow / title (+ body for About/Story) + a link to that feature's own manager. Every
 // text-bearing block gets the C1 TEXT-STYLE group (size / weight / align / token-color / shadow). Every block
 // gets the STYLE controls (background switch, padding, alignment, C3 margins).
-//
-// IMAGERY IS LOOM-ONLY (owner directive): every image field here opens the ONE Loom picker
-// (components/loom/loom-picker) to browse a library or upload into it. There is no file dialog and no
-// paste-a-URL box on a block photo field. `loomScope` names the library to open in (the Space being edited,
-// by slug or id; 'mine' on a member page), and it is UX plumbing only: the Loom's own server actions
-// re-resolve and re-gate every read and write.
 //
 // A feature agent adds a control to a block by DECLARING a field in block-content.ts (the enum primitives:
 // segmented / align / height / buttonOrientation / color / shadow / margin) — the panel dispatches on `type`
@@ -110,7 +107,7 @@ export function BlockEditPanel({
   hidden,
   editHref,
   pickerData,
-  loomScope,
+  uploadImage,
   onContent,
   onStyle,
   onToggleHide,
@@ -131,9 +128,8 @@ export function BlockEditPanel({
   /** For a function-backed block: the picker payload (ADR-573 item 5) — the Space's live items + create
    *  link. Feeds any `picker` field; absent for a block with no data source. */
   pickerData?: BlockPickerData
-  /** The Loom library every image field on this surface opens into: a Space id or slug when a Space is
-   *  being edited, 'mine' on a member page. Omit where there is no such context (the full picker). */
-  loomScope?: string
+  /** Gated image upload (SPACE only); when present, image fields show an Upload control (ADR-542). */
+  uploadImage?: UploadImage
   onContent: (next: Record<string, unknown>) => void
   onStyle: (next: BlockStyle) => void
   onToggleHide: () => void
@@ -177,7 +173,7 @@ export function BlockEditPanel({
           key={field.key}
           field={field}
           value={content[field.key]}
-          loomScope={loomScope}
+          uploadImage={uploadImage}
           pickerData={pickerData}
           textOnCanvas={contentOnCanvas}
           onChange={(v) => setField(field.key, v)}
@@ -240,15 +236,14 @@ export function BlockEditPanel({
 export function FieldEditor({
   field,
   value,
-  loomScope,
+  uploadImage,
   pickerData,
   textOnCanvas = false,
   onChange,
 }: {
   field: FieldDef
   value: unknown
-  /** The Loom library this surface's image fields open into (a Space id or slug, or 'mine'). */
-  loomScope?: string
+  uploadImage?: UploadImage
   pickerData?: BlockPickerData
   /** Email canvas surface (item 1): the per-item TITLE / TEXT are edited on the canvas, so the rail's
    *  Features / Cards editors hide those textareas and keep only the non-text controls (icon / image / link /
@@ -256,20 +251,9 @@ export function FieldEditor({
   textOnCanvas?: boolean
   onChange: (v: unknown) => void
 }) {
-  // An IMAGE field (`upload` on the schema) is the Loom and nothing else: no URL box, no file dialog
-  // (owner directive). Declared as `url` for the sanitizer's sake; the value is still a plain public URL.
-  if (field.upload && (field.type === 'url' || field.type === 'text')) {
-    return (
-      <LoomImageField
-        label={field.label}
-        value={typeof value === 'string' ? value : ''}
-        scopeKey={loomScope}
-        onChange={(url) => onChange(url)}
-      />
-    )
-  }
   if (field.type === 'text' || field.type === 'url' || field.type === 'embedUrl') {
     const str = typeof value === 'string' ? value : ''
+    const canUpload = field.upload && !!uploadImage
     return (
       <label className="block space-y-1">
         <span className={labelCls}>{field.label}</span>
@@ -280,6 +264,9 @@ export function FieldEditor({
           onChange={(e) => onChange(e.target.value)}
           className={compactField}
         />
+        {canUpload && uploadImage && (
+          <UploadButton uploadImage={uploadImage} onUploaded={(urls) => onChange(urls[urls.length - 1])} />
+        )}
       </label>
     )
   }
@@ -350,17 +337,17 @@ export function FieldEditor({
     return <PrimitiveField field={field} value={value} onChange={onChange} />
   }
   if (field.type === 'images') {
-    return <ImagesEditor label={field.label} value={value} loomScope={loomScope} onChange={onChange} />
+    return <ImagesEditor label={field.label} value={value} uploadImage={field.upload ? uploadImage : undefined} onChange={onChange} />
   }
   if (field.type === 'features') {
-    return <FeaturesEditor label={field.label} value={value} loomScope={loomScope} textOnCanvas={textOnCanvas} onChange={onChange} />
+    return <FeaturesEditor label={field.label} value={value} uploadImage={uploadImage} textOnCanvas={textOnCanvas} onChange={onChange} />
   }
   if (field.type === 'cards') {
     return (
       <CardsEditor
         label={field.label}
         value={value}
-        loomScope={loomScope}
+        uploadImage={uploadImage}
         textOnCanvas={textOnCanvas}
         onChange={onChange}
       />
@@ -560,23 +547,27 @@ function MarginGroup({ style, onChange }: { style: BlockStyle; onChange: (next: 
 }
 
 /** The image-gallery editor (ADR-542): a visual grid of the gallery's images with DRAG-to-reorder,
- *  per-image DELETE, and up/down buttons (keyboard + a11y fallback for the drag), plus ONE way to add more:
- *  the Loom picker in multi-select mode (owner directive). The first image leads the gallery. The value is
- *  always a clean string[]. */
+ *  per-image DELETE, and up/down buttons (keyboard + a11y fallback for the drag), plus the Upload control
+ *  and a collapsible "one URL per line" box for adding/editing by link. The first image leads the gallery.
+ *  The value is always a clean string[]. */
 function ImagesEditor({
   label,
   value,
-  loomScope,
+  uploadImage,
   onChange,
 }: {
   label: string
   value: unknown
-  loomScope?: string
+  uploadImage?: UploadImage
   onChange: (v: unknown) => void
 }) {
   const urls: string[] = Array.isArray(value) ? (value as unknown[]).filter((v): v is string => typeof v === 'string') : []
   const [dragIndex, setDragIndex] = useState<number | null>(null)
-  const [pickerOpen, setPickerOpen] = useState(false)
+  // The by-URL textarea keeps a LOCAL draft string while focused, parsed to the URL list only on blur. Parsing
+  // (trim + drop blank lines) on every keystroke made it impossible to type a space or start a new line — the
+  // blank line was deleted the instant Enter was pressed. `null` = not editing, so an upload elsewhere still
+  // shows through.
+  const [urlDraft, setUrlDraft] = useState<string | null>(null)
 
   const move = (i: number, delta: -1 | 1) => {
     const j = i + delta
@@ -652,22 +643,30 @@ function ImagesEditor({
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => setPickerOpen(true)}
-        className="inline-flex items-center gap-1 text-2xs font-semibold text-primary-strong hover:underline"
-      >
-        <ImagePlus className="h-3.5 w-3.5" aria-hidden /> Add photos
-      </button>
-      <LoomPicker
-        open={pickerOpen}
-        onClose={() => setPickerOpen(false)}
-        multiple
-        onSelectMany={(added) => onChange([...urls, ...added])}
-        title="Add photos"
-        scopeKey={loomScope}
-        kinds={['image']}
-      />
+      {uploadImage && (
+        <UploadButton
+          uploadImage={uploadImage}
+          multiple
+          label="Upload images"
+          onUploaded={(added) => onChange([...urls, ...added])}
+        />
+      )}
+
+      <details className="text-2xs text-muted">
+        <summary className="cursor-pointer select-none">Add or edit by URL</summary>
+        <Textarea
+          rows={3}
+          value={urlDraft ?? urls.join('\n')}
+          placeholder="One image URL per line"
+          onChange={(e) => setUrlDraft(e.target.value)}
+          onBlur={() => {
+            if (urlDraft === null) return
+            onChange(urlDraft.split('\n').map((s) => s.trim()).filter(Boolean))
+            setUrlDraft(null)
+          }}
+          className={`${compactField} mt-1`}
+        />
+      </details>
     </div>
   )
 }
@@ -779,13 +778,13 @@ function reorderItems<T>(items: T[], from: number, to: number): T[] {
 function FeaturesEditor({
   label,
   value,
-  loomScope,
+  uploadImage,
   textOnCanvas = false,
   onChange,
 }: {
   label: string
   value: unknown
-  loomScope?: string
+  uploadImage?: UploadImage
   textOnCanvas?: boolean
   onChange: (v: unknown) => void
 }) {
@@ -854,14 +853,17 @@ function FeaturesEditor({
               className={compactField}
             />
           )}
-          {/* An image (ADR-585): use INSTEAD of the icon for a photo-forward item (cards / spotlight layouts).
-              Loom-only, like every other block photo field. */}
-          <LoomImageField
-            label="Image"
-            value={it.image}
-            scopeKey={loomScope}
-            onChange={(url) => patch(i, { image: url ?? '' })}
-          />
+          {/* An image (ADR-585): use INSTEAD of the icon for a photo-forward item (cards / spotlight layouts). */}
+          <label className="block space-y-1">
+            <span className={labelCls}>Image</span>
+            <Input
+              value={it.image}
+              placeholder="https:// (leave blank to use the icon)"
+              onChange={(e) => patch(i, { image: e.target.value })}
+              className={compactField}
+            />
+            {uploadImage && <UploadButton uploadImage={uploadImage} onUploaded={(urls) => patch(i, { image: urls[urls.length - 1] })} />}
+          </label>
           <Input
             value={it.price}
             placeholder="Price (optional), e.g. from $80"
@@ -969,13 +971,13 @@ function fromCardRow(r: CardRow): Record<string, unknown> {
 function CardsEditor({
   label,
   value,
-  loomScope,
+  uploadImage,
   textOnCanvas = false,
   onChange,
 }: {
   label: string
   value: unknown
-  loomScope?: string
+  uploadImage?: UploadImage
   textOnCanvas?: boolean
   onChange: (v: unknown) => void
 }) {
@@ -1031,13 +1033,17 @@ function CardsEditor({
             <p className="text-2xs leading-snug text-muted">Edit this card&rsquo;s title and text on the canvas.</p>
           )}
 
-          {/* Photo card: pick from the Loom. Leave it empty for a stat card. */}
-          <LoomImageField
-            label="Photo"
-            value={c.image}
-            scopeKey={loomScope}
-            onChange={(url) => patch(i, { image: url ?? '' })}
-          />
+          {/* Photo card: an image URL (+ upload when the surface allows it). */}
+          <label className="block space-y-1">
+            <span className={labelCls}>Photo</span>
+            <Input
+              value={c.image}
+              placeholder="https:// (leave blank for a stat card)"
+              onChange={(e) => patch(i, { image: e.target.value })}
+              className={compactField}
+            />
+            {uploadImage && <UploadButton uploadImage={uploadImage} onUploaded={(urls) => patch(i, { image: urls[urls.length - 1] })} />}
+          </label>
 
           {/* Stat box: a big value + a label. Use INSTEAD of a photo for a metric card. */}
           <div className="flex items-center gap-1.5">
@@ -1110,6 +1116,123 @@ function CardsEditor({
       >
         <Plus className="h-3.5 w-3.5" aria-hidden /> Add card
       </button>
+    </div>
+  )
+}
+
+/** The inline image UPLOAD control (ADR-542): picks a file (or several when `multiple`), runs it through the
+ *  injected gated server upload, and hands back the resulting public URL(s). Reuses the space cover/logo
+ *  upload path (event-media, service-role) via the injected action; it invents no bucket of its own. */
+function UploadButton({
+  uploadImage,
+  multiple = false,
+  label = 'Upload image',
+  onUploaded,
+}: {
+  uploadImage: UploadImage
+  multiple?: boolean
+  label?: string
+  onUploaded: (urls: string[]) => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  // A per-file ceiling kept safely UNDER the server-action body limit (next.config bodySizeLimit, 10mb), so a
+  // single upload request never overflows the framework boundary (which crashes the route instead of
+  // returning an error). Larger files are skipped with a clear message.
+  const MAX_UPLOAD_BYTES = 9 * 1024 * 1024
+  // Upload a few files at once, not the whole batch, so many photos never open a flood of parallel requests.
+  const CONCURRENCY = 3
+
+  async function handle(files: FileList) {
+    setBusy(true)
+    setError(null)
+    const all = Array.from(files).filter((f) => f.type.startsWith('image/'))
+    if (!all.length) {
+      setError('Choose an image file.')
+      setBusy(false)
+      return
+    }
+    // Prep each in the browser first (the shared seam): an iPhone HEIC is converted to JPEG (a raw
+    // HEIC stores fine but renders broken in every browser but Safari), then big photos are
+    // downscaled. The size cap applies to the CONVERTED file; an unconvertible HEIC is skipped with
+    // an inline message.
+    const list: File[] = []
+    let prepError: string | null = null
+    let oversize = 0
+    for (const raw of all) {
+      const prepared = await prepareImageForUpload(raw)
+      if ('error' in prepared) {
+        prepError ??= prepared.error
+        continue
+      }
+      if (prepared.file.size > MAX_UPLOAD_BYTES) {
+        oversize++
+        continue
+      }
+      list.push(prepared.file)
+    }
+    if (!list.length) {
+      setError(prepError ?? (oversize ? 'Those images are over 9 MB. Use smaller versions.' : 'Choose an image file.'))
+      setBusy(false)
+      return
+    }
+    setProgress({ done: 0, total: list.length })
+
+    // Upload with a small worker pool: results are stored by ORIGINAL index so the gallery keeps the pick
+    // order even though uploads finish out of order. Each upload is ONE file (well under the body limit).
+    const results: (string | null)[] = new Array(list.length).fill(null)
+    let firstError: string | null = null
+    let cursor = 0
+    const worker = async () => {
+      while (cursor < list.length) {
+        const i = cursor++
+        try {
+          const res = await uploadImage(list[i])
+          if ('error' in res) firstError ??= res.error
+          else results[i] = res.url
+        } catch {
+          firstError ??= 'That upload did not go through. Try again.'
+        }
+        setProgress((p) => (p ? { ...p, done: p.done + 1 } : p))
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, list.length) }, worker))
+
+    const urls = results.filter((u): u is string => !!u)
+    if (urls.length) onUploaded(urls)
+    if (oversize && !firstError) firstError = 'Some images were over 9 MB and skipped. Use smaller versions.'
+    if (prepError && !firstError) firstError = prepError
+    if (firstError) setError(firstError)
+    setProgress(null)
+    setBusy(false)
+  }
+
+  return (
+    <div className="space-y-1">
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={busy}
+        className="inline-flex items-center gap-1 text-2xs font-semibold text-primary-strong hover:underline disabled:opacity-60"
+      >
+        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Upload className="h-3.5 w-3.5" aria-hidden />}
+        {busy ? (progress ? `Uploading ${progress.done}/${progress.total}` : 'Uploading') : label}
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple={multiple}
+        className="hidden"
+        onChange={(e) => {
+          if (e.target.files && e.target.files.length) void handle(e.target.files)
+          e.target.value = ''
+        }}
+      />
+      {error && <p className="text-2xs text-danger">{error}</p>}
     </div>
   )
 }

@@ -6,23 +6,13 @@
 // images to the PRIVATE network-contacts bucket under its own auth-user folder,
 // the server gates AI on availability + budget, runs ONE vision call, and every
 // write is owner-scoped. The engine (lib/events/event-drafts.ts) owns the rows.
-//
-// TWO DOORS OUT OF ONE READ (ADR-997). `scanPoster` hands the read back to the member's
-// browser, which cuts the crops and saves a draft. `scanPosterForReview` is the operator's
-// batch door: it stages the read on `event_intake` for the Event Seeder instead, so a walk
-// round town with fifty posters becomes one review board rather than fifty drafts. Both go
-// through the same private vision pass (`readPoster`), so the gate, the budget check, the
-// path-ownership check and the cleanup rule exist once.
 
 import { revalidatePath } from 'next/cache'
 import { getCachedUser, getMyProfileId } from '@/lib/auth'
-import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { scanEventPoster } from '@/lib/ai/events-ai'
 import { downloadImageBase64, removeObject } from '@/lib/connections/store'
-import { mergePosterLinks } from '@/lib/events/seed/draft'
-import { stageScannedEvent } from '@/lib/events/seed/from-scan'
 import { coerceEventDetails, coerceDomain, coerceIsoDate, clampImageBox } from '@/lib/events/normalize'
 import {
   coerceDetailsMedia,
@@ -53,25 +43,17 @@ async function requireCaller(): Promise<{ profileId: string; userId: string }> {
 }
 
 /**
- * THE ONE VISION PASS, shared by both doors below.
- *
- * Reads photos of the SAME poster that the client already uploaded (downscaled on-device) to
- * the private bucket. ONE vision call; the first image is KEPT as the event's poster_path, the
- * extra shots are deleted after extraction. Every path is ownership-checked against the
- * caller's own auth-user folder before anything is downloaded.
- *
- * Both the member's draft flow and the operator's staging flow go through here, so there is
- * one gate, one budget check, one cleanup rule, and one place a change to any of them lands.
+ * Scan one or more photos of the SAME poster that the client already uploaded
+ * (downscaled on-device) to the private bucket. ONE vision call; the first
+ * image is KEPT as the event's poster_path, the extra shots are deleted after
+ * extraction.
  */
-async function readPoster(
-  paths: string[],
-  who: { profileId: string; userId: string },
-  text?: string,
-): Promise<ScanPosterResult> {
+export async function scanPoster(paths: string[], text?: string): Promise<ScanPosterResult> {
+  const { profileId, userId } = await requireCaller()
   const clean = (paths ?? []).slice(0, 6)
   if (!clean.length) return { ok: false, reason: 'no_read' }
   for (const p of clean) {
-    if (!isOwnedStoragePath(p, who.userId)) throw new Error('Bad path')
+    if (!isOwnedStoragePath(p, userId)) throw new Error('Bad path')
   }
 
   // The first shot stays as the poster image; the rest are temp scans.
@@ -95,7 +77,7 @@ async function readPoster(
     return { ok: false, reason: 'no_read' }
   }
 
-  const extraction = await scanEventPoster({ images, text, profileId: who.profileId })
+  const extraction = await scanEventPoster({ images, text, profileId })
   cleanupExtras() // best-effort; the poster image itself is kept
 
   if (!extraction) {
@@ -103,69 +85,6 @@ async function readPoster(
     return { ok: false, reason: 'no_result' }
   }
   return { ok: true, extraction, posterPath }
-}
-
-/** Scan a poster for the MEMBER flow: the read comes back to the browser, which cuts the
- *  crops and calls saveDraft. Unchanged behaviour, now over the shared pass above. */
-export async function scanPoster(paths: string[], text?: string): Promise<ScanPosterResult> {
-  return readPoster(paths, await requireCaller(), text)
-}
-
-// ── The operator's batch door: scan straight onto the review board (ADR-997) ───
-
-export type StagePosterResult =
-  | { ok: true; intakeId: string; title: string }
-  | { ok: false; reason: ScanReason | 'too_thin' | 'not_staged' }
-
-/**
- * Read a poster and STAGE it on `event_intake` for the Event Seeder, in one request.
- *
- * This is the flyer half of ADR-989's seeding, and it is the counterpart of the chat
- * importer's `stageEventsForReview`. An operator working a batch of posters photographs one,
- * sends it, and moves on: the review happens later, in one place, field by field against the
- * poster. It writes to the service-role-only staging table and nowhere else. The event itself
- * is written later still, by the Seeder's own apply, as an unlisted draft.
- *
- * TRUST. The extraction NEVER round-trips through the browser here: the vision pass runs in
- * this request and the result goes straight to the stager, which re-coerces it anyway. The
- * client supplies exactly two things, and both are re-validated server-side: the storage
- * paths (checked against the caller's own folder, as always) and the QR URLs its own device
- * decoded, which are re-coerced through the details coercer before they are merged. No ledger
- * snippet comes from the client, because a flyer read cites no text at all: the receipt on the
- * board is the poster photo.
- *
- * GATE. The console's own rung (`admin` + `community:write`), re-checked here rather than
- * inherited from whether the button rendered.
- */
-export async function scanPosterForReview(paths: string[], qrLinks?: unknown): Promise<StagePosterResult> {
-  const { profileId } = await requireAdmin('admin', { staff: 'community', staffLevel: 'write' })
-  const user = await getCachedUser()
-  if (!profileId || !user) return { ok: false, reason: 'unauthorized' }
-
-  const read = await readPoster(paths, { profileId, userId: user.id })
-  if (!read.ok) return read
-
-  // The QR codes the operator's device decoded off the full-resolution shots. A QR pattern is
-  // the one thing the vision model cannot read, and on a poster it is usually the booking
-  // link. Client-supplied, so it goes through the SAME coercer the details column uses (safe
-  // http/https only, labelled, capped) before it is folded into the read.
-  const extraLinks = coerceEventDetails({ links: qrLinks }).links ?? []
-  const extraction = { ...read.extraction, details: mergePosterLinks(read.extraction.details, extraLinks) }
-
-  const intakeId = await stageScannedEvent({
-    operatorId: profileId,
-    extraction,
-    posterPath: read.posterPath,
-  })
-  if (!intakeId) {
-    // Nothing was staged, so the kept poster has nothing to belong to. Clean it up rather
-    // than leaving an orphan object in the bucket.
-    void removeObject(read.posterPath)
-    return { ok: false, reason: extraction.title.trim() ? 'not_staged' : 'too_thin' }
-  }
-
-  revalidatePath('/admin/event-seeder')
-  return { ok: true, intakeId, title: extraction.title.trim() || 'Untitled event' }
 }
 
 /** Discard a kept poster image after a retake (best-effort cleanup). */

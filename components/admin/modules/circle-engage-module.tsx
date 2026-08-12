@@ -58,7 +58,7 @@ export function CircleEngageModule() {
 
   if (!slug) return null
   if (loading) {
-    return <div className="h-40 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
+    return <div className="h-40 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
   }
   if (!data) return null
 
@@ -119,7 +119,7 @@ export function CircleEngageModule() {
                 type="button"
                 onClick={handleAdopt}
                 disabled={pending || !pick}
-                className="inline-flex shrink-0 items-center rounded-control bg-primary px-3 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                className="inline-flex shrink-0 items-center rounded-lg bg-primary px-3 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
               >
                 Adopt
               </button>
@@ -153,7 +153,7 @@ export function CircleEngageModule() {
                         onClick={() => handleDrop(c.id)}
                         disabled={pending}
                         aria-label={`Drop ${c.name}`}
-                        className="shrink-0 rounded-control p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-40"
+                        className="shrink-0 rounded-md p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-40"
                       >
                         <X className="h-4 w-4" />
                       </button>

@@ -6,18 +6,24 @@
 // (content/leader-training/authoring/how-to-create-a-journey.md), returns a structured verdict,
 // and coaches the author in the brand voice.
 //
-// SINCE ADR-993 this file is the JOURNEY half of that: it loads the Journey, renders it as the
-// content the model reads, and hands it to the shared gate (lib/ai/quality-gate.ts), which owns
-// the prompt, the rubric loading, the budget check, the forced-tool call, and the coercion. The
-// Journey's standard (the 'journey-review' budget key, Opus, the 70 bar, the rubric doc, and the
-// exact member-facing fail-closed copy) is declared there as DATA, so nothing about this gate's
-// behaviour changed and any other entity can now have one.
+// Server-only. Mirrors the house AI pattern (lib/ai/journey-outline.ts,
+// lib/ai/practice-wizard.ts): the voice primer is injected, the call is a forced-tool
+// structured output, the usage ledger records spend, and every field is re-coerced
+// because we never trust the raw model shape.
 //
-// Server-only. FAIL-CLOSED is still the law: if AI is off, over budget, the call fails, or the
-// model returns nothing usable, the verdict is `status: 'pending'` and the caller must NOT set
-// ranked_eligible. An unreviewed Journey never counts toward rank.
+// FAIL-CLOSED is the law here: if AI is off, over budget, the call fails, or the model
+// returns nothing usable, we return a `status: 'pending'` verdict and the caller must NOT
+// set ranked_eligible. An unreviewed Journey never counts toward rank.
 
-import { coerceVerdict, pendingVerdict, qualityStandardFor, runQualityGate } from './quality-gate'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
+import type Anthropic from '@anthropic-ai/sdk'
+import { completeRaw } from './complete'
+import { aiEnabled } from './client'
+import { MODELS } from './models'
+import { estimateCostUsd } from './budget'
+import { recordAiUsage, aiAvailable, featureOverBudget } from './usage'
+import { withVoice } from './voice'
 import { getPlan, type JourneyPlanItem } from '@/lib/journey-plans'
 import { getPillars, pillarsById } from '@/lib/pillars'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -33,16 +39,85 @@ export interface JourneyReview {
   reviewedAt: string
 }
 
-/** The Journey's declared standard (lib/ai/quality-gate.ts): the rubric doc, the Opus tier, the
- *  'journey-review' budget key, the 70 bar, and the exact fail-closed copy members read. */
-const STANDARD = qualityStandardFor('journey')
-
 /** The score at or above which a Journey passes the gate. The model also gives a verdict, but
  *  the score is the deterministic floor so "approved" can never drift below the bar. */
-export const PASS_SCORE = STANDARD.passScore
+export const PASS_SCORE = 70
 
 /** The feature key for the budget cap (lib/ai/budget.ts) + the usage ledger. */
-export const REVIEW_FEATURE = STANDARD.feature
+export const REVIEW_FEATURE = 'journey-review'
+
+const TOOL_NAME = 'submit_journey_review'
+
+const TOOL: Anthropic.Tool = {
+  name: TOOL_NAME,
+  description:
+    'Submit the quality verdict + coaching for this member-built Journey, judged against the Journey Creation standard.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      verdict: {
+        type: 'string',
+        enum: ['approved', 'rejected'],
+        description:
+          'approved = clears the bar to count toward season rank; rejected = needs work first.',
+      },
+      score: {
+        type: 'number',
+        description: 'How well it meets the standard, 0 to 100. 70 or above passes. Be fair but honest.',
+      },
+      feedback: {
+        type: 'array',
+        items: { type: 'string' },
+        description:
+          'Two to five short coaching lines for the author, in second person. Concrete and specific: name what works and the exact next change. Kind, plain, no hype, no em dashes. On a rejection, lead with the one change that matters most.',
+      },
+    },
+    required: ['verdict', 'score', 'feedback'],
+  },
+}
+
+const SYSTEM_TEMPLATE = `You are Vera, Frequency's guide, reviewing a member-built Journey for the community library. Your job is the quality gate: decide whether finishing this Journey should count toward a member's season rank, and coach the author so they can get there.
+
+Publishing is already open. You are NOT deciding whether it can be shared. You are only deciding whether it is good enough to count toward RANK, which must stay meaningful. Hold the bar, and be generous with help.
+
+Judge it against the Journey Creation standard below (the five rules and the anatomy). The Master Template the strong Journeys follow: a problem-first premise; a four-week arc, each week with an Anchor practice (a small daily through-line) plus one weekly practice each for Mind, Body, and Spirit that complement the Anchor, a weekly Expression Challenge, and a Reflection; two weekly touchpoints (a Circle Meetup mid-week and a Weekend Gathering on the weekend); and a heavy capstone Expression Challenge at the Close. A Journey need not match it exactly, but coach toward it. A Journey that ignores the standard does not pass, however nice it sounds.
+
+THE STANDARD
+{{RUBRIC}}
+
+How to score and coach:
+- approved (score 70 or above): the premise names a real shift, the practices range across effort and pillar and could be done on a bad day, and the whole thing could plausibly carry someone for four weeks. Small gaps are fine.
+- rejected (score below 70): a vague or hype premise, too few or all-same-weight practices, no daily-doable floor, or nothing that pays off in the first week.
+- feedback: two to five lines, in second person, that a real author can act on today. Name one thing that works, then the exact next change. Never narrate their feelings. Never invent facts about them or the audience.
+
+Always call ${TOOL_NAME}. Do not answer in prose.`
+
+// The authoring standard the gate judges against, loaded once per process from the
+// leader-training doc (the single source of truth for the rubric). Cached because it is
+// large + stable; the front-matter is stripped so only the guidance reaches the model.
+let rubricCache: string | undefined
+async function getRubricText(): Promise<string> {
+  if (rubricCache !== undefined) return rubricCache
+  const path = join(
+    process.cwd(),
+    'content',
+    'leader-training',
+    'authoring',
+    'how-to-create-a-journey.md',
+  )
+  try {
+    const raw = await readFile(path, 'utf8')
+    rubricCache = raw.replace(/^---[\s\S]*?---\n/, '').trim()
+  } catch (err) {
+    // Log loudly: a read miss means the gate is judging against the compact fallback below,
+    // not the real authoring doc. The fallback keeps the gate working; the warning keeps the
+    // miss from being silent (e.g. the doc moved again).
+    console.warn(`[journey-review] could not read the Journey authoring rubric at ${path}; using the inline fallback standard.`, err)
+    // A compact fallback so the gate still has a standard if the file can't be read.
+    rubricCache = `A Journey people finish: a problem-first premise (one line, the shift it creates); five practices tagged Light, Standard, or Heavy, each with a five-minute floor and anchored to a daily routine; a daily loop (a nudge, a tiny action, an instant Zap, visible progress); a capstone that pushes the member to express something. Win the first week. Plain names, no hype.`
+  }
+  return rubricCache
+}
 
 /** Build the per-Journey content block the model reviews: premise/summary/intro, then each
  *  practice with its weight class + Pillar. Kept compact. */
@@ -74,11 +149,9 @@ function buildJourneyContent(
   return lines.join('\n')
 }
 
-/** A safe fail-closed verdict: never approved. The shared gate's `pendingVerdict`, narrowed back
- *  to the Journey's own shape (which carries no `entity`, so every existing caller is unchanged). */
+/** A safe fail-closed verdict: never approved. */
 function pendingReview(feedback: string[]): JourneyReview {
-  const { status, score, reviewedAt } = pendingVerdict('journey', feedback)
-  return { status, score, feedback, reviewedAt }
+  return { status: 'pending', score: 0, feedback, reviewedAt: new Date().toISOString() }
 }
 
 /** Resolve a planId to its slug, then load the full plan + items (the read shape getPlan gives). */
@@ -144,10 +217,24 @@ function toReviewPractices(
  * @param planId the Journey to review (its id, not slug). Authorship is the caller's concern.
  */
 export async function reviewJourneyForLibrary(planId: string): Promise<JourneyReview> {
-  // 1) Load the Journey + its practices (with weight class + Pillar). A plan we can't load
-  //    can't be fairly reviewed — fail closed. (The kill switch + the budget check live in the
-  //    shared gate, which runs next; loading first costs one cheap read and lets a missing plan
-  //    say so plainly instead of blaming the budget.)
+  // 1) Kill switch + budget. Fail closed: an unreviewed Journey is not ranked-eligible.
+  if (!(await aiAvailable())) {
+    return pendingReview([
+      "Vera's review is paused right now, so this isn't counting toward rank yet. Your Journey is still live in the library. Submit it for review again later.",
+    ])
+  }
+  if (await featureOverBudget(REVIEW_FEATURE)) {
+    return pendingReview([
+      "Vera's review is taking a breather for today. Your Journey is live in the library. Submit it for review again tomorrow to have it count toward rank.",
+    ])
+  }
+
+  if (!aiEnabled()) {
+    return pendingReview(["Vera's review isn't available right now. Your Journey is still live. Try again later."])
+  }
+
+  // 2) Load the Journey + its practices (with weight class + Pillar). A plan we can't load
+  //    can't be fairly reviewed — fail closed.
   let loaded: Awaited<ReturnType<typeof getPlan>> = null
   try {
     loaded = await loadPlanById(planId)
@@ -170,18 +257,70 @@ export async function reviewJourneyForLibrary(planId: string): Promise<JourneyRe
   const practices = toReviewPractices(items, pillarMap, weightByPractice)
   const content = buildJourneyContent({ title: plan.title, summary: plan.summary, intro: plan.intro }, practices)
 
-  // 2) The shared gate: kill switch, budget cap, rubric, the forced-tool Opus call, and the
-  //    coercion. It never throws, and every failure path is already a fail-closed `pending`.
-  const verdict = await runQualityGate(STANDARD, content)
-  return { status: verdict.status, score: verdict.score, feedback: verdict.feedback, reviewedAt: verdict.reviewedAt }
+  // 3) The forced-tool review call. The rubric is the standard, the voice primer keeps the
+  //    coaching on-voice, and the system prompt is cached (it's large + stable across reviews).
+  const system = withVoice(SYSTEM_TEMPLATE.replace('{{RUBRIC}}', await getRubricText()))
+  try {
+    const res = await completeRaw({
+      tier: 'opus',
+      maxTokens: 1200,
+      thinking: { type: 'disabled' },
+      cacheSystem: true,
+      system,
+      tools: [TOOL],
+      toolChoice: { type: 'tool', name: TOOL_NAME },
+      messages: [
+        { role: 'user', content: `Review this member-built Journey and call ${TOOL_NAME}:\n\n${content}` },
+      ],
+    })
+    void recordAiUsage({
+      feature: REVIEW_FEATURE,
+      model: MODELS.opus,
+      usage: res.usage,
+      costUsd: estimateCostUsd('opus', res.usage),
+    })
+
+    const block = res.content.find(
+      (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === TOOL_NAME,
+    )
+    const verdict = block ? coerce(block.input) : null
+    if (!verdict) {
+      return pendingReview([
+        "Vera couldn't finish reviewing this one. Your Journey is live in the library. Submit it for review again to count toward rank.",
+      ])
+    }
+    return verdict
+  } catch {
+    // AiUnavailableError or any transient failure: fail closed to a pending verdict.
+    return pendingReview([
+      "Vera's review hit a snag. Your Journey is live in the library. Submit it for review again to count toward rank.",
+    ])
+  }
 }
 
 /** Coerce the raw tool input into a trustworthy verdict. The score is the deterministic
  *  gate: a model "approved" with a sub-bar score is downgraded to rejected, so eligibility
- *  can't drift below PASS_SCORE no matter what the model says. Kept as the Journey's own
- *  (entity-free) shape so its unit tests and callers are unchanged. */
+ *  can't drift below PASS_SCORE no matter what the model says. */
 export function coerce(raw: unknown): JourneyReview | null {
-  const verdict = coerceVerdict(raw, 'journey', PASS_SCORE)
-  if (!verdict) return null
-  return { status: verdict.status, score: verdict.score, feedback: verdict.feedback, reviewedAt: verdict.reviewedAt }
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Record<string, unknown>
+
+  const rawScore = typeof r.score === 'number' && Number.isFinite(r.score) ? r.score : NaN
+  if (Number.isNaN(rawScore)) return null
+  const score = Math.min(100, Math.max(0, Math.round(rawScore)))
+
+  const feedback = Array.isArray(r.feedback)
+    ? r.feedback
+        .filter((s): s is string => typeof s === 'string')
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, 5)
+    : []
+  if (feedback.length === 0) return null
+
+  // Verdict = the model's call AND the score bar. Both must agree to approve.
+  const modelApproved = r.verdict === 'approved'
+  const status: JourneyReview['status'] = modelApproved && score >= PASS_SCORE ? 'approved' : 'rejected'
+
+  return { status, score, feedback, reviewedAt: new Date().toISOString() }
 }
