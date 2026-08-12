@@ -274,7 +274,7 @@ export async function approveStagedEvent(intakeId: string): Promise<ApproveStage
   if (!result.ok) return { ok: false, error: result.error }
 
   revalidatePath('/admin/event-seeder')
-  revalidatePath('/events/drafts')
+  revalidatePath('/drafts')
   return {
     ok: true,
     eventId: result.eventId,

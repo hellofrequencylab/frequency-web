@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { describe, it, expect } from 'vitest'
 import {
   compare,
@@ -45,51 +46,76 @@ describe('exact parity is the target state, and it passes', () => {
   })
 
   it('the digests reproduce what Postgres computes for string_agg', () => {
-    // sha256 of the same bytes, so the number in the report is directly comparable to a hand-run
-    // `encode(sha256(convert_to(string_agg(version, E'\n' order by version),'UTF8')),'hex')` against production. Pinned against the
-    // live values measured 2026-08-11, which the repo filenames alone reproduce.
-    // Re-frozen 2026-08-11 after the security sweep added four migrations (598 -> 602). Both
-    // digests below were read back from PRODUCTION and matched the repo byte for byte before
-    // being pinned here — re-freezing from the repo alone would assert that the repo agrees with
-    // itself, which is the one thing this test must not be allowed to mean.
+    // ⚠️ THIS USED TO PIN THE LIVE CORPUS — a row count plus the two production digests, re-frozen
+    // by hand after every apply. It was re-frozen THREE times in a day (598 → 602 → 603 → 604 →
+    // 605) and the comment it carried had to forbid re-freezing from the repo alone, because a
+    // digest read back from the tree asserts only that the tree agrees with itself. That is a
+    // guard whose correctness depends on a human doing a fiddly thing right, every time, and on
+    // 2026-08-12 it was green while production carried a migration the repo did not have.
     //
-    // Re-frozen again 2026-08-11 (602 -> 603) for 20270222000000_event_intake (ADR-989). Read back
-    // from PRODUCTION after applying, per the rule above, and matched the repo byte for byte.
+    // The repo⇄ledger comparison now lives in `pnpm check:migrations`, which reads BOTH sides at
+    // run time and fails on divergence directly. Nothing here needs re-freezing again.
     //
-    // Worth knowing for the next apply: the Supabase MCP's apply_migration stamps the ledger with a
-    // WALL-CLOCK version, and this project's versions run AHEAD of the calendar (2027 dates), so it
-    // recorded 20260811232907 and sorted the row before the repo file it came from. Same table,
-    // divergent ledger, and a later `db push` would have re-run the file. The ledger row was
-    // corrected to the repo's own version before these digests were taken. Apply, then always
-    // re-read the ledger rather than trusting the version the tool chose.
-    // Re-frozen again 2026-08-11 (603 -> 604) for 20270223000000_studio_steer (ADR-996). Read back
-    // from PRODUCTION after applying and matched the repo byte for byte, per the rule above. The
-    // wall-clock stamping trap noted below bit again and was corrected BEFORE these were taken.
+    // What still needs proving is the thing a pinned corpus never proved: that this JS reproduces
+    // Postgres byte for byte, so the digest in the report is directly comparable to a hand-run
+    // query. A FIXED fixture does that and is stable forever. The separators are the whole trap —
+    // rows joined by NEWLINE, version and name joined by TAB (E'\t', not a colon) — so they are
+    // asserted literally as well as through the hashes.
     //
-    // Re-frozen 2026-08-12 (602 -> 605) for the Studio re-land: 20270222000000_event_intake and
-    // 20270223000000_studio_steer come back with #2098 (they were only ever removed from the REPO by
-    // the #2102 revert; production kept them applied throughout), plus 20270224000000_studio_draft
-    // (ADR-1001), applied today. Read back from PRODUCTION and matched the repo byte for byte.
-    //
-    // Re-frozen 2026-08-12 (605 -> 606) for 20270224000100_revoke_friendships_freeze_identity_execute.
-    // Applied with execute_sql and the ledger row written explicitly at the repo's own version, NOT
-    // with apply_migration — which is how the wall-clock trap below is avoided rather than repaired.
-    // Digests read back FROM PRODUCTION afterwards and matched the repo byte for byte, and matched
-    // the values an independent auditor derived from the repo alone, which is the strongest form of
-    // this check: two derivations, two sources, one number.
-    //
-    // ⚠️ THE WALL-CLOCK TRAP BIT A THIRD TIME, and the note below is why it was caught in minutes.
-    // apply_migration stamped studio_draft as 20260812134657 — sorted 400 rows before the file it
-    // came from — AND an explicit ledger row at the repo's own version had also been inserted, so
-    // production briefly carried the same migration twice (606 rows against the repo's 605). The
-    // stray wall-clock row was deleted before these digests were taken. Apply, then ALWAYS re-read
-    // the ledger; never trust the version the tool chose, and check for a duplicate as well as a
-    // mis-sorted one.
-    const { rows } = repoRows()
-    expect(rows.length).toBe(606)
-    expect(versionsDigest(rows)).toBe('59f8c73a94e641a2fa38e9ae55999e458e211c5ff342d4ccdceb04b5121fe328')
-    expect(pairsDigest(rows)).toBe('5e7af496729a75f8ee05864e315498e043ae4006284d3657be8e374ebeb4c139')
+    // Both values below were read back from PRODUCTION on 2026-08-12 with:
+    //   with fixture(version, name) as (values ('20260101000000','alpha'),
+    //          ('20260102000000','beta'), ('20260103000000','gamma'))
+    //   select encode(sha256(convert_to(string_agg(version, E'\n' order by version),'UTF8')),'hex'),
+    //          encode(sha256(convert_to(
+    //            string_agg(version || E'\t' || name, E'\n' order by version),'UTF8')),'hex')
+    //   from fixture;
+    const fixture = [row('20260101000000', 'alpha'), row('20260102000000', 'beta'), row('20260103000000', 'gamma')]
+
+    expect(versionsDigest(fixture)).toBe('5d8574c2ffe2e8cf969135e657e86ee084376c78009cec19f30f1c70c9158d5c')
+    expect(pairsDigest(fixture)).toBe('fba5d1f6fec0daf633c8a99879b5ee5136ca8df29ee001f03b84b2bb39d05691')
+
+    // The separators, stated rather than implied. A colon here instead of a tab produces a
+    // confidently wrong digest that matches nothing and explains itself to nobody.
+    expect(pairsDigest([row('20260101000000', 'alpha')])).toBe(
+      createHash('sha256').update('20260101000000\talpha', 'utf8').digest('hex'),
+    )
+    expect(versionsDigest(fixture)).toBe(
+      createHash('sha256')
+        .update('20260101000000\n20260102000000\n20260103000000', 'utf8')
+        .digest('hex'),
+    )
   })
+
+  it('the digests track the real tree without anyone re-freezing a number', () => {
+    // The property that replaced the pin: adding a migration changes both digests, and the repo
+    // reproduces its own digests deterministically. No literal from the live corpus appears here,
+    // so growing supabase/migrations/ is never an edit to this file.
+    const { rows } = repoRows()
+    expect(rows.length).toBeGreaterThan(MIN_ROWS)
+    expect(versionsDigest(rows)).toBe(versionsDigest(repoRows().rows))
+    expect(versionsDigest(rows)).not.toBe(versionsDigest(rows.slice(0, -1)))
+    expect(pairsDigest(rows)).not.toBe(versionsDigest(rows))
+  })
+
+  // ── ⚠️ HOW TO APPLY A MIGRATION HERE, kept from the pin this file replaced ──────────────────
+  //
+  // The hand-pinned corpus that used to live above was re-frozen FIVE times (598 -> 602 -> 603 ->
+  // 604 -> 605 -> 606) and still could not see the drift that `check:migrations` caught on its
+  // first run: 606 repo files against 606 ledger rows with two MISMATCHED members. A count is not
+  // a set. That is why the pin is gone and the comparison moved to a run-time set difference on
+  // both columns.
+  //
+  // The operational lesson underneath it is still true and still costs an afternoon when ignored:
+  //
+  //   Do NOT apply migrations with apply_migration. It stamps a WALL-CLOCK version. On 2026-08-12
+  //   it stamped studio_draft as 20260812134657 — sorting ~400 rows before the file it came from —
+  //   and, because an explicit row at the repo's own version had also been inserted, production
+  //   briefly carried the same migration TWICE (606 rows against a 605-file repo). The trap bit
+  //   three times in one day.
+  //
+  //   Apply the DDL with execute_sql and insert the ledger row explicitly at the REPO's version.
+  //   Then re-read the ledger. Never trust the version the tool chose, and check for a duplicate
+  //   as well as a mis-sorted one.
 
   it('order is by version as text, so an unsorted ledger payload still matches', () => {
     const rows = corpus()

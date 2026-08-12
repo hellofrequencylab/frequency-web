@@ -1,5 +1,3 @@
-import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { posterSignedUrl } from '@/lib/events/poster-media'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
@@ -9,6 +7,7 @@ import { claimCardResponse, CLAIM_OG_SIZE } from '@/lib/og/claim-card'
 import { cardResponse } from '@/lib/og/deliver'
 import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
 import { fetchRemoteImage } from '@/lib/og/remote-image'
+import { siteMarkDataUrl } from '@/lib/og/local-image'
 import { loadNunito } from '@/lib/og/load-nunito'
 import { SITE_NAME } from '@/lib/site'
 
@@ -51,13 +50,10 @@ type EventClaimRow = {
   theme: unknown
 }
 
-/** Base64-inline a build-time asset under public/ (Satori needs bytes, not a relative URL). */
-async function localImage(relPath: string): Promise<string> {
-  const clean = relPath.replace(/^\//, '')
-  const data = await readFile(join(process.cwd(), 'public', clean))
-  const mime = clean.endsWith('.png') ? 'image/png' : 'image/jpeg'
-  return `data:${mime};base64,${data.toString('base64')}`
-}
+// The Frequency mark is inlined through lib/og/local-image.ts (Satori needs bytes, not a relative
+// URL). ⚠️ NOT a `readFile` in this file: its only call site passed a literal and it made no
+// difference — @vercel/nft reads the emitted chunk, sees a `readFile` on a variable, and globs the
+// whole of public/ into this function and the rest of the claim segment. See that module's header.
 
 export default async function Image({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
@@ -132,7 +128,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
   const [black, bold, mark] = await Promise.all([
     loadNunito(900),
     loadNunito(700),
-    localImage('images/Frequency-Logo-Round-Icon-white.png'),
+    siteMarkDataUrl(),
   ])
   const fonts = [
     { name: 'Nunito', data: black, weight: 900 as const, style: 'normal' as const },

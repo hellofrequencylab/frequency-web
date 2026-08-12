@@ -536,21 +536,47 @@ seeded (a non-default menu), so it is unchanged pre-seed. Tables are not in
 > logical/rounded), so `db push` would see ~300 already-applied files as unapplied". Measured against
 > the live ledger, the two sets are **byte-identical** on both columns:
 >
-> | | repo | prod ledger |
-> | :--- | :--- | :--- |
-> | rows | 598 | 598 |
-> | `sha256` of sorted `version` | `0d4bf815…` | `0d4bf815…` |
-> | `sha256` of sorted `version\tname` | `c9f8be01…` | `c9f8be01…` |
+> 🔴 **The digest table that used to sit here has been REMOVED, not updated.** It pinned `598` rows and
+> two `sha256` prefixes, and it was stale within days. Pinning a number in prose is the same mistake
+> `ledger-parity.test.ts` made — that pin was re-frozen **five times in one day** and still could not
+> see a real divergence, because it compared a count and a count is not a set
+> ([ADR-1007](DECISIONS.md)).
 >
-> That means **zero** stamp divergence and **zero** name variants, so the "~300 unapplied" hazard
-> does not exist in the current state. The old text was accurate when written and was made obsolete
-> by the ADR-963 reconciliation, which nobody came back to record here. **Keep the `db push` ban
-> anyway** — it rests on ADR-496 and on the destructive re-run risk, neither of which depends on the
-> divergence claim. Verify with the two digests above before citing this block; do not assume.
+> **Run the guard instead of citing a number:**
+>
+> ```
+> SUPABASE_ACCESS_TOKEN=… SUPABASE_PROJECT_REF=… pnpm check:migrations --require-ledger
+> ```
+>
+> It reads both sides at run time and fails on a set difference across `version` AND `name`. It is
+> armed in CI, so a repo⇄production divergence now fails a pull request directly.
+>
+> The substantive finding still stands: there is **zero** stamp divergence and **zero** name variants,
+> so the "~300 unapplied" hazard does not exist. **Keep the `db push` ban anyway** — it rests on
+> ADR-496 and on the destructive re-run risk, neither of which depends on the divergence claim.
 
-- **Apply a new migration to prod** via the Supabase MCP `apply_migration` tool (or, if scripting, a
-  reviewed one-off) — never `db push`. Ship the migration as a repo file first with a monotonic
-  logical stamp later than every existing file.
+- **Apply a new migration to prod** with the Supabase MCP `execute_sql` tool for the DDL, followed by
+  an explicit ledger insert at the **repo file's own version** — never `db push`, and 🔴 **never
+  `apply_migration`**. Ship the migration as a repo file first with a monotonic logical stamp later
+  than every existing file.
+
+  ```sql
+  -- 1. the DDL, via execute_sql
+  -- 2. then, in the same session:
+  insert into supabase_migrations.schema_migrations (version, name)
+  values ('<the repo file's version>', '<the repo file's name>')
+  on conflict (version) do nothing;
+  ```
+
+  🔴 **Why `apply_migration` is banned.** It stamps a **wall-clock** version, not the file's. On
+  2026-08-12 it stamped `studio_draft` as `20260812134657` — sorting ~400 rows *before* the file it
+  came from — and because an explicit row had also been inserted, production briefly carried the same
+  migration **twice** (606 ledger rows against a 605-file repo). The trap bit three times in one day.
+  A mis-sorted stamp means a fresh `db reset` replays the migrations in a different order than
+  production ever ran them.
+
+  **Then re-read the ledger.** Never trust the version the tool chose, and check for a *duplicate* as
+  well as a mis-sorted row. `pnpm check:migrations --require-ledger` does both.
 - 🔴 **Then reconcile the ledger row, in the same sitting.** `apply_migration` stamps the ledger with
   **apply-time wall-clock** and ignores the filename's version prefix. A file named
   `20270220000000_fk_indexes_and_billing_policy_merge.sql` landed as version `20260811003019`. This
@@ -574,7 +600,9 @@ seeded (a non-default menu), so it is unchanged pre-seed. Tables are not in
 npx supabase migration list                 # check local vs remote tracking
 npx supabase db query --linked "<sql>"       # inspect live data, read-only (no Docker needed)
 npx supabase gen types typescript --linked > lib/database.types.ts  # regenerate types
-# Prod apply: MCP apply_migration only (ADR-496). Do NOT run `supabase db push` against prod.
+# Prod apply: MCP execute_sql for the DDL, THEN an explicit ledger insert at the repo file's own
+#   version. NEVER apply_migration (it stamps a wall-clock version — see the ban above), and never
+#   `supabase db push` against prod (ADR-496).
 # `db push` is acceptable ONLY against a clean throwaway/branch DB built from the repo files.
 ```
 

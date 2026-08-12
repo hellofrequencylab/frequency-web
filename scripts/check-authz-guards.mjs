@@ -86,7 +86,6 @@ const ALLOWLIST_LIB = new Map([
   ['lib/nurture/enroll.ts', 'fire-safe system enroll from anonymous lead capture; idempotent on (sequence_id, contact_id)'],
   ['lib/events/dispatch.ts', 'event-dispatch composer; the host authorization lives in the calling action (caller-trusted)'],
   ['lib/analytics/marketing-intel.ts', 'read-only mkt_* RPC layer (no write); admin-gated at the page'],
-  ['lib/profile-zaps.ts', 'read-only profile_zap_total RPC (a sum() aggregate, no write); behind app-code authz'],
 ])
 
 /** Recursively collect .ts/.tsx files under a dir (skips test files and node_modules). */

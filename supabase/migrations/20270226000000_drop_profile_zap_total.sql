@@ -1,0 +1,37 @@
+-- =============================================================================
+-- Drop public.profile_zap_total(uuid) — its only consumer is gone
+--
+-- ⚠️ NOT YET APPLIED. Written 2026-08-12 alongside the deletion of
+-- `lib/profile-zaps.ts`; it must be pushed before this file and the ledger agree.
+-- Until it is applied the repo carries one migration the ledger head does not,
+-- which is exactly the divergence `pnpm check:migrations` (rule 4) fails on when
+-- it has database credentials. Apply it or revert this file; do not leave it.
+--
+-- WHY. The RPC was added by 20260715000000_profile_zap_total.sql to serve ONE
+-- reader, `getProfileZapTotal` in lib/profile-zaps.ts, which put a member's
+-- lifetime Zaps on their profile. That reader was wrong: the aggregate sums
+-- `crew_completions.zaps_earned` only, so a member whose Zaps came from posts,
+-- reactions or joins read 0 (one real member showed 0 against 130 actual Zaps).
+-- Commit 5e4c722ba repointed the profile at `profiles.lifetime_zaps`, which is
+-- authoritative across every earning path, and left the module unmounted. The
+-- module is now deleted, so nothing in the application calls this function.
+--
+-- VERIFIED ORPHANED. A repo-wide grep for `profile_zap_total` outside
+-- supabase/ returns only the generated types (lib/database.types.ts) and prose.
+-- No RPC call, no view, no trigger, no other function references it.
+--
+-- ALSO REMOVE WHEN THIS IS APPLIED: supabase/tests/browser_reachable_secdef_rpcs.test.sql
+-- lines 62-65 assert `has_function_privilege(...,'public.profile_zap_total(uuid)',...)`
+-- for anon and authenticated. `has_function_privilege` RAISES on a function that
+-- does not exist, so those two assertions turn into pgTAP errors the moment this
+-- drop lands. Delete them in the same push, and drop the function's rows from the
+-- two grant migrations' prose (20270221000100, 20270221000200) only as comments —
+-- those files are applied history and must not be rewritten.
+--
+-- SAFE TO DROP. The function is `stable` and read-only (one sum()), holds no data,
+-- and is already revoked from anon/authenticated/public (20270221000100,
+-- 20270221000200), so nothing outside service_role can even reach it today.
+-- Regenerate lib/database.types.ts after applying.
+-- =============================================================================
+
+drop function if exists public.profile_zap_total(uuid);

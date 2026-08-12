@@ -129,6 +129,7 @@ gem_config                           public
 gem_gifts                            authenticated
 gem_transactions                     authenticated
 help_chunks                          internal
+household_bundle_invites             internal
 housing_listings                     authenticated
 housing_seeker_profiles              authenticated
 hubs                                 public

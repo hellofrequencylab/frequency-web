@@ -291,10 +291,15 @@ lowest-risk wins are **auto-calendar-on-RSVP**, **completing the 3-touch cadence
   cover + lineup thumbnails via signed URLs, explicit Save, then the ownership question on publish
   ("This is my event" → host; "I found this event" → posted + claim token) with the outreach
   prompt (claim link + prewritten copy-button message) after a posted publish.
-- ✅ **Drafts list** (`app/(main)/events/drafts/page.tsx`): the member's captured events as cards
-  (cover thumb, date, status: Draft / Awaiting claim / Live / Claimed / Removed) with edit +
-  two-tap delete (draft rows only; storage crops cleaned up). Linked from the events header
-  ("My drafts") and the capture flow.
+- ✅ **Drafts list** — **FOLDED INTO `/drafts`** (owner ruling 2026-08-12; `docs/NAMING.md`
+  "Drafts"). `app/(main)/events/drafts/page.tsx` is now a 308 stub that forwards to `/drafts`,
+  where an unfinished captured event is the THIRD row kind beside Vera's create proposals and the
+  staged wizard drafts (`app/(main)/drafts/event-draft-row.tsx`, fed by
+  `listMyUnfinishedEventDrafts`). It carried the title "My drafts" while `/drafts` said Drafts
+  about other things, so the word named two surfaces. Only rows still at `status='draft'` appear:
+  a POSTED capture is made, and already lists on the member's own `/events` (which reads
+  `host_id OR posted_by_profile_id`) and on `/admin/events`. The events header, the capture flow,
+  and both editor back-links now point at `/drafts`; the per-event editor keeps its own route.
 - ✅ **Claim landing** (`app/events/claim/[token]/`, PUBLIC, outside the (main) shell like
   `/join/[token]` so a signed-out organizer can see it): resolves the published unclaimed event by
   token (404 otherwise), event preview + poster credit, sign-in CTA preserving the return path,

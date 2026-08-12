@@ -75,12 +75,39 @@ const FIELD_CSS_ALLOWLIST = new Map([
   ['components/studio/market/new-listing-button.tsx', 'pre-kit: New listing button'],
 ])
 
+// ── NON-TRIVIALITY FLOORS ────────────────────────────────────────────────────────────────────
+// 🔴 MEASURED 2026-08-12: with the repo tree absent, this script printed
+// "✓ Studio contract: the kernel is pure and entity-blind" and exited 0. `walk()` returns [] for a
+// directory that does not exist, every loop body was skipped, `violations` stayed empty, and the
+// success branch fired. AGENTS.md calls this contract "machine-enforced" — it was enforcing
+// nothing, in exactly the way check:og-trace's regex bug made half of THAT guard vacuous for weeks.
+//
+// A guard that reports a clean bill of health over an empty corpus is worse than no guard: it
+// converts "I never looked" into "I looked and it was fine". These floors make the two distinct.
+//
+// Raise them only when the real counts move, and never to make a red build green.
+const MIN_KERNEL_FILES = 3
+const MIN_STUDIO_FILES = 10
+
 function runCheck() {
   const violations = []
   const norm = (p) => p.split('\\').join('/')
 
+  const kernelFiles = walk(KERNEL_DIR)
+  const studioFiles = STUDIO_ROOTS.flatMap((r) => walk(r))
+  if (kernelFiles.length < MIN_KERNEL_FILES || studioFiles.length < MIN_STUDIO_FILES) {
+    console.error(
+      `\n✗ check:studio — refusing to pass over a corpus it could not read.\n` +
+        `    ${KERNEL_DIR}: ${kernelFiles.length} file(s), floor ${MIN_KERNEL_FILES}\n` +
+        `    studio surfaces: ${studioFiles.length} file(s), floor ${MIN_STUDIO_FILES}\n\n` +
+        `  Either the Studio moved and this guard's paths are stale, or it is running outside the\n` +
+        `  repo. Both are real problems. Neither is a pass.\n`,
+    )
+    process.exit(1)
+  }
+
   // (a) + (b): the kernel's layering + purity.
-  for (const file of walk(KERNEL_DIR)) {
+  for (const file of kernelFiles) {
     const lines = readFileSync(file, 'utf8').split('\n')
     lines.forEach((text, i) => {
       if (text.includes(ANNOTATION)) return

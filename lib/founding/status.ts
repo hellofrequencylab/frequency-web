@@ -9,7 +9,8 @@
 //   • grantFoundingStatus() flips reserved -> active and applies the LOCKED rate. It NEVER
 //     charges: it does not set charged_at and does not call Stripe. The money flip lives
 //     behind billingLive() / payoutsLive() and is owned by the billing path, not this module.
-//     The beta graduation (graduateBeta) calls grantFoundingStatus() as its founding hook.
+//     Its LIVE callers are beta onboarding (app/onboarding/beta/actions.ts) and the Stripe
+//     webhook reconciler (lib/billing/beta-founding.ts).
 //
 // The founding_members table is not in the generated lib/database.types.ts yet (regen after
 // apply, ADR-246), so it is reached through ONE loose service-role handle, the repo idiom
@@ -305,11 +306,11 @@ export async function reserveFounding(input: {
   }
 }
 
-// ── GRANT (the graduation hook) ─────────────────────────────────────────────────────────────
+// ── GRANT (the founding hook) ───────────────────────────────────────────────────────────────
 
 /**
- * Grant founding status: flip reserved founders to ACTIVE and apply the LOCKED rate. This is the
- * beta graduation's founding hook (graduateBeta() calls it). Callable + IDEMPOTENT + no-charge:
+ * Grant founding status: flip reserved founders to ACTIVE and apply the LOCKED rate. Called by beta
+ * onboarding and the Stripe webhook reconciler. Callable + IDEMPOTENT + no-charge:
  *
  *   • Targeted (a profileId and/or spaceId given): activate that ONE founder's row (upserting a row
  *     if none exists yet, e.g. a member who bought the one-time Founders Round), applying the locked

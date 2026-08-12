@@ -22,12 +22,17 @@
 // Pricing P2 (ADR-363): subscription/checkout events carrying metadata.kind = 'space_plan' /
 // 'space_membership' route to the Space reconcilers (lib/billing/space-subscriptions.ts) FIRST;
 // the member Crew/Supporter path only runs for non-Space subscriptions.
+//
+// ADR-370: metadata.kind = 'household_bundle' routes to the bundle seating branch
+// (lib/billing/bundle-seats.ts) on the same principle — that payer bought SEATS, not a personal
+// membership, so the member tier path must not claim the event.
 
 import { NextResponse } from 'next/server'
 import type Stripe from 'stripe'
 import { stripe, STRIPE_WEBHOOK_SECRET, tierForPrice } from '@/lib/billing/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { routeSpaceSubscription, subscriptionKind } from '@/lib/billing/space-subscriptions'
+import { isBundleMetadata, reconcileBundleSubscription } from '@/lib/billing/bundle-seats'
 import { grantBetaFounding } from '@/lib/billing/beta-founding'
 import { foundingPaymentSignal } from '@/lib/billing/founding-payment'
 import { lapseFoundingStatus } from '@/lib/founding/status'
@@ -138,9 +143,14 @@ export async function POST(req: Request) {
         // entitlement is not something to leave standing "just in case" behind a metadata string an
         // operator could set by hand in the Stripe dashboard. A stray legacy session now falls through
         // to the guard below and is ignored.
-        if (!subscriptionKind(s.metadata) && s.metadata?.kind !== 'founders') {
+        if (!subscriptionKind(s.metadata) && !isBundleMetadata(s.metadata) && s.metadata?.kind !== 'founders') {
           // A Space plan/membership checkout's entitlement write is done by the
           // subscription.created/updated event, so skip the member tier path for those kinds.
+          //
+          // A HOUSEHOLD / CIRCLE BUNDLE is skipped here for the same reason and one sharper one: the
+          // buyer is not buying a personal membership, they are buying SEATS. Falling through would
+          // flip the payer's own membership_tier and stamp last_stripe_event_at off a bundle payment,
+          // seat nobody, and leave the real seating (lib/billing/bundle-seats.ts) looking stale.
           const profileId = s.metadata?.profile_id ?? s.client_reference_id ?? null
           const tier = s.metadata?.tier === 'supporter' ? 'supporter' : 'crew'
           const customerId = typeof s.customer === 'string' ? s.customer : s.customer?.id
@@ -173,6 +183,11 @@ export async function POST(req: Request) {
         // was a Space sub, the member tier path is skipped. event.created drives the space_plan
         // ordering guard (a stale out-of-order event is skipped, mirroring the member path).
         if (await routeSpaceSubscription(sub, event.created)) break
+        // Household / Circle bundle (ADR-370): ONE subscription that seats several members. Routed
+        // ahead of the member path for the same reason as a Space sub — the payer is buying seats,
+        // not a personal membership. Seating is one atomic RPC and throws on failure, so a partial
+        // seat is impossible and Stripe redelivers.
+        if ((await reconcileBundleSubscription(sub, event.created)).handled) break
         const profileId = sub.metadata?.profile_id
         if (profileId) {
           // Resolve the paid tier from the VALIDATED subscription metadata first (stamped at
@@ -230,6 +245,10 @@ export async function POST(req: Request) {
         // Pricing P2: a deleted Space subscription reverts the plan to free / cancels the membership.
         // event.created keeps the deletion in the same ordering stream as the updates.
         if (await routeSpaceSubscription(sub, event.created)) break
+        // A deleted bundle subscription EMPTIES the bundle: every seat is restored to what it held
+        // before the bundle seated it (never below), and the household link is cleared. `terminal`
+        // because THIS EVENT is the cancellation; it must not depend on reading a status back.
+        if ((await reconcileBundleSubscription(sub, event.created, { terminal: true })).handled) break
         const profileId = sub.metadata?.profile_id
         if (profileId) {
           await setTier(profileId, 'free', null, 'canceled', event.created)

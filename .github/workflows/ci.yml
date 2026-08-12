@@ -47,10 +47,18 @@
 # tests was mergeable. That window is closed. The job names below are exactly `lint` and
 # `test` because that is how they are named in the ruleset; renaming one silently un-gates it.
 #
-# ⚠️ STILL NOT REQUIRED, deliberately: `pr-compare` and `lighthouse` (e2e.yml, ADR-936). Both
-# are advisory while the visual baselines are stale (FINALIZE-PLAN Phase 1) — a required
-# `pr-compare` today would block every PR on a pre-existing failure. Add it as a required
-# context in the SAME change that recaptures the baselines, not before.
+# ⚠️ CORRECTED 2026-08-12 — this block said `pr-compare` was "STILL NOT REQUIRED, deliberately"
+# and that was FALSE. Ruleset 17640795 requires `checks`, `analyze`, `lint`, `test` AND
+# `pr-compare`; it was last modified 2026-08-11 03:55Z and nobody updated this comment. The
+# config drifted from the doc and no gate noticed, which is the same class of failure as every
+# other one recorded today. `lighthouse` is genuinely still advisory.
+#
+# 🔴 A REQUIRED `pr-compare` DEADLOCKS ANY PR THAT CANNOT TRIGGER e2e.yml. It is posted by a
+# path-filtered workflow, so a docs-only, migrations-only or scripts-only PR never produces the
+# context, and GitHub blocks such a PR FOREVER on "Expected — Waiting for status to be reported".
+# `bypass_actors` is null, so an admin cannot force it either. PR #2107 (two files, both docs/)
+# hit exactly this. `.github/workflows/pr-compare-fallback.yml` now posts the context for those
+# PRs, reading e2e.yml's own path list so the two can never drift apart.
 #
 # A Claude Code session cannot change this: the agent proxy refuses writes to the GitHub
 # rulesets API. Reading it back is permitted, which is how the state above was confirmed —
@@ -163,6 +171,24 @@ jobs:
       # would be noise, and the wiring half is already gated where the finding has an owner.
       - name: Contract guards (all run; every failure reported)
         if: ${{ !cancelled() }}
+        # ARMS THE LEDGER HALF OF check:migrations. Without these two, that guard proves only that
+        # the TREE is well-formed and says so in a loud skip; it cannot tell you whether production
+        # has applied exactly these migrations and nothing else.
+        #
+        # 🔴 WHY IT IS ARMED HERE. On 2026-08-12 production ran a security migration
+        # (20270224000100_revoke_friendships_freeze_identity_execute) whose file existed in NO
+        # branch — it was applied via execute_sql, then lost when a branch was rebuilt with
+        # cherry-picks after a bad rebase. For a full day the repo could not reproduce its own
+        # database, and every gate was green: the old check was a hand-pinned COUNT in
+        # ledger-parity.test.ts, re-frozen five times, and the count was 606 on both sides because
+        # one file was missing AND one was unapplied. A count is not a set.
+        #
+        # On a fork PR these are empty and the guard degrades to the same loud skip rather than a
+        # false pass — the skip states what was proved and what was not. That is deliberate: the
+        # failure mode of a credential-less run must never be a silent green.
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
         run: |
           set -uo pipefail
           failed=()

@@ -1,6 +1,6 @@
 // Beta referral + Circle-starter contest (phase P3 "Replication"). The tracking,
-// scoring, Zaps, leaderboard, and prize-award for the contest that rewards members
-// for bringing people in and starting Circles that take root.
+// scoring, Zaps, and leaderboard for the contest that rewards members for bringing
+// people in and starting Circles that take root.
 //
 // WHAT REUSES WHAT (the contest is a thin, flag-gated layer over existing spines):
 //   • Attribution   — profiles.referred_by_profile_id (set at signup by
@@ -18,8 +18,12 @@
 //   1. Only ACTIVATED invites count. Dedupe per invitee (beta_referrals.invitee UNIQUE).
 //   2. The whole contest is INERT behind platform_flags.beta_referral_contest (FALSE by
 //      default). Every write path no-ops when the flag is off.
-//   3. Prizes are RECORDED at graduation (awardReferralWinners), never granted as paid
-//      time before billing is live - that flip belongs to the graduation / billing agent.
+//   3. This module SCORES the contest; it never grants paid time. Billing went live on
+//      2026-07-10, and the automated prize-award path was retired with the beta program.
+//      The published free-membership prize came down with it (owner ruling, 2026-08-12):
+//      awardReferralWinners and its WINNER_PRIZE_MONTHS terms are deleted, and
+//      app/(main)/referral no longer states a prize. The rewards this module still pays
+//      are Zaps, on the live ledger, and they are the only rewards the copy may claim.
 //
 // The beta_* tables lag the generated Database types (ADR-246), so writes reach
 // beta_referrals through the loose service-role handle (lib/beta/db.betaDb); the
@@ -28,7 +32,6 @@
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { awardZaps, awardZapsForAction } from '@/lib/zaps'
-import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { betaDb } from './db'
 
 // The activation signals a referral must hit before it scores. Kept in lockstep with
@@ -49,12 +52,6 @@ export const FOUNDING_PERK_MIN_REFERRALS = 3
 
 // reward_grants rule_key prefixes (the idempotency keys for each contest payout).
 const CIRCLE_START_RULE = 'beta_contest.circle_start:' // + circleId
-const WINNER_RULE = 'beta_contest.winner:' // + rank (1|2|3)
-const FOUNDING_PERK_RULE = 'beta_contest.founding_perk' // one per profile
-
-/** The prize term (in months of paid membership) for each podium place, granted only
- *  post-Sept-1 at graduation. 1st = 1 year, 2nd = 6 months, 3rd = 3 months. */
-export const WINNER_PRIZE_MONTHS: Record<1 | 2 | 3, number> = { 1: 12, 2: 6, 3: 3 }
 
 /** Whether the contest is live. platform_flags.beta_referral_contest, default FALSE so
  *  the whole feature ships inert. Cached per request; fail-closed (FALSE) on any error. */
@@ -427,123 +424,5 @@ export async function getMemberContestProgress(profileId: string): Promise<Membe
     }
   } catch {
     return EMPTY_PROGRESS
-  }
-}
-
-// ── Prizes (RECORDED at graduation, never granted as paid time before billing) ────
-
-export interface WinnerAward {
-  rank: 1 | 2 | 3
-  profileId: string
-  displayName: string
-  handle: string
-  prizeMonths: number
-  score: number
-  /** false when this winner was already recorded on a prior run (idempotent). */
-  fresh: boolean
-}
-
-export interface AwardWinnersSummary {
-  /** false = the contest flag is off; nothing was awarded. */
-  enabled: boolean
-  winners: WinnerAward[]
-  /** Profiles that earned Founding-Member perks (3+ activated referrals). */
-  foundingPerkProfileIds: string[]
-  foundingPerkFresh: number
-  /** true when nothing was written (an idempotent re-run, or an empty board). */
-  alreadyAwarded: boolean
-}
-
-/**
- * Grant the contest prizes. Called by the beta-access agent's graduateBeta() at
- * graduation (P4), NOT before: this RECORDS each winner's entitlement on the
- * reward_grants ledger (idempotent via UNIQUE rule_key + profile_id) so the billing
- * agent can apply the free paid time once billing is live. It does NOT flip billing,
- * paid tier, or founding status itself (those belong to other agents).
- *
- *   1st place  -> 12 months free paid membership (recorded)
- *   2nd place  -> 6 months
- *   3rd place  -> 3 months
- *   3+ activated referrals -> Founding-Member perks (recorded)
- *
- * Idempotent: re-running grants nothing new (the reward_grants UNIQUE index dedupes),
- * so graduateBeta can call it safely more than once. Returns a summary of what was
- * (and was already) awarded. `dryRun` computes the summary without writing.
- */
-export async function awardReferralWinners(
-  opts: { dryRun?: boolean } = {},
-): Promise<ActionResult<AwardWinnersSummary>> {
-  try {
-    if (!(await betaReferralContestEnabled())) {
-      return ok({
-        enabled: false,
-        winners: [],
-        foundingPerkProfileIds: [],
-        foundingPerkFresh: 0,
-        alreadyAwarded: true,
-      })
-    }
-    const admin = createAdminClient()
-    const board = await getContestLeaderboard(1000)
-
-    // Podium: the top 3 by score.
-    const podium = board.slice(0, 3)
-    const winners: WinnerAward[] = []
-    for (let i = 0; i < podium.length; i++) {
-      const rank = (i + 1) as 1 | 2 | 3
-      const row = podium[i]
-      const prizeMonths = WINNER_PRIZE_MONTHS[rank]
-      let fresh = false
-      if (!opts.dryRun) {
-        const { error } = await admin.from('reward_grants').insert({
-          rule_key: `${WINNER_RULE}${rank}`,
-          profile_id: row.profileId,
-          reward_kind: 'membership',
-          amount: prizeMonths,
-          detail: `Referral contest winner (place ${rank}): ${prizeMonths} months free paid membership, applied when billing is live`,
-        })
-        fresh = !error
-      }
-      winners.push({
-        rank,
-        profileId: row.profileId,
-        displayName: row.displayName,
-        handle: row.handle,
-        prizeMonths,
-        score: row.score,
-        fresh,
-      })
-    }
-
-    // Founding-Member perks for everyone with 3+ activated referrals.
-    const eligible = board.filter((r) => r.activatedReferrals >= FOUNDING_PERK_MIN_REFERRALS)
-    const foundingPerkProfileIds = eligible.map((r) => r.profileId)
-    let foundingPerkFresh = 0
-    if (!opts.dryRun) {
-      for (const r of eligible) {
-        const { error } = await admin.from('reward_grants').insert({
-          rule_key: FOUNDING_PERK_RULE,
-          profile_id: r.profileId,
-          reward_kind: 'founding_perk',
-          amount: 0,
-          detail: `Founding-Member perks earned: brought in ${r.activatedReferrals} activated members`,
-        })
-        if (!error) foundingPerkFresh++
-      }
-    }
-
-    const alreadyAwarded =
-      !opts.dryRun && winners.every((w) => !w.fresh) && foundingPerkFresh === 0
-
-    return ok({
-      enabled: true,
-      winners,
-      foundingPerkProfileIds,
-      foundingPerkFresh,
-      alreadyAwarded,
-    })
-  } catch (err) {
-    console.error('[referral-contest] awardReferralWinners failed:', err)
-    return fail('Could not award the referral contest winners.')
   }
 }

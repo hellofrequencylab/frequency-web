@@ -77,8 +77,9 @@ parts. Promote them to `components/studio/kit/` so the next entity gets them for
   `save(patch)` + the `idle / saving / saved` indicator + error resync. Every builder gets
   "autosaves as you go" by using this hook with the entity's `save` action.
 - **`StudioFooter`**: the save-state line + primary action slot (Create / Share / Done).
-- **`StudioLaunchButton`**: generalize `NewJourneyButton`: opens the window in place for
-  *create*, navigates to the deep link for *edit*. Takes a registry key.
+- ~~**`StudioLaunchButton`**~~: **deleted (2026-08-12).** ADR-986 makes every create entry
+  point a deep-linkable Spark link, so a modal launcher has no consumer. Entry points are
+  plain `<Link>`s to the Spark route; `StudioWindow` remains the shell for *edit* surfaces.
 - **`SortableList`**: the journey's drag-reorder + up/down list (HTML5 DnD, no dep), reusable
   for any ordered child (event agenda, circle pinned items).
 
@@ -130,8 +131,8 @@ All four data layers + server actions **already exist**: the work is the builder
 
 1. ✅ **Journey**: the reference instance (ADR-142).
 2. ✅ **Foundation**: the kit (§2: `useStudioDraft`, `useSortable`, `StudioIdentity`
-   atoms, `StudioField`, `SaveStatus`/`StudioFooter`,
-   `StudioLaunchButton`) + the registry (§3); the journey builder now composes it
+   atoms, `StudioField`, `SaveStatus`/`StudioFooter`; the original
+   `StudioLaunchButton` was retired under ADR-986) + the registry (§3); the journey builder now composes it
    (behavior-neutral). The proof the kit fits.
 3. ✅ **Practice**: `components/studio/practice/*`: a `NewPracticeButton` launcher
    (now opens the guided builder at `/practices/new`) + a `PracticeBuilder` window

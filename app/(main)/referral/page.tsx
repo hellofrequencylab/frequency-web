@@ -3,6 +3,15 @@
 // Founding-Member perk. Composes the kit (DashboardTemplate + StatCard + SectionHeader
 // + EmptyState). The whole surface is INERT behind platform_flags.beta_referral_contest:
 // when the contest is off, the route 404s (it does not exist for members yet).
+//
+// THE PAGE ONLY CLAIMS WHAT THE CODE DOES (owner ruling, 2026-08-12). The free-membership
+// prize for the top referrers was taken down with the beta program: the code that recorded
+// it (awardReferralWinners, reached only from the deleted lib/beta/graduation.ts) is gone,
+// billing has been live for three weeks, and there were 0 referrals and 0 founding grants,
+// so nothing was owed. What remains here is what still pays out for real: Zaps per
+// activated invite (lib/zaps 'referral_activated') and per Circle-starter milestone
+// (CIRCLE_STARTER_ZAPS), plus the leaderboard standing. Do not restate a reward on this
+// page unless a live code path grants it.
 
 import { notFound, redirect } from 'next/navigation'
 import Image from 'next/image'
@@ -57,7 +66,7 @@ export default async function ReferralHubPage() {
     <DashboardTemplate
       eyebrow="Beta contest"
       title="Bring people in"
-      description="Invite friends and start Circles. Every friend who takes a real first action counts, and every Circle you grow to ten members counts. The top referrers win free membership when we open the doors."
+      description="Invite friends and start Circles. Every friend who takes a real first action earns you Zaps, and so does every Circle you grow to ten members. The leaderboard shows where everyone stands."
       stats={
         <>
           <StatCard label="Activated invites" value={progress.activatedReferrals} icon={Users} />

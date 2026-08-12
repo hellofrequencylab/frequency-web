@@ -3,6 +3,57 @@
 > The durable record of the full-repo meta scan: what shipped, and what is still open with the
 > exact fix. Update it as items close. Newest pass first; earlier passes are kept below.
 
+## 2026-08-12 pass (the ENOSPC outage, the Studio re-land, and the 47-finding baseline sweep)
+
+**The pattern worth naming this time.** Every gate in the repo measured the **source tree**; not one
+measured the **artifact that ships**. A 215-file PR passed 26 contract guards, 9,000+ tests, lint and
+typecheck, then killed every production deploy with `ENOSPC` for a day. The same shape recurred one
+level down in the docs: **five status lines were false against production for a full day** because
+each was copied from another doc rather than re-derived. Both halves have the same fix — measure the
+thing itself, and cite the command that measured it.
+
+Full record: [`DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md), [`BASELINE-TODO-2026-08-12.md`](BASELINE-TODO-2026-08-12.md),
+ADR-1002/1003/1004/1006/1007/1008.
+
+### Shipped this pass
+
+| Area | What was wrong | Guard added |
+|---|---|---|
+| 🔴 **Deploy** | `app/opengraph-image.tsx` was a **ROOT metadata image**. Next inherits metadata images into every page's metadata module, that module imports `next/og`, and `next/og` loads `sharp` — so `libvips-cpp.so` (17.7 MB) landed in **403 functions**: 6.99 GB, 42% of the build, for a codec 18 routes use. It is a static file now (ADR-1002) | `check:og-trace` (`postbuild`) |
+| 🔴 **Deploy** | `lib/ai/quality-gate.ts` called `join(process.cwd(), ...standard.rubricPath)`. `@vercel/nft` cannot resolve a spread of a runtime array, so it globbed the **repo root** into ~300 functions. The Studio tree measured **57.23 GB** (ADR-1004) | `check:build-budget` (`postbuild`) |
+| 🔴 **Deploy** | Nothing measured the artifact at all, and CI never builds — Vercel does. Both gates therefore live in `postbuild`, on the real build (ADR-1003) | both, plus `scripts/build-fanout.test.ts` |
+| 🟠 **Build fan-out** | `searchSiteIcons` pulled three `@iconify-json` collections into **337** functions (2,315 MB) and the `heic2any` WASM decoder into **381** (491 MB) — a browser decoder copied into server functions where it can never run. Now a route handler + a single dynamic-import door (ADR-1008). **9.16 GB → 6.45 GB** | `scripts/build-fanout.test.ts`, by content probe |
+| 🔴 **Migrations** | `check:migrations` read only the tree, so repo⇄ledger divergence was caught indirectly by a **hand-re-frozen** count and two sha256 digests. It bit three times, twice in one day. Rule 4 now compares against the **live** ledger head with no pinned numbers, degrading to a loud named SKIP rather than a vacuous pass (ADR-1007) | `check:migrations` Rule 4 |
+| 🔴 **Unbacked promise** | `/referral` published *"the top referrers win free membership"* while the code that awarded it (`awardReferralWinners`, reachable only from `graduateBeta`) was unreachable, then deleted. Owner ruling: **the page may only claim what the code does.** Board was empty — 0 referrals, 0 founding grants — so nothing was owed (ADR-1006) | — |
+| 🟠 **Orphans** | Seven built-but-never-mounted modules resolved: five deleted, and the **two carrying product weight were mounted rather than deleted** — `createBundleCheckout` reached a caller **and** its webhook seating branch (it would otherwise have taken payment and seated nobody), and `requestClaimLink` ("Is this your event? Claim it") got its CTA | per-feature wiring tests |
+| 🟠 **Dead code** | `AppElement` (the embeddable-elements mounter that never existed), the six files stranded behind the ADR-459 contacts redirect, the duplicate `circle-challenges`, and the shadowed `SupporterBadge` are all gone. `components/elements/` now holds `previews.tsx` alone | — |
+| 🟠 **Security** | `friendships_freeze_identity` was the one SECURITY DEFINER trigger function still anon-executable — a one-shot `do $$` revoke loop whose comment claimed it covered functions added later, which version-ordered replay makes impossible. `safeUrl`/`safeHref` returned protocol-relative URLs their comments said they blocked | revoke migration; `RELATIVE_BASE` parse in both helpers |
+| 🟠 **Docs** | Eleven plan-doc drift items. `"0 of 10"` kit states was 7 of 10; a +4.0 package sized at "52 sites" was ~7; a standing **"do not re-record the baselines"** order sat live after the recapture had shipped; `app/globals.css` asserted `.mk-cream`/`.mk-ink` had zero adopters while `Section` emitted one on every render | — |
+
+### Verified clean (worth not re-auditing)
+
+- **The re-land was a push-and-gate operation, not an untangling.** #2102 restored the exact tree of
+  `3f8d62b` rather than hand-reconstructing it, so `main` carried no half-removed menu rows and no
+  imports pointing at deleted modules.
+- **Four dead branches hold nothing `main` lacks** — verified by content, not by merge topology
+  (a squash merge leaves no ancestry, so `--is-ancestor` proves nothing). Table in
+  [`BASELINE-TODO-2026-08-12.md`](BASELINE-TODO-2026-08-12.md) §CP-9.
+- **The a11y baseline-raising hazard is blocked in code**: `scripts/a11y-baselines.mjs` exits 1
+  before `writeFileSync` without `--force`, which the workflow does not pass.
+
+### Open, engineering
+
+| Item | Sev |
+|---|---|
+| 🔴 **`/referral` still offers Founding-Member perks at 3 activated referrals and no code grants them.** `reward_kind: 'founding_perk'` has zero consumers repo-wide; the beta emails repeat the offer. Latent, not live — `platform_flags.beta_referral_contest` is **false**, so the page 404s. Full decision brief in BASELINE-TODO §4 B-1b | 🔴 |
+| **The Vercel Build Command is still unverified**, and `vercel.json` still has no `buildCommand`. If it was ever overridden to skip pnpm lifecycle scripts, **both artifact gates have never run.** Owner-only — no agent can close it | 🔴 |
+| Per-entity OG cards inherit `sharp` into 67 incidental functions against a budget of 70. **Adding four ordinary pages under `spaces/[slug]` fails a disk gate whose message talks about share cards.** Raise the ceiling with a reason, or move the cards to route handlers and re-prove the private-Space privacy contract | ⚠️ |
+| "Drafts" names three member surfaces and `NAMING.md` defines none of them. `/drafts` carries two row kinds by design (ADR-1001); `/events/drafts` is a separate surface whose back-link also reads "My drafts" | ⚠️ |
+| No repo-side gate for function grants at all: `check-grants.mjs` covers tables only, and nothing anywhere references `has_function_privilege`. 29 anon-executable SECURITY DEFINER functions rest on a human reading an advisor | ⚠️ |
+| `EDITOR-ARCHITECTURE`'s two 🔴 sequencing questions are unsettled, and its own audit says starting E0 or E3 blocks immediately. Decisions, not tasks — cheap on paper, expensive after E1 ships | ⚠️ |
+
+---
+
 ## 2026-08-04 scan (security · wiring · correctness, run against the live project)
 
 **The pattern worth naming.** Four separate gates were found checking the *shape* of a value
@@ -140,13 +191,13 @@ Also closed in the same pass, both flagged above as the highest user impact:
 ### 🟠 Medium, grouped by theme
 
 **Half-built features (each has a live control or nav entry with nothing behind it)**
-- Beta **graduation** is orphaned, so referral-contest prizes were never awarded on the `billing_live` flip (`lib/beta/graduation.ts:33`).
-- Beta **admission-wave** engine has no caller while the Command Center advertises and renders the UI (`lib/beta/admission.ts:88`).
-- **Email Studio** Phase-3 template gallery is a dead subtree; its nav target `/admin/email-studio` does not exist (`components/admin/email-studio/template-gallery.tsx:42`).
-- **Household/Circle bundle checkout** has no caller AND no webhook seating branch, so enabling the flag would take payment and seat nobody (`lib/billing/bundle-checkout.ts:21`).
+- ~~Beta **graduation** is orphaned, so referral-contest prizes were never awarded on the `billing_live` flip (`lib/beta/graduation.ts:33`).~~ ✅ closed by owner ruling (2026-08-12): the beta program is over, `billing_live` has been on for three weeks, and the board was empty (0 referrals, 0 founding grants), so nothing was owed. `graduation.ts` and `awardReferralWinners` are deleted, `WINNER_PRIZE_MONTHS` with them, and `/referral` no longer publishes a prize. See BASELINE-TODO B-1.
+- ~~Beta **admission-wave** engine has no caller while the Command Center advertises and renders the UI (`lib/beta/admission.ts:88`).~~ ✅ closed 2026-08-12 — `lib/beta/admission.ts` is **deleted** with the rest of the beta program (ADR-1006).
+- ~~**Email Studio** Phase-3 template gallery is a dead subtree; its nav target `/admin/email-studio` does not exist (`components/admin/email-studio/template-gallery.tsx:42`).~~ ✅ closed 2026-08-12 — `template-gallery.tsx` is **deleted**.
+- ~~**Household/Circle bundle checkout** has no caller AND no webhook seating branch, so enabling the flag would take payment and seat nobody (`lib/billing/bundle-checkout.ts:21`).~~ ✅ closed 2026-08-12 — **mounted with both halves**, deliberately not deleted: the caller is `app/(main)/settings/billing/actions.ts:60` and the seating branch is `lib/billing/bundle-seats.ts` (`reconcileBundleSubscription`), routed from `app/api/webhooks/stripe/route.ts:186` on `metadata.kind = 'household_bundle'`. Half-mounting this was the specific risk; both halves landed together.
 - `/admin/elements` renders QR Studio toggles and role gates nothing consumes; saving them silently does nothing (`lib/elements/qr-studio.ts:83`).
-- The declared **CRM policy layer** and membrane contact-card primitive are unreferenced (`lib/crm/capabilities.ts:83`).
-- The embeddable-elements `<AppElement>` mounter is orphaned; every mount forks its own (`components/elements/app-element.tsx:25`).
+- ~~The declared **CRM policy layer** and membrane contact-card primitive are unreferenced (`lib/crm/capabilities.ts:83`).~~ ✅ closed 2026-08-12 — both `lib/crm/capabilities.ts` and `lib/crm/scope.ts` are **deleted**. The pages already read correctly; the modules only named the assembly.
+- ~~The embeddable-elements `<AppElement>` mounter is orphaned; every mount forks its own (`components/elements/app-element.tsx:25`).~~ ✅ closed 2026-08-12 — there was **never a mounter to orphan**: `<AppElement>` existed only in comments. The dead component map `components/elements/registry.tsx` is deleted (`components/elements/` now holds `previews.tsx` alone), the surviving references are past-tense, and `docs/EMBEDDABLE-ELEMENTS.md` describes the pure catalog `lib/elements/registry.ts` that every consumer actually imports. The "one canonical component" invariant held regardless — `LoomPicker` one definition / 8 surfaces, `StyleEditor` one / 7, zero forks.
 - ~~`lib/marketing/personas.ts` is a second, unwired copy of the persona registry `/for/[niche]` actually uses.~~ ✅ deleted (ADR-915). `lib/marketing/funnel-config.ts` is the one registry.
 - `app_instances` (0 rows, no reader or writer) is the Loom where-referenced backbone, shipped ahead of its code.
 

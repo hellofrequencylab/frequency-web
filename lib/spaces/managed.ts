@@ -20,9 +20,11 @@
 // only ever contain Spaces the caller is entitled to steward (no cross-tenant leak).
 //
 // SHAPE: no 'use server' directive here, so SERVER components/readers import
-// listManagedSpaces directly. The thin 'use server' wrapper the CLIENT mega-menu calls
-// lives in lib/spaces/managed-actions.ts (a server-action module may export only async
-// functions, so this reader cannot live there).
+// listManagedSpaces directly (app/(main)/spaces/[slug]/circles/actions.ts and
+// lib/crm/import/actions.ts both do). The mega-menu launcher this originally fed was
+// retired per ADR-349, and its 'use server' wrapper (lib/spaces/managed-actions.ts) has
+// now been deleted with it; a future CLIENT surface would need a new wrapper, because a
+// server-action module may export only async functions.
 
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'

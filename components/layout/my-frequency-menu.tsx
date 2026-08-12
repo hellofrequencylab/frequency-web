@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { ChevronDown, UserRound, Building2, Users, NotebookPen, ContactRound } from 'lucide-react'
 import type { MyFrequency, MyFrequencyEntry } from '@/lib/nav/my-frequency'
+import { personalRows, badgeLabel } from '@/lib/nav/my-frequency-rows'
 
 // ── MY FREQUENCY — the rail's one disclosure ──────────────────────────────────────────
 //
@@ -36,17 +37,19 @@ const ROW =
   'flex items-center gap-2.5 px-3 py-[0.42rem] rounded-control text-body-sm transition-colors motion-reduce:transition-none'
 
 /** The count chip. Muted at rest, primary when the row it sits on is active — matching the
- *  rail's own two-state colouring so a badge never fights its row. */
+ *  rail's own two-state colouring so a badge never fights its row. Zero prints NOTHING (the rule
+ *  lives in lib/nav/my-frequency-rows badgeLabel, where it can be asserted). */
 function Badge({ count, active }: { count: number; active?: boolean }) {
-  if (count <= 0) return null
+  const label = badgeLabel(count)
+  if (!label) return null
   return (
     <span
       className={`ml-auto shrink-0 text-2xs font-bold tabular-nums ${
         active ? 'text-primary-strong' : 'text-muted'
       }`}
     >
-      {count > 99 ? '99+' : count}
-      <span className="sr-only"> unread</span>
+      {label}
+      <span className="sr-only"> waiting</span>
     </span>
   )
 }
@@ -139,7 +142,7 @@ export function MyFrequencyMenu({
       <Link
         href={data.profileHref}
         onClick={onNavigate}
-        aria-label={data.total > 0 ? `${label}, ${data.total} unread` : label}
+        aria-label={data.total > 0 ? `${label}, ${data.total} waiting` : label}
         title={label}
         className={`relative flex h-11 w-11 items-center justify-center rounded-control transition-colors ${
           anyActive ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-chrome-hover hover:text-text'
@@ -195,21 +198,12 @@ export function MyFrequencyMenu({
       >
         <div className="overflow-hidden">
           <div className="pb-1 pt-0.5">
-            <EntryRow
-              entry={{ key: 'profile', label: 'Profile', href: data.profileHref, notices: 0 }}
-              isActive={isActive}
-              onNavigate={onNavigate}
-            />
-            <EntryRow
-              entry={{ key: 'journal', label: 'Journal', href: '/journal', notices: 0 }}
-              isActive={isActive}
-              onNavigate={onNavigate}
-            />
-            <EntryRow
-              entry={{ key: 'contacts', label: 'My Contacts', href: '/network/contacts', notices: 0 }}
-              isActive={isActive}
-              onNavigate={onNavigate}
-            />
+            {/* Profile · Journal · My Contacts · Drafts. Declared as DATA in
+                lib/nav/my-frequency-rows so the rows (and the Drafts count) can be asserted
+                without rendering — see lib/nav/drafts-entrance.test.ts. */}
+            {personalRows(data).map((entry) => (
+              <EntryRow key={entry.key} entry={entry} isActive={isActive} onNavigate={onNavigate} />
+            ))}
             <EntryGroup
               label="Spaces"
               Icon={Building2}

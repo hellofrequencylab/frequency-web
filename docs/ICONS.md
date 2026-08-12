@@ -52,6 +52,30 @@ There is **no rip-and-replace** — Lucide stays. Just:
 
 The installed sets are browsable in The Loom at **`/admin/library?lane=icons`** (`app/(main)/admin/library/icons-lane-view.tsx`), indexed read-only from `lib/library/icon-sets.ts` the same way code-drawn elements are (`lib/library/element-registry.tsx`: code is source of truth, The Loom indexes it). The lane shows each set with its **license, count, author, and samples** (the white-label license audit ADR-505 flags) plus the **house palette** rendered through the RSC `<Icon>`. Icons are code, so the lane governs and documents; it never edits an icon. Full cross-set search over every glyph needs a client render path and is a follow-up (§3).
 
+## 6. The collections cost disk, per function ⚠️
+
+The three installed sets are ~6.9 MB once bundled, and **Vercel copies every traced file into every
+serverless function that can reach it** ([`DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md) rule 1). So the
+question is never "how big is the data", it is **"how many functions can see it"**.
+
+That went wrong once. `lib/loom/site-icons.ts` (the Loom picker's Icons view) was a `'use server'`
+action, and a server action is imported by the **client** module that calls it. The caller was
+`components/loom/loom-picker.tsx` — the universal image popup, rendered by two dozen uploaders — so
+the collections landed in **337 functions: 6.87 MB × 337 = 2.3 GB**, measured, the largest single
+line in the build. The search now sits behind **`app/api/site-icons/route.ts`**, which is its own
+function and fans out with nothing; the picker imports only `lib/loom/site-icons-client.ts` (the
+`SiteIcon` shape plus a `fetch`) and pays one round-trip on first open, covered by a skeleton grid.
+
+**The rule.** Exactly two modules may import `@iconify-json/*/icons.json`:
+
+| Module | Why it is allowed | Functions carrying the data |
+|---|---|---|
+| `lib/loom/site-icons.ts` | imported only by `app/api/site-icons/route.ts` | 1 |
+| `components/ui/icon.tsx` | the RSC `<Icon>`, composed by two pages | 2 |
+
+A third importer is a decision to multiply 6.9 MB by every route beneath it. `scripts/build-fanout.test.ts`
+fails on a new importer, and re-measures the real fan-out from the `.nft.json` sets after a build.
+
 ---
 
 *Routes per DOCS-PROTOCOL.md: this guide + ADR-505 → git. Icon names are verified against the installed

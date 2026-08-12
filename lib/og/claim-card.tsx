@@ -1,8 +1,11 @@
 /* eslint-disable @next/next/no-img-element -- Satori/ImageResponse renders raw elements; next/image cannot run inside an OG ImageResponse */
 import { ImageResponse } from "next/og";
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { fetchRemoteImage } from "@/lib/og/remote-image";
+import {
+  coverPlaceholderDataUrl,
+  siteMarkDataUrl,
+} from "@/lib/og/local-image";
+import type { CoverPlaceholderPath } from "@/lib/spaces/cover-placeholder";
 import { loadNunito } from "@/lib/og/load-nunito";
 import { SITE_NAME } from "@/lib/site";
 import { deliverCard } from "@/lib/og/deliver";
@@ -23,13 +26,12 @@ export const CLAIM_OG_SIZE = { width: 1200, height: 630 } as const;
 const ON_INK = "#F3EEE3";
 const PRIMARY = "#E2912F";
 
-/** Base64-inline a build-time asset under public/ (Satori needs bytes, not a relative URL). */
-async function localImage(relPath: string): Promise<string> {
-  const clean = relPath.replace(/^\//, "");
-  const data = await readFile(join(process.cwd(), "public", clean));
-  const mime = clean.endsWith(".png") ? "image/png" : "image/jpeg";
-  return `data:${mime};base64,${data.toString("base64")}`;
-}
+// Build-time assets under public/ are inlined through lib/og/local-image.ts (Satori needs bytes,
+// not a relative URL). ⚠️ NOT a `readFile` in this file: a path built from a variable is
+// unresolvable to @vercel/nft, which then globs the whole of public/ into all three claim segments
+// and everything under them. Measured at 12.25 MB per function before that module existed. This
+// module was the last of four holding the glob open, so it had to move with the other three or the
+// directory would have shipped regardless. See that module's header.
 
 export interface ClaimCardInput {
   /** The entity's own name (the business / event / listing title). */
@@ -40,8 +42,11 @@ export interface ClaimCardInput {
   noun: string;
   /** A remote cover to fetch + inline (the entity's own image), if any. */
   coverUrl?: string | null;
-  /** A local placeholder under public/ used when there is no remote cover (deterministic per entity). */
-  placeholderRelPath: string;
+  /** A local placeholder under public/ used when there is no remote cover (deterministic per
+   *  entity). ⚠️ Typed to the CLOSED placeholder set, not `string`: every one of these is read
+   *  from disk by a literal-pathed reader in lib/og/local-image.ts, and a path outside the set has
+   *  no reader. Callers pass `coverPlaceholderFor(id)` or one of the set's own literals. */
+  placeholderRelPath: CoverPlaceholderPath;
   /** A remote logo/avatar to fetch + inline into the chip, if any. */
   logoUrl?: string | null;
   /** The brand accent as a literal hex (Satori cannot resolve token names). */
@@ -70,9 +75,10 @@ export async function claimCardResponse(
   const [remoteCover, logo, mark] = await Promise.all([
     input.coverUrl ? fetchRemoteImage(input.coverUrl) : Promise.resolve(null),
     input.logoUrl ? fetchRemoteImage(input.logoUrl) : Promise.resolve(null),
-    localImage("images/Frequency-Logo-Round-Icon-white.png"),
+    siteMarkDataUrl(),
   ]);
-  const cover = remoteCover ?? (await localImage(input.placeholderRelPath));
+  const cover =
+    remoteCover ?? (await coverPlaceholderDataUrl(input.placeholderRelPath));
   const initials = name
     .split(/\s+/)
     .map((w) => w[0])

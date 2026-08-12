@@ -21676,8 +21676,10 @@ jobs and both are load-bearing:
 
 #### 1. The table: `studio_draft`, keyed `(profile_id, scope)`
 
-Migration `supabase/migrations/20270224000000_studio_draft.sql`. **UNAPPLIED.** Purely additive:
-one table, one index, its RLS. No `ALTER` or `DROP` on anything existing.
+Migration `supabase/migrations/20270224000000_studio_draft.sql`. **APPLIED** — production carries the
+table and the ledger row (verified 2026-08-12; this line read "UNAPPLIED" for a day after it went in,
+which is the drift [ADR-1007](DECISIONS.md)'s ledger comparison now catches automatically). Purely
+additive: one table, one index, its RLS. No `ALTER` or `DROP` on anything existing.
 
 Two extra columns, `route` and `label`, exist only so `/drafts` can offer a way back in: `scope` is
 a slug and cannot be reversed into a path. Both come from the shell (the pathname and the eyebrow),
@@ -21946,3 +21948,224 @@ authored-colour channel: `BlockTint { text?, bg? }` persists **validated hex** i
 `profiles.meta.spotlight.layout.blocks` on five block types, so E2's migration must rule on what
 `#112233` becomes when tokens are the only expression channel. Four profiles have a Spotlight, which
 is this decision at its lifetime cheapest.
+## ADR-1006: The beta program is closed, so the code that ran it is deleted
+
+**Decision.** `graduateBeta()`, `awardReferralWinners()` and the referral prize copy are **deleted**.
+`grantFoundingStatus` is **kept** — it is live at `app/onboarding/beta/actions.ts:228` and in the
+Stripe webhook, and it is the only piece of the beta machinery that still has callers.
+
+**Why the highest-severity finding on the board was the wrong call.** The 2026-08-12 scan filed
+`graduateBeta()` as its most severe item: an unreachable graduation path that would silently fail to
+convert beta members when billing went live. The reasoning was sound and the premise was stale.
+Asked of production rather than of the code: `billing_live` was flipped ON via the console FlagRow on
+2026-07-10 and again on 2026-07-21, and there are **0 beta referrals** and **0 founding members
+granted**. Billing has been live for three weeks. The hook that never ran had nothing to act on, and
+the graduation it guarded already happened by another route.
+
+**A promise with no mechanism is worse than a missing feature.** `/referral` published *"top referrers
+win free membership"* while the code that selected those winners was being deleted underneath it. The
+page has been corrected to claim only what the code does. This is the general rule: **when a
+mechanism is retired, the copy that sold it is part of the retirement, not a follow-up.** A member
+reading a promise the system cannot keep is a defect even when zero members are affected.
+
+**Also deleted, same pass.** `getManagedSpaces` (its own header records that
+[ADR-349](DECISIONS.md) retired the mega-menu launcher it served) · `assembleContactCard` and the rest
+of `lib/crm/scope.ts` · `SpaceCrmSnapshot` · `StudioLaunchButton`, which [ADR-986](DECISIONS.md) made
+obsolete by turning every create entry point into a deep-linkable Spark link.
+
+**Two more, deleted for a sharper reason.** `getProfileZapTotal` and `ProfileCover` were filed by the
+scan as *built work that reaches no user*. They were not. Both were **mounted and then deliberately
+removed**, and both still carried header comments claiming they were live — which is precisely what
+misled the scan. `getProfileZapTotal` sums `crew_completions` only, so it returned **0** for any
+member whose Zaps came from posts, reactions or joins; one real member showed 0 against 130 actual
+Zaps, and commit `5e4c722ba` repointed the profile at the authoritative `profiles.lifetime_zaps`.
+`ProfileCover` was replaced in the `DetailTemplate` hero slot by `PageHero`, which carries the cover
+plus the avatar, name, action row and the operator-configurable header element. Re-mounting either
+would have regressed a named, fixed bug.
+
+**Consequences.** ✅ The beta path is gone rather than half-present. ✅ `grantFoundingStatus` and
+`StudioWindow` verified live and untouched. ⚠️ **A stale header comment is a load-bearing defect.**
+Two components asserted they were mounted, an audit believed them, and an owner ruled to re-mount
+them on that basis. Where the code and a comment disagree the code wins — but the comment is what
+gets read first, so it gets fixed in the same pass or it misleads again.
+
+## ADR-1007: The migration contract is the ledger head, not a number somebody re-freezes
+
+**Decision.** `check:migrations` now reads `supabase_migrations.schema_migrations` at run time and
+fails on a **set difference across both columns**. The hand-pinned corpus in
+`scripts/maintenance/ledger-parity.test.ts` is deleted. The ledger half is armed in CI with
+`SUPABASE_ACCESS_TOKEN` + `SUPABASE_PROJECT_REF`; without credentials it **skips loudly**, stating
+what was proved and what was not, and never degrades to a silent pass.
+
+**The failure this closes, which had already happened.** For one full day this repository could not
+reproduce its own production database, and every gate was green. Production had applied
+`20270224000100_revoke_friendships_freeze_identity_execute` — a **security** migration — via
+`execute_sql`, and the file was then lost when a branch was rebuilt with cherry-picks after a rebase
+replayed already-squash-merged commits. It reached no branch. Simultaneously
+`20270225000000_household_bundle_seating.sql` sat committed and unapplied.
+
+**A count is not a set, and that is the whole lesson.** Both sides read **606**. One file missing and
+one file unapplied netted to zero, so the pinned count could not see it. That pin had been re-frozen
+**five times in one day** (598 → 602 → 603 → 604 → 605 → 606) and its own comment forbade re-pinning
+from the repo alone — which made its correctness depend on a human performing a fiddly manual step
+correctly, every time, under time pressure. The new guard caught it on its first real run.
+
+**The wall-clock trap, recorded because it bit three times in one day.** `apply_migration` stamps a
+**wall-clock** version. It stamped `studio_draft` as `20260812134657`, sorting ~400 rows before the
+file it came from, and because an explicit row had also been inserted, production briefly carried the
+same migration **twice**. Apply DDL with `execute_sql` and insert the ledger row at the **repo's own**
+version, then re-read the ledger and check for a duplicate as well as a mis-sorted row.
+
+**`MAX_INCIDENTAL` raised 70 → 100, deliberately.** Measured incidental count is **67**, stable across
+two builds, leaving 3 functions of headroom — so four ordinary pages under `/spaces/[slug]` would trip
+a gate whose message talks about share cards. The escalation ladder was measured too: a root-level
+card reaches **484** functions, one at `app/(main)` **303**, one at `app/discover` **28**. Both
+placements that killed production overshoot 100 by 3–4×, so the guard still catches what it exists
+for. The raise authorises ~0.58 GB against a 13 GB budget. **This guard is about placement**; absolute
+disk cost is enforced separately by `check:build-budget`.
+
+**Consequences.** ✅ Repo ⇄ ledger verified in lockstep at **607**, both digests matching byte for byte
+from two independent derivations. ✅ Divergence now fails CI directly on every PR. ⚠️ Fork PRs have no
+secrets and fall back to the loud skip — acceptable, because the failure mode of a credential-less run
+must never be a false green. ⚠️ `docs/DATABASE.md`'s byte-identical digest table is superseded by the
+live guard.
+
+## ADR-1008: A dependency's cost is per function, and the fix is a door, not a comment
+
+**Decision.** `searchSiteIcons` moves behind `app/api/site-icons/route.ts`, and the HEIC decoder moves
+behind a single dynamic-import door at `lib/library/heic-decode.ts` plus an
+`outputFileTracingExcludes` entry. Measured result: **9.16 GB → 6.45 GB** per-function output, a
+**2.71 GB** cut.
+
+| Line | Before | After |
+| :--- | ---: | ---: |
+| `@iconify-json` collections | 2,315 MB — 6.87 MB × **337 fns** | 21 MB — **3 fns** |
+| `heic2any` decoder | 491 MB — 1.29 MB × **381 fns** | **0 fns** |
+
+**Three fixes that do not work, recorded so nobody spends the afternoon again.** `turbopackIgnore`
+does nothing — `@vercel/nft` reads the literal specifier out of the emitted chunk. `['sh','arp']
+.join('')` is constant-folded straight back by the minifier. A broad glob like `@img/**/*` in tracing
+config panics Turbopack in Rust (`Is a directory (os error 21)`) because it sweeps a symlinked
+directory. Excludes are applied by picomatch over the **already-collected trace**, never by globbing
+the disk, which is why the narrow `*heic2any*` chunk pattern is safe where the broad one was not.
+
+**The floor is three functions, not one, and that is correct.** `components/ui/icon.tsx` is the
+legitimate RSC `<Icon>` primitive and is reachable from exactly two pages. Removing its static
+imports would have bought ~14 MB and broken the primitive. **A second importer is not automatically
+a mistake** — it is a mistake only if it is not the thing the module exists for.
+
+**Every fail-safe needs a gate that notices it fired.** `scripts/build-fanout.test.ts` reads the
+`.nft.json` sets directly and locates the icon chunks by **content probe**, because the chunk name is
+a content hash that Turbopack is free to change — at which point the exclude would silently stop
+matching. It carries a non-triviality control asserting the app-page runtime appears in more than half
+the functions, so a failed parse cannot pass as a false zero. Proven non-vacuous: against the
+pre-change build it fails with `expected 337 to be ≤ 8` and `expected 381 to be 0`.
+
+**Consequences.** ✅ Both artifact gates green on a real build. ✅ The Icons tab pays one round trip on
+first open and shows a dimension-matched `Skeleton` with an `sr-only` status line, because `Skeleton`
+is `aria-hidden` and cannot announce itself. ⚠️ `BUDGET_GB` is still 13 against a measured 6.45 —
+ratcheting it down is available and wants its own reason. ⚠️ The largest remaining line is
+`libvips-cpp.so` at 1,440 MB (17.4 MB × 83 segment-inherited OG cards).
+
+## ADR-1009: A bundle seat is offered and accepted, never assigned (amends ADR-370)
+
+**Decision.** The Household / Circle bundle's post-purchase seat management is an **invite**: the
+owner offers a seat, the invitee accepts. `household_bundle_invites` holds one row per offer.
+[ADR-370](DECISIONS.md) specified the purchase and the seating; it did not say how a seat gets
+filled after checkout, and this is that answer.
+
+**Why an offer and not an assignment.** A seat writes `profiles.household_bundle_id` **and takes
+over the member's `membership_tier`**. That is someone else's account state, so it needs their
+agreement — the same reasoning [ADR-845](DECISIONS.md) applied to circle handoff, where a thing
+carrying members cannot be pushed onto a person who never agreed. The precedent was followed
+deliberately rather than re-derived.
+
+**It targets a profile id, not an email, and the two precedents disagree for good reasons.**
+`space_invites` targets an **email** because a Space teammate may not have an account yet and the
+invite *is* the acquisition path. `circle_transfer_offers` targets a **profile id** because only an
+existing member can accept. A bundle seat is a `profiles` column, and `public.profiles` carries no
+email at all — addresses live in `auth.users` — so an email-targeted invite would have to reach
+across schemas to resolve the very id it needs. `createBundleCheckout` already made the same call
+in the other direction by refusing a seat id that is not a real profile. ⚠️ The cost, stated
+plainly: **you cannot invite someone who has not signed up yet.** An email path is additive later.
+
+**🔴 The amendment that fixes a real bug.** ADR-370's `apply_bundle_seating_atomic` computed the
+roster from the Stripe metadata alone and unseated anyone absent from it. Correct while checkout
+was the only way to fill a seat; a **silent eviction** the moment an invite could fill one — the
+invitee accepts, the next renewal arrives carrying the same `seat_ids`, and unseats them. The live
+roster is now the **union** of the stamped list with whoever accepted an invite.
+
+Unioning the *accepted invites* rather than *whoever is currently seated* is the load-bearing
+detail: removing someone from the stamped seat list still unseats them exactly as before, because a
+checkout seat leaves no invite row behind. Only a seat somebody agreed to survives a renewal. All
+14 of the original pgTAP assertions pass unchanged, which is the evidence that the amendment added
+a case rather than changing one.
+
+**🔴 Acceptance must not advance `household_bundle_event_at`.** That column is the webhook's
+event-ordering guard: the seating function drops any Stripe event created at-or-before it. If
+accepting an invite pushed it to now, the real `customer.subscription.deleted` would arrive looking
+stale, get dropped, and **a cancelled bundle would stay seated with everyone on a paid tier for
+free**. Acceptance therefore runs through a *separate* function, `accept_bundle_invite_atomic`,
+rather than a flag on the existing one, so the two writes cannot be confused at a call site. Three
+tests fail if that changes, including one asserting no UPDATE in the module names that column.
+
+**Overselling is prevented in the database, not the UI.** A pending invite **holds** a seat:
+`create_bundle_invite_atomic` counts filled seats plus live pending invites against the purchased
+count, inside one transaction under the same per-bundle advisory lock the webhook takes, so two
+sends racing for the last seat cannot both win. Elapsed invites are swept to `expired` first, so an
+unanswered offer returns its seat after 14 days. The purchased terms moved onto `profiles`
+(`household_bundle_seats`, `household_bundle_tier`) because they previously lived **only** in Stripe
+metadata, where no in-app surface could read them without a round trip on a member's click.
+
+**Consequences.** ✅ Applied to production 2026-08-12; repo ⇄ ledger verified at **609** with both
+digests matching from two independent derivations. ✅ Service-role only, RLS enabled with no
+policies, verified against the catalog rather than assumed: `anon` and `authenticated` can neither
+read the table nor execute any of the three functions. ✅ Gated behind `billingLive()` AND
+`bundle_household_enabled`, both fail-safe false, so none of it is reachable yet. ⚠️ The seat
+picker is owner-driven only — there is no "request a seat" from the other side, and no email path.
+
+## ADR-1010: The `public/` glob is closed, and the fourth call site is the lesson
+
+**Decision.** The four `localImage()` helpers that read a placeholder out of `public/` by a
+**variable** path are replaced by seven named literal readers behind
+`coverPlaceholderDataUrl()` / `siteMarkDataUrl()` in `lib/og/local-image.ts`. Measured:
+**6.19 GB → 5.59 GB**, a **612 MB** cut, on two real builds.
+
+**The set was derived, not guessed.** `coverPlaceholderFor()` is a pure hash into a fixed
+`as const` array with no other return path, so the closed set is provably complete: 7 files,
+1,817,415 bytes. The map is typed `Record<CoverPlaceholderPath, …>` against a union exported from
+`cover-placeholder.ts`, so **adding a placeholder without adding its reader is now a type error**
+rather than a silent return to globbing.
+
+**🔴 There were FOUR call sites, and the scan said three.**
+`app/events/claim/[token]/opengraph-image.tsx:57` carried its own copy of the same helper. Its call
+site passes a literal — which makes no difference, because nft reads the **emitted chunk**, not the
+call site. That function was in the 62 carrying the glob, so fixing the three named files would
+have left the same `public/` prefix globbed and the measurement would barely have moved.
+
+This is the third time today a fan-out fix had a second door nobody listed: `components/ui/icon.tsx`
+for the icon collections ([ADR-1008](DECISIONS.md)), the `image-shrink` importers for HEIC, and now
+this. **The rule that generalises: find the doors by measuring the trace, never by reading the
+import list.** A grep finds what a human wrote; only the `.nft.json` set says what the build did.
+
+**The guard is a property, not a list.** `scripts/build-fanout.test.ts` now asserts that **no
+non-test module passes a non-literal to `join(process.cwd(), …)`** — depth-counted argument
+extraction with comment lines stripped, because the fixing modules quote the broken call in their
+own headers. A list of four files would go stale the moment someone writes a fifth.
+
+Proven non-vacuous against the pre-change trace, which is the only evidence that matters for a test
+like this:
+```
+× no function carries a file from public/ that nothing reads from disk
+    expected [ 'public/file.svg', …(22) ] to deeply equal []
+× no function carries more than a handful of public/ files
+    expected 69 to be less than or equal to 14
+```
+
+**Consequences.** ✅ `public/maplibre` and `public/icons` now reach **0** functions, down from 62
+each. ✅ The worst single function went from 69 traced `public/` files to 10. ✅ The claim card still
+renders a real photographic cover under 400 KB as JPEG — the assertion that exists because a 1.7 MB
+PNG was timing out in Apple Mail. ⚠️ `BUDGET_GB` is still **13** against a measured **5.59**, down
+from 16.73 before [ADR-1002](DECISIONS.md); ratcheting it down is now available and wants its own
+reason rather than being done in passing. ⚠️ The largest remaining line is unchanged and known:
+`libvips-cpp.so` at 1,440 MB (17.4 MB × 83 segment-inherited OG cards), 26% of the build.

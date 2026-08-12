@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2440,
+      "baseline": 2288,
       "frozen": {
-        "at": "2026-08-11",
-        "value": 2440,
+        "at": "2026-08-12",
+        "value": 2288,
         "direction": "lowered",
         "basis": "6a00b952da5c",
-        "reason": "Incidental fall from the field/control variant sweep: converted call sites took their radius from the primitive rather than a literal. 2450 to 2440. No radius pass has run; the four missing roles are still unwritten.",
-        "from": 2450
+        "reason": "Catching up to PR #2106's kit sweep, which merged to main without a re-freeze, plus a small contribution from this branch. Measured attribution: of the -152, this branch's own diff accounts for -4 (deleting crm-snapshot, studio-launch-button, profile-cover and the /events/drafts delete-button and page, net of the three new /drafts rows and the claim CTA, which compose RowCard rather than hand-rolling a radius). The remaining -148 was already on main from #2106's RowCard/EntityCard adoption work. Verified by diffing rounded-* occurrences per changed file between origin/main and HEAD.",
+        "from": 2440
       },
       "history": [
         {
@@ -175,6 +175,13 @@
           "to": 2440,
           "direction": "lowered",
           "reason": "Incidental fall from the field/control variant sweep: converted call sites took their radius from the primitive rather than a literal. 2450 to 2440. No radius pass has run; the four missing roles are still unwritten."
+        },
+        {
+          "at": "2026-08-12",
+          "from": 2440,
+          "to": 2288,
+          "direction": "lowered",
+          "reason": "Catching up to PR #2106's kit sweep, which merged to main without a re-freeze, plus a small contribution from this branch. Measured attribution: of the -152, this branch's own diff accounts for -4 (deleting crm-snapshot, studio-launch-button, profile-cover and the /events/drafts delete-button and page, net of the three new /drafts rows and the claim CTA, which compose RowCard rather than hand-rolling a radius). The remaining -148 was already on main from #2106's RowCard/EntityCard adoption work. Verified by diffing rounded-* occurrences per changed file between origin/main and HEAD."
         }
       ]
     },
@@ -383,14 +390,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 23,
+      "baseline": 22,
       "frozen": {
-        "at": "2026-08-05",
-        "value": 23,
-        "direction": "rebased",
+        "at": "2026-08-12",
+        "value": 22,
+        "direction": "lowered",
         "basis": "2616a25fff84",
-        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
-        "from": 24
+        "reason": "One site retired with app/(main)/spaces/[slug]/crm/crm-snapshot.tsx, deleted on this branch as unmounted work (ADR-1006). No instrument or scope change: the file no longer exists.",
+        "from": 23
       },
       "history": [
         {
@@ -413,6 +420,13 @@
           "to": 23,
           "direction": "rebased",
           "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
+        },
+        {
+          "at": "2026-08-12",
+          "from": 23,
+          "to": 22,
+          "direction": "lowered",
+          "reason": "One site retired with app/(main)/spaces/[slug]/crm/crm-snapshot.tsx, deleted on this branch as unmounted work (ADR-1006). No instrument or scope change: the file no longer exists."
         }
       ]
     },
@@ -431,14 +445,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 524,
+      "baseline": 513,
       "frozen": {
-        "at": "2026-08-11",
-        "value": 524,
+        "at": "2026-08-12",
+        "value": 513,
         "direction": "lowered",
         "basis": "9bcf47d8a607",
-        "reason": "Incidental fall from the field/control variant sweep, not a button pass of its own. 526 to 524.",
-        "from": 526
+        "reason": "Same #2106 kit sweep catching up, plus the four components this branch deleted. The deleted files (studio-launch-button, crm-snapshot, the /events/drafts delete-button, profile-cover) each hand-rolled their own button surface; their replacements compose the kit Button, which reads its background from a token.",
+        "from": 524
       },
       "history": [
         {
@@ -510,6 +524,13 @@
           "to": 524,
           "direction": "lowered",
           "reason": "Incidental fall from the field/control variant sweep, not a button pass of its own. 526 to 524."
+        },
+        {
+          "at": "2026-08-12",
+          "from": 524,
+          "to": 513,
+          "direction": "lowered",
+          "reason": "Same #2106 kit sweep catching up, plus the four components this branch deleted. The deleted files (studio-launch-button, crm-snapshot, the /events/drafts delete-button, profile-cover) each hand-rolled their own button surface; their replacements compose the kit Button, which reads its background from a token."
         }
       ]
     },
@@ -809,14 +830,14 @@
         "components/ui/icon.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 116,
+      "baseline": 115,
       "frozen": {
         "at": "2026-08-12",
-        "value": 116,
-        "direction": "rebased",
+        "value": 115,
+        "direction": "lowered",
         "basis": "0ed9a314744e",
-        "reason": "Scope parity only, no sweep and no code change: app/opengraph-image.tsx moved to app/dev/og-root-card/route.tsx (ADR-1002) so Next stops inheriting the root share card into every page metadata module, which was putting sharp + libvips into 403 serverless functions. The file is the same raster surface it always was — Satori cannot read the CSS token cascade, which is why app/**/opengraph-image.tsx and lib/og/** are already carved out here — so the new path joins the same three carve-outs. Only the basis moves. The count falls 117 -> 116: the moved file carried one arbitrary px value that was excluded at its old path and would have been counted at its new one, and the carve-out follows the file rather than the filename.",
-        "from": 117
+        "reason": "One site retired with a component deleted on this branch (ADR-1006). Distinct from the 2026-08-12 rebase recorded against this key, which moved the basis for the root share card without changing any code; this one is a real deletion.",
+        "from": 116
       },
       "history": [
         {
@@ -853,6 +874,13 @@
           "to": 116,
           "direction": "rebased",
           "reason": "Scope parity only, no sweep and no code change: app/opengraph-image.tsx moved to app/dev/og-root-card/route.tsx (ADR-1002) so Next stops inheriting the root share card into every page metadata module, which was putting sharp + libvips into 403 serverless functions. The file is the same raster surface it always was — Satori cannot read the CSS token cascade, which is why app/**/opengraph-image.tsx and lib/og/** are already carved out here — so the new path joins the same three carve-outs. Only the basis moves. The count falls 117 -> 116: the moved file carried one arbitrary px value that was excluded at its old path and would have been counted at its new one, and the carve-out follows the file rather than the filename."
+        },
+        {
+          "at": "2026-08-12",
+          "from": 116,
+          "to": 115,
+          "direction": "lowered",
+          "reason": "One site retired with a component deleted on this branch (ADR-1006). Distinct from the 2026-08-12 rebase recorded against this key, which moved the basis for the root share card without changing any code; this one is a real deletion."
         }
       ]
     },
@@ -1103,7 +1131,7 @@
         "components/ui/field.tsx",
         "components/ui/checkbox.tsx"
       ],
-      "baseline": 119,
+      "baseline": 118,
       "history": [
         {
           "at": "2026-08-05",
@@ -1146,15 +1174,22 @@
           "to": 119,
           "direction": "lowered",
           "reason": "Borderless/inset variant added to Input, then the call sites swept. The blocker was never the sites: Input was bg-surface px-3 py-2 rounded-control, and cn is a plain join, so passing an inset className emitted two bg-* and two rounded-* utilities. 186 to 119."
+        },
+        {
+          "at": "2026-08-12",
+          "from": 119,
+          "to": 118,
+          "direction": "lowered",
+          "reason": "The CRM snapshot component deleted on this branch (ADR-1006, unmounted and superseded) carried the one raw input; nothing replaced it, because the surface itself is gone rather than rebuilt."
         }
       ],
       "frozen": {
-        "at": "2026-08-11",
-        "value": 119,
+        "at": "2026-08-12",
+        "value": 118,
         "direction": "lowered",
         "basis": "23c25a5145a1",
-        "reason": "Borderless/inset variant added to Input, then the call sites swept. The blocker was never the sites: Input was bg-surface px-3 py-2 rounded-control, and cn is a plain join, so passing an inset className emitted two bg-* and two rounded-* utilities. 186 to 119.",
-        "from": 186
+        "reason": "The CRM snapshot component deleted on this branch (ADR-1006, unmounted and superseded) carried the one raw input; nothing replaced it, because the surface itself is gone rather than rebuilt.",
+        "from": 119
       }
     },
     {

@@ -26,7 +26,10 @@
 -- Runs via `supabase test db` (see supabase/tests/README.md), NOT under vitest.
 
 begin;
-select plan(14);
+-- 12, not 14, since 20270226000000 dropped profile_zap_total and its two assertions went with it.
+-- ⚠️ pgTAP's plan is a HARD count: leaving it at 14 makes the suite fail with "planned 14 but ran
+-- 12" even though every remaining assertion passed, which reads as a security regression and is not.
+select plan(12);
 
 -- ── 1. The friendships identity trigger ───────────────────────────────────────
 select is(
@@ -59,10 +62,12 @@ select is(has_function_privilege('anon', 'public.record_qr_scan(uuid, uuid, text
 select is(has_function_privilege('authenticated', 'public.record_qr_scan(uuid, uuid, text, text, double precision, double precision, text, text)', 'execute'), false,
   'authenticated cannot execute record_qr_scan');
 
-select is(has_function_privilege('anon', 'public.profile_zap_total(uuid)', 'execute'), false,
-  'anon cannot execute profile_zap_total');
-select is(has_function_privilege('authenticated', 'public.profile_zap_total(uuid)', 'execute'), false,
-  'authenticated cannot execute profile_zap_total');
+-- profile_zap_total's two assertions were REMOVED with the function itself
+-- (20270226000000_drop_profile_zap_total.sql, ADR-1006). They had to go in the SAME change:
+-- has_function_privilege() RAISES on a function that does not exist, so the moment the drop
+-- migration replayed on a fresh database this file failed at exactly this line. It did, on
+-- PR #2108's db-tests run, which is how the coupling was found. Nothing is un-asserted by their
+-- removal — a dropped function is not reachable from a browser by any grant.
 
 select is(has_function_privilege('anon', 'public.match_library_assets(vector, uuid, integer, text)', 'execute'), false,
   'anon cannot execute match_library_assets (content oracle over private space libraries)');

@@ -219,3 +219,58 @@ describe('stripe webhook — consolidated payout-channel dispatch', () => {
     expect(H.calls).toHaveLength(0)
   })
 })
+
+// HOUSEHOLD / CIRCLE BUNDLE (ADR-370). lib/billing/bundle-seats.ts is deliberately NOT mocked here:
+// it runs for real against the same admin-client stub, so these cases pin the actual routing and the
+// actual RPC arguments. The seating semantics themselves live in lib/billing/bundle-seats.test.ts and
+// supabase/tests/household_bundle_seating.test.sql.
+describe('stripe webhook — household bundle seating', () => {
+  const OWNER = '11111111-1111-4111-8111-111111111111'
+  const SEAT = '22222222-2222-4222-8222-222222222222'
+  const bundleMeta = {
+    kind: 'household_bundle',
+    owner_id: OWNER,
+    bundle_seats: '4',
+    bundle_tier: 'crew',
+    seat_ids: SEAT,
+  }
+
+  it('does NOT flip the buyer personal membership on a bundle checkout (they bought seats)', async () => {
+    H.event = plainEvent('checkout.session.completed', { metadata: bundleMeta, customer: 'cus_1' })
+    const res = await post()
+    expect(res.status).toBe(200)
+    expect(H.rpcCalls).toHaveLength(0) // no apply_membership_event_atomic off a bundle payment
+    expect(H.calls).toEqual(['tip', 'ticket', 'supporter', 'order']) // recorders still no-op through
+  })
+
+  it('routes an active bundle subscription to the seating RPC instead of the member path', async () => {
+    H.event = subEvent('customer.subscription.updated', { status: 'active', created: 2000, metadata: bundleMeta })
+    const res = await post()
+    expect(res.status).toBe(200)
+    expect(H.rpcCalls).toHaveLength(1)
+    expect(H.rpcCalls[0].name).toBe('apply_bundle_seating_atomic')
+    expect(H.rpcCalls[0].args).toMatchObject({
+      _owner: OWNER,
+      _seat_ids: [SEAT],
+      _tier: 'crew',
+      _seats: 4,
+      _active: true,
+      _event_at: iso(2000),
+    })
+  })
+
+  it('empties the bundle on subscription.deleted', async () => {
+    H.event = subEvent('customer.subscription.deleted', { created: 3000, metadata: bundleMeta })
+    await post()
+    expect(H.rpcCalls[0].name).toBe('apply_bundle_seating_atomic')
+    expect(H.rpcCalls[0].args).toMatchObject({ _owner: OWNER, _active: false, _event_at: iso(3000) })
+  })
+
+  it('500s and releases the claim when seating fails, so the buyer is never left unseated on a 200', async () => {
+    H.rpcResult = { data: null, error: { message: 'boom' } }
+    H.event = subEvent('customer.subscription.updated', { status: 'active', created: 4000, metadata: bundleMeta })
+    const res = await post()
+    expect(res.status).toBe(500)
+    expect(H.deleteCalls).toContain('evt_4000')
+  })
+})

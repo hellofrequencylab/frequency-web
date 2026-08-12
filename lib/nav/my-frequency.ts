@@ -29,9 +29,28 @@
 // every page. The explicit `.eq(...)` filters stay as defense in depth: RLS decides what is
 // visible, the filters say what we asked for, and the two agreeing is the point.
 
+// THE DRAFTS COUNT IS THE ONE READ THAT IS NOT A NOTIFICATION (owner ruling 2026-08-12: "wire
+// the badge into the My Frequency menu, alongside the /drafts entrance"). It counts OPEN CREATE
+// PROPOSALS — the things Vera drew up that a member has not answered yet — because those are the
+// only unfinished thing on /drafts that expires in silence if nobody looks (ADR-998 exists to
+// close exactly that). A wizard draft you abandoned and a poster you captured are waiting on you,
+// not on a clock, so they do not wear a count; that keeps the badge meaning what every other badge
+// on this menu means, "something wants an answer from you".
+//
+// IT COSTS ONE HEAD-COUNT. `countMyCreateProposals` is `head: true` with every filter in SQL
+// (see its header: `agent_actions_status_idx` covers the two selective predicates, the ADR-246
+// jsonb arrow filters carry the rest), React-cached like this menu, joined into the SAME
+// Promise.all as the other three reads so it adds no serial round trip, and fail-safe to 0.
+//
+// It reaches the audit table through lib/ai/vera/create-entity.ts rather than reading
+// `agent_actions` here, which is deliberate on both counts: that module is the ONE path to the
+// audit trail (and the only file on the admin-client baseline for it), and it re-derives the
+// caller from the session itself, so this menu cannot ask about anybody else's drafts.
+
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { listOperatedSpaces } from '@/lib/spaces/operated'
+import { countMyCreateProposals } from '@/lib/ai/vera/create-entity'
 
 /** One thing the member owns or belongs to, ready to render as a rail row. */
 export interface MyFrequencyEntry {
@@ -47,6 +66,8 @@ export interface MyFrequencyEntry {
 export interface MyFrequency {
   /** The member's public profile (always present). */
   profileHref: string
+  /** Open create proposals waiting on this member. 0 renders no badge on the Drafts row. */
+  drafts: number
   spaces: MyFrequencyEntry[]
   circles: MyFrequencyEntry[]
   /** Sum of every entry's notices — the count the parent "My Frequency" row wears. */
@@ -55,7 +76,7 @@ export interface MyFrequency {
 
 /** Empty but valid: the profile is always reachable, so the row is never a dead disclosure. */
 function emptyFor(profileHref: string): MyFrequency {
-  return { profileHref, spaces: [], circles: [], total: 0 }
+  return { profileHref, drafts: 0, spaces: [], circles: [], total: 0 }
 }
 
 type NoticeRow = { reference_type: string | null; reference_id: string | null }
@@ -118,10 +139,11 @@ export const getMyFrequency = cache(
   async (profileId: string, handle: string): Promise<MyFrequency> => {
     const profileHref = `/people/${handle}`
     try {
-      const [spacesRaw, circlesRaw, notices] = await Promise.all([
+      const [spacesRaw, circlesRaw, notices, drafts] = await Promise.all([
         listOperatedSpaces(profileId),
         myCircles(profileId),
         noticeCounts(profileId),
+        countMyCreateProposals(),
       ])
 
       const spaces: MyFrequencyEntry[] = spacesRaw.slice(0, MAX_ENTRIES).map((s) => ({
@@ -141,8 +163,10 @@ export const getMyFrequency = cache(
           notices: notices.get(`circle:${c.id}`) ?? 0,
         }))
 
-      const total = [...spaces, ...circles].reduce((n, e) => n + e.notices, 0)
-      return { profileHref, spaces, circles, total }
+      // The parent row wears the TOTAL, so a FOLDED rail still says something wants you — and a
+      // proposal that expires unseen is the one thing on this menu that cannot be recovered.
+      const total = [...spaces, ...circles].reduce((n, e) => n + e.notices, drafts)
+      return { profileHref, drafts, spaces, circles, total }
     } catch {
       return emptyFor(profileHref)
     }

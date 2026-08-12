@@ -16,6 +16,11 @@ export const dynamic = 'force-dynamic'
 // only the caller's own rows; anyone else 404s). Once published, the page turns
 // into a small status surface: a link to the live event plus the outreach
 // prompt while a posted event stays unclaimed.
+//
+// BOTH BACK-LINKS POINT AT /drafts (owner ruling 2026-08-12). The list this editor used to sit
+// under, /events/drafts, folded into the one Drafts surface and now redirects there; docs/NAMING.md
+// pins Drafts to that single page, so the label is "Drafts" and never "My drafts". This ROUTE keeps
+// its path — it is the per-event editor, not a second list — so nothing a member has open breaks.
 export default async function DraftEditorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const profileId = await getMyProfileId()
@@ -34,7 +39,7 @@ export default async function DraftEditorPage({ params }: { params: Promise<{ id
       <FocusTemplate
         title={draft.title ?? 'Your event'}
         description="This one is already live."
-        back={{ href: '/events/drafts', label: 'My drafts' }}
+        back={{ href: '/drafts', label: 'Drafts' }}
       >
         <div className="space-y-4">
           {draft.claimToken && !draft.claimedAt && draft.slug && (
@@ -73,7 +78,7 @@ export default async function DraftEditorPage({ params }: { params: Promise<{ id
     <FocusTemplate
       title="Tidy your event draft"
       description="Fix anything the poster got fuzzy, then publish it to local events."
-      back={{ href: '/events/drafts', label: 'My drafts' }}
+      back={{ href: '/drafts', label: 'Drafts' }}
     >
       <DraftEditor
         draft={{

@@ -458,7 +458,8 @@ cleanly by audience and this section pins which is which.
   and the email footer, so they cannot drift apart. **Do not confuse it with the tier-ladder heading
   "The Community Collective"** immediately below, which is a different name and keeps its article.
 - **The tier ladder (named tiers are now canonical, superseding the ADR-552 "no tier names" clause):**
-  **Member** (free) · **Crew** ($9, personal) · **Business** ($29) · **Collective** ($79, beta $49) ·
+  **Member** (free) · **Crew** (personal, pay what you want from $4.99) · **Business** ($29) ·
+  **Collective** ($79, beta $49) ·
   **Non Profit** ($39) · **Independent** (white-label, ~$249). "Business" and "Non Profit" remain the two
   space *designators* (the public chip); **Collective** and **Independent** are the higher space tiers.
 - **"Collective" (capitalized) means two things ON PURPOSE, and they nest:** the **brand** (Frequency, the
@@ -529,6 +530,33 @@ Collision guards:
   *Classifieds*, and id `maker` backs member-facing *Market* — intentional, documented in ADR-596.
 - **"Store"**: retired as the per-Space services label (now **Shop**) and reserved for **Frequency
   Store** (first-party) only. The **Vault Store** (Gems, unchanged) is a separate proper noun.
+
+## Drafts: one surface, every unfinished thing (owner ruling, August 2026)
+
+**Drafts** (capital D) = the member's own page at `/drafts`, and it is the ONLY member surface
+that may carry the name. It holds everything a member has started and not finished, whatever
+started it:
+
+- a **proposal** Vera drew up for them to look at (nothing is created until they confirm it),
+- a **staged wizard draft** they typed into a Spark and stepped away from,
+- a **captured event** they photographed off a poster and have not posted yet.
+
+Rules:
+- **One page, one word.** `/events/drafts` used to be a second member surface titled "My drafts",
+  about captured posters only. It folded in as the third row kind and now redirects to `/drafts`.
+  Never build a second Drafts list for a new entity; add a row kind. The per-entity EDITOR keeps
+  its own route (`/events/drafts/<id>` is the event draft editor, not a list).
+- **Never "My drafts".** The page's H1, its metadata title, the nav row, the ⌘K entry, and every
+  link to it read **Drafts**. A menu row that renames its destination makes a member wonder if
+  they landed somewhere else.
+- **Unfinished is the test.** A thing leaves Drafts the moment it is made: a posted event lists on
+  `/events`, a created Circle on `/circles`. The page states this in its own words ("Nothing here
+  is made yet"), so a finished thing on it is a copy defect, not a filter preference.
+- **The kinds are told apart by a badge, never by a separate page**: "Vera drafted this" ·
+  "You started this" · "You captured this".
+- **The lowercase common noun is unaffected.** `status='draft'` is a Circle lifecycle (below), a
+  Loom asset can be drafted, and an operator email campaign has a drafts state. Those are states of
+  a thing, not the surface. Only the member-facing page is capital-D Drafts.
 
 ## Retired: zero hits allowed outside this list and ADR-208
 
