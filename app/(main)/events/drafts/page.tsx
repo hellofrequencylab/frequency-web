@@ -12,12 +12,17 @@ import { permanentRedirect } from 'next/navigation'
 // real inbound links (the Events header, the poster-scan page, both editor back-links) and the
 // kind of thing a member bookmarks after capturing a poster; every link in the repo has moved,
 // but a bookmark cannot be edited from here. Deleting the file would ALSO 404 a path whose own
-// child route still exists — `/events/drafts/<id>` is the per-event editor and is unchanged — so
-// the segment would answer for a draft and not for the list above it, which is the worst of both.
-// A stub costs one module and forwards anyone who arrives.
+// child route still exists: `/events/drafts/[id]` is the per-event editor and is unchanged, so the
+// segment would answer for a draft and not for the list above it, which is the worst of both. A
+// stub costs one module and forwards anyone who arrives.
 //
 // `permanentRedirect` (308) rather than `redirect` (307): the move is permanent, so a crawler or
 // a client that caches it is right to.
+//
+// 🔴 KEEP THE PLACEHOLDER IN SQUARE BRACKETS. check:templates decides "is this a redirect stub, or
+// a page that owes a kit shell" with a deliberately over-inclusive scan for an angle bracket
+// followed by a letter — including inside comments. Writing the child route as a pointy-bracket
+// placeholder made this three-line stub read as a bare page and pushed the guard over its baseline.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default async function MyEventDraftsMoved() {

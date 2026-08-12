@@ -400,6 +400,17 @@ begin
     return jsonb_build_object('created', false, 'reason', 'in_other_bundle');
   end if;
 
+  -- Re-sending to someone who already has an offer open. Checked BEFORE the seat count so the
+  -- owner is told the useful thing ("they already have one") rather than "no seats" — the second
+  -- invite would occupy the seat the first one is already holding. The unique partial index below
+  -- is still the race backstop; this is the ordinary path.
+  if exists (
+    select 1 from public.household_bundle_invites
+     where owner_profile_id = _owner and to_profile_id = _invitee and status = 'pending'
+  ) then
+    return jsonb_build_object('created', false, 'reason', 'already_invited');
+  end if;
+
   select count(*) into v_seated from public.profiles where household_bundle_id = _owner;
   select count(*) into v_pending
     from public.household_bundle_invites
