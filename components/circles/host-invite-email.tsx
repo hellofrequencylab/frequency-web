@@ -16,13 +16,21 @@ export function HostInviteEmail({ circleId }: { circleId: string }) {
     if (!email) return
     setError(null)
     start(async () => {
-      const res = await inviteByEmail(circleId, email)
-      if (res.ok) {
-        setSent(true)
-        setEmail('')
-        setTimeout(() => setSent(false), 3000)
-      } else {
-        setError(res.error ?? 'Could not send invite.')
+      // A thrown server-action error (a network blip, a server fault) reaches the client as an
+      // opaque digest, so it is caught and RENDERED here too. An invite that silently does
+      // nothing is worse than one that says it failed.
+      try {
+        const res = await inviteByEmail(circleId, email)
+        if (res.ok) {
+          setSent(true)
+          setEmail('')
+          setTimeout(() => setSent(false), 3000)
+        } else {
+          setError(res.error ?? 'Could not send invite.')
+        }
+      } catch (err) {
+        console.error('[HostInviteEmail]', err)
+        setError('Could not send that invite. Try again in a moment.')
       }
     })
   }
@@ -45,7 +53,11 @@ export function HostInviteEmail({ circleId }: { circleId: string }) {
         {sent ? <Check className="w-3.5 h-3.5" /> : <Mail className="w-3.5 h-3.5" />}
         {pending ? 'Sending…' : sent ? 'Sent' : 'Send invite'}
       </button>
-      {error && <span className="text-meta text-danger">{error}</span>}
+      {error && (
+        <span role="alert" className="text-meta text-danger">
+          {error}
+        </span>
+      )}
     </div>
   )
 }

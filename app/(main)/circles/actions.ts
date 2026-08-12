@@ -210,23 +210,36 @@ export async function joinCircle(
 }
 
 // ── Host invite link ──────────────────────────────────────────────────────────
-// Hosts can generate an invite link for their own circle without needing admin access.
+// Whoever manages the circle can generate an invite link for it.
+//
+// THE GATE IS `circle.editSettings`, NOT `circles.host_id`. This control and inviteByEmail below
+// are the two halves of one card ("Invite a friend"), rendered behind the same capability, so they
+// have to answer the same question. Checking the host FK here meant a circle-scoped Admin
+// (ADR-1014), a janitor, or the guide/mentor who leads the parent hub could email an invite but
+// not copy a link — the same person, the same card, two different answers.
+//
+// It RETURNS a result instead of throwing: a thrown server-action error reaches the client as an
+// opaque digest, which is how the old host-only refusal became invisible to the person it refused.
 
-export async function createHostInviteLink(circleId: string): Promise<{ token: string }> {
+export async function createHostInviteLink(
+  circleId: string,
+): Promise<ActionResult<{ token: string }>> {
   const myProfileId = await getMyProfileId()
-  if (!myProfileId) throw new Error('Not authenticated')
+  if (!myProfileId) return fail('Sign in to create an invite link.')
+
+  // Same gate as the Host Tools UI and as inviteByEmail: host + circle admins + janitors +
+  // area guides/mentors.
+  const caps = await getCircleCapabilities(circleId)
+  if (!caps.has('circle.editSettings')) return fail('You do not manage this circle.')
 
   const admin = createAdminClient()
 
-  // Verify the caller is the host of this circle
   const { data: circle } = await admin
     .from('circles')
-    .select('host_id')
+    .select('id')
     .eq('id', circleId)
     .maybeSingle()
-
-  if (!circle) throw new Error('Circle not found')
-  if (circle.host_id !== myProfileId) throw new Error('Only the host can generate invite links')
+  if (!circle) return fail('Circle not found.')
 
   const token = randomBytes(12).toString('base64url')
 
@@ -242,10 +255,13 @@ export async function createHostInviteLink(circleId: string): Promise<{ token: s
     circle_id:  circleId,
     created_by: myProfileId,
   })
-  if (error) throw new Error(error.message)
+  if (error) {
+    console.error('[createHostInviteLink]', error.message)
+    return fail('Could not create an invite link. Try again in a moment.')
+  }
 
   revalidatePath(`/circles`)
-  return { token }
+  return ok({ token })
 }
 
 // Invite someone to a circle by email: create a fresh invite link and send it
