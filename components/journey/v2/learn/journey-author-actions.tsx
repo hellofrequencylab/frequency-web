@@ -125,7 +125,7 @@ export function JourneyAuthorActions({
               it. You can publish it again anytime.
             </p>
             {adopterCount > 0 && (
-              <div className="rounded-lg border border-warning/50 bg-warning-bg p-3 text-warning">
+              <div className="rounded-card border border-warning/50 bg-warning-bg p-3 text-warning">
                 <p className="font-semibold">
                   {adopterCount} {adopterCount === 1 ? 'member is' : 'members are'} on this Journey right now.
                 </p>
