@@ -10,11 +10,15 @@ begin;
 select plan(8);
 
 -- ── Fixture ──────────────────────────────────────────────────────────────────────────────────
-insert into public.profiles (id, display_name, handle, is_active) values
-  ('00000000-0000-4000-b200-000000000001', 'Aud Owner',  'aud-owner',  true),
-  ('00000000-0000-4000-b200-000000000002', 'Aud Staff',  'aud-staff',  true),
-  ('00000000-0000-4000-b200-000000000003', 'Aud Payer',  'aud-payer',  true),
-  ('00000000-0000-4000-b200-000000000004', 'Aud Nobody', 'aud-nobody', true);
+-- ⚠️ `auth_user_id` is the join that makes private.get_my_profile_id() resolve: the JWT `sub` is
+-- the AUTH id, NOT the profile id. Omitting it (or setting `sub` to the profile id) makes every
+-- identity-dependent predicate quietly answer false, which reads as the feature being broken
+-- rather than the fixture being wrong.
+insert into public.profiles (id, auth_user_id, display_name, handle, is_active) values
+  ('00000000-0000-4000-b200-000000000001', '00000000-0000-4000-a200-000000000001', 'Aud Owner',  'aud-owner',  true),
+  ('00000000-0000-4000-b200-000000000002', '00000000-0000-4000-a200-000000000002', 'Aud Staff',  'aud-staff',  true),
+  ('00000000-0000-4000-b200-000000000003', '00000000-0000-4000-a200-000000000003', 'Aud Payer',  'aud-payer',  true),
+  ('00000000-0000-4000-b200-000000000004', '00000000-0000-4000-a200-000000000004', 'Aud Nobody', 'aud-nobody', true);
 
 insert into public.spaces (id, slug, name, type, entity_id, owner_profile_id, status, visibility, plan) values
   ('00000000-0000-4000-c200-000000000001', 'aud-space', 'Aud Space', 'business',
@@ -46,7 +50,7 @@ insert into public.circles (id, name, slug, type, status, space_id, unlisted, ac
 set local role authenticated;
 
 select set_config('request.jwt.claims',
-  json_build_object('sub', '00000000-0000-4000-b200-000000000003')::text, true);
+  json_build_object('sub', '00000000-0000-4000-a200-000000000003')::text, true);
 select ok(private.is_space_audience('00000000-0000-4000-c200-000000000001'),
   'A PAYING member is part of the Space audience -- the bug this migration exists to fix');
 select ok(private.can_enter_circle('00000000-0000-4000-e200-000000000001', 'space_members',
@@ -54,7 +58,7 @@ select ok(private.can_enter_circle('00000000-0000-4000-e200-000000000001', 'spac
   'and so may ENTER a space_members Circle, which is what the label has always promised');
 
 select set_config('request.jwt.claims',
-  json_build_object('sub', '00000000-0000-4000-b200-000000000002')::text, true);
+  json_build_object('sub', '00000000-0000-4000-a200-000000000002')::text, true);
 select ok(private.is_space_audience('00000000-0000-4000-c200-000000000001'),
   'STAFF still count -- the change is purely additive and shuts nobody out');
 select ok(private.can_enter_circle('00000000-0000-4000-e200-000000000001', 'space_members',
@@ -62,7 +66,7 @@ select ok(private.can_enter_circle('00000000-0000-4000-e200-000000000001', 'spac
   'and a staff seat still opens the Circle exactly as before');
 
 select set_config('request.jwt.claims',
-  json_build_object('sub', '00000000-0000-4000-b200-000000000004')::text, true);
+  json_build_object('sub', '00000000-0000-4000-a200-000000000004')::text, true);
 select ok(not private.is_space_audience('00000000-0000-4000-c200-000000000001'),
   'someone with neither a seat nor a membership is NOT the audience');
 select ok(not private.can_enter_circle('00000000-0000-4000-e200-000000000001', 'space_members',
@@ -71,7 +75,7 @@ select ok(not private.can_enter_circle('00000000-0000-4000-e200-000000000001', '
 
 -- ── 2. 🔴 THE CRM WALL. The whole reason this is a second predicate. ─────────────────────────
 select set_config('request.jwt.claims',
-  json_build_object('sub', '00000000-0000-4000-b200-000000000003')::text, true);
+  json_build_object('sub', '00000000-0000-4000-a200-000000000003')::text, true);
 select ok(not private.is_space_member('00000000-0000-4000-c200-000000000001'),
   'a PAYING member is NOT a space_member -- the predicate 16 CRM/orders/notes policies key on');
 
