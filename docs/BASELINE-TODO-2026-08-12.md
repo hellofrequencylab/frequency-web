@@ -13,6 +13,66 @@
 
 ---
 
+## ✅ END-OF-DAY STATUS, 2026-08-12 — read this before working any row below
+
+**36 of 47 items are closed.** The Studio/Vera wizards are on `main` (#2105), the baseline sweep
+landed (#2106), and the build is gated on the artifact. Every ✅ below was re-verified against the
+**code or the live database**, not against another doc — several rows in this repo were false for a
+full day, which is the reason for the rule. Where a row is still open, it is open for a stated
+reason.
+
+| Item | State | Verified against |
+|---|---|---|
+| CP-1 Vercel Build Command | ⚠️ **Still open — owner only** | `vercel.json` holds **only** a `crons` array; still no `buildCommand`. Both artifact gates remain unproven |
+| CP-2 `studio` in the CI guards | ✅ | `.github/workflows/ci.yml:206-210` — the array now ends `studio creates`. §2 adjudicated "studio only"; both were added, which is harmless |
+| CP-3 `/drafts` entrance | ✅ | `lib/nav/registry.ts:429` (`palette: true` ⇒ ⌘K) + `lib/nav/my-frequency.ts:70,146`. **Item 3 was a no-op:** `railFor` defaults to `'global'`, so a member page needs no `page-chrome.ts` line |
+| CP-4 `countMyCreateProposals` | ✅ **Option (a)** | Wired at `lib/nav/my-frequency.ts:53,146`. The ADR-246 exception now earns its keep |
+| CP-5 `StudioLaunchButton` | ✅ Deleted | Zero hits repo-wide |
+| CP-6 ADR-1004 + three false status lines | ✅ | `docs/DECISIONS.md:21821` — and ADR-1006/1007/1008 landed with it |
+| CP-7 / CP-8 the re-land | ✅ | `origin/main` = `4bcc51ba6`, carrying #2105 then #2106 |
+| CP-9 retire four branches | ⏳ **Verified, awaiting the owner's delete** | All four hold **nothing** `main` lacks — see the box below |
+| A-1 `public/tracks` excluded | ✅ | `next.config.ts:223-225` `outputFileTracingExcludes` |
+| A-2 icons behind a route · A-3 HEIC door | ✅ ([ADR-1008](DECISIONS.md)) | `app/api/site-icons/route.ts`, `lib/library/heic-decode.ts`; 9.16 GB → **6.45 GB** |
+| A-4 / A-6 the `public/` glob + per-entity OG cards | ⏳ In flight elsewhere | The two `opengraph-image.tsx` files are open in another change |
+| A-5 fonts off `'/**'` | ✅ | `next.config.ts:92-95` `OG_CARD_FONTS`, keyed per card route; `lib/og/load-nunito.ts:67-71` reads three **literal** paths |
+| B-1 the referral prize | ✅ Owner ruling | See §4 — and **its second half is still open, see 🔴 below** |
+| B-2 revoke `friendships_freeze_identity` | ✅ Applied | `supabase/migrations/20270224000100_revoke_friendships_freeze_identity_execute.sql`, present in the live ledger |
+| B-3 `safeUrl` / `safeHref` | ✅ | `RELATIVE_BASE` parse in **both** `lib/entity-blocks/block-content.ts:814` and `lib/page-editor/richtext.tsx:31` |
+| B-4 `signup_leads` comment | ✅ | Migration `20270215000000` now states what the capture door actually allows |
+| C-1 … C-10 plan-doc drift | ✅ | Spot-checked live: UX-MATURITY `:398` re-scoped, `:605` reads 11/~7 not 52, BUILD-LIST `:917` carries its SUPERSEDED banner, `app/globals.css:1626` corrected |
+| C-11 retract the `node_modules` theory | ✅ | [`DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md) §3 + [`HANDOFF-2026-08-12.md`](HANDOFF-2026-08-12.md) |
+| D-1 seven orphans | ✅ **All seven resolved** | Five deleted; the two carrying product weight were **mounted, not deleted** — `createBundleCheckout` at `app/(main)/settings/billing/actions.ts:60` **with** the webhook seating branch (`lib/billing/bundle-seats.ts`), and `requestClaimLink` behind `claim-request-cta.tsx`, both under wiring tests |
+| D-2 · D-3 · D-4 · D-5 | ✅ Deleted | `components/elements/` now holds `previews.tsx` alone |
+| E-1 17 env vars | ✅ | All 17 present in `.env.example` |
+| E-2 "Drafts" names three surfaces | ⚠️ **Still open** | NAMING.md still defines no `Drafts` noun |
+| E-3 `check:migrations` ledger rule | ✅ ([ADR-1007](DECISIONS.md)) | Rule 4 compares repo ⇄ **live** ledger head, no pinned numbers |
+| E-4 function-grant guard | ⏳ Backlog | Unchanged |
+| F-1 the two editor rulings | ⚠️ **Still open** | Unchanged; `EDITOR-ARCHITECTURE.md` is under an open PR |
+
+### CP-9 · the four branches, verified 2026-08-12 — **all four safe to delete**
+
+Verified by content, not by merge topology: a squash merge leaves no ancestry, so `--is-ancestor`
+answers "NO" for every one of them and proves nothing either way.
+
+| Branch | Verdict | Evidence |
+|---|---|---|
+| `feat/studio-kernel` (`78b9ba52b`) | ✅ **Safe to delete — and do not resurrect it** | Re-landed as #2105. The **"unmerged nav work" claim is false**: `git cat-file -t 4444d28b6` → *"Not a valid object name"*, and the drafts entrance is on `main` while the branch **lacks** it (`lib/nav/drafts-entrance.test.ts`, 69 lines, exists only on `main`). Every file it has that `main` lacks is a file `main` deleted on purpose — including `app/opengraph-image.tsx`, **the root metadata image that caused the outage** |
+| `claude/studio-reland` (`b29cddc56`) | ✅ Safe to delete | Squash-merged as **#2105** (`merged_at` 2026-08-12T14:57:56Z). Its 11 commits are all in `main`; `main` is strictly ahead (it also narrowed the OG font tracing this branch still carries wide) |
+| `fix/codeql-allowlist` (`c55e8b41f`) | ✅ Safe to delete | Squash-merged as **#2099**. All five changed files are **byte-identical** to `main` |
+| `fix/codeql-seeder-write-allowlist` (`a2bc8096c`) | ✅ Safe to delete | ⚠️ **The "superseded by #2099" claim is imprecise.** No PR was ever opened for this branch, and #2099 did **not** carry its `lib/safe-image-src.ts` or `loom-image-field.tsx` halves — those reached `main` later via #2105. It is superseded by **#2099 + #2105 together**. Six of its seven files are byte-identical to `main`; the seventh differs only cosmetically (`main` extracted the same `__proto__`/`constructor`/`prototype` guard into `isUnsafeObjectKey()`) |
+
+> ⚠️ One thing to carry forward, not a blocker: in extracting that helper, `main` dropped the
+> branch's *"The last inch"* comment explaining **why** the guard sits at the write rather than
+> upstream — *"consolidating it upstream for elegance is exactly what let the alerts come back once
+> already."* The guard is intact; only its rationale was lost.
+
+### 🔴 One promise is still standing — see §4, B-1
+
+`/referral` still offers Founding-Member perks at 3 activated referrals, and `reward_kind:
+'founding_perk'` has **zero** consumers repo-wide. It needs an owner ruling, not an agent's guess.
+
+---
+
 ## 0. State of the world — four corrections to the findings, verified just now
 
 The findings were gathered against a moving tree. Four of them are already stale in your favour, and you should not spend time on them:
@@ -86,6 +146,13 @@ So: a React-cached, index-justified count with a paragraph of performance ration
 ### CP-6 · Write ADR-1004 and strike three false status lines ✅-safe · **S**
 
 `docs/DECISIONS.md:21594` still asserts **"No commit crossed the disk."** The branch's own commit `a9cdba229` says: *"⚠️ This corrects ADR-1002's 'no commit crossed the disk'. That was measured on main alone, where it held. #2098 does cross it, hugely"* — with the table main 16.73 GB / +ADR-1002 9.80 GB / **+Studio spread path 57.23 GB** / +this fix 9.98 GB. The code fix is in the tree (`lib/ai/quality-gate.ts:169`, `const RUBRIC_DIR = join(process.cwd(), 'content', 'leader-training', 'authoring')` replacing the spread `rubricPath`) — the ADR is not. There is no ADR-1004; `grep '^## ADR-100' docs/DECISIONS.md` returns only 1000, 1002, 1001, 1003.
+
+> ✅ **CLOSED 2026-08-12.** ADR-1004 exists (`docs/DECISIONS.md:21821`, *"Correcting ADR-1002 — a
+> commit did cross the disk, and the gate is what found it"*), and ADR-1006/1007/1008 landed in the
+> same pass. `grep '^## ADR-10' docs/DECISIONS.md` now returns 1000, 1002, 1001, 1003, 1004, 1006,
+> 1007, 1008. ⚠️ **ADR-1005 is a gap** — no entry, and nothing anywhere cites it (`check:adr` is
+> green precisely because no reference is dangling). Either a number was reserved and abandoned or
+> one was skipped; worth an owner glance, harmless either way.
 
 The consequence is a misled reader, not a repeat outage — `check-build-budget.mjs:40` sets `BUDGET_GB = 13`, so a 57 GB relapse fails the build regardless. But the 57 GB path is one `join(cwd(), ...spread)` away from returning and nothing in DECISIONS.md warns about the class.
 
@@ -420,7 +487,7 @@ All seven verified: each symbol's only hit repo-wide is its own definition. All 
 | `lib/billing/bundle-checkout.ts:21` `createBundleCheckout` | — |
 | `lib/spaces/managed-actions.ts:22` `getManagedSpaces` | `:8` *"someClient -> getManagedSpaces()"* — no such client |
 | `app/(main)/events/[slug]/claim-actions.ts:15` `requestClaimLink` (`'use server'`) | — |
-| ~~`lib/profile-zaps.ts:16` `getProfileZapTotal`~~ 🔴 **deleted** ([ADR-1006](DECISIONS.md)) | *"surfaced on their public profile as the Spark milestone and the rank-ladder driver"* — it was not. Not unmounted work: it was **removed** in `5e4c722ba` because it sums `crew_completions` only and read 0 for members earning Zaps elsewhere. `profiles.lifetime_zaps` replaced it. Its `profile_zap_total` RPC is now orphaned; the drop is written and **unapplied** at `supabase/migrations/20270226000000_drop_profile_zap_total.sql` |
+| ~~`lib/profile-zaps.ts:16` `getProfileZapTotal`~~ 🔴 **deleted** ([ADR-1006](DECISIONS.md)) | *"surfaced on their public profile as the Spark milestone and the rank-ladder driver"* — it was not. Not unmounted work: it was **removed** in `5e4c722ba` because it sums `crew_completions` only and read 0 for members earning Zaps elsewhere. `profiles.lifetime_zaps` replaced it. Its `profile_zap_total` RPC is now orphaned; the drop is written and ~~**unapplied**~~ ✅ **APPLIED** at `supabase/migrations/20270226000000_drop_profile_zap_total.sql` — verified against production 2026-08-12: the migration holds a ledger row and `to_regprocedure('public.profile_zap_total(uuid)')` returns **null** |
 | `app/(main)/spaces/[slug]/crm/crm-snapshot.tsx:27` `SpaceCrmSnapshot` | — |
 | ~~`components/profile/profile-cover.tsx:8` `ProfileCover`~~ 🔴 **deleted** ([ADR-1006](DECISIONS.md)) | *"Rendered in the DetailTemplate `hero` slot"* — it was not. Superseded there by `PageHero` in `58dca581d` |
 

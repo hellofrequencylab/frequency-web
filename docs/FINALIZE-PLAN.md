@@ -3,14 +3,27 @@
 > **The answer, first.** The platform is built and green: `tsc` clean, **8,943 tests passing**,
 > **all 27 `check:*` gates exit 0**, and CI is green on `main`.
 >
-> 🔴 **The ledger bijection claim that used to sit here is no longer true.** It read "an exact
-> bijection with the repo (594 ⇄ 594, ADR-963)". Re-checked 2026-08-11: the repo carries
-> `20270220000000_fk_indexes_and_billing_policy_merge.sql` and production holds the same file under
-> `20260811003019`. That is the **fourth** recurrence, and it is the direct consequence of §2.6
-> never being done: `check:migrations` verifies 598 unique, well-ordered filenames and has **no
-> ledger-head rule**, so it structurally cannot see this class. A gate that cannot fail on the
-> defect it was written for is the repo's own named failure mode. §2.5 (repair) and §2.6 (stop it
-> recurring) are both open, and doing 2.5 again without 2.6 buys nothing.
+> ✅ **CLOSED 2026-08-12 — §2.5 and §2.6 both shipped. Kept in place, not deleted, because the
+> reasoning is the reason the fix took the shape it did.**
+>
+> *What this paragraph said until now:* the ledger bijection claim ("an exact bijection with the
+> repo, 594 ⇄ 594, ADR-963") had gone false — re-checked 2026-08-11, the repo carried
+> `20270220000000_fk_indexes_and_billing_policy_merge.sql` while production held the same file under
+> `20260811003019`. That was the **fourth** recurrence, and the direct consequence of §2.6 never
+> being done: `check:migrations` read the tree only and had **no ledger-head rule**, so it
+> structurally could not see this class. A gate that cannot fail on the defect it was written for is
+> the repo's own named failure mode.
+>
+> *Where both stand now, verified against the live database on 2026-08-12:*
+>
+> | Item | State | Evidence |
+> |---|---|---|
+> | §2.5 repair the ledger | ✅ Done | All four listed versions (`20270213000000`, `20270214000000`, `20270215000000`, `20270215000001`) plus `20270220000000` return **1 row each** in `supabase_migrations.schema_migrations` |
+> | §2.6 stop it recurring | ✅ Done ([ADR-1007](DECISIONS.md)) | `scripts/check-migrations.mjs` gained **Rule 4** — the repo and the ledger head must be the same set, compared **live** with no pinned numbers, degrading to a loud SKIP (never a vacuous pass) when CI has no credentials |
+> | Repo ⇄ ledger today | ⏳ **609 ⇄ 608** | `ls supabase/migrations/*.sql \| wc -l` → **609**; `select count(*) from supabase_migrations.schema_migrations` → **608**, head `20270226000000`. The single gap is `20270226000100_household_bundle_invites.sql`, written and **not yet applied** — a repo file ahead of the ledger, which is the safe direction and exactly what Rule 4 now reports |
+>
+> ⚠️ The old count in this paragraph ("598 unique, well-ordered filenames") was stale within a day of
+> being written. It is replaced above by the command rather than by another number to inherit.
 > What is left is not features. It is **three instruments that stopped telling the truth**, one
 > **access-grant layer** that was never actually closed, and a **short, verified list of real
 > defects**. Nothing on this list is speculative: every item below was reproduced against the
@@ -46,7 +59,7 @@ Sizes: **XS** under an hour · **S** one PR · **M** 1 to 3 PRs · **L** a wave.
 | **Visual regression** | ✅ | **71 of 76**, was 10 of 72. `/feed`'s viewport capture WORKS (passes now). App shell coverage **3/3 surfaces, 12/12 checks**, from zero this morning. The 4 remaining failures are `/settings` × 4 and are a TRUE POSITIVE — see 1.10. |
 | **Accessibility ratchet** | 🔴 | first full run with a session (2026-08-10): **32 failed · 28 passed · 26 skipped** — 4 absent baselines, 28 real rises, **all 16 dark-mode contrast checks among them** (1.7, ADR-980) |
 | **Anon/authenticated grants** | ⏳ | **1,556 across 195 tables**, down from 1,907 across 273 (Phase 2a swept 76 tables, ADR-965). This row said 1,907/273 until 2026-08-11: it was written before Phase 2 shipped and never updated when it did |
-| **Migration ledger numbering** | 🔴 | **Drift recurred**, fourth time. Repo `20270220000000_fk_indexes_and_billing_policy_merge.sql` ⇄ prod `20260811003019`. This row read "594 ⇄ 594, zero drift both directions" (ADR-963); that was true when written and is false now. See §2.5 and §2.6 |
+| **Migration ledger numbering** | ✅ | **Closed 2026-08-12.** The fourth recurrence (repo `20270220000000_fk_indexes_and_billing_policy_merge.sql` ⇄ prod `20260811003019`) is repaired — that version now holds a ledger row — and [ADR-1007](DECISIONS.md) gave `check:migrations` a live ledger-head rule so the class fails a guard instead of a re-freeze. Today **609 repo files ⇄ 608 ledger rows**, the one gap being a written-but-unapplied file. ⚠️ Do not restore a pinned pair here: this row has now been wrong twice by quoting a number instead of a command. See §2.5 and §2.6 |
 
 **The single most important sentence in this document:** six merges' worth of rendering changes have
 landed with no working visual gate, so *every* claim about how the site looks is currently unverified.
@@ -210,8 +223,8 @@ so it fails partway and leaves a third state.
 
 | # | Item | Size | Detail |
 | :--- | :--- | :---: | :--- |
-| 2.5 | ⚠️ **Repair the ledger** | XS | `supabase migration repair --status applied 20270213000000 20270214000000 20270215000000 20270215000001`. Verify each against the live schema first, never from a filename. |
-| 2.6 | **Stop renumbering applied migrations** | S | This is the root cause of both the gap and the ~13 duplicate rows. Either stop renumbering after apply, or make the repair part of whatever renumbers. Extend `check:migrations` to fail when a repo version exceeds the ledger head while an identically-named older version exists. |
+| 2.5 | ✅ **Repair the ledger — DONE** | XS | Was: `supabase migration repair --status applied 20270213000000 20270214000000 20270215000000 20270215000001`. Verified against the live ledger 2026-08-12 — all four versions return exactly one row, as does `20270220000000`. |
+| 2.6 | ✅ **Stop renumbering applied migrations — DONE** ([ADR-1007](DECISIONS.md)) | S | Was the root cause of both the gap and the ~13 duplicate rows. `scripts/check-migrations.mjs` Rule 4 now compares the repo against the **live** ledger head, with no pinned count or digest anywhere — the previous instrument was a hand-re-frozen number in `scripts/maintenance/ledger-parity.test.ts`, and "a guard whose correctness depends on a human doing a fiddly thing right, every time, has already failed." It degrades to a loud, named SKIP when CI has no database credentials rather than passing vacuously. |
 
 ### 2c. Advisor regressions
 

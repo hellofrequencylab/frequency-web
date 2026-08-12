@@ -1,11 +1,10 @@
-import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
 import { getSpaceBySlug, getSpaceVisibility } from '@/lib/spaces/store'
 import { readHeroConfig, resolveHero } from '@/lib/spaces/hero-config'
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { fetchRemoteImage } from '@/lib/og/remote-image'
+import { coverPlaceholderDataUrl, siteMarkDataUrl } from '@/lib/og/local-image'
 import { loadNunito } from '@/lib/og/load-nunito'
 import { cardResponse } from '@/lib/og/deliver'
 import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
@@ -42,12 +41,10 @@ const ACCENT_BY_TYPE: Record<string, string> = {
   nonprofit: '#0F8E78',
 }
 
-/** Base64-inline a build-time asset under public/ (Satori needs bytes, not a relative URL). */
-async function localImage(relPath: string): Promise<string> {
-  const data = await readFile(join(process.cwd(), 'public', relPath))
-  const mime = relPath.endsWith('.png') ? 'image/png' : 'image/jpeg'
-  return `data:${mime};base64,${data.toString('base64')}`
-}
+// Build-time assets under public/ are inlined through lib/og/local-image.ts (Satori needs bytes,
+// not a relative URL). ⚠️ NOT a `readFile` in this file: a path built from a variable is
+// unresolvable to @vercel/nft, which then globs the whole of public/ into all 50 functions under
+// this segment. Measured at 12.25 MB each before that module existed. See its header.
 
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -119,9 +116,9 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const [remoteCover, logo, mark] = await Promise.all([
     space.coverImageUrl ? fetchRemoteImage(space.coverImageUrl) : Promise.resolve(null),
     space.brandLogoUrl ? fetchRemoteImage(space.brandLogoUrl) : Promise.resolve(null),
-    localImage('images/Frequency-Logo-Round-Icon-white.png'),
+    siteMarkDataUrl(),
   ])
-  const cover = remoteCover ?? (await localImage(coverPlaceholderFor(space.id)))
+  const cover = remoteCover ?? (await coverPlaceholderDataUrl(coverPlaceholderFor(space.id)))
   const initials = brandName
     .split(/\s+/)
     .map((w) => w[0])

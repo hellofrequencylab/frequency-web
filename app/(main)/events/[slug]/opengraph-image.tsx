@@ -1,10 +1,9 @@
-import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { posterSignedUrl } from '@/lib/events/poster-media'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import type { EventDetailsWithMedia } from '@/lib/events/details-media'
 import { fetchRemoteImage } from '@/lib/og/remote-image'
+import { siteMarkDataUrl } from '@/lib/og/local-image'
 import { loadNunito } from '@/lib/og/load-nunito'
 import { cardResponse } from '@/lib/og/deliver'
 import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
@@ -44,12 +43,10 @@ type Row = {
   host: { display_name: string | null } | null
 }
 
-/** Base64-inline a build-time asset under public/ (Satori needs bytes, not a relative URL). */
-async function localImage(relPath: string): Promise<string> {
-  const data = await readFile(join(process.cwd(), 'public', relPath))
-  const mime = relPath.endsWith('.png') ? 'image/png' : 'image/jpeg'
-  return `data:${mime};base64,${data.toString('base64')}`
-}
+// The Frequency mark is inlined through lib/og/local-image.ts (Satori needs bytes, not a relative
+// URL). ⚠️ NOT a `readFile` in this file: a path built from a variable is unresolvable to
+// @vercel/nft, which then globs the whole of public/ into every function under this segment, even
+// though every call site here passed a literal. See that module's header.
 
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -172,7 +169,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const [black, bold, mark] = await Promise.all([
     loadNunito(900),
     loadNunito(700),
-    localImage('images/Frequency-Logo-Round-Icon-white.png'),
+    siteMarkDataUrl(),
   ])
   const fonts = [
     { name: 'Nunito', data: black, weight: 900 as const, style: 'normal' as const },

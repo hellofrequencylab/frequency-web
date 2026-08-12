@@ -82,6 +82,13 @@ describe('notificationHref', () => {
       .toBe(`/practices/${UUID}`)
   })
 
+  it('opens a Household bundle seat offer on the plan settings, where the seat is answered', () => {
+    // The invite id is a UUID and no page is keyed on it, so the notice lands on the surface that
+    // renders the accept/decline controls (ADR-370).
+    expect(notificationHref(notif({ type: 'bundle_seat_invite', reference_type: 'bundle_invite', reference_id: UUID })))
+      .toBe('/settings#plan')
+  })
+
   it('opens an inbound conversation reply on that thread in the workspace', () => {
     expect(notificationHref(notif({ type: 'conversation_reply', reference_type: 'conversation', reference_id: UUID })))
       .toBe(`/admin/crm/conversations?id=${UUID}`)
@@ -120,7 +127,7 @@ describe('notificationHref', () => {
   it('never returns an empty or relative path', () => {
     const types = [
       'post', 'profile', 'space', 'dispatch', 'support_ticket', 'practice',
-      'conversation', 'contact', 'circle', 'membership', 'event', 'journey', null,
+      'conversation', 'contact', 'circle', 'membership', 'event', 'journey', 'bundle_invite', null,
     ]
     for (const reference_type of types) {
       for (const reference_id of [null, '', '  ', UUID, 'a-slug']) {

@@ -600,7 +600,9 @@ seeded (a non-default menu), so it is unchanged pre-seed. Tables are not in
 npx supabase migration list                 # check local vs remote tracking
 npx supabase db query --linked "<sql>"       # inspect live data, read-only (no Docker needed)
 npx supabase gen types typescript --linked > lib/database.types.ts  # regenerate types
-# Prod apply: MCP apply_migration only (ADR-496). Do NOT run `supabase db push` against prod.
+# Prod apply: MCP execute_sql for the DDL, THEN an explicit ledger insert at the repo file's own
+#   version. NEVER apply_migration (it stamps a wall-clock version — see the ban above), and never
+#   `supabase db push` against prod (ADR-496).
 # `db push` is acceptable ONLY against a clean throwaway/branch DB built from the repo files.
 ```
 

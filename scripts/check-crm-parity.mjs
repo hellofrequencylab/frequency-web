@@ -15,7 +15,7 @@
 // Exit code: NON-ZERO on any violation (a surface that dropped a shared import, or a re-inlined copy).
 // Usage: `node scripts/check-crm-parity.mjs` (or `pnpm check:crm-parity`).
 
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join, relative } from 'node:path'
 
@@ -145,6 +145,25 @@ const isMain = process.argv[1] && fileURLToPath(import.meta.url) === join(proces
 if (isMain || process.argv[1]?.endsWith('check-crm-parity.mjs')) {
   const { violations } = checkCrmParity()
   console.log('CRM / comms parity guard (ADR-817)\n')
+
+  // ── NON-TRIVIALITY FLOOR ──────────────────────────────────────────────────────────────────
+  // 🔴 Without this, running from a tree where the surfaces do not exist printed
+  // "✓ all N CRM surfaces route through the shared comms modules" and exited 0. Measured
+  // 2026-08-12 by running this script with cwd set to an EMPTY DIRECTORY: it reported a clean
+  // bill of health over nothing at all. A guard that cannot fail is not a guard, and this one
+  // could not, because "no surface read" and "every surface correct" produced the same output.
+  const missing = SURFACES.filter((s) => !existsSync(join(ROOT, s)))
+  if (SURFACES.length === 0 || missing.length > 0) {
+    console.error(
+      `\n✗ check:crm-parity — refusing to pass over a corpus it could not read.\n` +
+        `    surfaces declared: ${SURFACES.length}\n` +
+        `    surfaces missing:  ${missing.length}\n` +
+        `  Either a surface moved and this guard's list is stale, or it is running from the wrong\n` +
+        `  directory. Both are real problems; neither is a pass.\n`,
+    )
+    process.exit(1)
+  }
+
   if (violations.length === 0) {
     console.log(`  ✓ all ${SURFACES.length} CRM surfaces route through the shared comms modules; no re-inlined logic.`)
     console.log('  ✓ Vera + branded send + signature + batching are single-source — an edit applies site-wide.')

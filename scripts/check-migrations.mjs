@@ -24,7 +24,7 @@
 // Ordering itself is deliberately NOT checked: filenames here are hand-assigned rather than
 // CLI-stamped, and are already required to sort correctly by (1) + (2).
 //
-// ── Rule 4 (ADR pending): the repo and the LEDGER HEAD must be the same set. ──────────────────
+// ── Rule 4 (ADR-1007): the repo and the LEDGER HEAD must be the same set. ─────────────────────
 //
 // Rules 1–3 all read the TREE. They prove the filenames are well-formed and cannot collide; they
 // prove nothing about whether the database ever ran them. That gap is the one that keeps biting:
