@@ -15,14 +15,6 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    // 30s, not vitest's 5s default. A whole class of guards here SCAN THE REPO — check:menu walks 117
-    // files, check:tokens the whole app/ + components/ tree, gate-meter-drift greps for every gate's
-    // enforcement call site (35s on its own). They were already sitting near the default, and adding
-    // ~15 files tipped several over, so a green suite turned red with "check-menu is not green" and
-    // "entry_points has no enforcement call site" — messages that point at the wrong thing entirely
-    // and cost real time to chase. The assertions are unchanged; only the clock is. A genuine hang
-    // still fails, just 25s later.
-    testTimeout: 30_000,
     // `.tsx` is included so component-level tests (e.g. the Puck render-parity
     // gate in lib/page-editor/block-render.test.tsx) can use JSX directly.
     include: ['**/*.test.ts', '**/*.test.tsx'],

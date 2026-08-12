@@ -9,26 +9,19 @@
 //   • cover + lineup + gallery crops are cut client-side from the squared
 //     image and uploaded as small jpegs; their paths ride in details.media.
 // Then the flow hands off to the draft editor with everything prefilled.
-//
-// AN OPERATOR GETS A SECOND DOOR (ADR-997). Someone who runs the Event Seeder is usually not
-// scanning one poster, they are working a wall of them. For them the page also offers "Send to
-// the review board": the server reads the poster and stages it on event_intake, the picker
-// clears, and they photograph the next one. Same capture, same vision pass, no draft editor in
-// between. The member flow below is untouched and stays the default for everyone.
 
 import { useRef, useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Camera, Upload, ScanLine, Sparkles, Loader2, X, RefreshCw, ArrowRight, AlertTriangle,
-  CalendarDays, MapPin, Lightbulb, Link2, ClipboardList,
+  CalendarDays, MapPin, Lightbulb, Link2,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import type { ExtractedEvent, EventLink } from '@/lib/events/types'
 import type { DetailsMedia, EventDetailsWithMedia } from '@/lib/events/details-media'
 import { decodePosterLinks } from '@/lib/events/qr-scan'
-import { scanPoster, scanPosterForReview, saveDraft, discardScan } from './actions'
+import { scanPoster, saveDraft, discardScan } from './actions'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import {
   downscaleForScan, fileToImage, cropBoxToJpeg, deskewPoster, canvasToJpeg,
@@ -37,19 +30,9 @@ import {
 
 const BUCKET = 'network-contacts'
 
-/** Why a poster did not reach the review board, in plain words the operator can act on. */
-const STAGE_PROBLEM: Record<string, string> = {
-  unauthorized: 'That needs the Event Seeder rung. Build a draft instead, or ask for access.',
-  ai_unavailable: 'The poster reader is off right now. Try again a little later.',
-  no_read: 'Could not read that poster. Try a sharper, straight-on shot.',
-  no_result: 'Could not read that poster. Try a sharper, straight-on shot.',
-  too_thin: 'No title came off that one, so there is nothing to review yet. Try a closer shot.',
-  not_staged: 'Could not send that one to the review board. Try again.',
-}
+type Stage = 'pick' | 'scanning' | 'review' | 'building'
 
-type Stage = 'pick' | 'scanning' | 'review' | 'building' | 'staging'
-
-export function Creator({ userId, canSeed = false }: { userId: string; canSeed?: boolean }) {
+export function Creator({ userId }: { userId: string }) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -57,8 +40,6 @@ export function Creator({ userId, canSeed = false }: { userId: string; canSeed?:
   const [files, setFiles] = useState<File[]>([])
   const [thumbs, setThumbs] = useState<string[]>([])
   const [msg, setMsg] = useState<{ kind: 'warn' | 'err'; text: string } | null>(null)
-  /** The operator's running batch: what has gone to the review board in this sitting. */
-  const [sent, setSent] = useState<string[]>([])
 
   const [extraction, setExtraction] = useState<ExtractedEvent | null>(null)
   const [posterPath, setPosterPath] = useState<string | null>(null)
@@ -113,27 +94,6 @@ export function Creator({ userId, canSeed = false }: { userId: string; canSeed?:
     return path
   }
 
-  /** Decode any QR codes on the picked shots, on-device, off the FULL-RESOLUTION originals
-   *  (sharper than the downscaled scan), deduped by URL. Best effort: a decode that throws
-   *  gives back what it had, because the read stands without it. */
-  async function decodeQrLinks(): Promise<EventLink[]> {
-    const found: EventLink[] = []
-    const seen = new Set<string>()
-    try {
-      for (const f of files.slice(0, 4)) {
-        const img = await fileToImage(f)
-        for (const l of await decodePosterLinks(img)) {
-          if (seen.has(l.url)) continue
-          seen.add(l.url)
-          found.push(l)
-        }
-      }
-    } catch {
-      /* QR decode is a bonus — the scan stands without it */
-    }
-    return found
-  }
-
   async function runScan() {
     if (!files.length || stage === 'scanning') return
     setStage('scanning')
@@ -163,12 +123,25 @@ export function Creator({ userId, canSeed = false }: { userId: string; canSeed?:
       }
 
       // QR codes on a poster ARE the booking link, and the vision model can't
-      // read a QR pattern. Fold anything the on-device decode found into the
+      // read a QR pattern. Decode them on-device from the full-res originals
+      // (sharper than the downscaled scan) and fold any booking link into the
       // harvest, deduped against links the model already read in print.
-      const seen = new Set((res.extraction.details.links ?? []).map((l) => l.url))
-      const found = (await decodeQrLinks()).filter((l) => !seen.has(l.url))
-      if (found.length) {
-        res.extraction.details.links = [...(res.extraction.details.links ?? []), ...found].slice(0, 10)
+      try {
+        const seen = new Set((res.extraction.details.links ?? []).map((l) => l.url))
+        const found: EventLink[] = []
+        for (const f of files.slice(0, 4)) {
+          const img = await fileToImage(f)
+          for (const l of await decodePosterLinks(img)) {
+            if (seen.has(l.url)) continue
+            seen.add(l.url)
+            found.push(l)
+          }
+        }
+        if (found.length) {
+          res.extraction.details.links = [...(res.extraction.details.links ?? []), ...found].slice(0, 10)
+        }
+      } catch {
+        /* QR decode is a bonus — the scan stands without it */
       }
 
       setExtraction(res.extraction)
@@ -194,43 +167,6 @@ export function Creator({ userId, canSeed = false }: { userId: string; canSeed?:
         }
       }
       setStage('review')
-    } catch (err) {
-      setStage('pick')
-      setMsg({ kind: 'err', text: err instanceof Error ? err.message : 'Something went wrong.' })
-    }
-  }
-
-  /**
-   * THE OPERATOR'S BATCH DOOR (ADR-997). Upload the shots, let the SERVER read the poster and
-   * stage it on the Event Seeder's board in the same request, then clear the picker so the
-   * next poster can go straight in. No draft, no editor, no review here: the review is the
-   * board, where the read sits beside this photo, field by field.
-   *
-   * The read never comes back to this browser, which is the point: nothing the operator's
-   * machine could alter ends up in a staged draft. The only things sent are the storage paths
-   * (checked server-side against their own folder) and the QR URLs this device decoded.
-   */
-  async function sendToBoard() {
-    if (!files.length || stage === 'staging') return
-    setStage('staging')
-    setMsg(null)
-    try {
-      const paths: string[] = []
-      for (const f of files) paths.push(await uploadBlob(await downscaleForScan(f)))
-      const links = await decodeQrLinks()
-
-      const res = await scanPosterForReview(paths, links)
-      if (!res.ok) {
-        setStage('pick')
-        setMsg({ kind: res.reason === 'ai_unavailable' ? 'warn' : 'err', text: STAGE_PROBLEM[res.reason] })
-        return
-      }
-
-      thumbs.forEach((u) => URL.revokeObjectURL(u))
-      setFiles([])
-      setThumbs([])
-      setSent((prev) => [...prev, res.title])
-      setStage('pick')
     } catch (err) {
       setStage('pick')
       setMsg({ kind: 'err', text: err instanceof Error ? err.message : 'Something went wrong.' })
@@ -359,20 +295,18 @@ export function Creator({ userId, canSeed = false }: { userId: string; canSeed?:
       ? 'border-primary/40 bg-primary-bg text-primary-strong'
       : 'border-danger/40 bg-danger-bg text-danger')
 
-  // ── Scanning / staging / building: calm progress ────────────────────────────
-  if (stage === 'scanning' || stage === 'building' || stage === 'staging') {
+  // ── Scanning / building: calm progress ──────────────────────────────────────
+  if (stage === 'scanning' || stage === 'building') {
     return (
       <div className="rounded-card border border-border bg-surface p-10 text-center">
         <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary-strong" />
         <p className="mt-4 text-body-sm font-medium text-text">
-          {stage === 'building' ? 'Building your draft' : 'Reading the poster'}
+          {stage === 'scanning' ? 'Reading the poster' : 'Building your draft'}
         </p>
         <p className="mt-1 text-meta text-subtle">
-          {stage === 'building'
-            ? 'Squaring the image and cutting the cover. Almost there.'
-            : stage === 'staging'
-              ? 'Vera is reading it, then it goes to the review board. A few seconds.'
-              : 'Vera is pulling out the who, when, and where. A few seconds.'}
+          {stage === 'scanning'
+            ? 'Vera is pulling out the who, when, and where. A few seconds.'
+            : 'Squaring the image and cutting the cover. Almost there.'}
         </p>
       </div>
     )
@@ -498,32 +432,6 @@ export function Creator({ userId, canSeed = false }: { userId: string; canSeed?:
         </p>
       </div>
 
-      {/* The operator's batch door (ADR-997). Only for whoever runs the Event Seeder. */}
-      {canSeed && (
-        <div className="rounded-card border border-border bg-surface p-4">
-          <p className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
-            <ClipboardList className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
-            Working a wall of posters?
-          </p>
-          <p className="mt-1 text-body-sm text-muted">
-            Send each one straight to the Event Seeder instead of building a draft. You check them
-            all in one place, then seed the ones worth seeding. Nothing is posted either way.
-          </p>
-          {sent.length > 0 && (
-            <p className="mt-2 text-body-sm font-medium text-success" role="status">
-              {sent.length} sent to the review board: {sent.slice(-3).join(', ')}
-              {sent.length > 3 ? ', and more' : ''}.
-            </p>
-          )}
-          <Link
-            href="/admin/event-seeder"
-            className="mt-2 inline-block text-body-sm font-semibold text-info hover:underline"
-          >
-            Open the Event Seeder
-          </Link>
-        </div>
-      )}
-
       <div className="rounded-card border border-dashed border-border-strong bg-surface p-6 text-center">
         <ScanLine className="mx-auto h-8 w-8 text-primary-strong" />
         <p className="mt-3 text-body-sm font-medium text-text">Snap the poster</p>
@@ -568,17 +476,7 @@ export function Creator({ userId, canSeed = false }: { userId: string; canSeed?:
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        {canSeed && (
-          <button
-            type="button"
-            onClick={sendToBoard}
-            disabled={files.length === 0}
-            className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-4 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
-          >
-            <ClipboardList className="h-4 w-4" /> Send to the review board
-          </button>
-        )}
+      <div className="flex justify-end">
         <button
           type="button"
           onClick={runScan}

@@ -61,7 +61,7 @@ Replace the popup-based creation with one clean builder. Remove only once the ne
 | Retire / replace | File | Note |
 |---|---|---|
 | Circle creation popup | `components/compose/new-circle-compose.tsx` | replaced by the full-page builder |
-| Old single-shot Vera suggest | `lib/ai/circle-spark.ts` (`CIRCLE_SUGGEST`, `suggestCircleDraft`, `fallbackCircleSuggestion`; was `lib/ai/circle-wizard.ts` until ADR-990) | replaced by the four-path circle Vera; update callers `lib/ai/vera/read-tools.ts`, `lib/ai/space-copilot.ts` |
+| Old single-shot Vera suggest | `lib/ai/circle-wizard.ts` (`suggestCircle`, `fallbackCircleSuggestion`) | replaced by the four-path circle Vera; update callers `lib/ai/vera/read-tools.ts`, `lib/ai/space-copilot.ts` |
 | Popup create action | `app/(main)/circles/actions.ts` (create path) | replaced by adopt/publish actions |
 | Admin create-circle path | `app/(main)/admin/actions.ts` (`createCircle`) + `app/(main)/admin/circles/page.tsx` | fold into the new admin surface |
 | Popup mount points | `app/(main)/circles/page.tsx`, `app/(main)/channels/[id]/page.tsx` | point to the new builder |

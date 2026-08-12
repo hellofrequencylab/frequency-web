@@ -1,53 +1,15 @@
 'use client'
 
-// ─────────────────────────────────────────────────────────────────────────────
-// THE PRACTICE SPARK, composed from the Spark kit (docs/STUDIO.md §0, ADR-986 · ADR-358).
-//
-// The Practice wizard was a copy of the Journey wizard: its own column, its own progress cue, its
-// own field styling, and a manual door that was an 11px grey text link ("Skip, I'll build it
-// myself"). It now declares nothing about how a field looks and composes the kit instead:
-//
-//   SparkShell     the staged surface, the progress cue, the footer vocabulary
-//   SparkDoors     screen one: two doors at EQUAL weight
-//   SparkDropzone  one drop zone under BOTH doors (paste it, or upload the write-up)
-//   FieldControl   one control per field KIND, rendered from PRACTICE_MANIFEST
-//   SparkSteer     the mood dial, on review, so it costs no extra step
-//
-// EVERY ENTRY PATH IS KEPT:
-//   • Vera drafts it, from four questions          (door 1)
-//   • Build it yourself, in the full builder       (door 2, was a text link)
-//   • Bring the practice you already wrote         (the drop zone, on screen one)
-//
-// DEFERRED CREATION IS UNCHANGED: nothing persists until the author commits a reviewed title.
-// sparkPracticeAction, createPracticeFromSparkAction and createPracticeDraftAction keep their
-// exact signatures and payloads. This is a front-door rebuild, not a pipeline change.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles } from 'lucide-react'
-import {
-  SparkDoors,
-  SparkDropzone,
-  SparkOffers,
-  SparkShell,
-  SparkSteer,
-  FieldControl,
-  StudioField,
-  draftText,
-  useCoverOffer,
-  useQualityCheck,
-} from '@/components/studio/spark'
+import { Sparkles, ArrowLeft, Loader2, Upload } from 'lucide-react'
+import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/components/templates'
 import { isError } from '@/lib/action-result'
-import type { GeneratedCover } from '@/lib/loom/cover-actions'
-import { PRACTICE_MANIFEST } from '@/lib/studio/entities/practice'
-import { sparkFields } from '@/lib/studio/kernel/review-kernel'
-import { DEFAULT_SEED_MOOD, type SeedMood } from '@/lib/studio/kernel/moods'
-import type { FieldDef } from '@/lib/studio/kernel/manifest'
 import { sparkPracticeAction, createPracticeFromSparkAction } from '@/app/(main)/practices/create-actions'
 import { createPracticeDraftAction } from '@/app/(main)/practices/actions'
 import type { PracticePace, PracticeCadenceHint, PracticeSparkTimer } from '@/lib/ai/practice-spark'
 import { timerPreview } from '@/lib/movement'
+import { Input, Textarea } from '@/components/ui/field'
 
 // The Be Still sub-mode LABELS (naming canon: member copy never shows raw enum slugs).
 const MINDLESS_LABEL: Record<string, string> = {
@@ -58,91 +20,23 @@ const MINDLESS_LABEL: Record<string, string> = {
   ritual: 'Ritual',
 }
 
-/**
- * The three cadence hints the Spark offers. The manifest declares `answers.cadence` as the
- * `cadence` KIND, which the kit renders as free text (right for "Wednesdays, coffee after", wrong
- * here): this question feeds `PracticeCadenceHint`, a closed set of three. Until the manifest
- * declares it a `select` (the kernel's own note says a closed recurrence is a select), the Spark
- * overrides the control kind locally and keeps the value space safe.
- */
-const CADENCE_OPTIONS: { value: PracticeCadenceHint; label: string }[] = [
-  { value: 'daily', label: 'Daily' },
-  { value: 'few-times-week', label: 'A few times a week' },
-  { value: 'weekly', label: 'Weekly' },
+// The guided Practice builder, Step 1 "Spark" (ADR-358). Two ways in:
+//   • QUESTIONS — a short stepped form (who / the act / outcome / cadence + time), or
+//   • WRITTEN   — paste a Practice you already wrote and let Vera shape it into the fields.
+// Either way Vera drafts the WHOLE Practice for review, then committing creates the row and
+// drops the author into the editor. Nothing persists until that commit (deferred creation).
+// "Build it myself" creates a blank draft and opens the editor straight away.
+
+const CADENCE_CHOICES: { key: PracticeCadenceHint; label: string }[] = [
+  { key: 'daily', label: 'Daily' },
+  { key: 'few-times-week', label: 'A few times a week' },
+  { key: 'weekly', label: 'Weekly' },
 ]
-
-const CADENCE_VALUES = CADENCE_OPTIONS.map((c) => c.value)
-
-/** The four Pillars a Practice can develop. A Practice may span more than one, which is why this
- *  stays a chip group: the manifest's `domain_id` is a single loaded reference by id, and the
- *  create action takes Pillar slugs. */
-const PILLARS: { key: 'mind' | 'body' | 'spirit' | 'expression'; label: string }[] = [
-  { key: 'mind', label: 'Mind' },
-  { key: 'body', label: 'Body' },
-  { key: 'spirit', label: 'Spirit' },
-  { key: 'expression', label: 'Expression' },
-]
-
-/** Every declared field, by path. The wizard renders the MANIFEST; it never restates a field. */
-const FIELD = new Map<string, FieldDef>(PRACTICE_MANIFEST.fields.map((f) => [f.path, f]))
-
-/** The fields a Spark asks for (`placement: 'spark'` plus anything required), by path. `title` is
- *  in here because it is required; it is asked on review, where the author names what Vera drafted. */
-const ASKED = new Map<string, FieldDef>(sparkFields(PRACTICE_MANIFEST).map((f) => [f.path, f]))
-
-/**
- * The question sequence. The FIELDS come from the manifest; only the framing (which paths share a
- * screen, and the example that helps someone answer) lives here, because an example tuned to the
- * question being asked is copy, not schema.
- */
-const QUESTIONS: { label: string; title: string; description: string; paths: string[]; requires?: string }[] = [
-  {
-    label: 'Who',
-    title: 'Who is this Practice for?',
-    description: 'Tell Vera who it is for in a sentence and she drafts the whole Practice.',
-    paths: ['answers.who'],
-    requires: 'answers.who',
-  },
-  {
-    label: 'The act',
-    title: 'What do they actually do?',
-    description: 'The act, in plain words. The concrete thing, not a vibe.',
-    paths: ['answers.act'],
-    requires: 'answers.act',
-  },
-  {
-    label: 'Outcome',
-    title: 'What do they walk away with?',
-    description: 'The outcome after a week. Lead with the feeling, plainly.',
-    paths: ['answers.outcome'],
-    requires: 'answers.outcome',
-  },
-  {
-    label: 'Shape',
-    title: 'How often, and how long?',
-    description: 'Keep the ask honest. The entry version should fit in five minutes.',
-    paths: ['answers.cadence', 'answers.pace'],
-  },
-]
-
-/** The ghost example in each question's control. A placeholder is tuned to the question being
- *  asked, which is why the kit takes it as a prop rather than reading it off the manifest. */
-const PLACEHOLDER: Record<string, string> = {
-  'answers.who': 'e.g. People who wake up wired and want a calmer start.',
-  'answers.act': 'e.g. Sit for two minutes and breathe before reaching for the phone.',
-  'answers.outcome': 'e.g. Start the day a notch calmer, most mornings.',
-}
-
-/** What the review controls accept, matching what the server stores (lib/practices.ts). */
-const LIMIT = { title: 80, summary: 140, description: 280, body: 8000 } as const
 
 export function PracticeSpark() {
   const router = useRouter()
-  // 'doors' is screen one for every entity. The written path skips the questions entirely, which
-  // is why the step count differs by path.
-  const [stage, setStage] = useState<'doors' | 'questions' | 'review'>('doors')
-  const [fromSource, setFromSource] = useState(false)
-  const [qIndex, setQIndex] = useState(0)
+  const [step, setStep] = useState(1)
+  const [usingWritten, setUsingWritten] = useState(false)
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
@@ -151,7 +45,7 @@ export function PracticeSpark() {
   const [outcome, setOutcome] = useState('')
   const [cadence, setCadence] = useState<PracticeCadenceHint>('daily')
   const [pace, setPace] = useState<PracticePace>('light')
-  const [sourceText, setSourceText] = useState('') // the practice they already wrote
+  const [sourceText, setSourceText] = useState('') // the pasted, already-written practice
 
   // Vera's drafted Practice (review step, editable).
   const [title, setTitle] = useState('')
@@ -165,105 +59,16 @@ export function PracticeSpark() {
   // practice ships with its timer preset instead of the silent default sit. Shown read-only
   // on the review step; the full tuning lives in the builder after create.
   const [timer, setTimer] = useState<PracticeSparkTimer | null>(null)
-  // The mood dial (kernel/moods.ts), shown on review so it costs no extra step.
-  const [mood, setMood] = useState<SeedMood>(DEFAULT_SEED_MOOD)
-  // A header image Vera drew, once the author has kept it. Held here because this Spark has no
-  // draft object: the review step IS the state, and creation is deferred until they commit.
-  const [cover, setCover] = useState<GeneratedCover | null>(null)
 
-  // ── The two review-step offers (ADR-993 / ADR-995) ──
-  //
-  // KEPT BESPOKE: this review carries a Pillar chip group and a read-only timer preview that a
-  // one-text-box-per-row board cannot express, so it renders the two OFFER CARDS rather than the
-  // whole review board. Neither may block Create Practice, and neither does.
-  const coverState = useCoverOffer({
-    entity: PRACTICE_MANIFEST.entity,
-    manifest: PRACTICE_MANIFEST,
-    // Empty until a cover is kept, which is the truth: nothing here sets `header_image`. The path
-    // comes back from the action, so it is never restated in this file.
-    draft: cover ? { [cover.path]: cover.url } : {},
-    subject: { title, summary, mood, directions: null },
-    onApply: setCover,
-    onRemove: () => setCover(null),
-  })
-
-  // ADVICE, never a gate. Nothing is stored, and the create button never waits on it.
-  const qualityState = useQualityCheck({
-    entity: PRACTICE_MANIFEST.entity,
-    read: () =>
-      draftText([
-        ['Title', title],
-        ['Summary', summary],
-        ['Description', description],
-        ['The guide', body],
-        ['Cadence', draftCadence],
-      ]),
-  })
-
-  const source = sourceText.trim()
-
-  // One binding per asked field. The control comes from the manifest; the value stays in the exact
-  // shape sparkPracticeAction already takes.
-  const bound: Record<string, { value: string; set: (next: string) => void }> = {
-    'answers.who': { value: who, set: setWho },
-    'answers.act': { value: act, set: setAct },
-    'answers.outcome': { value: outcome, set: setOutcome },
-    'answers.cadence': {
-      value: cadence,
-      set: (next) => setCadence(CADENCE_VALUES.includes(next as PracticeCadenceHint) ? (next as PracticeCadenceHint) : 'daily'),
-    },
-    'answers.pace': { value: pace, set: (next) => setPace(next === 'medium' ? 'medium' : 'light') },
-  }
-
-  /** The declared field, with the one local control override the kernel cannot express yet. */
-  const asked = (path: string): FieldDef | null => {
-    const def = ASKED.get(path)
-    if (!def) return null
-    if (path === 'answers.cadence') return { ...def, kind: 'select', options: CADENCE_OPTIONS }
-    return def
-  }
-
-  const askField = (path: string) => {
-    const def = asked(path)
-    const bind = bound[path]
-    if (!def || !bind) return null
-    return (
-      <StudioField key={path} label={def.label}>
-        <FieldControl
-          def={def}
-          value={bind.value}
-          onChange={(next) => bind.set(Array.isArray(next) ? next.join(', ') : next)}
-          disabled={pending}
-          placeholder={PLACEHOLDER[path]}
-        />
-      </StudioField>
-    )
-  }
-
-  const reviewField = (path: string, value: string, set: (next: string) => void, max: number, placeholder?: string) => {
-    const def = FIELD.get(path)
-    if (!def) return null
-    return (
-      <StudioField label={def.label}>
-        <FieldControl
-          def={def}
-          value={value}
-          // The same cap the control used to carry as `maxLength`, and the same one
-          // lib/practices.ts applies on write, so a paste truncates instead of surprising later.
-          onChange={(next) => set((Array.isArray(next) ? next.join(', ') : next).slice(0, max))}
-          disabled={pending}
-          placeholder={placeholder}
-        />
-      </StudioField>
-    )
-  }
-
-  // ── The actions. Signatures and payloads are exactly as they were. ──
+  const onReview = step === 5
+  const total = usingWritten ? 2 : 5
+  const current = onReview ? total : usingWritten ? 1 : step
+  const label = onReview ? 'Review' : usingWritten ? 'Your practice' : ['Who', 'The act', 'Outcome', 'Shape'][step - 1]
 
   const generate = () => {
     setError(null)
     start(async () => {
-      const res = await sparkPracticeAction({ who, act, outcome, cadence, pace }, source || undefined)
+      const res = await sparkPracticeAction({ who, act, outcome, cadence, pace }, usingWritten ? sourceText : undefined)
       if (isError(res)) {
         setError(res.error)
       } else {
@@ -276,7 +81,7 @@ export function PracticeSpark() {
         setDurationMin(res.data.durationMin)
         setTimer(res.data.timer ?? null)
       }
-      setStage('review')
+      setStep(5)
     })
   }
 
@@ -293,14 +98,11 @@ export function PracticeSpark() {
         cadence: draftCadence || null,
         durationMin,
         timer,
-        // Already a real asset in the author's Loom (ADR-987). Null when they never asked for one:
-        // a Practice with no header image is a first-class outcome.
-        headerImage: cover?.url ?? null,
       }),
     )
   }
 
-  // The manual door: a blank draft, then straight into the full editor (mirrors NewPracticeButton).
+  // Escape hatch: a blank draft, then straight into the full editor (mirrors NewPracticeButton).
   const buildItMyself = () => {
     setError(null)
     start(async () => {
@@ -310,170 +112,212 @@ export function PracticeSpark() {
     })
   }
 
-  // ── Screen one: the doors ──
-
-  if (stage === 'doors') {
-    return (
-      <SparkShell
-        eyebrow="New Practice"
-        title="How do you want to start?"
-        description="Both ways make the same Practice. Pick whichever suits what you already have."
-        step={1}
-        totalSteps={QUESTIONS.length + 2}
-        stepLabel="Start"
-        error={error}
-      >
-        <SparkDoors
-          entityLabel={PRACTICE_MANIFEST.label}
-          onVera={() => {
-            setFromSource(!!source)
-            if (source) {
-              // Straight to review: the write-up answered the questions, so the only screen left
-              // is the draft itself, which reports its own "Vera is shaping…" state while it runs.
-              setStage('review')
-              generate()
-            } else {
-              setQIndex(0)
-              setStage('questions')
-            }
-          }}
-          onManual={buildItMyself}
-          veraLabel="Have Vera draft it"
-          veraHint="Answer four short questions and Vera writes the whole Practice, guide and all, for you to review."
-          manualLabel="Build it yourself"
-          manualHint="Go straight to the builder and write the guide, the Pillars, and the timer your own way."
-          disabled={pending}
-        >
-          <SparkDropzone
-            accepts={PRACTICE_MANIFEST.accepts ?? []}
-            sourceText={sourceText}
-            onSourceText={setSourceText}
-            disabled={pending}
-          />
-        </SparkDoors>
-      </SparkShell>
-    )
+  const next = () => {
+    if (usingWritten || step === 4) generate()
+    else setStep((s) => Math.min(5, s + 1))
   }
+  const back = () => setStep((s) => Math.max(1, s - 1))
 
-  // ── The question path ──
+  const canNext = usingWritten
+    ? sourceText.trim().length > 0
+    : (step === 1 && who.trim().length > 0) ||
+      (step === 2 && act.trim().length > 0) ||
+      (step === 3 && outcome.trim().length > 0) ||
+      step === 4
 
-  if (stage === 'questions') {
-    const q = QUESTIONS[qIndex]
-    const last = qIndex === QUESTIONS.length - 1
-    const answered = !q.requires || (bound[q.requires]?.value.trim().length ?? 0) > 0
+  const heading = onReview
+    ? { title: 'Here is your Practice', description: "Vera's draft. Edit anything, then create it." }
+    : usingWritten
+      ? { title: 'Paste your written practice', description: 'Drop in what you already wrote and Vera shapes it into a Practice you can review.' }
+      : [
+          { title: 'Who is this Practice for?', description: 'Tell Vera who it is for in a sentence and she drafts the whole Practice.' },
+          { title: 'What do they actually do?', description: 'The act, in plain words. The concrete thing, not a vibe.' },
+          { title: 'What do they walk away with?', description: 'The outcome after a week. Lead with the feeling, plainly.' },
+          { title: 'How often, and how long?', description: 'Keep the ask honest. The entry version should fit in five minutes.' },
+        ][step - 1]
 
-    return (
-      <SparkShell
-        eyebrow="New Practice"
-        title={q.title}
-        description={q.description}
-        step={2 + qIndex}
-        totalSteps={QUESTIONS.length + 2}
-        stepLabel={q.label}
-        onBack={() => (qIndex === 0 ? setStage('doors') : setQIndex((i) => i - 1))}
-        onNext={() => (last ? generate() : setQIndex((i) => i + 1))}
-        nextLabel={last ? 'Draft with Vera' : 'Continue'}
-        nextDisabled={!answered}
-        busy={pending}
-        error={error}
-        exits={[{ label: 'Build it yourself', onSelect: buildItMyself }]}
-      >
-        <div className="space-y-5">{q.paths.map((path) => askField(path))}</div>
-      </SparkShell>
-    )
-  }
-
-  // ── Review. Vera's draft, editable, with the mood dial. Nothing has persisted yet. ──
-
-  const drafting = pending && !title
+  const PILLARS: { key: 'mind' | 'body' | 'spirit' | 'expression'; label: string }[] = [
+    { key: 'mind', label: 'Mind' },
+    { key: 'body', label: 'Body' },
+    { key: 'spirit', label: 'Spirit' },
+    { key: 'expression', label: 'Expression' },
+  ]
 
   return (
-    <SparkShell
-      eyebrow="New Practice"
-      title="Here is your Practice"
-      description="Vera's draft. Edit anything, then create it."
-      step={fromSource ? 2 : QUESTIONS.length + 2}
-      totalSteps={fromSource ? 2 : QUESTIONS.length + 2}
-      stepLabel="Review"
-      onBack={() => {
-        if (fromSource) setStage('doors')
-        else {
-          setQIndex(QUESTIONS.length - 1)
-          setStage('questions')
-        }
-      }}
-      onNext={create}
-      nextLabel="Create Practice"
-      nextDisabled={!title.trim()}
-      busy={pending}
-      error={error}
-    >
-      {drafting ? (
-        <p className="flex items-center gap-2 rounded-card border border-border bg-canvas px-4 py-3 text-body-sm text-muted">
-          <Sparkles className="h-4 w-4 shrink-0 animate-pulse text-primary-strong" aria-hidden /> Vera is shaping your Practice…
-        </p>
-      ) : (
-        <div className="space-y-4">
-          {reviewField('title', title, setTitle, LIMIT.title, 'Name your Practice')}
-          {reviewField('summary', summary, setSummary, LIMIT.summary, 'The problem it solves, in a line')}
-          {reviewField('description', description, setDescription, LIMIT.description, "Who it's for and what they notice after a week")}
-          {reviewField('body', body, setBody, LIMIT.body, 'The steps, in plain words')}
+    <div className="mx-auto w-full max-w-lg px-4 py-10">
+      <WizardProgress current={current} total={total} label={label} />
 
-          <div>
-            <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-muted">Pillars</p>
-            <div className="flex flex-wrap gap-1.5">
-              {PILLARS.map((p) => (
-                <button
-                  key={p.key}
-                  type="button"
-                  disabled={pending}
-                  onClick={() => setPillars((prev) => (prev.includes(p.key) ? prev.filter((x) => x !== p.key) : [...prev, p.key]))}
-                  aria-pressed={pillars.includes(p.key)}
-                  className={`rounded-pill border px-3 py-1 text-meta font-medium transition-colors disabled:opacity-60 ${
-                    pillars.includes(p.key)
-                      ? 'border-primary/40 bg-primary-bg text-primary-strong'
-                      : 'border-border bg-surface text-muted hover:text-text'
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-            <p className="mt-1.5 text-2xs text-muted">
-              Pick one or more Pillars. You can change them, the cadence, and everything else in the next step.
-            </p>
-          </div>
+      <div className="mt-7">
+        <p className="mb-1.5 text-meta font-semibold uppercase tracking-widest text-primary-strong">New Practice</p>
+        <h1 id="spark-step" className="text-page-title font-bold text-text">{heading.title}</h1>
+        <p className="mt-1 text-body-sm leading-relaxed text-muted">{heading.description}</p>
 
-          {timer && (
-            <div className="rounded-card border border-border bg-canvas px-3.5 py-2.5">
-              <span className="block text-2xs font-semibold uppercase tracking-wide text-muted">How it is done</span>
-              <p className="mt-0.5 text-body-sm font-medium text-text">
-                {timerPreview({
-                  timerKind: timer.timerKind,
-                  movementConfig: timer.movementMode ? { mode: timer.movementMode } : null,
-                  durationMin,
-                })}
-                {timer.mindlessMode && timer.timerKind === 'mindless' ? ` · ${MINDLESS_LABEL[timer.mindlessMode] ?? ''}` : ''}
-              </p>
-              <p className="mt-0.5 text-2xs text-muted">Vera set the timer to match the act. Tune every part of it in the next step.</p>
+        <div className="mt-5">
+          {/* WRITTEN path — paste a Practice you already have and let Vera shape it. */}
+          {usingWritten && !onReview && (
+            <Textarea
+              autoFocus
+              aria-labelledby="spark-step"
+              value={sourceText}
+              onChange={(e) => setSourceText(e.target.value)}
+              rows={9} className="py-2.5"
+              placeholder="Paste your practice here, the steps and how to do it, anything you've already written…"
+            />
+          )}
+
+          {!usingWritten && step === 1 && (
+            <>
+              <Textarea autoFocus aria-labelledby="spark-step" value={who} onChange={(e) => setWho(e.target.value)} rows={3} className="py-2.5" placeholder="e.g. People who wake up wired and want a calmer start." />
+              {/* Second path: drop in a Practice you already wrote and let Vera shape it. */}
+              <button
+                type="button"
+                onClick={() => { setUsingWritten(true); setStep(1) }}
+                className="mt-3 flex w-full items-center gap-3 rounded-xl border border-dashed border-primary/40 bg-primary-bg/20 px-4 py-3 text-left transition-colors hover:bg-primary-bg/40"
+              >
+                <Upload className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
+                <span className="min-w-0">
+                  <span className="block text-body-sm font-semibold text-text">Already have the practice written?</span>
+                  <span className="block text-meta leading-snug text-muted">Paste what you wrote and Vera shapes it into a Practice for you to review.</span>
+                </span>
+              </button>
+            </>
+          )}
+          {!usingWritten && step === 2 && (
+            <Textarea autoFocus aria-labelledby="spark-step" value={act} onChange={(e) => setAct(e.target.value)} rows={3} className="py-2.5" placeholder="e.g. Sit for two minutes and breathe before reaching for the phone." />
+          )}
+          {!usingWritten && step === 3 && (
+            <Textarea autoFocus aria-labelledby="spark-step" value={outcome} onChange={(e) => setOutcome(e.target.value)} rows={3} className="py-2.5" placeholder="e.g. Start the day a notch calmer, most mornings." />
+          )}
+          {!usingWritten && step === 4 && (
+            <div className="space-y-5">
+              <div>
+                <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">How often</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  {CADENCE_CHOICES.map((c) => (
+                    <button key={c.key} type="button" onClick={() => setCadence(c.key)} aria-pressed={cadence === c.key}
+                      className={`rounded-pill border px-3.5 py-1.5 text-body-sm font-medium transition-colors ${cadence === c.key ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}>
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Time a session</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {([['light', 'Light', 'Five minutes or less'], ['medium', 'Medium', 'Ten to twenty minutes']] as const).map(([key, lbl, hint]) => (
+                    <button key={key} type="button" onClick={() => setPace(key)} aria-pressed={pace === key}
+                      className={`rounded-control border px-3 py-2.5 text-left transition-colors ${pace === key ? 'border-primary/50 bg-primary-bg' : 'border-border bg-surface hover:bg-surface-elevated'}`}>
+                      <span className="block text-body-sm font-semibold text-text">{lbl}</span>
+                      <span className="block text-meta text-muted">{hint}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
-          {/* Both optional, both skippable: a header image Vera can draw, and a read before it
-              goes out. */}
-          <SparkOffers cover={coverState.offer} quality={qualityState.check} disabled={pending} />
-
-          {/* The mood dial (kernel/moods.ts). On review, so it costs no extra step. */}
-          <SparkSteer
-            steer={{ mood: PRACTICE_MANIFEST.steer?.mood }}
-            mood={mood}
-            onMood={setMood}
-            directions=""
-            onDirections={() => {}}
-            disabled={pending}
-          />
+          {/* REVIEW */}
+          {onReview && (
+            <div className="space-y-3">
+              {pending && !title ? (
+                <p className="flex items-center gap-2 rounded-card border border-border bg-canvas px-4 py-3 text-body-sm text-muted">
+                  <Sparkles className="h-4 w-4 shrink-0 animate-pulse text-primary-strong" aria-hidden /> Vera is shaping your Practice…
+                </p>
+              ) : (
+                <>
+                  <label className="block">
+                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Name</span>
+                    <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} className="font-semibold py-2.5" placeholder="Name your Practice" />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Card hook</span>
+                    <Input value={summary} onChange={(e) => setSummary(e.target.value)} maxLength={140} className="py-2.5" placeholder="The problem it solves, in a line" />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Description</span>
+                    <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} maxLength={280} className="py-2.5" placeholder="Who it's for and what they notice after a week" />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Guide</span>
+                    <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6} maxLength={8000} className="py-2.5" placeholder="The steps, in plain words" />
+                  </label>
+                  <div>
+                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Pillars</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {PILLARS.map((p) => (
+                        <button
+                          key={p.key}
+                          type="button"
+                          onClick={() => setPillars((prev) => (prev.includes(p.key) ? prev.filter((x) => x !== p.key) : [...prev, p.key]))}
+                          aria-pressed={pillars.includes(p.key)}
+                          className={`rounded-pill border px-3 py-1 text-meta font-medium transition-colors ${pillars.includes(p.key) ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mt-1.5 text-2xs text-muted">Pick one or more Pillars. You can change them, the cadence, and everything else in the next step.</p>
+                  </div>
+                  {timer && (
+                    <div className="rounded-card border border-border bg-canvas px-3.5 py-2.5">
+                      <span className="block text-2xs font-semibold uppercase tracking-wide text-muted">How it&apos;s done</span>
+                      <p className="mt-0.5 text-body-sm font-medium text-text">
+                        {timerPreview({
+                          timerKind: timer.timerKind,
+                          movementConfig: timer.movementMode ? { mode: timer.movementMode } : null,
+                          durationMin,
+                        })}
+                        {timer.mindlessMode && timer.timerKind === 'mindless'
+                          ? ` · ${MINDLESS_LABEL[timer.mindlessMode] ?? ''}`
+                          : ''}
+                      </p>
+                      <p className="mt-0.5 text-2xs text-muted">
+                        Vera set the timer to match the act. Tune every part of it in the next step.
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
+
+        {error && <p className="mt-4 text-body-sm text-warning">{error}</p>}
+
+        <div className="mt-7 flex gap-3">
+          {(step > 1 || (usingWritten && !onReview)) && (
+            <button type="button" onClick={usingWritten && !onReview ? () => setUsingWritten(false) : back} disabled={pending} className={`${wizardSecondaryClass} flex-1`}>
+              <ArrowLeft className="h-4 w-4" /> Back
+            </button>
+          )}
+          {!onReview ? (
+            <button type="button" onClick={next} disabled={!canNext || pending} className={`${wizardPrimaryClass} ${step > 1 || usingWritten ? 'flex-1' : 'w-full'}`}>
+              {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : usingWritten || step === 4 ? <Sparkles className="h-4 w-4" /> : null}
+              {usingWritten || step === 4 ? 'Draft with Vera' : 'Continue'}
+            </button>
+          ) : (
+            <button type="button" onClick={create} disabled={!title.trim() || pending} className={`${wizardPrimaryClass} flex-1`}>
+              {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Create Practice
+            </button>
+          )}
+        </div>
+      </div>
+
+      {!onReview && (
+        <p className="mt-8 text-center text-meta text-subtle">
+          {!usingWritten && (
+            <>
+              <button type="button" onClick={() => { setUsingWritten(true); setStep(1) }} className="underline-offset-4 transition-colors hover:text-muted hover:underline">
+                Already have the practice written? Paste it
+              </button>
+              <span className="px-1.5 text-border" aria-hidden>·</span>
+            </>
+          )}
+          <button type="button" onClick={buildItMyself} disabled={pending} className="underline-offset-4 transition-colors hover:text-muted hover:underline disabled:opacity-60">
+            Skip, I&apos;ll build it myself
+          </button>
+        </p>
       )}
-    </SparkShell>
+    </div>
   )
 }

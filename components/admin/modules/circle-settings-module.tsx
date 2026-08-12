@@ -64,7 +64,7 @@ export function CircleSettingsModule() {
 
   if (!slug) return null
   if (loading) {
-    return <div className="h-48 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
+    return <div className="h-48 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
   }
   if (!data) return null // not permitted / not found → no chrome
 
@@ -220,7 +220,7 @@ export function CircleSettingsModule() {
       <div className="space-y-1.5">
         <span className={fieldLabel}>Permalink</span>
         <div className="flex items-center gap-2">
-          <span className="flex flex-1 items-center rounded-control border border-border bg-surface px-3 text-body-sm text-subtle">
+          <span className="flex flex-1 items-center rounded-lg border border-border bg-surface px-3 text-body-sm text-subtle">
             <span className="shrink-0">/circles/</span>
             <Input
               variant="seamless"
@@ -234,7 +234,7 @@ export function CircleSettingsModule() {
             type="button"
             onClick={handlePermalink}
             disabled={permaPending || !permalink.trim() || permalink.trim() === data.slug}
-            className="inline-flex shrink-0 items-center rounded-control border border-border bg-surface px-3 py-2 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
+            className="inline-flex shrink-0 items-center rounded-lg border border-border bg-surface px-3 py-2 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
           >
             {permaPending ? 'Saving…' : 'Update'}
           </button>

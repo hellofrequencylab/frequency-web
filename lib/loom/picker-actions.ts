@@ -15,7 +15,7 @@
 
 import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getSpaceById, getSpaceBySlug, loadRootSpaceId } from '@/lib/spaces/store'
+import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { listOperatedSpaces } from '@/lib/spaces/operated'
 import {
@@ -30,8 +30,7 @@ import { resolveElement } from '@/lib/elements/store'
 import { elementDef } from '@/lib/elements/registry'
 import { elementFeatureOn, elementChoice, type ViewerRoleCtx } from '@/lib/elements/config'
 
-/** One selectable Loom scope in the picker's left rail. `key` is 'mine', or a Space (by id OR slug —
- *  see spaceForScopeKey: the page/block editors only ever carry the slug). */
+/** One selectable Loom scope in the picker's left rail. `key` is 'mine' or a Space id. */
 export interface LoomScope {
   key: string
   label: string
@@ -102,8 +101,7 @@ export async function loomScopes(): Promise<{ scopes: LoomScope[]; config: LoomP
 }
 
 /** ONE authorized Loom scope + the role-gated config, for a picker locked to a single context (the
- *  Space/profile/page being edited; `scopeKey` is 'mine', a Space id, or a Space slug). Unlike
- *  loomScopes() this never lists every operated Space: it
+ *  Space/profile/page being edited). Unlike loomScopes() this never lists every operated Space: it
  *  authorizes just `scopeKey` (via resolveScope) and returns that one scope's label, or `scope: null`
  *  when the caller cannot read it. FAIL-SAFE — an unauthorized/missing scopeKey yields a null scope +
  *  default config, never a throw. */
@@ -120,7 +118,7 @@ export async function loomScope(
   if (!resolved) return { scope: null, config }
   let label = 'This library'
   try {
-    const space = await spaceForScopeKey(scopeKey)
+    const space = await getSpaceById(scopeKey)
     if (space?.name) label = space.name
   } catch {
     // keep the fallback label
@@ -128,18 +126,8 @@ export async function loomScope(
   return { scope: { key: scopeKey, label, kind: 'space' }, config }
 }
 
-/** The Space a scope key names: its id, else its SLUG. Both are accepted because the surfaces that lock
- *  the picker to one library carry different handles — the settings forms hold the Space id, while the
- *  page/block editors (the profile builder, the on-canvas editor, the Puck space editor) only ever carry
- *  the slug. Neither is trusted: the key is just a lookup, and every caller re-gates on the resolved
- *  Space below (mirrors lib/page-editor/space-editor-context, where the slug is UX plumbing only). */
-async function spaceForScopeKey(scopeKey: string) {
-  return (await getSpaceById(scopeKey)) ?? (await getSpaceBySlug(scopeKey))
-}
-
 /** Resolve + AUTHORIZE a scope key to a concrete query scope. 'mine' = the caller's personal Loom;
- *  a Space (id or slug) requires the caller to manage that Space (owner/admin/editor). Null on any miss.
- *  The returned `spaceId` is always the resolved Space's REAL id, whichever handle came in. */
+ *  a Space id requires the caller to manage that Space (owner/admin/editor). Null on any miss. */
 async function resolveScope(
   callerId: string,
   scopeKey: string,
@@ -160,11 +148,11 @@ async function resolveScope(
   // FAIL-SAFE: a transient DB error resolving/authorizing the space must not throw (the picker's
   // contract is "never a throw" → an empty, safe picker), so swallow it to a null (unauthorized) scope.
   try {
-    const space = await spaceForScopeKey(scopeKey)
+    const space = await getSpaceById(scopeKey)
     if (!space) return null
     const caps = await getSpaceCapabilities(space, callerId)
     if (!caps.canEditProfile) return null
-    return { spaceId: space.id }
+    return { spaceId: scopeKey }
   } catch {
     return null
   }

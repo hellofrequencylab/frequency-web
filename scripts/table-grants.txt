@@ -107,7 +107,6 @@ event_dispatches                     authenticated
 event_embeddings                     internal
 event_guests                         authenticated
 event_host_transfers                 internal
-event_intake                         internal
 event_media                          authenticated
 event_placement_requests             internal
 event_post_reactions                 authenticated
@@ -277,7 +276,6 @@ store_redemptions                    authenticated
 streaks                              authenticated
 stripe_webhook_events                internal
 studio_site_changes                  authenticated
-studio_steer                         internal
 subject_topic_preferences            authenticated
 suggestion_hidden                    authenticated
 support_ticket_messages              authenticated

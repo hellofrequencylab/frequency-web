@@ -309,7 +309,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
       <button
         type="button"
         onClick={close}
-        className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
       >
         Done
       </button>
@@ -325,7 +325,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             type="button"
             onClick={() => setIconOpen((v) => !v)}
             aria-label="Choose an icon or photo"
-            className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-card bg-primary-bg text-primary-strong transition-transform hover:scale-105"
+            className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-primary-bg text-primary-strong transition-transform hover:scale-105"
           >
             {headerImage ? (
               // Unoptimized: user-controlled host + Supabase Storage, not a configured next/image domain.
@@ -335,7 +335,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             )}
           </button>
           {iconOpen && (
-            <div className="absolute left-0 top-[4.5rem] z-10 w-64 max-w-[calc(100vw-2rem)] rounded-card border border-border bg-surface p-3 lift-3">
+            <div className="absolute left-0 top-[4.5rem] z-10 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-surface p-3 lift-3">
               <div className="grid grid-cols-5 gap-1">
                 {/* Every one of these shipped with NO accessible name: icon-only, the glyph
                     marked nothing, so a screen reader read ten buttons called "button" and the
@@ -409,7 +409,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                 type="button"
                 aria-pressed={active}
                 onClick={() => toggleFocus(p.id)}
-                className={`min-h-11 rounded-control border px-3 py-2 text-body-sm font-medium transition-colors ${
+                className={`min-h-11 rounded-lg border px-3 py-2 text-body-sm font-medium transition-colors ${
                   active
                     ? 'border-primary/50 bg-primary-bg text-primary-strong'
                     : 'border-border bg-surface text-muted hover:bg-surface-elevated'
@@ -430,7 +430,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             const detail = focusDetails[pillarId] ?? { instructions: '', timing: '' }
             const name = props.pillars.find((p) => p.id === pillarId)?.name ?? 'Focus'
             return (
-              <fieldset key={pillarId} className="rounded-control border border-border bg-surface p-3">
+              <fieldset key={pillarId} className="rounded-lg border border-border bg-surface p-3">
                 <legend className="px-1 text-2xs font-semibold uppercase tracking-wide text-muted">{name}</legend>
                 <div className="space-y-3">
                   <StudioField label="Instructions">
@@ -541,7 +541,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                 disabled={!allowed}
                 title={allowed ? undefined : `Needs a ${floor}+ min practice`}
                 onClick={() => { if (!allowed) return; setWeightClass(w.value); queueSave({ weight_class: w.value }) }}
-                className={`flex min-h-11 flex-col items-center justify-center rounded-control border px-3 py-2 text-body-sm font-medium transition-colors ${
+                className={`flex min-h-11 flex-col items-center justify-center rounded-lg border px-3 py-2 text-body-sm font-medium transition-colors ${
                   active
                     ? 'border-primary/50 bg-primary-bg text-primary-strong'
                     : !allowed
@@ -600,7 +600,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                     queueSave({ timer_kind: 'none', movement_config: null })
                   }
                 }}
-                className={`flex min-h-11 flex-col items-start justify-center rounded-control border px-3 py-2 text-body-sm font-medium transition-colors ${
+                className={`flex min-h-11 flex-col items-start justify-center rounded-lg border px-3 py-2 text-body-sm font-medium transition-colors ${
                   active ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:bg-surface-elevated'
                 }`}
               >
@@ -635,7 +635,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                       setMovementMode(m.mode)
                       saveMovement({}, m.mode)
                     }}
-                    className={`flex min-h-11 items-center justify-center rounded-control border px-2 py-2 text-body-sm font-medium transition-colors ${
+                    className={`flex min-h-11 items-center justify-center rounded-lg border px-2 py-2 text-body-sm font-medium transition-colors ${
                       active ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:bg-surface-elevated'
                     }`}
                   >
@@ -716,7 +716,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
               )}
 
               {movementMode === 'play' && (
-                <p className="rounded-control border border-border bg-surface px-3 py-2 text-meta text-subtle">
+                <p className="rounded-lg border border-border bg-surface px-3 py-2 text-meta text-subtle">
                   An open count-up. The member starts, moves, and stops when they are done. Nothing to preset.
                 </p>
               )}
@@ -792,7 +792,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
         {/* LIVE LAUNCH PREVIEW (PRACTICE-TIMER-CONTINUITY P5): the exact summary line the member's
             card + detail page render (the same pure timerPreview the cards call), recomputed live
             as the creator edits. The creator sees what they are shipping, not an approximation. */}
-        <p className="mt-3 rounded-control bg-surface-elevated px-3 py-2 text-meta text-text">
+        <p className="mt-3 rounded-lg bg-surface-elevated px-3 py-2 text-meta text-text">
           <span className="font-semibold">Members will see:</span>{' '}
           {timerPreview({
             timerKind,
@@ -840,7 +840,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
 
       {/* Reward override — admin only. Overrides the weight-class payout + sets the card note. */}
       {props.isAdmin && (
-        <fieldset className="mt-4 rounded-control border border-warning/30 bg-warning-bg/20 p-3">
+        <fieldset className="mt-4 rounded-lg border border-warning/30 bg-warning-bg/20 p-3">
           <legend className="px-1 text-2xs font-semibold uppercase tracking-wide text-warning">Reward override · admin</legend>
           <div className="grid gap-4 sm:grid-cols-2">
             <StudioField label="Zap reward override">
@@ -933,7 +933,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                   if (!isError(res)) setSubmittedNow(true)
                 })
               }}
-              className="mt-2.5 inline-flex min-h-9 items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+              className="mt-2.5 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
             >
               {submitting ? 'Submitting…' : submittedNow ? 'Submitted' : 'Submit to the library'}
             </button>
@@ -953,7 +953,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           type="button"
           onClick={() => setConfirmDelete(true)}
           disabled={deleting}
-          className="mt-2 inline-flex items-center gap-1.5 rounded-control border border-danger/30 px-3 py-2 text-body-sm font-medium text-danger transition-colors hover:bg-danger-bg/40 disabled:opacity-60"
+          className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-danger/30 px-3 py-2 text-body-sm font-medium text-danger transition-colors hover:bg-danger-bg/40 disabled:opacity-60"
         >
           <Trash2 className="h-4 w-4" /> Delete this practice
         </button>
@@ -987,7 +987,7 @@ function MoveChip({ active, onClick, title, children }: { active: boolean; onCli
       aria-checked={active}
       title={title}
       onClick={onClick}
-      className={`min-h-9 rounded-control border px-3 py-1.5 text-body-sm font-medium transition-colors ${
+      className={`min-h-9 rounded-lg border px-3 py-1.5 text-body-sm font-medium transition-colors ${
         active ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:bg-surface-elevated'
       }`}
     >
@@ -999,12 +999,12 @@ function MoveChip({ active, onClick, title, children }: { active: boolean; onCli
 // A compact −/value/+ stepper for a single numeric setting (Work, Rest, Rounds, length).
 function MoveStepper({ label, value, onLess, onMore }: { label: string; value: string | number; onLess: () => void; onMore: () => void }) {
   return (
-    <div className="rounded-control border border-border bg-surface px-2 py-1.5 text-center">
+    <div className="rounded-lg border border-border bg-surface px-2 py-1.5 text-center">
       <p className="text-2xs font-semibold uppercase tracking-wide text-muted">{label}</p>
       <div className="mt-0.5 flex items-center justify-between gap-1">
-        <button type="button" aria-label={`Less ${label}`} onClick={onLess} className="h-6 w-6 rounded-control border border-border text-muted transition-colors hover:bg-surface-elevated">−</button>
+        <button type="button" aria-label={`Less ${label}`} onClick={onLess} className="h-6 w-6 rounded-md border border-border text-muted transition-colors hover:bg-surface-elevated">−</button>
         <span className="min-w-8 text-body-sm font-semibold tabular-nums text-text">{value}</span>
-        <button type="button" aria-label={`More ${label}`} onClick={onMore} className="h-6 w-6 rounded-control border border-border text-muted transition-colors hover:bg-surface-elevated">+</button>
+        <button type="button" aria-label={`More ${label}`} onClick={onMore} className="h-6 w-6 rounded-md border border-border text-muted transition-colors hover:bg-surface-elevated">+</button>
       </div>
     </div>
   )

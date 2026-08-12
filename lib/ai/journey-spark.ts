@@ -1,16 +1,18 @@
-// Vera's "Spark" for the guided Journey builder (ADR-302). From a few light onboarding answers
-// (who it's for, what it's about, the outcome, how many weeks, the daily pace), Vera drafts the
-// Journey's identity plus the weekly arc. The four-Pillar practices are drafted in later steps.
-//
-// This file is now a DECLARATION (ADR-990): the tool schema, the tier, the system prompt, the
-// budget key, and the coercer. The kill switch, the budget gate, the forced-tool call, the voice
-// primer, the mood dial, the usage ledger, and the degrade-to-null are all runSpark's job
-// (lib/ai/spark.ts), shared with every other entity. Degrades to null when AI is off, so the
-// wizard lets the author type the identity by hand.
+// Vera's "Spark" — the opening step of the guided Journey builder (ADR-302). From a few light
+// onboarding answers (who it's for, what it's about, the outcome, how many weeks, the daily pace),
+// Vera drafts the Journey's IDENTITY only: a title, a one-line promise, and a short overview. The
+// arc (weekly Phases) and the four-Pillar practices are drafted in later steps. Mirrors
+// lib/ai/journey-composition.ts: forced-tool structured output + the voice primer + the usage
+// ledger, never trusting the raw shape. Degrades to null when AI is off (the wizard then lets the
+// author type the identity by hand).
 
 import type Anthropic from '@anthropic-ai/sdk'
-import type { SeedMood } from '@/lib/studio/kernel/moods'
-import { defineSpark, runSpark, sparkStr, sparkStrArray, sparkStrOrNull, sparkInt, sparkEnum } from './spark'
+import { completeRaw } from './complete'
+import { aiEnabled } from './client'
+import { MODELS } from './models'
+import { estimateCostUsd } from './budget'
+import { recordAiUsage, featureOverBudget } from './usage'
+import { withVoice } from './voice'
 import { withJourneyShape } from './journey-shape'
 
 const FEATURE = 'journey-spark'
@@ -32,8 +34,6 @@ export interface SparkAnswers {
   weeks: number
   /** Roughly how much time a day. */
   pace: JourneyPace
-  /** The MOOD dial (ADR-986): steers TONE only. It never changes what is true, just how it reads. */
-  mood?: SeedMood
 }
 
 /** One week of the arc: a short focus title + a one-line description. */
@@ -146,21 +146,13 @@ How to write:
 - No jargon, no mysticism, no emoji, no em dashes.
 - Always call the ${TOOL_NAME} tool.`
 
-/** The declared Journey spark. `weeks` rides along as the coercer's context so the arc is
- *  clamped to the length the AUTHOR asked for, never the length the model felt like returning. */
-export const JOURNEY_SPARK = defineSpark<JourneySpark, number>({
-  entity: 'journey',
-  feature: FEATURE,
-  tier: SPARK_TIER,
-  maxTokens: 600,
-  tool: TOOL,
-  system: withJourneyShape(SYSTEM),
-  coerce,
-})
-
 export async function draftJourneySpark(
   input: SparkAnswers & { profileId?: string | null; sourceText?: string },
 ): Promise<JourneySpark | null> {
+  if (!aiEnabled()) return null
+  // Per-feature daily cap (lib/ai/budget.ts): over budget => fall back to hand-entry, never bill on.
+  if (await featureOverBudget(FEATURE)) return null
+
   const src = input.sourceText?.trim().slice(0, 8000)
   const userText = [
     src
@@ -177,21 +169,38 @@ export async function draftJourneySpark(
     .filter(Boolean)
     .join('\n')
 
-  return runSpark(JOURNEY_SPARK, {
-    content: userText,
-    context: input.weeks,
-    mood: input.mood,
-    profileId: input.profileId,
-  })
+  try {
+    const res = await completeRaw({
+      tier: SPARK_TIER,
+      maxTokens: 600,
+      thinking: { type: 'disabled' },
+      system: withVoice(withJourneyShape(SYSTEM)),
+      tools: [TOOL],
+      toolChoice: { type: 'tool', name: TOOL_NAME },
+      messages: [{ role: 'user', content: userText }],
+    })
+    void recordAiUsage({
+      feature: FEATURE,
+      model: MODELS[SPARK_TIER],
+      usage: res.usage,
+      costUsd: estimateCostUsd(SPARK_TIER, res.usage),
+      profileId: input.profileId ?? null,
+    })
+    const block = res.content.find(
+      (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === TOOL_NAME,
+    )
+    return block ? coerce(block.input, input.weeks) : null
+  } catch {
+    return null
+  }
 }
 
-/** Re-coerce every field. Never trust the raw model shape. */
-export function coerce(raw: unknown, weeks: number): JourneySpark | null {
+function coerce(raw: unknown, weeks: number): JourneySpark | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Record<string, unknown>
-  const title = sparkStr(r.title, 80)
-  const promise = sparkStr(r.promise, 200)
-  const overview = sparkStr(r.overview, 1200)
+  const title = typeof r.title === 'string' ? r.title.trim().slice(0, 80) : ''
+  const promise = typeof r.promise === 'string' ? r.promise.trim().slice(0, 200) : ''
+  const overview = typeof r.overview === 'string' ? r.overview.trim().slice(0, 1200) : ''
   if (!title) return null
 
   // The weekly arc — one entry per week, clamped to the requested length.
@@ -202,30 +211,40 @@ export function coerce(raw: unknown, weeks: number): JourneySpark | null {
       if (arc.length >= want) break
       if (!w || typeof w !== 'object') continue
       const ww = w as Record<string, unknown>
-      const wt = sparkStr(ww.title, 80)
-      const wf = sparkStr(ww.focus, 300)
+      const wt = typeof ww.title === 'string' ? ww.title.trim().slice(0, 80) : ''
+      const wf = typeof ww.focus === 'string' ? ww.focus.trim().slice(0, 300) : ''
       if (wt) arc.push({ title: wt, focus: wf })
     }
   }
 
-  // Settings: only what Vera lifted from the outline. Everything else stays null/empty.
+  // Settings — only what Vera lifted from the outline; everything else stays null/empty.
   const s = (r.settings && typeof r.settings === 'object' ? r.settings : {}) as Record<string, unknown>
+  const diff = typeof s.difficulty === 'string' ? s.difficulty.trim().toLowerCase() : ''
+  const tags = Array.isArray(s.tags)
+    ? s.tags.filter((t): t is string => typeof t === 'string').map((t) => t.trim().slice(0, 40)).filter(Boolean).slice(0, 6)
+    : []
+  const dm = typeof s.daily_minutes === 'number' && Number.isFinite(s.daily_minutes) ? Math.max(1, Math.min(600, Math.floor(s.daily_minutes))) : null
   const settings: SparkSettings = {
-    difficulty: sparkEnum(s.difficulty, ['gentle', 'standard', 'deep'] as const),
-    category: sparkStrOrNull(s.category, 60),
-    tags: sparkStrArray(s.tags, 40, 6),
-    dailyMinutes: sparkInt(s.daily_minutes, 1, 600),
+    difficulty: diff === 'gentle' || diff === 'standard' || diff === 'deep' ? diff : null,
+    category: typeof s.category === 'string' && s.category.trim() ? s.category.trim().slice(0, 60) : null,
+    tags,
+    dailyMinutes: dm,
   }
 
-  // Meeting / format: only what Vera lifted from the outline, everything else stays null. Bounds
+  // Meeting / format — only what Vera lifted from the outline; everything else stays null. Bounds
   // mirror normalizeJourneyMeeting (lib/journey-plans.ts) so what we collect survives that re-normalize.
   const m = (r.meeting && typeof r.meeting === 'object' ? r.meeting : {}) as Record<string, unknown>
+  const mstr = (v: unknown, max: number): string | null => {
+    const t = typeof v === 'string' ? v.trim() : ''
+    return t ? t.slice(0, max) : null
+  }
+  const fmt = typeof m.format === 'string' ? m.format.trim().toLowerCase() : ''
   const meeting: SparkMeeting = {
-    format: sparkEnum(m.format, ['virtual', 'in_person', 'hybrid'] as const),
-    schedule: sparkStrOrNull(m.schedule, 120),
-    timezone: sparkStrOrNull(m.timezone, 40),
-    location: sparkStrOrNull(m.location, 200),
-    link: sparkStrOrNull(m.link, 500),
+    format: fmt === 'virtual' || fmt === 'in_person' || fmt === 'hybrid' ? fmt : null,
+    schedule: mstr(m.schedule, 120),
+    timezone: mstr(m.timezone, 40),
+    location: mstr(m.location, 200),
+    link: mstr(m.link, 500),
   }
 
   return { title, promise, overview, arc, settings, meeting }

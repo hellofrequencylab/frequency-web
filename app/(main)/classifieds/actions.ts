@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache'
 import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { draftListingCopy, type ListingCopy } from '@/lib/ai/listing-copy'
 import {
   createListing, updateListing, setListingStatus, deleteListing, listingAuthorId,
   type ListingInput, type ListingPatch, type ListingStatus,
@@ -36,38 +35,6 @@ export async function createListingAction(input: ListingInput): Promise<ActionRe
   if (!listing) return fail('Could not post the listing. Try again.')
   revalidatePath('/classifieds')
   return ok({ id: listing.id })
-}
-
-/** How each listing kind is described to Vera. Plain, and never "for sale": the board takes no
- *  payment, so the copy must not imply a checkout (docs/NAMING.md, Classifieds is connect-only). */
-const KIND_FRAMING: Record<string, string> = {
-  offer: 'something a neighbour is offering to another neighbour on a community board (no checkout, they arrange it between themselves)',
-  free: 'something a neighbour is giving away for free on a community board',
-  lend: 'something a neighbour is lending out on a community board, to be borrowed and returned',
-  request: 'a neighbour asking whether anyone nearby has a thing they need, on a community board',
-}
-
-/**
- * Draft the headline + details for a Classifieds listing with Vera (the Spark's first door, ADR-986).
- * Posting is free for any signed-in member, so the gate here is exactly that: signed in.
- *
- * NEVER throws and never blocks: draftListingCopy falls back to a deterministic draft when Vera is off
- * or over budget, and a signed-out caller gets empty copy (the Spark then leaves its fields alone).
- */
-export async function draftBoardListingCopyAction(input: {
-  kind?: string | null
-  seed?: string | null
-}): Promise<ListingCopy> {
-  const profileId = await getMyProfileId()
-  if (!profileId) return { title: '', description: '' }
-  return draftListingCopy({
-    // A Classifieds listing is not a commerce row at all. `kind` only picks the default framing, which
-    // `framing` overrides with the truth for this board.
-    kind: 'physical',
-    framing: KIND_FRAMING[String(input.kind ?? 'offer')] ?? KIND_FRAMING.offer,
-    seed: input.seed ?? null,
-    profileId,
-  })
 }
 
 export async function updateListingAction(id: string, patch: ListingPatch): Promise<ActionResult> {

@@ -36,7 +36,7 @@ vi.mock('@/lib/site', () => ({ SITE_URL: 'https://frequencylocal.com' }))
 vi.mock('@/lib/achievements', () => ({ processGamificationEvent: vi.fn(async () => {}) }))
 vi.mock('@/lib/gems', () => ({ awardGems: vi.fn(async () => {}) }))
 vi.mock('@/lib/analytics/track', () => ({ track: vi.fn(async () => {}) }))
-vi.mock('@/lib/ai/circle-spark', () => ({
+vi.mock('@/lib/ai/circle-wizard', () => ({
   suggestCircleDraft: vi.fn(async () => null),
   fallbackCircleSuggestion: vi.fn(() => ({})),
 }))

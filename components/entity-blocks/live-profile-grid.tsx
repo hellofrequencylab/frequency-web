@@ -12,6 +12,7 @@ import { useSpaceEditMode } from './space-edit-mode'
 import { SpaceCanvasBlock } from './space-canvas/space-canvas-block'
 import { SpaceEditNotice } from './space-edit-notice'
 import { SpacePublishFab } from './space-publish-fab'
+import type { UploadImage } from './block-edit-panel'
 
 // THE LIVE PROFILE GRID (ADR-516 Phase C). The live-preview surface the in-rail builder edits. Every
 // candidate block is rendered ONCE, server-side, into a keyed node map (`nodes`); this client wrapper places
@@ -39,6 +40,7 @@ export function LiveProfileGrid({
   spaceSlug,
   profilePublished = true,
   hasUnpublishedChanges = false,
+  uploadImage,
 }: {
   /** Every candidate block, pre-rendered server-side (UNSTYLED) and keyed by block id. */
   nodes: Record<string, ReactNode>
@@ -60,6 +62,11 @@ export function LiveProfileGrid({
    *  who closed the admin rail can still see that their page has changes the network cannot see yet.
    *  Owner report: card-view edits sat unpublished for days and read as a rendering bug. */
   hasUnpublishedChanges?: boolean
+  /** Gated image upload for the on-page photo popup (SPACE owner preview only; ADR-542). Threaded down to
+   *  SpaceCanvasBlock so the popup can UPLOAD a file, not just PASTE a URL — the SAME owner-gated,
+   *  service-role action the /manage/layout rail editor uses. Optional + fail-safe: when it is absent (a
+   *  non-owner / no-upload surface) the popup still works for URL paste exactly as before. */
+  uploadImage?: UploadImage
 }) {
   const store = useProfileLayout()
   const editMode = useSpaceEditMode()
@@ -148,10 +155,9 @@ export function LiveProfileGrid({
               id={id}
               props={content[id] ?? {}}
               node={nodes[id]}
-              // Every on-page photo slot opens the ONE Loom picker, locked to the library being edited: this
-              // Space (by slug) on the Space preview, the caller's own uploads on a member grid. The Loom
-              // re-resolves + re-gates that scope server-side, so the key is UX plumbing only.
-              loomScope={spaceSlug ?? 'mine'}
+              // Thread the space upload action to the on-page photo popup so it can UPLOAD a file (not only
+              // paste a URL). Undefined on a non-owner surface, where the popup falls back to URL paste.
+              uploadImage={uploadImage}
               onField={(k, v) => setField(id, k, v)}
             />
           </BlockStyleFrame>

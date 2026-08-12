@@ -40,7 +40,7 @@ export function CircleQuestModule() {
 
   if (!slug) return null
   if (loading) {
-    return <div className="h-24 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
+    return <div className="h-24 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
   }
   if (!data) return null // not permitted / not found → no chrome
 
@@ -71,7 +71,7 @@ function QuestList({ label, items, empty }: { label: string; items: CircleQuestI
             <li key={item.id}>
               <Link
                 href={item.href}
-                className="block truncate rounded-control px-2 py-1 text-body-sm text-text hover:bg-surface-elevated hover:text-primary-strong transition-colors"
+                className="block truncate rounded-md px-2 py-1 text-body-sm text-text hover:bg-surface-elevated hover:text-primary-strong transition-colors"
               >
                 {item.title}
               </Link>

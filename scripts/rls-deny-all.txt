@@ -37,7 +37,6 @@ entry_template_settings
 event_blurb_cache
 event_embeddings
 event_host_transfers
-event_intake
 event_placement_requests
 financial_transactions
 founding_members
@@ -85,7 +84,6 @@ space_follower_event_reminders_sent
 space_function_type_defaults
 space_venue_holds
 stripe_webhook_events
-studio_steer
 team_members
 trust_scores
 trust_signals
