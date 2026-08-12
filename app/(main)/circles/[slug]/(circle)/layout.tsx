@@ -2,14 +2,14 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Users, MapPin, Settings, EyeOff, LayoutDashboard } from 'lucide-react'
 import { ProgressTrack } from '@/components/ui/progress-track'
-import { getCachedUser } from '@/lib/auth'
+import { getCachedUser, getMyProfileId } from '@/lib/auth'
 import { leaveCircle } from '../../actions'
 import { JoinCircleButton } from '@/components/circles/join-circle-button'
 import { CircleHandoffBanner } from '@/components/circles/circle-handoff-banner'
 import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 import { CircleHostMenu } from '@/components/circles/circle-host-menu'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
-import { getCircleCapabilities } from '@/lib/core/load-capabilities'
+import { circleCapabilities } from '@/lib/circles/detail-access'
 import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { DetailTemplate, PageHero, HERO_ACTION_CLASS } from '@/components/templates'
 import { UnderlineTabs } from '@/components/ui/underline-tabs'
@@ -19,7 +19,6 @@ import { loadCircleShell } from '@/lib/circles/store'
 import { circleTabs } from '@/lib/circles/tabs'
 import { ClaimCircle } from '@/components/circles/claim-circle'
 import { listPublicPractices } from '@/lib/practices'
-import { getMyProfileId } from '@/lib/auth'
 
 // ── THE CIRCLE DETAIL SHELL (PAGE-FRAMEWORK §3, "How templates map to Next.js") ──────────────────
 //
@@ -82,7 +81,9 @@ export default async function CircleDetailLayout({
   const [user, myProfileId, caps, header] = await Promise.all([
     getCachedUser(),
     getMyProfileId(),
-    getCircleCapabilities(circle.id),
+    // Request-memoized, so the tab page under `children` asking the same question is a memo hit
+    // rather than a second capability resolution (lib/circles/detail-access.ts).
+    circleCapabilities(circle.id),
     // The operator-tunable header (the Journey/Profile/Space idiom): identity layout at the
     // standard height unless an /admin/elements master (or Space override) retunes it.
     resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard' } }),

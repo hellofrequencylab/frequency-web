@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { existsSync } from 'node:fs'
 // @ts-expect-error — .mjs guard module, no type declarations (same shape as the other guard tests)
 import { composesShell, ancestorComposes, rendersJsx, evaluate, pages, SHELLS, PIECES, loadBaseline, BASELINE_FILE, MIN_PAGES } from './check-templates.mjs'
 
@@ -91,12 +92,15 @@ describe('the ratchet and its floor', () => {
     expect(added, `\n  NEW bare page(s):\n    ${added.join('\n    ')}\n`).toEqual([])
   })
 
-  it('the baseline names real paths and only shrinks', () => {
-    // A stale entry is not a failure (the gate reports it as shrinkable), but an entry that names a
-    // file which no longer exists at all means the list was hand-edited rather than regenerated.
+  it('the baseline names real page files, so it cannot rot into fiction', () => {
+    // A stale entry whose page now composes a shell is not a failure — the gate reports it as
+    // shrinkable. An entry naming a file that does not EXIST is different: it means the list was
+    // hand-edited rather than regenerated, and a ratchet nobody can reproduce is not a ratchet.
+    // (`app/page.tsx` is a legitimate entry, which is why this checks existence, not path depth.)
     const baseline = [...loadBaseline()]
     expect(baseline.length).toBeGreaterThan(0)
-    for (const p of baseline) expect(p, `${BASELINE_FILE} entry`).toMatch(/^app\/.*\/page\.tsx$/)
+    const missing = baseline.filter((p) => !existsSync(p))
+    expect(missing, `\n  ${BASELINE_FILE} names file(s) that do not exist:\n    ${missing.join('\n    ')}\n`).toEqual([])
   })
 
   it('scans a real corpus, well past the floor', () => {

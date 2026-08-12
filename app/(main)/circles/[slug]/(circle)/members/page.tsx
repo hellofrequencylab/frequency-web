@@ -63,13 +63,15 @@ export default async function CircleMembersPage({
           title={canManage ? 'Just you here so far' : 'This circle is still forming'}
           description={
             canManage
-              ? 'Share the link with the people you want in the room. Names show up here as they join.'
-              : 'Nobody has joined yet. Join to be one of the first.'
+              ? 'Share the link with the people you want here. Names land on this list as they join.'
+              : 'The host is the only one so far. Join and you will be one of the first.'
           }
           action={canManage ? <HostInviteButton circleId={circle.id} /> : undefined}
         />
       ) : (
-        <div className="grid grid-cols-1 gap-3 @lg:grid-cols-2 @3xl:grid-cols-3">
+        // A plain viewport grid, not `@`-variants: container queries are for blocks that land in a
+        // PageModules SLOT (ADR-295), and this body is the tab itself, not a module.
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {members.map((m) => (
             <PersonCard
               key={m.id}

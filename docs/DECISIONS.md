@@ -22322,3 +22322,98 @@ with the rewritten sentence; that was an editorial promise a human fulfils rathe
 and removing it was a judgement call rather than a strict consequence of this ruling. ⚠️ The general
 rule now has two instances behind it: **when a mechanism is retired, every surface that sold it is
 part of the retirement.** Both times, the copy outlived the code by weeks and nothing caught it.
+
+## ADR-1013: Amending ADR-088: the Circle is the community container, local or online; the Channel is the topic axis (2026-08-12)
+
+**Status.** Accepted. Amends [ADR-088](DECISIONS.md) (six comms surfaces) on one ruling only.
+ADR-088 is **not edited in place** and everything else in it stands, following the correction
+convention [ADR-1004](DECISIONS.md) set over [ADR-1002](DECISIONS.md): the original entry keeps
+saying what it said on the day, and the record carries the correction next to it rather than
+quietly rewriting history under a reader who cited it.
+
+**What is being amended.** ADR-088 §Channels reads:
+
+> **Channel = feed + one open public room.** A topical Channel gets both its content feed and a
+> single always-on public room anyone tuned-in can post to, the answer to "engage even without a
+> related Circle." **Circles stay the local/real-world unit; Channels the global/topical unit.**
+
+The bolded sentence is the ruling that changes. The owner has ruled that **the Circle absorbs the
+general community container role, local or online**, and that **Space Communities is being
+removed**.
+
+**Context.** ADR-088 split the two surfaces on GEOGRAPHY: a Circle was the thing you could walk to,
+a Channel the thing you could only read. Three things have made that line the wrong one.
+
+1. **The schema never agreed with it.** `circles.type` has carried `'in-person' | 'online'` since
+   before ADR-088 was written. An online Circle was always constructible; the canon simply said it
+   was not the point of a Circle, so nothing was ever built to make one feel intended.
+2. **The Channel room was a hedge against an empty room, and it inherited the emptiness.** Its
+   stated job was "engage even without a related Circle." That is a real need, and answering it with
+   a second, thinner room per topic means every topic has two places to talk and neither reaches
+   quorum. Production's largest Circle holds two members and five posts; splitting that attention
+   across a parallel Channel room does not produce two live rooms, it produces two dead ones.
+3. **A third container had grown informally.** Space Communities gave a Space its own members-and-
+   posts surface, overlapping the Circle on every axis that matters (a roster, a feed, a room) while
+   sharing none of its plumbing. ADR-088's own premise was that "where does X live?" must have one
+   answer, and by 2026-08 it had three.
+
+**Decision.**
+
+1. **The Circle is THE community container, local or online.** A Circle is a group of people who
+   belong to something together: it owns the roster, the room, the events, and the membership
+   grants. Whether it meets on a porch in Encinitas or only ever on a screen is a property of the
+   Circle (`circles.type`), not a different kind of object. "Local" stops being the definition and
+   becomes an attribute, and an online Circle is a first-class Circle with nothing withheld.
+
+2. **The Channel becomes the TOPIC AXIS, not a place you belong to.** This is the half of ADR-088
+   worth protecting, restated on the axis that actually divides the two:
+
+   | | Circle | Channel |
+   | :-- | :-- | :-- |
+   | What it is | the group you **belong to** | the subject you **tune into** |
+   | What it holds | people, a roster, a room, events, membership | circles, a topic feed, a Program blueprint |
+   | The relationship | membership (`memberships`, a durable row) | subscription (tune in / tune out) |
+   | The question it answers | "who am I in this with?" | "what is happening about this, and where do I start one?" |
+
+   So a Channel keeps everything [ADR-864](DECISIONS.md) gave it. It is a focus area: it hosts
+   Circles (`circles.topical_channel_id`), it carries the topic feed, it sorts under a Pillar, and
+   it can run as a Program with a Chapter blueprint. **What it loses is the standing open room.** The
+   answer to "engage even without a related Circle" is no longer a second room per topic; it is
+   **start one, online if there is nobody near you** (the always-offer posture ADR-089 already
+   committed to). The Channel's job is to make that Circle findable and easy to start, and to carry
+   the conversation ABOUT the topic that is not the conversation INSIDE any one group.
+
+3. **Space Communities is removed.** A Space's community is its **Circles**. The Space keeps a first-
+   class Circles surface, which is now gated on its own `circles` `SpaceFunctionKey` rather than
+   riding the `journeys` switch (fixed in the same pass, 2026-08-12: a Space with Journeys off used
+   to lose the Circles menu row entirely, which is exactly the "a Circle only exists to run a
+   program" assumption this ADR retires).
+
+4. **The six surfaces stand as a list.** Feed, Channels, Circle [+Hub/Nexus], Dispatch, Rooms and
+   Direct Messages are still the whole set, and every other ADR-088 ruling (1:1 DM, group DM to
+   private rooms, server-readable messaging, location-first feed, the dispatch ceiling, room AI,
+   liveness, open-room moderation) is untouched. One boundary moved; the map did not.
+
+**Consequences.**
+
+- **The Circle detail page has to hold more,** which is why it became a route-segment shell with
+  tabs in this pass (`app/(main)/circles/[slug]/(circle)/layout.tsx`, PAGE-FRAMEWORK §3). Home and
+  Members ship now; a Circle room and a leaderboard are later phases and have somewhere to land.
+  ADR-089's empty-Circle guardrail governs them: a Circle of one shows no tab strip at all.
+- **Canon edits fall due.** `NAMING.md` §Community structure describes Circles as the local unit and
+  Channels as the global one; both lines need this amendment folded in. `COMMS-STRATEGY.md` carries
+  the six-surface table and the Channel room in it. Neither is authority over this entry
+  (`AGENTS.md`: a plan doc that contradicts an ADR is stale, not authoritative), but both are read
+  by people and by AI generation paths, so both get corrected.
+- **The Channel room's data has an owner question.** Retiring the surface is a product ruling; what
+  happens to whatever room rows exist behind it is a migration question this ADR does not answer.
+  It is deliberately left open rather than guessed at, on the ADR-088 precedent that the group-DM
+  move was specified as its own reversible pass with an integrity check.
+- **The "start it online" path becomes load-bearing.** It was previously an available shape nobody
+  was steered toward. If it is now the answer to "there is nothing near me", the create flow has to
+  say so plainly, and an online Circle must not read as a lesser one anywhere in the product.
+
+**The durable rule.** ADR-088 divided two containers by WHERE they are. That held only while the
+product's reach was physical. **Divide surfaces by the relationship a person has to them, not by the
+geography they sit in**: belonging and subscribing stay distinct however far apart the people are,
+and a boundary drawn on that survives the product going online, going global, or going anywhere.
