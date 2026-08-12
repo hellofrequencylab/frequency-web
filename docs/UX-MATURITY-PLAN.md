@@ -434,7 +434,7 @@ held by a gate rather than a memory.
 
 > ⚠️ **STALE as of 2026-08-10 — re-derived in [`FINALIZE-PLAN.md`](FINALIZE-PLAN.md) §8.** The
 > four-territory sweep moved nine of these rows after this table was written. Live at 2026-08-12
-> (`node scripts/check-adoption.mjs`, baseline / current): `literal-radius` **2,440 / 2,298** (not
+> (`node scripts/check-adoption.mjs`, baseline / current): `literal-radius` **2,440 / 2,288** (not
 > 3,824, and not the 2,450 this banner carried until now), `literal-display-type` **96 / 96** (not
 > 301), `white-black-literals` **27 / 27**,
 > `handrolled-icon-button` **3 / 3**, and `raw-palette` + `handrolled-tabs` are both at **0** — meaning
@@ -573,7 +573,7 @@ column is the model; the score column is measured. **Total: 80.0 / 100.**
 | 6 | **Rails + docks + chrome** | 10 | 70% | 7.00 | Three-docks law ✅, foot-mounted rail control ✅, mini-strip ✅. Missing: the three-position ladder, persistence, any desktop left-rail fold |
 | 7 | **Marketing rhythm + page spine** | 10 | 70% | 7.00 | `Section` defaults to the four `mk-*` roles ✅, and the tone-adjacency half **is** adopted — `mk-cream` / `mk-ink` on every `<Section>` (see §4 finding 2). 21 of the 38 marketing pages route through it and 15 of the other 17 are redirect stubs. Both of the deductions behind this 70% are gone; the score has not been re-derived, so read it as a floor |
 | 8 | **Type roles** (body ✅ · display ⏳ · eyebrow 🔴) | 10 | 60% | 6.00 | `literal-type` at a defended **0** (7,578 sites swept). `literal-display-type` **96**; the eyebrow is split ten ways across ~698 sites |
-| 9 | **Radius roles** | 5 | 45% | 2.25 | Role tokens shipped and bridged; `literal-radius` baseline **2,440**, current **2,298** (`node scripts/check-adoption.mjs`, 2026-08-12; was quoted 3,824, then 2,450). The roles now EQUAL the steps as of the radius correction, so 1,816 of those are value-identical conversions |
+| 9 | **Radius roles** | 5 | 45% | 2.25 | Role tokens shipped and bridged; `literal-radius` baseline **2,440**, current **2,288** (`node scripts/check-adoption.mjs`, 2026-08-12; was quoted 3,824, then 2,450). The roles now EQUAL the steps as of the radius correction, so 1,816 of those are value-identical conversions |
 | 10 | **Contrast · a11y · interaction states** | 5 | 85% | 4.25 | Focus ring 1.75:1 → 3.87:1, alpha-aware contrast script, axe baselines, ×5 render states. `subtle-tiny-type` baseline **23**, current **22** (2026-08-12). The kit state sweep (8b) is **7 of 10 done** — five of six sweep items landed in PR #2084; the score column has not been re-derived since, so read it as a floor |
 | | **Total** | **100** | | **80.0** | |
 
@@ -589,7 +589,7 @@ column is the model; the score column is measured. **Total: 80.0 / 100.**
 | ✅ Three-docks law | top-right system · rail-foot account · bottom-right Vault/page. Nothing offered twice |
 | ✅ Rail-control law | 26px borderless glyph at the **foot**, subtle → muted, sticky |
 | ✅ Marketing four-role rhythm | `Section` derives `mk-band` / `mk-beat` and the double-count correction is live |
-| ✅ The ratchet itself | **17** debt classes, provenance-stamped, rises refused, basis fingerprinted. Read 2026-08-12: *"17 debt class(es) held or shrank — 4 shrank, −153 sites retired."* The three added since this row was written are `raw-select`, `raw-input` and `raw-textarea` |
+| ✅ The ratchet itself | **17** debt classes, provenance-stamped, rises refused, basis fingerprinted. Read 2026-08-12: *"17 debt class(es) held or shrank — 5 shrank (-166 sites retired)."* The three added since this row was written are `raw-select`, `raw-input` and `raw-textarea` |
 
 ### 3. What is left, ordered by payoff per unit of effort
 
@@ -606,7 +606,7 @@ Sizes: **S** one PR · **M** 1 to 3 PRs · **L** a wave. "Gain" is points on the
 | 7 | **The rail ladder** (Auto / Open / Strip, persisted; a desktop left-rail fold) | M | +3.0 | Today the right rail is binary, its state lives in `useState` keyed on `pathname` so it resets on navigation, and the left rail has a `compact` mode with **no user control at all**. DAWN's law is a three-position standing instruction honoured until the window is too narrow |
 | 8 | ✅ **Marketing: tone tagging — DONE. The "last 15 pages" half was never real** | S | +3.0 | Both halves of this row are closed, re-checked 2026-08-12. **Tone tagging:** `components/marketing/marketing-ui.tsx:276` sets `const toneClass = tone === 'ink' ? 'mk-ink' : 'mk-cream'` and emits it on **every** `<Section>` (`:278`, plus `:707` and `:1047`), with the adoption explained at `:261-274` and asserted in a committed snapshot (`lib/page-editor/block-render.test.tsx:170`). The same-tone-halving rule fires. **The 15 pages:** 17 of the 38 `app/(marketing)/**/page.tsx` carry no `<Section>`, and **15 of those 17 are `permanentRedirect()` stubs** with no layout to bypass; the other two (`rsvp/[token]`, `subscribe/confirm`) are single-section transactional surfaces. [`DAWN-CONVERSION.md`](DAWN-CONVERSION.md) §Phase 7 opened all 38 one by one on 2026-08-05 and reached the same result. **Residue, and it is a note not a package:** `.mk-hero:not(.mk-hero-dock) + .mk-beat` in `app/globals.css` is still dead, because no hero emits `.mk-hero` unconditionally |
 | 9 | **Pass 2b — 96 display literals** | M/L | +4.0 | `text-3xl`…`9xl` onto the display roles across 37 files (was quoted 301 across 67; 204 were bought across `6056d0a82`, `959ddb678`, `77bb066e5`, and the Lift 5c **Now** row already carries the correction). Per-site design judgment (*which role is this heading?*), not a codemod |
-| 10 | **`literal-radius` — baseline 2,440, current 2,298** (read 2026-08-12; was quoted 3,824, then 2,450) | L | +2.0 | Biggest number, worst ratio. The −142 between baseline and current is unclaimed sweep credit, which is the advice working: **spend it inside screen passes, never as its own wave** |
+| 10 | **`literal-radius` — baseline 2,440, current 2,288** (read 2026-08-12; was quoted 3,824, then 2,450) | L | +2.0 | Biggest number, worst ratio. The −152 between baseline and current is unclaimed sweep credit, which is the advice working: **spend it inside screen passes, never as its own wave** |
 
 **Reaching 100 is packages 1 to 9 (~24 points, capping at 100); packages 1 to 4 are a single
 afternoon and buy 5 of them.** Package 10 is not a project, it is a habit.
@@ -631,10 +631,10 @@ afternoon and buy 5 of them.** Package 10 is not a project, it is a habit.
    `lib/page-editor/block-render.test.tsx:170` asserts the rendered
    `<section class="bg-marketing-canvas mk-cream px-6 mk-tight ">`.
    *Kept rather than deleted for the same reason as finding 1 — and because the claim outlived its
-   own fix in three places. The third copy is the one that can still cost a session:
-   `app/globals.css:1625-1627` tells the reader the halving rule "has never fired", so a spacing
-   bug the rule causes would be diagnosed against a comment saying it cannot happen. That comment
-   is owned by whoever next edits the stylesheet.*
+   own fix in three places. The third copy was the one that could still cost a session:
+   `app/globals.css` told the reader the halving rule "has never fired", so a spacing bug the rule
+   causes would have been diagnosed against a comment saying it cannot happen. All three are
+   corrected as of 2026-08-12.*
 3. **Four tokens where production is ahead of DAWN, and DAWN does not know.** `SYNC.md` §"Going
    the other way" requires these go back on the next round:
 

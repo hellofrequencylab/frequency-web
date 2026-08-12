@@ -1622,9 +1622,13 @@
    Statement→arc pair is exactly that), and there the shoulder clearance is what
    keeps the heading out of the curve.
 
-   Nobody has seen this because the rule has never fired: .mk-cream / .mk-ink have
-   zero adopters today, so the defect is latent and lands with the tone sweep, not
-   before it. Guard first, then adopt.
+   THE RULE FIRES TODAY. This paragraph said the opposite until 2026-08-12 — "nobody
+   has seen this because .mk-cream / .mk-ink have zero adopters" — and that stopped
+   being true when Section started emitting the tone class on every render
+   (components/marketing/marketing-ui.tsx:276-278, and again at :707 and :1047). So a
+   same-tone stack halves its gap in production right now. If two adjacent sections
+   look wrong-spaced, this selector is the FIRST place to look, not the last: the
+   guard below is what decides whether a given pair is exempt.
 
    :where() and NOT :not() at full weight: :where() contributes ZERO specificity, so
    the selector stays exactly (0,2,0) — unchanged from before the guard. That matters

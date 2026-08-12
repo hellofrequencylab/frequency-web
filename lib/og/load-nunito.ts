@@ -38,7 +38,7 @@ const inflight = new Map<number, Promise<ArrayBuffer>>();
 
 /** Detach the exact bytes. `readFile` hands back a Buffer that is a VIEW into a shared pool slab, so
  *  passing `buf.buffer` straight to Satori would hand it megabytes of unrelated memory. */
-function bytes(buf: Buffer): ArrayBuffer {
+function detach(buf: Buffer): ArrayBuffer {
   return buf.buffer.slice(
     buf.byteOffset,
     buf.byteOffset + buf.byteLength,
@@ -56,20 +56,20 @@ function bytes(buf: Buffer): ArrayBuffer {
 // `join(process.cwd(), ...rubricPath)` swept the repo ROOT into ~300 functions.
 //
 // Written out as literals, nft resolves each read exactly and ships these three faces and nothing
-// else — WITHOUT help from next.config.ts, which is why the '/**' include key could be narrowed.
-// Verified with nodeFileTrace over both shapes before landing: the parameterised form emits all five
-// files, the literal form emits exactly three.
+// else — WITHOUT help from next.config.ts, which is why the catch-all include key there could be
+// narrowed to the card routes. Verified with nodeFileTrace over both shapes before landing: the
+// parameterised form emits all five files in the directory, the literal form emits exactly three.
 //
 // ⚠️ Reintroducing a `read(name)` helper — or hoisting "public/fonts" into a shared const and
 // building the path from it — silently restores the glob. Nothing fails; the deploy just gets
 // bigger. `og-fonts.test.ts` fails instead, which is the only reason that stays visible.
 const readNunitoBlack = () =>
-  readFile(join(process.cwd(), "public/fonts", "Nunito-Black.ttf")).then(bytes);
+  readFile(join(process.cwd(), "public/fonts", "Nunito-Black.ttf")).then(detach);
 const readNunitoBold = () =>
-  readFile(join(process.cwd(), "public/fonts", "Nunito-Bold.ttf")).then(bytes);
+  readFile(join(process.cwd(), "public/fonts", "Nunito-Bold.ttf")).then(detach);
 const readLiberationBold = () =>
   readFile(join(process.cwd(), "public/fonts", "LiberationSans-Bold.ttf")).then(
-    bytes,
+    detach,
   );
 
 /**

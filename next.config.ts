@@ -142,8 +142,9 @@ const nextConfig: NextConfig = {
     // `deliverCard` is fail-safe, so the damage would show up as broken previews in someone else's
     // mail client rather than as a red build (DEPLOY-SAFETY rule 6).
     //
-    // 🔴 THESE USED TO SIT ON '/**', WHICH WAS ~275MB OF DEPLOY DISK: 665KB of faces × 482 functions,
-    // for the ~10 image routes that draw with them.
+    // 🔴 THESE USED TO SIT ON '/**' — 650KB of faces × 482 functions, for the 10 image routes that
+    // draw with them. Narrowing here, plus the literal-pathed reads in load-nunito, takes the fonts
+    // from 333MB of per-function output to 49MB. Measured against the real .next trace, not estimated.
     //
     // Route keys match with picomatch in `contains` mode (next/dist/build/collect-build-traces.js),
     // against a route string that KEEPS its `app/` prefix — normalizeAppPath only strips groups and a
@@ -151,8 +152,8 @@ const nextConfig: NextConfig = {
     // safe: it catches '/app/opengraph-image-12g5h9' (the help group's card, whose suffix is a build
     // hash nobody can hardcode), '/app/spaces/[slug]/opengraph-image-tt3pwa', and
     // '/app/events/claim/[token]/opengraph-image' alike. Deliberately coarse — it also reaches the
-    // eight discover/spotlight cards, which draw with no custom face, for ~5MB. Under-matching breaks
-    // a card silently; over-matching costs bytes the budget gate prints.
+    // seven discover/spotlight cards, which draw with no custom face, for ~4.7MB. Under-matching
+    // breaks a card silently; over-matching costs bytes the budget gate prints.
     //
     // ⚠️ The help content above must stay on its own '/**' entry. A duplicate key is a TS error and,
     // worse, the later one silently wins — which would drop the help content and leave "Ask Vera"

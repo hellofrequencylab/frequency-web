@@ -276,12 +276,12 @@ before trusting it to measure this sweep.
 | Item | Sites | Size |
 | :--- | ---: | :---: |
 | `h-[…]` / `w-[…]` arbitrary | 442 | M |
-| `literal-radius` → role tokens | ~~3,687~~ → ~~2,450~~ → **2,298** | L. **Spend inside screen passes, never as its own wave** |
+| `literal-radius` → role tokens | ~~3,687~~ → ~~2,450~~ → **2,288** | L. **Spend inside screen passes, never as its own wave** |
 | R3: the radius ladder (`sm`…`2xl` in px, `xs`/`3xl`/`4xl` left at Tailwind's rem, so the top rung is a 1.5px step and ignores the density lever) | ~1,319 | S |
 | `rounded-[…]` 20 · `shadow-[…]` 2 · `border-[…]` 1 | 23 | XS |
 
 > **`literal-radius` was 3,824, then 3,687 here, then 2,450, and is baseline 2,440 / current
-> 2,298 live** (`node scripts/check-adoption.mjs`, read 2026-08-12, `✅ shrank −142`, frozen
+> 2,288 live** (`node scripts/check-adoption.mjs`, read 2026-08-12, `✅ shrank −152`, frozen
 > 2026-08-11 `lowered`). Every older figure was
 > quoted from a column, not a run, and three commit messages on this branch cited a floor that
 > was already stale when written. The 2,450 in this banner is the fourth instance of the same
