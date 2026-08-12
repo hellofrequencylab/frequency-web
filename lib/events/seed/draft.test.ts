@@ -6,6 +6,8 @@ import { describe, it, expect } from 'vitest'
 import { buildFieldModel } from '@/lib/studio/kernel/review-kernel'
 import { EVENT_MANIFEST } from '@/lib/studio/entities/event'
 import {
+  canonicalSeededPath,
+  confirmEventLedger,
   eventSeedDraftFromExtraction,
   isSeededPath,
   mergePosterLinks,
@@ -16,6 +18,7 @@ import {
   SEEDED_FIELD_PATHS,
 } from './draft'
 import type { EventLink } from '@/lib/events/types'
+import type { ProvenanceLedger } from '@/lib/studio/kernel/ledger'
 
 const RAW = {
   title: 'Sunrise Ecstatic Dance',
@@ -160,6 +163,9 @@ describe('reading and writing one path', () => {
 
   it('refuses a path that resolves to nothing instead of inventing a container', () => {
     const draft = eventSeedDraftFromExtraction(RAW) as unknown as Record<string, unknown>
+    // A declared tier that this draft does not have: allowed by name, refused by the walk.
+    expect(setDraftValue(draft, 'details.tickets[5].label', 'Ghost')).toBe(false)
+    expect((draft.details as { tickets: unknown[] }).tickets).toHaveLength(2)
     expect(setDraftValue(draft, 'details.tickets[9].label', 'Ghost')).toBe(false)
     expect(setDraftValue(draft, 'nope.deeper.still', 'x')).toBe(false)
     expect(readDraftValue(draft, 'nope.deeper.still')).toBe('')
@@ -199,9 +205,13 @@ describe('the scan door folds in the links only a browser can read', () => {
   })
 })
 
-// ── Prototype pollution (CodeQL, ADR-989 branch) ─────────────────────────────────────────────────
-// A staged intake's field paths come from a chat export, so a path is untrusted input. The segment
-// regex matches `__proto__` happily, which would have let a write reach the object prototype.
+// ── The write allowlist, and prototype pollution (CodeQL, ADR-989 branch) ────────────────────────
+// A staged intake's field paths come from a chat export and arrive back from a browser, so a path is
+// untrusted input twice over. Two guards stand behind these tests, and each one is load-bearing:
+//   1. the writable allowlist (canonicalSeededPath), checked immediately before every assignment —
+//      this board writes the paths the apply carries and nothing else, so an undeclared path is a
+//      bug (the edit would be dropped at apply) before it is a security hole; and
+//   2. the forbidden-key check in segments(), which also covers every READER of a path.
 
 describe('setDraftValue — a path may never reach the prototype', () => {
   it('refuses __proto__, constructor and prototype anywhere in the path', () => {
@@ -218,5 +228,87 @@ describe('setDraftValue — a path may never reach the prototype', () => {
     const draft: Record<string, unknown> = {}
     expect(setDraftValue(draft, 'title', 'Sound bath')).toBe(true)
     expect(draft.title).toBe('Sound bath')
+  })
+
+  it('never lets a READER step onto a prototype either', () => {
+    // The allowlist covers the writes. This is the reader's half, and it is why the forbidden-key
+    // check lives in segments(): without it a path can step off the draft onto a prototype and read
+    // back a value the event does not have (here Array.prototype.length, which answers '0'), and the
+    // board would show that to an operator as the field's content.
+    const draft = eventSeedDraftFromExtraction(RAW) as unknown as Record<string, unknown>
+    expect(readDraftValue(draft, 'details.tickets.__proto__.length')).toBe('')
+    expect(readDraftValue(draft, 'details.__proto__.x')).toBe('')
+    expect(readDraftValue(draft, 'details.tickets[0].label')).toBe('Early bird')
+  })
+})
+
+describe('setDraftValue — only the paths the apply carries', () => {
+  it('refuses a real manifest field this door does not carry, rather than writing one the apply would drop', () => {
+    const draft = eventSeedDraftFromExtraction(RAW) as unknown as Record<string, unknown>
+    // 'visibility' and 'scopeId' are declared on the EVENT manifest, so they parse and the draft is a
+    // plain object: only the allowlist stands between them and a write the apply would silently lose.
+    expect(setDraftValue(draft, 'visibility', 'public')).toBe(false)
+    expect(setDraftValue(draft, 'scopeId', 'some-space')).toBe(false)
+    expect(draft.visibility).toBeUndefined()
+    expect(draft.scopeId).toBeUndefined()
+  })
+
+  it('refuses a leaf inside details that is not a seeded field', () => {
+    const draft = eventSeedDraftFromExtraction(RAW) as unknown as Record<string, unknown>
+    expect(setDraftValue(draft, 'details.confidence', 'high')).toBe(false)
+    expect((draft.details as Record<string, unknown>).confidence).toBeUndefined()
+  })
+
+  it('refuses a repeat row past the cap the details coercer enforces', () => {
+    const draft = eventSeedDraftFromExtraction({ ...RAW, details: { tickets: [{ label: 'Door' }] } }) as unknown as Record<string, unknown>
+    // tickets caps at 8 rows, so [8] can never exist and is not a writable path.
+    expect(canonicalSeededPath('details.tickets[7].label')).toBe('details.tickets[7].label')
+    expect(canonicalSeededPath('details.tickets[8].label')).toBeNull()
+    expect(setDraftValue(draft, 'details.tickets[8].label', 'Ghost')).toBe(false)
+  })
+
+  it('still writes every path the board actually renders', () => {
+    const draft = eventSeedDraftFromExtraction(RAW) as unknown as Record<string, unknown>
+    for (const path of SEEDED_FIELD_PATHS) {
+      expect(canonicalSeededPath(path), path).toBe(path)
+      expect(setDraftValue(draft, path, 'x'), path).toBe(true)
+    }
+    // and inside a repeat, on a row that exists
+    expect(setDraftValue(draft, 'details.lineup[0].name', 'DJ Marea')).toBe(true)
+    expect(readDraftValue(draft, 'details.lineup[0].name')).toBe('DJ Marea')
+  })
+
+  it("resolves a path to the allowlist's own string, never to the caller's", () => {
+    // Same characters, different object: what comes back is the module's constant, which is what the
+    // writes are keyed on.
+    const fromRequest = ['details', 'tickets[0]', 'label'].join('.')
+    expect(canonicalSeededPath(fromRequest)).toBe('details.tickets[0].label')
+    expect(canonicalSeededPath('__proto__')).toBeNull()
+    expect(canonicalSeededPath('constructor')).toBeNull()
+    expect(canonicalSeededPath('visibility')).toBeNull()
+  })
+})
+
+describe('confirmEventLedger — a receipt only for a path the apply carries', () => {
+  it('refuses to key the ledger on __proto__, so a confirm cannot repoint a prototype', () => {
+    const ledger: ProvenanceLedger = {}
+    confirmEventLedger(ledger, '__proto__', 'x')
+    expect(Object.getPrototypeOf(ledger)).toBe(Object.prototype)
+    expect(Object.keys(ledger)).toEqual([])
+  })
+
+  it('writes no receipt for a field this board does not carry', () => {
+    const ledger: ProvenanceLedger = {}
+    confirmEventLedger(ledger, 'visibility', 'public')
+    expect(Object.keys(ledger)).toEqual([])
+  })
+
+  it('still promotes a carried path, including inside a repeat', () => {
+    const ledger: ProvenanceLedger = {}
+    confirmEventLedger(ledger, 'title', 'Sunrise Ecstatic Dance')
+    confirmEventLedger(ledger, 'details.tickets[0].priceCents', '$20')
+    expect(ledger.title[0].kind).toBe('fact')
+    expect(ledger.title[0].verifiedBy).toBe('human')
+    expect(ledger['details.tickets[0].priceCents'][0].snippet).toBe('$20')
   })
 })

@@ -32,6 +32,7 @@
 // it is the thing that lets an AI feature be turned on later.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { cache } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -42,6 +43,7 @@ import { fail, ok, type ActionResult } from '@/lib/action-result'
 import {
   CREATE_AUTONOMY_TIER,
   CREATE_ENTITY_TOOL,
+  CREATE_GATES,
   checkCreateDraft,
   createConfirmLabel,
   createGateFor,
@@ -401,6 +403,54 @@ export async function listMyCreateProposals(limit = 25): Promise<PendingCreatePr
   }
   return out
 }
+
+/** The entities `listMyCreateProposals` will actually SHOW: a key in CREATE_GATES that is still a
+ *  creatable entity. Computed once at module load so the count below can apply the same filter the
+ *  list applies, in SQL rather than in JS — the badge and the page must never disagree. */
+const COUNTABLE_CREATE_ENTITIES: readonly string[] = Object.keys(CREATE_GATES).filter(
+  (entity) => createGateFor(entity) !== null,
+)
+
+/**
+ * How many open proposals the caller has — the same set `listMyCreateProposals` would return,
+ * counted instead of read.
+ *
+ * WHY A SEPARATE FUNCTION AND NOT `listMyCreateProposals().length`. This runs in the app shell on
+ * EVERY page load (the My Frequency menu, lib/nav/my-frequency.ts), and the list read pulls up to
+ * 25 full `payload` jsonb blobs back over the wire and then filters them in JS. Here every filter
+ * is expressed in SQL and the request is `head: true`, so Postgres answers with a count and no rows
+ * at all. `agent_actions_status_idx (status, created_at desc)` covers the two selective predicates,
+ * and "proposed in the last 24h" is inherently a tiny working set — a proposal is confirmed,
+ * dismissed, or expired out of it within a day.
+ *
+ * SAME AUTHORITY AS THE LIST. The caller is re-derived from the session and never passed in, and
+ * `actor_profile_id` is compared against it — a member can only ever count their own. React-cached
+ * so the rail and the mobile drawer share one resolution per request.
+ *
+ * FAIL-SAFE: any error resolves to 0, which renders no badge. Navigation never blocks on this.
+ */
+export const countMyCreateProposals = cache(async (): Promise<number> => {
+  try {
+    const caller = await getCallerProfile()
+    if (!caller) return 0
+
+    const since = new Date(Date.now() - PROPOSAL_TTL_MS).toISOString()
+    const { count, error } = await db()
+      .from('agent_actions')
+      .select('id', { count: 'exact', head: true })
+      .eq('kind', CREATE_AUDIT_KIND)
+      .eq('status', 'proposed')
+      .gte('created_at', since)
+      // jsonb arrow filters, the same shape loadPageViews uses (ADR-246 exception). These are the
+      // two predicates the list applies in JS; applied here they keep the count honest.
+      .eq('payload->>actor_profile_id', caller.id)
+      .in('payload->>entity', COUNTABLE_CREATE_ENTITIES)
+    if (error) return 0
+    return count ?? 0
+  } catch {
+    return 0
+  }
+})
 
 /**
  * Throw a proposal away. The mirror of the confirm claim and deliberately the same shape: the
