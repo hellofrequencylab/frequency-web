@@ -22417,3 +22417,116 @@ a Channel the thing you could only read. Three things have made that line the wr
 product's reach was physical. **Divide surfaces by the relationship a person has to them, not by the
 geography they sit in**: belonging and subscribing stay distinct however far apart the people are,
 and a boundary drawn on that survives the product going online, going global, or going anywhere.
+
+## ADR-1014: Circle admin roles ride `memberships.volunteer_role`, and the owner sets them (2026-08-12)
+
+**Ruling (owner):** *"Circles have admin management roles that the owner can set up. Give them each
+best practice minimum viable product for roles."*
+
+**Decision.** A circle has a four-rung ladder. Three of the rungs are stored on
+`memberships.volunteer_role`; the fourth is the circle's owner and is `circles.host_id`, unchanged.
+No new enum, no new table, no migration, no second permission system.
+
+| Rung | Where it lives | Capabilities (all of them already existed and were already enforced) |
+| :--- | :--- | :--- |
+| **Host** (the owner) | `circles.host_id` | everything below, **plus `circle.manageRoles`** |
+| **Admin** | `volunteer_role = 'guide'` | `editSettings` · `moderate` · `assignTask` · `broadcast` · `post` · `view` |
+| **Moderator** | `volunteer_role = 'host'` | `moderate` · `post` · `view` |
+| **Member** | `volunteer_role = 'member'` / `NULL` | `post` · `view` |
+
+One new capability, `circle.manageRoles`, is added and granted **only to whoever LEADS the circle**
+(the `host_id` FK, a `stewardships` edge, platform staff, or the parent hub's guide/mentor). An
+Admin holds every other management capability and provably not that one. That is what makes the
+ladder a ladder: a rung that can re-rank its peers is not a rung, and the owner's ruling says the
+roles are the owner's to set up.
+
+### Why `volunteer_role` and not `stewardships`
+
+`stewardships` was the obvious candidate: it supports multiple holders, it is scoped by
+`(scope_type, scope_id)`, and it is already consumed by `lib/core/load-capabilities.ts`. It was
+rejected on three counts, in order of weight:
+
+1. **It grants leadership as a BINARY.** `leadsScope(edges, 'circle', id)` answers yes/no, and the
+   resolver turns a yes into the full leadership set. Expressing "moderates but does not edit
+   settings" would mean either re-reading `StewardRole` inside the circle branch — a second,
+   circle-only interpretation of a global table — or a parallel resolver. Both are the drift this
+   ADR exists to avoid.
+2. **`volunteer_role` already carries a RANKED value and already reaches the resolver.** The column
+   is typed `community_role`, the enum is ordered, `lib/core/load-capabilities.ts` already selects
+   it and already passes it as `membership.volunteerRole` on the circle `Scope`. The whole gap was
+   that `resolveCapabilities` declared the field and never read it. This is one branch, not a
+   pipeline.
+3. **`stewardships` has no write path in app code** (only a DELETE), so adopting it for this would
+   mean a migration plus an insert path, for a table whose every row today came from the ADR-218
+   backfill.
+
+A membership is also the right lifetime: leave the circle and the role leaves with you, in the same
+row, with no second thing to clean up.
+
+**Correction shipped with this:** `lib/stewardships.ts` claimed *"FOUNDATION ONLY: nothing consumes
+these reads yet … reads flip in P1.6"*. P1.6 shipped; `getStewardships` feeds `currentViewer`'s
+`leadsScope` and `viewerEdgeLevel`. The comment is fixed in place. A stale "this is inert" note is
+worse than no note, because it tells a reader that changing the file is free.
+
+### Why these two enum values
+
+The `community_role` enum is ordered `member < crew < host < guide < mentor`. Admin borrows
+`'guide'` and Moderator borrows `'host'` so the stored ladder and the capability ladder rank the
+same way round.
+
+**Measured on production 2026-08-12, before shipping:** all 6 rows holding `volunteer_role='host'`
+belong to their own circle's `host_id` (they resolve as Host by the FK either way), 4 rows hold
+`NULL`, and **no row anywhere holds `'guide'`**. So this mapping grants nobody anything they did not
+already hold. Every Admin and every Moderator from here on is an explicit assignment.
+
+**Fail closed.** `circleRoleFromStoredValue` is an allowlist, not a `>=` comparison. `'crew'` (the
+retired rung the demo generator still writes), `'mentor'` (which OUTRANKS `'guide'` globally and
+would escalate under any comparison-based read), `'admin'`, `'janitor'`, a future enum value, and
+junk all read as a plain Member. A role we cannot name is a role we do not honour.
+
+### The last-owner guard
+
+Ownership is `circles.host_id` and nothing else, so a role change cannot express a demotion of the
+owner. `setCircleMemberRole` never writes that column and refuses the owner's membership row
+outright, with the reason printed. No sequence of calls reaches zero owners, and no one but the
+owner can move ownership (transfer is a separate act and is deliberately not reachable from this
+control). `leaveCircle` is unaffected: it deletes the caller's own membership and leaves `host_id`
+standing.
+
+### Naming (docs/NAMING.md)
+
+The rungs are **Host / Admin / Moderator / Member**, and a circle roster renders them through
+`CircleRoleChip`, never through the global `RoleBadge`. The two ladders share storage and not
+meaning: a circle Admin is stored as `'guide'`, and `RoleBadge` would faithfully print "Guide", the
+global word for someone who oversees local hosts. One value, two vocabularies; the roster speaks the
+circle's. Three surfaces were converted (the Members tab, the rail roster, the Lead co-leaders
+block), so no surface prints the global word for a circle-scoped rung.
+
+Two collisions were considered and accepted. "Moderator" is also Vera's virtual chip
+(`profiles.is_system`, ADR-231) and "Admin" is also the legacy `community_role` chip on
+`/admin/roles`; neither renders on a circle roster, and both name the same job at a different scope.
+
+### The UI
+
+Role assignment lives **on the person's row**, never as a permissions matrix: the Host is looking at
+one person and deciding what that person does here. Three named presets in a `Select` on the
+member's `PersonCard`, in the `footer` slot (outside the card's profile link, because a `<select>`
+nested in an `<a>` is a broken control). The matrix survives as a collapsed **"What each role can
+do"** disclosure under the roster, read-only, rendered from the same `CIRCLE_ROLE_SUMMARY` the picker
+labels come from.
+
+No new menu row. The roles belong to the existing `circle.people` `ADMIN_MODULES` entry, whose
+description already reads *"Your members: the roster, roles, how full the circle is, and invites."*
+Adding a row would be exactly the drift MENU-CONTRACT forbids.
+
+### Enforcement
+
+`setCircleMemberRole` re-resolves `circle.manageRoles` from the live circle on every call, checks
+tenancy (the target must be an ACTIVE member of THIS circle), fails closed on any role name outside
+the three assignable rungs, and writes an `admin_audit_log` entry. The picker hiding a control is an
+affordance; this is the law.
+
+The tests are **capability assertions, not render assertions**: `lib/core/capabilities.test.ts`
+proves each rung cannot do the next rung's actions, that the four sets are strictly nested, that an
+unrecognised value / a non-active membership / an anonymous viewer grant nothing, and that a rung
+never leaks into another scope. Five of them fail against the pre-change resolver.

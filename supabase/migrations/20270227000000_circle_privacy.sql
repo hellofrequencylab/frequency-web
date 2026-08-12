@@ -94,12 +94,14 @@
 --   drop function if exists public.circles_visibility_mirror();
 --   drop function if exists public.enforce_membership_tier_circle_link();
 --   drop function if exists private.can_view_circle(uuid, text, uuid, uuid);
+--   drop function if exists private.post_scope_visible(uuid);
 --   drop function if exists private.space_can_sell(uuid);
 --   alter table public.circles drop constraint if exists circles_visibility_check;
 --   alter table public.circles drop constraint if exists circles_visibility_unlisted_mirror_check;
 --   alter table public.circles drop column if exists visibility;
 --   (and restore public_circles / public_circle_by_id / public_active_circle_count /
---    circles_near / circle_momentum from 20261157000000 and their original migrations)
+--    circles_near / circle_momentum / feed_for_viewer / scoped_feed_for_viewer from
+--    20261157000000 and their original migrations)
 -- ============================================================================
 
 -- ── 1. The column ─────────────────────────────────────────────────────────────────────────────
@@ -383,6 +385,143 @@ AS $$
 $$;
 
 GRANT EXECUTE ON FUNCTION public.circle_momentum(uuid) TO authenticated;
+
+-- ── 6b. The FEED, which names a circle without ever selecting from `circles` ───────────────────
+--
+-- 🔴 THE SUBTLE ONE. `posts.visibility` and `circles.visibility` are different axes, and the feed
+-- reads the post's. A post written with visibility='public' inside a PRIVATE circle satisfies the
+-- `p.visibility = 'public'` arm of feed_for_viewer, so it lands in the global feed for everybody.
+-- The post body is the author's to publish — but `lib/feed/post-origin.ts` then resolves
+-- `p.scope_id` into the origin chip on the post header, printing the private circle's NAME and
+-- deep-linking `/circles/<slug>`. The circle's own row was never read by the reader, so no amount
+-- of RLS on `circles` closes it. It has to close where the post is selected.
+--
+-- One predicate, ANDed into both feed RPCs, so their existing arms stay byte-for-byte identical.
+
+create or replace function private.post_scope_visible(p_scope_id uuid)
+returns boolean
+language sql
+stable security definer
+set search_path to 'public', 'private', 'pg_temp'
+as $$
+  select not exists (
+    select 1
+    from public.circles c
+    where c.id = p_scope_id
+      and c.visibility = 'private'
+      and not private.can_view_circle(c.id, c.visibility, c.space_id, c.host_id)
+  );
+$$;
+
+revoke all on function private.post_scope_visible(uuid) from public;
+grant execute on function private.post_scope_visible(uuid) to anon, authenticated, service_role;
+
+comment on function private.post_scope_visible(uuid) is
+  'Is a post whose scope is this id safe to surface? (ADR-1015) TRUE for every scope that is not a private Circle, and for a private Circle the caller may read. Exists because the feed names a Circle through the post ORIGIN CHIP without ever selecting from `circles`, so the RESTRICTIVE policy cannot reach it.';
+
+CREATE OR REPLACE FUNCTION public.feed_for_viewer(
+  _sort text DEFAULT 'relevant'::text,
+  _limit integer DEFAULT 40,
+  _lat double precision DEFAULT NULL::double precision,
+  _lng double precision DEFAULT NULL::double precision,
+  _radius_m integer DEFAULT NULL::integer
+)
+RETURNS TABLE(
+  id uuid, body text, post_type text, is_pinned boolean, created_at timestamp with time zone,
+  media_urls text[], is_demo boolean, reaction_count integer, comment_count integer,
+  engagement_score numeric, scope_id uuid, visibility text, author jsonb, reactions jsonb,
+  distance_m double precision
+)
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path TO 'public', 'private', 'pg_temp'
+AS $$
+  select p.id, p.body, p.post_type::text, p.is_pinned, p.created_at,
+         p.media_urls, p.is_demo, p.reaction_count, p.comment_count, p.engagement_score,
+         p.scope_id, p.visibility::text,
+         jsonb_build_object('id', a.id, 'display_name', a.display_name, 'handle', a.handle,
+                            'avatar_url', a.avatar_url, 'community_role', a.community_role,
+                            'membership_tier', a.membership_tier, 'is_system', a.is_system) as author,
+         coalesce((select jsonb_agg(jsonb_build_object('id', pr.id, 'reaction_type', pr.reaction_type, 'profile_id', pr.profile_id))
+                   from post_reactions pr where pr.post_id = p.id), '[]'::jsonb) as reactions,
+         dist.distance_m
+  from posts p
+  join profiles a on a.id = p.author_id
+  left join lateral (
+    select st_distance(c.geog, st_setsrid(st_makepoint(_lng, _lat), 4326)::geography) as distance_m
+    from circles c
+    where _lat is not null and _lng is not null and c.id = p.scope_id and c.geog is not null
+  ) dist on true
+  where p.parent_id is null
+    and p.hidden_at is null
+    and private.post_scope_visible(p.scope_id)
+    and (not p.is_demo or coalesce((select value from platform_flags where key = 'demo_mode'), true))
+    and (
+         coalesce((select value from platform_flags where key = 'feed_open'), false)
+      or p.visibility = 'public'
+      or (p.visibility = 'group' and p.scope_id = any(coalesce(get_my_circle_ids(), '{}'::uuid[])))
+      or (p.visibility = 'cluster'
+          and (p.scope_id = any(coalesce(get_my_circle_ids(), '{}'::uuid[]))
+               or exists (select 1 from circles c where c.id = p.scope_id
+                      and ((c.hub_id is not null and c.hub_id = any(coalesce(get_my_hub_ids(), '{}'::uuid[])))
+                        or (c.hub_id is null and c.topical_channel_id = any(coalesce(get_my_tuned_channel_ids(), '{}'::uuid[]))))
+                  )))
+      or p.is_demo
+    )
+  order by
+    case when _sort = 'nearby' and dist.distance_m is not null and dist.distance_m <= coalesce(_radius_m, 1e9) then 0 else 1 end,
+    case when _sort = 'nearby' then dist.distance_m end asc nulls last,
+    case when _sort = 'relevant' then p.engagement_score end desc nulls last,
+    p.created_at desc
+  limit greatest(1, least(coalesce(_limit, 40), 100));
+$$;
+
+GRANT EXECUTE ON FUNCTION public.feed_for_viewer(text, integer, double precision, double precision, integer)
+  TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.scoped_feed_for_viewer(
+  _scope_ids uuid[],
+  _sort text DEFAULT 'relevant'::text,
+  _limit integer DEFAULT 30
+)
+RETURNS TABLE(
+  id uuid, body text, post_type text, is_pinned boolean, created_at timestamp with time zone,
+  media_urls text[], is_demo boolean, reaction_count integer, comment_count integer,
+  engagement_score numeric, scope_id uuid, visibility text, author jsonb, reactions jsonb
+)
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path TO 'public', 'private', 'pg_temp'
+AS $$
+  select p.id, p.body, p.post_type::text, p.is_pinned, p.created_at,
+         p.media_urls, p.is_demo, p.reaction_count, p.comment_count, p.engagement_score,
+         p.scope_id, p.visibility::text,
+         jsonb_build_object('id', a.id, 'display_name', a.display_name, 'handle', a.handle,
+                            'avatar_url', a.avatar_url, 'community_role', a.community_role,
+                            'membership_tier', a.membership_tier, 'is_system', a.is_system) as author,
+         coalesce((select jsonb_agg(jsonb_build_object('id', pr.id, 'reaction_type', pr.reaction_type, 'profile_id', pr.profile_id))
+                   from post_reactions pr where pr.post_id = p.id), '[]'::jsonb) as reactions
+  from posts p
+  join profiles a on a.id = p.author_id
+  where p.parent_id is null
+    and p.hidden_at is null
+    and p.scope_id = any(_scope_ids)
+    and private.post_scope_visible(p.scope_id)
+    and (not p.is_demo or coalesce((select value from platform_flags where key = 'demo_mode'), true))
+    and (
+         p.visibility = 'public'
+      or (p.visibility = 'group' and p.scope_id = any(coalesce(get_my_circle_ids(), '{}'::uuid[])))
+      or (p.visibility = 'cluster'
+          and (p.scope_id = any(coalesce(get_my_circle_ids(), '{}'::uuid[]))
+               or exists (select 1 from circles c where c.id = p.scope_id
+                      and ((c.hub_id is not null and c.hub_id = any(coalesce(get_my_hub_ids(), '{}'::uuid[])))
+                        or (c.hub_id is null and c.topical_channel_id = any(coalesce(get_my_tuned_channel_ids(), '{}'::uuid[]))))
+                  )))
+      or p.is_demo
+    )
+  order by case when _sort = 'relevant' then p.engagement_score end desc nulls last, p.created_at desc
+  limit greatest(1, least(coalesce(_limit, 30), 100));
+$$;
+
+GRANT EXECUTE ON FUNCTION public.scoped_feed_for_viewer(uuid[], text, integer) TO authenticated;
 
 -- ── 7. The commerce rules, at the link site ───────────────────────────────────────────────────
 

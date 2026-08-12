@@ -20,7 +20,7 @@
 -- space_tenancy_walls.test.sql, including the auto-provisioned-profile cleanup.
 
 begin;
-select plan(29);
+select plan(32);
 
 -- ── Fixture (seeded as postgres, which RLS does not bind) ────────────────────────────────────────
 
@@ -94,6 +94,13 @@ insert into public.circles (id, name, slug, type, status, visibility) values
 insert into public.memberships (profile_id, circle_id, status) values
   ('00000000-0000-4000-b100-000000000002', '00000000-0000-4000-e100-000000000001', 'active'),
   ('00000000-0000-4000-b100-000000000003', '00000000-0000-4000-e100-000000000004', 'active');
+
+-- A PUBLIC post inside the PRIVATE circle. `posts.visibility` and `circles.visibility` are
+-- different axes, so this row satisfies the feed's `p.visibility = 'public'` arm — and the origin
+-- chip then prints the private circle's name and links its slug.
+insert into public.posts (id, author_id, body, scope_id, visibility) values
+  ('00000000-0000-4000-f100-000000000001', '00000000-0000-4000-b100-000000000001',
+   'A note inside the private room', '00000000-0000-4000-e100-000000000001', 'public');
 
 -- ── 1. THE SHAPE. The catalog, not the behaviour ─────────────────────────────────────────────────
 
@@ -199,6 +206,18 @@ select isnt_empty(
   'circle_momentum still answers for a circle the caller may read'
 );
 
+-- 🔴 The feed names a circle through the origin chip without ever selecting from `circles`, so no
+-- policy on that table can close it. A PUBLIC post inside a PRIVATE circle must not surface.
+select is_empty(
+  $$ select id from public.feed_for_viewer('recent', 100)
+     where scope_id = '00000000-0000-4000-e100-000000000001' $$,
+  'a public post inside a private circle stays out of the global feed for a non-member'
+);
+select is_empty(
+  $$ select id from public.scoped_feed_for_viewer(array['00000000-0000-4000-e100-000000000001']::uuid[]) $$,
+  'and out of the scoped feed, so a guessed circle id cannot pull its posts'
+);
+
 -- ── 3. VISIBLE to the seats that must have it ────────────────────────────────────────────────────
 
 select set_config('request.jwt.claims',
@@ -206,6 +225,11 @@ select set_config('request.jwt.claims',
 select isnt_empty(
   $$ select id from public.circles where slug = 'priv-personal' $$,
   'an ACTIVE MEMBER reads the private circle'
+);
+select isnt_empty(
+  $$ select id from public.feed_for_viewer('recent', 100)
+     where scope_id = '00000000-0000-4000-e100-000000000001' $$,
+  'and still sees the private circle''s posts in their own feed -- the guard narrows nothing for members'
 );
 
 select set_config('request.jwt.claims',

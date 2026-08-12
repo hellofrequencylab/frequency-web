@@ -160,6 +160,15 @@ describe('the migration shape', () => {
     expect(sql).toMatch(/circle_momentum[\s\S]*?private\.can_view_circle/)
   })
 
+  it('the feed is closed too — it names a circle through the origin chip without reading `circles`', () => {
+    expect(sql).toContain('private.post_scope_visible')
+    for (const fn of ['feed_for_viewer', 'scoped_feed_for_viewer']) {
+      const start = sql.indexOf(`FUNCTION public.${fn}(`)
+      expect(start).toBeGreaterThan(-1)
+      expect(sql.slice(start, start + 6000)).toContain('private.post_scope_visible(p.scope_id)')
+    }
+  })
+
   it('the nonsense cells are refused by the database, not by the UI', () => {
     expect(sql).toContain('circles_visibility_check')
     expect(sql).toContain('circles_visibility_unlisted_mirror_check')
