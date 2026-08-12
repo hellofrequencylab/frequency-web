@@ -21,10 +21,16 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState } from 'react'
-import { Check, ExternalLink, ImageIcon, Pencil, ShieldQuestion, Sparkles, X } from 'lucide-react'
+import { Check, ExternalLink, Pencil, ShieldQuestion, Sparkles, X } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
 import { SIGNAL_GLYPH, type ReviewSignal } from '@/lib/studio/kernel/ledger'
 import type { FieldModel, FieldState } from '@/lib/studio/kernel/review-kernel'
+import { SparkOffers, type SparkCoverOffer, type SparkQualityCheck } from './spark-offers'
+
+// The two offers live in ./spark-offers so the four wizards that keep a bespoke review step can
+// render the SAME cards without copying them (ADR-995). Re-exported here because this is where
+// they were declared and where a consumer looks for them.
+export type { SparkCoverOffer, SparkQualityCheck }
 
 const SIGNAL_STYLE: Record<ReviewSignal, string> = {
   green: 'border-success/30 bg-success-bg text-success',
@@ -36,23 +42,6 @@ const SIGNAL_LABEL: Record<ReviewSignal, string> = {
   green: 'Verified',
   amber: 'Needs a look',
   red: 'Contradicted',
-}
-
-/** The "Vera can draw one" offer, when the entity declares a cover field and the draft has none.
- *  Omit it and no offer renders. It is an OFFER: publishing with no image stays a real outcome. */
-export interface SparkCoverOffer {
-  label: string
-  busy?: boolean
-  /** Runs the generation. The surface owns applying the returned URL to the draft. */
-  onGenerate: () => void
-}
-
-/** The optional pre-publish read. A verdict is advice, never a gate: the entity that knows what a
- *  verdict COSTS decides that, not this board. */
-export interface SparkQualityCheck {
-  busy?: boolean
-  onCheck: () => void
-  verdict?: { status: string; score: number; notes: readonly string[] } | null
 }
 
 export interface SparkReviewProps {
@@ -77,7 +66,7 @@ export function SparkReview({ model, cover, quality, onEdit, onConfirm, disabled
     <div>
       {/* The roll-up. Leads with what needs attention, not with the total, because the total is
           not a decision and "3 need a look" is. */}
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2 rounded-card border border-border bg-surface px-4 py-3">
         <Tally signal="green" n={s.green} />
         <Tally signal="amber" n={s.amber} />
         {s.red > 0 && <Tally signal="red" n={s.red} />}
@@ -88,58 +77,10 @@ export function SparkReview({ model, cover, quality, onEdit, onConfirm, disabled
         )}
       </div>
 
-      {cover && (
-        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface px-4 py-3">
-          <ImageIcon className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
-          <span className="min-w-0 flex-1 text-xs text-muted">
-            No {cover.label.toLowerCase()} yet. Vera can draw one, or you can add your own later.
-          </span>
-          <button
-            type="button"
-            onClick={cover.onGenerate}
-            disabled={disabled || cover.busy}
-            className="shrink-0 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
-          >
-            {cover.busy ? 'Drawing…' : 'Vera can draw one'}
-          </button>
-        </div>
-      )}
-
-      {quality && (
-        <div className="mt-3 rounded-xl border border-border bg-surface px-4 py-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <ShieldQuestion className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
-            <span className="min-w-0 flex-1 text-xs text-muted">
-              Want a second read before this goes out?
-            </span>
-            <button
-              type="button"
-              onClick={quality.onCheck}
-              disabled={disabled || quality.busy}
-              className="shrink-0 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
-            >
-              {quality.busy ? 'Reading…' : 'Check it over'}
-            </button>
-          </div>
-          {quality.verdict && (
-            <div className="mt-2 border-t border-border pt-2">
-              <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">
-                {quality.verdict.status} · {quality.verdict.score}
-              </p>
-              {quality.verdict.notes.length > 0 && (
-                <ul className="mt-1 space-y-0.5">
-                  {quality.verdict.notes.map((n, i) => (
-                    <li key={i} className="text-xs leading-snug text-muted">{n}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+      <SparkOffers cover={cover} quality={quality} disabled={disabled} className="mt-3" />
 
       {s.blocked && (
-        <p className="mt-3 rounded-xl border border-danger/30 bg-danger-bg px-4 py-3 text-xs text-danger">
+        <p className="mt-3 rounded-card border border-danger/30 bg-danger-bg px-4 py-3 text-meta text-danger">
           A contradicted fact is blocking this. Fix or drop the red rows below before it can go live.
         </p>
       )}
@@ -147,9 +88,9 @@ export function SparkReview({ model, cover, quality, onEdit, onConfirm, disabled
       <div className="mt-4 space-y-5">
         {model.sections.map((section) => (
           <section key={section.key}>
-            <h3 className="text-sm font-bold text-text">{section.title}</h3>
+            <h3 className="text-body-sm font-bold text-text">{section.title}</h3>
             <p className="mt-0.5 text-2xs leading-snug text-muted">{section.desc}</p>
-            <ul className="mt-2 divide-y divide-border rounded-xl border border-border bg-surface">
+            <ul className="mt-2 divide-y divide-border rounded-card border border-border bg-surface">
               {section.fields.map((field) => (
                 <li key={field.path}>
                   <Row field={field} onEdit={onEdit} onConfirm={onConfirm} disabled={disabled} />
@@ -165,7 +106,7 @@ export function SparkReview({ model, cover, quality, onEdit, onConfirm, disabled
 
 function Tally({ signal, n }: { signal: ReviewSignal; n: number }) {
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-2xs font-semibold ${SIGNAL_STYLE[signal]}`}>
+    <span className={`inline-flex items-center gap-1 rounded-pill border px-2.5 py-1 text-2xs font-semibold ${SIGNAL_STYLE[signal]}`}>
       <span aria-hidden>{SIGNAL_GLYPH[signal]}</span>
       {n} {SIGNAL_LABEL[signal].toLowerCase()}
     </span>
@@ -202,7 +143,7 @@ function Row({
     <div className="px-4 py-3">
       <div className="flex items-start gap-2">
         <span
-          className={`mt-0.5 shrink-0 rounded-full border px-1.5 py-0.5 text-3xs font-semibold ${SIGNAL_STYLE[field.signal]}`}
+          className={`mt-0.5 shrink-0 rounded-pill border px-1.5 py-0.5 text-3xs font-semibold ${SIGNAL_STYLE[field.signal]}`}
           title={SIGNAL_LABEL[field.signal]}
         >
           <span aria-hidden>{SIGNAL_GLYPH[field.signal]}</span>
@@ -211,15 +152,15 @@ function Row({
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">{field.label}</span>
+            <span className="text-2xs font-semibold uppercase tracking-wide text-muted">{field.label}</span>
             {field.generated && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-elevated px-1.5 py-0.5 text-3xs text-muted">
+              <span className="inline-flex items-center gap-1 rounded-pill border border-border bg-surface-elevated px-1.5 py-0.5 text-3xs text-muted">
                 <Sparkles className="h-2.5 w-2.5" aria-hidden />{' '}
                 {field.kind === 'image' || field.kind === 'images' ? 'Made by Vera' : 'Written by Vera'}
               </span>
             )}
             {field.withheld && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-warning/30 bg-warning-bg px-1.5 py-0.5 text-3xs text-warning">
+              <span className="inline-flex items-center gap-1 rounded-pill border border-warning/30 bg-warning-bg px-1.5 py-0.5 text-3xs text-warning">
                 <ShieldQuestion className="h-2.5 w-2.5" aria-hidden /> Held back
               </span>
             )}
@@ -237,7 +178,7 @@ function Row({
                   type="button"
                   onClick={commit}
                   disabled={busy}
-                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-2xs font-semibold text-on-primary disabled:opacity-60"
+                  className="inline-flex items-center gap-1 rounded-control bg-primary px-2.5 py-1 text-2xs font-semibold text-on-primary disabled:opacity-60"
                 >
                   <Check className="h-3 w-3" aria-hidden /> Save
                 </button>
@@ -248,14 +189,14 @@ function Row({
                     setEditing(false)
                   }}
                   disabled={busy}
-                  className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-2xs font-semibold text-muted disabled:opacity-60"
+                  className="inline-flex items-center gap-1 rounded-control border border-border px-2.5 py-1 text-2xs font-semibold text-muted disabled:opacity-60"
                 >
                   <X className="h-3 w-3" aria-hidden /> Cancel
                 </button>
               </div>
             </div>
           ) : (
-            <p className={`mt-0.5 break-words text-sm ${field.value ? 'text-text' : 'text-subtle italic'}`}>
+            <p className={`mt-0.5 break-words text-body-sm ${field.value ? 'text-text' : 'text-subtle italic'}`}>
               {field.value || 'Not set'}
             </p>
           )}
@@ -287,7 +228,7 @@ function Row({
                 onClick={() => onConfirm(field.path)}
                 disabled={disabled}
                 title="Confirm this is right"
-                className="rounded-lg border border-border p-1.5 text-muted transition-colors hover:text-success disabled:opacity-60"
+                className="rounded-control border border-border p-1.5 text-muted transition-colors hover:text-success disabled:opacity-60"
               >
                 <Check className="h-3.5 w-3.5" aria-hidden />
                 <span className="sr-only">Confirm {field.label}</span>
@@ -301,7 +242,7 @@ function Row({
                   setEditing(true)
                 }}
                 disabled={disabled}
-                className="rounded-lg border border-border p-1.5 text-muted transition-colors hover:text-text disabled:opacity-60"
+                className="rounded-control border border-border p-1.5 text-muted transition-colors hover:text-text disabled:opacity-60"
               >
                 <Pencil className="h-3.5 w-3.5" aria-hidden />
                 <span className="sr-only">Edit {field.label}</span>

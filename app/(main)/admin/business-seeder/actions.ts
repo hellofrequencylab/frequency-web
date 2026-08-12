@@ -17,6 +17,12 @@
 // which itself binds each write to the row id. The list read binds to the operator (created_by)
 // via the admin client.
 //
+// ROW OWNERSHIP: the staff gate says "you may use this console", not "you may act on THAT row".
+// So every PER-ROW action reads through `readOwnedIntake` below: your own row (created_by, the
+// same bind as the list), or ANY row when you are a platform admin (web_role admin / janitor),
+// which is the deliberate "Re-seed an existing Space" power. An operator holding a stranger's
+// intake id now gets the same honest empty state as a row that does not exist.
+//
 // FAIL-SAFE (docs §7): a degraded / erroring intake returns a clear result, never throws to
 // the page. The Apply path NEVER bypasses the materializer's commercial-fact gate (Gate B):
 // updateImportField's CONFIRM sets verifiedBy:'human' on a real ledger entry, so the same gate
@@ -28,7 +34,15 @@ import { requireStaffCap } from '@/lib/staff'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { listSpaces } from '@/lib/spaces/store'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createIntake, getIntake, saveDraft, setInputs, setStatus, intakeIdsBySpaceIds } from '@/lib/importer/store'
+import {
+  createIntake,
+  getIntake,
+  getIntakeForOperator,
+  saveDraft,
+  setInputs,
+  setStatus,
+  intakeIdsBySpaceIds,
+} from '@/lib/importer/store'
 import { enqueueResearch } from '@/lib/importer/queue'
 import { runResearch, EDITABLE_PROSE_FIELDS, nextEditedProse, editedProsePaths } from '@/lib/importer/pipeline'
 import { reframe, applyReframe } from '@/lib/importer/reframe'
@@ -229,6 +243,36 @@ export async function listBusinessImports(): Promise<IntakeListItem[]> {
   }
 }
 
+// ── Row ownership: whose intake may you act on? ───────────────────────────────────────
+
+/**
+ * Read ONE intake the caller is allowed to act on. Every PER-ROW action goes through here.
+ *
+ *   • the caller's OWN row (created_by), which is exactly what the console list shows them, OR
+ *   • ANY row, when the caller is a PLATFORM ADMIN (web_role admin / janitor).
+ *
+ * The staff gate answers "may you use this console", not "may you act on THAT row", and those
+ * are different questions: with an id-only read, any operator who cleared structure:write could
+ * open, edit, and seed a row the list would never show them.
+ *
+ * The admin arm is not a leak, it is the deliberate power the console already carries: the
+ * "Re-seed an existing Space" search (page.tsx) is admin-only, and adoptSpaceMasterProfile hands
+ * back the Space's EXISTING master profile, which another operator may well have created. Binding
+ * on ownership alone would have broken that path.
+ *
+ * Fail-safe: null on a refusal or a miss, which every caller already renders as "Import not
+ * found" — the same answer as a row that never existed, so nothing is confirmed to a caller who
+ * may not touch it.
+ */
+async function readOwnedIntake(intakeId: string): Promise<BusinessIntakeRow | null> {
+  const caller = await getCallerProfile().catch(() => null)
+  if (!caller) return null
+  const own = await getIntakeForOperator(intakeId, caller.id)
+  if (own) return own
+  const isPlatformAdmin = caller.webRole === 'admin' || caller.webRole === 'janitor'
+  return isPlatformAdmin ? await getIntake(intakeId) : null
+}
+
 // ── Review board read ─────────────────────────────────────────────────────────────────
 
 export interface BusinessImportReview {
@@ -279,7 +323,7 @@ async function spaceIsListed(spaceId: string): Promise<boolean> {
  *  intake is absent or unreadable (the page then shows a clear empty/error state). */
 export async function getBusinessImportReview(intakeId: string): Promise<BusinessImportReview | null> {
   await requireStaffCap('structure', 'write')
-  const row = await getIntake(intakeId)
+  const row = await readOwnedIntake(intakeId)
   if (!row) return null
   const draft = (row.draft as unknown as BusinessProfile) ?? ({ name: '', type: 'business' } as BusinessProfile)
   const ledger = (row.ledger as ProvenanceLedger) ?? {}
@@ -326,7 +370,7 @@ export type SeederImagesResult = { ok: true; images: string[] } | { ok: false; e
  */
 export async function uploadSeederImages(intakeId: string, formData: FormData): Promise<SeederImagesResult> {
   await requireStaffCap('structure', 'write')
-  const row = await getIntake(intakeId)
+  const row = await readOwnedIntake(intakeId)
   if (!row) return { ok: false, error: 'Import not found.' }
 
   const current = Array.isArray(row.inputs.images)
@@ -401,7 +445,7 @@ export async function uploadSeederImages(intakeId: string, formData: FormData): 
  */
 export async function removeSeederImage(intakeId: string, url: string): Promise<SeederImagesResult> {
   await requireStaffCap('structure', 'write')
-  const row = await getIntake(intakeId)
+  const row = await readOwnedIntake(intakeId)
   if (!row) return { ok: false, error: 'Import not found.' }
 
   const current = Array.isArray(row.inputs.images)
@@ -463,7 +507,7 @@ async function syncDraftMediaToImages(row: BusinessIntakeRow, order: string[], l
  */
 export async function setPrimarySeederImage(intakeId: string, url: string): Promise<SeederImagesResult> {
   await requireStaffCap('structure', 'write')
-  const row = await getIntake(intakeId)
+  const row = await readOwnedIntake(intakeId)
   if (!row) return { ok: false, error: 'Import not found.' }
   const current = Array.isArray(row.inputs.images)
     ? row.inputs.images.filter((u): u is string => typeof u === 'string')
@@ -483,7 +527,7 @@ export async function setPrimarySeederImage(intakeId: string, url: string): Prom
  */
 export async function reorderSeederImages(intakeId: string, order: string[]): Promise<SeederImagesResult> {
   await requireStaffCap('structure', 'write')
-  const row = await getIntake(intakeId)
+  const row = await readOwnedIntake(intakeId)
   if (!row) return { ok: false, error: 'Import not found.' }
   const current = Array.isArray(row.inputs.images)
     ? row.inputs.images.filter((u): u is string => typeof u === 'string')
@@ -514,7 +558,7 @@ export type ArrangeImagesResult =
 export async function autoArrangeSeederImages(intakeId: string): Promise<ArrangeImagesResult> {
   await requireStaffCap('structure', 'write')
   const operatorId = await getMyProfileId()
-  const row = await getIntake(intakeId)
+  const row = await readOwnedIntake(intakeId)
   if (!row) return { ok: false, error: 'Import not found.' }
 
   const images = Array.isArray(row.inputs.images)
@@ -569,7 +613,7 @@ export async function reseedBusinessImport(
   const operatorId = await getMyProfileId()
   const nextMood = normalizeSeedMood(mood)
 
-  const row = await getIntake(intakeId)
+  const row = await readOwnedIntake(intakeId)
   if (!row) return { ok: false, error: 'Import not found.' }
   if (row.status !== 'review' && row.status !== 'applied') {
     return { ok: false, error: `This import is '${row.status}', not ready to re-seed (finish research first).` }
@@ -647,7 +691,7 @@ export interface AddInfoInput {
  */
 export async function reresearchWithInfo(intakeId: string, input: AddInfoInput): Promise<ReresearchResult> {
   await requireStaffCap('structure', 'write')
-  const row = await getIntake(intakeId)
+  const row = await readOwnedIntake(intakeId)
   if (!row) return { ok: false, error: 'Import not found.' }
   if (row.status !== 'review' && row.status !== 'applied') {
     return { ok: false, error: `This import is '${row.status}', not ready to add info (finish research first).` }
@@ -769,7 +813,7 @@ export type ListedResult = { ok: true; listed: boolean } | { ok: false; error: s
  */
 export async function setBusinessListed(intakeId: string, listed: boolean): Promise<ListedResult> {
   await requireStaffCap('structure', 'write')
-  const row = await getIntake(intakeId)
+  const row = await readOwnedIntake(intakeId)
   if (!row) return { ok: false, error: 'Import not found.' }
   if (!row.targetSpaceId) return { ok: false, error: 'Approve and seed this import first, then you can list it.' }
   try {
@@ -817,7 +861,7 @@ export async function updateImportField(
   action: FieldAction,
 ): Promise<UpdateFieldResult> {
   await requireStaffCap('structure', 'write')
-  const row = await getIntake(intakeId)
+  const row = await readOwnedIntake(intakeId)
   if (!row) return { ok: false, error: 'Import not found.' }
   // Editable in review AND after apply (the master profile stays editable, so an operator can review /
   // confirm / clear a "needs a look" field on a seeded Space, then Re-apply to push it live).
@@ -882,7 +926,7 @@ export async function approveBusinessImport(intakeId: string): Promise<ApproveRe
   const operatorId = await getMyProfileId()
   if (!operatorId) return { ok: false, error: 'No operator profile.' }
 
-  const row = await getIntake(intakeId)
+  const row = await readOwnedIntake(intakeId)
   if (!row) return { ok: false, error: 'Import not found.' }
   if (row.status !== 'review' && row.status !== 'applied') {
     return { ok: false, error: `This import is '${row.status}', not ready to approve (expected 'review').` }

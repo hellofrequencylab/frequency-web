@@ -80,8 +80,8 @@ export function SparkDropzone({
   }
 
   return (
-    <div className="rounded-xl border border-dashed border-border-strong bg-surface/50 p-4">
-      <p className="flex items-center gap-1.5 text-xs font-semibold text-text">
+    <div className="rounded-card border border-dashed border-border-strong bg-surface/50 p-4">
+      <p className="flex items-center gap-1.5 text-meta font-semibold text-text">
         <Upload className="h-3.5 w-3.5 text-primary-strong" aria-hidden />
         Already have it written?
       </p>
@@ -96,7 +96,7 @@ export function SparkDropzone({
               type="button"
               onClick={() => docRef.current?.click()}
               disabled={disabled || pending}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
             >
               {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <FileText className="h-3.5 w-3.5" aria-hidden />}
               {pending ? 'Reading…' : 'Upload a document'}
@@ -121,7 +121,7 @@ export function SparkDropzone({
               type="button"
               onClick={() => imageRef.current?.click()}
               disabled={disabled}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
             >
               <ImagePlus className="h-3.5 w-3.5" aria-hidden />
               Add photos
@@ -150,7 +150,7 @@ export function SparkDropzone({
                 type="button"
                 disabled={disabled}
                 onClick={() => onImages(images.filter((_, j) => j !== i))}
-                className="inline-flex max-w-48 items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-2xs text-muted transition-colors hover:text-text disabled:opacity-50"
+                className="inline-flex max-w-48 items-center gap-1 rounded-pill border border-border bg-surface px-2.5 py-1 text-2xs text-muted transition-colors hover:text-text disabled:opacity-50"
               >
                 <span className="truncate">{file.name}</span>
                 <X className="h-3 w-3 shrink-0" aria-hidden />
@@ -163,7 +163,7 @@ export function SparkDropzone({
 
       {takesPaste && (
         <div className="mt-3">
-          <label htmlFor="spark-source" className="mb-1 block text-2xs font-medium uppercase tracking-wide text-subtle">
+          <label htmlFor="spark-source" className="mb-1 block text-2xs font-medium uppercase tracking-wide text-muted">
             Or paste it
           </label>
           <Textarea
@@ -178,7 +178,7 @@ export function SparkDropzone({
         </div>
       )}
 
-      {error && <p className="mt-2 text-xs text-warning">{error}</p>}
+      {error && <p className="mt-2 text-meta text-warning">{error}</p>}
     </div>
   )
 }

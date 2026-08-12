@@ -31,14 +31,15 @@ import { rateLimitOk } from '@/lib/rate-limit'
 import { draftPracticeSpark, personalizePractice, type PracticeSuggestion } from '@/lib/ai/practice-spark'
 import { planPracticeEdits } from '@/lib/ai/practice-edit'
 import { PRACTICE_MANIFEST } from '@/lib/studio/entities/practice'
-import { moodToneDirective, normalizeSeedMood } from '@/lib/studio/kernel/moods'
 import {
   applyLock,
-  changedFields,
   declaredLockKeys,
-  lockLabel,
+  displayRecord,
+  redrawBrief,
+  settleRedraw,
   type FieldChange,
 } from '@/lib/studio/kernel/redraw'
+import { saveSteer } from '@/lib/studio/steer-store'
 import { pillarIdsBySlug } from '@/lib/journeys/compose'
 import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
@@ -456,11 +457,21 @@ export async function applyVeraPracticeChangeAction(
 //
 // It reuses the existing Vera edit path (planPracticeEdits) rather than re-drafting from
 // scratch: a redraw on a LIVE entity is a rewrite of what is there, not a new practice.
+//
+// GENERALIZED (ADR-996): the brief, the lock, and the diff moved into the kernel
+// (redrawBrief / applyLock / settleRedraw) and three more entities now walk the same four
+// steps. What stays here is what is genuinely a Practice's own: the owner gate, the Vera
+// planner, and the fact that a Practice's manifest paths ARE its column names, so the
+// planner's vocabulary needs no translation. (A Circle's does. See redrawCircleAction.)
 
 /** The fields a Practice redraw may touch. Exactly what `planPracticeEdits` can return, named
  *  once so the patch, the before-record, and the diff all walk the same list. */
 const REDRAW_KEYS = ['title', 'summary', 'description', 'body', 'cadence'] as const
 type RedrawKey = (typeof REDRAW_KEYS)[number]
+
+function isRedrawKey(path: string): path is RedrawKey {
+  return (REDRAW_KEYS as readonly string[]).includes(path)
+}
 
 /** What one redraw did: the fields that moved, what the pins protected, and the values to
  *  restore if the author would rather have their old draft back. */
@@ -485,40 +496,16 @@ export async function redrawPracticeAction(
   const { practice, profileId } = gate
   if (!practice) return fail('Practice not found')
 
-  // Only pins the manifest actually offers count. A client-invented lock key would otherwise
-  // read as protection the server never agreed to.
+  // 1. Only pins the manifest actually offers count. A client-invented lock key would otherwise
+  //    read as protection the server never agreed to.
   const pins = declaredLockKeys(PRACTICE_MANIFEST, input.locked ?? [])
-  const keptLabels = pins.map((k) => lockLabel(PRACTICE_MANIFEST, k))
-  const directions = (input.directions ?? '').trim().slice(0, 600)
-
-  const brief = [
-    'Draft this practice again, keeping every fact it already states true.',
-    moodToneDirective(normalizeSeedMood(input.mood)),
-    directions ? `How to approach it: ${directions}` : '',
-    keptLabels.length ? `Leave this exactly as it is, word for word: ${keptLabels.join(', ')}.` : '',
-  ]
-    .filter(Boolean)
-    .join('\n')
-
-  const edits = await planPracticeEdits({
-    request: brief,
-    practice: {
-      title: practice.title ?? '',
-      summary: practice.summary ?? '',
-      description: practice.description ?? '',
-      body: practice.body ?? '',
-      cadence: practice.cadence ?? '',
-    },
-    profileId,
+  // Remember the dials (ADR-996) so a second redraw opens where this one left off. Fail-soft.
+  await saveSteer('practice', id, profileId, {
+    mood: input.mood,
+    directions: input.directions,
+    locked: pins,
   })
-  if (!edits) return fail('Vera is offline right now. Try again in a moment, or edit by hand.')
 
-  // The pins, enforced. Everything the author kept is dropped from the patch here, before any
-  // comparison or write, so a locked field cannot even appear in the diff.
-  const proposed = applyLock(PRACTICE_MANIFEST, pins, { ...edits })
-
-  // Only what genuinely moved reaches the database, so "nothing changed" is an honest answer
-  // rather than a silent no-op write.
   const current: Record<RedrawKey, string> = {
     title: practice.title ?? '',
     summary: practice.summary ?? '',
@@ -526,20 +513,43 @@ export async function redrawPracticeAction(
     body: practice.body ?? '',
     cadence: practice.cadence ?? '',
   }
+
+  const edits = await planPracticeEdits({
+    request: redrawBrief({
+      manifest: PRACTICE_MANIFEST,
+      lead: 'Draft this practice again, keeping every fact it already states true.',
+      mood: input.mood,
+      directions: input.directions,
+      locked: pins,
+    }),
+    practice: current,
+    profileId,
+  })
+  if (!edits) return fail('Vera is offline right now. Try again in a moment, or edit by hand.')
+
+  // 2. The pins, enforced. Everything the author kept is DELETED from the patch here, before any
+  //    comparison or write, so a locked field cannot even appear in the diff.
+  const safe = applyLock(PRACTICE_MANIFEST, pins, { ...edits })
+
+  // 3. Only what genuinely moved reaches the database, so "nothing changed" is an honest answer
+  //    rather than a silent no-op write.
+  const settled = settleRedraw({
+    manifest: PRACTICE_MANIFEST,
+    locked: pins,
+    current,
+    proposed: displayRecord(safe),
+  })
+  if (settled.changes.length === 0) {
+    return fail('Vera kept this one as it is. Give her a direction, or unpin a field, and try again.')
+  }
+
+  // 4. Write exactly the paths that moved. A pinned path cannot be among them.
   const patch: PracticeEdit = {}
   const before: PracticeEdit = {}
-  const beforeDraft: Record<string, string> = {}
-  const afterDraft: Record<string, string> = {}
-  for (const key of REDRAW_KEYS) {
-    const next = proposed[key]
-    if (typeof next !== 'string' || next === current[key]) continue
-    patch[key] = next
-    before[key] = current[key]
-    beforeDraft[key] = current[key]
-    afterDraft[key] = next
-  }
-  if (Object.keys(patch).length === 0) {
-    return fail('Vera kept this one as it is. Give her a direction, or unpin a field, and try again.')
+  for (const change of settled.changes) {
+    if (!isRedrawKey(change.path)) continue
+    patch[change.path] = change.after
+    before[change.path] = change.before
   }
 
   const saved = await updatePractice(id, patch)
@@ -548,11 +558,7 @@ export async function redrawPracticeAction(
   revalidatePath(`/practices/${id}`)
   revalidatePath(`/practices/${id}/edit`)
 
-  return ok({
-    changes: changedFields(PRACTICE_MANIFEST, beforeDraft, afterDraft),
-    kept: keptLabels,
-    before,
-  })
+  return ok({ changes: settled.changes, kept: settled.kept, before })
 }
 
 // Set the author tags on a practice you created (hybrid model: new labels become

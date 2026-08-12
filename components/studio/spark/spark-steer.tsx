@@ -69,10 +69,10 @@ export function SparkSteer({
   if (!steer.mood && !steer.directions && lockKeys.length === 0) return null
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
+    <div className="rounded-card border border-border bg-surface p-4">
       {steer.mood && (
         <div>
-          <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+          <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
             <Palette className="h-3.5 w-3.5 text-primary-strong" aria-hidden /> Mood
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Mood">
@@ -84,7 +84,7 @@ export function SparkSteer({
                 disabled={disabled || busy}
                 aria-pressed={mood === m.key}
                 title={m.description}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors disabled:opacity-60 ${
+                className={`rounded-pill border px-3 py-1 text-meta font-medium transition-colors disabled:opacity-60 ${
                   mood === m.key
                     ? 'border-primary/40 bg-primary-bg text-primary-strong'
                     : 'border-border bg-surface text-muted hover:text-text'
@@ -99,7 +99,7 @@ export function SparkSteer({
 
       {steer.directions && (
         <div className={steer.mood ? 'mt-4' : ''}>
-          <label htmlFor="spark-directions" className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+          <label htmlFor="spark-directions" className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
             <Compass className="h-3.5 w-3.5 text-primary-strong" aria-hidden /> Directions
           </label>
           <Textarea
@@ -111,7 +111,7 @@ export function SparkSteer({
             onChange={(e) => onDirections(e.target.value)}
             disabled={disabled || busy}
           />
-          <p className="mt-1.5 text-2xs text-subtle">
+          <p className="mt-1.5 text-2xs text-muted">
             Steers emphasis and angle. It never overrides the trust rules: no invented facts.
           </p>
         </div>
@@ -119,7 +119,7 @@ export function SparkSteer({
 
       {lockKeys.length > 0 && (
         <div className="mt-4">
-          <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+          <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
             <Lock className="h-3.5 w-3.5 text-primary-strong" aria-hidden /> Keep as is
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -130,7 +130,7 @@ export function SparkSteer({
                 onClick={() => toggleLock(key)}
                 disabled={disabled || busy}
                 aria-pressed={pinned.includes(key)}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors disabled:opacity-60 ${
+                className={`rounded-pill border px-3 py-1 text-meta font-medium transition-colors disabled:opacity-60 ${
                   pinned.includes(key)
                     ? 'border-primary/40 bg-primary-bg text-primary-strong'
                     : 'border-border bg-surface text-muted hover:text-text'
@@ -140,7 +140,7 @@ export function SparkSteer({
               </button>
             ))}
           </div>
-          <p className="mt-1.5 text-2xs text-subtle">Anything pinned here survives a redraw untouched.</p>
+          <p className="mt-1.5 text-2xs text-muted">Anything pinned here survives a redraw untouched.</p>
         </div>
       )}
 
@@ -149,7 +149,7 @@ export function SparkSteer({
           type="button"
           onClick={onRedraw}
           disabled={disabled || busy}
-          className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+          className="mt-4 inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
         >
           {busy ? 'Drafting…' : redrawLabel}
         </button>

@@ -21,7 +21,7 @@
 import type { LedgerEntry, ProvenanceLedger } from '@/lib/studio/kernel/ledger'
 import type { FieldModel } from '@/lib/studio/kernel/review-kernel'
 import { coerceEventExtraction } from '@/lib/events/normalize'
-import type { EventDetails, ExtractedEvent, FieldConfidence } from '@/lib/events/types'
+import type { EventDetails, EventLink, ExtractedEvent, FieldConfidence } from '@/lib/events/types'
 import type { EventSeedDraft } from './intake'
 
 // ── 1. A read becomes a draft ─────────────────────────────────────────────────────
@@ -51,6 +51,30 @@ export function eventSeedDraftFromExtraction(raw: unknown): EventSeedDraft {
     category: 'gathering',
     details: ex.details,
   }
+}
+
+/**
+ * Fold extra links into a read's details, deduped on the URL, capped at the same 10 the
+ * details coercer keeps. The links a poster prints and the links its QR codes encode are the
+ * same field, and a booking link that arrives twice should not appear twice on the board.
+ *
+ * The scan door needs this because a QR pattern is the one thing the vision model cannot
+ * read: only a browser can decode it, off the full-resolution photo, on the operator's own
+ * device. Those URLs are therefore CLIENT-SUPPLIED, so the caller re-coerces them through
+ * `coerceEventDetails` first and hands the cleaned rows here. PURE.
+ */
+export function mergePosterLinks(details: EventDetails, extra: readonly EventLink[]): EventDetails {
+  if (extra.length === 0) return details
+  const existing = details.links ?? []
+  const seen = new Set(existing.map((l) => l.url))
+  const added: EventLink[] = []
+  for (const link of extra) {
+    if (seen.has(link.url)) continue
+    seen.add(link.url)
+    added.push(link)
+  }
+  if (added.length === 0) return details
+  return { ...details, links: [...existing, ...added].slice(0, 10) }
 }
 
 // ── 2. Seeding the ledger ─────────────────────────────────────────────────────────

@@ -60,7 +60,7 @@ export function SparkDraftCue({ saveState, restored }: { saveState: SaveState; r
   if (!message) return null
 
   return (
-    <p className="mt-1.5 text-2xs text-subtle" aria-live="polite">
+    <p className="mt-1.5 text-2xs text-muted" aria-live="polite">
       {message}
     </p>
   )

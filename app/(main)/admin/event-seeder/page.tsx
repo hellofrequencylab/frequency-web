@@ -39,9 +39,14 @@ export default async function EventSeederPage() {
       description="Events a chat export or a flyer scan found, waiting on you. Check each field against the message it came from, fix what the read got wrong, then seed it. A seeded event is an unlisted draft until you publish it."
       width="wide"
       actions={
-        <Link href="/admin/import" className={buttonClasses('secondary', 'sm')}>
-          Import from chat
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/admin/import" className={buttonClasses('secondary', 'sm')}>
+            Import from chat
+          </Link>
+          <Link href="/events/scan" className={buttonClasses('secondary', 'sm')}>
+            Scan a flyer
+          </Link>
+        </div>
       }
     >
       <AdminSection title="At a glance" description="Where your staged events stand.">

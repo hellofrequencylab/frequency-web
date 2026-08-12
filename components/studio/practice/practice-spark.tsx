@@ -26,8 +26,20 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sparkles } from 'lucide-react'
-import { SparkDoors, SparkDropzone, SparkShell, SparkSteer, FieldControl, StudioField } from '@/components/studio/spark'
+import {
+  SparkDoors,
+  SparkDropzone,
+  SparkOffers,
+  SparkShell,
+  SparkSteer,
+  FieldControl,
+  StudioField,
+  draftText,
+  useCoverOffer,
+  useQualityCheck,
+} from '@/components/studio/spark'
 import { isError } from '@/lib/action-result'
+import type { GeneratedCover } from '@/lib/loom/cover-actions'
 import { PRACTICE_MANIFEST } from '@/lib/studio/entities/practice'
 import { sparkFields } from '@/lib/studio/kernel/review-kernel'
 import { DEFAULT_SEED_MOOD, type SeedMood } from '@/lib/studio/kernel/moods'
@@ -155,6 +167,38 @@ export function PracticeSpark() {
   const [timer, setTimer] = useState<PracticeSparkTimer | null>(null)
   // The mood dial (kernel/moods.ts), shown on review so it costs no extra step.
   const [mood, setMood] = useState<SeedMood>(DEFAULT_SEED_MOOD)
+  // A header image Vera drew, once the author has kept it. Held here because this Spark has no
+  // draft object: the review step IS the state, and creation is deferred until they commit.
+  const [cover, setCover] = useState<GeneratedCover | null>(null)
+
+  // ── The two review-step offers (ADR-993 / ADR-995) ──
+  //
+  // KEPT BESPOKE: this review carries a Pillar chip group and a read-only timer preview that a
+  // one-text-box-per-row board cannot express, so it renders the two OFFER CARDS rather than the
+  // whole review board. Neither may block Create Practice, and neither does.
+  const coverState = useCoverOffer({
+    entity: PRACTICE_MANIFEST.entity,
+    manifest: PRACTICE_MANIFEST,
+    // Empty until a cover is kept, which is the truth: nothing here sets `header_image`. The path
+    // comes back from the action, so it is never restated in this file.
+    draft: cover ? { [cover.path]: cover.url } : {},
+    subject: { title, summary, mood, directions: null },
+    onApply: setCover,
+    onRemove: () => setCover(null),
+  })
+
+  // ADVICE, never a gate. Nothing is stored, and the create button never waits on it.
+  const qualityState = useQualityCheck({
+    entity: PRACTICE_MANIFEST.entity,
+    read: () =>
+      draftText([
+        ['Title', title],
+        ['Summary', summary],
+        ['Description', description],
+        ['The guide', body],
+        ['Cadence', draftCadence],
+      ]),
+  })
 
   const source = sourceText.trim()
 
@@ -249,6 +293,9 @@ export function PracticeSpark() {
         cadence: draftCadence || null,
         durationMin,
         timer,
+        // Already a real asset in the author's Loom (ADR-987). Null when they never asked for one:
+        // a Practice with no header image is a first-class outcome.
+        headerImage: cover?.url ?? null,
       }),
     )
   }
@@ -411,6 +458,10 @@ export function PracticeSpark() {
               <p className="mt-0.5 text-2xs text-muted">Vera set the timer to match the act. Tune every part of it in the next step.</p>
             </div>
           )}
+
+          {/* Both optional, both skippable: a header image Vera can draw, and a read before it
+              goes out. */}
+          <SparkOffers cover={coverState.offer} quality={qualityState.check} disabled={pending} />
 
           {/* The mood dial (kernel/moods.ts). On review, so it costs no extra step. */}
           <SparkSteer

@@ -31,6 +31,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { EntityManifest, FieldOption } from '@/lib/studio/kernel/manifest'
+import { SUBJECTS } from '@/lib/taxonomy/subjects'
 
 /** Render a scalar as display text. Mirrors the kernel's own reader. PURE + total. */
 function str(v: unknown): string {
@@ -163,14 +164,11 @@ export const PRACTICE_MANIFEST: EntityManifest = {
       kind: 'select',
       section: 'pillars',
       omitWhenEmpty: true,
-      options: [
-        { value: 'movement', label: 'Movement' },
-        { value: 'holistic-health', label: 'Holistic Health' },
-        { value: 'spirituality', label: 'Spirituality' },
-        { value: 'creative', label: 'Creative' },
-        { value: 'business-support', label: 'Business Support' },
-        { value: 'human-relating', label: 'Human Relating' },
-      ],
+      // The canonical subjects vocabulary (ADR-887, `pnpm check:vocab`). Read from the source
+      // rather than restated: this hand copy already held SIX of the fifteen subjects, which is
+      // exactly the bug that guard exists for. A practice stored under any of the other nine
+      // would have displayed as unset.
+      options: SUBJECTS.map((subject) => ({ value: subject.key, label: subject.label })),
     },
     { path: 'tags', label: 'Tags', kind: 'tags', section: 'pillars', omitWhenEmpty: true },
 

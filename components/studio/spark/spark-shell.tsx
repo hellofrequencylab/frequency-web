@@ -147,25 +147,25 @@ export function SparkShell({
         aria-label={stepLabel ? `Step ${step} of ${totalSteps}: ${stepLabel}` : `Step ${step} of ${totalSteps}`}
         className="mt-7 animate-[slideUp_0.35s_ease-out] outline-none motion-reduce:animate-none"
       >
-        <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-primary-strong">{eyebrow}</p>
+        <p className="mb-1.5 text-meta font-semibold uppercase tracking-widest text-primary-strong">{eyebrow}</p>
         {headingLevel === 1 ? (
-          <h1 className="text-2xl font-bold text-text">{title}</h1>
+          <h1 className="text-page-title font-bold text-text">{title}</h1>
         ) : (
-          <h2 className="text-2xl font-bold text-text">{title}</h2>
+          <h2 className="text-page-title font-bold text-text">{title}</h2>
         )}
-        {description && <p className="mt-1 text-sm leading-relaxed text-muted">{description}</p>}
+        {description && <p className="mt-1 text-body-sm leading-relaxed text-muted">{description}</p>}
 
         <div className="mt-5">{children}</div>
 
         {/* A div, not a p: callers pass rich error content (a Banner is a div) and nesting one
             inside a p is invalid HTML that React will silently reflow. */}
-        {error && <div className="mt-4 text-sm text-warning">{error}</div>}
+        {error && <div className="mt-4 text-body-sm text-warning">{error}</div>}
 
         {(footer ?? standardFooter) && <div className="mt-7">{footer ?? standardFooter}</div>}
       </div>
 
       {exits && exits.length > 0 && (
-        <p className="mt-8 text-center text-xs text-subtle">
+        <p className="mt-8 text-center text-meta text-subtle">
           {exits.map((exit, i) => (
             <span key={exit.label}>
               {i > 0 && (

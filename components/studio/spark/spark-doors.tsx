@@ -32,15 +32,15 @@ export interface SparkDoor {
 }
 
 const CARD =
-  'flex w-full items-start gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated disabled:opacity-60'
+  'flex w-full items-start gap-3 rounded-card border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated disabled:opacity-60'
 
 function DoorCard({ door, disabled }: { door: SparkDoor; disabled?: boolean }) {
   const body = (
     <>
       <door.Icon className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
       <span className="min-w-0">
-        <span className="block text-sm font-semibold text-text">{door.label}</span>
-        <span className="block text-xs leading-snug text-muted">{door.hint}</span>
+        <span className="block text-body-sm font-semibold text-text">{door.label}</span>
+        <span className="block text-meta leading-snug text-muted">{door.hint}</span>
       </span>
     </>
   )

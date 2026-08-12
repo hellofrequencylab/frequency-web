@@ -27,7 +27,16 @@ import { ArrowLeft, LayoutTemplate } from 'lucide-react'
 import { wizardSecondaryClass } from '@/components/templates'
 import { Input } from '@/components/ui/field'
 import { StudioField } from '@/components/studio/kit/studio-field'
-import { FieldControl, SparkDoors, SparkDropzone, SparkShell, SparkSteer } from '@/components/studio/spark'
+import {
+  FieldControl,
+  SparkDoors,
+  SparkDropzone,
+  SparkOffers,
+  SparkShell,
+  SparkSteer,
+  draftText,
+  useQualityCheck,
+} from '@/components/studio/spark'
 import { CIRCLE_MANIFEST } from '@/lib/studio/entities/circle'
 import { sparkFields } from '@/lib/studio/kernel/review-kernel'
 import { DEFAULT_SEED_MOOD, type SeedMood } from '@/lib/studio/kernel/moods'
@@ -135,6 +144,23 @@ export function CircleWizard() {
   // The steer dials. Captured on review so they never add a question to the flow.
   const [mood, setMood] = useState<SeedMood>(DEFAULT_SEED_MOOD)
   const [directions, setDirections] = useState('')
+
+  // ── The pre-publish read (ADR-993 / ADR-995) ──
+  //
+  // ADVICE, never a gate: nothing is stored and "Create the draft" never waits on it.
+  //
+  // NO COVER OFFER HERE, and not by omission: the Circle manifest declares no image field, so
+  // `coverOffer` would return null anyway, and `createDraftFromSparkAction` takes a frame with no
+  // image to put one on. Declare a cover on the Circle and this is where it joins.
+  const qualityState = useQualityCheck({
+    entity: CIRCLE_MANIFEST.entity,
+    read: () =>
+      draftText([
+        ['Name', spark?.name],
+        ['About', spark?.oneLiner],
+        ['Focus', spark?.primaryPillar],
+      ]),
+  })
 
   const generate = () => {
     setError(null)
@@ -323,6 +349,9 @@ export function CircleWizard() {
             Vera also drafted the four Pillars inside, the rhythm, the agreements, and more. Create the draft to edit
             all of it in the builder.
           </p>
+
+          {/* Optional and skippable: a read before it goes out. */}
+          <SparkOffers quality={qualityState.check} disabled={pending} />
 
           <SparkSteer
             steer={CREATE_STEER}

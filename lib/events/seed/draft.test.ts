@@ -8,12 +8,14 @@ import { EVENT_MANIFEST } from '@/lib/studio/entities/event'
 import {
   eventSeedDraftFromExtraction,
   isSeededPath,
+  mergePosterLinks,
   readDraftValue,
   seedEventLedger,
   seededFieldsOnly,
   setDraftValue,
   SEEDED_FIELD_PATHS,
 } from './draft'
+import type { EventLink } from '@/lib/events/types'
 
 const RAW = {
   title: 'Sunrise Ecstatic Dance',
@@ -167,5 +169,32 @@ describe('reading and writing one path', () => {
     expect(isSeededPath('title')).toBe(true)
     expect(isSeededPath('details.lineup[3].name')).toBe(true)
     expect(isSeededPath('visibility')).toBe(false)
+  })
+})
+
+describe('the scan door folds in the links only a browser can read', () => {
+  const link = (url: string, label = 'Tickets'): EventLink => ({ label, url, kind: 'tickets' })
+
+  it('adds a QR link the model never saw in print', () => {
+    const details = mergePosterLinks({ links: [link('https://a.test/one')] }, [link('https://b.test/qr')])
+    expect(details.links?.map((l) => l.url)).toEqual(['https://a.test/one', 'https://b.test/qr'])
+  })
+
+  it('does not list the same booking link twice', () => {
+    const details = mergePosterLinks({ links: [link('https://a.test/one')] }, [link('https://a.test/one', 'QR')])
+    expect(details.links).toHaveLength(1)
+  })
+
+  it('starts a links row on a read that had none, and leaves the rest of the details alone', () => {
+    const details = mergePosterLinks({ features: ['tea'] }, [link('https://b.test/qr')])
+    expect(details.links?.map((l) => l.url)).toEqual(['https://b.test/qr'])
+    expect(details.features).toEqual(['tea'])
+  })
+
+  it('is a no-op with nothing to add, and never grows past the cap the details column keeps', () => {
+    const base = { links: [link('https://a.test/one')] }
+    expect(mergePosterLinks(base, [])).toBe(base)
+    const many = Array.from({ length: 14 }, (_, i) => link(`https://q.test/${i}`))
+    expect(mergePosterLinks(base, many).links).toHaveLength(10)
   })
 })

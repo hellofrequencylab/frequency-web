@@ -52,9 +52,11 @@ export default async function StagedEventReviewPage({ params }: { params: Promis
         intakeId={review.id}
         status={review.status}
         initialModel={review.model}
+        door={review.door}
         note={review.note}
         sourceText={review.sourceText}
         imageNames={review.imageNames}
+        posterUrl={review.posterUrl}
         targetEventId={review.targetEventId}
         error={review.error}
       />

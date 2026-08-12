@@ -20938,3 +20938,580 @@ generalizes before it is copied four times.
 - The `practice.guided` row is asserted in `lib/admin/modules/registry.test.ts` (it leads the
   practice rail on both `modulesFor` and `modulesForScopeKind`), and the lock and diff rules in
   `lib/studio/redraw.test.ts`, against a toy manifest AND against the real Practice one.
+
+## ADR-995: The drawn cover and the pre-publish read get a door
+
+Follows [ADR-993](DECISIONS.md), which built both features. Spec: [STUDIO.md](STUDIO.md).
+
+## The problem
+
+ADR-993 shipped two working assets and no way to reach either.
+
+`SparkReview` (`components/studio/spark/spark-review.tsx`) grew two optional props, `cover` and
+`quality`. Nothing passed either one. The Recraft engine, the Loom filing, the AI labelling, the
+`entity-cover` budget key, the entity-agnostic quality gate, and its server action all existed and
+were, from a member's point of view, dead code.
+
+`SparkReview` also had exactly one consumer (`components/studio/commerce/commerce-spark.tsx`).
+Every other wizard renders its own review step, so "pass two props to SparkReview" reached one
+surface out of five.
+
+## The decision
+
+**1. The two offers move out of the review board into their own kit file.**
+
+`components/studio/spark/spark-offers.tsx` holds the two cards; `SparkReview` renders them, so its
+consumers change nothing. Four of the five wizards keep a bespoke review step, and without this
+each would have hand-rolled the same two cards in four wordings. One card, one wording, five
+surfaces.
+
+`components/studio/spark/use-spark-offers.ts` holds the plumbing: availability, generation,
+verdict state, and the mapping from the raw verdict enum to member-facing words. A wizard declares
+what it is making and what Vera should draw from; it never restates the rules.
+
+**2. Four wizards keep a bespoke review, one uses the board.**
+
+| Wizard | Review | Why |
+| --- | --- | --- |
+| `commerce-spark.tsx` | `SparkReview` | Already did. Its draft is manifest-shaped, so the board is the right renderer. |
+| `journey-spark.tsx` | Bespoke + `SparkOffers` | Edits a weekly arc and a conditional meeting block against state that is not manifest-shaped. |
+| `practice-spark.tsx` | Bespoke + `SparkOffers` | Carries a Pillar chip group and a read-only timer preview a one-text-box-per-row board cannot express. |
+| `circle-wizard.tsx` | Bespoke + `SparkOffers` | Holds a `CircleSparkDraft`, not a Circle. The two shapes name About differently. |
+| `event-spark.tsx` | Bespoke + `SparkOffers` | Holds an `ExtractedEvent` needing a datetime and a money conversion, and hides the price row on a free event. |
+
+Forcing the four onto the board would have cost real capability to buy uniformity in a place the
+author never sees. The two OFFERS are the thing that had to be shared, and they are.
+
+**3. Both stay offers, enforced by shape rather than by discipline.**
+
+Neither hook can disable anything: `useCoverOffer` returns card props, `useQualityCheck` returns
+card props, and no wizard's `nextDisabled` reads either. A verdict is held in memory, sent nowhere,
+and is gone when the tab closes. Publishing with no image and creating a draft nobody has read are
+both first-class outcomes, and always were.
+
+**4. A generated cover reaches the entity only where the entity can hold one.**
+
+`generateEntityCoverAction` files the image in the author's Loom and returns a URL; the surface puts
+it on the draft. `createJourneyFromSparkAction` and `createPracticeFromSparkAction` gained one
+optional field each (`coverImage` / `headerImage`), both re-validated server-side as `http(s)` URLs
+before they touch a column that feeds an `<img src>`.
+
+Three entities are deliberately not offered a cover:
+
+- **Product, Classifieds listing, Service.** All three declare their images `veraDrafts: false`, so
+  `coverFieldFor` returns null. A product photo must show the real thing. This is ADR-993's rule
+  working, not a gap.
+- **Circle.** The manifest declares no image field, and `createDraftFromSparkAction` takes a frame
+  with nowhere to put one.
+- **Event.** An event DRAFT carries its cover as a private storage path inside the author's own
+  folder (`isOwnedStoragePath`, `lib/events/details-media.ts`), not as a URL. A Loom URL cannot ride
+  there without changing what an event draft's cover IS. The Spark already photographs a flyer on
+  screen one, and the draft editor is the next screen.
+
+## Consequences
+
+- Adding a fillable image field to a manifest lights the offer up with no edit to any wizard.
+- The Journey's read spends the Opus `journey-review` budget from the Spark, before creation. Its
+  fail-closed copy still says "your Journey is still live in the library", which is false when the
+  Journey does not exist yet. Worth a pass on `QUALITY_STANDARDS.journey.pending` in
+  `lib/ai/quality-gate.ts`.
+- Giving the Event Spark a drawn cover means teaching event drafts to carry a Loom reference. That
+  is a schema-shaped change and is not attempted here.
+
+## ADR-996: Edit re-entry, generalized to four entities, with the dials remembered
+
+**Follows:** ADR-450 §2 (the one Edit toggle, two planes), ADR-994 (edit re-entry, Practice only),
+ADR-986/597 (the Studio kernel + manifests), ADR-553 (the locked menu catalog)
+
+## Context
+
+ADR-994 shipped edit re-entry for the **Practice alone**, on purpose, and said why: "the second
+entity will show whether the redraw action generalizes before it is copied four times." It also
+left one thing explicitly unbuilt: "**Mood and directions are not persisted.** An author who
+redraws twice re-picks the mood."
+
+This is the second, third, and fourth entity, and the persistence.
+
+## Decision
+
+### 1. The redraw generalized. Here is the shape.
+
+Every entity's redraw is now the same four steps, and three of them are kernel code
+(`lib/studio/kernel/redraw.ts`, still pure and entity-blind):
+
+| Step | What | Where |
+| --- | --- | --- |
+| 1 | `pins = declaredLockKeys(manifest, requested)` | kernel |
+| 2 | `safe = applyLock(manifest, pins, proposal)` — **the delete** | kernel |
+| 3 | `settled = settleRedraw({ manifest, pins, current, proposed })` — the diff | kernel |
+| 4 | write exactly the paths `settled.changes` names | entity |
+
+Plus `redrawBrief({ manifest, lead, mood, directions, locked })`, which composes the one brief
+every entity sends Vera: the lead line, the mood's tone directive, the author's directions, and
+the pins named the way the author named them.
+
+**What did NOT generalize, and should not have:**
+
+- **The authorization gate.** `practice.editSettings` / `circle.editSettings` /
+  `event.editSettings` / `journey.editSettings` resolve through four different capability paths.
+- **Which Vera path is called.** A Practice and a Circle have field-patch editors
+  (`planPracticeEdits`, `planCircleEdit`); a Journey has an OPS editor over a block tree
+  (`planJourneyEdits`); an Event has no edit path at all and re-runs its own Spark
+  (`draftEventSpark`).
+- **The translation between the planner's vocabulary and the manifest's field paths.** A Practice
+  needs none (its manifest paths ARE its column names). A Circle needs a real one: Vera says
+  `card` and `meetup`, the manifest and the draft say `about` and `meetup.text`.
+
+So the honest boundary is: **the lock, the brief, and the diff are shared; the gate, the planner,
+and the path mapping are per entity.** Forcing the last three into one function would have meant a
+`switch (entity)` in the kernel, which is the exact thing `pnpm check:studio` exists to prevent.
+
+### 2. The lock had a hole that only a second entity could reveal.
+
+`lockedPaths` walked `manifest.fields` and nothing else. Two of the three new entities pin a
+**repeated collection** and declare no plain field in that section:
+
+- a Circle offers `agreements` (the group's own norms),
+- a Journey offers `arc` (the weekly Phases).
+
+Both resolved to **zero paths**. The pin rendered, the author pressed it, and it protected nothing.
+Invisible on the Practice, which pins `content` (three ordinary fields), and it would have stayed
+invisible until an author lost their group's agreements to a redraw. `lockedPaths` now also
+resolves a repeat's section (or its `arrayPath`) to the collection path, which is the key a patch
+writes it under, so the delete bites exactly as it does for a plain field.
+
+### 3. Lock is enforced by deletion, per entity.
+
+Unchanged from ADR-994 and non-negotiable: the pin is honoured by **removing** the pinned field
+paths from the patch before anything is compared or written. Vera is also told, but the delete is
+the guarantee. Pins the manifest never declared are dropped (`declaredLockKeys`), so a client
+cannot invent protection.
+
+| Entity | Pins offered | What the delete removes |
+| --- | --- | --- |
+| Practice | `content` | `summary`, `description`, `body` |
+| Circle | `identity`, `agreements` | `name`, `about`, `primaryPillar`, `slug`; and the whole `agreements` collection |
+| Journey | `identity`, `arc` | `title`, `emoji`, `accent`, `cover_image`, `slug`; and the whole `arc` collection |
+| Event | none declared | nothing to delete |
+
+The Event row is the one worth stating plainly. Its manifest declares `steer: { mood, directions }`
+and no `lock`, so the rail draws no pins and `declaredLockKeys` drops every requested key. That is
+honest rather than missing: the Event redraw is bounded server-side to **title and description
+only**, so the date, the venue, the price, and the ticket tiers are outside its reach entirely and
+there is nothing a pin would add. Turning pins on is a manifest change (declare `lock`), and no
+action code changes when it happens.
+
+### 4. Four catalog rows, no render edits.
+
+The admin menu is a locked contract (ADR-553). Four `Guided` rows, all `slot: 'basics'`,
+`render: 'inline'`, `order: 5` so Guided leads each rail per ADR-450's fixed section order:
+
+`practice.guided` (existing) · `circle.guided` · `event.guided` · `journey.guided`
+
+Each is one row in `ADMIN_MODULES` plus one line in `MODULE_COMPONENTS`. The exact-list drift
+guards in `lib/admin/modules/registry.test.ts` were updated for all four scopes.
+
+### 5. One surface, four declarations.
+
+`components/admin/modules/guided-module.tsx` is the whole Guided section: the steer panel, the
+diff, the put-it-back, the loading and empty states. The four entity modules are ~30-line
+declarations of a manifest, a read-gated getter, and two actions. The Practice's hand-written
+module became one of them, which is the real proof the shape held.
+
+### 6. Mood and directions now persist, in their own table.
+
+New table `studio_steer`, keyed `(entity, entity_id, profile_id)`, holding `mood`, `directions`,
+and `locked`. Written by every redraw that passes its gate; read on mount by the Guided section.
+
+**Why not nullable columns on the entity's own table**, which is the usual preference:
+
+1. **Privacy.** `directions` is the author's private note to Vera. `practices`, `circles`,
+   `events`, and `journey_plans` all carry public read policies, so a column there would publish
+   the author's working notes to anyone with the anon key.
+2. **It is kernel behaviour, not entity data.** The dials are declared once and offered to every
+   manifest that declares `steer`. Four column pairs on four tables would re-declare one shared
+   thing four times, and a fifth entity's re-entry would need a fifth migration.
+3. **There is no single honest home.** A Circle's draft spans `circles` + `circle_profiles`; a
+   Journey's spans `journey_plans` + `journey_plan_items`.
+
+**Per author, not per entity:** the dials are the author's own hand on the wheel. That also means
+the read needs no per-entity capability check, because it can only ever return the caller's own row.
+
+Posture mirrors `business_intake` / `event_intake`: RLS enabled, **no client policies**, default
+grants revoked, registered in `scripts/rls-deny-all.txt`. The only access path is
+`lib/studio/steer-store.ts` through the service-role client.
+
+Migration: `supabase/migrations/20270223000000_studio_steer.sql`. Purely additive (one new table,
+one index, its RLS), idempotent, safe to re-run. **Shipped UNAPPLIED**; the store is fail-soft on
+every call, so the redraw works exactly as it did before the moment the migration lands.
+
+## Consequences
+
+- A kernel change now lands in four wizards at once, which is the property the Studio contract
+  exists to hold. Adding a fifth entity's re-entry is one catalog row, one 30-line module, one
+  redraw action, and no migration.
+- **The Journey redraw deliberately ignores three of Vera's five op kinds.** It consumes
+  `identity` and `phase`; `practice`, `add_practice`, and `remove` are dropped. "Draft it again"
+  re-words a Journey, it does not silently restructure the practices an author placed. The
+  editor's own Vera box remains where an author asks for that.
+- **The Event redraw is copy-only** (title + description) and re-runs the Spark rather than an
+  edit planner. Widening it means either declaring `lock` on the Event manifest or writing a real
+  event edit planner in `lib/ai/`, both of which are separate decisions.
+- `changedFields` is kept alongside the new `settleRedraw`. It reads NESTED drafts through the
+  manifest's own `read` functions; `settleRedraw` compares FLAT path-keyed display records, which
+  is what an entity holds after it has translated a planner's patch. Both are used.
+- The steer read is per author, so a co-manager who redraws the same Circle sees their own dials,
+  not the host's. That is intended; if a shared "house mood" per entity is ever wanted, it is an
+  additional column on the same table, not a re-key.
+
+## ADR-997: The Event Seeder's second door, and the honest answer on photos
+
+Completes [ADR-989](DECISIONS.md) (the Event Seeder), which shipped with both of these
+listed under "Not built, on purpose". Respects [ADR-987](DECISIONS.md) (the Loom is the only
+image picker an operator sees) and [ADR-986](DECISIONS.md) (the Studio kernel).
+
+**DRAFT.** This lives in `docs/adr-drafts/` because concurrent work was in flight on
+`docs/DECISIONS.md` when it was written. Move it into the ledger verbatim. Until it lands there,
+`pnpm check:adr` reports every `ADR-997` citation as dangling, because the guard resolves cited
+numbers against the ledger's headings. ADR-995 and ADR-996 are dangling for the same reason today.
+
+**No migration.** `event_intake` is applied in production and is unchanged. Everything below is
+new jsonb keys inside `inputs`, which the table already carries.
+
+## The problem
+
+ADR-989 left two loose ends and named them:
+
+1. **The flyer scan did not stage.** `event_intake`, its types, and the review board all accepted
+   a `scan` source. Nothing produced one. An operator with a wall of posters could only make one
+   draft at a time, through the member flow, and drafts do not queue up anywhere reviewable.
+2. **Chat photos were carried as filenames.** A WhatsApp export with media has real image files
+   sitting beside the text. The board printed their names in the success box after seeding, which
+   is the wrong moment and reads like a receipt for something that happened.
+
+## The decision
+
+### 1. The scan stages server-side, in one request, and the read never comes back to the browser
+
+`scanPosterForReview` (`app/(main)/events/scan/actions.ts`) runs the vision pass and stages the
+result on `event_intake` in the same call. `stageScannedEvent` (`lib/events/seed/from-scan.ts`) is
+the writer, and it is the sibling of `from-chat.ts` in every respect: it writes to the staging
+table and nowhere else, it lands at `review`, and its rows are demos.
+
+This is a stronger trust posture than the chat door has, and it costs nothing. The chat importer
+has to accept classified items back from the browser (the operator ran a dry run first and is
+staging what they saw), so it re-coerces every extraction and re-parses the chat server-side to
+recover the ledger snippet. The scan door does not need any of that: the extraction it stages is
+the read it just performed. The client supplies exactly two things, both re-validated:
+
+- **The storage paths.** Ownership-checked against the caller's own auth-user folder, as the scan
+  always has.
+- **The QR URLs its own device decoded.** A QR pattern is the one thing the vision model cannot
+  read, so this genuinely has to come from the browser. It goes through `coerceEventDetails` (safe
+  http/https only, labelled, capped at ten) and is folded in by `mergePosterLinks`, a pure,
+  tested, dedupe-on-URL merge.
+
+One vision pass serves both doors. `readPoster` is now the private shared body of `scanPoster` and
+`scanPosterForReview`, so the AI kill switch, the per-feature budget check, the path-ownership
+check, and the temp-shot cleanup exist once and a change to any of them reaches both.
+
+**The batch loop is the point.** `/events/scan` is a member page, so `canSeedEvents`
+(`lib/events/seed/gate.ts`) answers the console's own gate as a BOOLEAN instead of a redirect, and
+the page offers operators a second button. Send a poster, the picker clears, photograph the next
+one, with a running tally and a link to the board. No draft editor in between. The gate is
+declared once and re-checked at the write: `canSeedEvents` decides whether a button renders,
+`requireAdmin('admin', { staff: 'community', staffLevel: 'write' })` decides whether anything is
+written, so a browser that fakes its way to the button still gets nothing.
+
+**The poster travels.** The photo rides on `inputs.posterPath`, not in the draft (the draft is the
+manifest's vocabulary and outlives the door it came through), and the apply hands it to
+`createEventDraft` as `posterPath`. This is not a second image path: it is the same object, in the
+same private bucket, handed to the same writer that keeps it when the scan builds a draft
+directly. ADR-987 is untouched. On the board the poster IS the receipt, signed server-side for the
+life of the page and shown open, because a flyer has no text to quote and inventing a snippet out
+of the read would be citing the answer as its own source.
+
+### 2. Chat photos are NOT uploaded. They stay names, and every surface says so
+
+The alternative was to file them into the Loom at staging. Four reasons not to, in order of weight:
+
+1. **It would widen the posture of unvetted material.** `event_intake` has RLS on with zero
+   policies precisely because a staged row can hold third-party content lifted from a private
+   group chat with nobody's consent. The Loom is a browsable, reusable, space-scoped library that
+   `insertSpaceLibraryImage` files as approved. Moving a photo from the first into the second,
+   before an operator has decided the event is even real, moves it from quarantine into a catalog.
+2. **The photos are of people, and nobody has been asked.** A poster on a wall is public; a photo
+   posted in a group chat is not. The event may be set aside as chatter a classifier misread, and
+   the photo would still be in the library.
+3. **The volume is wrong.** A stage run carries up to fifty events, most of which will never be
+   seeded. That is hundreds of unreviewed images filed to keep a handful.
+4. **It would be a second image path.** Chat photos exist only as `File` objects in the operator's
+   browser. Uploading them means a new client upload route for unvetted material, which is exactly
+   the shape ADR-987 deleted. The Loom is a picker, and the operator already meets it in the right
+   place: the seeded draft, where they attach the real images before publishing.
+
+So `inputs.imageNames` stays a paper trail, and the honesty is now stated where the operator can
+act on it, not buried in a success box:
+
+- **On the staging card** (`/admin/import`), directly under thumbnails of the very photos: they
+  stay in this browser, they are not uploaded, the names travel.
+- **On the review board**, from the moment a row lands rather than only after seeding: "The chat
+  photos are names only", the count, why nothing was uploaded, and the filenames rendered plainly
+  as text chips so they cannot be mistaken for images.
+
+The two doors are deliberately asymmetric, and the board says which is which. A scanned poster
+shows the photo it was read from and says seeding attaches it. A chat event shows the message it
+was read from and says the photos did not come across. Neither one implies the other's behaviour.
+
+## What did not change
+
+- **No migration.** `event_intake` is untouched. `posterPath` is a new key inside the `inputs`
+  jsonb the table already holds.
+- **The posture.** A seeded event is still an unlisted `status='draft'` row, written by the
+  existing `createEventDraft`, that an operator publishes deliberately.
+- **The renderer.** The board still renders `seededFieldsOnly(buildFieldModel(EVENT_MANIFEST,
+  draft, ledger))`. Nothing here walks a field.
+- **The gate.** `admin` + `community:write`, in the catalog row and on the page.
+  `pnpm check:gate-parity`, `check:studio`, and `check:menu` are all clean.
+
+## What is still missing
+
+- **Cover crops on the batch door.** The member flow deskews the poster and cuts a cover on-device
+  before saving. The batch door stages the whole photo and leaves the crop to the draft editor,
+  because doing it per poster would put a slow client step in the middle of a fast loop.
+- **`listEventIntakes` binds to `created_by`, but the per-row actions bind to the intake id.** So
+  one operator can open and seed another's staged row if they have its id. That is inherited from
+  ADR-989 and shared with the Business Seeder, not introduced here, and it is the right thing to
+  fix in one place across both seeders rather than in one console.
+
+## ADR-998: The governed create layer gets a gate and a face
+
+Closes the two gaps [ADR-988](DECISIONS.md) named in itself: adoption is opt-in with nothing
+enforcing it, and a proposal has no member-visible surface. Respects
+[ADR-986](DECISIONS.md) (the Studio kernel) and [ADR-382](DECISIONS.md) (the autonomy
+vocabulary). No migration: `agent_actions` already carries every column this uses.
+
+**DRAFT.** This lives in `docs/adr-drafts/` because concurrent work was in flight on
+`docs/DECISIONS.md` when it was written. Move it into the ledger verbatim. Until it lands there,
+`pnpm check:adr` reports every `ADR-998` citation as dangling, for the same reason ADR-995
+through ADR-997 and ADR-999 are dangling today.
+
+Code: `scripts/check-creates.mjs` (+ its test) · `lib/ai/vera/create-commits.ts` ·
+`lib/ai/vera/create-entity.ts` (three new exports) · `app/(main)/drafts/*`.
+
+## The problem
+
+ADR-988 built the governed create layer and shipped it with nobody using it. Its own status line
+said so: "Server layer shipped; wizard adoption is per-surface and follows." Two things followed
+from that, and both are worse than they sound.
+
+**The audit log is empty.** ADR-988's whole argument is that creation is the highest-volume write
+on the platform and the one with no evidence behind it, so the autonomy ladder has nothing to be
+graduated against. A layer nobody calls produces exactly as much evidence as no layer at all. The
+census below found 26 entity-row writes across the repo and 18 member-facing create entry points.
+Zero of them called `proposeCreate` or `confirmCreate`.
+
+**A proposal was write-only.** Vera can already reach `create_entity`, which resolves to
+`proposeCreate` and stops. That is correct and it is the point. But the `studio_create` row it
+writes sat at status `proposed` with no surface anywhere: the member it belonged to could not
+read it, confirm it, or throw it away. It simply expired after 24 hours. The gate was real and
+the door behind it was bricked up.
+
+## The decision
+
+### 1. A guard that says what it enforces, and what it cannot
+
+`pnpm check:creates` (`scripts/check-creates.mjs`) enforces two separable things and refuses to
+pretend it enforces more.
+
+**Rule 1, the census.** Every write that inserts or upserts a row into a table backing a Studio
+entity must be classified in `ENTITY_WRITES` as one of five roles: a member `create`, an
+`operator` create, a `copy` of an existing row, a system `materialize`, or a `fixture`. An
+unclassified entity write fails the build. This is the forward-looking half: a tenth create path
+cannot land unnoticed, which is precisely how the first nine arrived.
+
+**Rule 2, adoption.** Every entry point in `CREATE_ENTRIES` (the exported server action a creation
+surface actually calls) must call the confirm phase inside its own function body, unless it is
+named in `UNROUTED` with a dated reason. `UNROUTED` may only shrink: an entry that has since
+adopted, but is still listed, fails as a stale allowance.
+
+**Rule 3, the autonomy wall.** The four structural promises ADR-988 makes about `auto` are
+re-asserted in the build so they cannot be edited away quietly: `CreateAutonomyTier` is still
+`Exclude<AutonomyTier, 'auto'>`, the declared tier is still `suggest`, `create_entity` is still
+absent from `PlaybookActionTool`, and `confirmCreate` still re-derives the caller, re-checks the
+gate at the moment of the write, and claims the row with a conditional update.
+
+**Rule 4, integrity,** plus a `MIN_WRITE_SITES` floor, so a broken matcher reports red, not green.
+
+**What it cannot detect, stated in its own header.** A coarse guard that overclaims is worse than
+a narrow one that says so. It cannot judge intent (that call is a human's, written into
+`ENTITY_WRITES`). It cannot see a write through an RPC, a trigger, raw SQL, a computed table name,
+or an unregistered untyped table handle. It cannot prove that the routing is *correct*, only that
+the confirm phase is called. And it cannot follow the call graph: adoption is checked at the entry
+point, not at the writer, because the governed layer takes the entity's own create path as a
+callback, so a brand-new surface calling an already-registered writer is invisible to both rules
+until somebody adds it to `CREATE_ENTRIES`. That is the largest hole and there is no static fix
+for it.
+
+### 2. How far adoption should go, written down rather than left implicit
+
+Some creates genuinely should not propose-and-confirm. Saying nothing about them would make the
+allowlist look like universal debt, so they are named in `NOT_PROPOSE_AND_CONFIRM` with the
+reason, and the guard requires each to still name real code.
+
+| Not routed | Why |
+| --- | --- |
+| `/admin` Circle, Event and Shop creates | **Operator.** Behind the admin gate, on the admin client, in the operator console. A staff member typing one in IS the human confirm. |
+| Listing Seeder + Event Seeder publish/approve | **Already propose-and-confirm.** Both stage every row in their own intake table and an operator approves each one on a review board. That tap IS the confirm; a second proposal row would audit the same decision twice. |
+| `mintPracticeForBlockAction` | **Materialization.** A Journey block mints its Practice as a consequence of an edit the author already made. There is no separate draft to approve. |
+| `createMasterFrameworkAction` | **Curriculum tooling.** Mints the platform master framework, not a member Journey. |
+| `remixTemplateAction` | **Copy.** The template the member picked IS the thing they reviewed. |
+| Demo generators | **Fixture.** Auditing them would pollute the log the ladder is read from. |
+
+The same judgement runs through `ENTITY_WRITES`: forks, duplicates, clones, run kickoff events and
+Circle occurrence events are all real inserts and none of them are proposals.
+
+### 3. A proposal gets a face, at `/drafts`
+
+A member-facing page listing their own pending `studio_create` proposals, with two decisions per
+row: make it, or bin it. Three new exports in `lib/ai/vera/create-entity.ts` back it, and they
+live there rather than in the route so the ownership rule, the TTL and the single-use claim are
+stated in exactly one file.
+
+- `listMyCreateProposals` reads only the caller's own rows, filtered against a caller it derives
+  itself, and drops expired ones from the read rather than showing them as confirmable.
+- `dismissCreateProposal` is the mirror of the confirm claim: same ownership check, same
+  conditional update on `status = 'proposed'`. So a dismissed proposal can never afterwards be
+  confirmed, and a confirmed one can never be dismissed out from under a write that already ran.
+- `confirmProposalWithRegisteredCommit` looks the commit up and hands everything else straight to
+  `confirmCreate`, unchanged. The caller is re-derived, the gate is re-checked at the moment of
+  the write, a stale or already-spent proposal is refused, and the row is claimed exactly once
+  before the commit runs.
+
+Nothing on that page is autonomous. Both actions run only from a member's own tap in their own
+session, the confirm half has no tool key, and it appears in no tool registry.
+
+### 4. The commit registry, and why it is nearly empty on purpose
+
+`confirmCreate` takes the entity's own create path as a callback. A generic surface has no wizard
+to supply one, so `lib/ai/vera/create-commits.ts` is the lookup that closes the gap. It is the
+narrowest thing that could work, because the obvious failure mode is that it quietly becomes the
+second authority ADR-988 §4 forbids. Two admission criteria, both required:
+
+1. **The entity's gate is a `capability` gate**, which `confirmCreate` re-checks itself, twice. A
+   `scoped` gate (a Space plan limit, a per-Space role ladder, a seller gate) is enforced by the
+   entity's own action, and a commit invoked from the drafts surface would skip it. So a scoped
+   entity is never registered. Not "not yet" — never, unless its scoped gate moves into the commit.
+2. **The entity's own create action adds nothing beyond that gate and the writer.** If the action
+   also settles policy (a review status derived from the author's role) or seeds companion rows,
+   calling the raw writer from here would produce a *different* thing from the one the wizard
+   makes. Re-stating that policy is how a governance layer becomes the bug.
+
+Today exactly one entity passes both: **Circle**. Its action is `assertCanCreate('circle.create')`
+plus `createBlankCircleDraft`, and nothing else. Event needs a whole form, Journey is born with
+its phases seeded, Practice settles its review status from the author's role, and Space, business,
+listing, product and service are all scoped. Each of those carries a plain member-facing sentence
+in `NO_COMMIT_REASON`, which the page shows instead of a button. Those drafts are still fully
+readable and still dismissable there; they are finished in their own builder, which is where their
+authority lives. That is a statement about where authority sits, not a gap waiting to be filled.
+
+## The order to route them in
+
+`UNROUTED` holds 18 lines today. The order that earns the most audit evidence per unit of risk:
+
+1. **`createDraftFromSparkAction` / `createBlankDraftAction`** (Circle). Vera already drafts this
+   spark, the commit is already registered, and the action has no policy of its own. This one is
+   nearly free.
+2. **`createJourneyFromSparkAction`** and **`createPracticeFromSparkAction`**. The other two roads
+   Vera already drafts. Both need their post-create seeding lifted into the commit callback first.
+3. **`createSpace` / `createBusinessSpace`**. Highest value per row (a Space is the least
+   reversible thing a member makes) and the scoped plan limit stays exactly where it is: the
+   governed layer records which gate decides and the commit keeps enforcing it.
+4. **`createEvent`**. Needs its `FormData` parse lifted above the propose call.
+5. The commerce four, last: they are scoped, so they gain the audit row and nothing else.
+
+## Consequences
+
+The census exists and is enforced, so an unclassified entity write now fails a build. The wall
+around `auto` is checked by CI rather than asserted in prose. A proposal is readable, confirmable
+and bin-able by the person it belongs to, which is what makes an AI-drafted create a real feature
+rather than a write into a void.
+
+The cost is honesty about the remaining state: **the adoption contract is 18/19 unenforced.** Every
+line in `UNROUTED` is real, unaudited create volume, and the guard prints them on every green run
+rather than letting a checkmark imply otherwise. The deterministic path is untouched throughout:
+with the AI kill switch off, every one of those 18 entry points creates exactly what it created
+before, by exactly the same commit.
+
+## Not decided here
+
+Whether creation ever graduates above `suggest`. ADR-988 said it should not on the evidence
+available; there is still no evidence, because the log is still nearly empty. That is the argument
+for routing the 18, not for moving the wall.
+
+## ADR-999: A seeder console gate is not a row permission
+
+Touches the Event Seeder (ADR-989) and the Smart Business Importer
+([BUSINESS-IMPORTER.md](BUSINESS-IMPORTER.md) §4/§8).
+
+## The problem
+
+Both seeder consoles list rows bound to `created_by`, so an operator sees only their own staged
+events and only their own imports. Every PER-ROW action fetched by intake id alone.
+
+Those are two different questions. The console gate answers "may you use this console". It does
+not answer "may you act on THAT row". So any operator who cleared the staff gate and held another
+operator's row id could open it, read the third-party contact details on it, edit its fields,
+re-seed it, and apply it to a live Space. Nothing in the product hands out a stranger's id, but
+nothing stopped one either: an id in a shared link, a screenshot, or a log was enough.
+
+The rows are not innocuous. A staged event can carry contact details lifted from a private group
+chat. A business intake carries un-verified third-party facts and the master profile that
+regenerates a live Space's whole page.
+
+## The decision
+
+**1. Every per-row action reads through ONE helper per console.**
+
+`readOwnedIntake(intakeId)` resolves the caller, returns the row when `created_by` matches, and
+otherwise returns null. Null is what each caller already renders: "not found", the same answer a
+row that never existed gives, so the console never confirms a stranger's row to someone who may
+not touch it.
+
+One helper, not a branch repeated eleven times, so a new action inherits the rule by using the
+same read.
+
+**2. The rule is ownership OR platform admin, never ownership alone.**
+
+The Business Seeder carries a deliberate power: the "Re-seed an existing Space" search is admin
+only (web_role `admin` / `janitor`), and `adoptSpaceMasterProfile` hands the admin back the
+Space's EXISTING master profile, which another operator very likely created. A blanket ownership
+bind would have killed that path, silently, at the first click. So the helper falls back to the
+unbound read for a platform admin, and for nobody else. The Event Seeder takes the same rule, so
+the two consoles answer the question the same way.
+
+**3. The bind lives in the store, not in a filter the caller remembers to add.**
+
+`getEventIntakeForOperator(id, operatorId)` (`lib/events/seed/store.ts`) and
+`getIntakeForOperator(id, operatorId)` (`lib/importer/store.ts`) select on `id` AND `created_by`
+in one query. The unbound `getEventIntake` / `getIntake` stay, because the background pipeline
+(research, apply, the queue drain) has no caller to bind to. The consoles no longer reach for
+them except through the admin arm of the helper.
+
+## What this changes for an operator
+
+| Caller | Their own row | Another operator's row |
+| --- | --- | --- |
+| Community / structure staff | ✅ unchanged | 🔴 "not found" (was: full access) |
+| Platform admin / janitor | ✅ unchanged | ✅ unchanged (the re-seed power) |
+
+Nothing loosens. Every existing gate stays exactly where it was; this adds a second question
+underneath it.
+
+## Enforcement
+
+`app/(main)/admin/event-seeder/row-ownership.test.ts` and
+`app/(main)/admin/business-seeder/row-ownership.test.ts` lock all three arms of the rule per
+console: the owner passes, a stranger is refused and writes NOTHING, a platform admin passes on a
+row they do not own. The business test drives all three arms over ONE list of every per-row
+action, so adding an action means adding a row to that list and seeing the rule proved for it.

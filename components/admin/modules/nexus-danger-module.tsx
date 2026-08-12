@@ -43,7 +43,7 @@ export function NexusDangerModule() {
 
   if (!slug) return null
   if (loading) {
-    return <div className="h-32 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
+    return <div className="h-32 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
   }
   if (!data) return null
 
@@ -65,14 +65,14 @@ export function NexusDangerModule() {
 
   return (
     <div className="@container">
-      <div className="rounded-xl border border-danger/30 bg-danger/5 p-4">
+      <div className="rounded-card border border-danger/30 bg-danger/5 p-4">
           {alreadyArchived || done ? (
             <p className="text-body-sm font-medium text-text">This nexus is archived.</p>
           ) : !armed ? (
             <button
               type="button"
               onClick={() => setArmed(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-danger/40 bg-surface px-4 py-2 text-meta font-semibold text-danger transition-colors hover:bg-danger/10"
+              className="inline-flex items-center gap-1.5 rounded-control border border-danger/40 bg-surface px-4 py-2 text-meta font-semibold text-danger transition-colors hover:bg-danger/10"
             >
               <Archive className="h-3.5 w-3.5" /> Archive this nexus
             </button>
@@ -87,7 +87,7 @@ export function NexusDangerModule() {
                   type="button"
                   onClick={handleArchive}
                   disabled={pending}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-danger px-4 py-2 text-meta font-semibold text-on-danger transition-colors hover:bg-danger/90 disabled:opacity-40"
+                  className="inline-flex items-center gap-1.5 rounded-control bg-danger px-4 py-2 text-meta font-semibold text-on-danger transition-colors hover:bg-danger/90 disabled:opacity-40"
                 >
                   {pending ? 'Archiving…' : 'Yes, archive it'}
                 </button>
@@ -95,7 +95,7 @@ export function NexusDangerModule() {
                   type="button"
                   onClick={() => setArmed(false)}
                   disabled={pending}
-                  className="rounded-lg px-3 py-2 text-meta font-medium text-muted transition-colors hover:text-text disabled:opacity-40"
+                  className="rounded-control px-3 py-2 text-meta font-medium text-muted transition-colors hover:text-text disabled:opacity-40"
                 >
                   Cancel
                 </button>

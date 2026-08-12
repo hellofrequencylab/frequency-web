@@ -41,12 +41,16 @@ import {
   SparkShell,
   SparkSteer,
   StudioField,
+  fieldModelText,
+  useCoverOffer,
+  useQualityCheck,
   type FieldOptions,
 } from '@/components/studio/spark'
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 import { uploadLoomImage } from '@/lib/loom/picker-actions'
 import { buildFieldModel, sparkFields } from '@/lib/studio/kernel/review-kernel'
 import { DEFAULT_SEED_MOOD, type SeedMood } from '@/lib/studio/kernel/moods'
+import type { ProvenanceLedger } from '@/lib/studio/kernel/ledger'
 import type { EntityManifest, FieldDef, FieldKind } from '@/lib/studio/kernel/manifest'
 
 /** A draft in the entity's own shape. The manifest's paths address into it. */
@@ -214,13 +218,19 @@ export function CommerceSpark({
   // so an untouched form is not scolded in warning colour the moment it opens.
   const [touched, setTouched] = useState(false)
   const [pending, start] = useTransition()
+  /**
+   * Where each drafted value came from (kernel/ledger.ts). Empty until something is drafted rather
+   * than typed: today the only writer is a cover Vera draws, whose provenance is what lights the
+   * board's existing "Made by Vera" badge with no new render code.
+   */
+  const [ledger, setLedger] = useState<ProvenanceLedger>({})
 
   // Everything on screen 2 comes from the manifest: `placement: 'spark'`, plus anything required.
   const fields = useMemo(() => sparkFields(manifest), [manifest])
   const required = useMemo(() => fields.filter((f) => f.required), [fields])
   const imagesField = useMemo(() => manifest.fields.find((f) => f.kind === 'images'), [manifest])
   const byPath = useMemo(() => new Map<string, FieldDef>(manifest.fields.map((f) => [f.path, f])), [manifest])
-  const model = useMemo(() => buildFieldModel(manifest, draft), [manifest, draft])
+  const model = useMemo(() => buildFieldModel(manifest, draft, ledger), [manifest, draft, ledger])
 
   const missing = required.filter((f) => {
     const v = toControl(f, draft)
@@ -310,6 +320,53 @@ export function CommerceSpark({
       if (reason) setError(reason)
     })
 
+  // ── The two review-step offers (ADR-993 / ADR-995) ──
+  //
+  // Both are OFFERS and neither can block the create button below. The cover is only ever offered
+  // when the MANIFEST declares an image field Vera may fill (`veraDrafts !== false`), which is why
+  // the three commerce entities do not see it today: a product photo, a listing's photos, and a
+  // service's photos must show the real thing. Declare a fillable image field on one of them and
+  // the offer appears here with no change to this file.
+
+  const coverState = useCoverOffer({
+    entity: manifest.entity,
+    manifest,
+    draft,
+    subject: {
+      title: String(readAt(draft, 'title') ?? ''),
+      summary: String(readAt(draft, 'description') ?? ''),
+      mood,
+      directions,
+    },
+    scopeKey,
+    // The generated image is already a real asset in the author's Loom (ADR-987). All that happens
+    // here is putting its URL on the declared path and recording WHERE it came from.
+    onApply: (cover, offer) => {
+      setDraft((d) => {
+        const current = readAt(d, cover.path)
+        const list = Array.isArray(current) ? current.map((v) => String(v)) : []
+        return writeAt(d, cover.path, offer.multiple ? [...list, cover.url] : cover.url)
+      })
+      setLedger((l) => ({ ...l, [cover.path]: [cover.provenance] }))
+    },
+    onRemove: (cover) => {
+      setDraft((d) => {
+        const current = readAt(d, cover.path)
+        if (Array.isArray(current)) return writeAt(d, cover.path, current.filter((v) => v !== cover.url))
+        return writeAt(d, cover.path, '')
+      })
+      setLedger((l) => {
+        const next = { ...l }
+        delete next[cover.path]
+        return next
+      })
+    },
+  })
+
+  // The verdict is ADVICE. It is not stored, it is not sent with the create, and it never disables
+  // the create button.
+  const qualityState = useQualityCheck({ entity: manifest.entity, read: () => fieldModelText(model) })
+
   const exits = [{ label: cancel.label, onSelect: () => router.push(cancel.href) }]
 
   if (stage === 'doors') {
@@ -345,7 +402,7 @@ export function CommerceSpark({
         </SparkDoors>
 
         {pending && (
-          <p className="mt-4 text-xs text-muted" role="status">
+          <p className="mt-4 text-meta text-muted" role="status">
             Getting things ready…
           </p>
         )}
@@ -406,6 +463,8 @@ export function CommerceSpark({
     >
       <SparkReview
         model={model}
+        cover={coverState.offer}
+        quality={qualityState.check}
         disabled={pending}
         onEdit={(path, value) => {
           const def = byPath.get(path)
@@ -433,7 +492,7 @@ export function CommerceSpark({
         </div>
       )}
 
-      {review.note && <p className="mt-4 text-2xs leading-relaxed text-subtle">{review.note}</p>}
+      {review.note && <p className="mt-4 text-2xs leading-relaxed text-muted">{review.note}</p>}
     </SparkShell>
   )
 }

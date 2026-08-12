@@ -45,11 +45,16 @@ export function IntakeList({ items }: { items: StagedEventListItem[] }) {
       <EmptyState
         icon={CalendarDays}
         title="Nothing staged yet"
-        description="Run a WhatsApp chat export through Import from chat, then send the events it finds here for review."
+        description="Two doors feed this board. Run a WhatsApp chat export through Import from chat and send the events it finds here, or photograph posters around town and send each one straight over from the flyer scan."
         action={
-          <Link href="/admin/import" className={buttonClasses('secondary', 'sm')}>
-            Import from chat
-          </Link>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Link href="/admin/import" className={buttonClasses('secondary', 'sm')}>
+              Import from chat
+            </Link>
+            <Link href="/events/scan" className={buttonClasses('secondary', 'sm')}>
+              Scan a flyer
+            </Link>
+          </div>
         }
       />
     )
@@ -64,7 +69,7 @@ export function IntakeList({ items }: { items: StagedEventListItem[] }) {
             key={it.id}
             href={`/admin/event-seeder/${it.id}`}
             anchor={
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface-elevated text-muted">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-control bg-surface-elevated text-muted">
                 <CalendarDays className="h-4 w-4" aria-hidden />
               </span>
             }

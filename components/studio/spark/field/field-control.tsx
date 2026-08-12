@@ -18,7 +18,8 @@
 
 import { useState } from 'react'
 import { ImageIcon, X } from 'lucide-react'
-import { Input, Textarea, fieldClasses } from '@/components/ui/field'
+import { Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import type { FieldDef, FieldKind } from '@/lib/studio/kernel/manifest'
 import { cn } from '@/lib/utils'
@@ -122,7 +123,7 @@ export function FieldControl({ def, value, onChange, loaded, scopeKey, disabled,
     <div>
       {control}
       {hint && (
-        <p id={describedBy} className="mt-1.5 text-2xs text-subtle">
+        <p id={describedBy} className="mt-1.5 text-2xs text-muted">
           {hint}
         </p>
       )}
@@ -161,26 +162,25 @@ function renderControl({
     case 'reference': {
       const choices = optionsFor(def, loaded)
       return (
-        <select {...common} className={fieldClasses} value={asText(value)} onChange={(e) => onChange(e.target.value)}>
-          {/* An optional field needs a way back to "unset", and a reference that has not loaded
-              yet needs to say so rather than looking like an empty list of real choices. */}
-          {/* A field that is required, or that computes a default through `read`, is never actually
-              unset, so offering an empty option would invite a state it cannot hold. */}
-          {!def.required && !def.read && (
-            <option value="">{def.kind === 'reference' ? 'None' : 'Not set'}</option>
-          )}
-          {choices.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+        // An optional field needs a way back to "unset", and a reference that has not loaded yet
+        // needs to say so rather than looking like an empty list of real choices. A field that is
+        // required, or that computes a default through `read`, is never actually unset, so
+        // offering an empty option would invite a state it cannot hold.
+        <Select
+          {...common}
+          value={asText(value)}
+          onChange={(e) => onChange(e.target.value)}
+          options={choices}
+          emptyLabel={
+            !def.required && !def.read ? (def.kind === 'reference' ? 'None' : 'Not set') : undefined
+          }
+        />
       )
     }
 
     case 'toggle':
       return (
-        <label className="flex items-center gap-2 text-sm text-text">
+        <label className="flex items-center gap-2 text-body-sm text-text">
           <input
             {...common}
             type="checkbox"
@@ -211,7 +211,7 @@ function renderControl({
             // token-ok: native color input cannot accept a design token
             value={/^#[0-9a-f]{6}$/i.test(asText(value)) ? asText(value) : '#000000'}
             onChange={(e) => onChange(e.target.value)}
-            className="h-9 w-9 shrink-0 cursor-pointer rounded-lg border border-border bg-surface p-1"
+            className="h-9 w-9 shrink-0 cursor-pointer rounded-control border border-border bg-surface p-1"
           />
         </div>
       )
@@ -299,13 +299,13 @@ function LoomImageSlot({
                   inside an editor, so optimization buys nothing and the domain allow-list would have
                   to know every storage host. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={url} alt="" className="h-10 w-10 shrink-0 rounded-lg border border-border object-cover" />
+              <img src={url} alt="" className="h-10 w-10 shrink-0 rounded-control border border-border object-cover" />
               <span className="min-w-0 flex-1 truncate text-2xs text-muted">{url}</span>
               <button
                 type="button"
                 disabled={disabled}
                 onClick={() => onChange(list.filter((_, j) => j !== i) as string & string[])}
-                className="shrink-0 rounded-lg border border-border p-1 text-muted transition-colors hover:text-text disabled:opacity-50"
+                className="shrink-0 rounded-control border border-border p-1 text-muted transition-colors hover:text-text disabled:opacity-50"
               >
                 <X className="h-3 w-3" aria-hidden />
                 <span className="sr-only">Remove image {i + 1}</span>
@@ -318,12 +318,12 @@ function LoomImageSlot({
       {!multiple && value && (
         <div className="mb-2 flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={value} alt="" className="h-14 w-14 shrink-0 rounded-lg border border-border object-cover" />
+          <img src={value} alt="" className="h-14 w-14 shrink-0 rounded-control border border-border object-cover" />
           <button
             type="button"
             disabled={disabled}
             onClick={() => onChange('' as string & string[])}
-            className="rounded-lg border border-border p-1.5 text-muted transition-colors hover:text-text disabled:opacity-50"
+            className="rounded-control border border-border p-1.5 text-muted transition-colors hover:text-text disabled:opacity-50"
           >
             <X className="h-3.5 w-3.5" aria-hidden />
             <span className="sr-only">Remove {label}</span>
@@ -335,7 +335,7 @@ function LoomImageSlot({
         type="button"
         disabled={disabled}
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
       >
         <ImageIcon className="h-3.5 w-3.5" aria-hidden />
         {multiple ? 'Add from the Loom' : value ? 'Change' : 'Choose from the Loom'}
@@ -391,7 +391,7 @@ function TagsControl({
                 type="button"
                 disabled={disabled}
                 onClick={() => onChange(value.filter((t) => t !== tag))}
-                className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-muted transition-colors hover:text-text disabled:opacity-50"
+                className="inline-flex items-center gap-1 rounded-pill border border-border bg-surface px-2.5 py-1 text-meta text-muted transition-colors hover:text-text disabled:opacity-50"
               >
                 {tag}
                 <X className="h-3 w-3" aria-hidden />
@@ -440,7 +440,7 @@ function DateRangeControl({
   return (
     <div className={cn('grid gap-2', 'sm:grid-cols-2')}>
       <label className="block">
-        <span className="mb-1 block text-2xs font-medium uppercase tracking-wide text-subtle">Starts</span>
+        <span className="mb-1 block text-2xs font-medium uppercase tracking-wide text-muted">Starts</span>
         <Input
           id={id}
           type="datetime-local"
@@ -451,7 +451,7 @@ function DateRangeControl({
         />
       </label>
       <label className="block">
-        <span className="mb-1 block text-2xs font-medium uppercase tracking-wide text-subtle">Ends</span>
+        <span className="mb-1 block text-2xs font-medium uppercase tracking-wide text-muted">Ends</span>
         <Input
           type="datetime-local"
           disabled={disabled}

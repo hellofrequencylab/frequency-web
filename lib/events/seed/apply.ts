@@ -69,6 +69,15 @@ export async function applyEventIntake(
   // and the writer reads 0 cents the same way the scan flow's cleanPrice does.
   const priceCents = draft.isFree ? 0 : typeof draft.priceCents === 'number' ? draft.priceCents : null
 
+  // THE POSTER TRAVELS, THE CHAT PHOTOS DO NOT (ADR-997). A scanned flyer's photo is already
+  // stored, by the scan itself, in the private bucket, and this is the same writer that keeps
+  // it when the scan builds a draft directly, so it is handed straight over. It is read back
+  // off the service-role-only intake, where it was written server-side after an ownership
+  // check; it never round-trips through a client. A chat photo has no stored object at all,
+  // only the filename the export printed, so there is nothing here to hand over and the board
+  // says as much rather than pretending otherwise.
+  const posterPath = row.inputs?.posterPath ?? null
+
   const created = await createEventDraft(opts.operatorProfileId, {
     title: (draft.title ?? '').trim(),
     description: (draft.description ?? '').trim(),
@@ -79,6 +88,7 @@ export async function applyEventIntake(
     organizerName: (draft.organizerName ?? '').trim(),
     organizerContact: (draft.organizerContact ?? '').trim(),
     domain: coerceDomain(draft.domain),
+    posterPath,
     // Re-coerce on the way out: the draft has been hand-edited on the review board, so the
     // rows are re-validated against the persisted shape rather than trusted.
     details: coerceEventDetails(draft.details),

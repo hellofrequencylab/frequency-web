@@ -73,7 +73,9 @@ describe('admin module registry', () => {
     const caps = new Set<Capability>(['event.editSettings'])
     // event.placeAndTime + event.engage folded into event.settings (Event page overhaul): the host
     // edits the whole event in one flow, so only Settings + People remain as event modules.
+    // Guided leads on `order` 5 (ADR-996, the ADR-450 §2 edit re-entry generalized off the Practice).
     expect(modulesFor(eventScope, caps).map((m) => m.id)).toEqual([
+      'event.guided',
       'event.settings',
       'event.people',
       'event.crm',
@@ -99,8 +101,9 @@ describe('admin module registry', () => {
     const journeyScope: Scope = { kind: 'journey', journeyId: 'j1', authorId: 'a1' }
     const caps = new Set<Capability>(['journey.editSettings'])
     // ADR-846 seven-box shape: Settings, Builder/Layout, and Export all sit in the Settings box (basics);
-    // Danger keeps its own. Still in `order`.
+    // Danger keeps its own. Still in `order`, so Guided (ADR-996, order 5) leads.
     expect(modulesFor(journeyScope, caps).map((m) => m.id)).toEqual([
+      'journey.guided',
       'journey.settings',
       'journey.builder',
       'journey.export',
@@ -235,7 +238,9 @@ describe('admin module registry', () => {
     // modulesForScopeKind sorts by `order` (stable), so the order-10 modules keep declaration order, then
     // insights (14) and text (15) trail. This week's practice folded INTO circle.engage (ADR-846) — its
     // picker now mounts inside that one Engage box, so it is no longer a row of its own.
+    // Guided leads (order 5, ADR-996), then the order-10 spine in declaration order.
     expect(modulesForScopeKind('circle', 'sidebar').map((m) => m.id)).toEqual([
+      'circle.guided',
       'circle.settings',
       'circle.placeAndTime',
       'circle.people',
@@ -264,6 +269,7 @@ describe('admin module registry', () => {
       'nexus.danger',
     ])
     expect(modulesForScopeKind('event', 'sidebar').map((m) => m.id)).toEqual([
+      'event.guided',
       'event.settings',
       'event.people',
       'event.crm',
@@ -286,8 +292,10 @@ describe('admin module registry', () => {
       // Danger LAST (order 20), matching hub/nexus: destructive controls sit under everything else.
       'channel.danger',
     ])
-    // Journey carries its ADR-515 Phase 6 rail: Settings, Builder/Layout, Export, Danger, in `order`.
+    // Journey carries its ADR-515 Phase 6 rail plus the ADR-996 Guided lead: Guided, Settings,
+    // Builder/Layout, Export, Danger, in `order`.
     expect(modulesForScopeKind('journey', 'sidebar').map((m) => m.id)).toEqual([
+      'journey.guided',
       'journey.settings',
       'journey.builder',
       'journey.export',

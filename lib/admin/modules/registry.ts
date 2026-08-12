@@ -96,6 +96,26 @@ export interface AdminModule {
 }
 
 export const ADMIN_MODULES: readonly AdminModule[] = [
+  // EDIT RE-ENTRY (ADR-450 §2 · ADR-994 · ADR-996): the "Guided" section of the Inspector rail —
+  // the Spark's own steer dials (mood · directions · lock) run over the LIVE Circle, so the wizard
+  // stops being a one-way door. Declared FIRST and at order/priority 5 so it leads the circle rail,
+  // per ADR-450's fixed section order (Guided → Layout → Settings → … → Danger). It rides the
+  // `basics` slot rather than inventing a spine cell: the 9-category spine is a locked contract of
+  // its own, and Guided edits exactly what Basics holds.
+  {
+    id: 'circle.guided',
+    label: 'Guided',
+    desc: 'Re-steer this Circle with Vera: set the mood, say how to approach it, pin what to keep, and draft it again.',
+    Icon: Wand2,
+    scopes: ['circle'],
+    requiredCapability: 'circle.editSettings',
+    slot: 'basics',
+    surface: 'sidebar',
+    render: 'inline',
+    order: 5,
+    tier: 'standard',
+    priority: 5,
+  },
   {
     id: 'circle.settings',
     label: 'Circle settings',
@@ -407,6 +427,24 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     tier: 'extra',
     priority: 99,
   },
+  // EDIT RE-ENTRY for an Event (ADR-450 §2 · ADR-996). Same section, same dials, same order-5 lead
+  // as circle.guided / practice.guided. An Event's manifest declares no `lock`, so this one renders
+  // mood + directions and no pins; the redraw is bounded server-side to the title and description,
+  // so the date, the place, and the price are outside its reach.
+  {
+    id: 'event.guided',
+    label: 'Guided',
+    desc: 'Re-steer this event with Vera: set the mood, say how to approach it, and write the name and description again.',
+    Icon: Wand2,
+    scopes: ['event'],
+    requiredCapability: 'event.editSettings',
+    slot: 'basics',
+    surface: 'sidebar',
+    render: 'inline',
+    order: 5,
+    tier: 'standard',
+    priority: 5,
+  },
   {
     id: 'event.settings',
     label: 'Event Admin',
@@ -616,6 +654,23 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   // the self-contained JourneySettings editor INLINE; the block-tree Builder + Advanced/page_config is
   // DATA-HEAVY, so Layout is a minimal affordance that links out to the full-page builder (the hub/nexus
   // pattern), NOT a forced inline picker. Export is a light inline control; Danger is inline (NEVER banked).
+  // EDIT RE-ENTRY for a Journey (ADR-450 §2 · ADR-996). Same section, same dials, same order-5 lead
+  // as the other three. Pins cover Identity and the weekly arc; the redraw re-words the name, the
+  // promise, the overview, and each week's focus, and never restructures the practices inside them.
+  {
+    id: 'journey.guided',
+    label: 'Guided',
+    desc: 'Re-steer this Journey with Vera: set the mood, say how to approach it, pin what to keep, and draft it again.',
+    Icon: Wand2,
+    scopes: ['journey'],
+    requiredCapability: 'journey.editSettings',
+    slot: 'basics',
+    surface: 'sidebar',
+    render: 'inline',
+    order: 5,
+    tier: 'standard',
+    priority: 5,
+  },
   {
     id: 'journey.settings',
     label: 'Journey settings',

@@ -1,6 +1,9 @@
 'use client'
 
 import type { ComponentType } from 'react'
+import { CircleGuidedModule } from './circle-guided-module'
+import { EventGuidedModule } from './event-guided-module'
+import { JourneyGuidedModule } from './journey-guided-module'
 import { CircleSettingsModule } from './circle-settings-module'
 import { CircleTextModule } from './circle-text-module'
 import { CirclePlaceTimeModule } from './circle-place-time-module'
@@ -75,6 +78,10 @@ function SpaceProfileSettingsModule() {
 // here, with no edit to the dock's dispatch logic.
 
 export const MODULE_COMPONENTS: Record<string, ComponentType> = {
+  // Edit re-entry (ADR-450 §2 · ADR-994 · ADR-996). ONE surface (guided-module.tsx) behind four
+  // entities: each of these is a ~30-line declaration of its manifest, its read-gated getter, and
+  // its two actions. The steer dials, the diff, and the put-it-back are written once.
+  'circle.guided': CircleGuidedModule,
   'circle.settings': CircleSettingsModule,
   'circle.text': CircleTextModule,
   'circle.placeAndTime': CirclePlaceTimeModule,
@@ -97,6 +104,7 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'nexus.danger': NexusDangerModule,
   // The former event.placeAndTime + event.engage editors folded into event.settings (Event page
   // overhaul), so the host edits the whole event in one flow. People stays its own module.
+  'event.guided': EventGuidedModule,
   'event.settings': EventSettingsModule,
   'event.people': EventPeopleModule,
   // Edit re-entry (ADR-450 §2 · ADR-994): the Guided section leads the practice rail — the Spark's
@@ -112,6 +120,7 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   // Builder/Layout links out to the full-page builder (the block tree is data-heavy — the hub/nexus
   // pattern); Export is a light inline control; Danger is inline (never banked). Each self-fetches its
   // read-gated bundle (getJourneyRailData) and renders nothing for a non-owner.
+  'journey.guided': JourneyGuidedModule,
   'journey.settings': JourneySettingsModule,
   'journey.builder': JourneyBuilderModule,
   'journey.export': JourneyExportModule,

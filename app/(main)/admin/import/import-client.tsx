@@ -241,6 +241,11 @@ function StageEvents({ preview, chatText }: { preview: ImportPreview; chatText: 
         each one was read from attached. Nothing is posted: you check every field, then seed each one as
         an unlisted draft you flip live when you are ready.
       </p>
+      {/* Say what does NOT travel, right where the operator is looking at thumbnails of it. */}
+      <p className="mt-1.5 text-body-sm text-muted">
+        The photos above stay in this browser. They are not uploaded, so a staged event carries their
+        filenames and you add the real images on the draft once you seed it.
+      </p>
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <button
           type="button"

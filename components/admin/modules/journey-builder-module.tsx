@@ -42,7 +42,7 @@ export function JourneyBuilderModule() {
 
   if (!slug) return null
   if (loading) {
-    return <div className="h-24 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
+    return <div className="h-24 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
   }
   if (!data) return null
 

@@ -28,6 +28,27 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { EntityManifest, FieldOption } from '@/lib/studio/kernel/manifest'
+// The canonical event vocabularies (ADR-879/887, enforced by `pnpm check:vocab`). This module is
+// genuinely PURE (zero imports), so the manifest reads the source rather than restating it. An
+// earlier pass copied these out of the `'use client'` create form, which is exactly the drift the
+// vocab guard exists to catch: a hand copy silently loses a category the moment one is added.
+import {
+  ATTENDANCE_OPTIONS,
+  CATEGORY_OPTIONS,
+  ENERGY_OPTIONS,
+  VISIBILITY_OPTIONS,
+} from '@/lib/events/options'
+
+/** Recurrence is NOT one of the vocabularies lib/events/options.ts owns, so it is restated here.
+ *  It mirrors RECURRENCE_OPTIONS in the create form and VALID_RECURRENCE in events/actions.ts.
+ *  Worth promoting into lib/events/options.ts alongside the other four, so this becomes an import
+ *  like its neighbours; left alone here because that module is shared and in use elsewhere. */
+const RECURRENCE_OPTIONS: readonly FieldOption[] = [
+  { value: 'none', label: 'One time' },
+  { value: 'daily', label: 'Every day' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+]
 
 // ── The closed choice sets ───────────────────────────────────────────────────────────────
 //
@@ -41,44 +62,6 @@ import type { EntityManifest, FieldOption } from '@/lib/studio/kernel/manifest'
 // The values below are the literal persisted strings the server re-validates against, so a
 // drift shows up as a rejected write rather than a silent mismatch. Keep them in step with the
 // file named above each set.
-
-/** Mirrors CATEGORY_OPTIONS in app/(main)/events/new/event-form.tsx. Defaults to 'gathering'. */
-const CATEGORIES: readonly FieldOption[] = [
-  { value: 'gathering', label: 'Gathering' },
-  { value: 'ceremony', label: 'Ceremony' },
-  { value: 'movement', label: 'Movement' },
-  { value: 'circle_ritual', label: 'Circle Ritual' },
-  { value: 'learning', label: 'Learning' },
-  { value: 'social', label: 'Social' },
-  { value: 'service', label: 'Service' },
-  { value: 'external_meetup', label: 'External Meetup' },
-  { value: 'retreat', label: 'Retreat' },
-  { value: 'online', label: 'Online' },
-]
-
-/** Mirrors VISIBILITY_OPTIONS in the create form and VALID_VISIBILITY in events/actions.ts. */
-const VISIBILITIES: readonly FieldOption[] = [
-  { value: 'circle_only', label: 'My circle' },
-  { value: 'public', label: 'Anyone' },
-  { value: 'unlisted', label: 'Anyone with the link' },
-  { value: 'private', label: 'Invite only' },
-]
-
-/** Mirrors ATTENDANCE_OPTIONS in the create form and VALID_ATTENDANCE in events/actions.ts. */
-const ATTENDANCE_MODES: readonly FieldOption[] = [
-  { value: 'in_person', label: 'In person' },
-  { value: 'online', label: 'Online' },
-  { value: 'hybrid', label: 'Both' },
-]
-
-/** Mirrors ENERGY_OPTIONS in the create form and VALID_ENERGY in events/actions.ts. The form's
- *  blank "Not sure yet" row is not a value: unset persists as NULL, so it is omitted here. */
-const ENERGIES: readonly FieldOption[] = [
-  { value: 'grounding', label: 'Grounding' },
-  { value: 'high_activation', label: 'High activation' },
-  { value: 'social', label: 'Social' },
-  { value: 'ceremonial', label: 'Ceremonial' },
-]
 
 /** The four Domains. Mirrors `DomainSlug` (lib/events/types.ts), itself the `domains.slug`
  *  taxonomy (migration 20260604010000_channels_domains_taxonomy). */
@@ -97,14 +80,6 @@ const LINEUP_ROLES: readonly FieldOption[] = [
   { value: 'performer', label: 'Performer' },
   { value: 'host', label: 'Host' },
   { value: 'other', label: 'Other' },
-]
-
-/** Mirrors RECURRENCE_OPTIONS in the create form and VALID_RECURRENCE in events/actions.ts. */
-const RECURRENCES: readonly FieldOption[] = [
-  { value: 'none', label: 'One time' },
-  { value: 'daily', label: 'Every day' },
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'monthly', label: 'Monthly' },
 ]
 
 /** Mirrors `EventLink['kind']` (lib/events/types.ts). */
@@ -169,7 +144,7 @@ export const EVENT_MANIFEST: EntityManifest = {
     //    do without, so it is inline content AND always asked (required implies the Spark). ──
     { path: 'title', label: 'Title', kind: 'text', section: 'identity', placement: 'inline', required: true },
     // Category defaults to 'gathering' when the draft leaves it unset (the create form's default).
-    { path: 'category', label: 'Kind of gathering', kind: 'select', section: 'identity', options: CATEGORIES, read: (d) => str(d.category) || 'gathering' },
+    { path: 'category', label: 'Kind of gathering', kind: 'select', section: 'identity', options: CATEGORY_OPTIONS, read: (d) => str(d.category) || 'gathering' },
     { path: 'domain', label: 'Domain', kind: 'select', section: 'identity', options: DOMAINS, veraDrafts: true, omitWhenEmpty: true },
     { path: 'tags', label: 'Tags', kind: 'tags', section: 'identity', veraDrafts: true, omitWhenEmpty: true, read: (d) => list(d.tags) },
     // The poster itself: the hero on the page and the first item in the gallery.
@@ -199,14 +174,14 @@ export const EVENT_MANIFEST: EntityManifest = {
     // Repeats default to a one-time event; the cadence re-materialises the occurrence window on save.
     // A `select`, not a `cadence`: this is a closed set the server re-validates, and only a kind
     // in CHOICE_KINDS may declare its options. `cadence` stays for the genuinely free-text case.
-    { path: 'recurrenceType', label: 'Repeats', kind: 'select', section: 'when', options: RECURRENCES, read: (d) => str(d.recurrenceType) || 'none' },
+    { path: 'recurrenceType', label: 'Repeats', kind: 'select', section: 'when', options: RECURRENCE_OPTIONS, read: (d) => str(d.recurrenceType) || 'none' },
     { path: 'recurrenceUntil', label: 'Repeats until', kind: 'date', section: 'when', omitWhenEmpty: true },
     // The venue's IANA zone. Seeded from the creator, then refined from the geocoded point.
     { path: 'timeZone', label: 'Time zone', kind: 'text', section: 'when', veraDrafts: false, omitWhenEmpty: true },
 
     // ── Where. The one-line place is what the Spark asks and what the geocoder falls back to. ──
     { path: 'location', label: 'Place', kind: 'place', section: 'where', placement: 'spark' },
-    { path: 'attendanceMode', label: 'How people attend', kind: 'select', section: 'where', options: ATTENDANCE_MODES, read: (d) => str(d.attendanceMode) || 'in_person' },
+    { path: 'attendanceMode', label: 'How people attend', kind: 'select', section: 'where', options: ATTENDANCE_OPTIONS, read: (d) => str(d.attendanceMode) || 'in_person' },
     { path: 'onlineUrl', label: 'Join link', kind: 'url', section: 'where', omitWhenEmpty: true },
     // The structured address, one field per persisted column, because each is separately
     // supplied and separately keyed. Together they resolve the event's point on the map.
@@ -244,9 +219,9 @@ export const EVENT_MANIFEST: EntityManifest = {
     // which is what `scopeType: 'public'` is derived from) is the collection's own first row,
     // supplied by the page rather than declared here.
     { path: 'scopeId', label: 'Where it lives', kind: 'reference', section: 'settings', optionsFrom: 'circles', veraDrafts: false },
-    { path: 'visibility', label: 'Who can see it', kind: 'select', section: 'settings', options: VISIBILITIES, veraDrafts: false, read: (d) => str(d.visibility) || 'circle_only' },
+    { path: 'visibility', label: 'Who can see it', kind: 'select', section: 'settings', options: VISIBILITY_OPTIONS, veraDrafts: false, read: (d) => str(d.visibility) || 'circle_only' },
     { path: 'capacity', label: 'Group size', kind: 'number', section: 'settings', omitWhenEmpty: true },
-    { path: 'energyTag', label: 'Energy', kind: 'select', section: 'settings', options: ENERGIES, omitWhenEmpty: true },
+    { path: 'energyTag', label: 'Energy', kind: 'select', section: 'settings', options: ENERGY_OPTIONS, omitWhenEmpty: true },
   ],
 
   // The flyer's repeated collections. Each item expands into its own rows, so a tier's price

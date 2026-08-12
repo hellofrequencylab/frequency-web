@@ -62,10 +62,13 @@ describe('exact parity is the target state, and it passes', () => {
     // divergent ledger, and a later `db push` would have re-run the file. The ledger row was
     // corrected to the repo's own version before these digests were taken. Apply, then always
     // re-read the ledger rather than trusting the version the tool chose.
+    // Re-frozen again 2026-08-11 (603 -> 604) for 20270223000000_studio_steer (ADR-996). Read back
+    // from PRODUCTION after applying and matched the repo byte for byte, per the rule above. The
+    // wall-clock stamping trap noted below bit again and was corrected BEFORE these were taken.
     const { rows } = repoRows()
-    expect(rows.length).toBe(603)
-    expect(versionsDigest(rows)).toBe('c6ad0df0ddd350920dc9a9296cc4ffceb463a7117e5bbd33856a1212f0de3bc1')
-    expect(pairsDigest(rows)).toBe('1e17fadbad46f818c5f01c97bdc33325fb1706db91221de247360b4d192d75c5')
+    expect(rows.length).toBe(604)
+    expect(versionsDigest(rows)).toBe('711a4506c457057087771413e52c57063e9a1edef7e1baed9b46e9fc459e2de5')
+    expect(pairsDigest(rows)).toBe('6c54fc3b84b7798087d7a38b9b4797ee878c97aa2f690e8bfe443c4525a61957')
   })
 
   it('order is by version as text, so an unsorted ledger payload still matches', () => {

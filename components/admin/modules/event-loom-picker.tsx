@@ -61,26 +61,26 @@ export function EventLoomPicker({
         type="button"
         onClick={() => setOpen(true)}
         disabled={disabled}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-2.5 py-1.5 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-50"
       >
         <ImageIcon className="h-3.5 w-3.5" aria-hidden /> Select from Loom
       </button>
 
       <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="Select an image from the Loom" className="max-w-lg">
-        <div className="rounded-2xl border border-border bg-canvas p-4 lift-1">
+        <div className="rounded-card border border-border bg-canvas p-4 lift-1">
           <div className="mb-3 flex items-center justify-between gap-2">
             <h2 className="text-body-sm font-semibold text-text">Your Loom</h2>
             <button
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close"
-              className="rounded-lg p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+              className="rounded-control p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
             >
               <X className="h-4 w-4" aria-hidden />
             </button>
           </div>
 
-          <div className="mb-3 flex items-center gap-2 rounded-lg border border-border bg-surface px-2">
+          <div className="mb-3 flex items-center gap-2 rounded-control border border-border bg-surface px-2">
             <Search className="h-3.5 w-3.5 text-subtle" aria-hidden />
             <Input
               variant="seamless"
@@ -107,7 +107,7 @@ export function EventLoomPicker({
                   onClick={() => pick(it.id)}
                   disabled={adding !== null}
                   title={it.title}
-                  className="relative aspect-square overflow-hidden rounded-lg border border-border transition-colors hover:border-primary disabled:opacity-50"
+                  className="relative aspect-square overflow-hidden rounded-control border border-border transition-colors hover:border-primary disabled:opacity-50"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element -- Loom asset thumbnail in the picker, not a build-time asset */}
                   <img src={it.url} alt={it.alt ?? ''} className="h-full w-full object-cover" />

@@ -26,7 +26,16 @@ import { useRouter } from 'next/navigation'
 import { Sparkles } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
 import { StudioField } from '@/components/studio/kit/studio-field'
-import { FieldControl, SparkDoors, SparkDropzone, SparkShell, SparkSteer } from '@/components/studio/spark'
+import {
+  FieldControl,
+  SparkDoors,
+  SparkDropzone,
+  SparkOffers,
+  SparkShell,
+  SparkSteer,
+  draftText,
+  useQualityCheck,
+} from '@/components/studio/spark'
 import { EVENT_MANIFEST } from '@/lib/studio/entities/event'
 import { sparkFields } from '@/lib/studio/kernel/review-kernel'
 import { DEFAULT_SEED_MOOD, type SeedMood } from '@/lib/studio/kernel/moods'
@@ -236,6 +245,28 @@ export function EventSpark({
   // The steer dials. Captured on review so they never add a question to the flow.
   const [mood, setMood] = useState<SeedMood>(DEFAULT_SEED_MOOD)
   const [directions, setDirections] = useState('')
+
+  // ── The pre-publish read (ADR-993 / ADR-995) ──
+  //
+  // ADVICE, never a gate: nothing is stored and "Create event" never waits on it.
+  //
+  // NO COVER OFFER HERE, deliberately. This Spark already has a first-class cover path (photograph
+  // the flyer on screen one and it becomes the draft's cover), and an event DRAFT carries its cover
+  // as a private storage path inside the author's own folder (lib/events/details-media.ts,
+  // `isOwnedStoragePath`), not as a URL. A generated cover is a public Loom URL, so it cannot ride
+  // there without changing what an event draft's cover IS. The Loom picker in the draft editor is
+  // the right place for that, and it is the next screen.
+  const qualityState = useQualityCheck({
+    entity: EVENT_MANIFEST.entity,
+    read: () =>
+      draftText([
+        ['Title', draft?.title],
+        ['Description', draft?.description],
+        ['When', draft?.startsAt],
+        ['Where', draft?.location],
+        ['Price', draft?.isFree ? 'Free' : draft?.priceCents != null ? `${draft.priceCents / 100} dollars` : null],
+      ]),
+  })
 
   if (mode === 'manual')
     return (
@@ -537,6 +568,9 @@ export function EventSpark({
               {detailSummary(draft)} You will fine-tune all of it (and the links) in the editor next.
             </p>
           )}
+
+          {/* Optional and skippable: a read before it goes out. */}
+          <SparkOffers quality={qualityState.check} disabled={pending} />
 
           <SparkSteer
             steer={EVENT_STEER}

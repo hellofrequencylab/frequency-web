@@ -49,6 +49,7 @@ import {
   type CreateAutonomyTier,
   type CreateGate,
 } from './create-tools'
+import { createCommitFor, hasCreateCommit } from './create-commits'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -322,6 +323,165 @@ async function closeOut(
   } catch {
     /* audit bookkeeping is best-effort; the write itself already succeeded or failed on its own terms */
   }
+}
+
+// ── The member-visible side of a proposal (ADR-998) ──────────────────────────────────────
+//
+// ADR-988 wrote proposals nobody could read: a `studio_create` row sat at status 'proposed'
+// with no surface, so the member whose draft it was could neither finish it nor throw it away,
+// and a proposal Vera made simply expired in silence. These two reads and one write are what a
+// surface needs, and they live HERE rather than in the route so the ownership rule, the TTL and
+// the single-use claim are stated in exactly one file.
+
+export interface PendingCreateProposal {
+  proposalId: string
+  entity: string
+  /** The entity's member-facing name, from its manifest. Falls back to the raw id. */
+  label: string
+  confirmLabel: string
+  draft: Record<string, unknown>
+  spaceId: string | null
+  /** Did a model draft this, or did the member? Shown, because it changes how it should read. */
+  aiDrafted: boolean
+  rationale: string | null
+  createdAt: string
+  /** When this stops being confirmable. A draft a member walked away from is not consent. */
+  expiresAt: string
+  /** Whether this surface can finish it here, or has to hand them back to the wizard. */
+  commitAvailable: boolean
+}
+
+/**
+ * The caller's OWN pending proposals, newest first. Never anyone else's: the filter is the
+ * caller this function derived itself, and the payload's `actor_profile_id` is only ever
+ * COMPARED against it. Expired rows are dropped from the read rather than shown as confirmable.
+ */
+export async function listMyCreateProposals(limit = 25): Promise<PendingCreateProposal[]> {
+  const caller = await getCallerProfile()
+  if (!caller) return []
+
+  const since = new Date(Date.now() - PROPOSAL_TTL_MS).toISOString()
+  const { data, error } = await db()
+    .from('agent_actions')
+    .select('id, status, payload, rationale, created_at')
+    .eq('kind', CREATE_AUDIT_KIND)
+    .eq('status', 'proposed')
+    .gte('created_at', since)
+    .order('created_at', { ascending: false })
+    .limit(Math.min(Math.max(limit, 1), 100))
+  if (error || !data) return []
+
+  const rows = data as {
+    id: string
+    payload: Record<string, unknown> | null
+    rationale: string | null
+    created_at: string | null
+  }[]
+
+  const out: PendingCreateProposal[] = []
+  for (const row of rows) {
+    const payload = row.payload ?? {}
+    if (payload.actor_profile_id !== caller.id) continue
+    const entity = String(payload.entity ?? '')
+    if (!createGateFor(entity)) continue
+    const created = row.created_at ?? new Date().toISOString()
+    out.push({
+      proposalId: row.id,
+      entity,
+      label: studioManifest(entity)?.label ?? entity,
+      confirmLabel: createConfirmLabel(entity),
+      draft: parseDraftArg(payload.draft) ?? {},
+      spaceId: (payload.space_id as string | null) ?? null,
+      aiDrafted: payload.ai_drafted === true,
+      rationale: (row.rationale ?? null) || null,
+      createdAt: created,
+      expiresAt: new Date(Date.parse(created) + PROPOSAL_TTL_MS).toISOString(),
+      commitAvailable: hasCreateCommit(entity),
+    })
+  }
+  return out
+}
+
+/**
+ * Throw a proposal away. The mirror of the confirm claim and deliberately the same shape: the
+ * caller is re-derived, the proposal must be THEIRS, and the update is conditional on
+ * `status = 'proposed'`, so a dismissed proposal can never be confirmed afterwards and a
+ * confirmed one can never be dismissed out from under the write it already ran.
+ */
+export async function dismissCreateProposal(proposalId: string): Promise<ActionResult<void>> {
+  const caller = await getCallerProfile()
+  if (!caller) return fail('Sign in first.')
+
+  const client = db()
+  const { data: row } = await client
+    .from('agent_actions')
+    .select('id, kind, status, payload')
+    .eq('id', proposalId)
+    .maybeSingle()
+  const proposal = row as
+    | { id: string; kind: string; status: string; payload: Record<string, unknown> | null }
+    | null
+
+  if (!proposal || proposal.kind !== CREATE_AUDIT_KIND) return fail('That draft is no longer here.')
+  if ((proposal.payload ?? {}).actor_profile_id !== caller.id) return fail('That draft is not yours.')
+  if (proposal.status !== 'proposed') return fail('That draft has already been used.')
+
+  const { data: claimed } = await client
+    .from('agent_actions')
+    .update({ status: 'dismissed', decided_by: caller.id, decided_at: new Date().toISOString() })
+    .eq('id', proposal.id)
+    .eq('status', 'proposed')
+    .select('id')
+    .maybeSingle()
+  if (!claimed) return fail('That draft has already been used.')
+  return ok()
+}
+
+/**
+ * Confirm a proposal from the DRAFTS surface, using the entity's own create path from the commit
+ * registry. Thin on purpose: every gate, the ownership check, the TTL and the single-use claim
+ * are `confirmCreate`'s, unchanged. The only thing added here is looking up which commit to run,
+ * and refusing plainly when the entity has none registered.
+ *
+ * An entity with no registered commit is NOT a failure of this layer. It means the authority that
+ * decides is scoped to the entity's own action (a Space plan limit, a per-Space role ladder, a
+ * seller gate), and the governance layer must not become a second authority for it (ADR-988 §4).
+ * Those drafts can still be read and dismissed here; they are finished in their own wizard.
+ */
+export async function confirmProposalWithRegisteredCommit(
+  proposalId: string,
+  draft?: Record<string, unknown>,
+): Promise<ActionResult<{ entity: string; href: string | null }>> {
+  const caller = await getCallerProfile()
+  if (!caller) return fail('Sign in first.')
+
+  const { data: row } = await db()
+    .from('agent_actions')
+    .select('kind, status, payload')
+    .eq('id', proposalId)
+    .maybeSingle()
+  const proposal = row as
+    | { kind: string; status: string; payload: Record<string, unknown> | null }
+    | null
+  if (!proposal || proposal.kind !== CREATE_AUDIT_KIND) return fail('That draft is no longer here.')
+  if ((proposal.payload ?? {}).actor_profile_id !== caller.id) return fail('That draft is not yours to confirm.')
+
+  const entity = String((proposal.payload ?? {}).entity ?? '')
+  const commit = createCommitFor(entity)
+  if (!commit) {
+    const label = studioManifest(entity)?.label ?? 'this'
+    return fail(`Finish this ${label} in its own builder. This is where you keep or bin the draft, not where it gets made.`)
+  }
+
+  // From here the governed layer owns everything: it re-derives the caller AGAIN, re-checks the
+  // gate at the moment of the write, refuses a stale or already-spent proposal, and claims the
+  // row exactly once before the commit runs.
+  const res = await confirmCreate<{ href: string | null }>({
+    proposalId,
+    draft,
+    commit: (input) => commit(input),
+  })
+  return 'error' in res ? res : ok({ entity, href: res.data.href })
 }
 
 // ── The Vera tool entry point ────────────────────────────────────────────────────────────

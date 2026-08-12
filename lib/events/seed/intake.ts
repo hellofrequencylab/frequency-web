@@ -51,9 +51,28 @@ export interface EventIntakeInputs {
   sourceText?: string
   /** The `ref` line numbers of the parsed chat messages this event was read from. */
   chatRefs?: number[]
-  /** Filenames of the photos posted alongside it in the chat. The operator uploads the real
-   *  files on the event draft once it is applied; the names are the paper trail until then. */
+  /**
+   * Filenames of the photos posted alongside it in the chat, and NOTHING MORE (ADR-997).
+   *
+   * A chat photo is never carried across. It is third-party imagery lifted out of a private
+   * group, staged before anyone has decided the event is even real, and `event_intake` is
+   * service-role-only precisely because material at that stage is unvetted. Filing it into the
+   * Loom would move it into a browsable, reusable library, which is a wider posture than the
+   * row that holds it. So the names travel as a paper trail, the operator attaches the real
+   * files on the event draft through the Loom (ADR-987, the one picker), and every surface
+   * that shows this list SAYS SO rather than implying the photos came across.
+   */
   imageNames?: string[]
+  /**
+   * The flyer photo this draft was read from (`network-contacts`, the private bucket, under
+   * the scanning operator's own auth-user folder). Set by the SCAN door only.
+   *
+   * This is not a second image path. The poster scan already uploads and keeps exactly this
+   * object when it builds a draft directly, and the apply hands the same path to the same
+   * writer, so a seeded scan carries its poster exactly as an unseeded one does. Server-set
+   * and server-validated at staging; never re-accepted from a client afterwards.
+   */
+  posterPath?: string
   /** The classifier's own one-line reason, in plain voice, for the operator's review. */
   note?: string
   /** The classifier's confidence in the whole read (drives the seeded ledger confidence). */

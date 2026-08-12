@@ -12,6 +12,11 @@
 // 🔴 contradicted), the value, whether it is AI-written copy, the source snippet it was read
 // from, and the controls: EDIT inline, CONFIRM, DROP. Seed writes an unlisted event draft.
 //
+// THE RECEIPT IS PER DOOR (ADR-997). A chat event shows the message it was read from and says
+// plainly that its photos did NOT come across, since a chat photo is never uploaded and the list
+// is filenames. A scanned flyer shows the poster itself, open, and says that photo travels with
+// the event. Neither door is ever allowed to imply the other's behaviour.
+//
 // All mutations go through the gated server actions; this holds only the optimistic model and
 // transient UI state.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -22,9 +27,11 @@ import {
   Check,
   CheckCircle2,
   ExternalLink,
+  ImageOff,
   Loader2,
   MessageSquareQuote,
   Pencil,
+  ScanLine,
   Sparkles,
   Undo2,
   X,
@@ -34,7 +41,7 @@ import { Textarea } from '@/components/ui/field'
 import { Banner, StatusChip } from '@/components/admin/status'
 import { SIGNAL_GLYPH, type ReviewSignal } from '@/lib/studio/kernel/ledger'
 import type { FieldModel, FieldState } from '@/lib/studio/kernel/review-kernel'
-import type { IntakeStatus } from '@/lib/events/seed/intake'
+import type { EventIntakeSource, IntakeStatus } from '@/lib/events/seed/intake'
 import {
   approveStagedEvent,
   restoreStagedEvent,
@@ -58,18 +65,22 @@ export function ReviewBoard({
   intakeId,
   status,
   initialModel,
+  door,
   note,
   sourceText,
   imageNames,
+  posterUrl,
   targetEventId,
   error: rowError,
 }: {
   intakeId: string
   status: IntakeStatus
   initialModel: FieldModel
+  door: EventIntakeSource
   note: string
   sourceText: string
   imageNames: string[]
+  posterUrl: string | null
   targetEventId: string | null
   error: string | null
 }) {
@@ -124,7 +135,7 @@ export function ReviewBoard({
   return (
     <div className="space-y-6">
       {/* Roll-up + the one decision on this page */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface p-4">
         <div className="flex flex-wrap items-center gap-2 text-body-sm">
           <StatusChip tone="success" size="sm">✅ {s.green} confirmed</StatusChip>
           <StatusChip tone="warning" size="sm">⚠️ {s.amber} to check</StatusChip>
@@ -160,13 +171,13 @@ export function ReviewBoard({
       )}
 
       {seeded && eventId && (
-        <div className="rounded-2xl border border-success/30 bg-success-bg p-4" role="status">
+        <div className="rounded-card border border-success/30 bg-success-bg p-4" role="status">
           <p className="flex items-center gap-1.5 text-body-sm font-semibold text-success">
             <CheckCircle2 className="h-4 w-4" aria-hidden /> Seeded as an unlisted draft
           </p>
           <p className="mt-1 text-body-sm text-muted">
-            It is in no catalog, no feed, and no search yet. Open the draft to add the photos, check the
-            date, and publish it when you are ready. Publishing on the organizer&apos;s behalf sends them a
+            It is in no catalog, no feed, and no search yet. Open the draft to check the date, sort the
+            images, and publish it when you are ready. Publishing on the organizer&apos;s behalf sends them a
             claim link so they can take it over.
           </p>
           <div className="mt-3 flex flex-wrap gap-3 text-body-sm font-semibold">
@@ -179,32 +190,84 @@ export function ReviewBoard({
               Open the draft <ExternalLink className="h-3.5 w-3.5" />
             </a>
           </div>
-          {imageNames.length > 0 && (
-            <p className="mt-2 text-2xs text-muted">
-              {imageNames.length} photo{imageNames.length === 1 ? ' was' : 's were'} posted with this in the
-              chat ({imageNames.slice(0, 4).join(', ')}
-              {imageNames.length > 4 ? ', and more' : ''}). Add them on the draft.
-            </p>
-          )}
         </div>
       )}
 
-      {/* The receipt: what the read was made from. */}
-      {(sourceText || note) && (
-        <details className="rounded-2xl border border-border bg-surface p-4">
-          <summary className="cursor-pointer text-body-sm font-semibold text-text">
-            <span className="inline-flex items-center gap-1.5">
-              <MessageSquareQuote className="h-4 w-4 text-primary-strong" aria-hidden />
-              The message this was read from
-            </span>
-          </summary>
-          {note && <p className="mt-2 text-body-sm text-muted">{note}</p>}
-          {sourceText && (
-            <p className="mt-2 whitespace-pre-wrap break-words rounded-lg border border-border bg-surface-elevated p-3 text-body-sm text-muted">
-              {sourceText}
+      {/* THE RECEIPT, and it is a different object per door (ADR-997). A chat event cites the
+          message it was read from. A flyer has no text to quote, so its receipt is the photo,
+          shown open: the operator reads the poster and the fields side by side. */}
+      {door === 'scan' ? (
+        (posterUrl || note) && (
+          <section className="rounded-card border border-border bg-surface p-4">
+            <p className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
+              <ScanLine className="h-4 w-4 text-primary-strong" aria-hidden />
+              The flyer this was read from
             </p>
-          )}
-        </details>
+            {note && <p className="mt-2 text-body-sm text-muted">{note}</p>}
+            {posterUrl ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={posterUrl}
+                  alt="The scanned flyer"
+                  className="mt-3 max-h-[26rem] w-full rounded-card border border-border object-contain"
+                />
+                <p className="mt-2 text-meta text-subtle">
+                  This photo travels with the event. Seeding attaches it to the draft.
+                </p>
+              </>
+            ) : (
+              <p className="mt-2 text-body-sm text-muted">
+                The photo is no longer stored, so there is nothing left to check the read against. Take
+                the fields below on their own merits, or set this one aside.
+              </p>
+            )}
+          </section>
+        )
+      ) : (
+        (sourceText || note) && (
+          <details className="rounded-card border border-border bg-surface p-4">
+            <summary className="cursor-pointer text-body-sm font-semibold text-text">
+              <span className="inline-flex items-center gap-1.5">
+                <MessageSquareQuote className="h-4 w-4 text-primary-strong" aria-hidden />
+                The message this was read from
+              </span>
+            </summary>
+            {note && <p className="mt-2 text-body-sm text-muted">{note}</p>}
+            {sourceText && (
+              <p className="mt-2 whitespace-pre-wrap break-words rounded-control border border-border bg-surface-elevated p-3 text-body-sm text-muted">
+                {sourceText}
+              </p>
+            )}
+          </details>
+        )
+      )}
+
+      {/* THE PHOTOS THAT DID NOT COME ACROSS (ADR-997). Said plainly, on the board, from the
+          moment the row lands rather than only after it is seeded. A chat photo is never
+          uploaded, so a filename list is exactly what it looks like: a list of names. */}
+      {imageNames.length > 0 && (
+        <div className="rounded-card border border-border bg-surface p-4">
+          <p className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
+            <ImageOff className="h-4 w-4 text-subtle" aria-hidden />
+            The chat photos are names only
+          </p>
+          <p className="mt-1 text-body-sm text-muted">
+            {imageNames.length} photo{imageNames.length === 1 ? ' was' : 's were'} posted with this
+            message. Nothing was uploaded: the files stayed in the browser that read the export, so
+            these are filenames, not images. Seed the event, then add the real photos on the draft.
+          </p>
+          <ul className="mt-2 flex flex-wrap gap-1.5">
+            {imageNames.slice(0, 8).map((name) => (
+              <li key={name} className="rounded-control bg-surface-elevated px-2 py-1 text-2xs text-muted">
+                {name}
+              </li>
+            ))}
+            {imageNames.length > 8 && (
+              <li className="px-1 py-1 text-2xs text-muted">and {imageNames.length - 8} more</li>
+            )}
+          </ul>
+        </div>
       )}
 
       {model.sections.map((section) => (
@@ -213,7 +276,7 @@ export function ReviewBoard({
             <h3 className="text-body font-bold text-text">{section.title}</h3>
             <p className="mt-0.5 text-body-sm text-muted">{section.desc}</p>
           </div>
-          <div className="divide-y divide-border rounded-2xl border border-border bg-surface">
+          <div className="divide-y divide-border rounded-card border border-border bg-surface">
             {section.fields.map((f) => (
               <FieldRow
                 key={f.path}
@@ -305,7 +368,7 @@ function FieldRow({
                 {showSource ? 'Hide where this came from' : 'Where this came from'}
               </button>
               {showSource && (
-                <div className="mt-1 rounded-lg border border-border bg-surface-elevated p-2 text-2xs text-muted">
+                <div className="mt-1 rounded-control border border-border bg-surface-elevated p-2 text-2xs text-muted">
                   {field.provenance.snippet ? (
                     <p className="whitespace-pre-wrap break-words">“{field.provenance.snippet}”</p>
                   ) : (

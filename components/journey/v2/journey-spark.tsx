@@ -34,10 +34,14 @@ import { wizardSecondaryClass } from '@/components/templates'
 import {
   SparkDoors,
   SparkDropzone,
+  SparkOffers,
   SparkShell,
   SparkSteer,
   FieldControl,
   StudioField,
+  draftText,
+  useCoverOffer,
+  useQualityCheck,
   type SparkDoor,
 } from '@/components/studio/spark'
 import { InfoTip } from '@/components/ui/info-tip'
@@ -54,6 +58,7 @@ import {
   createJourneyFromTemplateAction,
 } from '@/app/(main)/journeys/create-actions'
 import type { JourneyPace, ArcWeek, SparkSettings, SparkMeeting } from '@/lib/ai/journey-spark'
+import type { GeneratedCover } from '@/lib/loom/cover-actions'
 import { JourneyBuilder } from './journey-builder'
 
 const EMPTY_MEETING: SparkMeeting = { format: null, schedule: null, timezone: null, location: null, link: null }
@@ -172,6 +177,49 @@ export function JourneySpark({
   const patchMeeting = (patch: Partial<SparkMeeting>) => setMeeting((m) => ({ ...m, ...patch }))
   // The mood dial (kernel/moods.ts), shown on review so it costs no extra step.
   const [mood, setMood] = useState<SeedMood>(DEFAULT_SEED_MOOD)
+  // A cover Vera drew, once the author has kept it. Held here rather than on a draft object because
+  // this Spark has no draft object: the review step IS the state, and creation is deferred.
+  const [cover, setCover] = useState<GeneratedCover | null>(null)
+
+  // ── The two review-step offers (ADR-993 / ADR-995) ──
+  //
+  // KEPT BESPOKE: this review edits a weekly arc, a conditional meeting block, and three prose
+  // fields against a draft that is not manifest-shaped, so it renders the two OFFER CARDS rather
+  // than the whole review board. Neither may block Create Journey, and neither does.
+  //
+  // The draft handed to `coverOffer` is empty until a cover is kept, which is the truth: nothing
+  // in this Spark sets `cover_image`. The path is never written out here, it comes back from the
+  // action, so adding a second image field to the manifest needs no edit in this file.
+  const coverState = useCoverOffer({
+    entity: JOURNEY_MANIFEST.entity,
+    manifest: JOURNEY_MANIFEST,
+    draft: cover ? { [cover.path]: cover.url } : {},
+    subject: { title, summary: promise, mood, directions: null },
+    // Inside a Space's Journeys manager the asset belongs to that Space's Loom, so the next author
+    // there can reuse it. Otherwise it lands in the member's own.
+    scopeKey: spaceSlug,
+    onApply: setCover,
+    onRemove: () => setCover(null),
+  })
+
+  // ADVICE, never a gate. The Journey standard is the same Opus rank rubric the library gate uses
+  // (lib/ai/quality-gate.ts), so an author can hear it BEFORE they publish rather than after.
+  const qualityState = useQualityCheck({
+    entity: JOURNEY_MANIFEST.entity,
+    read: () =>
+      [
+        draftText([
+          ['Title', title],
+          ['Promise', promise],
+          ['Overview', overview],
+        ]),
+        arc.length
+          ? ['The weekly arc', ...arc.map((w, i) => `Week ${i + 1}: ${w.title}${w.focus ? `. ${w.focus}` : ''}`)].join('\n')
+          : '',
+      ]
+        .filter(Boolean)
+        .join('\n\n'),
+  })
 
   if (stage === 'manual') return <JourneyBuilder draft spaceSlug={spaceSlug} />
 
@@ -256,6 +304,9 @@ export function JourneySpark({
           settings: settings ?? undefined,
           meeting,
           sourceText: source || undefined,
+          // Already a real asset in the author's Loom (ADR-987). Null when they never asked for one,
+          // which stays a first-class outcome: a Journey with no cover publishes fine.
+          coverImage: cover?.url ?? null,
         },
         spaceSlug,
       ),
@@ -564,6 +615,9 @@ export function JourneySpark({
             <p className="text-2xs text-muted">Optional. You can fine-tune this in Settings later.</p>
           </div>
 
+          {/* Both optional, both skippable: a cover Vera can draw, and a read before it goes out. */}
+          <SparkOffers cover={coverState.offer} quality={qualityState.check} disabled={pending} />
+
           {/* The mood dial (kernel/moods.ts). On review, so it costs no extra step. */}
           <SparkSteer
             steer={{ mood: JOURNEY_MANIFEST.steer?.mood }}
@@ -604,12 +658,12 @@ function BatchUpload({
           type="button"
           onClick={() => fileRef.current?.click()}
           disabled={disabled || extracting}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
         >
           {extracting ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <FileStack className="h-3.5 w-3.5" aria-hidden />}
           {extracting ? 'Reading…' : 'Add several files at once'}
         </button>
-        <span className="inline-flex items-center gap-1 text-2xs text-subtle">
+        <span className="inline-flex items-center gap-1 text-2xs text-muted">
           Your outline and every handout
           <InfoTip
             side="top"
