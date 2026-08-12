@@ -1,7 +1,7 @@
 'use server'
 
 // Server actions for the Poster Events capture UI (the client islands in
-// app/(main)/events/scan, the per-event editor at /events/drafts/<id>, and the
+// app/(main)/events/scan, the per-event editor at /events/drafts/[id], and the
 // captured-event rows on /drafts call these). Mirrors the card-scan
 // actions (app/(main)/connections/actions.ts): the client uploads downscaled
 // images to the PRIVATE network-contacts bucket under its own auth-user folder,

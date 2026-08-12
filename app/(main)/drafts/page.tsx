@@ -113,7 +113,7 @@ async function DraftsList({ profileId }: { profileId: string }) {
       <EmptyState
         icon={FileText}
         title="No drafts waiting"
-        description="When Vera drafts something for you, or you start something and step away, or you capture a poster around town, it waits here until you come back to it."
+        description="Anything you start lands here and waits: a draft Vera made for you, a form you stepped away from, a poster you captured around town."
       />
     )
   }
