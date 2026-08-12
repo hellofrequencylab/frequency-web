@@ -14,8 +14,14 @@
 // can decode HEIC, so a raw .heic that reaches Storage renders as a broken tile in every other browser
 // (the picker grid, the crop/focus preview, the avatar). Every uploader should call prepareImageForUpload
 // instead of shrinkImageForUpload directly: it converts HEIC/HEIF to JPEG in the browser FIRST (native
-// decode where the browser can, else heic2any, dynamic-imported so it never ships in the main bundle),
-// then runs the same downscale, so size limits apply to the CONVERTED file.
+// decode where the browser can, else the decoder behind lib/library/heic-decode.ts), then runs the same
+// downscale, so size limits apply to the CONVERTED file.
+//
+// ⚠️ NOTHING HEAVY MAY BE IMPORTED HERE. Two dozen uploaders import this module, Next server-renders
+// every one of them, and @vercel/nft copies whatever it can reach into all of their functions. The
+// wasm decoder used to be named right here and cost 1.29MB x 381 functions = 491MB of the build's disk
+// budget (ADR-1002 follow-up, docs/DEPLOY-SAFETY.md rule 2). It now sits behind its own module, which
+// next.config.ts excludes from the server traces. Keep it that way.
 
 import { effectiveMime } from '@/lib/library/upload-kinds'
 
@@ -170,13 +176,14 @@ async function heicToJpegBlob(file: File): Promise<Blob | null> {
   } catch {
     // Not natively decodable here (Chrome/Firefox/Edge) — fall through to the library.
   }
-  // heic2any (libheif in wasm). Dynamic import keeps it out of the main bundle: it only downloads the
-  // first time someone actually picks a HEIC in a browser that cannot decode one.
+  // The wasm decoder, behind its own client-only boundary (lib/library/heic-decode.ts). The dynamic
+  // import keeps it out of the main browser bundle — it downloads the first time someone actually
+  // picks a HEIC in a browser that cannot decode one — and the boundary keeps it out of the server
+  // traces, which is a separate and much more expensive problem. Read that file before changing this
+  // line: the specifier is what the tracing exclude keys on.
   try {
-    const { default: heic2any } = await import('heic2any')
-    const out = await heic2any({ blob: file, toType: 'image/jpeg', quality: HEIC_ENCODE_QUALITY })
-    const blob = Array.isArray(out) ? out[0] : out
-    return blob && blob.size > 0 ? blob : null
+    const { decodeHeicToJpeg } = await import('./heic-decode')
+    return await decodeHeicToJpeg(file, HEIC_ENCODE_QUALITY)
   } catch {
     return null
   }

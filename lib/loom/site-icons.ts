@@ -1,13 +1,20 @@
-'use server'
+import 'server-only'
 
 // Site icons for the Loom picker's Icons view. The house icon system (docs/ICONS.md, ADR-505) ships
 // Lucide (primary) + Phosphor + Tabler as BUILD-TIME @iconify-json data. This turns any of those glyphs
 // into a self-contained SVG DATA URL, so picking a site icon stores exactly like picking an uploaded
 // image (the field always holds a URL) and renders anywhere with no runtime icon dependency.
 //
-// SERVER-ONLY: it statically imports the full collections (megabytes of glyph data), the same reason
-// components/ui/icon.tsx is RSC-only. Kept behind a server action so the collection JSON never reaches
-// the browser bundle — the client receives only the handful of rendered data URLs.
+// 🔴 THE ONLY THING ALLOWED TO IMPORT THIS IS app/api/site-icons/route.ts (ADR-1002 follow-up,
+// docs/DEPLOY-SAFETY.md rule 2). It statically imports the full collections — ~6.9MB once bundled —
+// and Vercel copies every traced file into EVERY function that can reach it. This used to be a
+// `'use server'` action imported by components/loom/loom-picker.tsx, and because a server action is
+// imported by the CLIENT module, it fanned out with the picker: the universal image popup put 6.87MB
+// into 337 serverless functions, 2.3GB, the largest single line in the build's disk budget.
+//
+// Behind a route handler the data lands in ONE function. The browser side is lib/loom/site-icons-client.ts
+// (the contract plus a fetch, nothing heavy); scripts/build-fanout.test.ts fails if a second importer
+// appears or if the measured fan-out creeps back.
 
 import { getIconData, iconToSVG } from '@iconify/utils'
 import type { IconifyJSON } from '@iconify/types'
@@ -15,6 +22,7 @@ import lucideIcons from '@iconify-json/lucide/icons.json'
 import phIcons from '@iconify-json/ph/icons.json'
 import tablerIcons from '@iconify-json/tabler/icons.json'
 import { ICONS } from '@/lib/ui/icon-catalog'
+import type { SiteIcon } from '@/lib/loom/site-icons-client'
 
 const COLLECTIONS: Record<string, IconifyJSON> = {
   lucide: lucideIcons as IconifyJSON,
@@ -22,13 +30,9 @@ const COLLECTIONS: Record<string, IconifyJSON> = {
   tabler: tablerIcons as IconifyJSON,
 }
 
-/** One pickable site icon: its Iconify name ('lucide:zap'), a human label, and a self-contained SVG
- *  data URL to both preview and store. */
-export interface SiteIcon {
-  name: string
-  label: string
-  dataUrl: string
-}
+// The wire shape lives with the client half so the picker never has to import this module for it,
+// not even type-only. Re-exported here so a server-side caller has one import to make.
+export type { SiteIcon }
 
 /** Build a standalone SVG data URL for one glyph, or null if the name doesn't resolve. The glyph keeps
  *  `currentColor` (renders as the default ink in an <img>); recolor/tint is a later enhancement. */

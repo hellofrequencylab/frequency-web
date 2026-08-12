@@ -16,11 +16,17 @@ import {
   Upload, Loader2, ImageIcon, Sparkles, Tag as TagIcon, Building2, User, Check, X, Search, Shapes,
 } from 'lucide-react'
 import { loomScopes, loomScope as loomScopeAction, loomImages, uploadLoomImage, type LoomScope, type LoomPickerConfig } from '@/lib/loom/picker-actions'
-import { searchSiteIcons, type SiteIcon } from '@/lib/loom/site-icons'
+// The Icons view fetches from GET /api/site-icons rather than calling a server action. A server
+// action is imported by this CLIENT module, so it would drag the ~6.9MB @iconify-json collections
+// into every serverless function that can open this popup: 337 of them, 2.3GB (ADR-1002 follow-up,
+// docs/DEPLOY-SAFETY.md rule 2). The cost is one round-trip the first time the tab opens, covered
+// by the skeleton grid below.
+import { fetchSiteIcons, type SiteIcon } from '@/lib/loom/site-icons-client'
 import { looksLikeImage } from '@/lib/library/upload-kinds'
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 import type { LoomPickAsset } from '@/lib/library/store'
 import { Input } from '@/components/ui/field'
+import { Skeleton } from '@/components/ui/skeleton'
 
 // Fallback config until the resolved one loads (matches the registry defaults). The real config comes
 // from the element_settings master (role-gated), resolved server-side by loomScopes().
@@ -138,7 +144,7 @@ export function LoomPicker({
             kinds: viewKinds,
             generatedOnly: opts.view === 'elements',
           }),
-          opts.view === 'icons' ? searchSiteIcons(opts.q, 60) : Promise.resolve([] as SiteIcon[]),
+          opts.view === 'icons' ? fetchSiteIcons(opts.q, 60) : Promise.resolve([] as SiteIcon[]),
         ])
         setAssets(res.assets)
         setTags(res.tags)
@@ -411,7 +417,24 @@ export function LoomPicker({
                     <p className="mb-2 text-2xs text-muted">Site icons plus any you upload. Search by name, or drop a new icon above.</p>
                   )}
                   {loading ? (
-                    <p className="flex items-center justify-center gap-2 py-10 text-body-sm text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading</p>
+                    // The loading state is the SHAPE of the grid, not a spinner in the middle of an
+                    // empty pane (docs/INTERACTION-STATES.md §1). It matters more here since the
+                    // Icons tab moved behind GET /api/site-icons and now pays a round-trip on first
+                    // open: a skeleton says "twelve tiles are coming", a spinner says only "wait".
+                    // `aria-busy` goes on the REGION because a Skeleton is aria-hidden and cannot
+                    // announce itself; the visually hidden line is what a screen reader actually gets.
+                    <div aria-busy="true">
+                      <p className="sr-only" role="status">
+                        {activeView === 'icons' ? 'Finding icons' : 'Loading images'}
+                      </p>
+                      <ul className="grid grid-cols-3 gap-2 md:grid-cols-4">
+                        {Array.from({ length: 12 }, (_, i) => (
+                          <li key={i}>
+                            <Skeleton className="aspect-square w-full rounded-control" />
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ) : tiles.length === 0 ? (
                     <p className="py-10 text-center text-body-sm text-subtle">
                       {activeView === 'elements' ? 'No AI-created images here yet.'

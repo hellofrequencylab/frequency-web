@@ -175,8 +175,37 @@ const nextConfig: NextConfig = {
   //
   // The rest of that 1.6GB needs the tracer to stop globbing at source — turning the three variable
   // reads into literal-pathed ones — which is a code change, not a config line. Tracked in ADR-1003.
+  //
+  // ── The HEIC decoder (ADR-1002 follow-up, docs/DEPLOY-SAFETY.md rule 2) ──────────────────────
+  //
+  // `heic2any` is libheif compiled to wasm. It converts an iPhone photo to JPEG IN THE BROWSER,
+  // before the upload starts, and it is physically incapable of running anywhere else: it needs the
+  // File the person just picked. It was nonetheless in 381 serverless functions, measured at
+  // 1.29MB x 381 = 491MB — the fourth-largest line in the build.
+  //
+  // WHY, and why no source-level fix reaches it. lib/library/image-shrink.ts is imported by two
+  // dozen uploaders spread across the app; Next server-renders every one of those client
+  // components; and @vercel/nft reads the `import('heic2any')` specifier out of the emitted SSR
+  // chunk whether or not that branch can execute there. The tricks that look like fixes are not:
+  // `turbopackIgnore` changes nothing (nft reads the specifier anyway) and a computed specifier
+  // only breaks the bundle, because Turbopack resolves dynamic imports at build time. The
+  // MAP pattern (`next/dynamic({ ssr:false })`, which really does keep maplibre out of the server
+  // trace) needs a component; this is a plain async function called from an upload handler.
+  //
+  // So the boundary is a module — lib/library/heic-decode.ts, the one place allowed to name
+  // heic2any — and the trace is corrected here. Safe for the same reason `public/tracks/**` is: no
+  // server code path can reach it, so a function that cannot see the chunk behaves identically.
+  //
+  // ⚠️ KEYED ON THE CHUNK NAME, and deliberately narrow: `*heic2any*` matches only chunks Turbopack
+  // named after that package, never a shared one. Excludes are applied with picomatch over the
+  // already-collected trace (next/dist/build/collect-build-traces.js), NOT by globbing the disk, so
+  // this cannot repeat the Rust panic a broad `@img/**/*` glob caused — but keep it narrow anyway.
+  //
+  // ⚠️ AN EXCLUDE THAT STOPS MATCHING IS SILENT (rule 6). If Turbopack ever renames the chunk, this
+  // line quietly does nothing and 491MB comes back with a green board. `scripts/build-fanout.test.ts`
+  // is the thing that notices: it fails when any traced file matches /heic2any/i.
   outputFileTracingExcludes: {
-    '/**': ['./public/tracks/**'],
+    '/**': ['./public/tracks/**', './.next/server/chunks/**/*heic2any*'],
   },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }]
