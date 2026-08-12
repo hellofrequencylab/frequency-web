@@ -75,7 +75,15 @@ const LOCAL_IMAGE_MODULE = 'lib/og/local-image.ts'
  * call site, as written in the source. Depth-counted rather than regexed to the first `)`, because
  * `process.cwd()` carries a paren of its own.
  */
-function cwdJoinArgs(src: string): string[] {
+function cwdJoinArgs(source: string): string[] {
+  // Comment LINES only (`//`, `*`, `/*` in the leading position). The modules that fixed this bug
+  // quote the broken call in their own headers to explain it, and a guard that cannot tell an
+  // explanation from a regression fails on the very files that document it. Code lines are never
+  // stripped, so a real call cannot hide behind this.
+  const src = source
+    .split('\n')
+    .filter((line) => !/^\s*(\/\/|\*|\/\*)/.test(line))
+    .join('\n')
   const out: string[] = []
   const re = /\b(?:path\.)?join\(\s*process\.cwd\(\)/g
   let m: RegExpExecArray | null
@@ -207,9 +215,10 @@ describe('every path read out of public/ is a literal, so the tracer never globs
     expect(mod).toBeDefined()
     expect(mod!.src).toContain('export async function coverPlaceholderDataUrl')
     expect(mod!.src).toContain('export async function siteMarkDataUrl')
-    // The readers must actually be reads. A module that stopped calling readFile would pass every
-    // assertion below while shipping cards with no background.
-    expect(mod!.src.match(/readFile\(/g)?.length).toBe(7)
+    // The readers must actually be reads, and literal ones. A module that stopped calling readFile
+    // would pass every assertion below while shipping cards with no background. Seven: the six
+    // cover placeholders plus the Frequency mark.
+    expect(mod!.src.match(/readFile\(join\(process\.cwd\(\), 'public\/images/g)?.length).toBe(7)
   })
 
   it('nothing anywhere builds a process.cwd() path out of a variable', () => {
