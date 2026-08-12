@@ -22656,3 +22656,137 @@ whether a list of individuals appears. One rule at the strip, one rule inside th
   nothing about individuals. This is app-level and does not depend on the C1 RLS work.
 - Tests cover the board at 1, 3, 6 and 60 contributors, a member with no baseline, a returning
   member, and an opted-out member still counting toward the total.
+
+## ADR-1015: Circles get a real privacy model, and it has to be RESTRICTIVE
+
+**Date:** 2026-08-12 · **Status:** Accepted · **Phase:** Circles C1
+**Migration:** `supabase/migrations/20270227000000_circle_privacy.sql` (written, **not applied** by
+the authoring agent — apply via `execute_sql` + an explicit ledger insert for version
+`20270227000000`, per `supabase/migrations/README.md`)
+**Proof:** `supabase/tests/circle_privacy.test.sql` (32 pgTAP assertions) ·
+`lib/circles/visibility.test.ts` · `app/(main)/circles/join-privacy.test.ts`
+**Amends:** ADR for `20261157000000_circles_unlisted.sql` · builds on ADR-328 (`can_view_space_content`),
+ADR-331 (root-space default), ADR-843 (root sentinel), ADR-859 (`space_membership_tiers.circle_id`),
+ADR-959 (the revoke shape), ADR-964 (grant verdicts)
+
+### Context
+
+Circles had **no private state**. `20261157000000_circles_unlisted.sql` says so in its own words —
+*"circles have no 'private' concept (draft/archived already cover 'hidden')"* — and it deliberately
+left `public_circle_by_id` untouched so a direct link keeps resolving. That is obscurity, and it was
+the right call for what `unlisted` is for. It is not a room a stranger cannot open.
+
+Three facts, all verified against the live database rather than inferred, shaped the answer:
+
+1. **`circles` carries 8 policies: 4 PERMISSIVE, 4 RESTRICTIVE**, and every one is `TO PUBLIC`
+   (`polroles = {0}`), so anon is inside them. `circles: authenticated read non-archived` has **no
+   identity term** in its main arm: `status not in ('archived','draft')` is TRUE for every live
+   circle. Postgres combines policies as `(permissive₁ OR … ) AND restrictive₁ AND …`, so a
+   visibility rule added as PERMISSIVE would be OR-ed against a predicate that is already true and
+   would change **nothing**.
+2. **Ownership is a root-space sentinel, not NULL** (`lib/circles/transfer.ts:9-10`; live: 7 circles,
+   0 with `space_id IS NULL`, 6 on root). And `private.can_view_space_content` returns TRUE whenever
+   the space is not `visibility='private'`, while the root space is `'network'` — so
+   `circles_space_visible` is a **permanent no-op for every personal circle**.
+3. **RLS is not the whole story.** `joinCircle`, the whole circle detail route (`loadCircleShell`),
+   `/api/search-scopes`, the sidebar rails, Vera's `suggestCircle` and the network page's
+   `circles_near` call all run through the service-role client, which holds `BYPASSRLS`.
+
+### Decision
+
+**1. `circles.visibility text` in `('public','unlisted','private')`**, mirroring `spaces.visibility`
+(ADR-322) so the platform has one visibility grammar. `public` = discovery + link + readable;
+`unlisted` = link + readable, out of discovery (today's behaviour, unchanged); `private` = out of
+discovery, **does not resolve by link**, readable only by an active member, the Host, a steward of
+the owning Space, or platform staff (`web_role` admin/janitor).
+
+**2. `unlisted boolean` is demoted to a derived mirror**, `unlisted = (visibility <> 'public')`, held
+by a trigger *and* a row-local CHECK. This is the highest-leverage part of the design: every reader
+that already honours `unlisted` — the `public_circles` RPC, `lib/circles/index-data.ts`,
+`lib/people/associations.ts` — excludes private circles with **no code change and no chance of being
+missed**. Expand-only; the boolean is dropped in a later contract migration.
+
+**3. The policy is `AS RESTRICTIVE FOR SELECT`**, calling `private.can_view_circle(id, visibility,
+space_id, host_id)`. The columns are passed in rather than re-read so a SECURITY DEFINER helper can
+never recurse into the policy that calls it.
+
+**4. `paid` is DERIVED, not a column.** A Circle is paid iff a live priced
+`space_membership_tiers` row points at it (ADR-859) — already the one and only way money reaches a
+Circle. A `price_cents` on `circles` would be a second, contradictory encoding.
+
+**5. Community `guide`+ does NOT open a private circle, and a Space *member* does not either.**
+Draft is a lifecycle state a moderator supervises; private is a member's room. Space **stewards** do
+get it, because they can already move and delete the Circle.
+
+**6. A private circle is invite-only to join.** Enforced in `joinCircle` (service role, so RLS
+cannot), with `invited: true` passed only by the QR route, whose code the Host minted. Without this,
+a stranger who learns the id joins, and joining makes them a member, which makes the policy open.
+
+### The forbidden cells, and why two of them are triggers rather than CHECKs
+
+⚠️ **A `CHECK` is row-local and must be `IMMUTABLE`.** Both owner rulings reference another table —
+the root-space id (`spaces.type='root'`) and the plan (`spaces.plan`). Neither is expressible as a
+CHECK; written as one it would fail to create or be silently stale after a plan change. They are
+`BEFORE INSERT OR UPDATE` triggers: the same guarantee, at the same layer (the database, never the
+UI), using the mechanism Postgres actually offers for a cross-table invariant.
+
+| Forbidden cell | Mechanism |
+|---|---|
+| visibility outside the domain | CHECK `circles_visibility_check` |
+| `private` with `unlisted = false` (private, inside discovery) | CHECK `circles_visibility_unlisted_mirror_check` |
+| a **personal** Circle is paid ("only businesses charge") | trigger `trg_membership_tier_circle_link` |
+| a Space **below Business** sells | same trigger, via `private.space_can_sell` |
+| Space A's tier links Space B's Circle | same trigger |
+
+All three cross-table rules are one trigger because they are one sentence: *the tier's Circle must be
+a Circle that tier's Space owns, and that Space must be allowed to sell.* Guarding at the **link
+site** is what makes "personal ⇒ free" enforceable at all — `circles` has no price to check. The
+cross-tenant arm was not in the rulings; it was found while writing the matrix and nothing stops it
+on today's tree.
+
+### The leak the policy could never have closed
+
+`posts.visibility` and `circles.visibility` are different axes. A post written `public` inside a
+private circle satisfies the feed's `p.visibility = 'public'` arm, and `lib/feed/post-origin.ts` then
+resolves `scope_id` into the origin chip — printing the private circle's **name** and linking its
+slug. The reader never selects from `circles`, so no policy on that table reaches it. Closed with
+`private.post_scope_visible(scope_id)`, ANDed into `feed_for_viewer` and `scoped_feed_for_viewer`
+with every existing arm left byte-for-byte intact.
+
+### Consequences
+
+- Nothing narrows for anyone today: every live circle backfills to `public` or `unlisted` and reads
+  exactly as before. Verified: 7 circles, 2 unlisted, 0 private.
+- `circles_near` gains `visibility = 'public'`, which also closes a **pre-existing** hole: it is
+  `EXECUTE`-able by `anon` and was returning **unlisted** circles with coordinates to signed-out
+  callers, contradicting the unlisted contract itself.
+- `public_circle_by_id` keeps resolving **unlisted** circles by direct link. That contract was set
+  deliberately in 2026-11 and C1 does not revisit it; only `private` is added to the exclusion.
+- No new tables, so `scripts/table-grants.txt` and `scripts/rls-deny-all.txt` need no new lines
+  (`check:rls` 276/276 and `check:grants` 276/276 both green).
+- Three new `private.*` helpers all use the ADR-959 shape — `revoke … from public, anon,
+  authenticated` in ONE statement, then an explicit grant. `can_view_circle` gets `anon` +
+  `authenticated` back deliberately: an RLS policy evaluates as the **invoking** role, so without it
+  every anon read of `circles` errors instead of filtering. `post_scope_visible` is service-role only
+  (its callers are SECDEF and run as owner); `space_can_sell` is authenticated + service_role.
+
+### Rejected alternatives
+
+- **A permissive visibility policy.** Would OR against an identity-free predicate and grant every
+  private circle to everyone, including anon. This is the trap the whole ADR is shaped around.
+- **Building on `can_view_space_content`.** Provably a no-op for personal circles (fact 2). A
+  pgTAP assertion pins that it returns TRUE for the root space, so nobody re-proposes it.
+- **A third ownership encoding** (`space_id IS NULL` for "personal"). Rejected — the root sentinel is
+  the convention and live data agrees; ADR-331 already stamps root on insert.
+- **`circles.price_cents`.** Rejected — see decision 4.
+- **Gating the detail route in `(circle)/layout.tsx`.** The layout is one of four callers of
+  `loadCircleShell`; a fifth would arrive ungated. The gate lives in the read.
+
+### Open for the owner
+
+- **Should a private Circle be visible to members of the owning Space (viewer role), or only to
+  Circle members?** Built as *Circle members only* (the narrower answer, reversible by widening one
+  arm of `can_view_circle`). Widening it would make "private" mean "private from strangers", which is
+  what `unlisted` already is.
+- **Is a paid Circle allowed to be `public`?** Built as yes (a shopfront: anyone sees it, only payers
+  get in). If the owner wants paid ⇒ private, that becomes a fourth arm of the same trigger.
