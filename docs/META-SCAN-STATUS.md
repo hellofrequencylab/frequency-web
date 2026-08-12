@@ -140,7 +140,7 @@ Also closed in the same pass, both flagged above as the highest user impact:
 ### 🟠 Medium, grouped by theme
 
 **Half-built features (each has a live control or nav entry with nothing behind it)**
-- Beta **graduation** is orphaned, so referral-contest prizes were never awarded on the `billing_live` flip (`lib/beta/graduation.ts:33`).
+- ~~Beta **graduation** is orphaned, so referral-contest prizes were never awarded on the `billing_live` flip (`lib/beta/graduation.ts:33`).~~ ✅ closed by owner ruling (2026-08-12): the beta program is over, `billing_live` has been on for three weeks, and the board was empty (0 referrals, 0 founding grants), so nothing was owed. `graduation.ts` and `awardReferralWinners` are deleted, `WINNER_PRIZE_MONTHS` with them, and `/referral` no longer publishes a prize. See BASELINE-TODO B-1.
 - Beta **admission-wave** engine has no caller while the Command Center advertises and renders the UI (`lib/beta/admission.ts:88`).
 - **Email Studio** Phase-3 template gallery is a dead subtree; its nav target `/admin/email-studio` does not exist (`components/admin/email-studio/template-gallery.tsx:42`).
 - **Household/Circle bundle checkout** has no caller AND no webhook seating branch, so enabling the flag would take payment and seat nobody (`lib/billing/bundle-checkout.ts:21`).

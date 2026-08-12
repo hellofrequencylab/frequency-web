@@ -41,8 +41,12 @@ export function EventsHeaderActions({
           <Link href="/admin/events" className={HERO_SECONDARY_BTN}>
             Manage
           </Link>
-          <Link href="/events/drafts" className={HERO_SECONDARY_BTN}>
-            My drafts
+          {/* One Drafts surface, not two (owner ruling 2026-08-12; docs/NAMING.md "Drafts").
+              This used to read "My drafts" and point at /events/drafts, a second member page
+              about captured posters only. Captured events are now a row kind on /drafts, which
+              also holds the wizard drafts and Vera's proposals, so the word means one place. */}
+          <Link href="/drafts" className={HERO_SECONDARY_BTN}>
+            Drafts
           </Link>
         </>
       )}
