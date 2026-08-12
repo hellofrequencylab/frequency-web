@@ -653,7 +653,6 @@ lib/pricing/settings.ts
 lib/pricing/space-allowance.ts
 lib/pricing/space-plan.ts
 lib/privacy/export.ts
-lib/profile-zaps.ts
 lib/profile/awards.ts
 lib/profile/profile-theme-actions.ts
 lib/profiles/account-email.ts

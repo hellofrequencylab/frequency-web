@@ -393,6 +393,16 @@ const PROFILE_LINK_SEEDS: readonly {
    *  SETTINGS — a member searching the palette wants a place, not a form. A seed that is a
    *  real member DESTINATION opts in. */
   palette?: true
+  /** DECLARED, but NOT a row in the account menu. The destination lives in another dock now, so
+   *  the seed drops `'profile'` and keeps `'palette'` — it is still a real place with a real
+   *  gate, it just is not a row here. The exact statement `railHidden` makes for a NAV_AREA
+   *  (lib/nav-areas.ts) that left the rail but kept ⌘K, said in this surface's vocabulary.
+   *
+   *  🔴 THIS IS NOT DELETION. Deleting the seed would take the label, the icon, the gate AND the
+   *  palette entry with it, and ⌘K is the surface a member uses when they know the word and not
+   *  the path — the one thing a menu move must never cost. One declaration, one gate, one label,
+   *  projected onto whichever surfaces still draw it. */
+  menuHidden?: true
 }[] = [
   // You (View profile + Appearance are fixed chrome woven in by the renderer)
   // DRAFTS IS A DESTINATION, NOT A SETTING, and it leads the section for that reason: it is

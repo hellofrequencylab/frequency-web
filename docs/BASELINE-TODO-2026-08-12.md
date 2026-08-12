@@ -420,15 +420,15 @@ All seven verified: each symbol's only hit repo-wide is its own definition. All 
 | `lib/billing/bundle-checkout.ts:21` `createBundleCheckout` | — |
 | `lib/spaces/managed-actions.ts:22` `getManagedSpaces` | `:8` *"someClient -> getManagedSpaces()"* — no such client |
 | `app/(main)/events/[slug]/claim-actions.ts:15` `requestClaimLink` (`'use server'`) | — |
-| `lib/profile-zaps.ts:16` `getProfileZapTotal` | *"surfaced on their public profile as the Spark milestone and the rank-ladder driver"* — it is not |
+| ~~`lib/profile-zaps.ts:16` `getProfileZapTotal`~~ 🔴 **deleted** ([ADR-1006](DECISIONS.md)) | *"surfaced on their public profile as the Spark milestone and the rank-ladder driver"* — it was not. Not unmounted work: it was **removed** in `5e4c722ba` because it sums `crew_completions` only and read 0 for members earning Zaps elsewhere. `profiles.lifetime_zaps` replaced it. Its `profile_zap_total` RPC is now orphaned; the drop is written and **unapplied** at `supabase/migrations/20270226000000_drop_profile_zap_total.sql` |
 | `app/(main)/spaces/[slug]/crm/crm-snapshot.tsx:27` `SpaceCrmSnapshot` | — |
-| `components/profile/profile-cover.tsx:8` `ProfileCover` | *"Rendered in the DetailTemplate `hero` slot"* — it is not |
+| ~~`components/profile/profile-cover.tsx:8` `ProfileCover`~~ 🔴 **deleted** ([ADR-1006](DECISIONS.md)) | *"Rendered in the DetailTemplate `hero` slot"* — it was not. Superseded there by `PageHero` in `58dca581d` |
 
 **Two carry product weight and need an explicit call:**
 - `requestClaimLink` is the *"Is this your event? Claim it"* flow — a real user-visible capability reaching no page. Needs a CTA on the event detail page, or deletion.
 - `createBundleCheckout` is already recorded in `docs/FINALIZE-PLAN.md` as having **no caller AND no webhook seating branch**. Mounting it without the seating branch would **take payment and seat nobody.** Delete it, or build both halves together.
 
-The other five: delete-or-mount. Correct the header comment either way. (The claim that `lib/crm/scope.ts` matters most as a safety boundary is refuted by its own header — the existing pages already read correctly; it merely names the assembly.)
+The other five: delete-or-mount. Correct the header comment either way. **Two are now closed** (see the struck rows): `getProfileZapTotal` and `ProfileCover` were never unmounted work. Both had been mounted and then deliberately removed, and both kept header comments claiming they were live, which is what filed them here in the first place. Re-mounting either would have re-opened a fixed bug. (The claim that `lib/crm/scope.ts` matters most as a safety boundary is refuted by its own header — the existing pages already read correctly; it merely names the assembly.)
 
 ### D-2 · ADR-459 left six unreachable files behind the contacts redirect ✅-safe · **S**
 
