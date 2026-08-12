@@ -27,7 +27,7 @@
 -- space_tenancy_walls.test.sql, including the auto-provisioned-profile cleanup.
 
 begin;
-select plan(43);
+select plan(44);
 
 -- ── Fixture (seeded as postgres, which RLS does not bind) ────────────────────────────────────────
 
@@ -102,6 +102,15 @@ insert into public.circles (id, name, slug, type, status, host_id, unlisted, acc
 insert into public.circles (id, name, slug, type, status, space_id, unlisted, access) values
   ('00000000-0000-4000-e100-000000000003', 'Priv Space Only', 'priv-space-only', 'online', 'active',
    '00000000-0000-4000-c100-00000000000b', false, 'space_members');
+
+-- A circle the FREE business Space legitimately owns. `open` access, so the plan floor on
+-- `circles.access` does not fire and the row actually exists — which is the whole point: the
+-- plan-floor assertions further down need a real, ownable Circle to try to SELL. Without this the
+-- only circle the free Space would have is the one created inside a throws_ok, which by
+-- definition never lands, and a subselect for it silently yields NULL.
+insert into public.circles (id, name, slug, type, status, space_id, unlisted, access) values
+  ('00000000-0000-4000-e100-000000000009', 'Priv Free Owned', 'priv-free-owned', 'online', 'active',
+   '00000000-0000-4000-c100-00000000000f', false, 'open');
 
 -- CELL 4 — the open control, with coordinates so circles_near has something to return.
 insert into public.circles (id, name, slug, type, status, unlisted, access, city, latitude, longitude) values
@@ -388,13 +397,35 @@ select throws_ok(
   'a tier cannot link a Circle its Space does not own'
 );
 
+-- 🔴 THE PLAN FLOOR AT THE LINK SITE — "only businesses charge", enforced where the PRICE lives.
+-- `circles.access` has no price on it, so the tier link is the only place this rule can be made
+-- true. The Circle below is one the free Space really owns, so the cross-tenant clause cannot fire
+-- and the failure can only be the plan floor.
+--
+-- ⚠️ This assertion used to compute its circle_id with
+--     (select id from public.circles where space_id = <free space> limit 1)
+-- and expect `circle_link_unknown_circle`. The free Space owned no Circle -- the only one it ever
+-- tried to create is inside a throws_ok above -- so the subselect was NULL, the trigger returned
+-- early on `new.circle_id is null` exactly as designed, and the test failed against CORRECT code.
+-- It never once exercised the plan floor it was named after.
 select throws_ok(
   $$ insert into public.space_membership_tiers (space_id, name, price_cents, circle_id)
      values ('00000000-0000-4000-c100-00000000000f', 'Paid tier on a free plan', 2900,
-             (select id from public.circles where space_id = '00000000-0000-4000-c100-00000000000f' limit 1)) $$,
+             '00000000-0000-4000-e100-000000000009') $$,
   'P0001',
-  'circle_link_unknown_circle',
-  'a free Space has no circle to link here, and the guard says so rather than silently passing'
+  'circle_link_plan_floor',
+  'a free Space cannot SELL a Circle it owns -- only businesses charge'
+);
+
+-- ...and the other side of that rule, which the trigger states in a comment and nothing tested:
+-- a FREE tier is an access GRANT, not a sale, so a free Space may absolutely hand out entry to its
+-- own Circle. Getting this half wrong would read as "the free plan cannot run Circles at all",
+-- which is not the ruling and would be a far worse bug than the one above.
+select lives_ok(
+  $$ insert into public.space_membership_tiers (space_id, name, price_cents, circle_id)
+     values ('00000000-0000-4000-c100-00000000000f', 'Free access to our own circle', 0,
+             '00000000-0000-4000-e100-000000000009') $$,
+  'a free Space CAN grant access to its own Circle at no charge -- the floor is on selling, not on having'
 );
 
 -- The meaningful paid cell still works, and it works BOTH listed and unlisted -- the owner chooses
