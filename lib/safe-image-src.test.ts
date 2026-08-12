@@ -34,6 +34,21 @@ describe('safeImageSrc', () => {
     expect(safeImageSrc('blob:https://app.local/9f2c-1')).toBe('blob:https://app.local/9f2c-1')
   })
 
+  it("normalises a same-origin path rather than passing the caller's string through", () => {
+    // The value that reaches the DOM is the URL parser's, never the input. A guard that hands back
+    // its argument unchanged is not a guard, it is a spelling check.
+    expect(safeImageSrc('/loom/../loom/a.jpg')).toBe('/loom/a.jpg')
+    expect(safeImageSrc('/loom/a b.jpg')).toBe('/loom/a%20b.jpg')
+    expect(safeImageSrc('/loom/a.jpg?width=400')).toBe('/loom/a.jpg?width=400')
+  })
+
+  it('refuses a protocol-relative value, which starts with a slash but points off-origin', () => {
+    // `//evil.test/a.jpg` inherits the page scheme and loads from another host. It used to pass
+    // through untouched on the strength of its leading slash.
+    expect(safeImageSrc('//evil.test/a.jpg')).toBeNull()
+    expect(safeImageSrc('//evil.test')).toBeNull()
+  })
+
   it('treats empty and absent values as no image', () => {
     expect(safeImageSrc(null)).toBeNull()
     expect(safeImageSrc(undefined)).toBeNull()
