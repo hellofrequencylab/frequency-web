@@ -1,9 +1,6 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { CalendarPlus } from 'lucide-react'
 import { ModuleCard } from '@/components/modules/module-card'
-import { EmptyState } from '@/components/ui/empty-state'
-import { buttonClasses } from '@/components/ui/button'
 import {
   UpcomingEventRows,
   UpcomingEventRowsSkeleton,
@@ -27,10 +24,17 @@ import {
   type CircleEventRow,
 } from '@/lib/events/circle-upcoming'
 
-// The Circle page's "Upcoming events" block (the `circle-events` layout module). The card head
-// renders immediately off the request-scoped circle context; the events READ streams in behind
-// its own <Suspense> with a dimension-matched skeleton, so a slow events query never holds up
-// the circle page or its sibling modules (PAGE-FRAMEWORK §5.2/§5.3).
+// The Circle page's "Upcoming events" block (the `circle-events` layout module), and the lead box
+// of the circle's side rail: what is on next, and the way in to it.
+//
+// THE WHOLE CARD, TITLE INCLUDED, LIVES BEHIND THE <Suspense>, so the block can render NOTHING when
+// there is nothing booked. A rail module that draws an empty "none yet" box teaches the eye that the
+// column is skippable, and takes the boxes that do have something down with it. Streaming is
+// unaffected: the fallback is the same card wearing a dimension-matched skeleton, so a slow events
+// query still never holds up the circle page or its sibling modules (PAGE-FRAMEWORK §5.2/§5.3).
+//
+// A host with an empty calendar loses nothing: "New event" is already in the Circle's Create menu
+// (components/circles/circle-host-menu.tsx) and in the admin rail's quick-link bank.
 //
 // Selection rules (which events count, who may see them) are pure + unit-tested in
 // lib/events/circle-upcoming.ts.
@@ -41,28 +45,25 @@ export const CircleEvents = async () => {
   const { circle, isMember, canManage } = ctx
 
   return (
-    <ModuleCard title="Upcoming events">
-      <Suspense fallback={<UpcomingEventRowsSkeleton />}>
-        <CircleUpcomingEvents
-          circleId={circle.id}
-          insider={isMember || canManage}
-          canCreate={canManage}
-        />
-      </Suspense>
-    </ModuleCard>
+    <Suspense
+      fallback={
+        <ModuleCard title="Upcoming events">
+          <UpcomingEventRowsSkeleton />
+        </ModuleCard>
+      }
+    >
+      <CircleUpcomingEvents circleId={circle.id} insider={isMember || canManage} />
+    </Suspense>
   )
 }
 
 async function CircleUpcomingEvents({
   circleId,
   insider,
-  canCreate,
 }: {
   circleId: string
   /** A member, Host, or steward of this Circle also sees its members-only events. */
   insider: boolean
-  /** Holds circle.editSettings — the same gate the Circle's Create menu uses for New event. */
-  canCreate: boolean
 }) {
   // ONE clock for the read, the fold and the selection rules. `seriesUpcomingFloor` is midnight
   // TODAY in the community's zone: events.starts_at stores the host's wall clock kept as UTC parts,
@@ -113,29 +114,12 @@ async function CircleUpcomingEvents({
   // fifty-five days out, and the row count is the only signal that happened.
   const hasMore = moreSeries || rows.length >= fetchLimit
 
-  if (events.length === 0) {
-    // A Circle with nothing booked is the normal resting state, not a failure. A Host gets the
-    // one next step; everyone else gets a calm line, the way the practice block reads.
-    return canCreate ? (
-      <EmptyState
-        icon={CalendarPlus}
-        title="Nothing on the calendar yet"
-        description="Pick a date, add the details, and post it. It shows up here and on the Events page."
-        action={
-          <Link href={`/events/new?circle=${circleId}`} className={buttonClasses('primary', 'sm')}>
-            Create an event
-          </Link>
-        }
-      />
-    ) : (
-      <p className="text-body-sm text-muted">
-        Nothing on the calendar yet. Gatherings for this Circle show up here.
-      </p>
-    )
-  }
+  // A Circle with nothing booked is the normal resting state, not a failure. It is also not worth a
+  // box: the block renders nothing at all rather than an empty card in the rail.
+  if (events.length === 0) return null
 
   return (
-    <>
+    <ModuleCard title="Upcoming events">
       <UpcomingEventRows events={events} />
       {hasMore && (
         <div className="mt-2 px-1">
@@ -144,6 +128,6 @@ async function CircleUpcomingEvents({
           </Link>
         </div>
       )}
-    </>
+    </ModuleCard>
   )
 }
