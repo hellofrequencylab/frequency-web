@@ -18,6 +18,21 @@ insert into auth.users (id, email) values
   ('00000000-0000-4000-a200-000000000003', 'aud-payer@test.local'),
   ('00000000-0000-4000-a200-000000000004', 'aud-nobody@test.local');
 
+-- 🔴 DROP THE TRIGGER'S PROFILES FIRST. `trg_on_auth_user_created`
+-- (20261013000000_reconcile_signup_trigger.sql) fires on every auth.users insert and provisions a
+-- profile automatically. Inserting our own on top leaves TWO profiles per auth id, and
+-- get_my_profile_id() then resolves to the trigger's row instead of ours, so every
+-- identity-dependent assertion silently answers about the wrong person. Worse, the scalar subquery
+-- in get_my_web_role() sees two rows and ERRORS OUT mid-file.
+--
+-- circle_privacy.test.sql has the same pattern and passes only because its OR arms short-circuit
+-- before reaching get_my_web_role. That is luck, not design, so this file is explicit instead.
+delete from public.profiles
+where auth_user_id in (
+  '00000000-0000-4000-a200-000000000001', '00000000-0000-4000-a200-000000000002',
+  '00000000-0000-4000-a200-000000000003', '00000000-0000-4000-a200-000000000004'
+);
+
 -- ⚠️ `auth_user_id` is the join that makes private.get_my_profile_id() resolve: the JWT `sub` is
 -- the AUTH id, NOT the profile id. Omitting it (or setting `sub` to the profile id) makes every
 -- identity-dependent predicate quietly answer false, which reads as the feature being broken
