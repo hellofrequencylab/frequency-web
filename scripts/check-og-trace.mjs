@@ -36,9 +36,53 @@ const SERVER_DIR = path.join(ROOT, '.next', 'server')
 // entity so they cannot become static files. What must never happen again is a metadata image near
 // the ROOT of the tree, which is what turns "a few dozen" into "all of them".
 //
-// Lower this number when a segment's card is retired. Raising it is a real decision: it means a
-// new share card was added high in the tree, and it costs ~18MB x every page beneath it.
-const MAX_INCIDENTAL = 70
+// THIS GATE IS ABOUT PLACEMENT, NOT ABOUT DISK. It answers "how far up the tree did a card get
+// attached", and that is the only question it is good at. The absolute cost of the artifact is
+// enforced separately and directly by `check:build-budget` (13 GB across the real per-function
+// output, same postbuild step, DEPLOY-SAFETY.md rule 1). Two gates, two questions: never reason
+// about deploy size from this number, and never let a placement mistake through because the size
+// gate is still green.
+//
+// ── 70 -> 100, 2026-08-12 (A-6). WHY. ────────────────────────────────────────────────────────
+// MEASURED on the 2026-08-12 build: 67 incidental against a ceiling of 70. Three functions of
+// headroom, on a number that moves by ONE every time anybody adds an ordinary page under a segment
+// that owns a card. Four new pages under `/spaces/[slug]` — routine work, no card involved — would
+// have failed a gate whose entire failure message talks about share cards, sending the next author
+// hunting for an `opengraph-image.tsx` that does not exist. A gate that cries wolf gets its number
+// bumped in a hurry by someone who has stopped reading it, which is how a real regression walks
+// through. Headroom is what buys the message its credibility.
+//
+// Where the 67 sits, measured, and what growth actually looks like:
+//     47  under app/(main)/spaces/[slug]   (the Space card; 50 routes in that segment)
+//      6  under app/discover/<entity>/[slug] (per-entity detail cards)
+//      5  under app/(main)/events/[slug]   (the event card)
+//      4  under app/(help)                 (the help card)
+//      3  the claim links, 1 spotlight, 1 the dev card generator
+// Ordinary growth is +1 per page. 100 buys 33 of those — roughly a doubling of the Space
+// settings/manage/CRM surface, which is the area under active construction (EDITOR-ARCHITECTURE
+// E0-E10). That is real room, not a rounding-up.
+//
+// And it still fails loudly on the thing that actually broke production. Measured trace counts on
+// the same build: a card at the ROOT reaches all 484 functions (403 carried libvips during
+// ADR-1002); one at `app/(main)` reaches 303; one at `app/discover` reaches 28. The two placements
+// that turn "a few dozen" into "all of them" overshoot 100 by 3x and 4x — this ceiling cannot
+// launder either of them. What 100 does concede is a card placed on a segment of ~25 routes or
+// fewer, which is the honest cost of any headroom at all: the gate cannot tell 22 new pages from
+// one badly-placed card. That case is bounded at ~0.4 GB and lands in check:build-budget's lap,
+// which is the correct division of labour.
+//
+// In disk terms this raise authorises at most 33 x 17.7MB = ~0.58 GB more than the old ceiling,
+// against a 13 GB budget currently sitting at 9.80 GB. It is not where the danger is.
+//
+// Lower this number when a segment's card is retired. Raising it again is a real decision: it means
+// a new share card was added high in the tree, and it costs ~18MB x every page beneath it. Raise it
+// with a measurement and a paragraph, the way this one was, or not at all.
+const MAX_INCIDENTAL = 100
+
+/** How close to the ceiling counts as worth saying out loud on a PASSING run. The 70 -> 100 raise
+ *  happened because nobody could see 67/70 coming until it failed; a gate that only speaks when it
+ *  trips teaches you nothing about the run before. Advisory only — this never fails the build. */
+const HEADROOM_WARN = 10
 
 if (!existsSync(SERVER_DIR)) {
   console.error('check:og-trace — no .next/server. Run `pnpm build` first.')
@@ -125,3 +169,15 @@ console.log(
     `${incidental.length} other function(s) by segment inheritance (budget ${MAX_INCIDENTAL}). ` +
     `${traces.length - carrying.size} functions carry none of it.`,
 )
+
+const headroom = MAX_INCIDENTAL - incidental.length
+if (headroom <= HEADROOM_WARN) {
+  console.log(
+    `\n⚠️  check:og-trace — only ${headroom} function(s) of headroom left under the ${MAX_INCIDENTAL} ` +
+      `budget.\n` +
+      `   Read this BEFORE it fails, because the failure message assumes a misplaced share card and\n` +
+      `   ordinary page growth trips the same wire. If no new opengraph-image.tsx went in, the cause\n` +
+      `   is pages accumulating under a segment that already owns a card — see the header for how\n` +
+      `   this number was set, and raise it with a measurement rather than a reflex.`,
+  )
+}

@@ -95,8 +95,9 @@ Grouped into eleven subsystems. Status is the honest current state from the code
 
 ### A. Identity & scope
 ✅ Three identity tables stitched by email · ✅ `resolvePerson` read model · ✅ `space_id` scoping ·
-✅ graduation (personal → Space). ⏳ Viewer-relative assembly exists as a helper
-(`assembleContactCard`, `lib/crm/scope.ts`) but is **not yet wired into any read** — built, unused.
+✅ graduation (personal → Space). ⚠️ The viewer-relative assembly helper
+(`assembleContactCard`, `lib/crm/scope.ts`) was **deleted on 2026-08-12**: it was never wired into a
+read, and the pages already read correctly scope by scope. Re-derive it only when a caller exists.
 ⏳ CI guard (`scripts/check-rls.mjs`) asserts every scoped table has RLS **enabled** + a policy (or a
 reasoned deny-all), **not** `FORCE ROW LEVEL SECURITY`; the core older tables (`contacts`, `crm_deals`,
 `network_contacts`, `contact_interactions`, `member_traits`) have RLS enabled but not forced.
@@ -185,7 +186,7 @@ passes [NAMING.md](NAMING.md) + [CONTENT-VOICE.md](CONTENT-VOICE.md).
 
 | Phase | Goal | Owner ask | Nature | Status | Depends on |
 |---|---|---|---|---|---|
-| **0** | Harden the spine (membrane made explicit) | the modular model | Hardening + guards | ⏳ partial (RLS guard is ENABLE+policy, not FORCE; `assembleContactCard` built but unused) | — |
+| **0** | Harden the spine (membrane made explicit) | the modular model | Hardening + guards | ⏳ partial (RLS guard is ENABLE+policy, not FORCE; `assembleContactCard` deleted unused 2026-08-12) | — |
 | **1** | Complete the contact card (timeline + toggle + stats) | 1, 2, 3, 7 | Wiring + 1 migration | ✅ shipped (ADR-610) | 0 |
 | **2** | CSV import & data onboarding | import | New | ✅ shipped (ADR-611) | 0 |
 | **3** | QR lead-grabs & attribution | lead grabs | Wiring + new | ⏳ partial (ADR-612): door 1 (Space QR) full; doors 2–5 are engine hooks, surfaces TODO | 0, (1) |
@@ -211,8 +212,8 @@ table has RLS **ENABLED** + at least one policy (or a reasoned deny-all in `scri
 — **not** `FORCE ROW LEVEL SECURITY`, which the guard does not check and which the core older tables
 (`contacts`, `crm_deals`, `network_contacts`, `contact_interactions`, `member_traits`) do **not**
 carry; audit policies for `TO authenticated` + `WITH CHECK` + `(select …)` initplans; name
-**viewer-relative card assembly** as a single read helper (`assembleContactCard`, `lib/crm/scope.ts`)
-— **built but not yet wired into any read**; confirm the consent model is keyed per `(person × scope ×
+**viewer-relative card assembly** as a single read helper (the first attempt, `assembleContactCard` in
+`lib/crm/scope.ts`, was never wired into a read and was deleted on 2026-08-12); confirm the consent model is keyed per `(person × scope ×
 purpose × channel)`; document the three membrane laws as enforced invariants. **Nature:** mostly
 hardening what already exists. **ADR:** membrane invariants + RLS guard.
 

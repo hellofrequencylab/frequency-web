@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ClaimButton } from '@/app/events/claim/[token]/claim-button'
+import { ClaimRequestCard } from './claim-request-card'
 import { CalendarDays, MapPin, Check, Ticket, Clock, Zap, Video, Globe, LayoutDashboard, Settings } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadSeriesDates } from '@/lib/events/series-dates'
@@ -431,6 +432,15 @@ export default async function EventDetailPage({
   // the page kept the seeded posture — prominent "Posted by Frequency" with the Zap credit,
   // plus the claim banner — under a real host's brand.
   const isUnclaimedPosted = isPostedEvent && !extra?.claimed_at && !event.host && !spaceHost
+
+  // CLAIMABLE — the exact guard `resendClaimInvite` applies server-side (lib/events/event-drafts.ts:
+  // published · no host_id · no claimed_at · a claim_token exists), expressed in this page's own
+  // terms so the CTA can never offer a send the action would refuse. `isUnclaimedPosted` already
+  // carries the host_id/claimed_at halves plus the Space-host rule; `status` and `claim_token` are
+  // the two the page didn't yet name. Status matters here because a manager may PREVIEW a draft
+  // (the notFound() guard above lets them through) and a draft is not claimable.
+  const isClaimable =
+    isUnclaimedPosted && !!extra?.claim_token && (extra?.status ?? 'published') === 'published'
 
   // Uploaded cover (A1) — a public storage path in the event-media bucket → public URL
   // (next/image allows the supabase public storage host). Null when the host never
@@ -1668,9 +1678,12 @@ export default async function EventDetailPage({
             <CohostInviteBanner eventId={event.id} slug={event.slug} eventTitle={event.title} />
           )}
 
-          {/* The public "Is this your event? Claim it" banner is retired (owner directive): the person who
-              SEEDED the event now hands it off privately via the "Send to host" link in the QR and Share popup,
-              so the claim path is no longer surfaced to every visitor. */}
+          {/* No claim banner in NOTICES. The banner that lived here was retired on 2026-07-13 (#1751)
+              because it surfaced the claim PATH to every visitor; the seeder hands the listing off
+              privately via "Send to host" in the QR and Share popup, and that is unchanged.
+              What an unclaimed listing shows instead is <ClaimRequestCard> in `bodyLead` below: it
+              carries no token, and pressing it only re-sends the one-time link to the organizer
+              contact already on the row. See the bodyLead comment. */}
         </>
       }
       // [A1] header image — the one big visual win. Uploaded cover, else the scanned
@@ -1957,6 +1970,14 @@ export default async function EventDetailPage({
               )}
             </div>
           </div>
+        ) : isClaimable && !canManage ? (
+          // No token in the URL, but this listing is genuinely unclaimed: offer to SEND the claim
+          // link to the organizer contact on file. This is the render path for `requestClaimLink`,
+          // which had none. It is not the banner that was retired on 2026-07-13 (#1751): that one
+          // published the claim path itself, this one publishes nothing and mails the one-time
+          // token to the address already on the row. Hidden from anyone who can already manage the
+          // event (the seeder and staff use "Send to host" in QR & Share instead).
+          <ClaimRequestCard eventId={event.id} organizerName={extra?.organizer_name ?? null} />
         ) : null
       }
       // Photo gallery (item 5) — the FIRST gallery image is the header/cover, already rendered

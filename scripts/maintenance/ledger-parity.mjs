@@ -21,18 +21,27 @@
 // So this gate reports the PAIR, not just the two halves, because the pairing IS the signature of
 // this defect and it names the one-line repair instead of making the operator derive it.
 //
-// WHERE IT RUNS. The scheduled maintenance sweep, NOT the CI guard array. CI has no database
-// credentials (see the guard-array comment block in .github/workflows/ci.yml), and this check is
-// meaningless without them. It follows scripts/maintenance/advisor-diff.mjs exactly: the fetch is a
-// separate, token-gated CI step (SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_REF) and this script
-// consumes its JSON output. No DB access here, so it stays a pure function of two inputs and is
-// testable without a live database.
+// WHERE IT RUNS. Two callers, and this file is the pure comparison engine for both:
 //
-// VERIFIED PARITY, 2026-08-11. 598 repo files, 598 ledger rows, byte-identical on both columns:
-//   versions      sha256 = 0d4bf8158bbc53a972a760f7c9d590bd3193d848a2146bde37d3c92ff6411818
-//   version+name  sha256 = c9f8be0151783b08a20e0451e79f49f01df0e6d986e1a9c8f21bfa9dedb64f19
-// Both reproduce from the filenames alone, which is what makes exact parity the correct target
-// rather than an approximation.
+//   1. The scheduled maintenance sweep (.github/workflows/maintenance.yml), which token-gates the
+//      fetch in a shell step and feeds this script the JSON — the advisor-diff.mjs shape exactly.
+//   2. `pnpm check:migrations` (scripts/check-migrations.mjs Rule 4), which IMPORTS compare(),
+//      formatReport(), parseLedger() and the digests from here and does its own read.
+//
+// ⚠️ THE HEADER BELOW USED TO ARGUE that a `check:`-named entry point was unreachable ON PURPOSE,
+// because CI has no credentials and such a guard could only crash or pass vacuously. The premise
+// was right; the conclusion was too strong. It left repo⇄ledger divergence detectable only by a
+// hand-pinned count and two hand-pinned digests in ledger-parity.test.ts — re-frozen by a human
+// on every apply, three times in one day, and green on 2026-08-12 while production carried a
+// migration the repo did not have. check:migrations resolves it by adding a THIRD outcome the
+// original reasoning did not consider: an explicit, loud SKIP that names what was and was not
+// proved. See that file's Rule 4 header. This file stays a pure function of two inputs either way,
+// and is testable without a live database.
+//
+// VERIFIED PARITY, 2026-08-11. 598 repo files, 598 ledger rows, byte-identical on both columns —
+// which is what established that exact parity is the correct target rather than an approximation.
+// The digests that used to be quoted here are deliberately gone: a number in a comment is a claim
+// with no gate behind it, and this one went stale within a day. Both sides are read live now.
 //
 // WHY SHA-256 AND NOT MD5. This is a CHECKSUM, not a security control: there is no adversary
 // choosing migration filenames, and a collision would only mean a missed drift report. MD5 was
@@ -49,10 +58,10 @@
 //   node scripts/maintenance/ledger-parity.mjs --print-query   # emit the SQL for the fetch step
 //   pnpm maintenance:ledger-parity <ledger.json>               # compare, report, exit 1 on drift
 //
-// The npm script is `maintenance:` and not `check:` ON PURPOSE. The ci.yml guard loop runs
-// `pnpm "check:${guard}"`, so a `check:`-named script is one array edit away from being run in a
-// job with no credentials, where its only possible outcomes are a crash or a vacuous pass. The
-// name makes the wrong home unreachable rather than merely discouraged.
+// THIS script keeps its `maintenance:` name rather than a `check:` one, because THIS entry point
+// takes a ledger file as a required argument and has nothing to do without one. The guard that is
+// safe to run credential-free is check:migrations, which handles the absence explicitly instead of
+// relying on its own name to keep it away from a job that cannot feed it.
 
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'

@@ -15,7 +15,8 @@ export type BetaAuditAction =
   | 'cancel'
   | 'record_test_send'
   | 'arm_phase'
-  // The beta graduation (lib/beta/graduation.ts).
+  // Historical rows only: the beta wave + graduation writers were retired with the
+  // beta program. Kept so the trail reader can still label existing rows.
   | 'propose_wave'
   | 'admit_wave'
   | 'graduate_beta'
