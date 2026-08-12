@@ -3,7 +3,7 @@ title: Dispatches
 description: Wider announcements from Hosts and leadership.
 category: sharing
 order: 2
-updated: 2026-07-24
+updated: 2026-08-12
 audience: member
 role: host
 featureKeys: [broadcast]
@@ -22,12 +22,12 @@ Dispatches are announcements that reach beyond a single Circle: the way Hosts an
 ## Interacting
 
 - You can **like and comment** on Dispatches, and **vote** on polls, just like other content.
-- You'll find them surfaced in your feed and on the **Community** page.
+- You'll find them surfaced in your feed and on **Around You**.
 
-## The Community dashboard
+## The Around You dashboard
 
-**Community** (in the left menu) is your at-a-glance view of everything happening around
-you, not just Dispatches. At the top you'll see the latest Dispatch or your next
+**Around You** (under Community in the left menu) is your at-a-glance view of everything
+happening around you, not just Dispatches. At the top you'll see the latest Dispatch or your next
 event, then quick counts (Dispatches, upcoming events, Circles, members), the full
 Dispatches feed, and side panels for **what's happening soon** and **new Circles to
 join**. It's the community counterpart to your Quest dashboard.
