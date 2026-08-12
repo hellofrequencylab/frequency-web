@@ -15,6 +15,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { confirmProposalWithRegisteredCommit, dismissCreateProposal } from '@/lib/ai/vera/create-entity'
+import { getMyProfileId } from '@/lib/auth'
+import { discardStagedDraft } from '@/lib/studio/draft-store'
 import type { ActionResult } from '@/lib/action-result'
 
 /** Make the thing. The governed layer owns every check; this only refreshes the list after. */
@@ -32,4 +34,20 @@ export async function dismissDraftAction(proposalId: string): Promise<ActionResu
   const res = await dismissCreateProposal(proposalId)
   revalidatePath('/drafts')
   return res
+}
+
+/**
+ * Erase one unfinished wizard draft (ADR-1001). The member's one-click erasure, matching the
+ * `ai_member_context` posture: unfinished text we hold is theirs to see and theirs to delete.
+ *
+ * Owner-scoped by construction. The profile id comes from the SESSION, so the scope the client
+ * sends can only ever select among that same person's own drafts and can address nothing else.
+ * The copy in the browser they typed it in is left alone and ages out on its own within the week.
+ */
+export async function binUnfinishedDraftAction(scope: string): Promise<boolean> {
+  const profileId = await getMyProfileId()
+  if (!profileId || !scope) return false
+  await discardStagedDraft(profileId, scope)
+  revalidatePath('/drafts')
+  return true
 }

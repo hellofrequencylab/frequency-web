@@ -733,6 +733,11 @@ lib/studio/agent.ts
 lib/studio/analytics.ts
 lib/studio/campaigns.ts
 lib/studio/contacts.ts
+# studio_draft is RLS-on-no-policy (zero policies, grants revoked from anon/authenticated), so the
+# session client cannot reach it at all: staged wizard answers are unfinished writing and the table
+# is deliberately unreachable except through this one owner-scoped file. Every query filters on a
+# session-derived profile_id, which IS the access control (ADR-1001, mirrors lib/studio/steer-store.ts).
+lib/studio/draft-store.ts
 lib/studio/recommendations.ts
 lib/studio/steer-store.ts
 lib/support/store.ts

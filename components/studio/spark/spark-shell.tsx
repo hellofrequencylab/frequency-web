@@ -9,10 +9,12 @@
 // components/templates and NOT ONE wizard used it (only onboarding did), so each re-declared the
 // centered column, the progress cue, the heading block, and the Back/Continue row.
 //
-// It also carries AUTOSAVE for every Spark at once (ADR-991, ./draft/*): what the author types is
-// kept on their own device as they go, and reopening the Spark offers to restore it or to start
-// fresh. Nothing is sent to the server before the commit each wizard already gates on, so deferred
-// creation is unchanged. No wizard wires any of this; composing the shell IS the wiring.
+// It also carries AUTOSAVE for every Spark at once (ADR-991 + the sync extension, ./draft/*): what
+// the author types is kept on their own device as they go AND staged against their account, so
+// reopening the Spark on any device offers to restore it or to start fresh. Where the two copies
+// disagree and the newer one came from elsewhere, the author is asked rather than told. No ENTITY
+// row exists before the commit each wizard already gates on, so deferred creation is unchanged. No
+// wizard wires any of this; composing the shell IS the wiring.
 //
 // `WizardShell` itself is not reused directly because it supplies its own full-screen canvas for
 // onboarding, which renders OUTSIDE the app shell. A Spark runs INSIDE the app shell, so it takes
@@ -26,7 +28,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react'
 import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/components/templates'
 import { draftScope } from './draft/draft-store'
 import { useSparkDraft } from './draft/use-spark-draft'
-import { SparkDraftCue, SparkResumeOffer } from './draft/spark-resume'
+import { SparkDraftConflict, SparkDraftCue, SparkResumeOffer } from './draft/spark-resume'
 
 export interface SparkShellProps {
   /** The thing being made, shown as the eyebrow ("New Event"). */
@@ -109,7 +111,7 @@ export function SparkShell({
   // opts a surface out entirely.
   const pathname = usePathname()
   const scope = draftScopeKey === null ? null : (draftScopeKey ?? draftScope([pathname, eyebrow]))
-  const draft = useSparkDraft({ scope, step, stageRef, busy })
+  const draft = useSparkDraft({ scope, step, stageRef, busy, route: pathname, label: eyebrow })
 
   const standardFooter = onNext && (
     <div className={onBack ? 'flex gap-3' : ''}>
@@ -133,7 +135,20 @@ export function SparkShell({
   return (
     <div className="mx-auto w-full max-w-lg px-4 py-10">
       {draft.phase === 'offer' && (
-        <SparkResumeOffer savedLabel={draft.savedLabel} onRestore={draft.restore} onDiscard={draft.discard} />
+        <SparkResumeOffer
+          savedLabel={draft.savedLabel}
+          fromAnotherDevice={draft.fromAnotherDevice}
+          onRestore={draft.restore}
+          onDiscard={draft.discard}
+        />
+      )}
+      {draft.phase === 'conflict' && draft.conflict && (
+        <SparkDraftConflict
+          localLabel={draft.conflict.localLabel}
+          otherLabel={draft.conflict.otherLabel}
+          onTakeOther={draft.takeOther}
+          onKeepLocal={draft.keepLocal}
+        />
       )}
 
       <WizardProgress current={step} total={totalSteps} label={stepLabel} />

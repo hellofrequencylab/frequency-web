@@ -5,10 +5,16 @@
 // clock, so the rules that actually matter (what a key is, when a draft expires, what is refused,
 // what discard does) are unit-testable in node and can never quietly depend on a browser.
 //
-// WHY A CLIENT STORE AT ALL. Journey, Practice and Circle share one hard rule: NOTHING persists
-// until the author commits a reviewed title. There is no row to autosave into, so a server draft
-// would mean creating the entity early, which is the exact thing deferred creation forbids. The
-// author's typing lives on their own device until they commit, and the commit path is unchanged.
+// WHY A CLIENT STORE AT ALL, now that there is also a server one. This is the FAST half of a
+// local-first pair (docs/adr-drafts/1001-draft-sync.md). It is what makes typing feel instant, what
+// survives a crash or a refresh with zero latency, and what keeps working on a flaky connection.
+// The server half (lib/studio/draft-store.ts) adds the other thing: it makes a draft THE AUTHOR'S
+// rather than THAT MACHINE'S. Sync degrades to this file on any failure, never the other way.
+//
+// Deferred creation is untouched by either half. Journey, Practice and Circle forbid a row in the
+// ENTITY's own table before the author commits a reviewed title; the staged answers live in
+// `studio_draft`, which carries no entity id and cannot be listed, searched, or mistaken for the
+// thing being made. The commit path is unchanged.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Bumped when the stored shape changes. An entry at any other version is dropped on read. */
@@ -97,6 +103,24 @@ const REFUSED_AUTOCOMPLETE = /^(cc-|current-password|new-password|one-time-code)
 
 /** Belt and braces for a control that carries no autocomplete hint but is plainly sensitive. */
 const REFUSED_NAME = /pass(word|code)|secret|token|api.?key|cvc|cvv|card.?number|\bssn\b|routing|iban/i
+
+/**
+ * The SECOND gate on the refusal list, applied to a stored KEY rather than to a live control.
+ *
+ * The first gate (`isDraftable`) is the real one: it sees the control, so it sees the input type,
+ * the autocomplete hint and the opt-out attribute, and a refused field never enters the draft at
+ * all. This one sees only what a key can carry, which is the field's name. It exists because the
+ * sync layer writes into the database, where a leaked secret is worse than it is in one browser,
+ * and a gate that runs on the way IN cannot be skipped by a caller that got the collection wrong.
+ */
+export function isRefusedKey(key: string): boolean {
+  return REFUSED_NAME.test(key)
+}
+
+/** Drop anything the key-level refusal catches. Used by the server store before a row is written. */
+export function refuseNamedSecrets(values: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(Object.entries(values).filter(([k]) => !isRefusedKey(k)))
+}
 
 /**
  * Whether this control's value may be written to the store. The default is yes: a Spark asks the

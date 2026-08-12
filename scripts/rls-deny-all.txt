@@ -85,6 +85,7 @@ space_follower_event_reminders_sent
 space_function_type_defaults
 space_venue_holds
 stripe_webhook_events
+studio_draft
 studio_steer
 team_members
 trust_scores
