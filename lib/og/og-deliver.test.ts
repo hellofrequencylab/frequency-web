@@ -60,7 +60,11 @@ describe('every route declares the bytes it actually serves', () => {
   const ROUTES = globSync('app/**/opengraph-image.tsx').sort()
 
   it('found them all, so an empty glob cannot pass this suite vacuously', () => {
-    expect(ROUTES.length).toBeGreaterThanOrEqual(14)
+    // 13, not 14, since ADR-1002: the ROOT card is no longer a route. It rendered identical bytes
+    // on every request, and being at the root it was inherited into every page's metadata module,
+    // which put next/og — and the 17.7MB of libvips sharp loads — into all ~403 functions. It ships
+    // as app/opengraph-image.jpg now and is covered by lib/og/root-card.test.ts instead.
+    expect(ROUTES.length).toBeGreaterThanOrEqual(13)
   })
 
   it('the shared MIME constant is jpeg', () => {

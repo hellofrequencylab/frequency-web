@@ -79,6 +79,10 @@ const ALLOWLIST = [
   // raster OG / social images (canvas-drawn, need raw color)
   (p) => /(?:^|\/)opengraph-image\.tsx$/.test(p),
   (p) => /(?:^|\/)twitter-image\.tsx$/.test(p),
+  // The ROOT card's generator (ADR-1002). Same raster exemption as the two above — it IS the old
+  // app/opengraph-image.tsx, moved out of the metadata-image filenames so Next stops inheriting it
+  // into every page in the app. Satori has no access to the CSS token cascade either way.
+  (p) => p === 'app/dev/og-root-card/route.tsx',
   (p) => /^app\/.*image[^/]*\.tsx?$/.test(p),
   // QR styling
   (p) => /\/qr\/.*style[^/]*\.tsx?$/.test(p),

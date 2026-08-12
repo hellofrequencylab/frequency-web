@@ -2,7 +2,8 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { SITE_NAME } from "@/lib/site";
 import { loadNunito } from "@/lib/og/load-nunito";
-import { cardResponse, OG_CONTENT_TYPE } from '@/lib/og/deliver'
+import { cardResponse } from '@/lib/og/deliver'
+import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
 
 export const runtime = "nodejs";
 export const alt = `${SITE_NAME} Help Center`;

@@ -1,7 +1,8 @@
 import { getPublicEventBySlug } from '@/lib/discover'
 import { getEventEnrichment } from '../_data'
 import { SITE_NAME } from '@/lib/site'
-import { cardResponse, OG_CONTENT_TYPE } from '@/lib/og/deliver'
+import { cardResponse } from '@/lib/og/deliver'
+import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
 
 export const runtime = 'nodejs'
 export const alt = `An event on ${SITE_NAME}`

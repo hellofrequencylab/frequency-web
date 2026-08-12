@@ -20169,3 +20169,61 @@ wrapper, which `Avatar` places for it. ✅ Three hover states carrying the same 
 outlived the gate. ⚠️ The rail discs step 32px → 36px (`Avatar`'s `sm`, the documented compact-list
 step) and the comment disc 28px → 24px (`xs`, matching `post-replies.tsx`). Using the shared scale
 is the point; a caller-supplied box would have reintroduced the fork.
+
+## ADR-1002: The root share card was a route, so every page in the app carried a rasteriser
+
+**Decision.** The root Open Graph card ships as a **static file** — `app/opengraph-image.jpg` +
+`app/twitter-image.jpg`, with `.alt.txt` beside each — instead of the `app/opengraph-image.tsx`
+route it had been. The renderer is kept, moved to `app/dev/og-root-card/route.tsx`, and is how the
+file gets regenerated. `pnpm check:og-trace` (`scripts/check-og-trace.mjs`) is the new guard.
+
+**Context.** Every production deploy from the night of 2026-08-11 compiled clean and then died with
+`ENOSPC` about nineteen minutes into `Deploying outputs`. Production served `3f8d62b` for a day and
+the Studio wizards (#2098) could not ship. #2102 reverted main to the last tree that deployed, which
+restored the pipeline without explaining anything; `docs/HANDOFF-2026-08-12.md` recorded the state
+and named "find which commit crosses the disk" as the next move.
+
+**No commit crossed the disk.** #2098 adds no dependency — its `package.json` diff is two `check:*`
+scripts — and the reported `node_modules` growth was self-inflicted by the disabled build cache, as
+the handoff already suspected. What #2098 added was **five more serverless functions**, against a
+build where each function already cost ~65MB.
+
+**The measurement nobody had.** Vercel's report counts the unique file set; the disk cost is the
+per-function sum, because the builder copies each function's traced set into its own directory. Sum
+the `.nft.json` files and the real number appears:
+
+| | Functions | Traced bytes, summed per function |
+| :--- | ---: | ---: |
+| Before | 480 | **16.73 GB** |
+| After | 481 | **9.80 GB** |
+
+The single biggest line was `libvips-cpp.so` — 17.7MB × **403** functions = **6.99 GB**, 42% of the
+whole build, for a native image codec that **18 routes** use.
+
+**Why every page had it.** `app/opengraph-image.tsx` was the ROOT metadata image, and Next inherits
+metadata images into every page's metadata module. That module imports `next/og`, and `next/og`
+loads `sharp` internally (`getSharp()` in `@vercel/og/index.node.js`). So one file at the root of
+`app/` put a 17.7MB shared object into all ~403 functions.
+
+**What does not work, recorded so nobody re-runs it.** All three were tried and measured:
+
+| Attempt | Result |
+| :--- | :--- |
+| Lazy `await import('sharp')` | No effect, and this was the *shipped* assumption — `lib/og/deliver.ts` claimed it kept the binary out of every route. @vercel/nft reads the literal specifier out of the emitted chunk regardless of how lazily it runs. |
+| `/* turbopackIgnore: true */` | No effect. Leaves the literal in place, which is exactly what nft is reading. 402 of 478 functions still carried it. |
+| Assembling the specifier at runtime | No effect. The minifier constant-folds `['sh','arp'].join('')` back to `"sharp"`. |
+| `outputFileTracingExcludes` | Unusable here. Next matches route globs with picomatch in `contains` mode, so negation matches everything, and excludes are applied AFTER includes and win — there is no way to strip sharp from pages while sparing the card routes. |
+
+The card is a pure function of `SITE_NAME`, `SITE_TAGLINE`, `hero.jpg` and the logo mark. It
+rendered identical bytes on every request, so the fix is not to hide the dependency but to delete
+the reason for it: a constant image is a file.
+
+**Consequences.** ✅ 6.9 GB out of the deploy and one fewer lambda; a static metadata image is
+inherited by every page at no bundle cost. ✅ `check:og-trace` fails the build in both directions —
+if a rasteriser spreads (budget: 70 functions by legitimate segment inheritance) and if a card route
+*loses* sharp, which is otherwise invisible because `deliverCard` is deliberately fail-safe and
+silently serves a 1.7MB PNG instead. ⚠️ The card no longer re-renders when its inputs change;
+`lib/og/root-card.test.ts` fails if the alt text drifts from `SITE_NAME`/`SITE_TAGLINE`, and the
+regeneration recipe is at the top of the generator. ⚠️ 9.80 GB is still large and still mostly
+duplication — a 7MB vendor SSR chunk in 331 functions (2.27 GB) and 823 MB of `public/tracks/*.mp3`
+in 61 are the next two lines, neither touched here.
