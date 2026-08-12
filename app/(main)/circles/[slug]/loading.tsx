@@ -20,7 +20,7 @@ export default function CircleDetailLoading() {
   return (
     <div>
       {/* The standard Detail cover (16:6). */}
-      <div className="mb-4 aspect-[16/6] w-full overflow-hidden rounded-2xl bg-surface-elevated" />
+      <div className="mb-4 aspect-[16/6] w-full overflow-hidden rounded-card bg-surface-elevated" />
 
       {/* The identity lockup: title + badges + the quiet fact lines on the left, the one primary
           action on the right from sm up. */}
@@ -49,8 +49,8 @@ export default function CircleDetailLoading() {
 
       {/* The body. */}
       <div className="space-y-3 pt-4">
-        <Skeleton className="h-24 w-full rounded-2xl" />
-        <Skeleton className="h-32 w-full rounded-2xl" />
+        <Skeleton className="h-24 w-full rounded-card" />
+        <Skeleton className="h-32 w-full rounded-card" />
       </div>
     </div>
   )

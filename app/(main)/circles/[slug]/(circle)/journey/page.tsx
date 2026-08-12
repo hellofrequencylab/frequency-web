@@ -75,7 +75,7 @@ export default async function CircleJourneyPage({
         </div>
 
         {/* The shared meter. It belongs to the group, and it leads. */}
-        <Suspense fallback={<Skeleton className="h-28 w-full rounded-xl" />}>
+        <Suspense fallback={<Skeleton className="h-28 w-full rounded-card" />}>
           <RunProgress runId={run.id} planId={run.plan.id} circleName={circle.name} />
         </Suspense>
       </section>

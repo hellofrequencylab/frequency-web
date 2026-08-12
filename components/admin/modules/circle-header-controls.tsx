@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { labelClasses } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 import { ImageFocalPicker } from '@/components/ui/image-focal-picker'
 import {
   updateCircleCoverFocus,
@@ -116,21 +117,21 @@ export function CircleHeaderControls({
             {CIRCLE_HERO_HEIGHTS.map((h) => {
               const on = h.value === height
               return (
-                <button
+                <Button
                   key={h.value}
                   type="button"
+                  size="sm"
+                  // The selected state of a segmented control, not a call to action: primarySoft is
+                  // the token pair the kit already carries for "present, not shouting". Composing
+                  // the primitive rather than hand-rolling the fill is what the adoption ratchet
+                  // asks for, and it brings the 44px touch floor with it.
+                  variant={on ? 'primarySoft' : 'secondary'}
                   disabled={heightPending}
                   aria-pressed={on}
                   onClick={() => onHeightChange(h.value)}
-                  className={
-                    'rounded-control px-2.5 py-1.5 text-meta font-semibold transition-colors disabled:opacity-40 ' +
-                    (on
-                      ? 'bg-primary text-on-primary'
-                      : 'border border-border bg-surface text-text hover:border-border-strong')
-                  }
                 >
                   {h.label}
-                </button>
+                </Button>
               )
             })}
           </div>
@@ -150,22 +151,18 @@ export function CircleHeaderControls({
             {COVER_SCRIM_OPTIONS.map((o) => {
               const on = o.value === scrim
               return (
-                <button
+                <Button
                   key={o.value}
                   type="button"
+                  size="sm"
+                  variant={on ? 'primarySoft' : 'secondary'}
                   disabled={scrimPending}
                   aria-pressed={on}
                   title={o.tagline}
                   onClick={() => onScrimChange(o.value)}
-                  className={
-                    'rounded-control px-2.5 py-1.5 text-meta font-semibold transition-colors disabled:opacity-40 ' +
-                    (on
-                      ? 'bg-primary text-on-primary'
-                      : 'border border-border bg-surface text-text hover:border-border-strong')
-                  }
                 >
                   {o.label}
-                </button>
+                </Button>
               )
             })}
           </div>

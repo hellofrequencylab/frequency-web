@@ -13,8 +13,8 @@ export default function CircleTabLoading() {
   return (
     <div className="space-y-3 pt-4">
       <Skeleton className="h-5 w-40" />
-      <Skeleton className="h-24 w-full rounded-2xl" />
-      <Skeleton className="h-24 w-full rounded-2xl" />
+      <Skeleton className="h-24 w-full rounded-card" />
+      <Skeleton className="h-24 w-full rounded-card" />
     </div>
   )
 }
