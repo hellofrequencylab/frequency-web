@@ -154,7 +154,6 @@ app/(main)/circles/[slug]/edit/page.tsx
 app/(main)/circles/[slug]/manage/events-actions.ts
 app/(main)/circles/[slug]/manage/events-section.tsx
 app/(main)/circles/[slug]/manage/page.tsx
-app/(main)/circles/[slug]/page.tsx
 app/(main)/circles/[slug]/settings/page.tsx
 app/(main)/circles/actions.ts
 app/(main)/circles/admin-actions.ts
