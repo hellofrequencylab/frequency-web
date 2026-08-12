@@ -208,7 +208,7 @@ const BASELINE_HEADER =
   '# to a client Spark which composes SparkShell. The gate matches literal tags in the page file by\n' +
   '# design — it over-reports rather than certifying a hand-rolled layout — so they are listed here.\n' +
   '#\n' +
-  '# ⚠️ Six entries are PRESENTATIONS of a page, not pages (ADR-1010): the app/(main)/@wizard/(.)…\n' +
+  '# ⚠️ Six entries are PRESENTATIONS of a page, not pages (ADR-1017): the app/(main)/@wizard/(.)…\n' +
   '# intercepting routes. Each one imports and renders the SAME page module its real route serves,\n' +
   '# wrapped in the Spark modal, so the kit shell is composed by the page underneath and by the\n' +
   '# wizard\'s own SparkShell. There is no second layout here to convert: giving one a template would\n' +
