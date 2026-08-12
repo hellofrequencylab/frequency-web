@@ -163,6 +163,24 @@ jobs:
       # would be noise, and the wiring half is already gated where the finding has an owner.
       - name: Contract guards (all run; every failure reported)
         if: ${{ !cancelled() }}
+        # ARMS THE LEDGER HALF OF check:migrations. Without these two, that guard proves only that
+        # the TREE is well-formed and says so in a loud skip; it cannot tell you whether production
+        # has applied exactly these migrations and nothing else.
+        #
+        # 🔴 WHY IT IS ARMED HERE. On 2026-08-12 production ran a security migration
+        # (20270224000100_revoke_friendships_freeze_identity_execute) whose file existed in NO
+        # branch — it was applied via execute_sql, then lost when a branch was rebuilt with
+        # cherry-picks after a bad rebase. For a full day the repo could not reproduce its own
+        # database, and every gate was green: the old check was a hand-pinned COUNT in
+        # ledger-parity.test.ts, re-frozen five times, and the count was 606 on both sides because
+        # one file was missing AND one was unapplied. A count is not a set.
+        #
+        # On a fork PR these are empty and the guard degrades to the same loud skip rather than a
+        # false pass — the skip states what was proved and what was not. That is deliberate: the
+        # failure mode of a credential-less run must never be a silent green.
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
         run: |
           set -uo pipefail
           failed=()

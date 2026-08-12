@@ -17,6 +17,7 @@ import { revalidatePath } from 'next/cache'
 import { confirmProposalWithRegisteredCommit, dismissCreateProposal } from '@/lib/ai/vera/create-entity'
 import { getMyProfileId } from '@/lib/auth'
 import { discardStagedDraft } from '@/lib/studio/draft-store'
+import { deleteDraft } from '@/app/(main)/events/scan/actions'
 import type { ActionResult } from '@/lib/action-result'
 
 /** Make the thing. The governed layer owns every check; this only refreshes the list after. */
@@ -50,4 +51,19 @@ export async function binUnfinishedDraftAction(scope: string): Promise<boolean> 
   await discardStagedDraft(profileId, scope)
   revalidatePath('/drafts')
   return true
+}
+
+/**
+ * Throw away one unfinished captured event (the third row kind).
+ *
+ * NO NEW AUTHORITY, deliberately. It forwards to `deleteDraft`, the poster flow's own delete,
+ * which re-derives the caller, refuses a row that is not theirs, refuses anything already
+ * published, and cleans up the stored poster and its crops. Folding the surface must not fork
+ * the rule about who may delete what: the list moved, the gate did not.
+ */
+export async function binEventDraftAction(id: string): Promise<boolean> {
+  if (!id) return false
+  const res = await deleteDraft(id)
+  revalidatePath('/drafts')
+  return 'ok' in res
 }

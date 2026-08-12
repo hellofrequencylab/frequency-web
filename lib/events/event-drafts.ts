@@ -325,12 +325,33 @@ export async function getMyDraft(posterProfileId: string, id: string): Promise<E
   return data ? mapDraft(data as unknown as Record<string, unknown>) : null
 }
 
-/** List the poster's drafts (and posted events), newest first. */
-export async function listMyDrafts(posterProfileId: string, limit = 100): Promise<EventDraft[]> {
+/**
+ * The poster's UNFINISHED captured events, newest first: the third row kind on `/drafts`
+ * (owner ruling 2026-08-12, "fold /events/drafts into /drafts as a third row kind").
+ *
+ * WHY THE STATUS FILTER IS PART OF THE READ. This used to be `listMyDrafts`, which returned
+ * every row the member had ever captured — draft, published, claimed and removed — because it
+ * fed a page called "My drafts" that was really a captured-events history. `/drafts` promises
+ * something narrower and says so in its own heading: nothing on it is made yet. A published
+ * event IS made, so it is not a draft, and it already has two homes (the member's own listing
+ * on `/events`, which reads `host_id OR posted_by_profile_id`, and the operator board at
+ * `/admin/events`). Filtering in SQL rather than in the page keeps the surface's promise and
+ * the query in agreement, and stops a heavy poster pulling a hundred finished rows over the
+ * wire to throw nearly all of them away.
+ *
+ * Owner-scoped end to end: `posted_by_profile_id` is the caller's own id, resolved from the
+ * session by the page.
+ */
+export async function listMyUnfinishedEventDrafts(
+  posterProfileId: string,
+  limit = 100,
+): Promise<EventDraft[]> {
   const { data } = await db()
     .from('events')
     .select(COLS)
     .eq('posted_by_profile_id', posterProfileId)
+    .eq('status', 'draft')
+    .is('removed_at', null)
     .order('created_at', { ascending: false })
     .limit(limit)
   return ((data ?? []) as unknown as Record<string, unknown>[]).map(mapDraft)

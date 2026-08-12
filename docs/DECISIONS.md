@@ -21676,8 +21676,10 @@ jobs and both are load-bearing:
 
 #### 1. The table: `studio_draft`, keyed `(profile_id, scope)`
 
-Migration `supabase/migrations/20270224000000_studio_draft.sql`. **UNAPPLIED.** Purely additive:
-one table, one index, its RLS. No `ALTER` or `DROP` on anything existing.
+Migration `supabase/migrations/20270224000000_studio_draft.sql`. **APPLIED** — production carries the
+table and the ledger row (verified 2026-08-12; this line read "UNAPPLIED" for a day after it went in,
+which is the drift [ADR-1007](DECISIONS.md)'s ledger comparison now catches automatically). Purely
+additive: one table, one index, its RLS. No `ALTER` or `DROP` on anything existing.
 
 Two extra columns, `route` and `label`, exist only so `/drafts` can offer a way back in: `scope` is
 a slug and cannot be reversed into a path. Both come from the shell (the pathname and the eyebrow),
@@ -21862,3 +21864,122 @@ edits away its own wrong turns stops being evidence of how the team reasons. ⚠
 mostly duplication: 2.31 GB of `@iconify-json` glyph data in 337 functions is now the largest single
 line, and the remaining `public/` glob is ~700 MB. Both are tracked in
 [`BASELINE-TODO-2026-08-12.md`](BASELINE-TODO-2026-08-12.md).
+
+## ADR-1006: The beta program is closed, so the code that ran it is deleted
+
+**Decision.** `graduateBeta()`, `awardReferralWinners()` and the referral prize copy are **deleted**.
+`grantFoundingStatus` is **kept** — it is live at `app/onboarding/beta/actions.ts:228` and in the
+Stripe webhook, and it is the only piece of the beta machinery that still has callers.
+
+**Why the highest-severity finding on the board was the wrong call.** The 2026-08-12 scan filed
+`graduateBeta()` as its most severe item: an unreachable graduation path that would silently fail to
+convert beta members when billing went live. The reasoning was sound and the premise was stale.
+Asked of production rather than of the code: `billing_live` was flipped ON via the console FlagRow on
+2026-07-10 and again on 2026-07-21, and there are **0 beta referrals** and **0 founding members
+granted**. Billing has been live for three weeks. The hook that never ran had nothing to act on, and
+the graduation it guarded already happened by another route.
+
+**A promise with no mechanism is worse than a missing feature.** `/referral` published *"top referrers
+win free membership"* while the code that selected those winners was being deleted underneath it. The
+page has been corrected to claim only what the code does. This is the general rule: **when a
+mechanism is retired, the copy that sold it is part of the retirement, not a follow-up.** A member
+reading a promise the system cannot keep is a defect even when zero members are affected.
+
+**Also deleted, same pass.** `getManagedSpaces` (its own header records that
+[ADR-349](DECISIONS.md) retired the mega-menu launcher it served) · `assembleContactCard` and the rest
+of `lib/crm/scope.ts` · `SpaceCrmSnapshot` · `StudioLaunchButton`, which [ADR-986](DECISIONS.md) made
+obsolete by turning every create entry point into a deep-linkable Spark link.
+
+**Two more, deleted for a sharper reason.** `getProfileZapTotal` and `ProfileCover` were filed by the
+scan as *built work that reaches no user*. They were not. Both were **mounted and then deliberately
+removed**, and both still carried header comments claiming they were live — which is precisely what
+misled the scan. `getProfileZapTotal` sums `crew_completions` only, so it returned **0** for any
+member whose Zaps came from posts, reactions or joins; one real member showed 0 against 130 actual
+Zaps, and commit `5e4c722ba` repointed the profile at the authoritative `profiles.lifetime_zaps`.
+`ProfileCover` was replaced in the `DetailTemplate` hero slot by `PageHero`, which carries the cover
+plus the avatar, name, action row and the operator-configurable header element. Re-mounting either
+would have regressed a named, fixed bug.
+
+**Consequences.** ✅ The beta path is gone rather than half-present. ✅ `grantFoundingStatus` and
+`StudioWindow` verified live and untouched. ⚠️ **A stale header comment is a load-bearing defect.**
+Two components asserted they were mounted, an audit believed them, and an owner ruled to re-mount
+them on that basis. Where the code and a comment disagree the code wins — but the comment is what
+gets read first, so it gets fixed in the same pass or it misleads again.
+
+## ADR-1007: The migration contract is the ledger head, not a number somebody re-freezes
+
+**Decision.** `check:migrations` now reads `supabase_migrations.schema_migrations` at run time and
+fails on a **set difference across both columns**. The hand-pinned corpus in
+`scripts/maintenance/ledger-parity.test.ts` is deleted. The ledger half is armed in CI with
+`SUPABASE_ACCESS_TOKEN` + `SUPABASE_PROJECT_REF`; without credentials it **skips loudly**, stating
+what was proved and what was not, and never degrades to a silent pass.
+
+**The failure this closes, which had already happened.** For one full day this repository could not
+reproduce its own production database, and every gate was green. Production had applied
+`20270224000100_revoke_friendships_freeze_identity_execute` — a **security** migration — via
+`execute_sql`, and the file was then lost when a branch was rebuilt with cherry-picks after a rebase
+replayed already-squash-merged commits. It reached no branch. Simultaneously
+`20270225000000_household_bundle_seating.sql` sat committed and unapplied.
+
+**A count is not a set, and that is the whole lesson.** Both sides read **606**. One file missing and
+one file unapplied netted to zero, so the pinned count could not see it. That pin had been re-frozen
+**five times in one day** (598 → 602 → 603 → 604 → 605 → 606) and its own comment forbade re-pinning
+from the repo alone — which made its correctness depend on a human performing a fiddly manual step
+correctly, every time, under time pressure. The new guard caught it on its first real run.
+
+**The wall-clock trap, recorded because it bit three times in one day.** `apply_migration` stamps a
+**wall-clock** version. It stamped `studio_draft` as `20260812134657`, sorting ~400 rows before the
+file it came from, and because an explicit row had also been inserted, production briefly carried the
+same migration **twice**. Apply DDL with `execute_sql` and insert the ledger row at the **repo's own**
+version, then re-read the ledger and check for a duplicate as well as a mis-sorted row.
+
+**`MAX_INCIDENTAL` raised 70 → 100, deliberately.** Measured incidental count is **67**, stable across
+two builds, leaving 3 functions of headroom — so four ordinary pages under `/spaces/[slug]` would trip
+a gate whose message talks about share cards. The escalation ladder was measured too: a root-level
+card reaches **484** functions, one at `app/(main)` **303**, one at `app/discover` **28**. Both
+placements that killed production overshoot 100 by 3–4×, so the guard still catches what it exists
+for. The raise authorises ~0.58 GB against a 13 GB budget. **This guard is about placement**; absolute
+disk cost is enforced separately by `check:build-budget`.
+
+**Consequences.** ✅ Repo ⇄ ledger verified in lockstep at **607**, both digests matching byte for byte
+from two independent derivations. ✅ Divergence now fails CI directly on every PR. ⚠️ Fork PRs have no
+secrets and fall back to the loud skip — acceptable, because the failure mode of a credential-less run
+must never be a false green. ⚠️ `docs/DATABASE.md`'s byte-identical digest table is superseded by the
+live guard.
+
+## ADR-1008: A dependency's cost is per function, and the fix is a door, not a comment
+
+**Decision.** `searchSiteIcons` moves behind `app/api/site-icons/route.ts`, and the HEIC decoder moves
+behind a single dynamic-import door at `lib/library/heic-decode.ts` plus an
+`outputFileTracingExcludes` entry. Measured result: **9.16 GB → 6.45 GB** per-function output, a
+**2.71 GB** cut.
+
+| Line | Before | After |
+| :--- | ---: | ---: |
+| `@iconify-json` collections | 2,315 MB — 6.87 MB × **337 fns** | 21 MB — **3 fns** |
+| `heic2any` decoder | 491 MB — 1.29 MB × **381 fns** | **0 fns** |
+
+**Three fixes that do not work, recorded so nobody spends the afternoon again.** `turbopackIgnore`
+does nothing — `@vercel/nft` reads the literal specifier out of the emitted chunk. `['sh','arp']
+.join('')` is constant-folded straight back by the minifier. A broad glob like `@img/**/*` in tracing
+config panics Turbopack in Rust (`Is a directory (os error 21)`) because it sweeps a symlinked
+directory. Excludes are applied by picomatch over the **already-collected trace**, never by globbing
+the disk, which is why the narrow `*heic2any*` chunk pattern is safe where the broad one was not.
+
+**The floor is three functions, not one, and that is correct.** `components/ui/icon.tsx` is the
+legitimate RSC `<Icon>` primitive and is reachable from exactly two pages. Removing its static
+imports would have bought ~14 MB and broken the primitive. **A second importer is not automatically
+a mistake** — it is a mistake only if it is not the thing the module exists for.
+
+**Every fail-safe needs a gate that notices it fired.** `scripts/build-fanout.test.ts` reads the
+`.nft.json` sets directly and locates the icon chunks by **content probe**, because the chunk name is
+a content hash that Turbopack is free to change — at which point the exclude would silently stop
+matching. It carries a non-triviality control asserting the app-page runtime appears in more than half
+the functions, so a failed parse cannot pass as a false zero. Proven non-vacuous: against the
+pre-change build it fails with `expected 337 to be ≤ 8` and `expected 381 to be 0`.
+
+**Consequences.** ✅ Both artifact gates green on a real build. ✅ The Icons tab pays one round trip on
+first open and shows a dimension-matched `Skeleton` with an `sr-only` status line, because `Skeleton`
+is `aria-hidden` and cannot announce itself. ⚠️ `BUDGET_GB` is still 13 against a measured 6.45 —
+ratcheting it down is available and wants its own reason. ⚠️ The largest remaining line is
+`libvips-cpp.so` at 1,440 MB (17.4 MB × 83 segment-inherited OG cards).

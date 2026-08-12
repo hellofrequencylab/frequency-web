@@ -20,6 +20,10 @@
 //      default). Every write path no-ops when the flag is off.
 //   3. This module SCORES the contest; it never grants paid time. Billing went live on
 //      2026-07-10, and the automated prize-award path was retired with the beta program.
+//      The published free-membership prize came down with it (owner ruling, 2026-08-12):
+//      awardReferralWinners and its WINNER_PRIZE_MONTHS terms are deleted, and
+//      app/(main)/referral no longer states a prize. The rewards this module still pays
+//      are Zaps, on the live ledger, and they are the only rewards the copy may claim.
 //
 // The beta_* tables lag the generated Database types (ADR-246), so writes reach
 // beta_referrals through the loose service-role handle (lib/beta/db.betaDb); the
@@ -48,10 +52,6 @@ export const FOUNDING_PERK_MIN_REFERRALS = 3
 
 // reward_grants rule_key prefixes (the idempotency keys for each contest payout).
 const CIRCLE_START_RULE = 'beta_contest.circle_start:' // + circleId
-
-/** The prize term (in months of paid membership) for each podium place. The published
- *  contest terms: 1st = 1 year, 2nd = 6 months, 3rd = 3 months. */
-export const WINNER_PRIZE_MONTHS: Record<1 | 2 | 3, number> = { 1: 12, 2: 6, 3: 3 }
 
 /** Whether the contest is live. platform_flags.beta_referral_contest, default FALSE so
  *  the whole feature ships inert. Cached per request; fail-closed (FALSE) on any error. */

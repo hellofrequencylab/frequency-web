@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
   rankContestRows,
-  WINNER_PRIZE_MONTHS,
   CIRCLE_STARTER_THRESHOLD,
   FOUNDING_PERK_MIN_REFERRALS,
   type ContestLeaderboardRow,
@@ -46,12 +45,10 @@ describe('rankContestRows', () => {
 })
 
 describe('contest constants', () => {
-  it('awards 1 year / 6 months / 3 months for the podium', () => {
-    expect(WINNER_PRIZE_MONTHS[1]).toBe(12)
-    expect(WINNER_PRIZE_MONTHS[2]).toBe(6)
-    expect(WINNER_PRIZE_MONTHS[3]).toBe(3)
-  })
-
+  // The podium prize (WINNER_PRIZE_MONTHS) and its assertions were deleted with the
+  // promise itself (owner ruling, 2026-08-12): no code grants free membership, so no
+  // surface may state it. What is left below are the two thresholds the LIVE copy on
+  // app/(main)/referral still reads.
   it('holds the milestone + founding-perk thresholds the copy promises', () => {
     expect(CIRCLE_STARTER_THRESHOLD).toBe(10)
     expect(FOUNDING_PERK_MIN_REFERRALS).toBe(3)
