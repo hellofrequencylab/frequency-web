@@ -223,6 +223,8 @@ export function seededFieldsOnly(model: FieldModel): FieldModel {
 
 // ── 3. Reading and writing one path ───────────────────────────────────────────────
 
+const FORBIDDEN_PATH_KEYS = new Set(['__proto__', 'prototype', 'constructor'])
+
 /** Split a ledger path into its segments: 'details.tickets[0].label' -> ['details','tickets',0,'label'].
  *  PURE + total; an unparseable segment yields no segments, which every caller reads as a dead end. */
 function segments(path: string): (string | number)[] {
@@ -230,7 +232,9 @@ function segments(path: string): (string | number)[] {
   for (const part of path.split('.')) {
     const m = part.match(/^([A-Za-z_][\w]*)((?:\[\d+\])*)$/)
     if (!m) return []
-    out.push(m[1])
+    const key = m[1]
+    if (FORBIDDEN_PATH_KEYS.has(key)) return []
+    out.push(key)
     for (const idx of m[2].match(/\d+/g) ?? []) out.push(Number(idx))
   }
   return out
