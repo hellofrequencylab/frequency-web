@@ -21862,3 +21862,87 @@ edits away its own wrong turns stops being evidence of how the team reasons. ⚠
 mostly duplication: 2.31 GB of `@iconify-json` glyph data in 337 functions is now the largest single
 line, and the remaining `public/` glob is ~700 MB. Both are tracked in
 [`BASELINE-TODO-2026-08-12.md`](BASELINE-TODO-2026-08-12.md).
+
+## ADR-1005: E1 before E2 was never circular; the gate was quantified over the wrong set
+
+**Decision.** Four rulings on [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md) §9, settled on paper
+before E1 opens because none of them can be settled cheaply afterwards.
+
+1. **E1 before E2 is NOT circular.** E1's gate is restated to quantify over **adopted** rows plus a
+   palette-reachability assertion; the completeness claim moves to E2. E1's adoption target is
+   `ENTITY_BLOCKS` — 36 rows, all three `kinds`, both render targets.
+2. **Field/UI metadata stays in E1**, with a `fields` ⇄ `content` **bijection** enforced by
+   `check:blocks`. The type alone does not prevent a second schema; the bijection does.
+3. **Per-type limits move to E0.** And the honest framing is *"cannot be deferred past E0"*, not
+   *"cannot be retrofitted"*.
+4. **The `CommunityRole` floor splits**: `minRole?: ModuleRole` on `BlockNode` at **E0**;
+   `defaultRole` on `defineBlock` at **E1**. The vocabulary is `ModuleRole`, not `ElementRole`.
+
+**Why the cycle was an illusion.** Test the two edges separately. E2 needs E1: consolidation means
+"five systems into one", and the *one* is the E1 contract, so without `defineBlock` there is no target
+to consolidate into. E1 needs E2: **it does not** — nothing in `defineBlock`, the Zod `content`, the
+up/down migrations, `resolveAt` or the binding layer requires the row count to be final. One directed
+edge is not a cycle.
+
+What made the row *read* circular is E1's gate — *"every registry row resolves to a renderer for every
+declared surface"* — which is a **completeness claim over the catalog**, and catalog membership is
+precisely what E2 decides. §9 correctly spotted a contradiction and misdiagnosed its location: the
+defect is in the gate's quantifier, not in the phase order. §3 compounded it by illustrating the E1
+contract with `frq/offerings`, an id that exists only after E2, carrying a `kinds: ['member','space']`
+widening that only exists after E3.
+
+**Why `ENTITY_BLOCKS` is the adoption target** rather than "two pilot blocks" or "all 304". It is the
+only one of the five systems that spans all three `kinds` and both render targets (6 rows
+member+space+email, 7 space+email, 1 email-only), so it exercises `kinds`, `reads`, `resolveAt`,
+`render.web` and `render.email` on real rows from day one — two pilot blocks cannot exercise
+`resolveAt` at all, since only `productCard` uses it. It already carries field metadata
+(`fieldsForBlock()` over `CONTENT_FIELDS`/`DATA_BLOCK_FIELDS`), so E1 proves the `fields` half without
+authoring 304 field lists. `check:email-blocks`' bijection is **already true** on it (14 ⇄ 14), so one
+of E1's three gates starts green and provable. And Spotlight collapses in nearly free —
+`SPOTLIGHT_PUCK_TYPES` is an explicit 10-row bijection, so 46 of 304 rows for the price of 36.
+
+⚠️ **The storage argument is what makes (2) and (4) urgent, and they are not equally urgent.**
+`FieldDef.defaultValue`/`default` are not cosmetics, they are the **decoding rule for stored
+documents**: `block-content.ts` states *"persisted only when it differs from this default, so the
+stored bag stays sparse"*. Put the default outside the contract and the Zod schema and the sparse
+decoder become two schemas that disagree about what a stored blob says — changing a default silently
+rewrites documents nobody edited. `SlotConfig.roles` is stronger still: **persisted tenant data**
+across 36 `page_settings.layout` rows, which E2's migration rewrites. If there is no slot to write
+into, the gate is dropped and a host-only module becomes publicly visible, with no way afterwards to
+tell which nodes were gated. §2.1 says exactly this and §9 nevertheless filed the fix a phase after E0
+freezes the document. Per-type limits, by contrast, are add-time policy: introducing one later breaks
+no stored document. They belong in E0 for a different reason — E0 task 10 **deletes the only per-type
+limit the system has** (`rows-ops.ts` `normalize()`'s global dedupe), so the slot is a prerequisite of
+that deletion, not a retrofit risk.
+
+**🔴 E0's own gate is red on today's tree, before E0 starts.** Measured, not inferred, from
+`.next/server/app/**/page_client-reference-manifest.js` (`__RSC_MANIFEST[route].clientModules`, 390
+route manifests): `components/entity-blocks/owner-block-frame.tsx` is `'use client'` and **statically**
+imported by `member-profile-modules.tsx` and `space-profile-modules.tsx`, so it sits in the client
+graph of `/spotlight/[handle]` (100 KB) and `/(main)/people/[handle]` (2,787 KB). §7.3 writes
+`editor-bytes-on-public-render: current → falls` as though the baseline were clean. Fix or waive those
+two routes before declaring the gate.
+
+**And the attribution rule matters more than the budget.** On `/spotlight/[handle]`, chunks
+*containing* an entity-blocks module total 62 KB of a 100 KB route; chunks *unique* to entity-blocks
+total **0 bytes**, because the bundler shares them. A naive byte ratchet reads 0 and passes forever.
+So E0 gets **two instruments**: a hard gate that no editor module appears in a public route's
+`clientModules` (exact, attributable, immune to sharing, and it catches the failure mode §9 names —
+*"a regression that arrives via an innocent shared import"*), and a falls-only byte ratchet that
+catches size regressions generally and does not pretend to attribute. Both belong as `postbuild`
+siblings of `check-build-budget.mjs` ([ADR-1003](DECISIONS.md)) — which is the **wrong instrument** for
+this and the **right pattern**: it sums per-function *server* traces and reads nothing under
+`.next/static`, but it proves the shape, measuring the artifact on Vercel's real build because CI never
+builds.
+
+**Consequences.** ✅ E1 can start: the cut is named down to the file, and `blocks-adopted` enters the
+§7.3 ledger at **36 / 304** so "how much of E1 is done" is a number rather than an argument. ✅ Two
+E0-blocking prerequisites are now filed in E0 rather than discovered mid-phase. ⚠️ **ADR-986 was absent
+from the entire editor document** despite shipping the same day and superseding ADR-450 §3, the
+field-schema layer E5 assumes it will build — E1 should reuse its `FieldKind` (a closed, CI-guarded
+control vocabulary) and must not fork its `FieldDef`, which carries entity-record concepts blocks do
+not have. ⚠️ `raw-css-paths: 0 must stay 0` is measured against a definition that misses a live
+authored-colour channel: `BlockTint { text?, bg? }` persists **validated hex** in
+`profiles.meta.spotlight.layout.blocks` on five block types, so E2's migration must rule on what
+`#112233` becomes when tokens are the only expression channel. Four profiles have a Spotlight, which
+is this decision at its lifetime cheapest.
