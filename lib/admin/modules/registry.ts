@@ -187,7 +187,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   {
     id: 'circle.engage',
     label: 'Engage',
-    desc: 'The shared challenges your circle takes on together.',
+    desc: 'What your circle is doing together: the shared challenges, this week’s practice, and starting a Journey Run.',
     Icon: Trophy,
     scopes: ['circle'],
     requiredCapability: 'circle.assignTask',
@@ -203,6 +203,11 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   // doing together — so the seven-box core-entity shape gives Engage one box. The picker did not go
   // anywhere: `circle.engage` now mounts BOTH editors (module-map.tsx composes CircleEngageModule +
   // CirclePracticeModule under the one id), exactly as `space.basics` composes its three section editors.
+  // The same reasoning took a THIRD editor in (circle rail trim): "Start a Run" was the
+  // `circle-journey-run` page block sitting in the member-facing side column, and a Run is one Circle
+  // going through one Journey together — the subject Engage already holds. So it stacks in this box
+  // (CircleJourneyRunModule) instead of claiming an eighth row. Its read keeps the block's original
+  // circle.editSettings gate, held by the same people as this row's circle.assignTask.
   // Circle insights (ADR-515 Phase 4). Circle health is an on-screen readout (zaps earned here, active
   // streaks, new this week), so the rail carries an at-a-glance insights module — INLINE, mirroring
   // hub.insights / nexus.insights / practice.insights (a circle has no standalone insights page, so there

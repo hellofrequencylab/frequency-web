@@ -25,6 +25,8 @@ import {
   COVER_HEIGHT_DEFAULT,
   type CoverHeight,
 } from '@/lib/layout/cover-height'
+import { heroOverlayForScrim, readCoverScrimSetting } from '@/lib/layout/cover-scrim'
+import type { HeroOverlayStyle } from '@/components/templates/page-hero'
 
 export type CircleHeroHeight = CoverHeight
 
@@ -100,4 +102,16 @@ export function circleCoverFocusStyle(
   focus: string | null | undefined,
 ): { objectPosition: string } {
   return { objectPosition: focus?.trim() || DEFAULT_OBJECT_POSITION }
+}
+
+/** The Circle's cover OVERLAY, ready for the template's `coverOverlayStyle` prop.
+ *
+ *  A delegation, deliberately: the operator's three words live in `lib/layout/cover-scrim.ts`
+ *  (re-exported from the Space's already-shipped reader) and the word → prop mapping lives there
+ *  too. This function only says "read it off a Circle's theme blob", which is the one part that is
+ *  Circle-specific. A second copy of the mapping is exactly how Spaces and Circles would drift into
+ *  disagreeing about what "Blend" looks like.
+ */
+export function circleHeroOverlayStyle(theme: unknown): HeroOverlayStyle {
+  return heroOverlayForScrim(readCoverScrimSetting(theme))
 }

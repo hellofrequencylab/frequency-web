@@ -43,6 +43,20 @@
 #       renders rows only for circle members. The effort index is deliberately a WHOLE-LIFE
 #       denominator per member, so it cannot be scoped by the circle's own RLS without
 #       changing the number the member is measured against.
+#
+# Added 2026-08-12 (the Circle five-tab restructure). Two files, both in the circle detail
+# path that already runs on the service-role client (loadCircleShell), and both applying the
+# visibility rules BY HAND because the bypass makes RLS invisible to them:
+#   app/(main)/circles/[slug]/(circle)/tab-facts.ts
+#       Decides which tabs exist, so it must answer "is there anything here for THIS viewer"
+#       before the shell renders. Its event read carries the full predicate — status=published,
+#       is_cancelled=false, removed_at is null — plus an insider-aware `visibility` list, so a
+#       members-only event grows the Events tab only for someone on the roster. Getting this
+#       wrong leaks by TAB COUNT rather than by row, which is why it is stated here.
+#   components/admin/modules/circle-journey-run-actions.ts
+#       Re-resolves getCircleCapabilities against the live circle and returns null without
+#       circle.editSettings, before any journey data is read. The gate is the first thing it
+#       does, not a filter on the way out.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -134,6 +148,7 @@ app/(main)/channels/admin-actions.ts
 app/(main)/channels/page.tsx
 app/(main)/checkin-actions.ts
 app/(main)/circles/[slug]/(circle)/members/actions.ts
+app/(main)/circles/[slug]/(circle)/tab-facts.ts
 app/(main)/circles/[slug]/claim-actions.ts
 app/(main)/circles/[slug]/edit/page.tsx
 app/(main)/circles/[slug]/manage/events-actions.ts
@@ -305,6 +320,7 @@ app/unsubscribe/page.tsx
 components/admin/admin-info-rail.tsx
 components/admin/crm/member-composer-actions.ts
 components/admin/email-studio/product-picker-actions.ts
+components/admin/modules/circle-journey-run-actions.ts
 components/admin/vera-ai/help-gaps-tab.tsx
 components/admin/vera-ai/studio-tab.tsx
 components/connections/group-map-section.tsx

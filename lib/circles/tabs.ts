@@ -1,17 +1,34 @@
-// THE CIRCLE DETAIL TAB STRIP — pure, so the one rule that decides whether a Circle gets tabs at
-// all is unit-testable without a database or a render (the lib/circles/*-gate idiom, ADR-841/843).
+// THE CIRCLE DETAIL TAB STRIP — pure, so the rules that decide which tabs a Circle gets are
+// unit-testable without a database or a render (the lib/circles/*-gate idiom, ADR-841/843).
 //
-// ADR-089's EMPTY-CIRCLE GUARDRAIL is the whole reason this is a function rather than a constant.
-// The ADR mitigates the thin-circle risk by DEFERRING a Circle's heavier surfaces until it crosses
-// a small size threshold: founding stays easy, ghost circles stay lightweight. A tab strip is one
-// of those heavier surfaces. Splitting a circle of one into Home and Members does not organize
-// anything; it just adds chrome to an empty room and makes it read emptier. So a circle nobody has
-// joined yet renders as ONE page, exactly as it did before the shell existed, and grows tabs the
-// moment a second person is in it.
+// FIVE TABS, and each one hides when it has nothing to say (owner ruling, 2026-08-12):
 //
-// A MANAGER always gets the strip, whatever the size. A host setting up a brand-new circle needs
-// to see where the roster lives before anyone arrives, and they are the one viewer for whom the
-// empty state is a to-do rather than a disappointment.
+//   Feed · Events · Journey · Practice · Members
+//
+// FEED IS THE DEFAULT and it carries the reason people came, so it is the bare `/circles/<slug>`
+// route and it leads the strip whenever a strip renders at all.
+//
+// THE LEADERBOARD IS GONE AS A TAB. It measures effort relative to YOURSELF (lib/quest/effort.ts),
+// so it is a view of your practice, not a peer entity of it: it folded into Practice, and
+// /circles/<slug>/leaderboard now redirects there. A Circle never had two boards; it had one board
+// filed under the wrong noun.
+//
+// EACH TAB HIDES WHEN IT HAS NOTHING. A Circle with no Journey running shows no Journey tab, a
+// Circle with nothing booked shows no Events tab. A tab pointing at an empty room is worse than no
+// tab: it spends a click to say "nothing here", and it makes a small Circle read emptier than it is.
+// The facts that answer "has it got anything" are read once in the shell
+// (app/(main)/circles/[slug]/(circle)/tab-facts.ts) and handed here as plain booleans.
+//
+// ADR-089's EMPTY-CIRCLE GUARDRAIL still holds underneath all of it. The ADR mitigates the
+// thin-circle risk by DEFERRING a Circle's heavier surfaces until it has something to defer TO. A
+// tab strip is one of those surfaces. A Circle of one with nothing on and nothing running renders
+// as ONE page, exactly as it did before the shell existed, because splitting a room of one into
+// Feed and Members organizes nothing. It grows a strip the moment it grows content or a second
+// person.
+//
+// A MANAGER always gets the strip. A host setting up a brand-new Circle needs to see where the
+// roster lives before anyone arrives, and they are the one viewer for whom an empty state is a
+// to-do rather than a disappointment.
 //
 // Production's largest circle today holds 2 members. That is the size this is designed for.
 
@@ -23,33 +40,59 @@ export interface CircleTabFacts {
   memberCount: number
   /** Holds circle.editSettings — host, scope leader, or admin of THIS circle. */
   canManage: boolean
+  /** The viewer is on this Circle's roster. */
+  isMember: boolean
+  /** Upcoming events this viewer may see, with a repeating series counted ONCE (ADR-897). */
+  upcomingEventCount: number
+  /** The Circle is part-way through a Journey together: an active Run (ADR-252). */
+  hasActiveJourney: boolean
+  /** The host has assigned this Circle a practice. */
+  hasAssignedPractice: boolean
 }
 
 /**
- * The tabs a Circle offers, in order. EMPTY means "render no strip": the circle has not crossed
- * ADR-089's threshold and reads as a single page.
- *
- * Home, Members and Leaderboard are the three tabs with real content today. Chat is a later phase
- * and is deliberately absent — a tab pointing at a surface that does not exist is worse than no tab.
- *
- * THE LEADERBOARD TAB RIDES THE SAME THRESHOLD as the strip itself, and does not get a higher one
- * of its own. It leads with the circle's SHARED total, which is real content at any size, and its
- * own ~6-contributor gate (lib/quest/effort.ts) decides whether a list of individuals appears
- * beneath that. So the small circle this guardrail is about gets the shared bar and a straight
- * answer about why there is no list yet, rather than a tab that vanishes and leaves the question
- * unasked. One rule at the strip, one rule inside the page.
+ * The tabs a Circle offers, in order. EMPTY means "render no strip": the Circle has nothing to
+ * split and reads as a single page.
  */
 export function circleTabs(facts: CircleTabFacts): UnderlineTabLink[] {
+  // Fail closed. A bad route renders no broken links.
   if (!facts.slug) return []
-  if (facts.memberCount <= 1 && !facts.canManage) return []
+
   const base = `/circles/${facts.slug}`
-  return [
-    { href: base, label: 'Home' },
-    // The count IS the affordance: it tells a visitor whether the roster is worth a click before
-    // they spend one, which matters most on exactly the small circles this guardrail is about.
-    { href: `${base}/members`, label: 'Members', count: facts.memberCount },
-    // No count here on purpose. A number beside "Leaderboard" would be read as a score or a
-    // standing before the page had a chance to explain that there is neither.
-    { href: `${base}/leaderboard`, label: 'Leaderboard' },
-  ]
+  const tabs: UnderlineTabLink[] = []
+
+  // EVENTS — the next gatherings. The count IS the affordance: it tells a visitor whether the
+  // calendar is worth a click before they spend one.
+  if (facts.upcomingEventCount > 0) {
+    tabs.push({ href: `${base}/events`, label: 'Events', count: facts.upcomingEventCount })
+  }
+
+  // JOURNEY — this Circle moving through one Journey together, a Run. No count: a Run is one
+  // thing, and a number beside it would be read as a score.
+  if (facts.hasActiveJourney) {
+    tabs.push({ href: `${base}/journey`, label: 'Journey' })
+  }
+
+  // PRACTICE — this week's practice, and the effort board underneath it. A visitor gets the tab
+  // only once the Circle has a practice to show; for someone ON the roster their own week is real
+  // content at any Circle size, which is the whole design of the board (effort against your own
+  // usual week, never against the person beside you), so a member always gets it. A manager gets
+  // it because setting the practice is their job and this is where it lands.
+  if (facts.hasAssignedPractice || facts.isMember || facts.canManage) {
+    tabs.push({ href: `${base}/practice`, label: 'Practice' })
+  }
+
+  // MEMBERS — the roster. A Circle of one is just its host, so there is no roster to browse yet;
+  // its manager still gets the tab, because they need to see where the roster lives before anyone
+  // arrives. No count on an empty-ish list would read as a bug, so the count rides along.
+  const showsRoster = facts.memberCount > 1 || facts.canManage
+  if (showsRoster) {
+    tabs.push({ href: `${base}/members`, label: 'Members', count: facts.memberCount })
+  }
+
+  // Nothing to split. Render no strip at all rather than a lone "Feed" tab, which is chrome that
+  // says only "you are where you already are" (ADR-089).
+  if (tabs.length === 0) return []
+
+  return [{ href: base, label: 'Feed' }, ...tabs]
 }

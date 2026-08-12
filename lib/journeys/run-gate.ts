@@ -1,7 +1,9 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { isPlatformStaff } from '@/lib/auth'
+import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
 import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { getCircleCapabilities } from '@/lib/core/load-capabilities'
+import { listPublicPlans } from '@/lib/journey-plans'
 
 // WHO MAY START A RUN for a Circle (ADR-842). A Run is one Circle going through one Journey
 // together (ADR-252). Before this seam the only answer was "the Circle's host", which left a
@@ -23,6 +25,11 @@ export interface RunGateFacts {
   spaceCanEdit: boolean
   /** Platform staff on the STAFF axis (web_role admin/janitor), preview-aware. */
   staff: boolean
+  /** Does this viewer hold `circle.editSettings` on the Circle — i.e. does the capability layer
+   *  say they MANAGE it? Covers the host recorded only as a stewardship edge, the guide/mentor
+   *  who leads the parent hub/nexus, and the circle-scoped Admin rung (ADR-1014). Optional and
+   *  defaulting to false, so a caller that forgets it can only ever be MORE closed. */
+  circleCanManage?: boolean
 }
 
 /**
@@ -30,11 +37,21 @@ export interface RunGateFacts {
  * A steward of the OWNING Space may, because the Space's Circles are the Space's to run.
  * Platform staff may anywhere. Anonymous never passes, staff or not: a Run records a host, so
  * every start needs a signed-in actor. Fail-closed on missing facts.
+ *
+ * WHOEVER MANAGES THE CIRCLE MAY TOO (`circleCanManage` = `circle.editSettings`). The UI that
+ * offers "Start a journey run" is gated on exactly that capability, so anything narrower here is
+ * a control that renders and then refuses. Three people were in that gap: a host recorded only as
+ * a stewardship edge (the host, by any honest reading), the guide/mentor who leads the parent
+ * hub/nexus, and the circle-scoped Admin rung. ADR-1014 defines Admin as "the Host's full
+ * management set MINUS the two acts that are ownership itself" — setting roles and handing the
+ * circle on — and starting a Run is neither. The gate that already admits ANY editor of the
+ * owning Space cannot coherently refuse the Circle's own Admin.
  */
 export function canStartRunForCircle(facts: RunGateFacts): boolean {
   if (!facts.viewerProfileId) return false
   if (facts.staff) return true
   if (facts.spaceCanEdit) return true
+  if (facts.circleCanManage === true) return true
   return !!facts.circleHostId && facts.circleHostId === facts.viewerProfileId
 }
 
@@ -49,8 +66,12 @@ export interface RunGateResult {
 
 /**
  * IO front door: may `viewerProfileId` start a Run for this Circle right now? Reads the Circle,
- * resolves the owning Space's capabilities for this viewer, and checks staff standing.
+ * resolves the owning Space's capabilities for this viewer, asks the capability layer whether the
+ * viewer manages the Circle, and checks staff standing.
  * FAIL-CLOSED: a missing Circle, an anonymous caller, or any read error denies.
+ *
+ * ⚠️ `viewerProfileId` must be the SIGNED-IN caller's own id: `getCircleCapabilities` resolves the
+ * request's caller, not an arbitrary profile. Both call sites pass `caller.id`.
  */
 export async function resolveRunGate(
   circleId: string,
@@ -78,6 +99,11 @@ export async function resolveRunGate(
       spaceCanEdit = caps.canEditProfile
     }
     const staff = await isPlatformStaff().catch(() => false)
+    // The SAME capability the "Start a journey run" control renders on, so the affordance and
+    // the action can never disagree again. Fail-closed on a read error.
+    const circleCanManage = await getCircleCapabilities(circleId)
+      .then((caps) => caps.has('circle.editSettings'))
+      .catch(() => false)
 
     return {
       allowed: canStartRunForCircle({
@@ -85,6 +111,7 @@ export async function resolveRunGate(
         viewerProfileId,
         spaceCanEdit,
         staff,
+        circleCanManage,
       }),
       circleSlug: circle.slug,
       spaceId,
@@ -100,6 +127,45 @@ export async function resolveRunGate(
  * member's own Circle (spaceId null) keeps the existing library-wide behavior by getting an
  * empty list here and falling back to the caller's own picker.
  */
+/** One option in the "Start a journey run" picker — the shape the Circle page's
+ *  `RunnableJourney` already carries. */
+export interface RunnableJourneyOption {
+  id: string
+  title: string
+  slug: string
+  emoji: string | null
+}
+
+/**
+ * The Journeys a picker may OFFER for this Circle: EXACTLY the set `startJourneyRunAction` will
+ * accept, resolved from the same seam the action checks.
+ *
+ * The picker used to be filled from the whole public library while the action refused any plan a
+ * Space Circle's Space does not offer, so on a Space Circle most of the options in the list were
+ * guaranteed to fail with "Pick a Journey this space offers." Offering a choice that cannot be
+ * taken is the bug; this function is the one place the two rules are read together.
+ *
+ * Returns an empty list when the viewer may not start a Run at all, so the picker cannot show
+ * options to someone the action would refuse either.
+ *
+ * `viewerProfileId` OMITTED resolves the signed-in caller, which is what a picker read wants;
+ * passing `null` explicitly means anonymous and denies. That distinction is deliberate: a caller
+ * that has no id to hand can only ever get the fail-closed answer.
+ */
+export async function runnableJourneysForCircle(
+  circleId: string,
+  viewerProfileId?: string | null,
+  limit = 50,
+): Promise<RunnableJourneyOption[]> {
+  const viewer = viewerProfileId === undefined ? await getMyProfileId() : viewerProfileId
+  const gate = await resolveRunGate(circleId, viewer)
+  if (!gate.allowed) return []
+  const plans = gate.spaceId ? await journeysOfferedBySpace(gate.spaceId) : await listPublicPlans()
+  return plans
+    .slice(0, limit)
+    .map((p) => ({ id: p.id, title: p.title, slug: p.slug, emoji: p.emoji ?? null }))
+}
+
 export async function journeysOfferedBySpace(
   spaceId: string | null,
 ): Promise<{ id: string; slug: string; title: string; summary: string | null; emoji: string | null }[]> {

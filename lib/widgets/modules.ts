@@ -218,13 +218,21 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'circle-members', label: 'Members', description: 'The active members of this circle, host first.' },
   { id: 'circle-health', label: 'Circle health', description: 'Live signals for managers: Zaps earned here, active streaks, new members this week.' },
   { id: 'circle-momentum', label: 'Momentum', description: "The circle's weekly vital signs; hides when there's no signal." },
-  { id: 'circle-practice', label: "This week's practice", description: 'The host-assigned practice, with a log button for members.' },
-  { id: 'circle-events', label: 'Upcoming events', description: 'The next gatherings for this circle.' },
+  { id: 'circle-practice', label: "This week's practice", description: 'The host-assigned practice, with a log button for members. Hides until a host sets one (the picker lives in the admin rail, under Engage).' },
+  { id: 'circle-events', label: 'Upcoming events', description: 'The next gatherings for this circle. Hides when nothing is booked.' },
   { id: 'circle-map', label: 'Venue map', description: "A map of the circle's public meeting place; hides when there's no location." },
   { id: 'circle-meeting', label: 'How we meet', description: 'How and where the circle meets: in person or online, the area, and the time zone. Hides when there is nothing to say.' },
   { id: 'circle-challenges', label: 'Challenges', description: "The shared challenges the circle is taking on together, with the circle's collective progress. Hides when none are adopted." },
-  { id: 'circle-invite', label: 'Invite a friend', description: 'Invite tools for the host (manager only).' },
-  { id: 'circle-journey-run', label: 'Start a Journey Run', description: 'Start a Journey Run for the circle (manager only).' },
+  // RETIRED (Circle rail trim): 'circle-invite' and 'circle-journey-run' were the two HOST WRITE
+  // actions sitting in the member-facing side column. Both are gone from the page and from this
+  // catalog, so the Layout editor can never put either one back:
+  //   • 'circle-invite' was a straight duplicate. Its whole body was HostInviteButton +
+  //     HostInviteEmail, the same two controls the `circle.people` admin module already renders
+  //     (components/admin/modules/circle-people-module.tsx, "Invite someone").
+  //   • 'circle-journey-run' had no other home, so it MOVED to the admin rail rather than being
+  //     dropped: the Start a Run control now renders inside the `circle.engage` module, beside the
+  //     shared challenges and this week's practice (ADR-846's one-Engage-box shape). Its gate is
+  //     unchanged (circle.editSettings), and startJourneyRunAction still re-checks its own.
   { id: 'circle-text', label: 'Page text', description: 'A free rich-text note you can place anywhere on the page. Set per circle, with a network default.' },
 
   // ── Event detail blocks (/events/<slug>) — the FULL arrangeable interior of one event. The fixed
@@ -567,6 +575,14 @@ const PAGES_MODULE_IDS = [
 // Every circle DETAIL page (/circles/<slug>) shares one layout, keyed at the '/circles/*' section
 // scope — the arrangeable body in default render order (feed leads, then the info-rail blocks). The
 // page header (cover · title · badges · Join/Settings) stays fixed; only the body is arrangeable.
+//
+// A set member with NO explicit placement is auto-appended to the template's FIRST slot, which on
+// 'header-side' is the full-width header — that is how "How we meet" ended up above the circle feed.
+// So every id here is placed EXPLICITLY in lib/page-settings/default-layouts.ts, on or off; nothing
+// falls through. The two host WRITE blocks that used to sit in the member column
+// ('circle-invite', 'circle-journey-run') are gone from the set: invites already render in the
+// `circle.people` admin module, and Start a Run moved into `circle.engage` (see the retirement note
+// in LAYOUT_MODULES above).
 const CIRCLE_DETAIL_MODULE_IDS = [
   'circle-feed',
   'circle-members',
@@ -577,8 +593,6 @@ const CIRCLE_DETAIL_MODULE_IDS = [
   'circle-events',
   'circle-map',
   'circle-meeting',
-  'circle-invite',
-  'circle-journey-run',
   'circle-text',
 ] as const
 

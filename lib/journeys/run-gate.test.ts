@@ -65,4 +65,58 @@ describe('canStartRunForCircle', () => {
       }),
     ).toBe(false)
   })
+
+  // ── circleCanManage: the UI/server alignment. "Start a journey run" renders on
+  // `circle.editSettings`; anything narrower here is a control that shows and then refuses.
+  it('admits whoever MANAGES the circle: the circle-scoped Admin rung (ADR-1014)', () => {
+    expect(
+      canStartRunForCircle({
+        circleHostId: 'host-1',
+        viewerProfileId: 'circle-admin',
+        spaceCanEdit: false,
+        staff: false,
+        circleCanManage: true,
+      }),
+    ).toBe(true)
+  })
+
+  it('admits a host recorded only as a stewardship edge (no host_id match)', () => {
+    // The FK says someone else (or nobody); the capability layer says this viewer leads it.
+    expect(
+      canStartRunForCircle({
+        circleHostId: null,
+        viewerProfileId: 'edge-host',
+        spaceCanEdit: false,
+        staff: false,
+        circleCanManage: true,
+      }),
+    ).toBe(true)
+  })
+
+  it('still refuses a plain member: managing is a capability, not a membership', () => {
+    expect(
+      canStartRunForCircle({
+        ...base,
+        viewerProfileId: 'plain-member',
+        circleCanManage: false,
+      }),
+    ).toBe(false)
+  })
+
+  it('omitting circleCanManage changes nothing (fail-closed default)', () => {
+    expect(canStartRunForCircle({ ...base, viewerProfileId: 'stranger' })).toBe(false)
+    expect(canStartRunForCircle(base)).toBe(true)
+  })
+
+  it('never admits an anonymous caller, however well the facts read', () => {
+    expect(
+      canStartRunForCircle({
+        circleHostId: null,
+        viewerProfileId: null,
+        spaceCanEdit: false,
+        staff: false,
+        circleCanManage: true,
+      }),
+    ).toBe(false)
+  })
 })
