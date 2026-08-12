@@ -4,6 +4,15 @@ import { useState } from 'react'
 import { ImagePlus, X } from 'lucide-react'
 import { LoomPicker } from '@/components/loom/loom-picker'
 
+function toSafeImageSrc(value: string): string {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : ''
+  } catch {
+    return ''
+  }
+}
+
 // THE ONE IMAGE CONTROL for a block's photo field (owner directive: the Loom is the only image picker an
 // operator ever sees). It replaces the old "paste a URL, or open a file dialog" pair on every image-bearing
 // block field (Zigzag photo, Callout image, Photo hero background, a Features / Cards item photo): the
@@ -34,12 +43,13 @@ export function LoomImageField({
 }) {
   const [open, setOpen] = useState(false)
   const lower = label.toLowerCase()
+  const safeValue = toSafeImageSrc(value)
 
   return (
     <div className="space-y-1">
       <span className="block text-2xs font-semibold uppercase tracking-wide text-muted">{label}</span>
 
-      {value ? (
+      {safeValue ? (
         <div className="flex items-center gap-1.5">
           <button
             type="button"
@@ -48,7 +58,7 @@ export function LoomImageField({
             className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border transition-colors hover:border-primary"
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset */}
-            <img src={value} alt="" className="h-full w-full object-cover" />
+            <img src={safeValue} alt="" className="h-full w-full object-cover" />
           </button>
           <button
             type="button"
