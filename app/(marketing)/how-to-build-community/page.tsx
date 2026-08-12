@@ -287,9 +287,9 @@ export default function HowToBuildCommunityPage() {
           That is the whole shape of it, and you can do the same this week. You bring
           the people and the willingness to show up. We hand you a format you can run
           without inventing it. See how it fits together on{' '}
-          <a className="text-primary-strong font-semibold hover:underline" href="/the-community">
+          <Link className="text-primary-strong font-semibold hover:underline" href="/the-community">
             the community
-          </a>
+          </Link>
           .
         </p>
       </ZigZag>
@@ -330,9 +330,9 @@ export default function HowToBuildCommunityPage() {
           answers. You have to be the reason there is a room. The format and the
           first-night plan come from us, so you are running a clear night instead of
           inventing one. Browse what people are running on{' '}
-          <a className="text-primary-strong font-semibold hover:underline" href="/discover">
+          <Link className="text-primary-strong font-semibold hover:underline" href="/discover">
             discover
-          </a>
+          </Link>
           .
         </p>
       </ZigZag>
@@ -488,9 +488,9 @@ export default function HowToBuildCommunityPage() {
           You do not need to be a natural leader. You need to set out the chairs and be
           the reason your people have somewhere to go. When you want the tooling that
           carries the admin, the{' '}
-          <a className="text-primary-strong font-semibold hover:underline" href="/tools-for-community-builders">
+          <Link className="text-primary-strong font-semibold hover:underline" href="/tools-for-community-builders">
             community builder toolkit
-          </a>{' '}
+          </Link>{' '}
           is the whole kit in one place.
         </p>
       </ZigZag>
@@ -537,9 +537,9 @@ export default function HowToBuildCommunityPage() {
           first-night script, and the rails, so hosting is a clear next step instead of
           a blank page. You keep 100% of your own bookings, always. See exactly what a
           plan costs on the{' '}
-          <a className="text-primary-strong font-semibold hover:underline" href="/pricing">
+          <Link className="text-primary-strong font-semibold hover:underline" href="/pricing">
             pricing page
-          </a>
+          </Link>
           , month to month, leave anytime.
         </Body>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">

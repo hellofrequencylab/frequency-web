@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import {
   ArrowRight,
   Brain,
@@ -486,17 +487,17 @@ function LegacyTheCommunity() {
           Circle only needs a few people and a standing time.
         </Body>
         <p className="mt-6 text-body text-muted leading-relaxed">
-          <a className="text-primary-strong font-semibold hover:underline" href="/discover">
+          <Link className="text-primary-strong font-semibold hover:underline" href="/discover">
             Find a Circle near you
-          </a>
+          </Link>
           , or{' '}
-          <a className="text-primary-strong font-semibold hover:underline" href={BETA_CTA_HREF}>
+          <Link className="text-primary-strong font-semibold hover:underline" href={BETA_CTA_HREF}>
             start your own
-          </a>
+          </Link>
           . See what membership opens on the{' '}
-          <a className="text-primary-strong font-semibold hover:underline" href="/pricing">
+          <Link className="text-primary-strong font-semibold hover:underline" href="/pricing">
             pricing page
-          </a>
+          </Link>
           .
         </p>
       </Section>

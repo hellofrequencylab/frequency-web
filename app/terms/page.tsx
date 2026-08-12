@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { FocusTemplate } from '@/components/templates'
 
 export const metadata: Metadata = {
@@ -122,7 +123,7 @@ export default function TermsPage() {
               only send these if you opt in. Message and data rates may apply, and message frequency
               varies. Reply STOP to any message to stop texts. Reply HELP for help. Opting in to
               texts is never a condition of using Frequency or of any purchase. See our{' '}
-              <a href="/privacy" className="text-primary-strong hover:underline">Privacy Policy</a>{' '}
+              <Link href="/privacy" className="text-primary-strong hover:underline">Privacy Policy</Link>{' '}
               for how we handle your phone number.
             </p>
           </section>

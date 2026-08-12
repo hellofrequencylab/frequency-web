@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { AdminSection } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buildTodayCards } from '@/lib/ai/vera/today'
@@ -54,9 +55,9 @@ function OwnerBriefGuidance() {
         <li>
           <span className="font-medium text-text">Turn it on or off:</span> it rides your lifecycle
           email preference. Manage it under{' '}
-          <a href="/settings/notifications" className="font-medium text-text underline underline-offset-2">
+          <Link href="/settings/notifications" className="font-medium text-text underline underline-offset-2">
             email settings
-          </a>
+          </Link>
           . Off there means no brief.
         </li>
         <li>

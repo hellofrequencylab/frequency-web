@@ -14,6 +14,7 @@
 // getSession() pattern (cookie read, no network). Off unless NEXT_PUBLIC_SUPPORT_CHAT is enabled.
 
 import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { MessageCircle, X, Send, Loader2, ArrowLeft, CheckCircle2, UserRound } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -191,7 +192,7 @@ function MemberDoorway({ authed, nextPath }: { authed: boolean; nextPath: string
   return (
     <div className="shrink-0 border-t border-border px-4 py-3">
       {authed ? (
-        <a
+        <Link
           href="/feed"
           className="flex items-center gap-2.5 rounded-lg border border-border px-3 py-2 transition-colors hover:border-primary"
         >
@@ -200,9 +201,9 @@ function MemberDoorway({ authed, nextPath }: { authed: boolean; nextPath: string
             <span className="block text-body-sm font-medium text-text">Open the app</span>
             <span className="block truncate text-meta text-muted">Your Messages and Vera live inside.</span>
           </span>
-        </a>
+        </Link>
       ) : (
-        <a
+        <Link
           href={`/sign-in?next=${encodeURIComponent(nextPath)}`}
           className="flex items-center gap-2.5 rounded-lg border border-border px-3 py-2 transition-colors hover:border-primary"
         >
@@ -211,7 +212,7 @@ function MemberDoorway({ authed, nextPath }: { authed: boolean; nextPath: string
             <span className="block text-body-sm font-medium text-text">Log in or register</span>
             <span className="block truncate text-meta text-muted">Message members and chat with Vera inside.</span>
           </span>
-        </a>
+        </Link>
       )}
     </div>
   )

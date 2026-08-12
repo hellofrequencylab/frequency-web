@@ -3,6 +3,7 @@
 // The activation engine — empower the natural connector, hand them the format.
 // Answer-first, relational register, no health claims.
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import {
   PhotoHero,
@@ -303,9 +304,9 @@ export default function HowToStartACirclePage() {
           never take a cut of your own bookings. If your Circle later grows into
           something you sell tickets or services through, you do not need a plan for
           that either: selling is open on a free account from day one, at one honest{' '}
-          <a className="text-primary-strong font-semibold hover:underline" href="/pricing">
+          <Link className="text-primary-strong font-semibold hover:underline" href="/pricing">
             price
-          </a>
+          </Link>
           , and you see exactly what the network earned you.
         </Body>
       </Section>
@@ -321,12 +322,12 @@ export default function HowToStartACirclePage() {
           you would rather find your people before you host, start there instead.
           Both doors lead to the same room. For the longer builder&rsquo;s guide,
           from a first gathering to a group that runs itself, read{' '}
-          <a
+          <Link
             className="text-primary-strong font-semibold hover:underline"
             href="/how-to-build-community"
           >
             how to build community
-          </a>
+          </Link>
           .
         </Body>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">

@@ -4,6 +4,7 @@
 // then resolves the follow-on questions a newcomer actually asks. Answer-first,
 // on-brand, Article + FAQ schema for AEO/AIO eligibility (CONTENT-VOICE §8).
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import {
   PhotoHero,
@@ -249,12 +250,12 @@ export default function WhatIsFrequencyPage() {
             that leads you to a Circle near you. You do not fill out a form or wait
             to be let in. You pick two words, Pillar and Channel, and you are in the
             room. See the four Pillars and how they fit together on{' '}
-            <a
+            <Link
               className="text-primary-strong font-semibold hover:underline"
               href="/the-community"
             >
               The Community
-            </a>
+            </Link>
             .
           </Body>
         </div>
@@ -459,7 +460,7 @@ export default function WhatIsFrequencyPage() {
             },
           ].map((p) => (
             <li key={p.href}>
-              <a
+              <Link
                 href={p.href}
                 className="block h-full rounded-3xl border border-border bg-surface p-6 transition-colors hover:border-border-strong"
               >
@@ -470,7 +471,7 @@ export default function WhatIsFrequencyPage() {
                 <span className="mt-4 inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong">
                   Read more <ArrowRight className="h-4 w-4" />
                 </span>
-              </a>
+              </Link>
             </li>
           ))}
         </ul>

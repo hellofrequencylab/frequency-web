@@ -58,7 +58,14 @@ const HERO = (
     subtitle={<span>@ada</span>}
     actions={
       <>
+        {/* Deliberate plain `<a>`s with placeholder hrefs: this fixture exists only to give the
+            action cluster two children so `classesOf` can read the WRAPPER's class string, and it is
+            rendered with `renderToStaticMarkup` — no router, no client boundary. `/x` and `/y` are
+            not routes; they only look like pages to the lint rule because
+            `app/(main)/@wizard/[...catchAll]` makes every one-segment path resolve. */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a href="/x" className={HERO_ACTION_CLASS_ADAPTIVE}>Save contact</a>
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a href="/y" className={HERO_ACTION_CLASS_ADAPTIVE}>Message</a>
       </>
     }

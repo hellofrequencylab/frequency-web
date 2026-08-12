@@ -8,6 +8,7 @@
 // a social life that does not run through a bar. Answer-first, relational
 // register only, no health claims, no personality-fixing promises.
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import {
   PhotoHero,
@@ -453,9 +454,9 @@ export default function HowToBeMoreSocialPage() {
           you yet, that is not a dead end, it is the cue to start the small standing
           room you wish you could walk into. Joining costs nothing, and Frequency
           never takes a cut of your own bookings, so you can{' '}
-          <a href="/pricing" className="text-primary-strong underline underline-offset-4">
+          <Link href="/pricing" className="text-primary-strong underline underline-offset-4">
             see exactly how the pricing works
-          </a>{' '}
+          </Link>{' '}
           before you commit to anything.
         </Body>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -468,17 +469,17 @@ export default function HowToBeMoreSocialPage() {
         </div>
         <p className="mt-8 text-muted">
           Keep going:{' '}
-          <a href="/friendship-as-an-adult" className="text-primary-strong underline underline-offset-4">
+          <Link href="/friendship-as-an-adult" className="text-primary-strong underline underline-offset-4">
             how to make friends as an adult
-          </a>
+          </Link>
           ,{' '}
-          <a href="/friendship-as-an-adult" className="text-primary-strong underline underline-offset-4">
+          <Link href="/friendship-as-an-adult" className="text-primary-strong underline underline-offset-4">
             how to meet people in a new city
-          </a>
+          </Link>
           , and{' '}
-          <a href="/loneliness" className="text-primary-strong underline underline-offset-4">
+          <Link href="/loneliness" className="text-primary-strong underline underline-offset-4">
             feeling lonely but not alone
-          </a>
+          </Link>
           .
         </p>
       </Section>
