@@ -405,33 +405,28 @@ const PROFILE_LINK_SEEDS: readonly {
   menuHidden?: true
 }[] = [
   // You (View profile + Appearance are fixed chrome woven in by the renderer)
-  // DRAFTS IS A DESTINATION, NOT A SETTING, and it leads the section for that reason: it is
-  // the one row here a member comes back FOR. It shipped reachable-by-nothing — ADR-998 gave
-  // Vera's create proposals a place to be confirmed and ADR-1001 added the wizard answers
-  // staged across devices, and both are reachability-dependent by construction (an unreachable
-  // proposal expires in silence, which is the exact defect ADR-998 exists to close, and an
-  // unreachable staged answer is data we hold that the member cannot erase).
+  // DRAFTS HAS MOVED TO MY FREQUENCY (owner ruling 2026-08-12: "wire the badge into the My
+  // Frequency menu, alongside the /drafts entrance"). It sits beside Journal and My Contacts in
+  // lib/nav/my-frequency-rows.ts, wearing the open-proposal count from countMyCreateProposals —
+  // which is exactly the move the interim note here always described: "a render edit plus a
+  // count on getMyFrequency, not a seed."
+  //
+  // 🔴 SO THE ROW IS GONE FROM THIS MENU, and that is required, not incidental. DAWN's dock law
+  // is "a control appears in exactly one dock" (chrome-docks.card.html); shipping Drafts in both
+  // the rail's My Frequency disclosure and the account menu would put one destination in two
+  // docks on the same chrome. The seed stays declared as `menuHidden` so ⌘K keeps it — the
+  // reachability that lib/nav/drafts-entrance.test.ts exists to guard is unchanged, and it is
+  // still ONE declaration of the label, the icon and the gate rather than a second node.
   //
   // ONE WORD, "Drafts", because that is the page's own H1 and metadata title, and a menu row
-  // that renames its destination makes the member wonder if they landed somewhere else. It is
-  // NOT "My drafts": /events/drafts already carries that title for poster-captured events.
-  // Two member surfaces saying "drafts" about different things is real, pre-existing, and an
-  // owner call to resolve (docs/NAMING.md defines no term for either) — not something to
-  // invent canon for here.
-  //
-  // 🔴 THE INTENDED LONG-TERM HOME IS MY FREQUENCY, beside Journal and My Contacts: DAWN files
-  // a member's own content under "You, and what you run" (chrome-docks.card.html), and the
-  // 2026-08-06 regroup already moved those two out of the rail for exactly that reason. The
-  // account menu is the honest interim because it is the only editable, every-page "you" list
-  // that a data row alone can reach — My Frequency's rows are literal EntryRows in
-  // components/layout/my-frequency-menu.tsx, so landing there is a render edit plus a count on
-  // getMyFrequency, not a seed. When that moves, delete this row in the same pass: DAWN's dock
-  // law is "a control appears in exactly one dock", so it must not live in both.
+  // that renames its destination makes the member wonder if they landed somewhere else. Never
+  // "My drafts": docs/NAMING.md now pins Drafts to the single surface at /drafts, and the
+  // /events/drafts list that used to carry that title folded into it as a third row kind.
   //
   // `icon` is a lucide NAME here (profile seeds resolve through nav-icons' LUCIDE_BY_NAME,
   // unlike spine nodes which key AREA_ICONS by area key). FileText is the glyph the page's own
   // empty state already draws, so the row and the page agree.
-  { id: 'drafts', label: 'Drafts', href: '/drafts', icon: 'FileText', section: 'You', minAccess: 'member', palette: true },
+  { id: 'drafts', label: 'Drafts', href: '/drafts', icon: 'FileText', section: 'You', minAccess: 'member', palette: true, menuHidden: true },
   { id: 'settings', label: 'Settings', href: '/settings', icon: 'SlidersHorizontal', section: 'You' },
   { id: 'notifications', label: 'Notifications', href: '/settings/notifications', icon: 'BellRing', section: 'You' },
   // Membership
@@ -465,8 +460,15 @@ function profileNodes(): NavNode[] {
     mode: 'calm' as const,
     // A `palette` seed rides BOTH surfaces off ONE declaration rather than a second node
     // with the same href — paletteDestinations dedupes by href, so a twin would be a silent
-    // no-op that still had to be kept in sync.
-    surfaces: (l.palette ? ['profile', 'palette'] : ['profile']) as NavSurface[],
+    // no-op that still had to be kept in sync. `menuHidden` drops the account-menu half of
+    // that pair: the destination is drawn by another dock, but it is still a real place and
+    // still ⌘K-reachable. A seed that is BOTH menuHidden and not palette would be declared
+    // and drawn nowhere, so it keeps 'profile' rather than vanishing silently.
+    surfaces: (l.menuHidden && l.palette
+      ? ['palette']
+      : l.palette
+        ? ['profile', 'palette']
+        : ['profile']) as NavSurface[],
     gate: { minAccess: (l.minAccess ?? 'visitor') as MenuAccess },
   }))
 }
