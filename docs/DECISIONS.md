@@ -21618,6 +21618,15 @@ worth 1.2GB of container disk and a class of failure that reads as "your merge b
 production". Correct and boring beats warm and fragile. Turn it back on only together with
 Enhanced Builds, and only after re-reading the folder sizes in the build system report.
 
+**Amendment (same day).** Pinning the flag off stopped Turbopack *writing* the cache but not
+Vercel *restoring* it: the next production build still took a ~1.2GB restore into the container,
+still re-uploaded it at the end, and still crawled in "Deploying outputs" (8 minutes and counting,
+against 71 seconds on the last healthy build). Turning off the reader does not turn off the
+provider. So `prebuild` now runs `scripts/drop-build-cache.mjs`, which deletes
+`.next/cache/turbopack` in the one window where it can matter: after the restore, before the
+build. After one build the stored cache is small and stays small. `next dev` caches to
+`.next/dev/cache/turbopack`, a different path, so local iteration is untouched.
+
 **Consequences.** Production builds start cold, costing a couple of minutes. `next dev` is
 untouched (`turbopackFileSystemCacheForDev` stays default-on), so local iteration is the same.
 Anyone whose local `.next/cache/turbopack` already grew can reclaim the disk with
