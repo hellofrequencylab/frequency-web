@@ -14,13 +14,30 @@
 //   /path            same-origin assets under public/
 // Everything else — javascript:, vbscript:, file:, a bare word — resolves to null.
 
+/** A base that cannot resolve, used only to turn a relative path into a parsed URL. `.invalid` is
+ *  reserved by RFC 2606, so nothing is fetchable from it even if one ever leaked into a `src`.
+ *  FIXED, and deliberately not `window.location.origin`: an allowlist that answers differently on
+ *  the server than in the browser is the trap this file already learned about with blob: below. */
+const RELATIVE_BASE = 'https://relative.invalid'
+
 export function safeImageSrc(src: string | null | undefined): string | null {
   if (!src) return null
   const s = src.trim()
   if (!s) return null
 
-  // Same-origin absolute path under public/app routes.
-  if (s.startsWith('/')) return s
+  // Same-origin absolute path under public/app routes. PARSED, never passed through: it resolves
+  // against a base that cannot exist, and it only counts as a path if the result's origin is still
+  // that base. That refuses what a leading slash can hide — `//host/x` is protocol-relative and
+  // points off-origin — and what comes back is the parser's normalised path, not the caller's
+  // string. Returning the input verbatim here was the one raw pass-through left in this file.
+  if (s.startsWith('/')) {
+    try {
+      const u = new URL(s, RELATIVE_BASE)
+      return u.origin === RELATIVE_BASE ? `${u.pathname}${u.search}` : null
+    } catch {
+      return null
+    }
+  }
 
   // Data URLs are only allowed for images.
   if (s.startsWith('data:')) {

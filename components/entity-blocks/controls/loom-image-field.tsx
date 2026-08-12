@@ -3,39 +3,18 @@
 import { useState } from 'react'
 import { ImagePlus, X } from 'lucide-react'
 import { LoomPicker } from '@/components/loom/loom-picker'
+import { safeImageSrc } from '@/lib/safe-image-src'
 
-/**
- * Only let a value reach `<img src>` when its scheme is safe. Flagged by CodeQL: an operator-stored
- * string rendered straight into `src` can carry `javascript:` or a hostile `data:` payload.
- *
- * Relative paths are allowed deliberately. The first version of this guard used `new URL(value)`
- * alone, which THROWS on a relative path and so returned '' for it — and because the preview is
- * rendered behind `safeValue ? …`, a legitimate relative value would have silently shown the empty
- * state, reading to an operator as "my photo vanished". A leading-slash path is same-origin and
- * carries no scheme, so it is safe by construction. A protocol-relative `//host` is NOT: it inherits
- * the page scheme and points off-origin, so it is refused.
- */
-function toSafeImageSrc(value: string): string {
-  const trimmed = value.trim()
-  if (!trimmed) return ''
-  if (trimmed.startsWith('//')) return ''
-  if (/[\u0000-\u001F\u007F]/.test(trimmed)) return ''
-
-  const base =
-    typeof window !== 'undefined' && window.location?.origin ? window.location.origin : 'http://localhost'
-
-  try {
-    const url = new URL(trimmed, base)
-
-    if (trimmed.startsWith('/')) {
-      return url.origin === base ? `${url.pathname}${url.search}${url.hash}` : ''
-    }
-
-    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : ''
-  } catch {
-    return ''
-  }
-}
+// The `<img src>` guard is NOT written here. Every src in the product whose value did not come from
+// a source literal goes through the one allowlist in lib/safe-image-src.ts: it parses rather than
+// prefix-matches, hands back the parser's own normalised string, and refuses anything that is not
+// http(s), a same-origin path, a blob:, or a data:image. A second copy in this file would be a
+// second thing to get right, and CodeQL flagged this control precisely because its private copy
+// returned a relative path verbatim.
+//
+// Relative paths keep working, deliberately. The preview renders behind `safeValue ? …`, so a value
+// this guard refuses shows the "Choose a photo" empty state, and a legitimate photo refused here
+// reads to an operator as "my photo vanished".
 
 // THE ONE IMAGE CONTROL for a block's photo field (owner directive: the Loom is the only image picker an
 // operator ever sees). It replaces the old "paste a URL, or open a file dialog" pair on every image-bearing
@@ -67,7 +46,7 @@ export function LoomImageField({
 }) {
   const [open, setOpen] = useState(false)
   const lower = label.toLowerCase()
-  const safeValue = toSafeImageSrc(value)
+  const safeValue = safeImageSrc(value) ?? ''
 
   return (
     <div className="space-y-1">

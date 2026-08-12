@@ -37,6 +37,7 @@ import { EVENT_MANIFEST } from '@/lib/studio/entities/event'
 import { posterSignedUrl } from '@/lib/events/poster-media'
 import { applyEventIntake } from '@/lib/events/seed/apply'
 import {
+  canonicalSeededPath,
   confirmEventLedger,
   readDraftValue,
   seededFieldsOnly,
@@ -209,6 +210,11 @@ export type UpdateStagedFieldResult = { ok: true; model: FieldModel } | { ok: fa
  * Editable while the row is in 'review' only: once it is applied, the event itself is the
  * thing to edit, in the draft editor, and pretending otherwise would be a second source of
  * truth. Fail-safe: a bad path or a wrong status returns a plain reason.
+ *
+ * The path arrives from the browser, so it is resolved against the board's writable allowlist
+ * before anything is touched, and it is the RESOLVED key (the allowlist's own string) that
+ * indexes the draft and the ledger below. The board only ever renders those paths, so an
+ * operator never meets this refusal; a request that invents a path gets a plain no.
  */
 export async function updateStagedEventField(
   intakeId: string,
@@ -222,20 +228,23 @@ export async function updateStagedEventField(
     return { ok: false, error: `This one is '${row.status}', not open for edits.` }
   }
 
+  const key = canonicalSeededPath(path)
+  if (key === null) return { ok: false, error: 'This board does not carry that field.' }
+
   const draft = structuredClone(row.draft)
   const ledger: ProvenanceLedger = structuredClone((row.ledger as ProvenanceLedger) ?? {})
 
   if (action.kind === 'edit') {
     const value = (action.value ?? '').trim()
-    if (!setDraftValue(draft, path, value)) return { ok: false, error: 'That field could not be updated.' }
-    confirmEventLedger(ledger, path, value)
+    if (!setDraftValue(draft, key, value)) return { ok: false, error: 'That field could not be updated.' }
+    confirmEventLedger(ledger, key, value)
   } else if (action.kind === 'confirm') {
-    const current = readDraftValue(draft, path)
+    const current = readDraftValue(draft, key)
     if (!current) return { ok: false, error: 'Nothing to confirm. The field is empty.' }
-    confirmEventLedger(ledger, path, current)
+    confirmEventLedger(ledger, key, current)
   } else if (action.kind === 'drop') {
-    if (!setDraftValue(draft, path, '')) return { ok: false, error: 'That field could not be cleared.' }
-    delete ledger[path]
+    if (!setDraftValue(draft, key, '')) return { ok: false, error: 'That field could not be cleared.' }
+    delete ledger[key]
   } else {
     return { ok: false, error: 'Unknown field action.' }
   }

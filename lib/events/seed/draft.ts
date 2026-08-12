@@ -118,13 +118,17 @@ export const SEEDED_FIELD_PATHS: readonly string[] = [
 ]
 
 /** The repeat collections the manifest declares, and the leaf fields worth citing on each.
- *  Every one of them lives inside `details`, which the writer carries whole. */
-const SEEDED_REPEATS: { arrayPath: keyof EventDetails; fields: string[] }[] = [
-  { arrayPath: 'tickets', fields: ['label', 'priceCents', 'note'] },
-  { arrayPath: 'lineup', fields: ['name', 'role', 'note'] },
-  { arrayPath: 'schedule', fields: ['time', 'title', 'note'] },
-  { arrayPath: 'links', fields: ['label', 'url'] },
-  { arrayPath: 'other', fields: ['label', 'value'] },
+ *  Every one of them lives inside `details`, which the writer carries whole.
+ *
+ *  `rows` is how many rows that collection can ever hold: the SAME cap `coerceEventDetails`
+ *  enforces, so the writable path list below is exactly as wide as a coerced draft and never
+ *  wider. If a cap moves in lib/events/normalize.ts, move it here too. */
+const SEEDED_REPEATS: { arrayPath: keyof EventDetails; fields: string[]; rows: number }[] = [
+  { arrayPath: 'tickets', fields: ['label', 'priceCents', 'note'], rows: 8 },
+  { arrayPath: 'lineup', fields: ['name', 'role', 'note'], rows: 24 },
+  { arrayPath: 'schedule', fields: ['time', 'title', 'note'], rows: 24 },
+  { arrayPath: 'links', fields: ['label', 'url'], rows: 10 },
+  { arrayPath: 'other', fields: ['label', 'value'], rows: 16 },
 ]
 
 /**
@@ -168,12 +172,20 @@ export function seedEventLedger(
   return ledger
 }
 
-/** Promote one field's ledger entry to a verified HUMAN fact. An operator edit or confirm IS
- *  a human confirmation, so the board's ✅ means a person vouched for it. Mirrors the Business
- *  Seeder's confirmLedger. PURE (mutates the ledger it is handed). */
+/**
+ * Promote one field's ledger entry to a verified HUMAN fact. An operator edit or confirm IS a
+ * human confirmation, so the board's ✅ means a person vouched for it. Mirrors the Business
+ * Seeder's confirmLedger. PURE (mutates the ledger it is handed).
+ *
+ * The path is resolved against the writable allowlist FIRST, and the resolved key is what indexes
+ * the ledger. A path this board does not carry earns no entry: the ledger is a record of what the
+ * apply will write, so a line for a field the apply drops would be a false receipt.
+ */
 export function confirmEventLedger(ledger: ProvenanceLedger, path: string, value: string): void {
-  const prior = ledger[path]?.[0]
-  ledger[path] = [
+  const key = canonicalSeededPath(path)
+  if (key === null) return
+  const prior = ledger[key]?.[0]
+  ledger[key] = [
     {
       kind: 'fact',
       confidence: 1,
@@ -192,6 +204,47 @@ const SEEDED_REPEAT_PREFIXES = SEEDED_REPEATS.map((r) => `details.${String(r.arr
 export function isSeededPath(path: string): boolean {
   if (SEEDED_FIELD_PATHS.includes(path)) return true
   return SEEDED_REPEAT_PREFIXES.some((prefix) => path.startsWith(prefix))
+}
+
+/**
+ * THE PATHS THIS BOARD MAY WRITE, spelled out in full: every declared scalar path, plus every
+ * (row, leaf) a repeat can hold up to the coercer's own cap. Finite and constant, built at load.
+ *
+ * This is the honest business rule before it is a security control. The apply carries exactly
+ * these paths, so a write to any other path is a BUG: it would persist on the staged draft and
+ * then be silently dropped at apply, which reads to an operator as "I edited that field and
+ * lost it". Refusing is the truthful answer.
+ *
+ * It is also what makes the write PROVABLE. `canonicalSeededPath` hands back the allowlist's own
+ * string, so the key that indexes the draft and the ledger is drawn from this list and never
+ * from the request. CodeQL flagged both writes on PR #2098 (remote property injection, prototype-
+ * polluting assignment); a key that cannot carry request data closes them at the source instead of
+ * hiding them.
+ */
+const SEEDED_WRITABLE_PATHS: readonly string[] = [
+  ...SEEDED_FIELD_PATHS,
+  ...SEEDED_REPEATS.flatMap((repeat) =>
+    Array.from({ length: repeat.rows }).flatMap((_row, index) =>
+      repeat.fields.map((leaf) => `details.${String(repeat.arrayPath)}[${index}].${leaf}`),
+    ),
+  ),
+]
+
+/** The same list as a Set, for the membership test. */
+const SEEDED_WRITABLE_PATH_SET = new Set(SEEDED_WRITABLE_PATHS)
+
+/**
+ * Resolve a caller-supplied path to the IDENTICAL member of the writable allowlist, or null when
+ * this board does not carry it (so `__proto__`, `constructor`, 'visibility', and a repeat row
+ * past the cap all come back null).
+ *
+ * Two steps, on purpose. The Set is the membership test — the guard a reader (and a scanner) can
+ * see. The `find` returns the allowlist's own string, so every caller writes with a key that came
+ * from this module rather than from the operator's request. PURE + total.
+ */
+export function canonicalSeededPath(path: string): string | null {
+  if (!SEEDED_WRITABLE_PATH_SET.has(path)) return null
+  return SEEDED_WRITABLE_PATHS.find((allowed) => allowed === path) ?? null
 }
 
 /**
@@ -225,9 +278,13 @@ export function seededFieldsOnly(model: FieldModel): FieldModel {
 
 /** Keys a path may never contain. `__proto__`, `constructor` and `prototype` all reach the object
  *  prototype, and the segment regex below happily matches them, so a path from a staged intake
- *  could otherwise write there. Checked in `segments()` rather than at one call site, so EVERY
- *  reader and writer of a path inherits the guard: a second copy beside one caller protects one
- *  caller. Flagged by CodeQL on this branch. */
+ *  could otherwise walk there. Checked in `segments()` so EVERY reader and writer inherits it,
+ *  `readDraftValue` and `at()` included, which the writable allowlist does not cover.
+ *
+ *  It is the SECOND line, not the only one: a write also has to survive `canonicalSeededPath`,
+ *  which is the allowlist test standing immediately before the assignment. Both, on purpose.
+ *  Consolidating this one upstream once removed the check at the write and the CodeQL alerts
+ *  came straight back. */
 const FORBIDDEN_PATH_KEYS = new Set(['__proto__', 'prototype', 'constructor'])
 
 /** Split a ledger path into its segments: 'details.tickets[0].label' -> ['details','tickets',0,'label'].
@@ -295,6 +352,13 @@ function moneyToCents(raw: string): number | null {
   return Math.round(n * 100)
 }
 
+/** The last inch, standing between the resolved leaf and the assignment itself. It can no longer
+ *  fire: `leaf` is taken off the writable allowlist, which holds none of these keys. It stays
+ *  because this is WHERE a check of this kind belongs, at the write, where a reader (and a
+ *  scanner) can see it without following a call. Consolidating it upstream for elegance is exactly
+ *  what let the alerts come back once already. */
+const UNSAFE_LEAF_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
+
 /**
  * Write one path on the draft from the operator's typed text, coercing to the shape that path
  * holds (list, money, integer, yes/no, string). An EMPTY value clears the field: it is set to
@@ -304,15 +368,18 @@ function moneyToCents(raw: string): number | null {
  * Returns false when the path does not resolve to an existing container (a stale board sending
  * a ticket tier that was already dropped), so the caller can report it instead of writing a
  * new nested object out of thin air. PURE (mutates the draft it is handed).
+ *
+ * It returns false FIRST for any path outside the writable allowlist, and then works only with
+ * the allowlist's own string: `key` is resolved before the walk, so the container it reaches and
+ * the leaf it assigns are both derived from this module's constants rather than from the
+ * operator's request. That is the allowlist test at the write, and it is the business rule too
+ * (see SEEDED_WRITABLE_PATHS): the apply carries these paths and no others.
  */
-const UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
-
-function isUnsafeObjectKey(key: string): boolean {
-  return UNSAFE_OBJECT_KEYS.has(key)
-}
-
 export function setDraftValue(draft: Record<string, unknown>, path: string, raw: string): boolean {
-  const parts = segments(path)
+  const key = canonicalSeededPath(path)
+  if (key === null) return false
+
+  const parts = segments(key)
   if (parts.length === 0) return false
 
   let cur: unknown = draft
@@ -324,22 +391,22 @@ export function setDraftValue(draft: Record<string, unknown>, path: string, raw:
 
   const container = cur as Record<string, unknown>
   const leaf = String(parts[parts.length - 1])
-  if (isUnsafeObjectKey(leaf)) return false
+  if (UNSAFE_LEAF_KEYS.has(leaf)) return false
   const value = raw.trim()
 
-  if (LIST_PATHS.has(path)) {
+  if (LIST_PATHS.has(key)) {
     container[leaf] = value ? value.split(',').map((s) => s.trim()).filter(Boolean) : []
     return true
   }
-  if (BOOL_PATHS.has(path)) {
+  if (BOOL_PATHS.has(key)) {
     container[leaf] = /^(y|yes|true|free|1)$/i.test(value)
     return true
   }
-  if (MONEY_LEAF.test(path)) {
+  if (MONEY_LEAF.test(key)) {
     container[leaf] = value ? moneyToCents(value) : null
     return true
   }
-  if (INT_LEAF.test(path)) {
+  if (INT_LEAF.test(key)) {
     const n = Number(value)
     container[leaf] = value && Number.isFinite(n) && n > 0 ? Math.round(n) : null
     return true
