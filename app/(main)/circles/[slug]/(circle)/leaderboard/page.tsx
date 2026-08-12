@@ -158,6 +158,10 @@ async function BoardSection({
 }) {
   const board = await loadCircleBoard(circleId, memberIds, viewerId)
   const me = board.me
+  // "Your week" is the reading that works at every Circle size and needs nobody else to exist, so
+  // it fills in exactly when the list does not already carry the viewer's row: below the gate, when
+  // they are hidden, and on the week they have not logged anything.
+  const showMyWeek = !!me && !board.rows.some((r) => r.id === me.id)
 
   return (
     <div className="space-y-6">
@@ -190,10 +194,9 @@ async function BoardSection({
         )}
       </section>
 
-      {/* The viewer's own week, which is the one reading that works at every circle size and needs
-          nobody else to exist. It is the whole answer for a circle of two, and it is what a member
-          in their first week gets while their usual week is still being built. */}
-      {me && (
+      {/* The whole answer for a circle of two, and what a member in their first week gets while
+          their usual week is still being built. */}
+      {me && showMyWeek && (
         <section aria-labelledby="my-week-heading">
           <SectionHeader id="my-week-heading" title="Your week" />
           {me.effort.recent === 0 ? (
@@ -206,7 +209,7 @@ async function BoardSection({
           )}
           {me.optedOut && (
             <p className="mt-3 text-meta text-muted">
-              You&apos;re hidden from the list above right now. You still count toward the shared total.
+              You&apos;re hidden from this Circle&apos;s list right now. You still count toward the shared total.
             </p>
           )}
         </section>

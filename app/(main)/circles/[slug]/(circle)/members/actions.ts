@@ -40,7 +40,7 @@ export async function setCircleMemberRole(
 
   // Fail closed on anything that is not one of the three assignable rungs. 'host' is not on
   // that list on purpose, so a client asking to mint an owner is rejected here.
-  if (!isAssignableCircleRole(role)) return fail('That is not a role you can set.')
+  if (!isAssignableCircleRole(role)) return fail("That's not a role you can set.")
 
   const admin = createAdminClient()
   const { data: circle } = await admin
@@ -77,7 +77,7 @@ export async function setCircleMemberRole(
     .from('memberships')
     .update({ volunteer_role: CIRCLE_ROLE_STORED_VALUE[role] })
     .eq('id', membership.id)
-  if (error) return fail('Could not save that role. Try again.')
+  if (error) return fail("Couldn't save that role. Try again.")
 
   await logAdminAction({
     actorId: myProfileId,

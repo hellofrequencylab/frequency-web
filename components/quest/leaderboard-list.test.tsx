@@ -49,6 +49,9 @@ describe('LeaderboardList — the self-relative board', () => {
     const el = mount(<LeaderboardList entries={SIX} track="effort" selfId="Ana" showPosition={false} />)
     // Six rows, and none of them opens with "1", "2", … The rank chips are the only pills.
     expect(el.querySelectorAll('li')).toHaveLength(6)
+    // An unordered list, not an ordered one: the accessible half of "no first place".
+    expect(el.querySelector('ul')).not.toBeNull()
+    expect(el.querySelector('ol')).toBeNull()
     for (const li of el.querySelectorAll('li')) {
       expect(li.textContent?.trimStart().startsWith('1')).toBe(false)
     }
@@ -122,10 +125,11 @@ describe('LeaderboardList — the ranked crew board is untouched', () => {
     entry({ id: 'b', displayName: 'Bo', seasonZaps: 300 }),
   ]
 
-  it('still numbers rows by default', () => {
+  it('still numbers rows, in an ordered list, by default', () => {
     const el = mount(<LeaderboardList entries={ranked} track="zaps" selfId="a" />)
     const positions = [...el.querySelectorAll('li')].map((li) => li.textContent?.trimStart()[0])
     expect(positions).toEqual(['1', '2'])
+    expect(el.querySelector('ol')).not.toBeNull()
   })
 
   it('still shows the season-rank chip when a row carries no effort score', () => {

@@ -41,6 +41,35 @@ This is why a **crew member can hold `task.volunteer` on a specific circle**
 without any global role change. The capability comes from their per-scope
 relationship + the presence of open tasks, computed server-side.
 
+### 1a. The circle role ladder (ADR-1014) — the per-scope role, realized
+
+The paragraph above named `memberships.volunteer_role` as an input from the start. It
+became one on 2026-08-12: until then `resolveCapabilities` *declared* the field on the
+circle `Scope` and never read it, and no action anywhere set it. Four rungs now:
+
+| Rung | Stored as | Capabilities |
+| :--- | :--- | :--- |
+| **Host** (owner) | `circles.host_id` | everything below, plus `circle.manageRoles` |
+| **Admin** | `volunteer_role = 'guide'` | `editSettings` · `moderate` · `assignTask` · `broadcast` · `post` · `view` |
+| **Moderator** | `volunteer_role = 'host'` | `moderate` · `post` · `view` |
+| **Member** | `volunteer_role = 'member'` / `NULL` | `post` · `view` |
+
+- **`circle.manageRoles` goes to whoever LEADS the circle** (host FK / stewardship edge /
+  platform staff / the parent hub's guide), never to a `volunteer_role` Admin. An Admin holds
+  every other management capability and provably not this one, which is what keeps the ladder a
+  ladder. Owner ruling: the roles are the owner's to set up.
+- **The mapping is an allowlist, not a `>=`.** `circleRoleFromStoredValue`
+  (`lib/core/circle-roles.ts`) fails closed: `'crew'`, `'mentor'`, `'admin'`, `'janitor'`, a
+  future enum value and junk all read as a plain Member. `'mentor'` matters most here — it
+  outranks `'guide'` on the global ladder and would escalate under any comparison-based read.
+- **A rung only counts on an ACTIVE membership, for a signed-in viewer.** A pending or departed
+  member keeps their `volunteer_role` in the row and holds nothing.
+- **Ownership is never a membership value.** `circles.host_id` is the only owner, the write path
+  (`setCircleMemberRole`) refuses the owner's row and never touches that column, so a circle
+  cannot reach zero owners.
+- **`stewardships` was not used**, and the reason is in ADR-1014: `leadsScope` is a BINARY, so it
+  cannot express a rung without a second circle-only interpretation of a global table.
+
 ---
 
 ## 2. Inline admin & contextual actions (regular users never see an admin tab)

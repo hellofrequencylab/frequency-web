@@ -118,9 +118,13 @@ export function LeaderboardList({
 }) {
   const t = TRACK[track]
   const Icon = t.icon
+  // A ranked board is an ORDERED list and says so to a screen reader; a self-relative one is not
+  // ordered by anything a reader should infer meaning from, so it is a plain list. The tag is the
+  // accessible half of "no first place".
+  const List = showPosition ? 'ol' : 'ul'
 
   return (
-    <ol className="space-y-1.5">
+    <List className="space-y-1.5">
       {entries.map((entry, i) => {
         const isSelf = entry.id === selfId
         const rankDef = getRankDef(entry.seasonRank)
@@ -195,6 +199,6 @@ export function LeaderboardList({
           </li>
         )
       })}
-    </ol>
+    </List>
   )
 }
