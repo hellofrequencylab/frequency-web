@@ -49,7 +49,7 @@ export function ReleaseTaskButton({ taskId }: { taskId: string }) {
     <button
       onClick={handleClick}
       disabled={isPending}
-      className="shrink-0 flex min-h-11 items-center gap-1 rounded-control px-3 py-1 text-meta font-semibold bg-surface-elevated text-muted hover:bg-border-strong transition-colors disabled:opacity-50 motion-reduce:transition-none"
+      className="shrink-0 flex min-h-11 items-center gap-1 rounded-control px-3 py-1 text-meta font-semibold bg-surface-elevated text-muted hover:bg-border-strong hover:text-text transition-colors disabled:opacity-50 motion-reduce:transition-none"
     >
       {isPending ? <Loader2 className="w-3 h-3 animate-spin motion-reduce:animate-none" /> : <Undo2 className="w-3 h-3" />}
       Release
