@@ -21815,3 +21815,50 @@ Vercel deploy, which is the intent, but it means a wrong budget blocks shipping;
 verified against two full local builds before landing. ⚠️ The 9.80 GB is still mostly duplication — a
 7 MB vendor SSR chunk in 331 functions and 823 MB of `public/tracks/*.mp3` in 61 are the next two
 lines, and neither is touched here.
+
+## ADR-1004: Correcting ADR-1002 — a commit did cross the disk, and the gate is what found it
+
+**Decision.** [ADR-1002](DECISIONS.md)'s headline finding, *"No commit crossed the disk"*, is **half
+right and was stated too broadly**. It held for `main`, which is all it measured. It is wrong about
+#2098. Both causes are real and either one alone is fatal, so the record now says so in both places
+rather than leaving a confident sentence that would send the next reader down the wrong path.
+
+**What was actually measured, in order.**
+
+| Tree | Per-function output |
+| :--- | ---: |
+| `main`, before ADR-1002 | 16.73 GB |
+| `main` + ADR-1002 | 9.80 GB |
+| **+ Studio (#2098), as merged** | **57.23 GB** |
+| + Studio, with this fix | 9.98 GB |
+| + `public/tracks` excluded | **9.16 GB** |
+
+**The second cause.** `lib/ai/quality-gate.ts` loaded its rubric with
+`join(process.cwd(), ...standard.rubricPath)`. @vercel/nft cannot resolve a spread of a runtime
+array, so it globbed everything under the value it *could* resolve — the repo root — into every
+function whose graph reaches that module. That module sits behind the Studio wiring, which the
+shared layout pulls in: ~300 functions each carrying `docs/DECISIONS.md`, the e2e screenshot
+baselines, and 14 MB of meditation audio. `public/tracks` alone went from 61 functions to 306.
+`rubricPath` is now `rubricFile`, joined onto a **static** `RUBRIC_DIR` that bounds the sweep.
+
+**Why ADR-1002 got it wrong, which is the transferable part.** It measured `main` and reasoned about
+#2098 from its diff — no dependency added, no `next.config.ts` change — and concluded the PR was
+innocent. Both observations were true and the conclusion did not follow: the cost was not in what
+#2098 *declared*, it was in what one line made the tracer *sweep*. **A diff cannot tell you what a
+build weighs.** Only building the tree can, which is the discipline
+[`DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md) rule 1 now enforces.
+
+**This is the gate justifying itself on its first run.** `check:build-budget` ([ADR-1003](DECISIONS.md))
+was written for the first cause and immediately caught the second — locally, on the re-land branch,
+**before any deploy**. Under the previous process the re-land would have merged on a green board and
+taken production down a second time, exactly as it did on 2026-08-11.
+
+**Consequences.** ✅ Both causes fixed and measured; the Vercel build log for the re-land shows
+`Deploying outputs` completing in **33 seconds** against ~19 minutes then `ENOSPC`, with Vercel's own
+report reading *"No memory or disk space problems detected"*. ✅ The `postbuild` hook is confirmed to
+run on Vercel, not just locally — the gate is real rather than decorative. ⚠️ ADR-1002's text is left
+standing rather than rewritten, with this entry as its correction, because a decision record that
+edits away its own wrong turns stops being evidence of how the team reasons. ⚠️ 9.16 GB is still
+mostly duplication: 2.31 GB of `@iconify-json` glyph data in 337 functions is now the largest single
+line, and the remaining `public/` glob is ~700 MB. Both are tracked in
+[`BASELINE-TODO-2026-08-12.md`](BASELINE-TODO-2026-08-12.md).
