@@ -298,16 +298,17 @@
         "**/*.{test,spec}.{ts,tsx}",
         "lib/og/**",
         "app/**/opengraph-image.tsx",
+        "app/dev/og-root-card/route.tsx",
         "app/**/twitter-image.tsx"
       ],
       "baseline": 27,
       "frozen": {
-        "at": "2026-08-06",
+        "at": "2026-08-12",
         "value": 27,
-        "direction": "lowered",
-        "basis": "564513ba9761",
-        "reason": "53 -> 27 as components/** retired bare white/black onto semantic tokens. The residue is carve-outs, not debt: QR quiet zones that a scanner needs true white for, and a video letterbox, each already carrying a KEEP comment. Note the class cannot reach zero as instrumented -- app/print/** is not excluded though DAWN §1 names it a carve-out; recorded in the Phase 9 queue rather than fixed here.",
-        "from": 53
+        "direction": "rebased",
+        "basis": "d47792c78573",
+        "reason": "Scope parity only, no sweep and no code change: app/opengraph-image.tsx moved to app/dev/og-root-card/route.tsx (ADR-1002) so Next stops inheriting the root share card into every page metadata module, which was putting sharp + libvips into 403 serverless functions. The file is the same raster surface it always was — Satori cannot read the CSS token cascade, which is why app/**/opengraph-image.tsx and lib/og/** are already carved out here — so the new path joins the same three carve-outs. Only the basis moves; the counts are unchanged at the same numbers.",
+        "from": 27
       },
       "history": [
         {
@@ -358,6 +359,13 @@
           "to": 27,
           "direction": "lowered",
           "reason": "53 -> 27 as components/** retired bare white/black onto semantic tokens. The residue is carve-outs, not debt: QR quiet zones that a scanner needs true white for, and a video letterbox, each already carrying a KEEP comment. Note the class cannot reach zero as instrumented -- app/print/** is not excluded though DAWN §1 names it a carve-out; recorded in the Phase 9 queue rather than fixed here."
+        },
+        {
+          "at": "2026-08-12",
+          "from": 27,
+          "to": 27,
+          "direction": "rebased",
+          "reason": "Scope parity only, no sweep and no code change: app/opengraph-image.tsx moved to app/dev/og-root-card/route.tsx (ADR-1002) so Next stops inheriting the root share card into every page metadata module, which was putting sharp + libvips into 403 serverless functions. The file is the same raster surface it always was — Satori cannot read the CSS token cascade, which is why app/**/opengraph-image.tsx and lib/og/** are already carved out here — so the new path joins the same three carve-outs. Only the basis moves; the counts are unchanged at the same numbers."
         }
       ]
     },
@@ -795,19 +803,20 @@
         "**/*.{test,spec}.tsx",
         "lib/og/**",
         "app/**/opengraph-image.tsx",
+        "app/dev/og-root-card/route.tsx",
         "app/**/twitter-image.tsx",
         "app/print/**",
         "components/ui/icon.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 117,
+      "baseline": 116,
       "frozen": {
-        "at": "2026-08-06",
-        "value": 117,
-        "direction": "lowered",
-        "basis": "085cd5ead614",
-        "reason": "122 -> 117. Arbitrary pixel values retired onto the spacing scale inside the components sweep. Not a wave of its own -- these are the ones that were already in hand while their file was open.",
-        "from": 122
+        "at": "2026-08-12",
+        "value": 116,
+        "direction": "rebased",
+        "basis": "0ed9a314744e",
+        "reason": "Scope parity only, no sweep and no code change: app/opengraph-image.tsx moved to app/dev/og-root-card/route.tsx (ADR-1002) so Next stops inheriting the root share card into every page metadata module, which was putting sharp + libvips into 403 serverless functions. The file is the same raster surface it always was — Satori cannot read the CSS token cascade, which is why app/**/opengraph-image.tsx and lib/og/** are already carved out here — so the new path joins the same three carve-outs. Only the basis moves. The count falls 117 -> 116: the moved file carried one arbitrary px value that was excluded at its old path and would have been counted at its new one, and the carve-out follows the file rather than the filename.",
+        "from": 117
       },
       "history": [
         {
@@ -837,6 +846,13 @@
           "to": 117,
           "direction": "lowered",
           "reason": "122 -> 117. Arbitrary pixel values retired onto the spacing scale inside the components sweep. Not a wave of its own -- these are the ones that were already in hand while their file was open."
+        },
+        {
+          "at": "2026-08-12",
+          "from": 117,
+          "to": 116,
+          "direction": "rebased",
+          "reason": "Scope parity only, no sweep and no code change: app/opengraph-image.tsx moved to app/dev/og-root-card/route.tsx (ADR-1002) so Next stops inheriting the root share card into every page metadata module, which was putting sharp + libvips into 403 serverless functions. The file is the same raster surface it always was — Satori cannot read the CSS token cascade, which is why app/**/opengraph-image.tsx and lib/og/** are already carved out here — so the new path joins the same three carve-outs. Only the basis moves. The count falls 117 -> 116: the moved file carried one arbitrary px value that was excluded at its old path and would have been counted at its new one, and the carve-out follows the file rather than the filename."
         }
       ]
     },
@@ -900,15 +916,16 @@
         "**/*.{test,spec}.{ts,tsx}",
         "lib/og/**",
         "app/**/opengraph-image.tsx",
+        "app/dev/og-root-card/route.tsx",
         "app/**/twitter-image.tsx"
       ],
       "baseline": 0,
       "frozen": {
-        "at": "2026-08-05",
+        "at": "2026-08-12",
         "value": 0,
         "direction": "rebased",
-        "basis": "aadfca900c6a",
-        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
+        "basis": "ed246d19cfb9",
+        "reason": "Scope parity only, no sweep and no code change: app/opengraph-image.tsx moved to app/dev/og-root-card/route.tsx (ADR-1002) so Next stops inheriting the root share card into every page metadata module, which was putting sharp + libvips into 403 serverless functions. The file is the same raster surface it always was — Satori cannot read the CSS token cascade, which is why app/**/opengraph-image.tsx and lib/og/** are already carved out here — so the new path joins the same three carve-outs. Only the basis moves; the counts are unchanged at the same numbers.",
         "from": 0
       },
       "history": [
@@ -932,6 +949,13 @@
           "to": 0,
           "direction": "rebased",
           "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
+        },
+        {
+          "at": "2026-08-12",
+          "from": 0,
+          "to": 0,
+          "direction": "rebased",
+          "reason": "Scope parity only, no sweep and no code change: app/opengraph-image.tsx moved to app/dev/og-root-card/route.tsx (ADR-1002) so Next stops inheriting the root share card into every page metadata module, which was putting sharp + libvips into 403 serverless functions. The file is the same raster surface it always was — Satori cannot read the CSS token cascade, which is why app/**/opengraph-image.tsx and lib/og/** are already carved out here — so the new path joins the same three carve-outs. Only the basis moves; the counts are unchanged at the same numbers."
         }
       ]
     },
