@@ -125,9 +125,6 @@ app/(main)/admin/studio/actions.ts
 app/(main)/admin/vera-ai/page.tsx
 app/(main)/admin/vera/load-vera.ts
 app/(main)/admin/walkthroughs/actions.ts
-app/(main)/broadcast/[id]/page.tsx
-app/(main)/broadcast/actions.ts
-app/(main)/broadcast/page.tsx
 app/(main)/channels/[id]/edit/page.tsx
 app/(main)/channels/[id]/manage/load.ts
 app/(main)/channels/[id]/manage/page.tsx
@@ -215,6 +212,9 @@ app/(main)/messages/page.tsx
 app/(main)/messages/r/[roomId]/page.tsx
 app/(main)/messages/rooms/actions.ts
 app/(main)/n/[nodeId]/page.tsx
+app/(main)/nearby/[id]/page.tsx
+app/(main)/nearby/actions.ts
+app/(main)/nearby/page.tsx
 app/(main)/network/page.tsx
 app/(main)/nexuses/[slug]/manage/page.tsx
 app/(main)/nexuses/[slug]/page.tsx
