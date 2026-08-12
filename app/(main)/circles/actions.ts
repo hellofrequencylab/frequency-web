@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
-import { asCircleVisibility } from '@/lib/circles/visibility'
+import { asCircleAccess, canJoinCircle } from '@/lib/circles/visibility'
 import { processGamificationEvent } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
 import { sendInviteEmail } from '@/lib/email'
@@ -48,8 +48,14 @@ export async function suggestCircle(
  * client is used because the `memberships` insert policy only lets crew+ self-join, while an
  * ordinary member joining a circle is the single most common thing in the product — so every rule
  * that would have been a policy has to be written here instead. Capacity was already such a rule.
- * Visibility is now another: a PRIVATE circle is invite-only, and this is the one place that can
- * enforce it, because the RESTRICTIVE read policy is invisible to the service role.
+ * ACCESS (axis 2) is now another, and it is load-bearing: joining WRITES a memberships row, and a
+ * memberships row is what `can_enter_circle` reads. Without a gate here, a stranger who learns the
+ * id of a closed circle joins it and thereby grants themselves entry — the model would be circular.
+ *
+ * NOTE which axis this does NOT consult: `unlisted`. Discoverability says nothing about who may
+ * join, and a LISTED closed circle is precisely a circle a stranger is meant to find and then be
+ * refused until they are invited, buy the tier, or belong to the Space. That refusal is the funnel
+ * working, not a bug.
  *
  * `invited` is passed ONLY by a caller that actually holds an invite — the QR route (`/q/[slug]`,
  * where the code was minted by the Host) is the one such caller today. The invite-link redemption
@@ -66,8 +72,8 @@ export async function joinCircle(
 
   const admin = createAdminClient()
 
-  // Check circle capacity + visibility. `circles.visibility` is newer than the generated types,
-  // so the row is read through the sanctioned untyped seam (ADR-246) and narrowed below.
+  // Check circle capacity + access. `circles.access` is newer than the generated types, so the row
+  // is read through the sanctioned untyped seam (ADR-246) and narrowed below.
   const { data: circleRaw } = await (admin as unknown as {
     from: (t: string) => {
       select: (c: string) => {
@@ -76,26 +82,66 @@ export async function joinCircle(
     }
   })
     .from('circles')
-    .select('member_count, member_cap, hub_id, visibility, space_id, host_id')
+    .select('member_count, member_cap, hub_id, access, unlisted, space_id, host_id')
     .eq('id', circleId)
     .maybeSingle()
 
   if (!circleRaw) return fail('This circle is no longer available.')
   const circle = circleRaw as unknown as { member_count: number; member_cap: number; hub_id: string | null }
 
-  // THE PRIVACY GATE. A private circle is not self-serve: without an invite, an existing
-  // membership, or authority over it, the answer is the same one a non-existent circle gets, so
-  // the refusal never confirms that this circle is real.
-  const row = circleRaw as { visibility?: unknown; space_id?: string | null; host_id?: string | null }
-  if (asCircleVisibility(row.visibility) === 'private' && opts?.invited !== true) {
-    const alreadyIn = await admin
-      .from('memberships')
-      .select('id')
-      .eq('circle_id', circleId)
-      .eq('profile_id', myProfileId)
-      .eq('status', 'active')
-      .maybeSingle()
-    if (!alreadyIn.data && (row.host_id ?? null) !== myProfileId && !(await isPlatformStaff())) {
+  // THE ACCESS GATE. Every closed mode has its own door; the default is deny.
+  const row = circleRaw as {
+    access?: unknown
+    unlisted?: unknown
+    space_id?: string | null
+    host_id?: string | null
+  }
+  const access = asCircleAccess(row.access)
+  if (access !== 'open') {
+    const spaceId = row.space_id ?? null
+    const [alreadyIn, staff, spaceSeat] = await Promise.all([
+      admin
+        .from('memberships')
+        .select('id')
+        .eq('circle_id', circleId)
+        .eq('profile_id', myProfileId)
+        .eq('status', 'active')
+        .maybeSingle(),
+      isPlatformStaff(),
+      // Only 'space_members' can be opened by a Space seat, so the lookup is skipped otherwise —
+      // Space membership is not a general key to a Space's Circles.
+      access === 'space_members' && spaceId
+        ? admin
+            .from('space_members')
+            .select('role')
+            .eq('space_id', spaceId)
+            .eq('profile_id', myProfileId)
+            .eq('status', 'active')
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ])
+
+    const verdict = canJoinCircle({
+      unlisted: row.unlisted === true,
+      access,
+      hostId: (row.host_id ?? null) as string | null,
+      viewerProfileId: myProfileId,
+      isMember: !!alreadyIn.data,
+      isSpaceMember: !!spaceSeat.data,
+      // A steward is resolved through the staff arm only here: the operator surfaces that manage a
+      // Circle do not route through joinCircle, so paying for a second Space lookup on the join
+      // path would buy nothing. FAIL-CLOSED is the right direction for a join.
+      isSpaceSteward: false,
+      isPlatformStaff: staff,
+      invited: opts?.invited === true,
+    })
+
+    if (!verdict.ok) {
+      // ⚠️ ONE refusal string for every closed mode, and it is BYTE-IDENTICAL to the missing-circle
+      // copy above. A per-mode message ("buy the membership", "ask for an invite") would confirm
+      // that this circle exists and hint at its shape, which for an UNLISTED closed circle is
+      // exactly the thing being protected. The join / buy call to action belongs on the circle's
+      // own public face, where the viewer has already been allowed to see that it exists.
       return fail('This circle is no longer available.')
     }
   }

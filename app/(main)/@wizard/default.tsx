@@ -1,4 +1,4 @@
-// The `@wizard` slot's fallback (ADR-1010).
+// The `@wizard` slot's fallback (ADR-1017).
 //
 // Parallel-route slots keep their own active state, and on a HARD navigation Next cannot recover
 // the state of a slot the URL does not name — it renders this file, or 404s if it is missing

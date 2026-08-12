@@ -1,7 +1,7 @@
 import { WizardModal } from '@/components/studio/wizard-modal'
 import NewJourneyPage from '@/app/(main)/journeys/new/page'
 
-// /journeys/new as a modal. See `(.)circles/new/page.tsx` for the mechanism (ADR-1010).
+// /journeys/new as a modal. See `(.)circles/new/page.tsx` for the mechanism (ADR-1017).
 // `searchParams` is forwarded verbatim: the Space road is `/journeys/new?space=<slug>`, and the
 // destination page reads it to swap the gate from the member tier to managing that Space.
 

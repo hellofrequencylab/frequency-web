@@ -9,7 +9,7 @@ import { discardDraft, readDraft, writeDraft, type StorageLike } from './draft-s
 import { ok } from '@/lib/action-result'
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
-// THE TWO PERSISTENCE LAYERS UNDER THE SPARK MODAL (ADR-1010, over ADR-991 + 1001).
+// THE TWO PERSISTENCE LAYERS UNDER THE SPARK MODAL (ADR-1017, over ADR-991 + 1001).
 //
 // The modal's close warning is only honest if the thing it promises is true: that what a member
 // typed is already saved when they close. These tests hold the two promises the warning makes.

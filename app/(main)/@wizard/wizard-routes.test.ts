@@ -3,7 +3,7 @@ import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
-// THE ROUTING CONTRACT BEHIND THE SPARK MODAL (ADR-1010).
+// THE ROUTING CONTRACT BEHIND THE SPARK MODAL (ADR-1017).
 //
 // The owner wants a wizard that does not take you off the page. ADR-986 wants a create entry point
 // that is a URL you can share, land on cold, and refresh. Intercepting + parallel routes satisfy

@@ -1,7 +1,7 @@
 'use client'
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
-// THE SPARK MODAL (ADR-1010 · docs/STUDIO.md §1 · docs/PAGE-FRAMEWORK.md §9).
+// THE SPARK MODAL (ADR-1017 · docs/STUDIO.md §1 · docs/PAGE-FRAMEWORK.md §9).
 //
 // WHAT IT IS. The modal HALF of a Spark. Mounted ONLY from the `@wizard` parallel-route slot
 // (app/(main)/@wizard/(.)…), so it wraps a wizard a member reached by an in-app link. The very same

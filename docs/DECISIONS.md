@@ -22657,136 +22657,354 @@ whether a list of individuals appears. One rule at the strip, one rule inside th
 - Tests cover the board at 1, 3, 6 and 60 contributors, a member with no baseline, a returning
   member, and an opted-out member still counting toward the total.
 
-## ADR-1015: Circles get a real privacy model, and it has to be RESTRICTIVE
+> **Replacement text for ADR-1015 in `docs/DECISIONS.md`.** Same number. Replaces the single-axis
+> version wholesale — that draft's model was wrong, and the file below says why in its own words so
+> the record carries the correction rather than hiding it.
+
+---
+
+## ADR-1015 — Circle privacy is TWO axes, and the policy has to be RESTRICTIVE
 
 **Date:** 2026-08-12 · **Status:** Accepted · **Phase:** Circles C1
 **Migration:** `supabase/migrations/20270227000000_circle_privacy.sql` (written, **not applied** by
 the authoring agent — apply via `execute_sql` + an explicit ledger insert for version
 `20270227000000`, per `supabase/migrations/README.md`)
-**Proof:** `supabase/tests/circle_privacy.test.sql` (32 pgTAP assertions) ·
-`lib/circles/visibility.test.ts` · `app/(main)/circles/join-privacy.test.ts`
-**Amends:** ADR for `20261157000000_circles_unlisted.sql` · builds on ADR-328 (`can_view_space_content`),
-ADR-331 (root-space default), ADR-843 (root sentinel), ADR-859 (`space_membership_tiers.circle_id`),
-ADR-959 (the revoke shape), ADR-964 (grant verdicts)
+**Proof:** `supabase/tests/circle_privacy.test.sql` (43 pgTAP assertions) ·
+`lib/circles/visibility.test.ts` (35) · `app/(main)/circles/join-privacy.test.ts` (17)
+**Amends:** the ADR for `20261157000000_circles_unlisted.sql` · builds on ADR-328
+(`can_view_space_content`), ADR-331 (root-space default), ADR-843 (root sentinel), ADR-859
+(`space_membership_tiers.circle_id`), ADR-959 (the revoke shape), ADR-964 (grant verdicts)
 
 ### Context
 
 Circles had **no private state**. `20261157000000_circles_unlisted.sql` says so in its own words —
 *"circles have no 'private' concept (draft/archived already cover 'hidden')"* — and it deliberately
 left `public_circle_by_id` untouched so a direct link keeps resolving. That is obscurity, and it was
-the right call for what `unlisted` is for. It is not a room a stranger cannot open.
+the right call for what `unlisted` is for. There has never been a way to say *"anyone may see that
+this exists, nobody may see what is in it."*
 
-Three facts, all verified against the live database rather than inferred, shaped the answer:
+Three facts, all verified against the live database rather than inferred:
 
-1. **`circles` carries 8 policies: 4 PERMISSIVE, 4 RESTRICTIVE**, and every one is `TO PUBLIC`
-   (`polroles = {0}`), so anon is inside them. `circles: authenticated read non-archived` has **no
+1. **`circles` carries 8 policies: 4 PERMISSIVE, 4 RESTRICTIVE**, every one `TO PUBLIC`
+   (`polroles = {0}`, so anon is inside them). `circles: authenticated read non-archived` has **no
    identity term** in its main arm: `status not in ('archived','draft')` is TRUE for every live
-   circle. Postgres combines policies as `(permissive₁ OR … ) AND restrictive₁ AND …`, so a
-   visibility rule added as PERMISSIVE would be OR-ed against a predicate that is already true and
-   would change **nothing**.
+   circle. Postgres combines policies as `(permissive₁ OR …) AND restrictive₁ AND …`, so a privacy
+   rule added as PERMISSIVE would be OR-ed against a predicate that is already true and change
+   **nothing**.
 2. **Ownership is a root-space sentinel, not NULL** (`lib/circles/transfer.ts:9-10`; live: 7 circles,
    0 with `space_id IS NULL`, 6 on root). And `private.can_view_space_content` returns TRUE whenever
    the space is not `visibility='private'`, while the root space is `'network'` — so
    `circles_space_visible` is a **permanent no-op for every personal circle**.
 3. **RLS is not the whole story.** `joinCircle`, the whole circle detail route (`loadCircleShell`),
-   `/api/search-scopes`, the sidebar rails, Vera's `suggestCircle` and the network page's
-   `circles_near` call all run through the service-role client, which holds `BYPASSRLS`.
+   `/api/search-scopes`, the Interest page, the sidebar rails, Vera's `suggestCircle`, the feed's
+   origin chip and the network page's `circles_near` call all run through the service-role client,
+   which holds `BYPASSRLS`.
 
 ### Decision
 
-**1. `circles.visibility text` in `('public','unlisted','private')`**, mirroring `spaces.visibility`
-(ADR-322) so the platform has one visibility grammar. `public` = discovery + link + readable;
-`unlisted` = link + readable, out of discovery (today's behaviour, unchanged); `private` = out of
-discovery, **does not resolve by link**, readable only by an active member, the Host, a steward of
-the owning Space, or platform staff (`web_role` admin/janitor).
+**1. Two independent axes, not one enum.** This ADR was first written with a single ordered
+`visibility ∈ (public, unlisted, private)`. **That model is wrong and is recorded here so nobody
+re-proposes it.** It can express *public*, *unlisted-and-open* and *private-and-hidden*, and it
+cannot express the cell the owner named:
 
-**2. `unlisted boolean` is demoted to a derived mirror**, `unlisted = (visibility <> 'public')`, held
-by a trigger *and* a row-local CHECK. This is the highest-leverage part of the design: every reader
-that already honours `unlisted` — the `public_circles` RPC, `lib/circles/index-data.ts`,
-`lib/people/associations.ts` — excludes private circles with **no code change and no chance of being
-missed**. Expand-only; the boolean is dropped in a later contract migration.
+> "Space circles can be listed or unlisted, as well as set to private. A listed private circle
+> basically works as a lead funnel into that space."
 
-**3. The policy is `AS RESTRICTIVE FOR SELECT`**, calling `private.can_view_circle(id, visibility,
-space_id, host_id)`. The columns are passed in rather than re-read so a SECURITY DEFINER helper can
-never recurse into the policy that calls it.
+A **listed closed** Circle appears in the index with its name, Host, description and member count so
+a stranger can find it and be moved to join or buy, while the roster and the posts stay shut. On a
+single ordered axis "private" implies "hidden" and that cell does not exist. So:
 
-**4. `paid` is DERIVED, not a column.** A Circle is paid iff a live priced
-`space_membership_tiers` row points at it (ADR-859) — already the one and only way money reaches a
-Circle. A `price_cents` on `circles` would be a second, contradictory encoding.
+- **Axis 1, discoverability:** `circles.unlisted` — the **existing** boolean, unchanged. No new
+  column, so every reader that already honours it keeps working and there is nothing to keep in sync.
+- **Axis 2, access:** `circles.access` (new) ∈ `open` · `circle_members` · `space_members` ·
+  `invite` · `tier`. Set per Circle by the Space owner, in the same membership settings that already
+  link a tier to a Circle (ADR-859) — not a second surface.
 
-**5. Community `guide`+ does NOT open a private circle, and a Space *member* does not either.**
-Draft is a lifecycle state a moderator supervises; private is a member's room. Space **stewards** do
-get it, because they can already move and delete the Circle.
+⚠️ **Do not collapse these back into one enum for tidiness.**
 
-**6. A private circle is invite-only to join.** Enforced in `joinCircle` (service role, so RLS
-cannot), with `invited: true` passed only by the QR route, whose code the Host minted. Without this,
-a stranger who learns the id joins, and joining makes them a member, which makes the policy open.
+**2. Two predicates, because there are now two questions.**
 
-### The forbidden cells, and why two of them are triggers rather than CHECKs
+| | Answers | Governs |
+|---|---|---|
+| `private.can_see_circle(id, unlisted, access, space_id, host_id)` | may this viewer see **that it exists**? | the `circles` row: name, Host, about, member count, city, image |
+| `private.can_enter_circle(id, access, space_id, host_id)` | may this viewer see **what is in it**? | roster, posts, tabs, momentum |
 
-⚠️ **A `CHECK` is row-local and must be `IMMUTABLE`.** Both owner rulings reference another table —
-the root-space id (`spaces.type='root'`) and the plan (`spaces.plan`). Neither is expressible as a
-CHECK; written as one it would fail to create or be silently stale after a plan change. They are
-`BEFORE INSERT OR UPDATE` triggers: the same guarantee, at the same layer (the database, never the
-UI), using the mechanism Postgres actually offers for a cross-table invariant.
+`can_see` is TRUE for every **listed** Circle whatever its access (the funnel), for an **unlisted +
+open** Circle (the 2026-11 direct-link contract, preserved), and otherwise only for someone who can
+enter. A listed closed Circle answers YES then NO, and that asymmetry is the feature.
+
+**3. The policy is `AS RESTRICTIVE FOR SELECT`** over `can_see_circle`. Columns are passed in rather
+than re-read so a SECURITY DEFINER helper can never recurse into the policy that calls it.
+
+**4. Each read path asks the RIGHT question, and getting it backwards breaks something real.**
+Discovery lists (`public_circles`, `circles_near`, the index, every rail and count) key on **axis 1**
+— a listed closed Circle must stay in them or the funnel does not exist. The landing page
+(`public_circle_by_id`, and therefore the discover detail page and its OG card) asks **can_see**.
+`circle_momentum` and the detail roster ask **can_enter**.
+
+**5. `space_members` is scoped to that mode only.** The owner's example is specific: *"a private
+circle that space members can only access if they are a member."* A general Space→Circle key would
+over-deliver, so Space membership opens a Circle **only** when `access = 'space_members'`. Space
+**stewards** (owner / editor+) still get every Circle, because they can already move and delete it.
+Community `guide`+ opens nothing: draft is a lifecycle state a moderator supervises, a closed Circle
+is a member's room.
+
+**6. `paid` is an access mode, not a visibility.** The owner: *"Owner chooses per Circle."* A paid
+Circle may be a listed shopfront or an unlisted room, exactly as a free one may. There is **no
+paid ⇒ public rule and no paid ⇒ private rule**; the strong form of that promise is that
+`enforce_membership_tier_circle_link` never reads `unlisted` at all, asserted as such in
+`lib/circles/visibility.test.ts`. `space_membership_tiers.circle_id` stays the only encoding of
+price — a `price_cents` on `circles` would be a second, contradictory one.
+
+**7. A closed Circle is not self-serve to join.** Enforced in `joinCircle` (service role, so RLS
+cannot), with `invited: true` passed only by the QR route, whose code the Host minted. Without this
+a stranger who learns the id joins, and joining writes the `memberships` row that `can_enter_circle`
+reads — the model would be circular. Every closed mode refuses with **one identical string**, byte
+for byte the same as the missing-circle copy, so the refusal never confirms the Circle exists or
+hints at its shape. The join / buy call to action belongs on the Circle's own public face, where the
+viewer has already been allowed to see it exists.
+
+### The forbidden cells, and why most cannot be CHECKs
+
+⚠️ **A `CHECK` is row-local and must be `IMMUTABLE`.** Most nonsense cells reference another table —
+the root-space id (`spaces.type='root'`) and the plan (`spaces.plan`). Written as a CHECK each would
+fail to create or be silently stale after a plan change. They are `BEFORE INSERT OR UPDATE`
+**triggers**: the same guarantee at the same layer (the database, never the UI).
 
 | Forbidden cell | Mechanism |
 |---|---|
-| visibility outside the domain | CHECK `circles_visibility_check` |
-| `private` with `unlisted = false` (private, inside discovery) | CHECK `circles_visibility_unlisted_mirror_check` |
-| a **personal** Circle is paid ("only businesses charge") | trigger `trg_membership_tier_circle_link` |
-| a Space **below Business** sells | same trigger, via `private.space_can_sell` |
-| Space A's tier links Space B's Circle | same trigger |
+| access mode outside the five | CHECK `circles_access_check` |
+| `space_members`/`tier` on a **personal** Circle (root has no roster and sells nothing) | trigger, `circle_access_needs_space` |
+| `tier` on a Space below Business | trigger, `circle_access_plan_floor` |
+| a **personal** Circle is paid ("only businesses charge") | trigger, `circle_link_cross_tenant` |
+| a priced tier on a Space below Business | trigger, `circle_link_plan_floor` |
+| Space A's tier links Space B's Circle | trigger, `circle_link_cross_tenant` |
 
-All three cross-table rules are one trigger because they are one sentence: *the tier's Circle must be
-a Circle that tier's Space owns, and that Space must be allowed to sell.* Guarding at the **link
-site** is what makes "personal ⇒ free" enforceable at all — `circles` has no price to check. The
-cross-tenant arm was not in the rulings; it was found while writing the matrix and nothing stops it
-on today's tree.
+The tier rules land on one trigger because they are one sentence: *the tier's Circle must be a Circle
+that tier's Space owns, and that Space must be allowed to sell.* Guarding at the **link site** is
+what makes "personal ⇒ free" enforceable at all — `circles` has no price to check. The cross-tenant
+arm was not in the rulings; it was found while writing the matrix and nothing stops it today.
 
-### The leak the policy could never have closed
+### The leak no policy could have closed
 
-`posts.visibility` and `circles.visibility` are different axes. A post written `public` inside a
-private circle satisfies the feed's `p.visibility = 'public'` arm, and `lib/feed/post-origin.ts` then
-resolves `scope_id` into the origin chip — printing the private circle's **name** and linking its
-slug. The reader never selects from `circles`, so no policy on that table reaches it. Closed with
-`private.post_scope_visible(scope_id)`, ANDed into `feed_for_viewer` and `scoped_feed_for_viewer`
-with every existing arm left byte-for-byte intact.
+`posts.visibility` and a Circle's access are different axes. A post written `public` inside a closed
+Circle satisfies the feed's `p.visibility = 'public'` arm, and `lib/feed/post-origin.ts` then
+resolves `scope_id` into the origin chip — printing the Circle's **name** and linking its slug. The
+reader never selects from `circles`, so no policy on that table reaches it.
+
+Closed with `private.post_scope_discoverable(scope_id)`, ANDed into `feed_for_viewer` and
+`scoped_feed_for_viewer` with every existing arm byte-for-byte intact, plus a second lock in
+`post-origin.ts` itself for every other caller of that resolver.
+
+⚠️ **Re-checked against the two-axis model, and the predicate is `can_see`, not `can_enter`.** A
+listed closed Circle's name is public face by design, so a member publishing a PUBLIC post naming it
+leaks nothing — suppressing that would delete the funnel's best organic surface. What must never
+surface is a post whose origin is a Circle the viewer may not know exists. Content inside a listed
+closed Circle is already members-only through the existing `p.visibility = 'group'` arm.
 
 ### Consequences
 
-- Nothing narrows for anyone today: every live circle backfills to `public` or `unlisted` and reads
-  exactly as before. Verified: 7 circles, 2 unlisted, 0 private.
-- `circles_near` gains `visibility = 'public'`, which also closes a **pre-existing** hole: it is
-  `EXECUTE`-able by `anon` and was returning **unlisted** circles with coordinates to signed-out
-  callers, contradicting the unlisted contract itself.
-- `public_circle_by_id` keeps resolving **unlisted** circles by direct link. That contract was set
-  deliberately in 2026-11 and C1 does not revisit it; only `private` is added to the exclusion.
+- **Nothing narrows for anyone today.** `access` defaults to `open`, so every live Circle behaves
+  exactly as before. Verified: 7 circles, 2 unlisted, 0 closed.
+- `circles_near` gains `not c.unlisted`, closing a **pre-existing** hole: it is `EXECUTE`-able by
+  `anon` and was returning **unlisted** circles with coordinates to signed-out callers,
+  contradicting the unlisted contract itself.
+- `public_circles` and `public_active_circle_count` are **deliberately unchanged**. Restated in the
+  migration so the file that introduces `access` is on the record about not touching them.
+- `public_circle_by_id` still resolves **unlisted + open** Circles by direct link. That contract was
+  set deliberately in 2026-11 and C1 does not revisit it.
 - No new tables, so `scripts/table-grants.txt` and `scripts/rls-deny-all.txt` need no new lines
-  (`check:rls` 276/276 and `check:grants` 276/276 both green).
-- Three new `private.*` helpers all use the ADR-959 shape — `revoke … from public, anon,
-  authenticated` in ONE statement, then an explicit grant. `can_view_circle` gets `anon` +
+  (`check:rls` and `check:grants` both green at 276/276).
+- Four new `private.*` helpers use the ADR-959 shape — `revoke … from public, anon, authenticated`
+  in ONE statement, then an explicit grant. `can_see_circle` / `can_enter_circle` get `anon` +
   `authenticated` back deliberately: an RLS policy evaluates as the **invoking** role, so without it
-  every anon read of `circles` errors instead of filtering. `post_scope_visible` is service-role only
-  (its callers are SECDEF and run as owner); `space_can_sell` is authenticated + service_role.
+  every anon read of `circles` errors instead of filtering. `post_scope_discoverable` is
+  service-role only (its callers are SECDEF and run as owner); `space_can_sell` is authenticated +
+  service_role.
+- **`loadCircleShell` now returns `canEnter`** and an empty roster for the funnel case. The public
+  face it enables (name, Host, description, count, join/buy CTA in place of the tab bodies) is a UI
+  change in `(circle)/layout.tsx` and the tab pages — **C4's files this cycle**, handed off.
+  `CIRCLE_PUBLIC_FACE_FIELDS` names exactly which fields that surface may show.
 
 ### Rejected alternatives
 
-- **A permissive visibility policy.** Would OR against an identity-free predicate and grant every
-  private circle to everyone, including anon. This is the trap the whole ADR is shaped around.
-- **Building on `can_view_space_content`.** Provably a no-op for personal circles (fact 2). A
-  pgTAP assertion pins that it returns TRUE for the root space, so nobody re-proposes it.
-- **A third ownership encoding** (`space_id IS NULL` for "personal"). Rejected — the root sentinel is
-  the convention and live data agrees; ADR-331 already stamps root on insert.
-- **`circles.price_cents`.** Rejected — see decision 4.
+- **A single ordered `visibility` enum.** Built first; cannot express listed + closed. Recorded
+  above rather than deleted, because it is the obvious shape and the next reader will reach for it.
+- **A permissive access policy.** Would OR against an identity-free predicate and grant every closed
+  Circle to everyone, anon included. This is the trap the whole ADR is shaped around.
+- **Building on `can_view_space_content`.** Provably a no-op for personal Circles (fact 2). A pgTAP
+  assertion pins that it returns TRUE for the root space, so nobody re-proposes it.
+- **A third ownership encoding** (`space_id IS NULL` for "personal"). The root sentinel is the
+  convention and live data agrees; ADR-331 already stamps root on insert.
+- **`circles.price_cents`.** See decision 6.
 - **Gating the detail route in `(circle)/layout.tsx`.** The layout is one of four callers of
-  `loadCircleShell`; a fifth would arrive ungated. The gate lives in the read.
+  `loadCircleShell`; a fifth would arrive ungated. The gate lives in the read, and the roster is
+  redacted there too — a tab that never receives the data cannot forget to hide it.
+- **A RESTRICTIVE policy on `posts`.** Wide blast radius for a narrow residue: a `public` post's raw
+  `scope_id` uuid stays readable for a hidden Circle, but the **name** is not resolvable now that
+  both the `circles` row and the origin chip are gated. Recorded as a named limit instead.
 
-### Open for the owner
 
-- **Should a private Circle be visible to members of the owning Space (viewer role), or only to
-  Circle members?** Built as *Circle members only* (the narrower answer, reversible by widening one
-  arm of `can_view_circle`). Widening it would make "private" mean "private from strangers", which is
-  what `unlisted` already is.
-- **Is a paid Circle allowed to be `public`?** Built as yes (a shopfront: anyone sees it, only payers
-  get in). If the owner wants paid ⇒ private, that becomes a fourth arm of the same trigger.
+## ADR-1017: Sparks open OVER the page, as intercepted routes, and every exit is guarded
+
+**Date:** 2026-08-12 · **Status:** Accepted · **Supersedes nothing; amends** ADR-986 (§ entry points), ADR-142 (`StudioWindow`), ADR-991 + ADR-1001 (Spark autosave).
+
+## The request, and the tension it walked into
+
+The owner: *"Put all the Vera Wizards in a pop up. I don't want people leaving the page."* Then, the
+same day: *"Install safeguards on the pop up wizard. Cash in the browser, write to the database and
+create a warning that makes them either draft, publish or delete on trying to close."* And:
+*"Do whatever is best practice for a pop up wizard."*
+
+Earlier the same day, `StudioLaunchButton` — the modal launcher — was **deleted**, on the reasoning
+that ADR-986 makes every create entry point a deep-linkable Spark link, so "the modal launcher has
+no future consumer". Read naively, the owner is asking for the thing that was just removed.
+
+They are not in conflict. Two different wants:
+
+| Want | Owner's | ADR-986's |
+|---|---|---|
+| Opening a wizard must not lose the page you were on | ✅ | — |
+| A create entry point is a URL you can link to, share, and land on cold | — | ✅ |
+
+A client-state modal (`useState(false)`) satisfies the first and **silently repeals the second**: the
+URL stops naming what is on screen, the link cannot be shared, Back does the wrong thing, and a
+refresh loses the surface. That is why this ADR exists rather than a revert.
+
+## Decision
+
+**Intercepting routes + a parallel-route slot.** One route, two presentations, one wizard component.
+
+- `app/(main)/@wizard/` is a parallel-route **slot**, rendered by `app/(main)/layout.tsx` beside
+  `children`.
+- `app/(main)/@wizard/(.)<segment>/…/page.tsx` **intercepts** the wizard's own route. It imports and
+  renders **the destination's own page module**, wrapped in `WizardModal`.
+- `@wizard/default.tsx` returns `null`; `@wizard/[...catchAll]/page.tsx` returns `null`.
+
+The consequence is the whole point:
+
+| How the member arrives | What renders |
+|---|---|
+| In-app link (client navigation) | `children` keeps the page they were on; `@wizard` renders the Spark as a modal over it |
+| Shared link, refresh, bookmark, crawler | `children` renders the wizard's own full page; `@wizard` renders `default.tsx` (nothing) |
+
+Interception is a client-navigation mechanism — Next's own doc states that on a shareable URL or a
+refresh "the entire photo page should render instead of the modal. No route interception should
+occur" — so the ADR-986 half is structural, not a branch anyone has to remember.
+
+### Why the intercepted page imports the real page module
+
+The alternative is a twin: a second file that re-does the gate, the redirect, the capability check
+and the Spark. That is a fork, and the shared-link path is the one nobody exercises by hand, so the
+fork would drift in the direction nobody sees. Importing the page module means there is nothing to
+drift **from**. `app/(main)/@wizard/wizard-routes.test.ts` pins it per route.
+
+### Scroll position needed no change at any entry point
+
+Next 16.3's `<Link>` default "is to maintain scroll position … as long as the Page is visible in the
+viewport", and its scroll-target search "bypasses … sticky or fixed positioned elements". The
+intercepted Page **is** the fixed overlay, so the router skips it, finds the still-visible page
+underneath, and leaves the scroll alone. None of the ~20 entry-point links needed `scroll={false}`.
+`StudioWindow`'s `fixed inset-0` root is therefore load-bearing, and is asserted in a test.
+
+## The safeguards: three layers, only one of them new
+
+| Layer | Where | State |
+|---|---|---|
+| **1. Browser cache** | `components/studio/spark/draft/draft-store.ts` (ADR-991) | ✅ already shipped |
+| **2. Database** | `public.studio_draft` + `lib/studio/draft-store.ts` (ADR-1001) | ✅ already shipped, applied to production |
+| **3. The close warning** | `components/studio/wizard-modal.tsx` | 🆕 this ADR |
+
+**`localStorage`, not IndexedDB**, and that is a decision rather than an inheritance: the staged
+state is a flat `{fieldKey: string}` map of what was **typed**. File inputs, passwords, autocomplete
+machine values and anything marked `data-spark-draft="off"` are refused *at collection*, so the case
+that breaks `localStorage` — a half-uploaded image — never reaches it. Caps are 20k per value and
+100k per entry, under a seven-day TTL.
+
+**Cadence:** 800 ms local debounce (`useStudioDraft`), with the server push rate-limited on the *same*
+call rather than a second timer, and forced flushes on unmount, `pagehide`, and `visibilitychange`.
+
+**Clearing:** the wizard's own commit discards both copies (the unmount-while-busy path), and the
+Discard button calls the same pair. `discard` also clears the sync gate's dirty flag, without which
+the unmount flush would push the erased draft straight back to the member's account.
+
+### Every exit path, and what covers it
+
+| Exit | Mechanism | Verdict |
+|---|---|---|
+| Close button (X) | `StudioWindow onClose` → `requestClose` | ✅ three-way dialog |
+| `Escape` | `StudioWindow` keydown → `onClose` | ✅ three-way dialog; a second `Escape` backs out of the dialog rather than through it |
+| Backdrop click | `dismissOnBackdrop={false}` | ✅ inert by design |
+| **Browser Back** | history sentinel + `popstate` | ✅ three-way dialog |
+| Refresh / tab close | `beforeunload`, armed only while a write is owed | ⚠️ generic browser text |
+| A link **inside** the wizard | nothing | 🔴 documented gap |
+
+**Browser Back is the one a naive guard misses.** With intercepting routes it is a *route change*,
+not an unmount the component controls. The first keystroke pushes a same-URL history entry; Back
+pops that instead of the wizard, `popstate` fires with the modal still mounted, the sentinel is
+re-pushed and the dialog appears. Leaving for real is one `history.go(-2)` — over the sentinel and
+the wizard entry together — rather than two `back()` calls that would race the router.
+
+**`beforeunload` is a net, never the mechanism.** No modern browser allows custom text and the
+handler cannot be async. It is armed *only* while `saveState === 'saving'`, the one window in which
+leaving could really lose a keystroke. Outside it both copies are on disk, so a prompt would be
+firing when there is nothing to lose — which is exactly how a dialog trains people to dismiss it
+unread.
+
+**The in-wizard link is an accepted gap.** Guarding it would mean wrapping every anchor a wizard
+might render. It costs the member no writing: the unmount flush persists the draft and `/drafts`
+offers it straight back. What they lose is the modal, not the work.
+
+**A clean wizard closes instantly, with no dialog at all,** and no sentinel is ever armed. This is
+the property that keeps the warning credible.
+
+### The two product questions, answered
+
+**"Publish" is not a button on this dialog.** A Spark is deferred creation: no entity row exists
+before the wizard's own commit, and that commit is the only code that knows which fields are
+required. A Publish button here would have to re-implement each wizard's validation and commit in
+the modal, which is the per-entity fork `docs/STUDIO.md` §0 forbids. In its place the dialog offers
+**"Back to it"** — one tap to the wizard's own footer, where publishing lives and where missing
+fields are already named per step by `SparkShell`'s error slot. The three choices are therefore
+**Keep as draft** (primary, safe default) · **Back to it** · **Discard**.
+
+**Discard is two steps.** It erases the browser cache *and* the `studio_draft` row with no undo, so
+one tap only reveals the question ("Discard what you have written? It goes from this device and from
+your account. There is no undo.") and a second, differently-labelled tap performs it. It is never
+the default and never the first target. Where no draft was staged (a gate wall rather than a Spark),
+it is not offered at all.
+
+### Interaction: what "best practice" resolved to
+
+Centred dialog on desktop, full-height sheet on mobile (already `StudioWindow`'s shape) · backdrop
+inert · focus lands on the first meaningful field rather than the close button · motion honours
+`prefers-reduced-motion` · scroll contained to the window body with the page behind locked · steps,
+progress, validation and the sticky footer left entirely to `SparkShell` · `z-[80]` deliberately
+covers the mobile tab bar (`z-40`), with the bottom safe-area inset carried by the modal body.
+
+The repo's existing primitives were used rather than re-created: `StudioWindow` (ADR-142) gained two
+additive props (`dismissOnBackdrop`, `ariaLabel`) and nothing else; its focus trap is the shared
+`useDialogFocusTrap`; buttons are `buttonClasses`.
+
+## Guards
+
+- **`check:seo`** mapped `app/(main)/@wizard/(.)circles/new/page.tsx` to the literal string
+  `/@wizard/(.)circles/new` and reported it as an undeclared public route. That path is not a URL and
+  cannot be requested. Corrected in the **mapper**: slot segments are dropped (Next: "slots are not
+  route segments and do not affect the URL structure") and intercepting folders are skipped (they can
+  only ever render during a client navigation). The URL they decorate is still governed, by the real
+  page that serves it. **No assertion was weakened.**
+- **`check:templates`** the six slot pages are **baselined with a reason**, not excluded from the
+  walk. They are presentations of a page, not pages: the kit shell is composed by the page underneath
+  and by `SparkShell`, and giving one a template would put a page header inside a dialog. Baselining
+  rather than excluding keeps the gate's eyes open, so a future slot page that really does hand-roll
+  a layout still fails.
+
+## Inventory this covers
+
+Six Vera Sparks: `/circles/new` · `/practices/new` · `/journeys/new` · `/events/new` ·
+`/classifieds/new` · `/market/sell`. Deliberately not intercepted: the Service Spark
+(`/spaces/[slug]/settings/services/new`, a Space settings console where the surface behind is the
+console itself), the Business Seeder (`/admin/*`, its own workspace with no member rail), and the
+three non-Spark create forms (`/housing/new`, `/spaces/new`, `/spaces/new/business`). Adding one is
+a new folder under `@wizard`; the tests discover routes rather than listing them.

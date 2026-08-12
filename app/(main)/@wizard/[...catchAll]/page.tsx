@@ -1,4 +1,4 @@
-// The `@wizard` slot's closer (ADR-1010).
+// The `@wizard` slot's closer (ADR-1017).
 //
 // A slot keeps showing its last active subpage across client-side navigations that do not match it,
 // so without this a member who opened a Spark modal and then followed a link INSIDE it (the Spark's

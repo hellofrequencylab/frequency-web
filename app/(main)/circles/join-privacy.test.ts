@@ -1,29 +1,35 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { isError, type ActionResult } from '@/lib/action-result'
 
-// joinCircle × CIRCLE PRIVACY (ADR-1015 · C1).
+// joinCircle × CIRCLE ACCESS (ADR-1015 · C1, two-axis model).
 //
 // 🔴 WHY THIS TEST EXISTS AT THE ACTION LAYER. joinCircle uses the SERVICE-ROLE client by design,
 // with a comment saying so: the `memberships` insert policy only lets crew+ self-join, while an
 // ordinary member joining a circle is the most common write in the product. Service role holds
-// BYPASSRLS, so `circles_visibility_restrictive` — the whole database half of C1 — is invisible
-// here. If the refusal is not written in this function, a stranger who learns a private circle's
-// id joins it, and joining makes them a member, which makes the RESTRICTIVE policy open for them.
-// A privacy model with a self-serve join is not a privacy model.
+// BYPASSRLS, so `circles_access_restrictive` — the whole database half of C1 — is invisible here.
+// And the gate is load-bearing in a way the read paths are not: joining WRITES a memberships row,
+// and a memberships row is exactly what `can_enter_circle` reads. Without a refusal here, a
+// stranger who learns a closed circle's id joins it and thereby grants themselves entry. The model
+// would be circular.
+//
+// ⚠️ NOTE WHICH AXIS IS ABSENT. `unlisted` never enters this decision. A LISTED closed circle is
+// precisely one a stranger is MEANT to find and then be refused until they are invited, buy the
+// tier, or belong to the Space — that refusal is the lead funnel working.
 //
 // What is locked, all network-free (admin client, auth, gamification and the email/AI graph mocked,
 // mirroring invite-by-email.test.ts):
-//   1. A stranger cannot join a PRIVATE circle, and the refusal is the SAME copy a missing circle
-//      gets — so it never confirms the circle is real.
-//   2. An INVITED caller (the QR route) can.
-//   3. An existing member and the Host can (joining is a no-op for them, not a refusal).
-//   4. Public and unlisted circles stay self-serve — the gate narrows nothing it should not.
-//   5. The membership insert genuinely does not happen on a refusal.
+//   1. Every closed mode refuses a stranger, with copy IDENTICAL to the missing-circle copy — so
+//      the refusal never confirms the circle exists or hints at its shape.
+//   2. Each mode's own door opens: an invite (the QR route), a Space seat for `space_members`.
+//   3. Existing members, the Host and platform staff are never locked out.
+//   4. `open` circles stay self-serve, listed or not — the gate narrows nothing it should not.
+//   5. Capacity still runs, and still runs AFTER the access gate.
 
 let currentProfileId: string | null = 'stranger-1'
 let staff = false
-let circleRow: Record<string, unknown> = {}
+let circleRow: Record<string, unknown> | null = {}
 let existingMembership: { id: string } | null = null
+let spaceSeat: { role: string } | null = null
 const membershipInserts: Record<string, unknown>[] = []
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
@@ -46,100 +52,153 @@ vi.mock('@/lib/ai/circle-spark', () => ({
 }))
 vi.mock('@/lib/beta/referral-contest', () => ({ recordCircleStarterMilestone: vi.fn(async () => {}) }))
 
-vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: () => ({
-    from: (table: string) => ({
-      select: () => ({
-        eq: () => ({
-          eq: () => ({
-            eq: () => ({ maybeSingle: async () => ({ data: existingMembership, error: null }) }),
-            maybeSingle: async () => ({ data: existingMembership, error: null }),
-          }),
-          maybeSingle: async () => {
-            if (table === 'circles') return { data: circleRow, error: null }
-            return { data: null, error: null }
-          },
-        }),
+// Table-aware mock: the access gate reads `circles`, then `memberships` and (only for
+// space_members) `space_members`, so each has to answer for itself.
+vi.mock('@/lib/supabase/admin', () => {
+  const rowFor = (table: string) => {
+    if (table === 'circles') return circleRow
+    if (table === 'memberships') return existingMembership
+    if (table === 'space_members') return spaceSeat
+    return null
+  }
+  const chain = (table: string) => {
+    const node: Record<string, unknown> = {}
+    node.eq = () => node
+    node.maybeSingle = async () => ({ data: rowFor(table), error: null })
+    return node
+  }
+  return {
+    createAdminClient: () => ({
+      from: (table: string) => ({
+        select: () => chain(table),
+        insert: (row: Record<string, unknown>) => {
+          if (table === 'memberships') membershipInserts.push(row)
+          return Promise.resolve({ error: null })
+        },
       }),
-      insert: (row: Record<string, unknown>) => {
-        if (table === 'memberships') membershipInserts.push(row)
-        return Promise.resolve({ error: null })
-      },
     }),
-  }),
-}))
+  }
+})
 
 import { joinCircle } from './actions'
 
-const PRIVATE = { member_count: 2, member_cap: 50, hub_id: null, visibility: 'private', space_id: 'root-1', host_id: 'host-1' }
+const CLOSED = {
+  member_count: 2,
+  member_cap: 50,
+  hub_id: null,
+  access: 'circle_members',
+  unlisted: false, // LISTED and closed: the lead funnel
+  space_id: 'space-1',
+  host_id: 'host-1',
+}
+
+const CLOSED_MODES = ['circle_members', 'invite', 'tier', 'space_members'] as const
 
 beforeEach(() => {
   currentProfileId = 'stranger-1'
   staff = false
   existingMembership = null
-  circleRow = { ...PRIVATE }
+  spaceSeat = null
+  circleRow = { ...CLOSED }
   membershipInserts.length = 0
 })
 
-describe('joinCircle refuses a private circle to anyone who was not invited', () => {
-  it('a stranger is refused, and no membership row is written', async () => {
-    const res = await joinCircle('circle-1', 'private-circle')
-    expect(isError(res as ActionResult)).toBe(true)
-    expect(membershipInserts).toHaveLength(0)
-  })
+describe('every closed access mode refuses a stranger', () => {
+  for (const access of CLOSED_MODES) {
+    it(`${access}: refused, and no membership row is written`, async () => {
+      circleRow = { ...CLOSED, access }
+      const res = await joinCircle('circle-1', 'closed-circle')
+      expect(isError(res as ActionResult)).toBe(true)
+      expect(membershipInserts).toHaveLength(0)
+    })
+  }
 
   it('the refusal copy is identical to the missing-circle copy, so it never confirms the circle exists', async () => {
-    const refusedPrivate = (await joinCircle('circle-1', 'private-circle')) as { error?: string }
-    circleRow = null as unknown as Record<string, unknown>
+    const refusedClosed = (await joinCircle('circle-1', 'closed-circle')) as { error?: string }
+    circleRow = null
     const refusedMissing = (await joinCircle('circle-nope', 'nope')) as { error?: string }
-    expect(refusedPrivate.error).toBeTruthy()
-    expect(refusedPrivate.error).toBe(refusedMissing.error)
+    expect(refusedClosed.error).toBeTruthy()
+    expect(refusedClosed.error).toBe(refusedMissing.error)
+  })
+
+  it('every closed mode refuses with the SAME string — a per-mode message would hint at its shape', async () => {
+    const errors = new Set<string>()
+    for (const access of CLOSED_MODES) {
+      circleRow = { ...CLOSED, access }
+      errors.add(((await joinCircle('circle-1', 'closed-circle')) as { error?: string }).error ?? '')
+    }
+    expect(errors.size).toBe(1)
   })
 
   it('a signed-out caller is refused before anything is read', async () => {
     currentProfileId = null
-    const res = await joinCircle('circle-1', 'private-circle')
+    const res = await joinCircle('circle-1', 'closed-circle')
     expect(isError(res as ActionResult)).toBe(true)
+    expect(membershipInserts).toHaveLength(0)
+  })
+
+  it('refusing does NOT depend on the discoverability axis — listed and unlisted refuse alike', async () => {
+    circleRow = { ...CLOSED, unlisted: true }
+    const hidden = (await joinCircle('circle-1', 'hidden')) as { error?: string }
+    circleRow = { ...CLOSED, unlisted: false }
+    const funnel = (await joinCircle('circle-1', 'funnel')) as { error?: string }
+    expect(hidden.error).toBe(funnel.error)
     expect(membershipInserts).toHaveLength(0)
   })
 })
 
-describe('joinCircle admits the seats that hold an invite or already belong', () => {
-  it('the QR route`s invited: true opens it', async () => {
-    await joinCircle('circle-1', 'private-circle', { invited: true })
+describe('each mode`s own door opens', () => {
+  it('the QR route`s invited: true opens an invite circle', async () => {
+    circleRow = { ...CLOSED, access: 'invite' }
+    await joinCircle('circle-1', 'closed-circle', { invited: true })
     expect(membershipInserts).toHaveLength(1)
+  })
+
+  it("a Space seat opens a space_members circle — the owner's own example", async () => {
+    circleRow = { ...CLOSED, access: 'space_members' }
+    spaceSeat = { role: 'viewer' }
+    await joinCircle('circle-1', 'closed-circle')
+    expect(membershipInserts).toHaveLength(1)
+  })
+
+  it('that same Space seat does NOT open a circle_members circle in the same Space', async () => {
+    circleRow = { ...CLOSED, access: 'circle_members' }
+    spaceSeat = { role: 'viewer' }
+    const res = await joinCircle('circle-1', 'closed-circle')
+    expect(isError(res as ActionResult)).toBe(true)
+    expect(membershipInserts).toHaveLength(0)
   })
 
   it('an existing active member re-joining is not refused', async () => {
     existingMembership = { id: 'm-1' }
-    await joinCircle('circle-1', 'private-circle')
+    await joinCircle('circle-1', 'closed-circle')
     expect(membershipInserts).toHaveLength(1)
   })
 
   it('the Host is not locked out of their own circle', async () => {
     currentProfileId = 'host-1'
-    await joinCircle('circle-1', 'private-circle')
+    await joinCircle('circle-1', 'closed-circle')
     expect(membershipInserts).toHaveLength(1)
   })
 
   it('platform staff keep break-glass', async () => {
     staff = true
-    await joinCircle('circle-1', 'private-circle')
+    await joinCircle('circle-1', 'closed-circle')
     expect(membershipInserts).toHaveLength(1)
   })
 })
 
 describe('joinCircle narrows nothing that was open before', () => {
-  for (const visibility of ['public', 'unlisted']) {
-    it(`a ${visibility} circle stays self-serve for a stranger`, async () => {
-      circleRow = { ...PRIVATE, visibility }
+  for (const unlisted of [false, true]) {
+    it(`an OPEN circle stays self-serve for a stranger (unlisted: ${unlisted})`, async () => {
+      circleRow = { ...CLOSED, access: 'open', unlisted }
       await joinCircle('circle-1', 'open-circle')
       expect(membershipInserts).toHaveLength(1)
     })
   }
 
-  it('capacity is still enforced, and still enforced AFTER the privacy gate', async () => {
-    circleRow = { ...PRIVATE, visibility: 'public', member_count: 50, member_cap: 50 }
+  it('capacity is still enforced, and still enforced AFTER the access gate', async () => {
+    circleRow = { ...CLOSED, access: 'open', member_count: 50, member_cap: 50 }
     const res = (await joinCircle('circle-1', 'full-circle')) as { error?: string }
     expect(res.error).toContain('full')
     expect(membershipInserts).toHaveLength(0)

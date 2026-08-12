@@ -1,7 +1,7 @@
 import { WizardModal } from '@/components/studio/wizard-modal'
 import NewEventPage from '@/app/(main)/events/new/page'
 
-// /events/new as a modal. See `(.)circles/new/page.tsx` for the mechanism (ADR-1010).
+// /events/new as a modal. See `(.)circles/new/page.tsx` for the mechanism (ADR-1017).
 // `searchParams` is forwarded verbatim — `?circle=`, `?space=`, `?duplicate=` and `?journey=` all
 // change what the destination builds, and the modal must not be a narrower door than the page.
 

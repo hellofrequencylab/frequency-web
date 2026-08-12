@@ -39,7 +39,7 @@ export function StudioWindow({
   /**
    * Whether a click on the backdrop dismisses the window. Defaults to true (every window that
    * existed before this prop). Pass `false` where the window holds work a stray tap must not throw
-   * away — the Spark modal (ADR-1010) does, because a mis-tap on the dim area beside a half-answered
+   * away — the Spark modal (ADR-1017) does, because a mis-tap on the dim area beside a half-answered
    * wizard is the cheapest possible gesture and the most expensive possible outcome.
    */
   dismissOnBackdrop?: boolean

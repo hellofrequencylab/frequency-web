@@ -114,7 +114,7 @@ export function SparkShell({
   const scope = draftScopeKey === null ? null : (draftScopeKey ?? draftScope([pathname, eyebrow]))
   const draft = useSparkDraft({ scope, step, stageRef, busy, route: pathname, label: eyebrow })
 
-  // Report this draft up to the Spark modal, when there IS one (ADR-1010). The modal needs exactly
+  // Report this draft up to the Spark modal, when there IS one (ADR-1017). The modal needs exactly
   // three things it cannot work out for itself — which draft is on screen, how to erase both copies
   // of it, and whether a write is still owed — and a Spark rendered as a full page has no provider
   // above it, so this is a no-op there. Nothing about the wizard changes either way.

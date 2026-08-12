@@ -4,7 +4,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
-// THE SPARK MODAL'S SAFEGUARDS (ADR-1010).
+// THE SPARK MODAL'S SAFEGUARDS (ADR-1017).
 //
 // Everything here is about ONE property: a member cannot lose writing by closing a window. The
 // tests are grouped by the exit path they cover, because "the guard works for the X and silently
@@ -25,13 +25,14 @@ const { useReportWizardDraft } = await import('./wizard-guard')
 
 let container: HTMLDivElement | null = null
 let root: Root | null = null
-let go: ReturnType<typeof vi.fn>
-let pushState: ReturnType<typeof vi.fn>
+// Typed to History's own signatures so `mockImplementation` matches the spied member exactly.
+let go: ReturnType<typeof vi.fn<(delta?: number) => void>>
+let pushState: ReturnType<typeof vi.fn<(data: unknown, unused: string, url?: string | URL | null) => void>>
 
 beforeEach(() => {
   back.mockClear()
-  go = vi.fn()
-  pushState = vi.fn()
+  go = vi.fn<(delta?: number) => void>()
+  pushState = vi.fn<(data: unknown, unused: string, url?: string | URL | null) => void>()
   vi.spyOn(window.history, 'go').mockImplementation(go)
   vi.spyOn(window.history, 'pushState').mockImplementation(pushState)
 })

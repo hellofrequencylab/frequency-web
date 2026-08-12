@@ -1,19 +1,18 @@
 import Link from 'next/link'
 import { CircleDot } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { DISCOVERABLE_CIRCLE_VISIBILITY } from '@/lib/circles/visibility'
 
 // A page-layout module (ADR-270): active circles filling up. Self-fetching RSC;
 // returns null when there's nothing to show. Public aggregate data only.
 export async function TopCircles() {
   const db = createAdminClient()
-  // Admin client = no RLS; the visibility filter is by hand (ADR-1015). A public-aggregate module
-  // may only name circles anyone could browse, so unlisted and private both drop out.
+  // Admin client = no RLS; the filter is by hand (ADR-1015). A discovery module keys on AXIS 1
+  // (`unlisted`): a LISTED Circle belongs here whatever its access mode, an unlisted one never.
   const { data, error } = await db
     .from('circles')
     .select('id, name, slug, member_count')
     .eq('status', 'active')
-    .in('visibility', [...DISCOVERABLE_CIRCLE_VISIBILITY])
+    .eq('unlisted', false)
     .order('member_count', { ascending: false })
     .limit(6)
 

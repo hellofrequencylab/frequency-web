@@ -2,7 +2,6 @@ import { Users } from 'lucide-react'
 import { DashArea, TileGrid, Tile, GraphTile, MiniStat, MiniGrid } from '@/components/admin/dash'
 import { TrendArea, weeklyBuckets, cumulative } from '@/components/admin/spark-charts'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { LINKABLE_CIRCLE_VISIBILITY } from '@/lib/circles/visibility'
 
 // Community layout module (LP7): "Structure & people" — the shape of the live site and who's in it.
 // Self-fetching RSC; the page owns the host + community-staff gate, so this never re-gates. Every
@@ -40,8 +39,10 @@ async function load(): Promise<StructureData> {
 
     const [circles, channels, events, hubs, nexuses, dispatches, members, inCircles, team, newMembers] =
       await Promise.all([
+        // Counts what the community can browse: AXIS 1 only (ADR-1015). A listed Circle counts
+        // whatever its access mode; an unlisted one would leak its existence through the total.
         admin.from('circles').select('id', { count: 'exact', head: true }).eq('status', 'active')
-          .in('visibility', [...LINKABLE_CIRCLE_VISIBILITY]),
+          .eq('unlisted', false),
         admin.from('channels').select('id', { count: 'exact', head: true }),
         admin
           .from('events')

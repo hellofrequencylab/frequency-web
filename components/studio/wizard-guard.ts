@@ -1,7 +1,7 @@
 'use client'
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
-// THE WIZARD GUARD SEAM (ADR-1010).
+// THE WIZARD GUARD SEAM (ADR-1017).
 //
 // The ONE piece of information the Spark modal cannot work out for itself: which draft is on
 // screen, and how to throw it away. A Spark's autosave scope is derived inside `SparkShell` from

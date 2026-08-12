@@ -2,7 +2,7 @@ import { WizardModal } from '@/components/studio/wizard-modal'
 import NewCirclePage from '@/app/(main)/circles/new/page'
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
-// /circles/new, PRESENTED AS A MODAL (ADR-1010). Read this one; its five siblings are the same
+// /circles/new, PRESENTED AS A MODAL (ADR-1017). Read this one; its five siblings are the same
 // three lines with a different wizard.
 //
 // The `(.)` matcher intercepts a route at the SAME segment level as this slot. `@wizard` is a slot

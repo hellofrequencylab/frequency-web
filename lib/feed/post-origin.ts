@@ -1,5 +1,7 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getMyProfileId } from '@/lib/auth'
+import { asCircleAccess, isListedCircle } from '@/lib/circles/visibility'
 import type { PostScopeContext } from '@/components/feed/post-card'
 
 // Where a post lives. A post's home is its `scope_id`: a CIRCLE (group/cluster
@@ -34,7 +36,12 @@ export async function buildScopeContextResolver(
   if (ids.length > 0) {
     const admin = createAdminClient()
     const [circlesR, eventsR, channelsR, spacesR, profilesR] = await Promise.all([
-      admin.from('circles').select('id, name, slug, image_url').in('id', ids),
+      // 🔴 THE ORIGIN CHIP IS WHERE THE FEED NAMES A CIRCLE (ADR-1015). This module is why a
+      // public post inside a hidden circle leaked: the reader never selects from `circles`, the
+      // CHIP does, through the admin client, with no filter. `access`/`unlisted` ride along so the
+      // hidden ones can be dropped below. The feed RPCs already suppress those posts upstream —
+      // this is the second lock, for every other caller of this resolver.
+      admin.from('circles').select('id, name, slug, image_url, unlisted, access').in('id', ids),
       admin.from('events').select('id, title, slug, cover_image_path').in('id', ids),
       admin.from('channels').select('id, name').in('id', ids),
       admin.from('spaces').select('id, name, brand_name, slug, brand_logo_url').in('id', ids),
@@ -53,7 +60,41 @@ export async function buildScopeContextResolver(
       }
     }
 
-    for (const c of (circlesR.data ?? []) as { id: string; name: string; slug: string; image_url: string | null }[]) {
+    type CircleScopeRow = {
+      id: string
+      name: string
+      slug: string
+      image_url: string | null
+      unlisted?: unknown
+      access?: unknown
+    }
+    const circleRows = (circlesR.data ?? []) as unknown as CircleScopeRow[]
+
+    // A LISTED circle's name is public face whatever its access mode — that is the lead funnel, and
+    // a chip pointing at it is the funnel working. An UNLISTED CLOSED circle must not be named to
+    // anyone who is not in it. The membership lookup is skipped entirely unless such a circle is
+    // actually in this batch, so the common feed render costs exactly what it did.
+    const hidden = circleRows.filter((c) => !isListedCircle(c.unlisted) && asCircleAccess(c.access) !== 'open')
+    let myHiddenIds = new Set<string>()
+    if (hidden.length > 0) {
+      const myProfileId = await getMyProfileId()
+      if (myProfileId) {
+        const { data: mine } = await admin
+          .from('memberships')
+          .select('circle_id')
+          .eq('profile_id', myProfileId)
+          .eq('status', 'active')
+          .in('circle_id', hidden.map((c) => c.id))
+        myHiddenIds = new Set(((mine ?? []) as { circle_id: string }[]).map((m) => m.circle_id))
+      }
+    }
+
+    for (const c of circleRows) {
+      const isHidden = !isListedCircle(c.unlisted) && asCircleAccess(c.access) !== 'open'
+      // Dropping the chip rather than the post: the post itself was published by its author and is
+      // gated by `posts.visibility`. What must not travel with it is the NAME of a room the viewer
+      // is not entitled to know exists.
+      if (isHidden && !myHiddenIds.has(c.id)) continue
       byScope.set(c.id, { type: 'circle', name: c.name, href: `/circles/${c.slug}`, image_url: c.image_url })
     }
     for (const e of (eventsR.data ?? []) as { id: string; title: string; slug: string; cover_image_path: string | null }[]) {

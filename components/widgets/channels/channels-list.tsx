@@ -5,7 +5,6 @@ import {
 import { CHANNEL_CATEGORY_ICON, FALLBACK_CHANNEL_CATEGORY_ICON } from '@/lib/channels/categories'
 import { readChannelCoverFocus, channelCoverFocusStyle } from '@/lib/channels/hero'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { LINKABLE_CIRCLE_VISIBILITY } from '@/lib/circles/visibility'
 import { createClient } from '@/lib/supabase/server'
 import { TuneInButton, TunedInButton } from '@/app/(main)/channels/channel-toggle'
 import { PageContents } from '@/components/templates/page-contents'
@@ -89,10 +88,11 @@ export async function ChannelsList() {
   if (channelIds.length > 0) {
     const [{ data: members }, { data: circles }] = await Promise.all([
       admin.from('topical_channel_memberships').select('topical_channel_id').in('topical_channel_id', channelIds),
-      // The per-Interest circle COUNT excludes private circles (ADR-1015): a browse count that
-      // moves when somebody creates a private room leaks its existence.
+      // The per-Interest circle COUNT keys on AXIS 1 (ADR-1015): it counts what the browse rail
+      // will actually show. A count that moved when somebody created an UNLISTED room would leak
+      // that room's existence; a listed closed Circle is public face and belongs in the number.
       admin.from('circles').select('topical_channel_id').in('topical_channel_id', channelIds).neq('status', 'archived')
-        .in('visibility', [...LINKABLE_CIRCLE_VISIBILITY]),
+        .eq('unlisted', false),
     ])
     ;(members ?? []).forEach((m: { topical_channel_id: string }) => {
       memberCounts[m.topical_channel_id] = (memberCounts[m.topical_channel_id] ?? 0) + 1
