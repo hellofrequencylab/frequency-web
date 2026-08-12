@@ -3,7 +3,7 @@ import { getSpaceById } from '@/lib/spaces/store'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
 import { claimCardResponse, CLAIM_OG_SIZE } from '@/lib/og/claim-card'
-import { OG_CONTENT_TYPE } from '@/lib/og/deliver'
+import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
 import { SITE_NAME } from '@/lib/site'
 
 export const runtime = 'nodejs'

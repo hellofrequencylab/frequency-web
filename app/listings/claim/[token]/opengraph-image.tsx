@@ -3,7 +3,7 @@ import { getListing as getMarketListing, LISTING_KINDS } from '@/lib/marketplace
 import { getListing as getBaseListing } from '@/lib/listings'
 import { getHousingDetail, propertyTypeLabel } from '@/lib/listings/housing'
 import { claimCardResponse, CLAIM_OG_SIZE } from '@/lib/og/claim-card'
-import { OG_CONTENT_TYPE } from '@/lib/og/deliver'
+import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
 import { SITE_NAME } from '@/lib/site'
 
 export const runtime = 'nodejs'

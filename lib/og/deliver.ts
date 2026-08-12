@@ -28,9 +28,13 @@ import type { ImageResponse, ImageResponse as ImageResponseCtor } from 'next/og'
  *  more and starts showing ringing on the scrim gradient behind the lockup. */
 const QUALITY = 85
 
-/** The MIME every claim/entity card now declares. Exported so a route's `contentType` and the bytes
- *  it actually serves cannot drift apart — a mismatch makes `og:image:type` a lie. */
-export const OG_CONTENT_TYPE = 'image/jpeg'
+// The MIME lives in its own leaf module (./content-type) and is re-exported here so existing
+// callers keep working. ⚠️ A ROUTE'S `contentType` EXPORT MUST IMPORT IT FROM './content-type',
+// NOT FROM HERE — importing it from this file pulls this whole module, and therefore sharp, into
+// the importer's bundle. For the root `app/opengraph-image.tsx` that means into every page in the
+// app. See lib/og/content-type.ts for the full account, and `pnpm check:og-trace` for the guard.
+export { OG_CONTENT_TYPE } from './content-type'
+import { OG_CONTENT_TYPE } from './content-type'
 
 /**
  * Cache posture. A card is a pure function of the entity's identity, so it is safe to reuse, but it
@@ -55,8 +59,19 @@ const CACHE_CONTROL = 'public, max-age=3600, s-maxage=86400, stale-while-revalid
 export async function deliverCard(image: ImageResponse): Promise<Response> {
   const png = Buffer.from(await image.arrayBuffer())
   try {
-    // Imported lazily and by name so the module graph does not pull a native binary into every
-    // route that merely imports this file's constants.
+    // ⚠️ THE LAZY IMPORT IS NOT WHAT KEEPS SHARP OUT OF OTHER ROUTES — it never was, despite what
+    // the comment here used to claim ("so the module graph does not pull a native binary into every
+    // route that merely imports this file's constants"). The intent was right and the mechanism did
+    // nothing: @vercel/nft reads the literal specifier straight back out of the emitted chunk, so
+    // sharp — and the 17.7MB `libvips-cpp.so` behind it — is traced into EVERY function whose
+    // bundle contains this module. Both ways of hiding it were tried and MEASURED to fail:
+    // `turbopackIgnore` leaves the literal in place for nft to find, and assembling the specifier
+    // at runtime is constant-folded back to `"sharp"` by the minifier.
+    //
+    // What actually bounds the blast radius is the MODULE BOUNDARY: bundling is per module, not
+    // per export, so nothing that merely declares a MIME type may import this file. That is why
+    // `OG_CONTENT_TYPE` lives in ./content-type — see the comment block there for what it cost.
+    // `pnpm check:og-trace` is the guard that keeps it true.
     const { default: sharp } = await import('sharp')
     const jpeg = await sharp(png).jpeg({ quality: QUALITY, mozjpeg: true }).toBuffer()
     return new Response(new Uint8Array(jpeg), {
