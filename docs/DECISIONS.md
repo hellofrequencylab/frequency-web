@@ -22531,7 +22531,7 @@ proves each rung cannot do the next rung's actions, that the four sets are stric
 unrecognised value / a non-active membership / an anonymous viewer grant nothing, and that a rung
 never leaks into another scope. Five of them fail against the pre-change resolver.
 
-# ADR-1016: The Circle board measures you against yourself, so there is no last place to be in
+## ADR-1016: The Circle board measures you against yourself, so there is no last place to be in
 
 > ⚠️ **Number is provisional.** ADR-1013 is the head of `docs/DECISIONS.md` on the branch point
 > (`6b506eb33`). C1 and C2 are landing decisions in the same window, so this may need to become

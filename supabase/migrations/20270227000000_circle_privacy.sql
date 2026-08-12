@@ -218,7 +218,20 @@ as $$
     or private.get_my_web_role() in ('admin', 'janitor');
 $$;
 
-revoke all on function private.can_view_circle(uuid, text, uuid, uuid) from public;
+-- ⚠️ BOTH HALVES, IN ONE STATEMENT (ADR-959). Supabase ships `ALTER DEFAULT PRIVILEGES IN SCHEMA
+-- public`, so anon and authenticated hold EXPLICIT per-role grants the moment an object exists,
+-- and `revoke ... from public` does not touch an explicit per-role grant. Revoking from `public`
+-- alone succeeds and locks nothing; revoking from the roles alone leaves the PUBLIC grant, which
+-- still satisfies has_function_privilege(). Naming all three is the only shape that is correct on
+-- a fresh replay. Pinned by supabase/migrations/fail-open-guards.test.ts.
+--
+-- anon and authenticated then get execute back DELIBERATELY, and the grant is not a hole: an RLS
+-- policy is evaluated as the INVOKING role, so a policy that calls this function needs the caller
+-- to hold execute or every anon read of `circles` errors instead of filtering. `private` is not an
+-- exposed PostgREST schema, so this is not a browser-reachable RPC. Identical posture, for the
+-- identical reason, to private.can_view_space_content (ADR-328) — verified against its live ACL.
+revoke all on function private.can_view_circle(uuid, text, uuid, uuid)
+  from public, anon, authenticated;
 grant execute on function private.can_view_circle(uuid, text, uuid, uuid)
   to anon, authenticated, service_role;
 
@@ -413,8 +426,11 @@ as $$
   );
 $$;
 
-revoke all on function private.post_scope_visible(uuid) from public;
-grant execute on function private.post_scope_visible(uuid) to anon, authenticated, service_role;
+-- Locked to service_role (ADR-959: all three principals named in one statement). Unlike
+-- can_view_circle this is NEVER called from a policy — its only callers are the two SECURITY
+-- DEFINER feed RPCs, which execute as their owner. So no browser role needs it and none keeps it.
+revoke all on function private.post_scope_visible(uuid) from public, anon, authenticated;
+grant execute on function private.post_scope_visible(uuid) to service_role;
 
 comment on function private.post_scope_visible(uuid) is
   'Is a post whose scope is this id safe to surface? (ADR-1015) TRUE for every scope that is not a private Circle, and for a private Circle the caller may read. Exists because the feed names a Circle through the post ORIGIN CHIP without ever selecting from `circles`, so the RESTRICTIVE policy cannot reach it.';
@@ -549,8 +565,11 @@ as $$
   );
 $$;
 
-revoke all on function private.space_can_sell(uuid) from public;
-grant execute on function private.space_can_sell(uuid) to anon, authenticated, service_role;
+-- ADR-959 shape again. `authenticated` keeps execute because the trigger below is SECURITY
+-- INVOKER, so an operator editing a tier through their own session runs this predicate as
+-- themselves; `anon` never writes a tier and never gets it back.
+revoke all on function private.space_can_sell(uuid) from public, anon, authenticated;
+grant execute on function private.space_can_sell(uuid) to authenticated, service_role;
 
 comment on function private.space_can_sell(uuid) is
   'May this Space charge? (ADR-1015) True for a non-root Space whose plan ranks at or above `business`, including the legacy labels lib/pricing/plans.ts asSpacePlan() narrows forward. DEFAULT-DENY on an unknown or missing plan. The root Space can never sell, which is what makes a personal Circle free by construction.';

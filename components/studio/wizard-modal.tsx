@@ -139,7 +139,10 @@ export function WizardModal({
   /** The live report from the Spark inside: its draft scope, how to erase it, whether a write is
    *  owed. A ref, because it is written during the child's render-commit and read only in handlers. */
   const draft = useRef<WizardDraftReport | null>(null)
-  const [pending, setPending] = useState(false)
+  /** The two facts from that report that RENDER: whether there is a draft to offer erasing, and
+   *  whether a write is still owed. Mirrored into state because a ref may not be read during
+   *  render; `discard` itself stays on the ref, since it is only ever called from a handler. */
+  const [signal, setSignal] = useState({ hasDraft: false, pending: false })
   /** True once the history sentinel is on the stack. */
   const trapped = useRef(false)
   /** Set immediately before a real departure, so our own `history.go` is not mistaken for a Back. */
@@ -149,8 +152,11 @@ export function WizardModal({
 
   const report = useCallback((next: WizardDraftReport) => {
     draft.current = next
-    // Only this one field drives a render (the beforeunload arm); the rest are read on demand.
-    setPending((was) => (was === next.pending ? was : next.pending))
+    const hasDraft = Boolean(next.scope)
+    // Reported on every render of the Spark, so the equality check is what keeps this from looping.
+    setSignal((was) =>
+      was.hasDraft === hasDraft && was.pending === next.pending ? was : { hasDraft, pending: next.pending },
+    )
   }, [])
 
   /** Push the sentinel that turns the next Back press into a `popstate` we can answer. Same URL, so
@@ -257,14 +263,14 @@ export function WizardModal({
   // generic text; no modern browser allows custom copy and the handler cannot be async, so this is
   // the net under the dialog rather than the dialog itself.
   useEffect(() => {
-    if (!pending) return
+    if (!signal.pending) return
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault()
       e.returnValue = ''
     }
     window.addEventListener('beforeunload', onBeforeUnload)
     return () => window.removeEventListener('beforeunload', onBeforeUnload)
-  }, [pending])
+  }, [signal.pending])
 
   // Move focus onto the safe choice whenever a dialog opens, so a keyboard member is not left on a
   // control that is now behind a decision.
@@ -274,8 +280,6 @@ export function WizardModal({
 
   // Portal only on the client; the server and the first hydration pass render nothing, matching.
   if (!isClient) return null
-
-  const canDiscard = Boolean(draft.current?.scope)
 
   return createPortal(
     <WizardGuardContext.Provider value={report}>
@@ -313,7 +317,7 @@ export function WizardModal({
                 </button>
                 {/* Destructive, so it is never the default and never the first target. Reaching the
                     erase itself takes a second, separate tap. */}
-                {canDiscard && (
+                {signal.hasDraft && (
                   <button
                     type="button"
                     onClick={() => setAsk('discard')}

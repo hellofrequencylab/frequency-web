@@ -15,6 +15,7 @@ import {
   channelCategoryLabel,
 } from '@/lib/channels/categories'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { DISCOVERABLE_CIRCLE_VISIBILITY } from '@/lib/circles/visibility'
 import { createClient } from '@/lib/supabase/server'
 import { relativeTime } from '@/lib/utils'
 import { TuneInButton, TunedInButton } from '../channel-toggle'
@@ -274,6 +275,9 @@ export default async function ChannelPage({
           )
           .eq('topical_channel_id', channel.id)
           .neq('status', 'archived')
+          // 🔴 Admin client = no RLS (ADR-1015). An Interest page is a BROWSE surface, so it may
+          // only name circles anyone could already browse: unlisted and private both drop out.
+          .in('visibility', [...DISCOVERABLE_CIRCLE_VISIBILITY])
           .order('member_count', { ascending: false })
           .limit(12),
     isProgramChannel ? listChapters(channel.id) : Promise.resolve<ChapterSummary[]>([]),

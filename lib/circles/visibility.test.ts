@@ -97,6 +97,9 @@ describe('the read-path ratchet — every service-role circle read that feeds a 
     ['components/sidebar/rail-panels.tsx', 'the "circles to explore" and "newest circles" rails'],
     ['components/widgets/top-circles.tsx', 'the "active circles" page module'],
     ['lib/ai/vera/read-tools.ts', 'Vera naming a circle and its host out loud'],
+    ['app/(main)/channels/[id]/page.tsx', 'the Interest page listing the circles inside it'],
+    ['components/widgets/channels/channels-list.tsx', 'the per-Interest circle count'],
+    ['components/widgets/community/structure.tsx', 'the community structure totals'],
   ]
 
   for (const [file, why] of DISCOVERY_READS) {
