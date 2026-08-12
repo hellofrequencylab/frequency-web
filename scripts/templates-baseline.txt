@@ -11,6 +11,19 @@
 # and app/(main)/spaces/[slug]/settings/services/new are SERVER pages that gate and then delegate
 # to a client Spark which composes SparkShell. The gate matches literal tags in the page file by
 # design — it over-reports rather than certifying a hand-rolled layout — so they are listed here.
+#
+# ⚠️ Six entries are PRESENTATIONS of a page, not pages (ADR-1017): the app/(main)/@wizard/(.)…
+# intercepting routes. Each one imports and renders the SAME page module its real route serves,
+# wrapped in the Spark modal, so the kit shell is composed by the page underneath and by the
+# wizard's own SparkShell. There is no second layout here to convert: giving one a template would
+# put a page header inside a dialog. They are BASELINED rather than excluded from the walk on
+# purpose — a future slot page that really does hand-roll a layout must still fail this gate.
+app/(main)/@wizard/(.)circles/new/page.tsx
+app/(main)/@wizard/(.)classifieds/new/page.tsx
+app/(main)/@wizard/(.)events/new/page.tsx
+app/(main)/@wizard/(.)journeys/new/page.tsx
+app/(main)/@wizard/(.)market/sell/page.tsx
+app/(main)/@wizard/(.)practices/new/page.tsx
 app/(main)/admin/appearance/[id]/page.tsx
 app/(main)/admin/appearance/new/page.tsx
 app/(main)/admin/content/practices/health/page.tsx

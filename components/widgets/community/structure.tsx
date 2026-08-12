@@ -39,7 +39,10 @@ async function load(): Promise<StructureData> {
 
     const [circles, channels, events, hubs, nexuses, dispatches, members, inCircles, team, newMembers] =
       await Promise.all([
-        admin.from('circles').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+        // Counts what the community can browse: AXIS 1 only (ADR-1015). A listed Circle counts
+        // whatever its access mode; an unlisted one would leak its existence through the total.
+        admin.from('circles').select('id', { count: 'exact', head: true }).eq('status', 'active')
+          .eq('unlisted', false),
         admin.from('channels').select('id', { count: 'exact', head: true }),
         admin
           .from('events')

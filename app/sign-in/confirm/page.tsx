@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { FocusTemplate } from '@/components/templates'
 import { ReturnHome } from './return-home'
 
@@ -35,9 +36,9 @@ export default function ConfirmPage() {
           </div>
           <p className="text-meta text-subtle">
             Didn&apos;t get it? Check your spam folder or{' '}
-            <a href="/sign-in" className="text-primary-strong hover:text-primary-strong underline">
+            <Link href="/sign-in" className="text-primary-strong hover:text-primary-strong underline">
               try again
-            </a>
+            </Link>
             .
           </p>
 

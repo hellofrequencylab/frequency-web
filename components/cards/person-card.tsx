@@ -21,6 +21,7 @@ export function PersonCard({
   context,
   meta,
   action,
+  footer,
   isDemo = false,
 }: {
   handle: string
@@ -34,6 +35,11 @@ export function PersonCard({
   meta?: React.ReactNode
   /** Floating top-right action (its own client component): Friend / Message / Accept… */
   action?: React.ReactNode
+  /** Full-width control pinned BELOW a divider at the bottom of the card (its own client
+   *  component): the circle role picker on a roster. Passed straight through to EntityCard,
+   *  which renders it OUTSIDE the profile link — the only place a `<select>` or a form can
+   *  live on a card whose whole body is an anchor. */
+  footer?: React.ReactNode
   /** Beta demo profile — badge it and grey it back behind real members. */
   isDemo?: boolean
 }) {
@@ -70,6 +76,7 @@ export function PersonCard({
       context={context ?? `@${handle}`}
       meta={meta}
       action={action}
+      footer={footer}
     />
   )
 }

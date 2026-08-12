@@ -127,8 +127,12 @@ async function statsSection(): Promise<string[]> {
     ),
     // Live Circles: forming or active (not archived/inactive/draft), excluding demo.
     headCount(() =>
+      // Keys on AXIS 1 (ADR-1015): a public stat block must not move when somebody creates an
+      // UNLISTED room. A listed Circle counts whatever its access mode, matching
+      // public_active_circle_count.
       admin.from('circles').select('*', { head: true, count: 'exact' })
-        .in('status', ['forming', 'active']).eq('is_demo', false),
+        .in('status', ['forming', 'active']).eq('is_demo', false)
+        .eq('unlisted', false),
     ),
     // Practices in the public library, excluding demo seeds.
     headCount(() =>

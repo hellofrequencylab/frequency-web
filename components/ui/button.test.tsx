@@ -83,6 +83,13 @@ describe('Button loading', () => {
   it('guards an asChild link too, which has no `disabled` attribute', () => {
     const c = mount(
       <Button asChild loading>
+        {/* A BARE `<a>` IS THE POINT OF THIS TEST, so it is not a `<Link>`. The assertion is that
+            `asChild` guards a child that has no `disabled` attribute, which is the anchor branch of
+            `buttonClasses`; swapping in `next/link` would test Link's prop forwarding instead, and
+            would need a router context this jsdom `createRoot` mount does not have. `/somewhere` is
+            a placeholder that only looks like a route to the lint rule because
+            `app/(main)/@wizard/[...catchAll]` makes every one-segment path resolve as a page. */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a href="/somewhere">Go</a>
       </Button>,
     )

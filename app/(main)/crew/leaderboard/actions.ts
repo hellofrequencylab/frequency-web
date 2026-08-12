@@ -14,9 +14,23 @@ import { getMyProfileId } from '@/lib/auth'
 // We read-modify-write the whole meta blob so we never clobber sibling keys. The pure
 // read of the flag lives in ./opt-out (so non-action callers don't import a server action).
 
+// The preference is per MEMBER, not per board, so one action serves every board that shows rows.
+// `boardPath` only says which OTHER page to repaint after the write. It arrives from a client
+// component, so it is matched against a closed allowlist of board routes rather than trusted: an
+// arbitrary string here would let a caller invalidate any page in the app.
+const BOARD_PATHS = [/^\/circles\/[a-z0-9-]{1,80}\/leaderboard$/] as const
+
+function safeBoardPath(path: string | undefined): string | null {
+  if (!path || path === '/crew/leaderboard') return null
+  return BOARD_PATHS.some((re) => re.test(path)) ? path : null
+}
+
 /** Set the viewer's "hide me from the board" preference. Always keys off the
  *  session profile, never the client, so a member can only change their OWN. */
-export async function setLeaderboardVisibility(hidden: boolean): Promise<{ ok: boolean; hidden: boolean }> {
+export async function setLeaderboardVisibility(
+  hidden: boolean,
+  boardPath?: string,
+): Promise<{ ok: boolean; hidden: boolean }> {
   const profileId = await getMyProfileId()
   if (!profileId) return { ok: false, hidden }
 
@@ -33,5 +47,7 @@ export async function setLeaderboardVisibility(hidden: boolean): Promise<{ ok: b
   await admin.from('profiles').update({ meta: nextMeta }).eq('id', profileId)
 
   revalidatePath('/crew/leaderboard')
+  const also = safeBoardPath(boardPath)
+  if (also) revalidatePath(also)
   return { ok: true, hidden }
 }

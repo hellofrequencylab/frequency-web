@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
@@ -286,13 +287,13 @@ function LegacyTheLab() {
           <Reveal>
             <p className="mx-auto mt-9 max-w-2xl text-center text-body leading-relaxed text-muted">
               The room follows the people, never the other way around. See{' '}
-              <a href="/loneliness" className="font-semibold text-primary-strong hover:underline">
+              <Link href="/loneliness" className="font-semibold text-primary-strong hover:underline">
                 what a third space is
-              </a>
+              </Link>
               , or meet the live community on{' '}
-              <a href="/discover" className="font-semibold text-primary-strong hover:underline">
+              <Link href="/discover" className="font-semibold text-primary-strong hover:underline">
                 Discover
-              </a>
+              </Link>
               .
             </p>
           </Reveal>

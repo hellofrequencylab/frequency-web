@@ -3,7 +3,7 @@ title: The leaderboard
 description: One shared goal first. Where people stand sits below it, scoped to your Circle and yours to opt out of.
 category: the-quest
 order: 8
-updated: 2026-06-18
+updated: 2026-08-12
 audience: member
 featureKeys: [leaderboard, gamification]
 status: published
@@ -34,6 +34,20 @@ Each row shows the member's standing on the active track, their streak, and thei
 ## You can step off the board
 
 Ranking is opt-in by feel. One tap on **Hide me from the board** removes your row from the list. You still count toward the shared goal up top, you just don't appear as a row. Tap again to show yourself any time.
+
+## The board inside a Circle is a different thing
+
+Your Circle has its own **Leaderboard** tab, and it does not rank anyone. It compares each member's week
+against **their own** usual week, so a beginner and a veteran can both be having a good one at the
+same time. There is no first place and no last place on it.
+
+Your usual week is the median of your last four weeks that had any activity, which means a quiet
+month never counts against you. Each row carries a plain label instead of a number: *Above usual*,
+*Usual week*, *Lighter week*, *Back this week*, or *No usual week yet* if you have not been around
+long enough for us to have one to compare with.
+
+The Vault board described above still works the way it always has. The two are separate on purpose:
+one is the season scoreboard, the other is a read on how your Circle is doing this week.
 
 ## A fresh race every season
 

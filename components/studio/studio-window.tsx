@@ -22,6 +22,8 @@ export function StudioWindow({
   footer,
   closeLabel = 'Close',
   hideChrome = false,
+  dismissOnBackdrop = true,
+  ariaLabel,
 }: {
   open: boolean
   onClose: () => void
@@ -34,6 +36,15 @@ export function StudioWindow({
   /** Hide the top chrome bar (eyebrow + close X) entirely. Used when the entity owns its own header
    *  (e.g. the Event window's logo bar carries the close button), so there is no separate top line. */
   hideChrome?: boolean
+  /**
+   * Whether a click on the backdrop dismisses the window. Defaults to true (every window that
+   * existed before this prop). Pass `false` where the window holds work a stray tap must not throw
+   * away — the Spark modal (ADR-1017) does, because a mis-tap on the dim area beside a half-answered
+   * wizard is the cheapest possible gesture and the most expensive possible outcome.
+   */
+  dismissOnBackdrop?: boolean
+  /** Accessible name for the dialog. Give one whenever the eyebrow is not the whole story. */
+  ariaLabel?: string
 }) {
   // Trap + restore focus while open (the "focus-trap-lite" the header promised but never
   // implemented). Esc + scroll-lock stay in the effect below; the hook adds only focus.
@@ -61,10 +72,11 @@ export function StudioWindow({
     <div
       className="fixed inset-0 z-[80] flex items-stretch justify-center bg-ink/50 backdrop-blur-sm sm:items-center sm:p-4 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150"
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose()
+        if (dismissOnBackdrop && e.target === e.currentTarget) onClose()
       }}
       role="dialog"
       aria-modal="true"
+      aria-label={ariaLabel}
     >
       {/* Desktop: size to the content (a quick "name it" create step stays a compact card),
           capped at 86vh so a full builder scrolls instead of overflowing. */}

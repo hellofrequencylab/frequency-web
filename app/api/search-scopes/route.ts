@@ -87,11 +87,16 @@ export async function GET(request: Request) {
       .neq('visibility', 'private')
       .order('name')
       .limit(6),
+    // 🔴 The admin client bypasses RLS, so `circles_access_restrictive` does not apply here and the
+    // filter has to be written by hand (ADR-1015). A picker is a DISCOVERY surface, so it keys on
+    // AXIS 1 (`unlisted`) and not on access: a LISTED closed Circle is meant to be findable by name
+    // — that is the lead funnel. What must never appear is an unlisted one.
     admin
       .from('circles')
       .select('id, name, slug, image_url, status')
       .or(`name.ilike.%${safeQ}%,slug.ilike.%${safeQ}%`)
       .neq('status', 'archived')
+      .eq('unlisted', false)
       .order('name')
       .limit(6),
   ])

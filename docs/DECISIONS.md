@@ -22417,3 +22417,711 @@ a Channel the thing you could only read. Three things have made that line the wr
 product's reach was physical. **Divide surfaces by the relationship a person has to them, not by the
 geography they sit in**: belonging and subscribing stay distinct however far apart the people are,
 and a boundary drawn on that survives the product going online, going global, or going anywhere.
+
+## ADR-1014: Circle admin roles ride `memberships.volunteer_role`, and the owner sets them (2026-08-12)
+
+**Ruling (owner):** *"Circles have admin management roles that the owner can set up. Give them each
+best practice minimum viable product for roles."*
+
+**Decision.** A circle has a four-rung ladder. Three of the rungs are stored on
+`memberships.volunteer_role`; the fourth is the circle's owner and is `circles.host_id`, unchanged.
+No new enum, no new table, no migration, no second permission system.
+
+| Rung | Where it lives | Capabilities (all of them already existed and were already enforced) |
+| :--- | :--- | :--- |
+| **Host** (the owner) | `circles.host_id` | everything below, **plus `circle.manageRoles`** |
+| **Admin** | `volunteer_role = 'guide'` | `editSettings` · `moderate` · `assignTask` · `broadcast` · `post` · `view` |
+| **Moderator** | `volunteer_role = 'host'` | `moderate` · `post` · `view` |
+| **Member** | `volunteer_role = 'member'` / `NULL` | `post` · `view` |
+
+One new capability, `circle.manageRoles`, is added and granted **only to whoever LEADS the circle**
+(the `host_id` FK, a `stewardships` edge, platform staff, or the parent hub's guide/mentor). An
+Admin holds every other management capability and provably not that one. That is what makes the
+ladder a ladder: a rung that can re-rank its peers is not a rung, and the owner's ruling says the
+roles are the owner's to set up.
+
+### Why `volunteer_role` and not `stewardships`
+
+`stewardships` was the obvious candidate: it supports multiple holders, it is scoped by
+`(scope_type, scope_id)`, and it is already consumed by `lib/core/load-capabilities.ts`. It was
+rejected on three counts, in order of weight:
+
+1. **It grants leadership as a BINARY.** `leadsScope(edges, 'circle', id)` answers yes/no, and the
+   resolver turns a yes into the full leadership set. Expressing "moderates but does not edit
+   settings" would mean either re-reading `StewardRole` inside the circle branch — a second,
+   circle-only interpretation of a global table — or a parallel resolver. Both are the drift this
+   ADR exists to avoid.
+2. **`volunteer_role` already carries a RANKED value and already reaches the resolver.** The column
+   is typed `community_role`, the enum is ordered, `lib/core/load-capabilities.ts` already selects
+   it and already passes it as `membership.volunteerRole` on the circle `Scope`. The whole gap was
+   that `resolveCapabilities` declared the field and never read it. This is one branch, not a
+   pipeline.
+3. **`stewardships` has no write path in app code** (only a DELETE), so adopting it for this would
+   mean a migration plus an insert path, for a table whose every row today came from the ADR-218
+   backfill.
+
+A membership is also the right lifetime: leave the circle and the role leaves with you, in the same
+row, with no second thing to clean up.
+
+**Correction shipped with this:** `lib/stewardships.ts` claimed *"FOUNDATION ONLY: nothing consumes
+these reads yet … reads flip in P1.6"*. P1.6 shipped; `getStewardships` feeds `currentViewer`'s
+`leadsScope` and `viewerEdgeLevel`. The comment is fixed in place. A stale "this is inert" note is
+worse than no note, because it tells a reader that changing the file is free.
+
+### Why these two enum values
+
+The `community_role` enum is ordered `member < crew < host < guide < mentor`. Admin borrows
+`'guide'` and Moderator borrows `'host'` so the stored ladder and the capability ladder rank the
+same way round.
+
+**Measured on production 2026-08-12, before shipping:** all 6 rows holding `volunteer_role='host'`
+belong to their own circle's `host_id` (they resolve as Host by the FK either way), 4 rows hold
+`NULL`, and **no row anywhere holds `'guide'`**. So this mapping grants nobody anything they did not
+already hold. Every Admin and every Moderator from here on is an explicit assignment.
+
+**Fail closed.** `circleRoleFromStoredValue` is an allowlist, not a `>=` comparison. `'crew'` (the
+retired rung the demo generator still writes), `'mentor'` (which OUTRANKS `'guide'` globally and
+would escalate under any comparison-based read), `'admin'`, `'janitor'`, a future enum value, and
+junk all read as a plain Member. A role we cannot name is a role we do not honour.
+
+### The last-owner guard
+
+Ownership is `circles.host_id` and nothing else, so a role change cannot express a demotion of the
+owner. `setCircleMemberRole` never writes that column and refuses the owner's membership row
+outright, with the reason printed. No sequence of calls reaches zero owners, and no one but the
+owner can move ownership (transfer is a separate act and is deliberately not reachable from this
+control). `leaveCircle` is unaffected: it deletes the caller's own membership and leaves `host_id`
+standing.
+
+### Naming (docs/NAMING.md)
+
+The rungs are **Host / Admin / Moderator / Member**, and a circle roster renders them through
+`CircleRoleChip`, never through the global `RoleBadge`. The two ladders share storage and not
+meaning: a circle Admin is stored as `'guide'`, and `RoleBadge` would faithfully print "Guide", the
+global word for someone who oversees local hosts. One value, two vocabularies; the roster speaks the
+circle's. Three surfaces were converted (the Members tab, the rail roster, the Lead co-leaders
+block), so no surface prints the global word for a circle-scoped rung.
+
+Two collisions were considered and accepted. "Moderator" is also Vera's virtual chip
+(`profiles.is_system`, ADR-231) and "Admin" is also the legacy `community_role` chip on
+`/admin/roles`; neither renders on a circle roster, and both name the same job at a different scope.
+
+### The UI
+
+Role assignment lives **on the person's row**, never as a permissions matrix: the Host is looking at
+one person and deciding what that person does here. Three named presets in a `Select` on the
+member's `PersonCard`, in the `footer` slot (outside the card's profile link, because a `<select>`
+nested in an `<a>` is a broken control). The matrix survives as a collapsed **"What each role can
+do"** disclosure under the roster, read-only, rendered from the same `CIRCLE_ROLE_SUMMARY` the picker
+labels come from.
+
+No new menu row. The roles belong to the existing `circle.people` `ADMIN_MODULES` entry, whose
+description already reads *"Your members: the roster, roles, how full the circle is, and invites."*
+Adding a row would be exactly the drift MENU-CONTRACT forbids.
+
+### Enforcement
+
+`setCircleMemberRole` re-resolves `circle.manageRoles` from the live circle on every call, checks
+tenancy (the target must be an ACTIVE member of THIS circle), fails closed on any role name outside
+the three assignable rungs, and writes an `admin_audit_log` entry. The picker hiding a control is an
+affordance; this is the law.
+
+The tests are **capability assertions, not render assertions**: `lib/core/capabilities.test.ts`
+proves each rung cannot do the next rung's actions, that the four sets are strictly nested, that an
+unrecognised value / a non-active membership / an anonymous viewer grant nothing, and that a rung
+never leaks into another scope. Five of them fail against the pre-change resolver.
+
+## ADR-1016: The Circle board measures you against yourself, so there is no last place to be in
+
+> ⚠️ **Number is provisional.** ADR-1013 is the head of `docs/DECISIONS.md` on the branch point
+> (`6b506eb33`). C1 and C2 are landing decisions in the same window, so this may need to become
+> 1017/1018 when the three branches merge. Nothing below depends on the number.
+
+**Status:** Accepted (Circles C4) · `lib/quest/effort.ts`, `lib/circles/effort-board.ts`,
+`app/(main)/circles/[slug]/(circle)/leaderboard/page.tsx`, `components/quest/leaderboard-list.tsx`,
+`components/quest/board-controls.tsx`, `lib/circles/tabs.ts`. Extends ADR-1013 (the tabbed Circle
+shell) with its third tab. Reuses, and does not fork, the cooperative machinery `/crew/leaderboard`
+already carries.
+
+## Context
+
+The Circle detail shell (ADR-1013) has Home and Members and nowhere for a board. The obvious thing
+to build was the thing `/crew/leaderboard` already builds: members ordered by season Zaps, with a
+one-tap opt-out. The owner rejected that shape, and rejected "team total only" as well. The ruling
+is **effort relative to yourself**: measured against your own recent baseline, so a beginner and a
+veteran can both be doing well in the same week. **No straight 1-to-N ranking.**
+
+The ruling is the design, not a constraint on it. This is a wellbeing product for tired, skeptical
+adults, and the research the repo already cites in `components/quest/collective-goal.tsx` (Festinger
+1954; JMIR 2021) says an absolute board rewards the top few and demotivates everyone else. The
+bottom of a visible ladder churns exactly the people who most need to stay.
+
+Two facts about production shaped every threshold below. The largest Circle holds **two members and
+five posts**, and a self-relative score **needs a baseline that a first-week member does not have**.
+Both are the common case, not the edge.
+
+## Decision
+
+### 1. The score, and where it comes from
+
+```
+effort index = this week's Zaps ÷ your usual week × 100, capped at 200
+your usual week = the MEDIAN of your last four weeks THAT HAD ANY ACTIVITY
+```
+
+Derived from `zap_transactions` (`20260607040000_zap_ledger_and_recategorize.sql`): an append-only
+ledger of `profile_id · amount · created_at`, indexed on profile and on `created_at`. It is the only
+per-member, timestamped record of Quest effort in the schema, so it is the only thing a windowed
+self-comparison can honestly be built on. **No migration, no new column, no nightly job.**
+
+| Choice | Why |
+|---|---|
+| 7-day recent window | A Circle lives in weeks. Shorter is noise; longer stops describing "now". |
+| 4 baseline weeks | Long enough that one odd week cannot define your normal, short enough that it is still you. |
+| **Median**, not mean | Finishing a Journey pays +75 Zaps in one week (ADR-305). On a mean that week inflates the denominator and the next four all read as a decline, punishing a member for finishing something. |
+| **Active weeks only** | A week you were ill is not evidence about your usual week. Counting the zero would halve the denominator and hand you a fake 200% the week you came back, which is a lie the skeptic test catches. |
+| 200% cap | Nothing to win by grinding, no arms race to lose, and no 5,000% trophy for a member whose usual week is 8 Zaps. |
+| Bands, not numbers, on the row's chip | `Above usual` · `Usual week` · `Lighter week` · `Back this week` · `No usual week yet`. |
+
+Ledger corrections (negative `amount`) are ignored: a clawback must not read as a lighter week.
+
+### 2. The cold start, stated and built
+
+A member needs **two of their last four weeks to have had activity** before we compare them with
+themselves. Under that there are two named states, and neither shows a ratio:
+
+- **`new`** (account younger than the 35-day window): "No usual week yet". There has not been time
+  for one. The row shows the **days they showed up this week**, a fact that needs no history.
+- **`returning`** (older account, quiet month): "Back this week". Same treatment. **A gap never
+  costs a member a band**, because they are routed here *before* any ratio is computed, so illness,
+  travel or a hard month cannot surface as a bad number.
+
+### 3. What refuses to render
+
+- **Under 6 people who showed up in the same week, there is no list.** A column of three is a
+  ranking however it is dressed. The surface is the shared bar plus a straight answer about why.
+  This is the path a 2-member Circle takes, so it is a complete answer, not a degraded one.
+- **A member who took the week off is absent, not last.** Absence is the kind answer and the honest
+  one: the board is "who showed up this week".
+- **No position numbers, and the order is alphabetical.** Sorting by the index would rebuild the
+  rejected ladder one row at a time. Alphabetical is the visible proof that the numbers are not
+  comparable across rows: they have different denominators.
+- **No Hub/Global switcher.** A Circle board *is* the local scope; zooming out is the comparison the
+  literature says demotivates.
+- **The season-rank chip gives way to the member's own band**, because a cross-member status ladder
+  is what this board exists not to be.
+
+### 4. Compose, do not fork
+
+- `BoardControls` gains `basePath` + `tracks` + `showScope`, replacing a hardcoded
+  `/crew/leaderboard` href. Defaults are the crew board's exact previous behaviour.
+- `LeaderboardList` gains an `effort` field per entry and `showPosition` (default `true`). The crew
+  board is unchanged by the defaults.
+- `setLeaderboardVisibility` takes an optional board path to repaint, matched against a **closed
+  allowlist** rather than trusted: it arrives from a client component.
+- The opt-out preference stays **per member, not per board**. Someone who does not want to be listed
+  did not mean "except over there". Hiding removes the row and **still counts them toward the shared
+  total**, because the total is summed from the Circle's own activity rows and there is no seam in
+  that path where a preference could be applied (`lib/circles/effort-board.test.ts` pins it).
+
+### 5. The tab
+
+`circleTabs` gains Leaderboard on the **same** threshold as the strip itself (ADR-089's guardrail:
+no strip at ≤1 member unless you manage it), not a higher one of its own. The tab leads with the
+shared total, which is real content at any size, and the page's own 6-contributor gate decides
+whether a list of individuals appears. One rule at the strip, one rule inside the page.
+
+## Alternatives rejected
+
+- **Straight ranking with opt-in visibility** (owner, explicitly). Opt-in visibility protects the
+  people who opt out and does nothing for the people who do not realise they should.
+- **Team total only** (owner, explicitly). It is the right headline and an insufficient whole page:
+  it gives an individual nothing to read about their own week.
+- **Grouping rows by band.** Renders as five tiers stacked top to bottom, which is a ladder with
+  the numbers filed off. One alphabetical list, band as per-row information.
+- **Circle-only Zaps as the numerator.** A circle-scoped numerator over a whole-life denominator is
+  a different number every time a member practises elsewhere. The Circle scopes *who appears*; the
+  shared bar above is the circle-scoped number.
+- **Raising the tab's own threshold above the strip's.** Would make the feature invisible in
+  production (largest Circle = 2), and hide the question rather than answer it.
+
+## Consequences
+
+- Two new pure modules, both fully unit-tested without a database: `lib/quest/effort.ts` (scoring +
+  board composition) and the pure half of `lib/circles/effort-board.ts`.
+- `getCircleZapContributions` is `cache()`d and gives a per-member breakdown of the same two
+  circle-scoped sources `lib/circles/earned.ts` already totals, so the shared bar keeps that file's
+  honesty rule (never sum members' personal season totals) without duplicating it.
+- Rows render for members and the Circle's managers only. A visitor sees the circle-level bar and
+  nothing about individuals. This is app-level and does not depend on the C1 RLS work.
+- Tests cover the board at 1, 3, 6 and 60 contributors, a member with no baseline, a returning
+  member, and an opted-out member still counting toward the total.
+
+> **Replacement text for ADR-1015 in `docs/DECISIONS.md`.** Same number. Replaces the single-axis
+> version wholesale — that draft's model was wrong, and the file below says why in its own words so
+> the record carries the correction rather than hiding it.
+
+---
+
+## ADR-1015 — Circle privacy is TWO axes, and the policy has to be RESTRICTIVE
+
+**Date:** 2026-08-12 · **Status:** Accepted · **Phase:** Circles C1
+**Migration:** `supabase/migrations/20270227000000_circle_privacy.sql` (written, **not applied** by
+the authoring agent — apply via `execute_sql` + an explicit ledger insert for version
+`20270227000000`, per `supabase/migrations/README.md`)
+**Proof:** `supabase/tests/circle_privacy.test.sql` (43 pgTAP assertions) ·
+`lib/circles/visibility.test.ts` (35) · `app/(main)/circles/join-privacy.test.ts` (17)
+**Amends:** the ADR for `20261157000000_circles_unlisted.sql` · builds on ADR-328
+(`can_view_space_content`), ADR-331 (root-space default), ADR-843 (root sentinel), ADR-859
+(`space_membership_tiers.circle_id`), ADR-959 (the revoke shape), ADR-964 (grant verdicts)
+
+### Context
+
+Circles had **no private state**. `20261157000000_circles_unlisted.sql` says so in its own words —
+*"circles have no 'private' concept (draft/archived already cover 'hidden')"* — and it deliberately
+left `public_circle_by_id` untouched so a direct link keeps resolving. That is obscurity, and it was
+the right call for what `unlisted` is for. There has never been a way to say *"anyone may see that
+this exists, nobody may see what is in it."*
+
+Three facts, all verified against the live database rather than inferred:
+
+1. **`circles` carries 8 policies: 4 PERMISSIVE, 4 RESTRICTIVE**, every one `TO PUBLIC`
+   (`polroles = {0}`, so anon is inside them). `circles: authenticated read non-archived` has **no
+   identity term** in its main arm: `status not in ('archived','draft')` is TRUE for every live
+   circle. Postgres combines policies as `(permissive₁ OR …) AND restrictive₁ AND …`, so a privacy
+   rule added as PERMISSIVE would be OR-ed against a predicate that is already true and change
+   **nothing**.
+2. **Ownership is a root-space sentinel, not NULL** (`lib/circles/transfer.ts:9-10`; live: 7 circles,
+   0 with `space_id IS NULL`, 6 on root). And `private.can_view_space_content` returns TRUE whenever
+   the space is not `visibility='private'`, while the root space is `'network'` — so
+   `circles_space_visible` is a **permanent no-op for every personal circle**.
+3. **RLS is not the whole story.** `joinCircle`, the whole circle detail route (`loadCircleShell`),
+   `/api/search-scopes`, the Interest page, the sidebar rails, Vera's `suggestCircle`, the feed's
+   origin chip and the network page's `circles_near` call all run through the service-role client,
+   which holds `BYPASSRLS`.
+
+### Decision
+
+**1. Two independent axes, not one enum.** This ADR was first written with a single ordered
+`visibility ∈ (public, unlisted, private)`. **That model is wrong and is recorded here so nobody
+re-proposes it.** It can express *public*, *unlisted-and-open* and *private-and-hidden*, and it
+cannot express the cell the owner named:
+
+> "Space circles can be listed or unlisted, as well as set to private. A listed private circle
+> basically works as a lead funnel into that space."
+
+A **listed closed** Circle appears in the index with its name, Host, description and member count so
+a stranger can find it and be moved to join or buy, while the roster and the posts stay shut. On a
+single ordered axis "private" implies "hidden" and that cell does not exist. So:
+
+- **Axis 1, discoverability:** `circles.unlisted` — the **existing** boolean, unchanged. No new
+  column, so every reader that already honours it keeps working and there is nothing to keep in sync.
+- **Axis 2, access:** `circles.access` (new) ∈ `open` · `circle_members` · `space_members` ·
+  `invite` · `tier`. Set per Circle by the Space owner, in the same membership settings that already
+  link a tier to a Circle (ADR-859) — not a second surface.
+
+⚠️ **Do not collapse these back into one enum for tidiness.**
+
+**2. Two predicates, because there are now two questions.**
+
+| | Answers | Governs |
+|---|---|---|
+| `private.can_see_circle(id, unlisted, access, space_id, host_id)` | may this viewer see **that it exists**? | the `circles` row: name, Host, about, member count, city, image |
+| `private.can_enter_circle(id, access, space_id, host_id)` | may this viewer see **what is in it**? | roster, posts, tabs, momentum |
+
+`can_see` is TRUE for every **listed** Circle whatever its access (the funnel), for an **unlisted +
+open** Circle (the 2026-11 direct-link contract, preserved), and otherwise only for someone who can
+enter. A listed closed Circle answers YES then NO, and that asymmetry is the feature.
+
+**3. The policy is `AS RESTRICTIVE FOR SELECT`** over `can_see_circle`. Columns are passed in rather
+than re-read so a SECURITY DEFINER helper can never recurse into the policy that calls it.
+
+**4. Each read path asks the RIGHT question, and getting it backwards breaks something real.**
+Discovery lists (`public_circles`, `circles_near`, the index, every rail and count) key on **axis 1**
+— a listed closed Circle must stay in them or the funnel does not exist. The landing page
+(`public_circle_by_id`, and therefore the discover detail page and its OG card) asks **can_see**.
+`circle_momentum` and the detail roster ask **can_enter**.
+
+**5. `space_members` is scoped to that mode only.** The owner's example is specific: *"a private
+circle that space members can only access if they are a member."* A general Space→Circle key would
+over-deliver, so Space membership opens a Circle **only** when `access = 'space_members'`. Space
+**stewards** (owner / editor+) still get every Circle, because they can already move and delete it.
+Community `guide`+ opens nothing: draft is a lifecycle state a moderator supervises, a closed Circle
+is a member's room.
+
+**6. `paid` is an access mode, not a visibility.** The owner: *"Owner chooses per Circle."* A paid
+Circle may be a listed shopfront or an unlisted room, exactly as a free one may. There is **no
+paid ⇒ public rule and no paid ⇒ private rule**; the strong form of that promise is that
+`enforce_membership_tier_circle_link` never reads `unlisted` at all, asserted as such in
+`lib/circles/visibility.test.ts`. `space_membership_tiers.circle_id` stays the only encoding of
+price — a `price_cents` on `circles` would be a second, contradictory one.
+
+**7. A closed Circle is not self-serve to join.** Enforced in `joinCircle` (service role, so RLS
+cannot), with `invited: true` passed only by the QR route, whose code the Host minted. Without this
+a stranger who learns the id joins, and joining writes the `memberships` row that `can_enter_circle`
+reads — the model would be circular. Every closed mode refuses with **one identical string**, byte
+for byte the same as the missing-circle copy, so the refusal never confirms the Circle exists or
+hints at its shape. The join / buy call to action belongs on the Circle's own public face, where the
+viewer has already been allowed to see it exists.
+
+### The forbidden cells, and why most cannot be CHECKs
+
+⚠️ **A `CHECK` is row-local and must be `IMMUTABLE`.** Most nonsense cells reference another table —
+the root-space id (`spaces.type='root'`) and the plan (`spaces.plan`). Written as a CHECK each would
+fail to create or be silently stale after a plan change. They are `BEFORE INSERT OR UPDATE`
+**triggers**: the same guarantee at the same layer (the database, never the UI).
+
+| Forbidden cell | Mechanism |
+|---|---|
+| access mode outside the five | CHECK `circles_access_check` |
+| `space_members`/`tier` on a **personal** Circle (root has no roster and sells nothing) | trigger, `circle_access_needs_space` |
+| `tier` on a Space below Business | trigger, `circle_access_plan_floor` |
+| a **personal** Circle is paid ("only businesses charge") | trigger, `circle_link_cross_tenant` |
+| a priced tier on a Space below Business | trigger, `circle_link_plan_floor` |
+| Space A's tier links Space B's Circle | trigger, `circle_link_cross_tenant` |
+
+The tier rules land on one trigger because they are one sentence: *the tier's Circle must be a Circle
+that tier's Space owns, and that Space must be allowed to sell.* Guarding at the **link site** is
+what makes "personal ⇒ free" enforceable at all — `circles` has no price to check. The cross-tenant
+arm was not in the rulings; it was found while writing the matrix and nothing stops it today.
+
+### The leak no policy could have closed
+
+`posts.visibility` and a Circle's access are different axes. A post written `public` inside a closed
+Circle satisfies the feed's `p.visibility = 'public'` arm, and `lib/feed/post-origin.ts` then
+resolves `scope_id` into the origin chip — printing the Circle's **name** and linking its slug. The
+reader never selects from `circles`, so no policy on that table reaches it.
+
+Closed with `private.post_scope_discoverable(scope_id)`, ANDed into `feed_for_viewer` and
+`scoped_feed_for_viewer` with every existing arm byte-for-byte intact, plus a second lock in
+`post-origin.ts` itself for every other caller of that resolver.
+
+⚠️ **Re-checked against the two-axis model, and the predicate is `can_see`, not `can_enter`.** A
+listed closed Circle's name is public face by design, so a member publishing a PUBLIC post naming it
+leaks nothing — suppressing that would delete the funnel's best organic surface. What must never
+surface is a post whose origin is a Circle the viewer may not know exists. Content inside a listed
+closed Circle is already members-only through the existing `p.visibility = 'group'` arm.
+
+### Consequences
+
+- **Nothing narrows for anyone today.** `access` defaults to `open`, so every live Circle behaves
+  exactly as before. Verified: 7 circles, 2 unlisted, 0 closed.
+- `circles_near` gains `not c.unlisted`, closing a **pre-existing** hole: it is `EXECUTE`-able by
+  `anon` and was returning **unlisted** circles with coordinates to signed-out callers,
+  contradicting the unlisted contract itself.
+- `public_circles` and `public_active_circle_count` are **deliberately unchanged**. Restated in the
+  migration so the file that introduces `access` is on the record about not touching them.
+- `public_circle_by_id` still resolves **unlisted + open** Circles by direct link. That contract was
+  set deliberately in 2026-11 and C1 does not revisit it.
+- No new tables, so `scripts/table-grants.txt` and `scripts/rls-deny-all.txt` need no new lines
+  (`check:rls` and `check:grants` both green at 276/276).
+- Four new `private.*` helpers use the ADR-959 shape — `revoke … from public, anon, authenticated`
+  in ONE statement, then an explicit grant. `can_see_circle` / `can_enter_circle` get `anon` +
+  `authenticated` back deliberately: an RLS policy evaluates as the **invoking** role, so without it
+  every anon read of `circles` errors instead of filtering. `post_scope_discoverable` is
+  service-role only (its callers are SECDEF and run as owner); `space_can_sell` is authenticated +
+  service_role.
+- **`loadCircleShell` now returns `canEnter`** and an empty roster for the funnel case. The public
+  face it enables (name, Host, description, count, join/buy CTA in place of the tab bodies) is a UI
+  change in `(circle)/layout.tsx` and the tab pages — **C4's files this cycle**, handed off.
+  `CIRCLE_PUBLIC_FACE_FIELDS` names exactly which fields that surface may show.
+
+### Rejected alternatives
+
+- **A single ordered `visibility` enum.** Built first; cannot express listed + closed. Recorded
+  above rather than deleted, because it is the obvious shape and the next reader will reach for it.
+- **A permissive access policy.** Would OR against an identity-free predicate and grant every closed
+  Circle to everyone, anon included. This is the trap the whole ADR is shaped around.
+- **Building on `can_view_space_content`.** Provably a no-op for personal Circles (fact 2). A pgTAP
+  assertion pins that it returns TRUE for the root space, so nobody re-proposes it.
+- **A third ownership encoding** (`space_id IS NULL` for "personal"). The root sentinel is the
+  convention and live data agrees; ADR-331 already stamps root on insert.
+- **`circles.price_cents`.** See decision 6.
+- **Gating the detail route in `(circle)/layout.tsx`.** The layout is one of four callers of
+  `loadCircleShell`; a fifth would arrive ungated. The gate lives in the read, and the roster is
+  redacted there too — a tab that never receives the data cannot forget to hide it.
+- **A RESTRICTIVE policy on `posts`.** Wide blast radius for a narrow residue: a `public` post's raw
+  `scope_id` uuid stays readable for a hidden Circle, but the **name** is not resolvable now that
+  both the `circles` row and the origin chip are gated. Recorded as a named limit instead.
+
+
+## ADR-1017: Sparks open OVER the page, as intercepted routes, and every exit is guarded
+
+**Date:** 2026-08-12 · **Status:** Accepted · **Supersedes nothing; amends** ADR-986 (§ entry points), ADR-142 (`StudioWindow`), ADR-991 + ADR-1001 (Spark autosave).
+
+## The request, and the tension it walked into
+
+The owner: *"Put all the Vera Wizards in a pop up. I don't want people leaving the page."* Then, the
+same day: *"Install safeguards on the pop up wizard. Cash in the browser, write to the database and
+create a warning that makes them either draft, publish or delete on trying to close."* And:
+*"Do whatever is best practice for a pop up wizard."*
+
+Earlier the same day, `StudioLaunchButton` — the modal launcher — was **deleted**, on the reasoning
+that ADR-986 makes every create entry point a deep-linkable Spark link, so "the modal launcher has
+no future consumer". Read naively, the owner is asking for the thing that was just removed.
+
+They are not in conflict. Two different wants:
+
+| Want | Owner's | ADR-986's |
+|---|---|---|
+| Opening a wizard must not lose the page you were on | ✅ | — |
+| A create entry point is a URL you can link to, share, and land on cold | — | ✅ |
+
+A client-state modal (`useState(false)`) satisfies the first and **silently repeals the second**: the
+URL stops naming what is on screen, the link cannot be shared, Back does the wrong thing, and a
+refresh loses the surface. That is why this ADR exists rather than a revert.
+
+## Decision
+
+**Intercepting routes + a parallel-route slot.** One route, two presentations, one wizard component.
+
+- `app/(main)/@wizard/` is a parallel-route **slot**, rendered by `app/(main)/layout.tsx` beside
+  `children`.
+- `app/(main)/@wizard/(.)<segment>/…/page.tsx` **intercepts** the wizard's own route. It imports and
+  renders **the destination's own page module**, wrapped in `WizardModal`.
+- `@wizard/default.tsx` returns `null`; `@wizard/[...catchAll]/page.tsx` returns `null`.
+
+The consequence is the whole point:
+
+| How the member arrives | What renders |
+|---|---|
+| In-app link (client navigation) | `children` keeps the page they were on; `@wizard` renders the Spark as a modal over it |
+| Shared link, refresh, bookmark, crawler | `children` renders the wizard's own full page; `@wizard` renders `default.tsx` (nothing) |
+
+Interception is a client-navigation mechanism — Next's own doc states that on a shareable URL or a
+refresh "the entire photo page should render instead of the modal. No route interception should
+occur" — so the ADR-986 half is structural, not a branch anyone has to remember.
+
+### Why the intercepted page imports the real page module
+
+The alternative is a twin: a second file that re-does the gate, the redirect, the capability check
+and the Spark. That is a fork, and the shared-link path is the one nobody exercises by hand, so the
+fork would drift in the direction nobody sees. Importing the page module means there is nothing to
+drift **from**. `app/(main)/@wizard/wizard-routes.test.ts` pins it per route.
+
+### Scroll position needed no change at any entry point
+
+Next 16.3's `<Link>` default "is to maintain scroll position … as long as the Page is visible in the
+viewport", and its scroll-target search "bypasses … sticky or fixed positioned elements". The
+intercepted Page **is** the fixed overlay, so the router skips it, finds the still-visible page
+underneath, and leaves the scroll alone. None of the ~20 entry-point links needed `scroll={false}`.
+`StudioWindow`'s `fixed inset-0` root is therefore load-bearing, and is asserted in a test.
+
+## The safeguards: three layers, only one of them new
+
+| Layer | Where | State |
+|---|---|---|
+| **1. Browser cache** | `components/studio/spark/draft/draft-store.ts` (ADR-991) | ✅ already shipped |
+| **2. Database** | `public.studio_draft` + `lib/studio/draft-store.ts` (ADR-1001) | ✅ already shipped, applied to production |
+| **3. The close warning** | `components/studio/wizard-modal.tsx` | 🆕 this ADR |
+
+**`localStorage`, not IndexedDB**, and that is a decision rather than an inheritance: the staged
+state is a flat `{fieldKey: string}` map of what was **typed**. File inputs, passwords, autocomplete
+machine values and anything marked `data-spark-draft="off"` are refused *at collection*, so the case
+that breaks `localStorage` — a half-uploaded image — never reaches it. Caps are 20k per value and
+100k per entry, under a seven-day TTL.
+
+**Cadence:** 800 ms local debounce (`useStudioDraft`), with the server push rate-limited on the *same*
+call rather than a second timer, and forced flushes on unmount, `pagehide`, and `visibilitychange`.
+
+**Clearing:** the wizard's own commit discards both copies (the unmount-while-busy path), and the
+Discard button calls the same pair. `discard` also clears the sync gate's dirty flag, without which
+the unmount flush would push the erased draft straight back to the member's account.
+
+### Every exit path, and what covers it
+
+| Exit | Mechanism | Verdict |
+|---|---|---|
+| Close button (X) | `StudioWindow onClose` → `requestClose` | ✅ three-way dialog |
+| `Escape` | `StudioWindow` keydown → `onClose` | ✅ three-way dialog; a second `Escape` backs out of the dialog rather than through it |
+| Backdrop click | `dismissOnBackdrop={false}` | ✅ inert by design |
+| **Browser Back** | history sentinel + `popstate` | ✅ three-way dialog |
+| Refresh / tab close | `beforeunload`, armed only while a write is owed | ⚠️ generic browser text |
+| A link **inside** the wizard | nothing | 🔴 documented gap |
+
+**Browser Back is the one a naive guard misses.** With intercepting routes it is a *route change*,
+not an unmount the component controls. The first keystroke pushes a same-URL history entry; Back
+pops that instead of the wizard, `popstate` fires with the modal still mounted, the sentinel is
+re-pushed and the dialog appears. Leaving for real is one `history.go(-2)` — over the sentinel and
+the wizard entry together — rather than two `back()` calls that would race the router.
+
+**`beforeunload` is a net, never the mechanism.** No modern browser allows custom text and the
+handler cannot be async. It is armed *only* while `saveState === 'saving'`, the one window in which
+leaving could really lose a keystroke. Outside it both copies are on disk, so a prompt would be
+firing when there is nothing to lose — which is exactly how a dialog trains people to dismiss it
+unread.
+
+**The in-wizard link is an accepted gap.** Guarding it would mean wrapping every anchor a wizard
+might render. It costs the member no writing: the unmount flush persists the draft and `/drafts`
+offers it straight back. What they lose is the modal, not the work.
+
+**A clean wizard closes instantly, with no dialog at all,** and no sentinel is ever armed. This is
+the property that keeps the warning credible.
+
+### The two product questions, answered
+
+**"Publish" is not a button on this dialog.** A Spark is deferred creation: no entity row exists
+before the wizard's own commit, and that commit is the only code that knows which fields are
+required. A Publish button here would have to re-implement each wizard's validation and commit in
+the modal, which is the per-entity fork `docs/STUDIO.md` §0 forbids. In its place the dialog offers
+**"Back to it"** — one tap to the wizard's own footer, where publishing lives and where missing
+fields are already named per step by `SparkShell`'s error slot. The three choices are therefore
+**Keep as draft** (primary, safe default) · **Back to it** · **Discard**.
+
+**Discard is two steps.** It erases the browser cache *and* the `studio_draft` row with no undo, so
+one tap only reveals the question ("Discard what you have written? It goes from this device and from
+your account. There is no undo.") and a second, differently-labelled tap performs it. It is never
+the default and never the first target. Where no draft was staged (a gate wall rather than a Spark),
+it is not offered at all.
+
+### Interaction: what "best practice" resolved to
+
+Centred dialog on desktop, full-height sheet on mobile (already `StudioWindow`'s shape) · backdrop
+inert · focus lands on the first meaningful field rather than the close button · motion honours
+`prefers-reduced-motion` · scroll contained to the window body with the page behind locked · steps,
+progress, validation and the sticky footer left entirely to `SparkShell` · `z-[80]` deliberately
+covers the mobile tab bar (`z-40`), with the bottom safe-area inset carried by the modal body.
+
+The repo's existing primitives were used rather than re-created: `StudioWindow` (ADR-142) gained two
+additive props (`dismissOnBackdrop`, `ariaLabel`) and nothing else; its focus trap is the shared
+`useDialogFocusTrap`; buttons are `buttonClasses`.
+
+## Guards
+
+- **`check:seo`** mapped `app/(main)/@wizard/(.)circles/new/page.tsx` to the literal string
+  `/@wizard/(.)circles/new` and reported it as an undeclared public route. That path is not a URL and
+  cannot be requested. Corrected in the **mapper**: slot segments are dropped (Next: "slots are not
+  route segments and do not affect the URL structure") and intercepting folders are skipped (they can
+  only ever render during a client navigation). The URL they decorate is still governed, by the real
+  page that serves it. **No assertion was weakened.**
+- **`check:templates`** the six slot pages are **baselined with a reason**, not excluded from the
+  walk. They are presentations of a page, not pages: the kit shell is composed by the page underneath
+  and by `SparkShell`, and giving one a template would put a page header inside a dialog. Baselining
+  rather than excluding keeps the gate's eyes open, so a future slot page that really does hand-roll
+  a layout still fails.
+
+## Inventory this covers
+
+Six Vera Sparks: `/circles/new` · `/practices/new` · `/journeys/new` · `/events/new` ·
+`/classifieds/new` · `/market/sell`. Deliberately not intercepted: the Service Spark
+(`/spaces/[slug]/settings/services/new`, a Space settings console where the surface behind is the
+console itself), the Business Seeder (`/admin/*`, its own workspace with no member rail), and the
+three non-Spark create forms (`/housing/new`, `/spaces/new`, `/spaces/new/business`). Adding one is
+a new folder under `@wizard`; the tests discover routes rather than listing them.
+
+## ADR-1018: `db-tests` installs the Supabase CLI from our own lockfile, not from GitHub releases (2026-08-12)
+
+**Status:** accepted · **Supersedes:** nothing · **Touches:** `.github/workflows/db-tests.yml`
+
+### What broke
+
+PR #2110's `db-tests` job failed twice in a row without running a single test. Neither failure was in
+the tree. `supabase/setup-cli@v3` downloads **Bun** from GitHub *releases* before it does anything
+else, and that download failed:
+
+```
+Downloading a new version of Bun: .../bun-v1.3.10/bun-linux-x64.zip
+socket hang up          → waiting 14 seconds
+socket hang up          → waiting 20 seconds
+Error: Unexpected HTTP response: 503
+```
+
+The action's own retry (14 s, 20 s) exhausted itself inside 34 seconds. That is the whole job: the
+CLI was never installed, the stack never booted, the pgTAP suite never ran. The first time this
+happened it was called an infrastructure flake and the job was re-run; the second time, on a
+different SHA, made it a dependency we do not control failing a gate we do.
+
+### The decision
+
+Drop `supabase/setup-cli` from the workflow. The repo **already pins the CLI as a devDependency**
+(`supabase@2.112.0`), whose bin shim resolves `@supabase/cli-linux-x64@2.112.0` — an optional
+dependency in `pnpm-lock.yaml`, served by the **npm registry**. The job now does the same
+`pnpm/action-setup` + `setup-node` + `pnpm install --frozen-lockfile` prelude as `checks`, `lint` and
+`test`, then calls `pnpm exec supabase db start` / `pnpm exec supabase test db`.
+
+| | Before | After |
+|---|---|---|
+| CLI source | GitHub releases (via a Bun download) | npm registry, via `pnpm-lock.yaml` |
+| Version | `version: latest` — unpinned | `2.112.0` — pinned by the lockfile |
+| New network dependency | Bun + the CLI tarball | 🟢 **none** — every other CI job already installs it |
+| Matches what a developer runs | no | yes (`pnpm test:rls` is `supabase test db`) |
+
+### Why this is not just swapping one download for another
+
+`@supabase/cli-linux-x64` is **already in every CI job's `node_modules`** — it is the 106 MB binary
+named in [`DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md) §3. `checks`, `lint` and `test` each pull it today as
+part of `pnpm install`. So this removes two fetches and adds zero, and the fetch it keeps is the one
+already covered by pnpm's store cache (`cache: pnpm`).
+
+The second gain is the one that will matter later: **`version: latest` was an unpinned input into a
+gate.** A CLI release could change the behaviour of a required check with no commit in this repo. It
+now moves only when the lockfile moves, in a reviewable diff.
+
+### The general rule this is an instance of
+
+A gate may not depend on a third party's CDN when the same artifact is already pinned in our
+lockfile. `DEPLOY-SAFETY.md` §9 records the same shape from the other direction — a build killed by
+`fonts.gstatic.com` returning 404 — and reaches the same durable answer: **vendor it, or pin it.**
+The difference is that a font flake wastes a redeploy while this one silently produces a red required
+check on a PR that is fine.
+
+## ADR-1019: The browser read grants were never in the repo, and a fresh rebuild proved it (2026-08-12)
+
+**Status:** accepted · **Touches:** `supabase/migrations/20270228000000_state_the_browser_read_grants.sql`
+· **Found by:** `supabase/tests/circle_privacy.test.sql` (ADR-1015) on the first `db-tests` run that
+reached the suite (ADR-1018).
+
+### The finding
+
+Two true statements that should not both be true:
+
+| Question | Production | Fresh apply of `supabase/migrations/` |
+|---|---|---|
+| `set role anon; select count(*) from public.circles` | **4 rows** | 🔴 `permission denied for table circles` |
+
+`public.circles` was created by `20240102000000_hierarchy_v2.sql`, when Supabase's `ALTER DEFAULT
+PRIVILEGES IN SCHEMA public` still stamped `anon`/`authenticated` onto every new table. **The live
+grant is a side effect of the environment at creation time. No file in this repository grants it** —
+verified by grepping every migration, which turns up EXECUTE on four functions and nothing else.
+
+So the tree could not rebuild production, and nothing noticed for two and a half years, because
+until ADR-1015's suite there had never been a test that read a table as `anon` on a fresh database.
+
+### Why the grant, and not a change to the test
+
+The direct read is shipped behaviour. The permissive read policy on `circles` is `TO PUBLIC` and its
+base branch (`status <> archived and status <> draft`) does not reference the caller, so a signed-out
+visitor is *meant* to reach the table and be filtered by RLS — that is the design both RESTRICTIVE
+policies were written against. Routing the assertion through `public_circles()` instead would have
+turned the board green while leaving the rebuild broken, and deleted the only coverage of the path a
+real browser takes.
+
+### What was restated, and what deliberately was not
+
+`grant select` for `anon, authenticated` on **`circles`, `memberships`, `profiles`, `entities`** —
+every one of them a grant production already holds, so applying it changed nothing live.
+
+- **Not the write grants.** Production also carries ambient INSERT/UPDATE/DELETE for `anon` on these
+  tables from the same accident, held back by RLS alone. That is the posture [ADR-959](DECISIONS.md)
+  and `20270218000000_close_default_grants_on_internal_tables.sql` exist to retire. Restating them
+  would launder an accident into an intention.
+- **Not `spaces`.** It is the one table here without a plain table-level grant in production:
+  `20270217000000` revoked two columns from `anon`, and Postgres converts the table grant into
+  per-column grants when you do that. `grant select on table public.spaces` would hand
+  `stripe_customer_id` and `stripe_subscription_id` back to every visitor.
+
+### ⚠️ What is NOT established
+
+**Why** the fresh apply ends up without the grant when tables created by later migrations
+(`app_instances`, `contacts`) clearly do have it in the same run. The mechanism is unidentified, and
+the migration's header says so rather than inventing one. What is established is enough to act on:
+production has the grants, the repo grants none of them, and the fresh apply demonstrably lacks them
+for `circles`. Whoever identifies the mechanism should amend this ADR instead of deleting the note.
+
+### The rule
+
+This is [`DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md) §1 in the schema: **every gate measured the source
+tree; none measured a rebuild.** `check:migrations` compares repo filenames to ledger rows, which
+proves both sides ran the same *files* and nothing about whether those files can produce the same
+*database*. Only an actual fresh apply can answer that, which is what `db-tests` now does on every PR
+touching `supabase/`.

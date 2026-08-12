@@ -134,6 +134,39 @@ and merged as one commit. Nothing about it was wrong — but when the deploy bro
 ask *which part*, and the answer turned out to be "none of it, it was the last straw". Where work can
 land in slices that each deploy on their own, it should.
 
+### 9. A build that dies in `[next]/internal/font/google/*` gets REDEPLOYED before it gets debugged
+
+**Measured 2026-08-12.** PR #2109's deploy failed with `module-not-found` repeated across
+`[next]/internal/font/google/nunito_*.module.css`. Fifteen seconds earlier, `fonts.gstatic.com`
+returned **HTTP 404** on five Nunito `woff2` URLs that Google's own CSS had just named. `next/font`
+caches only in memory (`loader.js:45-46`) and `retry.js` retries a 404 straight back into the same
+404. A redeploy of the byte-identical commit went green.
+
+This is rule 3 with a specific name attached: **the control costs three minutes and settles it.**
+
+⚠️ **The tempting wrong theory, and how it was killed.** The failing build opened with *"Previous
+build cache was too large, starting from a clean state"*, so the obvious story was "cold cache
+forced a font re-fetch". The orchestrator stated that as the likely cause. **It is wrong, and the
+control was already sitting in the logs**: the successful redeploy printed *"Skipping build cache,
+deployment was triggered without cache"* — it was **also cold**. Two cold builds, opposite
+outcomes. Reasoning from a plausible mechanism instead of looking for the control is exactly the
+`node_modules` mistake in §3, made again by the same process nine hours later.
+
+**The cache is a real but separate finding, and the measured answer is to leave it alone.** It is
+discarded on **6 of 38 builds (15.8%)** because Turbopack's cache grows past Vercel's 1.50 GB limit
+— a sawtooth of ~1.07 GB clean, ~1.33 GB warm, then 1.64 GB and invalidated, so it survives about
+one reuse. It is worth roughly **13 seconds on a four-minute build**, and the two fastest builds in
+the sample were both cold. Fixing it would make font flakes *more* frequent, since Turbopack module
+reuse is currently the only thing shielding five builds in six from Google. ⚠️ And note the trap:
+every build report prints `Build cache: <1 MB`, which does **not** measure the build cache — the
+real figure lands under *Input source code*, 2668 MB warm against 311 MB clean. Same shape as the
+`Output files: 873 MB` trap in §1.
+
+The durable fix, if the flake ever becomes routine, is `next/font/local` for **all eleven** Google
+families in `app/layout.tsx` — not just Nunito, and not by reusing `lib/og/load-nunito.ts`, which
+carries two weights as TTF where the layout needs six as woff2. 🔴 Whoever does it must **not** put
+the files in `public/fonts/`: that glob is what [ADR-1010](DECISIONS.md) spent 612 MB removing.
+
 ---
 
 ## The checklist, before merging anything structural

@@ -7,7 +7,9 @@ export async function CommunityPulse() {
   const db = createAdminClient()
   const [{ count: members }, { count: circles }] = await Promise.all([
     db.from('profiles').select('id', { count: 'exact', head: true }),
-    db.from('circles').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+    // The public pulse counts what the public can browse: AXIS 1 only (ADR-1015).
+    db.from('circles').select('id', { count: 'exact', head: true }).eq('status', 'active')
+      .eq('unlisted', false),
   ])
   if (!members && !circles) return null
 

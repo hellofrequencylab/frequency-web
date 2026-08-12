@@ -107,12 +107,31 @@ const INTENTIONALLY_EXCLUDED = new Map([
 
 // ── Route helpers ─────────────────────────────────────────────────────────────
 
+/**
+ * An INTERCEPTING route folder: `(.)seg`, `(..)seg`, `(..)(..)seg`, `(...)seg`
+ * (node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/intercepting-routes.md).
+ *
+ * These are skipped entirely, and that is a CORRECTION rather than an exemption. An intercepting
+ * route is only ever rendered during a client-side navigation — the doc's whole premise is that
+ * "when navigating … by clicking a shareable URL or by refreshing the page, the entire page should
+ * render instead … No route interception should occur". So no crawler, and no fresh request of any
+ * kind, can ever receive one. The URL it decorates is still fully governed here, by the real page
+ * that serves it: `app/(main)/@wizard/(.)circles/new/page.tsx` is skipped, `/circles/new` is not.
+ *
+ * Before this, the walk mapped that file to the literal string `/@wizard/(.)circles/new` and
+ * reported it as an undeclared public route. That path is not a URL, cannot be requested, and
+ * could not be fixed by adding it to the sitemap — the finding was an artefact of the mapper, not
+ * a gap in the site.
+ */
+const INTERCEPTING_DIR = /^(?:\(\.{1,3}\))+/
+
 /** Recursively collect files named `page.tsx`/`route.ts` (and .js/.jsx/.ts variants) under a dir. */
 function collectRouteFiles(dir, kinds) {
   const out = []
   if (!existsSync(dir)) return out
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (entry.name === 'node_modules') continue
+    if (entry.isDirectory() && INTERCEPTING_DIR.test(entry.name)) continue
     const p = join(dir, entry.name)
     if (entry.isDirectory()) {
       out.push(...collectRouteFiles(p, kinds))
@@ -127,14 +146,19 @@ function collectRouteFiles(dir, kinds) {
 
 /**
  * Map an app-router file to its URL route, dropping route-group segments like `(marketing)`
- * and `(main)`. Dynamic segments (`[slug]`, `[...all]`, `[[...opt]]`) are left intact so the
- * caller can tell static from dynamic. Returns e.g. '/', '/pricing', '/events/[slug]'.
+ * and `(main)` AND parallel-route slots like `@wizard`. Next is explicit that "slots are NOT route
+ * segments and do not affect the URL structure … for `/@analytics/views`, the URL will be `/views`"
+ * (node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/parallel-routes.md,
+ * §Slots), so a slot segment left in would invent a path nothing can request.
+ *
+ * Dynamic segments (`[slug]`, `[...all]`, `[[...opt]]`) are left intact so the caller can tell
+ * static from dynamic. Returns e.g. '/', '/pricing', '/events/[slug]'.
  */
 function routeForFile(file) {
   const rel = relative(APP_DIR, file)
   const parts = rel.split(sep)
   parts.pop() // drop the page.tsx / route.ts filename
-  const segs = parts.filter((s) => !(s.startsWith('(') && s.endsWith(')')))
+  const segs = parts.filter((s) => !(s.startsWith('(') && s.endsWith(')')) && !s.startsWith('@'))
   if (segs.length === 0) return '/'
   return '/' + segs.join('/')
 }

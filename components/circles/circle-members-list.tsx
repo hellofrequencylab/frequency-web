@@ -13,7 +13,9 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { getInitials } from '@/lib/utils'
 import { ProfileFlair } from '@/components/profile-flair'
 import { isEndorsed } from '@/lib/season-ranks'
-import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
+import { type CommunityRole } from '@/lib/community-roles'
+import { CircleRoleChip } from '@/components/circles/circle-role-chip'
+import { circleRoleFromStoredValue } from '@/lib/core/circle-roles'
 
 const INITIAL_VISIBLE = 5
 
@@ -95,8 +97,16 @@ export function CircleMembersList({
                         Host
                       </span>
                     )}
-                    {volunteer_role && !memberIsHost && (
-                      <RoleBadge role={volunteer_role} className="text-meta leading-tight" />
+                    {/* The CIRCLE's ladder, not the global one (ADR-1014). A circle Admin is
+                        stored as volunteer_role='guide', and the global RoleBadge printed that
+                        as "Guide" — the word for someone who oversees local hosts, which is a
+                        different job in a different scope. Plain Members carry no chip: the
+                        rail roster is dense, and "Member" on every row says nothing. */}
+                    {!memberIsHost && circleRoleFromStoredValue(volunteer_role) !== 'member' && (
+                      <CircleRoleChip
+                        role={circleRoleFromStoredValue(volunteer_role)}
+                        className="text-meta leading-tight"
+                      />
                     )}
                     <ProfileFlair
                       rank={profile.current_season_rank}

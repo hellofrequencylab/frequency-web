@@ -14,6 +14,35 @@
 #                                 canEditProfile itself before it writes
 # The session client cannot reach a zero-policy table by construction, so converging these is
 # not a matter of effort: it would mean giving those tables client-readable policies.
+# lib/billing/bundle-seats.ts (added 2026-08-12, ADR-370): the Stripe webhook seating branch for the
+# Household / Circle bundle. There is no session to run under — the caller is Stripe, and the write is
+# apply_bundle_seating_atomic, a SECURITY DEFINER function granted to service_role ONLY (migration
+# 20270225000000 revokes anon + authenticated). Converging it onto the session client is not possible
+# by construction. Same posture as lib/billing/bundle-checkout.ts directly above.
+# lib/billing/bundle-invites.ts (added 2026-08-12, ADR-370): the post-purchase seat invites for the
+# Household / Circle bundle. household_bundle_invites is RLS-on with ZERO policies (deny-all, see
+# scripts/rls-deny-all.txt) and the two seat writes are SECURITY DEFINER functions granted to
+# service_role ONLY (migration 20270226000100 revokes anon + authenticated on both the table and the
+# functions), so the session client cannot reach any of it by construction. Every read and write here
+# is bound to the caller's own profile id, re-resolved from the session by the action layer.
+# studio_draft is RLS-on-no-policy (zero policies, grants revoked from anon/authenticated), so the
+# session client cannot reach it at all: staged wizard answers are unfinished writing and the table
+# is deliberately unreachable except through this one owner-scoped file. Every query filters on a
+# session-derived profile_id, which IS the access control (ADR-1001, mirrors lib/studio/steer-store.ts).
+#
+# Added 2026-08-12 (ADR-1014, ADR-1016). Two files, each re-gating authorisation ITSELF
+# before it acts, which is why the bypass is the safe shape rather than the lazy one:
+#   app/(main)/circles/[slug]/(circle)/members/actions.ts
+#       setCircleMemberRole re-resolves the caller's capabilities against the LIVE circle on
+#       every request and refuses without circle.manageRoles. It must read circles.host_id to
+#       enforce the last-owner guard — the row a non-member cannot see under RLS, which is
+#       exactly the row the guard depends on. Fails closed on any role outside the three
+#       assignable rungs, so a client asking to mint an owner is rejected before the read.
+#   lib/circles/effort-board.ts
+#       Reads zap_transactions for members of one circle, behind the CALLER's gate: the page
+#       renders rows only for circle members. The effort index is deliberately a WHOLE-LIFE
+#       denominator per member, so it cannot be scoped by the circle's own RLS without
+#       changing the number the member is measured against.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -107,6 +136,7 @@ app/(main)/channels/actions.ts
 app/(main)/channels/admin-actions.ts
 app/(main)/channels/page.tsx
 app/(main)/checkin-actions.ts
+app/(main)/circles/[slug]/(circle)/members/actions.ts
 app/(main)/circles/[slug]/claim-actions.ts
 app/(main)/circles/[slug]/edit/page.tsx
 app/(main)/circles/[slug]/manage/events-actions.ts
@@ -393,19 +423,8 @@ lib/beta/db.ts
 lib/beta/referral-contest.ts
 lib/beta/stats.ts
 lib/billing/bundle-checkout.ts
-# lib/billing/bundle-seats.ts (added 2026-08-12, ADR-370): the Stripe webhook seating branch for the
-# Household / Circle bundle. There is no session to run under — the caller is Stripe, and the write is
-# apply_bundle_seating_atomic, a SECURITY DEFINER function granted to service_role ONLY (migration
-# 20270225000000 revokes anon + authenticated). Converging it onto the session client is not possible
-# by construction. Same posture as lib/billing/bundle-checkout.ts directly above.
-lib/billing/bundle-seats.ts
-# lib/billing/bundle-invites.ts (added 2026-08-12, ADR-370): the post-purchase seat invites for the
-# Household / Circle bundle. household_bundle_invites is RLS-on with ZERO policies (deny-all, see
-# scripts/rls-deny-all.txt) and the two seat writes are SECURITY DEFINER functions granted to
-# service_role ONLY (migration 20270226000100 revokes anon + authenticated on both the table and the
-# functions), so the session client cannot reach any of it by construction. Every read and write here
-# is bound to the caller's own profile id, re-resolved from the session by the action layer.
 lib/billing/bundle-invites.ts
+lib/billing/bundle-seats.ts
 lib/billing/checkout.ts
 lib/billing/connect.ts
 lib/billing/manual-agreements.ts
@@ -425,6 +444,7 @@ lib/circles/circle-text-actions.ts
 lib/circles/crm-roster.ts
 lib/circles/draft.ts
 lib/circles/earned.ts
+lib/circles/effort-board.ts
 lib/circles/events.ts
 lib/circles/handoff.ts
 lib/circles/remix.ts
@@ -745,10 +765,6 @@ lib/studio/agent.ts
 lib/studio/analytics.ts
 lib/studio/campaigns.ts
 lib/studio/contacts.ts
-# studio_draft is RLS-on-no-policy (zero policies, grants revoked from anon/authenticated), so the
-# session client cannot reach it at all: staged wizard answers are unfinished writing and the table
-# is deliberately unreachable except through this one owner-scoped file. Every query filters on a
-# session-derived profile_id, which IS the access control (ADR-1001, mirrors lib/studio/steer-store.ts).
 lib/studio/draft-store.ts
 lib/studio/recommendations.ts
 lib/studio/steer-store.ts

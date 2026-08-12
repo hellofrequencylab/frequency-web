@@ -4,6 +4,7 @@
 // their unique content + target keywords here. Answer-first, pain-first, Seeker
 // voice (CONTENT-VOICE §2a). Relational register only, no health claims.
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import {
   PhotoHero,
@@ -244,9 +245,9 @@ export default function LonelinessPage() {
           list of people we would actually call when something goes sideways, and
           for a lot of adults that short list has slowly shrunk to almost no one.
           If that is where you are, the{' '}
-          <a href="/friendship-as-an-adult" className="text-primary-strong underline underline-offset-4">
+          <Link href="/friendship-as-an-adult" className="text-primary-strong underline underline-offset-4">
             adult-friendship guide
-          </a>{' '}
+          </Link>{' '}
           goes deeper on how those short lists rebuild.
         </Body>
       </Section>
@@ -446,9 +447,9 @@ export default function LonelinessPage() {
           with friends. You pick what you practice, find a few people near you, and
           come back. Joining is free, and Frequency never takes a cut of your own
           bookings; you can see exactly how that works on the{' '}
-          <a href="/pricing" className="text-primary-strong underline underline-offset-4">
+          <Link href="/pricing" className="text-primary-strong underline underline-offset-4">
             pricing page
-          </a>
+          </Link>
           .
         </p>
       </ZigZag>
@@ -474,14 +475,14 @@ export default function LonelinessPage() {
         </p>
         <p>
           New to town and starting from zero? The{' '}
-          <a href="/friendship-as-an-adult" className="text-primary-strong underline underline-offset-4">
+          <Link href="/friendship-as-an-adult" className="text-primary-strong underline underline-offset-4">
             new-city guide
-          </a>{' '}
+          </Link>{' '}
           is the same idea aimed at week one. Always wired and can&apos;t switch
           off? Start with{' '}
-          <a href="/calm-down-fast" className="text-primary-strong underline underline-offset-4">
+          <Link href="/calm-down-fast" className="text-primary-strong underline underline-offset-4">
             a few ways to calm down fast
-          </a>
+          </Link>
           .
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">

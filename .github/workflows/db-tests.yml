@@ -31,13 +31,26 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-      - uses: supabase/setup-cli@v3
+      - uses: pnpm/action-setup@v6.0.9
+      - uses: actions/setup-node@v7
         with:
-          version: latest
+          node-version: '22'
+          cache: pnpm
+      # The CLI comes from the repo's own `supabase` devDependency, NOT `supabase/setup-cli`.
+      # ⚠️ Measured 2026-08-12 (ADR-1018): setup-cli@v3 downloads Bun from GitHub *releases*
+      # before it does anything else, and that download returned `socket hang up` then HTTP 503
+      # on two consecutive runs of PR #2110 — a required-ish check failing on an outage in a
+      # third party's CDN, with no retry we control. The npm route resolves
+      # `@supabase/cli-linux-x64`, an optional dependency already pinned in pnpm-lock.yaml and
+      # already downloaded by every other CI job, so this adds no new network dependency at all.
+      # It also kills `version: latest` — an unpinned input into a gate — and makes CI run the
+      # exact CLI a developer runs via `pnpm test:rls`.
+      - name: Install
+        run: pnpm install --frozen-lockfile
       # Boots the full local stack (Postgres + auth + extensions like PostGIS) and applies every
       # supabase/migrations file in order. A migration that can't apply fails the job here.
       - name: Start local Supabase (applies all migrations)
-        run: supabase db start
+        run: pnpm exec supabase db start
       # Runs every supabase/tests/*.test.sql through pgTAP against the freshly-migrated DB.
       - name: Run pgTAP RLS/RPC tests
-        run: supabase test db
+        run: pnpm exec supabase test db

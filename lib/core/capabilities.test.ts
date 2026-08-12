@@ -186,6 +186,156 @@ describe('resolveCapabilities · circle', () => {
   })
 })
 
+// ─── The circle role ladder (ADR-1014) ────────────────────────────────────────────────────
+//
+// EVERY RUNG MUST PROVABLY NOT DO THE NEXT RUNG'S ACTIONS. These are capability assertions,
+// not render assertions: the picker on the Members tab hides controls, and hiding a control
+// is not a permission. What follows is what the SERVER answers, which is what the server
+// actions re-check on every call.
+//
+// The four rungs and the one line each:
+//   Host       circles.host_id            everything below, plus circle.manageRoles
+//   Admin      volunteer_role 'guide'     editSettings · moderate · assignTask · broadcast · post · view
+//   Moderator  volunteer_role 'host'      moderate · post · view
+//   Member     volunteer_role 'member'/NULL  post · view
+
+describe('resolveCapabilities · circle role ladder (ADR-1014)', () => {
+  const CIRCLE = { kind: 'circle', circleId: 'c1', hostId: 'owner1' } as const
+  const viewer = { profileId: 'p1', role: 'member' } as const
+
+  /** A scope for a viewer holding `volunteerRole` on an active membership in c1. */
+  const asRung = (volunteerRole: string | null): Scope => ({
+    ...CIRCLE,
+    membership: { status: 'active', volunteerRole: volunteerRole as never },
+  })
+
+  const ADMIN_ONLY = ['circle.editSettings', 'circle.assignTask', 'circle.broadcast'] as const
+  const OWNER_ONLY = ['circle.manageRoles'] as const
+
+  it('ADMIN holds the full management set', () => {
+    const caps = resolveCapabilities(viewer, asRung('guide'))
+    for (const cap of [...ADMIN_ONLY, 'circle.moderate', 'circle.post', 'circle.view'] as const) {
+      expect(can(caps, cap)).toBe(true)
+    }
+  })
+
+  it('ADMIN provably cannot do the OWNER’s action: setting roles', () => {
+    const caps = resolveCapabilities(viewer, asRung('guide'))
+    for (const cap of OWNER_ONLY) expect(can(caps, cap)).toBe(false)
+  })
+
+  it('MODERATOR holds the room and provably not the settings', () => {
+    const caps = resolveCapabilities(viewer, asRung('host'))
+    expect(can(caps, 'circle.moderate')).toBe(true)
+    expect(can(caps, 'circle.post')).toBe(true)
+    expect(can(caps, 'circle.view')).toBe(true)
+    for (const cap of [...ADMIN_ONLY, ...OWNER_ONLY]) expect(can(caps, cap)).toBe(false)
+  })
+
+  it('MEMBER holds post + view and provably nothing above it', () => {
+    for (const stored of [null, 'member']) {
+      const caps = resolveCapabilities(viewer, asRung(stored))
+      expect(can(caps, 'circle.post')).toBe(true)
+      expect(can(caps, 'circle.view')).toBe(true)
+      for (const cap of ['circle.moderate', ...ADMIN_ONLY, ...OWNER_ONLY] as const) {
+        expect(can(caps, cap)).toBe(false)
+      }
+    }
+  })
+
+  it('the HOST (host_id) holds everything, including circle.manageRoles', () => {
+    const caps = resolveCapabilities({ profileId: 'owner1', role: 'host' }, CIRCLE)
+    for (const cap of [
+      'circle.view', 'circle.post', 'circle.moderate',
+      ...ADMIN_ONLY, ...OWNER_ONLY,
+    ] as const) {
+      expect(can(caps, cap)).toBe(true)
+    }
+  })
+
+  it('the ladder is strictly nested: Member ⊂ Moderator ⊂ Admin ⊂ Host', () => {
+    const set = (s: Scope) => resolveCapabilities(viewer, s)
+    const member = set(asRung(null))
+    const moderator = set(asRung('host'))
+    const admin = set(asRung('guide'))
+    const host = resolveCapabilities({ profileId: 'owner1', role: 'member' }, CIRCLE)
+    const subset = (a: ReadonlySet<string>, b: ReadonlySet<string>) => [...a].every((c) => b.has(c))
+    expect(subset(member, moderator)).toBe(true)
+    expect(subset(moderator, admin)).toBe(true)
+    expect(subset(admin, host)).toBe(true)
+    // …and strictly, at every step: each rung really does add something.
+    expect(moderator.size).toBeGreaterThan(member.size)
+    expect(admin.size).toBeGreaterThan(moderator.size)
+    expect(host.size).toBeGreaterThan(admin.size)
+  })
+
+  // ── FAIL CLOSED ───────────────────────────────────────────────────────────────────────
+
+  it('an UNRECOGNISED volunteer_role grants nothing above a plain member', () => {
+    // 'mentor' outranks 'guide' globally and would escalate under a `>=` comparison;
+    // 'crew' is the retired rung the demo generator still writes.
+    for (const stored of ['mentor', 'crew', 'janitor', 'owner', 'Guide', '']) {
+      const caps = resolveCapabilities(viewer, asRung(stored))
+      for (const cap of ['circle.moderate', ...ADMIN_ONLY, ...OWNER_ONLY] as const) {
+        expect(can(caps, cap)).toBe(false)
+      }
+      expect(can(caps, 'circle.post')).toBe(true)
+    }
+  })
+
+  it('a role on a NON-ACTIVE membership grants nothing (a departed Admin is not an Admin)', () => {
+    for (const status of ['pending', 'left', 'removed', 'banned', '']) {
+      const caps = resolveCapabilities(viewer, {
+        ...CIRCLE,
+        membership: { status, volunteerRole: 'guide' as never },
+      })
+      for (const cap of ['circle.moderate', 'circle.post', ...ADMIN_ONLY, ...OWNER_ONLY] as const) {
+        expect(can(caps, cap)).toBe(false)
+      }
+      expect(can(caps, 'circle.view')).toBe(true)
+    }
+  })
+
+  it('an ANONYMOUS viewer never inherits a role from a caller-supplied membership', () => {
+    const caps = resolveCapabilities({ profileId: null, role: 'member' }, asRung('guide'))
+    for (const cap of ['circle.moderate', ...ADMIN_ONLY, ...OWNER_ONLY] as const) {
+      expect(can(caps, cap)).toBe(false)
+    }
+  })
+
+  it('a role in ONE circle is scope-isolated: the scope carries its own membership', () => {
+    // The seam loads the membership for the circle being resolved, so an Admin in c1 resolving
+    // c2 arrives with no membership at all and holds nothing.
+    const other = resolveCapabilities(viewer, { kind: 'circle', circleId: 'c2', hostId: 'owner2' })
+    for (const cap of ['circle.moderate', 'circle.post', ...ADMIN_ONLY, ...OWNER_ONLY] as const) {
+      expect(can(other, cap)).toBe(false)
+    }
+  })
+
+  it('platform staff and the parent-hub guide keep circle.manageRoles (leadership, not a rung)', () => {
+    for (const v of [
+      { viewer: { profileId: 's', role: 'member', webRole: 'janitor' } as const, scope: CIRCLE },
+      { viewer: { profileId: 's', role: 'member', webRole: 'admin' } as const, scope: CIRCLE },
+      {
+        viewer: { profileId: 'g', role: 'guide' } as const,
+        scope: { ...CIRCLE, viewerManagesParent: true } as Scope,
+      },
+    ]) {
+      expect(can(resolveCapabilities(v.viewer, v.scope), 'circle.manageRoles')).toBe(true)
+    }
+  })
+
+  it('an Admin rung does NOT widen any OTHER scope (no leak into hub/nexus/event/global)', () => {
+    const v = { profileId: 'p1', role: 'member' } as const
+    expect(can(resolveCapabilities(v, { kind: 'hub', hubId: 'h1' }), 'hub.manage')).toBe(false)
+    expect(can(resolveCapabilities(v, { kind: 'nexus', nexusId: 'n1' }), 'nexus.manage')).toBe(false)
+    expect(
+      can(resolveCapabilities(v, { kind: 'event', eventId: 'e1', hostId: 'x' }), 'event.editSettings'),
+    ).toBe(false)
+    expect(can(resolveCapabilities(v, { kind: 'global' }), 'admin.access')).toBe(false)
+  })
+})
+
 describe('capabilityGaps (PB.1g — why is a capability absent?)', () => {
   const circle: Scope = { kind: 'circle', circleId: 'c1', hostId: 'host1', openTaskCount: 2 }
 

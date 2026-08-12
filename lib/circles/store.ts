@@ -13,6 +13,8 @@
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadRootSpaceId } from '@/lib/spaces/store'
+import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
+import { asCircleAccess, canEnterCircle, canSeeCircle, type CircleAccess } from './visibility'
 import type { CircleDetail, MemberRow } from './detail-types'
 
 /** A circle as the by-space read returns it (the columns the community module needs). */
@@ -97,6 +99,88 @@ export async function listCirclesHostedBy(profileId: string, limit = 50): Promis
   }
 }
 
+// ── THE CIRCLE VIEWER GATE (ADR-1015) ───────────────────────────────────────────────────────────
+
+/**
+ * Resolve the CURRENT caller against one Circle, on BOTH axes.
+ *
+ * Needed because every read in this module goes through the admin client, which holds BYPASSRLS
+ * and therefore never sees `circles_access_restrictive`. Arm for arm identical to
+ * `private.can_see_circle` / `private.can_enter_circle`, in the same order, so a reader can diff
+ * the two. FAIL-CLOSED: any error reads as "sees nothing, enters nothing", so a hiccup hides a
+ * Circle rather than publishing one.
+ *
+ * Only ever called for a Circle already known to be CLOSED (`access <> 'open'`), so the extra
+ * round trips land on the rare path and an open Circle costs exactly what it did before.
+ */
+async function resolveCircleViewer(
+  circleId: string,
+  unlisted: boolean,
+  access: CircleAccess,
+  spaceId: string | null,
+  hostId: string | null,
+): Promise<{ canSee: boolean; canEnter: boolean }> {
+  try {
+    const viewerProfileId = await getMyProfileId()
+
+    const admin = createAdminClient()
+    const [membership, staff] = await Promise.all([
+      viewerProfileId
+        ? admin
+            .from('memberships')
+            .select('id')
+            .eq('circle_id', circleId)
+            .eq('profile_id', viewerProfileId)
+            .eq('status', 'active')
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+      isPlatformStaff(),
+    ])
+
+    // Two DIFFERENT questions about the owning Space, and conflating them was the bug the owner's
+    // ruling exposed:
+    //   isSpaceMember   — an active seat of any role. Opens the Circle ONLY when access is
+    //                     'space_members' ("a private circle that space members can only access if
+    //                     they are a member"). Space membership is not a general key.
+    //   isSpaceSteward  — owner or editor+. Mirrors `private.can_write_space_content`: someone who
+    //                     can move or delete the Circle can read it.
+    // For a PERSONAL Circle the owning Space is ROOT, whose owner_profile_id is unset and whose
+    // roster is empty, so both are false and only the staff arm can open it. That asymmetry is the
+    // whole reason the DB policy could not be built on the space predicate.
+    let isSpaceMember = false
+    let isSpaceSteward = false
+    if (spaceId && viewerProfileId) {
+      const [owned, seat] = await Promise.all([
+        admin.from('spaces').select('id').eq('id', spaceId).eq('owner_profile_id', viewerProfileId).maybeSingle(),
+        admin
+          .from('space_members')
+          .select('role')
+          .eq('space_id', spaceId)
+          .eq('profile_id', viewerProfileId)
+          .eq('status', 'active')
+          .maybeSingle(),
+      ])
+      const role = (seat.data as { role?: string } | null)?.role ?? null
+      isSpaceMember = !!owned.data || role !== null
+      isSpaceSteward = !!owned.data || role === 'editor' || role === 'moderator' || role === 'admin'
+    }
+
+    const facts = {
+      unlisted,
+      access,
+      hostId,
+      viewerProfileId,
+      isMember: !!membership.data,
+      isSpaceMember,
+      isSpaceSteward,
+      isPlatformStaff: staff,
+    }
+    return { canSee: canSeeCircle(facts), canEnter: canEnterCircle(facts) }
+  } catch {
+    return { canSee: false, canEnter: false }
+  }
+}
+
 // ── THE CIRCLE DETAIL SHELL READ (the tabbed detail route, PAGE-FRAMEWORK §3) ───────────────────
 
 /** Everything the circle detail SHELL and every tab under it open on: the entity, the raw theme
@@ -105,8 +189,23 @@ export interface CircleShell {
   circle: CircleDetail
   /** Raw `circles.theme` jsonb — newer than the generated types, read through the ADR-246 seam. */
   theme: unknown
-  /** Active members, host first then by join date (the order every roster surface renders). */
+  /**
+   * Active members, host first then by join date (the order every roster surface renders).
+   *
+   * 🔴 EMPTY when `canEnter` is false. A LISTED closed Circle is public FACE — a viewer may see it
+   * exists, by name, Host, description and member count — and must NOT see who is in it. The
+   * roster is redacted HERE rather than at each tab, because a tab that forgot is a leak and a
+   * tab that cannot get the data cannot forget. `circle.member_count` is deliberately left intact:
+   * the number is part of the funnel's public face, the names are not.
+   */
   members: MemberRow[]
+  /**
+   * May this viewer see WHAT IS IN IT (ADR-1015 axis 2)? False for the lead-funnel case: the shell
+   * resolved, so the Circle exists and may be named, but every tab body, the roster and the posts
+   * are shut. A surface that renders content MUST branch on this and offer the join / buy call to
+   * action instead.
+   */
+  canEnter: boolean
 }
 
 /**
@@ -122,6 +221,31 @@ export interface CircleShell {
  * Archived circles resolve to null (the caller 404s), matching the filter the page has always
  * applied. FAIL-SAFE to null on any read error, so a hiccup reads as "not found" rather than a
  * half-painted page.
+ *
+ * 🔴 PRIVACY IS ENFORCED HERE, NOT IN THE ROUTE (ADR-1015). This read uses the ADMIN client, which
+ * holds BYPASSRLS — `circles_access_restrictive` is completely invisible to it. So the whole circle
+ * detail surface (the shell layout, the Home tab, the Members tab, every tab beneath) would render
+ * a closed circle to a stranger if the gate lived only in the database. Putting it in this function
+ * rather than in the layout is deliberate: the layout is one of four callers, and a fifth would
+ * arrive ungated.
+ *
+ * 🔴 IT ANSWERS BOTH QUESTIONS, BECAUSE THEY HAVE DIFFERENT ANSWERS:
+ *   • may this viewer see THAT IT EXISTS  → no ⇒ `null`, which every caller already turns into a
+ *     404. The same answer a non-existent slug gets, so the 404 never confirms the circle is real.
+ *   • may this viewer see WHAT IS IN IT   → no ⇒ the shell still resolves, with `canEnter: false`
+ *     and an EMPTY roster. That is the LISTED CLOSED circle, the lead funnel: name, Host,
+ *     description and member count are public face, the names and the posts are not.
+ *
+ * Redacting the roster here rather than at each tab is the whole point — a tab that forgot would
+ * be a leak, and a tab that never receives the data cannot forget.
+ *
+ * 🔴 THEREFORE VIEWER-SCOPED, and never `unstable_cache`-able. React `cache()` is per-request, so
+ * one viewer's shell can never be served to another. A cross-request cache keyed on the slug alone
+ * would hand a closed circle to the next visitor — cache poisoning, not a performance trade
+ * (the same rule `lib/people/associations.ts` tier B carries, for the same reason).
+ *
+ * The gate costs NOTHING on the common path: `access === 'open'` short-circuits before any viewer
+ * read is issued, so an open circle is exactly as many round trips as it was.
  */
 export const loadCircleShell = cache(async (slug: string): Promise<CircleShell | null> => {
   if (!slug) return null
@@ -131,7 +255,7 @@ export const loadCircleShell = cache(async (slug: string): Promise<CircleShell |
       .from('circles')
       .select(
         `id, name, slug, about, image_url, type, member_count, member_cap, status, is_demo, resonance_public,
-         latitude, longitude, neighborhood, city, sidebar_order, theme,
+         latitude, longitude, neighborhood, city, sidebar_order, theme, access, space_id, host_id, unlisted,
          host:profiles!host_id ( id, display_name, handle, avatar_url ),
          hub:hubs!hub_id (
            id, name, slug,
@@ -148,6 +272,28 @@ export const loadCircleShell = cache(async (slug: string): Promise<CircleShell |
       .neq('status', 'archived')
       .maybeSingle()
     if (!rawCircle) return null
+
+    // THE TWO-AXIS GATE (see the header). Reached only for a CLOSED circle.
+    const raw = rawCircle as unknown as {
+      id: string
+      access?: unknown
+      unlisted?: unknown
+      space_id?: string | null
+      host_id?: string | null
+    }
+    const access = asCircleAccess(raw.access)
+    let canEnter = true
+    if (access !== 'open') {
+      const verdict = await resolveCircleViewer(
+        raw.id,
+        raw.unlisted === true,
+        access,
+        raw.space_id ?? null,
+        raw.host_id ?? null,
+      )
+      if (!verdict.canSee) return null
+      canEnter = verdict.canEnter
+    }
 
     const circle = rawCircle as unknown as CircleDetail
     const { data: rawMembers } = await admin
@@ -167,7 +313,13 @@ export const loadCircleShell = cache(async (slug: string): Promise<CircleShell |
       return aHost - bHost
     })
 
-    return { circle, theme: (rawCircle as unknown as { theme?: unknown }).theme, members }
+    return {
+      circle,
+      theme: (rawCircle as unknown as { theme?: unknown }).theme,
+      // The redaction. `member_count` on the circle row survives (public face); the names do not.
+      members: canEnter ? members : [],
+      canEnter,
+    }
   } catch {
     return null
   }

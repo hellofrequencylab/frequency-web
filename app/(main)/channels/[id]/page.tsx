@@ -274,6 +274,9 @@ export default async function ChannelPage({
           )
           .eq('topical_channel_id', channel.id)
           .neq('status', 'archived')
+          // 🔴 Admin client = no RLS (ADR-1015). An Interest page is a BROWSE surface, so it keys
+          // on AXIS 1 (`unlisted`) — a LISTED closed Circle belongs on it, an unlisted one does not.
+          .eq('unlisted', false)
           .order('member_count', { ascending: false })
           .limit(12),
     isProgramChannel ? listChapters(channel.id) : Promise.resolve<ChapterSummary[]>([]),
