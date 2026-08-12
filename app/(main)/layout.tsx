@@ -147,8 +147,19 @@ export async function generateMetadata(): Promise<Metadata> {
 // without the nav shell and do their own auth checks.
 export default async function MainLayout({
   children,
+  wizard,
 }: {
   children: React.ReactNode
+  /**
+   * The `@wizard` parallel-route slot (ADR-1010). Renders a Spark OVER the page a member was on
+   * when they reached it by an in-app link, and NOTHING on a cold hit — a refresh, a shared link,
+   * or a crawl renders `@wizard/default.tsx` (null) here and the wizard's own full page in
+   * `children`, which is the ADR-986 half of the deal. See app/(main)/@wizard/.
+   *
+   * It costs the shell nothing: the slot's own tree is a null default plus a null catch-all, and
+   * an intercepting page only exists for the six wizard routes.
+   */
+  wizard: React.ReactNode
 }) {
   const supabase = await createClient()
   const {
@@ -678,6 +689,10 @@ export default async function MainLayout({
         </BannerMeasure>
       </Suspense>
       {children}
+      {/* The Spark modal slot (ADR-1010). Sits beside the page rather than inside it, next to the
+          app's other overlay launchers below, because a wizard opened over a page is chrome, not
+          that page's content. It portals to the body, so its position here costs nothing. */}
+      {wizard}
       {/* ONE bottom-right toast lane. Both stacks used to declare their own identical `fixed`
           box at z-50, so they claimed the same rect and both sat under the Vera panel — a reward
           toast fired with Vera open was never seen. components/toast-lane.tsx owns the geometry. */}

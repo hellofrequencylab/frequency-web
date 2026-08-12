@@ -22530,3 +22530,129 @@ The tests are **capability assertions, not render assertions**: `lib/core/capabi
 proves each rung cannot do the next rung's actions, that the four sets are strictly nested, that an
 unrecognised value / a non-active membership / an anonymous viewer grant nothing, and that a rung
 never leaks into another scope. Five of them fail against the pre-change resolver.
+
+# ADR-1016: The Circle board measures you against yourself, so there is no last place to be in
+
+> ⚠️ **Number is provisional.** ADR-1013 is the head of `docs/DECISIONS.md` on the branch point
+> (`6b506eb33`). C1 and C2 are landing decisions in the same window, so this may need to become
+> 1017/1018 when the three branches merge. Nothing below depends on the number.
+
+**Status:** Accepted (Circles C4) · `lib/quest/effort.ts`, `lib/circles/effort-board.ts`,
+`app/(main)/circles/[slug]/(circle)/leaderboard/page.tsx`, `components/quest/leaderboard-list.tsx`,
+`components/quest/board-controls.tsx`, `lib/circles/tabs.ts`. Extends ADR-1013 (the tabbed Circle
+shell) with its third tab. Reuses, and does not fork, the cooperative machinery `/crew/leaderboard`
+already carries.
+
+## Context
+
+The Circle detail shell (ADR-1013) has Home and Members and nowhere for a board. The obvious thing
+to build was the thing `/crew/leaderboard` already builds: members ordered by season Zaps, with a
+one-tap opt-out. The owner rejected that shape, and rejected "team total only" as well. The ruling
+is **effort relative to yourself**: measured against your own recent baseline, so a beginner and a
+veteran can both be doing well in the same week. **No straight 1-to-N ranking.**
+
+The ruling is the design, not a constraint on it. This is a wellbeing product for tired, skeptical
+adults, and the research the repo already cites in `components/quest/collective-goal.tsx` (Festinger
+1954; JMIR 2021) says an absolute board rewards the top few and demotivates everyone else. The
+bottom of a visible ladder churns exactly the people who most need to stay.
+
+Two facts about production shaped every threshold below. The largest Circle holds **two members and
+five posts**, and a self-relative score **needs a baseline that a first-week member does not have**.
+Both are the common case, not the edge.
+
+## Decision
+
+### 1. The score, and where it comes from
+
+```
+effort index = this week's Zaps ÷ your usual week × 100, capped at 200
+your usual week = the MEDIAN of your last four weeks THAT HAD ANY ACTIVITY
+```
+
+Derived from `zap_transactions` (`20260607040000_zap_ledger_and_recategorize.sql`): an append-only
+ledger of `profile_id · amount · created_at`, indexed on profile and on `created_at`. It is the only
+per-member, timestamped record of Quest effort in the schema, so it is the only thing a windowed
+self-comparison can honestly be built on. **No migration, no new column, no nightly job.**
+
+| Choice | Why |
+|---|---|
+| 7-day recent window | A Circle lives in weeks. Shorter is noise; longer stops describing "now". |
+| 4 baseline weeks | Long enough that one odd week cannot define your normal, short enough that it is still you. |
+| **Median**, not mean | Finishing a Journey pays +75 Zaps in one week (ADR-305). On a mean that week inflates the denominator and the next four all read as a decline, punishing a member for finishing something. |
+| **Active weeks only** | A week you were ill is not evidence about your usual week. Counting the zero would halve the denominator and hand you a fake 200% the week you came back, which is a lie the skeptic test catches. |
+| 200% cap | Nothing to win by grinding, no arms race to lose, and no 5,000% trophy for a member whose usual week is 8 Zaps. |
+| Bands, not numbers, on the row's chip | `Above usual` · `Usual week` · `Lighter week` · `Back this week` · `No usual week yet`. |
+
+Ledger corrections (negative `amount`) are ignored: a clawback must not read as a lighter week.
+
+### 2. The cold start, stated and built
+
+A member needs **two of their last four weeks to have had activity** before we compare them with
+themselves. Under that there are two named states, and neither shows a ratio:
+
+- **`new`** (account younger than the 35-day window): "No usual week yet". There has not been time
+  for one. The row shows the **days they showed up this week**, a fact that needs no history.
+- **`returning`** (older account, quiet month): "Back this week". Same treatment. **A gap never
+  costs a member a band**, because they are routed here *before* any ratio is computed, so illness,
+  travel or a hard month cannot surface as a bad number.
+
+### 3. What refuses to render
+
+- **Under 6 people who showed up in the same week, there is no list.** A column of three is a
+  ranking however it is dressed. The surface is the shared bar plus a straight answer about why.
+  This is the path a 2-member Circle takes, so it is a complete answer, not a degraded one.
+- **A member who took the week off is absent, not last.** Absence is the kind answer and the honest
+  one: the board is "who showed up this week".
+- **No position numbers, and the order is alphabetical.** Sorting by the index would rebuild the
+  rejected ladder one row at a time. Alphabetical is the visible proof that the numbers are not
+  comparable across rows: they have different denominators.
+- **No Hub/Global switcher.** A Circle board *is* the local scope; zooming out is the comparison the
+  literature says demotivates.
+- **The season-rank chip gives way to the member's own band**, because a cross-member status ladder
+  is what this board exists not to be.
+
+### 4. Compose, do not fork
+
+- `BoardControls` gains `basePath` + `tracks` + `showScope`, replacing a hardcoded
+  `/crew/leaderboard` href. Defaults are the crew board's exact previous behaviour.
+- `LeaderboardList` gains an `effort` field per entry and `showPosition` (default `true`). The crew
+  board is unchanged by the defaults.
+- `setLeaderboardVisibility` takes an optional board path to repaint, matched against a **closed
+  allowlist** rather than trusted: it arrives from a client component.
+- The opt-out preference stays **per member, not per board**. Someone who does not want to be listed
+  did not mean "except over there". Hiding removes the row and **still counts them toward the shared
+  total**, because the total is summed from the Circle's own activity rows and there is no seam in
+  that path where a preference could be applied (`lib/circles/effort-board.test.ts` pins it).
+
+### 5. The tab
+
+`circleTabs` gains Leaderboard on the **same** threshold as the strip itself (ADR-089's guardrail:
+no strip at ≤1 member unless you manage it), not a higher one of its own. The tab leads with the
+shared total, which is real content at any size, and the page's own 6-contributor gate decides
+whether a list of individuals appears. One rule at the strip, one rule inside the page.
+
+## Alternatives rejected
+
+- **Straight ranking with opt-in visibility** (owner, explicitly). Opt-in visibility protects the
+  people who opt out and does nothing for the people who do not realise they should.
+- **Team total only** (owner, explicitly). It is the right headline and an insufficient whole page:
+  it gives an individual nothing to read about their own week.
+- **Grouping rows by band.** Renders as five tiers stacked top to bottom, which is a ladder with
+  the numbers filed off. One alphabetical list, band as per-row information.
+- **Circle-only Zaps as the numerator.** A circle-scoped numerator over a whole-life denominator is
+  a different number every time a member practises elsewhere. The Circle scopes *who appears*; the
+  shared bar above is the circle-scoped number.
+- **Raising the tab's own threshold above the strip's.** Would make the feature invisible in
+  production (largest Circle = 2), and hide the question rather than answer it.
+
+## Consequences
+
+- Two new pure modules, both fully unit-tested without a database: `lib/quest/effort.ts` (scoring +
+  board composition) and the pure half of `lib/circles/effort-board.ts`.
+- `getCircleZapContributions` is `cache()`d and gives a per-member breakdown of the same two
+  circle-scoped sources `lib/circles/earned.ts` already totals, so the shared bar keeps that file's
+  honesty rule (never sum members' personal season totals) without duplicating it.
+- Rows render for members and the Circle's managers only. A visitor sees the circle-level bar and
+  nothing about individuals. This is app-level and does not depend on the C1 RLS work.
+- Tests cover the board at 1, 3, 6 and 60 contributors, a member with no baseline, a returning
+  member, and an opted-out member still counting toward the total.

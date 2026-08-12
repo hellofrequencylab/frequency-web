@@ -29,6 +29,7 @@ import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/comp
 import { draftScope } from './draft/draft-store'
 import { useSparkDraft } from './draft/use-spark-draft'
 import { SparkDraftConflict, SparkDraftCue, SparkResumeOffer } from './draft/spark-resume'
+import { useReportWizardDraft } from '../wizard-guard'
 
 export interface SparkShellProps {
   /** The thing being made, shown as the eyebrow ("New Event"). */
@@ -112,6 +113,12 @@ export function SparkShell({
   const pathname = usePathname()
   const scope = draftScopeKey === null ? null : (draftScopeKey ?? draftScope([pathname, eyebrow]))
   const draft = useSparkDraft({ scope, step, stageRef, busy, route: pathname, label: eyebrow })
+
+  // Report this draft up to the Spark modal, when there IS one (ADR-1010). The modal needs exactly
+  // three things it cannot work out for itself — which draft is on screen, how to erase both copies
+  // of it, and whether a write is still owed — and a Spark rendered as a full page has no provider
+  // above it, so this is a no-op there. Nothing about the wizard changes either way.
+  useReportWizardDraft({ scope, discard: draft.discard, pending: draft.saveState === 'saving' })
 
   const standardFooter = onNext && (
     <div className={onBack ? 'flex gap-3' : ''}>

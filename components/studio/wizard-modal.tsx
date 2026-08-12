@@ -361,6 +361,3 @@ export function WizardModal({
     document.body,
   )
 }
-
-/** Exported for the guard's tests: `touched` is state only so the beforeunload arm can react. */
-export type { Ask }
