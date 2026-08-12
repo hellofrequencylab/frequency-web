@@ -13,13 +13,19 @@ import type { CoverPlaceholderPath } from '@/lib/spaces/cover-placeholder'
 //       ...
 //     }
 //
-// 🔴 THAT ONE PARAMETER COST 651 MB OF DEPLOY DISK. @vercel/nft cannot resolve a path assembled
+// 🔴 THAT ONE PARAMETER COST 612 MB OF DEPLOY DISK. @vercel/nft cannot resolve a path assembled
 // from a variable, so it falls back to globbing the deepest prefix it CAN resolve — here the whole
-// of `public/` — into every function whose graph reaches the module. Measured off the real `.next`
-// trace before this file existed: **62 functions each carrying all 69 files of `public/`, 12.25 MB
-// apiece, 759.5 MB.** Every settings page under `/spaces/[slug]` shipped the maplibre browser
-// bundle, the PWA icon set and 43 stock photographs, because the segment's share card sits above
-// it and metadata is inherited downward. Same failure as ADR-1006/1007 one layer down
+// of `public/` — into every function whose graph reaches the module. Measured off two real `.next`
+// builds, 2026-08-12, not estimated:
+//
+//     public/ across all functions   770.4 MB  ->  158.0 MB
+//     whole artifact                  6.19 GB  ->   5.59 GB
+//     distinct public/ files traced        69  ->       11
+//     worst function                    69 files, 12.25 MB  ->  10 files, 2.37 MB
+//
+// Every settings page under `/spaces/[slug]` was shipping the maplibre browser bundle, the PWA icon
+// set and 43 stock photographs, because the segment's share card sits above it and metadata is
+// inherited downward. Same failure as ADR-1006/1007 one layer down
 // (`lib/og/load-nunito.ts`, 333 MB of fonts) and ADR-1004 one layer up
 // (`join(process.cwd(), ...rubricPath)`, which swept the repo ROOT into ~300 functions).
 //
@@ -37,8 +43,16 @@ import type { CoverPlaceholderPath } from '@/lib/spaces/cover-placeholder'
 //
 // ⚠️ REINTRODUCING A `read(name)` HELPER — or hoisting 'public/images/site' into a shared const and
 // building the path from it — SILENTLY RESTORES THE GLOB. Nothing fails, no test goes red on its
-// own, the deploy just gets ~650 MB heavier. `scripts/build-fanout.test.ts` is the thing that
-// notices, which is the only reason this stays visible (DEPLOY-SAFETY rule 6).
+// own, the deploy just gets 612 MB heavier. `scripts/build-fanout.test.ts` is the thing that
+// notices, which is the only reason this stays visible (DEPLOY-SAFETY rule 6). Its three trace
+// assertions were run against the pre-change build to prove they are not vacuous: they fail with
+// `expected 43 to be less than or equal to 6`, `expected 69 to be less than or equal to 14`, and a
+// 23-file list of unsanctioned `public/` assets.
+//
+// ⚠️ ONE MODULE, SO ALL SEVEN FILES TRAVEL TOGETHER. The event card needs only the mark, and pays
+// for the six covers because they share this module. Splitting the mark into its own file would
+// save ~1.7 MB x the 5 functions under `/events/[slug]`, roughly 9 MB against the 612 MB above —
+// not worth a second module to keep in sync, but that is the trade if it ever matters.
 //
 // The set is CLOSED, and the compiler holds it closed: `COVER_READERS` is keyed by
 // `CoverPlaceholderPath`, the union of `lib/spaces/cover-placeholder.ts`'s own array. Adding a
