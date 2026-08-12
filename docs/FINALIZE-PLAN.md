@@ -20,7 +20,7 @@
 > |---|---|---|
 > | §2.5 repair the ledger | ✅ Done | All four listed versions (`20270213000000`, `20270214000000`, `20270215000000`, `20270215000001`) plus `20270220000000` return **1 row each** in `supabase_migrations.schema_migrations` |
 > | §2.6 stop it recurring | ✅ Done ([ADR-1007](DECISIONS.md)) | `scripts/check-migrations.mjs` gained **Rule 4** — the repo and the ledger head must be the same set, compared **live** with no pinned numbers, degrading to a loud SKIP (never a vacuous pass) when CI has no credentials |
-> | Repo ⇄ ledger today | ⏳ **609 ⇄ 608** | `ls supabase/migrations/*.sql \| wc -l` → **609**; `select count(*) from supabase_migrations.schema_migrations` → **608**, head `20270226000000`. The single gap is `20270226000100_household_bundle_invites.sql`, written and **not yet applied** — a repo file ahead of the ledger, which is the safe direction and exactly what Rule 4 now reports |
+> | Repo ⇄ ledger today | ✅ **609 ⇄ 609** | `ls supabase/migrations/*.sql \| wc -l` → **609**; `select count(*) from supabase_migrations.schema_migrations` → **609**, head `20270226000100`. The last gap, `20270226000100_household_bundle_invites.sql`, was applied 2026-08-12 (DDL via `execute_sql`, ledger row inserted at the file's own version per [`DATABASE.md`](DATABASE.md) — never `apply_migration`, which stamps wall-clock). Repo and ledger now agree byte for byte: versions digest `3a19c090…d580a50`, version⇥name digest `84fea62d…168e80b` |
 >
 > ⚠️ The old count in this paragraph ("598 unique, well-ordered filenames") was stale within a day of
 > being written. It is replaced above by the command rather than by another number to inherit.
