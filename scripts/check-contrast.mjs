@@ -163,7 +163,9 @@ export const PAIRS = [
   { fg: '--color-text-on-move', bg: '--color-move', role: 'body', note: 'Get Moving button label' },
 
   // ── Tinted status/brand chips: the strong step reading on its own -bg wash ───────────────
-  { fg: '--color-primary-strong', bg: '--color-primary-bg', role: 'body', note: 'primary chip text' },
+  // Also THE avatar-initials fallback (components/ui/avatar.tsx): a warm disc with the member's
+  // letters on it. Named here so the pairing's second job is visible to whoever edits either token.
+  { fg: '--color-primary-strong', bg: '--color-primary-bg', role: 'body', note: 'primary chip text / avatar initials disc' },
   { fg: '--color-signal-strong', bg: '--color-signal-bg', role: 'body', note: 'signal chip text' },
   { fg: '--color-broadcast-strong', bg: '--color-broadcast-bg', role: 'body', note: 'broadcast chip text' },
   { fg: '--color-move-strong', bg: '--color-move-bg', role: 'body', note: 'Get Moving chip text' },
@@ -185,6 +187,22 @@ export const PAIRS = [
   // hairline), so it is out of scope by design — `--color-border-strong` is the control edge.
   { fg: '--color-border-strong', bg: '--color-canvas', role: 'edge', note: 'control edge on the canvas' },
   { fg: '--color-border-strong', bg: '--color-surface', role: 'edge', note: 'control edge on a card' },
+  // ── border-strong the other way round: as a GROUND ───────────────────────────────────────
+  // Added 2026-08-11 after axe failed /feed, /settings and /spaces/<slug>/manage in DAWN dark on
+  // one element: `.bg-border-strong` painting bold 12.75px initials at **3.27:1**. The token was
+  // only ever modelled as a foreground (the two rows above), so `bg-border-strong` — an EDGE token
+  // used as a FILL — sat outside everything this gate measured. It is a tone step, so the
+  // secondary inks are all short of AA ON it, in every state, not just the one axe happened to
+  // sample:
+  //     text-subtle on border-strong  3.85 (DAWN light) · 3.27 (DAWN dark) · 3.39 (Mid light) · 3.35 (Mid dark)
+  //     text-muted  on border-strong  4.03 (DAWN light) · 3.58 (DAWN dark) · 4.26 (Mid light) · 3.89 (Mid dark)
+  // Neither is entered here, because neither is now painted anywhere and a table row is a
+  // CONTRACT, not a museum. What is entered is the one ink that does clear AA on the fill, so the
+  // ground itself is under the gate and the answer to "what may sit on it" is a measured number
+  // rather than a guess. A filled DISC carrying initials is not this pairing at all — that is the
+  // avatar fallback, `primary-strong on primary-bg` below, and `components/ui/avatar.tsx` is the
+  // one component that should ever render it.
+  { fg: '--color-text', bg: '--color-border-strong', role: 'body', note: 'the only ink that clears AA on a border-strong fill (skeletons/tracks/switch tracks carry none)' },
   // The focus ring, measured AS PAINTED. globals.css draws it at full strength, so no `alpha`
   // here — but the field ring below shares the token, and if either use site ever reintroduces a
   // `color-mix(… N%, transparent)` the matching `alpha` has to come with it or this table starts

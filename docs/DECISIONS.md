@@ -20108,3 +20108,64 @@ here because both move the token layer and the visual baselines: `.dark [data-sk
 a descendant combinator while the bootstrap stamps `.dark` and `data-skin` on the **same** `<html>`
 element, so `#F0AD4E` never paints and midnight-dark renders a *mixture* of the dark and midnight
 palettes; and the amber-as-display-text debt is real and open.
+
+## ADR-986 — An edge token used as a fill is invisible to a gate that only measures it as ink (2026-08-11)
+
+**Decision.** The four rail avatar-initial pills and the Dispatch comment pill stop hand-rolling
+`bg-border-strong` + bold initials and render `components/ui/avatar.tsx`, whose fallback disc is
+`bg-primary-bg` + `text-primary-strong`. `scripts/check-contrast.mjs` gains a row for
+`--color-border-strong` **as a ground**, so the token is now under the gate in both directions.
+
+**Context.** The a11y suite failed `/feed`, `/settings` and `/spaces/<slug>/manage` in dawn-dark on
+one element, which is one element in the shared right rail seen three times:
+
+```
+[serious] color-contrast — .bg-border-strong
+3.27 (foreground #a2957d, background #50432b, 9.6pt bold). Expected 4.5:1
+```
+
+It is pre-existing debt, not a regression from the PR that surfaced it. It only gets measured on
+runs where the E2E member session mints, and the workflow branches around runs without one, so the
+shell pages had gone unmeasured.
+
+**Root cause, in two parts.**
+
+1. **An EDGE token used as a FILL.** `--color-border-strong` is a hairline tone step. The pair table
+   modelled it only as a foreground (`border-strong on canvas`, `border-strong on surface`, both
+   waived at ~1.4-1.99 because a tone step is not a control outline). Nothing in the contract
+   described what may sit **on** it, so a fill made of it was outside everything the gate checks
+   and `check:contrast` reported green over a live 3.27:1.
+2. **A duplicated control.** The platform already had the canonical avatar fallback. The rail
+   carried a second, worse copy of it in four places, and `app/(main)/broadcast/[id]/comment-section.tsx`
+   a fifth. `components/feed/post-replies.tsx` had the pairing right the whole time.
+
+**The pairing was short of AA in every skin, not just the one axe sampled.** Measured from
+`app/globals.css`:
+
+| Pairing | DAWN light | DAWN dark | Midnight light | Midnight dark |
+| :--- | ---: | ---: | ---: | ---: |
+| `text-subtle` on `border-strong` (before, dark) | 3.85 | **3.27** | 3.39 | 3.35 |
+| `text-muted` on `border-strong` (before, light) | 4.03 | 3.58 | 4.26 | 3.89 |
+| `primary-strong` on `primary-bg` (after) | **4.81** | **8.07** | **5.09** | **8.14** |
+
+Worst case goes 3.27 → 4.81. Every state clears 4.5.
+
+**Why not a waiver or a raised baseline.** Per ADR-985 the two instruments mean different things: a
+waiver records a decision an owner already made, and a baseline counts undecided debt. Neither
+applies. Bold 12.75px type at 3.27:1 is a genuine barrier with a one-component fix, and the fix was
+already written and shipping elsewhere in the tree.
+
+**What the gate learned.** The new row is `--color-text` on `--color-border-strong` (7.91-8.86 in
+every state), the one ink that clears AA on the fill. `text-muted` and `text-subtle` on it are
+*documented in the comment with their numbers* and deliberately **not** entered as rows: nothing
+paints them now, and a pair table is a contract, not a museum. `primary-strong on primary-bg` is
+renamed to name its second job, so an edit to either token can see that the avatar disc rides on it.
+
+**Consequences.** ✅ Five hand-rolled pills deleted; the rail also stops hand-rolling the presence
+wrapper, which `Avatar` places for it. ✅ Three hover states carrying the same anti-pattern
+(`text-muted` over `hover:bg-border-strong`, 3.58:1 in dawn-dark) were fixed to `hover:text-text` in
+`app/(main)/crew/complete-button.tsx`, `app/(main)/crew/circle-task-controls.tsx` and
+`components/rooms/member-row-actions.tsx`. axe never measures a hover state, so these would have
+outlived the gate. ⚠️ The rail discs step 32px → 36px (`Avatar`'s `sm`, the documented compact-list
+step) and the comment disc 28px → 24px (`xs`, matching `post-replies.tsx`). Using the shared scale
+is the point; a caller-supplied box would have reintroduced the fork.
