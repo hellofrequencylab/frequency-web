@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { CircleSettingsForm, type CircleSettingsInitial } from './circle-settings-form'
 import { CircleEditorWindow } from '@/components/studio/circle/circle-editor-window'
+import { asCircleAccess, availableAccessModes } from '@/lib/circles/visibility'
 
 // The host's full-page circle settings editor (gated by circle.editSettings → host, scope leader,
 // or admin). Reuses updateCircleSettings, which writes only host-owned fields.
@@ -20,6 +21,8 @@ interface CircleSettingsRow {
   neighborhood: string | null
   resonance_public: boolean | null
   unlisted: boolean | null
+  access: string | null
+  space_id: string | null
 }
 
 export default async function CircleSettingsPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -28,7 +31,7 @@ export default async function CircleSettingsPage({ params }: { params: Promise<{
 
   const { data } = await admin
     .from('circles')
-    .select('id, name, about, type, member_cap, image_url, city, neighborhood, resonance_public, unlisted')
+    .select('id, name, about, type, member_cap, image_url, city, neighborhood, resonance_public, unlisted, access, space_id')
     .eq('slug', slug)
     .maybeSingle()
   const circle = data as CircleSettingsRow | null
@@ -36,6 +39,15 @@ export default async function CircleSettingsPage({ params }: { params: Promise<{
 
   const caps = await getCircleCapabilities(circle.id)
   if (!caps.has('circle.editSettings')) notFound()
+
+  // Which access modes to OFFER (ADR-1015). A personal Circle sits on the root Space sentinel, so
+  // the two Space modes are nonsense there, and `tier` additionally needs a selling plan. The
+  // database refuses both regardless (`trg_circles_access_shape`); this only keeps the form from
+  // offering a choice that cannot be saved.
+  const { data: spaceRow } = circle.space_id
+    ? await admin.from('spaces').select('type, plan').eq('id', circle.space_id).maybeSingle()
+    : { data: null }
+  const space = spaceRow as { type: string | null; plan: string | null } | null
 
   const initial: CircleSettingsInitial = {
     name: circle.name ?? '',
@@ -47,11 +59,17 @@ export default async function CircleSettingsPage({ params }: { params: Promise<{
     neighborhood: circle.neighborhood ?? '',
     resonancePublic: circle.resonance_public ?? false,
     unlisted: circle.unlisted ?? false,
+    access: asCircleAccess(circle.access),
   }
 
   return (
     <CircleEditorWindow slug={slug}>
-      <CircleSettingsForm circleId={circle.id} slug={slug} initial={initial} />
+      <CircleSettingsForm
+        circleId={circle.id}
+        slug={slug}
+        initial={initial}
+        accessModes={availableAccessModes(space)}
+      />
     </CircleEditorWindow>
   )
 }
