@@ -70,6 +70,15 @@ In fixed order, each rendered only when it applies to the scope + viewer:
 
 ## 3. The one missing abstraction — a per-scope field schema
 
+> **⚠️ Superseded by [ADR-986](DECISIONS.md) — built, but not here.** This section proposed
+> `lib/editing/schema.ts`. It was never built, and it should not be: the Business Seeder's review
+> model turned out to hold the same abstraction from the creation side, so building both would have
+> produced the exact duplication this doc exists to kill. The schema now lives ONCE, in the Studio
+> kernel (`lib/studio/kernel/manifest.ts`, spec: [STUDIO.md](STUDIO.md)), and a field's `placement`
+> (`'spark' | 'inline' | 'rail'`) is what lets one declaration serve creation AND editing.
+> **§2 below is unchanged** and is that kernel's consumer: `inlineFields(manifest)` fills the inline
+> canvas, `railFields(manifest)` fills the Inspector. Read this section as history.
+
 Today each of the 7 entity settings modules hand-rolls its form, which is why nothing feels shared.
 Introduce **one declarative schema per scope kind** and **one renderer**:
 

@@ -19,7 +19,7 @@ import {
   type RowSplit,
 } from '@/lib/entity-blocks/rows-ops'
 import { useProfileLayout } from '@/components/entity-blocks/profile-layout-context'
-import { FieldEditor, type UploadImage } from '@/components/entity-blocks/block-edit-panel'
+import { FieldEditor } from '@/components/entity-blocks/block-edit-panel'
 import { SpaceCanvasBlock, isCanvasTextField, isCanvasImageField } from './space-canvas-block'
 import { Input } from '@/components/ui/field'
 
@@ -63,7 +63,10 @@ function columnsClass(columns: number, ratio: string | undefined): string {
   return ''
 }
 
-export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }) {
+export function SpaceCanvasEditor({ loomScope }: {
+  /** The Loom library every image field / photo slot on this canvas opens into (the Space slug). */
+  loomScope?: string
+}) {
   const store = useProfileLayout()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [addingAt, setAddingAt] = useState<{ rowId: string; col: number } | null>(null)
@@ -276,7 +279,7 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
                           tileRef={(el) => {
                             tileRefs.current[id] = el
                           }}
-                          uploadImage={uploadImage}
+                          loomScope={loomScope}
                           content={store.content[id] ?? {}}
                           onSelect={() => toggleTile(id)}
                           onUp={() => onNudge(id, -1)}
@@ -348,7 +351,7 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
                           <SpaceCanvasBlock
                             id={id}
                             props={store.content[id] ?? {}}
-                            uploadImage={uploadImage}
+                            loomScope={loomScope}
                             onField={(k, v) => setField(id, k, v)}
                           />
                         </div>
@@ -372,7 +375,7 @@ function BlockTile({
   canUp,
   canDown,
   tileRef,
-  uploadImage,
+  loomScope,
   content,
   onSelect,
   onUp,
@@ -385,7 +388,7 @@ function BlockTile({
   canUp: boolean
   canDown: boolean
   tileRef: (el: HTMLLIElement | null) => void
-  uploadImage?: UploadImage
+  loomScope?: string
   content: Record<string, unknown>
   onSelect: () => void
   onUp: () => void
@@ -442,7 +445,7 @@ function BlockTile({
                 key={f.key}
                 field={f}
                 value={content[f.key]}
-                uploadImage={uploadImage}
+                loomScope={loomScope}
                 textOnCanvas
                 onChange={(v) => onField(f.key, v)}
               />

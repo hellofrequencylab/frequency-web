@@ -17,6 +17,7 @@ import { saveStreakWithFreeze } from '@/lib/practice-streak'
 import { bothPartiesOptedIn } from '@/lib/resonance/matches'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
+import { proposeCreateFromTool } from './create-entity'
 
 /** Profile fields Vera may set (the member's own, low-risk). Must stay in sync with the
  *  `set_profile_field` tool advertisement in tools.ts (display_name | bio | neighborhood);
@@ -92,6 +93,12 @@ export async function executeConfirmedTool(
     // site). send_intro_email is OUTBOUND + suggest-only + double-opt-in gated; the suggest tool is a read.
     case 'send_intro_email':
       return sendIntroEmail(profileId, args, opts.approvedSend === true)
+    // ── Studio creation (ADR-988). A confirmed `create_entity` PROPOSES and stops. The member
+    // reads the draft on the review board and taps Create, which calls confirmCreate() from
+    // their own session — a call this switch cannot reach and no tool key names. So the model
+    // can put a draft in front of a person, and only a person can make it real.
+    case 'create_entity':
+      return proposeCreateFromTool(profileId, args)
     case 'suggest_circle':
     case 'find_host':
     case 'suggest_resonance_match':

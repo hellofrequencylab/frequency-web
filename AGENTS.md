@@ -90,6 +90,22 @@ One shell, five templates, one chrome map. Full spec:
 - **Speed is structural:** Server Components by default; never block the shell on slow
   awaits — push them behind per-section `<Suspense>` (PAGE-FRAMEWORK §5).
 
+# Creation wizards — a locked, machine-enforced contract (declare a manifest, never build a wizard)
+
+Every creation wizard, review board, and edit re-entry derives from ONE source. Do NOT hand-roll a
+per-entity wizard, review screen, or field style. Full spec: [`docs/STUDIO.md`](docs/STUDIO.md)
+(ADR-986). Enforced in CI by `pnpm check:studio` + `lib/studio/registry.test.ts`.
+
+- **To add or change an entity's fields:** edit its manifest in `lib/studio/entities/*.ts` and
+  register it in `lib/studio/registry.ts`. That is the whole change: the Spark, the review board,
+  and the edit rail all derive from it.
+- **To add a capability every entity should get** (a new control, signal, or mood): change
+  `lib/studio/kernel/*`, adding a `FIELD_KIND` if it is a new control. Kernel change ⇒ every wizard.
+- **The kernel is pure and entity-blind.** No React/Next/Supabase, and never an import from
+  `lib/studio/entities/`. If you want to reach sideways, you want a field kind instead.
+- A field's `placement` (`spark` / `inline` / `rail`) is the ONE seam between creating and editing
+  (ADR-450 §2), so the two can never drift.
+
 # Admin menu — a locked, machine-enforced contract (extend the catalog, never rewrite the rail)
 
 The operator admin menu + rail + `/manage` consoles all derive from ONE source. Do NOT hand-roll

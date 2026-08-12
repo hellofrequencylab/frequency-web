@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getMyProfileId } from '@/lib/auth'
+import { canSeedEvents } from '@/lib/events/seed/gate'
 import { FocusTemplate } from '@/components/templates'
 import { Creator } from './creator'
 
@@ -19,6 +20,11 @@ export default async function ScanPosterPage() {
   const profileId = await getMyProfileId()
   if (!profileId) redirect('/events')
 
+  // Does this caller also run the Event Seeder? If so the page offers the batch door beside
+  // the member's own flow (ADR-997). Visibility only: the staging action re-runs the real
+  // gate, so a browser that fakes its way to the button still gets nothing.
+  const canSeed = await canSeedEvents()
+
   return (
     <FocusTemplate
       title="Capture an event poster"
@@ -30,7 +36,7 @@ export default async function ScanPosterPage() {
         </Link>
       }
     >
-      <Creator userId={user.id} />
+      <Creator userId={user.id} canSeed={canSeed} />
     </FocusTemplate>
   )
 }

@@ -89,10 +89,6 @@ export const KNOWN_DELEGATED = new Map([
     'the "Create an event" instructional band hand-rolls the page h1 at text-body; /events/new and /events/[slug]/edit both delegate their header to it. Retire onto PageHeading.',
   ],
   [
-    'app/(main)/events/event-spark.tsx',
-    'the event wizard hand-rolls the eyebrow + h1 lockup PageHeading already provides (eyebrow + title). One of six identical spark/wizard hand-rolls; the other five live in components/** and are swept in DAWN Phase 3.',
-  ],
-  [
     'app/(main)/admin/walkthroughs/[id]/editor.tsx',
     'the Walkthrough editor hand-rolls back-link + h1 + actions, which is exactly PageHeading\u2019s back/title/actions slot set.',
   ],
