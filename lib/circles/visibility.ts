@@ -68,10 +68,63 @@ export const CIRCLE_ACCESS_LABEL: Record<CircleAccess, string> = {
   tier: 'Included with a membership',
 }
 
+/** One line of explanation per mode, for the control that sets it. Same voice rules as the labels:
+ *  plain sentences, no em dashes, and no telling the reader what to feel about their own Circle. */
+export const CIRCLE_ACCESS_HINT: Record<CircleAccess, string> = {
+  open: 'Anyone who finds this circle can join it straight away.',
+  circle_members: 'People get in only when you add them. Nobody else sees inside.',
+  space_members: 'Anyone with an active membership in your Space can join themselves.',
+  invite: 'An invite link or a QR code is the only way in.',
+  tier: 'Joining comes with a paid membership tier you set up in your Space.',
+}
+
 /** Which modes need a real (non-root) owning Space. A personal Circle lives on the root sentinel,
  *  which has no roster to admit from and sells nothing, so both are nonsense there. The database
  *  refuses them outright (`trg_circles_access_shape`); this is the same list for the UI. */
 export const SPACE_ONLY_ACCESS_MODES: readonly CircleAccess[] = ['space_members', 'tier']
+
+/** The plans that may SELL access to a Circle. A mirror of `private.space_can_sell`
+ *  (20270227000000), and the drift between the two is asserted in visibility.test.ts against the
+ *  migration text, because two lists of plan names WILL diverge otherwise and the failure mode is
+ *  silent: the UI offers a paid mode the trigger then refuses, which reads to an operator as the
+ *  save button being broken.
+ *
+ *  The second block is grandfathering, not aliasing. Those rows predate the plan rename and must
+ *  not lose the ability to sell just because the label moved. */
+export const SPACE_SELLING_PLANS: readonly string[] = [
+  'business', 'collective', 'nonprofit', 'independent',
+  'pro', 'practitioner', 'partner', 'organization', 'whitelabel',
+]
+
+/** May this Space put a Circle behind a paid tier? Two conditions, both from the SQL: it must be a
+ *  REAL Space (a personal Circle lives on the root sentinel, which sells nothing) and it must be on
+ *  a selling plan. A missing plan reads `free`, which is the same fail-closed direction the
+ *  database takes. */
+export function spaceCanSell(space: { type?: string | null; plan?: string | null } | null): boolean {
+  if (!space || !space.type || space.type === 'root') return false
+  return SPACE_SELLING_PLANS.includes(space.plan ?? 'free')
+}
+
+/** Which access modes this Circle may actually be set to, given the Space that owns it.
+ *
+ *  The UI must not offer a mode the trigger will refuse. Both refusals are real and both are
+ *  raised by `trg_circles_access_shape`: `circle_access_needs_space` for the two Space modes on a
+ *  personal Circle, and `circle_access_plan_floor` for `tier` below the Business plan. This is the
+ *  same rule stated once so the form and the database cannot disagree.
+ *
+ *  ⚠️ This narrows what is OFFERED. It is not the enforcement, and it must never become the only
+ *  check: the trigger fires on the service role too, which is the guarantee that survives an
+ *  admin-client write, a Stripe webhook, or a future form nobody has written yet. */
+export function availableAccessModes(
+  space: { type?: string | null; plan?: string | null } | null,
+): readonly CircleAccess[] {
+  const isRealSpace = !!space?.type && space.type !== 'root'
+  return CIRCLE_ACCESS_MODES.filter((mode) => {
+    if (SPACE_ONLY_ACCESS_MODES.includes(mode) && !isRealSpace) return false
+    if (mode === 'tier' && !spaceCanSell(space)) return false
+    return true
+  })
+}
 
 /** Narrow an arbitrary value (a raw `circles.access`, an untyped admin-client row) to a known
  *  mode. A pre-`access` row has no value at all and reads `open`, which is what it behaved as.

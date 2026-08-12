@@ -120,16 +120,37 @@ export default async function BroadcastPage({
 
   const [dispatchResults, eventsRes, newCirclesRes, membersRes, circlesCountRes, eventsCountRes] = await Promise.all([
     Promise.all(promises),
-    // Everything happening soon across the community (events are anon-readable).
+    // Everything happening soon across the community.
+    //
+    // ⚠️ These reads use the ADMIN client, which bypasses RLS, so every rule has to be stated
+    // here. The comment that used to sit on this line said "events are anon-readable" and that
+    // was the whole bug: it justified filtering nothing. `events` carries THREE more axes than
+    // `is_cancelled`, and all three have rows in production (measured 2026-08-12) —
+    // 2 `circle_only`, 1 `unlisted`, 1 soft-removed. They were all in the past, so the upcoming
+    // window looked clean while the hole stayed open for the next one written.
     admin.from('events').select('id, title, slug, location, starts_at')
       .eq('is_cancelled', false).gte('starts_at', nowIso)
+      .eq('status', 'published').eq('visibility', 'public').is('removed_at', null)
       .order('starts_at', { ascending: true }).limit(5),
     // Freshly-created circles to join.
+    //
+    // 🔴 This is a DISCOVERY surface, so it keys on axis 1 (`unlisted`) — NOT on can_see_circle.
+    // The two are different questions and ADR-1015 is explicit about it: an unlisted OPEN circle
+    // is still reachable by direct link, so `can_see_circle` says yes about it, and RLS alone
+    // would therefore keep listing it here. Discovery is the axis that says no. This predicate is
+    // the body of public_circles() (20270227000000), and this file is now on the read-path ratchet
+    // in lib/circles/visibility.test.ts, which C1's own sweep missed it off.
     admin.from('circles').select('id, name, slug, city, member_count, created_at')
+      .in('status', ['forming', 'active']).eq('unlisted', false)
       .order('created_at', { ascending: false }).limit(5),
     admin.from('profiles').select('id', { count: 'exact', head: true }).eq('is_active', true),
-    admin.from('circles').select('id', { count: 'exact', head: true }),
-    admin.from('events').select('id', { count: 'exact', head: true }).eq('is_cancelled', false).gte('starts_at', nowIso),
+    // The count tiles are public face, so they count what a stranger could actually find. Counting
+    // the hidden rows too would advertise a community larger than the one on offer.
+    admin.from('circles').select('id', { count: 'exact', head: true })
+      .in('status', ['forming', 'active']).eq('unlisted', false),
+    admin.from('events').select('id', { count: 'exact', head: true })
+      .eq('is_cancelled', false).gte('starts_at', nowIso)
+      .eq('status', 'published').eq('visibility', 'public').is('removed_at', null),
   ])
 
   const seen = new Set<string>()

@@ -2,9 +2,13 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
+  CIRCLE_ACCESS_HINT,
+  CIRCLE_ACCESS_LABEL,
   CIRCLE_ACCESS_MODES,
   SPACE_ONLY_ACCESS_MODES,
+  SPACE_SELLING_PLANS,
   asCircleAccess,
+  availableAccessModes,
   canEnterCircle,
   canJoinCircle,
   canSeeCircle,
@@ -165,6 +169,12 @@ describe('the read-path ratchet — every service-role circle read that feeds a 
   // They key on AXIS 1: a LISTED closed circle SHOULD appear (the funnel), an unlisted one never.
   const DISCOVERY_READS: [file: string, why: string][] = [
     ['app/api/search-scopes/route.ts', 'the event-placement / collaborator picker'],
+    // ⚠️ MISSED BY C1's OWN SWEEP, found 2026-08-12 while scoping the map page. The list above was
+    // assembled by searching for circle reads in components and lib; this one is inline in a PAGE,
+    // in a Promise.all beside four unrelated queries, which is exactly the shape a grep for
+    // "circles" in the usual places walks past. 2 of the 7 circles in production are unlisted and
+    // this list takes the 5 newest with no filter at all, so it was leaking today, not latently.
+    ['app/(main)/broadcast/page.tsx', 'the "new circles to join" list and the circle count tile'],
     ['components/sidebar/rail-panels.tsx', 'the "circles to explore" and "newest circles" rails'],
     ['components/widgets/top-circles.tsx', 'the "active circles" page module'],
     ['lib/ai/vera/read-tools.ts', 'Vera naming a circle and its host out loud'],
@@ -279,5 +289,72 @@ describe('the migration shape', () => {
     const body = sql.slice(start, sql.indexOf('$$;', start))
     expect(body).not.toContain('unlisted')
     expect(sql).toContain('a paid Circle may be a listed shopfront or an unlisted room')
+  })
+})
+
+// ── WHAT THE FORM MAY OFFER ────────────────────────────────────────────────────────────────────
+//
+// C1 shipped the enforcement and no control, so every Circle sat on the backfilled `open` and the
+// owner's verdict was "I see ZERO changes and can't find the settings". That was correct: the
+// access axis had no UI anywhere. These cover the helper that decides what the settings form is
+// allowed to offer.
+//
+// The rule this encodes: NEVER OFFER A CHOICE THE DATABASE WILL REFUSE. `trg_circles_access_shape`
+// raises on two combinations, and to an operator a raised trigger reads as a broken save button,
+// not as a rule. So the form narrows, the trigger enforces, and the two lists come from one place.
+describe('availableAccessModes — the form offers only what the trigger will accept', () => {
+  const ROOT = { type: 'root', plan: null }
+  const FREE_BIZ = { type: 'business', plan: 'free' }
+  const PAID_BIZ = { type: 'business', plan: 'business' }
+
+  it('a PERSONAL circle gets the three modes that need no Space', () => {
+    expect(availableAccessModes(ROOT)).toEqual(['open', 'circle_members', 'invite'])
+  })
+
+  it('a circle with no Space row at all is treated as personal, not as an error', () => {
+    expect(availableAccessModes(null)).toEqual(['open', 'circle_members', 'invite'])
+  })
+
+  it('a FREE Space gets space_members but NOT tier — it has a roster to admit from, and nothing to sell with', () => {
+    expect(availableAccessModes(FREE_BIZ)).toContain('space_members')
+    expect(availableAccessModes(FREE_BIZ)).not.toContain('tier')
+  })
+
+  it('a Space on a selling plan gets all five', () => {
+    expect(availableAccessModes(PAID_BIZ)).toEqual([...CIRCLE_ACCESS_MODES])
+  })
+
+  it('every offered mode has a label and a hint, so the control can never render a bare enum', () => {
+    for (const mode of CIRCLE_ACCESS_MODES) {
+      expect(CIRCLE_ACCESS_LABEL[mode]?.length).toBeGreaterThan(0)
+      expect(CIRCLE_ACCESS_HINT[mode]?.length).toBeGreaterThan(0)
+      // docs/CONTENT-VOICE.md: no em dashes in anything a member reads.
+      expect(CIRCLE_ACCESS_LABEL[mode]).not.toContain('—')
+      expect(CIRCLE_ACCESS_HINT[mode]).not.toContain('—')
+    }
+  })
+
+  it('the TS plan list matches private.space_can_sell, because two lists of plan names drift silently', () => {
+    const sql = read('supabase/migrations/20270227000000_circle_privacy.sql')
+    const start = sql.indexOf('function private.space_can_sell')
+    const body = sql.slice(start, sql.indexOf('$$;', start))
+    for (const plan of SPACE_SELLING_PLANS) {
+      expect(body).toContain(`'${plan}'`)
+    }
+    // And the other direction: a plan added to the SQL must reach the UI, or the form quietly
+    // stops offering `tier` to a Space that is paying for it. Scoped to the plan IN-list rather
+    // than the whole body, which also contains 'public'/'private'/'pg_temp' from the search_path
+    // and 'root' from the type check.
+    const listStart = body.indexOf("coalesce(s.plan, 'free') in (")
+    expect(listStart).toBeGreaterThan(-1)
+    // Start INSIDE the IN-list's paren: slicing from `listStart` stops at the close paren of
+    // `coalesce(...)`, which lands before the plans and matches nothing.
+    const open = body.indexOf('in (', listStart) + 'in ('.length
+    const planList = body.slice(open, body.indexOf(')', open))
+    const inSql = [...planList.matchAll(/'([a-z]+)'/g)].map((m) => m[1]).filter((p) => p !== 'free')
+    expect(inSql.length).toBeGreaterThan(0)
+    for (const plan of new Set(inSql)) {
+      expect(SPACE_SELLING_PLANS).toContain(plan)
+    }
   })
 })
