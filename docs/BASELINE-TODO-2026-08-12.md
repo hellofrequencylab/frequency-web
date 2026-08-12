@@ -307,13 +307,58 @@ After the named fixes the build lands near **6.7 GB**, of which ~1.5 GB is merge
 > | `/referral` prize copy ("the top referrers win free membership") | 🔴 removed; the page now states the Zaps it actually pays |
 > | Referral + Circle-starter scoring, Zaps, leaderboard | ✅ unchanged and live |
 >
-> ⚠️ **One promise is still standing and needs its own ruling:** `/referral` still offers
-> **Founding-Member perks at 3 activated referrals** (`FOUNDING_PERK_MIN_REFERRALS`). Its only grant
-> path was the `reward_kind: 'founding_perk'` insert inside the deleted `awardReferralWinners`;
-> `founding_perk` now has zero consumers repo-wide, and `grantFoundingStatus()` serves *reserved*
-> founders (beta onboarding + the Stripe webhook), never referrers. The beta contest emails
-> (`lib/beta/email-templates.ts:118,128`, `lib/beta/launch-emails.ts:246,270`) repeat it. Same defect
-> class as the prize, left in place pending the owner's call.
+> ### 🔴 B-1b · The second unbacked promise — DECISION BRIEF, mapped 2026-08-12, unchanged pending your ruling
+>
+> **The answer first:** `/referral` offers **Founding-Member perks at 3 activated referrals**, and
+> **no code path grants them.** `reward_kind: 'founding_perk'` has **zero** occurrences in the
+> repo — its only writer was the insert inside the deleted `awardReferralWinners`. Nothing was
+> touched here; this is a map, not a fix.
+>
+> **Nobody is currently being shown it, and nobody is owed anything.** Verified against production
+> 2026-08-12: `platform_flags.beta_referral_contest` = **false**, so
+> `app/(main)/referral/page.tsx:47` calls `notFound()` and the whole surface 404s. `beta_referrals`
+> holds **0** rows and `reward_grants` holds **0** rows with `reward_kind = 'founding_perk'`. The
+> exposure is latent — one flag flip away — not live.
+>
+> **Every surface that states or implies the offer:**
+>
+> | Surface | What it says | Reachable today? |
+> |---|---|---|
+> | `app/(main)/referral/page.tsx:93-104` | A `Gift`-iconed card headed **"Founding-Member perks"** with a `ProgressTrack` to 3 | 🔴 Only if the flag flips |
+> | `app/(main)/referral/page.tsx:59-63` | *"You earned Founding-Member perks. Nice work."* / *"N more activated friends to earn Founding-Member perks."* | 🔴 Same |
+> | `lib/beta/referral-contest.ts:50` | Docstring: *"threshold that earns Founding-Member perks **at graduation**"* — graduation is the deleted mechanism | ℹ️ Comment |
+> | `lib/beta/referral-contest.ts:413,422` | `foundingPerkEarned`, `toFoundingPerk` — computed, returned, rendered, and **never acted on** | 🔴 Same |
+> | `lib/beta/email-templates.ts:118,128` | Subject **"Bring a friend, start a Circle, win founding perks"**; body *"…win founding perks and a spot in the launch story."* | ⚠️ In the operator catalog, re-sendable |
+> | `lib/beta/launch-emails.ts:246,270` | The same email as blocks, same subject and same sentence | ⚠️ Same |
+>
+> Both emails are live rows in the Email Studio catalog (`app/(main)/admin/email-studio/actions.ts`,
+> `components/admin/beta/email-section.tsx`), so an operator can re-send the claim tomorrow without
+> touching code.
+>
+> **What could still honour it.** One thing, and it was built for a different purpose:
+> `grantFoundingStatus({ profileId, kind: 'member' })` (`lib/founding/status.ts:325`) creates an
+> ACTIVE founding row at the locked rate. It is live at `app/onboarding/beta/actions.ts:228` and via
+> the Stripe webhook (`lib/billing/beta-founding.ts:95`), and it serves **reserved** founders — never
+> referrers. Wiring it to the referral threshold is a few lines; it is also the one call that hands
+> out paid entitlement, which is why it is your call and not an agent's.
+>
+> **The sharpest detail:** `lib/beta/referral-contest.ts:24-26` states the governing rule in its own
+> header — *"the rewards this module still pays are Zaps… and they are the only rewards the copy may
+> claim."* Twenty-five lines later the same file exports `FOUNDING_PERK_MIN_REFERRALS`. **The file
+> violates its own rule.**
+>
+> **The options, in ascending cost:**
+>
+> | # | Option | What it costs | What it risks |
+> |---|---|---|---|
+> | 1 | **Take the copy down**, exactly as the prize came down — delete the perks card, `foundingCopy`, `foundingPerkEarned`/`toFoundingPerk`, and the "founding perks" clause from both emails | S. The page keeps the Zaps and the leaderboard, which do pay | Nothing owed: 0 referrals, 0 grants. Consistent with the 2026-08-12 ruling |
+> | 2 | **Honour it** — call `grantFoundingStatus({kind:'member'})` when `activatedReferrals` crosses 3, idempotently | S–M, plus a backfill decision (none needed at 0 rows) | Founding status is a **locked price**. Every future referrer at 3 earns real margin |
+> | 3 | **Retire the contest whole** — the flag has been false since launch and the beta is over | S | Loses the Zaps payouts and the leaderboard with it |
+> | 4 | **Leave it** | 0 | The defect that produced B-1 in the first place, knowingly repeated. Not recommended |
+>
+> Option 1 is the consistent reading of the ruling already made ("the page may only claim what the
+> code does"); option 2 is the only one that makes the rendered progress bar true. **Do not let an
+> agent pick between them.**
 
 *Original finding, for the record:*
 
