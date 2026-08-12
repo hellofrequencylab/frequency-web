@@ -118,7 +118,7 @@ export async function assembleDigestForProfile(profileId: string): Promise<Diges
       id:         d.id,
       title:      d.title,
       excerpt:    d.excerpt,
-      url:        `${APP_URL}/broadcast/${d.id}`,
+      url:        `${APP_URL}/nearby/${d.id}`,
       authorName: d.author?.display_name ?? 'A host',
     }))
   }

@@ -1,5 +1,5 @@
 // The FIRE-SAFE writer for the broadcast Dispatch recipient ledger (`dispatch_recipients`, CRM
-// Phase 5). A Dispatch fan-out (app/(main)/broadcast/actions.ts) records one row per (dispatch,
+// Phase 5). A Dispatch fan-out (app/(main)/nearby/actions.ts) records one row per (dispatch,
 // member, channel) with the send-gate outcome, so a Dispatch shows up in the messaging control
 // panel next to campaign sends. Writing this log must NEVER break a broadcast: every call is
 // wrapped, best-effort, and swallows its own errors (the send has already happened).
@@ -8,7 +8,7 @@
 // client (ADR-246, the repo convention for not-yet-typed tables).
 //
 // authz-delegated: this is an append-only delivery ledger (ADR-274). The gate lives at the call
-// site — the only caller, createAndPublishDispatch (app/(main)/broadcast/actions.ts), already
+// site — the only caller, createAndPublishDispatch (app/(main)/nearby/actions.ts), already
 // authorizes the broadcast to a scope the author leads before any row is written, and every row is
 // scoped by dispatch_id. It is a platform ledger write, not a caller-supplied unscoped mutation.
 

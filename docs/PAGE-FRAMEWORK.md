@@ -296,7 +296,7 @@ Sources: [RSC streaming performance (SitePoint)](https://www.sitepoint.com/react
 | Route | Template | Notable rail / slot widgets |
 |---|---|---|
 | `/feed` | Stream | getting-started, dispatches, upcoming-events, members, leaderboard |
-| `/broadcast` | Stream | announcements, dispatches |
+| `/nearby` | Stream | announcements, dispatches |
 | `/circles` | **Editable index** (`MarketHero` + `BlockRender`, §8.5) | filters (multi-topic + mode), my-circles, pulse |
 | `/circles/[slug]` | **Detail** | header(join/admin) · tabs(Posts/Events/Members/About) · rail: program, this-circle events, members, dispatches |
 | `/channels` → Topics | **Editable index** (`MarketHero` + `PageModules`, §8.5) | filters (category), tuned-in, pulse |
@@ -581,7 +581,7 @@ every section that is a self-contained, self-fetching block. For each one:
     page keeps its own auth guard.
   - `/programs/<slug>` → *(removed 2026-07, ADR-597.)* Was shell-only (Part A): the hand-rolled
     back-link became the `DetailTemplate` `back` slot; the prose body stayed hand-composed.
-  - **`/broadcast` (the index) stays hand-composed:** its interior is one cohesive, viewer-scoped
+  - **`/nearby` (the index) stays hand-composed:** its interior is one cohesive, viewer-scoped
     dashboard from a single fetch — the hero and at-a-glance line are derived from the SAME
     dispatch/event arrays as the main feed and the sidebar, not independent sections — and its
     two-column `main`/`side` visual cannot be preserved under the default `single` template (which

@@ -55,7 +55,7 @@ export type MatrixColumn =
 // ── The matrix rows: the surfaces everyone navigates to ──────────────────────────
 export type Surface =
   // Community
-  | 'feed' | 'broadcast' | 'circles' | 'channels' | 'events' | 'market' | 'people'
+  | 'feed' | 'nearby' | 'circles' | 'channels' | 'events' | 'market' | 'people'
   | 'housing' | 'maker' | 'shop'
   | 'messageBoards'
   // The Quest
@@ -94,7 +94,7 @@ const PAID_FULL: Row = { member: 'limited', crew: 'full', host: 'full', ...PARTN
 export const ACCESS_MATRIX: Record<Surface, Row> = {
   // ── Community — one site for everyone; visitors preview ─────────────────────────
   feed: COMMUNITY_OPEN,
-  broadcast: COMMUNITY_OPEN,
+  nearby: COMMUNITY_OPEN,
   circles: COMMUNITY_OPEN,
   channels: COMMUNITY_OPEN,
   events: COMMUNITY_OPEN,

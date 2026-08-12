@@ -14,7 +14,7 @@ import { relativeTime } from '@/lib/utils'
 // platform-wide read. We merge the two verified ways something gets "announced" to a
 // circle, both keyed to those circle ids:
 //   • dispatches  → audience_scope='circle', audience_id IN circleIds, status='published'
-//                   (the titled broadcast that lands at /broadcast/{id})
+//                   (the titled broadcast that lands at /nearby/{id})
 //   • posts       → post_type='announcement', scope_id IN circleIds (the circle feed's
 //                   "Dispatch" toggle — an announcement post pinned to the circle)
 // Newest first, capped at MAX_ITEMS. Self-hides when there's nothing real to show.
@@ -81,7 +81,7 @@ export async function LeadDispatches(): Promise<React.ReactElement | null> {
       circleName: circle.name,
       label: d.title?.trim() || d.excerpt?.trim() || 'Announcement',
       at: d.published_at,
-      href: `/broadcast/${d.id}`,
+      href: `/nearby/${d.id}`,
     })
   }
 
@@ -111,7 +111,7 @@ export async function LeadDispatches(): Promise<React.ReactElement | null> {
   // Footer drill-in: the circle's feed is where a leader posts or dispatches; with one
   // circle, link straight to it, otherwise send them to the community broadcast surface.
   const single = circles.length === 1 ? circles[0] : null
-  const footerHref = single ? `/circles/${single.slug}` : '/broadcast'
+  const footerHref = single ? `/circles/${single.slug}` : '/nearby'
   const footerLabel = single ? `Post or dispatch in ${single.name}` : 'Post or dispatch'
 
   return (

@@ -491,7 +491,7 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   { route: '/network/contacts', label: 'Connections (index)', area: 'Member' },
   { route: '/network/friends', label: 'Friends', area: 'Member' },
   { route: '/search', label: 'Search', area: 'Member' },
-  { route: '/broadcast', label: 'Broadcast', area: 'Member' },
+  { route: '/nearby', label: 'Around You', area: 'Member' },
   { route: '/crew', label: 'Crew', area: 'Member' },
   { route: '/outreach', label: 'Outreach', area: 'Member' },
   // The Beta referral + Circle-starter contest hub (phase P3). A member browse/dashboard

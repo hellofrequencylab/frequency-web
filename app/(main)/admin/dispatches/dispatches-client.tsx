@@ -409,7 +409,7 @@ export function DispatchesClient({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-0.5">
                     <Link
-                      href={`/broadcast/${d.id}`}
+                      href={`/nearby/${d.id}`}
                       className="text-body-sm font-semibold text-text hover:text-primary-strong dark:hover:text-primary-strong transition-colors"
                     >
                       {d.title}

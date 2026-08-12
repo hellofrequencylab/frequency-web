@@ -1,6 +1,6 @@
 // Dispatches from Vera — the next assignment at the end of an On Air session
 // (ADR-229, docs/ON-AIR.md). Distinct from broadcast Dispatches (`dispatches`,
-// /broadcast): a Vera Dispatch is personal, one per member per day, and CACHED —
+// /nearby): a Vera Dispatch is personal, one per member per day, and CACHED —
 // generated once, replayed from the table, never live on revisit.
 //
 // Two-layer design:

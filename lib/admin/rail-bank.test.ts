@@ -20,7 +20,7 @@ describe('bankForScope', () => {
     expect(h).toContain(`/circles/${slug}/manage`) // console → SLUG (not the uuid)
     expect(h).not.toContain(`/circles/${dbId}/manage`)
     expect(h).toContain(`/events/new?circle=${dbId}`) // create → DB id (create form matches circle.id)
-    expect(h).toContain(`/broadcast?compose=true&scope=${dbId}`)
+    expect(h).toContain(`/nearby?compose=true&scope=${dbId}`)
   })
 
   it('slug-keys the console for event / hub / nexus / practice too (4th-arg slug over scope.id)', () => {
@@ -120,7 +120,7 @@ describe('bankForScope', () => {
     expect(hrefs(bank)).toEqual([
       '/circles/c1/manage',
       '/events/new?circle=c1',
-      '/broadcast?compose=true&scope=c1',
+      '/nearby?compose=true&scope=c1',
     ])
     expect(bank.map((l) => l.label)).toEqual(['Manage console', 'New event', 'New announcement'])
     // None of the create/nav quick-actions is a destructive href.

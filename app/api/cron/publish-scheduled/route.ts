@@ -42,7 +42,7 @@ async function handler(request: Request) {
     return NextResponse.json({ error: updateError.message }, { status: 500 })
   }
 
-  revalidatePath('/broadcast')
+  revalidatePath('/nearby')
   revalidatePath('/feed')
   revalidatePath('/admin/dispatches')
 

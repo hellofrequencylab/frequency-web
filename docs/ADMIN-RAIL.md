@@ -382,7 +382,7 @@ layout chooser.**
 | Insights | `circle.insights` | inline (extra) | circle health (Zaps earned here · active streaks · new this week) is an on-screen readout; mirrors hub/nexus/practice insights |
 
 The circle **bank** is **Manage console · New event · New announcement** — the two create quick-actions
-(`/events/new?circle=<id>` · `/broadcast?compose=true&scope=<id>`) mirror the header `CircleHostMenu`
+(`/events/new?circle=<id>` · `/nearby?compose=true&scope=<id>`) mirror the header `CircleHostMenu`
 exactly, keyed on the same circle id the scope carries. **Deviation (stated):** the plan named an Insights
 *bank link*, but a circle has **no standalone insights page** — pointing a bank button at `/circles/<slug>`
 is circular and the health panel has no anchor, so per the plan's own fallback Insights is an **inline**

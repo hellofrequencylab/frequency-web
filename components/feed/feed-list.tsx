@@ -398,10 +398,10 @@ export async function FeedList({
 //
 // An Event Dispatch (ADR-255, dispatch_type='event') is the third member of the
 // Dispatch family: same broadcast rail, but it carries an inline EVENT badge and
-// links to the event page (/events/[slug]) instead of /broadcast/[id].
+// links to the event page (/events/[slug]) instead of /nearby/[id].
 function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
   const isEvent = d.dispatch_type === 'event' && d.event != null
-  const href = isEvent ? `/events/${d.event!.slug}` : `/broadcast/${d.id}`
+  const href = isEvent ? `/events/${d.event!.slug}` : `/nearby/${d.id}`
 
   return (
     <Link

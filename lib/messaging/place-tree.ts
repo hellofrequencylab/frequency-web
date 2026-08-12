@@ -9,7 +9,7 @@
 // This is the same fan-out the broadcast dispatch already did inline (circle -> memberships; hub ->
 // its circles -> memberships; nexus -> its hubs -> circles -> memberships). Factored here so BOTH
 // the audience resolvers (lib/spaces/audiences.ts, lib/studio/campaigns.ts) and the broadcast fan-out
-// (app/(main)/broadcast/actions.ts) resolve a place through ONE tested path, and the broadcast's
+// (app/(main)/nearby/actions.ts) resolve a place through ONE tested path, and the broadcast's
 // recipient log lines up with what a campaign to the same scope would reach.
 //
 // FAIL-SAFE: every read returns [] on any error / missing data, never throws, never leaks across
@@ -64,7 +64,7 @@ const MAX_PROFILE_IDS = 20_000
  *   circle -> its own active memberships
  *   hub    -> every circle in the hub -> their active memberships
  *   nexus  -> every hub -> every circle -> their active memberships
- * This mirrors the broadcast dispatch fan-out (app/(main)/broadcast/actions.ts) so a campaign to a
+ * This mirrors the broadcast dispatch fan-out (app/(main)/nearby/actions.ts) so a campaign to a
  * scope reaches exactly the members a dispatch to that scope would. FAIL-SAFE to [] on any error.
  */
 export async function resolvePlaceTreeProfileIds(selector: PlaceSelector): Promise<string[]> {

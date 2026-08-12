@@ -10,7 +10,7 @@
 | Surface | Route | Status | Mechanism / gap |
 |---|---|---|---|
 | Feed | `/feed` | ✅ | CreateMenu + Capture (post creation) |
-| Around You | `/broadcast` | ✅ | BroadcastCompose (host+ dispatch) |
+| Around You | `/nearby` | ✅ | BroadcastCompose (host+ dispatch) |
 | Circles | `/circles` | ✅ | NewCircleCompose · Manage circles |
 | Channels | `/channels` | ✅ | NewChannelCompose (host+) |
 | Events | `/events` | ✅ | EventCompose · `/events/new` |

@@ -174,7 +174,7 @@ describe('the read-path ratchet — every service-role circle read that feeds a 
     // in a Promise.all beside four unrelated queries, which is exactly the shape a grep for
     // "circles" in the usual places walks past. 2 of the 7 circles in production are unlisted and
     // this list takes the 5 newest with no filter at all, so it was leaking today, not latently.
-    ['app/(main)/broadcast/page.tsx', 'the "new circles to join" list and the circle count tile'],
+    ['app/(main)/nearby/page.tsx', 'the "new circles to join" list and the circle count tile'],
     ['components/sidebar/rail-panels.tsx', 'the "circles to explore" and "newest circles" rails'],
     ['components/widgets/top-circles.tsx', 'the "active circles" page module'],
     ['lib/ai/vera/read-tools.ts', 'Vera naming a circle and its host out loud'],

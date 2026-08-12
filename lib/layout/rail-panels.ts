@@ -57,7 +57,7 @@ const RULES: { test: (p: string) => boolean; panels: PanelKey[] }[] = [
   // Home (feed / Around You) — the community pulse. Each panel self-falls-back so
   // the rail is always full: events (yours → community), people (active → newest),
   // circles (new → popular), plus recent broadcasts.
-  { test: (p) => p === '/feed' || p === '/broadcast' || p.startsWith('/broadcast/'), panels: ['events', 'activenow', 'dispatches', 'newcircles'] },
+  { test: (p) => p === '/feed' || p === '/nearby' || p.startsWith('/nearby/'), panels: ['events', 'activenow', 'dispatches', 'newcircles'] },
 ]
 
 // The baseline for any page not matched above. Uses panels that effectively ALWAYS render —

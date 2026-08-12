@@ -3,7 +3,7 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { isStaff as isStaffAxis } from '@/lib/core/roles'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { DispatchesClient } from './dispatches-client'
-import { BroadcastCompose } from '@/app/(main)/broadcast/broadcast-compose'
+import { BroadcastCompose } from '@/app/(main)/nearby/broadcast-compose'
 
 export default async function AdminDispatchesPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
   const { profileId, role, webRole } = await requireAdmin('host', { staff: 'community' })

@@ -54,7 +54,7 @@ names below are plain and safe to use now.
 |---|---|---|---|
 | A podcast series / feed | `podcast_shows` | **Show** | clean |
 | One audio/video item | `recordings` | **Recording**; **Episode** when it sits in a Show | clean |
-| The browse surface | (a Market rail) | **Listen** rail in **Market**, or a standalone **Airwaves** surface | avoid "Broadcast" (that is `/broadcast` Dispatches), "On Air" (the timer), "Signal" (retired rank), "Airtime" (a stat) |
+| The browse surface | (a Market rail) | **Listen** rail in **Market**, or a standalone **Airwaves** surface | avoid "Broadcast" (that is Dispatches, at `/nearby`), "On Air" (the timer), "Signal" (retired rank), "Airtime" (a stat) |
 | The media file itself | `library_assets` (the Loom) | **the Loom** | ✅ existing |
 
 Do not ship any of these member-facing names until the Vision Steward locks them. Internal

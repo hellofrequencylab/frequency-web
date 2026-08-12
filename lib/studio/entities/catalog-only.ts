@@ -20,7 +20,7 @@
 //   room     -> app/(main)/messages/rooms/actions.ts createRoom
 //   hub      -> app/(main)/admin/actions.ts createHub
 //   nexus    -> app/(main)/admin/actions.ts createNexus
-//   broadcast-> app/(main)/broadcast/* dispatch compose
+//   broadcast-> app/(main)/nearby/* dispatch compose
 //
 // STRICT BOUNDARY: entities import from the kernel; the kernel never imports from entities.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -47,7 +47,7 @@ const PLACE_STATUS: readonly FieldOption[] = [
   { value: 'archived', label: 'Archived' },
 ]
 
-/** Mirrors the dispatch type in app/(main)/broadcast/broadcast-compose.tsx. */
+/** Mirrors the dispatch type in app/(main)/nearby/broadcast-compose.tsx. */
 const DISPATCH_TYPES: readonly FieldOption[] = [
   { value: 'post', label: 'Post' },
   { value: 'alert', label: 'Alert' },

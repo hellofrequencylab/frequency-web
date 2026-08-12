@@ -371,6 +371,6 @@ async function closeReport(
 
   revalidatePath('/admin/moderation')
   revalidatePath('/feed')
-  revalidatePath('/broadcast')
+  revalidatePath('/nearby')
   return ok()
 }

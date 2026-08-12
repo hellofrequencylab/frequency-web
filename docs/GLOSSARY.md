@@ -68,7 +68,7 @@ Community-ladder authz still uses the `HIERARCHY` index-comparison pattern
 | Term | Table(s) | Meaning |
 |---|---|---|
 | **Post** | `posts` | Feed content scoped to a Circle (`group` visibility) or broadcast wider (`cluster`) for host announcements. |
-| **Dispatch** | `dispatches` | Broadcast content (`dispatch_type`: post / poll / challenge / article) shown at `/broadcast`. Has comments, likes, polls. |
+| **Dispatch** | `dispatches` | Broadcast content (`dispatch_type`: post / poll / challenge / article) shown at `/nearby`. Has comments, likes, polls. |
 | **Room** | `rooms`, `room_members`, `room_messages` | Group chat spaces (crew+ can create). Distinct from DMs. |
 | **Conversation** | `conversations`, `messages`, `conversation_participants` | 1:1 and group direct messages. |
 | **Event** | `events`, `event_rsvps` | Gatherings. Support recurrence (materialised occurrences, not virtual) and ICS export. |

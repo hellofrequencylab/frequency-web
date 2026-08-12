@@ -72,7 +72,7 @@ describe('notificationHref', () => {
 
   it('opens a Dispatch and a support reply on their own page', () => {
     expect(notificationHref(notif({ type: 'dispatch', reference_type: 'dispatch', reference_id: 'd1' })))
-      .toBe('/broadcast/d1')
+      .toBe('/nearby/d1')
     expect(notificationHref(notif({ type: 'support_reply', reference_type: 'support_ticket', reference_id: 't1' })))
       .toBe('/support/t1')
   })
