@@ -61,6 +61,12 @@ export function notificationHref(n: NotificationItem): string {
       if (!id) return '/spaces/directory'
       return UUID_RE.test(id) ? '/spaces/operating' : `/spaces/${id}/community`
 
+    // A Household bundle seat offer (ADR-370). The invite id is a UUID and there is no page
+    // keyed on it: the seat is answered in the Plan and billing section of Settings, which is
+    // also where the person would go looking for anything about their membership.
+    case 'bundle_invite':
+      return '/settings#plan'
+
     case 'dispatch':
       return id ? `/broadcast/${id}` : '/broadcast'
 

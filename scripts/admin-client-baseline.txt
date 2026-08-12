@@ -399,6 +399,13 @@ lib/billing/bundle-checkout.ts
 # 20270225000000 revokes anon + authenticated). Converging it onto the session client is not possible
 # by construction. Same posture as lib/billing/bundle-checkout.ts directly above.
 lib/billing/bundle-seats.ts
+# lib/billing/bundle-invites.ts (added 2026-08-12, ADR-370): the post-purchase seat invites for the
+# Household / Circle bundle. household_bundle_invites is RLS-on with ZERO policies (deny-all, see
+# scripts/rls-deny-all.txt) and the two seat writes are SECURITY DEFINER functions granted to
+# service_role ONLY (migration 20270226000100 revokes anon + authenticated on both the table and the
+# functions), so the session client cannot reach any of it by construction. Every read and write here
+# is bound to the caller's own profile id, re-resolved from the session by the action layer.
+lib/billing/bundle-invites.ts
 lib/billing/checkout.ts
 lib/billing/connect.ts
 lib/billing/manual-agreements.ts
