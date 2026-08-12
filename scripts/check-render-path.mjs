@@ -41,7 +41,12 @@
 //     where that has to be written down.
 //   · Anything about non-gated marketing routes. They have no editor rung, so no duality.
 //
-// Usage: `node scripts/check-render-path.mjs` (or `pnpm check:render-path`). Exits 1 on violation.
+// ⚠️ WHERE THIS RUNS (changed 2026-08-12). No longer a `check:*` entry in the CI guards array: it is
+// enforced by scripts/check-render-path.test.ts, which vitest AUTO-DISCOVERS, so it cannot be
+// forgotten in an array the way check:studio was for the whole life of PR #2098. The rules live in
+// the exported `runCheck()`, which returns its findings as DATA, so the CLI and the test enforce the
+// same thing with no second copy. Still runnable by hand for the friendly report:
+// `node scripts/check-render-path.mjs`. Exits 1 on violation.
 
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -109,53 +114,73 @@ export function parseLedger(text) {
   return { entries, bad }
 }
 
-function main() {
+/** THE NON-TRIVIALITY FLOOR. `gatedSlugs()` returns [] the moment its regex stops matching
+ *  EDITABLE_PAGES, and an empty slug list means an empty loop, no failures, and a green gate that
+ *  checked nothing. 8 slugs are gated today; 5 leaves room for a page leaving the editor while
+ *  still firing on a parser that has given up. Fix the parser; never lower this. */
+export const MIN_SLUGS = 5
+
+/** Every check, as DATA rather than as console output — so scripts/check-render-path.test.ts
+ *  enforces exactly what the CLI reports, with no second copy of the rules to drift.
+ *  Returns { problems: string[], rows, slugs }. `problems` non-empty ⇒ the gate fails. */
+export function runCheck() {
   if (!existsSync(LEDGER) || !existsSync(DATA)) {
-    console.error(`✗ check:render-path — missing ${!existsSync(LEDGER) ? LEDGER : DATA} (cwd: ${process.cwd()}).`)
-    console.error('    Run from the repo root. A gate cannot pass over nothing.')
-    process.exit(1)
+    return {
+      problems: [
+        `✗ check:render-path — missing ${!existsSync(LEDGER) ? LEDGER : DATA} (cwd: ${process.cwd()}).\n` +
+          '    Run from the repo root. A gate cannot pass over nothing.',
+      ],
+      rows: [],
+      slugs: [],
+    }
   }
 
   const slugs = gatedSlugs(readFileSync(DATA, 'utf8'))
-  if (slugs.length < 5) {
-    console.error(`✗ check:render-path — parsed ${slugs.length} slug(s) from EDITABLE_PAGES, expected at least 5.`)
-    console.error(`    The parser has stopped matching ${DATA}. Fix it; do not lower the floor.`)
-    process.exit(1)
+  if (slugs.length < MIN_SLUGS) {
+    return {
+      problems: [
+        `✗ check:render-path — parsed ${slugs.length} slug(s) from EDITABLE_PAGES, expected at least ${MIN_SLUGS}.\n` +
+          `    The parser has stopped matching ${DATA}. Fix it; do not lower the floor.`,
+      ],
+      rows: [],
+      slugs,
+    }
   }
 
   const { entries, bad } = parseLedger(readFileSync(LEDGER, 'utf8'))
-  let failures = 0
+  const problems = []
 
   for (const line of bad) {
-    failures++
-    console.error(`✗ check:render-path — unparseable ledger line.\n\n  ${line}\n`)
-    console.error('    Expected: <slug>  <coded-component-count>\n')
+    problems.push(`✗ check:render-path — unparseable ledger line.\n\n  ${line}\n\n    Expected: <slug>  <coded-component-count>`)
   }
 
   for (const [slug, { line }] of entries) {
     if (slugs.includes(slug)) continue
-    failures++
-    console.error(`✗ check:render-path — stale ledger entry \`${slug}\` (${LEDGER}:${line}).`)
-    console.error(`    It is no longer in EDITABLE_PAGES (${DATA}). Delete the line.\n`)
+    problems.push(
+      `✗ check:render-path — stale ledger entry \`${slug}\` (${LEDGER}:${line}).\n` +
+        `    It is no longer in EDITABLE_PAGES (${DATA}). Delete the line.`,
+    )
   }
 
   const rows = []
   for (const slug of slugs) {
     const route = ROUTES[slug]
     if (!route || !existsSync(route)) {
-      failures++
-      console.error(`✗ check:render-path — no route mapped for gated slug \`${slug}\`.`)
-      console.error(`    Add it to ROUTES in ${LEDGER.replace('render-path-bodies.txt', 'check-render-path.mjs')}.\n`)
+      problems.push(
+        `✗ check:render-path — no route mapped for gated slug \`${slug}\`.\n` +
+          `    Add it to ROUTES in scripts/check-render-path.mjs.`,
+      )
       continue
     }
     const src = readFileSync(route, 'utf8')
 
     if (!rendersBlocks(src)) {
-      failures++
-      console.error(`✗ check:render-path — \`${slug}\` is editable but ${route} never renders <BlockRender>.`)
-      console.error('    An operator can edit this page in the editor and the site will ignore it:')
-      console.error('    the document saves and publishes, and no visitor ever sees it. Either render')
-      console.error(`    the published document, or remove the slug from EDITABLE_PAGES in ${DATA}.\n`)
+      problems.push(
+        `✗ check:render-path — \`${slug}\` is editable but ${route} never renders <BlockRender>.\n` +
+          '    An operator can edit this page in the editor and the site will ignore it:\n' +
+          '    the document saves and publishes, and no visitor ever sees it. Either render\n' +
+          `    the published document, or remove the slug from EDITABLE_PAGES in ${DATA}.`,
+      )
     }
 
     const comps = codedComponents(src)
@@ -164,33 +189,43 @@ function main() {
     rows.push({ slug, route, comps: comps.length, lines })
 
     if (!entry) {
-      failures++
-      console.error(`✗ check:render-path — no ledger row for gated slug \`${slug}\`.`)
-      console.error(`    ${route} declares ${comps.length} coded component(s). Add one line to ${LEDGER}:\n`)
-      console.error(`      ${slug}  ${comps.length}\n`)
+      problems.push(
+        `✗ check:render-path — no ledger row for gated slug \`${slug}\`.\n` +
+          `    ${route} declares ${comps.length} coded component(s). Add one line to ${LEDGER}:\n\n` +
+          `      ${slug}  ${comps.length}`,
+      )
       continue
     }
 
     if (comps.length > entry.count) {
-      failures++
       const added = comps.slice(entry.count).join(', ')
-      console.error(`✗ check:render-path — \`${slug}\` grew a coded body: ${entry.count} -> ${comps.length} component(s).`)
-      console.error(`    ${route} (${lines} lines). New: ${added || '(reordered)'}`)
-      console.error('    This page already exists twice, as blocks an operator can rearrange and as TSX')
-      console.error('    only a developer can change, and it is queued for retirement (FINALIZE-PLAN §5.2).')
-      console.error('    Put new marketing structure in a BLOCK, not in the route file.\n')
+      problems.push(
+        `✗ check:render-path — \`${slug}\` grew a coded body: ${entry.count} -> ${comps.length} component(s).\n` +
+          `    ${route} (${lines} lines). New: ${added || '(reordered)'}\n` +
+          '    This page already exists twice, as blocks an operator can rearrange and as TSX\n' +
+          '    only a developer can change, and it is queued for retirement (FINALIZE-PLAN §5.2).\n' +
+          '    Put new marketing structure in a BLOCK, not in the route file.',
+      )
     } else if (comps.length < entry.count) {
-      failures++
-      console.error(`✗ check:render-path — \`${slug}\` shrank: ${entry.count} -> ${comps.length} component(s). Record it.`)
-      console.error(`    ${LEDGER}:${entry.line} still says ${entry.count}. Change it to ${comps.length}.`)
-      console.error('    This ledger is the Phase 5 scoreboard; a scoreboard nobody updates is one')
-      console.error('    nobody reads. If the body MOVED to a sibling file rather than retiring, say so')
-      console.error('    in a comment on that line — the count cannot tell the difference.\n')
+      problems.push(
+        `✗ check:render-path — \`${slug}\` shrank: ${entry.count} -> ${comps.length} component(s). Record it.\n` +
+          `    ${LEDGER}:${entry.line} still says ${entry.count}. Change it to ${comps.length}.\n` +
+          '    This ledger is the Phase 5 scoreboard; a scoreboard nobody updates is one\n' +
+          '    nobody reads. If the body MOVED to a sibling file rather than retiring, say so\n' +
+          '    in a comment on that line — the count cannot tell the difference.',
+      )
     }
   }
 
-  if (failures > 0) {
-    console.error(`✖ One render path: ${failures} problem(s). See docs/FINALIZE-PLAN.md §Phase 5.`)
+  return { problems, rows, slugs }
+}
+
+function main() {
+  const { problems, rows } = runCheck()
+
+  if (problems.length > 0) {
+    for (const p of problems) console.error(`${p}\n`)
+    console.error(`✖ One render path: ${problems.length} problem(s). See docs/FINALIZE-PLAN.md §Phase 5.`)
     process.exit(1)
   }
 

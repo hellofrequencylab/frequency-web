@@ -40,8 +40,8 @@
 //
 // The weekly maintenance sweep (.github/workflows/maintenance.yml), NOT the ci.yml guard array.
 // Two reasons, both structural. It measures live operational state, so a red build on it would be
-// a build failing for something no pull request can fix, which is how a gate dies (ADR-970, and
-// check:research-freshness for the same reasoning applied to a human calendar). And its monitor
+// a build failing for something no pull request can fix, which is how a gate dies (ADR-970). And
+// its monitor
 // half depends on deployment env that CI does not have, so on a PR it could only ever report NOT
 // ESTABLISHED, every time, for every author. Advisory there, scheduled here, strict about the
 // half that is genuinely deterministic.

@@ -10,8 +10,10 @@
 // `circles.space_id` (added by 20260711000000_object_space_id.sql) is in the generated types now,
 // so the ADR-246 untyped casts this module carried are retired.
 
+import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadRootSpaceId } from '@/lib/spaces/store'
+import type { CircleDetail, MemberRow } from './detail-types'
 
 /** A circle as the by-space read returns it (the columns the community module needs). */
 export interface SpaceCircle {
@@ -94,6 +96,82 @@ export async function listCirclesHostedBy(profileId: string, limit = 50): Promis
     return []
   }
 }
+
+// ── THE CIRCLE DETAIL SHELL READ (the tabbed detail route, PAGE-FRAMEWORK §3) ───────────────────
+
+/** Everything the circle detail SHELL and every tab under it open on: the entity, the raw theme
+ *  jsonb the header settings live in, and the roster in render order. */
+export interface CircleShell {
+  circle: CircleDetail
+  /** Raw `circles.theme` jsonb — newer than the generated types, read through the ADR-246 seam. */
+  theme: unknown
+  /** Active members, host first then by join date (the order every roster surface renders). */
+  members: MemberRow[]
+}
+
+/**
+ * THE one read behind `/circles/<slug>` and every tab beneath it.
+ *
+ * It exists because the route is now a route-segment LAYOUT plus tab pages (PAGE-FRAMEWORK §3):
+ * the layout paints the hero + band, each tab paints a body, and all of them need the same circle
+ * and the same roster. `cache()` makes that ONE pair of queries per request no matter how many of
+ * them ask — the layout and its child page share a request, so the tab page's call is a memo hit,
+ * not a second round trip. Without it, splitting the page into a shell + tabs would have doubled
+ * the reads it costs.
+ *
+ * Archived circles resolve to null (the caller 404s), matching the filter the page has always
+ * applied. FAIL-SAFE to null on any read error, so a hiccup reads as "not found" rather than a
+ * half-painted page.
+ */
+export const loadCircleShell = cache(async (slug: string): Promise<CircleShell | null> => {
+  if (!slug) return null
+  try {
+    const admin = createAdminClient()
+    const { data: rawCircle } = await admin
+      .from('circles')
+      .select(
+        `id, name, slug, about, image_url, type, member_count, member_cap, status, is_demo, resonance_public,
+         latitude, longitude, neighborhood, city, sidebar_order, theme,
+         host:profiles!host_id ( id, display_name, handle, avatar_url ),
+         hub:hubs!hub_id (
+           id, name, slug,
+           nexus:nexuses!nexus_id (
+             id, name, slug,
+             outpost:outposts!outpost_id (
+               id, name,
+               region:nexus_regions!region_id ( name )
+             )
+           )
+         )`
+      )
+      .eq('slug', slug)
+      .neq('status', 'archived')
+      .maybeSingle()
+    if (!rawCircle) return null
+
+    const circle = rawCircle as unknown as CircleDetail
+    const { data: rawMembers } = await admin
+      .from('memberships')
+      .select(
+        `id, volunteer_role, joined_at,
+         profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, membership_tier, current_season_rank, current_streak, achievement_count )`
+      )
+      .eq('circle_id', circle.id)
+      .eq('status', 'active')
+      .order('joined_at', { ascending: true })
+
+    // Host first, then join order (the read already sorted by joined_at ascending).
+    const members = ((rawMembers ?? []) as unknown as MemberRow[]).slice().sort((a, b) => {
+      const aHost = circle.host?.id === a.profile?.id ? 0 : 1
+      const bHost = circle.host?.id === b.profile?.id ? 0 : 1
+      return aHost - bHost
+    })
+
+    return { circle, theme: (rawCircle as unknown as { theme?: unknown }).theme, members }
+  } catch {
+    return null
+  }
+})
 
 /**
  * Circles that BELONG TO a space, newest first. Defaults to the root space (so a caller that

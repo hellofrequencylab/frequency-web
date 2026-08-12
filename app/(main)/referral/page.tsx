@@ -1,33 +1,40 @@
 // The member-facing referral + Circle-starter contest hub (Beta phase P3). Your
-// invite link, your count + progress, the leaderboard, and how close you are to the
-// Founding-Member perk. Composes the kit (DashboardTemplate + StatCard + SectionHeader
-// + EmptyState). The whole surface is INERT behind platform_flags.beta_referral_contest:
-// when the contest is off, the route 404s (it does not exist for members yet).
+// invite link, your counts, what each one pays, and the leaderboard. Composes the kit
+// (DashboardTemplate + StatCard + SectionHeader + EmptyState). The whole surface is
+// INERT behind platform_flags.beta_referral_contest: when the contest is off, the route
+// 404s (it does not exist for members yet).
 //
-// THE PAGE ONLY CLAIMS WHAT THE CODE DOES (owner ruling, 2026-08-12). The free-membership
-// prize for the top referrers was taken down with the beta program: the code that recorded
-// it (awardReferralWinners, reached only from the deleted lib/beta/graduation.ts) is gone,
-// billing has been live for three weeks, and there were 0 referrals and 0 founding grants,
-// so nothing was owed. What remains here is what still pays out for real: Zaps per
-// activated invite (lib/zaps 'referral_activated') and per Circle-starter milestone
-// (CIRCLE_STARTER_ZAPS), plus the leaderboard standing. Do not restate a reward on this
-// page unless a live code path grants it.
+// THE PAGE ONLY CLAIMS WHAT THE CODE DOES (owner ruling, 2026-08-12). TWO published
+// prizes came down under that ruling, both for the same reason: the code that granted
+// them was deleted with the beta program.
+//   1. The free-membership prize for the top referrers (awardReferralWinners, reached
+//      only from the deleted lib/beta/graduation.ts).
+//   2. The Founding-Member perk at 3 activated invites. reward_kind 'founding_perk' had
+//      zero writers left in the repo, so the card, the progress bar, and the
+//      foundingPerkEarned / toFoundingPerk fields behind them are gone too.
+// Nothing was owed either time: the flag is FALSE in production, beta_referrals holds 0
+// rows, and reward_grants holds 0 founding_perk rows.
+//
+// What remains is what still pays out for real, and the numbers come from the code that
+// grants them: ZAP_AMOUNTS.referral_activated per activated invite (lib/zaps) and
+// CIRCLE_STARTER_ZAPS per Circle-starter milestone, plus the leaderboard standing. Do
+// not restate a reward on this page unless a live code path grants it.
 
 import { notFound, redirect } from 'next/navigation'
 import Image from 'next/image'
-import { Gift, Sparkles, Trophy, Users, Zap } from 'lucide-react'
+import { Sparkles, Trophy, Users, Zap } from 'lucide-react'
 import { DashboardTemplate } from '@/components/templates/dashboard-template'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
-import { ProgressTrack } from '@/components/ui/progress-track'
 import { getCallerProfile } from '@/lib/auth'
+import { ZAP_AMOUNTS } from '@/lib/zaps'
 import {
   betaReferralContestEnabled,
   getContestLeaderboard,
   getMemberContestProgress,
   CIRCLE_STARTER_THRESHOLD,
-  FOUNDING_PERK_MIN_REFERRALS,
+  CIRCLE_STARTER_ZAPS,
   type ContestLeaderboardRow,
 } from '@/lib/beta/referral-contest'
 import { getInviteLink } from '@/app/(main)/invite-actions'
@@ -56,17 +63,11 @@ export default async function ReferralHubPage() {
   ])
   const inviteUrl = 'url' in invite ? invite.url : null
 
-  const foundingCopy = progress.foundingPerkEarned
-    ? 'You earned Founding-Member perks. Nice work.'
-    : `${progress.toFoundingPerk} more activated ${
-        progress.toFoundingPerk === 1 ? 'friend' : 'friends'
-      } to earn Founding-Member perks.`
-
   return (
     <DashboardTemplate
       eyebrow="Beta contest"
       title="Bring people in"
-      description="Invite friends and start Circles. Every friend who takes a real first action earns you Zaps, and so does every Circle you grow to ten members. The leaderboard shows where everyone stands."
+      description="Invite friends and start Circles. Both pay Zaps, and the leaderboard shows where everyone stands."
       stats={
         <>
           <StatCard label="Activated invites" value={progress.activatedReferrals} icon={Users} />
@@ -88,20 +89,24 @@ export default async function ReferralHubPage() {
       <div className="space-y-8">
         <ReferralLinkCard url={inviteUrl} />
 
-        {/* Progress toward the Founding-Member perk (3+ activated invites). */}
+        {/* What the contest pays. Every number here reads from the constant the granting
+            code uses, so the copy cannot claim a payout the ledger does not make. */}
         <div className="rounded-card border border-border bg-surface p-4 lift-1">
           <h2 className="flex items-center gap-2 text-body-sm font-bold text-text">
-            <Gift className="h-4 w-4 text-primary-strong" aria-hidden /> Founding-Member perks
+            <Zap className="h-4 w-4 text-primary-strong" aria-hidden /> What you earn
           </h2>
-          <p className="mt-1 text-body-sm text-muted">{foundingCopy}</p>
-          <ProgressTrack
-            value={progress.activatedReferrals}
-            max={FOUNDING_PERK_MIN_REFERRALS}
-            size="lg"
-            animate
-            className="mt-3 w-full"
-            label={`${progress.activatedReferrals} of ${FOUNDING_PERK_MIN_REFERRALS} referrals toward the Founding-Member perks`}
-          />
+          <ul className="mt-2 space-y-1.5 text-body-sm text-muted">
+            <li>
+              <span className="font-semibold text-text">
+                {ZAP_AMOUNTS.referral_activated} Zaps
+              </span>{' '}
+              for every friend who joins and takes a real first action.
+            </li>
+            <li>
+              <span className="font-semibold text-text">{CIRCLE_STARTER_ZAPS} Zaps</span> when a
+              Circle you started reaches {CIRCLE_STARTER_THRESHOLD} active members.
+            </li>
+          </ul>
           {progress.pendingReferrals > 0 && (
             <p className="mt-2 text-meta text-subtle">
               {progress.pendingReferrals} invited{' '}

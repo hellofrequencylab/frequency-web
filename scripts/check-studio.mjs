@@ -31,9 +31,16 @@
 // lib/studio/registry.test.ts. Together: this catches "the layering was broken", the tests catch
 // "a manifest was declared wrong".
 //
-// Escape hatch: an inline `// studio-ok: <reason>` comment on the offending line. Usage:
-// `node scripts/check-studio.mjs` (or `pnpm check:studio`). Exits 1 on violation.
-// Model: scripts/check-menu.mjs.
+// Escape hatch: an inline `// studio-ok: <reason>` comment on the offending line.
+//
+// ⚠️ WHERE THIS RUNS (changed 2026-08-12). This is no longer a `check:*` entry in the CI guards
+// array. It is enforced by `scripts/check-studio.test.ts`, which vitest AUTO-DISCOVERS — so unlike
+// an array entry, it cannot be forgotten. That matters here more than anywhere: this exact guard
+// shipped in PR #2098 and was wired into nothing for the whole life of that PR, while AGENTS.md
+// called the contract "machine-enforced". The runtime half already lived beside the catalog in
+// lib/studio/registry.test.ts; this puts the layering half on the same footing.
+// Still runnable by hand for the friendly report: `node scripts/check-studio.mjs`. Exits 1 on
+// violation. Model: scripts/check-menu.mjs.
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -86,25 +93,34 @@ const FIELD_CSS_ALLOWLIST = new Map([
 // converts "I never looked" into "I looked and it was fine". These floors make the two distinct.
 //
 // Raise them only when the real counts move, and never to make a red build green.
-const MIN_KERNEL_FILES = 3
-const MIN_STUDIO_FILES = 10
+export const MIN_KERNEL_FILES = 3
+export const MIN_STUDIO_FILES = 10
 
-function runCheck() {
+/** The two corpora the floors are measured against. Exported so the vitest guard asserts the SAME
+ *  numbers the CLI does, rather than a re-derived approximation of them. */
+export function corpus() {
+  return { kernelFiles: walk(KERNEL_DIR), studioFiles: STUDIO_ROOTS.flatMap((r) => walk(r)) }
+}
+
+/** The floor, as a message rather than an exit — so both the CLI and the test can enforce it.
+ *  Returns null when the corpus is real. */
+export function corpusFloorFailure() {
+  const { kernelFiles, studioFiles } = corpus()
+  if (kernelFiles.length >= MIN_KERNEL_FILES && studioFiles.length >= MIN_STUDIO_FILES) return null
+  return (
+    `\n✗ check:studio — refusing to pass over a corpus it could not read.\n` +
+    `    ${KERNEL_DIR}: ${kernelFiles.length} file(s), floor ${MIN_KERNEL_FILES}\n` +
+    `    studio surfaces: ${studioFiles.length} file(s), floor ${MIN_STUDIO_FILES}\n\n` +
+    `  Either the Studio moved and this guard's paths are stale, or it is running outside the\n` +
+    `  repo. Both are real problems. Neither is a pass.\n`
+  )
+}
+
+export function runCheck() {
   const violations = []
   const norm = (p) => p.split('\\').join('/')
 
   const kernelFiles = walk(KERNEL_DIR)
-  const studioFiles = STUDIO_ROOTS.flatMap((r) => walk(r))
-  if (kernelFiles.length < MIN_KERNEL_FILES || studioFiles.length < MIN_STUDIO_FILES) {
-    console.error(
-      `\n✗ check:studio — refusing to pass over a corpus it could not read.\n` +
-        `    ${KERNEL_DIR}: ${kernelFiles.length} file(s), floor ${MIN_KERNEL_FILES}\n` +
-        `    studio surfaces: ${studioFiles.length} file(s), floor ${MIN_STUDIO_FILES}\n\n` +
-        `  Either the Studio moved and this guard's paths are stale, or it is running outside the\n` +
-        `  repo. Both are real problems. Neither is a pass.\n`,
-    )
-    process.exit(1)
-  }
 
   // (a) + (b): the kernel's layering + purity.
   for (const file of kernelFiles) {
@@ -132,13 +148,18 @@ function runCheck() {
   return violations
 }
 
-const WHY = {
+export const WHY = {
   boundary: 'the KERNEL imports an ENTITY (the dependency arrow must point entities -> kernel only)',
   impure: 'the KERNEL imports a framework (it must stay pure: no React / Next / Supabase)',
   'field-css': 'declares a bespoke field CSS constant instead of using the shared field kit',
 }
 
 function main() {
+  const floor = corpusFloorFailure()
+  if (floor) {
+    console.error(floor)
+    process.exit(1)
+  }
   const violations = runCheck()
   if (violations.length === 0) {
     console.log('✓ Studio contract: the kernel is pure and entity-blind, and no surface hand-rolls a field control.')

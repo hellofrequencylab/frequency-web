@@ -32,10 +32,22 @@
 // baseline stays a safe ceiling. If a real page trips this, compose the tag directly rather than
 // teaching the regex to chase indirection.
 //
-// Usage: `node scripts/check-templates.mjs` (or `pnpm check:templates`). Exits 1 when the count
-// RISES above the frozen baseline. Falling is reported and asks you to re-freeze.
+// ⚠️ A COUNT IS NOT A SET (2026-08-12). This gate used to be `export const BASELINE = 60` — a bare
+// number — and that had the two defects ADR-1007 named for the migration ledger:
+//   · it could not say WHICH page was new, so every failure printed all 61 paths with none marked
+//     and cost a manual diff to read;
+//   · one page adopting a template and one new bare page NET TO ZERO and it stayed green, so a
+//     fresh violation walked in unseen behind a stable total.
+// The baseline is now a SET of paths (scripts/templates-baseline.txt), so a failure names only the
+// delta, and a swap can no longer hide inside a stable count. Copied wholesale from
+// scripts/check-admin-client.mjs, which was already doing this correctly in the same directory.
+//
+// Usage: `node scripts/check-templates.mjs` (or `pnpm check:templates`). Exits 1 when a page that
+// is NOT on the baseline composes no shell. Pages that left the list are reported so it can shrink.
+//   node scripts/check-templates.mjs --update                 # after converting pages (shrink)
+//   node scripts/check-templates.mjs --update --allow-raise --reason="..."   # to ADD a bare page
 
-import { readFileSync, readdirSync, existsSync } from 'node:fs'
+import { readFileSync, readdirSync, existsSync, writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -155,27 +167,46 @@ export function evaluate(io = {}) {
  *  a walk that silently collapses. */
 export const MIN_PAGES = 150
 
-/** Frozen 2026-08-11 at the measured value: 313 in-app page.tsx, 290 rendering JSX, 58 of those
- *  composing no shell. RATCHET: may only fall. Deliberately not a hard zero — converting a page is
- *  a per-page judgement about which template the content actually IS, which is a design call and
- *  not a codemod. What the freeze buys is that the class stops GROWING meanwhile, the property it
- *  has never had.
+/** The baseline SET: one path per line, sorted, `#` comments ignored. Frozen 2026-08-11 at the
+ *  measured value (313 in-app page.tsx, 290 rendering JSX, 58 composing no shell), re-frozen to 60
+ *  by ADR-986, and converted from a bare count to this file on 2026-08-12.
  *
- *  ⚠️ This number is NOT the "84" or the "38" that circulated in the plan, and the difference is
+ *  RATCHET: it may only shrink. Deliberately not a hard zero — converting a page is a per-page
+ *  judgement about which template the content actually IS, which is a design call and not a codemod.
+ *  What the freeze buys is that the class stops GROWING meanwhile, the property it never had.
+ *
+ *  ⚠️ The number here is NOT the "84" or the "38" that circulated in the plan, and the difference is
  *  the method, not the tree:
  *    · scope — those counted all of app/; this counts only what the framework governs (SKIP_DIRS),
  *      because a marketing page hand-rolling a hero is following its own system.
  *    · evidence — those counted an IMPORT of a shell; this requires the shell to be RENDERED
  *      (`<AdminTemplate`). A page that imports one and never uses it is not composing it.
  *  Re-measure with `node scripts/check-templates.mjs`, never by grep. */
-// Re-frozen 58 -> 60 (ADR-986). The two new Spark routes, app/(main)/classifieds/new/page.tsx and
-// app/(main)/spaces/[slug]/settings/services/new/page.tsx, are SERVER pages that gate and then
-// delegate to a client Spark which composes SparkShell. They are compliant, but the shell tag lives
-// in the delegated component, and this gate matches literal tags in the page file by design (see the
-// note above: it over-reports rather than certifying a hand-rolled layout). Raising the ceiling for a
-// page that genuinely composes a shell is the sanctioned move; raising it for a hand-rolled layout is
-// not. Both routes are named here so the reason is reviewable rather than implied by a number.
-export const BASELINE = 60
+export const BASELINE_FILE = join('scripts', 'templates-baseline.txt')
+
+export function loadBaseline(read = (f) => readFileSync(f, 'utf8')) {
+  return new Set(
+    read(BASELINE_FILE)
+      .split('\n')
+      .map((l) => l.replace(/#.*/, '').trim())
+      .filter(Boolean),
+  )
+}
+
+const BASELINE_HEADER =
+  '# check:templates baseline — every in-app page.tsx that renders JSX and composes NO kit shell,\n' +
+  '# in the page itself or any ancestor layout (PAGE-FRAMEWORK §3). A SET, not a count: a page\n' +
+  '# adopting a template and a new bare page arriving can no longer net to zero and stay green.\n' +
+  '#\n' +
+  '# RATCHET: this list may only SHRINK. Convert a page to a template, then regenerate:\n' +
+  '#   node scripts/check-templates.mjs --update\n' +
+  '# Adding a bare page is a deliberate, reviewable act and needs a reason the diff carries:\n' +
+  '#   node scripts/check-templates.mjs --update --allow-raise --reason="why"\n' +
+  '#\n' +
+  '# ⚠️ Two entries are compliant pages the gate cannot see (ADR-986): app/(main)/classifieds/new\n' +
+  '# and app/(main)/spaces/[slug]/settings/services/new are SERVER pages that gate and then delegate\n' +
+  '# to a client Spark which composes SparkShell. The gate matches literal tags in the page file by\n' +
+  '# design — it over-reports rather than certifying a hand-rolled layout — so they are listed here.\n'
 
 function main() {
   const list = pages()
@@ -190,32 +221,59 @@ function main() {
 
   const { total, considered, bare } = evaluate({ pages: list })
 
-  if (bare.length > BASELINE) {
-    console.error(
-      `\n✗ Template adoption ROSE: ${bare.length} JSX page(s) compose no kit shell, baseline ` +
-        `${BASELINE}.\n`,
-    )
-    console.error('  Pages with no shell, in the page itself or any ancestor layout:\n')
-    for (const p of bare) console.error(`    ${p}`)
+  if (process.argv.includes('--update')) {
+    // A ratchet must be ASYMMETRIC or it is just a snapshot. Same shape as check-admin-client.mjs:
+    // shrinking is free, growing needs --allow-raise and a reason the reviewer can read.
+    const prior = (() => { try { return loadBaseline() } catch { return new Set() } })()
+    const rising = bare.filter((p) => !prior.has(p))
+    const allowRaise = process.argv.includes('--allow-raise')
+    const reasonArg = process.argv.find((a) => a.startsWith('--reason='))
+    const reason = reasonArg ? reasonArg.slice('--reason='.length).trim() : ''
+    if (rising.length > 0 && prior.size > 0 && !allowRaise) {
+      console.error(
+        `✗ templates baseline: refusing to RAISE by ${rising.length} page(s).\n` +
+          rising.map((p) => `    + ${p}`).join('\n') +
+          '\n  Each of these hand-rolls a layout the kit already owns. If that is intended:\n' +
+          '    node scripts/check-templates.mjs --update --allow-raise --reason="why"',
+      )
+      process.exit(1)
+    }
+    if (rising.length > 0 && prior.size > 0 && reason.length < 12) {
+      console.error('✗ templates baseline: --allow-raise needs --reason="..." (>= 12 chars).')
+      process.exit(1)
+    }
+    writeFileSync(BASELINE_FILE, BASELINE_HEADER + bare.join('\n') + '\n')
+    console.log(`✓ templates baseline regenerated: ${bare.length} bare page(s)`)
+    return
+  }
+
+  const baseline = loadBaseline()
+  const current = new Set(bare)
+  const added = bare.filter((p) => !baseline.has(p))
+  const removable = [...baseline].filter((p) => !current.has(p)).sort()
+
+  if (added.length > 0) {
+    console.error(`\n✗ check:templates: ${added.length} NEW page(s) compose no kit shell:\n`)
+    for (const p of added) console.error(`    - ${p}`)
     console.error(
       '\n  Pick a template from @/components/templates by WHAT THE CONTENT IS and fill its slots\n' +
         '  (PAGE-FRAMEWORK §3): Stream, Index, Detail, Dashboard, Focus. Importing PageHeading or\n' +
-        '  AdminSection is not composing a shell — those are pieces. Do NOT raise BASELINE.\n',
+        '  AdminSection is not composing a shell — those are pieces. If the page genuinely composes\n' +
+        '  one through a delegated client component the gate cannot see, add it in this PR:\n' +
+        '    node scripts/check-templates.mjs --update --allow-raise --reason="why"\n',
     )
     process.exit(1)
   }
 
-  if (bare.length < BASELINE) {
-    console.log(
-      `✅ Template adoption FELL: ${bare.length} bare page(s), baseline ${BASELINE}. ` +
-        'Re-freeze BASELINE in scripts/check-templates.mjs so it can only shrink again.',
-    )
-  }
-
   console.log(
-    `✓ Template contract: ${considered} of ${total} page(s) are considered (not redirect stubs); ${considered - bare.length} ` +
-      `compose a kit shell directly or through an ancestor layout, ${bare.length} do not ` +
-      `(baseline ${BASELINE}, may only fall).`,
+    `✓ Template contract: ${considered} of ${total} page(s) are considered (not redirect stubs); ` +
+      `${considered - bare.length} compose a kit shell directly or through an ancestor layout, ` +
+      `${bare.length} do not (baseline ${baseline.size}, may only shrink).` +
+      (removable.length
+        ? `\n  ${removable.length} baseline entr(ies) now compose a shell — shrink the baseline:` +
+          '\n    node scripts/check-templates.mjs --update' +
+          removable.map((p) => `\n      - ${p}`).join('')
+        : ''),
   )
 }
 

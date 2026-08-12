@@ -58,9 +58,16 @@ contract already exists — this adds the third voice to it.
 vendor by default (mirrors the ADR-922 no-vendor stance). Revisit at >1k WAM; if adopted,
 gate on the existing `analytics` consent scope and record the decision as its own ADR.
 
-**Gate:** `check:research-freshness` (advisory, not blocking): warns in CI when the
-newest `docs/research/findings/` file is older than 100 days. Advisory because a human
-cadence cannot be build-blocked honestly — but the warning is visible on every PR.
+**Gate:** 🔴 **none, and that is the honest state.** A `check:research-freshness` script
+existed until 2026-08-12; it ran in no workflow, and its own output ended *"Nothing a PR
+can fix, which is why this exits 0"* — it was structurally unable to fail. It was deleted
+(ADR-1011) rather than left as a gate four documents described and nothing ran. A human
+recruiting cadence cannot honestly be build-blocked, so this lift has no machine gate.
+The fact it reported is recorded here instead, where the live plan can be read:
+**no moderated round has ever run — `docs/research/findings/` holds only its `README.md`.**
+That line is also what `design_handoff/SYNC.md` standing rule 1 requires under "What users
+tripped on" until a real round lands. Closing it is 🔴 owner action (`docs/research/PROTOCOL.md` §2:
+recruit five members), not engineering.
 **Metric:** J1–J5 conversion, reviewed in every DAWN round note; findings file age.
 
 ---

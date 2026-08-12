@@ -243,7 +243,7 @@ const REFERRAL_CONTEST: BetaLaunchEmail = {
   label: 'Referral + Circle-starter contest',
   phaseKey: 'P3',
   segment: 'members',
-  subject: 'Bring a friend, start a Circle, win founding perks',
+  subject: 'Bring a friend, start a Circle, earn Zaps',
   preheader: 'Invite people you want in the room and start Circles worth showing up to.',
   blockJson: emailLayout([
     { id: 'displayHeading', content: { text: 'Bring a friend, start a Circle', font: 'display' } },
@@ -260,14 +260,14 @@ const REFERRAL_CONTEST: BetaLaunchEmail = {
         items: [
           { icon: '🔗', title: 'Share your link', text: 'Share your invite link with friends who fit.' },
           { icon: '🤝', title: 'They join and stay', text: 'Every friend who joins and sticks around counts.' },
-          { icon: '⭕', title: 'Start a Circle', text: 'Start a Circle and get it going for bonus credit.' },
+          { icon: '⭕', title: 'Start a Circle', text: 'Start a Circle and grow it to ten active members.' },
         ],
       },
     },
     {
       id: 'text',
       content: {
-        text: 'The members who bring the most people and start the liveliest Circles win founding perks and a spot in the launch story. It runs for two weeks.',
+        text: 'Every friend who joins and takes a real first action pays you 25 Zaps. A Circle you started pays 150 Zaps once it reaches ten active members. It runs for two weeks, and the leaderboard is public the whole time.',
       },
     },
     { id: 'divider', content: {} },

@@ -1,9 +1,15 @@
 import { describe, it, expect } from 'vitest'
-import { elementViolations } from './check-elements.mjs'
+// @ts-expect-error — plain .mjs guard script, no types
+import { elementViolations, runCheck, scannedFiles, MIN_SCANNED_FILES } from './check-elements.mjs'
 
 // Locks the embeddable-elements contract guard (ADR-792, docs/EMBEDDABLE-ELEMENTS.md). elementViolations
 // is the pure classifier the CLI runs; feeding it fixture strings keeps the guard honest without
 // touching the filesystem (mirrors scripts/check-menu.test.ts).
+//
+// ⚠️ 2026-08-12: this file is now the ENFORCEMENT, not just the unit coverage. `check:elements` left
+// the CI guards array; the live-tree block at the bottom is what CI runs. Vitest auto-discovers
+// `*.test.ts`, so unlike an array entry it cannot be forgotten — which is how check:studio came to
+// enforce nothing for the whole life of PR #2098.
 
 // A file that forks the catalog must import OUR ElementDef; the fixtures include that import so the
 // guard (which keys on the import, not the type name) sees them as real forks.
@@ -51,5 +57,21 @@ describe('check-elements (embeddable-elements contract guard)', () => {
   it('honors the // element-ok: escape hatch', () => {
     const v = elementViolations('lib/x.ts', IMPORT + "const Y: ElementDef[] = [] // element-ok: fixture, not a real catalog\n")
     expect(v).toHaveLength(0)
+  })
+})
+
+describe('check-elements · the live tree', () => {
+  it('scanned a real corpus, so silence means something (the non-triviality floor)', () => {
+    // `walk()` returns [] for a missing root without complaint, and the success line prints no
+    // count — so an under-scan was invisible. Assert the corpus before believing the verdict.
+    expect(scannedFiles().length).toBeGreaterThanOrEqual(MIN_SCANNED_FILES)
+  })
+
+  it('one catalog, one store: no fork and no direct element_settings access', () => {
+    const violations: { file: string; line: number; kind: string; text: string }[] = runCheck()
+    const report = violations
+      .map((v) => `  • ${v.file}:${v.line} — ${v.kind}\n      ${v.text}`)
+      .join('\n')
+    expect(violations, `\n${report}\n`).toEqual([])
   })
 })

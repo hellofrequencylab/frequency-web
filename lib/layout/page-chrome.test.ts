@@ -255,6 +255,18 @@ describe('adminScopeFor — the single admin-scope resolver (LP4 step B0)', () =
     expect(adminScopeFor('/events/sunrise-sit/manage')).toEqual({ kind: 'event', id: 'sunrise-sit' })
   })
 
+  it('carries the circle scope onto a circle TAB route with no edit to this file', () => {
+    // The circle detail page became a tabbed shell (app/(main)/circles/[slug]/(circle)/layout.tsx).
+    // A route GROUP adds no URL segment, so a tab is /circles/<slug>/<tab> and the existing prefix
+    // already covers it: the tab inherits the same circle admin rail its parent has, with nothing
+    // added to ADMIN_SCOPE_PREFIXES. Verifying that beats duplicating the pattern.
+    expect(adminScopeFor('/circles/sunrise-sit/members')).toEqual({ kind: 'circle', id: 'sunrise-sit' })
+    // ...and the tabs keep the GLOBAL community rail, like every other member page. Nothing about
+    // the circle route is registered as 'scoped' or 'none' (owner directive 2026-06-20, reaffirmed
+    // 2026-07-28), and this fails the moment somebody adds one.
+    expect(railFor('/circles/sunrise-sit/members')).toBe('global')
+  })
+
   it('returns the operator global scope on non-entity in-app pages (incl. entity LIST routes)', () => {
     for (const p of ['/feed', '/circles', '/events', '/admin', '/admin/menu', '/lead', '/settings', '/pages']) {
       expect(adminScopeFor(p), p).toEqual({ kind: 'global' })

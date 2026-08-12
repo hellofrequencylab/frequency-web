@@ -16,6 +16,7 @@ const steward = {
   targetSpaceCanEdit: true,
   target: SPACE_B,
   staff: false,
+  linkedTierCount: 0,
 }
 
 describe('canTransferCircle', () => {
@@ -58,6 +59,7 @@ describe('canTransferCircle', () => {
         targetSpaceCanEdit: true,
         target: SPACE_B,
         staff: false,
+        linkedTierCount: 0,
       }).allowed,
     ).toBe(true)
   })
@@ -71,6 +73,7 @@ describe('canTransferCircle', () => {
         targetSpaceCanEdit: false,
         target: TO_SOMEONE,
         staff: true,
+        linkedTierCount: 0,
       }).allowed,
     ).toBe(true)
   })
@@ -78,5 +81,45 @@ describe('canTransferCircle', () => {
   it('refuses anonymous callers, staff flag or not', () => {
     expect(canTransferCircle({ ...steward, viewerProfileId: null }).allowed).toBe(false)
     expect(canTransferCircle({ ...steward, viewerProfileId: null, staff: true }).allowed).toBe(false)
+  })
+})
+
+// THE TIER LOCK. A Space links a membership tier to one of its circles and the billing lifecycle
+// then mints provenance-stamped memberships rows into it (lib/spaces/tier-circle.ts). Nothing in
+// the ownership write ever touched that link, so a transferred circle left the old Space granting
+// paid members a seat on another tenant's roster. The linked circle is now PINNED until unlinked.
+// These fail on the pre-guard tree: every one of them was `allowed: true` there.
+describe('canTransferCircle: the tier lock (cross-tenant membership leak)', () => {
+  it('refuses to move a circle a membership tier is linked to', () => {
+    const d = canTransferCircle({ ...steward, linkedTierCount: 1 })
+    expect(d.allowed).toBe(false)
+    expect(d.reason).toContain('linked to a membership tier')
+  })
+
+  it('refuses for platform staff too: it is an integrity rule, not a permission', () => {
+    expect(
+      canTransferCircle({ ...steward, staff: true, linkedTierCount: 1 }).allowed,
+    ).toBe(false)
+  })
+
+  it('refuses a move to a person as firmly as a move to a space', () => {
+    expect(canTransferCircle({ ...steward, target: TO_ME, linkedTierCount: 1 }).allowed).toBe(false)
+  })
+
+  it('refuses on ANY link, whatever the tier costs or whether it is retired', () => {
+    // The guard counts links, never price_cents or is_active, because the GRANT path reads only
+    // circle_id. Two rules over one fact is how this hole opened.
+    expect(canTransferCircle({ ...steward, linkedTierCount: 3 }).allowed).toBe(false)
+  })
+
+  it('still allows the move once the operator unlinks', () => {
+    expect(canTransferCircle({ ...steward, linkedTierCount: 0 }).allowed).toBe(true)
+  })
+
+  it('tells an anonymous caller to sign in first, not about tiers', () => {
+    // Ordering guard: the signed-in check stays the first thing the gate says.
+    expect(
+      canTransferCircle({ ...steward, viewerProfileId: null, linkedTierCount: 1 }).reason,
+    ).toContain('Sign in')
   })
 })

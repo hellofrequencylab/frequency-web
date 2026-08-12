@@ -69,7 +69,16 @@ export function DetailTemplate({
    *  destination pages (the public event page); the default keeps every existing
    *  Detail page exactly as it was. */
   titleScale?: 'default' | 'display'
-  tabs?: DetailTab[]
+  /** Context tabs. Two accepted shapes, and which one you want depends on WHERE the template is
+   *  composed:
+   *    · `DetailTab[]` — the default row, with `active` precomputed by the caller. Correct for a
+   *      PAGE, which re-renders on every navigation.
+   *    · a ReactNode — your own strip, rendered in the same slot. Correct for a route-segment
+   *      LAYOUT (the Circle detail shell): a layout does NOT re-render when you move between its
+   *      child segments, so a server-computed `active` would freeze on whichever tab you landed on
+   *      first. Pass a small client strip (`<UnderlineTabs>`) and let `usePathname` decide, which
+   *      is the same signal the Space profile's sticky menu uses for the same reason. */
+  tabs?: DetailTab[] | React.ReactNode
   /** OPTIONAL sticky menu band rendered as a direct child of the page root (NOT inside the short
    *  header), so it pins under the global header and STAYS pinned for the whole scroll — its containing
    *  block is the full-height page, not the header. Used by the Space profile for its persistent sub-nav.
@@ -158,8 +167,11 @@ export function DetailTemplate({
           </div>
         )}
 
-        {/* Context tabs (the non-sticky default; a page using `stickyNav` passes its menu there instead). */}
-        {!stickyNav && tabs && tabs.length > 0 && (
+        {/* Context tabs (the non-sticky default; a page using `stickyNav` passes its menu there
+            instead). A caller-supplied NODE renders in the same slot, untouched — that is the
+            layout-composed form (see the prop's doc). */}
+        {!stickyNav && tabs != null && !Array.isArray(tabs) && <div className="mt-4">{tabs}</div>}
+        {!stickyNav && Array.isArray(tabs) && tabs.length > 0 && (
           <nav className="flex items-center gap-1 mt-4 -mb-px overflow-x-auto">
             {tabs.map((tab) => (
               <Link

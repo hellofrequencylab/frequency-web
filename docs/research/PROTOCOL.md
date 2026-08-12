@@ -280,7 +280,7 @@ to the Notion training page as its own paragraph, and the findings file just lin
 
 | | |
 |---|---|
-| **Gate** | 📋 `check:research-freshness` — advisory, non-blocking. Warns in CI when the newest `docs/research/findings/YYYY-MM-DD.md` is more than **100 days** old. `README.md` is excluded from the scan; only `\d{4}-\d{2}-\d{2}\.md` counts. Advisory because a human cadence cannot honestly be build-blocked, but the warning appears on every PR. Not built yet. |
+| **Gate** | 🔴 **None.** A `check:research-freshness` script existed until 2026-08-12 and ran in **no** workflow; its own output ended *"Nothing a PR can fix, which is why this exits 0"*, so it could not fail. It was deleted (ADR-1011). This table previously said it "warns in CI", which was never true. A human recruiting cadence cannot honestly be build-blocked, and a guard four documents describe while nothing runs it is worse than no guard. The status this section tracks is stated below and in [`UX-MATURITY-PLAN.md`](../UX-MATURITY-PLAN.md) Lift 1: **no moderated round has ever run — this directory holds only its `README.md`.** Closing it is 🔴 owner action (§2: recruit five members). |
 | **Metric** | Age of the newest findings file (target: under 100 days), and J1-J5 conversion from the Journeys panel, reviewed in every DAWN round note. |
 
 ---

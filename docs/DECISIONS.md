@@ -22169,3 +22169,251 @@ PNG was timing out in Apple Mail. ⚠️ `BUDGET_GB` is still **13** against a m
 from 16.73 before [ADR-1002](DECISIONS.md); ratcheting it down is now available and wants its own
 reason rather than being done in passing. ⚠️ The largest remaining line is unchanged and known:
 `libvips-cpp.so` at 1,440 MB (17.4 MB × 83 segment-inherited OG cards), 26% of the build.
+
+## ADR-1011: The guard suite shrinks: one deletion, six moves to vitest, one ratchet made set-shaped, one made advisory
+
+**Date:** 2026-08-12 · **Status:** Accepted · **Supersedes nothing; amends ADR-970, ADR-986, ADR-1003, ADR-1007**
+
+**Context.** The owner's instruction was "do whatever is best practice for our system", against a
+standing complaint that ~30 guards keep producing surprises. A read-only audit of the CI system
+found the guards themselves to be well written and fast (13 s for all 28 in CI, three of them
+catching real defects during the audit itself). What was broken was the wiring around them. Five
+concrete defects, all live on the tree at the time:
+
+1. `check:research-freshness` ran in **no** workflow, and its own output ended *"Nothing a PR can
+   fix, which is why this exits 0"* — it was structurally unable to fail. **Four** documents
+   (`docs/research/PROTOCOL.md`, `docs/UX-MATURITY-PLAN.md`, `docs/FINALIZE-PLAN.md`,
+   `docs/MAINTENANCE-AUTOMATION.md`) claimed it warned in CI.
+2. A guard's only home was a bash array in `ci.yml`, so shipping one and forgetting the second edit
+   left it enforcing nothing — which is exactly what happened to `check:studio` and `check:creates`
+   for the whole life of PR #2098, while `AGENTS.md` called the Studio contract "machine-enforced".
+3. `check:templates` froze a bare `BASELINE = 60`. A count is not a set (the defect ADR-1007 named
+   for the migration ledger): the failure could not say which page was new, and one page adopting a
+   template plus one new bare page netted to zero and stayed green.
+4. `check:adoption` is a scoreboard of 13 design-debt **counts**, three already flagged "not bought
+   by a sweep". `bespoke-cards: 0` means adding any ordinary `*-card.tsx` fails an unrelated PR.
+5. `check:vocab` had no non-triviality floor and reported a clean bill of health over an empty
+   corpus.
+
+**Decision.**
+
+1. **Delete `check:research-freshness`** — script, test, `package.json` entry, and its `UNWIRED`
+   allowlist entry — and correct all four documents. A guard described in four places and running
+   in none is worse than no guard. The signal it carried is real and is preserved as prose in the
+   two live places that own it: `docs/UX-MATURITY-PLAN.md` Lift 1 and `docs/research/PROTOCOL.md`
+   §8 now both state plainly that **no moderated round has ever run** and that closing it is 🔴
+   owner action, not engineering. `design_handoff/SYNC.md` already sources its "What users tripped
+   on" line from the findings directory, not from the script, so nothing downstream broke.
+
+2. **Six source-reading guards move into vitest** — `crm-parity` · `vocab` · `studio` · `elements`
+   · `render-path` · `creates`. Each only reads source files and asserts a wiring property, which
+   is a vitest test. The reason is mechanical, not aesthetic: **vitest auto-discovers `*.test.ts`,
+   so a guard that is a test cannot be forgotten in an array.** That removes six future instances
+   of defect 2 and shrinks `ci.yml`'s array from 28 to 20, with no loss of coverage; they inherit
+   the already-required `test` context. Their `pnpm check:*` scripts stay — a dozen docs cite them
+   and each CLI prints the friendly report — so only the enforcement site moved. Every assertion
+   and every non-triviality floor moved with them; where a floor lived only in a script's CLI block
+   (`crm-parity`, `studio`) it was lifted into a shared exported function so the CLI and the test
+   enforce the identical thing. `scripts/guard-wiring.test.ts` gains a `VITEST_ENFORCED` map that
+   names each guard's test file and verifies that file exists and imports the guard, so "it moved
+   to vitest" cannot become a story nobody checks.
+
+3. **`check:collective` does not move to vitest; it moves to the weekly sweep.** Everything else in
+   the guard array asserts a property of the code. This one grades a *build plan*
+   (`docs/COMMUNITY-COLLECTIVE-BUILD-PLAN.md`) against the tree and reports ⏳ for phases nobody has
+   started and ⚠ for tracked follow-ups. Its output is a per-phase report a human reads, not an
+   assertion — a vitest test can say "this is broken" but cannot say "phase 3 has not started, and
+   that is fine". It runs weekly in `maintenance.yml` and feeds the tracking issue when it finds a
+   genuine inconsistency, the same placement and the same reasoning as `check:cron-freshness`
+   (ADR-970).
+
+4. **`check:templates` becomes a path SET.** `scripts/templates-baseline.txt`, 60 paths, with
+   `--update` / `--allow-raise --reason=` — a direct copy of `scripts/check-admin-client.mjs`, which
+   was already doing this correctly in the same directory. A failure now prints only the delta and
+   names it. Verified non-vacuous: a probe page under `app/(main)/` produced *"✗ check:templates: 1
+   NEW page(s) compose no kit shell: - app/(main)/zz-ratchet-probe/page.tsx"*, and a simulated swap
+   (one baselined page adopting a template, one new bare page arriving) was shown to leave the old
+   count gate GREEN while the set gate fails and names the newcomer.
+
+5. **`check:adoption` stops blocking; `check:creates` keeps blocking.** Adoption moves to an
+   advisory step in `ci.yml` that runs, reports into the run summary, and never fails the `checks`
+   job — it is a count ratchet that fires on legitimate growth, and a count ratchet that cannot be
+   made set-shaped (thousands of literal utilities genuinely are a count) is one that should not
+   block. It remains fully runnable as a ratchet with `--update`, and still refuses to raise a
+   baseline without `--allow-raise` and a reason. `check:creates` was proposed for the same
+   treatment and is **deliberately left blocking**: its 18 unrouted creates are a *named set*
+   (`UNROUTED`), not a count, so it is green today and only fires on a NEW ungoverned create. An
+   unrelated PR cannot trip it and both ways out are one edit. That is a ratchet, not a tracker —
+   and the CI audit's own §3d lists `creates` among the ratchets "already doing this correctly and
+   needing no change", contradicting its own advisory classification.
+
+6. **`check:vocab` gains a non-triviality floor** (`MIN_SCANNED_FILES = 1500`; 3,330 today),
+   enforced by both the CLI and its new test. Moving a guard that could pass over nothing would
+   have moved the defect with it.
+
+7. **`BUDGET_GB` in `check-build-budget.mjs` falls from 13 to 8.** The measured artifact is 5.59 GB
+   across 485 functions (16.73 → 9.80 after ADR-1002 → 6.45 after ADR-1008 → 5.59 after ADR-1010).
+   13 was set against a 9.80 GB artifact and had become a ceiling nothing could reach by accident,
+   which makes it decorative. 8 leaves ~2.4 GB of headroom for ordinary growth while still firing
+   immediately on the failure that actually happened — the measured escalation ladder (ADR-1007) has
+   a root-level share card reaching 484 functions and one at `app/(main)` reaching 303. 7 was
+   rejected as likely to need routine raising, and a budget that gets raised routinely stops being a
+   budget. The reasoning is written into the file, not just here. **This lowering was an agent's
+   engineering call under the "best practice" instruction, not an owner decision.**
+
+**Consequences.**
+
+- The `guards=( )` array is 20, down from 28. `pnpm test` carries six more real-tree assertions.
+- `scripts/guard-wiring.test.ts` has four legitimate homes for a `check:*` script instead of three,
+  and its `UNWIRED` allowlist is empty — the intended steady state. Its `>= 25` floor was reviewed
+  and **deliberately left unchanged**: only one script was deleted (32 → 31 `check:*` entries), so
+  the floor still sits six below the real count.
+- One thing got slightly *more* machinery, not less: the `VITEST_ENFORCED` map. It is a declaration
+  rather than a heuristic on purpose. "Some test imports this script" would have been too weak,
+  because several guards have sibling tests that only exercise pure classifiers against fixtures
+  and never read the tree — under a heuristic, dropping one of those from the array would have
+  passed silently.
+- `docs/DEPLOY-SAFETY.md`'s pre-merge checklist, `AGENTS.md`'s Studio and budget lines,
+  `docs/EMBEDDABLE-ELEMENTS.md`, `docs/CRM-COMMS-CONTRACT.md` and
+  `docs/COMMUNITY-COLLECTIVE-EXECUTION.md` were corrected in the same pass, because a doc that
+  names the wrong enforcement site is the same defect as the four research-freshness docs.
+- **Not done, and deliberately:** `help:drift` was assessed for deletion and kept. It is not a
+  `check:*` guard, enforces nothing, runs in no array, and therefore cannot surprise anyone; it is a
+  44-line manual CLI over `lib/help/drift.ts`, the same library `scripts/help-autodoc.mts` uses in
+  `help-autodoc.yml` on every PR. Deleting it would remove a working debugging aid for a live
+  mechanism and break a doc reference, for zero reduction in CI surface. The audit's "dead weight"
+  verdict conflated "not wired into CI" with "dead", and only the first is true.
+
+## ADR-1012: The second unbacked promise comes down too
+
+**Decision.** The Founding-Member perk offer is removed from `/referral` and from both beta email
+templates. `FOUNDING_PERK_MIN_REFERRALS`, `foundingPerkEarned` and `toFoundingPerk` are deleted.
+✅ `grantFoundingStatus` is **kept** — it is live for *reserved* founders via beta onboarding and the
+Stripe webhook, and it was never the referrer path.
+
+**This is the same defect as [ADR-1006](DECISIONS.md), found in the same file, one ruling later.**
+That entry took down "top referrers win free membership" because the code awarding it had been
+deleted. It did not take down the perk offer sitting twenty lines away, because the owner had
+pinned `FOUNDING_PERK_MIN_REFERRALS` as live in an earlier round. It was live as a *constant* and
+dead as a *mechanism*: `reward_kind: 'founding_perk'` has zero writers repo-wide, its only one
+having been inside the deleted `awardReferralWinners`.
+
+**The file was already carrying its own indictment.** `lib/beta/referral-contest.ts` states, in its
+governing-rules header, that *"the rewards this module still pays are Zaps … and they are the only
+rewards the copy may claim"* — and then, twenty-five lines later, exports the perk threshold. A
+stated rule and a violation of it, in one file, neither noticed until someone read both. **A rule
+written in a comment is not enforced by anything**, which is the same lesson `ci.yml`'s warning
+about unwired guards taught in [ADR-1011](DECISIONS.md).
+
+**The emails were the part that mattered.** The page 404s today — `platform_flags
+.beta_referral_contest` is false — so the copy was unreachable. But `lib/beta/email-templates.ts`
+and `lib/beta/launch-emails.ts` are **live Email Studio catalog rows an operator could re-send
+tomorrow without touching code**. A promise is not retired while a human can still send it.
+
+**What replaced it, and the rule that produced it.** The page now claims exactly the two payouts the
+code makes — 25 Zaps for an activated referral, 150 for growing a Circle to ten active members — and
+renders them from `ZAP_AMOUNTS.referral_activated` and `CIRCLE_STARTER_ZAPS` rather than from
+literals, so the copy cannot drift from the grant. The regression test asserts that binding, not the
+numbers: hardcoding `25 Zaps` in the page fails it.
+
+**Consequences.** ✅ Nobody was owed anything — 0 referrals, 0 grants, 0 rows with that reward kind.
+✅ The referral mechanism itself is untouched and still pays. ⚠️ *"a spot in the launch story"* went
+with the rewritten sentence; that was an editorial promise a human fulfils rather than a code grant,
+and removing it was a judgement call rather than a strict consequence of this ruling. ⚠️ The general
+rule now has two instances behind it: **when a mechanism is retired, every surface that sold it is
+part of the retirement.** Both times, the copy outlived the code by weeks and nothing caught it.
+
+## ADR-1013: Amending ADR-088: the Circle is the community container, local or online; the Channel is the topic axis (2026-08-12)
+
+**Status.** Accepted. Amends [ADR-088](DECISIONS.md) (six comms surfaces) on one ruling only.
+ADR-088 is **not edited in place** and everything else in it stands, following the correction
+convention [ADR-1004](DECISIONS.md) set over [ADR-1002](DECISIONS.md): the original entry keeps
+saying what it said on the day, and the record carries the correction next to it rather than
+quietly rewriting history under a reader who cited it.
+
+**What is being amended.** ADR-088 §Channels reads:
+
+> **Channel = feed + one open public room.** A topical Channel gets both its content feed and a
+> single always-on public room anyone tuned-in can post to, the answer to "engage even without a
+> related Circle." **Circles stay the local/real-world unit; Channels the global/topical unit.**
+
+The bolded sentence is the ruling that changes. The owner has ruled that **the Circle absorbs the
+general community container role, local or online**, and that **Space Communities is being
+removed**.
+
+**Context.** ADR-088 split the two surfaces on GEOGRAPHY: a Circle was the thing you could walk to,
+a Channel the thing you could only read. Three things have made that line the wrong one.
+
+1. **The schema never agreed with it.** `circles.type` has carried `'in-person' | 'online'` since
+   before ADR-088 was written. An online Circle was always constructible; the canon simply said it
+   was not the point of a Circle, so nothing was ever built to make one feel intended.
+2. **The Channel room was a hedge against an empty room, and it inherited the emptiness.** Its
+   stated job was "engage even without a related Circle." That is a real need, and answering it with
+   a second, thinner room per topic means every topic has two places to talk and neither reaches
+   quorum. Production's largest Circle holds two members and five posts; splitting that attention
+   across a parallel Channel room does not produce two live rooms, it produces two dead ones.
+3. **A third container had grown informally.** Space Communities gave a Space its own members-and-
+   posts surface, overlapping the Circle on every axis that matters (a roster, a feed, a room) while
+   sharing none of its plumbing. ADR-088's own premise was that "where does X live?" must have one
+   answer, and by 2026-08 it had three.
+
+**Decision.**
+
+1. **The Circle is THE community container, local or online.** A Circle is a group of people who
+   belong to something together: it owns the roster, the room, the events, and the membership
+   grants. Whether it meets on a porch in Encinitas or only ever on a screen is a property of the
+   Circle (`circles.type`), not a different kind of object. "Local" stops being the definition and
+   becomes an attribute, and an online Circle is a first-class Circle with nothing withheld.
+
+2. **The Channel becomes the TOPIC AXIS, not a place you belong to.** This is the half of ADR-088
+   worth protecting, restated on the axis that actually divides the two:
+
+   | | Circle | Channel |
+   | :-- | :-- | :-- |
+   | What it is | the group you **belong to** | the subject you **tune into** |
+   | What it holds | people, a roster, a room, events, membership | circles, a topic feed, a Program blueprint |
+   | The relationship | membership (`memberships`, a durable row) | subscription (tune in / tune out) |
+   | The question it answers | "who am I in this with?" | "what is happening about this, and where do I start one?" |
+
+   So a Channel keeps everything [ADR-864](DECISIONS.md) gave it. It is a focus area: it hosts
+   Circles (`circles.topical_channel_id`), it carries the topic feed, it sorts under a Pillar, and
+   it can run as a Program with a Chapter blueprint. **What it loses is the standing open room.** The
+   answer to "engage even without a related Circle" is no longer a second room per topic; it is
+   **start one, online if there is nobody near you** (the always-offer posture ADR-089 already
+   committed to). The Channel's job is to make that Circle findable and easy to start, and to carry
+   the conversation ABOUT the topic that is not the conversation INSIDE any one group.
+
+3. **Space Communities is removed.** A Space's community is its **Circles**. The Space keeps a first-
+   class Circles surface, which is now gated on its own `circles` `SpaceFunctionKey` rather than
+   riding the `journeys` switch (fixed in the same pass, 2026-08-12: a Space with Journeys off used
+   to lose the Circles menu row entirely, which is exactly the "a Circle only exists to run a
+   program" assumption this ADR retires).
+
+4. **The six surfaces stand as a list.** Feed, Channels, Circle [+Hub/Nexus], Dispatch, Rooms and
+   Direct Messages are still the whole set, and every other ADR-088 ruling (1:1 DM, group DM to
+   private rooms, server-readable messaging, location-first feed, the dispatch ceiling, room AI,
+   liveness, open-room moderation) is untouched. One boundary moved; the map did not.
+
+**Consequences.**
+
+- **The Circle detail page has to hold more,** which is why it became a route-segment shell with
+  tabs in this pass (`app/(main)/circles/[slug]/(circle)/layout.tsx`, PAGE-FRAMEWORK §3). Home and
+  Members ship now; a Circle room and a leaderboard are later phases and have somewhere to land.
+  ADR-089's empty-Circle guardrail governs them: a Circle of one shows no tab strip at all.
+- **Canon edits fall due.** `NAMING.md` §Community structure describes Circles as the local unit and
+  Channels as the global one; both lines need this amendment folded in. `COMMS-STRATEGY.md` carries
+  the six-surface table and the Channel room in it. Neither is authority over this entry
+  (`AGENTS.md`: a plan doc that contradicts an ADR is stale, not authoritative), but both are read
+  by people and by AI generation paths, so both get corrected.
+- **The Channel room's data has an owner question.** Retiring the surface is a product ruling; what
+  happens to whatever room rows exist behind it is a migration question this ADR does not answer.
+  It is deliberately left open rather than guessed at, on the ADR-088 precedent that the group-DM
+  move was specified as its own reversible pass with an integrity check.
+- **The "start it online" path becomes load-bearing.** It was previously an available shape nobody
+  was steered toward. If it is now the answer to "there is nothing near me", the create flow has to
+  say so plainly, and an online Circle must not read as a lesser one anywhere in the product.
+
+**The durable rule.** ADR-088 divided two containers by WHERE they are. That held only while the
+product's reach was physical. **Divide surfaces by the relationship a person has to them, not by the
+geography they sit in**: belonging and subscribing stay distinct however far apart the people are,
+and a boundary drawn on that survives the product going online, going global, or going anywhere.

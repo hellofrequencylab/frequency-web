@@ -139,7 +139,8 @@ land in slices that each deploy on their own, it should.
 ## The checklist, before merging anything structural
 
 1. `pnpm build` locally, then read the `postbuild` output. Both gates must be ✅.
-2. `pnpm exec tsc --noEmit` · `pnpm lint` · `pnpm test` · the 26 contract guards.
+2. `pnpm exec tsc --noEmit` · `pnpm lint` · `pnpm test` (which now carries six of the contract
+   guards directly — ADR-1011) · the 20 guards in `ci.yml`'s `guards=( )` array.
 3. Migrations: is every file in `supabase/migrations/` actually applied, and does the applied ledger
    contain nothing the repo lacks? A revert can leave the DB **ahead of** the code.
 4. After merge: **watch the production deployment reach READY.** A merge is a deploy.

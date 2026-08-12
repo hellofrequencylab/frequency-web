@@ -56,8 +56,9 @@ one definition imported by eight surfaces and `StyleEditor` one imported by seve
 and `ElementDef.key: ElementKey` is compile-checked by `tsc`. If a future element genuinely needs
 key-discriminated mounting, re-add both halves together; a component map with no mounter buys nothing.
 
-**Enforcement (hard, in CI).** `pnpm check:elements` (`scripts/check-elements.mjs`, wired into the
-`checks` job) fails a PR that (a) declares a second `ElementDef[]` catalog outside the registry, or
+**Enforcement (hard, in CI).** `scripts/check-elements.test.ts` (under `pnpm test`; it left the
+`checks` guard array on 2026-08-12 — ADR-1011 — because vitest auto-discovers tests and an array
+entry can be forgotten) fails a PR that (a) declares a second `ElementDef[]` catalog outside the registry, or
 (b) reaches the `element_settings` table outside `lib/elements/store.ts`. Escape hatch:
 `// element-ok: <reason>` on the line. This is the elements twin of `check:menu` (ADR-553).
 

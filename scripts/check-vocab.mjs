@@ -34,6 +34,11 @@
 //
 // Escape hatch: add a file to ALLOWLIST below WITH a reason (printed on every run).
 // Model: scripts/check-crm-parity.mjs / scripts/check-menu.mjs. Exits 1 on any violation.
+//
+// ⚠️ WHERE THIS RUNS (changed 2026-08-12). No longer a `check:*` entry in the CI guards array: it is
+// enforced by scripts/check-vocab.test.ts, which vitest AUTO-DISCOVERS, so it cannot be forgotten in
+// an array the way check:studio was for the whole life of PR #2098. Still runnable by hand —
+// `node scripts/check-vocab.mjs` — for the friendly report and the allowlist printout.
 
 import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -227,6 +232,14 @@ function importsAll(src, module, symbols) {
   return symbols.every((s) => imported.has(s))
 }
 
+/** NON-TRIVIALITY FLOOR. Rule A's whole verdict is "none of the N files I read holds a hand copy",
+ *  and N was never checked — a walk that came back with nothing printed the same clean bill of
+ *  health as a walk that read the repo. (The audit of 2026-08-12 found this guard reporting
+ *  "✓ one source per vocabulary" over an empty corpus.) Live count on this tree: 3330. The floor
+ *  sits far under it and far above zero, so it fires on a broken read, never on ordinary shrinkage.
+ *  Same pattern as MIN_SCANNED_FILES in check-elements.mjs and MIN_ROWS in check-gate-parity.mjs. */
+export const MIN_SCANNED_FILES = 1500
+
 /** Run every check. Pure over the tree — a test can import and assert on it. */
 export function checkVocab() {
   const violations = []
@@ -313,6 +326,14 @@ const isMain = process.argv[1] && fileURLToPath(import.meta.url) === join(proces
 if (isMain || process.argv[1]?.endsWith('check-vocab.mjs')) {
   const { violations, vocabs, scanned, hubValues } = checkVocab()
   console.log('Vocabulary contract guard (ADR-879 / ADR-887)\n')
+  if (scanned < MIN_SCANNED_FILES) {
+    console.error(
+      `\n✗ check:vocab scanned only ${scanned} file(s), expected at least ${MIN_SCANNED_FILES}.\n` +
+        '  A search root moved or the walk is broken. "I read nothing and found nothing" is not a\n' +
+        '  clean bill of health; fix the walk rather than lowering the floor.\n',
+    )
+    process.exit(1)
+  }
   for (const v of vocabs) {
     console.log(`  checked: ${v.name} — ${v.keys.length} keys from ${v.source} (copy threshold: ${v.threshold}+ keys in one array)`)
   }

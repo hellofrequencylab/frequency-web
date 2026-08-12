@@ -1,10 +1,14 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
 import {
   rankContestRows,
   CIRCLE_STARTER_THRESHOLD,
-  FOUNDING_PERK_MIN_REFERRALS,
+  CIRCLE_STARTER_ZAPS,
   type ContestLeaderboardRow,
 } from './referral-contest'
+import { ZAP_AMOUNTS } from '@/lib/zaps'
+import { BETA_CAMPAIGN_TEMPLATES } from './email-templates'
+import { BETA_LAUNCH_EMAILS, flattenLaunchEmailText } from './launch-emails'
 
 const row = (
   handle: string,
@@ -45,12 +49,91 @@ describe('rankContestRows', () => {
 })
 
 describe('contest constants', () => {
-  // The podium prize (WINNER_PRIZE_MONTHS) and its assertions were deleted with the
-  // promise itself (owner ruling, 2026-08-12): no code grants free membership, so no
-  // surface may state it. What is left below are the two thresholds the LIVE copy on
-  // app/(main)/referral still reads.
-  it('holds the milestone + founding-perk thresholds the copy promises', () => {
+  // The podium prize (WINNER_PRIZE_MONTHS) and the Founding-Member perk
+  // (FOUNDING_PERK_MIN_REFERRALS) were deleted with the promises themselves (owner
+  // ruling, 2026-08-12): no code grants free membership and no code writes reward_kind
+  // 'founding_perk', so no surface may state either. What is left below is what the LIVE
+  // copy on app/(main)/referral reads, and every one of these numbers is paid for real.
+  it('holds the milestone thresholds and payouts the copy promises', () => {
     expect(CIRCLE_STARTER_THRESHOLD).toBe(10)
-    expect(FOUNDING_PERK_MIN_REFERRALS).toBe(3)
+    expect(CIRCLE_STARTER_ZAPS).toBe(150)
+    expect(ZAP_AMOUNTS.referral_activated).toBe(25)
+  })
+})
+
+// ── NO UNBACKED PROMISE SURVIVES ANYWHERE A MEMBER CAN READ IT ─────────────────────────
+//
+// Owner ruling, 2026-08-12, the SECOND of the day and the same class as the first: the
+// Founding-Member perk at 3 activated invites was published on /referral and in both beta
+// email catalogs, and NOTHING granted it. reward_kind 'founding_perk' had exactly one
+// writer, inside awardReferralWinners, which was deleted with the beta graduation path.
+//
+// This module's own header states the governing rule: "The rewards this module still pays
+// are Zaps, on the live ledger, and they are the ONLY rewards the copy may claim." These
+// assertions are that sentence, enforced.
+//
+// The email rows matter more than the page. /referral is inert behind
+// platform_flags.beta_referral_contest (FALSE in production, so the route 404s), but both
+// catalog rows are seeded into Email Studio as DRAFTS an operator can approve and send
+// tomorrow WITHOUT touching code. A type check cannot see a promise in a string.
+const PAGE_SRC = readFileSync('app/(main)/referral/page.tsx', 'utf8')
+
+/** Comments blanked. This file and the page BOTH explain why the perk came down, and a
+ *  guard that fails on its own evidence is a guard nobody keeps. */
+function stripComments(src: string): string {
+  return src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, '')
+}
+
+const PERK_CLAIM = /founding[- ]?member perk|founding perk|foundingPerk|founding_perk/i
+
+describe('the founding-perk promise is gone from every surface that states rewards', () => {
+  it('app/(main)/referral states no Founding-Member perk', () => {
+    const code = stripComments(PAGE_SRC)
+    expect(PERK_CLAIM.test(code), `/referral still claims a founding perk:\n${code.match(PERK_CLAIM)?.[0]}`).toBe(false)
+    // The constant behind the deleted progress bar is gone from the module's exports too,
+    // so nothing can quietly re-render it.
+    expect(PAGE_SRC).not.toContain('FOUNDING_PERK_MIN_REFERRALS')
+  })
+
+  it('the page claims exactly the two payouts the code makes, by reading their constants', () => {
+    const code = stripComments(PAGE_SRC)
+    expect(code).toContain('ZAP_AMOUNTS.referral_activated')
+    expect(code).toContain('CIRCLE_STARTER_ZAPS')
+    // Hardcoded Zap totals would drift from the ledger the moment either is tuned.
+    expect(code).not.toMatch(/\b(25|150) Zaps\b/)
+  })
+
+  it('neither beta email catalog row offers founding perks', () => {
+    const plain = BETA_CAMPAIGN_TEMPLATES.find((t) => t.key === 'referral_contest')
+    expect(plain, 'the referral_contest campaign template').toBeTruthy()
+    expect(PERK_CLAIM.test(plain!.subject), 'campaign subject').toBe(false)
+    expect(PERK_CLAIM.test(plain!.body), 'campaign body').toBe(false)
+
+    const built = BETA_LAUNCH_EMAILS.find((e) => e.key === 'referral_contest')
+    expect(built, 'the referral_contest launch email').toBeTruthy()
+    expect(PERK_CLAIM.test(built!.subject), 'launch email subject').toBe(false)
+    expect(PERK_CLAIM.test(built!.preheader), 'launch email preheader').toBe(false)
+    expect(PERK_CLAIM.test(flattenLaunchEmailText(built!)), 'launch email body').toBe(false)
+  })
+
+  it('both email rows state the live Zap payouts instead, and the numbers match the code', () => {
+    const perInvite = `${ZAP_AMOUNTS.referral_activated} Zaps`
+    const perCircle = `${CIRCLE_STARTER_ZAPS} Zaps`
+    const plain = BETA_CAMPAIGN_TEMPLATES.find((t) => t.key === 'referral_contest')!
+    const built = BETA_LAUNCH_EMAILS.find((e) => e.key === 'referral_contest')!
+    for (const [label, text] of [
+      ['campaign body', plain.body],
+      ['launch email body', flattenLaunchEmailText(built)],
+    ] as const) {
+      expect(text, `${label} should state the per-invite payout`).toContain(perInvite)
+      expect(text, `${label} should state the Circle-starter payout`).toContain(perCircle)
+    }
+  })
+
+  it('no reward this module cannot pay is named anywhere in lib/beta', () => {
+    for (const file of ['lib/beta/referral-contest.ts', 'lib/beta/email-templates.ts', 'lib/beta/launch-emails.ts']) {
+      const code = stripComments(readFileSync(file, 'utf8'))
+      expect(PERK_CLAIM.test(code), `${file} still names the founding perk`).toBe(false)
+    }
   })
 })

@@ -115,7 +115,7 @@ The Frequency team`,
     label: 'Referral + Circle-starter contest',
     phaseKey: 'P3',
     segment: 'members',
-    subject: 'Bring a friend, start a Circle, win founding perks',
+    subject: 'Bring a friend, start a Circle, earn Zaps',
     body: `Hi,
 
 We're running a short contest, and it is simple: invite people you would actually want in the room, and start Circles you would actually show up to.
@@ -123,9 +123,9 @@ We're running a short contest, and it is simple: invite people you would actuall
 Here's how it works:
 1. Share your invite link with friends who fit.
 2. Every friend who joins and sticks around counts.
-3. Start a Circle and get it going for bonus credit.
+3. Start a Circle and grow it to ten active members.
 
-The members who bring the most people and start the liveliest Circles win founding perks and a spot in the launch story. It runs for two weeks.
+Every friend who joins and takes a real first action pays you 25 Zaps. A Circle you started pays 150 Zaps once it reaches ten active members. It runs for two weeks, and the leaderboard is public the whole time.
 
 [Get my invite link](https://frequencylocal.com/onboarding/beta)
 

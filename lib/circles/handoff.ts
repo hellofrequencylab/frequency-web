@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { isPlatformStaff } from '@/lib/auth'
 import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { tierLinksForCircle } from '@/lib/spaces/tier-circle'
 
 // CIRCLE HANDOFF (ADR-845). The ADR-843 deferral, built: giving a Circle to another PERSON.
 //
@@ -23,6 +24,9 @@ export interface OfferGateFacts {
   /** The person being offered the Circle. */
   toProfileId: string
   staff: boolean
+  /** How many membership tiers currently point at this Circle
+   *  (space_membership_tiers.circle_id). Anything above zero LOCKS the handoff — see TIER_LINKED. */
+  linkedTierCount: number
 }
 
 export interface OfferDecision {
@@ -33,16 +37,24 @@ export interface OfferDecision {
 const NOT_SIGNED_IN = 'Sign in first.'
 const NOT_YOURS = 'Only the team that owns this circle can hand it off.'
 const TO_SELF = 'That circle is already yours to run.'
+export const TIER_LINKED =
+  'This circle is linked to a membership tier. Unlink it in the space membership settings first, then hand it off.'
 
 /**
  * May this viewer OFFER the Circle to that person? PURE. Source authority only: the offer changes
  * nothing on its own, so the destination's agreement is collected by the accept step rather than
  * checked here. Offering to yourself is refused because taking your own circle is the immediate
  * move (transferCircle), not an offer that would sit waiting for you to answer.
+ *
+ * The TIER LOCK (transfer.ts) applies here too, staff included: an accepted offer runs the same
+ * ownership write, so a circle a Space is minting paid-member rows into may not be offered away
+ * while the link stands. Refusing at OFFER time is the honest place to say it — the alternative is
+ * a recipient who accepts something that then cannot complete.
  */
 export function canOfferCircle(facts: OfferGateFacts): OfferDecision {
   if (!facts.viewerProfileId) return { allowed: false, reason: NOT_SIGNED_IN }
   if (facts.toProfileId === facts.viewerProfileId) return { allowed: false, reason: TO_SELF }
+  if (facts.linkedTierCount > 0) return { allowed: false, reason: TIER_LINKED }
   if (facts.staff) return { allowed: true, reason: '' }
 
   const ownsSource =
@@ -123,12 +135,19 @@ export async function offerCircleToPerson(
     )
     if (!circle) return { ok: false, reason: 'Circle not found.', circleSlug: null }
 
+    // The tier lock's one fact; a read miss is fatal, never permissive (see transfer.ts).
+    const links = await tierLinksForCircle(circleId)
+    if (!links.ok) {
+      return { ok: false, reason: 'Could not send that handoff. Please try again.', circleSlug: circle.slug }
+    }
+
     const decision = canOfferCircle({
       viewerProfileId,
       sourceSpaceCanEdit,
       currentHostId: circle.host_id ?? null,
       toProfileId,
       staff,
+      linkedTierCount: links.tiers.length,
     })
     if (!decision.allowed) return { ok: false, reason: decision.reason, circleSlug: circle.slug }
 
@@ -282,6 +301,22 @@ export async function respondToCircleOffer(
     if (!offer) return { ok: false, reason: 'That handoff is no longer available.', circleSlug: null }
     if (offer.to_profile_id !== viewerProfileId) {
       return { ok: false, reason: 'That handoff was offered to someone else.', circleSlug: null }
+    }
+
+    // THE TIER LOCK, re-checked at the moment of the write. canOfferCircle refused a linked circle
+    // when the offer was made, but an offer SITS: the sending Space can link the circle to a
+    // membership tier in the meantime, and accepting would then hand a live paid-member pipeline to
+    // a personal owner. Re-read the fact instead of trusting the one the offer was born with.
+    // Checked BEFORE the claim below, so a refusal leaves the offer pending rather than burning it,
+    // and only on ACCEPT: declining a locked circle must always work.
+    if (action === 'accept') {
+      const links = await tierLinksForCircle(offer.circle_id)
+      if (!links.ok) {
+        return { ok: false, reason: 'Could not finish that handoff. Please try again.', circleSlug: null }
+      }
+      if (links.tiers.length > 0) {
+        return { ok: false, reason: TIER_LINKED, circleSlug: null }
+      }
     }
 
     // Claim it. Zero rows back means someone already answered it.

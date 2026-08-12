@@ -56,8 +56,9 @@ page injects its gated actions via `draftAction` / `summarizeAction` / `aiTriage
 
 ## What is enforced, and how
 
-`scripts/check-crm-parity.mjs` (run by `pnpm check:crm-parity` in CI, and asserted by
-`scripts/check-crm-parity.test.ts` under `pnpm test`) fails the build when:
+`scripts/check-crm-parity.mjs` (asserted against the real tree by `scripts/check-crm-parity.test.ts`
+under `pnpm test`, which is where CI enforces it since ADR-1011; `pnpm check:crm-parity` runs the same
+guard locally) fails the build when:
 
 1. **A surface drops a shared import** — any of the three `SURFACES` stops importing `veraDraftReply` /
    `veraSummarize` / `veraSuggestTriage`, `renderReplyEmail`, `resolveSignature`, or `queueOutboundMessage`.

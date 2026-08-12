@@ -66,10 +66,13 @@ answers "NO" for every one of them and proves nothing either way.
 > upstream — *"consolidating it upstream for elegance is exactly what let the alerts come back once
 > already."* The guard is intact; only its rationale was lost.
 
-### 🔴 One promise is still standing — see §4, B-1
+### ✅ Both promises are down — see §4, B-1 and B-1b
 
-`/referral` still offers Founding-Member perks at 3 activated referrals, and `reward_kind:
-'founding_perk'` has **zero** consumers repo-wide. It needs an owner ruling, not an agent's guess.
+The owner ruled on B-1b the same day and the same way as B-1: **take the copy down** (option 1).
+`/referral` no longer offers Founding-Member perks, the clause is out of both beta email catalog
+rows, and `FOUNDING_PERK_MIN_REFERRALS` plus the `foundingPerkEarned` / `toFoundingPerk` fields are
+deleted. The page states only the two payouts the ledger makes, and reads them from the constants
+that grant them so the copy cannot drift. Guarded by `lib/beta/referral-contest.test.ts`.
 
 ---
 
@@ -309,7 +312,20 @@ After the named fixes the build lands near **6.7 GB**, of which ~1.5 GB is merge
 > | `/referral` prize copy ("the top referrers win free membership") | 🔴 removed; the page now states the Zaps it actually pays |
 > | Referral + Circle-starter scoring, Zaps, leaderboard | ✅ unchanged and live |
 >
-> ### 🔴 B-1b · The second unbacked promise — DECISION BRIEF, mapped 2026-08-12, unchanged pending your ruling
+> ### ✅ B-1b · The second unbacked promise — RULED 2026-08-12: option 1, take the copy down
+>
+> **Resolution (the brief below is kept verbatim as the record that produced it).** The owner ruled
+> the same way as B-1. Shipped: the perks card and `foundingCopy` are gone from
+> `app/(main)/referral/page.tsx`; `FOUNDING_PERK_MIN_REFERRALS`, the docstring citing the deleted
+> "at graduation" mechanism, and the `foundingPerkEarned` / `toFoundingPerk` fields are gone from
+> `lib/beta/referral-contest.ts`, so the file no longer violates its own stated rule; the "win
+> founding perks" clause is out of both `lib/beta/email-templates.ts` and `lib/beta/launch-emails.ts`.
+> In its place the page and both emails state the two payouts that are real, and the page renders
+> them from `ZAP_AMOUNTS.referral_activated` (25) and `CIRCLE_STARTER_ZAPS` (150) rather than from
+> literals, so no surface can outrun the ledger. `grantFoundingStatus` (option 2's lever) was
+> deliberately **kept**: it is live for reserved founders through beta onboarding and the Stripe
+> webhook, and it was never the referrer path. A guard in `lib/beta/referral-contest.test.ts` fails
+> if any of the three surfaces states the claim again.
 >
 > **The answer first:** `/referral` offers **Founding-Member perks at 3 activated referrals**, and
 > **no code path grants them.** `reward_kind: 'founding_perk'` has **zero** occurrences in the

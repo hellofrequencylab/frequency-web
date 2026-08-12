@@ -285,7 +285,7 @@ describe('exit codes, which decide what the weekly sweep opens an issue about', 
 
   it('is ADVISORY about coverage: unestablished exits 0', () => {
     // A red run here would be a run failing for a fact about someone else's dashboard, which no
-    // pull request can change. ADR-970, and check:research-freshness for the same split.
+    // pull request can change. ADR-970.
     const restore = quiet()
     expect(main(['--markdown'], io())).toBe(0)
     restore()

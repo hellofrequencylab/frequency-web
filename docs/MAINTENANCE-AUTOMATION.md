@@ -104,7 +104,9 @@ the step treats the halves differently on purpose:
 **Why the second half is advisory.** `CRON_HEARTBEAT_BASE_URL` lives in Vercel Production. A CI
 runner is not that environment, so a variable absent *there* says nothing about production, and
 failing a build on it would fail for a fact no pull request can change. That is ADR-970's split
-(`check:help`) and the one `check:research-freshness` follows. The verdict therefore has three
+(`check:help`). This paragraph used to cite `check:research-freshness` as the other case following
+it; that script ran in no workflow and could not fail, and was deleted on 2026-08-12 (ADR-1011).
+The verdict therefore has three
 states rather than two: **covered**, **blind** (only where the observation is authoritative, i.e.
 `VERCEL=1`), and **NOT ESTABLISHED**. Until 2026-08-11 the script collapsed the third into the
 second and printed "27 paging-blind" on every machine, including after the owner armed the base URL.

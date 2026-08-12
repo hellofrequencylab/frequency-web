@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
+import { existsSync } from 'node:fs'
 // @ts-expect-error — .mjs guard module, no type declarations (same shape as the other guard tests)
-import { composesShell, ancestorComposes, rendersJsx, evaluate, pages, SHELLS, PIECES, BASELINE, MIN_PAGES } from './check-templates.mjs'
+import { composesShell, ancestorComposes, rendersJsx, evaluate, pages, SHELLS, PIECES, loadBaseline, BASELINE_FILE, MIN_PAGES } from './check-templates.mjs'
 
 // The class this guards is the one whose number kept drifting in the plan docs, because it was the
 // only design-debt class with no instrument. These tests pin the two distinctions that made the old
@@ -82,9 +83,24 @@ describe('redirect stubs owe no shell', () => {
 })
 
 describe('the ratchet and its floor', () => {
-  it('the real tree sits exactly at the baseline', () => {
-    // If this fails the class MOVED. Falling is good and the gate says so; rising is the failure.
-    expect(evaluate().bare.length).toBe(BASELINE)
+  it('every bare page in the real tree is named on the baseline SET', () => {
+    // A SET, not a count (2026-08-12). The old assertion was `bare.length === BASELINE`, which
+    // passed for a tree where one page adopted a template and one new bare page arrived — the two
+    // net to zero. Comparing membership makes that swap visible, and names the newcomer.
+    const baseline = loadBaseline()
+    const added = evaluate().bare.filter((p) => !baseline.has(p))
+    expect(added, `\n  NEW bare page(s):\n    ${added.join('\n    ')}\n`).toEqual([])
+  })
+
+  it('the baseline names real page files, so it cannot rot into fiction', () => {
+    // A stale entry whose page now composes a shell is not a failure — the gate reports it as
+    // shrinkable. An entry naming a file that does not EXIST is different: it means the list was
+    // hand-edited rather than regenerated, and a ratchet nobody can reproduce is not a ratchet.
+    // (`app/page.tsx` is a legitimate entry, which is why this checks existence, not path depth.)
+    const baseline = [...loadBaseline()]
+    expect(baseline.length).toBeGreaterThan(0)
+    const missing = baseline.filter((p) => !existsSync(p))
+    expect(missing, `\n  ${BASELINE_FILE} names file(s) that do not exist:\n    ${missing.join('\n    ')}\n`).toEqual([])
   })
 
   it('scans a real corpus, well past the floor', () => {

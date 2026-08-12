@@ -1,0 +1,73 @@
+# check:templates baseline — every in-app page.tsx that renders JSX and composes NO kit shell,
+# in the page itself or any ancestor layout (PAGE-FRAMEWORK §3). A SET, not a count: a page
+# adopting a template and a new bare page arriving can no longer net to zero and stay green.
+#
+# RATCHET: this list may only SHRINK. Convert a page to a template, then regenerate:
+#   node scripts/check-templates.mjs --update
+# Adding a bare page is a deliberate, reviewable act and needs a reason the diff carries:
+#   node scripts/check-templates.mjs --update --allow-raise --reason="why"
+#
+# ⚠️ Two entries are compliant pages the gate cannot see (ADR-986): app/(main)/classifieds/new
+# and app/(main)/spaces/[slug]/settings/services/new are SERVER pages that gate and then delegate
+# to a client Spark which composes SparkShell. The gate matches literal tags in the page file by
+# design — it over-reports rather than certifying a hand-rolled layout — so they are listed here.
+app/(main)/admin/appearance/[id]/page.tsx
+app/(main)/admin/appearance/new/page.tsx
+app/(main)/admin/content/practices/health/page.tsx
+app/(main)/admin/crm/contacts/page.tsx
+app/(main)/admin/crm/intelligence/page.tsx
+app/(main)/admin/crm/page.tsx
+app/(main)/admin/crm/pipeline/[id]/page.tsx
+app/(main)/admin/events/[id]/page.tsx
+app/(main)/admin/marketing/contacts/[id]/page.tsx
+app/(main)/admin/spaces/[id]/page.tsx
+app/(main)/admin/walkthroughs/[id]/page.tsx
+app/(main)/channels/page.tsx
+app/(main)/circles/[slug]/edit/page.tsx
+app/(main)/circles/[slug]/settings/page.tsx
+app/(main)/circles/new/page.tsx
+app/(main)/circles/page.tsx
+app/(main)/classifieds/[id]/edit/page.tsx
+app/(main)/classifieds/new/page.tsx
+app/(main)/classifieds/page.tsx
+app/(main)/connections/[id]/page.tsx
+app/(main)/connections/import/page.tsx
+app/(main)/connections/page.tsx
+app/(main)/crew/page.tsx
+app/(main)/edit/[slug]/page.tsx
+app/(main)/events/[slug]/edit/page.tsx
+app/(main)/events/[slug]/page.tsx
+app/(main)/events/new/page.tsx
+app/(main)/events/page.tsx
+app/(main)/housing/page.tsx
+app/(main)/journeys/[slug]/edit/page.tsx
+app/(main)/journeys/[slug]/guide/page.tsx
+app/(main)/journeys/new/page.tsx
+app/(main)/journeys/page.tsx
+app/(main)/market/page.tsx
+app/(main)/messages/[id]/page.tsx
+app/(main)/messages/r/[roomId]/page.tsx
+app/(main)/people/[handle]/profile-preview/edit/page.tsx
+app/(main)/people/[handle]/profile-preview/page.tsx
+app/(main)/people/page.tsx
+app/(main)/practices/[id]/edit/page.tsx
+app/(main)/practices/[id]/page.tsx
+app/(main)/practices/new/page.tsx
+app/(main)/profile/page.tsx
+app/(main)/scan/page.tsx
+app/(main)/settings/billing/page.tsx
+app/(main)/settings/profile/spotlight/page.tsx
+app/(main)/spaces/[slug]/edit-page/page.tsx
+app/(main)/spaces/[slug]/manage/page.tsx
+app/(main)/spaces/[slug]/settings/page.tsx
+app/(main)/spaces/[slug]/settings/services/new/page.tsx
+app/(main)/spaces/directory/page.tsx
+app/(main)/store/page.tsx
+app/onboarding/beta/complete/page.tsx
+app/onboarding/beta/page.tsx
+app/onboarding/beta/preview/page.tsx
+app/onboarding/page.tsx
+app/onboarding/sequence-preview/page.tsx
+app/page.tsx
+app/sign-in/page.tsx
+app/spaces/claim/[token]/page.tsx

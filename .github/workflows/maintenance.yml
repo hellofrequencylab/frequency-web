@@ -123,8 +123,8 @@ jobs:
       # WHY HERE. This is the one guard the repo defines that ran in no workflow at all, so 27 cron
       # jobs were watched by a human remembering to type `pnpm check:cron-freshness`. It belongs in
       # the sweep and not in the ci.yml guard array for two reasons: it measures live operational
-      # state, so a red build on it would fail for something no pull request can fix (ADR-970, and
-      # check:research-freshness for the same split), and its monitor half depends on deployment env
+      # state, so a red build on it would fail for something no pull request can fix (ADR-970), and
+      # its monitor half depends on deployment env
       # CI does not have, so on a PR it could only ever report NOT ESTABLISHED, for every author,
       # every time. That is how a gate becomes something to route around.
       #
@@ -151,6 +151,33 @@ jobs:
           echo "$REPORT" > cron.txt
           echo "code=$CODE" >> "$GITHUB_OUTPUT"
 
+      # ── Community Collective phase gate (ADR-811) ────────────────────────────────────────────
+      #
+      # WHY HERE AND NOT IN ci.yml's GUARD ARRAY (moved 2026-08-12). Everything else in that array
+      # asserts a property of the CODE. This one grades a BUILD PLAN — it reads
+      # docs/COMMUNITY-COLLECTIVE-BUILD-PLAN.md's phases against the tree and reports ⏳ for phases
+      # nobody has started, ⚠ for tracked follow-ups, ✗ only for a half-wired tier. Off-plan
+      # document state is not a merge blocker: a PR that touches none of it can neither cause nor
+      # fix a finding here, which is the same reason cron-freshness sits in this workflow (ADR-970).
+      #
+      # It is ALSO the reason it stayed a standalone script when six of its neighbours became vitest
+      # tests: its output is a per-phase REPORT a human reads, not an assertion. A vitest test can
+      # say "this is broken"; it cannot say "phase 3 has not started, and that is fine".
+      #
+      # It exits non-zero only on a genuine inconsistency, so its code feeds the tracking issue.
+      - name: Community Collective phase gate
+        id: collective
+        run: |
+          set +e
+          REPORT=$(pnpm check:collective 2>&1)
+          CODE=$?
+          echo "$REPORT"
+          { echo "## Community Collective phase gate"; echo '```'; echo "$REPORT"; echo '```'; echo ""; } >> "$GITHUB_STEP_SUMMARY"
+          # Only surface it in the tracking issue when it actually found an inconsistency — a clean
+          # phase report is not news, and an issue nobody needs to read is an issue nobody reads.
+          if [ "$CODE" != "0" ]; then printf '```\n%s\n```\n' "$REPORT" > collective.txt; fi
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+
       # ── AI triage (Phase 4) — optional, uses the existing ANTHROPIC_API_KEY. Advises only;
       #    never edits code. Non-fatal, so the deterministic report always ships.
       #
@@ -170,7 +197,7 @@ jobs:
       #    broken wiring contract and 0 for the advisory coverage verdict, so any OTHER code means
       #    node itself died and a dead instrument is exactly what this sweep must not swallow.
       - name: Report to a tracking issue on delta
-        if: steps.audit.outputs.code != '0' || steps.advisors.outputs.code == '1' || steps.ledger.outputs.code == '1' || steps.cron.outputs.code != '0'
+        if: steps.audit.outputs.code != '0' || steps.advisors.outputs.code == '1' || steps.ledger.outputs.code == '1' || steps.cron.outputs.code != '0' || steps.collective.outputs.code != '0'
         uses: actions/github-script@v9
         with:
           script: |
@@ -184,6 +211,7 @@ jobs:
               read('advisors.txt') && ('### Supabase advisors (new)\n' + read('advisors.txt')),
               read('ledger.txt') && ('### Migration ledger parity\n' + read('ledger.txt')),
               read('cron.txt') && ('### Cron heartbeat coverage\n' + read('cron.txt')),
+              read('collective.txt') && ('### Community Collective phase gate\n' + read('collective.txt')),
             ].filter(Boolean).join('\n')
             const title = '🔧 Weekly maintenance sweep'
             const { data: open } = await github.rest.issues.listForRepo({

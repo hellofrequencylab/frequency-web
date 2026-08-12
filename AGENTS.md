@@ -13,7 +13,8 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
 ([ADR-1002](docs/DECISIONS.md), [ADR-1003](docs/DECISIONS.md)).
 
 - **The artifact is gated in `postbuild`, not CI** — CI never builds, Vercel does. `check:build-budget`
-  (total per-function output under 13 GB) and `check:og-trace` run on the real build and fail it.
+  (total per-function output under 8 GB; measured 5.59 GB) and `check:og-trace` run on the real
+  build and fail it.
 - **When the budget gate fires, fix the fan-out, do not raise the budget.** Anything reachable from a
   root layout, a ROOT metadata file, or a shared server module is multiplied by every route beneath it.
 - **Run the control before theorising** — redeploying the last known-good tree took three minutes and
@@ -111,7 +112,9 @@ One shell, five templates, one chrome map. Full spec:
 
 Every creation wizard, review board, and edit re-entry derives from ONE source. Do NOT hand-roll a
 per-entity wizard, review screen, or field style. Full spec: [`docs/STUDIO.md`](docs/STUDIO.md)
-(ADR-986). Enforced in CI by `pnpm check:studio` + `lib/studio/registry.test.ts`.
+(ADR-986). Enforced in CI by `scripts/check-studio.test.ts` (the layering half) +
+`lib/studio/registry.test.ts` (the manifests) — both under `pnpm test`. `pnpm check:studio` runs the
+same guard locally and prints what to fix.
 
 - **To add or change an entity's fields:** edit its manifest in `lib/studio/entities/*.ts` and
   register it in `lib/studio/registry.ts`. That is the whole change: the Spark, the review board,

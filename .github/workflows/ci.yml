@@ -161,8 +161,11 @@ jobs:
       # CRON_HEARTBEAT_BASE_URL is set in Vercel Production. CI is not that environment, so on a
       # PR that half can only ever report NOT ESTABLISHED, for every author, every time, and a
       # red build on it would fail for something no pull request can fix. Same reasoning as
-      # ADR-970 and check:research-freshness: an advisory finding forced through a blocking gate
-      # teaches everyone to route around the gate.
+      # ADR-970: an advisory finding forced through a blocking gate teaches everyone to route
+      # around the gate. (This block used to cite check:research-freshness as the twin case. That
+      # script was deleted on 2026-08-12 — it ran in no workflow at all and its own output ended
+      # "Nothing a PR can fix, which is why this exits 0", so it could not fail. Four docs claimed
+      # it warned in CI. See ADR-1011.)
       #
       # The other half IS deterministic (every cron has a handler, wrapped in withCronHeartbeat
       # under its own name, with a schedule that parses), and the scheduled step is strict about
@@ -198,15 +201,31 @@ jobs:
           # ⚠️ A guard that is not in this array does not run. #2098 shipped check:studio and
           # check:creates as package.json scripts and never added them here, so the Studio
           # contract — the thing AGENTS.md calls "machine-enforced" — was enforced by nothing for
-          # the whole life of that PR. Adding a check:* script is two edits, not one.
+          # the whole life of that PR. `scripts/guard-wiring.test.ts` now fails when a check:*
+          # script is wired nowhere, so that specific hole cannot reopen.
+          #
+          # ── WHY THIS ARRAY IS 20 AND NOT 28 (2026-08-12) ────────────────────────────────────
+          # Seven guards LEFT this array for vitest: elements · render-path · crm-parity · vocab ·
+          # studio · creates, plus collective which moved to maintenance.yml (below). Each of the
+          # six only READ SOURCE FILES AND ASSERTED A WIRING PROPERTY, which is a vitest test —
+          # and the point is not tidiness. Vitest AUTO-DISCOVERS `*.test.ts`, so a guard that is a
+          # test CANNOT be forgotten in an array. That removed six future instances of the exact
+          # #2098 failure, and the six inherit the `test` context, which branch protection already
+          # requires. Their assertions and non-triviality floors moved with them.
+          #
+          # Their `pnpm check:*` scripts all STAY — a dozen docs cite them as the local command and
+          # each CLI prints the friendly report with the fix instructions. What changed is only
+          # WHERE CI enforces them. `scripts/guard-wiring.test.ts` carries a VITEST_ENFORCED map
+          # naming each one's test file and verifying that file exists and imports the guard, so
+          # "it moved to vitest" cannot become a story nobody checks.
+          # Do NOT re-add them here — they would then run twice and could rot in one place.
           #
           # This array is for SOURCE-only guards. The two ARTIFACT gates (check:build-budget,
           # check:og-trace) deliberately live in `postbuild` instead, because CI never builds —
           # Vercel does. See docs/DEPLOY-SAFETY.md and ADR-1003.
           guards=(
-            authz canon menu gate-parity workflows elements labels render-path help tokens phantom bridge contrast adoption
-            headers seo collective crm-parity vocab rls grants admin-client migrations adr docs-links templates
-            studio creates
+            authz canon menu gate-parity workflows labels help tokens phantom bridge contrast
+            headers seo rls grants admin-client migrations adr docs-links templates
           )
           # RUN IN PARALLEL, REPORT IN ORDER. The guards are independent node processes that only
           # read the tree, so nothing about them needed to be sequential — it just was. Run wall
@@ -258,3 +277,49 @@ jobs:
             exit 1
           fi
           echo "### ✓ All ${#guards[@]} contract guards passed" >> "$GITHUB_STEP_SUMMARY"
+
+      # ── ADVISORY TRACKERS: they run, they report, they never fail this job ────────────────────
+      #
+      # Same reasoning as check:cron-freshness above, applied to a different half of the problem.
+      # cron-freshness is advisory because part of what it measures is DEPLOYMENT STATE, which no
+      # pull request can change. check:adoption is advisory because of what it measures ABOUT THE
+      # SOURCE: it is a SCOREBOARD of 13 design-debt COUNTS (scripts/adoption-baselines.json), and
+      # a count ratchet fires on legitimate growth. `bespoke-cards: 0` means that adding any new
+      # `*-card.tsx` — a perfectly ordinary thing to do — fails a PR that has nothing to do with
+      # the design system. Three of its baselines are already flagged "not bought by a sweep",
+      # i.e. debt the ratchet stopped guarding.
+      #
+      # The other ratchets in the guards array above are SETS of paths (admin-client, templates,
+      # rls, grants, creates' UNROUTED, headers, contrast's WAIVERS), so they only fire on the
+      # specific file that changed and the fix is one reviewable line. Adoption cannot be made
+      # set-shaped — thousands of literal utilities genuinely are a count — and a count ratchet you
+      # cannot make set-shaped is a count ratchet you should not block on. An advisory finding
+      # forced through a blocking gate teaches everyone to route around the gate (ADR-970).
+      #
+      # ⚠️ ADVISORY IS NOT DELETED. `pnpm check:adoption` is still the ratchet, still refuses to
+      # RAISE a baseline without --allow-raise and a reason, and is still how a sweep is banked:
+      #     node scripts/check-adoption.mjs --update
+      # It reports into the run summary on every PR so a rise is visible the day it happens. If it
+      # ever stops being read, that is an argument for deleting it, not for making it block again.
+      - name: Advisory trackers (reported, never blocking)
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          echo "::group::check:adoption (advisory)"
+          if pnpm check:adoption > adoption.log 2>&1; then
+            cat adoption.log
+            echo "### 📉 Design-debt scoreboard: held" >> "$GITHUB_STEP_SUMMARY"
+          else
+            cat adoption.log
+            {
+              echo "### ⚠️ Design-debt scoreboard ROSE (advisory — this does not block)"
+              echo
+              echo '```'
+              tail -n 40 adoption.log
+              echo '```'
+              echo
+              echo "Fix the rise, or bank it deliberately: \`node scripts/check-adoption.mjs --update\`."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "::endgroup::"

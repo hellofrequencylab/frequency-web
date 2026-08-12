@@ -50,7 +50,6 @@
     "check:adr": "node scripts/check-adr.mjs",
     "check:docs-links": "node scripts/check-docs-links.mjs",
     "check:cron-freshness": "node scripts/cron-freshness.mjs",
-    "check:research-freshness": "node scripts/check-research-freshness.mjs",
     "maintenance:ledger-parity": "node scripts/maintenance/ledger-parity.mjs",
     "help:coverage": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-coverage.mts",
     "help:index": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-index.mts",
