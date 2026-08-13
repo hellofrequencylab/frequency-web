@@ -140,7 +140,10 @@ export async function loadAnalytics(
 }
 
 export interface PendingGuest {
-  profileId: string
+  /** The RSVP row. The handle a host approves by, and the only one a guest seat has. */
+  rsvpId: string
+  /** Null for a signed-out guest request. */
+  profileId: string | null
   displayName: string
   handle: string
   avatarUrl: string | null
@@ -148,18 +151,26 @@ export interface PendingGuest {
   createdAt: string
 }
 
-/** The approval queue, joined to profiles for display. */
+/** The approval queue, joined to profiles for display.
+ *
+ *  Guest requests are included. They previously could not be: the queue mapped `p.profileId`
+ *  straight into `profileMap()`, so a guest's NULL became `.in('id', [null])` and the request
+ *  vanished — the person waited on an approval the host was never shown. */
 export async function loadPendingApprovals(eventId: string): Promise<PendingGuest[]> {
   const pending = await listPendingApprovals(eventId)
   if (pending.length === 0) return []
 
-  const ids = pending.map((p) => p.profileId)
-  const profiles = await profileMap(ids)
+  // Only real ids reach the profile lookup; a guest has nothing to look up.
+  const ids = pending.map((p) => p.profileId).filter((id): id is string => typeof id === 'string')
+  const profiles = ids.length > 0 ? await profileMap(ids) : new Map()
   return pending.map((p) => {
-    const prof = profiles.get(p.profileId)
+    const prof = p.profileId ? profiles.get(p.profileId) : null
     return {
+      rsvpId: p.rsvpId,
       profileId: p.profileId,
-      displayName: prof?.displayName ?? 'A member',
+      // A guest's own name, then their address, before the anonymous fallback — the host is being
+      // asked to admit a person, so give them the most identifying thing on the row.
+      displayName: prof?.displayName ?? p.guestName ?? p.guestEmail ?? (p.profileId ? 'A member' : 'A guest'),
       handle: prof?.handle ?? '',
       avatarUrl: prof?.avatarUrl ?? null,
       status: p.status,

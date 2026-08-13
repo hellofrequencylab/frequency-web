@@ -124,6 +124,7 @@ export function EventSettingsModule() {
   const [venueName, setVenueName] = useState('')
   const [street, setStreet] = useState('')
   const [hideAddress, setHideAddress] = useState(false)
+  const [requiresApproval, setRequiresApproval] = useState(false)
   const [marketListed, setMarketListed] = useState(true)
   const [city, setCity] = useState('')
   const [region, setRegion] = useState('')
@@ -177,6 +178,7 @@ export function EventSettingsModule() {
             setVenueName(d.venue_name ?? '')
             setStreet(d.street ?? '')
             setHideAddress(d.hide_address === true)
+            setRequiresApproval(d.rsvp_requires_approval === true)
             setMarketListed(readEventMarketListed(d.theme))
             setCity(d.city ?? '')
             setRegion(d.region ?? '')
@@ -399,6 +401,27 @@ export function EventSettingsModule() {
             <option value="tickets">Tickets (buying is how people attend)</option>
           </Select>
         </label>
+
+        {/* APPROVAL (20270303000000). event_rsvps.approval_status, the host's approve action and
+            this queue have all existed since 20260625020000, but nothing could ever SET a request
+            to pending: there was no column on `events` to derive it from and no caller passed the
+            flag, so the queue was permanently empty and the feature was a rule about nothing. This
+            control is the missing half. Same controlled-hidden-input idiom as hide_address above,
+            so the field is always in the autosave snapshot and no other form can reset it.
+
+            Applies identically to members and to signed-out guests — capture_guest_rsvp reads the
+            same column, so a guest waits exactly as long as a member does and no longer. */}
+        <Checkbox
+          checked={requiresApproval}
+          onChange={(e) => {
+            setRequiresApproval(e.target.checked)
+            requestAnimationFrame(saveNow)
+          }}
+          label="Approve each person before they are in"
+          hint="Requests land in your approval queue instead of taking a spot straight away. A full event still sends approved people to the waitlist."
+          wrapperClassName="flex pt-1"
+        />
+        <input type="hidden" name="rsvp_requires_approval" value={requiresApproval ? 'on' : 'off'} />
 
         {/* TICKET PRICE — blank keeps the event a free RSVP. */}
         <label className="block space-y-1.5">

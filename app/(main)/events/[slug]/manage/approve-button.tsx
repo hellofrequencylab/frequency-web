@@ -10,17 +10,17 @@ import { approveEventRsvpFromManage } from './actions'
 export function ApproveButton({
   eventId,
   slug,
-  guestProfileId,
+  rsvpId,
 }: {
   eventId: string
   slug: string
-  guestProfileId: string
+  rsvpId: string
 }) {
   const [pending, start] = useTransition()
   return (
     <Button
       size="sm"
-      onClick={() => start(() => approveEventRsvpFromManage(eventId, slug, guestProfileId))}
+      onClick={() => start(() => approveEventRsvpFromManage(eventId, slug, rsvpId))}
       disabled={pending}
     >
       <Check className="h-3.5 w-3.5" />

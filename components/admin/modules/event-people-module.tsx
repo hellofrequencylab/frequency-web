@@ -51,20 +51,22 @@ export function EventPeopleModule() {
   const cap = analytics.capacity.capacity
   const fillPct = cap && cap > 0 ? Math.min(100, Math.round((analytics.going / cap) * 100)) : null
 
-  function handleApprove(profileId: string) {
+  // Tracked by RSVP row rather than profile: a guest request has no profile id, so a
+  // profile-keyed optimistic set would collapse every guest into one `null` entry.
+  function handleApprove(rsvpId: string) {
     if (!data || pending) return
     startTransition(async () => {
-      const res = await approveEventRsvp(data!.eventId, slug!, profileId)
+      const res = await approveEventRsvp(data!.eventId, slug!, rsvpId)
       if ('error' in res) {
         setError(res.error)
       } else {
         setError(null)
-        setApproved((prev) => new Set(prev).add(profileId))
+        setApproved((prev) => new Set(prev).add(rsvpId))
       }
     })
   }
 
-  const stillPending = data.pending.filter((p) => !approved.has(p.profileId))
+  const stillPending = data.pending.filter((p) => !approved.has(p.rsvpId))
 
   return (
     <div className="@container space-y-6">
@@ -111,7 +113,7 @@ export function EventPeopleModule() {
             <ul className="space-y-2">
               {stillPending.map((p) => (
                 <li
-                  key={p.profileId}
+                  key={p.rsvpId}
                   className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface p-2.5"
                 >
                   <span className="min-w-0 truncate text-body-sm text-text">
@@ -120,7 +122,7 @@ export function EventPeopleModule() {
                   </span>
                   <button
                     type="button"
-                    onClick={() => handleApprove(p.profileId)}
+                    onClick={() => handleApprove(p.rsvpId)}
                     disabled={pending}
                     className="inline-flex shrink-0 items-center gap-1 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
                   >

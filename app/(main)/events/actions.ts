@@ -22,6 +22,7 @@ import { canEditJourney } from '@/lib/journeys/authoring'
 import { cancelAudit } from '@/lib/events/event-lifecycle'
 import { refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
+import { eventRequiresApproval } from '@/lib/events/rsvp-depth'
 import { stampEventSpaceId } from '@/lib/events/store'
 import { spaceIdForCircle } from '@/lib/circles/store'
 import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
@@ -1060,20 +1061,31 @@ export async function toggleRSVP(eventId: string) {
   } else {
     const { isFull } = await getCapacityInfo(eventId)
     const next = isFull ? 'waitlist' : 'going'
+    // The host's approval gate (20270303000000). A pending seat is a REQUEST, not an admission,
+    // so it is written the same way a guest's is (capture_guest_rsvp keys on the same column) and
+    // the side-effects below are held back until the host says yes.
+    const needsApproval = await eventRequiresApproval(eventId)
     await supabase.from('event_rsvps').insert({
       event_id: eventId,
       profile_id: myProfileId,
       status: next,
+      approval_status: needsApproval ? 'pending' : 'none',
     })
     // Branch on the PERSISTED status (the trigger may demote to waitlist), not intent.
     const stored = await readRsvpStatus(eventId, myProfileId)
     const effective: 'going' | 'waitlist' = (stored ?? next) === 'going' ? 'going' : 'waitlist'
-    if (effective === 'going') onGoing(true)
-    await syncRsvpActivityPost(eventId, myProfileId, effective === 'going')
-    sendRsvpConfirmation(eventId, myProfileId, effective).catch((e) =>
-      console.error('[events rsvp confirmation email]', e)
-    )
-    // Segment into the hosting Space's CRM for follow-up (fire-and-forget).
+    // Nothing that means "you are in" fires while a request is pending: no seat-confirming email,
+    // no feed line, no gems. Telling someone they are going and then making them wait for a host
+    // is worse than either outcome on its own.
+    if (!needsApproval) {
+      if (effective === 'going') onGoing(true)
+      await syncRsvpActivityPost(eventId, myProfileId, effective === 'going')
+      sendRsvpConfirmation(eventId, myProfileId, effective).catch((e) =>
+        console.error('[events rsvp confirmation email]', e)
+      )
+    }
+    // Segment into the hosting Space's CRM for follow-up (fire-and-forget). A request still
+    // signals intent, so this runs either way.
     void captureRsvpLead(eventId, myProfileId, 'rsvp')
   }
 
@@ -1152,6 +1164,10 @@ export async function setRsvpStatus(
     if (prevStatus !== 'going' && prevStatus !== 'waitlist') {
       const { isFull } = await getCapacityInfo(eventId)
       const next = isFull ? 'waitlist' : 'going'
+      // Only a NEW seat can be made pending. An existing row already cleared whatever gate was in
+      // force when it was created, so turning approval on later must not retroactively suspend
+      // people who are already in — they would silently vanish from the roster they are on.
+      const needsApproval = !existing && (await eventRequiresApproval(eventId))
       if (existing) {
         await supabase.from('event_rsvps').update({ status: next }).eq('id', existing.id)
       } else {
@@ -1159,6 +1175,7 @@ export async function setRsvpStatus(
           event_id: eventId,
           profile_id: myProfileId,
           status: next,
+          approval_status: needsApproval ? 'pending' : 'none',
         })
       }
       // Branch the side-effects on the PERSISTED status: the capacity trigger may have
@@ -1167,12 +1184,14 @@ export async function setRsvpStatus(
       // read failure.
       const stored = await readRsvpStatus(eventId, myProfileId)
       const effective: 'going' | 'waitlist' = (stored ?? next) === 'going' ? 'going' : 'waitlist'
-      if (effective === 'going') onGoing(!existing)
-      // Post the "RSVP'd" entry (with the note) only for a confirmed seat.
-      await syncRsvpActivityPost(eventId, myProfileId, effective === 'going', opts?.message)
-      sendRsvpConfirmation(eventId, myProfileId, effective).catch((e) =>
-        console.error('[events rsvp confirmation email]', e)
-      )
+      if (!needsApproval) {
+        if (effective === 'going') onGoing(!existing)
+        // Post the "RSVP'd" entry (with the note) only for a confirmed seat.
+        await syncRsvpActivityPost(eventId, myProfileId, effective === 'going', opts?.message)
+        sendRsvpConfirmation(eventId, myProfileId, effective).catch((e) =>
+          console.error('[events rsvp confirmation email]', e)
+        )
+      }
       // Segment into the hosting Space's CRM for follow-up (fire-and-forget).
       void captureRsvpLead(eventId, myProfileId, 'rsvp')
     } else if (opts?.message !== undefined) {

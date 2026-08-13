@@ -67,8 +67,18 @@ export async function suggestConnectorsForEvents(
     .select('event_id, profile_id')
     .in('event_id', eventIds)
     .eq('status', 'going')
-  const going = ((goingRows ?? []) as { event_id: string; profile_id: string }[]).filter(
-    (r) => r.profile_id !== viewerProfileId,
+  // profile_id is nullable since 20270303000000: a signed-out guest seat carries an address
+  // instead of a member. A guest has no profile to suggest, no Channels to share and no page to
+  // link to, so they are dropped here rather than downstream. The `!== viewerProfileId` test on
+  // its own let a NULL through, and that NULL then became a Map key — reaching
+  // `.in('profile_id', candidateIds)` and `.in('id', qualified)` as a literal null, which is not
+  // an id-shaped value at all. This is the ONE place attendees enter the pipeline, so it is the
+  // one place the check belongs.
+  const going = (
+    (goingRows ?? []) as { event_id: string; profile_id: string | null }[]
+  ).filter(
+    (r): r is { event_id: string; profile_id: string } =>
+      !!r.profile_id && r.profile_id !== viewerProfileId,
   )
   if (going.length === 0) return []
 

@@ -24126,3 +24126,75 @@ The decision is about the **button**. Three neighbouring things stay open and ar
 The waiver matches on the exact painted hex. If the amber drifts in either direction the hex changes,
 no waiver matches, and the gate fails loudly so the decision is re-made rather than inherited. That is
 the intended way back: this ADR is reversed by changing the token, not by editing a baseline.
+
+## ADR-1032: A seat you can hold before you have an account, and the approval rule that finally exists (2026-08-13)
+
+**Status:** accepted · **Builds on** ADR-854 (an unverified email may address a delivery but may never
+key a capability), ADR-825 (the hidden-address gate), ADR-959/964 (`revoke ... from public` does not
+remove a per-role grant) · **Amends** the EVENTS-REWORK A1 approval work, which shipped a queue that
+nothing could ever put anyone into
+
+### What was decided
+
+A signed-out visitor can RSVP to a free, public, upcoming event with one field. The seat lives in
+`event_rsvps` with `profile_id NULL` and `guest_email` set, not in a table of its own.
+
+**Why the same table.** The requirement was that a guest obeys the same capacity, waitlist and
+approval rules as a member. Those rules are not app logic that could be called twice: capacity is
+`enforce_event_rsvp_capacity()`, a BEFORE trigger that reads only `NEW.event_id` and `NEW.status` and
+is already identity-blind. Putting the guest row in the same table means the rule applies for free,
+forever, with no second implementation to drift. A separate table would have meant rewriting that
+trigger to count across two tables and re-sorting two waitlists by `created_at` — which is exactly how
+"the same rules" becomes "two rules that were the same once".
+
+**The dangerous half.** `UNIQUE (event_id, profile_id)` had to become a PARTIAL unique index. Postgres
+treats NULLs as distinct, so the moment `profile_id` is nullable that constraint silently stops
+enforcing one-seat-per-member while still looking correct in `\d` output. Two partial indexes replace
+it, one per identity.
+
+**The capture door returns an opaque uuid, not the row id.** Its sibling `capture_signup_lead` returns
+the row id and that is defensible for a LEAD. A SEAT is different: the question an attacker asks is not
+"does this address exist" but "is THIS PERSON going to THIS NAMED PUBLIC EVENT". Returning the row id
+would answer it — submit twice, and a real seat returns the same id both times while a fresh address
+returns a new one. So every path except a malformed address returns `gen_random_uuid()`. The one
+remaining leak is named rather than overlooked: the publicly-rendered `spotsLeft` counter moves, which
+is one bit about the event and is equally true of member RSVPs today.
+
+**Approval became a rule that exists.** `event_rsvps.approval_status`, the host's approve action and
+the pending queue all shipped in 20260625020000. Nothing ever set a request to `pending`: there was no
+column on `events` to derive it from and no caller passed the flag, so the queue was permanently empty
+and `RsvpControls`' `requiresApproval` prop was unreachable UI. `events.rsvp_requires_approval` is the
+missing half, and it is read by the member path and the guest function alike so a guest waits exactly
+as long as a member and no longer. Approving is now keyed on the RSVP ROW, because
+`approveRsvp(eventId, profileId)` can never match a guest.
+
+### What this cost, and what it caught
+
+Making `profile_id` nullable broke reads that had been correct for as long as it was NOT NULL. The
+audit found and this work fixed:
+
+| Site | What it did |
+|---|---|
+| Event detail page | Declared `profile` non-null behind an `as unknown as` cast and dereferenced it four times. The first guest RSVP on any event would have 500'd the page for everyone. |
+| Host roster | Ended in `.filter(r => r.profile != null)`. Guests held real capacity and were invisible to the host. |
+| Cancellation | A guest was never told the event was called off. They would have turned up. |
+| Reminder cron | No guest reminder, and the loop `continue`d without stamping — every guest row re-queried every 15 minutes forever. |
+| Approval queue | Mapped a guest's NULL into `.in('id', [null])`, so a guest request could be neither shown nor approved. |
+| Anti-farming counts | `poster-observer` and the admin engagement column counted account-free rows, making the metric trivially inflatable. Both now exclude guests. |
+
+The general lesson is the one the cast made possible: **a nullable column that TypeScript has been told
+is non-null is invisible to every gate we own.** `as unknown as` on a PostgREST payload silences the
+one check that would have caught all four of the null-deref sites at once.
+
+### Revisiting
+
+The guest seat is a dead end until it is claimed. `claim_guest_rsvps` requires `auth.uid()` ownership
+AND `auth.users.email_confirmed_at`, because an `auth.users` row is created the moment someone TYPES an
+address at `/sign-in` — so "a profile exists with this email" proves nothing and claiming on that basis
+would hand a stranger somebody else's seat. Verified against production that confirmations are actually
+stamped (47 of 52 users); if that ever stops being true the claim silently no-ops and every guest seat
+strands. That is the failure mode to watch.
+
+Still open: a guest reaches WAM only after claiming, since WAM counts distinct `actor_profile_id`. A
+magic-link check-in that lets a guest verify attendance without an account is NOT built, so guest-heavy
+events under-report their real turnout.

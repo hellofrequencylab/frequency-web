@@ -26,7 +26,7 @@ import { writeEventHeroHeight, type EventHeroHeight } from '@/lib/events/hero-he
 import { writeEventCoverFocus } from '@/lib/events/cover-focus'
 import { writeEventMarketListed } from '@/lib/events/market-listing'
 import { pointFromGeog } from '@/lib/events/geo'
-import { approveRsvp } from '@/lib/events/rsvp-depth'
+import { approveRsvpById } from '@/lib/events/rsvp-depth'
 import {
   copyEventMediaToProfileLoom,
   resolveProfileLoomSpaceId,
@@ -40,6 +40,15 @@ import {
   type ManageGuest,
   type PendingGuest,
 } from '@/app/(main)/events/[slug]/manage/load'
+
+/** The untyped update surface (ADR-246), for columns that lib/database.types.ts predates. */
+type UntypedUpdate = {
+  from: (table: string) => {
+    update: (patch: Record<string, unknown>) => {
+      eq: (col: string, val: unknown) => Promise<{ error: { message: string } | null }>
+    }
+  }
+}
 
 const RECURRENCE_VALUES: ReadonlySet<string> = new Set(['none', 'daily', 'weekly', 'monthly'])
 
@@ -82,7 +91,7 @@ export async function getEventAdminData(slug: string) {
   const { data } = await admin
     .from('events')
     .select(
-      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag, theme, price_cents, currency, time_zone, recurrence_type, recurrence_until, details, geog, hide_address, join_mode, scope_type',
+      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag, theme, price_cents, currency, time_zone, recurrence_type, recurrence_until, details, geog, hide_address, join_mode, scope_type, rsvp_requires_approval',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -174,6 +183,8 @@ type EventAdminRow = {
   geog: unknown
   /** ADR-825: exact address renders only for registered viewers / managers. */
   hide_address: boolean | null
+  /** 20270303000000. Newer than lib/database.types.ts, so it rides the untyped read/write. */
+  rsvp_requires_approval: boolean | null
   /** ADR-826: how people join — auto / rsvp (first come first served) / tickets. */
   join_mode: 'auto' | 'rsvp' | 'tickets' | null
   /** The event's ONE home (ADR-883). The settings module needs it so the "My circle"
@@ -275,7 +286,10 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
       ? writeEventMarketListed((currentBags as { theme?: unknown } | null)?.theme, listingRaw === 'on')
       : null
 
-  const { error } = await admin
+  // Untyped update handle (ADR-246): `rsvp_requires_approval` is a live column that
+  // lib/database.types.ts has not been regenerated for, so the typed Update rejects it as `never`.
+  // The cast is on the CALL, not on the patch, so every other field in this object stays checked.
+  const { error } = await (admin as unknown as UntypedUpdate)
     .from('events')
     .update({
       title,
@@ -306,6 +320,12 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
       // hidden input, 'on'/'off'), so a form without the control can never silently reset it.
       ...(fd.get('hide_address') != null
         ? { hide_address: fd.get('hide_address') === 'on' }
+        : {}),
+      // Approval required (20270303000000): same write-only-when-present rule as hide_address.
+      // Turning it on does NOT retroactively suspend anyone already holding a seat — the column is
+      // read when an RSVP is created, so existing rows keep the status they were admitted with.
+      ...(fd.get('rsvp_requires_approval') != null
+        ? { rsvp_requires_approval: fd.get('rsvp_requires_approval') === 'on' }
         : {}),
       // Join mode (ADR-826): same write-only-when-present rule; only a recognised value writes
       // (the column is CHECK-constrained).
@@ -839,17 +859,20 @@ export async function getEventPeopleData(slug: string): Promise<EventPeopleData 
   return { eventId: ev.id, analytics, pending, guests: roster.slice(0, 8) }
 }
 
-/** Host approves a guest waiting in the approval queue. Re-checks event.editSettings (the admin
- *  client bypasses RLS, so this action is the authority). */
+/** Host approves a seat waiting in the approval queue. Re-checks event.editSettings (the admin
+ *  client bypasses RLS, so this action is the authority).
+ *
+ *  Keyed on the RSVP ROW, not the profile: a signed-out guest has no profile id, so the old
+ *  predicate matched nothing and this button did nothing for guest requests. */
 export async function approveEventRsvp(
   eventId: string,
   slug: string,
-  profileId: string,
+  rsvpId: string,
 ): Promise<{ ok: true } | { error: string }> {
   const caps = await getEventCapabilities(eventId)
   if (!caps.has('event.editSettings')) return { error: 'Unauthorized' }
 
-  await approveRsvp(eventId, profileId)
+  await approveRsvpById(eventId, rsvpId)
 
   revalidatePath(`/events/${slug}`)
   revalidatePath(`/events/${slug}/manage`)

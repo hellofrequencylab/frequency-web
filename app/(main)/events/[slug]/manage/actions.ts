@@ -16,7 +16,7 @@ import {
   deleteQuestion,
   type QuestionType,
 } from '@/lib/events/questions'
-import { approveRsvp } from '@/lib/events/rsvp-depth'
+import { approveRsvpById } from '@/lib/events/rsvp-depth'
 
 // Host Manage Dashboard actions (EVENTS-REWORK A2).
 //
@@ -121,13 +121,17 @@ export async function deleteEventQuestion(eventId: string, slug: string, questio
 
 // ── Approval queue ──────────────────────────────────────────────────────────
 
+/** Approves BY RSVP ROW rather than by profile. A signed-out guest has no profile id, so the
+ *  old `approveRsvp(eventId, profileId)` predicate (`profile_id = NULL`) matched nothing and the
+ *  host's Approve button was inert for exactly the requests that most needed it. The event id is
+ *  still matched inside approveRsvpById, so a row id from another event cannot be approved here. */
 export async function approveEventRsvpFromManage(
   eventId: string,
   slug: string,
-  guestProfileId: string,
+  rsvpId: string,
 ) {
   if (!(await authorizeManager(eventId))) return
-  await approveRsvp(eventId, guestProfileId)
+  await approveRsvpById(eventId, rsvpId)
   revalidateManage(slug)
 }
 

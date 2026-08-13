@@ -14,7 +14,8 @@
 //   • posts ............... author_id = me
 //   • practice_logs ....... profile_id = me
 //   • practice_sessions ... profile_id = me
-//   • event_rsvps ......... profile_id = me
+//   • event_rsvps ......... profile_id = me  OR  guest_claimed_by = me (seats taken
+//                                            as a signed-out guest, later claimed)
 //   • memberships ......... profile_id = me
 //   • zap_transactions .... profile_id = me        (gamification ledger I own)
 //   • gem_transactions .... profile_id = me        (gamification ledger I own)
@@ -99,9 +100,9 @@ type Rows = Record<string, unknown>[]
 export async function buildMemberExport(profileId: string): Promise<MemberExport> {
   const db = createAdminClient()
   // `studio_draft` is newer than the generated types (its migration ships unapplied, by design),
-  // so its read goes through an untyped handle. The owner filter is identical and is still the
-  // whole access control.
-  // eslint-disable-next-line no-restricted-syntax -- studio_draft isn't in lib/database.types.ts yet (untyped seam, ADR-246)
+  // as is event_rsvps.guest_claimed_by, so those reads go through an untyped handle. The owner
+  // filter is identical and is still the whole access control.
+  // eslint-disable-next-line no-restricted-syntax -- studio_draft + event_rsvps.guest_claimed_by aren't in lib/database.types.ts yet (untyped seam, ADR-246)
   const untyped = db as unknown as SupabaseClient
 
   // Each read is independently owner-scoped; run them in parallel. A failed read
@@ -119,7 +120,8 @@ export async function buildMemberExport(profileId: string): Promise<MemberExport
     posts,
     practiceLogs,
     practiceSessions,
-    eventRsvps,
+    memberRsvps,
+    claimedGuestRsvps,
     memberships,
     zapTransactions,
     gemTransactions,
@@ -134,6 +136,18 @@ export async function buildMemberExport(profileId: string): Promise<MemberExport
     rows(db.from('practice_logs').select('*').eq('profile_id', profileId)),
     rows(db.from('practice_sessions').select('*').eq('profile_id', profileId)),
     rows(db.from('event_rsvps').select('*').eq('profile_id', profileId)),
+    // The seats they took as a signed-out GUEST before they had an account, which
+    // claim_guest_rsvps (20270303000100) attached to them at sign-up. That function converts a
+    // guest row IN PLACE — it stamps guest_claimed_by AND back-fills profile_id — so as the
+    // schema stands today these rows also satisfy the read above and the two sets overlap
+    // (deduped by id below). The read exists anyway because the member's claim on this history
+    // is the STAMP, not the back-fill: if the conversion ever stops writing profile_id, or a
+    // future path stamps a claim without it, the export would silently drop everything they did
+    // before signing up and nothing would notice. Portability rights do not begin at signup.
+    // guest_claimed_by is not in lib/database.types.ts, so this read uses the untyped handle
+    // already opened above (ADR-246); the owner filter is identical and is still the whole
+    // access control.
+    rows(untyped.from('event_rsvps').select('*').eq('guest_claimed_by', profileId)),
     rows(db.from('memberships').select('*').eq('profile_id', profileId)),
     rows(db.from('zap_transactions').select('*').eq('profile_id', profileId)),
     rows(db.from('gem_transactions').select('*').eq('profile_id', profileId)),
@@ -143,6 +157,16 @@ export async function buildMemberExport(profileId: string): Promise<MemberExport
     rows(untyped.from('studio_draft').select('*').eq('profile_id', profileId)),
     rows(db.from('consent_records').select('*').eq('profile_id', profileId)),
   ])
+
+  // One RSVP row per id. A claimed guest seat carries BOTH profile_id and guest_claimed_by, so
+  // it comes back from both owner-scoped reads above; the export should list it once.
+  const seenRsvpIds = new Set<string>()
+  const eventRsvps = [...memberRsvps, ...claimedGuestRsvps].filter((r) => {
+    if (typeof r.id !== 'string') return true
+    if (seenRsvpIds.has(r.id)) return false
+    seenRsvpIds.add(r.id)
+    return true
+  })
 
   // Network notes/tags are scoped through the contacts the member OWNS: collect
   // the owned contact ids first, then read only children of those ids. If the

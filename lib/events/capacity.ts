@@ -2,7 +2,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 // Capacity / waitlist helpers for events. `events.capacity` + the 'waitlist' RSVP
 // status are in the generated DB types (lib/database.types.ts) now, so the admin
-// client is used directly and fully typed.
+// client is used directly and fully typed. The guest-seat columns are not yet, so
+// the one read that needs them casts its payload (ADR-246).
+//
+// Capacity is identity-blind on purpose: the enforce_event_rsvp_capacity trigger
+// counts 'going' rows, and a guest seat is a going row. A guest occupies a real
+// place in the room and a real place in the waitlist queue, so every helper here
+// counts them and promoteFromWaitlist can hand back either identity.
 
 export interface CapacityInfo {
   /** null = unlimited */
@@ -35,25 +41,55 @@ export async function getCapacityInfo(eventId: string): Promise<CapacityInfo> {
 }
 
 /**
- * Promote the oldest waitlisted RSVP to 'going' when a spot frees up.
- * Returns the promoted profile id (so the caller can notify them), or null.
- * Best-effort, low-volume: capacity is checked again before promoting.
+ * The seat a promotion actually moved. Exactly ONE of the two identities is set
+ * (event_rsvps_identity_check, 20270303000000): a member seat carries `profileId`,
+ * a signed-out guest seat carries `guestEmail`. `rsvpId` is the row itself, so a
+ * caller can stamp or re-read it without guessing which identity it was.
  */
-export async function promoteFromWaitlist(eventId: string): Promise<string | null> {
+export interface PromotedSeat {
+  rsvpId: string
+  profileId: string | null
+  guestEmail: string | null
+}
+
+/**
+ * Promote the oldest waitlisted RSVP to 'going' when a spot frees up.
+ * Returns the promoted seat (so the caller can notify whichever identity holds
+ * it), or null when there was nobody to promote.
+ * Best-effort, low-volume: capacity is checked again before promoting.
+ *
+ * This used to return `profile_id ?? null`, which collapsed two opposite outcomes
+ * into the same value once guest seats existed: promoting a GUEST off the waitlist
+ * updated the row and then reported `null`, indistinguishable from "the waitlist
+ * was empty". The seat moved and nobody could be told — and the guest, who has no
+ * account, no bell and no "my events" page, would only find out by turning up.
+ * Returning the row keeps "nothing happened" (null) separate from "someone was
+ * promoted" (a seat), whichever identity that someone has.
+ */
+export async function promoteFromWaitlist(eventId: string): Promise<PromotedSeat | null> {
   const { isFull } = await getCapacityInfo(eventId)
   if (isFull) return null
 
   const admin = createAdminClient()
-  const { data: next } = await admin
+  // guest_email postdates the generated types, so the row is read untyped and cast to the
+  // shape used here (ADR-246, same seam as lib/events/cancellation.ts).
+  const { data: nextRaw } = await admin
     .from('event_rsvps')
-    .select('id, profile_id')
+    .select('id, profile_id, guest_email')
     .eq('event_id', eventId)
     .eq('status', 'waitlist')
     .order('created_at', { ascending: true })
     .limit(1)
     .maybeSingle()
+  const next = nextRaw as unknown as {
+    id: string; profile_id: string | null; guest_email: string | null
+  } | null
 
   if (!next) return null
   await admin.from('event_rsvps').update({ status: 'going' }).eq('id', next.id)
-  return next.profile_id ?? null
+  return {
+    rsvpId: next.id,
+    profileId: next.profile_id ?? null,
+    guestEmail: next.guest_email ?? null,
+  }
 }
