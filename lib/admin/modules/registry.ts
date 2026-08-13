@@ -14,7 +14,7 @@
 // render each module's Component. The catalog + filter are the durable seam.
 
 import type { LucideIcon } from 'lucide-react'
-import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Users, MapPin, Trophy, BarChart3, Archive, Palette, UserCircle, Bell, Radar, ShieldCheck, CreditCard, LayoutGrid, MessageCircle, Pencil, Wand2 } from 'lucide-react'
+import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Users, MapPin, Trophy, BarChart3, Archive, Palette, UserCircle, Bell, Radar, ShieldCheck, CreditCard, LayoutGrid, MessageCircle, Pencil, Wand2, ArrowRightLeft } from 'lucide-react'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 
 /** The Scope union's discriminant — where a module can attach. */
@@ -240,6 +240,32 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     order: 15,
     tier: 'standard',
     priority: 20,
+  },
+  // MOVE THIS CIRCLE (the circle-side half of ADR-843). Its OWN row rather than a fold into
+  // circle.settings, and the ADR-846 test is why: that fold took a second row on the same
+  // AUTHORITY *and the same SUBJECT*. This shares the authority (circle.editSettings) and fails
+  // the subject half. Every circle.settings control edits the circle IN PLACE inside the home it
+  // already has — what it is called, how it looks, where its URL points, and finally whether it
+  // exists. This one changes the home: the roster lands under another team, the events restamp
+  // onto another Space's calendar (ADR-857), and the one thing that can refuse it is a membership
+  // tier link belonging to the OLD Space, a commercial fact no settings field can see. A control
+  // whose blast radius is two other entities is not a settings field.
+  // Placed on `danger` at `extra`, the band that holds one consequential action at a time
+  // (hub.danger / nexus.danger / journey.danger). Circle keeps its delete inside Settings, which
+  // is the exception in that family, not the rule to extend.
+  {
+    id: 'circle.transfer',
+    label: 'Move this circle',
+    desc: 'Move this circle into a space you help run. Its members and its events go with it.',
+    Icon: ArrowRightLeft,
+    scopes: ['circle'],
+    requiredCapability: 'circle.editSettings',
+    slot: 'danger',
+    surface: 'sidebar',
+    render: 'inline',
+    order: 20,
+    tier: 'extra',
+    priority: 90,
   },
   {
     id: 'hub.settings',

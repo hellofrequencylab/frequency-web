@@ -175,6 +175,26 @@ describe('admin module registry', () => {
     expect(modulesFor(circleScope, new Set<Capability>(['account.manage']))).toHaveLength(0)
   })
 
+  // The circle-side transfer control (ADR-843). It is its OWN row, not a fold into circle.settings:
+  // same authority, different subject (see the catalog comment). Locked here so a later fold has to
+  // be an argued change rather than a silent one.
+  it('registers "Move this circle" as an inline, editSettings-gated danger row on the circle scope', () => {
+    const move = moduleById('circle.transfer')
+    expect(move).toBeDefined()
+    expect(move?.scopes).toEqual(['circle'])
+    expect(move?.requiredCapability).toBe('circle.editSettings')
+    expect(move?.slot).toBe('danger')
+    expect(move?.render).toBe('inline')
+    expect(move?.placement).not.toBe('bank')
+    // The obscured band, so a move that carries members and events never renders expanded at the
+    // top of the rail (tierForApp would force this anyway; the tag states the intent).
+    expect(move?.tier).toBe('extra')
+    // A viewer without circle.editSettings never sees it.
+    expect(
+      modulesFor(circleScope, new Set<Capability>(['circle.view'])).map((m) => m.id),
+    ).not.toContain('circle.transfer')
+  })
+
   it('has unique module ids and resolvable lookups', () => {
     const ids = ADMIN_MODULES.map((m) => m.id)
     expect(new Set(ids).size).toBe(ids.length)
@@ -238,7 +258,9 @@ describe('admin module registry', () => {
     // modulesForScopeKind sorts by `order` (stable), so the order-10 modules keep declaration order, then
     // insights (14) and text (15) trail. This week's practice folded INTO circle.engage (ADR-846) — its
     // picker now mounts inside that one Engage box, so it is no longer a row of its own.
-    // Guided leads (order 5, ADR-996), then the order-10 spine in declaration order.
+    // Guided leads (order 5, ADR-996), then the order-10 spine in declaration order. Move this
+    // circle trails at order 20: the circle-side half of ADR-843, the one circle control whose
+    // effect lands on another Space, so it sits on `danger` in the obscured band.
     expect(modulesForScopeKind('circle', 'sidebar').map((m) => m.id)).toEqual([
       'circle.guided',
       'circle.settings',
@@ -248,6 +270,7 @@ describe('admin module registry', () => {
       'circle.engage',
       'circle.insights',
       'circle.text',
+      'circle.transfer',
     ])
     // Hub/Nexus carry their 9-spine editor Apps (ADMIN-RAIL Phase 7) + the ADR-515 Phase 5 Layout
     // affordance: Basics, People, Layout, Insights, Danger, in spine order (all order 10, so declaration

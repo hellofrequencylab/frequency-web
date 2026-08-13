@@ -23447,3 +23447,76 @@ because the owner's first instruction is in the git history and reads like the i
   is what they were written against. `DetailTemplate`'s standard cover path keeps the
   `coverFocus` / `coverSize` / `coverOverlayStyle` props #2112 added to it — other Detail pages use
   them — a Circle just does not take that path.
+
+---
+
+## ADR-1024: The Circle's actions move onto the fact line, QR & Share moves onto the menu row, and a Circle can be moved from its own page (2026-08-13)
+
+**Status:** accepted · **Owner ruling, amending [ADR-1023](DECISIONS.md) the same night** ·
+**Touches:** `app/(main)/circles/[slug]/(circle)/layout.tsx`, `components/layout/page-admin-bar.tsx`,
+`app/(main)/circles/[slug]/transfer-actions.ts`, `components/admin/modules/circle-move-module.tsx`,
+`lib/admin/modules/registry.ts` · **Guarded by:** `pnpm check:menu`, the registry drift tests,
+`app/(main)/circles/[slug]/transfer-actions.test.ts`
+
+### 1 · The buttons come off the cover
+
+ADR-1023 put Edit and Manage beside Post on the cover, which is where the primary already sat. Seeing
+it rendered, the owner moved the whole group down: *"Move buttons under header on the same line with
+forming / in person pills & member count."*
+
+So the cover carries the eyebrow, the title and the place, and **nothing else**. The band's first
+line is chips + member count + Host on the left, every button on the right, one baseline. The fact a
+button acts on now sits beside the button.
+
+🔴 **A button that moves off a cover must change its class.** `HERO_ACTION_CLASS` is the kit's glassy
+on-ink treatment: translucent white over a backdrop blur, designed to stay legible on an arbitrary
+photograph and therefore near-invisible on the page background. Moving it and keeping the class is
+how a control silently disappears. Every button in the band takes `buttonClasses()` instead. This is
+worth an ADR line because the same mistake is available on every entity page with a cover.
+
+### 2 · QR & Share joins the menu row
+
+*"Remove QR & Share line. Move QR & Share to menu row aligned right."*
+
+It rendered on its own line under the tabs, placed there by the framework's `PageAdminBar asDivider`
+— a full row of chrome for one control, on every tab. It now sits at the right end of the tab row.
+
+**The hairline rule stays.** The rule under a header is structure; the button on it was the
+redundancy. Only the button moved.
+
+The duplicate is prevented by removing `circles` from `SHAREABLE_PREFIXES`, which is that file's own
+established seam rather than a new mechanism: People and Journeys are already absent for exactly this
+reason, and the list's comment says so. The row renders even when the tab strip does not, so a Circle
+too small to earn tabs ([ADR-089](DECISIONS.md)) keeps its share control rather than losing it as a
+side effect of having no tabs.
+
+### 3 · A Circle can be moved to a Space from its own page
+
+*"Create a way to transfer a circle to a space I own."*
+
+The transfer ENGINE has existed since [ADR-843](DECISIONS.md): `canTransferCircle` (pure) and
+`transferCircle` (IO), tier-lock and all. What did not exist was any way to reach it from a Circle.
+Both directions were wired to exactly one surface, the Space console at `/spaces/<slug>/circles`, so
+the host of a **personal** Circle — one on the root sentinel, which appears in no Space console — had
+no move control at all.
+
+`circle.transfer` is a new `ADMIN_MODULES` row, not a fold into `circle.settings`. ADR-846's fold test
+is *same authority AND same subject*; this shares the authority and fails the subject. Every
+`circle.settings` control edits the Circle in place inside the home it already has. This one changes
+the home, and its effects land outside the Circle entirely: the roster moves under another team, the
+events restamp onto another Space's calendar ([ADR-857](DECISIONS.md)), and the one thing that can
+refuse it is a membership-tier link belonging to the OLD Space — a commercial fact no settings field
+can see. It sits on the `danger` slot with the other consequential single actions.
+
+The tier lock is surfaced **before** the picker draws, not after a failed submit, and a read miss
+blocks rather than resolving to "no links". Every path returns a result; nothing throws, because a
+thrown server-action error reaches the browser as an opaque digest — the bug that made the Circle
+invite link a silent no-op for a year.
+
+### Consequences
+
+- **The move-to-a-person half is still not reachable from a Circle.** `offerCircleToPerson` and
+  `cancelCircleOffer` remain Space-console-only, so a personal Circle's host still cannot hand it to
+  someone. Help already tells them they can. Booked, not fixed here.
+- `HERO_ACTION_CLASS` now has exactly one Circle caller: none. It stays in the kit for the Space and
+  Journey headers that still put controls on a photo.

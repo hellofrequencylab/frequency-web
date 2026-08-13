@@ -23,7 +23,6 @@ import { openAdminBar } from '@/components/admin/open-admin-bar'
 // Entity detail routes that carry a slug segment (not the bare list route) — these are
 // the shareable pages that get a QR/link kit.
 const SHAREABLE_PREFIXES = [
-  'circles',
   'channels',
   'hubs',
   'nexuses',
@@ -34,6 +33,12 @@ const SHAREABLE_PREFIXES = [
   // second share affordance sitting beside it. People (profiles) and Journeys are likewise NOT here:
   // both now carry their OWN "QR & Share" control in the header actions, so the divider control would
   // duplicate it.
+  //
+  // CIRCLES joined that group on 2026-08-13, on the owner's instruction: *"Remove QR & Share line.
+  // Move QR & Share to menu row aligned right."* The Circle shell now renders QrShareDropdown at the
+  // right end of its own tab row (app/(main)/circles/[slug]/(circle)/layout.tsx), so leaving
+  // 'circles' here would put the same control on the page twice, one line apart. The DIVIDER RULE
+  // itself is unaffected — `asDivider` still draws it; only the button moved.
   'practices',
   'programs',
   'partners',
