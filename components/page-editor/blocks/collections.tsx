@@ -529,12 +529,12 @@ export function TiersBlock({
                   </span>
                 )}
                 {tier.badge === 'comingSoon' && (
-                  <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated border border-border px-2 py-0.5 text-3xs font-bold uppercase tracking-wider text-subtle">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated border border-border px-2 py-0.5 text-3xs font-bold uppercase tracking-wider text-muted">
                     <Sparkles className="w-3 h-3" aria-hidden /> Coming soon
                   </span>
                 )}
                 {tier.badge === 'inviteOnly' && (
-                  <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated border border-border px-2 py-0.5 text-3xs font-bold uppercase tracking-wider text-subtle">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated border border-border px-2 py-0.5 text-3xs font-bold uppercase tracking-wider text-muted">
                     <Shield className="w-3 h-3" aria-hidden /> Invite only
                   </span>
                 )}

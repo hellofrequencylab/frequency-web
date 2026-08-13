@@ -140,7 +140,7 @@ function EditorStub({ label, hint }: { label: string; hint: string }) {
   return (
     <div className="rounded-card border border-dashed border-border bg-surface/60 px-4 py-12 text-center text-body-sm text-muted">
       {label}
-      <span className="mt-1 block text-2xs text-subtle">{hint}</span>
+      <span className="mt-1 block text-2xs text-muted">{hint}</span>
     </div>
   )
 }
@@ -441,7 +441,7 @@ export function SpaceHighlightsBlock({ highlights, ink }: { highlights: SpaceHig
           <div className={`text-3xl font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>
             {s.value.toLocaleString()}
           </div>
-          <div className={`mt-1.5 text-2xs font-semibold uppercase tracking-wide ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
+          <div className={`mt-1.5 text-2xs font-semibold uppercase tracking-wide ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
             {s.label}
           </div>
         </div>
@@ -528,7 +528,7 @@ export function SpaceStatsBlock({
             <div className={`mt-3 text-3xl font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>
               {s.value.toLocaleString()}
             </div>
-            <div className={`mt-1 text-2xs font-semibold uppercase tracking-wide ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
+            <div className={`mt-1 text-2xs font-semibold uppercase tracking-wide ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
               {s.label}
             </div>
           </div>
@@ -654,7 +654,7 @@ export function SpaceEventsBlock({
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className={`block truncate text-body-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{e.title}</span>
-                  <span className={`block text-2xs ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>{when}</span>
+                  <span className={`block text-2xs ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{when}</span>
                 </span>
                 <Calendar className={`h-4 w-4 shrink-0 ${ink ? 'text-primary' : 'text-primary-strong'}`} aria-hidden />
               </Link>
@@ -695,10 +695,10 @@ function PracticeRow({ item, hrefBase, fallbackEmoji, ink }: { item: SpacePracti
         <span className="min-w-0 flex-1">
           <span className={`block truncate text-body-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{item.title}</span>
           {item.summary && (
-            <span className={`mt-0.5 block line-clamp-2 text-2xs ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>{item.summary}</span>
+            <span className={`mt-0.5 block line-clamp-2 text-2xs ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{item.summary}</span>
           )}
           {item.adoptCount > 0 && (
-            <span className={`mt-1 block text-3xs font-semibold uppercase tracking-wide ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
+            <span className={`mt-1 block text-3xs font-semibold uppercase tracking-wide ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
               {item.adoptCount.toLocaleString()} adopted
             </span>
           )}
@@ -800,9 +800,9 @@ export function SpaceCommunityBlock({
             >
               <span className={`truncate text-body-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{c.name}</span>
               {c.about && (
-                <span className={`mt-1 line-clamp-2 text-2xs ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>{c.about}</span>
+                <span className={`mt-1 line-clamp-2 text-2xs ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{c.about}</span>
               )}
-              <span className={`mt-2 inline-flex items-center gap-1.5 text-2xs font-semibold ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
+              <span className={`mt-2 inline-flex items-center gap-1.5 text-2xs font-semibold ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
                 <Users className={`h-3.5 w-3.5 ${ink ? 'text-primary' : 'text-primary-strong'}`} aria-hidden />
                 {c.memberCount.toLocaleString()} {c.memberCount === 1 ? 'member' : 'members'}
               </span>
@@ -1061,7 +1061,7 @@ function TeamCardTile({ card, ink }: { card: TeamCard; ink?: boolean }) {
     <>
       <TeamAvatar card={card} />
       <div className={`mt-3 text-body-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{card.name}</div>
-      {card.role && <div className={`text-2xs ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>{card.role}</div>}
+      {card.role && <div className={`text-2xs ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{card.role}</div>}
     </>
   )
   // A picked member links to their profile; a manual entry is a plain card.

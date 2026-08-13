@@ -117,7 +117,7 @@ function FunnelSteps({ funnel }: { funnel: JourneyFunnel }) {
       {funnel.steps.map((s, i) => (
         <li key={s.key}>
           {i > 0 && !s.linkedToPrevious && (
-            <p className="mb-2 border-t border-dashed border-border pt-2 text-2xs uppercase tracking-wide text-subtle">
+            <p className="mb-2 border-t border-dashed border-border pt-2 text-2xs uppercase tracking-wide text-muted">
               New count starts here: the steps above and below identify people differently
               and cannot be joined
             </p>
@@ -192,7 +192,7 @@ async function VitalsPanel() {
       render: (r) => (
         <div className="min-w-0">
           <p className="truncate font-mono text-meta text-text">{r.path}</p>
-          <p className="text-2xs text-subtle">{BUDGET_CLASS_LABEL[r.budgetClass]}</p>
+          <p className="text-2xs text-muted">{BUDGET_CLASS_LABEL[r.budgetClass]}</p>
         </div>
       ),
     },

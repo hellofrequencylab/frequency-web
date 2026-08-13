@@ -181,7 +181,7 @@ export function CircleMoveModule() {
           <p className="text-meta font-semibold text-text">
             You offered {data.name} to {data.pendingOffer.toName}.
           </p>
-          <p className="text-2xs text-subtle">
+          <p className="text-2xs text-muted">
             It stays yours until they accept. Nothing else can happen to the circle while the offer
             is open, so take it back if you want to move it somewhere else.
           </p>
@@ -195,7 +195,7 @@ export function CircleMoveModule() {
           </button>
         </div>
       ) : data.blockedReason ? (
-        <p className="rounded-card border border-border bg-surface-elevated/60 p-3 text-2xs text-subtle">
+        <p className="rounded-card border border-border bg-surface-elevated/60 p-3 text-2xs text-muted">
           {data.blockedReason}
         </p>
       ) : confirming && destination ? (
@@ -203,7 +203,7 @@ export function CircleMoveModule() {
           <p className="text-meta font-semibold text-text">
             Move {data.name} to {destination.name}?
           </p>
-          <ul className="space-y-1 text-2xs text-subtle">
+          <ul className="space-y-1 text-2xs text-muted">
             <li>
               {data.memberCount} {data.memberCount === 1 ? 'member stays' : 'members stay'} in the
               circle and move with it.
@@ -235,7 +235,7 @@ export function CircleMoveModule() {
           <p className="text-meta font-semibold text-text">
             Hand {data.name} to {offerTo.display_name}?
           </p>
-          <ul className="space-y-1 text-2xs text-subtle">
+          <ul className="space-y-1 text-2xs text-muted">
             <li>It stays yours until they accept. An offer changes nothing on its own.</li>
             <li>
               {data.memberCount} {data.memberCount === 1 ? 'member stays' : 'members stay'} in the

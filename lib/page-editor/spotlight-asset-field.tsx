@@ -119,7 +119,7 @@ export function SpotlightAssetField({
         >
           <Upload className="h-5 w-5" aria-hidden />
           {busy ? 'Uploading…' : 'Upload image'}
-          <span className="text-2xs font-normal text-subtle">JPEG, PNG, GIF, or WebP up to 5 MB</span>
+          <span className="text-2xs font-normal text-muted">JPEG, PNG, GIF, or WebP up to 5 MB</span>
         </button>
       )}
       {err && <p className="text-meta text-danger">{err}</p>}
