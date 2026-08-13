@@ -183,7 +183,14 @@ comment on function public.claim_guest_rsvps(uuid) is
 -- Default EXECUTE on a new function goes to PUBLIC, which over PostgREST means anon. Revoke first,
 -- then hand back exactly the roles each door is designed for.
 
-revoke execute on function public.capture_guest_rsvp(uuid, text, text) from public;
+-- Revoked BY NAME, not just from public. `revoke ... from public` does not touch the explicit
+-- per-role grants Supabase's ALTER DEFAULT PRIVILEGES creates on every new function, so on its own
+-- the statement succeeds and removes nothing (ADR-959). Both functions are cleared to zero here and
+-- re-granted deliberately below, so the final ACL is something this file decided rather than
+-- something it inherited. supabase/migrations/fail-open-guards.test.ts holds a census of the
+-- functions that got this wrong and refuses to let it grow; capture_guest_rsvp was in it until this
+-- line existed.
+revoke execute on function public.capture_guest_rsvp(uuid, text, text) from public, anon, authenticated;
 revoke execute on function public.claim_guest_rsvps(uuid) from public;
 
 -- 🔴 `revoke ... from public` IS NOT ENOUGH, and this file shipped a first draft that believed it was.
