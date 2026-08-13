@@ -3,7 +3,7 @@ title: The leaderboard
 description: One shared goal first. Where people stand sits below it, scoped to your Circle and yours to opt out of.
 category: the-quest
 order: 8
-updated: 2026-08-12
+updated: 2026-08-13
 audience: member
 featureKeys: [leaderboard, gamification]
 status: published
@@ -37,7 +37,7 @@ Ranking is opt-in by feel. One tap on **Hide me from the board** removes your ro
 
 ## The board inside a Circle is a different thing
 
-Your Circle has its own **Leaderboard** tab, and it does not rank anyone. It compares each member's week
+Your Circle has its own **Circle Stats** tab, and the board on it does not rank anyone. It compares each member's week
 against **their own** usual week, so a beginner and a veteran can both be having a good one at the
 same time. There is no first place and no last place on it.
 

@@ -23439,10 +23439,28 @@ because the owner's first instruction is in the git history and reads like the i
   repeat #2112's.
 - **The momentum tiles are asserted OUT of the rail** by the same test, so they cannot come back and
   render the same four numbers twice on one page.
-- **Circle Stats is members-and-managers only.** A stranger reading a Circle's weekly vital signs
-  learns nothing they can act on, and a thin week reads to them as a dead Circle when it is a new
-  one. The board's own gates (`MIN_BOARD_CONTRIBUTORS`, the viewer preference) are unchanged
-  underneath it.
+- **The Circle Stats TAB is members-and-managers only.** A stranger reading a Circle's weekly vital
+  signs learns nothing they can act on, and a thin week reads to them as a dead Circle when it is a
+  new one.
+
+  ⚠️ **CORRECTED 2026-08-13.** This bullet first read *"Circle Stats is members-and-managers only"*,
+  with no "tab", and that sentence was wrong about the code. `circleTabs` gates the TAB; the PAGE at
+  `/circles/<slug>/stats` stays reachable to anyone with the link, deliberately, and that is not a
+  leak on either half:
+  - the momentum tiles come from `public.circle_momentum`, which the C1 rewrite
+    (`20270227000000_circle_privacy.sql`) gated on `private.can_enter_circle`. A non-member on a
+    closed Circle gets **zero rows**, `getCircleMomentum` returns null, and the component renders
+    nothing. On an OPEN Circle a stranger sees four aggregate integers, which is public face.
+  - the collective total is shown to a non-member **on purpose**, with C4's own invite copy under
+    it: *"The total above is the whole Circle's. Join, log a practice, and your own week shows up
+    here."* Gating the page would delete that invitation.
+  - the individual rows are, and remain, behind `canSeeRows`.
+
+  The page is right and the sentence was wrong, so the sentence moved rather than the code. Recorded
+  rather than quietly edited, because "the ADR says members-only" is exactly the kind of half-memory
+  that later gets implemented as a gate nobody wanted.
+- The board's own gates (`MIN_BOARD_CONTRIBUTORS`, the viewer preference) are unchanged underneath
+  all of it.
 - **The three operator cover controls** (height, focal point, scrim) are PageHero props again, which
   is what they were written against. `DetailTemplate`'s standard cover path keeps the
   `coverFocus` / `coverSize` / `coverOverlayStyle` props #2112 added to it — other Detail pages use

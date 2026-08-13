@@ -230,6 +230,12 @@
 ## Community structure
 
 - **Circle → Hub → Nexus** (unchanged tree, caps unchanged).
+- **Circle** = the community CONTAINER, **local or online** ([ADR-1013](DECISIONS.md), amending
+  ADR-088). It has a roster, a feed, and a door. ⚠️ A Circle is **not** defined by meeting in person:
+  a Circle that meets on a call is still a Circle, and `circles.type` carries that distinction
+  ("In Person" / "Online") as a property of one Circle, never as the line between Circles and
+  something else. The retired formula, still widely remembered, was "Circles are the local,
+  real-world unit; Channels are the global, topical unit" — say **container vs topic axis** instead.
 - **Outpost** = the brick-and-mortar home base of a Nexus; one per Nexus; the seed
   toward a Lab. Circles meet in homes/public spaces, never Outposts.
 - **Frequency Lab** = standalone for-profit venue; when a Lab exists in a Nexus, the
