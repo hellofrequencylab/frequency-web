@@ -20,6 +20,20 @@
 // a silent no-op (#2112). A refusal here is DATA: the gate's own sentence, carried verbatim to the
 // surface that asked, because that copy (TIER_LINKED especially) is written for a member to read
 // and tells them what to do next.
+//
+// THE HANDOFF HALF (ADR-845) lives here too, for the same reason and with the same discipline.
+// ADR-1024 booked it: `offerCircleToPerson` and `cancelCircleOffer` were Space-console-only, so the
+// host of a PERSONAL circle — one on the root sentinel, which appears in no Space console — could
+// not hand it to anyone, while help/leading/how-to-start-a-circle.md told them they could.
+//
+// Handing a circle to someone ELSE is not a move: a circle carries members, so it is an OFFER the
+// recipient answers, and NOTHING changes until they do. The recipient's side already exists
+// (CircleHandoffBanner on the circle page). This is the sender's side.
+//
+// A PENDING OFFER BLOCKS THE CIRCLE. One pending offer per circle is a unique partial index
+// (migration 20261230000000), and moveCircleToSpaceAction's own refusal tells the operator to
+// "cancel that first" — so the read below reports the open offer and the module lets its sender
+// take it back. Without that, a host could strand their own circle with no way out.
 
 import { revalidatePath } from 'next/cache'
 import { getMyProfileId } from '@/lib/auth'
@@ -29,6 +43,11 @@ import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
 import { listManagedSpaces } from '@/lib/spaces/managed'
 import { tierLinksForCircle } from '@/lib/spaces/tier-circle'
 import { transferCircle, TIER_LINKED } from '@/lib/circles/transfer'
+import {
+  offerCircleToPerson,
+  cancelCircleOffer,
+  pendingOfferForCircle,
+} from '@/lib/circles/handoff'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 
 /** One destination the picker may offer. */
@@ -52,6 +71,11 @@ export interface CircleMoveData {
   /** Set when the move is ALREADY refused before anyone picks, so the refusal is shown up front
    *  instead of after a failed submit. The gate's own sentence, verbatim. */
   blockedReason: string | null
+  /** An unanswered handoff on this circle. While it stands the circle can go nowhere else — the
+   *  unique partial index refuses a second pending offer and the move refuses too — so the control
+   *  shows it BEFORE either picker and offers the only move that is actually available: take it
+   *  back. `toName` is who it is waiting on. */
+  pendingOffer: { id: string; toName: string } | null
 }
 
 /** Said when the tier-link read misses. "We could not tell" must never read as "no links"
@@ -69,6 +93,39 @@ function revalidateSpace(slug: string) {
 }
 
 /**
+ * The one authority check every write here shares: a signed-in caller who may manage THIS circle.
+ * Same shape as the Space console's `requireSpaceEditor` — a string back is the refusal to return
+ * verbatim. It is not the gate: `transferCircle` / `canOfferCircle` still decide. It is what keeps
+ * a caller with no business here from reaching them at all, and it takes the refusal sentence as an
+ * argument so each door says what it is refusing ("move it" / "hand it off").
+ */
+async function authorise(
+  slug: string,
+  refusal: string,
+): Promise<{ profileId: string; circleId: string } | string> {
+  const profileId = await getMyProfileId().catch(() => null)
+  if (!profileId) return 'Sign in first.'
+
+  const shell = await loadCircleShell(slug)
+  if (!shell) return 'Circle not found.'
+
+  const caps = await getCircleCapabilities(shell.circle.id)
+  if (!caps.has('circle.editSettings')) return refusal
+  return { profileId, circleId: shell.circle.id }
+}
+
+/** The circle's own page, plus the Space console that also lists it (its "Handoff waiting" badge
+ *  and its move control both read this state). */
+async function revalidateCircleAndHome(slug: string, circleId: string) {
+  revalidatePath(`/circles/${slug}`)
+  const [spaceId, root] = await Promise.all([spaceIdForCircle(circleId), loadRootSpaceId()])
+  if (spaceId && spaceId !== root) {
+    const home = await getSpaceById(spaceId)
+    if (home) revalidateSpace(home.slug)
+  }
+}
+
+/**
  * Read the move control's whole state for a circle, or null for anyone who may not manage it
  * (so the module renders no chrome at all for a member). FAIL-SAFE: null on any read error.
  */
@@ -81,11 +138,12 @@ export async function getCircleMoveData(slug: string): Promise<CircleMoveData | 
     const caps = await getCircleCapabilities(circle.id)
     if (!caps.has('circle.editSettings')) return null
 
-    const [spaceId, root, managed, links] = await Promise.all([
+    const [spaceId, root, managed, links, offer] = await Promise.all([
       spaceIdForCircle(circle.id),
       loadRootSpaceId(),
       listManagedSpaces(),
       tierLinksForCircle(circle.id),
+      pendingOfferForCircle(circle.id),
     ])
     // The root Space means "no Space owns this" — a member's own circle (ADR-843).
     const currentSpaceId = spaceId && spaceId !== root ? spaceId : null
@@ -109,6 +167,9 @@ export async function getCircleMoveData(slug: string): Promise<CircleMoveData | 
         : links.tiers.length > 0
           ? TIER_LINKED
           : null,
+      // pendingOfferForCircle carries the RECIPIENT's display name in `fromName` on purpose
+      // (lib/circles/handoff.ts): for the sender's view the useful name is who is being waited on.
+      pendingOffer: offer ? { id: offer.id, toName: offer.fromName } : null,
     }
   } catch {
     return null
@@ -127,18 +188,9 @@ export async function moveCircleToSpaceAction(
   spaceId: string,
 ): Promise<ActionResult<{ spaceSlug: string }>> {
   try {
-    const profileId = await getMyProfileId().catch(() => null)
-    if (!profileId) return fail('Sign in first.')
+    const gate = await authorise(slug, 'Only the team that runs this circle can move it.')
+    if (typeof gate === 'string') return fail(gate)
     if (!spaceId) return fail('Pick where it should go.')
-
-    const shell = await loadCircleShell(slug)
-    if (!shell) return fail('Circle not found.')
-    const circle = shell.circle
-
-    const caps = await getCircleCapabilities(circle.id)
-    if (!caps.has('circle.editSettings')) {
-      return fail('Only the team that runs this circle can move it.')
-    }
 
     // The picker's shaping rule, re-derived on the write: the destination must be one of the
     // caller's own Spaces. The gate decides this again inside transferCircle, so this is not the
@@ -148,9 +200,9 @@ export async function moveCircleToSpaceAction(
     const destination = managed.find((s) => s.id === spaceId && s.type !== 'root')
     if (!destination) return fail(NOT_YOURS_TO_TAKE)
 
-    const fromSpaceId = await spaceIdForCircle(circle.id)
+    const fromSpaceId = await spaceIdForCircle(gate.circleId)
 
-    const res = await transferCircle(circle.id, { kind: 'space', spaceId }, profileId)
+    const res = await transferCircle(gate.circleId, { kind: 'space', spaceId }, gate.profileId)
     if (!res.ok) return fail(res.reason || 'Could not move that circle.')
 
     revalidatePath(`/circles/${res.slug ?? slug}`)
@@ -163,5 +215,58 @@ export async function moveCircleToSpaceAction(
     return ok({ spaceSlug: destination.slug })
   } catch {
     return fail('Could not move that circle. Please try again.')
+  }
+}
+
+/**
+ * Offer this circle to another person. NOTHING changes on the circle: it keeps its owner, its
+ * members and any Run until they accept, which is why this is an offer and not the move above.
+ *
+ * Every rule stays in `offerCircleToPerson` / `canOfferCircle` (ADR-845), including the two this
+ * layer must not second-guess: offering it to YOURSELF is refused, because taking your own circle
+ * is the immediate move, and a circle a membership tier points at is pinned. The gate's sentence
+ * comes back verbatim, since it is written for a member to read and says what to do next.
+ */
+export async function offerCircleToPersonAction(
+  slug: string,
+  toProfileId: string,
+): Promise<ActionResult<void>> {
+  try {
+    const gate = await authorise(slug, 'Only the team that runs this circle can hand it off.')
+    if (typeof gate === 'string') return fail(gate)
+    if (!toProfileId) return fail('Pick who should get it.')
+
+    const res = await offerCircleToPerson(gate.circleId, toProfileId, gate.profileId)
+    if (!res.ok) return fail(res.reason || 'Could not send that handoff.')
+
+    await revalidateCircleAndHome(slug, gate.circleId)
+    return ok()
+  } catch {
+    return fail('Could not send that handoff. Please try again.')
+  }
+}
+
+/**
+ * Take back an unanswered handoff. This is the way OUT of the block: while an offer is pending the
+ * unique partial index refuses a second one and the move refuses too, so without this door a host
+ * could strand their own circle. Authority is the same on both sides of the offer, so the same
+ * check that let them send it lets them withdraw it.
+ */
+export async function cancelCircleOfferAction(
+  slug: string,
+  offerId: string,
+): Promise<ActionResult<void>> {
+  try {
+    const gate = await authorise(slug, 'Only the team that runs this circle can hand it off.')
+    if (typeof gate === 'string') return fail(gate)
+    if (!offerId) return fail('That handoff is no longer available.')
+
+    const res = await cancelCircleOffer(offerId, gate.profileId)
+    if (!res.ok) return fail(res.reason || 'Could not cancel that handoff.')
+
+    await revalidateCircleAndHome(slug, gate.circleId)
+    return ok()
+  } catch {
+    return fail('Could not cancel that handoff. Please try again.')
   }
 }

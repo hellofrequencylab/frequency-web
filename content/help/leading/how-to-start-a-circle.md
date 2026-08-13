@@ -3,7 +3,7 @@ title: How to start a Circle
 description: Pick one thing, set a standing time, recruit a co-host, and run a simple first night. You do not build a community. You host one Circle, and we hand you the format.
 category: leading
 order: 1
-updated: 2026-08-12
+updated: 2026-08-13
 audience: host
 role: host
 featureKeys: [circles, events]
@@ -108,12 +108,17 @@ stands), meeting details, and the rest.
 
 ### Can I hand my Circle to someone else?
 
-Yes. Open the Circle from the space that runs it and choose **Move**. You can move it
-into another space you help run, take it as your own, or hand it to a person. Handing
-it to a person is an **offer**, not a move: they see it on the Circle and choose to
-accept or pass, and nothing changes until they accept. A Circle carries its members,
-so it never lands on someone who did not agree to take it. When they accept, the
-Circle becomes theirs to host, and its members and anything it is running come along.
+Yes. Open your Circle and find **Move this circle** in its settings. From there you can
+move it into another space you help run, or hand it to a person. If a space runs the
+Circle, that space's Circles page has the same **Move** control, plus one more option:
+take the Circle as your own.
+
+Handing it to a person is an **offer**, not a move: they see it on the Circle and
+choose to accept or pass, and nothing changes until they accept. It stays yours the
+whole time, and you can take the offer back until they answer. A Circle carries its
+members, so it never lands on someone who did not agree to take it. When they accept,
+the Circle becomes theirs to host, and its members and anything it is running come
+along.
 
 It works in the other direction too. If you help run a space, open its Circles page
 and choose **Attach a circle you host** to bring one of your own Circles into the
