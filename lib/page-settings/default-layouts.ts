@@ -10,26 +10,29 @@ import { layoutScopeChain, type LayoutConfig } from './layout'
 //
 // Circles (/circles/<slug>): a two-column body — the feed leads MAIN, a SHORT info-rail fills SIDE.
 const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
-  // THE CIRCLE RAIL IS CAPPED AT THREE VISIBLE MODULES (circle rail trim). It used to carry seven.
-  // Eyetracking puts about 0.8% of fixations on a right rail that takes about a quarter of the
-  // screen, so a stack of seven unrelated boxes is not read as seven things: it is read as one
-  // region to skip, and it takes the useful boxes down with it. Three boxes, ordered by one rule:
-  //   (a) time-bound before evergreen · (b) action before information · (c) decision-relevant
-  //   before status.
-  // Which gives, top to bottom:
+  // THE CIRCLE RAIL CARRIES FOUR VISIBLE MODULES (owner ruling, 2026-08-13). The 2026-08-12 trim
+  // capped it at three on right-rail eyetracking grounds and dropped the roster on the reasoning
+  // that "the roster has its own tab now". The owner put two back by name: *"Put the member list
+  // back in the right column on the main page"* and *"Put Events in the right column on the main"*.
+  // A tab and a rail box are not the same affordance — the box is who is here right now, the tab is
+  // the roster you go and browse — and the owner reads the Circle page as incomplete without both.
+  // Ordered by the same rule as before: (a) time-bound before evergreen · (b) action before
+  // information · (c) decision-relevant before status. Which gives, top to bottom:
   //   1. circle-events   — what is on next, and the way in to RSVP. Time-bound and decision-
-  //      relevant, so it leads. Moved here OUT of MAIN, where it sat under an endless feed and
-  //      was effectively unreachable.
-  //   2. circle-practice — this week's practice with its log button. Time-bound and the one
-  //      member ACTION in the column.
-  //   3. circle-meeting  — how and where we meet. Evergreen orientation, so it goes last.
-  // The four below it are PLACED BUT OFF, not deleted: an operator turns any of them back on with
+  //      relevant, so it leads. It sits here AND on the Program tab, deliberately: the tab is the
+  //      full calendar, this is the next thing.
+  //   2. circle-members  — who is actually in the room. The roster tab still exists and still
+  //      carries the browse/manage affordances; this is the at-a-glance.
+  //   3. circle-practice — this week's practice with its log button. The one member ACTION here.
+  //   4. circle-meeting  — how and where we meet. Evergreen orientation, so it goes last.
+  // The three below it are PLACED BUT OFF, not deleted: an operator turns any of them back on with
   // one toggle in the Layout editor, and the id stays in the circle module set so the editor keeps
   // offering it. Why each is off by default:
   //   • circle-map      — the largest box in the column, and it repeats in a picture what "How we
   //     meet" says in a line.
-  //   • circle-members  — the roster has its own tab now (/circles/<slug>/members).
-  //   • circle-momentum — status, not a decision. Rule (c).
+  //   • circle-momentum — it moved to the Circle Stats tab (owner ruling: *"Bring back Momentum
+  //     blocks and put them in the leaderboard"*), which is where a member goes to read status.
+  //     Rendering it in the rail as well would put the same four numbers on the page twice.
   //   • circle-health   — status, and manager-facing: the same three numbers render in the admin
   //     rail's `circle.insights` module for exactly the people who can act on them.
   // The two HOST WRITE blocks that used to live here are gone from the page entirely (they are out
@@ -52,17 +55,17 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
       main: { order: ['circle-challenges', 'circle-feed'], hidden: [], roles: {} },
       side: {
         order: [
-          // The three that render.
+          // The four that render.
           'circle-events',
+          'circle-members',
           'circle-practice',
           'circle-meeting',
           // Placed but off — one toggle from the Layout editor brings any of them back.
           'circle-map',
-          'circle-members',
           'circle-momentum',
           'circle-health',
         ],
-        hidden: ['circle-map', 'circle-members', 'circle-momentum', 'circle-health'],
+        hidden: ['circle-map', 'circle-momentum', 'circle-health'],
         roles: {},
       },
     },

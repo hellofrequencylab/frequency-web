@@ -27,10 +27,18 @@ import { circleTextOverride, resolveCircleText } from '@/lib/circles/circle-text
 // precedent).
 //
 // FEED IS THE DEFAULT TAB AND IT CARRIES THE REASON PEOPLE CAME (owner ruling, 2026-08-12), so it
-// keeps the operator-arranged body — MINUS the four blocks that now have tabs of their own. Events,
-// the Journey Run, the practice and the roster each got a dedicated surface in this redesign, and a
-// block that also renders here would mean a member reads the same list twice in one scroll and
-// never learns which copy is the real one.
+// keeps the operator-arranged body.
+//
+// ⚠️ THE SUBSET SHRANK ON 2026-08-13, ON THE OWNER'S INSTRUCTION. The 2026-08-12 version pulled
+// FOUR blocks off this tab on the argument that a block with a tab of its own would be read twice.
+// The owner overruled two of them by name: *"Put the member list back in the right column on the
+// main page"* and *"Put Events in the right column on the main"*. A rail box and a tab are not the
+// same affordance — the box is the next thing / who is here, the tab is the full list you go and
+// browse — so both render, and `circle-events` and `circle-members` are back in the set.
+//
+// `circle-momentum` came OUT in the same pass and for the opposite reason: it moved to the Circle
+// Stats tab (*"Bring back Momentum blocks and put them in the leaderboard"*), so leaving it here
+// WOULD put the same four numbers on the page twice.
 //
 // THE SUBSET IS PASSED AS `moduleIds`, which is PageModules' documented override for exactly this
 // ("Override the route's module set"), and it is the caller-side version of what
@@ -42,17 +50,18 @@ import { circleTextOverride, resolveCircleText } from '@/lib/circles/circle-text
 // ── Anonymous share-card metadata (logged-in link unfurls; correct-by-construction
 // for any future anon carve). Reads the SAME request-memoized shell load the page body uses, so the
 // card costs no extra query, with the same archived filter the body applies.
-// The Feed tab's module set: every circle-detail block EXCEPT the four that now own a tab
-// ('circle-events' → /events, 'circle-journey-run' → /journey, 'circle-practice' → /practice,
-// 'circle-members' → /members). Order here does not decide layout; the saved '/circles/*' layout
-// still does, and this only filters what it may place.
+// The Feed tab's module set. Order here does not decide layout; the saved '/circles/*' layout
+// still does, and this only filters what it may place. `circle-momentum` is the one deliberate
+// omission — it renders on the Circle Stats tab instead.
 const FEED_TAB_MODULE_IDS = [
   'circle-feed',
   'circle-health',
-  'circle-momentum',
   'circle-challenges',
   'circle-map',
   'circle-meeting',
+  'circle-members',
+  'circle-events',
+  'circle-practice',
   'circle-invite',
   'circle-text',
 ] as const

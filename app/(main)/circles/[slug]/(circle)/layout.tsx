@@ -1,18 +1,20 @@
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { EyeOff, MapPin, PenLine } from 'lucide-react'
+import { EyeOff, LayoutDashboard, MapPin, PenLine, Settings, Users } from 'lucide-react'
+import { ProgressTrack } from '@/components/ui/progress-track'
 import { getCachedUser, getMyProfileId } from '@/lib/auth'
 import { leaveCircle } from '../../actions'
 import { JoinCircleButton } from '@/components/circles/join-circle-button'
 import { CircleHandoffBanner } from '@/components/circles/circle-handoff-banner'
 import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
+import { CircleHostMenu } from '@/components/circles/circle-host-menu'
+import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { circleCapabilities } from '@/lib/circles/detail-access'
 import { isPaidViewer } from '@/lib/core/viewer-hats'
-import { DetailTemplate } from '@/components/templates'
-import { Badge, type BadgeTone } from '@/components/ui/badge'
-import { buttonClasses } from '@/components/ui/button'
+import { DetailTemplate, PageHero, HERO_ACTION_CLASS } from '@/components/templates'
 import { UnderlineTabs } from '@/components/ui/underline-tabs'
+import { resolveHeaderElement } from '@/lib/elements/header'
 import { loadCircleShell } from '@/lib/circles/store'
 import { circleTabs } from '@/lib/circles/tabs'
 import {
@@ -53,54 +55,55 @@ import { circleEventInsider, loadCircleContentFacts } from './tab-facts'
 // PREFIX, so a tab route resolves to the same circle scope its parent does (locked by
 // lib/layout/page-chrome.test.ts).
 //
-// ── THE HEADER, REBUILT ON THE TEMPLATE'S OWN SLOTS (owner ruling, 2026-08-12) ───────────────────
+// ── THE HEADER: THE COVER LOCKUP, RESTORED (owner ruling, 2026-08-13) ────────────────────────────
 //
-// THE BUG WAS ONE PROP. This layout used to hand DetailTemplate a `band`, and `band` is documented
-// to REPLACE the template's identity lockup wholesale (detail-template.tsx:136). That lockup is
-// `flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between` — the only rule in the kit
-// that pushes actions to the right-hand side. Passing `band` opted the Circle out of it, so every
-// last thing (host tools, chips, place, host, capacity bar) stacked down the left margin and the
-// `title` prop was accepted and then silently ignored. The page had a title it never rendered.
+// 🔴 READ THIS BEFORE CHANGING THE HEADER. It has now been rewritten twice and reverted once, and
+// the revert was the owner's, in these words: *"The old header was perfect, I just wanted you to
+// rearrange the content."* The 2026-08-12 version moved the title OFF the cover and into the
+// template's own identity lockup below it. That is a defensible pattern in the abstract and it is
+// NOT what this product uses: every other destination page — the Space profile, the Journey page,
+// the person profile — opens on one immersive cover with the title riding it (ADR-793, the unified
+// entity header). A Circle that alone put its title in a text row below the photo was the odd one
+// out, and it read as one.
 //
-// So the band is gone and the four real slots do the work:
+// So the `hero` + `band` shape is back, exactly as ADR-793 specifies it:
 //
-//   1. TITLE      — the template owns the single page <h1>. Nothing else on this page emits one.
-//   2. SUBTITLE   — the quiet identity lines: where it meets and how full it is, who hosts it, and
-//                   the Hub it sits inside. Place first, hierarchy last: a member reads a Hub as
-//                   "where this sits", never as an org chart (IA §3a/§4).
-//   3. BADGES     — status and mode, on the kit's <Badge> primitive rather than a hand-rolled pill.
-//   4. ACTIONS    — EXACTLY ONE primary (Polaris: one primary, at most three secondary). Join for
-//                   someone who is not in yet; Post for someone who is. The old header had Join on
-//                   the cover AND Create/Edit/Manage in the band, which is four primaries and no
-//                   answer to "what do I do here". Leave stays as the single secondary, because it
-//                   is the only place a member can leave a Circle from.
+//   1. COVER    — ONE immersive PageHero as DetailTemplate's `hero` slot: rounded, bordered, height
+//                 off the header element's size ladder. No cover photo = the neutral token gradient.
+//                 Never a bare cover card with the title stranded underneath it.
+//   2. TUNABLE  — layout / height / overlay resolve through `resolveHeaderElement`, so /admin/elements
+//                 retunes the band with no deploy, and the operator's saved hero height wins over it.
+//   3. TITLE    — the single page <h1> rides the cover, bottom-left, over the ink scrim, with the
+//                 uppercase "CIRCLE" eyebrow above it. This is the ONLY h1 on the page: the body
+//                 tabs beneath are bodies, not shells (check:headers proves it).
+//   4. SUBTITLE — one quiet on-ink line on the cover: the place.
+//   5. ACTIONS  — bottom-RIGHT on the cover. See the next block, which is the part that changed.
+//   6. BAND     — below the hero: status + mode chips, the Hub line, the fact row, the capacity bar.
+//   7. BACK     — DetailTemplate's `back` slot, above the band. The breadcrumb and the back link
+//                 coexisted here for a year and the owner reads both as correct; this is not the
+//                 page to relitigate it on.
 //
-// HOST ACTIONS ARE NOT HERE, ON PURPOSE. Edit / Manage / the host menu moved to the admin rail. No
-// host action goes in this header and there is no overflow menu: an operator affordance in the
-// member's identity band is what made the header unreadable in the first place.
+// ── EDIT AND MANAGE RIDE WITH THE PRIMARY ACTION (owner ruling, 2026-08-13) ──────────────────────
 //
-// NO BACK LINK. The app shell already draws the breadcrumb, and breadcrumbs are hierarchy while
-// back links are history. A page showing both reads as a page that does not know where it is
-// (NN/g). The breadcrumb stays; DetailTemplate's `back` slot is deliberately unused.
+// The previous version moved every host affordance into the admin rail and left the header with one
+// primary. The owner put two of them back and said where: *"Those are admin only. put them to the
+// right by the post button."* So Edit and Manage are cover actions now, beside Post, not a separate
+// light row down in the band where they used to sit.
 //
-// THE COVER is DetailTemplate's own `coverImage` (PAGE-FRAMEWORK §8.5, "The standard Detail
-// cover"): the 16:6 crop, or the neutral token gradient when a Circle has no photo yet. It carries
-// no copy, which is what lets the identity lockup below it be the one heading on the page.
+// They are gated on `circle.editSettings` — the SAME capability the admin rail's circle modules
+// use, resolved once by `circleCapabilities` above. A member sees Post and nothing else; a visitor
+// sees Join; nobody who cannot manage the Circle sees either button, so the row does not grow for
+// the twenty-nine people in thirty who could not use it anyway.
 //
-// THE OPERATOR'S THREE COVER CONTROLS, and how they got back (resolved 2026-08-12).
+// The primary keeps its accent fill so it lifts off the photo; Edit, Manage and Leave use the
+// glassy on-ink `HERO_ACTION_CLASS`, which is the kit's one answer to "a secondary button on top of
+// an arbitrary image" and the reason none of them needs a hand-rolled class string.
 //
-// PageHero renders an `<h1>` in EVERY variant — `minimal` still emitted `<h1 className="sr-only">`
-// — so a PageHero above a template-owned lockup shipped two h1s with the same text, which a screen
-// reader reads out as a duplicated page heading. Since the ruling is that the TEMPLATE owns the
-// single h1, the hero had to go, and three operator controls went with it: hero HEIGHT, cover FOCAL
-// POINT, and the cover SCRIM (None / Shade / Blend), all three still written by
-// components/admin/modules and all three suddenly writing to nothing.
-//
-// FIXED IN THE KIT, ONCE, FOR EVERY DETAIL PAGE rather than per page:
-//   · page-hero.tsx gained `heading={false}`, so a PageHero can be a pure cover band.
-//   · detail-template.tsx's standard `coverImage` path now accepts `coverFocus`, `coverSize` and
-//     `coverOverlayStyle` and renders through PageHero `minimal` with the heading suppressed.
-// The call site is the three props below. Exactly one h1 still ships (check:headers proves it).
+// THE OPERATOR'S THREE COVER CONTROLS are native to this shape and need no special handling: hero
+// HEIGHT, cover FOCAL POINT and the cover SCRIM are PageHero's own props, which is what they were
+// written against. (Between 2026-08-12 and this revert they were briefly routed through
+// DetailTemplate's standard cover path instead. That path keeps its `coverFocus`/`coverSize`/
+// `coverOverlayStyle` props — other Detail pages use them — it is just not what a Circle takes.)
 //
 // The scrim mapping is NOT written here and must never be: `lib/layout/cover-scrim.ts` holds the
 // one operator-vocabulary → PageHero-prop mapping (none/shade/blend → none/shadow/fade), shared
@@ -142,7 +145,7 @@ export default async function CircleDetailLayout({
   // Round 2. Four independent reads in one batch. `user` gates the signed-in-only banners, caps
   // drives the manager rules, isPaidViewer feeds the Crew gate on Join, and the content facts
   // decide which tabs exist at all.
-  const [user, caps, isCrew, content] = await Promise.all([
+  const [user, caps, isCrew, content, header] = await Promise.all([
     getCachedUser(),
     // Request-memoized, so the tab page under `children` asking the same question is a memo hit
     // rather than a second capability resolution (lib/circles/detail-access.ts).
@@ -151,6 +154,10 @@ export default async function CircleDetailLayout({
     // `insider` keys the memoized events read, and it is derived from the roster (not from caps)
     // so the Events tab can derive the SAME key and hit the memo. See circleEventInsider.
     loadCircleContentFacts(circle.id, circleEventInsider({ isMember, isHost })),
+    // The tunable header band (ADR-793). Identity layout, standard height, unless /admin/elements
+    // says otherwise. It joins this batch rather than sitting in front of the JSX, because the
+    // cover cannot paint without it and a serial await here is PAGE-FRAMEWORK §5.3's anti-pattern.
+    resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard' } }),
   ])
 
   const canManage = caps.has('circle.editSettings')
@@ -164,24 +171,29 @@ export default async function CircleDetailLayout({
 
   const full = circle.member_count >= circle.member_cap
   const nearCap = circle.member_count >= circle.member_cap * 0.9
+  const pct = Math.min(100, Math.round((circle.member_count / circle.member_cap) * 100))
 
-  // Status badge: draft → neutral, forming → success, active → primary, full/closed → danger.
-  const status: { label: string; tone: BadgeTone } = isDraft
-    ? { label: 'Draft', tone: 'neutral' }
+  // The operator's saved hero height, when they have set one on THIS Circle, wins over the header
+  // element default resolved in round 2 above. Null-unless-chosen is the whole point: a host who
+  // picks "Standard" on a Circle whose element says "Tall" must see the height change, so an
+  // explicit choice is stored and only an unset key defers to the element (lib/circles/hero.ts).
+  const savedHeroHeight = hasCircleHeroHeight(theme) ? readCircleHeroHeight(theme) : undefined
+
+  // Header status pill: draft → muted, forming → green, active → blue, full/closed → red.
+  const statusPill = isDraft
+    ? { label: 'Draft', cls: 'bg-surface-elevated text-subtle' }
     : full
-      ? { label: 'Full', tone: 'danger' }
+      ? { label: 'Full', cls: 'bg-danger-bg text-danger' }
       : circle.status === 'forming'
-        ? { label: 'Forming', tone: 'success' }
+        ? { label: 'Forming', cls: 'bg-success-bg text-success' }
         : circle.status === 'active'
-          ? { label: 'Active', tone: 'primary' }
-          : { label: circle.status === 'archived' ? 'Closed' : 'Inactive', tone: 'danger' }
+          ? { label: 'Active', cls: 'bg-info-bg text-info' }
+          : { label: circle.status === 'archived' ? 'Closed' : 'Inactive', cls: 'bg-danger-bg text-danger' }
 
   const typeLabel = String(circle.type)
     .split(/[-_\s]+/)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ')
-
-  const place = [circle.neighborhood, circle.city].filter(Boolean).join(', ')
 
   // Which tabs this Circle has earned. Pure + unit-tested in lib/circles/tabs.ts.
   const tabs = circleTabs({
@@ -227,86 +239,153 @@ export default async function CircleDetailLayout({
       )}
 
       <DetailTemplate
-        coverImage={circle.image_url ?? null}
-        // The three operator cover controls, restored (see the block at the top of this file). They
-        // route the standard cover through PageHero `minimal` inside the template, with its heading
-        // suppressed so this page still ships exactly one h1 — the one the band below owns.
-        coverFocus={readCircleCoverFocus(theme)}
-        coverSize={hasCircleHeroHeight(theme) ? readCircleHeroHeight(theme) : undefined}
-        coverOverlayStyle={circleHeroOverlayStyle(theme)}
+        back={{ href: '/circles', label: 'Circles' }}
         title={circle.name}
-        badges={
-          <>
-            <Badge tone={status.tone}>{status.label}</Badge>
-            <Badge tone="signal">{typeLabel}</Badge>
-            {nearCap && !full && <Badge tone="warning">Almost full</Badge>}
-          </>
+        hero={
+          <PageHero
+            variant={header.layout}
+            size={savedHeroHeight ?? header.height}
+            // The operator's own None / Shade / Blend choice, added to the Circle admin rail on
+            // 2026-08-12. It is TOTAL — an untuned Circle reads 'shade', the treatment that stays
+            // legible on any photo — so it needs no fallback to the element default and must not
+            // have one, or a deliberate "None" would be overridden by the element.
+            overlayStyle={circleHeroOverlayStyle(theme)}
+            coverImage={circle.image_url}
+            coverFocus={readCircleCoverFocus(theme)}
+            eyebrow="Circle"
+            title={circle.name}
+            subtitle={[circle.neighborhood, circle.city].filter(Boolean).join(', ') || undefined}
+            actions={
+              <>
+                {/* The ONE filled primary, so it lifts off an arbitrary photo. Post for someone
+                    already inside, Join for someone who is not. */}
+                {primary === 'post' && (
+                  <Link
+                    href={`/circles/${circle.slug}#circle-post`}
+                    className="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+                  >
+                    <PenLine className="h-4 w-4" aria-hidden />
+                    Post
+                  </Link>
+                )}
+
+                {primary === 'join' && (
+                  <CrewGateButton
+                    isCrew={isCrew}
+                    label="Join"
+                    buttonClassName="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+                  >
+                    <JoinCircleButton
+                      circleId={circle.id}
+                      circleSlug={circle.slug}
+                      label="Join"
+                      className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+                    />
+                  </CrewGateButton>
+                )}
+
+                {!isMember && myProfileId && full && (
+                  <span className="shrink-0 inline-flex cursor-not-allowed items-center justify-center rounded-lg border border-on-ink/40 bg-on-ink/10 px-3 py-1.5 text-body-sm font-semibold text-on-ink/70 backdrop-blur-sm">
+                    Full
+                  </span>
+                )}
+
+                {/* ADMIN ONLY, beside the primary (owner ruling 2026-08-13). Gated on the same
+                    `circle.editSettings` the admin rail's circle modules use, so a member never
+                    sees them. The host menu rides along: it is the third host affordance and it
+                    belongs with the other two, not on its own row. */}
+                {canManage && (
+                  <>
+                    <OpenAdminBarButton
+                      scope={{ kind: 'circle', id: circle.id }}
+                      caps={Array.from(caps)}
+                      label="Edit"
+                      icon={<Settings className="h-4 w-4" />}
+                      className={HERO_ACTION_CLASS}
+                    />
+                    <Link href={`/circles/${circle.slug}/manage`} className={HERO_ACTION_CLASS}>
+                      <LayoutDashboard className="h-4 w-4" aria-hidden />
+                      Manage
+                    </Link>
+                    <CircleHostMenu circleId={circle.id} />
+                  </>
+                )}
+
+                {/* Leaving is only possible from here, so it cannot move to the admin rail with the
+                    host tools. A host does not get it: they hand the Circle over (ADR-845) rather
+                    than walking out of it. */}
+                {isMember && !isHost && (
+                  <form action={leaveCircle.bind(null, circle.id)}>
+                    <button type="submit" className={HERO_ACTION_CLASS}>
+                      Leave
+                    </button>
+                  </form>
+                )}
+              </>
+            }
+          />
         }
-        subtitle={
-          <div className="space-y-0.5">
-            <p>
-              {place && <>{place} · </>}
-              <span className="font-semibold text-text">
-                {circle.member_count} of {circle.member_cap} members
+        band={
+          <div className="min-w-0 space-y-2">
+            {/* Status / mode chips — the rounded-pill chip grammar the event + Journey bands use. */}
+            <span className="inline-flex flex-wrap items-center gap-1.5">
+              <span className={`inline-flex items-center rounded-pill px-2 py-0.5 text-meta font-semibold ${statusPill.cls}`}>
+                {statusPill.label}
               </span>
-            </p>
-            {circle.host && (
-              <p>
-                Hosted by{' '}
-                <Link
-                  href={`/people/${circle.host.handle}`}
-                  className="font-medium text-primary-strong hover:underline"
-                >
-                  {circle.host.display_name}
-                </Link>
-              </p>
-            )}
+              <span className="inline-flex items-center rounded-pill bg-signal-bg px-2 py-0.5 text-meta font-medium text-signal-strong">
+                {typeLabel}
+              </span>
+              {nearCap && !full && (
+                <span className="inline-flex items-center rounded-pill bg-warning-bg px-2 py-0.5 text-meta font-medium text-warning">
+                  Almost full
+                </span>
+              )}
+            </span>
+
             {/* Place-first context: the Hub this circle belongs to. Hubs/Nexuses surface here as the
                 emergent "where this sits", never as primary nav (IA §3a/§4). */}
             {circle.hub && (
-              <p className="flex items-center gap-1.5">
-                <MapPin className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+              <div className="flex items-center gap-1.5 text-body-sm text-subtle">
+                <MapPin className="h-4 w-4 shrink-0" aria-hidden />
                 <span className="truncate">
                   {circle.hub.nexus?.outpost?.name && <>{circle.hub.nexus.outpost.name} · </>}
                   <Link href={`/hubs/${circle.hub.slug}`} className="hover:text-primary-strong hover:underline">
                     {circle.hub.name}
                   </Link>
                 </span>
-              </p>
+              </div>
             )}
+
+            {/* Fact row — the events-header idiom: icon rows, the key fact a step stronger. */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-body-sm text-muted">
+              <span className="flex items-center gap-1.5">
+                <Users className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+                <span className="font-semibold text-text">
+                  {circle.member_count} of {circle.member_cap} members
+                </span>
+              </span>
+              {circle.host && (
+                <span>
+                  Host{' '}
+                  <Link
+                    href={`/people/${circle.host.handle}`}
+                    className="font-medium text-primary-strong hover:underline"
+                  >
+                    {circle.host.display_name}
+                  </Link>
+                </span>
+              )}
+            </div>
+
+            <ProgressTrack
+              value={pct}
+              tone={full ? 'danger' : 'primary'}
+              track="border"
+              animate
+              className="mt-2 max-w-xs"
+              label={`${circle.member_count} of ${circle.member_cap} seats taken`}
+            />
           </div>
-        }
-        actions={
-          <>
-            {primary === 'post' && (
-              <Link href={`/circles/${circle.slug}#circle-post`} className={buttonClasses('primary')}>
-                <PenLine className="h-4 w-4" aria-hidden />
-                Post
-              </Link>
-            )}
-
-            {primary === 'join' && (
-              <CrewGateButton isCrew={isCrew} label="Join Circle" buttonClassName={buttonClasses('primary')}>
-                <JoinCircleButton
-                  circleId={circle.id}
-                  circleSlug={circle.slug}
-                  label="Join Circle"
-                  className={buttonClasses('primary')}
-                />
-              </CrewGateButton>
-            )}
-
-            {/* The one secondary. Leaving is only possible from here, so it cannot move to the
-                admin rail with the host tools. A host does not get it: they hand the Circle over
-                (ADR-845) rather than walking out of it. */}
-            {isMember && !isHost && (
-              <form action={leaveCircle.bind(null, circle.id)}>
-                <button type="submit" className={buttonClasses('secondary')}>
-                  Leave
-                </button>
-              </form>
-            )}
-          </>
         }
         tabs={tabs.length > 0 ? <UnderlineTabs tabs={tabs} label="Circle sections" /> : undefined}
       >
