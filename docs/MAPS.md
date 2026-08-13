@@ -231,6 +231,9 @@ adds only the seam-level `expandable` / `expandLabel`, and `MapImplProps` adds o
 | `expandable` · `expandLabel` | An expand control that reopens the map full screen | ADR-1022 |
 | `pin.moreCount` | How many MORE things this one pin stands for. Turns the spot into a `1+` bubble | ADR-1026 |
 | `pin.approximate` | This pin was coarsened before publishing: it is an area, not an address | ADR-1026 |
+| `pin.detail` | The WHERE row of the popup card, under `subtitle`'s WHEN | ADR-1027 |
+| `pin.badge` | A pill above the title that qualifies the dot ("RSVP for address") | ADR-1027 |
+| `pin.imageUrl` | Header image for the popup card. Filtered to http(s) before it reaches `src` | ADR-1027 |
 
 ### The rule that makes the fallback trustworthy
 
@@ -251,6 +254,7 @@ So **every judgement the two engines could answer differently is imported, not d
 | Whether a bubble opens or zooms | `lib/maps/cluster.ts` | `group.points.length === 1` |
 | What colour a kind paints | `lib/maps/pin-kinds.ts` | `resolvePinPaint()` |
 | Where a withheld address is drawn | `lib/maps/approximate.ts` | `approximatePoint()` |
+| What a pin may SAY about where it is | `lib/maps/pin-copy.ts` | `locationCopy()` |
 
 Both pure modules import **nothing** — no React, no DOM, no map library — so a page may read
 `MAP_PIN_KINDS` to draw its legend without pulling a map engine into its bundle.
@@ -276,6 +280,21 @@ dates into its number would say "12" for what a member would find is three event
 That makes a single-point bubble a real case, and both engines honour the same consequence: **it
 opens that pin's popup instead of zooming.** There is nothing inside to split, so a zoom would step
 in twice and leave the same `1+` sitting there, which reads as a dead control.
+
+### What a pin is allowed to say (ADR-1027)
+
+One rule, one module (`lib/maps/pin-copy.ts`), every layer:
+
+| Precision | The line | The pill |
+| --- | --- | --- |
+| **Exact** | the street address | none |
+| **Approximate** | the **city**, nothing sharper | "RSVP for address" / "Approximate area" |
+
+🔴 **At approximate precision the VENUE NAME is dropped too.** A venue name is often an address in
+disguise ("Royal Temple" is one building in Vista), so coarsening the dot and publishing the name
+beside it is worse than not coarsening at all, because it looks careful. `locationCopy` refuses to
+print a street even when a caller hands it one — the loader already withholds those fields, and this
+is the second line of defence.
 
 ### Coarsened pins (ADR-1026)
 
@@ -319,6 +338,8 @@ The cluster bubble is the one exception, and only because its text is a number w
 | `lib/maps/diagnostics.test.ts` | Dedupe, and that the key never reaches the line |
 | `lib/maps/provider.test.ts` | The provider decision under every key state |
 | `lib/maps/cluster.test.ts` | The clustering BEHAVIOUR both engines render: what merges, what splits, determinism, the shared tap and bubble |
+| `lib/maps/pin-copy.test.ts` | That an approximate line never carries a street OR a venue name, even when handed one |
+| `components/maps/popup-content.test.ts` | That a title cannot become markup, and that the image `src` rejects `javascript:` / `data:` |
 | `lib/maps/approximate.test.ts` | That the coarsening is IRREVERSIBLE (two addresses in a cell give one output), stays inside the radius the copy promises, is stable, and returns null rather than the exact point on bad input |
 | `lib/nearby/map-pins.test.ts` | The Around You loader: every privacy filter, the series fold, and the caller-side half of the coarsening guarantee |
 | `components/maps/maplibre-interop.test.ts` | The only map test that **imports** maplibre-gl |

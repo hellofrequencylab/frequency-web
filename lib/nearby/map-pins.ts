@@ -3,7 +3,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { pointFromGeog } from '@/lib/events/geo'
 import { formatEventDate } from '@/lib/utils'
 import { collapseSeries, SERIES_COLUMNS, SERIES_WIDE_READ } from '@/lib/events/series'
-import { approximatePoint, APPROX_EVENT_NOTE, APPROX_SPACE_NOTE } from '@/lib/maps/approximate'
+import { approximatePoint } from '@/lib/maps/approximate'
+import { locationCopy, moreDatesLine, memberCountLine } from '@/lib/maps/pin-copy'
 import type { MapPin } from '@/components/maps/types'
 
 // THE AROUND YOU MAP'S PINS. One read per request, feeding components/nearby/nearby-map.tsx.
@@ -104,6 +105,9 @@ type EventRow = {
   city: string | null
   geog: unknown
   hide_address: boolean | null
+  street: string | null
+  region: string | null
+  cover_image_path: string | null
   recurrence_type: string | null
   recurrence_until: string | null
   parent_event_id: string | null
@@ -118,6 +122,7 @@ type CircleRow = {
   member_count: number | null
   latitude: number | null
   longitude: number | null
+  image_url: string | null
 }
 
 type SpaceRow = {
@@ -126,11 +131,14 @@ type SpaceRow = {
   name: string | null
   brand_name: string | null
   tagline: string | null
+  street: string | null
   city: string | null
   region: string | null
   latitude: number | null
   longitude: number | null
   location_precision: string | null
+  cover_image_url: string | null
+  brand_logo_url: string | null
 }
 
 /**
@@ -150,11 +158,24 @@ function pinDate(iso: string): string {
   return formatEventDate(iso)
 }
 
-/** "and 8 more dates", or nothing at all for a one-off. Singular is spelled, because "1 more
- *  dates" on the one surface that exists to fix a counting bug would be its own joke. */
-function moreDatesLine(moreCount: number): string | null {
-  if (moreCount <= 0) return null
-  return moreCount === 1 ? 'and 1 more date' : `and ${moreCount} more dates`
+/**
+ * A cover photo's public URL, or null.
+ *
+ * Event covers live in the public `event-media` bucket, the same one the event page reads;
+ * `getPublicUrl` is a local string build, not a round-trip, so this costs nothing per row. Fail-safe
+ * to no image: the popup card then renders without its header band, which is a cosmetic loss and
+ * never a broken card.
+ */
+function eventCoverUrl(
+  admin: ReturnType<typeof createAdminClient>,
+  path: string | null,
+): string | null {
+  if (!path) return null
+  try {
+    return admin.storage.from('event-media').getPublicUrl(path).data?.publicUrl ?? null
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -173,7 +194,7 @@ export const loadNearbyMapPins = cache(async (): Promise<MapPin[]> => {
       admin
         .from('events')
         .select(
-          `id, slug, title, starts_at, location, venue_name, city, geog, hide_address, ${SERIES_COLUMNS}`,
+          `id, slug, title, starts_at, location, venue_name, street, city, region, geog, hide_address, cover_image_path, ${SERIES_COLUMNS}`,
         )
         .eq('status', 'published')
         .eq('visibility', 'public')
@@ -190,7 +211,7 @@ export const loadNearbyMapPins = cache(async (): Promise<MapPin[]> => {
         .limit(EVENT_ROW_CAP),
       admin
         .from('circles')
-        .select('id, slug, name, city, neighborhood, member_count, latitude, longitude')
+        .select('id, slug, name, city, neighborhood, member_count, latitude, longitude, image_url')
         .eq('unlisted', false)
         .in('status', ['forming', 'active'])
         .eq('is_demo', false)
@@ -200,7 +221,7 @@ export const loadNearbyMapPins = cache(async (): Promise<MapPin[]> => {
         .limit(PER_LAYER_CAP),
       admin
         .from('spaces')
-        .select('id, slug, name, brand_name, tagline, city, region, latitude, longitude, location_precision')
+        .select('id, slug, name, brand_name, tagline, street, city, region, latitude, longitude, location_precision, cover_image_url, brand_logo_url')
         .eq('status', 'active')
         // Network-visible only. An `unlisted` Space is reachable by direct link, which makes it
         // visible and NOT discoverable, and a pin is a discovery row (the ADR-1015 distinction).
@@ -249,12 +270,19 @@ export const loadNearbyMapPins = cache(async (): Promise<MapPin[]> => {
       // "+N more" the popup and the map bubble both speak from.
       const moreCount = Math.max(0, (group?.dateCount ?? 1) - 1)
 
-      // A hidden-address event still has a venue NAME worth showing ("Royal Temple"); what it does
-      // not have is a street. `venue_name` and `city` are safe, `location` is the free-text line a
-      // host may well have typed an address into, so it is dropped for a hidden event.
-      const where = hidden
-        ? (row.venue_name ?? row.city ?? null)
-        : (row.venue_name ?? row.location ?? row.city ?? null)
+      // 🔴 EXACT SHOWS THE ADDRESS, APPROXIMATE SHOWS THE CITY AND A PILL. One decision, made in
+      // lib/maps/pin-copy.ts for every layer, so the map cannot say it two ways in one sentence.
+      // Note what is NOT passed at approximate precision: no `venue_name` and no `location`. A venue
+      // name is often an address in disguise ("Royal Temple" is one building in Vista), and
+      // `location` is free text a host may well have typed a street into. Coarsening the dot and
+      // publishing the address beside it would be worse than not coarsening at all, because it
+      // looks careful.
+      const { line: where, badge } = locationCopy(
+        hidden
+          ? { city: row.city, region: row.region }
+          : { venueName: row.venue_name, street: row.street ?? row.location, city: row.city },
+        { approximate: hidden, kind: 'event' },
+      )
 
       pins.push({
         // Prefixed: two layers can hold the same uuid, and the seam keys markers on `id`.
@@ -263,10 +291,12 @@ export const loadNearbyMapPins = cache(async (): Promise<MapPin[]> => {
         lng: point.lng,
         kind: 'event',
         title: row.title,
-        subtitle:
-          [pinDate(row.starts_at), moreDatesLine(moreCount), where, hidden ? APPROX_EVENT_NOTE : null]
-            .filter(Boolean)
-            .join(' · ') || null,
+        // WHEN on one row, WHERE on the next. Joining them is what produced the run-on line the
+        // owner screenshotted, and a card reads them as two different questions anyway.
+        subtitle: [pinDate(row.starts_at), moreDatesLine(moreCount)].filter(Boolean).join(' · ') || null,
+        detail: where,
+        badge,
+        imageUrl: eventCoverUrl(admin, row.cover_image_path),
         href: `/events/${row.slug}`,
         hrefLabel: moreCount > 0 ? 'See the event and its dates' : 'See the event',
         label: row.title,
@@ -279,17 +309,18 @@ export const loadNearbyMapPins = cache(async (): Promise<MapPin[]> => {
 
     for (const c of (circlesRes.data ?? []) as CircleRow[]) {
       if (c.latitude == null || c.longitude == null || !c.slug || !c.name) continue
-      const count = c.member_count ?? 0
-      const where = c.neighborhood ?? c.city ?? null
+      // A Circle's coordinate is a pin its host placed by hand, or the centroid of the city they
+      // typed, so there is no precision question to ask: `circles` carries no street column, and
+      // neighbourhood-or-city is the sharpest thing it could say even if it wanted to.
       pins.push({
         id: `circle:${c.id}`,
         lat: Number(c.latitude),
         lng: Number(c.longitude),
         kind: 'circle',
         title: c.name,
-        subtitle:
-          [`${count} ${count === 1 ? 'member' : 'members'}`, where].filter(Boolean).join(' · ') ||
-          null,
+        subtitle: memberCountLine(c.member_count ?? 0),
+        detail: c.neighborhood ?? c.city ?? null,
+        imageUrl: c.image_url?.trim() || null,
         href: `/circles/${c.slug}`,
         hrefLabel: 'See the circle',
         label: c.name,
@@ -311,17 +342,27 @@ export const loadNearbyMapPins = cache(async (): Promise<MapPin[]> => {
         : { lat: Number(s.latitude), lng: Number(s.longitude) }
       if (!point || !Number.isFinite(point.lat) || !Number.isFinite(point.lng)) continue
 
-      const where = [s.city, s.region].filter(Boolean).join(', ') || null
+      // Same rule as the event layer, from the same module: exact publishes the address, approximate
+      // publishes the city and wears the pill that says so.
+      const { line: where, badge } = locationCopy(
+        approximate
+          ? { city: s.city, region: s.region }
+          : { street: s.street, city: s.city, region: s.region },
+        { approximate, kind: 'space' },
+      )
+
       pins.push({
         id: `space:${s.id}`,
         lat: point.lat,
         lng: point.lng,
         kind: 'space',
         title: name,
-        subtitle:
-          [s.tagline?.trim() || null, where, approximate ? APPROX_SPACE_NOTE : null]
-            .filter(Boolean)
-            .join(' · ') || null,
+        subtitle: s.tagline?.trim() || null,
+        detail: where,
+        badge,
+        // The cover if the Space has one, else the brand logo. A logo on a transparent PNG sits on
+        // the card's own surface token rather than the basemap (see popup-content.ts).
+        imageUrl: s.cover_image_url?.trim() || s.brand_logo_url?.trim() || null,
         href: `/spaces/${s.slug}`,
         hrefLabel: 'See the space',
         label: name,

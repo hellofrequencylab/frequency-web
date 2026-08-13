@@ -23739,3 +23739,83 @@ for rows already in that state, dry-run by default.
 - `APPROX_GRID_DEG` and `APPROX_MAX_ERROR_M` are quoted in three places (the module, the migration
   comment, this ADR). A test asserts their values, so widening the grid makes all three wrong loudly
   rather than quietly.
+
+---
+
+## ADR-1027: A pin opens a card, and precision decides what the card is allowed to say (2026-08-13)
+
+**Status:** accepted · **Owner request, same day as [ADR-1026](DECISIONS.md)** ·
+**Extends** [ADR-901](DECISIONS.md)'s popup contract and [ADR-1026](DECISIONS.md)'s coarsening
+
+### What the owner saw
+
+The `1+` fold shipped and worked. The popup under it did not:
+
+> **Meld - Community Cowork**
+> Wed, Aug 19 · and 7 more dates · Royal Temple - RSVP for Address · Approximate area. The host
+> shares the address when you RSVP.
+
+One run-on line saying "RSVP for the address" **twice**, because the venue NAME the host typed
+already carried the instruction and the map appended its own. Everything the card knew was crushed
+into a single `subtitle` string, joined with `·`, and the more the map learned the worse that line
+got.
+
+### 1 · The rule, stated once, in one module
+
+`lib/maps/pin-copy.ts` is pure and has no imports. Every layer asks it the same question:
+
+| Precision | The line | The pill |
+|---|---|---|
+| **Exact** | the street address (venue, street, city) | none |
+| **Approximate** | the **city**, and nothing sharper | "RSVP for address" / "Approximate area" |
+
+🔴 **At approximate precision the VENUE NAME is dropped, and that is the point rather than an
+oversight.** A venue name is frequently an address in disguise: "Royal Temple" is one building in
+Vista, and a member with a search engine turns that name into a street number in one step. Pairing a
+coarsened *coordinate* with a precise *name* would coarsen the dot and publish the address beside it,
+which is **worse than not coarsening at all, because it looks careful**.
+
+`locationCopy` refuses to print a street even when a caller hands it one. The loader already
+withholds those fields; that is the second line of defence, because one mistake should not be enough.
+
+### 2 · The pin opens a card
+
+`MapPin` gained `detail`, `badge` and `imageUrl`, and `buildPopupContent` renders a real card: cover
+image, pill, title, **when** on one row, **where** on the next, then the way in. Two rows rather than
+one joined sentence, because they answer different questions and the joined version is the bug above.
+
+The pill sits **above** the title. It qualifies the dot the member just tapped, so it has to be read
+before the address underneath rather than discovered after it.
+
+Why it earns the pixels: the map is full width, above the feed, and a pin popup is the **only** place
+a member meets an event on this page. A dot with a title is not enough to decide whether to go.
+
+🔴 **The card is still nodes and `textContent`, never an HTML string.** A title is fully
+attacker-controlled. The one attribute that now takes caller data is the image `src`, so it is
+filtered to http(s) first: `javascript:` and `data:` render **no image** rather than an unchecked one.
+A missing header is a cosmetic loss and the alternative is not.
+
+### 3 · Placing the Royal Temple Circle, and the leak that was one copy-paste away
+
+"Meld Coworking - Royal Temple" had a city and no coordinate. Royal Temple's exact coordinate was
+sitting right there in the Circle's own events, and copying it would have been the obvious move.
+
+**It is a leak by the back door.** Those events all carry `hide_address`, so the map coarsens them on
+purpose. `circles` has no `location_precision` column, so whatever is stored publishes at full
+precision on every surface that reads it — a precise Circle pin beside three coarsened event pins
+hands back exactly the address the hosts withheld. The stored point is therefore the one
+`approximatePoint` produces for the Circle's own id, landing in the same grid cell the events already
+publish. **Net new disclosure: none.**
+
+### Consequences
+
+- Members are **not** on the map, and when they are they will never be exact
+  ([ADR-186](DECISIONS.md)'s cardinal rule stands: a member is described by a coarse band, never a
+  coordinate). `profiles.home_geocell_lat/lng` is already `round(home_lat, 2)`, the same ~1.1 km grain
+  as `lib/maps/approximate.ts`, so that layer will read what exists rather than adding a second model.
+  It must honour `location_band`, `discoverable_by` and `ghost_mode`.
+- `circles` still has no precision column. Today that is sound because a Circle's coordinate is
+  either a hand-placed pin or a city centroid. The moment a Circle can carry a street address, it
+  needs the same `location_precision` treatment `spaces` got.
+- Two rows remain unmappable and neither is a regression: "Mindless Encinitas" needs a real geocode
+  (no geocoder is reachable from the build container), and "Breath Is Life" was published without one.
