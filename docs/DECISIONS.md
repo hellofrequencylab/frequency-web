@@ -23968,10 +23968,16 @@ So the coverage splits by what each half actually needs:
 
 - Lift 6a names three shell routes plus the Space console. **`/nearby` is in none of them** — its
   absence from the plan is a scope gap the credential does not unblock. The row above records it.
-- The **sweep** for already-NULL events is not built. Its shape is settled — a
-  `scripts/backfill-event-coords.mts` modelled on `backfill-circle-coords.mts`, writing through the
-  `set_event_geog` RPC (service-role only) rather than a PATCH, and reusing `stripWithholdingNote`
-  or it reproduces the exact production miss. Not a cron: the two event crons are single-purpose and
-  one runs every 15 minutes, which is incompatible with Nominatim's 1 req/sec policy.
+- The **sweep** is `scripts/backfill-event-coords.mts`, dry-run by default. Measured against
+  production the day it was written: **17 published in-person events with no point, 16 of them
+  series ANCHORS**, all past-dated (so nothing a member can currently reach). The anchor count is
+  the reason it exists — `event-recurrence` copies `geog` into every occurrence it mints, so a NULL
+  anchor keeps minting NULL for as long as it is live.
+  It writes through the `set_event_geog` RPC (service-role only) rather than a PATCH, because
+  `geog` is a PostGIS geography and hand-building WKT in JS is what that RPC exists to prevent. It
+  re-reads each row immediately before writing, since an RPC takes arguments and cannot carry the
+  `geog is null` guard as a filter the way the Circle backfill's PATCH does.
+  Not a cron: the two event crons are single-purpose and one runs **every 15 minutes**, which is
+  incompatible with Nominatim's 1 req/sec policy.
 - No CI guard on geo data quality, deliberately. That belongs in the maintenance sweep, not
   `ci.yml` — a red build for something no pull request can fix is how a gate dies (ADR-970).
