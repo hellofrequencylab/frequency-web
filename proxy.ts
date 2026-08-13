@@ -8,6 +8,7 @@ import {
   encodeFirstTouch,
 } from '@/lib/attribution/first-touch'
 import { isProfileRef } from '@/lib/qr/public-url'
+import { hasPublicTwin } from '@/lib/nav/public-twin'
 import { referralsEnabled } from '@/lib/platform-flags'
 
 // The referral attribution cookie — the referrer's profile id, consumed once at
@@ -162,10 +163,18 @@ export async function proxy(request: NextRequest) {
       pathname !== '/events/new' &&
       !pathname.startsWith('/events/new/') &&
       !/\/manage(\/|$)/.test(pathname))
+  // Member detail routes with a canonical PUBLIC twin under /discover (lib/nav/public-twin.ts).
+  // A share link or QR resolves to the MEMBER url (/circles/<slug>, /practices/<id>, …), so
+  // bouncing an anonymous recipient to /sign-in dead-ends the one growth channel that costs
+  // nothing. Let the request through to the (main) layout, whose signed-out branch resolves the
+  // twin and redirects there. Only the DETAIL route matches: the index pages and every /manage,
+  // /edit and /settings sub-route fall through and stay protected exactly as before.
+  const isTwinRedirectable = hasPublicTwin(pathname)
   const isProtected =
     !isShareableFeed &&
     !isBetaEntry &&
     !isPublicEventView &&
+    !isTwinRedirectable &&
     PROTECTED_PATHS.some((p) => pathname.startsWith(p))
 
   if (!user && isProtected) {
