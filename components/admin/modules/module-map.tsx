@@ -12,6 +12,7 @@ import { CircleEngageModule } from './circle-engage-module'
 import { CirclePracticeModule } from './circle-practice-module'
 import { CircleJourneyRunModule } from './circle-journey-run-module'
 import { CircleInsightsModule } from './circle-insights-module'
+import { CircleMoveModule } from './circle-move-module'
 import { HubSettingsModule } from './hub-settings-module'
 import { HubPeopleModule } from './hub-people-module'
 import { HubLayoutModule } from './hub-layout-module'
@@ -99,6 +100,10 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   // ONE Engage box (ADR-846): the shared challenges + this week's practice, stacked.
   'circle.engage': CircleEngageAndPracticeModule,
   'circle.insights': CircleInsightsModule,
+  // Move this circle (the circle-side half of ADR-843), on the `danger` slot: it is the one circle
+  // control whose effect lands outside the circle, so it sits in the obscured band rather than
+  // inside the Settings box every other in-place edit shares.
+  'circle.transfer': CircleMoveModule,
   'hub.settings': HubSettingsModule,
   'hub.people': HubPeopleModule,
   // hub.layout / nexus.layout / journey.builder are `render: 'link'` since ADR-846 (thin cards whose whole

@@ -12,8 +12,10 @@ import { CircleHostMenu } from '@/components/circles/circle-host-menu'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { circleCapabilities } from '@/lib/circles/detail-access'
 import { isPaidViewer } from '@/lib/core/viewer-hats'
-import { DetailTemplate, PageHero, HERO_ACTION_CLASS } from '@/components/templates'
+import { DetailTemplate, PageHero } from '@/components/templates'
+import { buttonClasses } from '@/components/ui/button'
 import { UnderlineTabs } from '@/components/ui/underline-tabs'
+import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 import { resolveHeaderElement } from '@/lib/elements/header'
 import { loadCircleShell } from '@/lib/circles/store'
 import { circleTabs } from '@/lib/circles/tabs'
@@ -77,33 +79,60 @@ import { circleEventInsider, loadCircleContentFacts } from './tab-facts'
 //                 uppercase "CIRCLE" eyebrow above it. This is the ONLY h1 on the page: the body
 //                 tabs beneath are bodies, not shells (check:headers proves it).
 //   4. SUBTITLE — one quiet on-ink line on the cover: the place.
-//   5. ACTIONS  — bottom-RIGHT on the cover. See the next block, which is the part that changed.
-//   6. BAND     — below the hero: status + mode chips, the Hub line, the fact row, the capacity bar.
-//   7. BACK     — DetailTemplate's `back` slot, above the band. The breadcrumb and the back link
+//   5. BAND     — below the hero, and it is the part that moved. See the next block.
+//   6. BACK     — DetailTemplate's `back` slot, above the band. The breadcrumb and the back link
 //                 coexisted here for a year and the owner reads both as correct; this is not the
 //                 page to relitigate it on.
 //
-// ── EDIT AND MANAGE RIDE WITH THE PRIMARY ACTION (owner ruling, 2026-08-13) ──────────────────────
+// ── THE ACTIONS SIT IN THE BAND, ON THE FACT LINE (owner ruling, 2026-08-13, second pass) ────────
 //
-// The previous version moved every host affordance into the admin rail and left the header with one
-// primary. The owner put two of them back and said where: *"Those are admin only. put them to the
-// right by the post button."* So Edit and Manage are cover actions now, beside Post, not a separate
-// light row down in the band where they used to sit.
+// The cover carries NO buttons. It carries the eyebrow, the title and the place, and nothing else.
 //
-// They are gated on `circle.editSettings` — the SAME capability the admin rail's circle modules
-// use, resolved once by `circleCapabilities` above. A member sees Post and nothing else; a visitor
-// sees Join; nobody who cannot manage the Circle sees either button, so the row does not grow for
-// the twenty-nine people in thirty who could not use it anyway.
+// This moved twice in one night and the second move is the one that stands. First the owner put
+// Edit and Manage back beside Post: *"Those are admin only. put them to the right by the post
+// button."* They landed on the cover, where the primary already was. Then, seeing that:
+// *"Move buttons under header on the same line with forming / in person pills & member count."*
 //
-// The primary keeps its accent fill so it lifts off the photo; Edit, Manage and Leave use the
-// glassy on-ink `HERO_ACTION_CLASS`, which is the kit's one answer to "a secondary button on top of
-// an arbitrary image" and the reason none of them needs a hand-rolled class string.
+// So the band's first line is now: chips + member count + Host on the left, every button on the
+// right. One line, one baseline, and the facts the buttons act on are beside the buttons.
+//
+// 🔴 THE BUTTONS ARE NO LONGER ON A PHOTO, WHICH CHANGES THEIR CLASS. `HERO_ACTION_CLASS` is the
+// kit's glassy on-ink treatment: translucent white over a backdrop blur, legible on an arbitrary
+// image and effectively invisible on the page background. Moving a button off the cover without
+// changing its class is how it disappears. Every button in the band takes `buttonClasses()`.
+//
+// Gating is unchanged: Edit and Manage are `circle.editSettings`, the SAME capability the admin
+// rail's circle modules use, resolved once by `circleCapabilities` above. A member sees Post and
+// nothing else; a visitor sees Join.
 //
 // THE OPERATOR'S THREE COVER CONTROLS are native to this shape and need no special handling: hero
 // HEIGHT, cover FOCAL POINT and the cover SCRIM are PageHero's own props, which is what they were
 // written against. (Between 2026-08-12 and this revert they were briefly routed through
 // DetailTemplate's standard cover path instead. That path keeps its `coverFocus`/`coverSize`/
 // `coverOverlayStyle` props — other Detail pages use them — it is just not what a Circle takes.)
+//
+// ── THE MENU ROW CARRIES "QR & SHARE" AT ITS RIGHT END (owner ruling, 2026-08-13) ────────────────
+//
+// *"Remove QR & Share line. Move QR & Share to menu row aligned right."*
+//
+// QR & Share used to render on its OWN line below the tabs, sitting on the header's hairline rule,
+// put there by the framework's `PageAdminBar asDivider`. That is a whole row of chrome for one
+// control, and it pushed the Circle's content a line further down on every tab.
+//
+// It now shares the tab row: tabs left, share right, one line. The hairline itself STAYS —
+// PageAdminBar still draws it — because the rule under a header is structure; the button on it was
+// the redundancy.
+//
+// 🔴 HOW THE DUPLICATE IS PREVENTED, and why it is not a new mechanism. `circles` came out of
+// `SHAREABLE_PREFIXES` in components/layout/page-admin-bar.tsx. That list is the file's OWN
+// established seam: People and Journeys are already absent from it, and its comment says why in
+// exactly this situation — both "carry their OWN 'QR & Share' control in the header actions, so the
+// divider control would duplicate it." Putting `circles` back without removing the control below
+// would put the same button on the page twice, one line apart.
+//
+// The row renders even when the strip does not. A Circle too small to earn tabs (ADR-089) keeps its
+// share control instead of losing it as a side effect of having no tabs, so the empty `<span />` on
+// the left is load-bearing: it holds the left edge and keeps the control right-aligned.
 //
 // The scrim mapping is NOT written here and must never be: `lib/layout/cover-scrim.ts` holds the
 // one operator-vocabulary → PageHero-prop mapping (none/shade/blend → none/shadow/fade), shared
@@ -255,45 +284,89 @@ export default async function CircleDetailLayout({
             eyebrow="Circle"
             title={circle.name}
             subtitle={[circle.neighborhood, circle.city].filter(Boolean).join(', ') || undefined}
-            actions={
-              <>
-                {/* The ONE filled primary, so it lifts off an arbitrary photo. Post for someone
-                    already inside, Join for someone who is not. */}
+          />
+        }
+        band={
+          <div className="min-w-0 space-y-2">
+            {/* ── THE FACT ROW AND THE ACTIONS, ON ONE LINE (owner ruling, 2026-08-13) ──────────
+                Facts left, buttons right, one baseline. The buttons were on the COVER until this
+                change and the owner moved them down here: *"Move buttons under header on the same
+                line with forming / in person pills & member count."*
+
+                🔴 THEY ARE NO LONGER ON A PHOTO, SO THEY MUST NOT WEAR `HERO_ACTION_CLASS`. That
+                class is the kit's glassy on-ink treatment — translucent white on a backdrop blur —
+                which is legible over an arbitrary image and invisible on the page background. Every
+                button here takes `buttonClasses()` instead, the ordinary surface treatment.
+
+                It stacks on mobile (`flex-col` until `sm`) so a long circle name and four buttons
+                never fight for one narrow line. */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
+                {/* Status / mode chips — the rounded-pill chip grammar the event + Journey bands use. */}
+                <span className="inline-flex flex-wrap items-center gap-1.5">
+                  <span className={`inline-flex items-center rounded-pill px-2 py-0.5 text-meta font-semibold ${statusPill.cls}`}>
+                    {statusPill.label}
+                  </span>
+                  <span className="inline-flex items-center rounded-pill bg-signal-bg px-2 py-0.5 text-meta font-medium text-signal-strong">
+                    {typeLabel}
+                  </span>
+                  {nearCap && !full && (
+                    <span className="inline-flex items-center rounded-pill bg-warning-bg px-2 py-0.5 text-meta font-medium text-warning">
+                      Almost full
+                    </span>
+                  )}
+                </span>
+
+                {/* The fact row, folded onto the same line as the chips: the key fact a step
+                    stronger, the events-header idiom. */}
+                <span className="flex items-center gap-1.5 text-body-sm text-muted">
+                  <Users className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+                  <span className="font-semibold text-text">
+                    {circle.member_count} of {circle.member_cap} members
+                  </span>
+                </span>
+                {circle.host && (
+                  <span className="text-body-sm text-muted">
+                    Host{' '}
+                    <Link
+                      href={`/people/${circle.host.handle}`}
+                      className="font-medium text-primary-strong hover:underline"
+                    >
+                      {circle.host.display_name}
+                    </Link>
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+                {/* The ONE primary. Post for someone already inside, Join for someone who is not. */}
                 {primary === 'post' && (
-                  <Link
-                    href={`/circles/${circle.slug}#circle-post`}
-                    className="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
-                  >
+                  <Link href={`/circles/${circle.slug}#circle-post`} className={buttonClasses('primary')}>
                     <PenLine className="h-4 w-4" aria-hidden />
                     Post
                   </Link>
                 )}
 
                 {primary === 'join' && (
-                  <CrewGateButton
-                    isCrew={isCrew}
-                    label="Join"
-                    buttonClassName="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
-                  >
+                  <CrewGateButton isCrew={isCrew} label="Join" buttonClassName={buttonClasses('primary')}>
                     <JoinCircleButton
                       circleId={circle.id}
                       circleSlug={circle.slug}
                       label="Join"
-                      className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+                      className={buttonClasses('primary')}
                     />
                   </CrewGateButton>
                 )}
 
                 {!isMember && myProfileId && full && (
-                  <span className="shrink-0 inline-flex cursor-not-allowed items-center justify-center rounded-lg border border-on-ink/40 bg-on-ink/10 px-3 py-1.5 text-body-sm font-semibold text-on-ink/70 backdrop-blur-sm">
+                  <span className="inline-flex shrink-0 cursor-not-allowed items-center justify-center rounded-lg border border-border bg-surface-elevated px-3 py-1.5 text-body-sm font-semibold text-subtle">
                     Full
                   </span>
                 )}
 
-                {/* ADMIN ONLY, beside the primary (owner ruling 2026-08-13). Gated on the same
-                    `circle.editSettings` the admin rail's circle modules use, so a member never
-                    sees them. The host menu rides along: it is the third host affordance and it
-                    belongs with the other two, not on its own row. */}
+                {/* ADMIN ONLY, beside the primary. Gated on the same `circle.editSettings` the admin
+                    rail's circle modules use, so a member never sees them. The host menu rides
+                    along: it is the third host affordance and belongs with the other two. */}
                 {canManage && (
                   <>
                     <OpenAdminBarButton
@@ -301,9 +374,9 @@ export default async function CircleDetailLayout({
                       caps={Array.from(caps)}
                       label="Edit"
                       icon={<Settings className="h-4 w-4" />}
-                      className={HERO_ACTION_CLASS}
+                      className={buttonClasses('secondary')}
                     />
-                    <Link href={`/circles/${circle.slug}/manage`} className={HERO_ACTION_CLASS}>
+                    <Link href={`/circles/${circle.slug}/manage`} className={buttonClasses('secondary')}>
                       <LayoutDashboard className="h-4 w-4" aria-hidden />
                       Manage
                     </Link>
@@ -316,31 +389,13 @@ export default async function CircleDetailLayout({
                     than walking out of it. */}
                 {isMember && !isHost && (
                   <form action={leaveCircle.bind(null, circle.id)}>
-                    <button type="submit" className={HERO_ACTION_CLASS}>
+                    <button type="submit" className={buttonClasses('secondary')}>
                       Leave
                     </button>
                   </form>
                 )}
-              </>
-            }
-          />
-        }
-        band={
-          <div className="min-w-0 space-y-2">
-            {/* Status / mode chips — the rounded-pill chip grammar the event + Journey bands use. */}
-            <span className="inline-flex flex-wrap items-center gap-1.5">
-              <span className={`inline-flex items-center rounded-pill px-2 py-0.5 text-meta font-semibold ${statusPill.cls}`}>
-                {statusPill.label}
-              </span>
-              <span className="inline-flex items-center rounded-pill bg-signal-bg px-2 py-0.5 text-meta font-medium text-signal-strong">
-                {typeLabel}
-              </span>
-              {nearCap && !full && (
-                <span className="inline-flex items-center rounded-pill bg-warning-bg px-2 py-0.5 text-meta font-medium text-warning">
-                  Almost full
-                </span>
-              )}
-            </span>
+              </div>
+            </div>
 
             {/* Place-first context: the Hub this circle belongs to. Hubs/Nexuses surface here as the
                 emergent "where this sits", never as primary nav (IA §3a/§4). */}
@@ -356,27 +411,9 @@ export default async function CircleDetailLayout({
               </div>
             )}
 
-            {/* Fact row — the events-header idiom: icon rows, the key fact a step stronger. */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-body-sm text-muted">
-              <span className="flex items-center gap-1.5">
-                <Users className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
-                <span className="font-semibold text-text">
-                  {circle.member_count} of {circle.member_cap} members
-                </span>
-              </span>
-              {circle.host && (
-                <span>
-                  Host{' '}
-                  <Link
-                    href={`/people/${circle.host.handle}`}
-                    className="font-medium text-primary-strong hover:underline"
-                  >
-                    {circle.host.display_name}
-                  </Link>
-                </span>
-              )}
-            </div>
-
+            {/* The fact row used to live HERE, on its own line under the Hub. It folded up into the
+                chip row above on 2026-08-13, because that is the line the owner named for the
+                actions and a member count is what the buttons act on. */}
             <ProgressTrack
               value={pct}
               tone={full ? 'danger' : 'primary'}
@@ -387,7 +424,19 @@ export default async function CircleDetailLayout({
             />
           </div>
         }
-        tabs={tabs.length > 0 ? <UnderlineTabs tabs={tabs} label="Circle sections" /> : undefined}
+        tabs={
+          <div className="flex items-center justify-between gap-4">
+            {tabs.length > 0 ? (
+              <UnderlineTabs tabs={tabs} label="Circle sections" />
+            ) : (
+              // Holds the left edge so the share control stays right-aligned on a strip-less Circle.
+              <span />
+            )}
+            <div className="shrink-0 pb-2">
+              <QrShareDropdown manager={canManage} />
+            </div>
+          </div>
+        }
       >
         {children}
       </DetailTemplate>

@@ -28,10 +28,19 @@ describe('gate parity — surfacesFor(editor) reproduces modulesFor', () => {
     // holder omits them). Insights (order 14, ADR-515 Phase 4) sorts between Place & Time and Page text.
     // Guided (ADR-996) shares the editSettings gate and is order 5, so it LEADS the rail: the redraw
     // is an edit of what Settings holds, and ADR-450 fixes Guided as the rail's first section.
+    // Move this circle (order 20, the circle side of ADR-843) shares the same gate and trails
+    // everything: it sits on `danger`, the obscured band.
     const ids = surfacesFor(APPS, { on: 'scopeKind', kind: 'circle' }, viewer(['circle.editSettings']), 'editor').map(
       (a) => a.id,
     )
-    expect(ids).toEqual(['circle.guided', 'circle.settings', 'circle.placeAndTime', 'circle.insights', 'circle.text'])
+    expect(ids).toEqual([
+      'circle.guided',
+      'circle.settings',
+      'circle.placeAndTime',
+      'circle.insights',
+      'circle.text',
+      'circle.transfer',
+    ])
   })
 
   it('circle non-manager sees no editor modules', () => {
