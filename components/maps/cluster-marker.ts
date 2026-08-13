@@ -17,8 +17,12 @@ import { MAP_CLUSTER_PAINT } from '@/lib/maps/pin-kinds'
 // Colours are CSS custom properties, not resolved values: map DOM sits outside Tailwind, but
 // the variables cascade from :root, so a bubble tracks the active theme for free.
 
-/** A cluster bubble: a filled circle with its count, ringed so it reads against any basemap. */
-export function buildClusterMarker(count: number): HTMLElement {
+/** A cluster bubble: a filled circle with its count, ringed so it reads against any basemap.
+ *
+ *  `plus` is the "and more behind this" flag from lib/maps/cluster.ts, which turns the label into
+ *  `1+` for a repeating event folded to one pin. It only ever reaches the two shared functions
+ *  below, so the fallback engine cannot label a bubble differently from Google. */
+export function buildClusterMarker(count: number, plus = false): HTMLElement {
   const size = clusterDiameterPx(count)
   const el = document.createElement('div')
   el.className = 'frequency-map-cluster'
@@ -40,8 +44,8 @@ export function buildClusterMarker(count: number): HTMLElement {
     'cursor:pointer',
     'user-select:none',
   ].join(';')
-  el.textContent = clusterLabel(count)
-  makeMarkerActivatable(el, clusterAccessibleLabel(count))
+  el.textContent = clusterLabel(count, plus)
+  makeMarkerActivatable(el, clusterAccessibleLabel(count, plus))
   return el
 }
 

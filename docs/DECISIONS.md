@@ -23606,3 +23606,136 @@ accept*.
   stay separate strings on purpose; each names the act it refused.
 - `authorise()` is now the one authority check all three writes in the file share, shaped like the
   Space console's `requireSpaceEditor`: a string back is the refusal, verbatim.
+
+---
+
+## ADR-1026: A withheld address becomes an AREA, a repeating event becomes ONE pin, and a Space finally gets somewhere to put its coordinate (2026-08-13)
+
+**Status:** accepted · **Owner rulings on three questions raised by the Around You audit** ·
+**Amends** [ADR-1022](DECISIONS.md) (the map seam) and the `hide_address` exclusion this repo shipped
+the day before · **Migration** `20270301000000_space_location.sql`
+
+### The measurement that started it
+
+The owner reported that events, Circles and Spaces were missing from `/nearby`. They were. Measured
+in production on 2026-08-13, the map drew **ten pins, nine of which were the same event**:
+
+| layer | rows a member could reach | pins drawn | why |
+|---|---|---|---|
+| Event | 20 rows = **5 distinct gatherings** | 9 | no series fold; `hide_address` excluded 3 of the 5 |
+| Circle | 7 rows, 3 discoverable | 1 | 6 of 7 had no coordinate at all |
+| Space | 20 active | 0 | **no coordinate column existed** |
+
+Three independent faults, one symptom. Each got its own answer.
+
+### 1 · A repeating event is ONE pin, and the spot reads `1+`
+
+Recurrence is materialised ([ADR-007](DECISIONS.md)): an occurrence is a real `events` row and the
+cron keeps a 60-day horizon warm, so a weekly series is about nine rows. Every browse surface in the
+app has collapsed those to one card since [ADR-897](DECISIONS.md) through `lib/events/series.ts`.
+**The map never called it.** One cowork series painted nine identical dots on one street corner and
+everything else in the region sat underneath them.
+
+The loader now folds with `perSeries: 1` and carries the remainder as `MapPin.moreCount`. The owner's
+ruling on how that should read was explicit: **the spot shows `1+`, not `9`**. So `clusterPoints`
+gained a rule that looks odd until you know why it exists:
+
+> **A cluster bubble may hold a count of ONE.** That is not a degenerate case, it is the repeating
+> event. The consequence both engines honour is that a single-point bubble **opens that pin's popup
+> instead of zooming** — there is nothing inside it to split, and a zoom would step in twice and
+> leave the same `1+` sitting there, which reads as a dead control.
+
+The count is always **distinct things**; the `+` carries the hidden dates. A bubble that added the
+dates into its number would say "12" for what a member would find is three events, which is the
+overcount the whole change exists to remove.
+
+Also fixed, and it mattered: a post-query fold spends the query `LIMIT` on rows it discards, so the
+event read now over-fetches to `SERIES_WIDE_READ` and caps **after** folding. Reading 300 rows and
+folding them could have handed the map five gatherings out of a region that had fifty.
+
+### 2 · `hide_address` stops being an exclusion and becomes a PRECISION
+
+Ten of the twenty upcoming rows carried `hide_address`, covering three of the five gatherings. The
+previous day's reasoning ("a pin IS the address") was correct in isolation and wrong in aggregate: it
+left a map of a community showing one event. The owner ruled for an approximate pin.
+
+🔴 **The coarsening is quantisation, not a jitter, and the distinction is the whole privacy claim.**
+The obvious implementation is "offset the point by a pseudo-random amount derived from the row id".
+That is not private and it looks private: the algorithm is in this repo and the row id is in the
+page's own URL, so anyone can recompute the offset and **subtract it**. A deterministic jitter is a
+reversible encoding of the true coordinate, not a redaction of it.
+
+So `lib/maps/approximate.ts` destroys the truth first — snap to a fixed global grid, and only the
+cell survives:
+
+```
+truth ──quantise (lossy)──▶ cell ──jitter (cosmetic)──▶ what the map draws
+```
+
+An attacker who knows everything in the file recovers the **cell** and stops, because nothing
+downstream carries the sub-cell information any more. The cell is ~1.1 km north to south and ~0.9 km
+east to west at this community's latitude: a neighbourhood, not a building. The jitter is applied
+*after* the information is already gone and exists only so pins do not visibly snap to a lattice.
+
+The guard changed shape to match. `lib/nearby/map-pins.test.ts` used to assert
+`.eq('hide_address', false)`. "Coarsened" is a weaker rule than "never drawn", so the test is now a
+property of the **output**: a hidden event's published coordinate is never its real one, and never
+further than `APPROX_MAX_ERROR_M` from it. Both halves fail in opposite directions, so both are
+asserted. Two rows at the same real address must also land on different dots, because identical dots
+would be an equality oracle: "these two withheld events are at the same address" is itself a
+disclosure.
+
+### 3 · Spaces get a location, and the owner chooses how precisely it publishes
+
+`spaces` carried no coordinate of any kind, so the Spaces layer could never draw a pin while the
+map's empty state told every visitor that "Events, Circles and Spaces show up here once they have a
+location". A promise the schema could not keep.
+
+The migration adds the `circles`-shaped set: address parts, `latitude`/`longitude`, a **stored
+generated `geog`** so it can never drift from the pair that feeds it, and `location_precision`
+(`exact` | `approximate`). The owner's ruling was specific: *"a setting for the owner to be able to
+choose exact, or approximate with the option to adjust a pin."*
+
+🔴 **The table stores the TRUE point even when the owner picked `approximate`**, and the tidier
+alternative is a trap. Storing only the coarsened point breaks the owner's other requirement in the
+same breath: adjusting a pin means editing the true location, so the true location has to survive a
+round trip through the editor, or the pin would drift a little further from reality every time the
+form was opened. **The coarsening therefore happens once, on the read path that publishes the pin.**
+Anything that reads `spaces.latitude` and publishes it without consulting `location_precision` is a
+leak, and the migration's column comment says so.
+
+`location_precision` defaults to `exact`, which is the less private value and still correct: the
+coordinate columns start `NULL`, so a Space has no published location until its owner places a pin,
+and placing it is the act of consent. There is no row the default can surprise. `resolvePrecision`
+fails open to `exact` for the same reason, and the test asserts that direction on purpose rather than
+leaving it to look like an oversight.
+
+The layer maps `status='active'` and `visibility='network'` only. `unlisted` is excluded on
+[ADR-1015](DECISIONS.md)'s distinction: an unlisted Space is reachable by direct link, which makes it
+**visible, not discoverable**, and a pin is a discovery row.
+
+### 4 · Circles were not missing a location, they were missing a number
+
+Six of seven Circles had no coordinate. `updateCirclePlaceTime` took lat/lng from a **manual map
+pin** and nothing else, while happily storing the `city` the host typed beside it. A host who filled
+in "Vista" and never noticed the map got a Circle with a place and no point, and therefore no pin on
+`/circles`, no row from the near-me RPC, and no dot on Around You.
+
+The save path now geocodes that city when no pin was placed, through the same keyless Nominatim
+provider the event save path uses. A **fallback, never an override**: a hand-placed pin is better
+data than a centroid, always. A city centroid needs no coarsening either, since it discloses nothing
+beyond the city name the host already published. `scripts/backfill-circle-coords.mts` does the same
+for rows already in that state, dry-run by default.
+
+### Consequences
+
+- **The legend now says some dots are areas.** Each coarsened pin says so in its own popup, but a
+  popup is read by exactly the person who tapped that one dot. `MapPin.approximate` lets a surface
+  that draws a legend keep everyone else honest, in one line under it.
+- The `1+` bubble and the single-point-opens rule are computed in `lib/maps/cluster.ts` and drawn by
+  both engines from the same two functions, so the keyless MapLibre fallback cannot label or behave
+  differently from Google. That parity is [ADR-1022](DECISIONS.md)'s central promise and this change
+  keeps it a property of the code rather than a comment.
+- `APPROX_GRID_DEG` and `APPROX_MAX_ERROR_M` are quoted in three places (the module, the migration
+  comment, this ADR). A test asserts their values, so widening the grid makes all three wrong loudly
+  rather than quietly.

@@ -12,6 +12,8 @@ import { getSpaceReviews, getSpaceFaqs } from '@/lib/spaces/content-data'
 import { SpaceFaqEditor } from '@/components/spaces/space-faq-editor'
 import { SpaceSettingsForm, type SpaceSettingsValues } from '../settings-form'
 import { SpaceInfoConnectForm } from '@/components/spaces/space-business-info-form'
+import { SpaceLocationForm } from '@/components/spaces/space-location-form'
+import { normalizeSpaceLocation, type SpaceLocation } from '@/lib/spaces/location'
 import { ProfileCompletenessCard } from '../profile-completeness-card'
 
 // SPACE BASICS EDITOR — the console's "Basics" section target (ADR-441 EM1-3 hotfix). The unified
@@ -33,6 +35,37 @@ import { ProfileCompletenessCard } from '../profile-completeness-card'
 // yet, ADR-246), so they're read here through the untyped admin client, the same pattern the index uses.
 
 type ExtraRow = { about?: string | null; tagline?: string | null; visibility?: string | null }
+
+/** Read the Space's LOCATION columns (ADR-1026, 20270301000000_space_location.sql).
+ *
+ *  🔴 Reads the TRUE coordinate, and that is correct HERE and nowhere public. This is the editor:
+ *  the owner has to see the pin where they actually put it, or dragging it would be a lie and every
+ *  save would walk it further from the truth. The coarsening that `location_precision = 'approximate'`
+ *  asks for happens on the READ that PUBLISHES the pin (lib/nearby/map-pins.ts), never on the way
+ *  into this form. Fails to an empty location rather than throwing: a settings page must not 500
+ *  because one column read went wrong. */
+async function readSpaceLocation(spaceId: string): Promise<SpaceLocation> {
+  try {
+    const { data } = await createAdminClient()
+      .from('spaces')
+      .select('street, city, region, postal_code, country, latitude, longitude, location_precision')
+      .eq('id', spaceId)
+      .maybeSingle()
+    if (!data) return normalizeSpaceLocation({})
+    return normalizeSpaceLocation({
+      street: data.street,
+      city: data.city,
+      region: data.region,
+      postalCode: data.postal_code,
+      country: data.country,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      precision: data.location_precision,
+    })
+  } catch {
+    return normalizeSpaceLocation({})
+  }
+}
 
 /** Read the not-yet-typed profile columns (about / tagline / visibility) for a Space id. */
 async function readProfileExtras(spaceId: string): Promise<ExtraRow> {
@@ -107,6 +140,7 @@ export default async function SpaceBasicsPage({
   const profileData = readProfileData(space.preferences)
   const reviews = await getSpaceReviews(space.id)
   const faqs = await getSpaceFaqs(space.id)
+  const location = await readSpaceLocation(space.id)
 
   return (
     <FocusTemplate
@@ -159,6 +193,18 @@ export default async function SpaceBasicsPage({
           This page is where the repo had already decided it belongs: block-data-sources.ts:344
           maps the `faq` block to moduleId `space.basics` with the CTA label "Add a question", so
           that empty state has been linking here all along, to an editor that did not exist. */}
+      {/* WHERE YOU ARE (ADR-1026). The Space's address, its pin, and the exact-or-approximate
+          setting that decides what the community map is allowed to publish. It sits here, in
+          Profile and Settings, because it is identity: the same section that owns the contact
+          block the address already half-lived in. Before this, `spaces` carried no coordinate at
+          all, so every one of the 20 active Spaces was unmappable while the Around You map's empty
+          state told visitors that Spaces show up "once they have a location". */}
+      <SpaceLocationForm
+        slug={space.slug}
+        initial={location}
+        readOnly={staffViewing || !canUseProfile}
+      />
+
       <SpaceFaqEditor
         slug={space.slug}
         initialFaqs={faqs}

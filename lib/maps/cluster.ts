@@ -52,12 +52,45 @@ export const CLUSTER_ZOOM_EPSILON = 0.05
  *  the SAME on both engines, since `radiusPx` is interpreted against it. */
 const TILE_PX = 512
 
-export type ClusterPoint = { lat: number; lng: number }
+export type ClusterPoint = {
+  lat: number
+  lng: number
+  /**
+   * How many MORE things this one point already stands for, beyond itself.
+   *
+   * A repeating event is one gathering on many dates. lib/nearby/map-pins.ts folds the series to a
+   * single pin (lib/events/series.ts), so the extra dates no longer exist as points to cluster, but
+   * the member still has to be told they are there. `moreCount` is how a point carries "and there
+   * is more behind me" into the grouping, and it is what turns a bubble's label from `1` into `1+`.
+   *
+   * Zero, null and undefined all mean "this point is exactly one thing".
+   */
+  moreCount?: number | null
+}
 
-/** What a canvas draws: either one pin, or one bubble standing for several. */
+/** Does this point stand for more than itself? One predicate, so the engines and the label agree. */
+function hasMore(point: ClusterPoint): boolean {
+  return typeof point.moreCount === 'number' && point.moreCount > 0
+}
+
+/** What a canvas draws: either one pin, or one bubble standing for several.
+ *
+ *  🔴 A bubble can hold a COUNT OF ONE. That is not a degenerate case to guard against, it is the
+ *  repeating-event case: one event, more dates behind it, drawn as `1+`. The consequence both
+ *  engines must honour is that a single-point bubble opens that point's popup instead of zooming,
+ *  because there is nothing to split and a zoom would just walk the member away from the answer. */
 export type ClusterGroup<T extends ClusterPoint> =
   | { type: 'pin'; lat: number; lng: number; point: T }
-  | { type: 'cluster'; lat: number; lng: number; count: number; points: T[] }
+  | {
+      type: 'cluster'
+      lat: number
+      lng: number
+      /** Distinct points inside. Never the number of DATES; a series counts once. */
+      count: number
+      /** At least one point inside stands for more than itself, so the label takes a `+`. */
+      plus: boolean
+      points: T[]
+    }
 
 /** Project to world pixels at `zoom`. Screen distance, not ground distance, is what decides
  *  whether two pins overlap — two pins 200 m apart collide in a city view and not in a
@@ -95,7 +128,13 @@ export function clusterPoints<T extends ClusterPoint>(
   const maxZoom = options.maxZoom ?? CLUSTER_DEFAULTS.maxZoom
   const z = Number.isFinite(zoom) ? zoom : 0
 
-  const alone = (p: T): ClusterGroup<T> => ({ type: 'pin', lat: p.lat, lng: p.lng, point: p })
+  // ONE point, on its own. A plain pin, unless it stands for more than itself, in which case it is
+  // a bubble of one so the `+` has somewhere to render. This runs on the zoomed-in path too: a
+  // repeating event still has its other dates at street level, so the `+` must survive the zoom.
+  const alone = (p: T): ClusterGroup<T> =>
+    hasMore(p)
+      ? { type: 'cluster', lat: p.lat, lng: p.lng, count: 1, plus: true, points: [p] }
+      : { type: 'pin', lat: p.lat, lng: p.lng, point: p }
   if (points.length === 0) return []
   // Zoomed in far enough, or clustering switched off by a zero radius: one marker per pin.
   if (z >= maxZoom || radiusPx <= 0) return points.map(alone)
@@ -145,7 +184,17 @@ export function clusterPoints<T extends ClusterPoint>(
     const memberPoints = members.map((m) => points[m]!)
     const lat = memberPoints.reduce((sum, p) => sum + p.lat, 0) / memberPoints.length
     const lng = memberPoints.reduce((sum, p) => sum + p.lng, 0) / memberPoints.length
-    out.push({ type: 'cluster', lat, lng, count: memberPoints.length, points: memberPoints })
+    out.push({
+      type: 'cluster',
+      lat,
+      lng,
+      // The count is DISTINCT THINGS, and the `+` carries the rest. A bubble that added the hidden
+      // dates into its number would say "12" for what a member would find is three events, which is
+      // the exact overcount this whole change exists to remove.
+      count: memberPoints.length,
+      plus: memberPoints.some(hasMore),
+      points: memberPoints,
+    })
   }
 
   return out
@@ -163,9 +212,14 @@ export function shouldRecluster(previousZoom: number, nextZoom: number): boolean
   return Math.abs(nextZoom - previousZoom) >= CLUSTER_ZOOM_EPSILON
 }
 
-/** The count printed in the bubble. Capped so a big number cannot outgrow the circle. */
-export function clusterLabel(count: number): string {
-  return count > 99 ? '99+' : String(count)
+/** The count printed in the bubble. Capped so a big number cannot outgrow the circle.
+ *
+ *  `plus` appends the `+` that means "and more behind this". Over 99 the cap already ends in `+`,
+ *  so `99++` is never produced. `1+` is the repeating-event case and reads exactly as the owner
+ *  asked for it (2026-08-13): one event at this spot, more dates behind it. */
+export function clusterLabel(count: number, plus = false): string {
+  if (count > 99) return '99+'
+  return plus ? `${count}+` : String(count)
 }
 
 /** Bubble diameter in CSS pixels, growing with the square root of the count so area, not
@@ -176,7 +230,14 @@ export function clusterDiameterPx(count: number): number {
 }
 
 /** The bubble's accessible name and tooltip. Plain sentences, no em dashes
- *  (docs/CONTENT-VOICE.md). Shared so a screen reader hears the same thing on both engines. */
-export function clusterAccessibleLabel(count: number): string {
+ *  (docs/CONTENT-VOICE.md). Shared so a screen reader hears the same thing on both engines.
+ *
+ *  🔴 THE SINGLE-POINT BUBBLE GETS ITS OWN SENTENCE, and it has to. "1 nearby. Zoom in to see each
+ *  one." is an instruction that does nothing: there is nothing to split, and a zoom would walk the
+ *  member away from the thing they just found. The bubble opens the popup instead, so the label
+ *  says so. */
+export function clusterAccessibleLabel(count: number, plus = false): string {
+  if (count === 1) return 'One place here, on more than one date. Open it to see the dates.'
+  if (plus) return `${count} nearby, some on more than one date. Zoom in to see each one.`
   return `${count} nearby. Zoom in to see each one.`
 }

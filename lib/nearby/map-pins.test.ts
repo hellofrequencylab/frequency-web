@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { APPROX_MAX_ERROR_M, APPROX_GRID_DEG } from '@/lib/maps/approximate'
 
 // THE FILTER RATCHET for the Around You map.
 //
@@ -8,18 +9,26 @@ import { join } from 'node:path'
 // loader is the only thing standing between a private row and a public pin. There is no policy
 // underneath to catch a mistake.
 //
-// It is a SOURCE assertion, deliberately, and for the reason the sibling guard on this page states:
-// a query is wrong the moment it is written, not the moment somebody creates the row that exposes
-// it. The four event filters below were all added to `app/(main)/nearby/page.tsx` AFTER that page
-// shipped leaking drafts, circle-only events and moderator takedowns, and the only reason it read
-// clean was that the bad rows happened to be in the past.
+// It is a SOURCE assertion in its first half, deliberately, and for the reason the sibling guard on
+// this page states: a query is wrong the moment it is written, not the moment somebody creates the
+// row that exposes it. The event filters below were all added AFTER the page shipped leaking
+// drafts, circle-only events and moderator takedowns, and the only reason it read clean was that
+// the bad rows happened to be in the past.
 //
-// 🔴 THE ONE THAT IS NEW HERE, AND THE WORST ONE IF IT GOES. `hide_address`. A host can publish an
-// event publicly and still withhold WHERE it is. Measured in production 2026-08-13: 10 of the 19
-// otherwise-mappable upcoming events have it set. The LIST beside this map shows those events and
-// is right to, because the title and the time are public. But a pin IS the address. Losing this
-// filter would drop ten deliberately-withheld locations onto a public map, and nothing else in the
-// stack would stop it.
+// ── 🔴 WHAT CHANGED ON 2026-08-13, AND WHY THE HARDEST TEST IN HERE IS NEW ─────────────────────
+//
+// `hide_address` used to be an EXCLUSION, and this file used to assert `.eq('hide_address', false)`.
+// On the owner's call it became a PRECISION: those events are drawn, coarsened. That is a weaker
+// rule than "never drawn", so the guard has to be correspondingly stronger, and a `toContain` on a
+// query fragment cannot express it at all. The new guarantee is a property of the OUTPUT:
+//
+//   a hidden-address event's published coordinate is never its real one, and is never further
+//   than APPROX_MAX_ERROR_M from it
+//
+// Both halves matter and they fail in opposite directions. Drop the first and the coarsening has
+// silently become a no-op that publishes the address. Drop the second and a "privacy" change could
+// scatter pins into the next county and nothing would notice. The same pair guards Spaces whose
+// owner chose `approximate`.
 const SRC = readFileSync(join(process.cwd(), 'lib/nearby/map-pins.ts'), 'utf8')
 
 describe('the map filters events on every axis the table carries', () => {
@@ -28,7 +37,6 @@ describe('the map filters events on every axis the table carries', () => {
     [`.eq('visibility', 'public')`, 'circle_only and unlisted events are not discovery rows'],
     [`.is('removed_at', null)`, 'a moderator takedown stays taken down'],
     [`.eq('is_cancelled', false)`, 'a cancelled gathering is not somewhere to turn up'],
-    [`.eq('hide_address', false)`, 'a pin IS the address, and this host withheld it'],
   ]
 
   for (const [fragment, why] of REQUIRED) {
@@ -49,6 +57,14 @@ describe('the map filters events on every axis the table carries', () => {
     expect(SRC.split(`.eq('is_demo', false)`).length - 1).toBeGreaterThanOrEqual(2)
   })
 
+  it('SELECTS hide_address, because the pin now depends on it', () => {
+    // It stopped being a filter and became an input. A SELECT that drops it would hand every row
+    // `hide_address: undefined`, the `=== true` test would fail open, and every withheld address
+    // would publish at full precision. This is the cheapest possible tripwire for that.
+    expect(SRC).toContain('hide_address')
+    expect(SRC).toContain('row.hide_address === true')
+  })
+
   it('renders a pin date through the shared formatter, which pins timeZone UTC', () => {
     // 🔴 `starts_at` holds the host's wall-clock kept as UTC PARTS (lib/time/zone.ts), so a bare
     // toLocaleDateString resolves in the RUNTIME's zone and flips the day for any stored hour under
@@ -57,6 +73,21 @@ describe('the map filters events on every axis the table carries', () => {
     // in lib/utils.ts). A pin's date must agree with the card beside it.
     expect(SRC).toContain('formatEventDate')
     expect(SRC).not.toMatch(/toLocaleDateString\(/)
+  })
+
+  it('carries SERIES_COLUMNS into the select, without which the fold is a silent no-op', () => {
+    // lib/events/series.ts names this as the single most likely way the fold ships half-working:
+    // collapseSeries reads recurrence_type and parent_event_id, and a SELECT that omits them makes
+    // every row its own series again. That is the exact bug this map shipped with.
+    expect(SRC).toContain('${SERIES_COLUMNS}')
+    expect(SRC).toContain('collapseSeries')
+  })
+
+  it('over-fetches events, because the fold spends the LIMIT on rows it discards', () => {
+    // Reading only the display cap and folding afterwards would hand the map a handful of
+    // gatherings out of a region that has many: one daily series can eat 61 rows of the budget.
+    expect(SRC).toContain('EVENT_ROW_CAP')
+    expect(SRC).toContain('SERIES_WIDE_READ')
   })
 })
 
@@ -84,6 +115,24 @@ describe('the map respects both Circle privacy axes (ADR-1015)', () => {
   })
 })
 
+describe('the Space layer draws the discoverable set only (ADR-1026)', () => {
+  it('maps only ACTIVE spaces', () => {
+    expect(SRC).toContain(`.eq('status', 'active')`)
+  })
+
+  it('maps only NETWORK-visible spaces, never private and never unlisted', () => {
+    // The same distinction ADR-1015 draws for Circles: an unlisted Space is reachable by direct
+    // link, which makes it visible and NOT discoverable, and a pin is a discovery row. Asserting
+    // the exact predicate rather than "some visibility filter" is what stops a later widening to
+    // `.in('visibility', ['network','unlisted'])` from passing.
+    expect(SRC).toContain(`.eq('visibility', 'network')`)
+  })
+
+  it('consults location_precision before publishing a coordinate', () => {
+    expect(SRC).toContain(`s.location_precision === 'approximate'`)
+  })
+})
+
 describe('the loader cannot take the page down', () => {
   it('returns an empty array rather than throwing', () => {
     // A map is an enhancement on this page. Every failure path has to end in no pins, never a 500.
@@ -96,9 +145,10 @@ describe('the loader cannot take the page down', () => {
     expect(SRC).toContain('.limit(PER_LAYER_CAP)')
   })
 
-  it('prefixes pin ids by layer, because two tables can hold the same uuid', () => {
+  it('prefixes pin ids by layer, because three tables can hold the same uuid', () => {
     expect(SRC).toContain('`event:${')
     expect(SRC).toContain('`circle:${')
+    expect(SRC).toContain('`space:${')
   })
 })
 
@@ -165,9 +215,22 @@ const FUTURE = new Date(Date.now() + 7 * 864e5).toISOString()
 const PAST = new Date(Date.now() - 7 * 864e5).toISOString()
 /** A real PostGIS EWKB hex POINT at 34.27, -119.29 — the shape PostgREST actually returns. */
 const GEOG = '0101000020E6100000C3F5285C8FD25DC0C3F5285C8F224140'
+const TRUE_LAT = 34.27
+const TRUE_LNG = -119.29
 
-/** A published, public, upcoming, geocoded, address-visible, non-demo event: the one shape that
- *  earns a pin. Every test below spoils exactly one field of it. */
+/** Great-circle metres between two points. The coarsening's promise is a DISTANCE, so the test has
+ *  to measure one; comparing degrees would quietly pass a longitude bug at any latitude. */
+function metresBetween(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const R = 6371008.8
+  const rad = (d: number) => (d * Math.PI) / 180
+  const dLat = rad(bLat - aLat)
+  const dLng = rad(bLng - aLng)
+  const h =
+    Math.sin(dLat / 2) ** 2 + Math.cos(rad(aLat)) * Math.cos(rad(bLat)) * Math.sin(dLng / 2) ** 2
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)))
+}
+
+/** A published, public, upcoming, geocoded, address-visible, non-demo event: the plain shape. */
 const okEvent = (over: Row = {}): Row => ({
   id: 'e-1',
   slug: 'sunrise-swim',
@@ -183,6 +246,9 @@ const okEvent = (over: Row = {}): Row => ({
   is_cancelled: false,
   hide_address: false,
   is_demo: false,
+  recurrence_type: 'none',
+  recurrence_until: null,
+  parent_event_id: null,
   ...over,
 })
 
@@ -202,13 +268,30 @@ const okCircle = (over: Row = {}): Row => ({
   ...over,
 })
 
-function withRows(events: Row[], circles: Row[]) {
-  client.current = stubClient({ events, circles })
+/** An active, network-visible Space that placed an exact pin. */
+const okSpace = (over: Row = {}): Row => ({
+  id: 's-1',
+  slug: 'royal-temple',
+  name: 'Royal Temple',
+  brand_name: null,
+  tagline: 'A room for the work',
+  city: 'Vista',
+  region: 'CA',
+  latitude: 33.2,
+  longitude: -117.24,
+  location_precision: 'exact',
+  status: 'active',
+  visibility: 'network',
+  ...over,
+})
+
+function withRows(events: Row[], circles: Row[], spaces: Row[] = []) {
+  client.current = stubClient({ events, circles, spaces })
 }
 
-beforeEach(() => withRows([], []))
+beforeEach(() => withRows([], [], []))
 
-describe('events: exactly one shape earns a pin', () => {
+describe('events: the shape that earns a pin', () => {
   it('the good row becomes one layer-prefixed event pin', async () => {
     withRows([okEvent()], [])
     const pins = await loadNearbyMapPins()
@@ -219,9 +302,11 @@ describe('events: exactly one shape earns a pin', () => {
       title: 'Sunrise Swim',
       href: '/events/sunrise-swim',
     })
-    expect(pins[0].lat).toBeCloseTo(34.27, 6)
-    expect(pins[0].lng).toBeCloseTo(-119.29, 6)
+    expect(pins[0].lat).toBeCloseTo(TRUE_LAT, 6)
+    expect(pins[0].lng).toBeCloseTo(TRUE_LNG, 6)
     expect(pins[0].subtitle).toContain('Surfers Point')
+    // A one-off stands for nothing but itself, so it draws as a plain pin and not a `1+` bubble.
+    expect(pins[0].moreCount).toBe(0)
   })
 
   const SPOILED: [why: string, over: Row][] = [
@@ -231,7 +316,6 @@ describe('events: exactly one shape earns a pin', () => {
     ['a moderator-REMOVED event', { removed_at: PAST }],
     ['a CANCELLED event', { is_cancelled: true }],
     ['a PAST event', { starts_at: PAST }],
-    ['an event whose host HID the address', { hide_address: true }],
     ['a DEMO event', { is_demo: true }],
     ['an event that was never geocoded', { geog: null }],
   ]
@@ -242,6 +326,126 @@ describe('events: exactly one shape earns a pin', () => {
       expect(await loadNearbyMapPins()).toEqual([])
     })
   }
+})
+
+// ───────────────────────────────────────────────────────────────────────────────────────────────
+// 🔴 THE COARSENING. The most important block in this file.
+// ───────────────────────────────────────────────────────────────────────────────────────────────
+
+describe('a host who hid the address gets an area, never the address', () => {
+  it('still earns a pin, which is the whole point of the 2026-08-13 change', async () => {
+    // Before it, 3 of the community's 5 gatherings were excluded and the map showed one event.
+    withRows([okEvent({ hide_address: true })], [])
+    expect(await loadNearbyMapPins()).toHaveLength(1)
+  })
+
+  it('🔴 NEVER publishes the real coordinate', async () => {
+    withRows([okEvent({ hide_address: true })], [])
+    const pin = (await loadNearbyMapPins())[0]
+    expect(pin.lat).not.toBeCloseTo(TRUE_LAT, 4)
+    expect(pin.lng).not.toBeCloseTo(TRUE_LNG, 4)
+  })
+
+  it('🔴 stays inside the radius the copy promises', async () => {
+    withRows([okEvent({ hide_address: true })], [])
+    const pin = (await loadNearbyMapPins())[0]
+    expect(metresBetween(TRUE_LAT, TRUE_LNG, pin.lat, pin.lng)).toBeLessThanOrEqual(APPROX_MAX_ERROR_M)
+  })
+
+  it('🔴 two events at the SAME real address land on different dots', async () => {
+    // Otherwise the coarsening is a public equality oracle: "these two withheld events are at the
+    // identical address" is itself a disclosure, and a lattice of identical dots would announce it.
+    withRows(
+      [okEvent({ id: 'e-1', slug: 'a', hide_address: true }), okEvent({ id: 'e-2', slug: 'b', hide_address: true })],
+      [],
+    )
+    const [a, b] = await loadNearbyMapPins()
+    expect(a.lat === b.lat && a.lng === b.lng).toBe(false)
+  })
+
+  it('is stable across reads, so the pin does not wander between page loads', async () => {
+    withRows([okEvent({ hide_address: true })], [])
+    const first = (await loadNearbyMapPins())[0]
+    withRows([okEvent({ hide_address: true })], [])
+    const second = (await loadNearbyMapPins())[0]
+    expect(second.lat).toBe(first.lat)
+    expect(second.lng).toBe(first.lng)
+  })
+
+  it('says so in the popup, rather than letting the member trust a precise-looking dot', async () => {
+    withRows([okEvent({ hide_address: true })], [])
+    expect((await loadNearbyMapPins())[0].subtitle).toContain('Approximate area')
+  })
+
+  it('drops the free-text location line, which is where a street usually gets typed', async () => {
+    withRows([okEvent({ hide_address: true, location: '1234 Real Street, Vista CA' })], [])
+    const pin = (await loadNearbyMapPins())[0]
+    expect(pin.subtitle ?? '').not.toContain('Real Street')
+    // The venue NAME is still public face and still shown; it is the street that is withheld.
+    expect(pin.subtitle).toContain('Surfers Point')
+  })
+})
+
+// ───────────────────────────────────────────────────────────────────────────────────────────────
+// THE SERIES FOLD. The bug the owner reported: nine pins for one event.
+// ───────────────────────────────────────────────────────────────────────────────────────────────
+
+describe('a repeating event is ONE pin, not one per date', () => {
+  /** An anchor plus `n - 1` materialised occurrences, exactly as ADR-007 stores them. */
+  const series = (n: number): Row[] =>
+    Array.from({ length: n }, (_, i) =>
+      okEvent({
+        id: i === 0 ? 'anchor' : `occ-${i}`,
+        slug: i === 0 ? 'cowork' : `cowork-${i}`,
+        title: 'Meld Community Cowork',
+        starts_at: new Date(Date.now() + (i + 1) * 7 * 864e5).toISOString(),
+        recurrence_type: 'weekly',
+        parent_event_id: i === 0 ? null : 'anchor',
+      }),
+    )
+
+  it('nine occurrences of one series draw exactly one pin', async () => {
+    withRows(series(9), [])
+    const pins = await loadNearbyMapPins()
+    expect(pins).toHaveLength(1)
+  })
+
+  it('the pin elected is the NEXT date, not the anchor and not the last', async () => {
+    withRows(series(9), [])
+    expect((await loadNearbyMapPins())[0].id).toBe('event:anchor')
+  })
+
+  it('🔴 survives the anchor ageing out, which is how established series disappear', async () => {
+    // Browse filters starts_at >= now, so a long-running series' anchor row is simply not in the
+    // result set any more. A fold that elected "the anchor" would delete every established series
+    // from this map. lib/events/series.ts elects the earliest row PRESENT for exactly this reason.
+    const withoutAnchor = series(9).slice(1)
+    withRows(withoutAnchor, [])
+    const pins = await loadNearbyMapPins()
+    expect(pins).toHaveLength(1)
+    expect(pins[0].id).toBe('event:occ-1')
+  })
+
+  it('carries the other dates as moreCount, which is what makes the bubble read 1+', async () => {
+    withRows(series(9), [])
+    expect((await loadNearbyMapPins())[0].moreCount).toBe(8)
+  })
+
+  it('says how many more dates there are, in words, in the popup', async () => {
+    withRows(series(9), [])
+    expect((await loadNearbyMapPins())[0].subtitle).toContain('and 8 more dates')
+  })
+
+  it('spells the singular, on the one surface built to fix a counting bug', async () => {
+    withRows(series(2), [])
+    expect((await loadNearbyMapPins())[0].subtitle).toContain('and 1 more date')
+  })
+
+  it('two different series stay two pins', async () => {
+    const other = okEvent({ id: 'other', slug: 'other', title: 'Breathwork', recurrence_type: 'weekly' })
+    withRows([...series(9), other], [])
+    expect(await loadNearbyMapPins()).toHaveLength(2)
+  })
 })
 
 describe('circles: the listed set, and only the listed set', () => {
@@ -287,11 +491,83 @@ describe('circles: the listed set, and only the listed set', () => {
   })
 })
 
+describe('spaces: a layer that could not exist before ADR-1026', () => {
+  it('an active, network-visible, placed Space becomes one pin', async () => {
+    withRows([], [], [okSpace()])
+    const pins = await loadNearbyMapPins()
+    expect(pins).toHaveLength(1)
+    expect(pins[0]).toMatchObject({
+      id: 'space:s-1',
+      kind: 'space',
+      title: 'Royal Temple',
+      href: '/spaces/royal-temple',
+    })
+    expect(pins[0].lat).toBeCloseTo(33.2, 6)
+    expect(pins[0].subtitle).toContain('Vista, CA')
+  })
+
+  it('prefers the brand name, which is what the Space calls itself in public', async () => {
+    withRows([], [], [okSpace({ brand_name: 'RAPID Cold Plunge' })])
+    expect((await loadNearbyMapPins())[0].title).toBe('RAPID Cold Plunge')
+  })
+
+  const SPOILED: [why: string, over: Row][] = [
+    ['a PRIVATE space', { visibility: 'private' }],
+    ['an UNLISTED space (direct link only)', { visibility: 'unlisted' }],
+    ['a space that is not active', { status: 'suspended' }],
+    ['a space that never placed a pin', { latitude: null, longitude: null }],
+  ]
+
+  for (const [why, over] of SPOILED) {
+    it(`${why} produces NO pin`, async () => {
+      withRows([], [], [okSpace(over)])
+      expect(await loadNearbyMapPins()).toEqual([])
+    })
+  }
+
+  describe('the owner picked approximate', () => {
+    it('🔴 never publishes the real coordinate', async () => {
+      withRows([], [], [okSpace({ location_precision: 'approximate' })])
+      const pin = (await loadNearbyMapPins())[0]
+      expect(pin.lat).not.toBeCloseTo(33.2, 4)
+      expect(pin.lng).not.toBeCloseTo(-117.24, 4)
+    })
+
+    it('🔴 stays inside the radius the copy promises', async () => {
+      withRows([], [], [okSpace({ location_precision: 'approximate' })])
+      const pin = (await loadNearbyMapPins())[0]
+      expect(metresBetween(33.2, -117.24, pin.lat, pin.lng)).toBeLessThanOrEqual(APPROX_MAX_ERROR_M)
+    })
+
+    it('says so in the popup', async () => {
+      withRows([], [], [okSpace({ location_precision: 'approximate' })])
+      expect((await loadNearbyMapPins())[0].subtitle).toContain('Approximate area')
+    })
+
+    it('an EXACT space is left exactly where its owner put it', async () => {
+      withRows([], [], [okSpace()])
+      const pin = (await loadNearbyMapPins())[0]
+      expect(pin.lat).toBeCloseTo(33.2, 9)
+      expect(pin.lng).toBeCloseTo(-117.24, 9)
+      expect(pin.subtitle ?? '').not.toContain('Approximate')
+    })
+
+    it('🔴 an unrecognised precision value is treated as EXACT, and that is checked on purpose', async () => {
+      // Fail-safe direction matters. This one fails OPEN, deliberately: the coarsening is opt-in,
+      // and a typo that silently coarsened every Space would make the map wrong everywhere without
+      // anyone noticing. The column has a CHECK constraint, so only a schema change can produce a
+      // third value, and this test is what makes that change loud rather than silent.
+      withRows([], [], [okSpace({ location_precision: 'fuzzy' })])
+      expect((await loadNearbyMapPins())[0].lat).toBeCloseTo(33.2, 9)
+    })
+  })
+})
+
 describe('the whole payload', () => {
-  it('gives the same uuid in two tables two distinct pin ids', async () => {
-    withRows([okEvent({ id: 'same' })], [okCircle({ id: 'same' })])
+  it('gives the same uuid in three tables three distinct pin ids', async () => {
+    withRows([okEvent({ id: 'same' })], [okCircle({ id: 'same' })], [okSpace({ id: 'same' })])
     const ids = (await loadNearbyMapPins()).map((p) => p.id).sort()
-    expect(ids).toEqual(['circle:same', 'event:same'])
+    expect(ids).toEqual(['circle:same', 'event:same', 'space:same'])
   })
 
   it('keeps the SOONEST events and the LARGEST circles when a layer overflows its cap', async () => {
@@ -322,10 +598,20 @@ describe('the whole payload', () => {
   })
 
   it('emits no em dashes in any member-visible string (docs/CONTENT-VOICE.md)', async () => {
-    withRows([okEvent()], [okCircle()])
+    withRows([okEvent({ hide_address: true })], [okCircle()], [okSpace({ location_precision: 'approximate' })])
     const pins = await loadNearbyMapPins()
+    expect(pins).toHaveLength(3)
     for (const p of pins) {
       for (const s of [p.title, p.subtitle, p.hrefLabel, p.label]) expect(s ?? '').not.toContain('—')
     }
+  })
+})
+
+describe('the coarsening grid is the number the docs quote', () => {
+  it('a ~1 km cell, so the published area is a neighbourhood and not a building', () => {
+    // Quoted in lib/maps/approximate.ts, in the migration comment, and in the ADR. If someone
+    // widens or narrows it, all three become wrong at once and this is the test that says so.
+    expect(APPROX_GRID_DEG).toBe(0.01)
+    expect(APPROX_MAX_ERROR_M).toBe(1250)
   })
 })

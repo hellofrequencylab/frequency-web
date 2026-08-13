@@ -23,6 +23,7 @@ import {
   MAX_PROFILE_PAGES,
 } from '@/lib/spaces/profile-pages'
 import { withProfileData, type ProfileDataPatch, type SpaceOffering } from '@/lib/spaces/profile-data'
+import { normalizeSpaceLocation } from '@/lib/spaces/location'
 import {
   withLayoutPreset,
   withSpaceLayoutDefault,
@@ -722,5 +723,54 @@ export async function deleteSpacePage(slug: string, pageSlug: string): Promise<A
     return fail('Could not delete the page. Try again.')
   }
   revalidateNav(slug)
+  return ok()
+}
+
+/**
+ * Save WHERE THE SPACE IS, and how precisely it may be published (ADR-1026).
+ *
+ * Unlike almost every other write in this file, this one touches real COLUMNS rather than a node in
+ * the `preferences` blob, because `spaces.geog` is a generated PostGIS point over latitude/longitude
+ * and a jsonb key cannot carry a GiST index. Same gate as the rest: the space is re-resolved from the
+ * slug and `caps.canEditProfile` is re-checked server-side, so a non-editor can never place a pin on
+ * somebody else's Space and staff preview fails closed.
+ *
+ * 🔴 THE TRUE COORDINATE IS WHAT GETS STORED, EVEN WHEN THE OWNER PICKED 'approximate'. Storing only
+ * the coarsened point would be the tidier-looking choice and it breaks the feature: the owner asked
+ * to be able to ADJUST the pin, and a pin that re-coarsened itself on every save would drift a little
+ * further from the truth each time it was opened. The coarsening therefore happens once, on the READ
+ * path that publishes the pin (lib/nearby/map-pins.ts, via lib/maps/approximate.ts). Anything else
+ * that reads these columns and publishes them owes the same duty.
+ *
+ * Clearing the pin (both coordinates null) is how a Space comes OFF the map, and the address fields
+ * survive it: the Contact card still wants a street even when the venue does not want a dot.
+ */
+export async function setSpaceLocation(slug: string, input: unknown): Promise<ActionResult> {
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  const location = normalizeSpaceLocation(input)
+
+  const { error } = await createAdminClient()
+    .from('spaces')
+    .update({
+      street: location.street,
+      city: location.city,
+      region: location.region,
+      postal_code: location.postalCode,
+      country: location.country,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      location_precision: location.precision,
+    })
+    .eq('id', auth.spaceId)
+
+  if (error) return fail('Could not save your location. Try again.')
+
+  // The pin feeds the Around You map, and the address feeds every public profile route's Contact
+  // card, so both the community surface and the whole space layout have to be refreshed.
+  revalidatePath(`/spaces/${slug}`, 'layout')
+  revalidatePath(`/spaces/${slug}/settings/basics`)
+  revalidatePath('/nearby')
   return ok()
 }

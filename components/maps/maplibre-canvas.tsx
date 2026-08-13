@@ -229,10 +229,30 @@ export default function MapLibreCanvas({
       }
     }
 
-    const addCluster = (lat: number, lng: number, count: number) => {
-      const el = buildClusterMarker(count)
+    const addCluster = (lat: number, lng: number, count: number, plus: boolean, only: MapPin | null) => {
+      const el = buildClusterMarker(count, plus)
       const marker = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map)
       markers.push(marker)
+
+      // 🔴 A BUBBLE OF ONE OPENS, IT DOES NOT ZOOM. That bubble is a repeating event folded to a
+      // single pin, so there is nothing inside it to split: zooming would step in twice and leave
+      // the same `1+` sitting there, which reads as a dead control. The Google canvas applies the
+      // identical rule, from the same `points.length === 1` test.
+      if (only) {
+        const content = buildPopupContent(only)
+        const popup = content
+          ? new maplibregl.Popup({ offset: 14, closeButton: false }).setDOMContent(content)
+          : null
+        if (popup) marker.setPopup(popup)
+        teardowns.push(
+          onMarkerActivate(el, () => {
+            if (onPinClickRef.current) onPinClickRef.current(only)
+            else marker.togglePopup()
+          }),
+        )
+        return
+      }
+
       teardowns.push(
         onMarkerActivate(el, () => {
           // Identical to the Google canvas: the same shared step, the same shared cap.
@@ -249,8 +269,15 @@ export default function MapLibreCanvas({
         return
       }
       for (const group of clusterPoints(pins, map.getZoom(), clustering)) {
-        if (group.type === 'cluster') addCluster(group.lat, group.lng, group.count)
-        else addPin(group.point, false)
+        if (group.type === 'cluster') {
+          addCluster(
+            group.lat,
+            group.lng,
+            group.count,
+            group.plus,
+            group.points.length === 1 ? group.points[0]! : null,
+          )
+        } else addPin(group.point, false)
       }
     }
 
