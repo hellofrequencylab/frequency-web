@@ -32,6 +32,15 @@
 --
 -- IDEMPOTENT and NON-DESTRUCTIVE: keyed on slug, and each update is guarded on `city IS NULL`, so a
 -- re-run cannot overwrite a value an operator has since set by hand. Re-runnable as many times as needed.
+--
+-- ⚠️ THE TIMESTAMP IS LOAD-BEARING, and it is why this file is 20270302 and not 20270301.
+-- `spaces.city` is created by 20270301000000_space_location.sql. This backfill was first written at
+-- that SAME timestamp, and on a fresh database it failed with `column s.city does not exist`: when two
+-- migrations tie on the timestamp the CLI falls back to the whole filename, and `..._space_city_backfill`
+-- sorts before `..._space_location` because 'c' < 'l'. The tie is invisible in production, where the
+-- column already exists, and only ever fails on a rebuild-from-zero — which is exactly what db-tests
+-- does, and exactly why that job is worth having. Any future migration touching a column that another
+-- migration adds must sort strictly after it; do not reuse a timestamp already on disk.
 
 begin;
 
