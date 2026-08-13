@@ -25,7 +25,7 @@ const COLS =
 // `cover_image_url` (20260918000000) + `tagline` ride the untyped tail too (ADR-246, not in the
 // generated types yet). Both are FREE content framing, never a gate: the SpaceIdentityHeader block
 // (Phase 4) reads them to paint the shared cover + subtitle. Default-safe (null) when absent.
-const COLS_FULL = `${COLS}, feature_roles, mode_variant, preferences, cover_image_url, tagline`
+const COLS_FULL = `${COLS}, feature_roles, mode_variant, preferences, cover_image_url, tagline, city`
 
 type SpaceRow = {
   id: string
@@ -49,6 +49,7 @@ type SpaceRow = {
   preferences?: unknown
   cover_image_url?: string | null
   tagline?: string | null
+  city?: string | null
 }
 
 function mapSpace(r: SpaceRow): Space {
@@ -85,6 +86,8 @@ function mapSpace(r: SpaceRow): Space {
     // the column is absent (pre-migration) so every existing read behaves identically.
     coverImageUrl: r.cover_image_url ?? null,
     tagline: r.tagline ?? null,
+    // Feeds addressLocality on the public profile's LocalBusiness node, and nothing else.
+    city: r.city ?? null,
   }
 }
 

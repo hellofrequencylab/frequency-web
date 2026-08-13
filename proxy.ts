@@ -8,6 +8,7 @@ import {
   encodeFirstTouch,
 } from '@/lib/attribution/first-touch'
 import { isProfileRef } from '@/lib/qr/public-url'
+import { hasPublicTwin } from '@/lib/nav/public-twin'
 import { referralsEnabled } from '@/lib/platform-flags'
 
 // The referral attribution cookie — the referrer's profile id, consumed once at
@@ -162,15 +163,37 @@ export async function proxy(request: NextRequest) {
       pathname !== '/events/new' &&
       !pathname.startsWith('/events/new/') &&
       !/\/manage(\/|$)/.test(pathname))
+  // Member detail routes with a canonical PUBLIC twin under /discover (lib/nav/public-twin.ts).
+  // A share link or QR resolves to the MEMBER url (/circles/<slug>, /practices/<id>, …), so
+  // bouncing an anonymous recipient to /sign-in dead-ends the one growth channel that costs
+  // nothing. Let the request through to the (main) layout, whose signed-out branch resolves the
+  // twin and redirects there. Only the DETAIL route matches: the index pages and every /manage,
+  // /edit and /settings sub-route fall through and stay protected exactly as before.
+  const isTwinRedirectable = hasPublicTwin(pathname)
   const isProtected =
     !isShareableFeed &&
     !isBetaEntry &&
     !isPublicEventView &&
+    !isTwinRedirectable &&
     PROTECTED_PATHS.some((p) => pathname.startsWith(p))
 
   if (!user && isProtected) {
     const signInUrl = request.nextUrl.clone()
     signInUrl.pathname = '/sign-in'
+    // Carry WHERE THEY WERE GOING through the sign-in round trip. Without this the destination was
+    // simply dropped: someone who followed a link to a specific page got a bare sign-in form and,
+    // after clicking the magic link, landed on /feed having never reached the thing they came for.
+    // The machinery to honour it already existed end to end and nothing was feeding it — /sign-in
+    // reads `next`, re-validates it as a same-origin absolute path, and stashes it in the short-lived
+    // `fq_post_login` cookie, which /auth/callback re-reads and re-validates before redirecting.
+    //
+    // The search string rides along so a parameterised destination survives, and the query is REBUILT
+    // rather than inherited: `clone()` keeps the original page's params, which would otherwise arrive
+    // on /sign-in as stray input (a `?ref` is already banked in a cookie above, and an `?error` would
+    // render someone else's error banner on the form).
+    const destination = `${pathname}${request.nextUrl.search}`
+    signInUrl.search = ''
+    signInUrl.searchParams.set('next', destination)
     // Copy any refreshed session cookies onto the redirect response so they
     // are not lost (e.g. a nearly-expired token that was just rotated).
     const redirectResponse = NextResponse.redirect(signInUrl)

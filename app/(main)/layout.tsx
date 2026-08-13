@@ -11,6 +11,8 @@ import { BetaCountdownBanner, betaCountdownEndsAt } from '@/components/layout/be
 import { BannerMeasure } from '@/components/layout/banner-measure'
 import { SiteAlertBar } from '@/components/layout/site-alert-bar'
 import type { Metadata } from 'next'
+import { matchPublicTwin } from '@/lib/nav/public-twin'
+import { getPublicCircles, getTopicalChannels } from '@/lib/discover'
 import { loadChromeOverrides, isSafeRoute, adminScopeFor } from '@/lib/layout/page-chrome'
 import { loadAppOverrides, scopeKeyFor, type AppOverrides } from '@/lib/apps/overrides'
 import { loadPageSettings } from '@/lib/page-settings/store'
@@ -142,6 +144,41 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
+/**
+ * The PUBLIC twin of a member detail path, for a signed-out visitor who followed a share link
+ * or a QR (lib/nav/public-twin.ts explains why this is a redirect and not an opened page).
+ *
+ * The two lookups resolve through the SAME public reads the twin pages use, so this can never
+ * find a row the twin would refuse to render: `public_circles` omits unlisted Circles and
+ * `topical_channels` is filtered to active ones, so a miss returns null and the caller falls
+ * through to today's `/` redirect. FAIL-SAFE: any read error is swallowed to null for the same
+ * reason — a visitor landing on the home page is the behaviour we already ship, and a layout
+ * that throws on the signed-out path would take down every public route with it.
+ */
+async function resolvePublicTwin(pathname: string | null): Promise<string | null> {
+  const match = matchPublicTwin(pathname)
+  if (!match) return null
+  if (match.path) return match.path
+  try {
+    if (match.lookup === 'circle') {
+      // Member route is keyed by slug, the twin by id. Only LISTED circles are in this read,
+      // which is exactly the set /discover/circles/<id> will resolve.
+      const circles = await getPublicCircles(200)
+      const hit = circles.find((c) => c.slug === match.segment)
+      return hit ? `/discover/circles/${hit.id}` : null
+    }
+    if (match.lookup === 'channel') {
+      // Member route is keyed by id, the twin by slug.
+      const channels = await getTopicalChannels()
+      const hit = channels.find((c) => c.id === match.segment)
+      return hit ? `/discover/topics/${hit.slug}` : null
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
 // Authenticated app layout. Wraps Feed, Groups, Events, Admin.
 // Pages outside this group (onboarding, settings, sign-in, /people) render
 // without the nav shell and do their own auth checks.
@@ -218,6 +255,13 @@ export default async function MainLayout({
     // Send a logged-out visitor who lands on the member URL (e.g. a shared link) to the public browse
     // instead of the generic home, so the directory is reachable without an account.
     if (currentPath === '/spaces/directory') redirect('/discover/spaces')
+    // The same deal, generalised to the five entity DETAIL families that have a /discover twin
+    // (Circle, Practice, Journey, Partner, Channel). A share link or QR resolves to the MEMBER
+    // url, so without this the recipient of a shared Circle lands on the home page having been
+    // told they were being sent to a Circle. Resolved outside the try/catch-free path on purpose:
+    // resolvePublicTwin returns null rather than throwing, and null keeps today's behaviour.
+    const twin = await resolvePublicTwin(currentPath)
+    if (twin) redirect(twin)
     redirect('/')
   }
 

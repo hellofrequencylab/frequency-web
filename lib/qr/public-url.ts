@@ -25,7 +25,6 @@ const PUBLIC_ENTITY_PREFIXES = new Set<string>([
   'spaces',
   'practices',
   'journeys',
-  'programs',
   'partners',
 ])
 

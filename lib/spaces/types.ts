@@ -81,6 +81,13 @@ export interface Space {
   /** The one-line Space tagline (spaces.tagline), shown under the name in the identity header. Read
    *  untyped (ADR-246). Null / absent renders no subtitle. */
   tagline?: string | null
+  /** The Space's locality (spaces.city). Its ONE consumer is `addressLocality` on the LocalBusiness /
+   *  Organization node the public profile emits — the "<category> near me" local-SEO lever. It does NOT
+   *  drive /discover/places or /discover/cities, both of which bucket by the CIRCLE's and EVENT's own
+   *  city, nor the Spaces directory, which never reads it. Null for a Space with no premises (a virtual
+   *  or mobile business), and null is the correct value there rather than an invented town: the schema
+   *  omits the address block entirely instead of claiming a locality. Read untyped (ADR-246). */
+  city?: string | null
   /** The capability map the Space's plan grants ({ "crm": true, … }). Carried loosely as `unknown`
    *  (ADR-246): the entitlement readers (lib/spaces/entitlements.ts) normalize the raw jsonb, so the
    *  Space type does not pin its shape. PROJECTING this fixes the latent CRM gate (it was never read

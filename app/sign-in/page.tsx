@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { PhotoHero } from '@/components/marketing/marketing-ui'
+import { BETA_CTA_HREF } from '@/lib/site'
 import { signInWithMagicLink, signInWithGoogle } from './actions'
 
 export const metadata: Metadata = {
@@ -87,10 +88,15 @@ export default async function SignInPage({
           </button>
         </form>
 
+        {/* This used to read "New here? Request access", pointing at /beta. Both halves were wrong:
+            there is no access to request (the invite gate and the waitlist were retired, and
+            signInWithMagicLink provisions an account for an unknown email), and /beta itself now
+            says "The door is open". So the form was talking a new member out of the fastest way in.
+            Say the true thing, and keep the tour as the option rather than the instruction. */}
         <p className="mt-5 text-center text-meta text-subtle">
-          New here?{' '}
-          <Link href="/beta" className="font-semibold text-primary-strong hover:underline">
-            Request access
+          New here? That same email signs you up.{' '}
+          <Link href={BETA_CTA_HREF} className="font-semibold text-primary-strong hover:underline">
+            See what you&rsquo;re joining
           </Link>
         </p>
       </div>

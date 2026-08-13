@@ -155,6 +155,13 @@ the visual suite runs (Lift 6's cadence); same PW_BASE_URL plumbing.
 > used as body text, ~1,842 sites across 696 files, 2.52:1 on a light surface. That is a
 > judgment-heavy sweep (ink bands and icon colour follow a different rule), so it becomes
 > its own wave +2 pass rather than a blocker on the wave that surfaced it.
+>
+> **Re-measured 2026-08-13, and the sweep is nearly done.** That 1,842 counted `text-primary`
+> and `text-primary-strong` together, because the `\b` in the grep matches at the hyphen. Split
+> apart, the accessible token (`--color-primary-strong`, `#965C12`, which passes AA on surface)
+> now carries **1,453** of them and raw `text-primary` is down to **~300** — many of those
+> legitimately on ink bands, where amber on dark does pass. What this paragraph describes as a
+> wave-sized epic is a bounded sweep, and it is Phase B of the accessibility switchover.
 
 **3c. Focus-visible + keyboard sweep (M, once, then held by 3b).** One audit pass over
 the interactive kit (Button, IconButton, tabs, dialogs, docks, composer): the global

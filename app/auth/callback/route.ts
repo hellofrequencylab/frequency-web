@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
+import { track } from '@/lib/analytics/track'
 
 // Must match the cookie set in app/sign-in/page.tsx.
 const POST_LOGIN_COOKIE = 'fq_post_login'
@@ -32,6 +33,42 @@ export async function GET(request: Request) {
       // delete the auth user) when platform_flags.beta_invite_only was ON and the email had not been
       // admitted off the beta waitlist. The waitlist is gone and the beta is open, so every
       // successful exchange proceeds.
+
+      // `account.created` — the first row of the signup funnel, and until now the taxonomy declared
+      // it (lib/analytics/events.ts) while NOTHING emitted it. Signup left no ledger trace at all,
+      // so the step between arriving and finishing induction was invisible and no acquisition
+      // channel could be judged.
+      //
+      // WHY HERE, and why "first" is not a timing question. Profile rows are written by a DB trigger
+      // on auth.users (trg_on_auth_user_created), so there is no app code path that runs exactly once
+      // at account creation. The nearest honest seam is the first successful code exchange. This
+      // fires on EVERY successful sign-in and the STABLE idempotency key makes the ledger keep only
+      // the first: engagement_events upserts on idempotency_key with ignoreDuplicates. Nothing to
+      // reconcile, no window to miss, and a re-run cannot double-count.
+      //
+      // FAIL-SAFE, because this sits on the critical login path: everything below is wrapped and
+      // swallowed. An analytics row is never worth failing an authentication for.
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('auth_user_id', user.id)
+            .maybeSingle()
+          if (profile?.id) {
+            // `provider` distinguishes the magic link from Google, which is the `props.source` the
+            // taxonomy asks for and the only thing separating the two doors at this point.
+            const source = (user.app_metadata?.provider as string | undefined) ?? 'unknown'
+            await track('account.created', { source }, profile.id, {
+              idempotencyKey: `account.created:${profile.id}`,
+            })
+          }
+        }
+      } catch {
+        // Swallowed on purpose. See FAIL-SAFE above.
+      }
+
       const res = NextResponse.redirect(`${origin}${next}`)
       res.cookies.delete(POST_LOGIN_COOKIE)
       return res

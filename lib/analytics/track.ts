@@ -44,11 +44,28 @@ export async function track(
   event: string,
   props: Record<string, unknown> = {},
   actorProfileId: string | null = null,
+  opts: {
+    /**
+     * A STABLE idempotency key, for the rare event that must land AT MOST ONCE per subject rather
+     * than once per call. The default key carries `Date.now()` + a random suffix, which is right for
+     * ordinary product events (each call is its own ledger row) and wrong for a lifecycle fact.
+     *
+     * `account.created` is the case this exists for. Profile rows are written by a DB trigger on
+     * `auth.users`, so no app code path runs exactly once at account creation; the nearest honest
+     * seam is the first successful auth callback, and "first" is enforced HERE rather than by
+     * timing. `recordEngagementEvent` upserts on `idempotency_key` with `ignoreDuplicates`, so
+     * passing `account.created:<profileId>` means every later sign-in re-attempts the same row and
+     * the ledger drops it. Self-healing: no window to miss, nothing to reconcile.
+     */
+    idempotencyKey?: string
+  } = {},
 ): Promise<void> {
   if (!isTrackedEvent(event)) return
   const clean = sanitizeProps(props)
   await recordEngagementEvent({
-    idempotencyKey: `track:${event}:${actorProfileId ?? 'anon'}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
+    idempotencyKey:
+      opts.idempotencyKey ??
+      `track:${event}:${actorProfileId ?? 'anon'}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
     source: 'web',
     eventType: event,
     actorProfileId,
