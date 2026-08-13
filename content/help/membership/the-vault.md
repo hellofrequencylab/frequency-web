@@ -3,7 +3,7 @@ title: Membership & the Vault
 description: What's free, what membership includes, and how the Vault works.
 category: membership
 order: 1
-updated: 2026-06-11
+updated: 2026-08-13
 audience: member
 featureKeys: [vault]
 status: published
@@ -23,6 +23,8 @@ As you take part, the Quest's rewards (Zaps, Gems, milestones) **accrue for ever
 ## Cashing in (membership)
 
 To **claim** what's in your Vault (spend Gems, compete in the live season, and show your rank publicly) you need an active membership. That paid personal tier is **Crew**, and you pick what you pay for it. Member joins free, so you take part long before you ever pay. Hosts can also grant access to a Circle member who can't pay, so cost never keeps someone out.
+
+A membership can also cover several people at once. One payment, four seats, each person keeping their own account and their own history. See [sharing a membership with your household](/help/membership/household-bundle).
 
 Either way, everything you earn keeps building: your Gems, your season trophies, and your **Amplitude** (the lifetime total behind your rank that never resets). What Gems actually buy (cosmetics, titles, collectible badges, membership credits) is covered in [Spending Gems in the Vault Store](/help/membership/the-gem-store).
 
