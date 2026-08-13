@@ -11,6 +11,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 //   2. A REFUSAL IS RETURNED, NEVER THROWN. A thrown server-action error reaches the browser as an
 //      opaque digest with no message (#2112 — the Circle invite link's silent no-op). Both the
 //      engine's refusals AND an exploding dependency have to arrive as { error }.
+//
+// The HANDOFF half (ADR-845, wired here after ADR-1024 booked it) is held to the same two, plus a
+// third this layer owns alone: an OPEN OFFER IS REPORTED AND CAN BE WITHDRAWN. One pending offer
+// per circle is a unique partial index, and the move refuses while one stands, so a host who could
+// not see or cancel their own offer would have stranded the circle.
 
 const mocks = vi.hoisted(() => ({
   getMyProfileId: vi.fn<() => Promise<string | null>>(),
@@ -22,6 +27,9 @@ const mocks = vi.hoisted(() => ({
   listManagedSpaces: vi.fn(),
   tierLinksForCircle: vi.fn(),
   transferCircle: vi.fn(),
+  offerCircleToPerson: vi.fn(),
+  cancelCircleOffer: vi.fn(),
+  pendingOfferForCircle: vi.fn(),
   revalidatePath: vi.fn(),
 }))
 
@@ -45,10 +53,26 @@ vi.mock('@/lib/circles/transfer', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/circles/transfer')>()),
   transferCircle: mocks.transferCircle,
 }))
+// The handoff module's IO is stubbed the same way, and its PURE GATE is deliberately left real:
+// `offerCircleToPerson` is faked below by running the actual `canOfferCircle` over the world each
+// test seeds, so "you cannot offer it to yourself" and the tier lock are refused here for the real
+// reason, in the real words, rather than because a stub was told to say no.
+vi.mock('@/lib/circles/handoff', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/circles/handoff')>()),
+  offerCircleToPerson: mocks.offerCircleToPerson,
+  cancelCircleOffer: mocks.cancelCircleOffer,
+  pendingOfferForCircle: mocks.pendingOfferForCircle,
+}))
 vi.mock('next/cache', () => ({ revalidatePath: mocks.revalidatePath }))
 
-import { getCircleMoveData, moveCircleToSpaceAction } from './transfer-actions'
+import {
+  getCircleMoveData,
+  moveCircleToSpaceAction,
+  offerCircleToPersonAction,
+  cancelCircleOfferAction,
+} from './transfer-actions'
 import { TIER_LINKED } from '@/lib/circles/transfer'
+import { canOfferCircle, TIER_LINKED as HANDOFF_TIER_LINKED } from '@/lib/circles/handoff'
 
 const ME = 'profile-me'
 const CIRCLE = 'circle-1'
@@ -62,8 +86,14 @@ function managed(id: string, name: string, type = 'business') {
   return { id, slug: name.toLowerCase().replace(/\s+/g, '-'), name, type, isOwner: true, settingsHref: '/x' }
 }
 
+const THEM = 'profile-them'
+
+/** What the faked handoff IO reads: the circle's world as this test set it up. */
+const world = { linkedTierCount: 0 }
+
 /** The happy world: I manage this circle, it lives in Home, and I also run Mine. */
 function seed() {
+  world.linkedTierCount = 0
   mocks.getMyProfileId.mockResolvedValue(ME)
   mocks.getCircleCapabilities.mockResolvedValue(new Set(['circle.view', 'circle.editSettings']))
   mocks.loadCircleShell.mockResolvedValue({
@@ -86,6 +116,24 @@ function seed() {
   ])
   mocks.tierLinksForCircle.mockResolvedValue({ ok: true, tiers: [] })
   mocks.transferCircle.mockResolvedValue({ ok: true, reason: '', slug: SLUG })
+  mocks.pendingOfferForCircle.mockResolvedValue(null)
+  // The IO is faked; the DECISION is the real gate, fed the caller the action actually passed it.
+  mocks.offerCircleToPerson.mockImplementation(
+    async (circleId: string, toProfileId: string, actorId: string | null) => {
+      const decision = canOfferCircle({
+        viewerProfileId: actorId,
+        sourceSpaceCanEdit: true,
+        currentHostId: ME,
+        toProfileId,
+        staff: false,
+        linkedTierCount: world.linkedTierCount,
+      })
+      return decision.allowed
+        ? { ok: true, reason: '', circleSlug: SLUG }
+        : { ok: false, reason: decision.reason, circleSlug: SLUG }
+    },
+  )
+  mocks.cancelCircleOffer.mockResolvedValue({ ok: true, reason: '', circleSlug: SLUG })
 }
 
 beforeEach(() => {
@@ -193,5 +241,116 @@ describe('moveCircleToSpaceAction — refusals are returned, never thrown', () =
   it('refuses a circle that is not there', async () => {
     mocks.loadCircleShell.mockResolvedValue(null)
     expect(await moveCircleToSpaceAction(SLUG, MINE)).toEqual({ error: 'Circle not found.' })
+  })
+})
+
+describe('getCircleMoveData — an open handoff is reported before anything else', () => {
+  it('carries the pending offer and who it is waiting on', async () => {
+    mocks.pendingOfferForCircle.mockResolvedValue({
+      id: 'offer-1',
+      circleId: CIRCLE,
+      circleName: 'Tuesday Walk',
+      circleSlug: SLUG,
+      fromProfileId: ME,
+      // handoff.ts puts the RECIPIENT's name here for the sender's view; the shaping below is the
+      // one place that renames it, so a reader of CircleMoveData is not misled.
+      fromName: 'Rae',
+      toProfileId: THEM,
+      status: 'pending',
+      createdAt: '2026-08-13T00:00:00Z',
+    })
+    const data = await getCircleMoveData(SLUG)
+    expect(data?.pendingOffer).toEqual({ id: 'offer-1', toName: 'Rae' })
+  })
+
+  it('is null when nothing is waiting, so the pickers draw', async () => {
+    expect((await getCircleMoveData(SLUG))?.pendingOffer).toBeNull()
+  })
+})
+
+describe('offerCircleToPersonAction — the gate decides, this layer only carries the answer', () => {
+  it('offers it to someone else and revalidates the circle plus its space', async () => {
+    const res = await offerCircleToPersonAction(SLUG, THEM)
+    expect(res).toEqual({ data: undefined })
+    expect(mocks.offerCircleToPerson).toHaveBeenCalledWith(CIRCLE, THEM, ME)
+    const paths = mocks.revalidatePath.mock.calls.map((c) => c[0])
+    expect(paths).toContain(`/circles/${SLUG}`)
+    expect(paths).toContain('/spaces/home/circles')
+  })
+
+  it('refuses offering it to yourself, which is the immediate move instead', async () => {
+    const res = await offerCircleToPersonAction(SLUG, ME)
+    expect(res).toEqual({ error: 'That circle is already yours to run.' })
+  })
+
+  it('refuses a tier-linked circle, in the handoff gate’s own words', async () => {
+    world.linkedTierCount = 1
+    await expect(offerCircleToPersonAction(SLUG, THEM)).resolves.toEqual({
+      error: HANDOFF_TIER_LINKED,
+    })
+  })
+
+  it('returns an error result when a dependency throws, never an exception', async () => {
+    mocks.offerCircleToPerson.mockRejectedValue(new Error('boom'))
+    const res = await offerCircleToPersonAction(SLUG, THEM)
+    expect(res).toHaveProperty('error')
+  })
+
+  it('refuses a caller who may not manage the circle, without reaching the gate', async () => {
+    mocks.getCircleCapabilities.mockResolvedValue(new Set(['circle.view']))
+    expect(await offerCircleToPersonAction(SLUG, THEM)).toEqual({
+      error: 'Only the team that runs this circle can hand it off.',
+    })
+    expect(mocks.offerCircleToPerson).not.toHaveBeenCalled()
+  })
+
+  it('refuses a signed-out caller', async () => {
+    mocks.getMyProfileId.mockResolvedValue(null)
+    expect(await offerCircleToPersonAction(SLUG, THEM)).toEqual({ error: 'Sign in first.' })
+  })
+
+  it('refuses an empty pick', async () => {
+    expect(await offerCircleToPersonAction(SLUG, '')).toEqual({ error: 'Pick who should get it.' })
+    expect(mocks.offerCircleToPerson).not.toHaveBeenCalled()
+  })
+})
+
+describe('cancelCircleOfferAction — the way out of the block', () => {
+  it('takes the offer back as the caller, and revalidates both surfaces', async () => {
+    const res = await cancelCircleOfferAction(SLUG, 'offer-1')
+    expect(res).toEqual({ data: undefined })
+    expect(mocks.cancelCircleOffer).toHaveBeenCalledWith('offer-1', ME)
+    const paths = mocks.revalidatePath.mock.calls.map((c) => c[0])
+    expect(paths).toContain(`/circles/${SLUG}`)
+    expect(paths).toContain('/spaces/home/circles')
+  })
+
+  it('refuses a caller who may not manage the circle, without touching the offer', async () => {
+    mocks.getCircleCapabilities.mockResolvedValue(new Set(['circle.view']))
+    expect(await cancelCircleOfferAction(SLUG, 'offer-1')).toEqual({
+      error: 'Only the team that runs this circle can hand it off.',
+    })
+    expect(mocks.cancelCircleOffer).not.toHaveBeenCalled()
+  })
+
+  it('refuses a signed-out caller', async () => {
+    mocks.getMyProfileId.mockResolvedValue(null)
+    expect(await cancelCircleOfferAction(SLUG, 'offer-1')).toEqual({ error: 'Sign in first.' })
+  })
+
+  it('returns the handoff module’s refusal verbatim instead of throwing', async () => {
+    mocks.cancelCircleOffer.mockResolvedValue({
+      ok: false,
+      reason: 'That handoff has already been answered.',
+      circleSlug: SLUG,
+    })
+    await expect(cancelCircleOfferAction(SLUG, 'offer-1')).resolves.toEqual({
+      error: 'That handoff has already been answered.',
+    })
+  })
+
+  it('returns an error result when a dependency throws', async () => {
+    mocks.cancelCircleOffer.mockRejectedValue(new Error('boom'))
+    expect(await cancelCircleOfferAction(SLUG, 'offer-1')).toHaveProperty('error')
   })
 })

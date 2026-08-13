@@ -23535,6 +23535,55 @@ invite link a silent no-op for a year.
 
 - **The move-to-a-person half is still not reachable from a Circle.** `offerCircleToPerson` and
   `cancelCircleOffer` remain Space-console-only, so a personal Circle's host still cannot hand it to
-  someone. Help already tells them they can. Booked, not fixed here.
+  someone. Help already tells them they can. Booked, not fixed here. *(Closed by
+  [ADR-1025](DECISIONS.md), which folds the handoff into this same module.)*
 - `HERO_ACTION_CLASS` now has exactly one Circle caller: none. It stays in the kit for the Space and
   Journey headers that still put controls on a photo.
+
+## ADR-1025: The Circle handoff folds into the move module, and a pending offer is shown before either picker (2026-08-13)
+
+**Status:** accepted · **Closes the booked half of [ADR-1024](DECISIONS.md)** ·
+**Touches:** `app/(main)/circles/[slug]/transfer-actions.ts`,
+`components/admin/modules/circle-move-module.tsx` · **Guarded by:**
+`app/(main)/circles/[slug]/transfer-actions.test.ts`, `pnpm check:menu`
+
+### 1 · The last unreachable third
+
+`content/help/leading/how-to-start-a-circle.md` tells a host they can move their Circle into another
+space, take it as their own, or hand it to a person. ADR-1024 made the first true from a Circle's own
+page. The third was still Space-console-only, so the host of a **personal** Circle — one on the root
+sentinel, which appears in no Space console — read an instruction they could not follow.
+
+The engine was never the gap. `canOfferCircle` (pure, tier lock included), `offerCircleToPerson`,
+`pendingOfferForCircle` and `cancelCircleOffer` all shipped with [ADR-845](DECISIONS.md), and the
+RECIPIENT's side was already live on the Circle page (`CircleHandoffBanner`). Only the sender's door
+was missing. This adds it and no rules: the action resolves the caller, re-checks
+`circle.editSettings` against the live Circle, and hands the decision to the gate.
+
+### 2 · One module, not a second catalog row
+
+ADR-1024 kept `circle.transfer` OUT of `circle.settings` on [ADR-846](DECISIONS.md)'s fold test —
+*same authority AND same subject* — because settings edit a Circle inside the home it already has,
+and moving it changes the home. The handoff **passes** that same test against the move: same
+authority (`circle.editSettings`) and same subject (where the Circle lives). So it extends the
+existing module rather than adding a row, and the two doors sit under one control.
+
+### 3 · A pending offer is a block, so it is surfaced as one
+
+`circle_transfer_offers` allows one pending offer per circle (unique partial index, migration
+`20261230000000`), and the move refuses while one stands with copy that says to "cancel that first".
+Until now the only person who could clear an offer made from a Circle page would have been the
+recipient. So `getCircleMoveData` reports the open offer and the module shows it **ahead of both
+pickers** with the only action actually available: take it back. The same placement rule ADR-1024
+used for the tier lock, for the same reason — a control must not offer a door that does not open.
+
+An offer changes nothing on its own, and the copy leads with that fact: *it stays yours until they
+accept*.
+
+### Consequences
+
+- Every export still returns a result and never throws, and refusals arrive as the gate's own
+  sentence. The handoff's `TIER_LINKED` ("…then hand it off") and the transfer's ("…then move it")
+  stay separate strings on purpose; each names the act it refused.
+- `authorise()` is now the one authority check all three writes in the file share, shaped like the
+  Space console's `requireSpaceEditor`: a string back is the refusal, verbatim.
