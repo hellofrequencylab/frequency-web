@@ -25,6 +25,7 @@ import {
 import { EventCoreStatsCards } from '@/components/events/event-core-stats'
 import type { EventCoreStats } from '@/lib/events/event-stats'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
+import { Banner } from '@/components/admin/status'
 import { EventLoomPicker } from '@/components/admin/modules/event-loom-picker'
 import { VenueAutocomplete } from '@/components/admin/venue-autocomplete'
 import { EventHeaderControls } from '@/components/admin/modules/event-header-controls'
@@ -575,6 +576,33 @@ export function EventSettingsModule() {
             clears (as before). */}
         {mode !== 'online' && (
           <div className="space-y-3">
+            {/* 🔴 THE EVENT HAS NO MAP PIN, AND UNTIL NOW NOTHING SAID SO (ADR-1029).
+                `saveEventLocation` is best-effort by contract: a geocode miss leaves `geog` NULL and
+                the save still succeeds, which is right — a host must never lose their work because a
+                third-party geocoder shrugged. What was missing is the other half. Nothing downstream
+                noticed, so an event simply vanished from the Around You map, the events-index map,
+                its own page's mini-map, and every radius-based dispatch audience, with the host
+                given no reason to suspect it.
+
+                Production had exactly that: "Breath Is Life", published and public, with no point,
+                because its venue box read "The Royal Temple (RSVP to see location)" and no provider
+                resolves that sentence.
+
+                ⚠️ WORSE THAN ONE EVENT: lib/event-recurrence.ts carries `geog` in INHERITED_COLUMNS,
+                so a NULL-geog ANCHOR propagates NULL into every occurrence it mints. One unnoticed
+                miss on a weekly series is sixty invisible rows.
+
+                The condition costs no new read: `lat`/`lng` are already hydrated from the decoded
+                `geog` (getEventAdminData decodes it server-side), and the `mode !== 'online'` guard
+                this sits inside is already the correct one — an online event has no pin to miss. */}
+            {lat == null && lng == null && (
+              <Banner tone="warning" title="This event is not on the map yet">
+                We could not turn this address into a location. Your event is still published and
+                people can still find it, but it will not show on the map until there is a pin.
+                Search for the venue above, or drag the pin on the map below.
+              </Banner>
+            )}
+
             <div className="space-y-3 rounded-card border border-border bg-surface-elevated/40 p-3">
               <span className={fieldLabel}>Location</span>
 

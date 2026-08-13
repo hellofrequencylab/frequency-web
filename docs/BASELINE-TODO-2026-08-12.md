@@ -610,6 +610,8 @@ Reads spot-checked as real, not regex artifacts: `app/(main)/admin/sms/page.tsx:
 
 **`RECRAFT_API_KEY` is the one that hides a whole feature.** `lib/loom/recraft.ts:13-15` `recraftConfigured()` gates `app/(main)/admin/library/page.tsx:126` and `lib/loom/cover-actions.ts:111,147`; `create-studio.tsx:216` shows a permanently disabled control titled *"Needs the Image Studio (set RECRAFT_API_KEY)"*. The graceful degradation is correct and is exactly why nobody will ever surface this — the offer simply never appears and nobody gets an error.
 
+> ✅ **Both halves of this are now closed (2026-08-13).** `RECRAFT_API_KEY` is documented in `.env.example:169-177`, with a block that says in as many words why an unset key here reads as "we don't have that feature" rather than as a missing key — so it no longer belongs in the 17 above (16 remain). And the key **is set** in Vercel, on Production and Preview since Jul 1, so the feature it gates is live and always was. The paragraph is kept because its reasoning about invisible degradation is sound and still applies to every other silent gate.
+
 **Corrections:** `SENTRY_DSN` **is** documented, at `.env.example:55` as a comment — the list is 17, not 18. And mark the genuinely optional ones as such: `OAUTH_STATE_SECRET` and `EMAIL_REPLY_TO` are overrides with safe hardcoded defaults; `AI_DISABLED` and `SMS_PROVISIONING_ENABLED` are switches.
 
 ### E-2 · "Drafts" names three member surfaces; NAMING.md defines none ⚠️ · **S**
@@ -689,4 +691,4 @@ The two 🔴 rows live in **§9 "Sequencing collisions"** (not §8.1): *"E1 befo
 ## 11. Two things nobody has proven — flagged so they don't get treated as fact
 
 1. **The Vercel Build Command** (CP-1). If it is not `pnpm build`, both size gates have never run and the ENOSPC class is fully live. Unprovable without dashboard access.
-2. **`RECRAFT_API_KEY`'s actual state in Vercel.** The code is byte-identical whether it is set or not, and the feature degrades silently by design. E-1 closes the repo-side half regardless of which way it is; if the feature is meant to be dark, it is the same line with the opposite note.
+2. ~~**`RECRAFT_API_KEY`'s actual state in Vercel.**~~ ✅ **PROVEN, 2026-08-13: it is SET** — Production and Preview, added Jul 1, marked Sensitive (owner, from the dashboard). The flag was right that the repo cannot answer this, and right to refuse to guess. What went wrong afterwards is that the *unknown* was read downstream as a *finding*: `HANDOFF-2026-08-12.md` recorded it as "must be set", and it reached a task list as "RECRAFT_API_KEY unset, cover generation is inert". Nobody added evidence between those steps. **The lesson is about the handoff, not the audit** — an item parked here as unproven must keep that status until someone with dashboard access says otherwise, because a silent-by-design feature offers no other way to tell, and its absence of complaints is not evidence either way.

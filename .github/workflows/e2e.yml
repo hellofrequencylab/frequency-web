@@ -445,13 +445,31 @@ jobs:
             const fs = require("fs");
             const dir = ".lighthouseci";
             if (!fs.existsSync(dir)) { console.log("no .lighthouseci dir"); process.exit(0); }
+            // 🔴 THE BUDGETS ARE READ FROM lighthouserc.json, NEVER RESTATED HERE (ADR-1030).
+            // They were hardcoded, and they were the ADR-930 GUESSES that ADR-936 had already
+            // replaced: LCP 4000 vs the asserted 2500, TBT 600 vs 300, FCP 2500 vs 1000, weight
+            // 3.5MB vs 2MB. Four of five columns reported a looser budget than the one actually
+            // gating, all in the same direction -- so the headroom column read HEALTHIER than the
+            // truth, and a PR could show comfortable headroom in the summary while the assertion
+            // failed three lines below it. The whole point of this step is that the evidence lands
+            // where the result is read; evidence measured against the wrong number is worse than
+            // none. One source of truth, so a future re-tune cannot drift them apart again.
+            const rc = JSON.parse(fs.readFileSync("lighthouserc.json", "utf8"));
+            const assertions = rc.ci?.assert?.assertions ?? {};
+            // Each entry is [level, {maxNumericValue}] -- or a bare "warn" for score audits,
+            // which carry no numeric budget and are dropped by the filter below.
+            const ruleOf = (id) => {
+              const a = assertions[id];
+              return Array.isArray(a) ? { level: a[0], budget: a[1]?.maxNumericValue } : {};
+            };
             const METRICS = [
-              ["largest-contentful-paint", "LCP", "ms", 4000],
-              ["cumulative-layout-shift",  "CLS", "",   0.1],
-              ["total-blocking-time",      "TBT", "ms", 600],
-              ["first-contentful-paint",   "FCP", "ms", 2500],
-              ["total-byte-weight",        "Weight", "b", 3500000],
-            ];
+              ["largest-contentful-paint", "LCP", "ms"],
+              ["cumulative-layout-shift",  "CLS", ""],
+              ["total-blocking-time",      "TBT", "ms"],
+              ["first-contentful-paint",   "FCP", "ms"],
+              ["total-byte-weight",        "Weight", "b"],
+            ].map(([id, label, unit]) => [id, label, unit, ruleOf(id)])
+             .filter(([, , , rule]) => typeof rule.budget === "number");
             const byUrl = new Map();
             for (const f of fs.readdirSync(dir).filter((f) => f.startsWith("lhr-") && f.endsWith(".json"))) {
               let lhr; try { lhr = JSON.parse(fs.readFileSync(`${dir}/${f}`, "utf8")); } catch { continue; }
@@ -460,16 +478,22 @@ jobs:
               byUrl.get(url).push(lhr);
             }
             const median = (xs) => { const s = [...xs].sort((a, b) => a - b); return s[Math.floor(s.length / 2)]; };
-            const out = ["| URL | metric | median | budget | headroom |", "|---|---|---|---|---|"];
+            // The `on breach` column exists because "over budget" means two different things here and
+            // the reader cannot otherwise tell which: an LCP/CLS/TBT breach FAILS the job, while
+            // FCP and Weight are warns that inform and never block (lighthouserc.json explains
+            // why for each). A table that presented all five identically invited both mistakes --
+            // panicking over a warn, and shrugging at the one that just went red.
+            const out = ["| URL | metric | median | budget | headroom | on breach |", "|---|---|---|---|---|---|"];
             for (const [url, runs] of byUrl) {
               const path = (() => { try { return new URL(url).pathname; } catch { return url; } })();
-              for (const [id, label, unit, budget] of METRICS) {
+              for (const [id, label, unit, rule] of METRICS) {
                 const vals = runs.map((r) => r.audits?.[id]?.numericValue).filter((v) => typeof v === "number");
                 if (!vals.length) continue;
                 const m = median(vals);
-                const pct = Math.round((1 - m / budget) * 100);
+                const pct = Math.round((1 - m / rule.budget) * 100);
                 const fmt = (v) => (unit === "b" ? `${(v / 1e6).toFixed(2)}MB` : unit === "ms" ? `${Math.round(v)}ms` : v.toFixed(3));
-                out.push(`| ${path} | ${label} | ${fmt(m)} | ${fmt(budget)} | ${pct}% |`);
+                const gate = rule.level === "error" ? "fails" : "warns";
+                out.push(`| ${path} | ${label} | ${fmt(m)} | ${fmt(rule.budget)} | ${pct}% | ${gate} |`);
               }
             }
             const table = out.join("\n");
