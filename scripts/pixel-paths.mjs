@@ -67,12 +67,41 @@ function matches(file, glob) {
   return file === glob
 }
 
+/**
+ * The changed-file list, from `--files <path>` (one repo-relative path per line) or from bare argv.
+ *
+ * 🔴 `--files` EXISTS BECAUSE `xargs` DESTROYS THE EXIT CODE. The fallback workflow used to run
+ * `xargs -a /tmp/changed.txt node scripts/pixel-paths.mjs`, and xargs reports **123** whenever the
+ * command it invoked exits 1–125. So this script's exit 1 — "nothing here moves pixels, post the
+ * status" — reached the workflow as 123, which it correctly refuses to interpret. The docs-only
+ * branch was therefore UNREACHABLE, and the whole fallback failed on precisely the pull requests it
+ * was built to unblock. It shipped that way and nothing noticed until PR #2116, the first docs-only
+ * PR after it landed.
+ *
+ * Reading the list here, rather than having the shell splat it into argv, also removes two quieter
+ * xargs hazards: a list longer than ARG_MAX is split across SEVERAL invocations (so "some file
+ * matches" would be decided per batch), and an EMPTY list still invokes the command once with no
+ * arguments, which used to mean "print the globs and exit 0" — read by the workflow as "e2e owns
+ * this PR", the one wrong answer for a PR that changes nothing.
+ */
+function changedFiles(argv) {
+  const i = argv.indexOf('--files')
+  if (i === -1) return { files: argv, explicit: false }
+  const path = argv[i + 1]
+  if (!path) throw new Error('pixel-paths: --files needs a path')
+  const files = readFileSync(path, 'utf8').split('\n').map((l) => l.trim()).filter(Boolean)
+  return { files, explicit: true }
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const files = process.argv.slice(2)
-  if (files.length === 0) {
+  const { files, explicit } = changedFiles(process.argv.slice(2))
+  // Bare `node scripts/pixel-paths.mjs` with no arguments is the human affordance: print the list.
+  // `--files` on an empty file is NOT that case — it is a real answer about a real pull request.
+  if (files.length === 0 && !explicit) {
     console.log(pixelPaths().join('\n'))
   } else {
     // Exit 0 = e2e will run and post pr-compare itself. Exit 1 = it will not, so the fallback must.
+    // Do not reintroduce a wrapper (xargs, a pipeline, a subshell) between this and the caller.
     process.exit(movesPixels(files) ? 0 : 1)
   }
 }

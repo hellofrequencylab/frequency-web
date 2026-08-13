@@ -87,7 +87,12 @@ jobs:
           # Exit 1 = none can, so e2e was skipped and this job must post it.
           # Any OTHER failure (an unparseable e2e.yml) propagates and fails this job, which is the
           # intended behaviour — see the 🔴 note in scripts/pixel-paths.mjs.
-          if xargs -a /tmp/changed.txt node scripts/pixel-paths.mjs; then
+          #
+          # 🔴 THE SCRIPT READS THE FILE. DO NOT PUT `xargs` BACK. xargs reports **123** for any
+          # command that exits 1–125, so the exit-1 arm below was unreachable and this job failed on
+          # every docs-only PR — the only PRs it exists for. `scripts/pixel-paths.test.ts` now spawns
+          # this exact command line and asserts the code, so a wrapper creeping back in fails `pnpm test`.
+          if node scripts/pixel-paths.mjs --files /tmp/changed.txt; then
             echo "e2e=true" >> "$GITHUB_OUTPUT"
             echo "::notice::A changed file can move pixels. e2e.yml owns pr-compare for this PR; posting nothing."
           else
