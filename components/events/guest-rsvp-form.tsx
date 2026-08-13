@@ -3,6 +3,7 @@
 import { useId, useState, useTransition } from 'react'
 import { Check } from 'lucide-react'
 import { submitGuestRsvp } from '@/app/(main)/events/guest-rsvp-actions'
+import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/field'
 
 // THE SIGNED-OUT DOOR. What stood here was a link to /sign-in: someone followed a shared link,
@@ -44,7 +45,7 @@ export function GuestRsvpForm({ eventId, isFull }: { eventId: string; isFull?: b
         // Announced rather than silently swapped: the submit button is gone by the time this
         // renders, so a screen reader user has nothing left to move back to.
         role="status"
-        className="flex items-start gap-2.5 rounded-lg bg-success-bg px-4 py-3 text-success"
+        className="flex items-start gap-2.5 rounded-card bg-success-bg px-4 py-3 text-success"
       >
         <Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         <div className="space-y-1">
@@ -101,20 +102,21 @@ export function GuestRsvpForm({ eventId, isFull }: { eventId: string; isFull?: b
       {/* Honeypot. Hidden from sight AND from the accessibility tree AND from tab order, so no
           real person can reach it by any route — a bot filling it is therefore unambiguous.
           `aria-hidden` alone would still leave it tabbable, which is how these turn into a trap
-          for keyboard users instead of for bots. */}
+          for keyboard users instead of for bots. It stays a real text Input rather than
+          type="hidden" because a bot that fills forms fills text fields; a hidden input would
+          never be touched and the trap would catch nothing. */}
       <div aria-hidden="true" className="hidden">
-        <label htmlFor={`${fieldId}-company`}>Company</label>
-        <input id={`${fieldId}-company`} name="company" type="text" tabIndex={-1} autoComplete="off" />
+        <Label htmlFor={`${fieldId}-company`}>Company</Label>
+        <Input id={`${fieldId}-company`} name="company" type="text" tabIndex={-1} autoComplete="off" />
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="submit"
-          disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
-        >
-          {pending ? 'Sending…' : isFull ? 'Join the waitlist' : "I'm coming"}
-        </button>
+        {/* `loading` rather than a label swap: the primitive marks the control aria-busy and
+            disables it while keeping the label the same width, which is the one thing a pending
+            state must not change (INTERACTION-STATES §4 rule 3). */}
+        <Button type="submit" loading={pending}>
+          {isFull ? 'Join the waitlist' : "I'm coming"}
+        </Button>
         <p className="text-meta text-muted">
           No account needed. {isFull ? 'The room is full, so this holds your place in line.' : 'Free to join.'}
         </p>
