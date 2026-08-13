@@ -20,7 +20,8 @@ Events are the gatherings that make Frequency real: the in-person and online mee
 - Changed your plans? You can update your RSVP anytime.
 - When you RSVP, we **email you a confirmation** with the details and a one-tap calendar link (and a quick note if you land on the waitlist), then nudge you again as the date nears.
 - Your upcoming events surface in your feed so they don't sneak up on you.
-- **No account needed.** Any public event takes an RSVP from a signed-out visitor: one email field, and a name if they want to give one. They get the same confirmation, the same reminders, and the same notice if you cancel. When they later sign up with that address, every RSVP they made attaches to the new account.
+- **No account needed.** Any public event takes an RSVP from a signed-out visitor: one email field, and a name if they want to give one. They get the same confirmation, the same reminders, and the same notice if you cancel. The moment they sign in with that address their RSVPs attach to their account, whether it is brand new or one they already had.
+- **Checking in still needs an account.** A guest holds a real spot, but check-in is what counts someone as having shown up, and that is tied to an account. Your checked-in number therefore covers members only; guests who never sign in are not counted either way, rather than counted as absent.
 
 ## Capacity & waitlists
 
@@ -35,6 +36,7 @@ Events are the gatherings that make Frequency real: the in-person and online mee
 - It applies to **everyone**, whether or not they have an account. A signed-out guest waits exactly as long as a member does.
 - Turning it on later does not unseat anyone already going. It only applies to people who answer after you switch it on.
 - A full event still sends approved people to the waitlist. Approving says "yes, you are welcome", not "there is room".
+- **They are emailed when you approve them**, so nobody is left refreshing the page to find out.
 
 ## Recurring events & your calendar
 

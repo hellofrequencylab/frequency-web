@@ -43,8 +43,9 @@ Plans change. You can update your RSVP whenever you need to, right up to the day
 
 Some Hosts approve each person before they are in. On those events your answer is
 a request: it waits in the Host's queue until they say yes, and you are not
-holding a spot until they do. The same rule applies to everyone, whether or not
-they have an account.
+holding a spot until they do. We email you the moment they reply, so there is
+nothing to keep checking. The same rule applies to everyone, whether or not they
+have an account.
 
 If an event is full, Going puts you on the waitlist instead. You keep your place
 in line, and if someone drops out the next person moves up automatically.
@@ -104,8 +105,10 @@ We email you to confirm, and that email says whether you got a spot or landed on
 the waitlist. It also carries the calendar link and, closer to the day, you get
 the same reminders anyone else does. If the Host cancels, you get told.
 
-Making an account later attaches every RSVP you made with that same email to it,
-so you can change or cancel them in one place. Nothing is lost if you wait.
+Signing in later attaches every RSVP you made with that same email to your
+account, so you can change or cancel them in one place. That happens on its own
+the moment you sign in, and it works whether the account is brand new or one you
+already had and were signed out of. Nothing is lost if you wait.
 
 ### Someone sent me a personal invite link. Is that different?
 
