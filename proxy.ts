@@ -180,6 +180,20 @@ export async function proxy(request: NextRequest) {
   if (!user && isProtected) {
     const signInUrl = request.nextUrl.clone()
     signInUrl.pathname = '/sign-in'
+    // Carry WHERE THEY WERE GOING through the sign-in round trip. Without this the destination was
+    // simply dropped: someone who followed a link to a specific page got a bare sign-in form and,
+    // after clicking the magic link, landed on /feed having never reached the thing they came for.
+    // The machinery to honour it already existed end to end and nothing was feeding it — /sign-in
+    // reads `next`, re-validates it as a same-origin absolute path, and stashes it in the short-lived
+    // `fq_post_login` cookie, which /auth/callback re-reads and re-validates before redirecting.
+    //
+    // The search string rides along so a parameterised destination survives, and the query is REBUILT
+    // rather than inherited: `clone()` keeps the original page's params, which would otherwise arrive
+    // on /sign-in as stray input (a `?ref` is already banked in a cookie above, and an `?error` would
+    // render someone else's error banner on the form).
+    const destination = `${pathname}${request.nextUrl.search}`
+    signInUrl.search = ''
+    signInUrl.searchParams.set('next', destination)
     // Copy any refreshed session cookies onto the redirect response so they
     // are not lost (e.g. a nearly-expired token that was just rotated).
     const redirectResponse = NextResponse.redirect(signInUrl)
