@@ -20,6 +20,7 @@ import { formatAbsolute } from '@/lib/events/follower-reminders'
 import type { Database } from '@/lib/database.types'
 import {
   sendEventReminderEmail,
+  sendGuestEventReminderEmail,
   enqueueEmail,
   listUnsubscribeHeaders,
 } from '@/lib/email'
@@ -52,6 +53,8 @@ type EventRow = {
   slug:        string
   is_cancelled: boolean
   time_zone:   string | null
+  /** ADR-825. Selected so the GUEST leg can withhold a venue a guest has not earned sight of. */
+  hide_address: boolean | null
 }
 
 // The widest real UTC offset any IANA zone reaches is ±14h. starts_at stores the event's
@@ -62,7 +65,10 @@ const MAX_TZ_OFFSET_MS = 14 * 60 * 60 * 1000
 type RsvpRow = {
   id:          string
   event_id:    string
-  profile_id:  string
+  /** Null for a signed-out guest seat (20270303000000). */
+  profile_id:  string | null
+  guest_email: string | null
+  guest_name:  string | null
 }
 
 function leadOffsetMs(lead: '24h' | '2h'): number {
@@ -119,7 +125,7 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
   // than the generated types, so read untyped and cast (repo convention).
   const { data: events } = await admin
     .from('events')
-    .select('id, title, starts_at, location, slug, is_cancelled, time_zone')
+    .select('id, title, starts_at, location, slug, is_cancelled, time_zone, hide_address')
     .gte('starts_at', new Date(windowStart.getTime() - MAX_TZ_OFFSET_MS).toISOString())
     .lt('starts_at', new Date(windowEnd.getTime() + MAX_TZ_OFFSET_MS).toISOString())
     .eq('is_cancelled', false)
@@ -138,15 +144,21 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
   for (const ev of eventRows) {
     const { data: rsvps } = await admin
       .from('event_rsvps')
-      .select('id, event_id, profile_id')
+      .select('id, event_id, profile_id, guest_email, guest_name')
       .eq('event_id', ev.id)
       .eq('status', 'going')
       .is(sentColumn, null)
 
-    const rsvpRows = (rsvps ?? []) as RsvpRow[]
+    const rsvpRows = (rsvps ?? []) as unknown as RsvpRow[]
     if (!rsvpRows.length) continue
 
-    const profileIds = rsvpRows.map((r) => r.profile_id)
+    // 🔴 A guest's NULL used to be passed straight into `.in('id', profileIds)`. Two failures
+    // followed: no guest ever received a reminder despite guest_email being right there, AND the
+    // loop below `continue`d WITHOUT stamping, so every guest row came back on the next run and the
+    // one after that — re-queried every 15 minutes, forever, for every guest seat in the system.
+    const profileIds = rsvpRows
+      .map((r) => r.profile_id)
+      .filter((id): id is string => typeof id === 'string')
     const { data: profiles } = await admin
       .from('profiles')
       .select('id, display_name, auth_user_id, home_timezone')
@@ -176,6 +188,29 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
     const warmProof = goingCount >= 2 ? `${goingCount} going` : null
 
     for (const rsvp of rsvpRows) {
+      // ── The guest leg. Email only: push needs a registered device and SMS needs an A2P consent
+      // record, and a guest has neither. Stamped like every other path so it is sent once.
+      if (!rsvp.profile_id) {
+        if (rsvp.guest_email) {
+          // Gated the same way the event page gates it: a guest is never `viewerRegistered`, so a
+          // hidden-address event gives them the city line and not the venue (ADR-825/854).
+          const guestLocation = ev.hide_address === true ? null : ev.location
+          await sendGuestEventReminderEmail({
+            to:           rsvp.guest_email,
+            guestName:    rsvp.guest_name,
+            eventTitle:   ev.title,
+            whenLabel:    formatRelative(lead),
+            whenAbsolute: formatAbsolute(ev.starts_at, ev.time_zone),
+            location:     guestLocation,
+            eventUrl:     `${appUrl}/events/${ev.slug}`,
+          })
+          sent += 1
+        }
+        // Stamped even with no address to send to, so an unreachable row is not re-read forever.
+        await stampReminder(rsvp.id, sentColumn)
+        continue
+      }
+
       const profile = profileMap.get(rsvp.profile_id)
       if (!profile || !profile.auth_user_id) continue
 
