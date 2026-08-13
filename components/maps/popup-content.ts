@@ -10,13 +10,26 @@ import { resolvePinPaint } from '@/lib/maps/pin-kinds'
 // step left to subvert. Every string below goes through `textContent`. The ONE attribute that takes
 // caller data is the image `src`, and it is filtered to http(s) first (see `safeImageSrc`).
 //
+// ── IT IS THE /events CARD, SHRUNK ────────────────────────────────────────────────────────────
+//
+// Owner instruction 2026-08-13: "make the cards look closer to the events cards". So the stack here
+// is the SAME ORDER as components/events/event-card.tsx on /events, because a member who has browsed
+// that grid already knows how to read it:
+//
+//   cover  ·  title  ·  when  ·  pills  ·  📍 where
+//
+// 🔴 THE PILLS MOVED BELOW THE TITLE, reversing my first pass. I had put them on top, arguing a
+// member should read what the dot IS before reading its address. That argument is fine in isolation
+// and wrong in context: /events puts "Public" and "Part of a series" under the time, and a card that
+// leads with a pill reads as a different component rather than the same one. Consistency with the
+// grid the member already knows beats a local optimisation.
+//
 // ── ONE LAYOUT, EVERY KIND ─────────────────────────────────────────────────────────────────────
 //
 // Owner instruction 2026-08-13: an Event and a Circle at the same venue are two different things and
 // both keep their pin, so the card must make it obvious WHICH one you opened, and must not change
 // shape between them. So every kind renders the identical stack:
 //
-//   cover image  ·  pill row  ·  title  ·  the quiet line  ·  the where line  ·  the way in
 //
 // 🔴 THE KIND PILL IS PAINTED IN THE PIN'S OWN TOKEN. A three-colour legend under a map still leaves
 // a member decoding it to know whether the dot they just tapped is a gathering or a group. The pill
@@ -126,27 +139,41 @@ export function buildPopupContent(pin: MapPin): HTMLElement | null {
     root.appendChild(img)
   }
 
-  // ── Pill row ────────────────────────────────────────────────────────────────────────────────
-  // ABOVE the title, deliberately, and in this order: WHAT it is, then what is qualified about it.
-  // A member reads the kind first and the caveat second, which is the order they need them in.
-  const pills = document.createElement('div')
-  pills.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px'
-  pills.appendChild(pill(paint.noun, paint.token))
-  if (notice) pills.appendChild(pill(notice))
-  root.appendChild(pills)
-
   if (title) {
     root.appendChild(
       line(title, 'font-weight:700;font-size:14px;color:var(--color-text);line-height:1.3'),
     )
   }
-  // The quiet line, then WHERE. Two rows rather than one joined sentence: they answer different
-  // questions, and the joined version is the run-on line this card replaced.
+  // WHEN, directly under the title, exactly where /events puts its time line.
   if (subtitle) {
     root.appendChild(line(subtitle, 'font-size:12px;color:var(--color-text-muted);margin-top:3px'))
   }
+
+  // ── Pill row ────────────────────────────────────────────────────────────────────────────────
+  // Under the time, over the address: the /events card's order. Kind first, then the caveat — what
+  // it is, then what is qualified about it.
+  const pills = document.createElement('div')
+  pills.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-top:6px'
+  pills.appendChild(pill(paint.noun, paint.token))
+  if (notice) pills.appendChild(pill(notice))
+  root.appendChild(pills)
+
+  // WHERE, with the same pin glyph /events uses, so the two read as one family.
   if (detail) {
-    root.appendChild(line(detail, 'font-size:12px;color:var(--color-text-muted);margin-top:2px'))
+    const where = document.createElement('div')
+    where.style.cssText =
+      'display:flex;align-items:flex-start;gap:4px;font-size:12px;color:var(--color-text-muted);margin-top:6px'
+    const glyph = document.createElement('span')
+    // Decorative: the line beside it already says this is a place, and a screen reader announcing
+    // "round pushpin" before every address is noise.
+    glyph.setAttribute('aria-hidden', 'true')
+    glyph.textContent = '\u{1F4CD}'
+    glyph.style.cssText = 'flex:none;line-height:1.35;font-size:11px'
+    const text = document.createElement('span')
+    text.textContent = detail
+    text.style.cssText = 'min-width:0;line-height:1.35'
+    where.append(glyph, text)
+    root.appendChild(where)
   }
 
   if (href) {

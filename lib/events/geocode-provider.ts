@@ -19,6 +19,7 @@
 
 import type { EventAddress, GeoPoint, Geocoder } from '@/lib/events/geocode'
 import { nominatimSearch } from '@/lib/events/nominatim'
+import { stripWithholdingNote } from '@/lib/events/location-intent'
 
 /** Compose the structured address into a single free-form Nominatim query.
  *  Nominatim's `q` handles partial addresses well, so we just join whatever the
@@ -37,7 +38,14 @@ function toQuery(address: EventAddress): string {
     .join(', ')
   // Fall back to the free-text location line (Vera scan / onboarding) when there are no
   // structured fields, so a one-line address still resolves to a point.
-  return structured || (address.query?.trim() ?? '')
+  //
+  // 🔴 STRIPPED OF ANY "RSVP for the address" NOTE FIRST (ADR-1028). Hosts write the instruction
+  // into the same box as the venue: "The Royal Temple (RSVP to see location)". Handed over verbatim
+  // that is not an address any provider resolves, which is exactly why that event sat in production
+  // with no pin. Cleaning the query is HALF a fix, though — the other half is that the same note
+  // makes the resulting point one that must be COARSENED, which lib/nearby/map-pins.ts enforces on
+  // the read. Shipping this line without that one would turn a missing pin into a published address.
+  return structured || stripWithholdingNote(address.query) || ''
 }
 
 type NominatimResult = {

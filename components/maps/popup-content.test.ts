@@ -52,17 +52,25 @@ describe('the card renders what the pin gives it', () => {
     expect(el.querySelector('img')).toBeNull()
   })
 
-  it('renders the pills ABOVE the title, so the dot is qualified before the address is read', () => {
+  it('stacks in the /events card order: title, when, pills, where', () => {
+    // Owner instruction 2026-08-13: match the /events grid. An earlier pass put the pills ON TOP,
+    // reasoning that a member should read what the dot IS before its address. Right in isolation,
+    // wrong in context — /events puts its pills under the time, and a card that leads with a pill
+    // reads as a different component rather than the same one.
     const el = buildPopupContent({
       ...base,
       kind: 'event',
       title: 'Meld Community Cowork',
+      subtitle: 'Wed, Aug 19 · and 7 more dates',
       detail: 'Vista, CA',
       badge: 'RSVP for address',
     })!
     const text = el.textContent ?? ''
-    expect(text).toContain('RSVP for address')
-    expect(text.indexOf('RSVP for address')).toBeLessThan(text.indexOf('Meld Community Cowork'))
+    const at = (s: string) => text.indexOf(s)
+    expect(at('Meld Community Cowork')).toBeLessThan(at('Wed, Aug 19'))
+    expect(at('Wed, Aug 19')).toBeLessThan(at('Event'))
+    expect(at('Event')).toBeLessThan(at('RSVP for address'))
+    expect(at('RSVP for address')).toBeLessThan(at('Vista, CA'))
   })
 })
 
@@ -115,6 +123,11 @@ describe('the card says WHAT you tapped', () => {
     })!
     const text = el.textContent ?? ''
     expect(text.indexOf('Space')).toBeLessThan(text.indexOf('Approximate area'))
+  })
+
+  it('marks the where row with the same pin glyph /events uses', () => {
+    const el = buildPopupContent({ ...base, kind: 'event', title: 'ok', detail: 'Vista, CA' })!
+    expect(el.textContent).toContain('\u{1F4CD}')
   })
 })
 

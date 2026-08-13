@@ -61,14 +61,14 @@ type EventRow = {
  *  with the read's over-fetch and with the block's row grid so the three cannot drift. */
 const COMING_UP_COUNT = 4
 
-/** THE BAND HEIGHT, in ONE place. The map, the map's Suspense fallback and the Coming up stack all
- *  read it, which is what makes the owner's "match the height" hold through a later tweak: there is
- *  no second number to forget. */
-const MAP_BAND = 'h-[22rem] sm:h-[26rem]'
-/** The same band, applied only from `lg` up. Below that the two columns are STACKED, and pinning a
- *  four-card stack to the map's height there would squash each card to ~5rem on a phone. Stacked,
- *  the cards size to their content and nothing needs to match. */
-const MAP_BAND_LG = 'lg:h-[26rem]'
+/** THE MAP'S SHAPE, in ONE place.
+ *
+ *  🔴 AN ASPECT RATIO, NOT A HEIGHT, and that is the fix for what the first pass got wrong. The map
+ *  used to span the full content width at a fixed 26rem, which is about 2.4:1. Narrowing it to the
+ *  main column kept the 26rem and dropped the width, so the same constant silently became a ~1.7:1
+ *  portrait box: a taller, more zoomed-in, worse map. A ratio holds the shape at ANY width, so the
+ *  map shrinks to fit its column instead of stretching to fill a number. */
+const MAP_SHAPE = 'aspect-[12/5]'
 type CircleRow = { id: string; name: string; slug: string; city: string | null; member_count: number; created_at: string }
 
 function eventDate(iso: string): string {
@@ -318,13 +318,13 @@ export default async function NearbyPage({
               STREAMED, and that is load-bearing on THIS page. The pin read spans three tables; the
               header, the counts and the Dispatch feed must not wait on it. The fallback holds the
               band's height so nothing below jumps when the pins land. */}
-      <div className="mb-8 flex flex-col items-start gap-6 lg:flex-row">
-        <div className="min-w-0 flex-1">
+      <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-stretch">
+        <div className="flex min-w-0 flex-1 flex-col">
           <Suspense
             fallback={
               <>
                 <SectionHeader title="On the map" />
-                <div className={`w-full animate-pulse rounded-2xl bg-surface-elevated ${MAP_BAND}`} />
+                <div className={`w-full animate-pulse rounded-2xl bg-surface-elevated ${MAP_SHAPE}`} />
               </>
             }
           >
@@ -333,33 +333,29 @@ export default async function NearbyPage({
         </div>
 
         {upcomingEvents.length > 0 && (
-          <div className="w-full shrink-0 lg:w-72">
-            <SectionHeader
-              title="Coming up"
-              count={eventsCountRes.count ?? undefined}
-              href="/events"
-            />
-            {/* One row per card, so four cards divide the map's height exactly. `grid-rows-4` is
-                fixed rather than derived from the array: a run of three would otherwise stretch to
-                fill the band and stop matching the map. COMING_UP_COUNT is the shared number. */}
-            <div className={`grid gap-2 lg:grid-rows-4 ${MAP_BAND_LG}`}>
+          <div className="flex w-full shrink-0 flex-col lg:w-[17rem]">
+            <SectionHeader title="Coming up" count={eventsCountRes.count ?? undefined} href="/events" />
+            {/* `flex-1` + `auto-rows-fr`: the row's height comes from the MAP's aspect ratio
+                (lg:items-stretch on the parent), and the four cards divide whatever that turns out
+                to be. Nothing here restates the map's size, so the two cannot drift apart when the
+                ratio changes. Below `lg` the columns stack and the cards size to their content. */}
+            <div className="grid flex-1 auto-rows-fr gap-2">
               {upcomingEvents.map((e) => (
                 <Link
                   key={e.id}
                   href={`/events/${e.slug}`}
-                  className="group flex min-h-0 items-center gap-3 rounded-2xl border border-border bg-surface p-3 lift-1 transition-colors hover:border-primary-bg dark:hover:border-primary"
+                  className="group flex min-h-0 items-center gap-2.5 overflow-hidden rounded-xl border border-border bg-surface px-2.5 py-2 lift-1 transition-colors hover:border-primary-bg dark:hover:border-primary"
                 >
-                  <span className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+                  <span className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
                     <span className="text-3xs font-bold uppercase leading-none">{eventMonth(e.starts_at)}</span>
                     <span className="text-body-sm font-bold leading-none">{eventDay(e.starts_at)}</span>
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-body-sm font-semibold text-text">{e.title}</span>
-                    <span className="mt-0.5 block truncate text-meta text-subtle">
+                    <span className="block truncate text-body-sm font-semibold leading-tight text-text">{e.title}</span>
+                    <span className="mt-0.5 block truncate text-meta leading-tight text-subtle">
                       {eventDate(e.starts_at)}{e.location ? ` · ${e.location}` : ''}
                     </span>
                   </span>
-                  <ArrowRight className="hidden h-4 w-4 shrink-0 text-subtle transition-colors group-hover:text-primary-strong sm:block" />
                 </Link>
               ))}
             </div>

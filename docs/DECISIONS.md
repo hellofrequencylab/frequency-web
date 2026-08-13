@@ -23844,3 +23844,63 @@ collapses them to one pin correctly regardless, but the split itself is unexplai
   needs the same `location_precision` treatment `spaces` got.
 - Two rows remain unmappable and neither is a regression: "Mindless Encinitas" needs a real geocode
   (no geocoder is reachable from the build container), and "Breath Is Life" was published without one.
+
+---
+
+## ADR-1028: A host who hides their address in a text field has still hidden it (2026-08-13)
+
+**Status:** accepted · **Extends** [ADR-1026](DECISIONS.md)'s coarsening ·
+**Found by** the "Breath Is Life" row while closing the ungeocoded-event gap
+
+### The row
+
+```
+title        : Breath Is Life
+hide_address : false
+street/city/region/postal : all NULL
+location     : "The Royal Temple (RSVP to see location)"
+```
+
+The host said, in the only field they were looking at, that the address is shared on RSVP. The FLAG
+that actually controls that said the opposite. Two things follow, and the second is why this is an
+ADR and not a bugfix:
+
+1. **It never geocoded**, so it had no pin. The free-text line goes to the provider verbatim, and
+   `"The Royal Temple (RSVP to see location)"` is not an address anything resolves. That was the
+   reported symptom and it is the smaller half.
+
+2. 🔴 **If it had geocoded, the map would have published the exact address.** `hide_address` is
+   false, so `lib/nearby/map-pins.ts` would have drawn a precise pin at Royal Temple's door — the
+   address its three sibling events at that venue deliberately coarsen. **The missing geocode was
+   the only thing preventing the leak. A bug prevented by a second bug is not prevented.**
+
+### The fix is a pair, and either half alone makes it worse
+
+- `stripWithholdingNote` cleans the note off the query so the geocode can succeed.
+- `withholdsAddress` makes that success safe: the read path coarsens on the host's **words** as well
+  as the flag.
+
+Shipping only the first turns a missing pin into a published address. They land together.
+
+### Why the read path, and not a data fix
+
+The obvious alternative is to flip `hide_address` to true on the row. That is one host's privacy
+setting, rewritten by us, on our reading of their prose. This module **never mutates anything**. The
+read path fails safe on what the host actually wrote, which needs nobody's permission and covers
+every row at once, including the ones written tomorrow.
+
+The predicate is tuned deliberately: a false positive costs a member some precision on a map, a
+false negative publishes an address a host meant to keep. Not symmetric, and the tests say so.
+
+### Consequences
+
+- `"Breath Is Life"` now has the coordinate its venue always had (taken from its own sibling events,
+  no geocoder required) and publishes **coarsened**, like every other Royal Temple event. Upcoming
+  public events with no point: **0**, from 1.
+- Every discoverable Circle is placed. `"Meld Coworking - Royal Temple"` and `"Mindless Encinitas"`
+  were derived from points already in our data, because no geocoder is reachable from the build
+  container. ⚠️ Mindless is placed at **city** grain, not the Leucadia neighbourhood it names, and
+  `scripts/backfill-circle-coords.mts` only touches rows where `latitude IS NULL` — so that write
+  closed the script's own path to refining it. Refining it now needs a deliberate re-run.
+- **The editor still does not warn a host that their event has no pin.** This ADR removes the
+  privacy consequence of that silence, not the silence itself.
