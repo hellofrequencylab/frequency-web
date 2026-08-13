@@ -63,12 +63,24 @@ const STATUS_CHIP: Record<
 }
 
 function GuestName({ guest }: { guest: ManageGuest }) {
+  // A signed-out guest has no profile to link to. The marker is there so the host reads the missing
+  // link and missing avatar as "this person has no account yet" rather than as a broken row — and
+  // so they know this seat is reachable only by email.
+  const guestMarker = guest.profileId === null && (
+    <span className="ml-2 shrink-0 rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-semibold text-muted">
+      No account
+    </span>
+  )
+
   return guest.handle ? (
     <Link href={`/people/${guest.handle}`} className="block truncate font-medium text-text hover:underline">
       {guest.displayName}
     </Link>
   ) : (
-    <span className="block truncate font-medium text-text">{guest.displayName}</span>
+    <span className="flex min-w-0 items-center">
+      <span className="truncate font-medium text-text">{guest.displayName}</span>
+      {guestMarker}
+    </span>
   )
 }
 
@@ -83,7 +95,9 @@ function RosterGroup({ title, guests }: { title: string; guests: ManageGuest[] }
         {guests.map((g) => {
           const chip = STATUS_CHIP[g.status]
           return (
-            <li key={g.profileId} className="flex items-center gap-3 px-4 py-3">
+            /* Keyed on the RSVP row, not the profile: a guest seat has no profileId, so keying on
+               it would give every guest in the list the same `null` key. */
+            <li key={g.rsvpId} className="flex items-center gap-3 px-4 py-3">
               <span
                 className={`inline-flex shrink-0 items-center gap-1 rounded-pill px-2 py-0.5 text-2xs font-semibold ${chip.cls}`}
               >

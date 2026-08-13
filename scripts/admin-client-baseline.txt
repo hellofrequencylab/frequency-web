@@ -566,6 +566,17 @@ lib/events/event-share.ts
 lib/events/event-stats.ts
 lib/events/follower-reminders.ts
 lib/events/geocode.ts
+# lib/events/guest-rsvp-email.ts (added 2026-08-13): composes the confirmation email for a
+# SIGNED-OUT guest RSVP (20270303000000). The bypass is the reason the module exists: it must read
+# whether the seat landed as `going` or `waitlist`, and the reader is anon — event_rsvps' SELECT
+# policy grants a row to its own profile or to a host, and a guest is neither, so under RLS this
+# read returns nothing. Converging it onto the session client would mean giving anon a policy that
+# lets it read RSVP rows by email, which is precisely the address oracle capture_guest_rsvp was
+# shaped to avoid. Quarantined here rather than left in the server action so the action itself stays
+# on the session client: capture_guest_rsvp is granted to anon and reachable over PostgREST, so the
+# action is not a security boundary and must hold no power the SQL is not already assuming. The
+# status reaches the email body only, never the HTTP response.
+lib/events/guest-rsvp-email.ts
 lib/events/guests.ts
 lib/events/host-gate.ts
 lib/events/matching.ts

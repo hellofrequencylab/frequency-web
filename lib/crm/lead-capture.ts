@@ -312,7 +312,18 @@ async function findContactByEmail(email: string, spaceId: string): Promise<Conta
  *  address is safe under the per-space unique index. FAIL-SAFE: [] on any error. */
 async function findContactsByEmail(email: string): Promise<ContactRow[]> {
   try {
-    const { data } = (await table('contacts').select(CONTACT_COLS).eq('email', email.toLowerCase())) as {
+    // Case-INSENSITIVE, for the reason findContactByEmail states 20 lines above and this function
+    // did not honour: the `email` column carries mixed case (an OAuth signup / import path stores it
+    // un-normalized) while uniqueness is on lower(email) (ADR-624). The `.eq('john@x.com')` that used
+    // to be here MISSED a stored `John@x.com`, silently — and this is the cross-space reader behind
+    // claimLeadOnSignup, so the miss landed on the one path that runs for every new member: their
+    // pre-account lead touchpoints were never claimed and nobody saw an error, because the function
+    // fails safe to []. Set-returning, so `.ilike` is if anything safer here than in the scoped twin:
+    // there is no `.maybeSingle()` to throw on a multi-row match. escapeLike neutralizes `%`/`_` so
+    // the address matches literally.
+    const { data } = (await table('contacts')
+      .select(CONTACT_COLS)
+      .ilike('email', escapeLike(email.trim().toLowerCase()))) as {
       data: ContactRow[] | null
     }
     return data ?? []

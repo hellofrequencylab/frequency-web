@@ -10,8 +10,15 @@ import { listQuestions, listEventAnswers, type EventQuestion } from '@/lib/event
 // behind their own <Suspense> (PAGE-FRAMEWORK §5) and they fetch in parallel.
 
 export interface ManageGuest {
-  profileId: string
+  /** The RSVP row id. The only identifier EVERY seat has — a guest seat has no profile, so this
+   *  is what a list key and any per-seat host action must be built on. */
+  rsvpId: string
+  /** Null for a signed-out guest seat (20270303000000). */
+  profileId: string | null
+  /** For a guest: the address they RSVP'd with. The host's only way to reach them. */
+  guestEmail: string | null
   displayName: string
+  /** Empty string for a guest — there is no profile to link to, and GuestName renders plain text. */
   handle: string
   avatarUrl: string | null
   status: 'going' | 'maybe' | 'waitlist' | 'not_going'
@@ -24,7 +31,10 @@ export interface ManageGuest {
 }
 
 interface RsvpRow {
-  profile_id: string
+  id: string
+  guest_email: string | null
+  guest_name: string | null
+  profile_id: string | null
   status: ManageGuest['status']
   plus_ones: number | null
   plus_one_names: string[] | null
@@ -44,27 +54,36 @@ export async function loadRoster(eventId: string): Promise<ManageGuest[]> {
     admin
       .from('event_rsvps')
       .select(
-        'profile_id, status, plus_ones, plus_one_names, approval_status, created_at, profile:profiles!profile_id ( id, display_name, handle, avatar_url )',
+        'id, profile_id, guest_email, guest_name, status, plus_ones, plus_one_names, approval_status, created_at, profile:profiles!profile_id ( id, display_name, handle, avatar_url )',
       )
       .eq('event_id', eventId)
       .order('created_at', { ascending: true }),
     loadCheckedInIds(eventId),
   ])
 
-  return ((rsvpRes.data ?? []) as unknown as RsvpRow[])
-    .filter((r) => r.profile != null)
-    .map((r) => ({
-      profileId: r.profile!.id,
-      displayName: r.profile!.display_name,
-      handle: r.profile!.handle,
-      avatarUrl: r.profile!.avatar_url,
-      status: r.status,
-      plusOnes: Math.max(0, r.plus_ones ?? 0),
-      plusOneNames: Array.isArray(r.plus_one_names) ? r.plus_one_names : [],
-      approvalStatus: r.approval_status ?? 'none',
-      checkedIn: checkedIn.has(r.profile!.id),
-      createdAt: r.created_at,
-    }))
+  // 🔴 This used to end in `.filter((r) => r.profile != null)`, which was harmless when profile_id
+  // was NOT NULL and became a silent bug the moment guest seats existed: guests occupy real
+  // capacity (the trigger is identity-blind) but vanished from the host's roster, so the dashboard
+  // showed fewer people than the room actually held and the host had no way to see, or contact,
+  // anyone who RSVP'd without an account. Every seat is listed now; the profile is what is optional.
+  return ((rsvpRes.data ?? []) as unknown as RsvpRow[]).map((r) => ({
+    rsvpId: r.id,
+    profileId: r.profile?.id ?? null,
+    guestEmail: r.guest_email ?? null,
+    // Best name available, in descending order of what the host can actually act on. The address
+    // is a real fallback rather than a placeholder: it is how they reach an anonymous guest.
+    displayName: r.profile?.display_name ?? r.guest_name ?? r.guest_email ?? 'Guest',
+    handle: r.profile?.handle ?? '',
+    avatarUrl: r.profile?.avatar_url ?? null,
+    status: r.status,
+    plusOnes: Math.max(0, r.plus_ones ?? 0),
+    plusOneNames: Array.isArray(r.plus_one_names) ? r.plus_one_names : [],
+    approvalStatus: r.approval_status ?? 'none',
+    // The check-in ledger keys on (event, profile), so a guest can never appear in it. False here
+    // is "we cannot know", not "did not attend" — the magic-link check-in for guests is not built.
+    checkedIn: r.profile ? checkedIn.has(r.profile.id) : false,
+    createdAt: r.created_at,
+  }))
 }
 
 /** Profile ids that have logged a verified check-in for this event. Check-in is

@@ -14,11 +14,22 @@ export const metadata: Metadata = {
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string }>
+  searchParams: Promise<{ error?: string; next?: string; email?: string }>
 }) {
-  const { error, next } = await searchParams
+  const { error, next, email } = await searchParams
   const nextValue =
     next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\') ? next : ''
+
+  // Prefill, for the guest-RSVP receipt email (lib/events/guest-rsvp-email.ts). A guest seat can
+  // only be claimed by signing in with the SAME address, because claim_guest_rsvps reads the
+  // address from auth.users rather than taking it as a parameter — so making them retype it is
+  // friction that buys nothing. The link is delivered to that mailbox, so the address in it is
+  // already the reader's own.
+  //
+  // It is a DEFAULT VALUE on an editable field, never a hidden input: whatever arrives here is
+  // just text off a query string, and the person typing must stay able to correct or replace it.
+  // Shape-checked before it renders so the field cannot be stuffed with arbitrary content.
+  const emailValue = email && email.length <= 254 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) ? email : ''
 
   return (
     <PhotoHero
@@ -50,6 +61,7 @@ export default async function SignInPage({
               type="email"
               autoComplete="email"
               required
+              defaultValue={emailValue}
               placeholder="you@example.com"
               className="mt-1 block w-full rounded-control border border-border-strong bg-surface px-3 py-2.5 text-body-sm text-text placeholder-subtle lift-1 focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30"
             />
