@@ -79,8 +79,12 @@ export async function loadRoster(eventId: string): Promise<ManageGuest[]> {
     plusOnes: Math.max(0, r.plus_ones ?? 0),
     plusOneNames: Array.isArray(r.plus_one_names) ? r.plus_one_names : [],
     approvalStatus: r.approval_status ?? 'none',
-    // The check-in ledger keys on (event, profile), so a guest can never appear in it. False here
-    // is "we cannot know", not "did not attend" — the magic-link check-in for guests is not built.
+    // The check-in ledger keys on (event, profile), so a guest can never appear in it. False here is
+    // "we cannot know", not "did not attend". That gap closes one guest at a time rather than in
+    // aggregate (ADR-1033): a guest who signs in with the address they RSVP'd with has their seat
+    // claimed on the way through (claim_guest_rsvps runs at /auth/callback), which turns them into a
+    // profile that CAN be checked in and counted here. A guest who never signs in stays unknowable,
+    // because both this count and WAM are defined on profile ids.
     checkedIn: r.profile ? checkedIn.has(r.profile.id) : false,
     createdAt: r.created_at,
   }))

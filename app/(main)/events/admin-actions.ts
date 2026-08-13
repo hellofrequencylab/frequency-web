@@ -27,6 +27,7 @@ import { writeEventCoverFocus } from '@/lib/events/cover-focus'
 import { writeEventMarketListed } from '@/lib/events/market-listing'
 import { pointFromGeog } from '@/lib/events/geo'
 import { approveRsvpById } from '@/lib/events/rsvp-depth'
+import { sendRsvpApprovedNotice } from '@/lib/events/guest-rsvp-email'
 import {
   copyEventMediaToProfileLoom,
   resolveProfileLoomSpaceId,
@@ -81,10 +82,15 @@ export async function getViewerHome(): Promise<{ lat: number; lng: number } | nu
 // this is the authority — the admin client bypasses RLS). Cancel/reinstate lives
 // here too (the header kebab is gone; Settings is the one host surface).
 
-// Every events column used below is covered by the regenerated DB types (ADR-246
-// closed), so reads and writes go through the typed admin client. The rows below
-// keep their app-facing shapes (join_mode narrowed to its vocabulary, details as a
-// plain record) via a narrowing assertion on the typed read.
+// Almost every events column used below is covered by the regenerated DB types, so reads and
+// writes go through the typed admin client. The rows below keep their app-facing shapes (join_mode
+// narrowed to its vocabulary, details as a plain record) via a narrowing assertion on the typed read.
+//
+// ONE EXCEPTION, and it reopens ADR-246 for this file: `rsvp_requires_approval` (20270303000000)
+// is live in the database and absent from lib/database.types.ts, so the typed Update types it as
+// `never` and rejects the write. The update call therefore goes through `UntypedUpdate` above. The
+// cast is on the CALL rather than on the patch object, so every other field in that patch stays
+// fully checked — and it comes back out the moment the types are regenerated.
 
 export async function getEventAdminData(slug: string) {
   const admin = createAdminClient()
@@ -873,6 +879,9 @@ export async function approveEventRsvp(
   if (!caps.has('event.editSettings')) return { error: 'Unauthorized' }
 
   await approveRsvpById(eventId, rsvpId)
+  // Same notice as the Manage console's approve path — a host admitting someone from either
+  // surface must produce the same outcome for the person waiting.
+  await sendRsvpApprovedNotice(eventId, rsvpId).catch(() => {})
 
   revalidatePath(`/events/${slug}`)
   revalidatePath(`/events/${slug}/manage`)

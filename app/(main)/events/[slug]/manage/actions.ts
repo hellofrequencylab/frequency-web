@@ -17,6 +17,7 @@ import {
   type QuestionType,
 } from '@/lib/events/questions'
 import { approveRsvpById } from '@/lib/events/rsvp-depth'
+import { sendRsvpApprovedNotice } from '@/lib/events/guest-rsvp-email'
 
 // Host Manage Dashboard actions (EVENTS-REWORK A2).
 //
@@ -132,6 +133,10 @@ export async function approveEventRsvpFromManage(
 ) {
   if (!(await authorizeManager(eventId))) return
   await approveRsvpById(eventId, rsvpId)
+  // Tell them. Without this the gate is a trap: they asked, were told to wait, and nothing ever
+  // arrives — a member would find out by reopening the page on the off chance, and a guest, who has
+  // no account to reopen anything with, would never find out at all.
+  await sendRsvpApprovedNotice(eventId, rsvpId).catch(() => {})
   revalidateManage(slug)
 }
 

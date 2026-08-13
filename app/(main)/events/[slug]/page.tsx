@@ -33,6 +33,7 @@ import { updateEventField } from '../admin-actions'
 import { RsvpControls } from '@/components/events/rsvp-controls'
 import { WarmProof } from '@/components/events/warm-proof'
 import { GuestRsvpForm } from '@/components/events/guest-rsvp-form'
+import { GuestCheckInPrompt } from '@/components/events/guest-check-in-prompt'
 import { safeHttpUrl } from '@/lib/safe-url'
 import { MembershipCheckoutFold } from '@/components/events/membership-checkout-fold'
 import { RsvpPaymentFlow, type FlowRate } from '@/components/events/rsvp-payment-flow'
@@ -1514,6 +1515,13 @@ export default async function EventDetailPage({
               to RSVP with your account.
             </p>
           </div>
+        ) : !myProfileId && isPast && !ticketsMode ? (
+          /* Signed-out visitor on an event that has STARTED (ADR-1033). RSVP is closed, so the guest
+             form above is gone and, until now, nothing replaced it. This is the check-in door: a
+             guest seat can only become a counted attendance by becoming a member's seat first, so
+             the honest offer is the sign-in that claims it. Tickets-mode events are excluded because
+             a guest seat cannot exist on one (capture_guest_rsvp refuses join_mode = 'tickets'). */
+          <GuestCheckInPrompt slug={event.slug} />
         ) : null}
 
         {/* Who's coming — the avatar pile grows in place as guests answer (warm proof, in-box). */}

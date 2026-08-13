@@ -555,7 +555,8 @@ export async function sendGuestRsvpConfirmationEmail(params: {
   googleCalUrl: string | null
   /** Sign-in deep link carrying this address, so the seat can become theirs in one step. */
   signUpUrl:    string
-  status:       'going' | 'waitlist'
+  /** 'pending' when the host approves each person: a REQUEST, not a seat. */
+  status:       'going' | 'waitlist' | 'pending'
 }) {
   const {
     to, guestName, eventTitle, whenAbsolute, location, hostName, circleName,
@@ -564,9 +565,10 @@ export async function sendGuestRsvpConfirmationEmail(params: {
 
   await enqueueEmail({
     to,
-    subject: status === 'going'
-      ? `You're going: ${eventTitle}`
-      : `You're on the waitlist: ${eventTitle}`,
+    subject:
+      status === 'going'   ? `You're going: ${eventTitle}` :
+      status === 'waitlist' ? `You're on the waitlist: ${eventTitle}` :
+                              `Request sent: ${eventTitle}`,
     html: guestRsvpConfirmationHtml({
       guestName, eventTitle, whenAbsolute, location, hostName, circleName,
       eventUrl, icsUrl, googleCalUrl, signUpUrl, status,
@@ -1754,13 +1756,19 @@ function guestRsvpConfirmationHtml({
   guestName: string | null; eventTitle: string; whenAbsolute: string; location: string | null
   hostName: string | null; circleName: string | null; eventUrl: string
   icsUrl: string | null; googleCalUrl: string | null; signUpUrl: string
-  status: 'going' | 'waitlist'
+  status: 'going' | 'waitlist' | 'pending'
 }): string {
-  const eyebrow = status === 'going' ? "You're going" : "You're on the waitlist"
+  const eyebrow =
+    status === 'going'   ? "You're going" :
+    status === 'waitlist' ? "You're on the waitlist" :
+                            'Request sent'
   const greeting = escapeHtml(guestGreeting(guestName))
-  const intro = status === 'going'
-    ? `${greeting}your spot is saved. No account needed to come along, just turn up.`
-    : `${greeting}this one is full, so you are on the waitlist. If a spot opens we will move you in and let you know. Nothing for you to do.`
+  const intro =
+    status === 'going'
+      ? `${greeting}your spot is saved. No account needed to come along, just turn up.`
+      : status === 'waitlist'
+        ? `${greeting}this one is full, so you are on the waitlist. If a spot opens we will move you in and let you know. Nothing for you to do.`
+        : `${greeting}the host approves each person for this one, so your request is with them now. We will email you the moment they reply. You do not have a spot until then.`
   const hostLine = rsvpHostLine(hostName, circleName)
 
   const calendarBlock = status === 'going' && (icsUrl || googleCalUrl) ? `
@@ -1808,13 +1816,19 @@ function guestRsvpConfirmationText({
   guestName: string | null; eventTitle: string; whenAbsolute: string; location: string | null
   hostName: string | null; circleName: string | null; eventUrl: string
   icsUrl: string | null; googleCalUrl: string | null; signUpUrl: string
-  status: 'going' | 'waitlist'
+  status: 'going' | 'waitlist' | 'pending'
 }): string {
-  const eyebrow = status === 'going' ? "You're going" : "You're on the waitlist"
+  const eyebrow =
+    status === 'going'   ? "You're going" :
+    status === 'waitlist' ? "You're on the waitlist" :
+                            'Request sent'
   const greeting = guestGreeting(guestName)
-  const intro = status === 'going'
-    ? `${greeting}your spot is saved. No account needed to come along, just turn up.`
-    : `${greeting}this one is full, so you are on the waitlist. If a spot opens we will move you in and let you know. Nothing for you to do.`
+  const intro =
+    status === 'going'
+      ? `${greeting}your spot is saved. No account needed to come along, just turn up.`
+      : status === 'waitlist'
+        ? `${greeting}this one is full, so you are on the waitlist. If a spot opens we will move you in and let you know. Nothing for you to do.`
+        : `${greeting}the host approves each person for this one, so your request is with them now. We will email you the moment they reply. You do not have a spot until then.`
 
   const hostPlain =
     hostName && circleName ? `Hosted by ${hostName} · ${circleName}` :
