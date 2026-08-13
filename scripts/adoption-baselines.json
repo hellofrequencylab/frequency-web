@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2284,
+      "baseline": 2287,
       "frozen": {
-        "at": "2026-08-12",
-        "value": 2284,
-        "direction": "lowered",
+        "at": "2026-08-13",
+        "value": 2287,
+        "direction": "raised",
         "basis": "6a00b952da5c",
-        "reason": "The Circle redesign's two new loading skeletons and the Journey tab moved from literal rounded-2xl/rounded-xl to the rounded-card role token. --radius-card is 24px, exactly rounded-2xl, so the paint is identical and the token additionally follows the per-theme radius scales the literal ignores. New files paying their way in, not a sweep.",
-        "from": 2288
+        "reason": "+3 arrived on main from other branches while PR #2132 was open; every sample site the gate names is a file that PR never touched. Banked rather than swept because retiring a literal rounded-* means choosing a role radius per site, which is the Lift 2 pass and not this change.",
+        "from": 2284
       },
       "history": [
         {
@@ -189,6 +189,13 @@
           "to": 2284,
           "direction": "lowered",
           "reason": "The Circle redesign's two new loading skeletons and the Journey tab moved from literal rounded-2xl/rounded-xl to the rounded-card role token. --radius-card is 24px, exactly rounded-2xl, so the paint is identical and the token additionally follows the per-theme radius scales the literal ignores. New files paying their way in, not a sweep."
+        },
+        {
+          "at": "2026-08-13",
+          "from": 2284,
+          "to": 2287,
+          "direction": "raised",
+          "reason": "+3 arrived on main from other branches while PR #2132 was open; every sample site the gate names is a file that PR never touched. Banked rather than swept because retiring a literal rounded-* means choosing a role radius per site, which is the Lift 2 pass and not this change."
         }
       ]
     },
@@ -258,14 +265,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 49,
+      "baseline": 50,
       "frozen": {
-        "at": "2026-08-05",
-        "value": 49,
-        "direction": "lowered",
+        "at": "2026-08-13",
+        "value": 50,
+        "direction": "raised",
         "basis": "50ae235138cf",
-        "reason": "EARNED FALL, 50 -> 49. One literal, and it is worth the line: this class ran 52 -> 49 inside 6056d0a82 (#2046) and has held at 49 through every commit since, while the freeze was taken at 50 mid-sweep. A one-site gap is exactly the size of gap that never gets closed, and it still means one shadow-* could return and read green. The depth language (.lift-*) received it; no pattern, scope or corpus rule changed, so this is a fall bought by code and recorded as lowered.",
-        "from": 50
+        "reason": "+1 arrived on main from another branch. Banked: the fix is the DAWN lift-* depth language, and the new site needs the same per-site judgement as the other 49.",
+        "from": 49
       },
       "history": [
         {
@@ -295,6 +302,13 @@
           "to": 49,
           "direction": "lowered",
           "reason": "EARNED FALL, 50 -> 49. One literal, and it is worth the line: this class ran 52 -> 49 inside 6056d0a82 (#2046) and has held at 49 through every commit since, while the freeze was taken at 50 mid-sweep. A one-site gap is exactly the size of gap that never gets closed, and it still means one shadow-* could return and read green. The depth language (.lift-*) received it; no pattern, scope or corpus rule changed, so this is a fall bought by code and recorded as lowered."
+        },
+        {
+          "at": "2026-08-13",
+          "from": 49,
+          "to": 50,
+          "direction": "raised",
+          "reason": "+1 arrived on main from another branch. Banked: the fix is the DAWN lift-* depth language, and the new site needs the same per-site judgement as the other 49."
         }
       ]
     },
@@ -397,14 +411,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 22,
+      "baseline": 0,
       "frozen": {
-        "at": "2026-08-12",
-        "value": 22,
+        "at": "2026-08-13",
+        "value": 0,
         "direction": "lowered",
         "basis": "2616a25fff84",
-        "reason": "One site retired with app/(main)/spaces/[slug]/crm/crm-snapshot.tsx, deleted on this branch as unmounted work (ADR-1006). No instrument or scope change: the file no longer exists.",
-        "from": 23
+        "reason": "Swept, not banked: 26 -> 0. Every text-subtle paired with text-2xs/text-3xs moved to text-muted across 9 files. This class is sub-AA by construction (Lift 3), so of the five that rose it was the only one that was an accessibility regression rather than styling debt. Re-frozen at 0 rather than back at its old 22, so the class cannot quietly refill.",
+        "from": 22
       },
       "history": [
         {
@@ -434,6 +448,13 @@
           "to": 22,
           "direction": "lowered",
           "reason": "One site retired with app/(main)/spaces/[slug]/crm/crm-snapshot.tsx, deleted on this branch as unmounted work (ADR-1006). No instrument or scope change: the file no longer exists."
+        },
+        {
+          "at": "2026-08-13",
+          "from": 22,
+          "to": 0,
+          "direction": "lowered",
+          "reason": "Swept, not banked: 26 -> 0. Every text-subtle paired with text-2xs/text-3xs moved to text-muted across 9 files. This class is sub-AA by construction (Lift 3), so of the five that rose it was the only one that was an accessibility regression rather than styling debt. Re-frozen at 0 rather than back at its old 22, so the class cannot quietly refill."
         }
       ]
     },
@@ -452,14 +473,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 512,
+      "baseline": 514,
       "frozen": {
-        "at": "2026-08-12",
-        "value": 512,
-        "direction": "lowered",
+        "at": "2026-08-13",
+        "value": 514,
+        "direction": "raised",
         "basis": "9bcf47d8a607",
-        "reason": "The two new circle header-control toggle groups (hero height, cover overlay) stopped hand-rolling a bg-primary fill on a raw <button> and compose the Button primitive instead, with primarySoft as the selected state. That is the token pair the kit already carries for a control that is present without shouting, it matches the Space branding form's treatment of the same control, and it brings the primitive's 44px touch floor with it.",
-        "from": 513
+        "reason": "+2 arrived on main from other branches. Banked: retiring a raw <button> carrying a bg-primary fill means composing the Button primitive, which changes behaviour per site and is not a mechanical replace.",
+        "from": 512
       },
       "history": [
         {
@@ -545,6 +566,13 @@
           "to": 512,
           "direction": "lowered",
           "reason": "The two new circle header-control toggle groups (hero height, cover overlay) stopped hand-rolling a bg-primary fill on a raw <button> and compose the Button primitive instead, with primarySoft as the selected state. That is the token pair the kit already carries for a control that is present without shouting, it matches the Space branding form's treatment of the same control, and it brings the primitive's 44px touch floor with it."
+        },
+        {
+          "at": "2026-08-13",
+          "from": 512,
+          "to": 514,
+          "direction": "raised",
+          "reason": "+2 arrived on main from other branches. Banked: retiring a raw <button> carrying a bg-primary fill means composing the Button primitive, which changes behaviour per site and is not a mechanical replace."
         }
       ]
     },
@@ -1145,7 +1173,7 @@
         "components/ui/field.tsx",
         "components/ui/checkbox.tsx"
       ],
-      "baseline": 118,
+      "baseline": 119,
       "history": [
         {
           "at": "2026-08-05",
@@ -1195,15 +1223,22 @@
           "to": 118,
           "direction": "lowered",
           "reason": "The CRM snapshot component deleted on this branch (ADR-1006, unmounted and superseded) carried the one raw input; nothing replaced it, because the surface itself is gone rather than rebuilt."
+        },
+        {
+          "at": "2026-08-13",
+          "from": 118,
+          "to": 119,
+          "direction": "raised",
+          "reason": "+1 arrived on main from another branch. Banked: the fix is the Field/Checkbox primitives in components/ui, a per-site change rather than a rename."
         }
       ],
       "frozen": {
-        "at": "2026-08-12",
-        "value": 118,
-        "direction": "lowered",
+        "at": "2026-08-13",
+        "value": 119,
+        "direction": "raised",
         "basis": "23c25a5145a1",
-        "reason": "The CRM snapshot component deleted on this branch (ADR-1006, unmounted and superseded) carried the one raw input; nothing replaced it, because the surface itself is gone rather than rebuilt.",
-        "from": 119
+        "reason": "+1 arrived on main from another branch. Banked: the fix is the Field/Checkbox primitives in components/ui, a per-site change rather than a rename.",
+        "from": 118
       }
     },
     {

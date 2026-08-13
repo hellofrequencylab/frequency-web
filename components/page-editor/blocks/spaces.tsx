@@ -58,7 +58,7 @@ function EditorStub({ label, hint }: { label: string; hint: string }) {
   return (
     <div className="rounded-card border border-dashed border-border bg-surface/60 px-4 py-8 text-center text-body-sm text-muted">
       {label}
-      <span className="mt-0.5 block text-2xs text-subtle">{hint}</span>
+      <span className="mt-0.5 block text-2xs text-muted">{hint}</span>
     </div>
   )
 }

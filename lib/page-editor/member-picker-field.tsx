@@ -110,7 +110,7 @@ function MemberPickerField({
               <Avatar member={m} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-body-sm font-medium text-text">{m.displayName}</span>
-                <span className="block truncate text-2xs text-subtle">@{m.handle}</span>
+                <span className="block truncate text-2xs text-muted">@{m.handle}</span>
               </span>
               <button
                 type="button"
@@ -159,10 +159,10 @@ function MemberPickerField({
                       <Avatar member={m} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-body-sm font-medium text-text">{m.displayName}</span>
-                        <span className="block truncate text-2xs text-subtle">@{m.handle}</span>
+                        <span className="block truncate text-2xs text-muted">@{m.handle}</span>
                       </span>
                       {already ? (
-                        <span className="shrink-0 text-2xs text-subtle">Added</span>
+                        <span className="shrink-0 text-2xs text-muted">Added</span>
                       ) : (
                         <UserPlus className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
                       )}
@@ -176,7 +176,7 @@ function MemberPickerField({
       )}
 
       {!slug && (
-        <p className="text-2xs text-subtle">Open this from your space editor to add members from the network.</p>
+        <p className="text-2xs text-muted">Open this from your space editor to add members from the network.</p>
       )}
     </div>
   )
@@ -190,7 +190,7 @@ function Avatar({ member }: { member: MemberPick }) {
     )
   }
   return (
-    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-2xs font-bold text-subtle">
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-2xs font-bold text-muted">
       {getInitials(member.displayName)}
     </span>
   )

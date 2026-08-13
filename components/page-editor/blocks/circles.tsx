@@ -34,7 +34,7 @@ function EditorStub({ label }: { label: string }) {
   return (
     <div className="rounded-card border border-dashed border-border bg-surface/60 px-4 py-8 text-center text-body-sm text-muted">
       {label}
-      <span className="mt-0.5 block text-2xs text-subtle">Live circles show on the published page</span>
+      <span className="mt-0.5 block text-2xs text-muted">Live circles show on the published page</span>
     </div>
   )
 }

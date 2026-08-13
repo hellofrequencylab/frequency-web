@@ -66,7 +66,7 @@ function LoomImageField({
         >
           <ImageIcon className="h-5 w-5" aria-hidden />
           Pick from the Loom
-          <span className="text-2xs font-normal text-subtle">browse your library, or upload there</span>
+          <span className="text-2xs font-normal text-muted">browse your library, or upload there</span>
         </button>
       )}
 
