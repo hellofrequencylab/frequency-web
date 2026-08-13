@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { pixelPaths, movesPixels } from './pixel-paths.mjs'
 
 // ── The guard on the fallback that unblocks docs-only pull requests ─────────────────────────
@@ -71,5 +74,49 @@ describe('the fallback fires on exactly the PRs e2e skips', () => {
 
   it('an empty changed-file list does not move pixels', () => {
     expect(movesPixels([])).toBe(false)
+  })
+})
+
+// ── The half these tests used to miss: the EXIT CODE the workflow reads ─────────────────────────
+//
+// 🔴 Everything above tests `movesPixels`, which was always correct. The fallback still failed on
+// every docs-only pull request, because the workflow ran the script through `xargs` — and xargs
+// reports **123** for any command exiting 1–125. The script's "nothing moves pixels" exit 1 reached
+// the workflow as 123, hit its "refusing to post a status on a guess" arm, and failed the job. The
+// deadlock the whole fallback exists to close therefore stayed shut, silently, from the day it
+// shipped until PR #2116 became the first docs-only PR to run it.
+//
+// That is AGENTS.md's deploy-safety rule 6 exactly — *every fail-safe needs a gate that notices it
+// fired*. The fail-safe had unit tests on its logic and none on its wiring. These are the wiring.
+
+function runCli(files: string[]): number {
+  const dir = mkdtempSync(join(tmpdir(), 'pixel-paths-'))
+  const list = join(dir, 'changed.txt')
+  writeFileSync(list, files.join('\n') + (files.length ? '\n' : ''))
+  // Deliberately the workflow's own command line, verbatim. A test that called the function
+  // instead would have passed all along.
+  const r = spawnSync('node', ['scripts/pixel-paths.mjs', '--files', list], { cwd: process.cwd() })
+  return r.status ?? -1
+}
+
+describe('the command line the workflow actually runs', () => {
+  it('exits 1 on a docs-only list, so the fallback posts pr-compare', () => {
+    expect(runCli(['docs/DECISIONS.md', 'docs/CIRCLES-C3-PLAN.md'])).toBe(1)
+  })
+
+  it('exits 0 when a changed file can move pixels, so e2e keeps ownership', () => {
+    expect(runCli(['docs/x.md', 'app/(main)/page.tsx'])).toBe(0)
+  })
+
+  it('exits 1 on an empty list rather than printing the globs and exiting 0', () => {
+    // `--files` on an empty file is a real answer about a real PR, not the bare no-argument
+    // affordance. Reading it as "e2e owns this" would deadlock a PR that changed nothing.
+    expect(runCli([])).toBe(1)
+  })
+
+  it('is never 123 — the code xargs substitutes for anything in 1..125', () => {
+    for (const files of [['docs/a.md'], [], ['scripts/check-adr.mjs']]) {
+      expect(runCli(files)).not.toBe(123)
+    }
   })
 })
