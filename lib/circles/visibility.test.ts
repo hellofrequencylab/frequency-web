@@ -177,6 +177,11 @@ describe('the read-path ratchet — every service-role circle read that feeds a 
     // "circles" in the usual places walks past. 2 of the 7 circles in production are unlisted and
     // this list takes the 5 newest with no filter at all, so it was leaking today, not latently.
     ['app/(main)/nearby/page.tsx', 'the "new circles to join" list and the circle count tile'],
+    // The map layer added beside that list. It reads `circles` through the same service-role
+    // client, and a pin says MORE than a list row does: it publishes the circle's PLACE. It joins
+    // the ratchet on the day it is written rather than on the day somebody notices, which is the
+    // whole lesson of the entry above it.
+    ['lib/nearby/map-pins.ts', 'the Around You map circle pins'],
     ['components/sidebar/rail-panels.tsx', 'the "circles to explore" and "newest circles" rails'],
     ['components/widgets/top-circles.tsx', 'the "active circles" page module'],
     ['lib/ai/vera/read-tools.ts', 'Vera naming a circle and its host out loud'],
