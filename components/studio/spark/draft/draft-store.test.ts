@@ -5,6 +5,7 @@ import {
   MAX_DRAFT_CHARS,
   MAX_VALUE_CHARS,
   capValues,
+  clearAllDrafts,
   discardDraft,
   draftScope,
   draftStorageKey,
@@ -207,6 +208,44 @@ describe('discard', () => {
     const store = fakeStorage()
     discardDraft(store, 'never-existed')
     expect(() => discardDraft(store, 'never-existed')).not.toThrow()
+  })
+})
+
+// Sign-out clears the device. These are the rules that stop one member's half-typed answers being
+// offered to the next person who signs in on the same browser — see the note on `clearAllDrafts`.
+describe('clearing the device on sign-out', () => {
+  it('takes every Spark draft, not only the expired ones', () => {
+    const store = fakeStorage()
+    writeDraft(store, 'a', { step: 1, values: { 'f.who': 'fresh' } }, NOW)
+    writeDraft(store, 'b', { step: 3, values: { 'f.who': 'also fresh' } }, NOW)
+    // `pruneDrafts` would keep both of these; that is the difference between the two functions and
+    // the whole reason a second one exists.
+    expect(pruneDrafts(store, NOW)).toBe(0)
+    expect(clearAllDrafts(store)).toBe(2)
+    expect(readDraft(store, 'a', NOW)).toBeNull()
+    expect(readDraft(store, 'b', NOW)).toBeNull()
+  })
+
+  it('leaves every key that is not ours alone', () => {
+    const store = fakeStorage({ 'theme': 'dark', 'unrelated.cache': '{}' })
+    writeDraft(store, 'a', { step: 1, values: { 'f.who': 'typed' } }, NOW)
+    clearAllDrafts(store)
+    expect(store.map.get('theme')).toBe('dark')
+    expect(store.map.get('unrelated.cache')).toBe('{}')
+    expect(readDraft(store, 'a', NOW)).toBeNull()
+  })
+
+  it('reports nothing to do on a device that was never used to draft', () => {
+    expect(clearAllDrafts(fakeStorage())).toBe(0)
+  })
+
+  it('never throws, because a sign-out must not fail on a blocked Storage', () => {
+    // Seeded directly rather than via `writeDraft`, which cannot write to a refusing Storage — the
+    // point is to reach `removeItem` and have IT throw. A sign-out that fails because localStorage
+    // was locked down would be worse than the leak it is closing.
+    const store = fakeStorage({ [draftStorageKey('a')]: 'anything' }, true)
+    expect(() => clearAllDrafts(store)).not.toThrow()
+    expect(clearAllDrafts(store)).toBe(0)
   })
 })
 

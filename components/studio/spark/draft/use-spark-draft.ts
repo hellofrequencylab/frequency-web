@@ -42,6 +42,7 @@ import {
 import { useStudioDraft, type SaveState } from '../../kit/use-studio-draft'
 import { applyValues, collectValues } from './draft-dom'
 import {
+  clearAllDrafts,
   discardDraft,
   pruneDrafts,
   readDraft,
@@ -118,6 +119,20 @@ export function clearSparkDraft(scope: string): void {
   const store = safeStorage()
   if (store) discardDraft(store, scope)
   void discardSparkDraftAction(scope).catch(() => {})
+}
+
+/**
+ * Erase every Spark draft this DEVICE is holding. Called from the sign-out button; see the long
+ * note on `clearAllDrafts` for what it is protecting against.
+ *
+ * 🔴 THE SERVER COPY IS DELIBERATELY LEFT ALONE. `studio_draft` is keyed by profile id, so it is
+ * already the author's own and nobody else can reach it — that is the whole point of the server
+ * half. Signing out on a borrowed laptop must not destroy work the member will expect to find on
+ * their own machine tomorrow. Only the device copy, which is the one that outlives the session, goes.
+ */
+export function clearDeviceSparkDrafts(): number {
+  const store = safeStorage()
+  return store ? clearAllDrafts(store) : 0
 }
 
 interface OfferState {
