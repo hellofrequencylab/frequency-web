@@ -13,7 +13,8 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
 ([ADR-1002](docs/DECISIONS.md), [ADR-1003](docs/DECISIONS.md)).
 
 - **The artifact is gated in `postbuild`, not CI** — CI never builds, Vercel does. `check:build-budget`
-  (total per-function output under 8 GB; measured 5.59 GB) and `check:og-trace` run on the real
+  (total per-function output under 8 GB; **measured 5.81 GB across 499 functions, 2026-08-13**, up
+  from 5.59 GB) and `check:og-trace` (sharp reaching 67 functions of a 100 budget) run on the real
   build and fail it.
 - **When the budget gate fires, fix the fan-out, do not raise the budget.** Anything reachable from a
   root layout, a ROOT metadata file, or a shared server module is multiplied by every route beneath it.

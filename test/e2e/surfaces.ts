@@ -271,6 +271,24 @@ export function appSurfaces(
   const surfaces: Surface[] = [
     { path: '/feed', slug: 'app-feed', audience: 'member', viewportOnly: true },
     { path: '/settings', slug: 'app-settings', audience: 'member' },
+    // Around You. Listed KNOWING it will SKIP until the seeded member account and its three repo
+    // secrets exist (UX-MATURITY-PLAN lift 6a, an owner action), and that is the point rather than
+    // an oversight: a listed-but-skipping surface is NAMED in the shell reporter's `unphotographed`
+    // list on every PR, so the gap is visible in a job summary instead of being invisible because
+    // nobody thought to add the row. It cost three consecutive PRs of dense layout work — a header
+    // divider carrying a counts line, an aspect-ratio map band, a height-matched card grid — with
+    // no automated check on any of it.
+    //
+    // 🔴 IT CANNOT BE AN `anon` SURFACE, and the reason is worth stating so nobody "fixes" it that
+    // way. `/nearby` is auth-walled twice: proxy.ts lists it in PROTECTED_PATHS (so publicSurfaces()
+    // filters it out on the same pass that drops /circles), and the page calls notFound() with no
+    // user. An anon entry would either vanish from the registry or land on /sign-in and skip — a
+    // permanent green with nothing behind it, which is the failure mode this file already fights.
+    //
+    // The structural half is covered TODAY and browserlessly by test/a11y/nearby-map.a11y.test.tsx,
+    // on the already-required `test` check. What this row buys is the pixels, the hour the secret
+    // lands.
+    { path: '/nearby', slug: 'app-nearby', audience: 'member' },
   ]
   if (roomPath) {
     surfaces.push({ path: roomPath, slug: 'app-room', audience: 'member' })
@@ -372,6 +390,36 @@ export function masksFor(page: Page, surface: Surface): Locator[] {
  * 8497 → 9272 → 9390). The lazy-content problem was HYPOTHESISED and never seen. Shipping a
  * fix for the second alongside the first is what turned a three-surface failure into a
  * suite-wide one.
+ *
+ * ── 🔴 THE LAZY-CONTENT PROBLEM HAS NOW BEEN SEEN (2026-08-13) ────────────────────────────
+ *
+ * It is real, and it is WORSE than "a surface renders differently": it can freeze a broken
+ * image into a baseline and INVERT the gate for that region — green while the image stays
+ * broken, red the moment it renders correctly.
+ *
+ * The evidence. A capture run rewrote exactly one non-app baseline,
+ * `spaces--dawn-dark-mobile.png`. Both versions are 390×16416 — identical dimensions, so it
+ * never looked like a layout regression — and byte-identical everywhere except ONE contiguous
+ * 421px band at y 4010..4430 (2.21% of pixels). Cropping both: the OLD baseline holds an empty
+ * rounded rectangle, the NEW one holds the photograph that belongs there. The old capture had
+ * photographed an image that never loaded, and that failure had been the expected state since.
+ *
+ * The band sits ~4000px down a 16416px page, far below the 390×844 mobile viewport, so it is
+ * `loading="lazy"` content that was never asked to load. The height matched because the box is
+ * correctly reserved; only the pixels were missing. On a dark theme an empty box reads as
+ * deliberate negative space, which is why nobody caught it by eye.
+ *
+ * 🔴 THIS IS NOT A LICENCE TO RE-TRY THE SCROLL PASS. The note above still stands and the fix
+ * is a DIFFERENT shape, which is precisely why the scroll pass failed: scrolling loads images
+ * as a side effect of moving the viewport, and moving the viewport is what fires every
+ * IntersectionObserver reveal on the page. Flipping `img.loading` to `eager` and awaiting
+ * `img.decode()` loads the images WITHOUT moving anything, so it cannot trip a reveal.
+ *
+ * That change is not made here, because it contradicts this helper's observation-only rule and
+ * would rewrite every full-page baseline currently holding a frozen-empty image — an owner
+ * call, with an audit of the other 75 baselines for the same pattern first. Until then, treat a
+ * baseline diff that is one contiguous band at identical dimensions as SUSPECTED FROZEN IMAGE
+ * and crop both before judging it: the new capture is likely the correct one.
  */
 export async function settle(page: Page): Promise<void> {
   await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {})

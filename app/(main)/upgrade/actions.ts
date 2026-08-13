@@ -109,31 +109,18 @@ export async function startMembershipCheckout(
 }
 
 // PWYW SUPPORTER BADGE (Pricing ladder Phase C, ADR-463 / ADR-495). Supporter is retired as a tier and
-// becomes an opt-in pay-what-you-want badge on Crew (profiles.is_supporter). This writes the badge flag
-// only: the actual PWYW CONTRIBUTION CHARGE + `supporter_contributions` ledger live in
-// startSupporterContribution below, DORMANT behind billing_live. A member can turn the badge on or off
-// freely. Writes the caller's OWN profile only (re-resolved from the session), never another member's.
-export async function toggleSupporterBadge(on: boolean): Promise<ActionResult<{ isSupporter: boolean }>> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return fail('Not signed in')
-
-  const admin = createAdminClient()
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('id')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  if (!profile) return fail('Profile not found')
-
-  const { error } = await admin.from('profiles').update({ is_supporter: on }).eq('id', profile.id)
-  if (error) return fail(error.message)
-
-  revalidatePath('/upgrade')
-  return ok({ isSupporter: on })
-}
+// becomes an opt-in pay-what-you-want badge on Crew (profiles.is_supporter).
+//
+// 🔴 THERE IS NO STANDALONE `toggleSupporterBadge` ANY MORE (ADR-1030). One existed here and never
+// acquired a caller: nothing in app/ or components/ imported it, and no test covered it. In a
+// 'use server' module that is not dead code — every export is a POST endpoint the framework wires up
+// and serves, so an orphan action is an untested, unreviewed write path onto `profiles` that stays
+// reachable precisely because nobody is looking at it.
+//
+// The badge write it performed is not lost: `startSupporterContribution` below does exactly the same
+// thing on its dormant path (billing off ⇒ badge on, no Stripe), which is the path the /upgrade flow
+// actually calls. If a member-facing "turn the badge off again" control is ever built, it should be
+// added THEN, with its caller and its test in the same change.
 
 /** The signed-in caller's profile id (session-derived), or null when not signed in. Never trust a
  *  client-supplied id; resolve it from the auth session (mirrors the founders checkout action). */
@@ -153,7 +140,7 @@ async function getMyProfileId(): Promise<string | null> {
 
 export type SupporterContributionResult =
   // billing_live is OFF (today): the badge was turned on, but NO charge was started. No session,
-  // no card. This is the dormant path — identical to toggleSupporterBadge's behavior.
+  // no card. This is the dormant path, and it is now the ONLY path that sets the badge.
   | { ok: true; dormant: true; isSupporter: boolean }
   // Live + authorized: the hosted Stripe Checkout URL for the one-time PWYW contribution.
   | { ok: true; url: string }
@@ -166,7 +153,7 @@ export type SupporterContributionResult =
  * successful payment turns the Supporter badge on + books a Foundation donation (lib/billing/supporter.ts).
  *
  * THE GATE (no-charge invariant): while billingLive() is false this NEVER touches Stripe. It simply turns
- * the badge on (profiles.is_supporter) exactly like toggleSupporterBadge and returns { dormant:true }. The
+ * the badge on (profiles.is_supporter) and returns { dormant:true }. The
  * charge machinery only runs once the operator flips `billing_live`.
  *
  * When live: validate the chosen amount against the operator PWYW floor (catalog.pwyw.minCents) + the
