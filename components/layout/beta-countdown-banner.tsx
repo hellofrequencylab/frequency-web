@@ -29,21 +29,46 @@ import { betaEndsAt } from '@/lib/platform-flags'
 //
 // DARK UNTIL SET: betaEndsAt() returns null when
 // the operator hasn't set a date (and on any read error), so this renders nothing today. Once a date is
-// set, it counts down to it and quietly disappears the moment the date passes. Server component; one
-// cached read. Voice per CONTENT-VOICE §10 (plain, no em dashes, proper noun carries the magic).
+// set, it counts down to it and quietly disappears the moment the date passes.
+//
+// 🔴 THE READ LIVES IN THE LAYOUT, NOT HERE (ADR-1030). This used to be an async component behind
+// `<Suspense fallback={null}>`, which reserved NOTHING. On every request with a date set the shell
+// painted, then the whole page jumped down by the banner's height the moment the read landed — the
+// exact shift the boundary looks like it is preventing. A fixed-height fallback cannot fix it either:
+// the copy wraps to two or three lines on a narrow viewport, so any number guessed here is wrong at
+// some width.
+//
+// So the decision moves up. `app/(main)/layout.tsx` reads `betaEndsAt()` inside the parallel wave it
+// already awaits (it costs no wall-clock: four other reads are in flight beside it) and mounts this
+// only when there is a live countdown. Height is reserved by the banner itself, because the banner is
+// already there in the first flush. Nothing is reserved when no date is set, so there is no gap either.
+//
+// That makes this a SYNCHRONOUS, presentational component: it is handed the date and renders it. It
+// has no opinion about whether it should exist, which is why `betaCountdownEndsAt()` below is the one
+// place that question is answered — the layout and this file cannot drift on it.
+
+/**
+ * The single predicate: is there a countdown to show RIGHT NOW, and if so, when does it end?
+ *
+ * Null when no date is set, when the stored value is unreadable, or when the date has already passed
+ * (nothing to count down; the graduation flip owns what comes next). Callers render the banner if and
+ * only if this returns a date, and hand that same date straight to it.
+ *
+ * Request-time "now" via `new Date()` — the repo's server-render pattern, which keeps
+ * react-hooks/purity happy in a way `Date.now()` does not.
+ */
+export async function betaCountdownEndsAt(): Promise<Date | null> {
+  const ends = await betaEndsAt()
+  if (!ends) return null
+  return ends.getTime() <= new Date().getTime() ? null : ends
+}
 
 function daysBetween(fromMs: number, toMs: number): number {
   return Math.max(0, Math.ceil((toMs - fromMs) / 86_400_000))
 }
 
-export async function BetaCountdownBanner() {
-  const ends = await betaEndsAt()
-  if (!ends) return null
-  // Request-time read via `new Date()` (the repo's server-render pattern; keeps react-hooks/purity happy,
-  // unlike Date.now()). Past the end date: nothing to count down; the graduation flip owns what's next.
+export function BetaCountdownBanner({ ends }: { ends: Date }) {
   const nowMs = new Date().getTime()
-  if (ends.getTime() <= nowMs) return null
-
   const days = daysBetween(nowMs, ends.getTime())
   const dateLabel = ends.toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' })
   const countLabel = days === 1 ? '1 day left' : `${days} days left`

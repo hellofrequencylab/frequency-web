@@ -23907,7 +23907,158 @@ false negative publishes an address a host meant to keep. Not symmetric, and the
 
 ---
 
-## ADR-1029: The primary button keeps its white label on the brand amber, and we stop claiming unqualified AA (2026-08-13)
+## ADR-1029: An event with no map pin says so, and Around You gets its first automated check (2026-08-13)
+
+**Status:** accepted · **Closes the half [ADR-1028](DECISIONS.md) deliberately left open**
+
+### 1 · The silence, not the miss
+
+`saveEventLocation` is best-effort by contract: a geocode miss leaves `geog` NULL and the save still
+succeeds. That is **right** — a host must never lose their work because a third-party geocoder
+shrugged. Every caller passes a geocoder; none of them is the bug.
+
+The bug is that **nothing downstream ever noticed**. An event with no point silently disappears from:
+
+| surface | where |
+|---|---|
+| the Around You map | `lib/nearby/map-pins.ts` — `.not('geog', 'is', null)` |
+| the events-index map | `app/(main)/events/index-data.ts` |
+| its own page's mini-map | `app/(main)/events/[slug]/page.tsx` |
+| radius-based dispatch audiences | `lib/events/dispatch-audience.ts` |
+
+Four surfaces, no signal, and the host with no reason to suspect any of it. `map-pins.test.ts` even
+has a case named *"an event that was never geocoded"* asserting the pin is correctly omitted — the
+silence was encoded as correct behaviour.
+
+⚠️ **And it multiplies.** `lib/event-recurrence.ts` carries `geog` in `INHERITED_COLUMNS`, so a
+NULL-geog **anchor** propagates NULL into every occurrence it mints. One unnoticed miss on a weekly
+series is sixty invisible rows.
+
+`EventSettingsModule` now shows a `Banner tone="warning"` inside the existing `mode !== 'online'`
+guard — already the correct condition, since an online event has no pin to miss. It costs no new
+read: `lat`/`lng` are hydrated from the decoded `geog` the module already receives.
+
+🔴 **A component, not the Studio manifest.** `lib/studio/entities/event.ts` declares what a DRAFT
+contains; `geog` is derived server-side and never authored, and `FieldDef` has no `warn`/`validate`
+slot by design. Adding one would be wrong on both counts.
+
+### 2 · Around You had no automated coverage at all
+
+Not a visual baseline, not an axe audit, not a render test — while carrying three consecutive PRs of
+the densest layout work in the app.
+
+🔴 **It cannot be a Playwright `anon` surface**, and the reason matters so nobody "fixes" it that
+way: `/nearby` is auth-walled twice (`proxy.ts` PROTECTED_PATHS, and `notFound()` with no user), so
+an anon entry either drops out of `publicSurfaces()` on the same pass that removes `/circles`, or
+lands on `/sign-in` and skips. **A permanent green with nothing behind it** — the failure this repo
+keeps meeting.
+
+So the coverage splits by what each half actually needs:
+
+- **`test/a11y/nearby-map.a11y.test.tsx`** — browserless, no credential, on the **already-required**
+  `test` check. jsdom cannot compute layout, so the aspect ratio and the height match stay uncovered
+  and honestly so. What it does guard is the structural half that breaks silently: the band is a
+  named region, the legend describes *this* map rather than the vocabulary, swatches are decorative,
+  and the "more than one date" / "general area" lines appear exactly when they apply.
+- **A `member` row in `appSurfaces()`** — listed on the expectation that it would SKIP until lift
+  6a's seeded account existed, on the theory that a listed-but-skipping surface is at least **named**
+  in the shell reporter's `unphotographed` list.
+
+  ✅ **That expectation was wrong, and the first `pr-compare` run to see the row proved it**
+  (2026-08-13). The shell session minted, `/nearby` loaded authenticated, and the reporter read
+  *"App shell covered: 4/4 surfaces, 16/16 checks"*. The `capture_shell` secrets have been in place
+  since the other three `app-*` surfaces were photographed; lift 6a was never the blocker. The run
+  failed on *"A snapshot doesn't exist … writing actual"* for all four `app-nearby-*` PNGs, which is
+  a **capture**, not a gap — resolved by the documented dispatch (`e2e-manual.yml`, `capture_shell` +
+  `update_baselines`). Recorded here rather than quietly fixed because the wrong belief was written
+  into this ADR, the a11y test's header, and the task list, and all three said the same wrong thing
+  confidently.
+
+### Consequences
+
+- Lift 6a names three shell routes plus the Space console. **`/nearby` is in none of them** — its
+  absence from the plan is a scope gap the credential does not unblock. The row above records it.
+- The **sweep** is `scripts/backfill-event-coords.mts`, dry-run by default. Measured against
+  production the day it was written: **17 published in-person events with no point, 16 of them
+  series ANCHORS**, all past-dated (so nothing a member can currently reach). The anchor count is
+  the reason it exists — `event-recurrence` copies `geog` into every occurrence it mints, so a NULL
+  anchor keeps minting NULL for as long as it is live.
+  It writes through the `set_event_geog` RPC (service-role only) rather than a PATCH, because
+  `geog` is a PostGIS geography and hand-building WKT in JS is what that RPC exists to prevent. It
+  re-reads each row immediately before writing, since an RPC takes arguments and cannot carry the
+  `geog is null` guard as a filter the way the Circle backfill's PATCH does.
+  Not a cron: the two event crons are single-purpose and one runs **every 15 minutes**, which is
+  incompatible with Nominatim's 1 req/sec policy.
+- No CI guard on geo data quality, deliberately. That belongs in the maintenance sweep, not
+  `ci.yml` — a red build for something no pull request can fix is how a gate dies (ADR-970).
+
+## ADR-1030: The shell decides whether a banner is coming, and an action nobody calls is not free (2026-08-13)
+
+**Status:** Accepted · **Owner-ruled** (three items, walked one at a time)
+
+### Context
+
+Three unrelated items from the Around You sweep's tail, each small enough to be dismissed and each
+wrong in the same way: something existed that nothing was accountable for.
+
+**1 — A `Suspense` boundary that reserved nothing.** `app/(main)/layout.tsx` mounted the beta
+countdown as `<Suspense fallback={null}><BetaCountdownBanner /></Suspense>`, and the banner did its
+own `await betaEndsAt()`. A `null` fallback holds no space, so on any request with a date set the
+shell painted and then the entire page jumped down by the banner's height when the read landed. The
+boundary looked like it was preventing a shift and was causing one.
+
+A fixed-height fallback cannot fix it either: the copy wraps to two or three lines at narrow
+viewports, so any number written into the fallback is wrong at some width.
+
+**2 — `toggleSupporterBadge`, an export with no importer.** It sat in `app/(main)/upgrade/actions.ts`
+with zero callers in `app/` or `components/` and no test. In a `'use server'` module that is not dead
+code: **every export is a POST endpoint the framework wires up and serves**, so it was a reachable,
+unreviewed write onto `profiles.is_supporter` that stayed reachable precisely because nobody looked
+at it. Its behaviour was not unique — `startSupporterContribution`'s dormant branch (billing off ⇒
+badge on, no Stripe) performs the same write and is the path `/upgrade` actually calls.
+
+**3 — "Drafts", already ruled on.** The task list carried *"NAMING.md defines no Drafts noun"*. It
+does: `docs/NAMING.md` §Drafts, an owner ruling from August 2026, reserving capital-D **Drafts** for
+the member page at `/drafts` and explicitly releasing the lowercase state word. The task was stale.
+A survey against that canon found the operator consoles compliant — `Drafts` stat counts and section
+headings on `/admin/growth/funnels`, `/admin/walkthroughs`, `/admin/content/tips` and
+`/admin/crm/marketing` are the state word in title-case label positions a member never sees — and
+exactly one real violation on a member surface: `components/profile/profile-associations.tsx` read
+*"Drafts and private items stay off this list."*
+
+### Decision
+
+**1. The layout owns the question, the banner owns the answer.** `betaCountdownEndsAt()` is the one
+predicate — null when unset, unreadable, or already past. The layout calls it inside the parallel
+wave it already awaits, so it costs no wall-clock (five reads were in flight beside it), and mounts
+the banner only when a countdown is live. `BetaCountdownBanner` becomes **synchronous** and takes
+`ends: Date`; it has no opinion about whether it should exist. Height is reserved by the banner
+being present in the first flush, and nothing is reserved when no date is set, so there is no gap
+either. The `Suspense` boundary is gone: with the read already resolved it guarded nothing.
+
+**2. Delete the orphan action.** Not deprecate, not test — delete. If a member-facing "turn the badge
+off again" control is ever built, it arrives with its caller and its test in the same change.
+
+**3. Do not write a competing rule; enforce the one that exists.** A parallel-qualification rule
+("Spark drafts", "page drafts") was considered and rejected — it contradicts a standing owner ruling
+that already picked a winner, and `AGENTS.md` is explicit that the naming canon wins on names. What
+the canon lacked was the narrow guard that made this ambiguous, now added: **a member-facing sentence
+may not OPEN with the state word**, because sentence-initial capitalisation erases the very
+distinction the canon rests on. The profile note is recast to "Unpublished and private items stay off
+this list."
+
+### Consequences
+
+- One `platform_settings` read moves onto the shell's critical path. It is `cache()`d and joins an
+  existing `Promise.all`, so the added latency is the max of that wave, not a new serial hop.
+- `components/layout/beta-countdown-banner.test.ts` pins the predicate, because its two failure
+  directions are opposite and both silent: a past date returned eagerly leaves a permanent empty band
+  above every page in the app the day the beta ends; a null returned eagerly makes a live countdown
+  quietly stop appearing. Neither throws and neither shows up in a typecheck.
+- The `/upgrade` surface loses no capability. `profiles.is_supporter` now has exactly one writer.
+- The four operator `Drafts` labels are deliberately **left alone**, and the canon now says so in
+  writing, so the next survey does not re-open them as findings.
+## ADR-1031: The primary button keeps its white label on the brand amber, and we stop claiming unqualified AA (2026-08-13)
 
 **Status:** accepted · **Re-affirms** the 2026-08-06 palette decision already frozen in
 `scripts/check-contrast.mjs` and `test/e2e/a11y-waivers.ts` · **Supersedes nothing**, but it gives that
