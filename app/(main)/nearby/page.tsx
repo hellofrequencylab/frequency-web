@@ -12,6 +12,9 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { ModuleCard } from '@/components/modules/module-card'
 import { StreamTemplate } from '@/components/templates'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
+import { Suspense } from 'react'
+import { NearbyMap } from '@/components/nearby/nearby-map'
+import { loadNearbyMapPins } from '@/lib/nearby/map-pins'
 
 // /nearby is the Community Dashboard — the counterpart to the Quest Dashboard
 // (/crew), but for community life: what's being announced, what's coming up, and
@@ -264,6 +267,20 @@ export default async function NearbyPage({
         <span><strong className="font-semibold text-text tabular-nums">{(membersRes.count ?? 0).toLocaleString()}</strong> members</span>
       </p>
 
+      {/* ── THE MAP (ADR-1022's first caller) ──────────────────────────────────────────────
+              Full width, under the counts and above the feed, because this page is called Around
+              You and a map IS the answer to that. The right rail was the other candidate and was
+              rejected on the page's own evidence: the Circle rail trim cited NN/g putting ~0.8% of
+              fixations on a right column, which is exactly why the roster and the events had to be
+              argued back into one. A map is not a thing to put where things go to be skipped.
+
+              STREAMED, and that is load-bearing on THIS page. The pin read spans four tables; the
+              counts and the Dispatch feed above it must not wait on it. The fallback holds the
+              band's height so nothing below jumps when the pins land. */}
+      <Suspense fallback={<div className="mb-8 h-[22rem] w-full animate-pulse rounded-2xl bg-surface-elevated sm:h-[26rem]" />}>
+        <NearbyMapSection />
+      </Suspense>
+
       {/* ── Main: broadcasts (left) + happenings (right) ─────── */}
       <div className="flex flex-col items-start gap-6 lg:flex-row">
         <div className="min-w-0 flex-1">
@@ -384,4 +401,10 @@ function DispatchCard({ dispatch: d, viewerRole, myProfileId }: { dispatch: Disp
       }
     />
   )
+}
+
+/** The map's own read, behind its own Suspense boundary so the page paints without it. */
+async function NearbyMapSection() {
+  const pins = await loadNearbyMapPins()
+  return <NearbyMap pins={pins} />
 }

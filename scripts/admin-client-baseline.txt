@@ -643,6 +643,7 @@ lib/messages/scoped-dm.ts
 lib/messaging/control-panel.ts
 lib/messaging/dispatch-log.ts
 lib/messaging/place-tree.ts
+lib/nearby/map-pins.ts
 lib/notification-preferences.ts
 lib/nurture/enroll.ts
 lib/nurture/runner.ts
