@@ -118,8 +118,23 @@ Each topical Channel is the home for "engage even if you're not in a related Cir
 - **Open public room:** anyone tuned in can talk; **AI menu + search over the room** = "menu and
   search for topics discussed."
 
-Circles stay the **local, real-world** unit; Channels are the **global, topical** unit. Both now
-have async (wall/feed) + live (room) surfaces: one consistent pattern.
+⚠️ **AMENDED BY [ADR-1013](DECISIONS.md) (2026-08-12).** This section used to read: *"Circles stay
+the **local, real-world** unit; Channels are the **global, topical** unit."* That is no longer the
+model, and the sentence is quoted rather than deleted because it is the one people remember.
+
+**A Circle is the community CONTAINER, local or online. A Channel is the TOPIC axis.** A Circle that
+meets on a call is still a Circle; it was never the in-person-ness that made it one. What separates
+the two is not geography, it is what kind of thing they are: a Circle has a roster, a Channel has a
+subject.
+
+Two consequences for the table above:
+
+- The **Channel's standing open room is retired** by the same ADR. The room rows' disposition is an
+  open owner question, deliberately left unanswered there, so the surface still ships today. Do not
+  read this table as describing the target state until that lands.
+- "Both have async + live surfaces" no longer holds symmetrically, and the **Circle room** ADR-088
+  promised has never been built (`RoomVisibility` carries `'circle'` and nothing writes one). ADR-1013
+  parks it as a later phase rather than a commitment.
 
 ## 5. Dispatch ladder
 
