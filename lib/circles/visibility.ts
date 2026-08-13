@@ -78,6 +78,12 @@ export const CIRCLE_ACCESS_HINT: Record<CircleAccess, string> = {
   tier: 'Joining comes with a paid membership tier you set up in your Space.',
 }
 
+/** The one sentence a control shows when it is offering FEWER than all five modes, and the one
+ *  sentence the save action refuses with. Written once because a note and a refusal that disagree
+ *  teach an operator two different rules for the same wall. */
+export const CIRCLE_ACCESS_LIMIT_NOTE =
+  'Space member access and paid membership tiers are available to circles a Space owns, on the Business plan.'
+
 /** Which modes need a real (non-root) owning Space. A personal Circle lives on the root sentinel,
  *  which has no roster to admit from and sells nothing, so both are nonsense there. The database
  *  refuses them outright (`trg_circles_access_shape`); this is the same list for the UI. */
@@ -124,6 +130,22 @@ export function availableAccessModes(
     if (mode === 'tier' && !spaceCanSell(space)) return false
     return true
   })
+}
+
+/** What a PICKER should list for a Circle that currently sits on `current`.
+ *
+ *  `availableAccessModes` says what may be SET. That is not the same list: a Circle can already be
+ *  sitting on a mode it could no longer be moved to, because the Space that owns it dropped off a
+ *  selling plan while a `tier` Circle stayed as it was. Dropping the current mode from the list
+ *  would make the select claim the Circle is something it is not, and the first save would silently
+ *  change access nobody asked to change. So the current mode stays listed, in canonical order —
+ *  the same rule the Channel picker follows for a paused Channel. */
+export function accessModeOptions(
+  space: { type?: string | null; plan?: string | null } | null,
+  current: CircleAccess,
+): readonly CircleAccess[] {
+  const available = availableAccessModes(space)
+  return CIRCLE_ACCESS_MODES.filter((mode) => available.includes(mode) || mode === current)
 }
 
 /** Narrow an arbitrary value (a raw `circles.access`, an untyped admin-client row) to a known

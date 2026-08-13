@@ -2,8 +2,10 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
+  accessModeOptions,
   CIRCLE_ACCESS_HINT,
   CIRCLE_ACCESS_LABEL,
+  CIRCLE_ACCESS_LIMIT_NOTE,
   CIRCLE_ACCESS_MODES,
   SPACE_ONLY_ACCESS_MODES,
   SPACE_SELLING_PLANS,
@@ -356,5 +358,40 @@ describe('availableAccessModes — the form offers only what the trigger will ac
     for (const plan of new Set(inSql)) {
       expect(SPACE_SELLING_PLANS).toContain(plan)
     }
+  })
+})
+
+// accessModeOptions — what a PICKER lists, which is not quite what may be SET.
+describe('accessModeOptions — the list a picker renders', () => {
+  const ROOT = { type: 'root', plan: null }
+  const FREE_BIZ = { type: 'business', plan: 'free' }
+  const PAID_BIZ = { type: 'business', plan: 'business' }
+
+  it('matches availableAccessModes when the circle already sits on an available mode', () => {
+    expect(accessModeOptions(ROOT, 'open')).toEqual([...availableAccessModes(ROOT)])
+    expect(accessModeOptions(PAID_BIZ, 'tier')).toEqual([...availableAccessModes(PAID_BIZ)])
+  })
+
+  it('keeps a mode the circle is ALREADY on, even once the Space may no longer choose it', () => {
+    // A Space that drops off a selling plan keeps its `tier` circles as they stand. Hiding the
+    // current mode would make the select claim the circle is something it is not, and the next
+    // save would change access nobody asked to change.
+    expect(availableAccessModes(FREE_BIZ)).not.toContain('tier')
+    expect(accessModeOptions(FREE_BIZ, 'tier')).toContain('tier')
+  })
+
+  it('lists in the canonical order, so an added mode never lands in a different slot per Space', () => {
+    const listed = accessModeOptions(FREE_BIZ, 'tier')
+    expect(listed).toEqual(CIRCLE_ACCESS_MODES.filter((m) => listed.includes(m)))
+  })
+
+  it('still never offers a Space mode to a personal circle', () => {
+    expect(accessModeOptions(ROOT, 'circle_members')).toEqual(['open', 'circle_members', 'invite'])
+  })
+
+  it('the limit note is member-facing copy, not a schema sentence', () => {
+    expect(CIRCLE_ACCESS_LIMIT_NOTE.length).toBeGreaterThan(0)
+    expect(CIRCLE_ACCESS_LIMIT_NOTE).not.toContain('—')
+    expect(CIRCLE_ACCESS_LIMIT_NOTE).not.toContain('_')
   })
 })

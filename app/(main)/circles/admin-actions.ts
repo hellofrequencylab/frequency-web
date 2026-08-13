@@ -18,6 +18,13 @@ import { isValidTimeZone } from '@/lib/time/zone'
 import { getCircleEarnedZaps } from '@/lib/circles/earned'
 import { setCircleChannel } from '@/lib/channels/programs'
 import { writeCircleCoverFocus, writeCircleHeroHeight } from '@/lib/circles/hero'
+import {
+  accessModeOptions,
+  asCircleAccess,
+  availableAccessModes,
+  CIRCLE_ACCESS_LIMIT_NOTE,
+  CIRCLE_ACCESS_MODES,
+} from '@/lib/circles/visibility'
 import { writeCoverScrimSetting, type CoverScrim } from '@/lib/layout/cover-scrim'
 import type { Database, Json } from '@/lib/database.types'
 
@@ -168,6 +175,21 @@ async function listChannelOptionGroups(currentChannelId: string | null): Promise
   return groups
 }
 
+/** The two facts `availableAccessModes` decides over: is this a REAL Space (a personal Circle sits
+ *  on the root sentinel), and is it on a plan that may sell. Returned as null for a Circle with no
+ *  `space_id` at all, which `availableAccessModes` already reads as personal. */
+async function readOwningSpaceFacts(
+  spaceId: string | null,
+): Promise<{ type: string | null; plan: string | null } | null> {
+  if (!spaceId) return null
+  const { data } = await createAdminClient()
+    .from('spaces')
+    .select('type, plan')
+    .eq('id', spaceId)
+    .maybeSingle()
+  return (data as { type: string | null; plan: string | null } | null) ?? null
+}
+
 /** Load the editable fields of a circle, but only for a viewer who may edit it.
  *  Returns null when the circle is missing or the caller lacks circle.editSettings
  *  (so the module renders no chrome for someone who can't manage this circle). */
@@ -175,7 +197,9 @@ export async function getCircleAdminData(slug: string) {
   const admin = createAdminClient()
   const { data: circle } = await admin
     .from('circles')
-    .select('id, slug, name, about, type, member_cap, status, image_url, unlisted, topical_channel_id')
+    .select(
+      'id, slug, name, about, type, member_cap, status, image_url, unlisted, access, space_id, topical_channel_id',
+    )
     .eq('slug', slug)
     .maybeSingle()
   if (!circle) return null
@@ -189,7 +213,7 @@ export async function getCircleAdminData(slug: string) {
   // picker's Pillar-grouped choices (ADR-871), and the header presentation bag
   // (circles.theme — read through its own tolerant helper, NOT this function's main
   // select, so a not-yet-applied theme migration can never null out the whole module).
-  const [practice_library, activePractice, adoptions, adoptableChallenges, channelGroups, theme] =
+  const [practice_library, activePractice, adoptions, adoptableChallenges, channelGroups, theme, space] =
     await Promise.all([
       listPublicPractices(),
       getCircleActivePractice(circle.id),
@@ -197,7 +221,13 @@ export async function getCircleAdminData(slug: string) {
       listAdoptableChallenges(circle.id),
       listChannelOptionGroups(circle.topical_channel_id ?? null),
       readCircleTheme(circle.id),
+      readOwningSpaceFacts(circle.space_id ?? null),
     ])
+
+  // AXIS 2 (ADR-1015). The modes to OFFER are narrowed by the owning Space, because
+  // `trg_circles_access_shape` refuses the two Space modes on a personal Circle and refuses `tier`
+  // below a selling plan — and a mode the trigger refuses reads to a host as a broken save button.
+  const access = asCircleAccess(circle.access)
 
   return {
     id: circle.id,
@@ -209,6 +239,10 @@ export async function getCircleAdminData(slug: string) {
     status: circle.status,
     image_url: circle.image_url,
     unlisted: circle.unlisted ?? false,
+    access,
+    access_modes: accessModeOptions(space, access),
+    /** True when the Space narrows the list, so the control can show the one note that says why. */
+    access_limited: availableAccessModes(space).length < CIRCLE_ACCESS_MODES.length,
     theme,
     topical_channel_id: circle.topical_channel_id ?? null,
     channel_groups: channelGroups,
@@ -296,6 +330,62 @@ export async function updateCircleSettings(id: string, slug: string, fd: FormDat
 
   revalidatePath(`/circles/${slug}`)
   revalidatePath('/circles')
+}
+
+/** Turn a database refusal into something a host can act on. `trg_circles_access_shape` raises its
+ *  two rules as bare codes (`circle_access_needs_space`, `circle_access_plan_floor`), which is the
+ *  right thing for a trigger and the wrong thing for a rail. Anything else stays generic on
+ *  purpose: a raw Postgres message is not member-facing copy. */
+function readableAccessError(message: string): string {
+  if (message.includes('circle_access_needs_space') || message.includes('circle_access_plan_floor')) {
+    return CIRCLE_ACCESS_LIMIT_NOTE
+  }
+  return 'Could not save that. Try again.'
+}
+
+/** AXIS 2 (ADR-1015): set WHO MAY ENTER this circle. Its own action rather than a field on the
+ *  autosave form, for the same reason the Channel select has one: the save can be REFUSED, and an
+ *  expected refusal is a return value, not a throw (a thrown server-action message is redacted in
+ *  production, so the host would see nothing they could act on).
+ *
+ *  Three gates, narrowest first. `circle.editSettings` (capabilities are law, and the admin client
+ *  bypasses RLS so THIS is what protects the write); then the same `availableAccessModes` the
+ *  control narrows its list with, re-run here because a client can post whatever it likes; then the
+ *  database trigger, which is the real enforcement and fires on the service role too. */
+export async function setCircleAccessAction(
+  circleId: string,
+  slug: string,
+  access: string,
+): Promise<{ ok: true } | { error: string }> {
+  const caps = await getCircleCapabilities(circleId)
+  if (!caps.has('circle.editSettings')) return { error: 'Unauthorized' }
+
+  // Strict, not `asCircleAccess`: that helper resolves an unknown value to the closed default,
+  // which is the right read of a stored row and the wrong read of a submitted one. A mode nobody
+  // picked must not be saved as some other mode.
+  const next = CIRCLE_ACCESS_MODES.find((mode) => mode === access)
+  if (!next) return { error: 'Pick who can join.' }
+
+  const admin = createAdminClient()
+  const { data: circle } = await admin
+    .from('circles')
+    .select('space_id')
+    .eq('id', circleId)
+    .maybeSingle()
+  if (!circle) return { error: 'That circle could not be found.' }
+
+  const space = await readOwningSpaceFacts(circle.space_id ?? null)
+  if (!availableAccessModes(space).includes(next)) return { error: CIRCLE_ACCESS_LIMIT_NOTE }
+
+  const { error } = await admin
+    .from('circles')
+    .update({ access: next })
+    .eq('id', circleId)
+  if (error) return { error: readableAccessError(error.message) }
+
+  revalidatePath(`/circles/${slug}`)
+  revalidatePath('/circles')
+  return { ok: true }
 }
 
 /** Declare (or clear) the Channel this circle practices in (ADR-871). Re-checks

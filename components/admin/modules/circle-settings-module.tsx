@@ -11,6 +11,7 @@ import {
   updateCircleSettings,
   updateCirclePermalink,
   setCircleChannelAction,
+  setCircleAccessAction,
   setCircleCoverUrl,
   removeCircleCover,
   deleteCircle,
@@ -19,6 +20,13 @@ import { DangerDelete } from '@/components/admin/danger-delete'
 import { CircleHeaderControls } from '@/components/admin/modules/circle-header-controls'
 import { readCircleCoverFocus, readCircleHeroHeight } from '@/lib/circles/hero'
 import { readCoverScrimSetting } from '@/lib/layout/cover-scrim'
+import {
+  asCircleAccess,
+  CIRCLE_ACCESS_HINT,
+  CIRCLE_ACCESS_LABEL,
+  CIRCLE_ACCESS_LIMIT_NOTE,
+  type CircleAccess,
+} from '@/lib/circles/visibility'
 
 // In-place "Circle settings" (EMBEDDED-ADMIN.md / ADR-133), rendered inside the page admin rail on a
 // /circles/[slug] page. The rail section header is the single title. The main fields autosave and reflect
@@ -45,6 +53,10 @@ export function CircleSettingsModule() {
   const [channelErr, setChannelErr] = useState<string | null>(null)
   const [channelPending, startChannel] = useTransition()
 
+  const [access, setAccess] = useState<CircleAccess>('open')
+  const [accessErr, setAccessErr] = useState<string | null>(null)
+  const [accessPending, startAccess] = useTransition()
+
   useEffect(() => {
     if (!slug) return
     let active = true
@@ -54,6 +66,7 @@ export function CircleSettingsModule() {
         if (d) {
           setPermalink(d.slug)
           setChannelId(d.topical_channel_id ?? '')
+          setAccess(d.access)
         }
         setLoading(false)
       }
@@ -93,6 +106,24 @@ export function CircleSettingsModule() {
       if ('error' in res) {
         setChannelErr(res.error)
         setChannelId(prev)
+      } else {
+        router.refresh()
+      }
+    })
+  }
+
+  /** Set who may enter the circle (axis 2, ADR-1015). Its own action for the same reason the
+   *  Channel select has one: the save can be REFUSED, so the refusal lands next to the select and
+   *  the pick rolls back rather than leaving the control claiming a mode that was never stored. */
+  function handleAccess(next: string) {
+    const prev = access
+    setAccess(asCircleAccess(next))
+    setAccessErr(null)
+    startAccess(async () => {
+      const res = await setCircleAccessAction(data!.id, data!.slug, next)
+      if ('error' in res) {
+        setAccessErr(res.error)
+        setAccess(prev)
       } else {
         router.refresh()
       }
@@ -185,6 +216,30 @@ export function CircleSettingsModule() {
         </div>
         <p className="text-2xs text-muted">Unlisted keeps this circle off the directory, map, and search. The link still works and members always see it.</p>
       </RailAutosaveForm>
+
+      {/* THE SECOND AXIS (ADR-1015), sitting under the first. Visibility above answers "can they
+          find it"; this answers "can they get in", and the two are independent: a listed circle
+          with a closed door is a shopfront, an unlisted circle anyone can join is a quiet room.
+          Reading them together is what makes that pair legible.
+
+          Its own action, outside the autosave form: the save can be refused (the list below is
+          narrowed by the owning Space, and `trg_circles_access_shape` refuses the same two shapes
+          on the service role), so the refusal shows here and the pick rolls back. */}
+      <div className="space-y-1.5">
+        <label htmlFor="circle-access" className={fieldLabel}>
+          Who can join
+        </label>
+        <Select
+          id="circle-access"
+          value={access}
+          onChange={(e) => handleAccess(e.target.value)}
+          disabled={accessPending}
+          options={data.access_modes.map((mode) => ({ value: mode, label: CIRCLE_ACCESS_LABEL[mode] }))}
+        />
+        <p className="text-2xs text-muted">{CIRCLE_ACCESS_HINT[access]}</p>
+        {data.access_limited && <p className="text-2xs text-muted">{CIRCLE_ACCESS_LIMIT_NOTE}</p>}
+        {accessErr && <span className="text-meta font-medium text-danger">{accessErr}</span>}
+      </div>
 
       {/* Channel — its own action: the save can be refused (a paused Program takes no
           new Circles), so the refusal shows here and the pick rolls back. */}
