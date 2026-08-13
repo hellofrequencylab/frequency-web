@@ -14,7 +14,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   circles: 'Circles',
   channels: 'Channels',
   events: 'Events',
-  broadcast: 'Around You',
+  nearby: 'Around You',
   messages: 'Message Boards',
   crew: 'My Quest',
   quests: 'Quests',

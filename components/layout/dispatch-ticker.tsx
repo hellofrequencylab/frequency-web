@@ -39,7 +39,7 @@ export function DispatchTicker({ items }: { items: TickerItem[] }) {
       onMouseLeave={() => setPaused(false)}
     >
       <Link
-        href="/broadcast"
+        href="/nearby"
         className="flex shrink-0 items-center gap-1.5 text-meta font-bold uppercase tracking-wide text-primary-strong transition-colors hover:text-primary"
       >
         <Megaphone className="h-3.5 w-3.5" />
@@ -50,7 +50,7 @@ export function DispatchTicker({ items }: { items: TickerItem[] }) {
 
       {/* Rotating headline — aria-live so the change is announced politely. */}
       <Link
-        href={`/broadcast/${current.id}`}
+        href={`/nearby/${current.id}`}
         aria-live="polite"
         className="group flex min-w-0 flex-1 items-center gap-2 text-body-sm transition-colors"
       >

@@ -231,7 +231,7 @@ export async function DispatchesPanel({ profileId, circleIds }: { profileId: str
         {dispatches.map((d) => (
           <Link
             key={d.id}
-            href={`/broadcast/${d.id}`}
+            href={`/nearby/${d.id}`}
             className="flex items-start gap-3 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
           >
             <div className="shrink-0 w-7 h-7 rounded-lg bg-signal-bg flex items-center justify-center mt-0.5">
@@ -245,7 +245,7 @@ export async function DispatchesPanel({ profileId, circleIds }: { profileId: str
         ))}
       </div>
       <div className="px-1 pt-3">
-        <Link href="/broadcast" className="text-body-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
+        <Link href="/nearby" className="text-body-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
           View all Dispatches →
         </Link>
       </div>

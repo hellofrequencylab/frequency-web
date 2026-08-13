@@ -712,8 +712,8 @@ export async function updateDispatch(id: string, fd: FormData) {
   }
 
   revalidatePath('/admin/dispatches')
-  revalidatePath('/broadcast')
-  revalidatePath(`/broadcast/${id}`)
+  revalidatePath('/nearby')
+  revalidatePath(`/nearby/${id}`)
 }
 
 export async function publishDispatch(id: string) {
@@ -728,8 +728,8 @@ export async function publishDispatch(id: string) {
   if (error) throw new Error(error.message)
 
   revalidatePath('/admin/dispatches')
-  revalidatePath('/broadcast')
-  revalidatePath(`/broadcast/${id}`)
+  revalidatePath('/nearby')
+  revalidatePath(`/nearby/${id}`)
   revalidatePath('/feed')
 
   // Fire-and-forget email fan-out. Never block publish on email failure
@@ -745,7 +745,7 @@ export async function publishDispatch(id: string) {
       const authorName  = dispatch.author?.display_name ?? 'A host'
       const excerpt     = dispatch.excerpt ?? ''
       const appUrl      = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
-      const dispatchUrl = `${appUrl}/broadcast/${id}`
+      const dispatchUrl = `${appUrl}/nearby/${id}`
 
       let profileIds: string[] = []
       // A scoped dispatch always has an audience_id; the `&& audience_id` narrows the
@@ -800,7 +800,7 @@ export async function publishDispatch(id: string) {
         await sendPushToProfile(profile.id, {
           title: `📡 ${dispatch.title}`,
           body:  excerpt || `New dispatch from ${authorName}`,
-          url:   `/broadcast/${dispatch.id}`,
+          url:   `/nearby/${dispatch.id}`,
           tag:   `dispatch-${dispatch.id}`,
         }, 'dispatches')
       }
@@ -821,8 +821,8 @@ export async function unpublishDispatch(id: string) {
   if (error) throw new Error(error.message)
 
   revalidatePath('/admin/dispatches')
-  revalidatePath('/broadcast')
-  revalidatePath(`/broadcast/${id}`)
+  revalidatePath('/nearby')
+  revalidatePath(`/nearby/${id}`)
   revalidatePath('/feed')
 }
 
@@ -834,7 +834,7 @@ export async function deleteDispatch(id: string) {
   if (error) throw new Error(error.message)
 
   revalidatePath('/admin/dispatches')
-  revalidatePath('/broadcast')
+  revalidatePath('/nearby')
   revalidatePath('/feed')
 }
 

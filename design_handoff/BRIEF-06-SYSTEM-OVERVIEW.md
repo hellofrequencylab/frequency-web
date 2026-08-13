@@ -43,7 +43,7 @@ One line each; the deep inventory lives in the route tree and `docs/`.
 | # | Domain | What it is | Key routes |
 |---|---|---|---|
 | 1 | Feed & posts | Resonance-ranked home stream; composer, reactions, mentions, nested replies, pinning | `/feed` |
-| 2 | Dispatches & ticker | Short host/leader broadcasts with likes, comments, polls; site-wide ticker | `/broadcast` |
+| 2 | Dispatches & ticker | Short host/leader broadcasts with likes, comments, polls; site-wide ticker | `/nearby` |
 | 3 | Capture & Journal | The center-button action: catch a post / note / photo / contact / scan from anywhere; private day-grouped Journal | global modal, `/journal`, `/scan` |
 | 4 | Events | The deepest domain: RSVP (open or approval), tiered tickets, QR check-in (+25 zaps), recurring series (materialized occurrences + series fold), guest invites, co-hosts, host transfer, placement on Circles/Spaces, event wall + Q&A + recap, .ics feeds, Vera Event Spark (poster OCR → draft) | `/events`, `/events/[slug]`, `/discover/events` |
 | 5 | Circles | Small local groups: one-tap join, wall, weekly practice, invite links, Starter Circle blueprints (⏳ flag-gated), transfer/handoff | `/circles`, `/circles/[slug]` |

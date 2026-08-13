@@ -31,7 +31,7 @@ const F = 'full' as const
 const SHEET: Record<Surface, AccessLevel[]> = {
   // Community
   feed: [L, F, F, F, F, F, F, F, F, F, F, F, F],
-  broadcast: [L, F, F, F, F, F, F, F, F, F, F, F, F],
+  nearby: [L, F, F, F, F, F, F, F, F, F, F, F, F],
   circles: [L, F, F, F, F, F, F, F, F, F, F, F, F],
   channels: [L, F, F, F, F, F, F, F, F, F, F, F, F],
   events: [L, F, F, F, F, F, F, F, F, F, F, F, F],

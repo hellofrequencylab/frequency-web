@@ -24,7 +24,14 @@ export const CONTENT_EDIT_ROUTES = [
   '/journeys',
   '/practices',
   '/library',
-  '/broadcast',
+  // Renamed from '/broadcast' with the route (ADR-1020). `page_content` is keyed by the
+  // ROUTE STRING, so this registry line, the page's resolvePageContent call, and its
+  // pageContentMetadata call all had to move together or the operator's edits would write
+  // to one key and the page would read another. NO data migration was run: the production
+  // row for '/broadcast' was measured empty (title NULL, description NULL) on 2026-08-12,
+  // so there was nothing to carry over. That row is now inert — nothing reads it — and
+  // deleting it is a data change for the owner to make, not a code change.
+  '/nearby',
   // Admin Menu Manager: the page Settings is trimmed to Subtitle + Layout (ADR-359). The
   // Subtitle editor edits only this route's description (the header subtitle); the page reads
   // it via resolvePageContent('/admin/menu', fallback), with the coded line as the fallback.

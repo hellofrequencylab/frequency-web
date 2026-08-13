@@ -16,7 +16,7 @@ import { CockpitMemberViewer } from './cockpit-member-viewer'
 // The header is condensed to one truncated line + a compact StatCard row (Members / Active this week /
 // At risk / Resonance Health), each fail-safe and streamed behind its own <Suspense> so a slow read
 // never blocks the shell (PAGE-FRAMEWORK §5). Contacts import lives in-line as a header action
-// (<ImportContactsButton>), not a separate view. Like /broadcast and /friends, this is one coupled,
+// (<ImportContactsButton>), not a separate view. Like /nearby and /friends, this is one coupled,
 // searchParam-driven view, so it composes the kit directly rather than <PageModules>.
 //
 // STAFF-GATED: requireAdmin('janitor'). The /admin/* group mounts its own info rail (page-chrome

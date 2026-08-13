@@ -13,10 +13,13 @@ import { ModuleCard } from '@/components/modules/module-card'
 import { StreamTemplate } from '@/components/templates'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 
-// /broadcast is the Community Dashboard — the counterpart to the Quest Dashboard
+// /nearby is the Community Dashboard — the counterpart to the Quest Dashboard
 // (/crew), but for community life: what's being announced, what's coming up, and
 // what's new to join, all in one place (ADR-097 follow-on). Aggregates dispatches
 // (audience-targeted), upcoming events, and freshly-created circles.
+//
+// The route was /broadcast until ADR-1020; the visible label has always been
+// "Around You" and did not change. next.config.ts holds the permanent redirect.
 export const dynamic = 'force-dynamic'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
@@ -49,10 +52,10 @@ const CONTENT_FALLBACK = {
 
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2).
 export function generateMetadata() {
-  return pageContentMetadata('/broadcast', CONTENT_FALLBACK)
+  return pageContentMetadata('/nearby', CONTENT_FALLBACK)
 }
 
-export default async function BroadcastPage({
+export default async function NearbyPage({
   searchParams,
 }: {
   searchParams: Promise<{ compose?: string; scope?: string }>
@@ -186,7 +189,7 @@ export default async function BroadcastPage({
   const nextEvent = upcomingEvents[0]
 
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
-  const { title, description, ctaLabel, ctaHref } = await resolvePageContent('/broadcast', CONTENT_FALLBACK)
+  const { title, description, ctaLabel, ctaHref } = await resolvePageContent('/nearby', CONTENT_FALLBACK)
 
   const showCompose = canCompose || role === 'janitor'
   return (
@@ -215,7 +218,7 @@ export default async function BroadcastPage({
       {/* ── Highlight hero: the latest broadcast, else the next event ── */}
       {latest ? (
         <Link
-          href={`/broadcast/${latest.id}`}
+          href={`/nearby/${latest.id}`}
           className="mb-6 flex items-center gap-4 rounded-2xl border border-primary-bg bg-primary-bg/40 p-5 transition-colors hover:bg-primary-bg/60 dark:bg-primary-bg/15 dark:hover:bg-primary-bg/25"
         >
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-on-primary">
@@ -359,7 +362,7 @@ function DispatchCard({ dispatch: d, viewerRole, myProfileId }: { dispatch: Disp
 
   return (
     <EntityCard
-      href={`/broadcast/${d.id}`}
+      href={`/nearby/${d.id}`}
       anchor={
         <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
           {d.linked_task ? <Zap className="h-5 w-5" /> : <Megaphone className="h-5 w-5" />}

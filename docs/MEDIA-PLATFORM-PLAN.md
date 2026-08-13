@@ -67,7 +67,7 @@ stay plain.**
 
 | Set | Collection (surface) | Item noun | Series noun | Collision read |
 |---|---|---|---|---|
-| **A. Airwaves** (RECOMMENDED) | **Airwaves** | **Recording** (audio or video); **Episode** in a Show | **Show** | ✅ clean. Distinct from On Air (internal timer name), Airtime (a stat), Broadcast (Dispatches, `/broadcast`), Channel (forum), Signal (retired rank) |
+| **A. Airwaves** (RECOMMENDED) | **Airwaves** | **Recording** (audio or video); **Episode** in a Show | **Show** | ✅ clean. Distinct from On Air (internal timer name), Airtime (a stat), Broadcast (Dispatches, now `/nearby`), Channel (forum), Signal (retired rank) |
 | B. Waves | **Waves** / the Waves | **a Wave** | **Show** | ⚠️ strongest wave identity and a magical item noun, but sits next to the banned vibe-verb "ride the wave" (§5b) and the retired reward mechanic "Carrier Wave" |
 | C. The Dial | **The Dial** | **a Transmission** | **a Frequency** / Show | ⚠️ evocative, but "Transmission" overlaps the Dispatch transmission family, and "tune the dial" flirts with "tune in" (the Channels verb) |
 

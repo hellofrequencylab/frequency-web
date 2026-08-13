@@ -35,7 +35,7 @@ describe('railFor — the single source of truth for page chrome', () => {
       '/journeys/tune-in-b3fnjh/learn',
       '/journeys/tune-in-b3fnjh/edit',
       '/partners',
-      '/broadcast',
+      '/nearby',
       '/search',
       '/crew',
       // Operator / steward DASHBOARDS keep the uniform slim stats rail like the rest

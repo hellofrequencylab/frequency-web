@@ -8,7 +8,7 @@ import { SITE_URL } from "@/lib/site";
 const DISALLOW = [
   "/api/",
   "/feed",
-  "/broadcast",
+  "/nearby",
   "/circles",
   "/practices",
   "/channels",

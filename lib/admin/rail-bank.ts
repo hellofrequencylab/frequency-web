@@ -106,7 +106,7 @@ function baseBank(scope: AdminScope | null, viewer: BankViewer, slug: string | n
         // `?circle=` against circle.id), so they keep scope.id — mirrors CircleHostMenu exactly.
         { label: 'Manage console', icon: SlidersHorizontal, href: `/circles/${urlSlug}/manage` },
         { label: 'New event', icon: CalendarPlus, href: `/events/new?circle=${id}` },
-        { label: 'New announcement', icon: Megaphone, href: `/broadcast?compose=true&scope=${id}` },
+        { label: 'New announcement', icon: Megaphone, href: `/nearby?compose=true&scope=${id}` },
       ]
     }
     // An EVENT (ADR-515 Phase 4): the full host Manage dashboard — the second-layer console that carries

@@ -90,7 +90,10 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   { key: 'feed',          href: '/feed',      label: 'Feed',         section: null,        defaultAccess: 'visitor', surface: 'feed' },
 
   // ── Community ────────────────────────────────────────────────────────────────
-  { key: 'broadcast',     href: '/broadcast', label: 'Around You',   section: 'Community', defaultAccess: 'visitor', surface: 'broadcast' },
+  // The URL wants ONE short token, the label wants the voice (ADR-1020). The route was
+  // /broadcast — the last member-reachable survivor of a name NAMING.md retired — and is
+  // now /nearby; the visible label has always been "Around You" and did not change.
+  { key: 'nearby',        href: '/nearby',    label: 'Around You',   section: 'Community', defaultAccess: 'visitor', surface: 'nearby' },
   { key: 'circles',       href: '/circles',   label: 'Circles',      section: 'Community', defaultAccess: 'visitor', surface: 'circles' },
   { key: 'channels',      href: '/channels',  label: 'Channels',     section: 'Community', defaultAccess: 'visitor', surface: 'channels' },
   { key: 'events',        href: '/events',    label: 'Events',       section: 'Community', defaultAccess: 'visitor', surface: 'events' },

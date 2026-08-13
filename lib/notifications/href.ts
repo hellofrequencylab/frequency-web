@@ -68,7 +68,7 @@ export function notificationHref(n: NotificationItem): string {
       return '/settings#plan'
 
     case 'dispatch':
-      return id ? `/broadcast/${id}` : '/broadcast'
+      return id ? `/nearby/${id}` : '/nearby'
 
     case 'support_ticket':
       return id ? `/support/${id}` : '/support'

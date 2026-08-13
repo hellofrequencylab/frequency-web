@@ -22,7 +22,7 @@ import { join } from 'node:path'
 // hole was invisible. That is the reason this is a source assertion rather than a data assertion:
 // a query is wrong the moment it is written, not the moment somebody schedules the row that
 // exposes it.
-const SRC = readFileSync(join(process.cwd(), 'app/(main)/broadcast/page.tsx'), 'utf8')
+const SRC = readFileSync(join(process.cwd(), 'app/(main)/nearby/page.tsx'), 'utf8')
 
 describe('the Around You page filters events on every axis the table carries', () => {
   const REQUIRED: [fragment: string, why: string][] = [

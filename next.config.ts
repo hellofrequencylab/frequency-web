@@ -272,6 +272,20 @@ const nextConfig: NextConfig = {
       // one events home. Permanent (308), same shape as the housing pair above.
       { source: '/marketplace/events', destination: '/events', permanent: true },
       { source: '/marketplace/events/:path*', destination: '/events/:path*', permanent: true },
+      // /broadcast -> /nearby (ADR-1020). "Broadcast" was retired from member copy long ago
+      // (NAMING.md §Dispatch) and the route was its last member-reachable survivor. The visible
+      // label did not change: it was, and stays, "Around You".
+      //
+      // Permanent (308) is REQUIRED here, not cosmetic. Three classes of link already point at
+      // the old URL and cannot be rewritten: notification emails that have already been sent,
+      // member bookmarks, and one live operator menu_items row. The 308 also preserves the
+      // request method, which a 301 would not. Query strings ride through automatically, so the
+      // compose deep link (/broadcast?compose=true&scope=<id>) lands correctly too.
+      //
+      // The :path* pair covers the [id] Dispatch detail page. It also matches zero segments, but
+      // the bare rule stays explicit to read like the retired routes above.
+      { source: '/broadcast', destination: '/nearby', permanent: true },
+      { source: '/broadcast/:path*', destination: '/nearby/:path*', permanent: true },
     ]
   },
   images: {

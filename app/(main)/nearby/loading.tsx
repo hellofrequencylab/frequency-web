@@ -1,7 +1,7 @@
 import { Skeleton } from '@/components/ui/skeleton'
 import { SectionHeader } from '@/components/ui/section-header'
 
-// Route-level loading UI for the Broadcast / Community dashboard (PAGE-FRAMEWORK
+// Route-level loading UI for the /nearby Community dashboard (PAGE-FRAMEWORK
 // §5). Mirrors the StreamTemplate header + the highlight hero, the at-a-glance
 // line, and the two-column body (broadcasts left, happenings rail right), so the
 // dashboard paints its real shape immediately while the aggregates stream (no
@@ -19,7 +19,7 @@ function DispatchCardSkeleton() {
   )
 }
 
-export default function BroadcastLoading() {
+export default function NearbyLoading() {
   return (
     <div>
       {/* Header band (PageHeading: title + description + rule) */}

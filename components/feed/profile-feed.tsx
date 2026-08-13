@@ -297,7 +297,7 @@ export async function ProfileFeed({
 function DispatchTimelineCard({ dispatch: d }: { dispatch: DispatchItem }) {
   return (
     <Link
-      href={`/broadcast/${d.id}`}
+      href={`/nearby/${d.id}`}
       className="group block rounded-card border border-border/70 bg-surface px-4 py-3.5 lift-1 transition-colors hover:border-primary dark:border-border/60 dark:bg-surface-elevated/80"
     >
       <div className="flex items-start gap-3">

@@ -240,7 +240,7 @@ Every member-facing label is governed by `docs/NAMING.md`. Nav labels that are a
 | **Marketplace** · Housing · Makers · Shop | ✅ locked | the market areas |
 | **Vera** | ✅ locked | the one system voice; Studio's assistant |
 | **Loom** | ✅ locked | the DAM / library (operator "Loom", drop the "Studio" suffix under Studio mode) |
-| **Broadcasts / Dispatches** (`/broadcast`) | ✅ locked | leader transmissions; distinct from Vera Dispatches |
+| **Broadcasts / Dispatches** (`/nearby`) | ✅ locked | leader transmissions; distinct from Vera Dispatches |
 | **Around You** | ⚠️ open in `IA-RESTRUCTURE.md` | keep, or rename to "Community Hub"? |
 | **Calm** / **Studio** (the mode axis) | ⚠️ ratify | canon reserves the axis; confirm the two mode words |
 | Studio worlds: **Overview · Community · Growth · Content · Platform** | ⚠️ approve | operator-facing, not member copy, so lighter canon load |

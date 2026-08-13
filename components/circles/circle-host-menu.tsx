@@ -28,7 +28,7 @@ export function CircleHostMenu({ circleId }: { circleId: string }) {
       Icon: CalendarPlus,
     },
     {
-      href: `/broadcast?compose=true&scope=${circleId}`,
+      href: `/nearby?compose=true&scope=${circleId}`,
       label: 'New announcement',
       hint: 'Dispatch to the wider Hub',
       Icon: Megaphone,

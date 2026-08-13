@@ -23185,6 +23185,110 @@ to a paid membership would make the paid mode meaningless.
    row in front of a tree that did not carry it and failed `check:migrations` on *every other
    branch*, including `main`. The guard was right and the sequencing was wrong: land the file on a
    mergeable path first, or accept that every open PR goes red until it does.
+
+---
+
+## ADR-1020: `/broadcast` becomes `/nearby`, and the URL and the label are allowed to differ (2026-08-12)
+
+**Status:** accepted · **Owner ruling** · **Touches:** `app/(main)/nearby/**` (moved from
+`app/(main)/broadcast/**`), `next.config.ts` (the 308 pair), `lib/nav-areas.ts`,
+`lib/core/access-matrix.ts`, `lib/layout/{page-chrome,rail-panels,editable-content}.ts`,
+`lib/help/feature-keys.ts`, `components/layout/{breadcrumbs,nav-icons}.tsx`, `app/robots.ts`,
+`proxy.ts`, and 20 link/`revalidatePath` call sites · **Supersedes** the "survives as the internal
+route" clause of [`NAMING.md`](NAMING.md) §Dispatch.
+
+### The decision
+
+Two statements, and the second is the one worth recording.
+
+1. The route `/broadcast` is now **`/nearby`**.
+2. The visible label is **"Around You"**, and it did not change.
+
+### Why the rename is with the naming canon, not a new exception to it
+
+[`NAMING.md`](NAMING.md) §Dispatch retired "Broadcast" from member copy years ago: Dispatch is the
+sole member-facing noun, and "Broadcast" is reserved for a future feature. The canon then listed
+four places the old word survived internally: the route, the schema, `featureKeys`, and the design
+token. Three of those four are genuinely internal. **The route was not.** A URL is read by the
+member in the address bar, typed into a browser, pasted into a message, and printed under a link
+preview. Leaving the retired name in the one internal survivor a member can actually see made the
+canon's own rule read as an exception nobody had gotten around to.
+
+So this does not carve out a new allowance. It closes the last hole in a rule that was already
+written. `NAMING.md` was amended in the same pass rather than left describing a route that no
+longer exists.
+
+### The part that is a genuine ruling: one token in the URL, the voice in the label
+
+The obvious symmetric move is to rename the label to match, or to name the route
+`/around-you`. The owner chose neither, because **a URL and a label are answering different
+questions**:
+
+| | Wants | Result |
+|---|---|---|
+| **URL** | one short, lowercase, unhyphenated token that survives being read aloud, typed from memory, and truncated in a preview | `/nearby` |
+| **Label** | the voice, in the reader's words, with room for more than one | "Around You" |
+
+`/around-you` would have paid a hyphen and two words for nothing a member gains. "Nearby" as a nav
+label would have paid the voice for a tidiness nobody sees. Held apart, each half gets to be good at
+its own job.
+
+**This pairing is deliberate and is not drift.** It is recorded in `NAMING.md` and in the registry
+row itself so that the next reader who notices the mismatch finds the reason instead of "fixing" it.
+
+### The redirect is required, not hygiene
+
+`{ source: '/broadcast', destination: '/nearby', permanent: true }` plus the `:path*` twin for the
+Dispatch detail page, in `next.config.ts` — the same mechanism and the same shape as the retired
+`/marketplace/*` routes above them.
+
+Permanent (308) because three classes of inbound link exist that we cannot rewrite: **notification
+emails already sent**, **member bookmarks**, and **one live `menu_items` row** an operator saved
+pointing at `/broadcast`. 308 rather than 301 also preserves the request method. Query strings ride
+through automatically, so the compose deep link (`?compose=true&scope=<id>`) still lands.
+
+**Notification deep links needed nothing**, and this was verified rather than assumed:
+`notifications` carries no href/url/link column at all, and `lib/notifications/href.ts` builds
+`/nearby/${id}` from `reference_type` + `reference_id` at render time. Every notification ever
+written now points at the new URL on its own.
+
+### The route string is a database key, so the rename had to move three things at once
+
+`page_content` is keyed by the **route string**. The registry line
+(`lib/layout/editable-content.ts`), the page's `resolvePageContent` call, and its
+`pageContentMetadata` call all name that key independently, so moving fewer than all three would
+have left an operator editing one key while the page read another — a silent failure with no error
+anywhere.
+
+**No data migration was run.** The production `page_content` row for `/broadcast` was measured empty
+(title NULL, description NULL) on 2026-08-12, so there was nothing to carry over. The row is now
+inert. Deleting it is a data change for the owner to make, not something a rename should do on its
+way past.
+
+Two other production rows still name the old value and are left alone on purpose:
+
+| Row | State | Why it is safe |
+|---|---|---|
+| `area_permissions.area_key = 'broadcast'` | `min_role = 'visitor'` | Identical to the coded `defaultAccess`, so the override was already a no-op. Orphaning it changes nothing. |
+| `menu_items.href = '/broadcast'` (label "Around You") | live operator menu row | Resolves through the 308. Worth re-saving from the Menu Manager, but it works untouched. |
+
+### ⚠️ What the guards did and did not catch
+
+`tsc` and the 26 contract guards passed the route rename with **two live breakages still in the
+tree**, both in maps keyed by something other than a path: `AREA_ICONS`
+(`components/layout/nav-icons.ts`) is keyed by the **nav key**, so the rail row silently fell back to
+the generic glyph; `SEGMENT_LABELS` (`components/layout/breadcrumbs.tsx`) is keyed by the **URL
+segment**, so the Dispatch page's breadcrumb would have read "Nearby" instead of "Around You".
+
+The icon map had a test and failed loudly. The breadcrumb map had none and was found only by
+grepping for the bare key `broadcast:` after the first failure taught what shape to look for.
+
+**The rule:** a route rename is not a path find-and-replace. Grep the **key**, not just the path.
+Anything keyed on a nav key, a URL segment, or a route string is a rename site, and a quoted-string
+search finds none of them.
+
+---
+
 ## ADR-1022: The map seam grew four capabilities, and one shared brain so the two engines cannot disagree (2026-08-12)
 
 **Status:** accepted · **Extends:** [ADR-901](DECISIONS.md) (the seam), [ADR-904](DECISIONS.md)

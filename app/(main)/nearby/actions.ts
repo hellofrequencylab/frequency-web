@@ -91,7 +91,7 @@ export async function createAndPublishDispatch(fd: FormData) {
 
   if (error) throw new Error(error.message)
 
-  revalidatePath('/broadcast')
+  revalidatePath('/nearby')
   revalidatePath('/feed')
 
   // Fire-and-forget email fan-out
@@ -104,7 +104,7 @@ export async function createAndPublishDispatch(fd: FormData) {
         .maybeSingle()
       const authorName = authorProfile?.display_name ?? 'A host'
       const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
-      const dispatchUrl = `${appUrl}/broadcast/${dispatch.id}`
+      const dispatchUrl = `${appUrl}/nearby/${dispatch.id}`
 
       // Resolve WHO to reach. Global is every active member; a place scope resolves through the
       // shared place-tree walker (the same path a campaign to `circle:/hub:/nexus:<id>` uses), so the
@@ -150,7 +150,7 @@ export async function createAndPublishDispatch(fd: FormData) {
         const pushed = await sendPushToProfile(profile.id, {
           title: `📡 ${title}`,
           body:  excerpt || `New dispatch from ${authorName}`,
-          url:   `/broadcast/${dispatch.id}`,
+          url:   `/nearby/${dispatch.id}`,
           tag:   `dispatch-${dispatch.id}`,
         }, 'dispatches')
         recipientRows.push({ dispatch_id: dispatch.id, profile_id: profile.id, channel: 'push', status: pushed > 0 ? 'sent' : 'skipped', reason: pushed > 0 ? null : 'no delivery (gate off or no subscription)', email: null })
@@ -186,7 +186,7 @@ export async function toggleDispatchLike(dispatchId: string) {
     if (error) throw new Error('Could not update your like')
   }
 
-  revalidatePath(`/broadcast/${dispatchId}`)
+  revalidatePath(`/nearby/${dispatchId}`)
 }
 
 // Returns the created comment (with its author) so the client can render it
@@ -217,7 +217,7 @@ export async function addDispatchComment(dispatchId: string, body: string): Prom
     .single()
   if (error || !data) throw new Error(error?.message ?? 'Could not post your comment')
 
-  revalidatePath(`/broadcast/${dispatchId}`)
+  revalidatePath(`/nearby/${dispatchId}`)
   return data as unknown as DispatchComment
 }
 
@@ -233,7 +233,7 @@ export async function deleteDispatchComment(commentId: string, dispatchId: strin
     .eq('author_id', profileId) // only own comments
   if (error) throw new Error(error.message)
 
-  revalidatePath(`/broadcast/${dispatchId}`)
+  revalidatePath(`/nearby/${dispatchId}`)
 }
 
 export async function castVote(optionId: string, dispatchId: string) {
@@ -277,5 +277,5 @@ export async function castVote(optionId: string, dispatchId: string) {
     if (error) throw new Error('Could not record your vote')
   }
 
-  revalidatePath(`/broadcast/${dispatchId}`)
+  revalidatePath(`/nearby/${dispatchId}`)
 }

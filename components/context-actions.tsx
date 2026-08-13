@@ -260,7 +260,7 @@ function buildActions(
           label: 'Edit Dispatch',
           icon: <Pencil className={iconCls} />,
           kind: 'link',
-          href: `/broadcast/${context.id}?edit=true`,
+          href: `/nearby/${context.id}?edit=true`,
         })
         items.push({
           key: 'unpublish',
@@ -309,7 +309,7 @@ function buildActions(
           label: 'Create announcement',
           icon: <Megaphone className={iconCls} />,
           kind: 'link',
-          href: `/broadcast?compose=true&scope=${context.id}`,
+          href: `/nearby?compose=true&scope=${context.id}`,
         })
       }
       break

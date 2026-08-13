@@ -12,7 +12,7 @@
 | Feature | Route | What it is | Spec |
 |---|---|---|---|
 | **Feed** | `/feed` | The home stream — posts, dispatches, events, scoped to the member's reach | — |
-| **Around You** | `/broadcast` | Awareness surface: local dispatches/broadcasts & what's happening nearby | — |
+| **Around You** | `/nearby` | Awareness surface: local dispatches/broadcasts & what's happening nearby | — |
 | **Circles** | `/circles` · `/circles/[slug]` | Groups members belong to & gather in; one-tap join, walls, members, health | — |
 | **Channels** | `/channels` | Topical broadcast channels members follow | — |
 | **Events** | `/events` · `/events/[slug]` | Create/RSVP/check-in to gatherings (QR check-in, verified-practice) | — |

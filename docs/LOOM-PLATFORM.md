@@ -234,7 +234,7 @@ Prioritized batches, member-first:
 |---|---|---|
 | **C-P0** | reconcile drift (`/network/friends` renders `<PageModules>` but isn't in `MODULE_ROUTES`); audit reachability | ~0.5 day |
 | **C-P1** | top member browse/stream: `/feed`, `/circles`, `/channels`, `/events`, `/people` | highest visibility; establishes the `x-search` facet seam |
-| **C-P2** | `/vault`, `/outreach`, `/codes`, `/network/*`; then the `/broadcast` + `/library` coupled-view seams | clears the two documented skips |
+| **C-P2** | `/vault`, `/outreach`, `/codes`, `/network/*`; then the `/nearby` + `/library` coupled-view seams | clears the two documented skips |
 | **C-P3** | the `/admin/*` long tail in 5 clusters (Marketing, CRM, Growth, Marketplace, Content/Ops) | ~90 pages; parallelizable; `admin-practices-*` is the exemplar |
 | **C-P4** | shell-only adoption for the ~48 no-template leaf/editor pages | Part A only (editors/Studio/Puck stop here) |
 

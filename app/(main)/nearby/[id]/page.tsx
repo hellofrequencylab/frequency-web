@@ -139,7 +139,7 @@ export default async function DispatchDetailPage({ params }: Props) {
 
       {/* Back */}
       <Link
-        href="/broadcast"
+        href="/nearby"
         className="inline-flex items-center gap-1.5 text-meta text-subtle hover:text-primary-strong transition-colors mb-8"
       >
         <ArrowLeft className="w-3.5 h-3.5" />

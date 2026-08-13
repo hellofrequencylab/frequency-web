@@ -18,7 +18,7 @@ const REF_COOKIE_MAX_AGE = 60 * 60 * 24 * 30 // 30 days
 
 const PROTECTED_PATHS = [
   '/feed',
-  '/broadcast',
+  '/nearby',
   '/circles',
   '/practices',
   '/channels',

@@ -76,7 +76,8 @@ export const AREA_ICONS: Record<string, ElementType> = {
   practices: Sparkles,
   journeys: Route,
   library: Library,
-  broadcast: Megaphone,
+  // "Around You" — keyed `nearby` since the route rename (ADR-1020); the glyph is unchanged.
+  nearby: Megaphone,
   messages: MessageSquare,
   friends: UserPlus,
   partners: Store,
