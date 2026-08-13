@@ -23260,17 +23260,36 @@ written now points at the new URL on its own.
 have left an operator editing one key while the page read another — a silent failure with no error
 anywhere.
 
-**No data migration was run.** The production `page_content` row for `/broadcast` was measured empty
-(title NULL, description NULL) on 2026-08-12, so there was nothing to carry over. The row is now
-inert. Deleting it is a data change for the owner to make, not something a rename should do on its
-way past.
+#### 🔴 Amendment, 2026-08-13: a data migration *was* needed, and this ADR said it wasn't
 
-Two other production rows still name the old value and are left alone on purpose:
+This section originally read "**No data migration was run.** The production `page_content` row for
+`/broadcast` was measured empty (title NULL, description NULL) on 2026-08-12, so there was nothing to
+carry over." **That measurement was real and the conclusion drawn from it was wrong.** The row was
+checked on `title` and `description` — the two fields the registry comment talks about — and
+`hero_image` was never looked at. It was set. `pageContentMetadata` (`lib/page-content.ts`) falls
+back to `hero_image` for a route's OG image, so from the rename until this amendment **Around You
+shared to every social surface with no image**: nothing visible on the page itself, nothing in any
+log, and no guard that could have noticed, because the key it needed simply no longer matched.
 
-| Row | State | Why it is safe |
+Fixed in production 2026-08-13 by re-keying rather than inserting — no `/nearby` row existed, so
+`update page_content set route = '/nearby' where route = '/broadcast'` was a rename with no merge
+and no data loss. The `menu_items` row below was repointed in the same pass.
+
+Corrected state of the production sweep:
+
+| Row | Then | Now |
 |---|---|---|
-| `area_permissions.area_key = 'broadcast'` | `min_role = 'visitor'` | Identical to the coded `defaultAccess`, so the override was already a no-op. Orphaning it changes nothing. |
-| `menu_items.href = '/broadcast'` (label "Around You") | live operator menu row | Resolves through the 308. Worth re-saving from the Menu Manager, but it works untouched. |
+| `page_content.route = '/broadcast'` | believed inert; actually held the route's OG `hero_image` | **re-keyed to `/nearby`** |
+| `menu_items.href = '/broadcast'` (label "Around You") | left on the 308 | **repointed to `/nearby`** — correct via the redirect, but it cost every member who used the nav link a redirect hop |
+| `help_chunks` mentioning `/broadcast` | not previously searched | false positive: `/help/sharing/broadcasts`, an article path unrelated to the retired route |
+| `area_permissions.area_key = 'broadcast'` | `min_role = 'visitor'` | unchanged and still safe — identical to the coded `defaultAccess`, so the override was always a no-op |
+
+**The generalisable failure, which is the reason this amendment is longer than the fix:** the section
+below already says "grep the key, not just the path" about *code*. The same sentence is true of
+*data* and I did not apply it there. A route string is a foreign key stored as text, held in more
+than one table, and "I checked the row" is not the same claim as "I checked the row's columns." The
+sweep that found all three rows took one query — `to_jsonb(t.*)::text like '%/broadcast%'` across the
+candidate tables — and it should be the first step of any future route rename, not the retrospective.
 
 ### ⚠️ What the guards did and did not catch
 

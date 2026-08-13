@@ -20,7 +20,8 @@ export async function saveHomeSeo(fd: FormData): Promise<{ ok: boolean; error?: 
   const title = ((fd.get('title') as string) ?? '').trim().slice(0, MAX_TITLE) || null
   const description = ((fd.get('description') as string) ?? '').trim().slice(0, MAX_DESCRIPTION) || null
 
-  // `page_content` predates the generated types — untyped-client cast (convention).
+  // `page_content` IS in the generated types now, so this upsert is checked against the
+  // real table (the comment here used to say the opposite — see lib/page-content.ts).
   const db = createAdminClient()
   const { error } = await db.from('page_content').upsert({
     route: '/',
