@@ -256,7 +256,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   {
     id: 'circle.transfer',
     label: 'Move this circle',
-    desc: 'Move this circle into a space you help run. Its members and its events go with it.',
+    desc: 'Move this circle into a space you help run, or hand it to a person. Its members and its events go with it.',
     Icon: ArrowRightLeft,
     scopes: ['circle'],
     requiredCapability: 'circle.editSettings',

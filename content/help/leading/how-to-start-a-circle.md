@@ -3,7 +3,7 @@ title: How to start a Circle
 description: Pick one thing, set a standing time, recruit a co-host, and run a simple first night. You do not build a community. You host one Circle, and we hand you the format.
 category: leading
 order: 1
-updated: 2026-08-12
+updated: 2026-08-13
 audience: host
 role: host
 featureKeys: [circles, events]
