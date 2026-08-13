@@ -23904,3 +23904,74 @@ false negative publishes an address a host meant to keep. Not symmetric, and the
   closed the script's own path to refining it. Refining it now needs a deliberate re-run.
 - **The editor still does not warn a host that their event has no pin.** This ADR removes the
   privacy consequence of that silence, not the silence itself.
+
+---
+
+## ADR-1029: The primary button keeps its white label on the brand amber, and we stop claiming unqualified AA (2026-08-13)
+
+**Status:** accepted · **Re-affirms** the 2026-08-06 palette decision already frozen in
+`scripts/check-contrast.mjs` and `test/e2e/a11y-waivers.ts` · **Supersedes nothing**, but it gives that
+waiver a citation that is a decision record rather than two config files pointing at each other
+
+### What was decided
+
+The primary button ships white-on-amber, unchanged. Measured against the tokens in `app/globals.css`:
+
+| Render state | `--color-primary` | White label |
+|---|---|---|
+| DAWN light | `#E2912F` | **2.52:1** |
+| DAWN dark | `#F2B14E` | **1.88:1** |
+| Midnight light | `#D9852A` | **2.86:1** |
+
+WCAG 1.4.3 asks 4.5:1 for normal text and 3:1 even for large text. No state clears either bar, so no
+font size or weight rescues it. This is a knowing exception, not an oversight.
+
+### The alternatives, rendered rather than described
+
+On 2026-08-06 the owner was shown option 2 below as a hex value and rejected it. On 2026-08-13 all
+three were rendered as actual buttons on the real grounds, in light and dark, and the owner chose the
+current treatment from the pixels:
+
+1. **Dark label, same amber.** 7.41 · 10.39 · 6.53 · 10.04. Clears AAA in every state, and the brand
+   hue does not move by a single value.
+2. **Darkened amber (`#A06621`), white label.** 4.75:1 in every state. Clears AA. But in dark mode the
+   swatch sits at **3.93:1 against the dark canvas**, so the control's own boundary lands barely above
+   the 3:1 that 1.4.11 asks of a UI edge: it fixes the label by weakening the button. Making it work in
+   dark mode means darkening only in light mode, which is two buttons wearing one name.
+3. **Keep it.** Chosen.
+
+### 🔴 The consequence, which is the whole reason this is an ADR
+
+**We do not claim WCAG 2.x AA without qualification.** Any statement of conformance says *AA except the
+brand primary*. That sentence is now load-bearing: an unqualified claim in marketing copy, a
+procurement answer, a grant application or an accessibility statement would be false.
+
+### What this does NOT cover
+
+The decision is about the **button**. Three neighbouring things stay open and are not waived by it:
+
+- **Amber as small body text** (~300 remaining raw `text-primary` uses at 2.52:1 on white). A different
+  question with no brand-identity argument, and the reversed pair is explicitly refused by the waiver
+  matcher (`never waives the reversed pair: amber TEXT on white is a different decision`).
+- **The near-miss pairs**: signal 4.08, move 4.42, `primary-strong` on `primary-bg` 4.45. Not the brand
+  amber, and a nudge clears them.
+- **Everything axe cannot see.** Focus order, keyboard traps, the Circle map's lack of a non-map
+  equivalent. Roughly a third of real failures are invisible to the automated gates.
+
+### Two corrections this decision surfaced
+
+- **Keeping the button costs nothing on the ratchet, and the first framing of this choice said
+  otherwise.** `partitionWaived` subtracts waived elements *before* the count is compared, so the
+  187 serious+ elements in `a11y-baselines.json` already exclude this button. The decision was
+  presented as clearing "most of the 187". It clears none of it, because none of it is this.
+- **`#F0AD4E` is not a missing fourth waiver.** It is declared for `.dark [data-skin="midnight"]`, a
+  descendant combinator whose two halves are both stamped on `<html>`, so it can never match itself
+  and never paints. A waiver for a colour nothing renders would be noise covering a future
+  regression, and `a11y-waivers.test.ts` asserts its absence on purpose. Separately: this means
+  Midnight dark renders DAWN dark's amber, which is a real latent CSS defect and is not this ADR's.
+
+### Revisiting
+
+The waiver matches on the exact painted hex. If the amber drifts in either direction the hex changes,
+no waiver matches, and the gate fails loudly so the decision is re-made rather than inherited. That is
+the intended way back: this ADR is reversed by changing the token, not by editing a baseline.
