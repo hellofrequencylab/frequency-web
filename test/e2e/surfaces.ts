@@ -271,6 +271,24 @@ export function appSurfaces(
   const surfaces: Surface[] = [
     { path: '/feed', slug: 'app-feed', audience: 'member', viewportOnly: true },
     { path: '/settings', slug: 'app-settings', audience: 'member' },
+    // Around You. Listed KNOWING it will SKIP until the seeded member account and its three repo
+    // secrets exist (UX-MATURITY-PLAN lift 6a, an owner action), and that is the point rather than
+    // an oversight: a listed-but-skipping surface is NAMED in the shell reporter's `unphotographed`
+    // list on every PR, so the gap is visible in a job summary instead of being invisible because
+    // nobody thought to add the row. It cost three consecutive PRs of dense layout work — a header
+    // divider carrying a counts line, an aspect-ratio map band, a height-matched card grid — with
+    // no automated check on any of it.
+    //
+    // 🔴 IT CANNOT BE AN `anon` SURFACE, and the reason is worth stating so nobody "fixes" it that
+    // way. `/nearby` is auth-walled twice: proxy.ts lists it in PROTECTED_PATHS (so publicSurfaces()
+    // filters it out on the same pass that drops /circles), and the page calls notFound() with no
+    // user. An anon entry would either vanish from the registry or land on /sign-in and skip — a
+    // permanent green with nothing behind it, which is the failure mode this file already fights.
+    //
+    // The structural half is covered TODAY and browserlessly by test/a11y/nearby-map.a11y.test.tsx,
+    // on the already-required `test` check. What this row buys is the pixels, the hour the secret
+    // lands.
+    { path: '/nearby', slug: 'app-nearby', audience: 'member' },
   ]
   if (roomPath) {
     surfaces.push({ path: roomPath, slug: 'app-room', audience: 'member' })

@@ -23904,3 +23904,74 @@ false negative publishes an address a host meant to keep. Not symmetric, and the
   closed the script's own path to refining it. Refining it now needs a deliberate re-run.
 - **The editor still does not warn a host that their event has no pin.** This ADR removes the
   privacy consequence of that silence, not the silence itself.
+
+---
+
+## ADR-1029: An event with no map pin says so, and Around You gets its first automated check (2026-08-13)
+
+**Status:** accepted · **Closes the half [ADR-1028](DECISIONS.md) deliberately left open**
+
+### 1 · The silence, not the miss
+
+`saveEventLocation` is best-effort by contract: a geocode miss leaves `geog` NULL and the save still
+succeeds. That is **right** — a host must never lose their work because a third-party geocoder
+shrugged. Every caller passes a geocoder; none of them is the bug.
+
+The bug is that **nothing downstream ever noticed**. An event with no point silently disappears from:
+
+| surface | where |
+|---|---|
+| the Around You map | `lib/nearby/map-pins.ts` — `.not('geog', 'is', null)` |
+| the events-index map | `app/(main)/events/index-data.ts` |
+| its own page's mini-map | `app/(main)/events/[slug]/page.tsx` |
+| radius-based dispatch audiences | `lib/events/dispatch-audience.ts` |
+
+Four surfaces, no signal, and the host with no reason to suspect any of it. `map-pins.test.ts` even
+has a case named *"an event that was never geocoded"* asserting the pin is correctly omitted — the
+silence was encoded as correct behaviour.
+
+⚠️ **And it multiplies.** `lib/event-recurrence.ts` carries `geog` in `INHERITED_COLUMNS`, so a
+NULL-geog **anchor** propagates NULL into every occurrence it mints. One unnoticed miss on a weekly
+series is sixty invisible rows.
+
+`EventSettingsModule` now shows a `Banner tone="warning"` inside the existing `mode !== 'online'`
+guard — already the correct condition, since an online event has no pin to miss. It costs no new
+read: `lat`/`lng` are hydrated from the decoded `geog` the module already receives.
+
+🔴 **A component, not the Studio manifest.** `lib/studio/entities/event.ts` declares what a DRAFT
+contains; `geog` is derived server-side and never authored, and `FieldDef` has no `warn`/`validate`
+slot by design. Adding one would be wrong on both counts.
+
+### 2 · Around You had no automated coverage at all
+
+Not a visual baseline, not an axe audit, not a render test — while carrying three consecutive PRs of
+the densest layout work in the app.
+
+🔴 **It cannot be a Playwright `anon` surface**, and the reason matters so nobody "fixes" it that
+way: `/nearby` is auth-walled twice (`proxy.ts` PROTECTED_PATHS, and `notFound()` with no user), so
+an anon entry either drops out of `publicSurfaces()` on the same pass that removes `/circles`, or
+lands on `/sign-in` and skips. **A permanent green with nothing behind it** — the failure this repo
+keeps meeting.
+
+So the coverage splits by what each half actually needs:
+
+- **`test/a11y/nearby-map.a11y.test.tsx`** — browserless, no credential, on the **already-required**
+  `test` check. jsdom cannot compute layout, so the aspect ratio and the height match stay uncovered
+  and honestly so. What it does guard is the structural half that breaks silently: the band is a
+  named region, the legend describes *this* map rather than the vocabulary, swatches are decorative,
+  and the "more than one date" / "general area" lines appear exactly when they apply.
+- **A `member` row in `appSurfaces()`** — listed *knowing* it skips until lift 6a's seeded account
+  exists. That is the point: a listed-but-skipping surface is **named** in the shell reporter's
+  `unphotographed` list on every PR, turning an invisible gap into a visible one.
+
+### Consequences
+
+- Lift 6a names three shell routes plus the Space console. **`/nearby` is in none of them** — its
+  absence from the plan is a scope gap the credential does not unblock. The row above records it.
+- The **sweep** for already-NULL events is not built. Its shape is settled — a
+  `scripts/backfill-event-coords.mts` modelled on `backfill-circle-coords.mts`, writing through the
+  `set_event_geog` RPC (service-role only) rather than a PATCH, and reusing `stripWithholdingNote`
+  or it reproduces the exact production miss. Not a cron: the two event crons are single-purpose and
+  one runs every 15 minutes, which is incompatible with Nominatim's 1 req/sec policy.
+- No CI guard on geo data quality, deliberately. That belongs in the maintenance sweep, not
+  `ci.yml` — a red build for something no pull request can fix is how a gate dies (ADR-970).
