@@ -25,8 +25,21 @@ export type MapPin = {
   lng: number
   /** Bold first line of the popup. Omit for a pin with no popup. */
   title?: string | null
-  /** Quiet second line of the popup. */
+  /** Quiet second line of the popup. On the Around You map this is the WHEN (the date, and how many
+   *  more dates a repeating event has); `detail` carries the WHERE. */
   subtitle?: string | null
+  /** Quiet third line, under `subtitle`. Kept separate rather than joined into it because the two
+   *  answer different questions and a member scanning a card reads them as different rows. */
+  detail?: string | null
+  /** A short pill above the title: "RSVP for address", "Approximate area".
+   *
+   *  🔴 Its job is to qualify the DOT. A coarsened pin looks exactly as precise as an exact one, so
+   *  without this the map quietly invites a member to plan around a point that is up to a kilometre
+   *  out. lib/maps/pin-copy.ts decides the wording; this only carries it. */
+  badge?: string | null
+  /** Header image for the popup card. A cover photo, already resolved to a public URL by the
+   *  loader: the map layer never touches storage. Omit and the card renders without a header. */
+  imageUrl?: string | null
   /** Optional link at the foot of the popup. */
   href?: string | null
   hrefLabel?: string | null

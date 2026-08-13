@@ -238,7 +238,10 @@ const okEvent = (over: Row = {}): Row => ({
   starts_at: FUTURE,
   location: null,
   venue_name: 'Surfers Point',
+  street: '1 Beach Way',
   city: 'Ventura',
+  region: 'CA',
+  cover_image_path: null,
   geog: GEOG,
   status: 'published',
   visibility: 'public',
@@ -262,6 +265,7 @@ const okCircle = (over: Row = {}): Row => ({
   member_count: 12,
   latitude: 34.28,
   longitude: -119.29,
+  image_url: null,
   unlisted: false,
   status: 'active',
   is_demo: false,
@@ -275,8 +279,11 @@ const okSpace = (over: Row = {}): Row => ({
   name: 'Royal Temple',
   brand_name: null,
   tagline: 'A room for the work',
+  street: '100 Temple Way',
   city: 'Vista',
   region: 'CA',
+  cover_image_url: null,
+  brand_logo_url: null,
   latitude: 33.2,
   longitude: -117.24,
   location_precision: 'exact',
@@ -304,7 +311,15 @@ describe('events: the shape that earns a pin', () => {
     })
     expect(pins[0].lat).toBeCloseTo(TRUE_LAT, 6)
     expect(pins[0].lng).toBeCloseTo(TRUE_LNG, 6)
-    expect(pins[0].subtitle).toContain('Surfers Point')
+    // 🔴 EXACT PRECISION LISTS THE ADDRESS. The venue name is what a member looks for on arrival
+    // and the street is how they get there, so both are on the WHERE row.
+    expect(pins[0].detail).toContain('Surfers Point')
+    expect(pins[0].detail).toContain('1 Beach Way')
+    // No pill: nothing about this pin needs qualifying.
+    expect(pins[0].badge ?? null).toBeNull()
+    // WHEN and WHERE are separate rows, not one joined sentence.
+    expect(pins[0].subtitle).toContain('Thu')
+    expect(pins[0].subtitle ?? '').not.toContain('Surfers Point')
     // A one-off stands for nothing but itself, so it draws as a plain pin and not a `1+` bubble.
     expect(pins[0].moreCount).toBe(0)
   })
@@ -372,17 +387,35 @@ describe('a host who hid the address gets an area, never the address', () => {
     expect(second.lng).toBe(first.lng)
   })
 
-  it('says so in the popup, rather than letting the member trust a precise-looking dot', async () => {
+  it('wears a pill that says how to get the real address', async () => {
     withRows([okEvent({ hide_address: true })], [])
-    expect((await loadNearbyMapPins())[0].subtitle).toContain('Approximate area')
+    expect((await loadNearbyMapPins())[0].badge).toBe('RSVP for address')
   })
 
-  it('drops the free-text location line, which is where a street usually gets typed', async () => {
+  it('🔴 lists the CITY and nothing sharper', async () => {
+    withRows([okEvent({ hide_address: true })], [])
+    const pin = (await loadNearbyMapPins())[0]
+    expect(pin.detail).toContain('Ventura')
+    expect(pin.detail ?? '').not.toContain('Beach Way')
+  })
+
+  it('🔴 drops the VENUE NAME too, because a venue name is an address in disguise', async () => {
+    // "Royal Temple" is one building in Vista: a member with a search engine turns that name into a
+    // street number in one step. Coarsening the dot and publishing the name beside it would be
+    // worse than not coarsening at all, because it looks careful.
+    withRows([okEvent({ hide_address: true })], [])
+    const pin = (await loadNearbyMapPins())[0]
+    for (const field of [pin.subtitle, pin.detail, pin.badge]) {
+      expect(field ?? '').not.toContain('Surfers Point')
+    }
+  })
+
+  it('🔴 drops the free-text location line, which is where a street usually gets typed', async () => {
     withRows([okEvent({ hide_address: true, location: '1234 Real Street, Vista CA' })], [])
     const pin = (await loadNearbyMapPins())[0]
-    expect(pin.subtitle ?? '').not.toContain('Real Street')
-    // The venue NAME is still public face and still shown; it is the street that is withheld.
-    expect(pin.subtitle).toContain('Surfers Point')
+    for (const field of [pin.subtitle, pin.detail, pin.badge]) {
+      expect(field ?? '').not.toContain('Real Street')
+    }
   })
 })
 
@@ -458,7 +491,8 @@ describe('circles: the listed set, and only the listed set', () => {
       kind: 'circle',
       title: 'Ventura Breathwork',
       href: '/circles/ventura-breathwork',
-      subtitle: '12 members · Midtown',
+      subtitle: '12 members',
+      detail: 'Midtown',
     })
   })
 
@@ -487,7 +521,7 @@ describe('circles: the listed set, and only the listed set', () => {
 
   it('one member reads "1 member", not "1 members"', async () => {
     withRows([], [okCircle({ member_count: 1 })])
-    expect((await loadNearbyMapPins())[0].subtitle).toBe('1 member · Midtown')
+    expect((await loadNearbyMapPins())[0].subtitle).toBe('1 member')
   })
 })
 
@@ -503,7 +537,10 @@ describe('spaces: a layer that could not exist before ADR-1026', () => {
       href: '/spaces/royal-temple',
     })
     expect(pins[0].lat).toBeCloseTo(33.2, 6)
-    expect(pins[0].subtitle).toContain('Vista, CA')
+    // Exact precision lists the address, not just the city.
+    expect(pins[0].detail).toContain('100 Temple Way')
+    expect(pins[0].badge ?? null).toBeNull()
+    expect(pins[0].subtitle).toBe('A room for the work')
   })
 
   it('prefers the brand name, which is what the Space calls itself in public', async () => {
@@ -539,9 +576,12 @@ describe('spaces: a layer that could not exist before ADR-1026', () => {
       expect(metresBetween(33.2, -117.24, pin.lat, pin.lng)).toBeLessThanOrEqual(APPROX_MAX_ERROR_M)
     })
 
-    it('says so in the popup', async () => {
+    it('wears the Approximate area pill and lists only the city', async () => {
       withRows([], [], [okSpace({ location_precision: 'approximate' })])
-      expect((await loadNearbyMapPins())[0].subtitle).toContain('Approximate area')
+      const pin = (await loadNearbyMapPins())[0]
+      expect(pin.badge).toBe('Approximate area')
+      expect(pin.detail).toContain('Vista')
+      expect(pin.detail ?? '').not.toContain('Temple Way')
     })
 
     it('an EXACT space is left exactly where its owner put it', async () => {
@@ -549,7 +589,7 @@ describe('spaces: a layer that could not exist before ADR-1026', () => {
       const pin = (await loadNearbyMapPins())[0]
       expect(pin.lat).toBeCloseTo(33.2, 9)
       expect(pin.lng).toBeCloseTo(-117.24, 9)
-      expect(pin.subtitle ?? '').not.toContain('Approximate')
+      expect(pin.badge ?? null).toBeNull()
     })
 
     it('🔴 an unrecognised precision value is treated as EXACT, and that is checked on purpose', async () => {
@@ -602,7 +642,9 @@ describe('the whole payload', () => {
     const pins = await loadNearbyMapPins()
     expect(pins).toHaveLength(3)
     for (const p of pins) {
-      for (const s of [p.title, p.subtitle, p.hrefLabel, p.label]) expect(s ?? '').not.toContain('—')
+      for (const s of [p.title, p.subtitle, p.detail, p.badge, p.hrefLabel, p.label]) {
+        expect(s ?? '').not.toContain('—')
+      }
     }
   })
 })

@@ -19,6 +19,7 @@ export function StreamTemplate({
   composer,
   sort,
   inlineAction = false,
+  headingLead,
   children,
 }: {
   /** Small contextual line above the title (e.g. today's date). Adds weight to thin headers. */
@@ -35,6 +36,9 @@ export function StreamTemplate({
   sort?: React.ReactNode
   /** Keep a COMPACT action beside the title on mobile (PageHeading.inlineActions). */
   inlineAction?: boolean
+  /** One short line for the LEFT of the header's divider row, opposite the Settings control.
+   *  Around You seats its at-a-glance counts there. */
+  headingLead?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
@@ -53,6 +57,7 @@ export function StreamTemplate({
         // template, so every Stream gets it — not just the feed.
         size="hero"
         divider={false}
+        headingLead={headingLead}
       />
       {composer && <div className="mb-6">{composer}</div>}
       {children}

@@ -20,6 +20,7 @@ export function PageHeading({
   inlineActions = false,
   actionsAlign = 'start',
   adminBar = true,
+  headingLead,
 }: {
   /** Small contextual kicker above the title (date, section, status). */
   eyebrow?: React.ReactNode
@@ -46,6 +47,9 @@ export function PageHeading({
    *  pages that carry their own customizer (e.g. Practices' per-user "Customize this page"), so the
    *  old operator page-layout customizer doesn't double up. A plain divider is drawn instead. */
   adminBar?: boolean
+  /** Content for the LEFT of the header's divider row, opposite the Settings control. One short
+   *  line: it shares that row and wraps under the controls on a narrow viewport. */
+  headingLead?: React.ReactNode
 }) {
   return (
     <>
@@ -128,7 +132,7 @@ export function PageHeading({
         and the Settings control, if any, sits on its own. A page can opt out of the admin
         bar entirely (adminBar=false) when it owns its own customizer — a plain rule is drawn. */}
     {adminBar ? (
-      divider ? <PageAdminBar asDivider /> : <PageAdminBar />
+      divider ? <PageAdminBar asDivider lead={headingLead} /> : <PageAdminBar lead={headingLead} />
     ) : divider ? (
       <div className="mb-5 border-b border-border sm:mb-6" />
     ) : null}

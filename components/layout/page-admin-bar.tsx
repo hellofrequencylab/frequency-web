@@ -55,7 +55,20 @@ function isShareable(pathname: string): boolean {
 // on it — one line, not two. Fed by PageAdminProvider (no per-template prop threading).
 // When the viewer has nothing to do here it still draws the bare rule (asDivider) or
 // nothing (legacy callers that own their own divider).
-export function PageAdminBar({ asDivider = false }: { asDivider?: boolean } = {}) {
+export function PageAdminBar({
+  asDivider = false,
+  lead,
+}: {
+  asDivider?: boolean
+  /** Page-owned content that sits at the LEFT of the divider row, opposite the controls.
+   *
+   *  Around You uses it for its at-a-glance counts, on the owner's instruction to put that row
+   *  "in line with the settings button" rather than on a line of its own under it. The rule then
+   *  fills whatever gap is left between the two, so the row still reads as a divider and not as a
+   *  toolbar. Keep whatever goes in here to ONE short line: it shares a row with the controls and
+   *  wraps under them on a narrow viewport. */
+  lead?: React.ReactNode
+} = {}) {
   const { role, staffRole } = usePageAdmin()
   const pathname = usePathname()
 
@@ -141,12 +154,16 @@ export function PageAdminBar({ asDivider = false }: { asDivider?: boolean } = {}
   )
 
   // As the page divider: the hairline rule fills the row and the controls sit INLINE
-  // on it (one line, not two).
+  // on it (one line, not two). With a `lead`, the page's own line takes the left and the rule
+  // becomes the connective tissue between the two rather than the whole row.
   if (asDivider) {
     return (
       <div className="mb-5 sm:mb-6">
-        <div className="flex items-center gap-3">
-          <div className="h-px flex-1 bg-border" />
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          {lead && <div className="min-w-0">{lead}</div>}
+          {/* Hidden below sm when there is a lead: on a phone the rule would be a 12px stub
+              wedged between two wrapped blocks, which reads as a rendering fault. */}
+          <div className={`h-px flex-1 bg-border ${lead ? 'hidden sm:block' : ''}`} />
           {controls}
         </div>
       </div>

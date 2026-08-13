@@ -29,6 +29,12 @@ export type MapPinPaint = {
   fallback: string
   /** Plural, title-case label for a legend. Voice: plain noun, no sentence. */
   legend: string
+  /** SINGULAR, title-case. The pill on a popup card that says WHAT the member just tapped.
+   *
+   *  A map with three layers in three colours still leaves a member decoding a legend to know
+   *  whether the dot they opened is a gathering or a group. The pill says it in a word, and it is
+   *  painted in the SAME token as the dot, so the card and the pin are visibly the same thing. */
+  noun: string
 }
 
 /** The three layers the Around You map draws, plus the neutral default.
@@ -37,21 +43,21 @@ export type MapPinPaint = {
  *  only when the custom property has not resolved yet, so they never fight the dark theme. */
 export const MAP_PIN_KINDS: Record<MapPinKind, MapPinPaint> = {
   // token-ok: mirrors --color-primary; a Google Symbol requires a concrete colour string
-  event: { token: '--color-primary', fallback: '#E2912F', legend: 'Events' },
+  event: { token: '--color-primary', fallback: '#E2912F', legend: 'Events', noun: 'Event' },
   // token-ok: mirrors --color-signal
-  circle: { token: '--color-signal', fallback: '#0F8E78', legend: 'Circles' },
+  circle: { token: '--color-signal', fallback: '#0F8E78', legend: 'Circles', noun: 'Circle' },
   // token-ok: mirrors --color-broadcast
-  space: { token: '--color-broadcast', fallback: '#1EB6C5', legend: 'Spaces' },
+  space: { token: '--color-broadcast', fallback: '#1EB6C5', legend: 'Spaces', noun: 'Space' },
   // token-ok: mirrors --color-primary; the pre-existing default, unchanged
-  place: { token: '--color-primary', fallback: '#E2912F', legend: 'Places' },
+  place: { token: '--color-primary', fallback: '#E2912F', legend: 'Places', noun: 'Place' },
 }
 
 /** The pre-ADR-1022 tone escape hatch, kept so no migrated surface changes colour. */
 export const MAP_PIN_TONES: Record<MapPinTone, MapPinPaint> = {
   // token-ok: mirrors --color-primary
-  primary: { token: '--color-primary', fallback: '#E2912F', legend: 'Places' },
+  primary: { token: '--color-primary', fallback: '#E2912F', legend: 'Places', noun: 'Place' },
   // token-ok: mirrors --color-info
-  secondary: { token: '--color-info', fallback: '#2F6FB0', legend: 'Places' },
+  secondary: { token: '--color-info', fallback: '#2F6FB0', legend: 'Places', noun: 'Place' },
 }
 
 /** The cluster bubble. One paint for every cluster, whatever the kinds inside it: a bubble that
