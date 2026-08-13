@@ -1,20 +1,45 @@
 // THE CIRCLE DETAIL TAB STRIP — pure, so the rules that decide which tabs a Circle gets are
 // unit-testable without a database or a render (the lib/circles/*-gate idiom, ADR-841/843).
 //
-// FIVE TABS, and each one hides when it has nothing to say (owner ruling, 2026-08-12):
+// FOUR TABS, and each one hides when it has nothing to say (owner ruling, 2026-08-13):
 //
-//   Feed · Events · Journey · Practice · Members
+//   Feed · What's On · Members · Circle Stats
 //
 // FEED IS THE DEFAULT and it carries the reason people came, so it is the bare `/circles/<slug>`
 // route and it leads the strip whenever a strip renders at all.
 //
-// THE LEADERBOARD IS GONE AS A TAB. It measures effort relative to YOURSELF (lib/quest/effort.ts),
-// so it is a view of your practice, not a peer entity of it: it folded into Practice, and
-// /circles/<slug>/leaderboard now redirects there. A Circle never had two boards; it had one board
-// filed under the wrong noun.
+// ⚠️ THIS REPLACES THE FIVE-TAB STRIP OF 2026-08-12 (Feed · Events · Journey · Practice · Members),
+// on the owner's instruction: *"Change Practice tab to Program. All events, practices and journeys
+// go there"* and *"Change leaderboard to Circle Stats"*.
 //
-// EACH TAB HIDES WHEN IT HAS NOTHING. A Circle with no Journey running shows no Journey tab, a
-// Circle with nothing booked shows no Events tab. A tab pointing at an empty room is worse than no
+// 🔴 THE MERGED TAB IS CALLED "WHAT'S ON", NOT "PROGRAM", AND THAT IS DELIBERATE. The owner's word
+// was Program; the owner then changed it on being shown the collision, and the collision is the
+// reason to leave this note rather than let someone "fix" the label back. `NAMING.md` §Community
+// structure already binds **Program** to a Channel carrying a Chapter blueprint
+// (`topical_channels.template_id`), with **Chapter** as its local CIRCLE. A Chapter is a Circle, so
+// a Chapter's "Program" tab would have meant its schedule while the published help article at
+// `/help/groups/programs-and-chapters` says a Program is the blueprint that Chapter runs — two
+// meanings one click apart, on exactly the Circles most likely to meet both.
+//
+// WHY IT IS BETTER AND NOT JUST DIFFERENT. Events, the Journey Run and the weekly practice are all
+// answers to ONE member question — *what is this Circle actually doing, and when do I show up?* —
+// so three tabs made a member check three rooms to assemble one answer, and made a Circle running
+// only a Journey look like a Circle with two empty tabs. One **What's On** tab answers it in one
+// scroll: this week's practice, what is booked, and where the Run has got to. The label is also
+// the question, which is the shortest a tab label ever gets to be.
+//
+// **Circle Stats** is the board plus the Momentum tiles. The board measures effort relative to
+// YOURSELF (lib/quest/effort.ts) and the tiles are the Circle's weekly vital signs; both are
+// STATUS, which is a different question from "what are we doing", and status is the thing that
+// belongs behind its own tab rather than in a rail box nobody's eye reaches.
+//
+// ROUTE ≠ LABEL, and that is allowed (the ADR-1020 precedent, set by /nearby → "Around You").
+// This strip is ADR-1023. The old `/practice`, `/events`, `/journey` and `/leaderboard` URLs all
+// still resolve: each is a permanent redirect to whichever of the two new tabs absorbed it, so
+// every link anyone has ever sent still lands somewhere true.
+//
+// EACH TAB HIDES WHEN IT HAS NOTHING. A Circle with nothing booked, nothing running and no
+// practice set shows no What's On tab at all to a visitor. A tab pointing at an empty room is worse than no
 // tab: it spends a click to say "nothing here", and it makes a small Circle read emptier than it is.
 // The facts that answer "has it got anything" are read once in the shell
 // (app/(main)/circles/[slug]/(circle)/tab-facts.ts) and handed here as plain booleans.
@@ -61,25 +86,23 @@ export function circleTabs(facts: CircleTabFacts): UnderlineTabLink[] {
   const base = `/circles/${facts.slug}`
   const tabs: UnderlineTabLink[] = []
 
-  // EVENTS — the next gatherings. The count IS the affordance: it tells a visitor whether the
-  // calendar is worth a click before they spend one.
-  if (facts.upcomingEventCount > 0) {
-    tabs.push({ href: `${base}/events`, label: 'Events', count: facts.upcomingEventCount })
-  }
-
-  // JOURNEY — this Circle moving through one Journey together, a Run. No count: a Run is one
-  // thing, and a number beside it would be read as a score.
-  if (facts.hasActiveJourney) {
-    tabs.push({ href: `${base}/journey`, label: 'Journey' })
-  }
-
-  // PRACTICE — this week's practice, and the effort board underneath it. A visitor gets the tab
-  // only once the Circle has a practice to show; for someone ON the roster their own week is real
-  // content at any Circle size, which is the whole design of the board (effort against your own
-  // usual week, never against the person beside you), so a member always gets it. A manager gets
-  // it because setting the practice is their job and this is where it lands.
-  if (facts.hasAssignedPractice || facts.isMember || facts.canManage) {
-    tabs.push({ href: `${base}/practice`, label: 'Practice' })
+  // WHAT'S ON — what this Circle is doing: this week's practice, what is booked, and the Journey Run
+  // it is part-way through. A visitor gets it as soon as the Circle has ANY of the three to show;
+  // a member and a manager always get it, because for someone on the roster an empty What's On is a
+  // to-do ("nothing booked, add something") rather than a dead end, and setting the practice is the
+  // manager's job and this is where it lands.
+  //
+  // The COUNT is the upcoming events, and only when there are some. It is the one number on this
+  // tab that tells a visitor whether the click is worth it before they spend it; a practice and a
+  // Run are each one thing, and adding them into the count would make "3" mean nothing.
+  const hasWhatsOn =
+    facts.upcomingEventCount > 0 || facts.hasActiveJourney || facts.hasAssignedPractice
+  if (hasWhatsOn || facts.isMember || facts.canManage) {
+    tabs.push({
+      href: `${base}/whats-on`,
+      label: "What's On",
+      ...(facts.upcomingEventCount > 0 ? { count: facts.upcomingEventCount } : {}),
+    })
   }
 
   // MEMBERS — the roster. A Circle of one is just its host, so there is no roster to browse yet;
@@ -88,6 +111,15 @@ export function circleTabs(facts: CircleTabFacts): UnderlineTabLink[] {
   const showsRoster = facts.memberCount > 1 || facts.canManage
   if (showsRoster) {
     tabs.push({ href: `${base}/members`, label: 'Members', count: facts.memberCount })
+  }
+
+  // CIRCLE STATS — the Momentum tiles and the effort board. Status, so it is the last tab, and it
+  // is for the people IN the room: a visitor reading a Circle's weekly vital signs before they have
+  // joined it learns nothing they can act on, and a thin week reads to a stranger as a dead Circle
+  // when it is a new one. No count: every number on this tab is a number, and one more in the strip
+  // would be read as a rank.
+  if (facts.isMember || facts.canManage) {
+    tabs.push({ href: `${base}/stats`, label: 'Circle Stats' })
   }
 
   // Nothing to split. Render no strip at all rather than a lone "Feed" tab, which is chrome that

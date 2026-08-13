@@ -23353,3 +23353,97 @@ the *same prop list, key for key*, and that neither re-implements a shared decis
   pin. Google draws marker text natively, MapLibre does not, and matching it would mean a
   custom DOM element per pin on one engine and a Cloud Map ID on the other. `pin.label` is the
   accessible name and tooltip instead, which both engines do render.
+
+---
+
+## ADR-1023: The Circle header goes back on the cover, and the five tabs become four (2026-08-13)
+
+**Status:** accepted · **Owner ruling, reversing part of [ADR-1017](DECISIONS.md)'s sibling work in
+#2112** · **Touches:** `app/(main)/circles/[slug]/(circle)/{layout,page}.tsx`, the new `whats-on/` and
+`stats/` routes, four redirect stubs, `lib/circles/tabs.ts`, `lib/page-settings/default-layouts.ts` ·
+**Guarded by:** `lib/circles/tabs.test.ts`, `lib/page-settings/default-layouts.test.ts`,
+`pnpm check:headers`, `pnpm check:templates`
+
+### What happened
+
+PR #2112 rebuilt the Circle detail page: it moved the title off the cover into the template's own
+identity lockup, cut the header to one primary action with every host tool pushed to the admin rail,
+trimmed the right rail from seven modules to three, and split the body into five tabs
+(Feed · Events · Journey · Practice · Members). It merged on 2026-08-12 and deployed.
+
+The owner reviewed it live and reversed five of those six decisions the same night. The wording
+matters, because it is the whole reason this ADR exists: **"The old header was perfect, I just
+wanted you to rearrange the content."**
+
+### The ruling, item by item
+
+| # | Owner's instruction | What shipped |
+| :-- | :-- | :-- |
+| 1 | Revert the header / title | The `hero` + `band` shape is back: one immersive `PageHero`, the eyebrow + h1 + place riding the cover, chips / Hub / facts / capacity bar in the band below, the back link restored. |
+| 2 | Edit and Manage back, admin only, right by the Post button | Both are cover actions now, gated on `circle.editSettings`, in the glassy `HERO_ACTION_CLASS`. The host menu joins them. |
+| 3 | Member list back in the right column | `circle-members` is visible in the `/circles/*` rail again. |
+| 4 | Events in the right column | `circle-events` likewise, and it leads. |
+| 5 | Practice tab → **Program**; events, practices and journeys all go there | New `whats-on/` route; `practice/`, `events/` and `journey/` are permanent redirects into it. The LABEL is "What's On", not Program, on a second owner ruling the same night. See ⚠️ below. |
+| 6 | Momentum blocks back, in the leaderboard | The momentum tiles render on the new `stats/` route, above the board, and are hidden in the rail so the numbers appear once. |
+| 7 | Leaderboard → **Circle Stats** | The tab label; `leaderboard/` permanently redirects to `stats/`. |
+
+### Why the reversal was right, and what #2112 actually got wrong
+
+Not the craft. #2112's header was internally coherent and it cited real sources. It was wrong about
+**this product**, in two ways a design argument cannot reach:
+
+1. **It made the Circle the odd page out.** Every other destination — the Space profile, the Journey
+   page, the person profile — opens on one immersive cover with the title riding it
+   ([ADR-793](DECISIONS.md), the unified entity header). A Circle that alone put its title in a text
+   row under the photo did not read as "cleaner"; it read as broken. A consistency argument beats a
+   local-optimum argument, and #2112 never weighed one.
+2. **It treated a tab and a rail box as duplicates.** They are different affordances. The box is
+   *who is here / what is next*; the tab is *the full list, which I have come to browse*. Removing
+   the box because a tab exists takes the glanceable answer away and charges a click for it.
+
+The tab merge is the one place this went further than a revert rather than back. Events, the Journey
+Run and the weekly practice are three answers to one member question — *what is this Circle doing,
+and when do I show up?* Three tabs made a member check three rooms to assemble one answer, and made a
+Circle running only a Journey look like a Circle with two empty tabs. **What's On** answers it in
+one scroll. **Circle Stats** takes the other half: the board and the momentum tiles are both STATUS,
+which is a different question, and status is what belongs behind its own tab rather than in a rail
+box no eye reaches.
+
+### ⚠️ "Program" was the instruction, and it could not be the label
+
+[`NAMING.md`](NAMING.md) §Community structure binds **Program** to a Channel carrying a Chapter
+blueprint (`topical_channels.template_id`), with **Chapter** as its local Circle. **A Chapter is a
+Circle**, so a Chapter's "Program" tab would have meant *its schedule* while the published help
+article at `/help/groups/programs-and-chapters` tells that same member a Program is *the blueprint
+the Chapter runs*. Two meanings, one click apart, on exactly the Circles most likely to meet both.
+
+This is not a canon-hygiene point. It is member-facing and already shipped in help.
+
+The tab was built as instructed, the collision was put to the owner with the evidence, and the owner
+picked a different label the same night: **What's On**. It collides with nothing, and it is the
+member's own question rather than a noun they have to learn. The canon is untouched, which is the
+outcome to prefer whenever a locked term and a new surface disagree: **move the new surface.**
+
+🔴 Do not "fix" the label back to Program. `lib/circles/tabs.ts` carries the same warning at the top,
+because the owner's first instruction is in the git history and reads like the intended state.
+
+### Consequences
+
+- **Every retired URL still resolves.** `practice/`, `events/`, `journey/` → `whats-on/`;
+  `leaderboard/` → `stats/`. All four are `permanentRedirect`, because a Circle's board and calendar
+  are exactly the sort of link members send each other.
+- **Route ≠ label is now twice-precedented.** `/stats` renders under the label "Circle Stats" and `/whats-on` under "What's On", the
+  same shape as `/nearby` → "Around You" ([ADR-1020](DECISIONS.md)).
+- **The rail cap is four, not three, and it is still a cap.** `default-layouts.test.ts` asserts the
+  ceiling, the order, and that the roster and the events stay in it, so the next trim cannot quietly
+  repeat #2112's.
+- **The momentum tiles are asserted OUT of the rail** by the same test, so they cannot come back and
+  render the same four numbers twice on one page.
+- **Circle Stats is members-and-managers only.** A stranger reading a Circle's weekly vital signs
+  learns nothing they can act on, and a thin week reads to them as a dead Circle when it is a new
+  one. The board's own gates (`MIN_BOARD_CONTRIBUTORS`, the viewer preference) are unchanged
+  underneath it.
+- **The three operator cover controls** (height, focal point, scrim) are PageHero props again, which
+  is what they were written against. `DetailTemplate`'s standard cover path keeps the
+  `coverFocus` / `coverSize` / `coverOverlayStyle` props #2112 added to it — other Detail pages use
+  them — a Circle just does not take that path.

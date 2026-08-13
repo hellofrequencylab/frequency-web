@@ -2,9 +2,11 @@ import { permanentRedirect } from 'next/navigation'
 
 // ── THE OLD LEADERBOARD ROUTE ───────────────────────────────────────────────────────────────────
 //
-// The board folded into the Practice tab (owner ruling, 2026-08-12): it measures effort relative to
-// YOURSELF, so it is a reading of your practice, not a peer entity of it. The page that used to
-// live here now sits under ../practice, in full, below the practice it is measuring.
+// "Leaderboard" is not what this is, and the name was the problem. The board measures effort
+// relative to YOURSELF (lib/quest/effort.ts) — no positions, alphabetical order — so a word that
+// promises a ranking described the one thing it refuses to do. It is now Circle Stats, under
+// ../stats, where it sits beneath the Circle's momentum tiles: the numbers for this Circle, in one
+// place (owner ruling, 2026-08-13).
 //
 // THIS STUB IS NOT HOUSEKEEPING. The route is nearly a year old, it is linked from members' own
 // history and from anything anyone pasted into a Circle, and a Circle's board is exactly the sort
@@ -17,5 +19,5 @@ export default async function CircleLeaderboardRedirect({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  permanentRedirect(`/circles/${slug}/practice`)
+  permanentRedirect(`/circles/${slug}/stats`)
 }
