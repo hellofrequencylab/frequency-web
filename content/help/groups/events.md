@@ -20,12 +20,21 @@ Events are the gatherings that make Frequency real: the in-person and online mee
 - Changed your plans? You can update your RSVP anytime.
 - When you RSVP, we **email you a confirmation** with the details and a one-tap calendar link (and a quick note if you land on the waitlist), then nudge you again as the date nears.
 - Your upcoming events surface in your feed so they don't sneak up on you.
+- **No account needed.** Any public event takes an RSVP from a signed-out visitor: one email field, and a name if they want to give one. They get the same confirmation, the same reminders, and the same notice if you cancel. When they later sign up with that address, every RSVP they made attaches to the new account.
 
 ## Capacity & waitlists
 
 - Some gatherings have a **limited group size** so they stay intimate. When an event is full, you can **join the waitlist**.
 - If someone's plans change and a spot opens up, the next person on the waitlist is **moved to "going" automatically**, no need to keep checking.
 - You'll only ever see a "filling up" note when spots are genuinely running low. We don't do fake countdowns or pressure.
+- Guests without an account **take up a spot like anyone else**, and hit the waitlist on a full event like anyone else. There is one set of rules, not two.
+
+## Approving people before they are in
+
+- In **Event settings**, turn on **"Approve each person before they are in"**. Answers become requests instead of spots, and they wait in the approvals queue on your Manage screen.
+- It applies to **everyone**, whether or not they have an account. A signed-out guest waits exactly as long as a member does.
+- Turning it on later does not unseat anyone already going. It only applies to people who answer after you switch it on.
+- A full event still sends approved people to the waitlist. Approving says "yes, you are welcome", not "there is room".
 
 ## Recurring events & your calendar
 
