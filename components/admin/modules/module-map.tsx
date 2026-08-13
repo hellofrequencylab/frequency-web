@@ -1,48 +1,49 @@
 'use client'
 
 import type { ComponentType } from 'react'
-import { CircleGuidedModule } from './circle-guided-module'
-import { EventGuidedModule } from './event-guided-module'
-import { JourneyGuidedModule } from './journey-guided-module'
-import { CircleSettingsModule } from './circle-settings-module'
-import { CircleTextModule } from './circle-text-module'
-import { CirclePlaceTimeModule } from './circle-place-time-module'
-import { CirclePeopleModule } from './circle-people-module'
-import { CircleEngageModule } from './circle-engage-module'
-import { CirclePracticeModule } from './circle-practice-module'
-import { CircleJourneyRunModule } from './circle-journey-run-module'
-import { CircleInsightsModule } from './circle-insights-module'
-import { CircleMoveModule } from './circle-move-module'
-import { HubSettingsModule } from './hub-settings-module'
-import { HubPeopleModule } from './hub-people-module'
-import { HubLayoutModule } from './hub-layout-module'
-import { HubInsightsModule } from './hub-insights-module'
-import { HubDangerModule } from './hub-danger-module'
-import { NexusSettingsModule } from './nexus-settings-module'
-import { NexusPeopleModule } from './nexus-people-module'
-import { NexusLayoutModule } from './nexus-layout-module'
-import { NexusInsightsModule } from './nexus-insights-module'
-import { NexusDangerModule } from './nexus-danger-module'
-import { EventSettingsModule } from './event-settings-module'
-import { EventPeopleModule } from './event-people-module'
-import { PracticeGuidedModule } from './practice-guided-module'
-import { PracticeSettingsModule } from './practice-settings-module'
-import { PracticeInsightsModule } from './practice-insights-module'
-import { ChannelSettingsModule } from './channel-settings-module'
-import { ChannelInsightsModule } from './channel-insights-module'
-import { ChannelDangerZone } from './channel-danger-zone'
-import { JourneySettingsModule } from './journey-settings-module'
-import { JourneyBuilderModule } from './journey-builder-module'
-import { JourneyExportModule } from './journey-export-module'
-import { JourneyDangerModule } from './journey-danger-module'
-import { SpaceBasicsModule } from './space-basics-module'
-import { SpaceBrandingModule } from './space-branding-module'
-import { SpaceSettingsModule } from './space-settings-module'
-import { SpacePageModule } from './space-page-module'
-import { PersonalProfileModule } from './personal-profile-module'
-import { PersonalSpotlightModule } from './personal-spotlight-module'
-import { PersonalLayoutModule } from './personal-layout-module'
-import { PersonalAppearanceModule } from './personal-appearance-module'
+import dynamic from 'next/dynamic'
+const CircleGuidedModule = dynamic(() => import('./circle-guided-module').then((m) => m.CircleGuidedModule))
+const EventGuidedModule = dynamic(() => import('./event-guided-module').then((m) => m.EventGuidedModule))
+const JourneyGuidedModule = dynamic(() => import('./journey-guided-module').then((m) => m.JourneyGuidedModule))
+const CircleSettingsModule = dynamic(() => import('./circle-settings-module').then((m) => m.CircleSettingsModule))
+const CircleTextModule = dynamic(() => import('./circle-text-module').then((m) => m.CircleTextModule))
+const CirclePlaceTimeModule = dynamic(() => import('./circle-place-time-module').then((m) => m.CirclePlaceTimeModule))
+const CirclePeopleModule = dynamic(() => import('./circle-people-module').then((m) => m.CirclePeopleModule))
+const CircleEngageModule = dynamic(() => import('./circle-engage-module').then((m) => m.CircleEngageModule))
+const CirclePracticeModule = dynamic(() => import('./circle-practice-module').then((m) => m.CirclePracticeModule))
+const CircleJourneyRunModule = dynamic(() => import('./circle-journey-run-module').then((m) => m.CircleJourneyRunModule))
+const CircleInsightsModule = dynamic(() => import('./circle-insights-module').then((m) => m.CircleInsightsModule))
+const CircleMoveModule = dynamic(() => import('./circle-move-module').then((m) => m.CircleMoveModule))
+const HubSettingsModule = dynamic(() => import('./hub-settings-module').then((m) => m.HubSettingsModule))
+const HubPeopleModule = dynamic(() => import('./hub-people-module').then((m) => m.HubPeopleModule))
+const HubLayoutModule = dynamic(() => import('./hub-layout-module').then((m) => m.HubLayoutModule))
+const HubInsightsModule = dynamic(() => import('./hub-insights-module').then((m) => m.HubInsightsModule))
+const HubDangerModule = dynamic(() => import('./hub-danger-module').then((m) => m.HubDangerModule))
+const NexusSettingsModule = dynamic(() => import('./nexus-settings-module').then((m) => m.NexusSettingsModule))
+const NexusPeopleModule = dynamic(() => import('./nexus-people-module').then((m) => m.NexusPeopleModule))
+const NexusLayoutModule = dynamic(() => import('./nexus-layout-module').then((m) => m.NexusLayoutModule))
+const NexusInsightsModule = dynamic(() => import('./nexus-insights-module').then((m) => m.NexusInsightsModule))
+const NexusDangerModule = dynamic(() => import('./nexus-danger-module').then((m) => m.NexusDangerModule))
+const EventSettingsModule = dynamic(() => import('./event-settings-module').then((m) => m.EventSettingsModule))
+const EventPeopleModule = dynamic(() => import('./event-people-module').then((m) => m.EventPeopleModule))
+const PracticeGuidedModule = dynamic(() => import('./practice-guided-module').then((m) => m.PracticeGuidedModule))
+const PracticeSettingsModule = dynamic(() => import('./practice-settings-module').then((m) => m.PracticeSettingsModule))
+const PracticeInsightsModule = dynamic(() => import('./practice-insights-module').then((m) => m.PracticeInsightsModule))
+const ChannelSettingsModule = dynamic(() => import('./channel-settings-module').then((m) => m.ChannelSettingsModule))
+const ChannelInsightsModule = dynamic(() => import('./channel-insights-module').then((m) => m.ChannelInsightsModule))
+const ChannelDangerZone = dynamic(() => import('./channel-danger-zone').then((m) => m.ChannelDangerZone))
+const JourneySettingsModule = dynamic(() => import('./journey-settings-module').then((m) => m.JourneySettingsModule))
+const JourneyBuilderModule = dynamic(() => import('./journey-builder-module').then((m) => m.JourneyBuilderModule))
+const JourneyExportModule = dynamic(() => import('./journey-export-module').then((m) => m.JourneyExportModule))
+const JourneyDangerModule = dynamic(() => import('./journey-danger-module').then((m) => m.JourneyDangerModule))
+const SpaceBasicsModule = dynamic(() => import('./space-basics-module').then((m) => m.SpaceBasicsModule))
+const SpaceBrandingModule = dynamic(() => import('./space-branding-module').then((m) => m.SpaceBrandingModule))
+const SpaceSettingsModule = dynamic(() => import('./space-settings-module').then((m) => m.SpaceSettingsModule))
+const SpacePageModule = dynamic(() => import('./space-page-module').then((m) => m.SpacePageModule))
+const PersonalProfileModule = dynamic(() => import('./personal-profile-module').then((m) => m.PersonalProfileModule))
+const PersonalSpotlightModule = dynamic(() => import('./personal-spotlight-module').then((m) => m.PersonalSpotlightModule))
+const PersonalLayoutModule = dynamic(() => import('./personal-layout-module').then((m) => m.PersonalLayoutModule))
+const PersonalAppearanceModule = dynamic(() => import('./personal-appearance-module').then((m) => m.PersonalAppearanceModule))
 
 // The collapsed "Engage" inline body (ADR-846): the circle's shared challenges PLUS this week's practice,
 // stacked under the ONE `circle.engage` module. Both were separate `engage`-slot rows on the same
@@ -87,6 +88,37 @@ function SpaceProfileSettingsModule() {
 // render boundary instead: registry decides WHICH modules show for a scope; this map
 // turns each module id into its component. Add a module = one catalog entry + one line
 // here, with no edit to the dock's dispatch logic.
+
+// ── 🔴 EVERY MODULE IS `next/dynamic`, AND THAT IS A PERFORMANCE FIX, NOT A STYLE CHOICE ────────
+//
+// These 42 modules are the OPERATOR admin console. They used to be static imports, and this file is
+// reached from `components/layout/app-shell.tsx` → `AdminBar` → `settings-panel.tsx` → here, with no
+// code-split boundary anywhere on the path. So every module page shipped the entire operator console
+// to every MEMBER, who then rendered none of it: `admin-bar.tsx` returns null unless the viewer can
+// actually open the rail.
+//
+// MEASURED, 2026-08-13, against the production build and the first-party vitals sink (ADR-922):
+//
+//   · median `app/(main)` route  2.78 MB eager JS   vs  1.30 MB outside the shell
+//   · `/feed`                    2.88 MB raw / 867 KB gzipped, 49 files
+//   · FCP p75 inside the shell   4,623 ms            vs  3,274 ms outside
+//   · INP p75                    224 ms              vs  136 ms
+//   · TTFB p75                   155 ms              vs  569 ms  ← the SERVER is fast
+//
+// That last line is the whole diagnosis: the wait a member feels after a reload, before links
+// respond, is not the server. It is this file, parsed on their phone.
+//
+// The proof it was really shipping: the string "This nexus is archived", which exists only in
+// nexus-danger-module.tsx, was found inside a shell chunk that every member downloads.
+//
+// ⚠️ DO NOT "TIDY" THESE BACK INTO STATIC IMPORTS. A static import here is invisible in review and
+// costs every member on every page. `dynamic()` keeps each module in its own chunk, fetched when the
+// rail actually opens. Nothing about behaviour changes: `hasContent` derives from the section count
+// in settings-panel.tsx, not from whether a component is resolved.
+//
+// There is no guard for this. The repo gates the SERVER artifact (`check:build-budget`) and has
+// NOTHING measuring client first-load JS, which is how 1.8 MB accumulated unnoticed. That gap is
+// recorded as follow-up work rather than fixed here.
 
 export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   // Edit re-entry (ADR-450 §2 · ADR-994 · ADR-996). ONE surface (guided-module.tsx) behind four
