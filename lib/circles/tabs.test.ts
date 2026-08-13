@@ -4,15 +4,15 @@ import { circleTabs, type CircleTabFacts } from './tabs'
 // The circle detail shell's tab rules (PAGE-FRAMEWORK §3, the owner's 2026-08-13 ruling, and
 // ADR-089's empty-Circle guardrail underneath both). Four tabs, each hiding when it has nothing:
 //
-//   Feed · Program · Members · Circle Stats
+//   Feed · What's On · Members · Circle Stats
 //
 // These are the rules a render cannot check for you — "does a circle with nothing scheduled show a
-// Program tab" is a question about a pure function, and it is asked here so nobody has to boot a
+// What's On tab" is a question about a pure function, and it is asked here so nobody has to boot a
 // database to answer it.
 //
 // ⚠️ THIS FILE REPLACES THE FIVE-TAB SUITE OF 2026-08-12 (Feed · Events · Journey · Practice ·
 // Members). Those three middle tabs were three doors onto one question — what is this Circle doing
-// — so they merged into Program, and the board that hid under Practice moved out to its own tab
+// — so they merged into What's On, and the board that hid under Practice moved out to its own tab
 // with the momentum tiles. The old suite asserted each door separately; this one asserts the
 // question, which is the thing that actually has to stay true.
 
@@ -41,14 +41,14 @@ const hrefs = (facts: CircleTabFacts) => circleTabs(facts).map((t) => t.href)
 const tab = (facts: CircleTabFacts, label: string) => circleTabs(facts).find((t) => t.label === label)
 
 describe('circleTabs — the full strip', () => {
-  it('offers Feed, Program, Members and Circle Stats, in that order', () => {
-    expect(labels(busy)).toEqual(['Feed', 'Program', 'Members', 'Circle Stats'])
+  it("offers Feed, What's On, Members and Circle Stats, in that order", () => {
+    expect(labels(busy)).toEqual(['Feed', "What's On", 'Members', 'Circle Stats'])
   })
 
   it('routes every tab under the circle, with Feed on the bare slug', () => {
     expect(hrefs(busy)).toEqual([
       '/circles/sunrise-sit',
-      '/circles/sunrise-sit/program',
+      '/circles/sunrise-sit/whats-on',
       '/circles/sunrise-sit/members',
       '/circles/sunrise-sit/stats',
     ])
@@ -65,7 +65,7 @@ describe('circleTabs — the full strip', () => {
   })
 
   it('offers none of the four tabs the merge retired', () => {
-    // Each of these is still a live URL — a permanent redirect into Program or Circle Stats — but
+    // Each of these is still a live URL — a permanent redirect into What's On or Circle Stats — but
     // none of them is a tab any more, and a strip that offered both would be two doors to one room.
     for (const gone of ['Events', 'Journey', 'Practice', 'Leaderboard']) {
       expect(labels(busy)).not.toContain(gone)
@@ -76,44 +76,44 @@ describe('circleTabs — the full strip', () => {
   })
 })
 
-describe('circleTabs — Program, which absorbed events, the practice and the Run', () => {
-  it('shows Program to a VISITOR as soon as ANY of the three has something', () => {
+describe("circleTabs — What's On, which absorbed events, the practice and the Run", () => {
+  it("shows What's On to a VISITOR as soon as ANY of the three has something", () => {
     // Any one of them is enough. A Circle running only a Journey is not a Circle with two empty
     // tabs, which is exactly what the three-tab version made it look like.
-    expect(labels({ ...base, upcomingEventCount: 1 })).toContain('Program')
-    expect(labels({ ...base, hasActiveJourney: true })).toContain('Program')
-    expect(labels({ ...base, hasAssignedPractice: true })).toContain('Program')
+    expect(labels({ ...base, upcomingEventCount: 1 })).toContain("What's On")
+    expect(labels({ ...base, hasActiveJourney: true })).toContain("What's On")
+    expect(labels({ ...base, hasAssignedPractice: true })).toContain("What's On")
   })
 
-  it('hides Program from a visitor when the circle has nothing on at all', () => {
-    expect(labels(base)).not.toContain('Program')
+  it("hides What's On from a visitor when the circle has nothing on at all", () => {
+    expect(labels(base)).not.toContain("What's On")
   })
 
-  it('shows Program to a MEMBER with nothing on: their own week is the content', () => {
+  it("shows What's On to a MEMBER with nothing on: their own week is the content", () => {
     // The practice half scores a member against their own last few weeks, so it says something real
     // at any circle size and needs nobody else to be there.
-    expect(labels({ ...base, isMember: true })).toContain('Program')
+    expect(labels({ ...base, isMember: true })).toContain("What's On")
   })
 
-  it('shows Program to a MANAGER with nothing on, because scheduling it lands there', () => {
-    expect(labels({ ...base, canManage: true })).toContain('Program')
+  it("shows What's On to a MANAGER with nothing on, because scheduling it lands there", () => {
+    expect(labels({ ...base, canManage: true })).toContain("What's On")
   })
 
   it('counts the upcoming events, and nothing else', () => {
     // 🔴 The count is EVENTS only. A practice is one thing and a Run is one thing, so folding them
     // in would make "5" a number with no referent — the reader cannot tell what five of what.
-    expect(tab({ ...base, upcomingEventCount: 3 }, 'Program')?.count).toBe(3)
+    expect(tab({ ...base, upcomingEventCount: 3 }, "What's On")?.count).toBe(3)
     expect(
-      tab({ ...base, upcomingEventCount: 3, hasActiveJourney: true, hasAssignedPractice: true }, 'Program')
+      tab({ ...base, upcomingEventCount: 3, hasActiveJourney: true, hasAssignedPractice: true }, "What's On")
         ?.count,
     ).toBe(3)
   })
 
   it('carries NO count when the calendar is empty, rather than a zero', () => {
-    // A "0" beside Program would say "nothing here" about a tab that still holds the practice and
+    // A "0" beside the tab would say "nothing here" about a tab that still holds the practice and
     // the Run. Absent is the honest state.
-    expect(tab({ ...base, isMember: true }, 'Program')?.count).toBeUndefined()
-    expect(tab({ ...base, hasActiveJourney: true }, 'Program')?.count).toBeUndefined()
+    expect(tab({ ...base, isMember: true }, "What's On")?.count).toBeUndefined()
+    expect(tab({ ...base, hasActiveJourney: true }, "What's On")?.count).toBeUndefined()
   })
 })
 
@@ -171,15 +171,15 @@ describe('circleTabs — ADR-089, no chrome on an empty room', () => {
   })
 
   it('grows a strip the moment a circle of one has something to show', () => {
-    expect(labels({ ...base, memberCount: 1, upcomingEventCount: 2 })).toEqual(['Feed', 'Program'])
-    expect(labels({ ...base, memberCount: 1, hasActiveJourney: true })).toEqual(['Feed', 'Program'])
-    expect(labels({ ...base, memberCount: 1, hasAssignedPractice: true })).toEqual(['Feed', 'Program'])
+    expect(labels({ ...base, memberCount: 1, upcomingEventCount: 2 })).toEqual(['Feed', "What's On"])
+    expect(labels({ ...base, memberCount: 1, hasActiveJourney: true })).toEqual(['Feed', "What's On"])
+    expect(labels({ ...base, memberCount: 1, hasAssignedPractice: true })).toEqual(['Feed', "What's On"])
   })
 
   it('gives a MANAGER the strip at any size, because an empty state is their to-do', () => {
     expect(labels({ ...base, memberCount: 1, canManage: true })).toEqual([
       'Feed',
-      'Program',
+      "What's On",
       'Members',
       'Circle Stats',
     ])

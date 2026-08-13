@@ -23359,7 +23359,7 @@ the *same prop list, key for key*, and that neither re-implements a shared decis
 ## ADR-1023: The Circle header goes back on the cover, and the five tabs become four (2026-08-13)
 
 **Status:** accepted · **Owner ruling, reversing part of [ADR-1017](DECISIONS.md)'s sibling work in
-#2112** · **Touches:** `app/(main)/circles/[slug]/(circle)/{layout,page}.tsx`, the new `program/` and
+#2112** · **Touches:** `app/(main)/circles/[slug]/(circle)/{layout,page}.tsx`, the new `whats-on/` and
 `stats/` routes, four redirect stubs, `lib/circles/tabs.ts`, `lib/page-settings/default-layouts.ts` ·
 **Guarded by:** `lib/circles/tabs.test.ts`, `lib/page-settings/default-layouts.test.ts`,
 `pnpm check:headers`, `pnpm check:templates`
@@ -23383,7 +23383,7 @@ wanted you to rearrange the content."**
 | 2 | Edit and Manage back, admin only, right by the Post button | Both are cover actions now, gated on `circle.editSettings`, in the glassy `HERO_ACTION_CLASS`. The host menu joins them. |
 | 3 | Member list back in the right column | `circle-members` is visible in the `/circles/*` rail again. |
 | 4 | Events in the right column | `circle-events` likewise, and it leads. |
-| 5 | Practice tab → **Program**; events, practices and journeys all go there | New `program/` route; `practice/`, `events/` and `journey/` are permanent redirects into it. |
+| 5 | Practice tab → **Program**; events, practices and journeys all go there | New `whats-on/` route; `practice/`, `events/` and `journey/` are permanent redirects into it. The LABEL is "What's On", not Program, on a second owner ruling the same night. See ⚠️ below. |
 | 6 | Momentum blocks back, in the leaderboard | The momentum tiles render on the new `stats/` route, above the board, and are hidden in the rail so the numbers appear once. |
 | 7 | Leaderboard → **Circle Stats** | The tab label; `leaderboard/` permanently redirects to `stats/`. |
 
@@ -23404,26 +23404,35 @@ Not the craft. #2112's header was internally coherent and it cited real sources.
 The tab merge is the one place this went further than a revert rather than back. Events, the Journey
 Run and the weekly practice are three answers to one member question — *what is this Circle doing,
 and when do I show up?* Three tabs made a member check three rooms to assemble one answer, and made a
-Circle running only a Journey look like a Circle with two empty tabs. **Program** answers it in one
-scroll. **Circle Stats** takes the other half: the board and the momentum tiles are both STATUS,
+Circle running only a Journey look like a Circle with two empty tabs. **What's On** answers it in
+one scroll. **Circle Stats** takes the other half: the board and the momentum tiles are both STATUS,
 which is a different question, and status is what belongs behind its own tab rather than in a rail
 box no eye reaches.
 
-### ⚠️ "Program" collides with a locked term, and the owner chose it anyway
+### ⚠️ "Program" was the instruction, and it could not be the label
 
-[`NAMING.md`](NAMING.md) §Community structure already defines **Program** as a Channel carrying a
-Chapter blueprint (`topical_channels.template_id`), with **Chapter** as its local Circle. So a
-Chapter's "Program" tab means something one click away from what "Program" means in the canon. The
-instruction was explicit, so it shipped as instructed and the collision is recorded here rather than
-quietly resolved. **The canon needs either an amendment recording the second sense or a different
-tab label, and that is an owner call, not an implementation detail.**
+[`NAMING.md`](NAMING.md) §Community structure binds **Program** to a Channel carrying a Chapter
+blueprint (`topical_channels.template_id`), with **Chapter** as its local Circle. **A Chapter is a
+Circle**, so a Chapter's "Program" tab would have meant *its schedule* while the published help
+article at `/help/groups/programs-and-chapters` tells that same member a Program is *the blueprint
+the Chapter runs*. Two meanings, one click apart, on exactly the Circles most likely to meet both.
+
+This is not a canon-hygiene point. It is member-facing and already shipped in help.
+
+The tab was built as instructed, the collision was put to the owner with the evidence, and the owner
+picked a different label the same night: **What's On**. It collides with nothing, and it is the
+member's own question rather than a noun they have to learn. The canon is untouched, which is the
+outcome to prefer whenever a locked term and a new surface disagree: **move the new surface.**
+
+🔴 Do not "fix" the label back to Program. `lib/circles/tabs.ts` carries the same warning at the top,
+because the owner's first instruction is in the git history and reads like the intended state.
 
 ### Consequences
 
-- **Every retired URL still resolves.** `practice/`, `events/`, `journey/` → `program/`;
+- **Every retired URL still resolves.** `practice/`, `events/`, `journey/` → `whats-on/`;
   `leaderboard/` → `stats/`. All four are `permanentRedirect`, because a Circle's board and calendar
   are exactly the sort of link members send each other.
-- **Route ≠ label is now twice-precedented.** `/stats` renders under the label "Circle Stats", the
+- **Route ≠ label is now twice-precedented.** `/stats` renders under the label "Circle Stats" and `/whats-on` under "What's On", the
   same shape as `/nearby` → "Around You" ([ADR-1020](DECISIONS.md)).
 - **The rail cap is four, not three, and it is still a cap.** `default-layouts.test.ts` asserts the
   ceiling, the order, and that the roster and the events stay in it, so the next trim cannot quietly

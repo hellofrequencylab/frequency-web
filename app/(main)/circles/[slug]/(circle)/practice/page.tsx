@@ -6,10 +6,10 @@ import { permanentRedirect } from 'next/navigation'
 // underneath it. They split on 2026-08-13 (owner ruling) along the seam between "what are we
 // doing" and "how are we doing":
 //
-//   · this week's practice → ../program, beside the events and the Journey Run
+//   · this week's practice → ../whats-on, beside the events and the Journey Run
 //   · the effort board     → ../stats,   beneath the Circle's momentum tiles
 //
-// The practice is the half a member acts on, so this route follows it to Program.
+// The practice is the half a member acts on, so this route follows it to What's On.
 //
 // THIS STUB IS NOT HOUSEKEEPING. The route is linked from members' own history, from the practice
 // log flow, and from anything anyone pasted into a Circle. A permanent redirect keeps every one of
@@ -22,5 +22,5 @@ export default async function CirclePracticeRedirect({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  permanentRedirect(`/circles/${slug}/program`)
+  permanentRedirect(`/circles/${slug}/whats-on`)
 }

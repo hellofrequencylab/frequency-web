@@ -49,9 +49,9 @@ import {
 // MEMBER COPY SAYS "RUN", NEVER "COHORT" (docs/NAMING.md). `getCohortProgress` is the internal name
 // of the read; nothing it produces is labelled that way on screen.
 
-export const metadata = { title: 'Program' }
+export const metadata = { title: "What's On" }
 
-export default async function CircleProgramPage({
+export default async function CircleWhatsOnPage({
   params,
 }: {
   params: Promise<{ slug: string }>

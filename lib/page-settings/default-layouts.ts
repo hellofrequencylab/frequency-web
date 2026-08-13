@@ -19,7 +19,7 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
   // Ordered by the same rule as before: (a) time-bound before evergreen · (b) action before
   // information · (c) decision-relevant before status. Which gives, top to bottom:
   //   1. circle-events   — what is on next, and the way in to RSVP. Time-bound and decision-
-  //      relevant, so it leads. It sits here AND on the Program tab, deliberately: the tab is the
+  //      relevant, so it leads. It sits here AND on the What's On tab, deliberately: the tab is the
   //      full calendar, this is the next thing.
   //   2. circle-members  — who is actually in the room. The roster tab still exists and still
   //      carries the browse/manage affordances; this is the at-a-glance.

@@ -2,9 +2,9 @@ import { permanentRedirect } from 'next/navigation'
 
 // ── THE OLD EVENTS ROUTE ────────────────────────────────────────────────────────────────────────
 //
-// Events folded into the Program tab (owner ruling, 2026-08-12): a Circle's practice, its calendar
+// Events folded into the "What's On" tab (owner ruling, 2026-08-13): a Circle's practice, its calendar
 // and its Journey are the same subject at three horizons, not three sibling tabs, so a member who
-// found one now finds all three. The Circle's calendar sits under ../program, in full, in the
+// found one now finds all three. The Circle's calendar sits under ../whats-on, in full, in the
 // middle section.
 //
 // THIS STUB IS NOT HOUSEKEEPING. A Circle's events page is exactly the sort of link people paste to
@@ -18,5 +18,5 @@ export default async function CircleEventsRedirect({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  permanentRedirect(`/circles/${slug}/program`)
+  permanentRedirect(`/circles/${slug}/whats-on`)
 }
