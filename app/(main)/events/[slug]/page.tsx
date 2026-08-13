@@ -32,6 +32,7 @@ import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { updateEventField } from '../admin-actions'
 import { RsvpControls } from '@/components/events/rsvp-controls'
 import { WarmProof } from '@/components/events/warm-proof'
+import { GuestRsvpForm } from '@/components/events/guest-rsvp-form'
 import { safeHttpUrl } from '@/lib/safe-url'
 import { MembershipCheckoutFold } from '@/components/events/membership-checkout-fold'
 import { RsvpPaymentFlow, type FlowRate } from '@/components/events/rsvp-payment-flow'
@@ -117,16 +118,27 @@ const MODE_CHIP: Record<AttendanceMode, { Icon: typeof Video; cls: string; label
   hybrid:    { Icon: Globe, cls: 'border-primary/30 bg-primary-bg text-primary-strong', label: 'In person + online' },
 }
 
+// `profile` is NULLABLE, and the null case is a real row rather than a defect: a signed-out guest
+// RSVP carries `guest_name`/`guest_email` and no profile_id at all (20270303000000). The embed is a
+// LEFT join, so those rows arrive with `profile: null`.
+//
+// 🔴 This type was declared non-null and reached through unguarded (`r.profile.id`) in four places.
+// The row is cast with `as unknown as RSVPRow[]`, so TypeScript believed the lie and the first
+// guest RSVP on any event would have thrown `Cannot read properties of null` and 500'd the whole
+// detail page. Guard every deref; `goingMembers` below exists so the common case reads cleanly.
 type RSVPRow = {
   id: string
   status: string
   plus_ones: number
+  /** Null for a signed-out guest seat. */
   profile: {
     id: string
     display_name: string
     handle: string
     avatar_url: string | null
-  }
+  } | null
+  /** What a guest typed, when they typed one. Null for member seats and for anonymous guests. */
+  guest_name: string | null
 }
 
 // The stored starts_at/ends_at hold the event's wall-clock as UTC parts, so rendering
@@ -563,7 +575,7 @@ export default async function EventDetailPage({
   }] = await Promise.all([
     admin
       .from('event_rsvps')
-      .select('id, status, plus_ones, profile:profiles!profile_id ( id, display_name, handle, avatar_url )')
+      .select('id, status, plus_ones, guest_name, profile:profiles!profile_id ( id, display_name, handle, avatar_url )')
       .eq('event_id', event.id)
       .order('created_at', { ascending: true }),
     // Real capacity / waitlist info (lib/events/capacity) — drives the waitlist CTA
@@ -583,7 +595,17 @@ export default async function EventDetailPage({
   ])
 
   const rsvps = (rawRsvps ?? []) as unknown as RSVPRow[]
+  // EVERY going seat, member or guest. This is the headcount, and it is deliberately
+  // identity-blind so it agrees with lib/events/capacity.ts — the capacity trigger counts guests
+  // because they occupy the room, so a "going" number that skipped them would contradict the
+  // waitlist the same page renders.
   const goingRsvps = rsvps.filter((r) => r.status === 'going')
+  // The subset with an account. Anything that needs a profile — a face, a handle, a shared-circle
+  // lookup — reads THIS list, never `goingRsvps`. A guest has no avatar to show and no circles to
+  // overlap with, so they are absent here by definition rather than by oversight.
+  const goingMembers = goingRsvps.filter(
+    (r): r is RSVPRow & { profile: NonNullable<RSVPRow['profile']> } => r.profile != null,
+  )
   const maybeCount = rsvps.filter((r) => r.status === 'maybe').length
   // Plus-ones are an informational headcount for the host (they do NOT consume
   // capacity — the trigger counts 'going' rows). Sum across confirmed attendees.
@@ -619,7 +641,7 @@ export default async function EventDetailPage({
     if (profile) {
       myProfileId = profile.id
       isHost = event.host?.id === myProfileId
-      const myRsvp = rsvps.find((r) => r.profile.id === myProfileId)
+      const myRsvp = rsvps.find((r) => r.profile?.id === myProfileId)
       myRsvpStatus = myRsvp?.status ?? null
       myPlusOnes = myRsvp?.plus_ones ?? 0
 
@@ -628,7 +650,7 @@ export default async function EventDetailPage({
       // mirrors the shared-circle pattern in lib/connections/welcomes.ts. This
       // is warm proof, never scarcity — it's only ever additive. The Crew check
       // is independent of the membership reads, so they all run concurrently.
-      const otherGoingIds = goingRsvps
+      const otherGoingIds = goingMembers
         .map((r) => r.profile.id)
         .filter((id) => id !== myProfileId)
       const [paidViewer, mineRes, theirsRes] = await Promise.all([
@@ -1062,13 +1084,16 @@ export default async function EventDetailPage({
   }))
 
   // Warm-proof faces (shared by the reward strip + fact panel).
-  const faces = goingRsvps.map(({ profile }) => ({
+  // Members only: a face needs an avatar and a profile to link to. The pile therefore shows fewer
+  // faces than `going` counts when guests are present, which is correct — WarmProof already renders
+  // a count alongside the pile, so the room still reads as full.
+  const faces = goingMembers.map(({ profile }) => ({
     id: profile.id,
     displayName: profile.display_name,
     avatarUrl: profile.avatar_url,
   }))
   // Guest roster for the fact panel — Crew see names; others see a count.
-  const factGuests: FactGuest[] = goingRsvps.map(({ profile }) => ({
+  const factGuests: FactGuest[] = goingMembers.map(({ profile }) => ({
     id: profile.id,
     displayName: profile.display_name,
     avatarUrl: profile.avatar_url,
@@ -1461,14 +1486,22 @@ export default async function EventDetailPage({
           /* Signed-out visitor on a FREE RSVP-mode upcoming event: RSVP is for everyone, so
              offer the one step that unlocks it. (A priced RSVP event's flow above carries its
              own sign-in step; tickets-mode events carry theirs in the cascade.) */
-          <div className="space-y-2">
-            <Link
-              href={`/sign-in?next=/events/${event.slug}`}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-            >
-              Sign in to RSVP
-            </Link>
-            <p className="text-meta text-muted">Free to join. Sign in and you&rsquo;re on the list.</p>
+          /* One field instead of a detour through /sign-in. Someone who follows a shared link and
+             wants to come can say so here; the account is offered afterwards, in the confirmation
+             email, once there is a reason to make one. Signing in is still available below for
+             anyone who already has an account. */
+          <div className="space-y-3">
+            <GuestRsvpForm eventId={event.id} isFull={capacityInfo.isFull} />
+            <p className="text-meta text-muted">
+              Already a member?{' '}
+              <Link
+                href={`/sign-in?next=/events/${event.slug}`}
+                className="font-semibold text-text underline underline-offset-2 hover:text-primary"
+              >
+                Sign in
+              </Link>{' '}
+              to RSVP with your account.
+            </p>
           </div>
         ) : null}
 

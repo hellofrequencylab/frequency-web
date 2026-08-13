@@ -510,6 +510,75 @@ export async function sendEventRsvpConfirmationEmail(params: {
 }
 
 
+// ── Guest RSVP confirmation email ─────────────────────────────────────────────
+//
+// The sibling of sendEventRsvpConfirmationEmail, for a seat held by someone who has NO ACCOUNT
+// (event_rsvps.guest_email, 20270303000000). Three things make it a separate sender rather than a
+// parameter on that one, and each is load-bearing:
+//
+// 1. NO PROFILE ID, SO NO UNSUBSCRIBE TOKEN. buildUnsubscribeUrl signs an HMAC over
+//    (profileId, category) and a guest has neither. This is the same transactional carve-out
+//    sendInviteEmail documents and that the scan-intro, claim and beta-invite senders already
+//    take: one email the reader themself just asked for, straight onto the durable outbox, with
+//    the global suppression check inside sendRawEmail at drain time as the gate. Nothing here
+//    subscribes anyone to anything, so there is no list to leave.
+//
+// 2. THE ADDRESS IS UNPROVEN, AND THE COPY HAS TO SAY SO. Anyone can type anyone's address into a
+//    public form, so this mail may land in front of someone who did not send it. It names what
+//    happened, and it is honest that ignoring it ends the matter — never "confirm you're not
+//    coming", which would make a stranger do work to undo something they never did.
+//
+// 3. IT CARRIES THE WAY IN. A guest seat is a dead end until it is attached to an account
+//    (claim_guest_rsvps, 20270303000100), so the one CTA that is not the event itself is signing
+//    up with THIS address. That is also the only route by which this person ever reaches WAM.
+//
+// 🔴 `location`, `icsUrl` and `googleCalUrl` MUST ARRIVE ALREADY GATED. This function prints what
+// it is handed. The event page withholds an exact address behind `hide_address` unless the viewer
+// is going/waitlisted/ticketed (page.tsx addressHidden, ADR-825), and a guest row satisfies none
+// of those, so the caller passes the city line and nulls the calendar links for a hidden-address
+// event. A calendar file embeds the address in its LOCATION field, which is why it is not enough
+// to redact the visible line. Handing a withheld address to an unverified address on the strength
+// of a typed form is exactly the trade ADR-854 forbids.
+export async function sendGuestRsvpConfirmationEmail(params: {
+  to:           string
+  /** What they typed, or null. Never a display_name — a guest has no profile to read one from. */
+  guestName:    string | null
+  eventTitle:   string
+  whenAbsolute: string
+  /** Pre-gated. The full location for an open event, the city line for a hidden-address one. */
+  location:     string | null
+  hostName:     string | null
+  circleName:   string | null
+  eventUrl:     string
+  /** Pre-gated AND status-gated: null for a waitlist hold and for a hidden-address event. */
+  icsUrl:       string | null
+  googleCalUrl: string | null
+  /** Sign-in deep link carrying this address, so the seat can become theirs in one step. */
+  signUpUrl:    string
+  status:       'going' | 'waitlist'
+}) {
+  const {
+    to, guestName, eventTitle, whenAbsolute, location, hostName, circleName,
+    eventUrl, icsUrl, googleCalUrl, signUpUrl, status,
+  } = params
+
+  await enqueueEmail({
+    to,
+    subject: status === 'going'
+      ? `You're going: ${eventTitle}`
+      : `You're on the waitlist: ${eventTitle}`,
+    html: guestRsvpConfirmationHtml({
+      guestName, eventTitle, whenAbsolute, location, hostName, circleName,
+      eventUrl, icsUrl, googleCalUrl, signUpUrl, status,
+    }),
+    text: guestRsvpConfirmationText({
+      guestName, eventTitle, whenAbsolute, location, hostName, circleName,
+      eventUrl, icsUrl, googleCalUrl, signUpUrl, status,
+    }),
+  })
+}
+
+
 // ── Event cancellation email ──────────────────────────────────────────────────
 // Sent when a host/admin cancels an event. Two variants, gated by `refunded`:
 //   • refunded=true  → the attendee paid; their ticket has been refunded.
@@ -1552,6 +1621,122 @@ function rsvpConfirmationText({
     "Plans change, and that's okay, update your RSVP any time.",
     `Manage preferences: ${BASE_URL}/settings/notifications`,
     `Unsubscribe from event reminders: ${unsubscribeUrl}`,
+  )
+
+  return lines.join('\n') + '\n'
+}
+
+
+// The guest pair. Same furniture as the member templates above, three differences: it greets
+// someone who may have no name, it closes with signing up instead of managing preferences (a guest
+// has no preferences to manage), and it carries the "if this wasn't you" line that an UNVERIFIED
+// address makes necessary. Everything printed here was gated by the caller.
+
+/** Greeting for someone who may not have given a name. Never invents one. */
+function guestGreeting(guestName: string | null): string {
+  const trimmed = (guestName ?? '').trim()
+  return trimmed ? `Hi ${trimmed}, ` : 'Hi, '
+}
+
+function guestRsvpConfirmationHtml({
+  guestName, eventTitle, whenAbsolute, location, hostName, circleName,
+  eventUrl, icsUrl, googleCalUrl, signUpUrl, status,
+}: {
+  guestName: string | null; eventTitle: string; whenAbsolute: string; location: string | null
+  hostName: string | null; circleName: string | null; eventUrl: string
+  icsUrl: string | null; googleCalUrl: string | null; signUpUrl: string
+  status: 'going' | 'waitlist'
+}): string {
+  const eyebrow = status === 'going' ? "You're going" : "You're on the waitlist"
+  const greeting = escapeHtml(guestGreeting(guestName))
+  const intro = status === 'going'
+    ? `${greeting}your spot is saved. No account needed to come along, just turn up.`
+    : `${greeting}this one is full, so you are on the waitlist. If a spot opens we will move you in and let you know. Nothing for you to do.`
+  const hostLine = rsvpHostLine(hostName, circleName)
+
+  const calendarBlock = status === 'going' && (icsUrl || googleCalUrl) ? `
+    <p style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#8F8675;margin:24px 0 8px;">
+      Add to your calendar
+    </p>
+    <p style="margin:0 0 8px;">
+      ${googleCalUrl ? `<a href="${googleCalUrl}" style="display:inline-block;background:#FAF6EC;color:#3D352A;font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Google Calendar</a>` : ''}
+      ${icsUrl ? `<a href="${icsUrl}" style="display:inline-block;background:#FAF6EC;color:#3D352A;font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Apple / Outlook (.ics)</a>` : ''}
+    </p>
+  ` : ''
+
+  return emailShell(`
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+      ${eyebrow}
+    </p>
+    <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
+    <p style="${pStyle}">${intro}</p>
+    <p style="${pStyle}">
+      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:#777;">${escapeHtml(location)}</span>` : ''}
+      ${hostLine ? `<br><span style="color:#777;">${hostLine}</span>` : ''}
+    </p>
+    ${calendarBlock}
+    <a href="${eventUrl}" style="${btnStyle}">View event →</a>
+    <hr style="${dividerStyle}">
+    <p style="${pStyle}">
+      <strong>Want to change or cancel this later?</strong> Sign up with this same address and this
+      RSVP becomes part of your account, along with anything else you have said yes to.
+    </p>
+    <p style="margin:0 0 8px;">
+      <a href="${signUpUrl}" style="${btnStyle}">Set up your account →</a>
+    </p>
+    <hr style="${dividerStyle}">
+    <p style="font-size:13px;color:#8F8675;">
+      You are getting this because this address was used to RSVP to ${escapeHtml(eventTitle)}.
+      If that was not you, ignore this email and nothing further will be sent.
+    </p>
+  `)
+}
+
+function guestRsvpConfirmationText({
+  guestName, eventTitle, whenAbsolute, location, hostName, circleName,
+  eventUrl, icsUrl, googleCalUrl, signUpUrl, status,
+}: {
+  guestName: string | null; eventTitle: string; whenAbsolute: string; location: string | null
+  hostName: string | null; circleName: string | null; eventUrl: string
+  icsUrl: string | null; googleCalUrl: string | null; signUpUrl: string
+  status: 'going' | 'waitlist'
+}): string {
+  const eyebrow = status === 'going' ? "You're going" : "You're on the waitlist"
+  const greeting = guestGreeting(guestName)
+  const intro = status === 'going'
+    ? `${greeting}your spot is saved. No account needed to come along, just turn up.`
+    : `${greeting}this one is full, so you are on the waitlist. If a spot opens we will move you in and let you know. Nothing for you to do.`
+
+  const hostPlain =
+    hostName && circleName ? `Hosted by ${hostName} · ${circleName}` :
+    circleName             ? `Hosted by ${circleName}` :
+    hostName               ? `Hosted by ${hostName}` : ''
+
+  const lines: string[] = [
+    `${eyebrow}: ${eventTitle}`,
+    '',
+    intro,
+    '',
+    `When: ${whenAbsolute}`,
+  ]
+  if (location)  lines.push(`Where: ${location}`)
+  if (hostPlain) lines.push(hostPlain)
+  lines.push('', `View event: ${eventUrl}`)
+
+  if (status === 'going' && (googleCalUrl || icsUrl)) {
+    lines.push('', 'Add to your calendar:')
+    if (googleCalUrl) lines.push(`  Google Calendar: ${googleCalUrl}`)
+    if (icsUrl)       lines.push(`  Apple / Outlook (.ics): ${icsUrl}`)
+  }
+
+  lines.push(
+    '',
+    'Want to change or cancel this later? Sign up with this same address and this RSVP becomes',
+    'part of your account, along with anything else you have said yes to.',
+    `Set up your account: ${signUpUrl}`,
+    '',
+    `You are getting this because this address was used to RSVP to ${eventTitle}.`,
+    'If that was not you, ignore this email and nothing further will be sent.',
   )
 
   return lines.join('\n') + '\n'

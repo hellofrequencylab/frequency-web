@@ -105,6 +105,18 @@ export async function completeOnboarding(data: {
       /* claim is a bonus, never a blocker on signup */
     }
     await claimLeadOnSignup(updated.id, user.email).catch(() => {})
+    // CLAIM-ON-JOIN, the seats leg: any event this person already RSVP'd to as a signed-out guest
+    // becomes theirs (20270303000100). Without this the guest seat is a dead end — it holds a place
+    // in the room but never appears in "my events", can never be cancelled by the person holding
+    // it, and never reaches WAM.
+    //
+    // Called on the SESSION client, which is not incidental: claim_guest_rsvps proves ownership
+    // with auth.uid() and would find nothing under the admin client. It also requires
+    // auth.users.email_confirmed_at, so a merely-typed address claims nothing (ADR-854).
+    // Fail-safe like its neighbours — a claim is a bonus, never a blocker on signup.
+    await (supabase as unknown as { rpc: (fn: string, args: Record<string, unknown>) => Promise<unknown> })
+      .rpc('claim_guest_rsvps', { p_profile_id: updated.id })
+      .catch(() => {})
     // Connector reward (ADR-154 / ADR-777): if this new member's email matches one or more
     // inviters' event-sourced personal contacts, each inviter earns the join ⚡⚡ + 💎 (the person
     // they captured actually joined). Idempotent + daily-capped + fail-safe inside the grant engine.

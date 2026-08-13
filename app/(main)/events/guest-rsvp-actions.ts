@@ -3,6 +3,7 @@
 import { headers } from 'next/headers'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { createClient } from '@/lib/supabase/server'
+import { sendGuestRsvpReceipt } from '@/lib/events/guest-rsvp-email'
 
 // SIGNED-OUT GUEST RSVP — one field, and a seat that obeys the member rules.
 //
@@ -87,6 +88,22 @@ export async function submitGuestRsvp(input: {
       p_email: email,
       p_name: name,
     })
+
+    // The receipt. Awaited rather than floated because a server action's process can be torn down
+    // the moment it returns, and a dropped promise here means a guest who submitted a form and
+    // heard nothing at all — this email is the ONLY record they have. It cannot change the reply:
+    // it resolves on every path and swallows its own failures.
+    //
+    // It decides for itself whether to send, by re-reading the seat with an admin client (a guest
+    // cannot see their own row under RLS). That read lives in lib/events/guest-rsvp-email.ts and
+    // not here on purpose — this file stays on the session client so it holds no power the SQL is
+    // not already assuming, since the capture function is granted to anon and reachable directly.
+    //
+    // Known and accepted: awaiting makes a real, seatable event a few database reads slower than a
+    // bogus event id, which is a weak timing signal about the EVENT (not about any person). It is
+    // the same class as the publicly-rendered `spotsLeft` counter the migration already accepts,
+    // and it is bounded by an outbox insert rather than an SMTP round trip.
+    await sendGuestRsvpReceipt(input.eventId, email)
   } catch {
     // Swallowed on purpose. A thrown RPC (network, PostgREST, a bad event id shaped like a uuid)
     // must not produce a different reply from a successful one, or the error itself becomes the
