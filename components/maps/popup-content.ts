@@ -1,4 +1,5 @@
 import type { MapPin } from './types'
+import { resolvePinPaint } from '@/lib/maps/pin-kinds'
 
 // THE CARD A PIN OPENS — real DOM nodes, shared by both providers (ADR-1027 extends ADR-901).
 //
@@ -9,23 +10,29 @@ import type { MapPin } from './types'
 // step left to subvert. Every string below goes through `textContent`. The ONE attribute that takes
 // caller data is the image `src`, and it is filtered to http(s) first (see `safeImageSrc`).
 //
-// ── WHY THIS IS A CARD NOW ─────────────────────────────────────────────────────────────────────
+// ── ONE LAYOUT, EVERY KIND ─────────────────────────────────────────────────────────────────────
 //
-// It was three stacked lines. The owner asked for "a card with event info and header image", and the
-// reason it is worth the pixels is that a pin popup is the ONLY place a member meets an event on
-// this page: the map is full width, above the feed, and a dot with a title is not enough to decide
-// whether to go. So: cover image, a pill when the location is qualified, the title, when it is, where
-// it is, and the way in.
+// Owner instruction 2026-08-13: an Event and a Circle at the same venue are two different things and
+// both keep their pin, so the card must make it obvious WHICH one you opened, and must not change
+// shape between them. So every kind renders the identical stack:
+//
+//   cover image  ·  pill row  ·  title  ·  the quiet line  ·  the where line  ·  the way in
+//
+// 🔴 THE KIND PILL IS PAINTED IN THE PIN'S OWN TOKEN. A three-colour legend under a map still leaves
+// a member decoding it to know whether the dot they just tapped is a gathering or a group. The pill
+// says it in one word AND in the same colour as the dot, so the card and the pin are visibly the
+// same object. That is the whole reason `resolvePinPaint` is imported here rather than the label
+// being passed in as a string: the colour and the word have to come from one table or they drift.
 //
 // Colours are the DAWN custom properties directly. Map DOM sits outside Tailwind, but the variables
 // cascade from :root, so the card tracks the active theme for free.
 
 /** Popup width. Wide enough for a date line and a street address without wrapping to three rows,
  *  narrow enough to sit inside a phone viewport with the map still readable behind it. */
-const CARD_WIDTH_PX = 260
-/** Header image height. A 16:9-ish band: enough to read the photo, not so much that the text is
- *  pushed under the fold of a small popup. */
-const IMAGE_HEIGHT_PX = 120
+const CARD_WIDTH_PX = 264
+/** Header image height. Close to 16:9 at the card's width, matching the `cover` band on the app's
+ *  own browse cards (components/cards/entity-card.tsx) so a map card reads as the same furniture. */
+const IMAGE_HEIGHT_PX = 148
 
 function line(text: string, style: string): HTMLDivElement {
   const el = document.createElement('div')
@@ -55,20 +62,44 @@ function safeImageSrc(url: string | null | undefined): string | null {
   }
 }
 
+/** One pill. `token` paints it; omitting the token gives the neutral notice treatment. */
+function pill(text: string, token?: string): HTMLSpanElement {
+  const el = document.createElement('span')
+  el.textContent = text
+  el.style.cssText = [
+    'display:inline-flex',
+    'align-items:center',
+    'padding:2px 8px',
+    'border-radius:9999px',
+    'font-size:11px',
+    'font-weight:600',
+    'line-height:1.45',
+    'white-space:nowrap',
+    // color-mix keeps the pill on the TOKEN layer: the fill is the pin's own colour at low alpha and
+    // the ink is the same colour at full strength, so a new kind needs no new pair of tokens and a
+    // theme switch moves both together.
+    token
+      ? `color:var(${token});background:color-mix(in srgb, var(${token}) 14%, transparent)`
+      : 'color:var(--color-text-muted);background:var(--color-surface-elevated)',
+  ].join(';')
+  return el
+}
+
 /** Build the popup card for a pin, or null when the pin carries nothing to show. */
 export function buildPopupContent(pin: MapPin): HTMLElement | null {
   const title = pin.title?.trim()
   const subtitle = pin.subtitle?.trim()
   const detail = pin.detail?.trim()
-  const badge = pin.badge?.trim()
+  const notice = pin.badge?.trim()
   const href = pin.href?.trim()
   const imageUrl = safeImageSrc(pin.imageUrl)
   if (!title && !subtitle && !detail && !href) return null
 
+  const paint = resolvePinPaint(pin)
   const root = document.createElement('div')
   root.style.cssText = `width:${CARD_WIDTH_PX}px;max-width:100%`
 
-  // ── Header image ────────────────────────────────────────────────────────────────────────────
+  // ── Cover ───────────────────────────────────────────────────────────────────────────────────
   if (imageUrl) {
     const img = document.createElement('img')
     img.src = imageUrl
@@ -84,10 +115,10 @@ export function buildPopupContent(pin: MapPin): HTMLElement | null {
       'width:100%',
       `height:${IMAGE_HEIGHT_PX}px`,
       'object-fit:cover',
-      'border-radius:8px',
+      'border-radius:10px',
       'margin-bottom:8px',
-      // The map's own basemap shows through a transparent PNG otherwise, which reads as a broken
-      // image rather than a logo.
+      // The basemap shows through a transparent PNG otherwise, which reads as a broken image rather
+      // than a logo.
       'background:var(--color-surface-elevated)',
     ].join(';')
     // A cover that 404s should collapse the band, not leave a broken-image glyph in the card.
@@ -95,33 +126,24 @@ export function buildPopupContent(pin: MapPin): HTMLElement | null {
     root.appendChild(img)
   }
 
-  // ── Pill ────────────────────────────────────────────────────────────────────────────────────
-  // ABOVE the title, deliberately. It qualifies the dot the member just tapped, so it has to be read
-  // before the address underneath rather than discovered after it.
-  if (badge) {
-    const pill = document.createElement('span')
-    pill.textContent = badge
-    pill.style.cssText = [
-      'display:inline-block',
-      'padding:2px 8px',
-      'margin-bottom:4px',
-      'border-radius:9999px',
-      'font-size:11px',
-      'font-weight:600',
-      'line-height:1.4',
-      'color:var(--color-primary-strong)',
-      'background:var(--color-primary-bg)',
-    ].join(';')
-    root.appendChild(pill)
-  }
+  // ── Pill row ────────────────────────────────────────────────────────────────────────────────
+  // ABOVE the title, deliberately, and in this order: WHAT it is, then what is qualified about it.
+  // A member reads the kind first and the caveat second, which is the order they need them in.
+  const pills = document.createElement('div')
+  pills.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px'
+  pills.appendChild(pill(paint.noun, paint.token))
+  if (notice) pills.appendChild(pill(notice))
+  root.appendChild(pills)
 
   if (title) {
-    root.appendChild(line(title, 'font-weight:600;color:var(--color-text);line-height:1.3'))
+    root.appendChild(
+      line(title, 'font-weight:700;font-size:14px;color:var(--color-text);line-height:1.3'),
+    )
   }
-  // WHEN, then WHERE. Two rows rather than one joined sentence: they answer different questions and
-  // the joined version is what produced the run-on line this card replaced.
+  // The quiet line, then WHERE. Two rows rather than one joined sentence: they answer different
+  // questions, and the joined version is the run-on line this card replaced.
   if (subtitle) {
-    root.appendChild(line(subtitle, 'font-size:12px;color:var(--color-text-muted);margin-top:2px'))
+    root.appendChild(line(subtitle, 'font-size:12px;color:var(--color-text-muted);margin-top:3px'))
   }
   if (detail) {
     root.appendChild(line(detail, 'font-size:12px;color:var(--color-text-muted);margin-top:2px'))
@@ -132,7 +154,7 @@ export function buildPopupContent(pin: MapPin): HTMLElement | null {
     a.href = href
     a.textContent = pin.hrefLabel?.trim() || 'Open'
     a.style.cssText =
-      'font-size:13px;font-weight:600;color:var(--color-primary-strong);text-decoration:none;display:inline-block;margin-top:6px'
+      'font-size:13px;font-weight:600;color:var(--color-primary-strong);text-decoration:none;display:inline-block;margin-top:8px'
     root.appendChild(a)
   }
 

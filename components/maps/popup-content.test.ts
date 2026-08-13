@@ -52,9 +52,10 @@ describe('the card renders what the pin gives it', () => {
     expect(el.querySelector('img')).toBeNull()
   })
 
-  it('renders the pill ABOVE the title, so the dot is qualified before the address is read', () => {
+  it('renders the pills ABOVE the title, so the dot is qualified before the address is read', () => {
     const el = buildPopupContent({
       ...base,
+      kind: 'event',
       title: 'Meld Community Cowork',
       detail: 'Vista, CA',
       badge: 'RSVP for address',
@@ -62,6 +63,58 @@ describe('the card renders what the pin gives it', () => {
     const text = el.textContent ?? ''
     expect(text).toContain('RSVP for address')
     expect(text.indexOf('RSVP for address')).toBeLessThan(text.indexOf('Meld Community Cowork'))
+  })
+})
+
+// ───────────────────────────────────────────────────────────────────────────────────────────────
+// 🔴 THE KIND PILL. An Event and a Circle at one venue are two different things and both keep their
+// pin (owner ruling 2026-08-13), so the card has to say which one was opened — and must not change
+// shape between them.
+// ───────────────────────────────────────────────────────────────────────────────────────────────
+
+describe('the card says WHAT you tapped', () => {
+  const NOUNS: [kind: 'event' | 'circle' | 'space', noun: string][] = [
+    ['event', 'Event'],
+    ['circle', 'Circle'],
+    ['space', 'Space'],
+  ]
+
+  for (const [kind, noun] of NOUNS) {
+    it(`a ${kind} pin names itself "${noun}"`, () => {
+      const el = buildPopupContent({ ...base, kind, title: 'Meld' })!
+      expect(el.textContent).toContain(noun)
+    })
+  }
+
+  it('paints the kind pill in the SAME token as the pin, so card and dot are one object', () => {
+    const el = buildPopupContent({ ...base, kind: 'circle', title: 'Meld Coworking' })!
+    const html = el.innerHTML
+    // --color-signal is the circle token in lib/maps/pin-kinds.ts. If the pill stopped reading the
+    // shared table, this is what would go.
+    expect(html).toContain('--color-signal')
+  })
+
+  it('an Event and a Circle at one venue render the SAME stack, differing only in the pill', () => {
+    const shape = (el: HTMLElement) => Array.from(el.children).map((c) => c.tagName).join(',')
+    const event = buildPopupContent({
+      ...base, kind: 'event', title: 'Meld - Community Cowork',
+      subtitle: 'Wed, Aug 19 · and 7 more dates', detail: 'Vista, CA',
+      imageUrl: 'https://cdn.example.com/a.jpg', href: '/events/meld', hrefLabel: 'See the event',
+    })!
+    const circle = buildPopupContent({
+      ...base, kind: 'circle', title: 'Meld Coworking - Royal Temple',
+      subtitle: '1 member', detail: 'Vista',
+      imageUrl: 'https://cdn.example.com/b.jpg', href: '/circles/meld', hrefLabel: 'See the circle',
+    })!
+    expect(shape(event)).toBe(shape(circle))
+  })
+
+  it('the kind pill comes FIRST, then the caveat: what it is, then what is qualified', () => {
+    const el = buildPopupContent({
+      ...base, kind: 'space', title: 'Royal Temple', badge: 'Approximate area',
+    })!
+    const text = el.textContent ?? ''
+    expect(text.indexOf('Space')).toBeLessThan(text.indexOf('Approximate area'))
   })
 })
 
@@ -82,6 +135,12 @@ describe('🔴 nothing a host typed can become markup', () => {
     const el = buildPopupContent({ ...base, title: 'ok', badge: '<b>bold</b>' })!
     expect(el.querySelector('b')).toBeNull()
     expect(el.textContent).toContain('<b>bold</b>')
+  })
+
+  it('a payload in the subtitle renders as text', () => {
+    const el = buildPopupContent({ ...base, title: 'ok', subtitle: '<iframe src=evil>' })!
+    expect(el.querySelector('iframe')).toBeNull()
+    expect(el.textContent).toContain('<iframe src=evil>')
   })
 })
 

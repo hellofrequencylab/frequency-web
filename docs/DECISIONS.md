@@ -23807,6 +23807,31 @@ hands back exactly the address the hosts withheld. The stored point is therefore
 `approximatePoint` produces for the Circle's own id, landing in the same grid cell the events already
 publish. **Net new disclosure: none.**
 
+### 4 · One card shape, and a pill that says which thing you tapped
+
+**Amended the same day, on the owner's correction.** The first read of "Meld is showing with two
+different instances" looked like a duplicate to collapse. It is not: `Meld - Community Cowork` is an
+**Event** and `Meld Coworking - Royal Temple` is a **Circle**, two different entities at one venue,
+each with its own page. The owner's ruling: *"Keep those separate but make sure the cards are
+formatted and the same layout. Make it clear with pills alerts that it's a Circle or Event."*
+
+So the card renders an **identical stack for every kind** — cover, pill row, title, quiet line, where
+line, link — and leads with a pill naming the kind.
+
+🔴 **The kind pill is painted in the pin's own token.** A three-colour legend under a map still
+leaves a member decoding it to know whether the dot they opened is a gathering or a group. The pill
+says it in one word *and* in the same colour as the dot, so the card and the pin are visibly the same
+object. `MAP_PIN_KINDS` grew a singular `noun` beside its plural `legend` for exactly this, so the
+word and the colour come from one table and cannot drift.
+
+Pill order is **kind first, caveat second**: what it is, then what is qualified about it. That is the
+order a member needs them in.
+
+While proving this out, one genuine data oddity surfaced and is worth recording: the Meld series
+(`7742530c`) has **inconsistent `scope_type` across its own occurrences** — 4 rows `circle`-scoped,
+4 rows `public`-scoped, interleaved by date. The fold keys on `parent_event_id ?? id`, so it
+collapses them to one pin correctly regardless, but the split itself is unexplained.
+
 ### Consequences
 
 - Members are **not** on the map, and when they are they will never be exact

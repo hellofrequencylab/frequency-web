@@ -14,6 +14,12 @@ import { StreamTemplate } from '@/components/templates'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { Suspense } from 'react'
 import { NearbyMap } from '@/components/nearby/nearby-map'
+import {
+  collapseSeriesRows,
+  seriesFetchLimit,
+  SERIES_COLUMNS,
+  TEASER_CARDS_PER_SERIES,
+} from '@/lib/events/series'
 import { loadNearbyMapPins } from '@/lib/nearby/map-pins'
 
 // /nearby is the Community Dashboard — the counterpart to the Quest Dashboard
@@ -39,11 +45,43 @@ type DispatchRow = {
   linked_task: { id: string; name: string } | null
 }
 
-type EventRow = { id: string; title: string; slug: string; location: string | null; starts_at: string }
+type EventRow = {
+  id: string
+  title: string
+  slug: string
+  location: string | null
+  starts_at: string
+  is_cancelled?: boolean | null
+  recurrence_type?: string | null
+  recurrence_until?: string | null
+  parent_event_id?: string | null
+}
+
+/** "Coming up" cards beside the map. FOUR, on the owner's instruction, and the number is shared
+ *  with the read's over-fetch and with the block's row grid so the three cannot drift. */
+const COMING_UP_COUNT = 4
+
+/** THE BAND HEIGHT, in ONE place. The map, the map's Suspense fallback and the Coming up stack all
+ *  read it, which is what makes the owner's "match the height" hold through a later tweak: there is
+ *  no second number to forget. */
+const MAP_BAND = 'h-[22rem] sm:h-[26rem]'
+/** The same band, applied only from `lg` up. Below that the two columns are STACKED, and pinning a
+ *  four-card stack to the map's height there would squash each card to ~5rem on a phone. Stacked,
+ *  the cards size to their content and nothing needs to match. */
+const MAP_BAND_LG = 'lg:h-[26rem]'
 type CircleRow = { id: string; name: string; slug: string; city: string | null; member_count: number; created_at: string }
 
 function eventDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+}
+
+/** The date chip's two lines. Split out so the Coming up card reads as markup rather than as two
+ *  inline `toLocaleDateString` calls with different option bags. */
+function eventMonth(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short' })
+}
+function eventDay(iso: string): string {
+  return String(new Date(iso).getDate())
 }
 
 // Coded defaults for the operator-editable content (ADR-180) — shared by the
@@ -134,10 +172,15 @@ export default async function NearbyPage({
     // `is_cancelled`, and all three have rows in production (measured 2026-08-12) —
     // 2 `circle_only`, 1 `unlisted`, 1 soft-removed. They were all in the past, so the upcoming
     // window looked clean while the hole stayed open for the next one written.
-    admin.from('events').select('id, title, slug, location, starts_at')
+    // 🔴 SELECTS SERIES_COLUMNS AND OVER-FETCHES, because this list FOLDS (ADR-897). Without the
+    // fold this block showed "Breathe Connect Expand" twice in five rows — Aug 13 and Aug 20 of one
+    // weekly series — which is the same bug the map had and the reason TEASER_CARDS_PER_SERIES
+    // exists: a fixed block answers "which gathering", not "which date". Reading only 5 rows and
+    // folding afterwards would leave 2 cards, so the read is multiplied first.
+    admin.from('events').select(`id, title, slug, location, starts_at, is_cancelled, ${SERIES_COLUMNS}`)
       .eq('is_cancelled', false).gte('starts_at', nowIso)
       .eq('status', 'published').eq('visibility', 'public').is('removed_at', null)
-      .order('starts_at', { ascending: true }).limit(5),
+      .order('starts_at', { ascending: true }).limit(seriesFetchLimit(COMING_UP_COUNT)),
     // Freshly-created circles to join.
     //
     // 🔴 This is a DISCOVERY surface, so it keys on axis 1 (`unlisted`) — NOT on can_see_circle.
@@ -166,7 +209,11 @@ export default async function NearbyPage({
     .sort((a, b) => new Date(b.published_at ?? 0).getTime() - new Date(a.published_at ?? 0).getTime())
     .slice(0, 20) as unknown as DispatchRow[]
 
-  const upcomingEvents = (eventsRes.data ?? []) as EventRow[]
+  // One card per GATHERING, earliest date first, then the first four.
+  const upcomingEvents = collapseSeriesRows((eventsRes.data ?? []) as EventRow[], {
+    perSeries: TEASER_CARDS_PER_SERIES,
+    dropCancelled: false,
+  }).slice(0, COMING_UP_COUNT)
   const newCircles = (newCirclesRes.data ?? []) as CircleRow[]
   const role = (profile as { community_role: CommunityRole }).community_role
   const broadcastsThisWeek = dispatches.filter((d) => (d.published_at ?? '') >= weekAgoIso).length
@@ -189,7 +236,6 @@ export default async function NearbyPage({
   const canCompose = isHost && (namedCircles.length > 0 || namedHubs.length > 0 || namedNexuses.length > 0)
 
   const latest = dispatches[0]
-  const nextEvent = upcomingEvents[0]
 
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
   const { title, description, ctaLabel, ctaHref } = await resolvePageContent('/nearby', CONTENT_FALLBACK)
@@ -217,8 +263,31 @@ export default async function NearbyPage({
           </div>
         ) : undefined
       }
+      // ── AT A GLANCE, ON THE DIVIDER ROW ──────────────────────────────────────────────────
+      // Owner instruction 2026-08-13: this line sits "in line with the settings button" rather
+      // than on a line of its own beneath it. The header's rule then fills the gap between the
+      // two, so the row still reads as a divider carrying a label, not as a toolbar.
+      //
+      // ORDER: Events, Circles, Members, Dispatches. The three things a member came to find lead;
+      // the count of announcements, which is the page's own furniture, goes last.
+      headingLead={
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-muted">
+          <span><strong className="font-semibold text-text tabular-nums">{(eventsCountRes.count ?? upcomingEvents.length).toLocaleString()}</strong> upcoming events</span>
+          <span aria-hidden className="text-subtle">·</span>
+          <span><strong className="font-semibold text-text tabular-nums">{(circlesCountRes.count ?? 0).toLocaleString()}</strong> circles</span>
+          {newCirclesCount > 0 && <span className="text-subtle">({newCirclesCount} new)</span>}
+          <span aria-hidden className="text-subtle">·</span>
+          <span><strong className="font-semibold text-text tabular-nums">{(membersRes.count ?? 0).toLocaleString()}</strong> members</span>
+          <span aria-hidden className="text-subtle">·</span>
+          <span><strong className="font-semibold text-text tabular-nums">{dispatches.length}</strong> recent Dispatches</span>
+          {broadcastsThisWeek > 0 && <span className="text-subtle">({broadcastsThisWeek} this week)</span>}
+        </p>
+      }
     >
-      {/* ── Highlight hero: the latest broadcast, else the next event ── */}
+      {/* ── Highlight hero: the latest Dispatch ──────────────────────────────────────────────
+              The "next event" FALLBACK that used to sit here is gone: the four Coming up cards
+              beside the map now do that job, with four gatherings instead of one. Keeping both
+              would have led the page with the same event twice. */}
       {latest ? (
         <Link
           href={`/nearby/${latest.id}`}
@@ -234,52 +303,69 @@ export default async function NearbyPage({
           </div>
           <ArrowRight className="hidden h-4 w-4 shrink-0 text-primary-strong sm:block" />
         </Link>
-      ) : nextEvent ? (
-        <Link
-          href={`/events/${nextEvent.slug}`}
-          className="mb-6 flex items-center gap-4 rounded-2xl border border-primary-bg bg-primary-bg/40 p-5 transition-colors hover:bg-primary-bg/60 dark:bg-primary-bg/15 dark:hover:bg-primary-bg/25"
-        >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-on-primary">
-            <CalendarDays className="h-5 w-5" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-meta font-medium text-subtle">Coming up</p>
-            <p className="text-body font-bold leading-tight text-text">{nextEvent.title}</p>
-            <p className="mt-0.5 text-body-sm text-muted">{eventDate(nextEvent.starts_at)}{nextEvent.location ? ` · ${nextEvent.location}` : ''}</p>
-          </div>
-          <ArrowRight className="hidden h-4 w-4 shrink-0 text-primary-strong sm:block" />
-        </Link>
       ) : null}
 
-      {/* ── At-a-glance line ─────────────────────────────────── */}
-      {/* One calm summary instead of a wall of stat tiles — the hero above and
-          the quick-links sidebar already carry navigation, so these are just
-          context. */}
-      <p className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-muted">
-        <span><strong className="font-semibold text-text tabular-nums">{dispatches.length}</strong> recent Dispatches</span>
-        {broadcastsThisWeek > 0 && <span className="text-subtle">({broadcastsThisWeek} this week)</span>}
-        <span aria-hidden className="text-subtle">·</span>
-        <span><strong className="font-semibold text-text tabular-nums">{(eventsCountRes.count ?? upcomingEvents.length).toLocaleString()}</strong> upcoming events</span>
-        <span aria-hidden className="text-subtle">·</span>
-        <span><strong className="font-semibold text-text tabular-nums">{(circlesCountRes.count ?? 0).toLocaleString()}</strong> circles</span>
-        {newCirclesCount > 0 && <span className="text-subtle">({newCirclesCount} new)</span>}
-        <span aria-hidden className="text-subtle">·</span>
-        <span><strong className="font-semibold text-text tabular-nums">{(membersRes.count ?? 0).toLocaleString()}</strong> members</span>
-      </p>
+      {/* ── THE MAP, AND WHAT IS COMING UP, ON ONE ROW ────────────────────────────────────
+              Owner instruction 2026-08-13: the map narrows to the MAIN COLUMN (so it lines up with
+              the Dispatches block under it rather than spanning the rail too), and the four next
+              gatherings sit beside it.
 
-      {/* ── THE MAP (ADR-1022's first caller) ──────────────────────────────────────────────
-              Full width, under the counts and above the feed, because this page is called Around
-              You and a map IS the answer to that. The right rail was the other candidate and was
-              rejected on the page's own evidence: the Circle rail trim cited NN/g putting ~0.8% of
-              fixations on a right column, which is exactly why the roster and the events had to be
-              argued back into one. A map is not a thing to put where things go to be skipped.
+              The two are one grid, not a map with a rail bolted on, which is what makes the height
+              match hold: both columns start at the same y because both are headed by the same
+              SectionHeader, and both bodies are pinned to MAP_BAND. Change that constant and the
+              map, its Suspense fallback, and the Coming up stack all move together.
 
-              STREAMED, and that is load-bearing on THIS page. The pin read spans four tables; the
-              counts and the Dispatch feed above it must not wait on it. The fallback holds the
+              STREAMED, and that is load-bearing on THIS page. The pin read spans three tables; the
+              header, the counts and the Dispatch feed must not wait on it. The fallback holds the
               band's height so nothing below jumps when the pins land. */}
-      <Suspense fallback={<div className="mb-8 h-[22rem] w-full animate-pulse rounded-2xl bg-surface-elevated sm:h-[26rem]" />}>
-        <NearbyMapSection />
-      </Suspense>
+      <div className="mb-8 flex flex-col items-start gap-6 lg:flex-row">
+        <div className="min-w-0 flex-1">
+          <Suspense
+            fallback={
+              <>
+                <SectionHeader title="On the map" />
+                <div className={`w-full animate-pulse rounded-2xl bg-surface-elevated ${MAP_BAND}`} />
+              </>
+            }
+          >
+            <NearbyMapSection />
+          </Suspense>
+        </div>
+
+        {upcomingEvents.length > 0 && (
+          <div className="w-full shrink-0 lg:w-72">
+            <SectionHeader
+              title="Coming up"
+              count={eventsCountRes.count ?? undefined}
+              href="/events"
+            />
+            {/* One row per card, so four cards divide the map's height exactly. `grid-rows-4` is
+                fixed rather than derived from the array: a run of three would otherwise stretch to
+                fill the band and stop matching the map. COMING_UP_COUNT is the shared number. */}
+            <div className={`grid gap-2 lg:grid-rows-4 ${MAP_BAND_LG}`}>
+              {upcomingEvents.map((e) => (
+                <Link
+                  key={e.id}
+                  href={`/events/${e.slug}`}
+                  className="group flex min-h-0 items-center gap-3 rounded-2xl border border-border bg-surface p-3 lift-1 transition-colors hover:border-primary-bg dark:hover:border-primary"
+                >
+                  <span className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+                    <span className="text-3xs font-bold uppercase leading-none">{eventMonth(e.starts_at)}</span>
+                    <span className="text-body-sm font-bold leading-none">{eventDay(e.starts_at)}</span>
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-body-sm font-semibold text-text">{e.title}</span>
+                    <span className="mt-0.5 block truncate text-meta text-subtle">
+                      {eventDate(e.starts_at)}{e.location ? ` · ${e.location}` : ''}
+                    </span>
+                  </span>
+                  <ArrowRight className="hidden h-4 w-4 shrink-0 text-subtle transition-colors group-hover:text-primary-strong sm:block" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* ── Main: broadcasts (left) + happenings (right) ─────── */}
       <div className="flex flex-col items-start gap-6 lg:flex-row">
@@ -309,24 +395,11 @@ export default async function NearbyPage({
             <QuickLink href="/network" Icon={Users} label="Directory" sub="The community" color="bg-warning-bg text-warning" />
           </div>
 
-          {upcomingEvents.length > 0 && (
-            <ModuleCard title="Happening soon">
-              <div className="space-y-0.5">
-                {upcomingEvents.map((e) => (
-                  <Link key={e.id} href={`/events/${e.slug}`} className="flex items-center gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-surface-elevated">
-                    <span className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
-                      <span className="text-3xs font-bold uppercase leading-none">{new Date(e.starts_at).toLocaleDateString('en-US', { month: 'short' })}</span>
-                      <span className="text-body-sm font-bold leading-none">{new Date(e.starts_at).getDate()}</span>
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-body-sm font-semibold text-text">{e.title}</p>
-                      <p className="mt-0.5 truncate text-meta text-subtle">{eventDate(e.starts_at)}{e.location ? ` · ${e.location}` : ''}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </ModuleCard>
-          )}
+          {/* "Happening soon" USED TO SIT HERE and is gone deliberately. It rendered the exact
+              same `upcomingEvents` array the Coming up cards beside the map now render, so keeping
+              it would have printed the next four gatherings twice on one page, a screen apart.
+              (It was also the block that showed "Breathe Connect Expand" twice in five rows: it
+              never applied the series fold, which is fixed at the read now.) */}
 
           {newCircles.length > 0 && (
             <ModuleCard title="New circles">
