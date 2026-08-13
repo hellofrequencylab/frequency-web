@@ -583,7 +583,17 @@ export default async function SpaceProfileChromeLayout({
               // already rendered on this page by the Contact / Business blocks; read the same source here so
               // the schema carries the address, phone, website + socials instead of a name-only stub.
               telephone: spaceProfile.phone,
-              address: spaceProfile.address ? { streetAddress: spaceProfile.address } : null,
+              // addressLocality is the half that makes this a LOCAL node rather than a named one, and it
+              // was never passed: the builder has accepted it all along, the call site only ever sent a
+              // street. `spaces.city` supplies it. Either half alone still emits a valid PostalAddress,
+              // and a Space with neither (virtual or mobile) correctly emits no address block at all.
+              address:
+                spaceProfile.address || space.city
+                  ? {
+                      ...(spaceProfile.address ? { streetAddress: spaceProfile.address } : {}),
+                      ...(space.city ? { addressLocality: space.city } : {}),
+                    }
+                  : null,
               sameAs: [spaceProfile.website, ...(spaceProfile.socials ?? []).map((s) => s.url)],
               // The operator's relative price indicator ('$'..'$$$$'), captured on the Business Info form.
               priceRange: spaceProfile.priceRange,
