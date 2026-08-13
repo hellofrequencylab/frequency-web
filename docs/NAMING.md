@@ -576,6 +576,14 @@ Rules:
 - **The lowercase common noun is unaffected.** `status='draft'` is a Circle lifecycle (below), a
   Loom asset can be drafted, and an operator email campaign has a drafts state. Those are states of
   a thing, not the surface. Only the member-facing page is capital-D Drafts.
+- **A sentence may not OPEN with the state word** on any member-facing surface — see ADR-1030.
+  Sentence-initial capitalisation erases the one distinction the rule above rests on, so
+  "Drafts and private items stay off this list" (the owner-only note on a profile) read as a
+  pointer to `/drafts` when it meant the draft state of the things listed beside it. Recast so the
+  word is not first: "Unpublished and private items stay off this list." Title-cased LABELS are
+  exempt and stay as they are — a `Drafts` stat count or section heading inside an operator console
+  (`/admin/growth/funnels`, `/admin/walkthroughs`, `/admin/content/tips`, `/admin/crm/marketing`) is
+  the state word in a position where every label is capitalised, and a member never sees it.
 
 ## Retired: zero hits allowed outside this list and ADR-208
 

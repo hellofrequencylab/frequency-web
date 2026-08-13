@@ -278,8 +278,11 @@ export async function ProfileAssociations({
         </div>
       )}
 
+      {/* Not "Drafts and private items…": capital-D Drafts is the member's own page at /drafts
+          (NAMING.md), and sentence-initial capitalisation made this read as a pointer to it. What
+          it actually means is the draft STATE of the things listed here. */}
       {isOwner && (
-        <p className="mt-3 text-meta text-subtle">Drafts and private items stay off this list.</p>
+        <p className="mt-3 text-meta text-subtle">Unpublished and private items stay off this list.</p>
       )}
     </section>
   )

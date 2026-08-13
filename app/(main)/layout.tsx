@@ -7,7 +7,7 @@ import { hasOperatedSpaces } from '@/lib/spaces/operated'
 import { VERTICALS } from '@/lib/verticals'
 import AppShell from '@/components/layout/app-shell'
 import { ImpersonationBanner } from '@/components/layout/impersonation-banner'
-import { BetaCountdownBanner } from '@/components/layout/beta-countdown-banner'
+import { BetaCountdownBanner, betaCountdownEndsAt } from '@/components/layout/beta-countdown-banner'
 import { BannerMeasure } from '@/components/layout/banner-measure'
 import { SiteAlertBar } from '@/components/layout/site-alert-bar'
 import type { Metadata } from 'next'
@@ -582,7 +582,7 @@ export default async function MainLayout({
   // when there is no pin and no explicit occasion. All fail-safe. The per-request
   // cookie + DB-theme reads live HERE, not in the root layout, so public marketing/
   // discover pages stay static (app/layout.tsx).
-  const [theme, occasionPinned, autoOccasion, pageGate, railFold] = await Promise.all([
+  const [theme, occasionPinned, autoOccasion, pageGate, railFold, betaEnds] = await Promise.all([
     resolveTheme({ spaceSkin: activeSkin, spaceGeneration: activeGeneration }),
     (async () => {
       try {
@@ -613,6 +613,12 @@ export default async function MainLayout({
         return undefined /* no cookie → Auto, which is the pre-existing first paint */
       }
     })(),
+    // The beta countdown's date, read HERE rather than inside the banner (ADR-1030). It rides this
+    // wave, so it costs no wall-clock — five reads were already in flight. What it buys is that the
+    // shell knows whether a banner is coming BEFORE it renders: the banner ships in the first flush
+    // and reserves its own height, instead of arriving late behind a `fallback={null}` and shoving
+    // the page down. Null when unset, unreadable, or already past; fail-safe throughout.
+    betaCountdownEndsAt(),
   ])
   if (pageGate) {
     const draftHidden = pageGate.status === 'draft'
@@ -678,16 +684,17 @@ export default async function MainLayout({
       <GaConsentGate disabled={!analyticsConsent || gaStaffExcluded} />
       {gaStaffExcluded && <GaStaffOptOut />}
       <ImpersonationBanner />
-      {/* Beta countdown (platform_settings.beta_ends_at) — renders nothing until an operator sets a
-          date; its one cached read sits behind Suspense so it never blocks the shell. */}
-      <Suspense fallback={null}>
-        {/* BannerMeasure holds it to the page BODY's width on the operator consoles, whose info
-            rail is a column inside the page rather than a shell rail — without it the alert ran
-            the full width and painted across LIVE / NEEDS ATTENTION. */}
+      {/* Beta countdown (platform_settings.beta_ends_at) — absent entirely until an operator sets a
+          date, so no space is held for a banner that is not coming. When one IS coming the date is
+          already resolved above, so the banner renders in the same flush as the shell and there is
+          nothing to shift. BannerMeasure holds it to the page BODY's width on the operator consoles,
+          whose info rail is a column inside the page rather than a shell rail — without it the alert
+          ran the full width and painted across LIVE / NEEDS ATTENTION. */}
+      {betaEnds && (
         <BannerMeasure>
-          <BetaCountdownBanner />
+          <BetaCountdownBanner ends={betaEnds} />
         </BannerMeasure>
-      </Suspense>
+      )}
       {children}
       {/* The Spark modal slot (ADR-1017). Sits beside the page rather than inside it, next to the
           app's other overlay launchers below, because a wizard opened over a page is chrome, not

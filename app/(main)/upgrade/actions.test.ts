@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 // SUPPORTER CONTRIBUTION action (startSupporterContribution). MONEY CODE — the test that matters
 // most is the DORMANT-WHEN-OFF invariant: while billingLive() is false the action turns the badge
-// on and NEVER touches Stripe (no session, no charge, no card), exactly like toggleSupporterBadge.
+// on and NEVER touches Stripe (no session, no charge, no card). Since ADR-1030 removed the orphan
+// `toggleSupporterBadge`, this dormant branch is the only code that writes profiles.is_supporter.
 // When billingLive() is true it creates a mode:'payment' PWYW session tagged with the contribution
 // kind + profile metadata, records the pending ledger row, and returns the URL.
 

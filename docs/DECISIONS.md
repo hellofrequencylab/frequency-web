@@ -23960,9 +23960,19 @@ So the coverage splits by what each half actually needs:
   and honestly so. What it does guard is the structural half that breaks silently: the band is a
   named region, the legend describes *this* map rather than the vocabulary, swatches are decorative,
   and the "more than one date" / "general area" lines appear exactly when they apply.
-- **A `member` row in `appSurfaces()`** — listed *knowing* it skips until lift 6a's seeded account
-  exists. That is the point: a listed-but-skipping surface is **named** in the shell reporter's
-  `unphotographed` list on every PR, turning an invisible gap into a visible one.
+- **A `member` row in `appSurfaces()`** — listed on the expectation that it would SKIP until lift
+  6a's seeded account existed, on the theory that a listed-but-skipping surface is at least **named**
+  in the shell reporter's `unphotographed` list.
+
+  ✅ **That expectation was wrong, and the first `pr-compare` run to see the row proved it**
+  (2026-08-13). The shell session minted, `/nearby` loaded authenticated, and the reporter read
+  *"App shell covered: 4/4 surfaces, 16/16 checks"*. The `capture_shell` secrets have been in place
+  since the other three `app-*` surfaces were photographed; lift 6a was never the blocker. The run
+  failed on *"A snapshot doesn't exist … writing actual"* for all four `app-nearby-*` PNGs, which is
+  a **capture**, not a gap — resolved by the documented dispatch (`e2e-manual.yml`, `capture_shell` +
+  `update_baselines`). Recorded here rather than quietly fixed because the wrong belief was written
+  into this ADR, the a11y test's header, and the task list, and all three said the same wrong thing
+  confidently.
 
 ### Consequences
 
@@ -23981,3 +23991,70 @@ So the coverage splits by what each half actually needs:
   incompatible with Nominatim's 1 req/sec policy.
 - No CI guard on geo data quality, deliberately. That belongs in the maintenance sweep, not
   `ci.yml` — a red build for something no pull request can fix is how a gate dies (ADR-970).
+
+## ADR-1030: The shell decides whether a banner is coming, and an action nobody calls is not free (2026-08-13)
+
+**Status:** Accepted · **Owner-ruled** (three items, walked one at a time)
+
+### Context
+
+Three unrelated items from the Around You sweep's tail, each small enough to be dismissed and each
+wrong in the same way: something existed that nothing was accountable for.
+
+**1 — A `Suspense` boundary that reserved nothing.** `app/(main)/layout.tsx` mounted the beta
+countdown as `<Suspense fallback={null}><BetaCountdownBanner /></Suspense>`, and the banner did its
+own `await betaEndsAt()`. A `null` fallback holds no space, so on any request with a date set the
+shell painted and then the entire page jumped down by the banner's height when the read landed. The
+boundary looked like it was preventing a shift and was causing one.
+
+A fixed-height fallback cannot fix it either: the copy wraps to two or three lines at narrow
+viewports, so any number written into the fallback is wrong at some width.
+
+**2 — `toggleSupporterBadge`, an export with no importer.** It sat in `app/(main)/upgrade/actions.ts`
+with zero callers in `app/` or `components/` and no test. In a `'use server'` module that is not dead
+code: **every export is a POST endpoint the framework wires up and serves**, so it was a reachable,
+unreviewed write onto `profiles.is_supporter` that stayed reachable precisely because nobody looked
+at it. Its behaviour was not unique — `startSupporterContribution`'s dormant branch (billing off ⇒
+badge on, no Stripe) performs the same write and is the path `/upgrade` actually calls.
+
+**3 — "Drafts", already ruled on.** The task list carried *"NAMING.md defines no Drafts noun"*. It
+does: `docs/NAMING.md` §Drafts, an owner ruling from August 2026, reserving capital-D **Drafts** for
+the member page at `/drafts` and explicitly releasing the lowercase state word. The task was stale.
+A survey against that canon found the operator consoles compliant — `Drafts` stat counts and section
+headings on `/admin/growth/funnels`, `/admin/walkthroughs`, `/admin/content/tips` and
+`/admin/crm/marketing` are the state word in title-case label positions a member never sees — and
+exactly one real violation on a member surface: `components/profile/profile-associations.tsx` read
+*"Drafts and private items stay off this list."*
+
+### Decision
+
+**1. The layout owns the question, the banner owns the answer.** `betaCountdownEndsAt()` is the one
+predicate — null when unset, unreadable, or already past. The layout calls it inside the parallel
+wave it already awaits, so it costs no wall-clock (five reads were in flight beside it), and mounts
+the banner only when a countdown is live. `BetaCountdownBanner` becomes **synchronous** and takes
+`ends: Date`; it has no opinion about whether it should exist. Height is reserved by the banner
+being present in the first flush, and nothing is reserved when no date is set, so there is no gap
+either. The `Suspense` boundary is gone: with the read already resolved it guarded nothing.
+
+**2. Delete the orphan action.** Not deprecate, not test — delete. If a member-facing "turn the badge
+off again" control is ever built, it arrives with its caller and its test in the same change.
+
+**3. Do not write a competing rule; enforce the one that exists.** A parallel-qualification rule
+("Spark drafts", "page drafts") was considered and rejected — it contradicts a standing owner ruling
+that already picked a winner, and `AGENTS.md` is explicit that the naming canon wins on names. What
+the canon lacked was the narrow guard that made this ambiguous, now added: **a member-facing sentence
+may not OPEN with the state word**, because sentence-initial capitalisation erases the very
+distinction the canon rests on. The profile note is recast to "Unpublished and private items stay off
+this list."
+
+### Consequences
+
+- One `platform_settings` read moves onto the shell's critical path. It is `cache()`d and joins an
+  existing `Promise.all`, so the added latency is the max of that wave, not a new serial hop.
+- `components/layout/beta-countdown-banner.test.ts` pins the predicate, because its two failure
+  directions are opposite and both silent: a past date returned eagerly leaves a permanent empty band
+  above every page in the app the day the beta ends; a null returned eagerly makes a live countdown
+  quietly stop appearing. Neither throws and neither shows up in a typecheck.
+- The `/upgrade` surface loses no capability. `profiles.is_supporter` now has exactly one writer.
+- The four operator `Drafts` labels are deliberately **left alone**, and the canon now says so in
+  writing, so the next survey does not re-open them as findings.

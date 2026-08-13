@@ -183,7 +183,7 @@ describe('every viewer gets a different, correct panel', () => {
     // Tier B and tier C are not merely hidden, they are absent.
     expect(html).not.toContain('Circles you are both in')
     expect(html).not.toContain('Only you can see this')
-    expect(html).not.toContain('Drafts and private items stay off this list.')
+    expect(html).not.toContain('Unpublished and private items stay off this list.')
 
     // And nothing owner-private is named.
     for (const name of PRIVATE_NAMES) expect(html).not.toContain(name)
@@ -241,7 +241,7 @@ describe('every viewer gets a different, correct panel', () => {
 
     // Tier B is the answer for a visitor, not for the owner looking at their own page.
     expect(html).not.toContain('Circles you are both in')
-    expect(html).toContain('Drafts and private items stay off this list.')
+    expect(html).toContain('Unpublished and private items stay off this list.')
   })
 })
 
@@ -314,7 +314,7 @@ describe('the empty states', () => {
     expect(html).toContain('Host a Circle')
     expect(html).toContain('Host an event')
     expect(html).toContain('Publish a Journey')
-    expect(html).toContain('Drafts and private items stay off this list.')
+    expect(html).toContain('Unpublished and private items stay off this list.')
     // No tiles, so no zeroes.
     expect(html).not.toContain('Circles.')
     expect(html).not.toContain('Circle.')

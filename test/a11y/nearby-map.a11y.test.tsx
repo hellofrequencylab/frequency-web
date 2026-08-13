@@ -15,17 +15,22 @@ import type { MapPin } from '@/components/maps/types'
 // stay height-matched to it. All of that shipped on three consecutive PRs guarded by nothing but a
 // human looking at a screenshot.
 //
-// 🔴 IT CANNOT BE COVERED BY THE PLAYWRIGHT SUITE TODAY, and not for a reason a test can fix.
-// `/nearby` is auth-walled twice over — `proxy.ts` redirects a signed-out visitor to /sign-in, and
+// IT IS NOT A SUBSTITUTE FOR THE PLAYWRIGHT SURFACE — it is the half that needs no browser.
+// `/nearby` is auth-walled twice over: `proxy.ts` redirects a signed-out visitor to /sign-in, and
 // the page itself calls `notFound()` with no user. So an `audience: 'anon'` entry in
-// test/e2e/surfaces.ts is worse than nothing: `publicSurfaces()` filters against the same
+// test/e2e/surfaces.ts is worse than nothing — `publicSurfaces()` filters against the same
 // PROTECTED_PATHS list and would drop it, and if it survived it would land on /sign-in and skip.
-// A `member` entry is correct and is added alongside this file, but it produces permanent SKIPS
-// until the seeded beta account and its three repo secrets exist (UX-MATURITY-PLAN lift 6a, an
-// owner action). A suite that skips green is the thing this repo keeps getting bitten by.
+// A `member` entry is the correct one and ships alongside this file.
 //
-// So: the half that needs no browser and no credential, landing on the ALREADY-REQUIRED `test`
-// check. jsdom cannot compute layout, so it cannot judge the aspect ratio or the height match —
+// ✅ CORRECTION (2026-08-13): this comment first claimed a `member` entry "produces permanent SKIPS
+// until the seeded beta account and its three repo secrets exist". That was wrong, and the first
+// `pr-compare` run to see the entry proved it — the shell session minted, /nearby loaded
+// authenticated, and the reporter read "App shell covered: 4/4 surfaces, 16/16 checks". The secrets
+// have been in place since the other three app-* surfaces were captured. The run failed only
+// because /nearby's four baselines had never been photographed, which is a capture, not a gap.
+//
+// What this file covers is the half that needs no browser at all, landing on the ALREADY-REQUIRED
+// `test` check. jsdom cannot compute layout, so it cannot judge the aspect ratio or the height match —
 // those stay uncovered and honestly so (see the SCOPE note in ./axe.ts). What it CAN judge is the
 // structural half, which is the half that silently breaks: the map band is a named region, the
 // legend is a real list, every swatch is decorative rather than an unlabelled graphic, and the
