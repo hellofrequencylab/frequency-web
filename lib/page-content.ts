@@ -15,9 +15,17 @@ import { loadPageSettings } from '@/lib/page-settings/store'
 //     (migration 20260612050000). NULL/blank = the page's coded default (usually:
 //     nothing). The CTA renders only when BOTH label and href are set.
 //
-// `page_content` isn't in the generated DB types yet → untyped-client cast (repo
-// convention). Cached per request so the header, metadata, and hero/CTA all share
-// one read.
+// Cached per request so the header, metadata, and hero/CTA all share one read.
+//
+// 🔴 THIS FILE USED TO CAST THE ROW TO A HAND-WRITTEN SHAPE, and that is how the
+// `hero_image` bug in ADR-1020's amendment stayed invisible. The comment here said
+// "`page_content` isn't in the generated DB types yet → untyped-client cast (repo
+// convention)". It IS in them (`lib/database.types.ts`, all seven columns), and
+// `createAdminClient()` is `createServerClient<Database>` — so the reader was
+// DOWNCASTING a correctly-typed row onto a local duplicate. The duplicate then
+// became the only place a reader could see which columns exist, disconnected from
+// the schema, which is exactly the wrong place to look when asking "is this row
+// actually empty?". The generated type now flows through untouched.
 
 export interface PageContent {
   title: string
@@ -29,27 +37,18 @@ export interface PageContent {
   ctaHref?: string | null
 }
 
-type PageContentRow = {
-  title?: string | null
-  description?: string | null
-  hero_image?: string | null
-  cta_label?: string | null
-  cta_href?: string | null
-}
-
 export const getPageContent = cache(async (route: string): Promise<PageContent | null> => {
   try {
     const db = createAdminClient()
-    // `select('*')` rather than a column list so the read keeps working before the
-    // hero/CTA migration (20260612050000) is applied — not-yet-existing columns
-    // simply come back undefined instead of erroring the whole row away.
-    const { data } = await db
+    // `select('*')` rather than a column list, and it stays that way now that the row is
+    // typed: the generated `Row` is the enumeration of what exists, so a future column
+    // lands here as a type error at the mapping below rather than as silence.
+    const { data: row } = await db
       .from('page_content')
       .select('*')
       .eq('route', route)
       .maybeSingle()
-    if (!data) return null
-    const row = data as PageContentRow
+    if (!row) return null
     return {
       title: row.title ?? '',
       description: row.description ?? '',
