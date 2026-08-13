@@ -12,6 +12,20 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **The map around you shows one pin per gathering, not one per date**: a Circle that meets
+  weekly used to take a dozen dots on the same street corner and bury everything else nearby.
+  Now it takes one, marked **1+**. Open it and the other dates are there.
+- **Events that keep their address private are on the map now**: a Host can share the street only
+  with people who RSVP and still be findable. Those show as a general area, about a kilometre
+  across, so you can tell whether something is near you before you commit. The pin is a
+  neighbourhood, not a door.
+- **Spaces can put themselves on the map**: add your address under Profile and Settings, drag the
+  pin to the right spot, and choose whether members see your exact place or just your general
+  area. Right for anyone running a Space out of their home.
+- **A Circle lands on the map from its city**: fill in the city under Place and Time and that is
+  enough to be found. Drag the pin if you want it somewhere more exact; a pin you place yourself
+  always wins.
+
 - **Adopt a practice for a stretch, not forever**: adopting now asks how long you will take it
   on — 2 weeks, 4 weeks, 8 weeks (long enough to make it stick), or ongoing — and you can say
   when you plan to do it ("After my morning coffee"). Your card shows where you stand ("Week 2

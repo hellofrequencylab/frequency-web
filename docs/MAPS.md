@@ -229,6 +229,8 @@ adds only the seam-level `expandable` / `expandLabel`, and `MapImplProps` adds o
 | `cluster: { radiusPx?, maxZoom? }` | Density: overlapping pins merge into a bubble that splits on zoom | ADR-1022 |
 | `pin.kind` (`event` / `circle` / `space` / `place`) · `pin.label` | Which layer a pin belongs to; its accessible name | ADR-1022 |
 | `expandable` · `expandLabel` | An expand control that reopens the map full screen | ADR-1022 |
+| `pin.moreCount` | How many MORE things this one pin stands for. Turns the spot into a `1+` bubble | ADR-1026 |
+| `pin.approximate` | This pin was coarsened before publishing: it is an area, not an address | ADR-1026 |
 
 ### The rule that makes the fallback trustworthy
 
@@ -246,7 +248,9 @@ So **every judgement the two engines could answer differently is imported, not d
 | How far a cluster tap zooms | `lib/maps/cluster.ts` | `zoomIntoCluster()` |
 | When to re-group during a pinch | `lib/maps/cluster.ts` | `shouldRecluster()` |
 | Bubble size, count text, accessible name | `lib/maps/cluster.ts` | `clusterDiameterPx()` · `clusterLabel()` · `clusterAccessibleLabel()` |
+| Whether a bubble opens or zooms | `lib/maps/cluster.ts` | `group.points.length === 1` |
 | What colour a kind paints | `lib/maps/pin-kinds.ts` | `resolvePinPaint()` |
+| Where a withheld address is drawn | `lib/maps/approximate.ts` | `approximatePoint()` |
 
 Both pure modules import **nothing** — no React, no DOM, no map library — so a page may read
 `MAP_PIN_KINDS` to draw its legend without pulling a map engine into its bundle.
@@ -260,6 +264,32 @@ implementations means two behaviours, and the one that drifts is the fallback. O
 two dumb renderers.
 
 ⚠️ `cluster` is **ignored in `draggable` picker mode** on both engines: one pin, being placed by hand.
+
+### A bubble may hold ONE, and then it opens instead of zooming (ADR-1026)
+
+A repeating event is one gathering on many dates. `lib/nearby/map-pins.ts` folds the series to a
+single pin and carries the rest as `pin.moreCount`, so the spot reads **`1+`** rather than `9`.
+
+🔴 **The count is always distinct THINGS; the `+` carries the hidden dates.** A bubble that added the
+dates into its number would say "12" for what a member would find is three events.
+
+That makes a single-point bubble a real case, and both engines honour the same consequence: **it
+opens that pin's popup instead of zooming.** There is nothing inside to split, so a zoom would step
+in twice and leave the same `1+` sitting there, which reads as a dead control.
+
+### Coarsened pins (ADR-1026)
+
+Some pins are an **area**, not an address: an event whose host set `hide_address`, and a Space whose
+owner chose `location_precision = 'approximate'`. `lib/maps/approximate.ts` **quantises** the point
+to a fixed ~1 km grid cell and keeps only the cell.
+
+🔴 **Quantisation, not a jitter.** A deterministic offset derived from a row id is reversible by
+anyone who can read this repo and the page's URL, so it encodes the true coordinate rather than
+redacting it. The snap destroys the sub-cell information first; the small jitter applied afterwards
+is cosmetic, so pins do not visibly land on a lattice.
+
+A surface that draws a legend should say so: `pin.approximate` is how it knows. A popup is only read
+by whoever tapped that one dot.
 
 ### Fullscreen composes the dialog
 
@@ -289,6 +319,8 @@ The cluster bubble is the one exception, and only because its text is a number w
 | `lib/maps/diagnostics.test.ts` | Dedupe, and that the key never reaches the line |
 | `lib/maps/provider.test.ts` | The provider decision under every key state |
 | `lib/maps/cluster.test.ts` | The clustering BEHAVIOUR both engines render: what merges, what splits, determinism, the shared tap and bubble |
+| `lib/maps/approximate.test.ts` | That the coarsening is IRREVERSIBLE (two addresses in a cell give one output), stays inside the radius the copy promises, is stable, and returns null rather than the exact point on bad input |
+| `lib/nearby/map-pins.test.ts` | The Around You loader: every privacy filter, the series fold, and the caller-side half of the coarsening guarantee |
 | `components/maps/maplibre-interop.test.ts` | The only map test that **imports** maplibre-gl |
 | `components/maps/maps-wiring.test.ts` | The seam, the CSP host set, popup DOM safety, the loader drift guards |
 | `components/maps/map-capabilities.test.ts` | **Parity.** The two canvases destructure the same prop list key for key, and neither re-implements a shared decision |

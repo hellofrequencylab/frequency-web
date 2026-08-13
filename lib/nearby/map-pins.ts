@@ -2,27 +2,32 @@ import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { pointFromGeog } from '@/lib/events/geo'
 import { formatEventDate } from '@/lib/utils'
+import { collapseSeries, SERIES_COLUMNS, SERIES_WIDE_READ } from '@/lib/events/series'
+import { approximatePoint, APPROX_EVENT_NOTE, APPROX_SPACE_NOTE } from '@/lib/maps/approximate'
 import type { MapPin } from '@/components/maps/types'
 
 // THE AROUND YOU MAP'S PINS. One read per request, feeding components/nearby/nearby-map.tsx.
 //
-// ── 🔴 WHAT CAN AND CANNOT BE MAPPED, MEASURED IN PRODUCTION 2026-08-13 ─────────────────────────
+// ── 🔴 WHAT THIS MAP LOOKED LIKE BEFORE THE 2026-08-13 AUDIT, MEASURED IN PRODUCTION ───────────
 //
-// The owner asked for four layers: Events, Circles, Spaces, Places. Two of them have nowhere to
-// store a coordinate, so they are not "not built yet", they are not buildable without a migration:
+// It drew ten pins. Nine of them were the SAME EVENT.
 //
-//   | layer  | coordinates                     | mappable rows today |
-//   |--------|---------------------------------|---------------------|
-//   | Event  | `events.geog` (PostGIS)         | 9                   |
-//   | Circle | `circles.latitude/longitude`    | 1                   |
-//   | Space  | 🔴 NO COLUMN EXISTS on `spaces` | n/a                 |
-//   | Place  | 🔴 `outposts` is id/name/slug/region_id/created_at, no geometry | n/a |
+//   | layer  | rows a member could reach | what the map drew                                    |
+//   |--------|---------------------------|------------------------------------------------------|
+//   | Event  | 20 rows = 5 gatherings    | 9 pins, all one weekly series, stacked on one corner |
+//   | Circle | 7, of which 3 discoverable| 1                                                    |
+//   | Space  | 20 active                 | 0, and no column existed to hold one                 |
 //
-// Adding either means a migration, a geocoding path, and operator UI to enter an address. That is
-// a real piece of work and it is recorded here rather than faked with an empty layer, because a
-// legend row for a layer that can never have pins is a lie the map tells every visitor.
+// Three separate faults produced that, and all three are fixed here:
 //
-// The two live layers are wired so a third is a small edit: one more `push`, one more `kind`.
+//   1. NO SERIES FOLD. Recurrence is MATERIALISED (ADR-007): an occurrence is a real `events` row,
+//      and the cron keeps a 60-day horizon warm, so a weekly series is ~9 rows. Every other browse
+//      surface collapses those to one card through lib/events/series.ts (ADR-897). This map never
+//      did, so one cowork series painted nine identical pins on one coordinate and every other
+//      gathering in the region was invisible underneath them.
+//   2. `hide_address` EXCLUDED THREE OF THE FIVE GATHERINGS OUTRIGHT. See the next section.
+//   3. SPACES HAD NOWHERE TO STORE A COORDINATE, while the map's empty state promised them. Fixed
+//      by 20270301000000_space_location.sql (ADR-1026).
 //
 // ── WHY THE ADMIN CLIENT, AND WHAT THAT OBLIGES ────────────────────────────────────────────────
 //
@@ -30,7 +35,7 @@ import type { MapPin } from '@/components/maps/types'
 // "Coming up" band, the rails all do), and a map that disagreed with the list beside it about what
 // exists would be its own bug. So: same client, and therefore RLS IS NOT BACKING ANY OF THIS UP.
 // Every filter below is load-bearing with no safety net underneath it, which is exactly the
-// situation `app/(main)/nearby/page.test.ts` was written for after the same page shipped a leak.
+// situation `lib/nearby/map-pins.test.ts` was written for after this page shipped a leak.
 //
 // ── THE FILTERS, AND WHY EACH ONE IS THERE ─────────────────────────────────────────────────────
 //
@@ -39,30 +44,56 @@ import type { MapPin } from '@/components/maps/types'
 // `visibility='public'` (circle_only and unlisted events are not discovery rows), `removed_at is
 // null` (a moderator takedown stays taken down), plus not cancelled and in the future.
 //
-// 🔴 AND ONE MORE THE LIST DOES NOT NEED: `hide_address`. A host can publish an event publicly and
-// still withhold WHERE it is, and 10 of the 19 otherwise-mappable upcoming events have that flag
-// set. The list beside this map shows those events and is right to: the title and the time are
-// public. A PIN IS THE ADDRESS. Dropping a coordinate a host deliberately hid, onto a public map,
-// would be the worst kind of leak in this file, so `hide_address` events are excluded outright
-// rather than fuzzed. Fuzzing is a judgement call about how much precision is safe, and that is an
-// owner's call, not a default.
-//
 // AND ONE MORE, quieter: `is_demo`. Seeded demo events are not somewhere a member can turn up, and
-// a map is the one surface that would put a fictional gathering on a real street corner. The circle
-// layer already carried it; the event layer did not.
+// a map is the one surface that would put a fictional gathering on a real street corner.
+//
+// 🔴 `hide_address` IS NO LONGER AN EXCLUSION. IT IS A PRECISION. This is the one filter that
+// changed on 2026-08-13, and it changed on the owner's explicit call, so the reasoning is worth
+// keeping. A host can publish an event publicly and still withhold WHERE it is, and 10 of the 20
+// upcoming rows had that flag set: Meld Cowork, Royal Reset Friday Float and the Vibe Check pool
+// party, which is three of the community's five actual gatherings. Excluding them was defensible in
+// isolation and indefensible in aggregate, because it left a map of a community showing one event.
+//
+// So they are drawn, coarsened. lib/maps/approximate.ts QUANTISES the point to a ~1 km grid cell
+// before it is published, which is not the same thing as offsetting it: a deterministic offset is a
+// reversible encoding of the true coordinate (the algorithm is in this repo and the row id is in the
+// URL), whereas a snap to a grid destroys the sub-cell information for good. The popup says the area
+// is approximate and that the host shares the address on RSVP, which is what those events already
+// say in their own venue lines ("Royal Temple - RSVP for Address"). The map now agrees with them
+// instead of pretending they do not exist.
 //
 // CIRCLES. ADR-1015's two axes. A pin is a DISCOVERY row, so the question is `canSeeCircle`, and
 // the LISTED set is the honest answer for a mixed audience: `unlisted = false` and
 // `status in ('forming','active')`. A listed-but-CLOSED circle still earns its pin, deliberately —
 // that is the lead funnel ADR-1015 exists to express, and its name and place are public face. An
-// unlisted one must never appear, and neither must a demo.
+// unlisted one must never appear, and neither must a demo. A Circle's coordinate is a pin its host
+// placed by hand, so there is no precision question: placing it IS the consent.
+//
+// SPACES (ADR-1026, new). `status='active'` and `visibility='network'`. `unlisted` is deliberately
+// excluded and it is the same distinction ADR-1015 draws for Circles: an unlisted Space is readable
+// by direct link, which makes it VISIBLE, not DISCOVERABLE, and a pin is a discovery row. `private`
+// is never a question. A Space with no coordinate simply has none: the columns start NULL, so
+// appearing on the map is something an owner opts into by placing a pin, never a default.
 
-/** Nothing on this page is worth a slow map. The clustering in lib/maps/cluster.ts handles density
- *  fine, but the payload still crosses the wire, so the read is capped per layer. Well above
- *  today's volumes; a ceiling, not a filter. */
+/** Pins per layer AFTER folding. Well above today's volumes; a ceiling, not a filter. Nothing on
+ *  this page is worth a slow map: the clustering in lib/maps/cluster.ts handles density fine, but
+ *  the payload still crosses the wire. */
 const PER_LAYER_CAP = 300
 
-/** One decoded pin's worth of an event row. */
+/**
+ * ROWS the event layer READS, before the series fold runs.
+ *
+ * 🔴 THIS HAS TO BE BIGGER THAN THE DISPLAY CAP, and the reason is the trap lib/events/series.ts
+ * names: a post-query fold spends the query LIMIT on rows it then discards. One daily series can
+ * occupy 61 rows of the budget on its own, so reading PER_LAYER_CAP rows and folding them could
+ * hand the map five gatherings out of a region that has fifty. SERIES_WIDE_READ is the shared
+ * constant for exactly this shape (a global cap on the community's whole upcoming set, not a
+ * display count), so this map uses it rather than inventing a second number.
+ */
+const EVENT_ROW_CAP = SERIES_WIDE_READ
+
+/** One decoded pin's worth of an event row. `hide_address` and the three series columns are
+ *  SELECTED, not just filtered on, because both now change what the pin says. */
 type EventRow = {
   id: string
   slug: string | null
@@ -72,6 +103,10 @@ type EventRow = {
   venue_name: string | null
   city: string | null
   geog: unknown
+  hide_address: boolean | null
+  recurrence_type: string | null
+  recurrence_until: string | null
+  parent_event_id: string | null
 }
 
 type CircleRow = {
@@ -83,6 +118,19 @@ type CircleRow = {
   member_count: number | null
   latitude: number | null
   longitude: number | null
+}
+
+type SpaceRow = {
+  id: string
+  slug: string | null
+  name: string | null
+  brand_name: string | null
+  tagline: string | null
+  city: string | null
+  region: string | null
+  latitude: number | null
+  longitude: number | null
+  location_precision: string | null
 }
 
 /**
@@ -102,6 +150,13 @@ function pinDate(iso: string): string {
   return formatEventDate(iso)
 }
 
+/** "and 8 more dates", or nothing at all for a one-off. Singular is spelled, because "1 more
+ *  dates" on the one surface that exists to fix a counting bug would be its own joke. */
+function moreDatesLine(moreCount: number): string | null {
+  if (moreCount <= 0) return null
+  return moreCount === 1 ? 'and 1 more date' : `and ${moreCount} more dates`
+}
+
 /**
  * Every pin the Around You map should draw, for anyone. Request-memoized (the `cache()` idiom from
  * lib/circles/store.ts), so the page may call it beside its other reads without paying twice.
@@ -114,26 +169,25 @@ export const loadNearbyMapPins = cache(async (): Promise<MapPin[]> => {
     const admin = createAdminClient()
     const nowIso = new Date().toISOString()
 
-    const [eventsRes, circlesRes] = await Promise.all([
+    const [eventsRes, circlesRes, spacesRes] = await Promise.all([
       admin
         .from('events')
-        .select('id, slug, title, starts_at, location, venue_name, city, geog')
+        .select(
+          `id, slug, title, starts_at, location, venue_name, city, geog, hide_address, ${SERIES_COLUMNS}`,
+        )
         .eq('status', 'published')
         .eq('visibility', 'public')
         .is('removed_at', null)
         .eq('is_cancelled', false)
         .gte('starts_at', nowIso)
-        // The pin IS the address, so an event whose host hid it gets no pin. See the header.
-        .eq('hide_address', false)
         // Seeded demo content is not somewhere a member can actually turn up. Every other event
         // read in the app carries this (lib/events/store.ts filters it on all four of its queries)
-        // and the circle layer below carries it, so the map would have been the one surface that
-        // put a fictional gathering on a real street corner. No demo event is upcoming today, which
-        // is exactly why this had to be written now rather than after one is seeded.
+        // and the other two layers below carry it or have no demo axis, so the map would have been
+        // the one surface that put a fictional gathering on a real street corner.
         .eq('is_demo', false)
         .not('geog', 'is', null)
         .order('starts_at', { ascending: true })
-        .limit(PER_LAYER_CAP),
+        .limit(EVENT_ROW_CAP),
       admin
         .from('circles')
         .select('id, slug, name, city, neighborhood, member_count, latitude, longitude')
@@ -144,30 +198,82 @@ export const loadNearbyMapPins = cache(async (): Promise<MapPin[]> => {
         .not('longitude', 'is', null)
         .order('member_count', { ascending: false })
         .limit(PER_LAYER_CAP),
+      admin
+        .from('spaces')
+        .select('id, slug, name, brand_name, tagline, city, region, latitude, longitude, location_precision')
+        .eq('status', 'active')
+        // Network-visible only. An `unlisted` Space is reachable by direct link, which makes it
+        // visible and NOT discoverable, and a pin is a discovery row (the ADR-1015 distinction).
+        .eq('visibility', 'network')
+        .not('latitude', 'is', null)
+        .not('longitude', 'is', null)
+        .order('name', { ascending: true })
+        .limit(PER_LAYER_CAP),
     ])
 
     const pins: MapPin[] = []
 
-    for (const e of (eventsRes.data ?? []) as EventRow[]) {
+    // ── EVENTS: fold the series FIRST, then draw one pin per gathering ────────────────────────
+    //
+    // The fold runs over the rows the database returned, in the order it returned them (earliest
+    // first), and elects the EARLIEST row present as each series' representative. That election is
+    // the one that survives a series' anchor ageing out of the window, which is the trap
+    // lib/events/series.ts exists to hold: filtering `starts_at >= now` deletes the anchor row of
+    // every established series, so electing "the anchor" would delete every established series from
+    // this map instead of collapsing it.
+    //
+    // `dropCancelled: false` because the query already excluded cancelled rows, and asking the fold
+    // to re-check a field this SELECT does not fetch would silently drop every group.
+    const eventRows = (eventsRes.data ?? []) as EventRow[]
+    const folded = collapseSeries(eventRows, { perSeries: 1, dropCancelled: false })
+
+    for (const row of folded.rows.slice(0, PER_LAYER_CAP)) {
       // `geog` arrives as an EWKB hex string OR a GeoJSON object depending on how PostgREST feels
       // about the column; `pointFromGeog` is the SHIPPED decoder that handles both, and it is what
       // the event detail and edit pages already use. I wrote a second one that handled only the hex
       // form before finding it, which would have silently emptied this map the day PostgREST
       // returned the other shape. One decoder, or they drift.
-      const point = pointFromGeog(e.geog)
-      if (!point || !e.slug || !e.title) continue
-      const where = e.venue_name ?? e.location ?? e.city ?? null
+      const truePoint = pointFromGeog(row.geog)
+      if (!truePoint || !row.slug || !row.title) continue
+
+      // 🔴 THE COARSENING, AND THE ONLY PLACE IT HAPPENS FOR EVENTS. A host who set `hide_address`
+      // gets a grid cell, never the coordinate. `approximatePoint` returns null for anything that
+      // is not a real lat/lng, and null means NO PIN: a row that cannot be coarsened must not fall
+      // back to the exact point, which is the one mistake in this file that would be a leak.
+      const hidden = row.hide_address === true
+      const point = hidden ? approximatePoint(truePoint.lat, truePoint.lng, row.id) : truePoint
+      if (!point) continue
+
+      const group = folded.byRowId.get(row.id)
+      // dateCount counts the series' eligible dates; this pin IS one of them, so the rest is the
+      // "+N more" the popup and the map bubble both speak from.
+      const moreCount = Math.max(0, (group?.dateCount ?? 1) - 1)
+
+      // A hidden-address event still has a venue NAME worth showing ("Royal Temple"); what it does
+      // not have is a street. `venue_name` and `city` are safe, `location` is the free-text line a
+      // host may well have typed an address into, so it is dropped for a hidden event.
+      const where = hidden
+        ? (row.venue_name ?? row.city ?? null)
+        : (row.venue_name ?? row.location ?? row.city ?? null)
+
       pins.push({
         // Prefixed: two layers can hold the same uuid, and the seam keys markers on `id`.
-        id: `event:${e.id}`,
+        id: `event:${row.id}`,
         lat: point.lat,
         lng: point.lng,
         kind: 'event',
-        title: e.title,
-        subtitle: [pinDate(e.starts_at), where].filter(Boolean).join(' · ') || null,
-        href: `/events/${e.slug}`,
-        hrefLabel: 'See the event',
-        label: e.title,
+        title: row.title,
+        subtitle:
+          [pinDate(row.starts_at), moreDatesLine(moreCount), where, hidden ? APPROX_EVENT_NOTE : null]
+            .filter(Boolean)
+            .join(' · ') || null,
+        href: `/events/${row.slug}`,
+        hrefLabel: moreCount > 0 ? 'See the event and its dates' : 'See the event',
+        label: row.title,
+        // What turns this spot into a `1+` bubble instead of a plain pin (lib/maps/cluster.ts).
+        moreCount,
+        // So the legend can say some dots are areas, not just the popup of the one dot tapped.
+        approximate: hidden,
       })
     }
 
@@ -187,6 +293,39 @@ export const loadNearbyMapPins = cache(async (): Promise<MapPin[]> => {
         href: `/circles/${c.slug}`,
         hrefLabel: 'See the circle',
         label: c.name,
+      })
+    }
+
+    for (const s of (spacesRes.data ?? []) as SpaceRow[]) {
+      if (s.latitude == null || s.longitude == null || !s.slug) continue
+      const name = s.brand_name?.trim() || s.name?.trim()
+      if (!name) continue
+
+      // 🔴 THE OWNER'S PRECISION SETTING, OBEYED ON THE READ PATH. The table holds the TRUE point so
+      // the owner can drag their pin and have it stay dragged (20270301000000_space_location.sql
+      // explains why it must); this is the single place that decides what the public sees. Anything
+      // that reads spaces.latitude and publishes it without passing through here is a leak.
+      const approximate = s.location_precision === 'approximate'
+      const point = approximate
+        ? approximatePoint(Number(s.latitude), Number(s.longitude), s.id)
+        : { lat: Number(s.latitude), lng: Number(s.longitude) }
+      if (!point || !Number.isFinite(point.lat) || !Number.isFinite(point.lng)) continue
+
+      const where = [s.city, s.region].filter(Boolean).join(', ') || null
+      pins.push({
+        id: `space:${s.id}`,
+        lat: point.lat,
+        lng: point.lng,
+        kind: 'space',
+        title: name,
+        subtitle:
+          [s.tagline?.trim() || null, where, approximate ? APPROX_SPACE_NOTE : null]
+            .filter(Boolean)
+            .join(' · ') || null,
+        href: `/spaces/${s.slug}`,
+        hrefLabel: 'See the space',
+        label: name,
+        approximate,
       })
     }
 

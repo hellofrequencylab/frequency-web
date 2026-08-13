@@ -219,13 +219,13 @@ export default function GoogleCanvas({
           }
         }
 
-        const addCluster = (lat: number, lng: number, count: number) => {
+        const addCluster = (lat: number, lng: number, count: number, plus: boolean, only: MapPin | null) => {
           // Same diameter curve and same label text as the MapLibre bubble, read from the same
           // two functions. `scale` on a CIRCLE symbol is a RADIUS, hence the halving.
           const marker = new maps.Marker({
             map: live,
             position: { lat, lng },
-            title: clusterAccessibleLabel(count),
+            title: clusterAccessibleLabel(count, plus),
             zIndex: 10,
             icon: {
               path: maps.SymbolPath.CIRCLE,
@@ -236,13 +236,34 @@ export default function GoogleCanvas({
               strokeWeight: 2,
             },
             label: {
-              text: clusterLabel(count),
+              text: clusterLabel(count, plus),
               color: tokenColor(MAP_CLUSTER_PAINT.textToken, MAP_CLUSTER_PAINT.textFallback),
               fontSize: '13px',
               fontWeight: '600',
             },
           })
           markers.push(marker)
+
+          // 🔴 A BUBBLE OF ONE OPENS, IT DOES NOT ZOOM. That bubble is a repeating event folded to
+          // a single pin, so there is nothing inside it to split: zooming would step in twice and
+          // leave the same `1+` sitting there, which reads as a dead control. The MapLibre canvas
+          // applies the identical rule, from the same `points.length === 1` test.
+          if (only) {
+            const content = buildPopupContent(only)
+            markerListeners.push(
+              marker.addListener('click', () => {
+                if (onPinClickRef.current) {
+                  onPinClickRef.current(only)
+                  return
+                }
+                if (!content) return
+                info?.setContent(content)
+                info?.open({ map: live, anchor: marker })
+              }),
+            )
+            return
+          }
+
           markerListeners.push(
             marker.addListener('click', () => {
               // Identical to the MapLibre canvas: the same shared step, the same shared cap.
@@ -260,8 +281,15 @@ export default function GoogleCanvas({
             return
           }
           for (const group of clusterPoints(pins, live.getZoom() ?? zoom, clustering)) {
-            if (group.type === 'cluster') addCluster(group.lat, group.lng, group.count)
-            else addPin(group.point, false)
+            if (group.type === 'cluster') {
+              addCluster(
+                group.lat,
+                group.lng,
+                group.count,
+                group.plus,
+                group.points.length === 1 ? group.points[0]! : null,
+              )
+            } else addPin(group.point, false)
           }
         }
 

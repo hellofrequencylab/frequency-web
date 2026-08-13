@@ -38,6 +38,23 @@ export type MapPin = {
   kind?: MapPinKind
   /** Accessible name and tooltip for the marker. Falls back to `title`. */
   label?: string | null
+  /** How many MORE things this one pin already stands for, beyond itself.
+   *
+   *  A repeating event is ONE gathering on many dates. lib/nearby/map-pins.ts folds the series to a
+   *  single pin (lib/events/series.ts) rather than stacking one pin per date on the same coordinate,
+   *  and this is what carries the rest of the dates through to the map: the spot draws as a `1+`
+   *  bubble instead of a plain pin, and the bubble opens the pin's popup rather than zooming.
+   *
+   *  Zero, null and undefined all mean "this pin is exactly one thing". */
+  moreCount?: number | null
+  /** This pin was COARSENED before it was published: it is an area, not an address.
+   *
+   *  Set by any loader that ran a point through lib/maps/approximate.ts, which today means an event
+   *  whose host set `hide_address` and a Space whose owner chose an approximate location. The popup
+   *  already says so, but a popup is only read by someone who taps that one dot, and a map full of
+   *  precise-looking dots where some are not precise is a quiet lie to everyone who does not. A
+   *  surface that draws a legend should say it there too. */
+  approximate?: boolean
 }
 
 /** A geographic area drawn instead of (or alongside) a pin — the privacy circle. */

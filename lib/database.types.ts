@@ -13792,9 +13792,11 @@ export type Database = {
           brand_accent: string | null
           brand_logo_url: string | null
           brand_name: string | null
+          city: string | null
           claim_token: string | null
           claimed_at: string | null
           claimed_by: string | null
+          country: string | null
           cover_image_url: string | null
           created_at: string
           domain: string | null
@@ -13804,19 +13806,26 @@ export type Database = {
           entity_id: string
           feature_roles: Json
           generation: string | null
+          geog: unknown
           id: string
           is_comped: boolean
           last_plan_event_at: string | null
+          latitude: number | null
+          location_precision: string
+          longitude: number | null
           mode_variant: string | null
           name: string
           network_connected: boolean
           owner_profile_id: string | null
           plan: string | null
+          postal_code: string | null
           preferences: Json
+          region: string | null
           seat_quantity: number
           skin: string
           slug: string
           status: string
+          street: string | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           tagline: string | null
@@ -13829,9 +13838,11 @@ export type Database = {
           brand_accent?: string | null
           brand_logo_url?: string | null
           brand_name?: string | null
+          city?: string | null
           claim_token?: string | null
           claimed_at?: string | null
           claimed_by?: string | null
+          country?: string | null
           cover_image_url?: string | null
           created_at?: string
           domain?: string | null
@@ -13841,19 +13852,26 @@ export type Database = {
           entity_id: string
           feature_roles?: Json
           generation?: string | null
+          geog?: unknown
           id?: string
           is_comped?: boolean
           last_plan_event_at?: string | null
+          latitude?: number | null
+          location_precision?: string
+          longitude?: number | null
           mode_variant?: string | null
           name: string
           network_connected?: boolean
           owner_profile_id?: string | null
           plan?: string | null
+          postal_code?: string | null
           preferences?: Json
+          region?: string | null
           seat_quantity?: number
           skin?: string
           slug: string
           status?: string
+          street?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           tagline?: string | null
@@ -13866,9 +13884,11 @@ export type Database = {
           brand_accent?: string | null
           brand_logo_url?: string | null
           brand_name?: string | null
+          city?: string | null
           claim_token?: string | null
           claimed_at?: string | null
           claimed_by?: string | null
+          country?: string | null
           cover_image_url?: string | null
           created_at?: string
           domain?: string | null
@@ -13878,19 +13898,26 @@ export type Database = {
           entity_id?: string
           feature_roles?: Json
           generation?: string | null
+          geog?: unknown
           id?: string
           is_comped?: boolean
           last_plan_event_at?: string | null
+          latitude?: number | null
+          location_precision?: string
+          longitude?: number | null
           mode_variant?: string | null
           name?: string
           network_connected?: boolean
           owner_profile_id?: string | null
           plan?: string | null
+          postal_code?: string | null
           preferences?: Json
+          region?: string | null
           seat_quantity?: number
           skin?: string
           slug?: string
           status?: string
+          street?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           tagline?: string | null

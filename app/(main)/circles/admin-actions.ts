@@ -15,6 +15,7 @@ import {
 } from '@/lib/circles/challenges'
 import { slugify, isoDaysAgo } from '@/lib/utils'
 import { isValidTimeZone } from '@/lib/time/zone'
+import { nominatimGeocoder } from '@/lib/events/geocode-provider'
 import { getCircleEarnedZaps } from '@/lib/circles/earned'
 import { setCircleChannel } from '@/lib/channels/programs'
 import { writeCircleCoverFocus, writeCircleHeroHeight } from '@/lib/circles/hero'
@@ -805,17 +806,50 @@ export async function updateCirclePlaceTime(id: string, slug: string, fd: FormDa
     update.latitude = null
     update.longitude = null
   } else {
-    update.neighborhood = ((fd.get('neighborhood') as string) ?? '').trim() || null
-    update.city = ((fd.get('city') as string) ?? '').trim() || null
-    // Manual map pin: a valid lat/lng pair persists the meeting spot; empty/NaN clears it.
+    const neighborhood = ((fd.get('neighborhood') as string) ?? '').trim() || null
+    const city = ((fd.get('city') as string) ?? '').trim() || null
+    update.neighborhood = neighborhood
+    update.city = city
+    // Manual map pin: a valid lat/lng pair persists the meeting spot; empty/NaN falls through to
+    // the geocode below.
     const latRaw = ((fd.get('lat') as string) ?? '').trim()
     const lngRaw = ((fd.get('lng') as string) ?? '').trim()
     const latNum = latRaw ? Number(latRaw) : NaN
     const lngNum = lngRaw ? Number(lngRaw) : NaN
     const valid =
       Number.isFinite(latNum) && Number.isFinite(lngNum) && Math.abs(latNum) <= 90 && Math.abs(lngNum) <= 180
-    update.latitude = valid ? latNum : null
-    update.longitude = valid ? lngNum : null
+
+    if (valid) {
+      update.latitude = latNum
+      update.longitude = lngNum
+    } else {
+      // 🔴 GEOCODE THE CITY THE HOST ALREADY TYPED. Before this, a Circle's coordinates came from a
+      // MANUAL map pin and nothing else, so a host who filled in "Vista" and never noticed the map
+      // got a Circle with a city, no point, and therefore no place on ANY map in the app: not
+      // /circles, not the near-me RPC, not Around You. Measured 2026-08-13: 6 of 7 Circles had no
+      // coordinates, and two of them were listed, active, and had a perfectly good city sitting in
+      // the row. The map was not missing them because they had no location. It was missing them
+      // because nobody ever turned the location into a number.
+      //
+      // A CITY CENTRE IS THE RIGHT GRAIN HERE, and needs no coarsening the way a hidden event
+      // address does: it discloses nothing beyond the city name the host already published. It is
+      // a fallback, never an override, so a host who placed a pin keeps exactly the pin they placed.
+      //
+      // FAIL-SAFE, like every other geocode in the app: a miss, a timeout or a rate-limit leaves the
+      // columns NULL and the save still succeeds. The Circle is simply not on the map until the next
+      // save resolves, which is the same contract saveEventLocation has carried since EVENTS-REWORK.
+      const query = [neighborhood, city].filter(Boolean).join(', ')
+      let point: { lat: number; lng: number } | null = null
+      if (query) {
+        try {
+          point = await nominatimGeocoder({ query })
+        } catch {
+          point = null
+        }
+      }
+      update.latitude = point?.lat ?? null
+      update.longitude = point?.lng ?? null
+    }
   }
 
   const { error } = await admin.from('circles').update(update).eq('id', id)

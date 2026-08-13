@@ -50,6 +50,18 @@ export function NearbyMap({ pins }: { pins: MapPin[] }) {
   const present = new Set(pins.map((p) => p.kind ?? 'place'))
   const legend = MAP_PIN_LAYERS.filter((k) => present.has(k))
 
+  // 🔴 SOME DOTS ARE AREAS, AND THE MAP HAS TO SAY SO WHERE EVERYONE READS IT. A host who set
+  // `hide_address`, and a Space whose owner chose an approximate location, are drawn at a coarsened
+  // point (lib/maps/approximate.ts). Each of those pins says so in its own popup, but a popup is
+  // read by exactly the person who tapped that one dot. Everyone else sees a map of precise-looking
+  // dots, some of which are not precise, and would be right to plan around them. One line under the
+  // legend is the cheapest place to keep that honest.
+  const anyApproximate = pins.some((p) => p.approximate)
+
+  // How many of these pins stand for more than one date, so the copy under the map can explain the
+  // `1+` bubbles rather than leaving a member to guess what the `+` means.
+  const anyRepeating = pins.some((p) => (p.moreCount ?? 0) > 0)
+
   return (
     <section aria-labelledby="nearby-map-heading" className="mb-8">
       <SectionHeader
@@ -65,6 +77,9 @@ export function NearbyMap({ pins }: { pins: MapPin[] }) {
           description="Events, Circles and Spaces show up here once they have a location. Add a place to yours and it lands on the map."
         />
       ) : (
+        // Every layer in that empty state can now actually appear. It was a promise the schema could
+        // not keep until ADR-1026 gave `spaces` a coordinate to hold; before that it named three
+        // layers at a member while one of them was unreachable by construction.
         <>
           <MapCanvas
             pins={pins}
@@ -89,6 +104,13 @@ export function NearbyMap({ pins }: { pins: MapPin[] }) {
                 <LegendRow key={kind} kind={kind} />
               ))}
             </ul>
+          )}
+
+          {(anyRepeating || anyApproximate) && (
+            <p className="mt-2 text-body-sm text-muted">
+              {anyRepeating && 'A number on a pin means it runs on more than one date. '}
+              {anyApproximate && 'Some pins show a general area instead of an address.'}
+            </p>
           )}
         </>
       )}
