@@ -71,7 +71,13 @@ them as a set amount, pay-what-you-can, a sliding scale, or a donation. If there
 is a cost, it is shown clearly before you commit. A few tickets are reserved for
 members of the Space hosting the event; those show a small lock, and you can join
 the membership right on the event page. Some events also show only the city until
-you RSVP; the exact address appears once you register.
+you RSVP; the exact address appears once you register. On the map those events
+still show up, as a general area rather than a street, so you can tell whether
+something is near you before you commit. The pin is a neighbourhood, not a door.
+
+You will also see a number on some pins, like **1+**. That means one event that
+runs on more than one date. Open it and the other dates are listed, so a weekly
+gathering takes one spot on the map instead of crowding out everything around it.
 
 ### I RSVP and then chicken out. Is that bad?
 

@@ -175,4 +175,16 @@ No. A Circle can meet on a call, and many start virtual while the Host builds a
 local group. The standing time matters more than the room. Virtual is the default;
 in person is the bonus.
 
+### How do I get my Circle onto the map?
+
+Set it to meet **in person** and fill in the city under **Place & Time**. That is
+enough: your Circle lands on the map at that city, and people browsing Around You
+can find it.
+
+If you want the pin somewhere more exact, drag it on the map in the same settings.
+A pin you place by hand always wins over the city, so you can move it to the park
+or the studio you actually meet at and it stays there.
+
+An online Circle has no pin, and that is on purpose. There is nowhere to turn up.
+
 Next: [why groups fizzle, and how to get the return](/help/leading/why-groups-fizzle).
