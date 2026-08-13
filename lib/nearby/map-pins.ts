@@ -5,6 +5,7 @@ import { formatEventDate } from '@/lib/utils'
 import { collapseSeries, SERIES_COLUMNS, SERIES_WIDE_READ } from '@/lib/events/series'
 import { approximatePoint } from '@/lib/maps/approximate'
 import { locationCopy, moreDatesLine, memberCountLine } from '@/lib/maps/pin-copy'
+import { withholdsAddress } from '@/lib/events/location-intent'
 import type { MapPin } from '@/components/maps/types'
 
 // THE AROUND YOU MAP'S PINS. One read per request, feeding components/nearby/nearby-map.tsx.
@@ -261,7 +262,15 @@ export const loadNearbyMapPins = cache(async (): Promise<MapPin[]> => {
       // gets a grid cell, never the coordinate. `approximatePoint` returns null for anything that
       // is not a real lat/lng, and null means NO PIN: a row that cannot be coarsened must not fall
       // back to the exact point, which is the one mistake in this file that would be a leak.
-      const hidden = row.hide_address === true
+      // 🔴 THE FLAG **OR** THE HOST'S OWN WORDS (ADR-1028). Production had an event with
+      // `hide_address = false` and a location line reading "The Royal Temple (RSVP to see location)":
+      // the host said the address is withheld in the only field they were looking at, and the flag
+      // that controls it said the opposite. The one reason it had not already published Royal
+      // Temple's door is that the note also broke its geocode, so it had no point to publish. A bug
+      // prevented by a second bug is not prevented, so this reads BOTH signals and coarsens on
+      // either. Fails safe: a false positive costs a member some precision, a false negative
+      // publishes an address a host meant to keep, and those are not symmetric.
+      const hidden = row.hide_address === true || withholdsAddress(row.location)
       const point = hidden ? approximatePoint(truePoint.lat, truePoint.lng, row.id) : truePoint
       if (!point) continue
 

@@ -95,7 +95,7 @@ export function NearbyMap({ pins }: { pins: MapPin[] }) {
             cluster={{}}
             expandable
             expandLabel="Open the full map"
-            className="h-[22rem] w-full overflow-hidden rounded-2xl sm:h-[26rem]"
+            className="aspect-[12/5] w-full overflow-hidden rounded-2xl"
           />
 
           {legend.length > 0 && (
