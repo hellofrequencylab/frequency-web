@@ -263,6 +263,45 @@ export function discardDraft(storage: StorageLike, scope: string): void {
  * Remove every expired or unreadable Spark draft, whatever its scope. Runs when any Spark opens, so
  * abandoned drafts for entities the author never returns to still age out. Returns the count removed.
  */
+/**
+ * Erase EVERY Spark draft on this device, expired or not. Called on sign-out.
+ *
+ * 🔴 WHY THIS EXISTS, because it is the one function here that is about somebody else.
+ *
+ * A draft key is `frequency.spark.draft.v1.<route>.<eyebrow>` — it names the SURFACE and nothing
+ * about the author. That is deliberate (the kit is entity-blind and has no identity to reach for),
+ * and it is fine while a browser belongs to one person. It stops being fine on a shared device:
+ * member A abandons a half-typed Circle, member B signs in on the same browser and opens the same
+ * Spark, and `reconcileDrafts` finds A's local copy with no server copy to beat it. B is then shown
+ * a card that says "**You** started this 2 hours ago", and "Restore answers" fills B's wizard with
+ * A's unpublished writing. The draft store refuses passwords, payment fields and anything matching
+ * the credential patterns above, so this is never secrets — but it is one member's text in another
+ * member's form, under a sentence claiming they wrote it.
+ *
+ * Clearing on sign-out closes the path a member actually takes to hand the machine over, and it is
+ * independently right: your unfinished writing should not outlive your session on a device you just
+ * stepped away from. It does NOT close the path where A never signs out and B signs in on the same
+ * browser — that needs the author folded into the key, which orphans every in-flight draft on the
+ * day it ships and is therefore an owner's call, not a 3am one. Recorded rather than silently
+ * half-fixed.
+ *
+ * Returns how many entries were removed. Never throws: private mode and a full quota both surface
+ * as a throwing `Storage`, and a sign-out must not be the thing that fails.
+ */
+export function clearAllDrafts(storage: StorageLike): number {
+  const doomed: string[] = []
+  try {
+    for (let i = 0; i < storage.length; i += 1) {
+      const key = storage.key(i)
+      if (key?.startsWith(DRAFT_PREFIX)) doomed.push(key)
+    }
+    for (const key of doomed) storage.removeItem(key)
+  } catch {
+    return 0
+  }
+  return doomed.length
+}
+
 export function pruneDrafts(storage: StorageLike, now: number = Date.now()): number {
   const doomed: string[] = []
   try {

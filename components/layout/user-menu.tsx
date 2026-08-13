@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { User, LogOut, ChevronDown } from 'lucide-react'
+import { User, ChevronDown } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
@@ -11,6 +11,7 @@ import { defaultMenu } from '@/lib/menus/defaults'
 import { canSeeMenuItem, flattenCategoryTree } from '@/components/layout/menu-role'
 import { railIconFor } from '@/components/layout/nav-icons'
 import type { MenuAccess, ResolvedItem, ResolvedMenu } from '@/lib/menus/types'
+import { SignOutForm } from './sign-out-form'
 
 export type UserMenuProfile = {
   display_name: string
@@ -163,15 +164,10 @@ export function UserMenu({
 
           {/* Sign out */}
           <div className="border-t border-border py-1">
-            <form action="/auth/signout" method="POST">
-              <button
-                type="submit"
-                className="flex items-center gap-2.5 px-3 py-2 text-body-sm text-text hover:bg-surface w-full text-left transition-colors"
-              >
-                <LogOut className="w-4 h-4 text-subtle" />
-                Sign out
-              </button>
-            </form>
+            <SignOutForm
+              buttonClassName="flex items-center gap-2.5 px-3 py-2 text-body-sm text-text hover:bg-surface w-full text-left transition-colors"
+              iconClassName="w-4 h-4 text-subtle"
+            />
           </div>
         </div>
       )}

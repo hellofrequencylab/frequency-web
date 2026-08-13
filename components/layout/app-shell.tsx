@@ -7,7 +7,6 @@ import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore
 import {
   Globe,
   User,
-  LogOut,
   Moon,
   Sun,
   Zap,
@@ -83,6 +82,7 @@ import { EntityLayoutMount } from '@/components/entity-blocks/profile-layout-con
 import { MindlessProvider, useMindless } from '@/components/on-air/mindless'
 import { MovementProvider } from '@/components/on-air/movement'
 import { LotusIcon } from '@/components/on-air/icons'
+import { SignOutForm } from './sign-out-form'
 
 // The sidebar + community bar are built from NAV_AREAS (lib/nav-areas.ts — the
 // single source of truth shared with the permission grid). The whole menu is
@@ -773,15 +773,7 @@ function AccountDropdown({
 
           {/* Sign out */}
           <div className="border-t border-border py-1">
-            <form action="/auth/signout" method="POST">
-              <button
-                type="submit"
-                className="flex items-center gap-2.5 px-3 py-2 text-body-sm text-danger hover:bg-danger-bg w-full text-left transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                Sign out
-              </button>
-            </form>
+            <SignOutForm buttonClassName="flex items-center gap-2.5 px-3 py-2 text-body-sm text-danger hover:bg-danger-bg w-full text-left transition-colors" />
           </div>
         </div>
       )}
