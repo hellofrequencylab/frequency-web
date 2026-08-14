@@ -139,6 +139,15 @@ async function recentPostedEvents(posterId: string): Promise<RecentPostedEvent[]
       .select('event_id, profile_id, status')
       .in('event_id', ids)
       .eq('status', 'going')
+      // MEMBER seats only. This count is not decoration: it is the evidence the honesty band
+      // and Vera's tip-vs-flag verdict are built on, so it has to be expensive to move. A guest
+      // seat (profile_id NULL, guest_email set — 20270303000000) needs NO ACCOUNT to create:
+      // anyone with the event page and a mail domain can add unlimited rows. Counting those
+      // would make the anti-farming metric farmable with the least effort in the system.
+      // The self-skip below is no defence either — String(null) is the string "null", which
+      // never equals a poster id, so every guest row sailed straight past it as engagement.
+      .is('guest_email', null)
+    // profile_id is non-null for every row that survives the guest filter above.
     for (const r of (rsvps ?? []) as { event_id: string; profile_id: string }[]) {
       if (String(r.profile_id) === posterId) continue
       const key = String(r.event_id)

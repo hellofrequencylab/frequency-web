@@ -125,6 +125,13 @@ export const getPostedAdminData = cache(async (): Promise<PostedAdminData> => {
       .select('event_id')
       .in('event_id', events.map((e) => e.id))
       .eq('status', 'going')
+      // MEMBER seats only, for the same reason the honesty band counts them that way
+      // (lib/ai/poster-observer.ts): this number is what an operator reads as "did anyone
+      // actually turn up for what this poster posted", and a guest seat (profile_id NULL,
+      // guest_email set — 20270303000000) takes no account to create. Counting guest rows
+      // would let a poster manufacture their own engagement column with a mail domain, and
+      // the quality panel two sections down would then agree with them.
+      .is('guest_email', null)
     for (const r of (rsvps ?? []) as { event_id: string }[]) {
       rsvpCounts.set(r.event_id, (rsvpCounts.get(r.event_id) ?? 0) + 1)
     }

@@ -33,6 +33,7 @@ import { updateEventField } from '../admin-actions'
 import { RsvpControls } from '@/components/events/rsvp-controls'
 import { WarmProof } from '@/components/events/warm-proof'
 import { GuestRsvpForm } from '@/components/events/guest-rsvp-form'
+import { GuestCheckInPrompt } from '@/components/events/guest-check-in-prompt'
 import { safeHttpUrl } from '@/lib/safe-url'
 import { MembershipCheckoutFold } from '@/components/events/membership-checkout-fold'
 import { RsvpPaymentFlow, type FlowRate } from '@/components/events/rsvp-payment-flow'
@@ -139,6 +140,8 @@ type RSVPRow = {
   } | null
   /** What a guest typed, when they typed one. Null for member seats and for anonymous guests. */
   guest_name: string | null
+  /** 'pending' while the host has not yet admitted this request (20270303000000). */
+  approval_status: string | null
 }
 
 // The stored starts_at/ends_at hold the event's wall-clock as UTC parts, so rendering
@@ -337,6 +340,8 @@ export default async function EventDetailPage({
     geog: unknown
     // ADR-825: hide the exact address until the viewer registers (going/waitlist RSVP or ticket).
     hide_address: boolean | null
+    /** 20270303000000. When true an RSVP lands as a REQUEST and the host admits it. */
+    rsvp_requires_approval: boolean | null
     // ADR-826: how people join — 'auto' derives from pricing; 'rsvp' = first come first served
     // (prices informational); 'tickets' = buying is attending (no RSVP switch).
     join_mode: 'auto' | 'rsvp' | 'tickets' | null
@@ -348,7 +353,7 @@ export default async function EventDetailPage({
     (admin)
       .from('events')
       .select(
-        'posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, time_zone, space_id, host_space_id, theme, geog, hide_address, join_mode',
+        'posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, time_zone, space_id, host_space_id, theme, geog, hide_address, join_mode, rsvp_requires_approval',
       )
       .eq('id', event.id)
       .maybeSingle(),
@@ -575,7 +580,7 @@ export default async function EventDetailPage({
   }] = await Promise.all([
     admin
       .from('event_rsvps')
-      .select('id, status, plus_ones, guest_name, profile:profiles!profile_id ( id, display_name, handle, avatar_url )')
+      .select('id, status, plus_ones, guest_name, approval_status, profile:profiles!profile_id ( id, display_name, handle, avatar_url )')
       .eq('event_id', event.id)
       .order('created_at', { ascending: true }),
     // Real capacity / waitlist info (lib/events/capacity) — drives the waitlist CTA
@@ -625,6 +630,7 @@ export default async function EventDetailPage({
 
   let myProfileId: string | null = null
   let myRsvpStatus: string | null = null
+  let myApprovalStatus: 'none' | 'pending' | 'approved' = 'none'
   let myPlusOnes = 0
   let isHost = false
   let isCrew = false
@@ -643,6 +649,7 @@ export default async function EventDetailPage({
       isHost = event.host?.id === myProfileId
       const myRsvp = rsvps.find((r) => r.profile?.id === myProfileId)
       myRsvpStatus = myRsvp?.status ?? null
+      myApprovalStatus = (myRsvp?.approval_status as 'none' | 'pending' | 'approved' | null) ?? 'none'
       myPlusOnes = myRsvp?.plus_ones ?? 0
 
       // "From your circles" = going attendees (excluding me) who share at least
@@ -1448,6 +1455,11 @@ export default async function EventDetailPage({
               plusOnes={myPlusOnes}
               isFull={capacityInfo.isFull}
               initialNote={myRsvpNote}
+              // The host's approval gate. RsvpControls has accepted these two props since
+              // EVENTS-REWORK A1 and NOTHING has ever passed them, so "Request to join" and the
+              // pending state were unreachable UI for the whole life of the feature.
+              requiresApproval={extra?.rsvp_requires_approval === true}
+              approvalStatus={myApprovalStatus}
             />
           ) : null
         ) : ticketsMode && ownsTicket && !isPast ? null : myProfileId && isGoing && isPast ? (
@@ -1503,6 +1515,13 @@ export default async function EventDetailPage({
               to RSVP with your account.
             </p>
           </div>
+        ) : !myProfileId && isPast && !ticketsMode ? (
+          /* Signed-out visitor on an event that has STARTED (ADR-1033). RSVP is closed, so the guest
+             form above is gone and, until now, nothing replaced it. This is the check-in door: a
+             guest seat can only become a counted attendance by becoming a member's seat first, so
+             the honest offer is the sign-in that claims it. Tickets-mode events are excluded because
+             a guest seat cannot exist on one (capture_guest_rsvp refuses join_mode = 'tickets'). */
+          <GuestCheckInPrompt slug={event.slug} />
         ) : null}
 
         {/* Who's coming — the avatar pile grows in place as guests answer (warm proof, in-box). */}

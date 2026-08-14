@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { track } from '@/lib/analytics/track'
+import { claimGuestSeatsOnSignIn, type SessionClient } from '@/lib/events/guest-seat-claim'
 
 // Must match the cookie set in app/sign-in/page.tsx.
 const POST_LOGIN_COOKIE = 'fq_post_login'
@@ -18,11 +19,16 @@ export async function GET(request: Request) {
   // same-origin absolute path; anything starting with `//` or `/\` is a
   // protocol-relative open-redirect to another host.
   const cookieStore = await cookies()
-  const requested = searchParams.get('next') ?? cookieStore.get('fq_post_login')?.value ?? '/feed'
+  const asked = searchParams.get('next') ?? cookieStore.get(POST_LOGIN_COOKIE)?.value ?? null
+  const requested = asked ?? '/feed'
   const next =
     requested.startsWith('/') && !requested.startsWith('//') && !requested.startsWith('/\\')
       ? requested
       : '/feed'
+  // Whether a destination was actually ASKED FOR, as opposed to defaulted. The guest-seat landing
+  // below may only fill the default: someone who followed a `?next=` (or whose sign-in stashed one)
+  // asked to go somewhere, and a claim is never a reason to overrule them.
+  const hasExplicitNext = asked !== null
 
   if (code) {
     const supabase = await createClient()
@@ -48,6 +54,11 @@ export async function GET(request: Request) {
       //
       // FAIL-SAFE, because this sits on the critical login path: everything below is wrapped and
       // swallowed. An analytics row is never worth failing an authentication for.
+      // CLAIM-ON-SIGN-IN (ADR-1033): any event this person RSVP'd to while signed out becomes
+      // theirs here, and if one of those events is happening RIGHT NOW they land on it instead of
+      // the feed. Set inside the fail-safe block below; null means "use the normal destination".
+      let seatLanding: string | null = null
+
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
@@ -62,14 +73,40 @@ export async function GET(request: Request) {
             const source = (user.app_metadata?.provider as string | undefined) ?? 'unknown'
             await track('account.created', { source }, profile.id, {
               idempotencyKey: `account.created:${profile.id}`,
-            })
+            }).catch(() => {})
+
+            // WHY HERE, and not only in onboarding. `claim_guest_rsvps` had one caller,
+            // completeOnboarding, which covers a guest who signs UP and misses the commonest guest
+            // of all: a member who was merely signed OUT when they RSVP'd. Their seat stranded
+            // forever — real capacity held, absent from "my events", and never checkable-in, so
+            // their attendance could never reach WAM (which counts distinct actor_profile_id).
+            //
+            // Sign-in is the seam where both things the SQL requires are true at once: auth.uid()
+            // is the caller, and auth.users.email_confirmed_at was just stamped by the link they
+            // clicked. The SESSION client is passed for the same reason the profile read above uses
+            // it — under the service-role client auth.uid() is null, the claim matches nothing, and
+            // the RLS policies that already grant a member their own seats would be bypassed for no
+            // gain. The session exists here: exchangeCodeForSession has run and set the cookies.
+            //
+            // Cast per ADR-246: the RPC and the guest_claimed_* columns postdate the generated types.
+            seatLanding = await claimGuestSeatsOnSignIn(
+              supabase as unknown as SessionClient,
+              profile.id,
+            )
           }
         }
       } catch {
         // Swallowed on purpose. See FAIL-SAFE above.
       }
 
-      const res = NextResponse.redirect(`${origin}${next}`)
+      // An explicitly requested destination always wins; the landing only fills the /feed default.
+      // This is what makes the round trip survive the case the cookie cannot: a magic link opened in
+      // a different browser than the one that asked for it arrives with no `fq_post_login` at all,
+      // and a guest standing at the event would otherwise be dropped on the feed with their newly
+      // claimed seat and no sign of the room they are in.
+      const destination = !hasExplicitNext && seatLanding ? seatLanding : next
+
+      const res = NextResponse.redirect(`${origin}${destination}`)
       res.cookies.delete(POST_LOGIN_COOKIE)
       return res
     }

@@ -555,7 +555,8 @@ export async function sendGuestRsvpConfirmationEmail(params: {
   googleCalUrl: string | null
   /** Sign-in deep link carrying this address, so the seat can become theirs in one step. */
   signUpUrl:    string
-  status:       'going' | 'waitlist'
+  /** 'pending' when the host approves each person: a REQUEST, not a seat. */
+  status:       'going' | 'waitlist' | 'pending'
 }) {
   const {
     to, guestName, eventTitle, whenAbsolute, location, hostName, circleName,
@@ -564,9 +565,10 @@ export async function sendGuestRsvpConfirmationEmail(params: {
 
   await enqueueEmail({
     to,
-    subject: status === 'going'
-      ? `You're going: ${eventTitle}`
-      : `You're on the waitlist: ${eventTitle}`,
+    subject:
+      status === 'going'   ? `You're going: ${eventTitle}` :
+      status === 'waitlist' ? `You're on the waitlist: ${eventTitle}` :
+                              `Request sent: ${eventTitle}`,
     html: guestRsvpConfirmationHtml({
       guestName, eventTitle, whenAbsolute, location, hostName, circleName,
       eventUrl, icsUrl, googleCalUrl, signUpUrl, status,
@@ -659,6 +661,115 @@ You're receiving this because you RSVP'd or held a ticket.
 Manage preferences: ${BASE_URL}/settings/notifications
 Unsubscribe from event emails: ${unsubscribeUrl}
 `
+}
+
+
+// ── Guest event cancellation email ────────────────────────────────────────────
+//
+// The one email in the guest set that is NOT optional in any sense: a guest who is not told has no
+// other way to find out. They have no account to sign into, no notification bell, and the event
+// page they RSVP'd from is a link they may never open again. Somebody drives to a car park.
+//
+// Same transactional carve-out as sendGuestRsvpConfirmationEmail above (no profile id, so no
+// unsubscribe token; suppression still applies at drain time inside sendRawEmail). `refunded` is
+// absent because a guest seat is always a free RSVP — capture_guest_rsvp refuses ticketed events
+// outright, so there is never a charge to reverse.
+export async function sendGuestEventCancelledEmail(params: {
+  to:           string
+  guestName:    string | null
+  eventTitle:   string
+  whenAbsolute: string
+  eventUrl:     string
+}) {
+  const { to, guestName, eventTitle, whenAbsolute, eventUrl } = params
+  const greeting = guestGreeting(guestName)
+
+  await enqueueEmail({
+    to,
+    subject: `Cancelled: ${eventTitle}`,
+    html: emailShell(`
+      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#b91c1c;margin:28px 0 8px;">
+        Event cancelled
+      </p>
+      <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
+      <p style="${pStyle}">
+        ${escapeHtml(greeting)}this event has been cancelled and will not be going ahead.
+        Your RSVP has been released, so there is nothing you need to do.
+      </p>
+      <p style="${pStyle}"><strong>${escapeHtml(whenAbsolute)}</strong></p>
+      <a href="${eventUrl}" style="${btnStyle}">View event →</a>
+      <hr style="${dividerStyle}">
+      <p style="font-size:13px;color:#8F8675;">
+        You are getting this because this address was used to RSVP to ${escapeHtml(eventTitle)}.
+      </p>
+    `),
+    text: `Event cancelled: ${eventTitle}
+
+${greeting}this event has been cancelled and will not be going ahead. Your RSVP has been released, so there is nothing you need to do.
+
+When: ${whenAbsolute}
+
+View event: ${eventUrl}
+
+You are getting this because this address was used to RSVP to ${eventTitle}.
+`,
+  })
+}
+
+
+// ── Guest event reminder email ────────────────────────────────────────────────
+//
+// The guest leg of the reminder cron. Email only: the other two channels the cron drives are push
+// (needs a registered device) and SMS (needs a consent record under the A2P track), and a guest has
+// neither, so there is nothing to gate and nothing to send on those.
+//
+// 🔴 `location` MUST ARRIVE ALREADY GATED, exactly as in sendGuestRsvpConfirmationEmail: a guest
+// never satisfies the going/waitlist/ticket test that unlocks a withheld address on the event page,
+// so a hidden-address event sends the city line here too. A reminder is the easiest place to leak
+// an address by accident, because it is sent by a cron rather than composed by a person.
+export async function sendGuestEventReminderEmail(params: {
+  to:           string
+  guestName:    string | null
+  eventTitle:   string
+  whenLabel:    string
+  whenAbsolute: string
+  location:     string | null
+  eventUrl:     string
+}) {
+  const { to, guestName, eventTitle, whenLabel, whenAbsolute, location, eventUrl } = params
+  const greeting = guestGreeting(guestName)
+
+  await enqueueEmail({
+    to,
+    subject: `${whenLabel}: ${eventTitle}`,
+    html: emailShell(`
+      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+        ${escapeHtml(whenLabel)}
+      </p>
+      <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
+      <p style="${pStyle}">${escapeHtml(greeting)}a quick reminder that you said you were coming.</p>
+      <p style="${pStyle}">
+        <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:#777;">${escapeHtml(location)}</span>` : ''}
+      </p>
+      <a href="${eventUrl}" style="${btnStyle}">View event →</a>
+      <hr style="${dividerStyle}">
+      <p style="font-size:13px;color:#8F8675;">
+        You are getting this because this address was used to RSVP to ${escapeHtml(eventTitle)}.
+        Plans change, and that is okay — you can say so on the event page.
+      </p>
+    `),
+    text: `${whenLabel}: ${eventTitle}
+
+${greeting}a quick reminder that you said you were coming.
+
+When: ${whenAbsolute}
+${location ? `Where: ${location}\n` : ''}
+View event: ${eventUrl}
+
+You are getting this because this address was used to RSVP to ${eventTitle}.
+Plans change, and that is okay — you can say so on the event page.
+`,
+  })
 }
 
 
@@ -1645,13 +1756,19 @@ function guestRsvpConfirmationHtml({
   guestName: string | null; eventTitle: string; whenAbsolute: string; location: string | null
   hostName: string | null; circleName: string | null; eventUrl: string
   icsUrl: string | null; googleCalUrl: string | null; signUpUrl: string
-  status: 'going' | 'waitlist'
+  status: 'going' | 'waitlist' | 'pending'
 }): string {
-  const eyebrow = status === 'going' ? "You're going" : "You're on the waitlist"
+  const eyebrow =
+    status === 'going'   ? "You're going" :
+    status === 'waitlist' ? "You're on the waitlist" :
+                            'Request sent'
   const greeting = escapeHtml(guestGreeting(guestName))
-  const intro = status === 'going'
-    ? `${greeting}your spot is saved. No account needed to come along, just turn up.`
-    : `${greeting}this one is full, so you are on the waitlist. If a spot opens we will move you in and let you know. Nothing for you to do.`
+  const intro =
+    status === 'going'
+      ? `${greeting}your spot is saved. No account needed to come along, just turn up.`
+      : status === 'waitlist'
+        ? `${greeting}this one is full, so you are on the waitlist. If a spot opens we will move you in and let you know. Nothing for you to do.`
+        : `${greeting}the host approves each person for this one, so your request is with them now. We will email you the moment they reply. You do not have a spot until then.`
   const hostLine = rsvpHostLine(hostName, circleName)
 
   const calendarBlock = status === 'going' && (icsUrl || googleCalUrl) ? `
@@ -1699,13 +1816,19 @@ function guestRsvpConfirmationText({
   guestName: string | null; eventTitle: string; whenAbsolute: string; location: string | null
   hostName: string | null; circleName: string | null; eventUrl: string
   icsUrl: string | null; googleCalUrl: string | null; signUpUrl: string
-  status: 'going' | 'waitlist'
+  status: 'going' | 'waitlist' | 'pending'
 }): string {
-  const eyebrow = status === 'going' ? "You're going" : "You're on the waitlist"
+  const eyebrow =
+    status === 'going'   ? "You're going" :
+    status === 'waitlist' ? "You're on the waitlist" :
+                            'Request sent'
   const greeting = guestGreeting(guestName)
-  const intro = status === 'going'
-    ? `${greeting}your spot is saved. No account needed to come along, just turn up.`
-    : `${greeting}this one is full, so you are on the waitlist. If a spot opens we will move you in and let you know. Nothing for you to do.`
+  const intro =
+    status === 'going'
+      ? `${greeting}your spot is saved. No account needed to come along, just turn up.`
+      : status === 'waitlist'
+        ? `${greeting}this one is full, so you are on the waitlist. If a spot opens we will move you in and let you know. Nothing for you to do.`
+        : `${greeting}the host approves each person for this one, so your request is with them now. We will email you the moment they reply. You do not have a spot until then.`
 
   const hostPlain =
     hostName && circleName ? `Hosted by ${hostName} · ${circleName}` :

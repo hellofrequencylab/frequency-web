@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { refundTicket } from '@/lib/billing/tickets'
-import { sendEventCancelledEmail } from '@/lib/email'
+import { sendEventCancelledEmail, sendGuestEventCancelledEmail } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
 
 interface CancelTicketRow {
@@ -132,10 +132,21 @@ export async function refundAndNotifyForCancelledEvent(eventId: string): Promise
   // Skip anyone we already emailed as a refunded buyer to avoid a duplicate note.
   const { data: rsvpData } = await admin
     .from('event_rsvps')
-    .select('profile_id')
+    .select('profile_id, guest_email, guest_name')
     .eq('event_id', eventId)
     .eq('status', 'going')
-  const rsvpProfileIds = ((rsvpData ?? []) as { profile_id: string }[]).map((r) => r.profile_id)
+
+  // Two identities, two legs. `profile_id` is nullable since 20270303000000 and this cast used to
+  // claim `string`, so a guest's NULL was passed straight into shouldSend() and resolveRecipient(),
+  // both typed for a real id. The practical effect was worse than the type lie: a guest holding a
+  // confirmed seat was NEVER TOLD the event was cancelled, even though we hold their address and it
+  // is the only way to reach them. They would have turned up.
+  const rsvpRows = (rsvpData ?? []) as unknown as {
+    profile_id: string | null; guest_email: string | null; guest_name: string | null
+  }[]
+  const rsvpProfileIds = rsvpRows
+    .map((r) => r.profile_id)
+    .filter((id): id is string => typeof id === 'string')
 
   for (const profileId of rsvpProfileIds) {
     if (refundedBuyerIds.has(profileId)) continue
@@ -154,6 +165,29 @@ export async function refundAndNotifyForCancelledEvent(eventId: string): Promise
       })
     } catch (err) {
       console.error('[cancelEvent] notify (rsvp) failed', { eventId, profileId, err })
+    }
+  }
+
+  // ── 4. Notify signed-out guests. No shouldSend and no resolveRecipient: both key on a profile,
+  // and a guest has neither a preferences row nor an auth.users record to read an address from —
+  // the address IS the row. Suppression still applies, inside sendRawEmail at drain time.
+  //
+  // No dedupe against refundedBuyerIds is needed: a buyer is a member by construction (tickets
+  // require an account), and capture_guest_rsvp refuses ticketed events outright, so these two
+  // sets cannot intersect.
+  for (const row of rsvpRows) {
+    const guestEmail = row.guest_email
+    if (!guestEmail) continue
+    try {
+      await sendGuestEventCancelledEmail({
+        to: guestEmail,
+        guestName: row.guest_name,
+        eventTitle: event.title,
+        whenAbsolute,
+        eventUrl,
+      })
+    } catch (err) {
+      console.error('[cancelEvent] notify (guest) failed', { eventId, err })
     }
   }
 }

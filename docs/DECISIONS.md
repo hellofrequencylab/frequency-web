@@ -24126,3 +24126,180 @@ The decision is about the **button**. Three neighbouring things stay open and ar
 The waiver matches on the exact painted hex. If the amber drifts in either direction the hex changes,
 no waiver matches, and the gate fails loudly so the decision is re-made rather than inherited. That is
 the intended way back: this ADR is reversed by changing the token, not by editing a baseline.
+
+## ADR-1032: A seat you can hold before you have an account, and the approval rule that finally exists (2026-08-13)
+
+**Status:** accepted · **Builds on** ADR-854 (an unverified email may address a delivery but may never
+key a capability), ADR-825 (the hidden-address gate), ADR-959/964 (`revoke ... from public` does not
+remove a per-role grant) · **Amends** the EVENTS-REWORK A1 approval work, which shipped a queue that
+nothing could ever put anyone into
+
+### What was decided
+
+A signed-out visitor can RSVP to a free, public, upcoming event with one field. The seat lives in
+`event_rsvps` with `profile_id NULL` and `guest_email` set, not in a table of its own.
+
+**Why the same table.** The requirement was that a guest obeys the same capacity, waitlist and
+approval rules as a member. Those rules are not app logic that could be called twice: capacity is
+`enforce_event_rsvp_capacity()`, a BEFORE trigger that reads only `NEW.event_id` and `NEW.status` and
+is already identity-blind. Putting the guest row in the same table means the rule applies for free,
+forever, with no second implementation to drift. A separate table would have meant rewriting that
+trigger to count across two tables and re-sorting two waitlists by `created_at` — which is exactly how
+"the same rules" becomes "two rules that were the same once".
+
+**The dangerous half.** `UNIQUE (event_id, profile_id)` had to become a PARTIAL unique index. Postgres
+treats NULLs as distinct, so the moment `profile_id` is nullable that constraint silently stops
+enforcing one-seat-per-member while still looking correct in `\d` output. Two partial indexes replace
+it, one per identity.
+
+**The capture door returns an opaque uuid, not the row id.** Its sibling `capture_signup_lead` returns
+the row id and that is defensible for a LEAD. A SEAT is different: the question an attacker asks is not
+"does this address exist" but "is THIS PERSON going to THIS NAMED PUBLIC EVENT". Returning the row id
+would answer it — submit twice, and a real seat returns the same id both times while a fresh address
+returns a new one. So every path except a malformed address returns `gen_random_uuid()`. The one
+remaining leak is named rather than overlooked: the publicly-rendered `spotsLeft` counter moves, which
+is one bit about the event and is equally true of member RSVPs today.
+
+**Approval became a rule that exists.** `event_rsvps.approval_status`, the host's approve action and
+the pending queue all shipped in 20260625020000. Nothing ever set a request to `pending`: there was no
+column on `events` to derive it from and no caller passed the flag, so the queue was permanently empty
+and `RsvpControls`' `requiresApproval` prop was unreachable UI. `events.rsvp_requires_approval` is the
+missing half, and it is read by the member path and the guest function alike so a guest waits exactly
+as long as a member and no longer. Approving is now keyed on the RSVP ROW, because
+`approveRsvp(eventId, profileId)` can never match a guest.
+
+### What this cost, and what it caught
+
+Making `profile_id` nullable broke reads that had been correct for as long as it was NOT NULL. The
+audit found and this work fixed:
+
+| Site | What it did |
+|---|---|
+| Event detail page | Declared `profile` non-null behind an `as unknown as` cast and dereferenced it four times. The first guest RSVP on any event would have 500'd the page for everyone. |
+| Host roster | Ended in `.filter(r => r.profile != null)`. Guests held real capacity and were invisible to the host. |
+| Cancellation | A guest was never told the event was called off. They would have turned up. |
+| Reminder cron | No guest reminder, and the loop `continue`d without stamping — every guest row re-queried every 15 minutes forever. |
+| Approval queue | Mapped a guest's NULL into `.in('id', [null])`, so a guest request could be neither shown nor approved. |
+| Anti-farming counts | `poster-observer` and the admin engagement column counted account-free rows, making the metric trivially inflatable. Both now exclude guests. |
+
+The general lesson is the one the cast made possible: **a nullable column that TypeScript has been told
+is non-null is invisible to every gate we own.** `as unknown as` on a PostgREST payload silences the
+one check that would have caught all four of the null-deref sites at once.
+
+### Revisiting
+
+The guest seat is a dead end until it is claimed. `claim_guest_rsvps` requires `auth.uid()` ownership
+AND `auth.users.email_confirmed_at`, because an `auth.users` row is created the moment someone TYPES an
+address at `/sign-in` — so "a profile exists with this email" proves nothing and claiming on that basis
+would hand a stranger somebody else's seat. Verified against production that confirmations are actually
+stamped (47 of 52 users); if that ever stops being true the claim silently no-ops and every guest seat
+strands. That is the failure mode to watch.
+
+Still open: a guest reaches WAM only after claiming, since WAM counts distinct `actor_profile_id`. A
+magic-link check-in that lets a guest verify attendance without an account is NOT built, so guest-heavy
+events under-report their real turnout.
+
+**Resolved by [ADR-1033](DECISIONS.md), which also answers the "without an account" half: it cannot be
+built, because the metric is defined on profile ids.** Claiming now runs at every sign-in rather than
+only in onboarding, and the event page finally offers a signed-out visitor the door.
+
+## ADR-1033: A guest cannot be counted without becoming a member, so the claim moves to sign-in (2026-08-13)
+
+**Status:** accepted · **Closes the "Still open" paragraph of [ADR-1032](DECISIONS.md)** ·
+**Builds on** [ADR-854](DECISIONS.md) (an unverified email may address a delivery but may never key a
+capability) · **Touches** WAM as defined in [ADR-024/025](DECISIONS.md)
+
+### The question, and the answer that is not the one that was asked for
+
+The ask was a check-in that lets a signed-out guest verify attendance, so guest-heavy events stop
+under-reporting turnout. **That feature cannot exist as stated, and the code is unambiguous about
+why.** WAM counts `DISTINCT actor_profile_id` over `practice.verified` in a rolling 7 days
+(`lib/analytics/practice.ts`), the nightly trait rollup does the same from the other side
+(`member_engagement_stats` joins `profiles` to `engagement_events` on `actor_profile_id`), and the
+host's "checked in" number reads that same ledger keyed on `(event, profile)`
+(`events/[slug]/manage/load.ts`). A check-in with a null actor is a row every one of those readers
+filters straight back out. Minting one would not move the number; it would only make the ledger
+lie about what it contains.
+
+So the honest close is not "check in without an account". It is: **make the last step from guest to
+member as short as one tap, at the moment attendance is happening, and let the existing member
+check-in do the counting.** Nothing else reaches WAM, and anything that claims to is theatre.
+
+### What was actually broken
+
+The chain guest → member → counted attendance already had every piece except the one that connects
+them. `claim_guest_rsvps` (20270303000100) attaches a guest seat to a proven account, and it had
+**exactly one caller: `completeOnboarding`**. That covers a guest who signs UP and finishes induction,
+and misses the commonest guest of all: **someone who already has an account and was merely signed out
+when they hit the RSVP form.** They never see onboarding again, so their seat stranded permanently —
+holding real capacity, absent from "my events", uncancellable by the person in it, and never
+checkable-in. The receipt email's sign-in CTA (`lib/events/guest-rsvp-email.ts`) has always pointed at
+the right door; behind it, nothing ran.
+
+The second hole was on the page. A signed-out visitor on an event that has **started** saw nothing at
+all in the join box: the guest RSVP form is correctly gone (`capture_guest_rsvp` refuses a past
+event), and every other branch requires a profile. The one person we most want to count, a guest
+standing in the room, had no affordance.
+
+### Decision
+
+1. **The claim runs at `/auth/callback`, on every successful exchange**, not only in onboarding.
+   Sign-in is the seam where both things the SQL demands are true at once: `auth.uid()` is the caller,
+   and `auth.users.email_confirmed_at` has just been stamped by the link they clicked. It runs on the
+   **session** client, because under the admin client `auth.uid()` is null and the claim silently
+   matches nothing. Fail-safe and swallowed: a claim is a bonus, never a blocker on authentication.
+
+2. **A claim that lands on a live event decides where the sign-in lands.** `claim_guest_rsvps` writes
+   `guest_claimed_by` / `guest_claimed_at` in the same statement that sets `profile_id`, so the rows
+   just converted are readable with no pre-read. If one belongs to an event happening around now, the
+   redirect goes there instead of `/feed`. An explicitly requested `next` always wins; the landing
+   only fills the default.
+
+   This exists for a specific failure. The post-login destination is stashed in a short-lived cookie
+   rather than on the callback URL (deliberately, so the provider's redirect allowlist match stays on
+   the bare `/auth/callback`). A magic link opened in a different browser than the one that asked for
+   it arrives with **no cookie at all**, and a guest standing at the event would be dropped on the
+   feed with a freshly claimed seat and no sign of the room they are in. The landing is derived from
+   database state, so it survives what the cookie cannot.
+
+3. **A signed-out visitor on a started event is offered the sign-in that claims their seat**
+   (`GuestCheckInPrompt`). It says what is true — checking in needs an account, the same address
+   brings the spot with it — and it stays silent about whether *this* visitor holds a seat, because
+   the page cannot know and guessing out loud would answer "is this person going to this event" to
+   anyone who opens the URL, the exact question [ADR-1032](DECISIONS.md)'s capture door is built not
+   to answer.
+
+4. **Nothing in this path takes the service-role bypass, including the read-back.** The RPC has no
+   choice (its whole mechanism is `auth.uid()`), and the two reads were checked against the LIVE
+   policies rather than assumed. `event_rsvps` SELECT is
+   `profile_id = private.get_my_profile_id() OR (host of the event)` — and by the time the read-back
+   runs, the claim has already set `profile_id` to this member, so the rows are the caller's own.
+   `events` SELECT permits public and unlisted, which is exactly the set a guest seat can exist on,
+   because `capture_guest_rsvp` refuses every other visibility. The only row RLS withholds is a
+   `draft` event (author-only branch), which no UI can RSVP to and which costs nothing but the
+   convenience redirect if it ever occurs. So `check:admin-client` stays green with no baseline
+   entry, and the tenancy wall is enforcement rather than decoration on this path.
+
+**No token was minted, and that is a decision rather than an omission.** The obvious design is an
+HMAC-signed `(event, email)` link in the guest's emails, in the style of `lib/unsubscribe-tokens.ts`.
+It buys nothing here: the only capability in the chain is the session, and Supabase's own magic link
+is what mints it against a proven address. Such a token could prefill an address the receipt email
+already prefills with a plain query param, at the cost of a new long-lived credential-shaped string
+in every mailbox. Under [ADR-854](DECISIONS.md) a token that keys a capability off an address we
+have not proven is exactly the trade we refuse, and a token that keys nothing is attack surface with
+a security-looking shape. The one thing a token could honestly add is a check-in that fires without a
+tap once the round trip completes; that is deliberately not built, because check-in is a member
+saying "I was here" and it should stay a thing a person does.
+
+### Consequences
+
+A guest who signs in with the address they RSVP'd with is now a member holding their own seat, on the
+event page, one tap from a `practice.verified` that reaches WAM and the host's roster. A guest who
+never signs in stays uncountable, and the roster now says so in those words rather than reporting a
+confident `false`.
+
+The failure mode to watch is unchanged from [ADR-1032](DECISIONS.md) and now has more riding on it:
+if `email_confirmed_at` ever stops being stamped, the claim silently no-ops and every guest seat
+strands. The rule this leaves behind: **a metric defined on an identity cannot be reached by anything
+that lacks that identity, so the feature is always the shortest honest path to the identity, never a
+way around it.**

@@ -41,6 +41,15 @@ spot is covered.
 
 Plans change. You can update your RSVP whenever you need to, right up to the day.
 
+Some Hosts approve each person before they are in. On those events your answer is
+a request: it waits in the Host's queue until they say yes, and you are not
+holding a spot until they do. We email you the moment they reply, so there is
+nothing to keep checking. The same rule applies to everyone, whether or not they
+have an account.
+
+If an event is full, Going puts you on the waitlist instead. You keep your place
+in line, and if someone drops out the next person moves up automatically.
+
 ## What happens after I RSVP?
 
 You get a confirmation email with the details and a one-tap **add to calendar**
@@ -86,13 +95,27 @@ the real fix for the cold feet is knowing what you are walking into. Read
 [what happens at a gathering](/help/getting-started/what-happens-at-a-gathering)
 first; it is almost always less awkward than your head says.
 
-### Someone sent me an invite link. Do I need an account to RSVP?
+### Do I need an account to RSVP?
 
-No. If a friend shares their personal invite link or QR for an event, opening it
-gives you a short form: your name, your email, and going or maybe. That is the
-whole thing, and you can do it without signing up. Your details go straight to the
-person who invited you, not to a mailing list. You can always make an account
-later to get the reminder and the calendar link.
+No. Open any public event and there is a short form: your email, and your name if
+you want to give it. That is the whole thing. You do not need to sign up first,
+and it works whether you found the event yourself or someone sent you a link.
+
+We email you to confirm, and that email says whether you got a spot or landed on
+the waitlist. It also carries the calendar link and, closer to the day, you get
+the same reminders anyone else does. If the Host cancels, you get told.
+
+Signing in later attaches every RSVP you made with that same email to your
+account, so you can change or cancel them in one place. That happens on its own
+the moment you sign in, and it works whether the account is brand new or one you
+already had and were signed out of. Nothing is lost if you wait.
+
+### Someone sent me a personal invite link. Is that different?
+
+Slightly. A friend's personal invite link or QR gives you a form with going or
+maybe on it, and your details go straight to the person who invited you rather
+than to a mailing list. The plain event page asks for less, because it only needs
+to save you a spot.
 
 ### Can I invite people to a gathering?
 
