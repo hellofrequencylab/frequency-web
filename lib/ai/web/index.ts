@@ -289,9 +289,17 @@ export function extractImages(html: string, pageUrl: string, max = MAX_IMAGES): 
   return out
 }
 
-/** Decode the handful of entities that actually appear inside html attribute values. PURE. */
+/**
+ * Decode the handful of entities that actually appear inside html attribute values. PURE.
+ *
+ * ONE pass with an alternation, deliberately, so each entity is decoded EXACTLY once. Chained
+ * replaces double-unescape: `&amp;` -> `&` followed by `&#38;` -> `&` turns the literal text
+ * `&amp;#38;` into a bare `&` when it should decode to `&#38;` (CodeQL js/double-escaping). A single
+ * regex consumes each match and moves past it, so a decoded `&` can never be re-read as the start of
+ * another entity.
+ */
 function decodeAttr(value: string): string {
-  return value.replace(/&amp;/gi, '&').replace(/&#38;/g, '&')
+  return value.replace(/&(?:amp|#0*38|#[xX]0*26);/g, '&')
 }
 
 // ── The default provider ────────────────────────────────────────────────────────────

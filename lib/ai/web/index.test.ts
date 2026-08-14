@@ -191,10 +191,20 @@ describe('extractLinks', () => {
 
   it('drops cross-origin links, non-http schemes, and bare fragments', () => {
     const links = extractLinks(FIXTURE_HTML, 'https://bright.test/')
-    expect(links.some((l) => l.includes('instagram.com'))).toBe(false)
-    expect(links.some((l) => l.startsWith('mailto:'))).toBe(false)
-    expect(links.some((l) => l.startsWith('javascript:'))).toBe(false)
-    expect(links.some((l) => l.includes('#'))).toBe(false)
+    expect(links.length).toBeGreaterThan(0)
+    // Assert on the PARSED url rather than on substrings. A substring check is both weaker and the
+    // wrong shape (CodeQL js/incomplete-url-substring-sanitization + js/incomplete-url-scheme-check):
+    // `evil.com/?x=instagram.com` contains the string while `data:` and `vbscript:` are schemes an
+    // allowlist of two would miss. Parsing states the real contract: every surviving link is
+    // same-origin, http(s), and fragment-free, which excludes every one of those by construction.
+    for (const link of links) {
+      const u = new URL(link)
+      expect(u.protocol).toBe('https:')
+      expect(u.host).toBe('bright.test')
+      expect(u.hash).toBe('')
+    }
+    // And the specific things the fixture tried to sneak past it are gone by host, not by substring.
+    expect(links.some((l) => new URL(l).host === 'instagram.com')).toBe(false)
   })
 
   it('caps the count and survives an unparseable base url', () => {
@@ -215,13 +225,30 @@ describe('extractImages', () => {
 
   it('drops non-http(s) sources and caps the count', () => {
     const images = extractImages(FIXTURE_HTML, 'https://bright.test/')
-    expect(images.some((i) => i.startsWith('data:'))).toBe(false)
+    // Protocol, not prefix: the contract is an http(s) ALLOWLIST, which excludes data:, blob:,
+    // vbscript: and everything else, where a check for one prefix would not.
+    expect(images.length).toBeGreaterThan(0)
+    for (const image of images) {
+      expect(['http:', 'https:']).toContain(new URL(image).protocol)
+    }
     const many = Array.from({ length: 40 }, (_, i) => `<img src="/i${i}.jpg">`).join('')
     expect(extractImages(many, 'https://bright.test/', 5)).toHaveLength(5)
   })
 
   it('returns nothing for a document with no images', () => {
     expect(extractImages('<html><body><p>no pictures here</p></body></html>', 'https://bright.test/')).toEqual([])
+  })
+
+  // REGRESSION (CodeQL js/double-escaping): attribute entities are decoded in ONE pass, so a decoded
+  // `&` is never re-read as the start of another entity. Chained replaces turned the literal text
+  // `&amp;#38;` into a bare `&`, silently rewriting the url; it must decode to `&#38;` and stop.
+  it('decodes an attribute entity exactly once', () => {
+    const [image] = extractImages('<img src="/i.jpg?a=1&amp;#38;b=2">', 'https://bright.test/')
+    expect(image).toBe('https://bright.test/i.jpg?a=1&#38;b=2')
+    // A plain ampersand entity still decodes, so the single pass did not just stop decoding.
+    expect(extractImages('<img src="/i.jpg?a=1&amp;b=2">', 'https://bright.test/')[0]).toBe(
+      'https://bright.test/i.jpg?a=1&b=2',
+    )
   })
 })
 
