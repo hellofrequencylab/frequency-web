@@ -81,6 +81,11 @@ export interface StartImportInput {
   webContent?: string
   bookingSchedule?: string
   differentiators?: string
+  /** NUMBERS AND CREDENTIALS (ADR-1038): the raw material for the page's PROOF band (real figures like
+   *  "5+ years", "1,000+ sessions", "200hr certified"). A business's own site rarely states these in a
+   *  form the extractor can find, so the operator supplies them and the composer can render stat tiles
+   *  instead of falling back to a generic value-prop list. */
+  numbers?: string
   /** Run the research inline (behind after()) for a faster operator turnaround, in addition to
    *  enqueuing it durably. Defaults to enqueue-only. */
   runInline?: boolean
@@ -99,6 +104,7 @@ function composePaste(input: StartImportInput): string {
   add('Website content', input.webContent)
   add('Booking and schedule', input.bookingSchedule)
   add('What makes them different', input.differentiators)
+  add('Numbers and credentials', input.numbers)
   const freeform = (input.pastedContent ?? '').trim()
   if (freeform) parts.push(freeform)
   return parts.join('\n\n')
@@ -298,6 +304,9 @@ export interface BusinessImportReview {
   imagePlan: { url: string; category: string; alt: string }[]
   /** Whether the hero is locked (Importer v2) — seeds the re-seed panel's lock toggle. */
   lockHero: boolean
+  /** Whether the BLOCK ARRANGEMENT is locked (ADR-1038) — seeds the re-seed panel's layout toggle. A
+   *  locked layout survives a re-seed; copy, images and live data still refresh. */
+  lockLayout: boolean
   /** The operator DIRECTIONS stored on the intake (Importer v2.1) — prefills the re-seed directions box. */
   directions: string
   /** Whether the applied Space is LISTED in the directory (visibility != 'private'). False until applied
@@ -347,6 +356,9 @@ export async function getBusinessImportReview(intakeId: string): Promise<Busines
           .map((p) => ({ url: p.url, category: String(p.category ?? 'other'), alt: String(p.alt ?? '') }))
       : [],
     lockHero: row.inputs.lockHero ?? true,
+    // Defaults OFF: a re-seed's whole point is to regenerate the page, so the operator opts in to
+    // protecting an arrangement they have hand-tuned.
+    lockLayout: row.inputs.lockLayout ?? false,
     directions: row.inputs.directions ?? '',
     listed,
   }
@@ -597,6 +609,8 @@ export type ReseedResult =
  *   • `lockHero` freezes the hero HEADLINE (tagline) and the hero IMAGE (draft.media.heroPath is left as
  *     it is, so the cover and photoHero image do not move). Everything else (about, story, offering
  *     blurbs, layout) is re-voiced + recomposed.
+ *   • `lockLayout` (ADR-1038) freezes the BLOCK ARRANGEMENT, so a page an operator hand-tuned survives.
+ *     The copy inside the blocks, the images and the live data all still refresh.
  *   • Edit-wins (P5): any prose field the operator hand-edited is preserved too (editedProsePaths).
  * Steps: persist mood + lockHero → re-voice the verified draft (best-effort; AI off just skips the
  * re-voice) → on an APPLIED intake, re-apply via applyIntake so the live page regenerates from the fresh
@@ -608,6 +622,7 @@ export async function reseedBusinessImport(
   mood: SeedMood,
   lockHero = true,
   directions?: string,
+  lockLayout = false,
 ): Promise<ReseedResult> {
   await requireStaffCap('structure', 'write')
   const operatorId = await getMyProfileId()
@@ -628,6 +643,7 @@ export async function reseedBusinessImport(
     ...row.inputs,
     mood: nextMood,
     lockHero,
+    lockLayout,
     ...(nextDirections ? { directions: nextDirections } : {}),
   })
 
@@ -672,6 +688,8 @@ export interface AddInfoInput {
   webContent?: string
   bookingSchedule?: string
   differentiators?: string
+  /** Numbers and credentials for the proof band (ADR-1038), same box as the start form. */
+  numbers?: string
   pastedContent?: string
   directions?: string
 }
@@ -703,6 +721,7 @@ export async function reresearchWithInfo(intakeId: string, input: AddInfoInput):
     webContent: input.webContent,
     bookingSchedule: input.bookingSchedule,
     differentiators: input.differentiators,
+    numbers: input.numbers,
     pastedContent: input.pastedContent,
   })
   const directions = (input.directions ?? '').trim()

@@ -16,6 +16,11 @@ import { isFetchableUrl } from '@/lib/ai/web'
 const BUCKET = 'site-media'
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024 // mirror the editor's 8MB cap
 const FETCH_TIMEOUT_MS = 10_000
+/** A gallery capture is meant to be a PHOTO of the business. The url-level chrome filter
+ *  (./plan isLikelyChromeImage) catches the obvious cases; this byte floor catches what only the
+ *  response reveals: a tracking pixel, a spacer gif, a tiny ui chip. Logo/hero are exempt, since a
+ *  legitimate logo is often a small file. */
+const MIN_GALLERY_BYTES = 5 * 1024
 
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'])
 
@@ -49,8 +54,9 @@ export interface CapturedImage {
 /**
  * Download `imageUrl` and upload it into `site-media` under `importer/<intakeId>/…`, returning
  * its public url. Returns null on any failure (fail-safe). Binds the storage path to the intake
- * id so an import's media is namespaced to it. `role` (logo/hero/gallery) only shapes the file
- * name for legibility.
+ * id so an import's media is namespaced to it. `role` (logo/hero/gallery) shapes the file name for
+ * legibility, and tightens the accept rules for `gallery` (no svg, no sub-5KB pixel) so a chrome
+ * asset that slipped past the url filter never lands in a seeded page's gallery.
  */
 export async function captureImage(
   intakeId: string,
@@ -68,8 +74,11 @@ export async function captureImage(
     if (!res.ok) return null
     const contentType = (res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase()
     if (!ALLOWED_IMAGE_TYPES.has(contentType)) return null
+    // A gallery slot is a photograph; a vector mark is a logo by another name.
+    if (role === 'gallery' && contentType === 'image/svg+xml') return null
     const buf = new Uint8Array(await res.arrayBuffer())
     if (buf.length === 0 || buf.length > MAX_IMAGE_BYTES) return null
+    if (role === 'gallery' && buf.length < MIN_GALLERY_BYTES) return null
 
     const admin = createAdminClient()
     const path = `importer/${intakeId}/${role}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extFor(contentType)}`

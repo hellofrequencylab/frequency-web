@@ -36,6 +36,7 @@ import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
 import { insertSpaceLibraryImage, fileAssetsIntoSpacesCollection } from '@/lib/library/store'
 import { withImageOrder } from './media-order'
 import { composeMarketingLayout } from './compose'
+import { buildSourceExcerpt } from './excerpt'
 import { addSpaceMember } from '@/lib/spaces/membership'
 import { normalizeWindow } from '@/lib/spaces/booking'
 import { withProfileData } from '@/lib/spaces/profile-data'
@@ -93,8 +94,14 @@ export interface MaterializeOptions {
   isDemo?: boolean
   /** AI PAGE COMPOSER (Importer v2): when set, one model call designs a best-practice marketing layout
    *  (choosing the blocks that fit the business + writing the design-block copy) and REPLACES the
-   *  deterministic layout. Falls back to the deterministic layout when AI is off / errors. */
-  aiCompose?: { profileId?: string | null; directions?: string }
+   *  deterministic layout. Falls back to the deterministic layout when AI is off / errors.
+   *  `sourceExcerpt` (ADR-1036) is the business's OWN words from lib/importer/excerpt.ts, so the copy
+   *  LIFTS their sentences instead of paraphrasing a twice-compressed draft. */
+  aiCompose?: { profileId?: string | null; directions?: string; sourceExcerpt?: string }
+  /** LOCK LAYOUT (ADR-1038): keep the Space's existing block arrangement on a re-apply. Copy, images and
+   *  live data still refresh; only `preferences.profileLayout` is left alone, so a hand-tuned page
+   *  survives a re-seed. Ignored on a create (there is no layout to protect yet). */
+  lockLayout?: boolean
   /** The seed MOOD (task #21): drives the Space PAGE STYLE. Each mood maps to one of the five page themes
    *  (moodToSpaceTheme), written to preferences.theme so the page's look matches its mood. Absent ⇒ leave the
    *  theme untouched (a re-run with no mood never disturbs an operator's chosen style). */
@@ -172,9 +179,15 @@ export async function materializeBusiness(
   // AI PAGE COMPOSER (Importer v2): design a best-practice marketing layout that fits THIS business and
   // REPLACE the deterministic one. Fail-safe: a null result (AI off / thin / error) keeps plan.layout.
   if (options.aiCompose) {
+    // The call to action's DESTINATION is derived here, never chosen by the model (a model-picked url is
+    // a dead link). A bookable business is sent to its booking page; everyone else to their profile.
+    const bookable = (profile.availability ?? []).length > 0
     const composed = await composeMarketingLayout(profile, profile.media?.gallery ?? [], {
       profileId: options.aiCompose.profileId,
       directions: options.aiCompose.directions,
+      sourceExcerpt: options.aiCompose.sourceExcerpt,
+      ctaUrl: bookable ? `/spaces/${plan.identity.slug}/book` : `/spaces/${plan.identity.slug}`,
+      bookable,
       policy,
     })
     if (composed) plan.layout = composed
@@ -230,7 +243,15 @@ export async function materializeBusiness(
 
   // Every step below binds to `spaceId`. Each is best-effort + idempotent; a single failure
   // does not abort the whole seed (the result reports counts so the caller/test can assert).
-  const prefsWrite = await writeProfileDataAndLayout(spaceId, plan, profile, policy, options.mood, seedMarker)
+  const prefsWrite = await writeProfileDataAndLayout(
+    spaceId,
+    plan,
+    profile,
+    policy,
+    options.mood,
+    seedMarker,
+    options.lockLayout,
+  )
   const availabilityWindows = await seedAvailability(spaceId, plan)
   const faqs = await seedFaqs(spaceId, plan)
   const events = await seedEvents(spaceId, plan, ownerProfileId)
@@ -408,6 +429,7 @@ async function writeProfileDataAndLayout(
   policy: CommercialPolicy,
   mood: SeedMood | undefined,
   seedMarker: SeedEditWinsMarker,
+  lockLayout = false,
 ): Promise<{ profileData: boolean; siteDoc: boolean }> {
   const space = await getSpaceById(spaceId)
   const currentPrefs =
@@ -421,7 +443,12 @@ async function writeProfileDataAndLayout(
   // profileLayout: sanitize to the space kind, then store (or clear when nothing survives).
   const safeLayout: EntityLayout | null = sanitizeEntityLayout(plan.layout, 'space')
   let next: Record<string, unknown> = { ...withData }
-  if (safeLayout) next.profileLayout = safeLayout
+  // LOCK LAYOUT (ADR-1038): an operator who hand-tuned this page asked us not to rearrange it. Copy,
+  // images, live data and the Site doc all still refresh below; only the block arrangement is held.
+  // The lock only bites when there IS an existing layout to protect, so it can never leave a Space
+  // with no page at all.
+  const layoutLocked = lockLayout && !!currentPrefs.profileLayout
+  if (safeLayout && !layoutLocked) next.profileLayout = safeLayout
   // (leave any existing profileLayout in place if sanitize returned null — do not wipe on a no-op)
 
   // PAGE STYLE from the mood (task #21): map the seed mood to one of the five page themes and write it to
@@ -671,8 +698,16 @@ export async function applyIntake(
     ledger: (row.ledger as ProvenanceLedger) ?? {},
     isDemo: row.inputs.consent?.isDemo ?? true,
     // Let the AI composer design the marketing page from the verified draft (Importer v2). Falls back to
-    // the deterministic layout when AI is off. Steered by the operator's directions.
-    aiCompose: { profileId: owner, directions: row.inputs.directions },
+    // the deterministic layout when AI is off. Steered by the operator's directions, and grounded in the
+    // business's OWN words (ADR-1036) so the page copy LIFTS their sentences rather than paraphrasing a
+    // twice-compressed draft. The excerpt is rebuilt from the harvest cache, so it costs no new crawl.
+    aiCompose: {
+      profileId: owner,
+      directions: row.inputs.directions,
+      sourceExcerpt: buildSourceExcerpt(row.rawSources),
+    },
+    // LOCK LAYOUT (ADR-1038): honour the operator's "keep this arrangement" toggle on a re-apply.
+    lockLayout: !!row.inputs.lockLayout,
     // The seed mood drives the PAGE STYLE (task #21): map it to one of the five page themes on apply/re-apply.
     mood: normalizeSeedMood(row.inputs.mood),
   })

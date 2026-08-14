@@ -195,6 +195,18 @@ export interface LedgerEntry {
   kind: LedgerKind
   /** Set once the adversarial verifier or an operator confirms it. */
   verifiedBy?: 'auto' | 'human'
+  /**
+   * PROSE SAFETY SCAN verdict (ADR-1037), set only on the PROSE paths (tagline / about / story /
+   * an offering blurb) by lib/importer/prose-scan.ts. `'clean'` means the machine scan found no
+   * price, phone, address, hours, rating, health, or superlative claim hiding in the sentence, so
+   * the prose gate lets it publish without a per-field human confirm. `'flagged'` means it found
+   * one, and the prose stays review-required exactly as it was before the scan existed.
+   *
+   * DELIBERATELY SEPARATE from `kind` / `verifiedBy`: generated prose stays honestly labelled
+   * `kind:'generated'`, and this never widens the COMMERCIAL-FACT gate, which still requires a
+   * cited, verified fact (isCommercialFieldCleared, unchanged).
+   */
+  proseScan?: 'clean' | 'flagged'
 }
 
 /** Record keyed by a draft field path (e.g. 'contact.phone') to its ledger entries. */

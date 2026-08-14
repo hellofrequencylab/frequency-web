@@ -24524,7 +24524,164 @@ reads it, so custom-property inheritance never carries it up and every preset re
 so it is filed rather than done here. And the gate reads one render state, because mode and skin
 re-map colour tokens rather than box widths.
 
-## ADR-1036: A disclosure that does not announce itself cannot be tested, and a clip is not an excuse (2026-08-14)
+---
+
+## ADR-1036: The page designer never saw the website, so it wrote about a business it had never read (2026-08-14)
+
+**Owner instruction:** *"I want you to take content directly from the people's websites if it's good
+and not reword it very much at all. Just make it fit somewhere in one of the blocks. Feel free to cut
+it down to fit or whatever is best practice."*
+
+### What was actually wrong
+
+The Smart Business Importer harvests a business's site, then compresses it three times before anything
+writes a page. Measured on a real applied intake (Kevin Russell, `0d0a5c8e`):
+
+| Stage | What survives |
+|---|---|
+| Harvest | **21,958 chars** across 13 sources |
+| Extract | a `BusinessProfile` whose prose fields total **982 chars** |
+| Verify | `splitVerified` strips every uncited commercial fact |
+| Reframe | grounded on `buildGroundingBlock`, which prints the name, type, category, the already-compressed about + story, offering titles, and *presence flags* like "this business has published hours" |
+| Compose | handed `brief(profile)` only, so the page designer sees roughly **500 chars** |
+
+So the model that writes the marketing page had never read a sentence the business wrote. The prompt
+even told reframe *"If the verified facts are thin, write LESS"*, which is the correct instruction for
+a starved grounding and the wrong one for a business with a good About page.
+
+The pipeline was built to RESEARCH a business. The owner wants it to REUSE one.
+
+### The change
+
+`lib/importer/excerpt.ts` (new, PURE) builds a labeled, de-boilerplated, priority-ordered VERBATIM
+excerpt from the harvest cache: operator paste first, then the home page, then about-ish pages, then
+offering-ish pages, then the rest, with third-party search snippets last. Capped at 12,000 chars total
+and 3,000 per page, truncated on sentence boundaries. It is subtractive only: it strips nav chrome and
+cookie lines, and never rewords, because the whole point is that the sentences arrive intact.
+
+That excerpt is handed to **reframe** (6,000 chars of it, enough to catch a voice) and to the **page
+composer** (all of it), with the instruction to lift the good sentences close to verbatim and trim
+them to fit. It costs no new crawl: `raw_sources` is already the harvest cache, so the excerpt is
+rebuilt from it at apply time.
+
+### Why this does not weaken the trust gate
+
+Handing reframe unverified source text is a real change to the §4.4 posture, which previously relied on
+GROUNDING STARVATION: reframe could not launder an unverified fact because it was never shown one. That
+protection is replaced, not dropped:
+
+- the prompt forbids restating any specific price, phone number, address, hours, or rating in prose;
+- everything reframe writes is still tagged `kind:'generated'`;
+- and [ADR-1037](DECISIONS.md)'s prose safety scan now READS the output and gates anything carrying a
+  claim.
+
+Starvation was a blunt instrument that also removed the good sentences. A scan on the output is the
+narrower tool, and it is the one that can tell "we have worked with 400 people" from "the room is warm
+and the tea is free".
+
+---
+
+## ADR-1037: Withholding the prose we just wrote made the operator confirm the same three fields on every seed (2026-08-14)
+
+**Status:** accepted · **Amends** the prose half of [ADR-575](DECISIONS.md) §4.3 Gate B ·
+**Does NOT touch** the commercial-fact gate
+
+### The evidence
+
+`prosePublishes` (lib/importer/map.ts) published prose only when its ledger entry was a verified fact.
+Reframe stamps every string it writes `kind:'generated'`. Those two rules compose to: **the importer
+withholds all of its own copy, always.** The live data says exactly that:
+
+| | Applied intakes checked | `about` + `story` carrying `verifiedBy:'human'` |
+|---|---|---|
+| production `business_intake` | 12 | **12** |
+
+Twelve businesses, thirty-six hand-confirmations, every one of them the operator clicking Confirm on
+copy the pipeline had just written. It is not a gate at that point, it is a toll booth. And it leaks:
+Kevin Russell's tagline was left `kind:'generated'`, so `spaces.tagline` for `kevin-russell` is **null**
+in production. A gate everyone always waves through is a gate that eventually forgets to.
+
+### The change
+
+`lib/importer/prose-scan.ts` (new, PURE) reads a prose string and looks for the thing the gate actually
+exists to catch: a commercial claim hiding inside a sentence. It detects price, phone, address, hours,
+rating, health-claim and superlative shapes. Prose that scans CLEAN gets `proseScan:'clean'` stamped on
+its ledger entry by the pipeline; `prosePublishes` accepts that as a third publish reason. Prose that
+scans dirty is stamped `'flagged'` and behaves exactly as it did before this ADR.
+
+Three deliberate choices:
+
+1. **`proseScan` is a NEW field, not a lie about `kind`.** Generated prose stays labelled generated. We
+   did not promote it to `kind:'fact'` to sneak it past `isCommercialFieldCleared`, because that helper
+   is also what guards prices and phone numbers, and it must keep meaning what it says.
+2. **The commercial-fact gate is untouched.** `commercialFieldClears` is unchanged. A price in the price
+   field still needs a citation and a verification. Only PROSE changed.
+3. **The scan is tuned for this demographic.** Frequency's businesses are healers, breathwork guides and
+   somatic practitioners, so `heal`, `healing`, `therapy`, `somatic` and `practitioner` are ordinary
+   vocabulary and do NOT flag. Only claim SHAPES do: "clinically proven", "cures", "treats <condition>",
+   "guaranteed results", a percentage-improvement figure. A scan that flagged the whole industry would
+   just rebuild the toll booth.
+
+### What we accept
+
+A claim phrased so obliquely that seven regexes miss it can now publish without a human. Against that:
+it publishes on an **unlisted demo Space** that an operator consciously flips live, the review board
+still paints and still allows an edit, and the alternative we measured is thirty-six confirmations that
+had already stopped being read.
+
+---
+
+## ADR-1038: The reference page is a rhythm, not a schema, so the composer fills bands instead of inventing pages (2026-08-14)
+
+**Owner instruction:** *"I want you to look at how Daniel Tyack's space is set up and use that for a
+primary business template, the way those blocks and layout are arranged is the template"* — then,
+refining it: *"keep in mind that the Daniel Tyack layout is primarily for look / feel / best practice
+features. I want you to follow that if you can, but if their content doesn't fit well, use different
+blocks and modify slightly. Tune it to fit their brand with a basic layout."*
+
+### The reference, read out of production
+
+`spaces.preferences.profileLayout` for slug `danieltyack`:
+
+| Row | Blocks | Notable |
+|---|---|---|
+| r0, 1 col, untitled | editorial, zigzag, cardGrid | pain-point qualifier, then a first-person origin story with a vertical photo, then a 3-step method with numbered icons |
+| r10 | features | `layout: "cards"`, six STAT tiles ("1,000+" / "public guided meditations") |
+| r7 | gallery | `view: "masonry"`, `gap: "roomy"` |
+| r5 | offerings + booking | |
+| r6 | faq | |
+| r8 | accentBeat | a REAL button to `/spaces/danieltyack/book` |
+| r9, 2 cols, "Contact and details" | contact \| business | |
+
+Two things the old composer could not have produced even by luck: it hardcoded `buttonOn: false`, so
+every seeded page ended with a dead call to action, and its tool schema exposed only
+`eyebrow/title/subtitle/body/cards/imageIndex`, so `features.layout`, `cardGrid.shape`, `zigzag.aspect`
+and `gallery.view` were never set and every page rendered at defaults.
+
+### The change
+
+A BAND SPINE: nine intents, each with a primary block and named alternates, and each free to drop when
+nothing real fills it. Bands 1 to 3 group into one untitled opening row, the way r0 does.
+
+The distinction the owner drew is the load-bearing one, so it is encoded rather than described: the
+model chooses WHAT goes in each band and writes the copy; it does not choose the ORDER, and it never
+chooses the CTA destination (a model-picked url is a dead link, so `ctaUrl` is derived in the
+materializer from the slug and whether the business is bookable). Presentation is derived from real
+signals rather than taste: `features.layout` is `stats` when the items read as numbers, `cardGrid.shape`
+is `left` when its cards carry photos, `gallery.view` is `masonry` past four photos.
+
+### Two supporting decisions
+
+**Lock layout.** Rolling a template out means the next re-seed rearranges any page an operator has
+hand-tuned. `inputs.lockLayout` (the sibling of `lockHero`, defaulting OFF) holds
+`preferences.profileLayout` on a re-apply while copy, photos and live data still refresh. It only bites
+when there is an existing layout to protect, so it can never leave a Space with no page.
+
+**Numbers and credentials.** The proof band wants real figures, and a business's own site almost never
+states them in a form the extractor can find. Rather than let the band degrade to a generic value-prop
+list on every seed, the start form asks: a fifth labeled content box, folded into the paste by
+`composePaste` exactly like the other four.
+## ADR-1039: A disclosure that does not announce itself cannot be tested, and a clip is not an excuse (2026-08-14)
 
 **Owner instruction:** *"the home menu looks like trash on mobile. alerts look weird and the tool
 tip doesn't close."* — with two phone screenshots.
