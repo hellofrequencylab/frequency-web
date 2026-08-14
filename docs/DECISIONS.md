@@ -24171,13 +24171,27 @@ operator-set height and overlay.
 `never` in that mode rather than silently rendering nowhere. The divider row is unchanged — the
 at-a-glance counts still sit opposite the operator Settings control.
 
-### The backdrop is inert, deliberately
+### The backdrop is inert, deliberately, and `inert` is the word on purpose
 
-`interactive={false}` + `pointer-events-none` + `aria-hidden`. A member who drags the header instead
-of scrolling the page has a worse map than no map, and a screen reader walking a marker tree behind
-a scrim hears a list of places with no way to act on any of them. The map that pans, zooms and opens
-a card per pin is the one behind the button, and it is the same seam instance with `interactive`
+`interactive={false}` + `pointer-events-none` + `inert`. A member who drags the header instead of
+scrolling the page has a worse map than no map, and a screen reader walking a marker tree behind a
+scrim hears a list of places with no way to act on any of them. The map that pans, zooms and opens a
+card per pin is the one behind the button, and it is the same seam instance with `interactive`
 flipped on, mounted only while the popup is open.
+
+🔴 **It shipped as `aria-hidden` first, and that was a real barrier.** `aria-hidden` removes a
+subtree from the accessibility tree but leaves it in the TAB ORDER, and a map engine injects its own
+focusable chrome (the terms and "report a map error" links, the keyboard-shortcuts control, the
+markers). So a keyboard user tabbed into controls a screen reader had been told did not exist — the
+`aria-hidden-focus` rule, and one of the few axe rules that names an actual trap. `inert` removes it
+from both, which is what "decorative" was always supposed to mean.
+
+**Which gate caught it is the part worth keeping.** The browserless jsdom test passed, and could not
+have failed: both engines are `ssr: false`, so a server render leaves the container EMPTY and there
+is nothing to tab into. The `@a11y` shell run against the Vercel preview failed it three times on
+two viewports. A real barrier that only exists once a third-party script has painted is exactly the
+class of defect the e2e ratchet is not redundant for, and this is the first time it has earned that
+on this surface.
 
 ### What moved rather than what was deleted
 

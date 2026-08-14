@@ -33,12 +33,25 @@ import { MAP_PIN_KINDS, MAP_PIN_LAYERS, type MapPinKind } from '@/lib/maps/pin-k
 // second dialog next to a working one, which is how components/circles/circles-map.tsx ended up
 // with an ESC listener and none of the rest.
 //
-// ── THE BACKDROP IS INERT, DELIBERATELY ─────────────────────────────────────────────────────────
+// ── THE BACKDROP IS INERT, DELIBERATELY, AND `inert` IS THE WORD ON PURPOSE ─────────────────────
 //
-// `interactive={false}` + `pointer-events-none` + `aria-hidden`. A member dragging the header
-// instead of scrolling the page is a worse map than no map, and a screen reader walking a marker
-// tree behind a scrim hears a list of places with no way to act on them. The REAL map, the one that
-// pans and zooms and opens a card per pin, is what the button opens.
+// `interactive={false}` + `pointer-events-none` + `inert`. A member dragging the header instead of
+// scrolling the page is a worse map than no map, and a screen reader walking a marker tree behind a
+// scrim hears a list of places with no way to act on them. The REAL map, the one that pans and
+// zooms and opens a card per pin, is what the button opens.
+//
+// 🔴 IT SHIPPED AS `aria-hidden` FIRST, AND THAT WAS A REAL BARRIER, caught by the axe run on the
+// preview (PR #2136) after the browserless test passed. `aria-hidden` hides a subtree from the
+// accessibility tree WITHOUT removing it from the tab order, and a map engine injects its own
+// focusable chrome (the terms and "report a map error" links, the keyboard-shortcuts control,
+// markers). So a keyboard user tabbed into controls that a screen reader had been told do not
+// exist — the `aria-hidden-focus` rule, and one of the few axe rules that names an actual trap.
+// `inert` removes the subtree from BOTH, which is what "decorative" was always supposed to mean.
+//
+// ⚠️ THE JSDOM TEST COULD NOT HAVE CAUGHT IT. Both engines are `ssr: false`, so nothing focusable
+// exists in a server render — the container is empty there. This is the honest limit named in
+// test/a11y/nearby-map-header.a11y.test.tsx, and the reason the e2e a11y ratchet is not redundant
+// with it: only a real browser has a real map inside the box.
 //
 // ⚠️ ATTRIBUTION. The scrim darkens the engine's own attribution chrome along with everything else.
 // The fully attributed, unobscured map is one tap away in the popup, and this band is decorative.
@@ -141,7 +154,7 @@ export function NearbyMapHeader({
       <PageHero
         background={
           hasMap ? (
-            <div className="pointer-events-none absolute inset-0" aria-hidden>
+            <div className="pointer-events-none absolute inset-0" inert>
               <MapCanvas
                 pins={pins}
                 // `center` and `zoom` are only what the map paints BEFORE `fit` runs, so they never

@@ -95,13 +95,24 @@ describe('the band carries the page heading, whatever it is showing', () => {
 })
 
 describe('the map behind the scrim is a backdrop, not a second interface', () => {
-  it('is hidden from the accessibility tree and takes no pointer', async () => {
-    // A screen reader walking a marker tree behind a scrim hears a list of places with no way to
-    // act on them, and a member dragging the header instead of scrolling the page is a worse map
-    // than no map. The REAL map is what the button opens.
+  it('🔴 is INERT, not merely aria-hidden, so nothing inside it can be tabbed into', async () => {
+    // THIS ASSERTION IS A SCAR. The backdrop shipped as `aria-hidden` and the axe run on the
+    // preview failed it (`aria-hidden-focus`): aria-hidden takes a subtree out of the
+    // accessibility tree but LEAVES IT IN THE TAB ORDER, and a map engine injects its own
+    // focusable chrome (terms and "report a map error" links, the keyboard-shortcuts control,
+    // markers). A keyboard user landed on controls a screen reader had been told were not there.
+    // `inert` removes it from both, which is what a decorative backdrop always meant.
+    //
+    // ⚠️ This test can only assert the ATTRIBUTE, never the absence of a focusable descendant:
+    // both engines are `ssr: false`, so the container is empty in a server render and there is
+    // nothing here to tab into either way. The e2e a11y ratchet is what checks the real thing.
     const { document: doc } = await render(band(ALL_LAYERS))
-    const backdrop = doc.querySelector('[aria-hidden].pointer-events-none')
+    const backdrop = doc.querySelector('.pointer-events-none.inset-0')
     expect(backdrop).not.toBeNull()
+    expect(backdrop!.hasAttribute('inert')).toBe(true)
+    // And NOT aria-hidden: with `inert` doing the work, an aria-hidden that re-opened the tab
+    // order question would be the exact regression this file is here to keep out.
+    expect(backdrop!.hasAttribute('aria-hidden')).toBe(false)
   })
 
   it('offers exactly one control, and it says what it does', async () => {
