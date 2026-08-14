@@ -36,6 +36,18 @@ export type HeroOverlayStyle = 'none' | 'shadow' | 'fade'
 export interface PageHeroProps {
   /** Cover image URL. `null` renders the neutral gradient placeholder; omit entirely for no cover. */
   coverImage?: string | null
+  /** A LIVE media node painted in the cover layer instead of a photo: a map, a canvas, a video.
+   *  Rendered edge to edge behind the scrim and the lockup, so every other header affordance
+   *  (variant, height, overlay, actions) works over it unchanged.
+   *
+   *  Around You is the first caller (ADR-1034): its header IS the map of what is around you. It
+   *  exists because the alternative was a second header grammar for one page, and the thing the
+   *  band needed was a different SOURCE of pixels, not a different band.
+   *
+   *  Wins over `coverImage` when both are set. The node owns its own sizing (`absolute inset-0`
+   *  is applied here) and its own interactivity: a decorative backdrop should be inert
+   *  (`pointer-events-none` + `aria-hidden`) so it never competes with the copy on top of it. */
+  background?: React.ReactNode
   /** Focal point ("x% y%") from the operator's focal picker, so the crop keeps the subject in frame. */
   coverFocus?: string | null
   /** Small contextual line above the title (uppercase, accent). */
@@ -149,6 +161,7 @@ function zoneProps(
 
 export function PageHero({
   coverImage,
+  background,
   coverFocus,
   eyebrow,
   title,
@@ -197,8 +210,12 @@ export function PageHero({
 
   return (
     <section className={`relative overflow-hidden rounded-3xl border border-border${adaptiveText ? ' hero-adaptive-text' : ''}`}>
-      {/* Cover: a real photo, or the neutral gradient placeholder when null/absent. */}
-      {coverImage ? (
+      {/* Cover: a LIVE media node, a real photo, or the neutral gradient placeholder when
+          null/absent. The three are one layer, so the scrim, the glow and the lockup below sit on
+          whichever of them rendered and none of them has to know which it was. */}
+      {background ? (
+        <div className="absolute inset-0">{background}</div>
+      ) : coverImage ? (
         rawImg ? (
           // eslint-disable-next-line @next/next/no-img-element -- arbitrary operator host, next/image can't allowlist it
           <img src={coverImage} alt="" data-hero-cover="" fetchPriority="high" style={focalStyle} className={`absolute inset-0 h-full w-full object-cover${dim}`} />

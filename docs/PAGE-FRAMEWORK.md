@@ -364,7 +364,7 @@ forces a big-bang rewrite.
 
 | Shell | Import | Use it for | Header / slots |
 |---|---|---|---|
-| **Stream** | `StreamTemplate` | a flow of items: Feed, Broadcast, a circle discussion | `eyebrow·title·description·action·composer` |
+| **Stream** | `StreamTemplate` | a flow of items: Feed, Broadcast, a circle discussion | `eyebrow·title·description·action·composer`, or `hero` when the stream opens on a header BAND instead of a sentence (Around You opens on the map, ADR-1034). The two are a union: in `hero` mode the band owns the `<h1>`, so the heading props are typed `never`. |
 | **Index** | `IndexTemplate` | a collection to browse whose sections are FIXED: Practices, Journeys, Library, Search, Messages, a Space's tabs, Help. (A browse surface whose body an operator rearranges is the **editable index** instead, §8.5) | `title·description·action·toolbar` |
 | **Detail** | `DetailTemplate` | one entity: a Circle, Event, Profile, Hub, Program | context band (`badges·actions`) + `tabs` |
 | **Dashboard** | `DashboardTemplate` | a metric-led operator/steward workspace: Marketing, CRM, Crew home | `eyebrow·title·description·actions·stats` + sections |

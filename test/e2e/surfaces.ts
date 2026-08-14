@@ -285,9 +285,23 @@ export function appSurfaces(
     // user. An anon entry would either vanish from the registry or land on /sign-in and skip — a
     // permanent green with nothing behind it, which is the failure mode this file already fights.
     //
-    // The structural half is covered TODAY and browserlessly by test/a11y/nearby-map.a11y.test.tsx,
-    // on the already-required `test` check. What this row buys is the pixels, the hour the secret
-    // lands.
+    // The structural half is covered TODAY and browserlessly by
+    // test/a11y/nearby-map-header.a11y.test.tsx, on the already-required `test` check. What this
+    // row buys is the pixels.
+    //
+    // ⚠️ AND SINCE ADR-1034, IT BUYS FEWER OF THEM THAN IT LOOKS. The page's header is now the live
+    // map, and the map paints into a `canvas` — which GLOBAL_MASK_SELECTORS masks, correctly, since
+    // tiles are not ours to stabilise. A Playwright mask paints over an element's BOUNDING BOX, and
+    // the band's eyebrow / h1 / subtitle / button sit INSIDE that box, on top of the map. So the
+    // baseline photographs the header as one magenta rectangle: everything below the band is still
+    // covered, the band's own copy is not, and no mask selector can separate them because the text
+    // and the tiles occupy the same rectangle by design.
+    //
+    // What holds that gap instead, so nobody reads this as uncovered: the jsdom test above asserts
+    // the h1, the subtitle and the single control by content, and the @a11y shell run audits the
+    // rendered band in a real browser (it is what caught the `aria-hidden` focus trap the first
+    // version of this header shipped with). What is genuinely unmeasured is the band's APPEARANCE,
+    // and an owner's eye on the Vercel preview is the check for it.
     { path: '/nearby', slug: 'app-nearby', audience: 'member' },
   ]
   if (roomPath) {

@@ -8,7 +8,8 @@ import { locationCopy, moreDatesLine, memberCountLine } from '@/lib/maps/pin-cop
 import { withholdsAddress } from '@/lib/events/location-intent'
 import type { MapPin } from '@/components/maps/types'
 
-// THE AROUND YOU MAP'S PINS. One read per request, feeding components/nearby/nearby-map.tsx.
+// THE AROUND YOU MAP'S PINS. One read per request, feeding components/nearby/nearby-map-header.tsx
+// (the page's header band since ADR-1034; it was an in-body section before that).
 //
 // ── 🔴 WHAT THIS MAP LOOKED LIKE BEFORE THE 2026-08-13 AUDIT, MEASURED IN PRODUCTION ───────────
 //

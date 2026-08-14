@@ -24127,6 +24127,8 @@ The waiver matches on the exact painted hex. If the amber drifts in either direc
 no waiver matches, and the gate fails loudly so the decision is re-made rather than inherited. That is
 the intended way back: this ADR is reversed by changing the token, not by editing a baseline.
 
+---
+
 ## ADR-1032: A seat you can hold before you have an account, and the approval rule that finally exists (2026-08-13)
 
 **Status:** accepted · **Builds on** ADR-854 (an unverified email may address a delivery but may never
@@ -24303,3 +24305,100 @@ if `email_confirmed_at` ever stops being stamped, the claim silently no-ops and 
 strands. The rule this leaves behind: **a metric defined on an identity cannot be reached by anything
 that lacks that identity, so the feature is always the shortest honest path to the identity, never a
 way around it.**
+---
+
+
+## ADR-1034: Around You opens on the map, and the map's popup grows a door it does not own (2026-08-14)
+
+**Owner instruction:** *"I want to use the map as a header. Can you use the same header system as
+events without the buttons or search, and the map in the background?"* and, on the same thread:
+*"I want the same header style with eyebrow, headline and subtext as Events. Dark overlay with a
+button that says view the map ... when they click on it, it opens in the pop up."*
+
+### What changed
+
+`/nearby` used to open on a plain `PageHeading` (title, description, counts on the divider row) with
+the map as a section halfway down the page, beside four "Coming up" cards. It now opens on the SAME
+header band every browse surface opens on — `PageHero`, sized and tuned by the `header` element
+(ADR-793) — with three differences from the Events header:
+
+| Events header | Around You header |
+|---|---|
+| Cover photograph behind the scrim | The **live map** of what is around the member |
+| In-hero search bar | none |
+| New Event / Manage / My drafts cluster | **one** control: **View the map** |
+
+Everything else is the same component with the same props: eyebrow, H1, subtitle, dark ink scrim,
+operator-set height and overlay.
+
+### The two seams this needed, and why they are seams rather than a fork
+
+1. **`PageHero` gained a `background` slot.** It could paint a photo or a gradient and nothing else,
+   so a live map meant a second header grammar for one page. The band did not need to be different;
+   the SOURCE of its pixels did. `background` wins over `coverImage`, is rendered `absolute inset-0`
+   under the scrim, and leaves every other affordance untouched.
+2. **`MapCanvas` gained `expandControl` + `expanded`/`onExpandedChange`.** The seam already owned the
+   fullscreen popup (ADR-1022) — backdrop, ESC, scroll-lock, focus trap, focus restore, safe-area
+   insets, all from `components/ui/dialog.tsx`. What it did not have was a way to be opened by a
+   button somewhere else on the page. Without that prop pair the header would have hand-rolled a
+   second dialog beside a working one, which is exactly how `MapBanner`
+   (`components/circles/circles-map.tsx`) ended up with an ESC listener and none of the rest.
+   **A button is not a reason to fork a dialog.**
+
+`StreamTemplate` gained a `hero` slot to carry the band, modelled on `IndexTemplate`'s proven
+`heroOverlay` branch: the band owns the `<h1>`, so `title` / `description` / `action` are typed
+`never` in that mode rather than silently rendering nowhere. The divider row is unchanged — the
+at-a-glance counts still sit opposite the operator Settings control.
+
+### The backdrop is inert, deliberately, and `inert` is the word on purpose
+
+`interactive={false}` + `pointer-events-none` + `inert`. A member who drags the header instead of
+scrolling the page has a worse map than no map, and a screen reader walking a marker tree behind a
+scrim hears a list of places with no way to act on any of them. The map that pans, zooms and opens a
+card per pin is the one behind the button, and it is the same seam instance with `interactive`
+flipped on, mounted only while the popup is open.
+
+🔴 **It shipped as `aria-hidden` first, and that was a real barrier.** `aria-hidden` removes a
+subtree from the accessibility tree but leaves it in the TAB ORDER, and a map engine injects its own
+focusable chrome (the terms and "report a map error" links, the keyboard-shortcuts control, the
+markers). So a keyboard user tabbed into controls a screen reader had been told did not exist — the
+`aria-hidden-focus` rule, and one of the few axe rules that names an actual trap. `inert` removes it
+from both, which is what "decorative" was always supposed to mean.
+
+**Which gate caught it is the part worth keeping.** The browserless jsdom test passed, and could not
+have failed: both engines are `ssr: false`, so a server render leaves the container EMPTY and there
+is nothing to tab into. The `@a11y` shell run against the Vercel preview failed it three times on
+two viewports. A real barrier that only exists once a third-party script has painted is exactly the
+class of defect the e2e ratchet is not redundant for, and this is the first time it has earned that
+on this surface.
+
+### What moved rather than what was deleted
+
+The old map section carried three things besides the map, and none of them were dropped:
+
+- **The layer legend** and **the qualifier line** ("a number on a pin means more than one date",
+  "some pins show a general area instead of an address") moved WITH the map, to a quiet row under the
+  band. The qualifier line is not decoration: a coarsened pin looks exactly as precise as an exact
+  one (ADR-1026), and its own popup is read only by the person who tapped that one dot.
+- **"Coming up"** moved to the rail, where the retired "Happening soon" block used to render the same
+  four events off a second, unfolded read. There is still exactly one of these on the page, still fed
+  by the single folded `upcomingEvents` array.
+- **New Dispatch** (and the operator CTA) moved to the **Latest Dispatches** section header. The page
+  header is the map band now and its one control is View the map, so a create button at the top of
+  the page had no home. The section it acts on is a better one than the page header ever was.
+
+### ⚠️ Attribution, stated rather than discovered later
+
+The dark scrim darkens the map engine's own attribution chrome along with everything else. The band
+is decorative and the fully attributed, unobscured map is one tap away in the popup. If that trade is
+not acceptable, the lever is the overlay control in `/admin/elements` (a lighter scrim, or `fade`) —
+not a code change, and not a second map.
+
+### Coverage
+
+`test/a11y/nearby-map-header.a11y.test.tsx` (renamed from `nearby-map.a11y.test.tsx`, ADR-1029) is
+re-aimed at the band: axe over three pin sets, the h1 survives an empty map read, the backdrop stays
+out of the accessibility tree, exactly ONE control exists and it says what it does, no control at all
+with nothing to plot, and the legend/qualifier assertions carried over unchanged. What jsdom cannot
+judge — the band's height, the scrim's contrast, the map itself, which is `ssr: false` on both
+engines — stays uncovered and is named as uncovered in the file.

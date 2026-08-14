@@ -13,7 +13,9 @@ import { ModuleCard } from '@/components/modules/module-card'
 import { StreamTemplate } from '@/components/templates'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { Suspense } from 'react'
-import { NearbyMap } from '@/components/nearby/nearby-map'
+import { NearbyMapHeader } from '@/components/nearby/nearby-map-header'
+import { PageHero, type PageHeroSize, type PageHeroVariant } from '@/components/templates/page-hero'
+import { resolveHeaderElement } from '@/lib/elements/header'
 import {
   collapseSeriesRows,
   seriesFetchLimit,
@@ -57,18 +59,13 @@ type EventRow = {
   parent_event_id?: string | null
 }
 
-/** "Coming up" cards beside the map. FOUR, on the owner's instruction, and the number is shared
- *  with the read's over-fetch and with the block's row grid so the three cannot drift. */
+/** "Coming up" cards. FOUR, on the owner's instruction, and the number is shared with the read's
+ *  over-fetch and with the block's row grid so the three cannot drift. */
 const COMING_UP_COUNT = 4
 
-/** THE MAP'S SHAPE, in ONE place.
- *
- *  🔴 AN ASPECT RATIO, NOT A HEIGHT, and that is the fix for what the first pass got wrong. The map
- *  used to span the full content width at a fixed 26rem, which is about 2.4:1. Narrowing it to the
- *  main column kept the 26rem and dropped the width, so the same constant silently became a ~1.7:1
- *  portrait box: a taller, more zoomed-in, worse map. A ratio holds the shape at ANY width, so the
- *  map shrinks to fit its column instead of stretching to fill a number. */
-const MAP_SHAPE = 'aspect-[12/5]'
+/** The header's eyebrow, above the operator-editable title. The same register the other community
+ *  headers open on (Circles reads COMMUNITY over "Circles near you"). */
+const HERO_EYEBROW = 'Community'
 type CircleRow = { id: string; name: string; slug: string; city: string | null; member_count: number; created_at: string }
 
 function eventDate(iso: string): string {
@@ -237,31 +234,72 @@ export default async function NearbyPage({
 
   const latest = dispatches[0]
 
-  // Operator-editable page header (ADR-180) — falls back to the coded defaults.
-  const { title, description, ctaLabel, ctaHref } = await resolvePageContent('/nearby', CONTENT_FALLBACK)
+  // Operator-editable page header (ADR-180) + the operator-tunable header ELEMENT (ADR-793: which
+  // layout, height and overlay the band paints in). Both are cached reads and neither depends on the
+  // other, so they run together.
+  const [{ title, description, heroImage, ctaLabel, ctaHref }, header] = await Promise.all([
+    resolvePageContent('/nearby', CONTENT_FALLBACK),
+    resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } }),
+  ])
 
   const showCompose = canCompose || role === 'janitor'
+
+  // The page's own actions. They USED to ride the page header; the header is now the map band, whose
+  // one control is "View the map" (owner instruction, 2026-08-13). So they moved to the section they
+  // act on — a New Dispatch button on the Dispatches header is closer to the thing it creates than a
+  // button at the top of the page ever was, and the operator CTA travels with it rather than being
+  // dropped.
+  const dispatchActions =
+    showCompose || (ctaLabel && ctaHref) ? (
+      <div className="flex items-center gap-2">
+        {showCompose && (
+          <BroadcastCompose circles={namedCircles} hubs={namedHubs} nexuses={namedNexuses} canGlobal={role === 'janitor'} defaultOpen={compose === 'true'} initialScopeId={scopeParam} />
+        )}
+        {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
+        {ctaLabel && ctaHref && (
+          <a
+            href={ctaHref}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+          >
+            {ctaLabel}
+          </a>
+        )}
+      </div>
+    ) : undefined
+
   return (
     <StreamTemplate
-      title={title}
-      description={description}
-      action={
-        (showCompose || (ctaLabel && ctaHref)) ? (
-          <div className="flex items-center gap-2">
-            {showCompose && (
-              <BroadcastCompose circles={namedCircles} hubs={namedHubs} nexuses={namedNexuses} canGlobal={role === 'janitor'} defaultOpen={compose === 'true'} initialScopeId={scopeParam} />
-            )}
-            {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
-            {ctaLabel && ctaHref && (
-              <a
-                href={ctaHref}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
-              >
-                {ctaLabel}
-              </a>
-            )}
-          </div>
-        ) : undefined
+      // ── THE HEADER IS THE MAP ────────────────────────────────────────────────────────────
+      // The same header system Events and Circles open on (PageHero, sized and tuned by the
+      // `header` element), with the live map behind the scrim instead of a photograph, and one
+      // control: View the map, which opens the seam's fullscreen popup (ADR-1034).
+      //
+      // STREAMED, and that is load-bearing on THIS page. The pin read spans three tables and the
+      // header must not wait on it: the fallback is the SAME band at the SAME height with the same
+      // eyebrow, heading and subtitle, so the map arrives into a band that is already there and
+      // nothing below it moves.
+      hero={
+        <Suspense
+          fallback={
+            <PageHero
+              eyebrow={HERO_EYEBROW}
+              title={title}
+              subtitle={description}
+              coverImage={heroImage ?? null}
+              rawImg={!!heroImage}
+              variant={header.layout}
+              size={header.height}
+              overlay={header.scrim}
+            />
+          }
+        >
+          <NearbyMapHeaderSection
+            title={title}
+            subtitle={description}
+            coverImage={heroImage}
+            header={header}
+          />
+        </Suspense>
       }
       // ── AT A GLANCE, ON THE DIVIDER ROW ──────────────────────────────────────────────────
       // Owner instruction 2026-08-13: this line sits "in line with the settings button" rather
@@ -305,68 +343,14 @@ export default async function NearbyPage({
         </Link>
       ) : null}
 
-      {/* ── THE MAP, AND WHAT IS COMING UP, ON ONE ROW ────────────────────────────────────
-              Owner instruction 2026-08-13: the map narrows to the MAIN COLUMN (so it lines up with
-              the Dispatches block under it rather than spanning the rail too), and the four next
-              gatherings sit beside it.
-
-              The two are one grid, not a map with a rail bolted on, which is what makes the height
-              match hold: both columns start at the same y because both are headed by the same
-              SectionHeader, and both bodies are pinned to MAP_BAND. Change that constant and the
-              map, its Suspense fallback, and the Coming up stack all move together.
-
-              STREAMED, and that is load-bearing on THIS page. The pin read spans three tables; the
-              header, the counts and the Dispatch feed must not wait on it. The fallback holds the
-              band's height so nothing below jumps when the pins land. */}
-      <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-stretch">
-        <div className="flex min-w-0 flex-1 flex-col">
-          <Suspense
-            fallback={
-              <>
-                <SectionHeader title="On the map" />
-                <div className={`w-full animate-pulse rounded-2xl bg-surface-elevated ${MAP_SHAPE}`} />
-              </>
-            }
-          >
-            <NearbyMapSection />
-          </Suspense>
-        </div>
-
-        {upcomingEvents.length > 0 && (
-          <div className="flex w-full shrink-0 flex-col lg:w-[17rem]">
-            <SectionHeader title="Coming up" count={eventsCountRes.count ?? undefined} href="/events" />
-            {/* `flex-1` + `auto-rows-fr`: the row's height comes from the MAP's aspect ratio
-                (lg:items-stretch on the parent), and the four cards divide whatever that turns out
-                to be. Nothing here restates the map's size, so the two cannot drift apart when the
-                ratio changes. Below `lg` the columns stack and the cards size to their content. */}
-            <div className="grid flex-1 auto-rows-fr gap-2">
-              {upcomingEvents.map((e) => (
-                <Link
-                  key={e.id}
-                  href={`/events/${e.slug}`}
-                  className="group flex min-h-0 items-center gap-2.5 overflow-hidden rounded-xl border border-border bg-surface px-2.5 py-2 lift-1 transition-colors hover:border-primary-bg dark:hover:border-primary"
-                >
-                  <span className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
-                    <span className="text-3xs font-bold uppercase leading-none">{eventMonth(e.starts_at)}</span>
-                    <span className="text-body-sm font-bold leading-none">{eventDay(e.starts_at)}</span>
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-body-sm font-semibold leading-tight text-text">{e.title}</span>
-                    <span className="mt-0.5 block truncate text-meta leading-tight text-subtle">
-                      {eventDate(e.starts_at)}{e.location ? ` · ${e.location}` : ''}
-                    </span>
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* ── Main: broadcasts (left) + happenings (right) ─────── */}
       <div className="flex flex-col items-start gap-6 lg:flex-row">
         <div className="min-w-0 flex-1">
-          <SectionHeader title="Latest Dispatches" count={dispatches.length > 0 ? dispatches.length : undefined} />
+          <SectionHeader
+            title="Latest Dispatches"
+            count={dispatches.length > 0 ? dispatches.length : undefined}
+            action={dispatchActions}
+          />
           {dispatches.length === 0 ? (
             <EmptyState
               icon={Megaphone}
@@ -383,6 +367,38 @@ export default async function NearbyPage({
         </div>
 
         <div className="w-full shrink-0 space-y-4 lg:w-72">
+          {/* ── COMING UP ────────────────────────────────────────────────────────────────────
+              The four next GATHERINGS (one card per series, not one per date). This block used to
+              sit beside the map in the main column, height-matched to it; the map is the page
+              header now, so it moved to the rail, which is where the retired "Happening soon"
+              block used to render the same four events off a second, unfolded read. There is still
+              exactly ONE of these on the page and it is still fed by `upcomingEvents`. */}
+          {upcomingEvents.length > 0 && (
+            <div>
+              <SectionHeader title="Coming up" count={eventsCountRes.count ?? undefined} href="/events" />
+              <div className="grid gap-2">
+                {upcomingEvents.map((e) => (
+                  <Link
+                    key={e.id}
+                    href={`/events/${e.slug}`}
+                    className="group flex min-h-0 items-center gap-2.5 overflow-hidden rounded-xl border border-border bg-surface px-2.5 py-2 lift-1 transition-colors hover:border-primary-bg dark:hover:border-primary"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+                      <span className="text-3xs font-bold uppercase leading-none">{eventMonth(e.starts_at)}</span>
+                      <span className="text-body-sm font-bold leading-none">{eventDay(e.starts_at)}</span>
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-body-sm font-semibold leading-tight text-text">{e.title}</span>
+                      <span className="mt-0.5 block truncate text-meta leading-tight text-subtle">
+                        {eventDate(e.starts_at)}{e.location ? ` · ${e.location}` : ''}
+                      </span>
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Quick links across community surfaces */}
           <div className="grid grid-cols-2 gap-2">
             <QuickLink href="/events" Icon={CalendarDays} label="Events" sub="What’s on" color="bg-primary-bg text-primary-strong" />
@@ -472,8 +488,31 @@ function DispatchCard({ dispatch: d, viewerRole, myProfileId }: { dispatch: Disp
   )
 }
 
-/** The map's own read, behind its own Suspense boundary so the page paints without it. */
-async function NearbyMapSection() {
+/** The header band's own read, behind its own Suspense boundary so the page paints without it.
+ *  Everything the band needs except the pins is already resolved by the page and passed in, which is
+ *  why the fallback can render the identical band and the map can land into it without a jump. */
+async function NearbyMapHeaderSection({
+  title,
+  subtitle,
+  coverImage,
+  header,
+}: {
+  title: string
+  subtitle?: string
+  coverImage?: string | null
+  header: { layout: PageHeroVariant; height: PageHeroSize; scrim: boolean }
+}) {
   const pins = await loadNearbyMapPins()
-  return <NearbyMap pins={pins} />
+  return (
+    <NearbyMapHeader
+      pins={pins}
+      eyebrow={HERO_EYEBROW}
+      title={title}
+      subtitle={subtitle}
+      coverImage={coverImage}
+      variant={header.layout}
+      size={header.height}
+      overlay={header.scrim}
+    />
+  )
 }
