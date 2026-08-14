@@ -24784,3 +24784,16 @@ three-of-four split killed the "layout regression" reading too. Neither was chec
 believed the first time. A visual baseline that disagrees is data about the HARNESS as often as
 about the code, and the cheap discriminator — run it twice and see whether the number repeats — costs
 one re-run and should come before any theory.
+
+### The overlay pass earned its keep on the first run
+
+Its first CI run against the member shell found a defect nobody had reported and that no local
+harness could reach: the feed's **emoji reaction picker**. Six reactions ≈ 273px, anchored `left-0`
+to a trigger ~152px into a 360px screen, so its right edge landed at **425 — 65px off the side**,
+clipped by the shell root and unreachable. `right-0` would have been worse (left edge at −93). Below
+`sm` it now centres on the trigger, where it spans 30→302, with `max-w` + `flex-wrap` so a trigger
+nearer an edge or a seventh reaction wraps to a second row instead of leaving the screen.
+
+That is the answer to "why open the overlays" in one example: the picker is behind a tap, on an
+authed surface, at a width the visual baselines do not photograph. Three separate reasons the
+existing suites could never have seen it.
