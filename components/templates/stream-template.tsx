@@ -30,7 +30,7 @@ type StreamTemplateProps = StreamTemplateBase &
     | {
         /** A HEADER BAND that replaces the plain PageHeading: a PageHero (cover or live media,
          *  eyebrow + H1 + subtitle on the scrim). Around You opens on the map of what is around
-         *  you (ADR-1032).
+         *  you (ADR-1034).
          *
          *  The band OWNS the page's `<h1>` and its own eyebrow / subtitle / actions, which is why
          *  those props are forbidden here — two h1s with the same text is the exact defect

@@ -40,7 +40,7 @@ export interface PageHeroProps {
    *  Rendered edge to edge behind the scrim and the lockup, so every other header affordance
    *  (variant, height, overlay, actions) works over it unchanged.
    *
-   *  Around You is the first caller (ADR-1032): its header IS the map of what is around you. It
+   *  Around You is the first caller (ADR-1034): its header IS the map of what is around you. It
    *  exists because the alternative was a second header grammar for one page, and the thing the
    *  band needed was a different SOURCE of pixels, not a different band.
    *

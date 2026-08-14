@@ -16,7 +16,8 @@ import {
   deleteQuestion,
   type QuestionType,
 } from '@/lib/events/questions'
-import { approveRsvp } from '@/lib/events/rsvp-depth'
+import { approveRsvpById } from '@/lib/events/rsvp-depth'
+import { sendRsvpApprovedNotice } from '@/lib/events/guest-rsvp-email'
 
 // Host Manage Dashboard actions (EVENTS-REWORK A2).
 //
@@ -121,13 +122,21 @@ export async function deleteEventQuestion(eventId: string, slug: string, questio
 
 // ── Approval queue ──────────────────────────────────────────────────────────
 
+/** Approves BY RSVP ROW rather than by profile. A signed-out guest has no profile id, so the
+ *  old `approveRsvp(eventId, profileId)` predicate (`profile_id = NULL`) matched nothing and the
+ *  host's Approve button was inert for exactly the requests that most needed it. The event id is
+ *  still matched inside approveRsvpById, so a row id from another event cannot be approved here. */
 export async function approveEventRsvpFromManage(
   eventId: string,
   slug: string,
-  guestProfileId: string,
+  rsvpId: string,
 ) {
   if (!(await authorizeManager(eventId))) return
-  await approveRsvp(eventId, guestProfileId)
+  await approveRsvpById(eventId, rsvpId)
+  // Tell them. Without this the gate is a trap: they asked, were told to wait, and nothing ever
+  // arrives — a member would find out by reopening the page on the off chance, and a guest, who has
+  // no account to reopen anything with, would never find out at all.
+  await sendRsvpApprovedNotice(eventId, rsvpId).catch(() => {})
   revalidateManage(slug)
 }
 

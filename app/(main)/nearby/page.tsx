@@ -272,7 +272,7 @@ export default async function NearbyPage({
       // ── THE HEADER IS THE MAP ────────────────────────────────────────────────────────────
       // The same header system Events and Circles open on (PageHero, sized and tuned by the
       // `header` element), with the live map behind the scrim instead of a photograph, and one
-      // control: View the map, which opens the seam's fullscreen popup (ADR-1032).
+      // control: View the map, which opens the seam's fullscreen popup (ADR-1034).
       //
       // STREAMED, and that is load-bearing on THIS page. The pin read spans three tables and the
       // header must not wait on it: the fallback is the SAME band at the SAME height with the same

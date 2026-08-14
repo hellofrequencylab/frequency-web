@@ -171,7 +171,7 @@ export async function ApprovalsSection({ eventId, slug }: { eventId: string; slu
   return (
     <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
       {pending.map((p) => (
-        <li key={p.profileId} className="flex items-center gap-3 px-4 py-3">
+        <li key={p.rsvpId} className="flex items-center gap-3 px-4 py-3">
           <div className="min-w-0 flex-1">
             {p.handle ? (
               <Link href={`/people/${p.handle}`} className="block truncate font-medium text-text hover:underline">
@@ -182,7 +182,7 @@ export async function ApprovalsSection({ eventId, slug }: { eventId: string; slu
             )}
             <span className="text-meta text-subtle">requested {fmtDate(p.createdAt)}</span>
           </div>
-          <ApproveButton eventId={eventId} slug={slug} guestProfileId={p.profileId} />
+          <ApproveButton eventId={eventId} slug={slug} rsvpId={p.rsvpId} />
         </li>
       ))}
     </ul>

@@ -12,7 +12,7 @@ import { MAP_PIN_KINDS, MAP_PIN_LAYERS, type MapPinKind } from '@/lib/maps/pin-k
 // The page used to open on a plain PageHeading with the map as a section halfway down it. It now
 // opens on the SAME header system every browse surface uses (PageHero, the one canonical band, sized
 // and tuned by the `header` element in /admin/elements) with one difference: the pixels behind the
-// scrim are a live map of what is around the member rather than a photograph (ADR-1032).
+// scrim are a live map of what is around the member rather than a photograph (ADR-1034).
 //
 // WHY A HEADER AND NOT A BIGGER MAP. A map you can pan is a tool, and a tool halfway down a page is
 // furniture. A map you can SEE the moment the page paints is an answer to the question the page's

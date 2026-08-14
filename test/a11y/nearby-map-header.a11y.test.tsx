@@ -4,7 +4,7 @@ import { findA11yViolations, formatViolations } from './axe'
 import { NearbyMapHeader } from '@/components/nearby/nearby-map-header'
 import type { MapPin } from '@/components/maps/types'
 
-// THE ONE AUTOMATED CHECK /nearby HAS (ADR-1029, re-aimed at the header band by ADR-1032).
+// THE ONE AUTOMATED CHECK /nearby HAS (ADR-1029, re-aimed at the header band by ADR-1034).
 //
 // ── WHY THIS FILE EXISTS AND NOT A PLAYWRIGHT SURFACE ──────────────────────────────────────────
 //

@@ -289,7 +289,7 @@ export function appSurfaces(
     // test/a11y/nearby-map-header.a11y.test.tsx, on the already-required `test` check. What this
     // row buys is the pixels.
     //
-    // ⚠️ AND SINCE ADR-1032, IT BUYS FEWER OF THEM THAN IT LOOKS. The page's header is now the live
+    // ⚠️ AND SINCE ADR-1034, IT BUYS FEWER OF THEM THAN IT LOOKS. The page's header is now the live
     // map, and the map paints into a `canvas` — which GLOBAL_MASK_SELECTORS masks, correctly, since
     // tiles are not ours to stabilise. A Playwright mask paints over an element's BOUNDING BOX, and
     // the band's eyebrow / h1 / subtitle / button sit INSIDE that box, on top of the map. So the
