@@ -259,10 +259,13 @@ export function publicSurfaces(): readonly Surface[] {
  * The one real layout change in this PR, the footer gutter, was a separate 13px shift that had
  * already been recaptured and accepted.
  *
- * ⚠️ WHAT THIS COSTS, stated rather than glossed: `/discover`'s footer and its lower bands stop
- * being pixel-covered. The footer's `px-safe` fix keeps FULL-page coverage on the seven marketing
- * surfaces that carry the marketing footer, and the class of bug that broke it is now held from the
- * source side by components/layout/px-safe.test.ts, so the gap is narrow and it is watched.
+ * ⚠️ WHAT THIS COSTS, stated rather than glossed, and it is more than the mobile screen: the flag is
+ * read per SURFACE, not per project, so `/discover` drops to a first-screen capture on **desktop as
+ * well** — eight baselines in total, all of them shrinking from a full page to 390x844 / 1280x800.
+ * Everything below the fold on that route (the topic bands, the circle grid, the footer) stops being
+ * pixel-covered at either width. Two things bound it: the footer's `px-safe` fix keeps FULL-page
+ * coverage on the seven marketing surfaces that carry the marketing footer, and the class of bug that
+ * broke it is now held from the source side by components/layout/px-safe.test.ts.
  */
 const LIVE_DATA_PATHS: readonly string[] = ['/discover']
 

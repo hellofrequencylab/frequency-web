@@ -24769,8 +24769,11 @@ which has carried `viewportOnly` for exactly this reason).
 
 So `/discover` joins it, via a named `LIVE_DATA_PATHS` list rather than a magic string at the call site.
 
-⚠️ **What it costs, stated rather than glossed:** `/discover`'s footer and lower bands stop being
-pixel-covered. That is a real reduction and it was not taken lightly — it is bounded by two things.
+⚠️ **What it costs, stated rather than glossed — and it is more than the phone.** The flag is read per
+SURFACE, not per project, so `/discover` drops to a first-screen capture on **desktop as well**: eight
+baselines, all shrinking from a full page to one screen. Everything below the fold on that route (the
+topic bands, the circle grid, the footer) stops being pixel-covered at either width. That is a real
+reduction, it is larger than the first draft of this note implied, and it is bounded by two things.
 The footer's `px-safe` fix keeps FULL-page coverage on the seven marketing surfaces carrying the
 marketing footer, and the class of bug that broke it is now held from the source side by
 `components/layout/px-safe.test.ts`. Reverting is one line if that trade turns out wrong.
