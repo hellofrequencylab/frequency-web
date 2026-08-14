@@ -218,6 +218,13 @@ test.describe('overflow', { tag: '@overflow' }, () => {
   // ADR-1035's in-app defects lived on. They need PW_STORAGE_STATE; without it they skip, and the
   // shell reporter names them as uncovered rather than letting a green board imply coverage.
   test.describe('shell', { tag: '@shell' }, () => {
+    // 🔴 `storageState` IS THE WHOLE THING, and leaving it off does not skip — it FAILS, twelve
+    // times, on `assertMemberSession` rather than on a measurement. The session is not ambient:
+    // sign-in is magic-link only, so the suite consumes a pre-baked state and each describe that
+    // wants the shell has to say so. Without this the context is anonymous, /feed redirects, and
+    // the gate reports "rendered without the member shell" for every width.
+    test.use({ storageState: STORAGE_STATE })
+
     test.skip(!STORAGE_STATE, 'PW_STORAGE_STATE is not set; the member shell cannot be reached.')
     for (const surface of appSurfaces()) {
       for (const width of WIDTHS) {
