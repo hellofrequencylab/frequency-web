@@ -24736,3 +24736,18 @@ against the opened sheet **passes**. So it is held by a source test instead —
 `components/layout/px-safe.test.ts` fails on any element combining `px-safe` with a `px-*` — and
 that test was itself verified red on the old spelling before being trusted. Two instruments, two
 failure shapes, neither a substitute for the other.
+
+### The baseline recapture, and why a 13px diff is the proof
+
+`pr-compare` failed on four `@visual` baselines: `/discover`, mobile, all four render states, the
+page **13px taller** (9664 → 9677). That is the gutter fix landing, not a regression. The footer had
+been rendering edge to edge because `px-6 … px-safe` resolved to 0; restoring 1.5rem narrows the
+measure, and one line of the contact row wraps. A 13px diff is exactly the shape of one wrapped line
+— and it is the only surface that moved, because `/discover` and the marketing footer are the two
+places that carried the broken pair, and the marketing footer sits below the fold of every captured
+page. Recaptured on a runner per `test/e2e/README.md`.
+
+⚠️ Worth stating for the next reader: **the `@overflow` gate passed this whole time**, on both the
+closed pass and the new overlay pass. It should have — a zeroed gutter is not overflow. The visual
+baseline is what noticed, which is the one thing full-page pixel capture is genuinely good at
+(page HEIGHT), and it is why the two suites are kept rather than collapsed into one.
