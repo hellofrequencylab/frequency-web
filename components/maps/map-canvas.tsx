@@ -31,7 +31,14 @@ const COLLAPSE_LABEL = 'Close map'
 const CONTROL =
   'absolute z-10 inline-flex items-center gap-1.5 rounded-control bg-surface/95 px-3 py-1.5 text-body-sm font-semibold text-text lift-1 transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary'
 
-export function MapCanvas({ expandable = false, expandLabel, ...engineProps }: MapCanvasProps) {
+export function MapCanvas({
+  expandable = false,
+  expandLabel,
+  expandControl = true,
+  expanded: controlledExpanded,
+  onExpandedChange,
+  ...engineProps
+}: MapCanvasProps) {
   // A Google load that fails at RUNTIME (bad key, referrer denied, quota, offline) falls
   // back to MapLibre in place, so a misconfigured key never costs anyone their map.
   const [googleUnavailable, setGoogleUnavailable] = useState(false)
@@ -75,23 +82,35 @@ export function MapCanvas({ expandable = false, expandLabel, ...engineProps }: M
   // does not stretch into a full-screen one: both engines size to their container at
   // construction. It is always interactive — a still map you deliberately expanded would be a
   // dead end.
+  // CONTROLLED or not, ONE dialog. A caller that owns the open state (the Around You header, whose
+  // trigger is a button in the hero lockup) passes `expanded` + `onExpandedChange` and turns the
+  // corner control off; everyone else keeps the seam's own state and its own button. Either way the
+  // overlay below is the same shared Dialog, which is the whole point of the prop pair existing.
+  const controlled = controlledExpanded !== undefined
+  const isOpen = controlled ? controlledExpanded : expanded
   const label = expandLabel?.trim() || EXPAND_LABEL
-  const close = () => setExpanded(false)
+  const setOpen = (next: boolean) => {
+    if (controlled) onExpandedChange?.(next)
+    else setExpanded(next)
+  }
+  const close = () => setOpen(false)
 
   return (
     <div className={cn('relative', engineProps.className ?? 'h-full w-full')}>
       {engine({ ...engineProps, className: 'h-full w-full' })}
-      <button
-        type="button"
-        onClick={() => setExpanded(true)}
-        className={cn(CONTROL, 'bottom-3 right-3')}
-      >
-        <Maximize2 className="h-4 w-4" aria-hidden="true" />
-        {label}
-      </button>
+      {expandControl && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className={cn(CONTROL, 'bottom-3 right-3')}
+        >
+          <Maximize2 className="h-4 w-4" aria-hidden="true" />
+          {label}
+        </button>
+      )}
 
       <Dialog
-        open={expanded}
+        open={isOpen}
         onClose={close}
         align="sheet"
         ariaLabel={label}

@@ -2,6 +2,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { APPROX_MAX_ERROR_M, APPROX_GRID_DEG } from '@/lib/maps/approximate'
+// The SAME formatter the loader builds the WHEN row with, so the expectation cannot be a weekday
+// that was true on the day the test was written (see the derived assertion below).
+import { formatEventDate } from '@/lib/utils'
 
 // THE FILTER RATCHET for the Around You map.
 //
@@ -318,7 +321,13 @@ describe('events: the shape that earns a pin', () => {
     // No pill: nothing about this pin needs qualifying.
     expect(pins[0].badge ?? null).toBeNull()
     // WHEN and WHERE are separate rows, not one joined sentence.
-    expect(pins[0].subtitle).toContain('Thu')
+    //
+    // 🔴 THE EXPECTED WEEKDAY IS DERIVED, NOT TYPED. This line read `toContain('Thu')` and was
+    // green for exactly as long as `Date.now() + 7 days` happened to land on a Thursday: it failed
+    // on 2026-08-14 having been written on a Wednesday, with nothing about the pin's behaviour
+    // changed. A date-relative fixture asserted against a hardcoded weekday is a test with a
+    // timer on it. Derive from the same constant the fixture uses and it holds any day of the week.
+    expect(pins[0].subtitle).toContain(formatEventDate(FUTURE))
     expect(pins[0].subtitle ?? '').not.toContain('Surfers Point')
     // A one-off stands for nothing but itself, so it draws as a plain pin and not a `1+` bubble.
     expect(pins[0].moreCount).toBe(0)

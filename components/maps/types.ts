@@ -128,6 +128,18 @@ export type MapCanvasProps = MapEngineProps & {
   expandable?: boolean
   /** Copy for the expand control. Defaults to "Expand map". */
   expandLabel?: string
+  /** Draw the seam's own corner control (default on). Set false when the caller supplies its own
+   *  trigger somewhere else on the page and drives the state below — the Around You header's
+   *  "View the map" button sits in the hero lockup, not on the map. */
+  expandControl?: boolean
+  /** CONTROLLED fullscreen: the caller owns the open state. Omit for the seam's own state.
+   *
+   *  The point is that the DIALOG stays here. A caller that wanted its own trigger used to have to
+   *  hand-roll the overlay too, and the one that did (MapBanner, components/circles/circles-map.tsx)
+   *  re-solved ESC by hand and got none of the backdrop, scroll-lock, focus trap or focus restore
+   *  that components/ui/dialog.tsx already owns. A button is not a reason to fork a dialog. */
+  expanded?: boolean
+  onExpandedChange?: (expanded: boolean) => void
 }
 
 /** Props the two implementations receive. `onProviderError` is how the Google canvas asks
