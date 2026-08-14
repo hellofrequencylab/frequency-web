@@ -13,7 +13,19 @@ always pass.
 |---|---|---|---|
 | `@smoke` | `smoke.spec.ts` | Routes answer 2xx, no console errors, `llms.txt`/`robots.txt` serve | ✅ |
 | `@a11y` | `a11y.spec.ts` | axe-core WCAG 2.x A/AA: **0 serious+ violations** | ✅ |
+| `@overflow` | `overflow.spec.ts` | Nothing runs off the side of a phone, at **320 / 360 / 390** | ✅ |
 | `@visual` | `visual.spec.ts` | Pixel baselines across four render states × two viewports | ⚠️ opt-in |
+
+`@overflow` exists because neither of the other two could see ADR-1035, where a re-cropped wordmark
+pushed the marketing menu button to x=404 on a 360px screen — off the viewport, on every phone.
+axe has no rule for "outside the viewport", and the shell root's `overflow-x-clip` means nothing
+scrolls, nothing errors and nothing logs; the UI is just amputated. `@visual` could not see it
+either, and the reason is worth knowing before trusting a green board: its captures are full-page,
+~18,000px tall, against `maxDiffPixelRatio: 0.02`, so a 64px header is ~0.35% of the image and the
+chrome at the top of every page can change **completely** while the baseline passes. This suite
+measures boxes instead of comparing pixels, so it needs no baseline and fails with a selector and a
+pixel offset. It drives its own widths (the `mobile` project is 390px only, and three of ADR-1035's
+five defects first bite below that) and runs once, under `mobile`.
 
 A fourth tag, **`@shell`**, cuts across the other two: it marks every test that needs a
 member session. `test/e2e/shell-reporter.ts` counts those and reports what the run did

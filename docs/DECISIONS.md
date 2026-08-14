@@ -24491,3 +24491,35 @@ gates page HEIGHT and body reflow, and is close to blind to the chrome at the to
 which is precisely where this ADR's defects lived. Two cheap follow-ups, neither taken here because
 both re-baseline the whole matrix: a viewport-only capture of the header band as its own surface,
 and a second `mobile` project narrower than 390px.
+
+### The gate this needed, and why neither existing suite was it
+
+Everything above was found by hand, at five widths, from two screenshots. That is not a method, so
+`test/e2e/overflow.spec.ts` (`@overflow`) makes it one: walk every surface in the registry at
+**320 / 360 / 390** and assert every painted box sits inside the viewport. It rides the default
+`pnpm test:e2e` run, so `pr-compare` gates it — including the member shell, which has a rail, a dock
+and the bottom tab bar and is exactly where the in-app defects lived.
+
+It is a MEASUREMENT, not a picture, and that is the point:
+
+| Suite | Why it could not see ADR-1035 |
+|---|---|
+| `@a11y` | axe has no rule for "outside the viewport". The menu button had a fine name and role. |
+| `@visual` | Full-page captures ~18,000px tall against `maxDiffPixelRatio: 0.02`. A 64px header is ~0.35% of the image, so the chrome at the top of every page can change **completely** and pass. Measured, not assumed — see the recapture note above. |
+
+Exemptions are for real patterns, not to quiet failures: a container that scrolls on purpose
+(PAGE-FRAMEWORK's rule for wide tables), a clipping container that is itself in bounds (the marquee
+is 3,600px wide inside an `overflow-hidden` strip), and `aria-hidden` decorative bleeds. The clip
+exemption checks the CLIPPER's own box — without that, the shell root's `overflow-x-clip` would
+excuse the entire application, which is the trap this whole ADR is about.
+
+Verified both ways before shipping: green on the fixed tree, and red on the pre-fix tree with a
+message that names the element, its class, its text and its pixel offset — actionable from the CI
+log alone, which matters because artifact downloads are unreachable from an agent sandbox.
+
+⚠️ **Two things it still does not cover.** The `--density-root` half of the generation axis is
+**inert** — the presets declare it on the shell root (`[data-generation]`) while `html` is what
+reads it, so custom-property inheritance never carries it up and every preset renders at the same
+17px root (measured across all eight). Fixing that would move every rem-based width on every page,
+so it is filed rather than done here. And the gate reads one render state, because mode and skin
+re-map colour tokens rather than box widths.
