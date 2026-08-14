@@ -310,3 +310,71 @@ describe('nextEditedProse — the edit-wins marker writer (review board)', () =>
     expect(editedProsePaths({ _editedProse: marker })).toEqual(new Set(['about', 'story']))
   })
 })
+
+// ── The prose safety scan (ADR-1037) ─────────────────────────────────────────────────────
+// After reframe folds its copy in, the pipeline READS every prose string and stamps the verdict on
+// its ledger entry, so clean copy publishes on Apply without the operator confirming the same three
+// fields on every seed, while copy carrying a claim stays review-required exactly as before.
+describe('runResearch — prose safety scan stamps the ledger', () => {
+  const proseLedger = () => (state.row?.ledger ?? {}) as ProvenanceLedger
+
+  it('marks claim-free reframe copy clean, so it publishes without a human confirm', async () => {
+    const out = await runResearch('intake-1', { deps: happyDeps() })
+    expect(out.ok).toBe(true)
+    expect(proseLedger().tagline?.[0]?.proseScan).toBe('clean')
+    expect(proseLedger().about?.[0]?.proseScan).toBe('clean')
+    expect(out.prose).toEqual({ clean: 2, flagged: 0 })
+  })
+
+  it('flags copy that hides a commercial claim, leaving it review-required', async () => {
+    const out = await runResearch('intake-1', {
+      deps: {
+        ...happyDeps(),
+        reframe: async () =>
+          reframeResult({
+            copy: { tagline: 'A calm place to begin.', about: 'Massages from $95. Call (555) 123-4567.' },
+          }),
+      },
+    })
+    expect(proseLedger().tagline?.[0]?.proseScan).toBe('clean')
+    expect(proseLedger().about?.[0]?.proseScan).toBe('flagged')
+    expect(out.prose).toEqual({ clean: 1, flagged: 1 })
+    expect(out.note).toContain('1 prose field(s) held for review')
+  })
+
+  it('never touches kind or verifiedBy, so the commercial-fact gate is unchanged', async () => {
+    await runResearch('intake-1', { deps: happyDeps() })
+    // Generated prose stays honestly labelled generated.
+    expect(proseLedger().about?.[0]?.kind).toBe('generated')
+    expect(proseLedger().about?.[0]?.verifiedBy).toBeUndefined()
+    // The verified commercial fact is untouched, and carries no scan verdict (it is not prose).
+    expect(proseLedger()['contact.address']?.[0]?.verifiedBy).toBe('auto')
+    expect(proseLedger()['contact.address']?.[0]?.proseScan).toBeUndefined()
+  })
+
+  it('leaves prose with no ledger entry alone (hand-supplied copy is already trusted)', async () => {
+    const out = await runResearch('intake-1', {
+      deps: { ...happyDeps(), reframe: async () => null },
+    })
+    // Reframe did not run, so no prose path was ledgered and there is nothing to stamp.
+    expect(out.prose).toEqual({ clean: 0, flagged: 0 })
+  })
+})
+
+// ── The verbatim source excerpt (ADR-1036) ───────────────────────────────────────────────
+describe('runResearch — reframe is handed the business own words', () => {
+  it('passes a source excerpt built from the harvest cache', async () => {
+    let seen: string | undefined = 'unset'
+    await runResearch('intake-1', {
+      deps: {
+        ...happyDeps(),
+        reframe: async (input: { sourceExcerpt?: string }) => {
+          seen = input.sourceExcerpt
+          return reframeResult()
+        },
+      },
+    })
+    expect(seen).toContain('Acme at 123 Main.')
+    expect(seen).toContain('https://acme.com')
+  })
+})

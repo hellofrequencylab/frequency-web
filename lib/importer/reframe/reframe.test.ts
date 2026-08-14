@@ -76,6 +76,30 @@ describe('buildGroundingBlock — grounds ONLY on the verified subset', () => {
     expect(g).not.toContain('$25')
     expect(g).not.toMatch(/(^|[^0-9])25([^0-9]|$)/)
   })
+
+  // ADR-1036: the business's OWN words are appended as SOURCE MATERIAL so the copy can LIFT their
+  // sentences instead of paraphrasing a twice-compressed draft.
+  it('appends the source excerpt as clearly-labelled SOURCE MATERIAL', () => {
+    const excerpt = '--- from https://stillwater.example/about\n\nWe started in a garage with two mats.'
+    const g = buildGroundingBlock(verifiedDraft(), excerpt)
+    expect(g).toContain('SOURCE MATERIAL')
+    expect(g).toContain('We started in a garage with two mats.')
+    // The verified block still leads, so the fact authority is unambiguous.
+    expect(g.indexOf('VERIFIED FACTS')).toBeLessThan(g.indexOf('SOURCE MATERIAL'))
+    // And the excerpt carries its own do-not-restate rule, since it is unverified copy.
+    expect(g).toMatch(/Do NOT restate any specific price/i)
+  })
+
+  it('behaves exactly as before when there is no excerpt', () => {
+    expect(buildGroundingBlock(verifiedDraft())).not.toContain('SOURCE MATERIAL')
+    expect(buildGroundingBlock(verifiedDraft(), '   ')).not.toContain('SOURCE MATERIAL')
+  })
+
+  it('bounds the excerpt so a large crawl cannot blow the prompt', () => {
+    const huge = 'x'.repeat(50_000)
+    const g = buildGroundingBlock(verifiedDraft(), huge)
+    expect(g.length).toBeLessThan(10_000)
+  })
 })
 
 describe('coerceReframe — fail safe on garbage', () => {

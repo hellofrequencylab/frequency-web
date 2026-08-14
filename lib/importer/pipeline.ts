@@ -17,6 +17,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { BusinessProfile, ProvenanceLedger } from './schema'
+import { buildSourceExcerpt } from './excerpt'
+import { scanProse } from './prose-scan'
 import { harvest, type HarvestDeps, type HarvestResult } from './harvest'
 import { extractProfile, type ExtractRunResult } from './extract'
 import { verify, type VerifyResult } from './verify'
@@ -54,6 +56,8 @@ export interface ResearchOutcome {
   verify?: { fieldsVerified: number; blocked: string[]; withheld: boolean }
   /** Whether reframe ran + whether its copy passed the §10 voice check (else it is flagged amber). */
   reframe?: { ran: boolean; voiceOk: boolean }
+  /** The prose safety scan (ADR-1037): how many prose fields cleared to publish vs stayed gated. */
+  prose?: { clean: number; flagged: number }
 }
 
 /**
@@ -213,7 +217,17 @@ export async function runResearch(
     if (extractRan && reframeBudget > 0) {
       // Steer the reframe TONE by the intake's seed MOOD + operator DIRECTIONS (Importer v2). Absent ⇒
       // the default warm tone and no extra steering.
-      reframeResult = await doReframe({ verified: finalDraft, profileId: row.createdBy, mood: row.inputs.mood, directions: row.inputs.directions })
+      // The business's OWN words, so the copy LIFTS their sentences instead of paraphrasing a draft
+      // that has already been compressed twice (ADR-1036). Empty when there is nothing usable, which
+      // leaves reframe on exactly its prior verified-facts-only grounding.
+      const sourceExcerpt = buildSourceExcerpt(rawSources)
+      reframeResult = await doReframe({
+        verified: finalDraft,
+        profileId: row.createdBy,
+        mood: row.inputs.mood,
+        directions: row.inputs.directions,
+        sourceExcerpt,
+      })
       if (reframeResult) {
         budgetSpent += reframeResult.costUsd
         // Edit-wins (docs §5): never clobber a prose field an operator already edited in review.
@@ -238,6 +252,12 @@ export async function runResearch(
       }
     }
 
+    // ── Stage 5.5: the PROSE SAFETY SCAN (ADR-1037). Read every prose string and stamp its ledger
+    // entry clean or flagged, so copy with no claim hiding in it publishes on Apply without the
+    // operator confirming the same three fields on every seed, while copy carrying a price / phone /
+    // address / hours / rating / health / superlative claim stays review-required. ──
+    const proseVerdicts = stampProseScan(finalDraft, finalLedger)
+
     await store.saveDraft(intakeId, { draft: finalDraft, ledger: finalLedger, budgetSpent })
 
     // Land in review (partial results are fine; the operator resolves flags there).
@@ -249,12 +269,13 @@ export async function runResearch(
         ? '; voiced'
         : '; voiced (flagged for a voice edit)'
       : ''
+    const proseNote = proseVerdicts.flagged > 0 ? `; ${proseVerdicts.flagged} prose field(s) held for review` : ''
     return {
       ok: true,
       status: 'review',
       note: extractRan
         ? verifyResult
-          ? `researched; ${verifyResult.fieldsVerified} commercial field(s) checked${reframedNote}`
+          ? `researched; ${verifyResult.fieldsVerified} commercial field(s) checked${reframedNote}${proseNote}`
           : 'extracted (verify skipped: budget/AI)'
         : 'degraded to a flagged draft (extract unavailable)',
       budgetSpent,
@@ -263,12 +284,54 @@ export async function runResearch(
         ? { fieldsVerified: verifyResult.fieldsVerified, blocked: verifyResult.blocked, withheld }
         : undefined,
       reframe: reframeResult ? { ran: true, voiceOk: reframeResult.voice.ok } : undefined,
+      prose: proseVerdicts,
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     await store.setStatus(intakeId, 'failed', { error: msg })
     return { ok: false, status: 'failed', note: msg, budgetSpent }
   }
+}
+
+/** Every PROSE path present on a draft, paired with its value: the three identity strings plus each
+ *  offering blurb (the paths lib/importer/reframe/apply.ts ledgers as generated). PURE. */
+function prosePathValues(draft: BusinessProfile): { path: string; value: string }[] {
+  const out: { path: string; value: string }[] = []
+  const push = (path: string, value: string | undefined) => {
+    const t = (value ?? '').trim()
+    if (t) out.push({ path, value: t })
+  }
+  push('tagline', draft.tagline)
+  push('about', draft.about)
+  push('story', draft.story)
+  ;(draft.offerings ?? []).forEach((o, i) => push(`offerings[${i}].blurb`, o.blurb))
+  return out
+}
+
+/**
+ * Run the PROSE SAFETY SCAN (ADR-1037) over every prose path on the draft and stamp the verdict onto
+ * that path's ledger entry. Prose the scan finds CLEAN (no price, phone, address, hours, rating,
+ * health, or superlative claim hiding in the sentence) is marked `proseScan:'clean'`, which the prose
+ * gate (map.ts prosePublishes) accepts, so the copy publishes without an operator confirming three
+ * fields on every single seed. Prose that carries a claim is marked `'flagged'` and stays
+ * review-required exactly as it was before the scan existed.
+ *
+ * Deliberately does NOT touch `kind` or `verifiedBy`: generated prose stays honestly labelled, and the
+ * COMMERCIAL-FACT gate is untouched. A path with no ledger entry is left alone (hand-supplied prose is
+ * already trusted). Mutates the run-local ledger in place. PURE of IO.
+ */
+function stampProseScan(draft: BusinessProfile, ledger: ProvenanceLedger): { clean: number; flagged: number } {
+  let clean = 0
+  let flagged = 0
+  for (const { path, value } of prosePathValues(draft)) {
+    const entries = ledger[path]
+    if (!entries || entries.length === 0) continue
+    const verdict = scanProse(value).clean ? 'clean' : 'flagged'
+    if (verdict === 'clean') clean += 1
+    else flagged += 1
+    ledger[path] = entries.map((e) => ({ ...e, proseScan: verdict }))
+  }
+  return { clean, flagged }
 }
 
 /** A minimal, HONEST draft when extraction is unavailable: the operator's name hint (or a

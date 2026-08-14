@@ -85,6 +85,7 @@ async function callReframe(
   verified: BusinessProfile,
   profileId: string | null | undefined,
   extraSystem = '',
+  sourceExcerpt?: string,
 ): Promise<{ copy: ReframedCopy; costUsd: number } | null> {
   try {
     const res = await completeRaw({
@@ -94,7 +95,7 @@ async function callReframe(
       system: withVoice(REFRAME_SYSTEM + extraSystem),
       tools: [REFRAME_TOOL],
       toolChoice: { type: 'tool', name: REFRAME_TOOL_NAME },
-      messages: [{ role: 'user', content: buildGroundingBlock(verified) }],
+      messages: [{ role: 'user', content: buildGroundingBlock(verified, sourceExcerpt) }],
     })
     void recordAiUsage({
       feature: REFRAME_FEATURE,
@@ -133,6 +134,10 @@ export async function reframe(input: {
    *  form ("lead with the retreat angle", "emphasize the sound bath"). Folded into the system note so it
    *  steers the copy, but it can never override the trust rules (no invented facts, no health claims). */
   directions?: string
+  /** The business's OWN words (lib/importer/excerpt.ts), so the copy can LIFT their sentences rather
+   *  than paraphrase a compressed draft. Absent ⇒ exactly the prior verified-facts-only behaviour. The
+   *  prompt forbids restating any figure from it, and the prose safety scan re-checks the output. */
+  sourceExcerpt?: string
 }): Promise<ReframeRunResult | null> {
   if (!aiEnabled()) return null
   if (await featureOverBudget(REFRAME_FEATURE)) return null
@@ -146,7 +151,7 @@ export async function reframe(input: {
     : ''
   const baseNote = moodNote + directionsNote
 
-  const first = await callReframe(input.verified, input.profileId, baseNote)
+  const first = await callReframe(input.verified, input.profileId, baseNote, input.sourceExcerpt)
   if (!first) return null
 
   let costUsd = first.costUsd
@@ -156,7 +161,7 @@ export async function reframe(input: {
   if (!verdict.ok) {
     // Regenerate ONCE with a corrective nudge naming what tripped (docs §4.6), keeping the mood tone.
     const corrective = `\n\nA previous attempt failed the voice checklist (${voiceReason(verdict)}). Rewrite it clean: plain sentences, no hype, no jargon, no em dashes, no health claims, at most one exclamation point.`
-    const second = await callReframe(input.verified, input.profileId, baseNote + corrective)
+    const second = await callReframe(input.verified, input.profileId, baseNote + corrective, input.sourceExcerpt)
     if (second) {
       costUsd += second.costUsd
       const secondVerdict = checkVoice(joinReframeCopy(second.copy))
