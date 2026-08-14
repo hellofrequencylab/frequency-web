@@ -24523,3 +24523,59 @@ reads it, so custom-property inheritance never carries it up and every preset re
 17px root (measured across all eight). Fixing that would move every rem-based width on every page,
 so it is filed rather than done here. And the gate reads one render state, because mode and skin
 re-map colour tokens rather than box widths.
+
+## ADR-1036: A disclosure that does not announce itself cannot be tested, and a clip is not an excuse (2026-08-14)
+
+**Owner instruction:** *"the home menu looks like trash on mobile. alerts look weird and the tool
+tip doesn't close."* — with two phone screenshots.
+
+### Three defects, three different shapes
+
+| | What a member saw | Cause |
+|---|---|---|
+| 🔴 Marketing menu sheet | Every row flush against the left edge of the screen | `px-4 … px-safe` on one element. `.px-safe` **set** `padding-inline` to a bare `env(safe-area-inset-left)`, which is **0 in portrait**, so it won the cascade and deleted the gutter. Both site footers had the same pair and went edge to edge. |
+| 🔴 Notifications panel | Heading and "Mark all read" cut off the left of the screen | `absolute right-0 w-80` (340px) anchored to a bell ~67px in from the right edge: left edge at **−17px** on a 390px phone, **−57px** on a 360px one. |
+| ⚠️ Tooltip | Label stuck over the open panel with no way to dismiss it | `group-focus-within` — and a **tap focuses a button**, so the tip lit on first touch and stayed while focus remained on the trigger. |
+
+### The decisions
+
+1. **`.px-safe` composes instead of overwriting.** `max(var(--px-safe-gutter, 0px), env(…))`, the
+   same shape `.mk-band` already used — whose comment claimed "`max()` is the same shape .px-safe
+   uses" while `.px-safe` did no such thing. The default of `0px` keeps every bare `px-safe`
+   byte-identical; a caller wanting a gutter writes `px-safe [--px-safe-gutter:1rem]`, one decision
+   about horizontal space rather than two that fight.
+2. **Below `sm` the notifications popover is a sheet.** It detaches from the bell and spans the
+   viewport under the header, height-capped between `--app-header-h` and `--tab-bar-clearance` so
+   the list scrolls inside it. The bell-anchored popover is unchanged from `sm` up.
+3. **Tooltips open on `:focus-visible`, not `:focus-within`.** That is precisely the distinction the
+   platform already draws between keyboard navigation and a tap, so a keyboard member keeps the
+   label on an icon-only control and a thumb-only member never sees it.
+
+### 🔴 Two corrections to ADR-1035's gate, and the second one matters
+
+**The overlay blind spot.** `@overflow` measured each page as it loaded. Most of a phone's chrome
+is behind a disclosure, so it was measuring the easy half. It now opens every visible
+`button[aria-expanded]` / `button[aria-haspopup]`, measures, and closes — triggers **discovered**,
+not listed, so a popover written later is covered the day it ships. That in turn required the bell
+and the account menu to *have* those attributes; both were missing them, which was already an a11y
+defect and is why the panel was invisible to the one check that could have caught it. **A control
+that does not announce it opens something cannot be tested, and should not have shipped either way.**
+
+**The clip exemption was backwards, and it made the previous result partly hollow.** It excused any
+child of an `overflow: hidden|clip` box whose own edges were in bounds — which describes the shell
+root (`overflow-x-clip`, full width, always in bounds). So every overflow inside the authed app was
+waved through: the "12 member-shell checks pass" line in ADR-1035 was measuring almost nothing, and
+the notifications panel was hanging off the screen the entire time the gate reported green.
+Clipping is the **symptom** this gate exists to catch, not a licence. Only two things are excused
+now — a real scroller (the content stays reachable) and the named marquee (decorative by design) —
+plus anything with `pointer-events: none`, which covers the closed off-canvas drawer parked at
+`-translate-x-full` without needing to know about it.
+
+### ⚠️ What the browser gate structurally cannot catch
+
+The zeroed gutter is **not overflow**. Nothing crosses the viewport edge; the content is merely
+jammed against it. Verified rather than assumed: reverting the fix and re-running `@overflow`
+against the opened sheet **passes**. So it is held by a source test instead —
+`components/layout/px-safe.test.ts` fails on any element combining `px-safe` with a `px-*` — and
+that test was itself verified red on the old spelling before being trusted. Two instruments, two
+failure shapes, neither a substitute for the other.

@@ -25,7 +25,7 @@ export function MarketingFooter({ menu }: { menu?: ResolvedMenu }) {
   const links = footerLinks(menu)
   return (
     <footer
-      className="bg-marketing-canvas border-t border-border/60 px-6 pt-12 px-safe"
+      className="bg-marketing-canvas border-t border-border/60 pt-12 px-safe [--px-safe-gutter:1.5rem]"
       // Keep the 3rem base, add the home-indicator inset on top so the legal row clears it
       // in a standalone PWA (env() = 0 on a normal display, so no change off-device).
       style={{ paddingBottom: 'calc(3rem + env(safe-area-inset-bottom))' }}

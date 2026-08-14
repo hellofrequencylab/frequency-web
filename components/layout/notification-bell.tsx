@@ -81,9 +81,17 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
 
   return (
     <div ref={ref} className="relative">
+      {/* `aria-expanded` + `aria-haspopup` were both missing, and that was two problems wearing
+          one coat. A screen-reader user was told this is a button called "Notifications" and
+          nothing about the panel it opens or whether it is already open. And the @overflow
+          gate's overlay pass discovers what to click by looking for exactly those attributes —
+          so the panel that hung 17px off the left of a 390px screen was invisible to the one
+          check that would have caught it. Announcing the disclosure is what earns the coverage. */}
       <button
         onClick={handleOpen}
         aria-label="Notifications"
+        aria-expanded={open}
+        aria-haspopup="dialog"
         title="Notifications"
         className="relative p-2 rounded-lg text-muted hover:text-text hover:bg-surface-elevated transition-colors"
       >
@@ -96,7 +104,24 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 rounded-card border border-border bg-surface-elevated lift-3 z-50 overflow-hidden">
+        // 🔴 BELOW sm THIS IS A SHEET, NOT A POPOVER, because a popover cannot fit here.
+        // `w-80` is 340px at this app's 17px root, and the bell sits ~67px in from the right
+        // edge — so anchored `right-0` its left edge lands at viewport − 67 − 340, i.e. −17px
+        // on a 390px iPhone and −57px on a 360px Android. The panel was clipped off the side
+        // of the screen (the shell root carries `overflow-x-clip`, so there was no scrolling
+        // to it), taking the "Notifications" heading and "Mark all read" with it.
+        //
+        // So on a phone it detaches from the bell and spans the viewport instead: `inset-x-2`
+        // for the gutter, `top` under the app header, and a height capped to the gap between
+        // the header and the tab bar's catch so the list scrolls INSIDE the panel rather than
+        // disappearing under the bottom bar. From sm up the bell-anchored popover is unchanged.
+        //
+        // ⚠️ The offsets are the SAME tokens the bars are built from (`--app-header-h`,
+        // `--tab-bar-clearance`), not literals that happen to match today — the mobile
+        // stacking contract in components/sidebar/game-stats-dock.tsx is explicit that a
+        // measured-from-a-literal offset is how the teaser pill and the RSVP bar each ended up
+        // painted over.
+        <div className="absolute right-0 top-full mt-2 w-80 max-sm:fixed max-sm:inset-x-2 max-sm:top-[calc(var(--app-header-h)+0.5rem)] max-sm:mt-0 max-sm:w-auto max-sm:max-h-[calc(100dvh-var(--app-header-h)-var(--tab-bar-clearance)-1rem)] max-sm:flex max-sm:flex-col rounded-card border border-border bg-surface-elevated lift-3 z-50 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <p className="text-body-sm font-semibold text-text">Notifications</p>
             {unread > 0 && (
@@ -110,7 +135,11 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
             )}
           </div>
 
-          <div className="max-h-96 overflow-y-auto divide-y divide-border">
+          {/* `max-sm:min-h-0` is what lets the sheet's height cap actually reach this list: a
+              flex child's default `min-height:auto` refuses to shrink below its content, so the
+              list would keep its full height and push the panel past the cap. Same floor rule as
+              the `min-w-0` on the header and tab bar (ADR-1035), one axis over. */}
+          <div className="max-h-96 max-sm:max-h-none max-sm:min-h-0 max-sm:flex-1 overflow-y-auto divide-y divide-border">
             {!loaded && (
               <div className="py-8 text-center">
                 <div className="w-5 h-5 border-2 border-primary-bg border-t-primary rounded-full animate-spin mx-auto" />
