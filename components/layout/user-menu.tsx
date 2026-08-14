@@ -23,10 +23,20 @@ export type UserMenuProfile = {
 
 export function AuthButtons({ dark = false }: { dark?: boolean }) {
   return (
-    <div className="flex items-center gap-2">
+    // `shrink-0`: this rides the fixed public header, whose one flexible child is the wordmark.
+    // Unpinned, the pair (178px at full padding) rode straight off the right edge of every
+    // /discover page on a phone — and it carries BOTH doors, so nothing here may be clipped.
+    //
+    // 🔴 NEITHER LINK IS HIDDEN BELOW sm, and that is deliberate rather than an oversight. Hiding
+    // Sign in would be the obvious way to buy back ~70px, and it is the wrong one: SiteHeader has
+    // no mobile drawer (MarketingMobileMenu belongs to MarketingHeader), and the /discover footer
+    // lists Discover / Privacy / Terms / Contact. So a hidden Sign in is not a demoted link, it is
+    // the last way back into an account on 22 public pages. The padding tightens on a phone
+    // instead, and the wordmark beside it gives up the rest.
+    <div className="flex shrink-0 items-center gap-1 sm:gap-2">
       <Link
         href="/sign-in"
-        className={`text-body-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${
+        className={`text-body-sm font-medium px-2 py-1.5 rounded-lg transition-colors sm:px-3 ${
           dark
             ? 'text-on-ink-muted hover:text-on-ink hover:bg-on-ink/10'
             : 'text-muted hover:text-text hover:bg-surface-elevated'
@@ -36,7 +46,7 @@ export function AuthButtons({ dark = false }: { dark?: boolean }) {
       </Link>
       <Link
         href={BETA_CTA_HREF}
-        className={`rounded-lg px-3 py-1.5 text-body-sm font-semibold transition-colors whitespace-nowrap ${
+        className={`rounded-lg px-2.5 py-1.5 text-body-sm font-semibold transition-colors whitespace-nowrap sm:px-3 ${
           dark
             ? 'bg-on-ink text-ink hover:bg-surface-elevated'
             : 'bg-primary text-on-primary hover:bg-primary-hover'

@@ -24402,3 +24402,72 @@ out of the accessibility tree, exactly ONE control exists and it says what it do
 with nothing to plot, and the legend/qualifier assertions carried over unchanged. What jsdom cannot
 judge — the band's height, the scrim's contrast, the map itself, which is `ssr: false` on both
 engines — stays uncovered and is named as uncovered in the file.
+
+## ADR-1035: A header lays out by giving way, not by adding up, and an asset crop proved it (2026-08-14)
+
+**Owner instruction:** *"Please go through all the mobile styles and make sure it's all working.
+There's a bunch of overflow right now."* — with a phone screenshot of `/nearby`.
+
+### What was actually wrong
+
+Three days earlier, ADR-1026's sweep re-cropped `public/frequency-wordmark.png` from **963x170** to
+**963x130** so the retired tagline stopped shipping as pixels. The crop is right and provable. What
+nobody measured is the second-order effect: **every header sizes the mark by HEIGHT**, so a narrower
+asset is a *wider* mark at the same CSS height.
+
+| | before (5.66:1) | after (7.41:1) |
+|---|---|---|
+| `MarketingHeader` / `SiteHeader` — `h-7` | 168px | **220px** |
+| `AppShell` `BrandMark` — `h-[22px]` | 124px | **163px** |
+
+Every one of those bars was laid out as **arithmetic**: a `shrink-0` mark plus fixed-size controls
+that happened to add up on a phone. Arithmetic cannot notice an asset swap. Nothing threw, no gate
+fired, and the extra ~50px landed differently in each bar:
+
+| Surface | Measured failure |
+|---|---|
+| 🔴 Marketing header (every public page) | The mobile menu button sat at **x=404 on a 360px screen**. The bar is `fixed` and the document does not scroll sideways, so the only navigation a signed-out visitor has was **off-screen and unreachable**, up to 447px wide — i.e. on every phone. |
+| 🔴 `/discover` (`SiteHeader`) | The "Sign in + Start a Circle" cluster ran to **x=496** on a 390px screen. Both auth doors, gone. |
+| ⚠️ In-app header (`AppShell`) | The icon cluster is `justify-end`, so squeezing it overflows **leftward**: the search glyph painted on top of the wordmark from 390px down, the whole row from 360px. The bar needs ~421px; an iPhone 14 is 390. |
+| ⚠️ Mobile tab bar | Unrelated cause, same class. Seven `flex-1` tabs floored at `min-width:auto` = **their own label's width**, so the row was uneven (49/49/55/49/49/49/59 at 360px), "The Quest" wrapped to two lines beside one-line neighbours, and the min-contents summed to **319px against a 320px screen**. |
+| ⚠️ `/pricing` comparison ledger | A `shrink-0` value cell holding "3 seats included, add more per seat" (241px) pushed the page into a **366px horizontal scroll** on a 360px screen. |
+
+### The decision
+
+**A bar that must fit an unknown viewport designates exactly ONE child that gives way, and pins
+every other child.** Not a budget that adds up — a guarantee that cannot stop being true.
+
+In all three headers the give-way child is the **wordmark**, because it is the only element whose
+shrinking costs nothing anyone needs: a smaller mark is still the mark, while a clipped menu button
+is a dead end and a clipped CTA is a lost conversion. Concretely, that is `min-w-0` on the brand
+link (a flex item's default `min-width:auto` floors it at its content size, so the CSS alone does
+nothing) plus `max-w-full` on the mark (its width comes from `aspect-ratio`, which is an intrinsic
+*floor*, not a target) — and `shrink-0` on every control beside it.
+
+The tab bar takes the same rule from the other end: `min-w-0` on all seven items is what makes
+`flex-1` mean "an equal seventh" rather than "at least as wide as my caption", with `truncate` on
+the label because permitting the shrink does not tell the text what to do when it happens. The tab's
+accessible name is the full label on the link, so a clipped word never costs a screen-reader user
+the destination.
+
+### What this does NOT do
+
+It does not hide anything to buy room. The obvious ~70px saving on `/discover` was to drop **Sign
+in** below `sm` — and that is wrong, not merely aggressive: `SiteHeader` has no mobile drawer
+(`MarketingMobileMenu` belongs to `MarketingHeader`) and the `/discover` footer lists only
+Discover / Privacy / Terms / Contact. A hidden Sign in there is not a demoted link, it is the last
+way back into an account on 22 public pages. Both links stay; their padding tightens on a phone and
+the wordmark gives up the rest.
+
+### Coverage
+
+`components/layout/header-fit.test.ts` pins the invariant — one shrinkable child per bar, every
+control pinned, both `/discover` auth links present below `sm`, seven shrinkable tabs with clipped
+one-line labels — and states the arithmetic (22px and 28px times 7.41) so the next asset swap has a
+number to fail against rather than a paragraph to skim.
+
+⚠️ **What it cannot cover, named rather than implied:** these are SOURCE assertions. The failure is
+a layout fact and `pnpm test` has no browser, so a unit test can only hold the invariant that
+produced the layout, not the pixels. The findings above were measured in headless Chromium at
+320/360/390/412/430 against the real shell; the standing pixel guard is the Playwright suite, whose
+`mobile` project is 390px only — narrower phones are where three of these five first bite.
