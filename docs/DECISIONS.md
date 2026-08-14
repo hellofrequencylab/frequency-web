@@ -24471,3 +24471,23 @@ a layout fact and `pnpm test` has no browser, so a unit test can only hold the i
 produced the layout, not the pixels. The findings above were measured in headless Chromium at
 320/360/390/412/430 against the real shell; the standing pixel guard is the Playwright suite, whose
 `mobile` project is 390px only — narrower phones are where three of these five first bite.
+
+### The baseline recapture, and what its narrowness proves
+
+`pr-compare` failed on the first push with exactly four `@visual` diffs: `/pricing`, mobile, all
+four render states, the page **368px shorter** (18451 → 18083). That is the fix, not a regression.
+The old ledger pinned the VALUE column with `shrink-0`, so the label column was squeezed to a
+sliver and wrapped over four or five lines per row; both sides sharing the width is what makes the
+page shorter. `test/e2e/__screenshots__/visual.spec.ts/pricing--*-mobile.png` was recaptured on a
+runner per `test/e2e/README.md` (an agent sandbox cannot reach a deploy URL — the network policy
+refused the preview host, which is the same limit that doc already records).
+
+🔴 **THE FOUR-FILE DIFF IS ALSO A FINDING, and it is about the gate rather than about this change.**
+The header moved on every marketing page and the tab bar on every shell page, and NONE of those
+baselines failed. They are full-page captures ~18,000px tall, `maxDiffPixelRatio` is 0.02, and a
+64px header is ~0.35% of that image — so a header can change **completely** and still pass. The
+`/pricing` diff only registered because a 368px reflow reached 7%. So the visual suite currently
+gates page HEIGHT and body reflow, and is close to blind to the chrome at the top of every page,
+which is precisely where this ADR's defects lived. Two cheap follow-ups, neither taken here because
+both re-baseline the whole matrix: a viewport-only capture of the header band as its own surface,
+and a second `mobile` project narrower than 390px.
