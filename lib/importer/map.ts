@@ -56,11 +56,18 @@ export function commercialFieldClears(policy: CommercialPolicy, path: string): b
 /**
  * Whether GENERATED PROSE at `path` (about / story / tagline / offering blurb) may auto-publish as
  * trusted (docs §4.2 finding: a commercial claim can hide inside generated prose, e.g. an `about`
- * that says "Massages from $95. Call (555) 123-4567."). Under a ledger policy such prose is
- * review-required: it publishes ONLY when its ledger entry is a verified fact, OR when it carries NO
- * ledger entry at all (hand-provided prose the importer never generated). A `generated`/`inferred`
- * entry is WITHHELD, so unverified AI prose never reaches a live surface as trusted. 'allow' keeps
- * all prose (P0 hand-authored); 'withhold' drops generated prose. PURE + total.
+ * that says "Massages from $95. Call (555) 123-4567."). Under a ledger policy such prose publishes
+ * when ANY of three things is true:
+ *   1. it carries NO ledger entry at all (hand-provided prose the importer never generated);
+ *   2. its ledger entry is a verified fact (the operator confirmed it, or the verifier cleared it);
+ *   3. the PROSE SAFETY SCAN marked it `proseScan:'clean'` (ADR-1037) — the machine read the sentence
+ *      and found no price, phone, address, hours, rating, health, or superlative claim inside it, so
+ *      there is no commercial claim to hide and nothing for a human to confirm.
+ * Anything else, including prose the scan FLAGGED, is withheld exactly as before. 'allow' keeps all
+ * prose (P0 hand-authored); 'withhold' drops generated prose. PURE + total.
+ *
+ * This never widens the COMMERCIAL-FACT gate: `commercialFieldClears` above is untouched, so a price
+ * or a phone number in its own field still needs a cited, verified entry.
  */
 export function prosePublishes(policy: CommercialPolicy, path: string): boolean {
   if (policy === 'allow') return true
@@ -68,8 +75,9 @@ export function prosePublishes(policy: CommercialPolicy, path: string): boolean 
   const entries = policy.ledger[path]
   // No ledger entry => the importer did not generate this prose; a hand-supplied value is trusted.
   if (!entries || entries.length === 0) return true
-  // There IS an entry: publish only if it is a verified fact; generated/inferred prose is held back.
-  return isCommercialFieldCleared(entries)
+  // A verified fact publishes; so does prose the safety scan read and found clean.
+  if (isCommercialFieldCleared(entries)) return true
+  return entries.some((e) => e.proseScan === 'clean')
 }
 
 // ── Slug ──────────────────────────────────────────────────────────────────────
@@ -347,26 +355,27 @@ export function mapEvents(profile: BusinessProfile): EventRow[] {
 /** The ordered space block ids the composer will place, driven by what the draft actually has.
  *  A `layoutHint` (ordered block ids) overrides the default composition when present.
  *
- *  ORDER (Importer v2): business + core info leads. The hero (name/tagline/primary image) opens, then the
- *  identity (about), then the commercial core (offerings + contact/hours), then a visual gallery, then the
- *  softer narrative + community sections. So a visitor sees WHAT this is, WHAT it offers, and HOW to reach
- *  it before the story — and the page always leads with substance, not filler. */
+ *  ORDER (ADR-1038): the SAME band spine the AI composer follows, so a seed with AI off lands in the same
+ *  reading order as one with AI on, just without the authored design blocks. Open with what this is, then
+ *  the story, then proof, then the photos, then what to do next, then the questions, and close on how to
+ *  reach them. This is the arrangement read out of the reference Space (slug `danieltyack`), reduced to the
+ *  DATA blocks a deterministic pass can fill. */
 const DEFAULT_ORDER: readonly string[] = [
   // NOTE: `photoHero` (the in-page Banner) is intentionally NOT auto-placed. The Space's COVER already
   // shows the hero (the primary image + name + tagline), so a second in-page banner is a duplicate hero
   // (and, once images are re-ordered, shows the wrong photo). photoHero stays a valid block an operator
   // can add by hand (it is in MANAGED_BLOCKS), just not seeded.
-  'about', //     what this business is
-  'offerings', // what it sells (core)
-  'contact', //   how + when to reach it (core) — near the top, not buried
-  'gallery', //   the uploaded photos (visual proof)
-  'booking', //   book a time (if bookable)
-  'story', //     the longer narrative
+  'about', //     band 1: what this business is
+  'story', //     band 2: the longer narrative
+  'reviews', //   band 4: proof, in the words of people who came
+  'gallery', //   band 5: the uploaded photos
+  'offerings', // band 6: what it sells
+  'booking', //   band 6: book a time (if bookable)
   'events',
   'team',
-  'reviews',
-  'faq',
-  'links', //     find them online
+  'faq', //       band 7: the questions people ask
+  'contact', //   band 9: how + when to reach it
+  'links', //     band 9: find them online
 ]
 
 /** The full allowlist of space blocks the composer MANAGES (may place from a layoutHint) — the default

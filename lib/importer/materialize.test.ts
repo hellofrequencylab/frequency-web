@@ -261,6 +261,56 @@ describe('materializeBusiness — idempotent re-run (update)', () => {
   })
 })
 
+// LOCK LAYOUT (ADR-1038): an operator who hand-tuned a seeded page can hold its block arrangement
+// through a re-seed. Copy, photos and live data still refresh; only preferences.profileLayout is held.
+describe('materializeBusiness — lock layout on a re-apply', () => {
+  const prefsOf = (spaceId: string) =>
+    H.tables.spaces.find((s) => s.id === spaceId)!.preferences as Record<string, unknown>
+
+  it('keeps the operator arrangement when locked, and still refreshes the data around it', async () => {
+    const created = await materializeBusiness(wellnessStudioFixture, { kind: 'create', ownerProfileId: 'owner-1' }, { verificationPolicy: 'allow' })
+    const spaceId = created.spaceId!
+
+    // Stand in for an operator who rearranged the page by hand after the seed.
+    const handTuned = { rows: [{ id: 'r0', columns: 1 as const, cells: [['about']] }] }
+    const before = prefsOf(spaceId)
+    H.tables.spaces.find((s) => s.id === spaceId)!.preferences = { ...before, profileLayout: handTuned }
+
+    const rerun = await materializeBusiness(
+      wellnessStudioFixture,
+      { kind: 'update', spaceId },
+      { verificationPolicy: 'allow', lockLayout: true },
+    )
+    expect(rerun.ok).toBe(true)
+
+    const after = prefsOf(spaceId)
+    expect(after.profileLayout).toEqual(handTuned)
+    // The lock is layout-only: the profile data around it was still re-seeded.
+    expect((after.profileData as Record<string, unknown>).phone).toBe('(503) 555-0142')
+  })
+
+  it('replaces the arrangement when NOT locked (the default)', async () => {
+    const created = await materializeBusiness(wellnessStudioFixture, { kind: 'create', ownerProfileId: 'owner-1' }, { verificationPolicy: 'allow' })
+    const spaceId = created.spaceId!
+    const handTuned = { rows: [{ id: 'r0', columns: 1 as const, cells: [['about']] }] }
+    const before = prefsOf(spaceId)
+    H.tables.spaces.find((s) => s.id === spaceId)!.preferences = { ...before, profileLayout: handTuned }
+
+    await materializeBusiness(wellnessStudioFixture, { kind: 'update', spaceId }, { verificationPolicy: 'allow' })
+    expect(prefsOf(spaceId).profileLayout).not.toEqual(handTuned)
+  })
+
+  it('cannot leave a Space with no page: the lock is a no-op when there is no layout yet', async () => {
+    const res = await materializeBusiness(
+      wellnessStudioFixture,
+      { kind: 'create', ownerProfileId: 'owner-1' },
+      { verificationPolicy: 'allow', lockLayout: true },
+    )
+    const layout = prefsOf(res.spaceId!).profileLayout as { rows?: unknown[] }
+    expect(layout?.rows?.length).toBeGreaterThan(0)
+  })
+})
+
 describe('materializeBusiness — Spotlight demo dressing (optional)', () => {
   it('writes a member grid layout and enables Spotlight for the demo owner', async () => {
     const res = await materializeBusiness(

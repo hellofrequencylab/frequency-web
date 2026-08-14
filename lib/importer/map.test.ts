@@ -202,12 +202,16 @@ describe('composeBlockOrder / mapBlockContent — Importer v2 default order + ga
     media: { heroPath: 'https://cdn.example/hero.jpg', gallery: ['https://cdn.example/g1.jpg', 'https://cdn.example/g2.jpg'] },
   }
 
-  it('leads with core info (about → offerings) and puts contact before the story; no duplicate hero banner', () => {
+  it('follows the band spine (about → story → photos → offerings) and closes on contact; no duplicate hero banner', () => {
     const order = composeBlockOrder(withGallery)
-    expect(order.slice(0, 3)).toEqual(['about', 'offerings', 'contact'])
+    // ADR-1038: the deterministic fallback reads in the SAME order as the AI composer's band spine,
+    // so a seed with AI off lands in the same shape, just without the authored design blocks.
+    expect(order.slice(0, 4)).toEqual(['about', 'story', 'gallery', 'offerings'])
     // The in-page Banner is never auto-seeded (the cover is the hero) — no duplicate hero.
     expect(order).not.toContain('photoHero')
-    expect(order.indexOf('contact')).toBeLessThan(order.indexOf('story'))
+    // Band 9 closes the page: how to reach them comes after what they offer, not before it.
+    expect(order.indexOf('contact')).toBeGreaterThan(order.indexOf('offerings'))
+    expect(order.indexOf('story')).toBeLessThan(order.indexOf('contact'))
     expect(order).toContain('gallery')
   })
 
@@ -349,6 +353,28 @@ describe('prosePublishes — generated prose is review-required (finding #2)', (
   })
   it('prose with NO ledger entry is hand-supplied and trusted', () => {
     expect(prosePublishes({ mode: 'ledger', ledger: {} }, 'about')).toBe(true)
+  })
+
+  // ADR-1037: the prose SAFETY SCAN is the third publish reason. Generated prose the scan read and
+  // found free of any commercial claim publishes without a human confirming it; prose the scan
+  // FLAGGED keeps the pre-ADR behaviour exactly.
+  it('publishes generated prose the safety scan marked clean', () => {
+    const clean: ProvenanceLedger = { about: [{ kind: 'generated', confidence: 0.5, proseScan: 'clean' }] }
+    expect(prosePublishes({ mode: 'ledger', ledger: clean }, 'about')).toBe(true)
+  })
+  it('still WITHHOLDS generated prose the safety scan flagged', () => {
+    const flagged: ProvenanceLedger = { about: [{ kind: 'generated', confidence: 0.5, proseScan: 'flagged' }] }
+    expect(prosePublishes({ mode: 'ledger', ledger: flagged }, 'about')).toBe(false)
+  })
+  it('the scan verdict never widens the COMMERCIAL-FACT gate', () => {
+    // A price with a 'clean' stamp on it is still an uncleared commercial fact: proseScan is read by
+    // prosePublishes only, never by commercialFieldClears.
+    const ledger: ProvenanceLedger = {
+      'offerings[0].price': [{ kind: 'generated', confidence: 0.9, proseScan: 'clean' }],
+      'contact.phone': [{ kind: 'inferred', confidence: 0.9, proseScan: 'clean' }],
+    }
+    expect(commercialFieldClears({ mode: 'ledger', ledger }, 'offerings[0].price')).toBe(false)
+    expect(commercialFieldClears({ mode: 'ledger', ledger }, 'contact.phone')).toBe(false)
   })
 })
 

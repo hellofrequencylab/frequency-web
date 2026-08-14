@@ -52,6 +52,7 @@ export function ReviewBoard({
   initialImages,
   initialImagePlan,
   initialLockHero,
+  initialLockLayout,
   initialListed,
   initialDirections,
 }: {
@@ -64,6 +65,8 @@ export function ReviewBoard({
   initialImages: string[]
   initialImagePlan: { url: string; category: string; alt: string }[]
   initialLockHero: boolean
+  /** Whether the BLOCK ARRANGEMENT is locked (ADR-1038) — seeds the layout lock toggle. */
+  initialLockLayout: boolean
   initialListed: boolean
   /** The operator DIRECTIONS currently stored on the intake (Importer v2.1) — prefills the re-seed box. */
   initialDirections: string
@@ -72,6 +75,7 @@ export function ReviewBoard({
   const [model, setModel] = useState<ReviewModel>(initialModel)
   const [mood, setMood] = useState<SeedMood>(initialMood)
   const [lockHero, setLockHero] = useState(initialLockHero)
+  const [lockLayout, setLockLayout] = useState(initialLockLayout)
   const [listed, setListed] = useState(initialListed)
   const [listing, startListing] = useTransition()
   const [reseedMsg, setReseedMsg] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null)
@@ -79,7 +83,7 @@ export function ReviewBoard({
   const [directions, setDirections] = useState(initialDirections)
   // "Add more info" boxes (Importer v2.1): extra source content folded into the master profile at re-seed.
   const [showAddInfo, setShowAddInfo] = useState(false)
-  const [info, setInfo] = useState({ overview: '', webContent: '', bookingSchedule: '', differentiators: '', pastedContent: '' })
+  const [info, setInfo] = useState({ overview: '', webContent: '', bookingSchedule: '', differentiators: '', numbers: '', pastedContent: '' })
   const [infoMsg, setInfoMsg] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null)
   const [addingInfo, startAddInfo] = useTransition()
   const setInfoField = (key: keyof typeof info, value: string) => setInfo((prev) => ({ ...prev, [key]: value }))
@@ -138,13 +142,14 @@ export function ReviewBoard({
     setReseedMsg(null)
     startReseed(async () => {
       // Pass the operator's directions only when non-blank, so an empty box never CLEARS stored directions.
-      const res = await reseedBusinessImport(intakeId, next, lockHero, directions.trim() || undefined)
+      const res = await reseedBusinessImport(intakeId, next, lockHero, directions.trim() || undefined, lockLayout)
       if (!res.ok) {
         setReseedMsg({ tone: 'err', text: res.error })
         return
       }
       const label = SEED_MOODS.find((m) => m.key === next)?.label ?? next
-      const heroNote = lockHero ? ' The hero stayed locked.' : ''
+      const locks = [lockHero && 'hero', lockLayout && 'layout'].filter(Boolean) as string[]
+      const heroNote = locks.length ? ` The ${locks.join(' and ')} stayed locked.` : ''
       setReseedMsg({
         tone: 'ok',
         text: res.revoiced
@@ -170,7 +175,7 @@ export function ReviewBoard({
         setInfoMsg({ tone: 'err', text: res.error })
         return
       }
-      setInfo({ overview: '', webContent: '', bookingSchedule: '', differentiators: '', pastedContent: '' })
+      setInfo({ overview: '', webContent: '', bookingSchedule: '', differentiators: '', numbers: '', pastedContent: '' })
       setInfoMsg({
         tone: 'ok',
         text: res.researching
@@ -255,6 +260,13 @@ export function ReviewBoard({
           onChange={(e) => setLockHero(e.target.checked)}
           disabled={reseeding}
         />
+        <Checkbox
+          wrapperClassName="mt-2"
+          label="Lock the layout (keep this block arrangement; refresh the copy, photos and data inside it)"
+          checked={lockLayout}
+          onChange={(e) => setLockLayout(e.target.checked)}
+          disabled={reseeding}
+        />
 
         {/* Directions (Importer v2.1): a freeform steer folded into the re-voice. Persists on re-seed, so it
             keeps driving future runs. Blank leaves any stored directions untouched. */}
@@ -308,6 +320,7 @@ export function ReviewBoard({
                   { key: 'webContent', label: 'Website content', ph: 'Paste copy from their site or elsewhere.' },
                   { key: 'bookingSchedule', label: 'Booking and schedule', ph: 'Hours, how to book, session lengths.' },
                   { key: 'differentiators', label: 'What makes them different', ph: 'What sets them apart.' },
+                  { key: 'numbers', label: 'Numbers and credentials', ph: 'One per line: 5+ years teaching, 1,000+ sessions, 200hr certified.' },
                   { key: 'pastedContent', label: 'Anything else', ph: 'Any other notes or details.' },
                 ] as const
               ).map((box) => (

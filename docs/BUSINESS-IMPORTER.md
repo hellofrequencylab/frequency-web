@@ -16,6 +16,9 @@ harvest, extract, verify, ledger, staging table) ✅ shipped (ADR-574): `lib/imp
 `.txt` is removed). P2 (reframe + the confirmed 3-surface compose) ✅ shipped (ADR-575):
 `lib/importer/reframe/*` + `site-compose.ts`, wired into `pipeline.ts` after verify, and `materialize.ts`
 now writes the Site (`website`) Home doc (`preferences.pageDocs.home`). P3+ (console, wizard) pending.
+**Importer v3 (2026-08-14)** ✅ shipped: the page is now written FROM the business's own words, not from a
+twice-compressed draft. `excerpt.ts` (ADR-1036) + the prose safety scan `prose-scan.ts` (ADR-1037) +
+the composer's band spine, lock layout, and the numbers box (ADR-1038). See the four subsections in §3.2.
 Authority order: running code + `supabase/migrations/` > this doc.
 
 This spec follows [`DOCS-PROTOCOL.md`](DOCS-PROTOCOL.md) (technical → git), [`PRESENTATION.md`](PRESENTATION.md)
@@ -160,6 +163,45 @@ the cover at the resolved hero.
 at Apply. `store.getIntakeBySpaceId` / `store.intakeIdsBySpaceIds` (batched) resolve that reverse link,
 and the Manage Spaces console (`/admin/spaces`) shows a **Re-seed** button per seeded row so any seeded
 business is re-openable without hunting for the import.
+
+**Verbatim source excerpt (ADR-1036).** `lib/importer/excerpt.ts` (`buildSourceExcerpt`, PURE) rebuilds a
+labeled, de-boilerplated, priority-ordered excerpt of the business's OWN words from the harvest cache
+(`raw_sources`): operator paste first, then the home page, then about-ish pages, then offering-ish pages,
+then the rest, with third-party search snippets last. Capped at 12,000 chars total / 3,000 per page and
+truncated on sentence boundaries. It is fed to **reframe** (6,000 chars) and to the **page composer** (all
+of it), which are instructed to LIFT the good sentences close to verbatim and trim them to fit rather than
+paraphrase. Costs no new crawl. This replaced "grounding starvation" as reframe's safety mechanism, so the
+prose safety scan below is what now enforces the trust boundary.
+
+**Prose safety scan (ADR-1037).** `lib/importer/prose-scan.ts` (`scanProse`, PURE) reads each prose string
+(tagline / about / story / offering blurbs) for the thing the prose gate exists to catch: a commercial
+claim hiding inside a sentence (price, phone, address, hours, rating, health claim, superlative). The
+pipeline stamps the verdict on the ledger entry as `proseScan: 'clean' | 'flagged'`, and `map.prosePublishes`
+accepts `'clean'` as a third publish reason alongside "no entry" and "verified fact". Flagged prose stays
+review-required exactly as before. **The commercial-fact gate is untouched**: `commercialFieldClears` still
+requires a cited, verified entry, so a price in the price field is unaffected. The scan is deliberately
+tuned for this demographic: `heal` / `healing` / `somatic` / `practitioner` are ordinary vocabulary and do
+not flag; only claim SHAPES do.
+
+**The band spine (ADR-1038).** The page composer no longer invents a page from scratch. It fills NINE
+BANDS, each with an intent, a primary block, and named alternates it may swap in when the content does not
+fit: (1) who this is for, (2) the human / origin, (3) how it works, (4) proof, (5) show the work, (6) what
+to do next, (7) questions, (8) the ask, (9) find us. Bands 1 to 3 group into one untitled opening row. A
+band with nothing real behind it drops. The model chooses WHAT fills each band and writes the copy; it does
+not choose the ORDER, and it never chooses the CTA DESTINATION (`ctaUrl` is derived in the materializer
+from the slug plus whether the business is bookable, so a seeded page can never end on a dead link).
+Presentation is derived from real signals: `features.layout` is `stats` when the items read as numbers,
+`cardGrid.shape` is `left` when its cards carry photos, `gallery.view` is `masonry` past four photos.
+The reference arrangement is the live layout of the Space at slug `danieltyack`.
+
+**Lock layout (ADR-1038).** `inputs.lockLayout` (the sibling of `lockHero`, default OFF) holds
+`preferences.profileLayout` on a re-apply, so a page an operator hand-tuned survives a re-seed while its
+copy, photos and live data still refresh. It only bites when there is an existing layout to protect.
+
+**Numbers and credentials (ADR-1038).** A fifth labeled content box on the start form (and on the review
+board's "add more info" panel), folded into the paste by `composePaste`. It is the raw material for band 4:
+real figures like "5+ years", "1,000+ sessions", "200hr certified" almost never appear on a business's own
+site in a form the extractor can find, so without them the proof band degrades to a generic value-prop list.
 
 **AI marketing-page composer (Importer v2).** `lib/importer/compose.ts` (`composeMarketingLayout`) is a
 page designer: ONE model call is given the verified draft, the block palette with when-to-use guidance,

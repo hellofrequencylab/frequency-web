@@ -79,6 +79,10 @@ const CONTENT_FIELDS: readonly FieldDef[] = [
   { path: 'webContent', label: 'Website content', kind: 'longtext', section: 'content' },
   { path: 'bookingSchedule', label: 'Booking and schedule', kind: 'longtext', section: 'content' },
   { path: 'differentiators', label: 'What makes them different', kind: 'longtext', section: 'content' },
+  // The PROOF band's raw material (ADR-1038). Real numbers and credentials almost never appear on a
+  // business's own site in a form the extractor can find, and they are the difference between a proof
+  // section of stat tiles and a generic "why choose us" list. So we ask for them.
+  { path: 'numbers', label: 'Numbers and credentials', kind: 'longtext', section: 'content' },
 ]
 
 /** The example inside each box. Ghost text, not a hint line: an example of the SHAPE of an answer
@@ -95,6 +99,7 @@ const PLACEHOLDERS: Record<string, string> = {
   webContent: 'Paste the About, Home, or Services page copy, bios, mission.',
   bookingSchedule: 'Hours, session lengths, prices, how to book, availability.',
   differentiators: 'The angle, the specialty, the vibe, the proof.',
+  numbers: 'One per line: 5+ years teaching, 1,000+ sessions, 200hr certified, founder of X.',
 }
 
 /**
@@ -179,6 +184,7 @@ export function StartImportForm() {
         webContent: trimmed('webContent') || undefined,
         bookingSchedule: trimmed('bookingSchedule') || undefined,
         differentiators: trimmed('differentiators') || undefined,
+        numbers: trimmed('numbers') || undefined,
         // Anything dropped or pasted into the shared drop zone is one more source.
         pastedContent: sourceText.trim() || undefined,
         runInline,

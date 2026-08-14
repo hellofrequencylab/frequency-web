@@ -13,18 +13,24 @@
 // HONEST LIMITS (docs §7): we do NOT scrape auth/ToS-walled socials (Instagram/Facebook/
 // LinkedIn/TikTok). We resolve public oEmbed where one exists (YouTube/TikTok), record the
 // social PROFILE url as a link, and lean on the operator PASTE + web SEARCH for the rest.
+//
+// The crawl is TWO waves: read the seed page first, rank the links its own nav exposes
+// (./plan rankDiscoveredUrls), then fetch the rest in parallel. The seed's images feed the
+// gallery capture. Both waves stay inside HARVEST_BUDGET, and a seed that fails simply
+// leaves the plan on the KEY_SUBPATHS fallback, exactly as before.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { defaultWebProvider, type WebProvider } from '@/lib/ai/web'
 import type { IntakeInputs, HarvestedSource } from '../intake'
 import {
   HARVEST_BUDGET,
-  planCrawlUrls,
+  planCrawlFromDiscovery,
   planSearchQueries,
   planOembeds,
   normalizeSeedUrl,
   parsePageMedia,
   pasteSource,
+  pickGalleryImages,
   newSourceId,
   type ParsedPageMedia,
 } from './plan'
@@ -92,7 +98,9 @@ export async function harvest(
 
   // Fan out the three IO families in parallel; each family swallows its own errors.
   const [crawl, searches, oembeds] = await Promise.all([
-    seed ? crawlSite(web, seed, now) : Promise.resolve({ sources: [], media: [] as ParsedPageMedia[], failed: 0 }),
+    seed
+      ? crawlSite(web, seed, now)
+      : Promise.resolve({ sources: [], media: [] as ParsedPageMedia[], failed: 0, images: [] as string[] }),
     runSearches(web, inputs, now),
     runOembeds(web, inputs, now),
   ])
@@ -106,62 +114,94 @@ export async function harvest(
   summary.searchResults = searches.sources.length
   summary.oembeds = oembeds.sources.filter((s) => s.kind === 'oembed').length
 
-  // Capture media (logo + hero) from the best og/logo parse across crawled pages. Serial (small,
-  // and it lands after the crawl anyway) and budget-capped.
-  const media = await captureMedia(intakeId, crawl.media, doCapture, now, sources, summary)
+  // Capture media (logo + hero + a small gallery) from the og/logo parse across crawled pages and
+  // the seed page's own images. Serial (small, and it lands after the crawl anyway), budget-capped.
+  const media = await captureMedia(intakeId, crawl.media, crawl.images, doCapture, now, sources, summary)
 
   return { sources, media, summary }
 }
 
 // ── Crawl ────────────────────────────────────────────────────────────────────────
 
+/** One page fetch, fully fail-safe: it always yields a recorded source, plus whatever the page
+ *  gave us (og/logo parse, discovered links, discovered images). Never throws. */
+async function fetchPage(
+  web: WebProvider,
+  url: string,
+  now: string,
+): Promise<{ source: HarvestedSource; media?: ParsedPageMedia; links: string[]; images: string[]; failed: boolean }> {
+  try {
+    const r = await web.fetchUrl(url)
+    const links = r.links ?? []
+    const images = r.images ?? []
+    if (!r.ok || !(r.text && r.text.length > 0)) {
+      // A reachable-but-empty page still records a source (status trail); a hard fail records too.
+      return {
+        source: {
+          id: newSourceId('page'),
+          kind: 'page',
+          url: r.finalUrl ?? url,
+          fetchedAt: now,
+          title: r.title,
+          meta: { status: r.status, ok: r.ok, error: r.error, empty: r.ok },
+        },
+        links,
+        images,
+        failed: !r.ok,
+      }
+    }
+    return {
+      source: {
+        id: newSourceId('page'),
+        kind: 'page',
+        url: r.finalUrl ?? url,
+        fetchedAt: now,
+        title: r.title,
+        text: r.text,
+        meta: { status: r.status, contentType: r.contentType, length: r.text.length },
+      },
+      media: r.headHtml ? parsePageMedia(r.headHtml, r.finalUrl ?? url) : undefined,
+      links,
+      images,
+      failed: false,
+    }
+  } catch {
+    return {
+      source: {
+        id: newSourceId('page'),
+        kind: 'page',
+        url,
+        fetchedAt: now,
+        meta: { status: 0, ok: false, error: 'fetch threw' },
+      },
+      links: [],
+      images: [],
+      failed: true,
+    }
+  }
+}
+
+/**
+ * Crawl the site in two waves: the SEED first (so its nav can be read), then the ranked
+ * discovered links plus the KEY_SUBPATHS fallback tail, in parallel. A seed that fails or exposes
+ * no readable nav leaves the plan exactly as it was before discovery existed.
+ */
 async function crawlSite(
   web: WebProvider,
   seed: string,
   now: string,
-): Promise<{ sources: HarvestedSource[]; media: ParsedPageMedia[]; failed: number }> {
-  const urls = planCrawlUrls(seed)
-  const media: ParsedPageMedia[] = []
-  let failed = 0
-  const results = await Promise.all(
-    urls.map(async (url) => {
-      try {
-        const r = await web.fetchUrl(url)
-        if (!r.ok || !(r.text && r.text.length > 0)) {
-          failed += r.ok ? 0 : 1
-          // A reachable-but-empty page still records a source (status trail); a hard fail records too.
-          return {
-            id: newSourceId('page'),
-            kind: 'page' as const,
-            url: r.finalUrl ?? url,
-            fetchedAt: now,
-            title: r.title,
-            meta: { status: r.status, ok: r.ok, error: r.error, empty: r.ok },
-          }
-        }
-        if (r.headHtml) media.push(parsePageMedia(r.headHtml, r.finalUrl ?? url))
-        return {
-          id: newSourceId('page'),
-          kind: 'page' as const,
-          url: r.finalUrl ?? url,
-          fetchedAt: now,
-          title: r.title,
-          text: r.text,
-          meta: { status: r.status, contentType: r.contentType, length: r.text.length },
-        }
-      } catch {
-        failed += 1
-        return {
-          id: newSourceId('page'),
-          kind: 'page' as const,
-          url,
-          fetchedAt: now,
-          meta: { status: 0, ok: false, error: 'fetch threw' },
-        }
-      }
-    }),
-  )
-  return { sources: results, media, failed }
+): Promise<{ sources: HarvestedSource[]; media: ParsedPageMedia[]; failed: number; images: string[] }> {
+  const first = await fetchPage(web, seed, now)
+  const urls = planCrawlFromDiscovery(seed, first.links)
+  // urls[0] is the seed we just fetched; the rest is the second wave.
+  const rest = urls.slice(1)
+  const restResults = await Promise.all(rest.map((url) => fetchPage(web, url, now)))
+
+  const pages = [first, ...restResults]
+  const sources = pages.map((p) => p.source)
+  const media = pages.map((p) => p.media).filter((m): m is ParsedPageMedia => Boolean(m))
+  const failed = pages.filter((p) => p.failed).length
+  return { sources, media, failed, images: first.images }
 }
 
 // ── Search ───────────────────────────────────────────────────────────────────────
@@ -250,6 +290,7 @@ async function runOembeds(
 async function captureMedia(
   intakeId: string,
   parsed: ParsedPageMedia[],
+  pageImages: string[],
   doCapture: NonNullable<HarvestDeps['captureImage']>,
   now: string,
   sources: HarvestedSource[],
@@ -276,6 +317,18 @@ async function captureMedia(
       captured += 1
       sources.push(imageSource(c.publicUrl, c.sourceUrl, 'hero', now))
     }
+  }
+  // Then the gallery: real photos off the seed page, with chrome (logos, icons, pixels) filtered
+  // out by ./plan. Without this a seeded page has an EMPTY gallery unless an operator uploads by
+  // hand. Each capture is independent and fail-safe: a null simply means one fewer image.
+  const galleryUrls = pickGalleryImages(pageImages, { exclude: [logo, hero] })
+  for (const url of galleryUrls) {
+    if (captured >= HARVEST_BUDGET.maxImages) break
+    const c = await doCapture(intakeId, url, 'gallery')
+    if (!c) continue
+    media.gallery = [...(media.gallery ?? []), c.publicUrl]
+    captured += 1
+    sources.push(imageSource(c.publicUrl, c.sourceUrl, 'gallery', now))
   }
   summary.imagesCaptured = captured
   return media

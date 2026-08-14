@@ -71,6 +71,10 @@ export interface IntakeInputs {
    *  ("lead with the retreat angle", "keep it calm and clinical"). Folded into the reframe system note so
    *  it steers the copy; it can never override the trust rules (no invented facts / health claims). */
   directions?: string
+  /** LOCK LAYOUT (ADR-1038): freeze the Space's BLOCK ARRANGEMENT on a re-apply / re-seed. Copy, images
+   *  and live data still refresh; only preferences.profileLayout is left alone, so a page an operator
+   *  hand-tuned survives a re-seed. The sibling of lockHero, and independent of it. */
+  lockLayout?: boolean
 }
 
 // ── Harvested sources (docs §3.3) ─────────────────────────────────────────────────

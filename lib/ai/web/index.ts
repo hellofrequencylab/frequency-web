@@ -5,8 +5,13 @@
 // tools later) is a one-line swap and the rest of the pipeline depends only on the
 // interface, never on a vendor.
 //
-//   fetchUrl(url)   -> readable text (+ trimmed html for og/logo parse, + status)
+//   fetchUrl(url)   -> readable text (+ trimmed html for og/logo parse, + status,
+//                      + the same-origin LINKS and the image urls found in the document)
 //   searchWeb(query) -> a handful of { title, url, snippet } results
+//
+// The links/images come out of the SAME single html parse the text extraction already does,
+// so the crawler can follow a site's REAL nav (docs §6.2) and the harvest can capture real
+// photos, without any caller ever handling raw body html.
 //
 // FAIL-SAFE by contract: neither throws. A network error, a non-2xx, a timeout, or a
 // missing search provider degrades to an empty/failed result the harvest records as a
@@ -27,6 +32,12 @@ export interface WebFetchResult {
   text?: string
   /** Trimmed <head> html for og/logo parsing only (never the whole document). */
   headHtml?: string
+  /** Absolute, de-duplicated, SAME-ORIGIN hrefs found in the document (fragments + queries
+   *  normalised away, non-http(s) dropped, capped). Absent on a failed or non-html response. */
+  links?: string[]
+  /** Absolute image urls found in the document (img src + a srcset's first candidate),
+   *  non-http(s) dropped, capped. Absent on a failed or non-html response. */
+  images?: string[]
   contentType?: string
   error?: string
 }
@@ -49,6 +60,8 @@ const DEFAULT_TIMEOUT_MS = 10_000
 const DEFAULT_MAX_BYTES = 1_500_000 // ~1.5MB page cap; enough for text + head, bounds memory
 const MAX_TEXT_CHARS = 20_000 // per-page readable-text cap fed downstream
 const HEAD_HTML_CHARS = 20_000 // <head> slice kept for og/logo parse
+const MAX_LINKS = 60 // same-origin hrefs handed to the crawl planner (it ranks + caps again)
+const MAX_IMAGES = 20 // image urls handed to the media capture (it filters chrome + caps again)
 
 // ── SSRF / scheme guard ────────────────────────────────────────────────────────────
 
@@ -184,6 +197,103 @@ export function extractHeadHtml(html: string): string {
   return head.slice(0, HEAD_HTML_CHARS)
 }
 
+// ── Link + image discovery (the crawler's nav read) ─────────────────────────────────
+
+/** Resolve one href against the page, keep it ONLY when it is a public-ish http(s) url on the
+ *  SAME origin, and normalise it to its bare path form (no fragment, no query, no trailing
+ *  slash) so `/about`, `/about/`, `/about#team` and `/about?ref=nav` collapse to one url. PURE. */
+function sameOriginHref(href: string, base: string, origin: string): string | undefined {
+  const t = href.trim()
+  if (!t || t.startsWith('#')) return undefined
+  let u: URL
+  try {
+    u = new URL(t, base)
+  } catch {
+    return undefined
+  }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return undefined
+  if (u.origin !== origin) return undefined
+  u.hash = ''
+  u.search = ''
+  return u.toString().replace(/\/$/, '') || undefined
+}
+
+/**
+ * The absolute, de-duplicated, SAME-ORIGIN links in a document, in document order, capped.
+ * Same-origin only because the crawler follows a business's OWN nav; an outbound link is noise
+ * (and a fetch we have no reason to spend). Regex parse over the already-bounded body, no DOM.
+ * Returns [] for a base url we cannot parse. PURE + total.
+ */
+export function extractLinks(html: string, pageUrl: string, max = MAX_LINKS): string[] {
+  let origin: string
+  try {
+    origin = new URL(pageUrl).origin
+  } catch {
+    return []
+  }
+  const out: string[] = []
+  const seen = new Set<string>()
+  const re = /<a\b[^<>]*?\bhref\s*=\s*["']([^"']*)["']/gi
+  let m: RegExpExecArray | null
+  while ((m = re.exec(html)) !== null) {
+    const abs = sameOriginHref(decodeAttr(m[1]), pageUrl, origin)
+    if (!abs) continue
+    const key = abs.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(abs)
+    if (out.length >= max) break
+  }
+  return out
+}
+
+/**
+ * The absolute image urls in a document (an `<img src>`, plus the FIRST candidate of a
+ * `srcset` when there is no usable src), in document order, capped. Cross-origin is fine here:
+ * a site's photos usually live on a cdn. Non-http(s) (data:, blob:) is dropped. The chrome
+ * filter (logo / icon / pixel) lives in the harvest planner, not here. PURE + total.
+ */
+export function extractImages(html: string, pageUrl: string, max = MAX_IMAGES): string[] {
+  const out: string[] = []
+  const seen = new Set<string>()
+  const push = (raw: string | undefined) => {
+    const t = (raw ?? '').trim()
+    if (!t || out.length >= max) return
+    let u: URL
+    try {
+      u = new URL(decodeAttr(t), pageUrl)
+    } catch {
+      return
+    }
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return
+    const abs = u.toString()
+    const key = abs.toLowerCase()
+    if (seen.has(key)) return
+    seen.add(key)
+    out.push(abs)
+  }
+  const tagRe = /<img\b[^<>]*>/gi
+  let tag: RegExpExecArray | null
+  while ((tag = tagRe.exec(html)) !== null) {
+    if (out.length >= max) break
+    const src = /\bsrc\s*=\s*["']([^"']*)["']/i.exec(tag[0])?.[1]
+    if (src && src.trim()) {
+      push(src)
+      continue
+    }
+    // Lazy-loaded markup often carries only a srcset; its first candidate is the smallest but
+    // it is a real url we can capture, which beats capturing nothing.
+    const srcset = /\bsrcset\s*=\s*["']([^"']*)["']/i.exec(tag[0])?.[1]
+    if (srcset) push(srcset.split(',')[0]?.trim().split(/\s+/)[0])
+  }
+  return out
+}
+
+/** Decode the handful of entities that actually appear inside html attribute values. PURE. */
+function decodeAttr(value: string): string {
+  return value.replace(/&amp;/gi, '&').replace(/&#38;/g, '&')
+}
+
 // ── The default provider ────────────────────────────────────────────────────────────
 
 /** Read the response body up to a byte cap (bounds memory on a hostile / huge page). */
@@ -252,6 +362,9 @@ export const defaultWebProvider: WebProvider = {
         return { ok: true, url, finalUrl: res.url, status: res.status, contentType, text: '', headHtml: '' }
       }
       const body = await readBounded(res, maxBytes)
+      // ONE parse of the body feeds everything downstream: readable text, the head slice for
+      // og/logo, and the link + image lists. Callers never see raw body html.
+      const base = res.url || url
       return {
         ok: true,
         url,
@@ -261,6 +374,8 @@ export const defaultWebProvider: WebProvider = {
         title: extractTitle(body),
         text: htmlToText(body),
         headHtml: extractHeadHtml(body),
+        links: extractLinks(body, base),
+        images: extractImages(body, base),
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)

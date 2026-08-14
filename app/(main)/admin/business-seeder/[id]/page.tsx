@@ -90,6 +90,7 @@ export default async function BusinessImportReviewPage({ params }: { params: Pro
         initialImages={review.images}
         initialImagePlan={review.imagePlan}
         initialLockHero={review.lockHero}
+        initialLockLayout={review.lockLayout}
         initialListed={review.listed}
         initialDirections={review.directions}
       />
