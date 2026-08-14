@@ -111,7 +111,10 @@ export async function SiteHeader({ profile: profileProp, variant = 'light', auth
       // h-16 + top padding by env(safe-area-inset-top) so the fixed bar fills behind the
       // iOS PWA status bar / notch (viewport-fit=cover) instead of rendering under it.
       style={{ height: 'calc(4rem + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)' }}
-      className={`fixed top-0 inset-x-0 z-50 flex items-center gap-3 px-5 sm:px-8 ${
+      // The wordmark is the one flexible child and every control is `shrink-0` — the same
+      // guarantee MarketingHeader states at length. Without it the auth cluster ("Sign in" +
+      // the CTA, 178px) rode off the right edge of every /discover page below ~500px.
+      className={`fixed top-0 inset-x-0 z-50 flex items-center gap-2 px-4 sm:gap-3 sm:px-8 ${
         isDark
           ? 'bg-transparent'
           : 'bg-surface/90 backdrop-blur-md border-b border-border'
@@ -129,12 +132,12 @@ export async function SiteHeader({ profile: profileProp, variant = 'light', auth
 
       {/* Logo */}
       {clientAuth ? (
-        <ViewerLink anonHref="/" authHref="/feed" className="shrink-0">
-          <Wordmark className={`h-7 w-auto ${isDark ? 'invert' : 'dark:invert'}`} priority />
+        <ViewerLink anonHref="/" authHref="/feed" className="min-w-0 shrink">
+          <Wordmark className={`h-6 w-auto max-w-full object-contain sm:h-7 ${isDark ? 'invert' : 'dark:invert'}`} priority />
         </ViewerLink>
       ) : (
-        <Link href={isAuth ? '/feed' : '/'} className="shrink-0">
-          <Wordmark className={`h-7 w-auto ${isDark ? 'invert' : 'dark:invert'}`} priority />
+        <Link href={isAuth ? '/feed' : '/'} className="min-w-0 shrink">
+          <Wordmark className={`h-6 w-auto max-w-full object-contain sm:h-7 ${isDark ? 'invert' : 'dark:invert'}`} priority />
         </Link>
       )}
 
@@ -163,7 +166,7 @@ export async function SiteHeader({ profile: profileProp, variant = 'light', auth
       <SearchLink
         clientAuth={clientAuth}
         isAuth={isAuth}
-        className={`hidden sm:flex items-center gap-2 rounded-lg border px-3 py-1.5 text-body-sm transition-colors ${
+        className={`hidden sm:flex shrink-0 items-center gap-2 rounded-lg border px-3 py-1.5 text-body-sm transition-colors ${
           isDark
             ? 'border-on-ink/20 bg-on-ink/10 text-on-ink-muted hover:bg-on-ink/20 hover:text-on-ink'
             : 'border-border bg-surface-elevated text-muted hover:border-border-strong'
@@ -186,7 +189,7 @@ export async function SiteHeader({ profile: profileProp, variant = 'light', auth
       <SearchLink
         clientAuth={clientAuth}
         isAuth={isAuth}
-        className={`sm:hidden p-2 rounded-lg transition-colors ${
+        className={`sm:hidden shrink-0 p-2 rounded-lg transition-colors ${
           isDark
             ? 'text-on-ink-muted hover:text-on-ink hover:bg-on-ink/10'
             : 'text-muted hover:text-text hover:bg-surface-elevated'

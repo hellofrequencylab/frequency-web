@@ -9,6 +9,9 @@
 //   @smoke  — reachability + no-500 checks.        default run
 //   @a11y   — axe-core WCAG A/AA gate.             default run  (no baseline dependency;
 //                                                  see the rationale in a11y.spec.ts)
+//   @overflow — nothing runs off the side of a     default run  (no baseline dependency either;
+//               phone, at 320/360/390.                          it MEASURES boxes rather than
+//                                                               comparing pixels. ADR-1035.)
 //   @visual — pixel baselines.                     OPT-IN ONLY (`--grep @visual`), because
 //                                                  a missing baseline is noise, not signal.
 // So `pnpm test:e2e` (`--grep-invert @visual`) stays correct as written: it runs smoke +

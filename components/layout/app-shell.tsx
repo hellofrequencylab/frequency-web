@@ -1476,8 +1476,20 @@ function MobileTabBar({
   // Every item — the two edge buttons AND the destination tabs — is flex-1 with the same
   // icon size + stroke weight, so the row reads as one evenly-spaced, uniform set. Active is
   // shown by COLOR only (not a heavier stroke), so weights never differ across the row.
+  // 🔴 `min-w-0` IS WHAT MAKES `flex-1` MEAN "an equal seventh", and without it the row was
+  // neither equal nor safe. A flex item's default `min-width:auto` floors it at its content
+  // width, and here the content is a LABEL — so each tab was as wide as its own word. Measured
+  // at 360px: Menu/Feed/Zap/Events/Quest 49px, Community 55px, Marketplace 59px, i.e. icons that
+  // are supposed to be evenly spaced were not, "The Quest" wrapped onto two lines while its
+  // neighbours stayed on one, and the seven min-contents summed to 319px against a 320px screen —
+  // one pixel of headroom on the row that carries every destination on a phone. A longer label, a
+  // denser generation preset or a narrower device tips that into an overflowing bar whose last
+  // tab (Marketplace) leaves the screen with no way to scroll to it.
+  //
+  // The label then needs `truncate` (see below) because `min-w-0` only permits the shrink; it does
+  // not tell the text what to do when it happens.
   const tabClass = (active: boolean) =>
-    `flex flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-medium transition-colors ${
+    `flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-medium transition-colors ${
       active ? 'text-primary-strong' : 'text-muted hover:text-text'
     }`
 
@@ -1487,15 +1499,18 @@ function MobileTabBar({
     const active = isActive(tab.node.href)
     return (
       <Link key={tab.node.id} href={tab.node.href} aria-label={tab.label} className={tabClass(active)}>
-        <Icon className="h-[22px] w-[22px]" strokeWidth={2} />
-        <span className="leading-none">{tab.label}</span>
+        <Icon className="h-[22px] w-[22px] shrink-0" strokeWidth={2} />
+        {/* ONE line, clipped rather than wrapped or overflowing. The tab's accessible name is the
+            full label (aria-label on the Link), so a truncated word never costs a screen-reader
+            user the destination — and the icon, not the caption, is what a thumb aims at. */}
+        <span className="w-full truncate text-center leading-none">{tab.label}</span>
       </Link>
     )
   }
 
   // The edge buttons (menu + stats) are plain tabs too — same flex-1 width, icon, and weight.
   const handle =
-    'flex flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-medium text-muted transition-colors active:text-text'
+    'flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-medium text-muted transition-colors active:text-text'
 
   return (
     <nav
@@ -1513,8 +1528,8 @@ function MobileTabBar({
         aria-expanded={menuOpen}
         className={`${handle} ${menuOpen ? 'text-primary-strong' : ''}`}
       >
-        {menuOpen ? <X className="h-[22px] w-[22px]" strokeWidth={2} /> : <Menu className="h-[22px] w-[22px]" strokeWidth={2} />}
-        <span className="leading-none">Menu</span>
+        {menuOpen ? <X className="h-[22px] w-[22px] shrink-0" strokeWidth={2} /> : <Menu className="h-[22px] w-[22px] shrink-0" strokeWidth={2} />}
+        <span className="w-full truncate text-center leading-none">Menu</span>
       </button>
 
       {!hideAppNav && tabs.slice(0, 2).map(renderTab)}
@@ -1529,7 +1544,7 @@ function MobileTabBar({
           type="button"
           onClick={() => window.dispatchEvent(new CustomEvent('open-capture', { detail: { mode: 'post' } }))}
           aria-label="Zap, capture a moment"
-          className="relative flex flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-semibold text-primary-strong"
+          className="relative flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-semibold text-primary-strong"
         >
           {/* The circle sits a touch lower than dead-center on the bar's top edge so
               it reads balanced against the flat tabs (its center is 6px below the
@@ -1557,7 +1572,7 @@ function MobileTabBar({
               strokeWidth={2}
             />
           </span>
-          <span className="leading-none">Zap</span>
+          <span className="w-full truncate text-center leading-none">Zap</span>
         </button>
       )}
 
@@ -2056,7 +2071,18 @@ export default function AppShell({
             foot — nothing is offered twice.
             pr keeps the avatar off the screen edge below lg (the lg block is
             flush-right by design for the rail alignment). */}
-        <div className="flex flex-1 min-w-0 items-center justify-end gap-1 pl-2.5 pr-2 md:gap-2 md:pl-4 lg:pr-0">
+        {/* 🔴 `shrink-0`, NOT `min-w-0`, and the swap is the fix rather than a preference.
+            `min-w-0` said "this cluster may be squeezed below its contents" — and because the
+            cluster is `justify-end`, being squeezed pushes its icons out through its LEFT edge,
+            over the wordmark beside it. The mark could not shrink to make room (its width comes
+            from `aspect-ratio`, an intrinsic floor), so the deficit had nowhere else to go: at
+            390px the search glyph sat on top of the mark's last letters, and at 360px the whole
+            icon row did. Now the cluster keeps its contents' width at every viewport and the
+            BRAND absorbs the deficit (components/layout/brand-mark.tsx), which is the only child
+            that can give ground without anything becoming unreachable.
+            `flex-1` stays: it is what grows the cluster to meet `lg:min-w-72` and keep the
+            account block aligned to the right rail. */}
+        <div className="flex flex-1 shrink-0 items-center justify-end gap-1 pl-2.5 pr-2 md:gap-2 md:pl-4 lg:pr-0">
 
           {/* Demo-content toggle — sits to the LEFT of Search (desktop). Members
               hide/show seeded demo content for themselves; sized to match Search. */}

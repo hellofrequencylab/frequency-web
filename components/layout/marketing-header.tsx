@@ -96,7 +96,23 @@ export function MarketingHeader({
       // h-16 + top padding by env(safe-area-inset-top) so the fixed bar fills behind the
       // iOS PWA status bar / notch (viewport-fit=cover) instead of rendering under it.
       style={{ height: 'calc(4rem + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)' }}
-      className={`fixed top-0 inset-x-0 z-50 flex items-center gap-3 px-5 sm:px-8 transition-colors duration-300 ${
+      // ── THE WORDMARK IS THE ONLY THING THAT SHRINKS ────────────────────────────────────────
+      // Every other child is `shrink-0`, so the CTA and the mobile menu button keep their full
+      // size at every width and the mark absorbs the whole deficit (see the Link below).
+      //
+      // 🔴 WHY THIS IS A GUARANTEE AND NOT A BUDGET. This bar was laid out as a budget — a
+      // `shrink-0` mark plus fixed controls that happened to add up — and the budget silently
+      // broke when the wordmark asset was cropped from 963x170 to 963x130 (#2085). The mark is
+      // sized by HEIGHT, so a 31% wider aspect made it 31% wider at the same `h-7`: 168px became
+      // 220px. Nothing else moved, nothing failed a test, and the extra 52px pushed the mobile
+      // menu button to x=404 on a 360px screen. The bar is `fixed` with no horizontal scroll, so
+      // that button was not merely ugly, it was OFF THE SCREEN AND UNREACHABLE on every phone —
+      // the only navigation a visitor has on a marketing page. An arithmetic layout cannot notice
+      // an asset swap; a shrinking one cannot be broken by it.
+      //
+      // Mobile gutters + gap are tightened (px-4/gap-2) so the mark still has room to read at
+      // 360px rather than shrinking to nothing to pay for padding.
+      className={`fixed top-0 inset-x-0 z-50 flex items-center gap-2 px-4 sm:gap-3 sm:px-8 transition-colors duration-300 ${
         light ? 'bg-surface/90 backdrop-blur-md border-b border-border' : 'bg-gradient-to-b from-ink/60 via-ink/25 to-transparent'
       }`}
     >
@@ -110,9 +126,15 @@ export function MarketingHeader({
         Skip to content
       </a>
 
-      {/* Logo — into the app when signed in, to the splash when not. */}
-      <Link href={authed ? '/feed' : '/'} className="shrink-0">
-        <Wordmark className={`h-7 w-auto ${light ? 'dark:invert' : 'invert drop-shadow-md'}`} priority />
+      {/* Logo — into the app when signed in, to the splash when not.
+          `min-w-0` is what lets this be the flexible child: a flex item's default `min-width:auto`
+          is its content size, so without it the mark refuses to shrink no matter what the CSS says
+          and the deficit lands on whichever sibling can move (or on the viewport edge).
+          `max-w-full object-contain` is the other half — the mark is sized by height, so clamping
+          its width would squash the letterforms; `object-contain` letterboxes instead, and the mask
+          scales down cleanly. */}
+      <Link href={authed ? '/feed' : '/'} className="min-w-0 shrink">
+        <Wordmark className={`h-6 w-auto max-w-full object-contain sm:h-7 ${light ? 'dark:invert' : 'invert drop-shadow-md'}`} priority />
       </Link>
 
       {/* Header mega-menu (Discover + Explore dropdowns, from the `header` surface) */}
@@ -129,7 +151,7 @@ export function MarketingHeader({
 
       <Link
         href="/sign-in"
-        className={`hidden sm:block text-body-sm font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+        className={`hidden shrink-0 sm:block text-body-sm font-semibold px-3 py-1.5 rounded-lg transition-colors ${
           light
             ? 'text-muted hover:text-text hover:bg-surface-elevated'
             : 'text-on-ink-muted hover:text-on-ink hover:bg-on-ink/10'
@@ -139,7 +161,7 @@ export function MarketingHeader({
       </Link>
       <Link
         href={BETA_CTA_HREF}
-        className={`rounded-lg px-4 py-2 text-body-sm font-bold transition-colors whitespace-nowrap ${
+        className={`shrink-0 rounded-lg px-3 py-1.5 text-body-sm font-bold transition-colors whitespace-nowrap sm:px-4 sm:py-2 ${
           light
             ? 'bg-primary text-on-primary hover:bg-primary-hover'
             : 'bg-on-ink text-ink hover:bg-on-ink/90'

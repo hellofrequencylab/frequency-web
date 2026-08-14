@@ -252,9 +252,15 @@ function MobileByColumn({
                 </h4>
                 <dl className="space-y-2">
                   {group.rows.map((row) => (
+                    // `min-w-0` on BOTH sides, never `shrink-0` on the value. A `shrink-0` value
+                    // is a promise the row cannot keep once an allowance sentence lands in it:
+                    // "3 seats included, add more per seat" measures 241px, which on a 320px card
+                    // (minus px-5 and the gap) has nowhere to go, so the row pushed the whole
+                    // /pricing page into a horizontal scroll (measured 366px on a 360px screen).
+                    // Both cells wrap instead; `text-right` keeps the ledger reading as a ledger.
                     <div key={row.key} className="flex items-start justify-between gap-4">
-                      <dt className="text-body-sm text-muted">{row.label}</dt>
-                      <dd className="shrink-0 text-right text-body-sm">
+                      <dt className="min-w-0 text-body-sm text-muted">{row.label}</dt>
+                      <dd className="min-w-0 text-right text-body-sm">
                         <ComparisonCellText cell={row.cells[i]!} />
                       </dd>
                     </div>
@@ -295,7 +301,10 @@ function MobileByRow({
                   <p className="font-semibold text-text">{row.label}</p>
                   {row.detail && <p className="mt-0.5 text-meta text-muted">{row.detail}</p>}
                 </div>
-                <div className="flex shrink-0 flex-col items-end gap-1 text-right text-body-sm">
+                {/* `min-w-0`, not `shrink-0` — same reason as the by-column ledger above. The
+                    card carries `overflow-hidden`, so here an unshrinkable value column did not
+                    scroll the page, it silently CLIPPED the end of the longest allowance line. */}
+                <div className="flex min-w-0 flex-col items-end gap-1 text-right text-body-sm">
                   {row.cells.map((cell, i) => (
                     <ComparisonCellText key={columns[i]!.id} cell={cell} />
                   ))}

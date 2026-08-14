@@ -42,7 +42,10 @@ export function MarketingMobileMenu({ light }: { light: boolean }) {
   }, [open])
 
   return (
-    <div className="md:hidden">
+    // `shrink-0` because this is the ONLY navigation a visitor has below md. It rides three
+    // fixed headers whose one flexible child is the wordmark (see marketing-header.tsx); a
+    // shrinkable menu button would be the header's escape valve and could be squeezed to nothing.
+    <div className="shrink-0 md:hidden">
       <button
         ref={openButtonRef}
         type="button"
