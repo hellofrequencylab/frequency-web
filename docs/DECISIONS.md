@@ -24681,3 +24681,119 @@ when there is an existing layout to protect, so it can never leave a Space with 
 states them in a form the extractor can find. Rather than let the band degrade to a generic value-prop
 list on every seed, the start form asks: a fifth labeled content box, folded into the paste by
 `composePaste` exactly like the other four.
+## ADR-1039: A disclosure that does not announce itself cannot be tested, and a clip is not an excuse (2026-08-14)
+
+**Owner instruction:** *"the home menu looks like trash on mobile. alerts look weird and the tool
+tip doesn't close."* — with two phone screenshots.
+
+### Three defects, three different shapes
+
+| | What a member saw | Cause |
+|---|---|---|
+| 🔴 Marketing menu sheet | Every row flush against the left edge of the screen | `px-4 … px-safe` on one element. `.px-safe` **set** `padding-inline` to a bare `env(safe-area-inset-left)`, which is **0 in portrait**, so it won the cascade and deleted the gutter. Both site footers had the same pair and went edge to edge. |
+| 🔴 Notifications panel | Heading and "Mark all read" cut off the left of the screen | `absolute right-0 w-80` (340px) anchored to a bell ~67px in from the right edge: left edge at **−17px** on a 390px phone, **−57px** on a 360px one. |
+| ⚠️ Tooltip | Label stuck over the open panel with no way to dismiss it | `group-focus-within` — and a **tap focuses a button**, so the tip lit on first touch and stayed while focus remained on the trigger. |
+
+### The decisions
+
+1. **`.px-safe` composes instead of overwriting.** `max(var(--px-safe-gutter, 0px), env(…))`, the
+   same shape `.mk-band` already used — whose comment claimed "`max()` is the same shape .px-safe
+   uses" while `.px-safe` did no such thing. The default of `0px` keeps every bare `px-safe`
+   byte-identical; a caller wanting a gutter writes `px-safe [--px-safe-gutter:1rem]`, one decision
+   about horizontal space rather than two that fight.
+2. **Below `sm` the notifications popover is a sheet.** It detaches from the bell and spans the
+   viewport under the header, height-capped between `--app-header-h` and `--tab-bar-clearance` so
+   the list scrolls inside it. The bell-anchored popover is unchanged from `sm` up.
+3. **Tooltips open on `:focus-visible`, not `:focus-within`.** That is precisely the distinction the
+   platform already draws between keyboard navigation and a tap, so a keyboard member keeps the
+   label on an icon-only control and a thumb-only member never sees it.
+
+### 🔴 Two corrections to ADR-1035's gate, and the second one matters
+
+**The overlay blind spot.** `@overflow` measured each page as it loaded. Most of a phone's chrome
+is behind a disclosure, so it was measuring the easy half. It now opens every visible
+`button[aria-expanded]` / `button[aria-haspopup]`, measures, and closes — triggers **discovered**,
+not listed, so a popover written later is covered the day it ships. That in turn required the bell
+and the account menu to *have* those attributes; both were missing them, which was already an a11y
+defect and is why the panel was invisible to the one check that could have caught it. **A control
+that does not announce it opens something cannot be tested, and should not have shipped either way.**
+
+**The clip exemption was backwards, and it made the previous result partly hollow.** It excused any
+child of an `overflow: hidden|clip` box whose own edges were in bounds — which describes the shell
+root (`overflow-x-clip`, full width, always in bounds). So every overflow inside the authed app was
+waved through: the "12 member-shell checks pass" line in ADR-1035 was measuring almost nothing, and
+the notifications panel was hanging off the screen the entire time the gate reported green.
+Clipping is the **symptom** this gate exists to catch, not a licence. Only two things are excused
+now — a real scroller (the content stays reachable) and the named marquee (decorative by design) —
+plus anything with `pointer-events: none`, which covers the closed off-canvas drawer parked at
+`-translate-x-full` without needing to know about it.
+
+### ⚠️ What the browser gate structurally cannot catch
+
+The zeroed gutter is **not overflow**. Nothing crosses the viewport edge; the content is merely
+jammed against it. Verified rather than assumed: reverting the fix and re-running `@overflow`
+against the opened sheet **passes**. So it is held by a source test instead —
+`components/layout/px-safe.test.ts` fails on any element combining `px-safe` with a `px-*` — and
+that test was itself verified red on the old spelling before being trusted. Two instruments, two
+failure shapes, neither a substitute for the other.
+
+### The baseline recapture, and why a 13px diff is the proof
+
+`pr-compare` failed on four `@visual` baselines: `/discover`, mobile, all four render states, the
+page **13px taller** (9664 → 9677). That is the gutter fix landing, not a regression. The footer had
+been rendering edge to edge because `px-6 … px-safe` resolved to 0; restoring 1.5rem narrows the
+measure, and one line of the contact row wraps. A 13px diff is exactly the shape of one wrapped line
+— and it is the only surface that moved, because `/discover` and the marketing footer are the two
+places that carried the broken pair, and the marketing footer sits below the fold of every captured
+page. Recaptured on a runner per `test/e2e/README.md`.
+
+⚠️ Worth stating for the next reader: **the `@overflow` gate passed this whole time**, on both the
+closed pass and the new overlay pass. It should have — a zeroed gutter is not overflow. The visual
+baseline is what noticed, which is the one thing full-page pixel capture is genuinely good at
+(page HEIGHT), and it is why the two suites are kept rather than collapsed into one.
+
+### `/discover` becomes a viewport capture, and the evidence that justified it
+
+The recaptured `/discover` baselines failed again, and the second failure is what settled it: **390x9701
+on two `pr-compare` runs 25 minutes apart**, against a 9677 baseline captured minutes earlier from the
+same branch. Reproducible, so not flake — and only **three of the four render states** differed, which
+no code change can produce, since the four are the same page with different colour tokens and a layout
+regression moves all four together.
+
+`/discover` reads `getPublicCircles(200)` plus live event and channel counts behind
+`revalidate = 3600`. Its page LENGTH therefore tracks the database and the ISR cache of whichever
+deployment answered — and a capture run and the `pr-compare` that verifies it necessarily hit
+different deployments, because every commit builds a new one. That is not fixable from the harness,
+and re-capturing only resets the clock (`test/e2e/README.md` records the same conclusion for `/feed`,
+which has carried `viewportOnly` for exactly this reason).
+
+So `/discover` joins it, via a named `LIVE_DATA_PATHS` list rather than a magic string at the call site.
+
+⚠️ **What it costs, stated rather than glossed — and it is more than the phone.** The flag is read per
+SURFACE, not per project, so `/discover` drops to a first-screen capture on **desktop as well**: eight
+baselines, all shrinking from a full page to one screen. Everything below the fold on that route (the
+topic bands, the circle grid, the footer) stops being pixel-covered at either width. That is a real
+reduction, it is larger than the first draft of this note implied, and it is bounded by two things.
+The footer's `px-safe` fix keeps FULL-page coverage on the seven marketing surfaces carrying the
+marketing footer, and the class of bug that broke it is now held from the source side by
+`components/layout/px-safe.test.ts`. Reverting is one line if that trade turns out wrong.
+
+🔴 **The general lesson, since this is the second time a plausible story was wrong.** The first
+explanation for these failures was "live content drift"; the reproducibility killed it, and the
+three-of-four split killed the "layout regression" reading too. Neither was checked before being
+believed the first time. A visual baseline that disagrees is data about the HARNESS as often as
+about the code, and the cheap discriminator — run it twice and see whether the number repeats — costs
+one re-run and should come before any theory.
+
+### The overlay pass earned its keep on the first run
+
+Its first CI run against the member shell found a defect nobody had reported and that no local
+harness could reach: the feed's **emoji reaction picker**. Six reactions ≈ 273px, anchored `left-0`
+to a trigger ~152px into a 360px screen, so its right edge landed at **425 — 65px off the side**,
+clipped by the shell root and unreachable. `right-0` would have been worse (left edge at −93). Below
+`sm` it now centres on the trigger, where it spans 30→302, with `max-w` + `flex-wrap` so a trigger
+nearer an edge or a seventh reaction wraps to a second row instead of leaving the screen.
+
+That is the answer to "why open the overlays" in one example: the picker is behind a tap, on an
+authed surface, at a width the visual baselines do not photograph. Three separate reasons the
+existing suites could never have seen it.

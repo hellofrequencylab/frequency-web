@@ -117,6 +117,11 @@ export function UserMenu({
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 hover:bg-surface-elevated transition-colors"
         aria-label="User menu"
+        // Same disclosure contract the notification bell now carries: announce that this opens
+        // something and whether it is open. It also brings the dropdown into the @overflow
+        // gate's overlay pass, which discovers triggers by these two attributes.
+        aria-expanded={open}
+        aria-haspopup="menu"
       >
         {profile.avatar_url ? (
           <Image

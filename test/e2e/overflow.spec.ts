@@ -93,19 +93,36 @@ async function overflowing(page: Page, viewport: number): Promise<Offender[]> {
   return page.evaluate((vw) => {
     const out: Offender[] = []
 
-    /** Is `el` inside something that scrolls or clips on purpose, and is that ancestor in bounds? */
+    /**
+     * Is `el` inside something that legitimately extends past the viewport?
+     *
+     * 🔴 A CLIPPING ANCESTOR IS NOT AN EXCUSE, and the first version of this gate got that
+     * exactly backwards. It excused any child of an `overflow: hidden|clip` box whose own edges
+     * were in bounds — which describes the SHELL ROOT (`overflow-x-clip`, full width, always in
+     * bounds). So every overflow inside the authed app was waved through, and the "12 member
+     * shell checks pass" result that shipped with this file was hollow: the notifications panel
+     * was hanging 17px off the left of a 390px screen the whole time and the gate said ok.
+     *
+     * Clipping is the SYMPTOM this gate exists to catch, not a licence. What is genuinely fine
+     * is content the reader can still get to (a real scroller) or that they were never meant to
+     * read (a decorative bleed). So only those two are excused, plus the one named exception
+     * below.
+     */
     const excusedByAncestor = (el: Element): boolean => {
       let node = el.parentElement
       while (node && node !== document.documentElement) {
         const s = getComputedStyle(node)
-        const x = s.overflowX
-        const y = s.overflowY
-        if (x === 'auto' || x === 'scroll' || y === 'auto' || y === 'scroll') return true
-        if (x === 'hidden' || x === 'clip' || y === 'hidden' || y === 'clip') {
-          // A clip only excuses the child if the CLIPPER itself is on screen. The shell root
-          // carries `overflow-x-clip`, so without this the gate would excuse the entire app.
-          const r = node.getBoundingClientRect()
-          if (r.right <= vw + 1 && r.left >= -1) return true
+        // A real scroller. PAGE-FRAMEWORK's rule for wide tables and the admin sub-nav is that
+        // they scroll inside their own container; the content stays reachable.
+        if (['auto', 'scroll'].includes(s.overflowX) || ['auto', 'scroll'].includes(s.overflowY)) {
+          return true
+        }
+        // The marquee: a ~3,600px strip of duplicated words inside an `overflow-hidden` band,
+        // running past the edge BY DESIGN and carrying no information a reader needs. Named
+        // explicitly rather than inferred from its clip, so it cannot become a loophole the way
+        // "any clipper" did.
+        if (node.querySelector(':scope > .animate-marquee') || node.classList.contains('animate-marquee')) {
+          return true
         }
         node = node.parentElement
       }
@@ -120,6 +137,13 @@ async function overflowing(page: Page, viewport: number): Promise<Offender[]> {
       if (s.visibility === 'hidden' || s.display === 'none') continue
       // Decorative bleeds (glows, rules, gradient washes) are allowed to run past the edge.
       if (el.getAttribute('aria-hidden') === 'true') continue
+      // Parked off-stage on purpose. `pointer-events` INHERITS, so this one read covers the
+      // whole subtree: the closed mobile drawer sits at `-translate-x-full` inside a
+      // `pointer-events-none` wrapper, 272px off the left edge, and is not a defect — it is a
+      // panel waiting its turn. The test is reachability, and a box the reader cannot touch is
+      // not withholding anything from them. When the overlay pass OPENS that drawer the wrapper
+      // flips to `pointer-events-auto` and it gets measured like everything else.
+      if (s.pointerEvents === 'none') continue
 
       const over = Math.max(rect.right - vw, -rect.left)
       if (over <= 1) continue
@@ -166,6 +190,59 @@ function report(surface: Surface, width: number, found: Offender[]): string {
   )
 }
 
+/**
+ * Open each disclosure control in turn and re-measure.
+ *
+ * 🔴 THE CLOSED PAGE WAS A BLIND SPOT, and it shipped two bugs on the day this gate landed:
+ * the marketing menu sheet rendered with every row flush against the left edge (a `px-safe`
+ * that zeroed its own gutter), and the notifications panel — `w-80`, 340px, anchored to a bell
+ * 67px in from the right — hung 17px off the left of a 390px screen. Neither is reachable
+ * without a tap, so a gate that only ever photographs the page as it loads cannot see either.
+ * Most of a phone's chrome is behind a disclosure; measuring only the closed state measures the
+ * easy half.
+ *
+ * The triggers are DISCOVERED, not listed: any visible <button> carrying `aria-expanded` or
+ * `aria-haspopup` is a disclosure by definition, so a popover added later is covered the day it
+ * is written — as long as it has the ARIA it already owes a screen-reader user. Only buttons,
+ * never links: a link navigates, and this must not wander off the surface under test.
+ *
+ * Each one is opened, measured, then closed with Escape (and a second press against the trigger
+ * for anything that ignores it), so the surfaces stay independent of each other's state.
+ */
+async function checkOverlays(page: Page, surface: Surface, width: number): Promise<void> {
+  const triggers = page.locator(
+    'button[aria-expanded]:visible, button[aria-haspopup]:visible',
+  )
+  const count = await triggers.count()
+
+  for (let i = 0; i < count; i++) {
+    const trigger = triggers.nth(i)
+    const name =
+      (await trigger.getAttribute('aria-label')) ??
+      (await trigger.textContent())?.trim().slice(0, 30) ??
+      `trigger #${i}`
+
+    try {
+      await trigger.click({ timeout: 5_000 })
+    } catch {
+      // A trigger that moved or is covered by a sibling overlay is not this gate's business.
+      continue
+    }
+    await page.waitForTimeout(350)
+
+    const found = await overflowing(page, width)
+    expect(
+      found.length === 0,
+      found.length
+        ? `${report(surface, width, found)}\n\n  Opened by: "${name}" on ${surface.path}.`
+        : '',
+    ).toBe(true)
+
+    await page.keyboard.press('Escape')
+    await page.waitForTimeout(150)
+  }
+}
+
 async function check(page: Page, surface: Surface, width: number): Promise<void> {
   await page.setViewportSize({ width, height: 844 })
   await page.goto(surface.path, { waitUntil: 'load' })
@@ -183,6 +260,12 @@ async function check(page: Page, surface: Surface, width: number): Promise<void>
   // the readable report and again as a 20-line object diff — and the diff is the half nobody can
   // act on. The message carries the detail; the assertion just has to fail.
   expect(found.length === 0, report(surface, width, found)).toBe(true)
+}
+
+/** The closed-state check, then every disclosure on the surface. */
+async function checkWithOverlays(page: Page, surface: Surface, width: number): Promise<void> {
+  await check(page, surface, width)
+  await checkOverlays(page, surface, width)
 }
 
 test.describe('overflow', { tag: '@overflow' }, () => {
@@ -205,11 +288,19 @@ test.describe('overflow', { tag: '@overflow' }, () => {
   // render states here and is pinned browserlessly instead.)
   const state = RENDER_STATES[0]!
 
+  // The width the OVERLAY pass runs at. One, not three: a disclosure has to be opened before it
+  // can be measured, so each extra width costs a full page load plus a click per trigger — and
+  // both overlay defects this pass was written for (the menu sheet's zeroed gutter, the
+  // notifications panel hanging off the left edge) are already caught here. 360 because it is the
+  // most common Android width and the tighter of the two mainstream phone sizes.
+  const OVERLAY_WIDTH = 360
+
   for (const surface of publicSurfaces()) {
     for (const width of WIDTHS) {
       test(`${surface.path} fits ${width}px @overflow`, async ({ page }) => {
         await applyRenderState(page, state)
-        await check(page, surface, width)
+        if (width === OVERLAY_WIDTH) await checkWithOverlays(page, surface, width)
+        else await check(page, surface, width)
       })
     }
   }
@@ -230,7 +321,8 @@ test.describe('overflow', { tag: '@overflow' }, () => {
       for (const width of WIDTHS) {
         test(`${surface.path} fits ${width}px @overflow`, async ({ page }) => {
           await applyRenderState(page, state)
-          await check(page, surface, width)
+          if (width === OVERLAY_WIDTH) await checkWithOverlays(page, surface, width)
+          else await check(page, surface, width)
         })
       }
     }

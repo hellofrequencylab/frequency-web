@@ -75,7 +75,12 @@ export function MarketingMobileMenu({ light }: { light: boolean }) {
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className="absolute inset-x-0 top-0 max-h-[100dvh] overflow-y-auto rounded-b-2xl bg-surface px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-pop px-safe"
+            // `px-safe [--px-safe-gutter:1rem]` replaces `px-4 … px-safe`. The two were a pair
+            // that could never both apply: px-safe set padding-inline to a bare env() inset,
+            // which is 0px in portrait, so the sheet rendered with its label, every nav row and
+            // both buttons flush against the left edge of the screen. One utility, one gutter,
+            // and the notch still clears in landscape.
+            className="absolute inset-x-0 top-0 max-h-[100dvh] overflow-y-auto rounded-b-2xl bg-surface pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-pop px-safe [--px-safe-gutter:1rem]"
             style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
           >
             <div className="mb-3 flex items-center justify-between">

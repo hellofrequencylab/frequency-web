@@ -38,7 +38,7 @@ export default function DiscoverLayout({ children }: { children: React.ReactNode
       {/* pt base + the home-indicator inset on the bottom so the legal/contact links clear it
           in a standalone PWA (env() = 0 off-device, so unchanged in a normal browser). */}
       <footer
-        className="bg-marketing-canvas border-t border-border/60 px-6 pt-10 px-safe"
+        className="bg-marketing-canvas border-t border-border/60 pt-10 px-safe [--px-safe-gutter:1.5rem]"
         style={{ paddingBottom: 'calc(2.5rem + env(safe-area-inset-bottom))' }}
       >
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">

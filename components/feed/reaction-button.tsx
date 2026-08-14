@@ -219,7 +219,17 @@ export function ReactionInlinePicker({
       {pickerOpen && (
         <div
           role="menu"
-          className={`absolute bottom-full z-20 mb-1.5 flex rounded-card bg-surface-elevated p-1 lift-3 ring-1 ring-border/40 ${
+          // 🔴 BELOW sm IT CENTRES ON THE TRIGGER AND MAY WRAP, because edge-anchoring cannot fit
+          // here. The row is six emoji ≈ 273px; the trigger sits ~152px into a 360px screen, so
+          // `left-0` put its right edge at 425 (65px off the side, found by the @overflow gate's
+          // overlay pass) and `right-0` would put its left edge at -93. Centred it spans 30→302 and
+          // fits. `max-w` + `flex-wrap` are the belt to that brace: a trigger nearer an edge, or a
+          // seventh reaction, wraps to a second row instead of leaving the screen — and the shell
+          // root's `overflow-x-clip` means anything that does leave is gone, not scrolled to.
+          //
+          // From sm up the `align` edge-anchoring is untouched: there is room for it there, and it
+          // keeps the popover visually tied to the control that opened it.
+          className={`absolute bottom-full z-20 mb-1.5 flex max-sm:left-1/2 max-sm:right-auto max-sm:max-w-[calc(100vw-1rem)] max-sm:-translate-x-1/2 max-sm:flex-wrap max-sm:justify-center rounded-card bg-surface-elevated p-1 lift-3 ring-1 ring-border/40 ${
             align === 'end' ? 'right-0' : 'left-0'
           }`}
         >

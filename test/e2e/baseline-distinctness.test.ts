@@ -24,7 +24,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import sharp from 'sharp'
 import { describe, expect, it } from 'vitest'
-import { appSurfaces } from './surfaces'
+import { appSurfaces, publicSurfaces } from './surfaces'
 
 const DIR = join('test', 'e2e', '__screenshots__', 'visual.spec.ts')
 
@@ -32,9 +32,16 @@ const DIR = join('test', 'e2e', '__screenshots__', 'visual.spec.ts')
 const VIEWPORT = { desktop: { width: 1280, height: 800 }, mobile: { width: 390, height: 844 } }
 
 /** Slugs captured at viewport height, read off the surface registry rather than re-listed.
- *  The stub env is what makes the two env-gated rows visible here; see appSurfaces(). */
+ *  The stub env is what makes the two env-gated rows visible here; see appSurfaces().
+ *
+ *  🔴 BOTH REGISTRIES, and the omission was live: this read `appSurfaces()` alone, on the fair
+ *  assumption that only the member shell would ever need a first-screen capture. `/discover` broke
+ *  that — it is an ANON surface whose length tracks live data (see LIVE_DATA_PATHS) — and the
+ *  moment it opted in, its eight baselines came back viewport-tall and this file called every one
+ *  of them a Vercel protection wall. The wall detector below is why that matters: it fails CLOSED,
+ *  so a registry it cannot see reads as a compromised capture rather than as an unknown. */
 const VIEWPORT_ONLY = new Set(
-  appSurfaces({ roomPath: '/room', spaceSlug: 'space' })
+  [...appSurfaces({ roomPath: '/room', spaceSlug: 'space' }), ...publicSurfaces()]
     .filter((s) => s.viewportOnly)
     .map((s) => s.slug),
 )

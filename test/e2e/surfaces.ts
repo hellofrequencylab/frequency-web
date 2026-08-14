@@ -233,8 +233,41 @@ export function publicSurfaces(): readonly Surface[] {
     if (isWalled(path)) continue
     if (!paths.includes(path)) paths.push(path)
   }
-  return paths.map((path) => ({ path, slug: slugFor(path), audience: 'anon' as const }))
+  return paths.map((path) => ({
+    path,
+    slug: slugFor(path),
+    audience: 'anon' as const,
+    ...(LIVE_DATA_PATHS.includes(path) ? { viewportOnly: true } : {}),
+  }))
 }
+
+/**
+ * Public surfaces whose PAGE LENGTH is driven by live, shared data, so a `fullPage` baseline
+ * records what was in the database rather than what the page looks like. Same reasoning and same
+ * remedy as `/feed` (see the note on `Surface.viewportOnly`).
+ *
+ * `/discover` reads `getPublicCircles(200)` plus live event and channel counts behind
+ * `revalidate = 3600`, so what it renders depends on the data AND on which deployment's ISR cache
+ * answered. That is unfixable from the harness: a capture run and the `pr-compare` that verifies it
+ * necessarily hit different deployments, because every commit builds a new one.
+ *
+ * 🔴 MEASURED BEFORE BEING BELIEVED, because `viewportOnly` must never be a way to quiet a real
+ * layout regression. `/discover` came back at 390x9701 on two `pr-compare` runs 25 minutes apart
+ * against a baseline of 9677 captured minutes earlier from the same branch — reproducible, so not
+ * flake — while only THREE of its four render states differed, which no code change can explain
+ * (the four are the same page with different colour tokens; a layout regression moves all four).
+ * The one real layout change in this PR, the footer gutter, was a separate 13px shift that had
+ * already been recaptured and accepted.
+ *
+ * ⚠️ WHAT THIS COSTS, stated rather than glossed, and it is more than the mobile screen: the flag is
+ * read per SURFACE, not per project, so `/discover` drops to a first-screen capture on **desktop as
+ * well** — eight baselines in total, all of them shrinking from a full page to 390x844 / 1280x800.
+ * Everything below the fold on that route (the topic bands, the circle grid, the footer) stops being
+ * pixel-covered at either width. Two things bound it: the footer's `px-safe` fix keeps FULL-page
+ * coverage on the seven marketing surfaces that carry the marketing footer, and the class of bug that
+ * broke it is now held from the source side by components/layout/px-safe.test.ts.
+ */
+const LIVE_DATA_PATHS: readonly string[] = ['/discover']
 
 /**
  * The member-shell surfaces (Lift 6a's "app trio" + the Space console).

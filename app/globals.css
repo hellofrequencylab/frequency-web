@@ -1801,9 +1801,27 @@
    `env(safe-area-inset-top)` inline where each fixed bar sets its height.
    `env()` resolves to 0 on any non-inset display, so this is a no-op off-device. */
 @layer utilities {
+  /* 🔴 IT COMPOSES WITH A GUTTER NOW, BECAUSE IT USED TO SILENTLY EAT ONE.
+     This was `padding-left: env(safe-area-inset-left)` flat. `env()` is 0 on any display
+     without a side inset — which is EVERY phone in portrait — so on the three elements that
+     wrote `px-4 … px-safe` (or `px-6 … px-safe`) expecting the two to add up, this utility
+     won the cascade and set the padding to ZERO. The marketing mobile drawer rendered with
+     every row flush against the left edge of the screen; both site footers went edge to edge.
+     Nothing warned, because "0px" is a perfectly valid padding.
+
+     `max()` is the shape .mk-band above already uses for exactly this pair of concerns, and
+     the note there even claims "the same shape .px-safe uses" — it did not. Now it does.
+
+     The gutter comes from --px-safe-gutter, defaulting to 0px so every existing bare
+     `px-safe` (the app shell body, the claim page) keeps its current behaviour to the pixel.
+     A caller that wants a gutter sets the variable INSTEAD of a second padding utility:
+
+       class="px-safe [--px-safe-gutter:1rem]"
+
+     which reads as one decision about horizontal space rather than two that fight. */
   .px-safe {
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
+    padding-left: max(var(--px-safe-gutter, 0px), env(safe-area-inset-left));
+    padding-right: max(var(--px-safe-gutter, 0px), env(safe-area-inset-right));
   }
 }
 
