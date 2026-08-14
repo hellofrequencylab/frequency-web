@@ -24751,3 +24751,33 @@ page. Recaptured on a runner per `test/e2e/README.md`.
 closed pass and the new overlay pass. It should have — a zeroed gutter is not overflow. The visual
 baseline is what noticed, which is the one thing full-page pixel capture is genuinely good at
 (page HEIGHT), and it is why the two suites are kept rather than collapsed into one.
+
+### `/discover` becomes a viewport capture, and the evidence that justified it
+
+The recaptured `/discover` baselines failed again, and the second failure is what settled it: **390x9701
+on two `pr-compare` runs 25 minutes apart**, against a 9677 baseline captured minutes earlier from the
+same branch. Reproducible, so not flake — and only **three of the four render states** differed, which
+no code change can produce, since the four are the same page with different colour tokens and a layout
+regression moves all four together.
+
+`/discover` reads `getPublicCircles(200)` plus live event and channel counts behind
+`revalidate = 3600`. Its page LENGTH therefore tracks the database and the ISR cache of whichever
+deployment answered — and a capture run and the `pr-compare` that verifies it necessarily hit
+different deployments, because every commit builds a new one. That is not fixable from the harness,
+and re-capturing only resets the clock (`test/e2e/README.md` records the same conclusion for `/feed`,
+which has carried `viewportOnly` for exactly this reason).
+
+So `/discover` joins it, via a named `LIVE_DATA_PATHS` list rather than a magic string at the call site.
+
+⚠️ **What it costs, stated rather than glossed:** `/discover`'s footer and lower bands stop being
+pixel-covered. That is a real reduction and it was not taken lightly — it is bounded by two things.
+The footer's `px-safe` fix keeps FULL-page coverage on the seven marketing surfaces carrying the
+marketing footer, and the class of bug that broke it is now held from the source side by
+`components/layout/px-safe.test.ts`. Reverting is one line if that trade turns out wrong.
+
+🔴 **The general lesson, since this is the second time a plausible story was wrong.** The first
+explanation for these failures was "live content drift"; the reproducibility killed it, and the
+three-of-four split killed the "layout regression" reading too. Neither was checked before being
+believed the first time. A visual baseline that disagrees is data about the HARNESS as often as
+about the code, and the cheap discriminator — run it twice and see whether the number repeats — costs
+one re-run and should come before any theory.
