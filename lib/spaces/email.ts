@@ -11,7 +11,10 @@
 //   (a) the caller has canEditProfile on the Space (owner / admin / editor);
 //   (b) the Space's email KILL-SWITCH (spaces.email_enabled) is ON (default OFF, fail-closed);
 //   (c) today's send count for the Space is under the conservative DAILY CAP;
-//   (d) the recipient is not suppressed (GLOBAL or this-Space) -> logged as 'suppressed', not sent.
+//   (d) the recipient clears the lane's CONSENT BAR (ADR-1040) and is not suppressed (GLOBAL or
+//       this-Space) -> otherwise logged as 'suppressed', not sent. The bar is the marketing double
+//       opt-in for every lane except an event host mailing that event's own guests, which clears at
+//       'transactional' (still blocked by suppression, a hard unsubscribe, and the per-topic mute).
 // Each accepted send carries a per-Space From + Reply-To and an RFC 8058 List-Unsubscribe header with
 // a per-Space unsubscribe token, and writes one outreach_sends row with the provider id + status.
 //
@@ -24,12 +27,12 @@ import { featureGatesLive } from '@/lib/pricing/settings'
 import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { spaceFunctionAccess } from '@/lib/spaces/functions'
+import { spaceFunctionAccess, spaceFunctionAvailable } from '@/lib/spaces/functions'
 import { sendRawEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { suppress } from '@/lib/suppression'
 import { buildSpaceUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { canEmailContact } from '@/lib/crm/contact-consent'
+import { canEmailContact, type ContactPurpose } from '@/lib/crm/contact-consent'
 import { isContactTopicMuted } from '@/lib/comms/contact-preferences'
 import type { NotificationTopic } from '@/lib/notification-preferences'
 import { normalizeEmailTopic } from './email-topics'
@@ -80,15 +83,31 @@ export interface SpaceRecipient {
   email: string
 }
 
+/** Which lane a send belongs to, which is what decides the CONSENT BAR it must clear (ADR-1040).
+ *
+ *  `marketing` (the DEFAULT, and everything except one caller) — a bulk send from a Space to its
+ *  contact book. Held to the double opt-in: a contact must be explicitly `subscribed`.
+ *
+ *  `event_host` — an event's own host messaging that event's own guest list, from the event's Manage
+ *  hub. Attending is the affirmative act (the same reasoning ADR-797 applied to joining), so this
+ *  clears at the `transactional` bar. It is NOT a way to skip consent: suppression, a hard
+ *  `unsubscribed`, the per-topic 'events' mute, the kill switch, the daily cap, and the plan allowance
+ *  all still block it, and every send still carries a one-click unsubscribe. The relaxation applies
+ *  ONLY in combination with topic 'events' (consentPurposeForLane enforces the pairing), and the
+ *  interactive owner-composer entry strips the lane, so the generic campaign composer cannot reach it. */
+export type SpaceSendLane = 'marketing' | 'event_host'
+
 /** The input to sendSpaceCampaign. `campaignId` links the sends to a saved campaign (optional for a
  *  one-off). subject + html are the rendered email; recipients is the resolved audience. `topic` tags
  *  the send (marketing / events / dispatches) so the per-recipient mute gate honors that topic; absent
- *  or invalid falls back to 'marketing' (the pre-topic behavior). */
+ *  or invalid falls back to 'marketing' (the pre-topic behavior). `lane` picks the consent bar and
+ *  defaults to 'marketing' — see SpaceSendLane. */
 export interface SendSpaceCampaignInput {
   campaignId?: string
   subject: string
   html: string
   topic?: NotificationTopic
+  lane?: SpaceSendLane
   recipients: SpaceRecipient[]
 }
 
@@ -125,6 +144,26 @@ export function normalizeRecipients(raw: SpaceRecipient[] | null | undefined): S
     if (out.length >= MAX_RECIPIENTS_PER_CALL) break
   }
   return out
+}
+
+/**
+ * The CONSENT PURPOSE a send must clear, from its lane and topic (ADR-1040). PURE + total.
+ *
+ * `marketing` for everything, EXCEPT the one pairing the owner ruled on: the `event_host` lane
+ * carrying topic 'events' — an event's host mailing that event's own guests — which clears at
+ * `transactional`. Both halves are required, so a caller cannot relax the bar by tagging arbitrary
+ * content 'events', and cannot relax it by claiming the lane while sending marketing.
+ *
+ * `transactional` is NOT "no consent". evaluateContactConsent still refuses a suppressed address and
+ * a hard `unsubscribed`; what it allows through is `unknown` — a guest the Space has never had a
+ * chance to collect an opt-in from, which under the old bar meant an event host's list was always
+ * empty (every recipient logged 'suppressed' and nothing shipped).
+ */
+export function consentPurposeForLane(
+  lane: SpaceSendLane | undefined,
+  topic: NotificationTopic,
+): ContactPurpose {
+  return lane === 'event_host' && topic === 'events' ? 'transactional' : 'marketing'
 }
 
 /** The per-Space From line. v1 reuses the shared verified sender domain (no per-Space DKIM yet), but
@@ -348,7 +387,11 @@ export async function sendSpaceCampaign(
 
   // Authz passed; the kill-switch + cap + consent + suppression + ledger all live in the shared
   // delivery core, which both this interactive path and the SYSTEM (cron) path call.
-  return deliverSpaceCampaign(space, input)
+  // The LANE is stripped here (ADR-1040): the relaxed `event_host` consent bar belongs to the event
+  // Manage hub's broadcast, which enters through sendSpaceCampaignSystem behind the event's own
+  // 'event.editSettings' gate. The generic owner composer must never be able to reach it, so this
+  // entry point cannot carry a lane at all rather than relying on its callers not to set one.
+  return deliverSpaceCampaign(space, { ...input, lane: 'marketing' })
 }
 
 /**
@@ -366,11 +409,19 @@ export async function sendSpaceCampaignSystem(
 ): Promise<ActionResult<SendSpaceCampaignResult>> {
   const space = await getSpaceById(spaceId)
   if (!space) return fail('Space not found.')
-  // PER-SPACE FUNCTION GATE (defense in depth): the Space's plan/role config must still grant email.
-  // A null role checks the space-level default; the cron acts as the Space, not a member, so this
-  // guards against a Space whose email function was turned off after a campaign was scheduled.
-  if (!spaceFunctionAccess(space, 'email', null))
-    return fail('Email is not available on this space plan.')
+  // PER-SPACE FUNCTION GATE (defense in depth): the Space's email function must still be turned on,
+  // guarding against a Space that disabled email after a campaign was scheduled.
+  //
+  // ⚠️ This asks `spaceFunctionAvailable` (enabled only), NOT `spaceFunctionAccess(space,'email',null)`.
+  // It used to ask the latter, on the reasoning that "a null role checks the space-level default".
+  // It does not: `atLeastSpaceRole` is fail-closed, so a null role clears no minimum and the email
+  // function's default is 'admin' — the call returned false for every Space, and this entry point
+  // therefore refused EVERY send since the gate was added. All four callers were affected: the event
+  // Manage broadcast, the Space message center, the scheduled-campaign cron, and the drip runner.
+  // A system caller has no space role by construction; the role half of the gate belongs to the
+  // surface that authorized it (ADR-1041).
+  if (!spaceFunctionAvailable(space, 'email'))
+    return fail('Email is turned off for this space.')
   return deliverSpaceCampaign(space, input)
 }
 
@@ -407,6 +458,10 @@ async function deliverSpaceCampaign(
   // against THIS topic below. Absent/invalid -> 'marketing' (the pre-topic behavior), so a legacy
   // campaign, a drip, or any un-updated caller sends exactly as before.
   const sendTopic = normalizeEmailTopic(input?.topic)
+
+  // The CONSENT BAR for this send (ADR-1040). 'marketing' for every lane but one: an event host
+  // mailing that event's own guests clears at 'transactional'. Resolved once, outside the loop.
+  const sendPurpose = consentPurposeForLane(input?.lane, sendTopic)
 
   // (c) DAILY CAP: how many more may this Space send today? countTodaySends reflects EVERY non-
   // suppressed outreach_sends row for today (including ones this call writes and any CONCURRENT call's),
@@ -472,10 +527,13 @@ async function deliverSpaceCampaign(
     // (isContactTopicMuted, "consulted in real time at send time") but never actually wired into the send
     // loop; wiring it here keeps that promise, and matters more now that a membership join can flip a
     // contact to subscribed (ADR-797) while a prior topic opt-down must still be honored.
-    // The consent gate stays purpose 'marketing': every space broadcast is a bulk send that must clear
-    // the marketing double-opt-in, whatever its topic tag (ADR-799 C keeps this deliberate). The softer
-    // per-topic mute below uses the campaign's OWN topic.
-    const emailable = (await canEmailContact(rec.email, 'marketing', spaceId)).allowed
+    // The consent gate's PURPOSE is the lane's (sendPurpose, resolved above). ADR-799 C originally held
+    // every space broadcast to 'marketing' regardless of topic; ADR-1040 carves out exactly one pairing
+    // (lane 'event_host' + topic 'events'), because under the blanket rule an event host's own guest
+    // list was structurally empty — an RSVP creates no subscribed contact, so every recipient was
+    // logged 'suppressed' and the event CRM's headline feature delivered nothing. Every other lane is
+    // unchanged. The softer per-topic mute below uses the campaign's OWN topic either way.
+    const emailable = (await canEmailContact(rec.email, sendPurpose, spaceId)).allowed
     const topicMuted = emailable
       ? await isContactTopicMuted({ email: rec.email, spaceId, topic: sendTopic })
       : false
