@@ -24890,9 +24890,29 @@ recorded here as an available follow-up on its own design merits, not as a gate 
 
 ### Baselines
 
-The eight committed `/discover` PNGs are currently viewport-sized (390x844 / 1280x800) from #2139 and
-must be recaptured full-page on a runner (`e2e-manual.yml` → `update_baselines`) before `pr-compare`
-can be green. Until that runs, `baseline-distinctness.test.ts` fails them loudly rather than quietly:
-with `/discover` out of `VIEWPORT_ONLY`, its `height <= 900` rule reads a viewport-tall baseline as
-the signature of a wall. That is the intended failure — the two sides disagreeing is exactly what it
+The eight committed `/discover` PNGs were viewport-sized (390x844 / 1280x800) from #2139 and had to be
+recaptured full-page on a runner (`e2e-manual.yml` → `update_baselines`) before `pr-compare` could be
+green. Until that ran, `baseline-distinctness.test.ts` failed them loudly rather than quietly: with
+`/discover` out of `VIEWPORT_ONLY`, its `height <= 900` rule reads a viewport-tall baseline as the
+signature of a wall. That was the intended failure — the two sides disagreeing is exactly what it
 exists to say.
+
+✅ **Recaptured 2026-08-16 (#2141): 1280x7540 desktop, 390x9701 mobile, all four states each.** The
+mobile number is worth keeping in view: **9701 is the exact height that failed against the 9677
+baseline** in run `31826333373` and set this whole reversal going. It is not a coincidence and it is
+not a fix — it is the same page, one text line taller than the day the old baseline was taken, now
+recorded at the height it currently renders. The next disagreement of one or two lines, mobile only,
+desktop green, means the database moved again and the reading rule above applies.
+
+🔴 **RECAPTURING IS TWO RUNS' WORTH OF FOOTGUN, and both fired here.** Worth the paragraph, because
+the next person to recapture will hit them:
+
+1. **`capture_shell` is not what you want for a recapture.** Passing it writes twelve BRAND-NEW
+   member-shell PNGs, and a branch that changes the shell is the worst possible place to take a
+   first-ever baseline: it records the change as the reference with nothing to diff it against.
+   Establish those on `main` first. Recapturing a public surface needs `update_baselines` alone.
+2. **Cancelling the workflow does not un-push it.** The job commits BEFORE it uploads its artifact,
+   so a cancel that arrives during the capture still leaves a partial commit on the branch — here,
+   three of eight PNGs. The next run then captured all eight, hit `git pull --rebase` against that
+   partial, and died on a **binary merge conflict**: two commits touching one PNG is not something
+   git can auto-resolve. If a capture run has to be stopped, let it finish and revert the commit.
