@@ -32,9 +32,12 @@ import type {
 // ONE action, per-channel fan-out over the EXISTING seams, never a parallel sender:
 //
 //   Email    — the CAMPAIGNS machinery (owner refinement): a `campaigns` row (topic 'events')
-//              in the event's host Space lane, delivered by the space send seam
-//              (lib/spaces/email — kill-switch, daily cap, consent + per-topic mutes,
-//              per-recipient unsubscribe, outreach_sends ledger). A platform-hosted event
+//              in the event's host Space lane, delivered by the space send seam on the
+//              'event_host' consent lane (ADR-1040: attending is the affirmative act, so a
+//              host reaching their own guest list clears the transactional bar, not the
+//              marketing double opt-in) — kill-switch, daily cap, suppression + hard
+//              unsubscribes + per-topic mutes, per-recipient unsubscribe, outreach_sends
+//              ledger, all unchanged. A platform-hosted event
 //              (no host Space) falls back to the Event Dispatch email lane
 //              (sendEventUpdateEmail per guest, 'dispatches' email preference).
 //   DM       — one spine conversation per recipient (kind 'crm', channel 'in_app',
@@ -177,6 +180,13 @@ async function sendEmailChannel(args: {
       subject,
       html: renderCampaignHtml(body),
       topic: 'events',
+      // The event-host consent lane (ADR-1040): attending is the affirmative act, so this send
+      // clears at the transactional bar instead of the marketing double opt-in. Under the blanket
+      // marketing rule an RSVP list was structurally unreachable (an RSVP creates no subscribed
+      // contact, so every recipient logged 'suppressed'). Suppression, a hard unsubscribe, the
+      // per-topic 'events' mute, the kill switch, the daily cap and the plan allowance all still
+      // apply, and every send still carries a one-click unsubscribe.
+      lane: 'event_host',
       recipients: emailable.map((r) => ({ email: r.email, contactId: contactIdByEmail.get(r.email) })),
     })
     if (isError(res)) return { channel: 'email', ok: false, detail: res.error }
@@ -231,7 +241,7 @@ async function sendEmailChannel(args: {
 
     const { sent, suppressed, failed } = res.data
     let detail = `Sent to ${people(sent)} through the host Space's campaign lane.`
-    if (suppressed > 0) detail += ` ${suppressed} skipped (not subscribed to its emails, or muted event emails).`
+    if (suppressed > 0) detail += ` ${suppressed} skipped (unsubscribed, or muted event emails).`
     if (failed > 0) detail += ` ${failed} failed.`
     return { channel: 'email', ok: sent > 0 || (suppressed === 0 && failed === 0), detail }
   }

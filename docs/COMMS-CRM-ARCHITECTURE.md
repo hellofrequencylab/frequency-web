@@ -78,6 +78,14 @@ bounces only) · L2 Funnel/lifecycle (requires marketing consent) · L3 Social/p
 (L2); `notification_preferences` governs product notifications (L3–4); a global
 **suppressions** list overrides everything. Marketing requires double opt-in.
 
+**The one carve-out ([ADR-1040](DECISIONS.md)):** an event's own host messaging that
+event's own guest list (lane `event_host` + topic `events`, reachable only from the
+event Manage hub) clears at the **transactional** bar instead, because attending is
+the affirmative act. Suppression, a hard `unsubscribed`, the per-topic `events` mute,
+and the one-click unsubscribe all still apply. Every other lane keeps the double
+opt-in. The pairing is enforced by `consentPurposeForLane` in `lib/spaces/email.ts`,
+and the interactive owner composer cannot reach it.
+
 ## 3. The CRM cockpit — embedded CRM / Business OS
 
 An admin-gated cockpit for the operator, distinct from member chrome.

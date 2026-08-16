@@ -3,8 +3,14 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
-import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { getVisibleSpaceBySlug, loadRootSpaceId } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import {
+  audienceEmailsByProfile,
+  pairSpaceContacts,
+  type RootContactRow,
+  type SpaceContactRow,
+} from '@/lib/crm/contact-audience'
 import { ok, fail, isError, type ActionResult } from '@/lib/action-result'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { sendSpaceCampaignSystem } from '@/lib/spaces/email'
@@ -61,35 +67,52 @@ async function resolveManagedSpace(slug: string): Promise<{ space: ManagedSpace;
   return { space: { id: space.id, slug, name }, actorId: caller.id }
 }
 
-/** The Space CONTACTS inside the audience, by profile_id — the ONLY people this lane may
- *  email (ADR-863). A member's auth-account email is delivery data they never gave the
- *  Space (ADR-854); reading it via the Auth admin API and feeding it to the campaign lane
- *  both disclosed private addresses into the operator-visible send ledger AND ran one Auth
- *  call per member. The campaign lane exists to email CONTACTS — people the Space already
- *  has a relationship and consent record for — so we resolve the audience to its contact
- *  rows in ONE batched read and never touch auth. A member with no contact card is not
- *  emailable here; they still receive DM and Dispatch. */
+/** The Space CONTACTS inside the audience — the ONLY people this lane may email (ADR-863).
+ *  A member's auth-account email is delivery data they never gave the Space (ADR-854);
+ *  reading it via the Auth admin API and feeding it to the campaign lane both disclosed
+ *  private addresses into the operator-visible send ledger AND ran one Auth call per member.
+ *  The campaign lane exists to email CONTACTS — people the Space already has a relationship
+ *  and consent record for. A member with no contact card is not emailable here; they still
+ *  receive DM and Dispatch.
+ *
+ *  KEYED ON EMAIL, NOT profile_id. Per-space contact tenancy (ADR-624) makes a tenant
+ *  Space's contacts `profile_id` NULL BY LAW — they are keyed (space_id, lower(email)), and
+ *  the member's platform record lives in the ROOT space. `ensureSpaceMemberContact` and
+ *  `linkMemberToSpaceLead` both insert without a profile link, so the previous
+ *  `.in('profile_id', …)` scoped to THIS space asked for a combination the schema forbids
+ *  and returned nothing on every Space except the root hub (where the signup trigger sets
+ *  both columns). Two bounded reads instead: the audience's ROOT contact rows for their
+ *  addresses, then the rows THIS Space holds for those addresses. Still contacts-only, still
+ *  never Auth — and an address is only ever emitted because the Space already holds it on a
+ *  contact of its own, so ADR-863's rule is preserved exactly. FAIL-SAFE: [] on any miss. */
 async function resolveContactEmails(
   spaceId: string,
   profileIds: string[],
 ): Promise<{ profileId: string; contactId: string; email: string }[]> {
   if (profileIds.length === 0) return []
+  const rootSpaceId = await loadRootSpaceId()
+  if (!rootSpaceId) return []
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = createAdminClient() as unknown as { from: (t: string) => any }
-  const { data } = await db
+
+  // 1. The audience's PLATFORM contact records (the root lane), for their addresses only.
+  const { data: rootRows } = await db
     .from('contacts')
-    .select('id, profile_id, email')
-    .eq('space_id', spaceId)
+    .select('profile_id, email')
+    .eq('space_id', rootSpaceId)
     .in('profile_id', profileIds)
-  const out: { profileId: string; contactId: string; email: string }[] = []
-  const seen = new Set<string>()
-  for (const c of (data ?? []) as { id: string; profile_id: string | null; email: string | null }[]) {
-    const email = c.email?.trim().toLowerCase()
-    if (!c.profile_id || !email || seen.has(c.profile_id)) continue
-    seen.add(c.profile_id)
-    out.push({ profileId: c.profile_id, contactId: c.id, email })
-  }
-  return out
+  const emailByProfile = audienceEmailsByProfile(rootRows as RootContactRow[] | null, profileIds)
+  if (emailByProfile.size === 0) return []
+
+  // 2. The rows THIS Space holds for those addresses. Bounded by the audience, and every
+  //    contact writer normalizes the address on insert, so a lowercased `in` matches.
+  const { data: spaceRows } = await db
+    .from('contacts')
+    .select('id, email')
+    .eq('space_id', spaceId)
+    .in('email', [...new Set(emailByProfile.values())])
+
+  return pairSpaceContacts(emailByProfile, spaceRows as SpaceContactRow[] | null)
 }
 
 /** Untyped `campaigns` handle (space_id/topic reached past the generated types, ADR-246). */

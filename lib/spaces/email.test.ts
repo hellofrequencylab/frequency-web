@@ -231,9 +231,11 @@ import {
   normalizeRecipients,
   normalizeEmail,
   spaceFromLine,
+  consentPurposeForLane,
   isSpaceEmailEnabled,
   setSpaceEmailEnabled,
   sendSpaceCampaign,
+  sendSpaceCampaignSystem,
   DAILY_SEND_CAP,
 } from './email'
 
@@ -622,6 +624,164 @@ describe('sendSpaceCampaign: daily cap', () => {
     expect('error' in r).toBe(false)
     if (!('error' in r)) expect(r.data).toEqual({ sent: 1, suppressed: 1, failed: 0 })
     expect(sends.map((s) => s.to)).toEqual(['real@b.com'])
+  })
+})
+
+// ── The SYSTEM entry (cron + surfaces gated elsewhere) ───────────────────────────────────────────
+//
+// THE REGRESSION THIS LOCKS. sendSpaceCampaignSystem gated on
+// `spaceFunctionAccess(space, 'email', null)` on the reasoning that a null role checks the
+// space-level default. It does not: atLeastSpaceRole is fail-closed, so a null role clears no
+// minimum and the email function's default min-role is 'admin'. The call was therefore ALWAYS
+// false and this entry point refused EVERY send — the event Manage broadcast, the Space message
+// center, the scheduled-campaign cron, and the drip runner alike. Nothing caught it because the
+// cron's own test mocks this function out. It now asks spaceFunctionAvailable (enabled only).
+
+describe('sendSpaceCampaignSystem: the system entry can actually send (ADR-1041)', () => {
+  it('SENDS for a Space with email on, with no caller session and no space role', async () => {
+    currentProfileId = null // no session at all: this is the cron's world
+    const r = await sendSpaceCampaignSystem('space-A', {
+      subject: 'Hi',
+      html: '<p>x</p>',
+      recipients: recips('a@b.com'),
+    })
+    expect('error' in r).toBe(false)
+    if (!('error' in r)) expect(r.data).toEqual({ sent: 1, suppressed: 0, failed: 0 })
+    expect(sends.map((s) => s.to)).toEqual(['a@b.com'])
+  })
+
+  it('still refuses when the Space has the email function turned OFF', async () => {
+    resolvedSpace = { ...resolvedSpace!, entitlements: { email: false } }
+    const r = await sendSpaceCampaignSystem('space-A', {
+      subject: 'Hi',
+      html: '<p>x</p>',
+      recipients: recips('a@b.com'),
+    })
+    expect('error' in r).toBe(true)
+    expect(sends).toHaveLength(0)
+  })
+
+  it('still refuses for a Space that does not resolve', async () => {
+    const r = await sendSpaceCampaignSystem('space-Z', {
+      subject: 'Hi',
+      html: '<p>x</p>',
+      recipients: recips('a@b.com'),
+    })
+    expect('error' in r).toBe(true)
+    expect(sends).toHaveLength(0)
+  })
+})
+
+// ── The consent LANE (ADR-1040) ──────────────────────────────────────────────────────────────────
+
+describe('consentPurposeForLane (pure)', () => {
+  it('relaxes to transactional ONLY for the event-host lane carrying topic events', () => {
+    expect(consentPurposeForLane('event_host', 'events')).toBe('transactional')
+  })
+
+  it('holds the marketing bar when the lane claims event_host but the topic is not events', () => {
+    expect(consentPurposeForLane('event_host', 'marketing')).toBe('marketing')
+    expect(consentPurposeForLane('event_host', 'dispatches')).toBe('marketing')
+  })
+
+  it('holds the marketing bar for topic events on any other lane', () => {
+    expect(consentPurposeForLane('marketing', 'events')).toBe('marketing')
+    expect(consentPurposeForLane(undefined, 'events')).toBe('marketing')
+  })
+})
+
+describe('sendSpaceCampaignSystem: the event-host consent lane', () => {
+  beforeEach(() => {
+    currentProfileId = null
+  })
+
+  const eventSend = (email: string) => ({
+    subject: 'Doors at 7',
+    html: '<p>x</p>',
+    topic: 'events' as const,
+    lane: 'event_host' as const,
+    recipients: recips(email),
+  })
+
+  it('REACHES a guest who never opted in (the whole point: an RSVP list used to be empty)', async () => {
+    contactConsent.set('guest@b.com', 'unknown')
+    const r = await sendSpaceCampaignSystem('space-A', eventSend('guest@b.com'))
+    expect('error' in r).toBe(false)
+    if (!('error' in r)) expect(r.data).toEqual({ sent: 1, suppressed: 0, failed: 0 })
+    expect(sends.map((s) => s.to)).toEqual(['guest@b.com'])
+  })
+
+  it('still carries the one-click unsubscribe headers', async () => {
+    contactConsent.set('guest@b.com', 'unknown')
+    await sendSpaceCampaignSystem('space-A', eventSend('guest@b.com'))
+    expect(sends[0]!.headers!['List-Unsubscribe']).toContain('/unsubscribe?s=space-A')
+    expect(sends[0]!.headers!['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click')
+  })
+
+  it('STILL blocks a hard unsubscribe (transactional is not "no consent")', async () => {
+    contactConsent.set('guest@b.com', 'unsubscribed')
+    const r = await sendSpaceCampaignSystem('space-A', eventSend('guest@b.com'))
+    expect('error' in r).toBe(false)
+    if (!('error' in r)) expect(r.data).toEqual({ sent: 0, suppressed: 1, failed: 0 })
+    expect(sends).toHaveLength(0)
+  })
+
+  it('STILL blocks a suppressed address', async () => {
+    globalSuppressed.add('guest@b.com')
+    const r = await sendSpaceCampaignSystem('space-A', eventSend('guest@b.com'))
+    expect('error' in r).toBe(false)
+    if (!('error' in r)) expect(r.data).toEqual({ sent: 0, suppressed: 1, failed: 0 })
+    expect(sends).toHaveLength(0)
+  })
+
+  it('STILL refuses when the Space kill-switch is off', async () => {
+    db.enabled.set('space-A', false)
+    const r = await sendSpaceCampaignSystem('space-A', eventSend('guest@b.com'))
+    expect('error' in r).toBe(true)
+    expect(sends).toHaveLength(0)
+  })
+
+  it('does NOT relax marketing sent through the same lane', async () => {
+    contactConsent.set('guest@b.com', 'unknown')
+    const r = await sendSpaceCampaignSystem('space-A', {
+      subject: 'Sale',
+      html: '<p>x</p>',
+      topic: 'marketing',
+      lane: 'event_host',
+      recipients: recips('guest@b.com'),
+    })
+    expect('error' in r).toBe(false)
+    if (!('error' in r)) expect(r.data).toEqual({ sent: 0, suppressed: 1, failed: 0 })
+    expect(sends).toHaveLength(0)
+  })
+
+  it('does NOT relax an events-topic campaign on the ordinary marketing lane', async () => {
+    contactConsent.set('guest@b.com', 'unknown')
+    const r = await sendSpaceCampaignSystem('space-A', {
+      subject: 'Doors at 7',
+      html: '<p>x</p>',
+      topic: 'events',
+      recipients: recips('guest@b.com'),
+    })
+    expect('error' in r).toBe(false)
+    if (!('error' in r)) expect(r.data).toEqual({ sent: 0, suppressed: 1, failed: 0 })
+    expect(sends).toHaveLength(0)
+  })
+})
+
+describe('sendSpaceCampaign (interactive): the owner composer cannot reach the relaxed lane', () => {
+  it('STRIPS a smuggled event_host lane and holds the marketing double opt-in', async () => {
+    contactConsent.set('guest@b.com', 'unknown')
+    const r = await sendSpaceCampaign('space-A', {
+      subject: 'Doors at 7',
+      html: '<p>x</p>',
+      topic: 'events',
+      lane: 'event_host',
+      recipients: recips('guest@b.com'),
+    })
+    expect('error' in r).toBe(false)
+    if (!('error' in r)) expect(r.data).toEqual({ sent: 0, suppressed: 1, failed: 0 })
+    expect(sends).toHaveLength(0)
   })
 })
 

@@ -49,7 +49,7 @@ async function resolveEmailLane(eventId: string): Promise<{ enabled: boolean; no
   }
   return {
     enabled: true,
-    note: `Rides ${spaceName}'s campaign lane; it reaches people subscribed to its emails.`,
+    note: `Rides ${spaceName}'s campaign lane. Reaches guests with an email on file, apart from anyone who unsubscribed or muted event emails.`,
   }
 }
 

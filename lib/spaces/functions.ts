@@ -339,6 +339,28 @@ export function spaceFunctionEnabled(space: SpaceLike | null | undefined, fn: Sp
   return fn.key in ent ? ent[fn.key] === true : true
 }
 
+/**
+ * Is a function AVAILABLE ON THIS SPACE AT ALL — the enabled half of the gate, with no viewer in it
+ * (ADR-1041). For a SYSTEM caller (a cron, or an action authorized by a DIFFERENT surface's gate)
+ * there is no space role to weigh, and asking `spaceFunctionAccess(space, fn, null)` is not a softer
+ * check but an ALWAYS-FALSE one: `atLeastSpaceRole` is fail-closed, so a null role satisfies no
+ * minimum, and every such call refuses. Callers that mean "is this function turned on for this Space"
+ * must use THIS; callers that mean "may this member use it" must use `spaceFunctionAccess`.
+ *
+ * Fail-safe for an unknown key (false), exactly like spaceFunctionAccess. PURE.
+ */
+export function spaceFunctionAvailable(
+  // Same parameter shape as spaceFunctionAccess, so the two are drop-in swappable at a call site
+  // that holds a whole Space. `featureRoles` is accepted and deliberately ignored: the min-role
+  // override is the ROLE half of the gate, and this half has no viewer to weigh it against.
+  space: ({ featureRoles?: unknown } & SpaceLike) | null | undefined,
+  fn: SpaceFunctionKey | string,
+): boolean {
+  const def = spaceFunctionDef(fn)
+  if (!def) return false
+  return spaceFunctionEnabled(space, def)
+}
+
 /** Read the per-Space min-role OVERRIDE for a function from spaces.feature_roles, or null when there is
  *  no valid override (so the caller falls back to the code default). Tolerant of a malformed blob and an
  *  unknown role value (both yield null = no override). PURE. */
