@@ -84,8 +84,8 @@ describe('the reveal distributes that budget instead of overflowing it', () => {
   })
 
   it('caps the spot art against svh, so the cards do not resize when the URL bar slides away', () => {
-    expect(REVEAL).toContain("const ART = 'mx-auto h-24 max-h-[13svh] w-auto'")
-    expect(REVEAL).not.toContain('max-h-[13dvh]')
+    expect(REVEAL).toContain("const ART = 'mx-auto h-24 max-h-[9svh] w-auto'")
+    expect(REVEAL).not.toContain('max-h-[9dvh]')
   })
 
   it('routes every panel through the one capped art class', () => {

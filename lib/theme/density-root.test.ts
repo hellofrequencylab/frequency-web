@@ -8,12 +8,22 @@ import { GENERATIONS } from './generations'
 //
 //     html { font-size: var(--density-root, 106.25%); }
 //
-// Every other generation token (`--type-scale`, `--radius-*`, `--motion-*`, `--ornament`,
-// `--tap-min`) is read by descendants of the shell root, so declaring them on the shell root
-// works. This one is different in kind: `rem` resolves against <html> and nothing else, and CSS
-// custom properties inherit DOWNWARD only. `[data-generation]` lived exclusively on a div inside
-// <body>, so <html> never saw the preset's value and every one of the eight presets fell through
-// to the 106.25% fallback.
+// `rem` resolves against <html> and nothing else, and CSS custom properties inherit DOWNWARD only.
+// `[data-generation]` lived exclusively on a div inside <body>, so <html> never saw the preset's
+// value and every one of the eight presets fell through to the 106.25% fallback.
+//
+// ⚠️ AN EARLIER VERSION OF THIS COMMENT SAID DENSITY WAS THE ONLY AXIS AFFECTED. It was wrong, and
+// the correction is worth more than the original claim. `--type-scale` had the SAME defect by a
+// different route: the eighteen `--text-*` role tokens are declared INSIDE the `:root` block as
+// `calc(… * var(--type-scale, 1))`, and a `var()` inside a custom property is substituted on the
+// element where it is DECLARED — <html> — with descendants inheriting the already-computed number.
+// So while `[data-generation]` sat only on the shell div, every role token was pinned at 1.0 under
+// all eight presets too. The only part of the type axis that worked was `text-scaled-*`, which
+// resolves at the element and has six call sites in the repo, against `text-body` and its siblings
+// everywhere. The stamp below repairs both; `lib/theme/type-scale-root.test.ts` pins that half.
+//
+// `--radius-*`, `--motion-*`, `--ornament` and `--tap-min` really are read at the element, so those
+// were live all along.
 //
 // The failure was completely silent. Nothing threw. Nothing overflowed. The Theme Studio kept
 // offering a Density control (components/admin/theme-studio/tokens.ts) bound to a token no rule

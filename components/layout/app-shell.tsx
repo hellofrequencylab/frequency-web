@@ -20,6 +20,7 @@ import {
   Flame,
   Bug,
   Gift,
+  Palette,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
@@ -651,7 +652,22 @@ function AccountDropdown({
         // `.glass` is unlayered, so it beats a Tailwind border/background utility outright —
         // it owns both here, and adding them back would be dead text of exactly the kind
         // check:bridge exists to catch.
-        <div className="glass lift-3 animate-cue-pop absolute right-0 top-full mt-2 w-60 rounded-card py-1 z-50 max-h-[80vh] overflow-y-auto">
+        // 🔴 `max-h-[80vh]` PUT THE SIGN OUT ROW BEHIND THE TAB BAR, and the z-index cannot save it.
+        // This header is `sticky … z-30`, and a positioned element with a z-index CREATES A STACKING
+        // CONTEXT — so this panel's `z-50` only orders it against its siblings inside the header. The
+        // mobile tab bar is `z-40` in the ROOT context (see MobileTabBar), which puts the whole bar,
+        // and the raised Zap catch that stands 22px proud of it, on top of this menu.
+        //
+        // Measured at the 17px root: the panel opens at 68px (`--app-header-h` + `mt-2`), so on a
+        // 320x568 iPhone SE its bottom lands at 522 against a catch that starts at 486 — 36px of menu
+        // behind the bar, which is exactly the Sign out row. At 390x844 it is 15px. Only 360x800
+        // happened to clear.
+        //
+        // `vh` compounded it: on a phone that is the LARGE viewport (URL bar out of the way), so the
+        // panel was already measured against ~15px more than the member could see before the tab bar
+        // was counted at all. Same cap as the notifications sheet, built from the same two tokens
+        // rather than from literals that happen to agree today.
+        <div className="glass lift-3 animate-cue-pop absolute right-0 top-full mt-2 w-60 rounded-card py-1 z-50 max-h-[80dvh] max-sm:max-h-[calc(100dvh-var(--app-header-h)-var(--tab-bar-clearance)-1rem)] overflow-y-auto">
 
           {/* Header */}
           <div className="px-3 py-2.5 border-b border-border">
@@ -694,13 +710,33 @@ function AccountDropdown({
               )}
               {s.items.map(renderAccountLink)}
               {s.label === 'You' && (
-                <button
-                  onClick={() => { cycleTheme() }}
-                  className="flex items-center gap-2.5 px-3 py-2 text-body-sm text-text hover:bg-surface-elevated w-full text-left transition-colors"
-                >
-                  <ThemeIcon className="w-4 h-4 text-subtle" />
-                  {themeLabel}
-                </button>
+                <>
+                  <button
+                    onClick={() => { cycleTheme() }}
+                    className="flex items-center gap-2.5 px-3 py-2 text-body-sm text-text hover:bg-surface-elevated w-full text-left transition-colors"
+                  >
+                    <ThemeIcon className="w-4 h-4 text-subtle" />
+                    {themeLabel}
+                  </button>
+                  {/* 🔴 THERE WAS NO APPEARANCE LINK, while three comments in this file said there
+                      was. They all describe "Appearance" as fixed chrome woven into the You group,
+                      and what is actually woven in is the light/dark CYCLE button above — a
+                      different control with a different job. Grepping `/settings#appearance` across
+                      the app finds the href in a route-map and in tests, and in no menu.
+                      So the three-axis picker (palette, feel, seasonal accent) was reachable only by
+                      opening Settings and scrolling past Profile, which on a phone is most of a
+                      screen of scrolling to reach a surface the account menu claims to offer.
+                      The cycle button stays: mode is the thing people change often and it is worth a
+                      one-tap control. This is the way to everything else it cannot express. */}
+                  <Link
+                    href="/settings#appearance"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-2.5 px-3 py-2 text-body-sm text-text hover:bg-surface-elevated transition-colors"
+                  >
+                    <Palette className="w-4 h-4 text-subtle" />
+                    Appearance
+                  </Link>
+                </>
               )}
               {s.label === 'Community' && (
                 <button

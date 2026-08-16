@@ -242,32 +242,56 @@ export function publicSurfaces(): readonly Surface[] {
 }
 
 /**
- * Public surfaces whose PAGE LENGTH is driven by live, shared data, so a `fullPage` baseline
- * records what was in the database rather than what the page looks like. Same reasoning and same
- * remedy as `/feed` (see the note on `Surface.viewportOnly`).
+ * Public surfaces that photograph the FIRST SCREEN instead of the whole page, by path.
+ * **Deliberately empty**, the same way `ALLOWED_TWINS` in baseline-distinctness.test.ts is:
+ * the seam stays so the next candidate lands as a row here with its measurement attached,
+ * rather than as a magic string at the call site.
  *
- * `/discover` reads `getPublicCircles(200)` plus live event and channel counts behind
- * `revalidate = 3600`, so what it renders depends on the data AND on which deployment's ISR cache
- * answered. That is unfixable from the harness: a capture run and the `pr-compare` that verifies it
- * necessarily hit different deployments, because every commit builds a new one.
+ * 🔴 `/discover` WAS THE ONLY ENTRY IT EVER HELD (#2139), AND THE OWNER REVERSED THAT TRADE.
+ * The flag is read per SURFACE, not per project, so it cost the below-the-fold baseline on
+ * desktop AND mobile — eight PNGs, the topic bands, the circle grid and the footer among them —
+ * to quiet a failure the record says is rare: the full-page baseline captured 2026-08-11 held
+ * through 46 commits and three days of `pr-compare` before it moved. Paying eight baselines
+ * permanently for that is the wrong side of the trade.
  *
- * 🔴 MEASURED BEFORE BEING BELIEVED, because `viewportOnly` must never be a way to quiet a real
- * layout regression. `/discover` came back at 390x9701 on two `pr-compare` runs 25 minutes apart
- * against a baseline of 9677 captured minutes earlier from the same branch — reproducible, so not
- * flake — while only THREE of its four render states differed, which no code change can explain
- * (the four are the same page with different colour tokens; a layout regression moves all four).
- * The one real layout change in this PR, the footer gutter, was a separate 13px shift that had
- * already been recaptured and accepted.
+ * ⚠️ THE CAUSE THE FIRST NOTE GAVE WAS WRONG, and it is worth correcting here because it is the
+ * kind of wrong that makes the next reader reach for the same flag. It blamed `revalidate = 3600`
+ * and "the ISR cache of whichever deployment answered". There is no ISR generation to blame.
+ * `app/discover/page.tsx` calls `createClient()` (lib/supabase/server.ts → `cookies()`), which opts
+ * the route out of static rendering altogether, and every discover read is a `.rpc()`, i.e. a POST,
+ * which Next's data cache never stores. EVERY request runs the six queries live, and three of them
+ * are order- or clock-sensitive:
+ *   · `public_circles`  ORDER BY member_count DESC   one join reorders the top six
+ *   · `public_posts`    ORDER BY created_at DESC     one post replaces the newest of three
+ *   · `public_events`   WHERE starts_at >= now()     the upcoming window slides continuously
  *
- * ⚠️ WHAT THIS COSTS, stated rather than glossed, and it is more than the mobile screen: the flag is
- * read per SURFACE, not per project, so `/discover` drops to a first-screen capture on **desktop as
- * well** — eight baselines in total, all of them shrinking from a full page to 390x844 / 1280x800.
- * Everything below the fold on that route (the topic bands, the circle grid, the footer) stops being
- * pixel-covered at either width. Two things bound it: the footer's `px-safe` fix keeps FULL-page
- * coverage on the seven marketing surfaces that carry the marketing footer, and the class of bug that
- * broke it is now held from the source side by components/layout/px-safe.test.ts.
+ * ⚠️ AND THE PAGE'S HEIGHT IS A FUNCTION OF THAT TEXT, which is the part no wait can reach.
+ * Measured on run 31826333373: mobile returned 390x9701 against a 390x9677 baseline on dawn-light,
+ * dawn-dark and midnight-light, while midnight-dark passed and ALL FOUR DESKTOP captures passed.
+ * No code change produces that shape. A narrower column does: 24px is exactly one `--text-body`
+ * line (1.5rem), one row heading wrapping in the single-column mobile grid and absorbed on desktop
+ * by an `h-full` sibling in the same three-up row. The same test's retries reported 76,014 then
+ * 82,853 differing pixels at identical dimensions, so the content moved between two captures in
+ * one run.
+ *
+ * 🔴 WHAT CANNOT FIX IT, listed so nobody spends the afternoon re-trying them:
+ *   · A WAIT. The render is stable per request — Playwright logged "captured a stable screenshot"
+ *     on every attempt, after `settle()` had already held `scrollHeight` still. The variance is
+ *     between REQUESTS, not within one.
+ *   · A MASK. A mask paints over a box and the box keeps its size (see `Surface.viewportOnly`).
+ *   · `maxDiffPixelRatio`. `toHaveScreenshot` fails a size mismatch before it counts a pixel.
+ *   · CSS injected at capture time (`toHaveScreenshot({ stylePath })`) genuinely CAN pin a height,
+ *     and it still cannot pin this one: six live regions feed the page, and three of them (events,
+ *     circles, posts) drop their entire section when the query comes back empty, which no clamp on
+ *     a container can hold.
+ *
+ * SO THIS GATE WILL GO RED ON `/discover` AGAIN, and the honest reading when it does is the one
+ * test/e2e/README.md already prescribes for `/spaces`. A `/discover`-only size mismatch worth one
+ * or two text lines, on MOBILE ONLY, with all four desktop captures green, is the database moving:
+ * recapture it. A shift that moves both viewports, or moves all four states together, is a layout
+ * change and must be read as one.
  */
-const LIVE_DATA_PATHS: readonly string[] = ['/discover']
+const LIVE_DATA_PATHS: readonly string[] = []
 
 /**
  * The member-shell surfaces (Lift 6a's "app trio" + the Space console).
