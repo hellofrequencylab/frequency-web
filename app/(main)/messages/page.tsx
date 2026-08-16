@@ -91,8 +91,13 @@ const ACTIVE_WINDOW_MS = 30 * 60 * 1000
 // occurrence names its own section instead of being reconstructed from the schema afterwards.
 function noteFailedRead(section: string, error: unknown): void {
   if (!error) return
+  // No `error !== null` guard on the object branch, and CodeQL is the reason it went (alert 238,
+  // "comparison between inconvertible types"). The usual reason to write one is that
+  // `typeof null === 'object'` — but the truthiness return above has already narrowed `unknown` to
+  // `{}`, so null cannot reach this line and the comparison could never be false. A check that can
+  // only ever pass reads to the next person as though null were a live case here. It is not.
   const detail =
-    typeof error === 'object' && error !== null && 'message' in error
+    typeof error === 'object' && 'message' in error
       ? String((error as { message: unknown }).message)
       : String(error)
   console.error(`[messages] ${section} read failed; that section degraded to empty:`, detail)
