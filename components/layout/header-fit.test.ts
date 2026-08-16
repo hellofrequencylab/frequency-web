@@ -137,14 +137,22 @@ describe('AppShell header: the icon cluster holds its width, the brand gives way
     expect(BRAND).toContain('min-w-[6.5rem]')
   })
 
-  // The floor is the backstop; the BUDGET is the fix. Measured at this app's 17px root:
-  //   link    pl-3.5 14.9 + mark 163 + pr-2 8.5                                    = 186.4
-  //   cluster pl-1 4.25 + search 34 + 4.25 + friends 34 + 4.25 + bell 34
-  //           + account ml-1 4.25 + avatar 34 + pr-2 8.5                           = 161.5
-  //   total                                                                        = 347.9
-  // so 360 and 390 both clear it with the mark at its FULL width and nothing shrinking at all.
-  // Each of the three assertions below is one of the line items that made that sum fit; losing any
-  // one of them puts the header back over 360 and starts eating the brand again.
+  // The floor is the backstop; the BUDGET is the fix. These numbers were MEASURED in Chromium
+  // (coarse pointer, this app's 17px root, the real compiled globals.css) rather than added up —
+  // the mark box against the glyph the `contain` mask actually draws inside it:
+  //
+  //     viewport   BEFORE (as shipped in #2137)   AFTER
+  //     320px      61.9 x 8.4                     130.9 x 17.7
+  //     360px      101.9 x 13.8                   163 x 22   (full)
+  //     390px      131.9 x 17.8                   163 x 22   (full)
+  //     412px      153.9 x 20.8                   163 x 22   (full)
+  //
+  // So this was never "a little tight on the smallest phones" — the brand was being cut on EVERY
+  // phone width, and at 320 it drew eight pixels tall. The cluster's min-content is 165.8px against
+  // a 186.3px link, which is why 360 is the first width with any slack.
+  //
+  // Each of the three assertions below is one of the line items that bought that slack. Losing any
+  // one of them puts the header back over 360 and starts eating the brand again, silently.
   describe('the mobile cluster is small enough that the mark never has to shrink', () => {
     it('keeps the Mindless lotus off the phone (owner directive, ~42px of the budget)', () => {
       expect(SHELL).toMatch(/hidden md:inline-flex[\s\S]{0,120}<MindlessLaunch \/>/)

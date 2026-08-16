@@ -74,9 +74,23 @@ export function BrandMark({
 
           The floor is not the plan, though — it is the backstop. The plan is that the mobile
           cluster is small enough that the mark never shrinks at all (app-shell.tsx: the Mindless
-          lotus is desktop-only, the account divider is sm+, the bell matches Friends). Measured at
-          the 17px root: link 186px + cluster 163px = 349px, so 360 and 390 both clear it with the
-          mark at its full 163px, and only a 320px screen asks it for anything. */}
+          lotus is desktop-only, the account divider is sm+, the bell matches Friends).
+
+          MEASURED IN A BROWSER, not computed — the arithmetic in header-fit.test.ts is what let the
+          last version of this comment be confidently wrong. Chromium, coarse pointer, this app's
+          17px root, the real compiled globals.css, mark box vs the glyph the `contain` mask
+          actually draws inside it:
+
+              viewport   BEFORE (as shipped)      AFTER
+              320px      61.9 x 8.4               130.9 x 17.7
+              360px      101.9 x 13.8             163 x 22   (full)
+              390px      131.9 x 17.8             163 x 22   (full)
+              412px      153.9 x 20.8             163 x 22   (full)
+
+          So it was never "a bit tight on the smallest phones": the mark was being cut on EVERY
+          phone width, and at 320 it drew 8px tall. The cluster's min-content is 165.8px against a
+          186.3px link, which is why 360 is the first width with slack and why 320 is the only one
+          that still asks the mark for anything. */}
       <span className="brandmark h-[22px] min-w-[6.5rem] max-w-full md:h-8" aria-hidden />
     </Link>
   )
