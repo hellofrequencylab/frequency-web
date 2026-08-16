@@ -935,7 +935,17 @@ function ChatTrigger({
             edge, and the translate then pushes it back down by its height MINUS the peek — so the
             peek is a single number that means what it says, at every safe-area inset, with no
             second calc to keep in sync. Only the top corners are rounded: the bottom of a tab that
-            is behind something has no corners to see. */}
+            is behind something has no corners to see.
+
+            🔴 THE PEEK IS A TOKEN NOW, AND THAT IS THE WHOLE OF THE 2026-08-16 FIX. The bottom
+            was already measured from `--tab-bar-h`; the three numbers that decide how far this
+            tab rises ABOVE it were not — 26px, 36px and `-top-4` lived only in this file. The
+            shell pads its scrolling content column by `--tab-bar-clearance`, which was the Zap
+            catch's 22px, so on a phone this tab stood 31px INTO the column and painted over the
+            Capture composer's send button (owner, off a live /feed capture). Reading the same
+            names the clearance is computed from is what makes "the column clears this tab" a
+            fact rather than two literals that happen to agree — the failure mode the mobile
+            stacking contract (components/sidebar/game-stats-dock.tsx) already records twice. */}
         <button
           type="button"
           onClick={onOpen}
@@ -947,17 +957,22 @@ function ChatTrigger({
               : 'Open messages, Vera, and help'
           }
           style={{ bottom: 'var(--tab-bar-h)' }}
-          // The hit area extends 1rem ABOVE the visible tab via the ::before, because the peek is
-          // what a thumb can actually reach — the rest of the button is behind an opaque bar and
-          // cannot receive the tap. 26px of peek plus 17px of invisible extension is ~43px, which
-          // is the touch floor met honestly rather than by claiming the hidden half counts.
+          // The hit area extends `--dock-tab-reach` (1rem = 17px at this app's 17px root) ABOVE
+          // the visible tab via the ::before, because the peek is what a thumb can actually reach
+          // — the rest of the button is behind an opaque bar and cannot receive the tap. 26px of
+          // peek plus 17px of invisible extension is ~43px, which is the touch floor met honestly
+          // rather than by claiming the hidden half counts. It is a TOKEN because that invisible
+          // band is the half of this tab that steals taps from content that looks free, so the
+          // content column's clearance has to know about it (globals.css, --dock-tab-rise).
           className={cn(
             'fixed right-3 z-30 flex h-11 w-14 items-start justify-center rounded-t-card border-x border-t border-primary-strong/20 pt-1.5 md:hidden print:hidden',
-            'before:absolute before:inset-x-0 before:-top-4 before:h-4 before:content-[""]',
+            'before:absolute before:inset-x-0 before:-top-[var(--dock-tab-reach)] before:h-[var(--dock-tab-reach)] before:content-[""]',
             'transition-transform duration-[var(--motion-base)] ease-[var(--ease-out)] motion-reduce:transition-none',
+            // The waiting peek is the TALLER of the two, and it is the one the lane's clearance is
+            // computed from: the column cannot re-pad itself when an unread arrives.
             unread > 0 || waiting
-              ? 'translate-y-[calc(100%-36px)] animate-wiggle'
-              : 'translate-y-[calc(100%-26px)]',
+              ? 'translate-y-[calc(100%_-_var(--dock-tab-peek-alert))] animate-wiggle'
+              : 'translate-y-[calc(100%_-_var(--dock-tab-peek))]',
             // Yielding is TONE ONLY, same law as the docked tab: the Vault owns the open panel,
             // so this goes quiet — it does not hide, and it stays pressable.
             !yielding && (unread > 0 || open) ? 'bg-primary text-on-primary chisel' : 'bg-primary-bg text-primary-strong',

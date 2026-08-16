@@ -105,21 +105,48 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 //     SLOT 0a - the raised Zap catch, a CHILD of slot 0 breaking upward. An h-14 (59.5px) disc
 //               at top-0, translated up by var(--tab-bar-lift). Spans [34, 115.5]; the band it
 //               exposes above the bar is [93.5, 115.5], 59.5px wide and centred. z-40.
-//     SLOT 1  - the toast lane. ONE lane, one definition (components/toast-lane.tsx). bottom-32
-//               = 136px, right-4 = 17px. Clears slot 0a's top by 20.5px. z-60.
+//     SLOT 0b - the chat tab, peeling out from BEHIND slot 0 (components/vera/vera-launcher.tsx,
+//               the `!slot` branch). An h-11 (46.75px) w-14 (59.5px) tab whose bottom is
+//               var(--tab-bar-h) and which is then translated back down by its own height minus
+//               the peek. z-30 — deliberately UNDER the bar, which is what sells it as sliding
+//               out from behind it. It sits in the RIGHT corner: x ∈ [right 12.75, right 72.25]
+//               (right-3 + w-14), so it is the only slot that overlaps the content column's
+//               right-hand gutter and everything a card puts against it.
+//               🔴 WRITTEN DOWN 2026-08-16, AFTER IT PAINTED OVER A SEND BUTTON. It was added to
+//               this edge without a slot, and the three numbers that decide how far it rises
+//               were literals private to its own file. Now:
+//                 rest    peek var(--dock-tab-peek)       = 26 → visible [72.75, 119.5]
+//                 waiting peek var(--dock-tab-peek-alert) = 36 → visible [82.75, 129.5]
+//               and in BOTH states the ::before adds var(--dock-tab-reach) = 17px of INVISIBLE
+//               hit band on top, so the tab takes taps up to 136.5 at rest and 146.5 waiting.
+//               var(--dock-tab-rise) = 36 + 17 = 53 is that worst case, and it is now the term
+//               that wins the max() inside var(--tab-bar-clearance).
+//     SLOT 1  - the toast lane. ONE lane, one definition (components/toast-lane.tsx).
+//               calc(var(--tab-bar-clearance) + 0.75rem) = 159.25px, right-4 = 17px. Clears the
+//               top of the lane by --space-3 (12.75px), which is the contract's own minimum gap
+//               between two fixed objects. It was a `bottom-32` literal chosen against slot 0a
+//               alone (136px, clearing 115.5 by 20.5) — 10.5px INSIDE slot 0b's waiting hit
+//               band, which is what a literal buys you the day a new occupant joins the lane.
+//               z-60.
 //     SLOT 2  - a bottom sheet (Vera's h-[68dvh] panel, the capture composer). Takes the edge
 //               FROM slot 0 while open and pads its own inset. ONE AT A TIME. z-50.
-//     SLOT 3  - RETIRED. The chat edge pill left the corner when the Vault and the chat became
-//               one bar, so there is no second floating object to keep away.
+//     SLOT 3  - RETIRED. The chat edge PILL (top-1/2 of the right edge) left when the Vault and
+//               the chat became one bar. Do not read that as "there is no floating chat object
+//               on a phone any more": it came back at the bottom edge as slot 0b above, and this
+//               line saying otherwise for a week is part of why 0b was never given a number.
 //
 //   WHAT A NEW FIXED ELEMENT MUST DO. Six rules, and they are the answer to the question:
 //     1. Name your slot before you pick a number. If it is not a tab bar, a toast or a sheet,
 //        it does not belong at the phone's bottom edge. Put it in the drawer or in the flow.
 //     2. Measure from var(--tab-bar-h), never from a literal. The bottom inset is 0 on one
 //        phone and 34px on the next; a literal is right on exactly one device.
-//     3. Clear 115.5px, not 93.5px — var(--tab-bar-clearance), which is the bar plus
-//        var(--tab-bar-lift). The catch is the real top of the bar. This is the one number
-//        every prior comment in this area got wrong.
+//     3. Clear 146.5px, not 93.5px — var(--tab-bar-clearance), which is the bar plus the
+//        TALLEST thing breaking upward out of it: max(var(--tab-bar-lift), var(--dock-tab-rise)).
+//        The lane's top is the real top of the bar. This is the one number every prior comment
+//        in this area got wrong, and it went wrong a THIRD time on 2026-08-16 — the clearance
+//        still read 115.5 (the Zap catch) after slot 0b arrived reaching 146.5, so the shell's
+//        own content pad stood 31px inside a control. `max()`, not a sum: 0a and 0b break out of
+//        the same edge in different columns, so the lane's top is the taller of them.
 //     4. Two fixed boxes that must not overlap is not a thing you fix with better offsets. It
 //        is ONE box. toast-lane.tsx is the precedent, written after two lanes drifted into
 //        being byte-identical.
@@ -144,7 +171,8 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 //       actionable ones are either >= 40px apart or JOINED INTO ONE OBJECT. See the rollback
 //       note above: 12px of clearance still read as one cluster, and joining them was the fix.
 //     - THE REACHABLE BAND is bottom-0 to 35dvh, 295px on a 390x844 phone. Anchored to numbers
-//       already committed to rather than to a heatmap: slot 0 ends at 93.5, the lane at 136,
+//       already committed to rather than to a heatmap: slot 0 ends at 93.5, the toast lane at
+//       159.25 (146.5 + --space-3),
 //       and the drawer's Vault disclosure is capped max-h-[50dvh] precisely so the drawer's
 //       foot Close stays reachable. 35dvh is the smallest band holding all three. Anything a
 //       member touches more than once a session goes in the band.
@@ -152,6 +180,19 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 //       may overlap scrolling content that CAN BE SCROLLED CLEAR of it; it may never overlap a
 //       submit button, a link or an input. Which is why the content column pads by
 //       var(--tab-bar-clearance) and not by var(--tab-bar-h) (app-shell.tsx).
+//       🔴 AND THE PAD IS ONLY HALF OF THAT RULE, which the 2026-08-16 report proves. A column
+//       pad settles the END of the scroll: it is what makes "can be scrolled clear" TRUE, and
+//       with the clearance stuck at the catch's 115.5 it was false — the last 31px of every
+//       mobile column could not be scrolled out from under slot 0b, and a fixed action bar
+//       pinned AT the clearance (the event RSVP bar, the Quest CTA) could not move at all.
+//       What a pad can never settle is the TRANSIT: a fixed corner object sits over whatever
+//       the scroll happens to be showing, so a card that puts a control in the bottom-right
+//       will meet slot 0b on the way past. On /feed that is the Capture composer's send
+//       button, and the honest statement is that clearance makes it reachable, not that it
+//       makes the collision impossible. The structural answer to a transit collision is to
+//       keep primary actions out of the right 72.25px of the bottom band, or to move the
+//       floating object into the bar (which is what >= 768 already did — see the top of this
+//       file). Do not answer one with a bigger pad.
 //
 // SCORE ONCE PER VIEWPORT: < 768 the drawer's identity card; >= 768 this tab. Nothing else
 // renders it.
