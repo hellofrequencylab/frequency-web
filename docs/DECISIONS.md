@@ -24754,7 +24754,7 @@ baseline is what noticed, which is the one thing full-page pixel capture is genu
 
 ### `/discover` becomes a viewport capture, and the evidence that justified it
 
-> **⚠️ REVERSED — see [ADR-1040](DECISIONS.md).** The owner declined this trade, and the cause named
+> **⚠️ REVERSED — see [ADR-1042](DECISIONS.md).** The owner declined this trade, and the cause named
 > below is wrong on its own terms: `/discover` has no ISR generation to blame, because `cookies()`
 > makes the route fully dynamic and every discover read is an uncacheable `.rpc()` POST. The
 > measurement (9677 → 9701, three of four mobile states) is sound and is reused there; the
@@ -24805,7 +24805,95 @@ That is the answer to "why open the overlays" in one example: the picker is behi
 authed surface, at a width the visual baselines do not photograph. Three separate reasons the
 existing suites could never have seen it.
 
-## ADR-1040: A dynamic page has no cache generation to blame, so the coverage stays and the flake is named (2026-08-16)
+## ADR-1040: Attending is the affirmative act, so an event host reaches their own guest list (2026-08-14)
+
+**Owner instruction:** *"implement F1 and F2"*, answering the audit's consent question with **"RSVP
+is the opt-in."**
+
+### The defect
+
+The Space send core held **every** broadcast to the marketing double opt-in, whatever its topic tag
+(ADR-799 C, deliberately). An event host messaging their own guests rides that core, so each
+recipient was checked for `contacts.consent_state === 'subscribed'` **in the host Space**.
+
+Nothing on the event path ever produces such a row. An RSVP writes no contact at all;
+`recordBuyerAsContact` writes one with no email. So every recipient of an event broadcast was logged
+`suppressed` and the host was told *"N skipped (not subscribed to its emails)."* The event CRM's
+headline feature could not deliver to anyone, and the composer's note was accurate about a rule whose
+qualifying set was always empty.
+
+### The decision
+
+**One pairing is carved out of ADR-799 C: lane `event_host` + topic `events` clears at the
+`transactional` bar.** The reasoning is ADR-797's, applied one step further out: joining a Space was
+ruled an affirmative opt-in to that Space's member email, and buying a ticket to someone's event is
+the same kind of act toward that event.
+
+`transactional` is **not** "no consent". `evaluateContactConsent` still refuses a suppressed address
+and a hard `unsubscribed`; what it admits is `unknown` — the guest who was never given a chance to
+opt in. Everything else is untouched: the kill switch, the daily cap, the plan allowance, the
+per-topic `events` mute, the per-recipient one-click unsubscribe, and the `outreach_sends` ledger.
+
+### Why it cannot widen
+
+Two structural limits, both tested:
+
+1. **Both halves are required.** `consentPurposeForLane(lane, topic)` relaxes only for
+   `event_host` **and** `events`. Tagging arbitrary content `events` does not relax it, and claiming
+   the lane while sending marketing does not either.
+2. **The owner composer cannot reach the lane at all.** `sendSpaceCampaign` (the interactive,
+   canEditProfile-gated entry) overwrites `lane: 'marketing'` on the way in, so only
+   `sendSpaceCampaignSystem` — entered from the event Manage hub behind that event's own
+   `event.editSettings` gate — can carry it.
+
+### Consequences
+
+Amends ADR-799 C, which stands for every other lane. The relaxation is one enum value and one pure
+function, so the blast radius is legible: `grep event_host`. The alternative the owner declined
+(an opt-in checkbox at RSVP) remains available and would compose with this rather than replace it.
+
+## ADR-1041: A gate whose only outcome is "no" is not a gate, it is an outage (2026-08-14)
+
+**Context.** Implementing ADR-1040 surfaced two *separate* refusals sitting in front of the same
+send, each of which alone made a whole lane undeliverable, and neither of which any test, type, lint
+rule, or contract guard could see. Both had the same shape: a filter written against a model that
+guarantees it matches nothing.
+
+### The two
+
+| | The gate | Why it could never pass |
+|---|---|---|
+| 🔴 **Recipient resolution** | `contacts` filtered `.eq('space_id', spaceId).in('profile_id', …)` in the Space message center | Per-space contact tenancy (ADR-624) makes a **tenant** Space's contacts `profile_id` NULL *by law* — they are keyed `(space_id, lower(email))`, and the member's platform record lives in the root space. The only writer that sets `profile_id` on a tenant contact is the ticket path, which stores no email. The query asked for a combination the schema forbids. |
+| 🔴 **The system send gate** | `spaceFunctionAccess(space, 'email', null)` in `sendSpaceCampaignSystem` | `atLeastSpaceRole` is fail-closed, so a null role clears **no** minimum, and `email`'s default min-role is `admin`. The call returned `false` for every Space on every call. **All four callers** were dead: the event Manage broadcast, the Space message center, the scheduled-campaign cron, and the drip runner. |
+
+The second is the more instructive. Its comment read *"a null role checks the space-level default;
+the cron acts as the Space, not a member"* — a correct intention, expressed with a function that
+does the opposite. The cron's own test mocks `sendSpaceCampaignSystem` out, so the suite proved the
+scheduler picked the right rows and never that a send could leave the building.
+
+### The decisions
+
+1. **Resolve space contacts by EMAIL.** Two bounded reads — the audience's root contact rows for
+   their addresses, then the rows *this* Space holds for those addresses — paired by the pure
+   `lib/crm/contact-audience.ts`. ADR-863's rule is preserved exactly: Auth is never touched, and an
+   address is emitted only because the Space already holds it on a contact of its own.
+2. **A system caller asks whether a function is ON, not whether it may use it.** New pure
+   `spaceFunctionAvailable(space, fn)` (enabled only) beside `spaceFunctionAccess` (enabled + role).
+   The role half belongs to whichever surface authorized the call. `sendSpaceCampaignSystem` now
+   refuses only a Space that actually turned email off. Every other call site in the tree passes a
+   real `caps.role` and is unaffected.
+
+### The durable rule
+
+**A guard written against a model that cannot satisfy it fails silently and reads as working.** Both
+of these presented to the operator as an honest, well-worded refusal — *"No one in this audience is a
+contact with an email on file"*, *"Email is not available on this space plan"* — which is precisely
+why neither was reported as a bug. Where a gate composes with an invariant declared somewhere else
+(a tenancy membrane, a fail-closed role ladder), the test that earns its keep is the one asserting
+the gate can still say **yes**. Both are now covered by a passing-case test, and the message center's
+source-shape guard asserts the join key as well as the absence of Auth.
+
+## ADR-1042: A dynamic page has no cache generation to blame, so the coverage stays and the flake is named (2026-08-16)
 
 **Owner instruction:** revert `/discover`'s `viewportOnly` capture from [ADR-1039](DECISIONS.md).
 

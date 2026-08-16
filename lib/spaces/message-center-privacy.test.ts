@@ -20,8 +20,21 @@ describe('space message center never harvests member auth emails', () => {
 
   it('resolves the email audience to Space contacts', () => {
     expect(src).toContain('resolveContactEmails')
-    // The contact resolver reads the contacts table scoped to this space, by profile_id.
+    // The contact resolver reads the contacts table scoped to a space.
     expect(src).toMatch(/from\('contacts'\)[\s\S]{0,120}space_id/)
+  })
+
+  // Per-space contact tenancy (ADR-624) makes a TENANT space's contacts profile_id NULL by
+  // law, so a lane that filters this space's contacts by profile_id matches nothing and the
+  // email channel silently reaches no one. The join must be on the address, which is the key
+  // every contact writer actually uses. Source-shape again, for the same reason as above: the
+  // defect was a data-model one that no unit of a pure helper would expose.
+  it('joins the sending space to its contacts by email, never by profile_id', () => {
+    expect(src).toContain('pairSpaceContacts')
+    // The read scoped to the SENDING space selects on email...
+    expect(src).toMatch(/eq\('space_id', spaceId\)[\s\S]{0,80}in\('email'/)
+    // ...and profile_id is only ever used against the ROOT lane, never the sending space.
+    expect(src).not.toMatch(/eq\('space_id', spaceId\)[\s\S]{0,80}in\('profile_id'/)
   })
 
   it('no shared upfront recipient resolution runs before the per-lane cap', () => {

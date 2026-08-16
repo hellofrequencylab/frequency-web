@@ -16,6 +16,7 @@ import {
   spaceFunctionMinRole,
   spaceFunctionMinRoleOverride,
   spaceFunctionAccess,
+  spaceFunctionAvailable,
   isSpaceFunctionKey,
   isSpaceType,
   seedSpaceConfigFromDefaults,
@@ -164,6 +165,30 @@ describe('spaceFunctionAccess (the gate — UNIVERSAL, ADR-517 Phase F)', () => 
     // Universal default-ON survives a garbage entitlements blob (spaceEntitlements -> {}).
     expect(spaceFunctionAccess({ entitlements: 'garbage', featureRoles: 'garbage' }, 'members', 'editor')).toBe(true)
     expect(spaceFunctionAccess({ entitlements: 'garbage', featureRoles: 'garbage' }, 'crm', 'admin')).toBe(true)
+  })
+})
+
+describe('spaceFunctionAvailable (the enabled-only gate for SYSTEM callers, ADR-1041)', () => {
+  it('answers "is this on for the Space" with NO viewer in the question', () => {
+    expect(spaceFunctionAvailable({ entitlements: {}, featureRoles: {} }, 'email')).toBe(true)
+    expect(spaceFunctionAvailable({ entitlements: { email: true }, featureRoles: {} }, 'email')).toBe(true)
+  })
+
+  it('still honours an explicit off switch', () => {
+    expect(spaceFunctionAvailable({ entitlements: { email: false }, featureRoles: {} }, 'email')).toBe(false)
+  })
+
+  it('ignores the min-role entirely, where the role gate would deny', () => {
+    // THE BUG THIS EXISTS FOR: a system caller has no space role, and spaceFunctionAccess with a null
+    // role is not a softer check but an always-false one (atLeastSpaceRole is fail-closed). Any caller
+    // that means "is it turned on" must ask this instead.
+    const space = { entitlements: { email: true }, featureRoles: { email: 'admin' } }
+    expect(spaceFunctionAccess(space, 'email', null)).toBe(false)
+    expect(spaceFunctionAvailable(space, 'email')).toBe(true)
+  })
+
+  it('FAIL-SAFE: an unknown function key denies', () => {
+    expect(spaceFunctionAvailable({ entitlements: {}, featureRoles: {} }, 'made-up')).toBe(false)
   })
 })
 

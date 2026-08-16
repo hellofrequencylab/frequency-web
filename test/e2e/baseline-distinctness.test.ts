@@ -157,7 +157,7 @@ describe('visual baselines are distinct per surface', () => {
         //
         // It is also what a baseline looks like after its surface LEAVES `viewportOnly` and has
         // not been recaptured yet — the mirror of the branch above, and the state `/discover` was
-        // left in when ADR-1040 reverted its opt-in. Both readings are named because the fix
+        // left in when ADR-1042 reverted its opt-in. Both readings are named because the fix
         // differs: a wall means the bypass secret is missing, a stale mode means one runner
         // dispatch. The light-vs-dark rule below is what tells them apart (a wall photographs
         // identically in both states; a real surface repaints), so run it before choosing.

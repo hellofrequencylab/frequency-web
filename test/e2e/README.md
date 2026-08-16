@@ -334,7 +334,7 @@ pixels at identical dimensions. Nothing in this harness can pin that: the render
 per request, a mask preserves the box it paints over, `maxDiffPixelRatio` never runs on a
 size mismatch, and even capture-time CSS (`stylePath`) cannot hold a section that vanishes
 when its query comes back empty. `viewportOnly` was tried and reverted — it is per surface,
-not per project, so it cost eight baselines to buy an occasional recapture (ADR-1040).
+not per project, so it cost eight baselines to buy an occasional recapture (ADR-1042).
 
 ## A visual failure that has nothing to do with your diff
 
