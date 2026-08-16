@@ -2082,7 +2082,7 @@ export default function AppShell({
             that can give ground without anything becoming unreachable.
             `flex-1` stays: it is what grows the cluster to meet `lg:min-w-72` and keep the
             account block aligned to the right rail. */}
-        <div className="flex flex-1 shrink-0 items-center justify-end gap-1 pl-2.5 pr-2 md:gap-2 md:pl-4 lg:pr-0">
+        <div className="flex flex-1 shrink-0 items-center justify-end gap-1 pl-1 pr-2 sm:pl-2.5 md:gap-2 md:pl-4 lg:pr-0">
 
           {/* Demo-content toggle — sits to the LEFT of Search (desktop). Members
               hide/show seeded demo content for themselves; sized to match Search. */}
@@ -2131,8 +2131,19 @@ export default function AppShell({
               border. Below lg (no right rail) it's a natural-width right-aligned cluster. */}
           <div className="flex items-center justify-end gap-1 sm:ml-1 sm:border-l sm:border-border sm:pl-1.5 md:gap-2 lg:ml-0 lg:min-w-72 lg:justify-start lg:pl-3 lg:pr-4">
             {/* Community actions: mindless · friends · messages · notifications · daily streak. */}
-            {/* Mindless — the global practice timer overlay, openable from anywhere. */}
-            <MindlessLaunch />
+            {/* Mindless — the global practice timer overlay, openable from anywhere.
+                🔴 DESKTOP ONLY (owner, 2026-08-16: "We don't need the mindless icon in the menu on
+                mobile"). It is not a taste call about clutter, it is the header's WIDTH BUDGET. The
+                mobile bar has one flexible child — the wordmark — so every pinned control in this
+                cluster is subtracted from the brand before anything else gives way, and the lotus
+                plus its gap is ~42px of a ~360px line. Removing it is what buys the mark back its
+                full 163px at 390 and 360 (components/layout/brand-mark.tsx).
+                Nothing becomes unreachable: the timer is the whole point of The Quest tab in the
+                bottom bar, and every practice card opens it directly. This is the one header
+                control on a phone whose destination is already a primary tab. */}
+            <span className="hidden md:inline-flex">
+              <MindlessLaunch />
+            </span>
             {/* Friends — all sizes (mobile reaches Messages via the button on /network/friends). */}
             <HoverTip label="Friends">
               <Link
@@ -2172,8 +2183,12 @@ export default function AppShell({
                 the Vault dock, bottom right (components/sidebar/game-stats-dock.tsx). The
                 top bar is the system, and the system does not keep score. */}
 
-            {/* Account — its own divider, pushed to the far right of the block on lg+. */}
-            <div className="flex items-center gap-1.5 ml-2 pl-2.5 border-l border-border md:gap-2 md:pl-2.5 lg:ml-auto">
+            {/* Account — its own divider, pushed to the far right of the block on lg+.
+                The divider and its two paddings are ~19px, and below sm they were buying a hairline
+                at the wordmark's expense. The account avatar is already visually distinct (a filled
+                initials disc among outline glyphs), so the rule has nothing left to explain on a
+                phone; from sm up, where the room exists, it is unchanged. */}
+            <div className="flex items-center gap-1.5 ml-1 sm:ml-2 sm:border-l sm:border-border sm:pl-2.5 md:gap-2 lg:ml-auto">
               <AccountDropdown
                 profile={profile}
                 profileHref={profileHref}

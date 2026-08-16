@@ -112,7 +112,7 @@ describe('the mobile menu button is never the give-way point', () => {
 
 describe('AppShell header: the icon cluster holds its width, the brand gives way', () => {
   it('pins the right cluster — `justify-end` means squeezing it overflows LEFT, over the brand', () => {
-    expect(SHELL).toContain('flex flex-1 shrink-0 items-center justify-end gap-1 pl-2.5 pr-2')
+    expect(SHELL).toContain('flex flex-1 shrink-0 items-center justify-end gap-1 pl-1 pr-2')
   })
 
   it('does not leave the cluster shrinkable, which is what let the icons reach the wordmark', () => {
@@ -124,7 +124,39 @@ describe('AppShell header: the icon cluster holds its width, the brand gives way
   })
 
   it('caps the mark at its box, so `aspect-ratio` stops acting as a floor', () => {
-    expect(BRAND).toContain('brandmark h-[22px] max-w-full md:h-8')
+    expect(BRAND).toContain('brandmark h-[22px] min-w-[6.5rem] max-w-full md:h-8')
+  })
+
+  // ── THE SECOND HALF OF THE SAME FIX (owner, 2026-08-16: "The logo was way too small") ────────
+  // `max-w-full` gave the header an escape valve with no bottom. Height stays pinned at 22px while
+  // width collapses, and the mask is `contain`, so the letterforms shrink to fit the narrower axis
+  // and the box pads out the rest: at ~23px of box the mark draws about 3px tall. A smudge, not a
+  // logo — and SILENT, because nothing overflows when the give-way child gives way completely.
+  // Neither the @overflow gate nor axe has a rule for "the brand is now a smear".
+  it('gives the mark a legibility floor, so the give-way child cannot give way to nothing', () => {
+    expect(BRAND).toContain('min-w-[6.5rem]')
+  })
+
+  // The floor is the backstop; the BUDGET is the fix. Measured at this app's 17px root:
+  //   link    pl-3.5 14.9 + mark 163 + pr-2 8.5                                    = 186.4
+  //   cluster pl-1 4.25 + search 34 + 4.25 + friends 34 + 4.25 + bell 34
+  //           + account ml-1 4.25 + avatar 34 + pr-2 8.5                           = 161.5
+  //   total                                                                        = 347.9
+  // so 360 and 390 both clear it with the mark at its FULL width and nothing shrinking at all.
+  // Each of the three assertions below is one of the line items that made that sum fit; losing any
+  // one of them puts the header back over 360 and starts eating the brand again.
+  describe('the mobile cluster is small enough that the mark never has to shrink', () => {
+    it('keeps the Mindless lotus off the phone (owner directive, ~42px of the budget)', () => {
+      expect(SHELL).toMatch(/hidden md:inline-flex[\s\S]{0,120}<MindlessLaunch \/>/)
+    })
+
+    it('drops the account divider below sm (~19px) rather than the wordmark', () => {
+      expect(SHELL).toContain('flex items-center gap-1.5 ml-1 sm:ml-2 sm:border-l sm:border-border sm:pl-2.5')
+    })
+
+    it('sizes the bell to match the Friends control beside it instead of 4px wider', () => {
+      expect(read('./notification-bell.tsx')).toContain('relative p-1.5 sm:p-2 rounded-lg')
+    })
   })
 
   it('truncates a white-label Space name rather than letting it push the icons', () => {

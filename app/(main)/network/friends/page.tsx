@@ -16,6 +16,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { PersonCard } from '@/components/cards/person-card'
 import { InviteButton } from '@/components/invite/invite-button'
 import { NetworkTabs } from '@/components/people/network-tabs'
+import { dockThreadPath } from '@/lib/messages/dock-open'
 import { OrbitGroups, PlainFriendList } from './orbit-list'
 import { NearMissesSection } from './near-misses'
 import { AcceptDeclineButtons, CancelOutgoingButton } from './friend-row-actions'
@@ -60,9 +61,25 @@ export default async function FriendsPage() {
         description="Your people. Connections you’ve made, reconnect nudges, near-misses, and introductions."
         action={
           <div className="flex flex-wrap items-center gap-2">
-            {/* Messages lives here on mobile (the header keeps one Friends icon). */}
+            {/* ── MESSAGES OPENS THE DOCK, IT DOES NOT NAVIGATE (owner, 2026-08-16) ──────────
+                "when I clicked on the friends icon and hit messages, it took me to the message
+                page that's turned off rather than opening the message tab on the bottom right."
+
+                This was the last member-facing entry point still handing chat to a full page.
+                ADR-896 moved conversations into the lower-right dock and retired /messages/[id]
+                behind `chat_dm_routes_retired`, but the INDEX kept rendering, so this button led
+                somewhere the product no longer takes anyone — and on the owner's phone it landed
+                on that page's error boundary ("Messages didn't load"), which is how a link into a
+                surface nobody visits stays broken without anyone noticing.
+
+                The `?chat=inbox` QUERY channel rather than a client button dispatching `open-chat`:
+                the launcher is mounted in a <Suspense> slot in the (main) layout, so on a cold load
+                it may not have attached its listener yet, and lib/messages/dock-open.ts is explicit
+                that an event dispatched before it mounts "is lost with no trace". The URL survives
+                that race, the launcher strips the param once it has acted, and this page stays a
+                Server Component with no island to hydrate. */}
             <Link
-              href="/messages"
+              href={dockThreadPath('/network/friends', { kind: 'inbox' })}
               className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3.5 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong"
             >
               <MessageSquare className="h-4 w-4" /> Messages

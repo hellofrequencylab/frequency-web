@@ -57,8 +57,27 @@ export function BrandMark({
           derived from its height by `aspect-ratio` (963/130 — the wordmark crop), which is an
           intrinsic size and therefore a floor, not a target: the box would keep its 163px and
           simply overhang. Capping it at the link's content box lets the mask's `contain` sizing
-          scale the letterforms down on a narrow phone. */}
-      <span className="brandmark h-[22px] max-w-full md:h-8" aria-hidden />
+          scale the letterforms down on a narrow phone.
+
+          🔴 `min-w-[6.5rem]` IS THE OTHER HALF, AND IT IS WHY THE OWNER SAW "the logo was way too
+          small" (2026-08-16, on a phone). `max-w-full` alone bought the header an escape valve with
+          NO BOTTOM. The height stays pinned at 22px while the width collapses, and the mask is
+          `contain`, so the letterforms shrink to fit the narrower of the two and the box pads the
+          rest out with dead space: at ~23px of box the mark draws about 3px tall. That is not a
+          smaller logo, it is a smudge where the brand used to be, and it is silent — nothing
+          overflows, nothing errors, so neither the @overflow gate nor axe has anything to report.
+
+          A floor converts that silence into a failure somebody sees. Past 110px the deficit has
+          nowhere left to go and the cluster overflows the viewport, which is exactly what the
+          @overflow gate measures. Loud beats invisible: the same trade this repo made when it
+          decided a swallowed error is worse than a thrown one.
+
+          The floor is not the plan, though — it is the backstop. The plan is that the mobile
+          cluster is small enough that the mark never shrinks at all (app-shell.tsx: the Mindless
+          lotus is desktop-only, the account divider is sm+, the bell matches Friends). Measured at
+          the 17px root: link 186px + cluster 163px = 349px, so 360 and 390 both clear it with the
+          mark at its full 163px, and only a 320px screen asks it for anything. */}
+      <span className="brandmark h-[22px] min-w-[6.5rem] max-w-full md:h-8" aria-hidden />
     </Link>
   )
 }
