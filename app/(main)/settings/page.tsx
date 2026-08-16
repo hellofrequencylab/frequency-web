@@ -7,6 +7,7 @@ import { FocusTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getMyProfileId } from '@/lib/auth'
+import { SELECTABLE_SKINS } from '@/lib/theme/skins'
 import { AppearanceSection } from './appearance/section'
 import { NotificationsSection } from './notifications/section'
 import { ConnectionsSection } from './connections/section'
@@ -93,7 +94,20 @@ export default async function SettingsPage({
       <SettingsSection
         id="appearance"
         title="Appearance"
-        intro="Pick the palette, feel, and seasonal accent. Changes save instantly."
+        // 🔴 THE INTRO NAMED A CONTROL THAT IS NOT ON THE PAGE. It read "Pick the palette,
+        // feel, and seasonal accent", but the switcher only renders the Palette picker when
+        // there is more than one SELECTABLE skin (theme-switcher.tsx), and there is exactly
+        // one today: Midnight is registered but `selectable: false` (lib/theme/skins.ts,
+        // owner call 2026-08-04). So every member read a promise of a palette chooser and
+        // then scrolled a phone-height section looking for it. It also never mentioned Mode,
+        // which IS on the page. Derived from the same registry the switcher reads, so
+        // flipping Midnight back to selectable restores the word by itself rather than
+        // leaving a second copy to go stale. (The escape-hatch case — a member stranded on a
+        // withdrawn skin, where the picker shows for one card — under-promises here, which is
+        // the harmless direction.)
+        intro={`Pick ${
+          SELECTABLE_SKINS.length > 1 ? 'the palette, the feel' : 'the feel'
+        }, the seasonal accent, and light or dark. Changes save instantly.`}
       >
         <Suspense fallback={<SectionSkeleton rows={3} />}>
           <AppearanceSection />

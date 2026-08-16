@@ -34,12 +34,15 @@ const VIEWPORT = { desktop: { width: 1280, height: 800 }, mobile: { width: 390, 
 /** Slugs captured at viewport height, read off the surface registry rather than re-listed.
  *  The stub env is what makes the two env-gated rows visible here; see appSurfaces().
  *
- *  🔴 BOTH REGISTRIES, and the omission was live: this read `appSurfaces()` alone, on the fair
- *  assumption that only the member shell would ever need a first-screen capture. `/discover` broke
- *  that — it is an ANON surface whose length tracks live data (see LIVE_DATA_PATHS) — and the
- *  moment it opted in, its eight baselines came back viewport-tall and this file called every one
- *  of them a Vercel protection wall. The wall detector below is why that matters: it fails CLOSED,
- *  so a registry it cannot see reads as a compromised capture rather than as an unknown. */
+ *  🔴 BOTH REGISTRIES, and keep it that way even though only `/feed` opts in today. This read
+ *  `appSurfaces()` alone, on the fair assumption that only the member shell would ever need a
+ *  first-screen capture. `/discover` broke that in #2139: an ANON surface opted in, its eight
+ *  baselines came back viewport-tall, and this file called every one of them a Vercel protection
+ *  wall. That opt-in has since been reversed (see LIVE_DATA_PATHS in surfaces.ts, now deliberately
+ *  empty), so the widening currently changes no result — which is exactly when it is cheapest to
+ *  keep. The wall detector below is why: it fails CLOSED, so a registry it cannot see reads as a
+ *  compromised capture rather than as an unknown, and the next anon opt-in must not have to
+ *  rediscover that. */
 const VIEWPORT_ONLY = new Set(
   [...appSurfaces({ roomPath: '/room', spaceSlug: 'space' }), ...publicSurfaces()]
     .filter((s) => s.viewportOnly)
@@ -151,7 +154,18 @@ describe('visual baselines are distinct per surface', () => {
       } else if (height <= 900) {
         // A viewport-tall capture is the signature of a wall (Vercel Deployment Protection,
         // an error page) rather than a full-page render of a real surface.
-        bad.push(`${file}: height ${height} — viewport-tall, likely a wall`)
+        //
+        // It is also what a baseline looks like after its surface LEAVES `viewportOnly` and has
+        // not been recaptured yet — the mirror of the branch above, and the state `/discover` was
+        // left in when ADR-1042 reverted its opt-in. Both readings are named because the fix
+        // differs: a wall means the bypass secret is missing, a stale mode means one runner
+        // dispatch. The light-vs-dark rule below is what tells them apart (a wall photographs
+        // identically in both states; a real surface repaints), so run it before choosing.
+        bad.push(
+          `${file}: height ${height} — viewport-tall. Either a wall (set ` +
+            'VERCEL_AUTOMATION_BYPASS_SECRET) or a baseline taken while this surface was ' +
+            'viewportOnly and not yet recaptured full-page (e2e-manual.yml → update_baselines).',
+        )
       }
     }
     expect(bad, bad.join('\n')).toEqual([])

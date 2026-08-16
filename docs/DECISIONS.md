@@ -24754,6 +24754,13 @@ baseline is what noticed, which is the one thing full-page pixel capture is genu
 
 ### `/discover` becomes a viewport capture, and the evidence that justified it
 
+> **⚠️ REVERSED — see [ADR-1042](DECISIONS.md).** The owner declined this trade, and the cause named
+> below is wrong on its own terms: `/discover` has no ISR generation to blame, because `cookies()`
+> makes the route fully dynamic and every discover read is an uncacheable `.rpc()` POST. The
+> measurement (9677 → 9701, three of four mobile states) is sound and is reused there; the
+> explanation and the remedy are not. Read the rest of this section as the record of a call that was
+> made, not as guidance.
+
 The recaptured `/discover` baselines failed again, and the second failure is what settled it: **390x9701
 on two `pr-compare` runs 25 minutes apart**, against a 9677 baseline captured minutes earlier from the
 same branch. Reproducible, so not flake — and only **three of the four render states** differed, which
@@ -24885,3 +24892,115 @@ why neither was reported as a bug. Where a gate composes with an invariant decla
 (a tenancy membrane, a fail-closed role ladder), the test that earns its keep is the one asserting
 the gate can still say **yes**. Both are now covered by a passing-case test, and the message center's
 source-shape guard asserts the join key as well as the absence of Auth.
+
+## ADR-1042: A dynamic page has no cache generation to blame, so the coverage stays and the flake is named (2026-08-16)
+
+**Owner instruction:** revert `/discover`'s `viewportOnly` capture from [ADR-1039](DECISIONS.md).
+
+### The decision
+
+`/discover` goes back to a full-page baseline on both projects. `LIVE_DATA_PATHS` in
+`test/e2e/surfaces.ts` stays as the declared seam and is now **deliberately empty**, the same way
+`ALLOWED_TWINS` in `baseline-distinctness.test.ts` is. `/feed` is untouched: it sets `viewportOnly`
+directly on its registry row and keeps it. The widened `VIEWPORT_ONLY` read in
+`baseline-distinctness.test.ts` (`appSurfaces()` **and** `publicSurfaces()`) also stays, and is
+correct on its own merits — that guard fails CLOSED, so a registry it cannot see reads as a
+compromised capture rather than as an unknown, and the next anon opt-in should not have to
+rediscover it.
+
+### 🔴 ADR-1039 named the wrong cause, and the wrong cause is what justified the flag
+
+That note said `/discover` sits behind `revalidate = 3600`, so "its page LENGTH tracks the data and
+the ISR cache of whichever deployment answered", and concluded that a capture run and the
+`pr-compare` verifying it necessarily hit different deployments.
+
+**There is no ISR generation involved.** `app/discover/page.tsx` calls `createClient()`
+(`lib/supabase/server.ts` → `cookies()`), which opts the route out of static rendering entirely, and
+every discover read goes through `.rpc()`, i.e. a POST, which Next's data cache never stores.
+`createPublicClient()` exists precisely so a public page CAN stay static (its own header says so),
+and this page defeats that on line 88 by asking for the viewer. So `revalidate = 3600` buys nothing
+here, and **every request runs the six queries live**. Three of them are order- or clock-sensitive:
+
+| Read | Ordering | What moves it |
+|---|---|---|
+| `public_circles` | `ORDER BY member_count DESC, created_at ASC` | one join reorders the top six |
+| `public_posts` | `ORDER BY created_at DESC` | one post replaces the newest of three |
+| `public_events` | `WHERE starts_at >= now()` | the upcoming window slides continuously |
+
+### What the failure actually was, from the run rather than from a theory
+
+Run `31826333373`, `pr-compare`, mobile: **390x9701 against a 390x9677 baseline on `dawn-light`,
+`dawn-dark` and `midnight-light`. `midnight-dark` passed, and all four DESKTOP captures passed.**
+
+That last clause is the one ADR-1039 did not have, and it changes the reading. A per-request data
+difference explains three-of-four (four independent requests to a page that re-queries on each). A
+**mobile-only** delta of exactly **24px** explains the rest: 24px is one `--text-body` line
+(`calc(1.5 / 1)` × 1rem), which is one row heading wrapping to a second line in the single-column
+mobile grid — and absorbed on desktop, where the same card sits in a three-up `h-full` row whose
+height is set by its tallest sibling. The same test's retries reported 76,014 then 82,853 differing
+pixels **at identical dimensions**, so the content moved between two captures inside one run.
+
+### Why the coverage is worth keeping anyway
+
+The flag is read per SURFACE, not per project, so it was costing the below-the-fold baseline at both
+widths: eight PNGs, covering the topic bands, the circle grid and the footer. Against that, the
+record says the failure is rare — the full-page baseline captured 2026-08-11 (`390x9664`) held
+through **46 commits and three days** of `pr-compare` runs before it moved. A permanent eight-baseline
+loss to avoid an occasional recapture is the wrong side of that trade, and the footer defect ADR-1039
+itself found is exactly the class of bug only a below-the-fold full-page capture sees.
+
+### 🔴 What cannot fix it, recorded so it is not re-attempted
+
+- **A wait.** The render is stable per request. Playwright logged *"captured a stable screenshot"* on
+  every attempt, after `settle()` had already held `scrollHeight` still. The variance is between
+  requests, not within one.
+- **A mask.** A mask paints over a box and the box keeps its size — the finding `Surface.viewportOnly`
+  and `settle()` already record twice.
+- **`maxDiffPixelRatio`.** `toHaveScreenshot` fails a size mismatch before it counts a pixel.
+- **CSS injected at capture time.** `toHaveScreenshot({ stylePath })` can genuinely pin a height, and
+  it still cannot pin this one: six live regions feed the page, and three of them (events, circles,
+  posts) drop their whole section when the query returns nothing, which no clamp on a container holds.
+
+So the honest position is that this surface's height is **not pinnable from the harness**, and the
+answer is a reading rule rather than a mechanism: a `/discover`-only size mismatch worth one or two
+text lines, mobile only, with desktop green, is the database moving and should be recaptured. A shift
+that moves both viewports, or moves all four states together, is a layout change and must be read as
+one. That rule now lives next to the code in `surfaces.ts` and in `test/e2e/README.md`.
+
+### The one source fix that was considered and NOT taken
+
+`CircleCard`'s heading is `text-body font-bold break-words` over a member-supplied circle name, and
+`EventRow` right beside it already `truncate`s its title for the same reason. Clamping the name to one
+line would remove the exact 24px mechanism measured above. It was left alone because it does not make
+the page stable — the row counts, the optional post image and the vanishing sections all still move
+the height — so shipping it would buy a product rendering change and the *appearance* of a fix. It is
+recorded here as an available follow-up on its own design merits, not as a gate repair.
+
+### Baselines
+
+The eight committed `/discover` PNGs were viewport-sized (390x844 / 1280x800) from #2139 and had to be
+recaptured full-page on a runner (`e2e-manual.yml` → `update_baselines`) before `pr-compare` could be
+green. Until that ran, `baseline-distinctness.test.ts` failed them loudly rather than quietly: with
+`/discover` out of `VIEWPORT_ONLY`, its `height <= 900` rule reads a viewport-tall baseline as the
+signature of a wall. That was the intended failure — the two sides disagreeing is exactly what it
+exists to say.
+
+✅ **Recaptured 2026-08-16 (#2141): 1280x7540 desktop, 390x9701 mobile, all four states each.** The
+mobile number is worth keeping in view: **9701 is the exact height that failed against the 9677
+baseline** in run `31826333373` and set this whole reversal going. It is not a coincidence and it is
+not a fix — it is the same page, one text line taller than the day the old baseline was taken, now
+recorded at the height it currently renders. The next disagreement of one or two lines, mobile only,
+desktop green, means the database moved again and the reading rule above applies.
+
+🔴 **RECAPTURING IS TWO RUNS' WORTH OF FOOTGUN, and both fired here.** Worth the paragraph, because
+the next person to recapture will hit them:
+
+1. **`capture_shell` is not what you want for a recapture.** Passing it writes twelve BRAND-NEW
+   member-shell PNGs, and a branch that changes the shell is the worst possible place to take a
+   first-ever baseline: it records the change as the reference with nothing to diff it against.
+   Establish those on `main` first. Recapturing a public surface needs `update_baselines` alone.
+2. **Cancelling the workflow does not un-push it.** The job commits BEFORE it uploads its artifact,
+   so a cancel that arrives during the capture still leaves a partial commit on the branch — here,
+   three of eight PNGs. The next run then captured all eight, hit `git pull --rebase` against that
+   partial, and died on a **binary merge conflict**: two commits touching one PNG is not something
+   git can auto-resolve. If a capture run has to be stopped, let it finish and revert the commit.

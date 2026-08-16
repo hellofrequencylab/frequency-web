@@ -189,10 +189,34 @@ function readSavedSetup(): Partial<SavedSetup> | null {
  *  hides the End controls behind the browser toolbar. (The browser's own chrome
  *  can't be removed by a web page on iOS Safari — that needs the installed PWA,
  *  manifest `display: standalone`.) */
-function Overlay({ children, flash = false }: { children: React.ReactNode; flash?: boolean }) {
+function Overlay({
+  children,
+  flash = false,
+  fit = false,
+}: {
+  children: React.ReactNode
+  flash?: boolean
+  /** ONE SCREEN, NO PAGE SCROLL — the reveal stage only (owner, 2026-08-16: "everything should be
+   *  on the same screen with no overflow or scroll"). The default stays scrollable because the
+   *  other stages legitimately need it: the setup screen carries the practice picker, the length
+   *  dial and the mode toggle, and a list that is one item too long has to be reachable. The
+   *  reveal is the opposite kind of surface — four fixed cards and a rail — so it gets a hard
+   *  budget and distributes the space internally (see components/on-air/reveal.tsx). */
+  fit?: boolean
+}) {
   return (
-    <div className="fixed inset-0 z-50 h-[100dvh] max-h-[100dvh] overflow-y-auto bg-canvas">
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-6 py-5">{children}</div>
+    <div
+      className={`fixed inset-0 z-50 h-[100dvh] max-h-[100dvh] bg-canvas ${
+        fit ? 'overflow-hidden' : 'overflow-y-auto'
+      }`}
+    >
+      <div
+        className={`mx-auto flex w-full max-w-md flex-col px-6 ${
+          fit ? 'h-full min-h-0 py-3' : 'min-h-[100dvh] py-5'
+        }`}
+      >
+        {children}
+      </div>
       {/* The warm-up "one" flash: a full-screen wash as the sit begins. Semantic tokens
           only (no hex); hidden entirely under prefers-reduced-motion (motion-reduce). */}
       {flash && (
@@ -1334,11 +1358,15 @@ export function OnAirSession({
   if (stage === 'reveal' && payload) {
     const hasNext = !!queuePosition && queuePosition.index + 1 < queuePosition.total
     return (
-      <Overlay>
+      // `fit`: the reveal is exactly one viewport and does not scroll (owner, 2026-08-16). Every
+      // banner below is therefore a TAX on the four cards underneath it — the partial-sit notice
+      // and the queue chip are each ~100px off the card budget on a phone, which is why they are
+      // `shrink-0` (they may not be squeezed into unreadability) but tight.
+      <Overlay fit>
         {/* Sequenced run (P6): a progress chip; when more practices remain, closing this reveal
             rolls into the next one. */}
         {queuePosition && (
-          <div className="mx-auto mb-3 w-full max-w-sm rounded-pill bg-surface-elevated px-3 py-1.5 text-center text-meta font-medium text-muted">
+          <div className="mx-auto mb-2 w-full max-w-sm shrink-0 rounded-pill bg-surface-elevated px-3 py-1.5 text-center text-meta font-medium text-muted">
             Practice {queuePosition.index + 1} of {queuePosition.total}
             {hasNext ? ' · closing this starts the next' : ' · last one'}
           </div>
@@ -1347,7 +1375,7 @@ export function OnAirSession({
             no shame, a gentle "finish for the rest". FINISHED: celebrate the top-up. Plain copy,
             no em or en dashes. */}
         {payload.partial && (
-          <div className="mx-auto mb-4 w-full max-w-sm rounded-2xl border border-primary/50 bg-primary-bg/30 px-4 py-3 text-center">
+          <div className="mx-auto mb-2 w-full max-w-sm shrink-0 rounded-2xl border border-primary/50 bg-primary-bg/30 px-4 py-2.5 text-center">
             <p className="text-body-sm font-semibold text-text">You banked the day and earned 1 Zap.</p>
             <p className="mt-1 text-meta text-muted">
               Finish the sit any time today and the rest of the Zaps are yours.
@@ -1356,7 +1384,7 @@ export function OnAirSession({
               <button
                 type="button"
                 onClick={finishTheRest}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+                className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 Finish the sit <ChevronRight className="h-3.5 w-3.5" aria-hidden />
               </button>
@@ -1364,7 +1392,7 @@ export function OnAirSession({
           </div>
         )}
         {payload.finished && (
-          <div className="mx-auto mb-4 w-full max-w-sm rounded-2xl border border-success/50 bg-success-bg/40 px-4 py-3 text-center">
+          <div className="mx-auto mb-2 w-full max-w-sm shrink-0 rounded-2xl border border-success/50 bg-success-bg/40 px-4 py-2.5 text-center">
             <p className="text-body-sm font-semibold text-text">You finished it. The rest of the Zaps are in.</p>
             <p className="mt-1 text-meta text-muted">Full sit, full reward. Nice work.</p>
           </div>

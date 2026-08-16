@@ -24,6 +24,53 @@ const fmtMin = (sec: number) => {
   return m < 1 ? '<1 min' : `${m.toLocaleString()} min`
 }
 
+// ── ONE SCREEN, ALWAYS (owner, 2026-08-16, off a phone capture of the reveal) ─────────────────
+// "when I finished my meditation timer it went to the stats. There was a bunch of overflow. and
+// top to bottom scroll. everything should be on the same screen with no overflow or scroll."
+//
+// The reveal is a TAKEOVER, and a takeover that scrolls has failed at the one thing a takeover is
+// for. What it was doing: the overlay wrapped the cards in `min-h-[100dvh]` + `overflow-y-auto`,
+// so a tall card simply grew the page and pushed the swipe rail — the ONLY way forward through
+// the four panels — below the fold. On the capture the partial-sit banner was cut off the top and
+// both chevrons were cut off the bottom at the same time, which is the shape of that bug exactly.
+//
+// The fix is a budget rather than a diet. The overlay is now EXACTLY one viewport (`fit`, in
+// session.tsx / movement-session.tsx), the rail is pinned, and everything above it lives inside
+// the leftover space. Two things give way inside that space, in this order:
+//
+//   1. THE SPOT ART, because it is the only element on these cards carrying no information. It is
+//      capped against `svh` — the SMALL viewport height, i.e. the measure with the mobile URL bar
+//      OUT — so the cards do not resize under the member when Safari's chrome slides away
+//      mid-read. `dvh` would do exactly that, and a layout that moves while you look at it reads
+//      as a glitch even when every number on it is right.
+//   2. THE PANEL BODY, which scrolls INSIDE its own box as a last resort. That is a fail-safe, not
+//      the design. It exists because the alternative is amputation — the shell root carries
+//      `overflow-x-clip` and this overlay now carries `overflow-hidden`, so content that does not
+//      fit is GONE rather than reachable, and a stat you cannot reach is worse than one you have
+//      to nudge into view.
+//
+// MEASURED, in Chromium at 390px against the real compiled globals.css. The card under test is
+// STATS, the tallest of the four (five rows, the depth nudge, the depth-streak line and the link):
+//
+//     dvh     before          after, no banner   after, partial-sit banner
+//     844     rail off-screen  no scroll          no scroll
+//     750     rail off-screen  no scroll          no scroll
+//     700     rail off-screen  no scroll          card scrolls 8px
+//     660     rail off-screen  no scroll          card scrolls 28px
+//     600     rail off-screen  no scroll          card scrolls 58px
+//
+// The "before" column is the finding, not the fix: the rail's bottom edge sat at 844.6px REGARDLESS
+// of viewport height, so both chevrons were off the screen on every phone including a full-height
+// iPhone 14, and the page overflowed by 22px to 266px depending on height. It was never a
+// small-screen edge case.
+//
+// The remaining fail-safe scroll is the partial-sit path on a short viewport — that banner is about
+// 105px of the budget, and squeezing the numbers underneath it to win back 28px would trade
+// readable stats for a scrollbar nobody sees. Note that `100dvh` on a phone is the viewport with
+// the browser chrome SHOWING (~700 on an iPhone 14, not 844), because a takeover that does not
+// scroll never gives the URL bar a reason to collapse. That is the row to read.
+const ART = 'mx-auto h-24 max-h-[9svh] w-auto'
+
 // The depth nudge (ADR-443): from the real engaged time, name the tier the sit
 // EARNED and, if there's a deeper one, the minutes that would reach it next time.
 // Pure — same achievedTier the economy used server-side, so the line never
@@ -232,14 +279,20 @@ export function Reveal({
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
-      className={`flex min-h-full flex-1 flex-col transition-[transform,opacity] duration-300 ease-in motion-reduce:transition-none ${
+      // `h-full min-h-0`, not `min-h-full`: the second one was asking the parent for a percentage
+      // of a height the parent did not have (the overlay was `min-h-[100dvh]`, and a min-height is
+      // not a definite height to resolve a percentage against), so it computed to nothing and the
+      // cards sized themselves off their own content instead. `min-h-0` is the other half — a flex
+      // child's automatic minimum is its CONTENT, so without it the tallest card sets the floor and
+      // the rail below gets pushed off the screen no matter what the container says.
+      className={`flex h-full min-h-0 flex-1 flex-col transition-[transform,opacity] duration-300 ease-in motion-reduce:transition-none ${
         dismissing ? 'translate-y-[70vh] opacity-0' : ''
       }`}
     >
       <div
         ref={scroller}
         onScroll={onScroll}
-        className="flex flex-1 snap-x snap-mandatory overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         <Panel>
           <RewardsPanel payload={payload} />
@@ -260,8 +313,11 @@ export function Reveal({
       </div>
 
       {/* Swipe rail: chevrons flank the dots; the right one walks the cards and,
-          from the last card, swipes it off and closes the mode. */}
-      <div className="flex items-center justify-center gap-5 py-4">
+          from the last card, swipes it off and closes the mode.
+          `shrink-0` is load-bearing now that the overlay is exactly one viewport: this row is the
+          only way through the four panels for anyone not swiping, so it is the last thing allowed
+          to give ground. It was the first thing to go off the bottom before. */}
+      <div className="flex shrink-0 items-center justify-center gap-5 py-3">
         <IconButton variant="bordered" label="Previous card" onClick={prev} disabled={panel === 0}>
           <ChevronLeft className="h-4 w-4" />
         </IconButton>
@@ -285,7 +341,14 @@ export function Reveal({
 
 function Panel({ children }: { children: React.ReactNode }) {
   return (
-    <section className="flex w-full shrink-0 snap-center flex-col items-center justify-center px-6 py-8 text-center">
+    <section
+      // `min-h-0` + `overflow-y-auto` is the per-card fail-safe described at the top of this file:
+      // the card scrolls inside its own box rather than growing the takeover. `justify-center` only
+      // centres content that FITS — once it does not, a centred overflowing box clips equally at
+      // BOTH ends, which is how the partial-sit banner and both chevrons managed to be cut off in
+      // the same screenshot. With a scroller the same card starts at its top and stays reachable.
+      className="flex min-h-0 w-full shrink-0 snap-center flex-col items-center justify-center overflow-y-auto px-4 py-1.5 text-center [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
       {children}
     </section>
   )
@@ -305,7 +368,7 @@ function RewardsPanel({ payload }: { payload: RevealPayload }) {
 
   return (
     <div className="w-full max-w-sm">
-      <RewardsArt className="mx-auto h-24 w-auto" />
+      <RewardsArt className={ART} />
       {payload.logged ? (
         <>
           <p className="mt-3 text-meta font-semibold uppercase tracking-widest text-subtle">
@@ -318,11 +381,11 @@ function RewardsPanel({ payload }: { payload: RevealPayload }) {
           {payload.welcomeBack && (
             <p className="mt-3 text-body-sm text-muted">Good to see you. One practice at a time.</p>
           )}
-          <div className="mt-5 space-y-2">
+          <div className="mt-4 space-y-1.5">
             {payload.bonuses.slice(0, shown).map((b, i) => (
               <div
                 key={`${b.label}-${i}`}
-                className="flex items-center justify-between rounded-card border border-border bg-surface-elevated/60 px-3 py-2 text-body-sm"
+                className="flex items-center justify-between rounded-card border border-border bg-surface-elevated/60 px-3 py-1.5 text-body-sm"
               >
                 <span className="font-medium text-text">{b.label}</span>
                 <span className="flex items-center gap-1 font-semibold tabular-nums text-primary-strong">
@@ -375,7 +438,7 @@ function StreakPanel({ payload }: { payload: RevealPayload }) {
     : 100
   return (
     <div className="w-full max-w-sm">
-      <StreakArt className="mx-auto h-24 w-auto" />
+      <StreakArt className={ART} />
       <p className="mt-3 text-meta font-semibold uppercase tracking-widest text-subtle">Streak</p>
       <p className="mt-2 flex items-center justify-center gap-2 text-6xl font-bold tabular-nums text-text">
         <Flame className="h-10 w-10 text-primary" />
@@ -434,13 +497,13 @@ function StatsPanel({ payload }: { payload: RevealPayload }) {
   ]
   return (
     <div className="w-full max-w-sm">
-      <StatsArt className="mx-auto h-24 w-auto" />
-      <p className="mt-3 text-meta font-semibold uppercase tracking-widest text-subtle">Stats</p>
-      <div className="mt-4 space-y-2 text-left">
+      <StatsArt className={ART} />
+      <p className="mt-2 text-meta font-semibold uppercase tracking-widest text-subtle">Stats</p>
+      <div className="mt-3 space-y-1.5 text-left">
         {rows.map(([k, v]) => (
           <div
             key={k}
-            className="flex items-center justify-between rounded-card border border-border bg-surface-elevated/60 px-3 py-2 text-body-sm"
+            className="flex items-center justify-between rounded-card border border-border bg-surface-elevated/60 px-3 py-1.5 text-body-sm"
           >
             <span className="truncate text-muted">{k}</span>
             <span className="ml-3 shrink-0 font-semibold tabular-nums text-text">{v}</span>
@@ -448,7 +511,7 @@ function StatsPanel({ payload }: { payload: RevealPayload }) {
         ))}
       </div>
       {nudge && (
-        <div className="mt-4 rounded-xl border border-primary/40 bg-primary-bg/30 px-3 py-2.5 text-left">
+        <div className="mt-3 rounded-xl border border-primary/40 bg-primary-bg/30 px-3 py-2 text-left">
           <p className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
             <Zap className="h-3.5 w-3.5 text-primary" /> {nudge.reached}
           </p>
@@ -460,11 +523,11 @@ function StatsPanel({ payload }: { payload: RevealPayload }) {
         </div>
       )}
       {depthFlavor && (
-        <p className="mt-3 flex items-center justify-center gap-1.5 text-meta font-medium text-primary-strong">
+        <p className="mt-2 flex items-center justify-center gap-1.5 text-meta font-medium text-primary-strong">
           <Flame className="h-3.5 w-3.5" aria-hidden /> {depthFlavor}
         </p>
       )}
-      <Link href="/crew/leaderboard" className="mt-4 inline-block text-meta font-semibold text-primary-strong hover:underline">
+      <Link href="/crew/leaderboard" className="mt-3 inline-block text-meta font-semibold text-primary-strong hover:underline">
         Full stats →
       </Link>
     </div>
@@ -500,7 +563,7 @@ function DispatchPanel({
 
   return (
     <div className="w-full max-w-sm">
-      <DispatchArt className="mx-auto mb-4 h-24 w-auto" />
+      <DispatchArt className={`${ART} mb-4`} />
       <div className="rounded-2xl border border-primary/50 bg-primary-bg/30 p-5 text-left lift-1">
         <p className="flex items-center gap-1.5 text-2xs font-bold uppercase tracking-widest text-primary-strong">
           <Radio className="h-3.5 w-3.5" /> Incoming · Dispatch from Vera

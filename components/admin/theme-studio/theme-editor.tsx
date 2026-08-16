@@ -360,7 +360,16 @@ function TokenField({
     <div>
       <div className="text-meta font-semibold text-muted">{spec.label}</div>
       {spec.hint && <p className="text-meta text-subtle">{spec.hint}</p>}
-      <div className="mt-1 grid grid-cols-2 gap-2">
+      {/* 🔴 `grid-cols-2` WAS UNCONDITIONAL, and it is the one grid in Theme Studio with no
+          mobile fallback. Each cell holds a 38px colour swatch plus its hex field, and the
+          section this sits in is `p-5` inside the page's `px-4` gutters: at 320px that leaves
+          about 118px a cell, so the hex input rendered ~73px wide and neither "#FBFAF6" nor
+          its "Light · " prefix could be read while typing. It never overflowed (the input is
+          `min-w-0 flex-1`, so it absorbed the deficit silently) — it just became unusable,
+          which is why nothing caught it. Below sm the pair stacks full width; from sm up,
+          where the parent grid halves the cell anyway, the side-by-side light/dark comparison
+          this control exists for is unchanged. */}
+      <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
         <ColorPair
           idBase={`light-${spec.name}`}
           modeLabel="Light"

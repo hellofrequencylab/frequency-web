@@ -71,6 +71,64 @@ const SORTS: { value: Sort; label: string }[] = [
 
 const ACTIVE_WINDOW_MS = 30 * 60 * 1000
 
+// ── THE ELEVEN SWALLOWED READS ON THIS PAGE, AND THE ONE THAT COULD NOT BE SWALLOWED ─────────
+// Every read below is FAIL-SAFE by intent: a denied or failed read should degrade ONE section
+// of the inbox to empty, never take the whole surface to its error boundary. That is the same
+// preference lib/platform-flags.ts states for flags ("a transient DB hiccup must never be able
+// to make a member's messages unreachable"). The implementation only got half of it right.
+//
+// 🔴 WHAT WAS WRONG. Both `Promise.all` waves destructured `{ data }` and threw `{ error }` on
+// the floor. A Supabase result with a non-null `error` carries `data: null`, so an RLS denial, a
+// revoked EXECUTE grant on one of the three DEFINER RPCs, or a PostgREST 400 from a renamed
+// column read to this page as the perfectly ordinary sentence "you have no rooms" / "you have no
+// DMs" / "nobody is online". No throw, no log line, no signal of any kind — and AGENTS.md is
+// explicit that a fail-safe with no gate watching it is an invisible regression. When the owner
+// hit "Messages didn't load" on 2026-08-16 there was consequently nothing on this page's side of
+// the request to read: it had eleven ways to fail quietly and none to say so.
+//
+// `noteFailedRead` is that missing gate. One tagged line per degraded section, on console.error,
+// which is what Vercel's runtime errors and runtime logs group and count on — so the next
+// occurrence names its own section instead of being reconstructed from the schema afterwards.
+function noteFailedRead(section: string, error: unknown): void {
+  if (!error) return
+  // No `error !== null` guard on the object branch, and CodeQL is the reason it went (alert 238,
+  // "comparison between inconvertible types"). The usual reason to write one is that
+  // `typeof null === 'object'` — but the truthiness return above has already narrowed `unknown` to
+  // `{}`, so null cannot reach this line and the comparison could never be false. A check that can
+  // only ever pass reads to the next person as though null were a live case here. It is not.
+  const detail =
+    typeof error === 'object' && 'message' in error
+      ? String((error as { message: unknown }).message)
+      : String(error)
+  console.error(`[messages] ${section} read failed; that section degraded to empty:`, detail)
+}
+
+// The presence read is the ONE member of the second wave that could take the page down, and it
+// did not need a non-null `error` to do it. `createAdminClient()` asserts
+// `process.env.SUPABASE_SERVICE_ROLE_KEY!` and @supabase/ssr throws "supabaseKey is required"
+// when that env var is absent — SYNCHRONOUSLY, while the `Promise.all` argument list is still
+// being built, so the throw escapes before a single sibling read is even started and every
+// section of the inbox dies with it. Presence dots are decoration on this page; whether a peer
+// was seen in the last thirty minutes may not decide whether a member can reach their
+// conversations. Constructing the client inside the async boundary means a service-role
+// misconfiguration costs the dots and logs why, instead of costing the page.
+async function readPeerPresence(
+  peerIds: string[],
+): Promise<{ id: string; last_seen_at: string | null }[]> {
+  if (peerIds.length === 0) return []
+  try {
+    const { data, error } = await createAdminClient()
+      .from('profiles')
+      .select('id, last_seen_at')
+      .in('id', peerIds)
+    noteFailedRead('peer presence', error)
+    return (data ?? []) as { id: string; last_seen_at: string | null }[]
+  } catch (e) {
+    noteFailedRead('peer presence (admin client)', e)
+    return []
+  }
+}
+
 // Coded defaults for the operator-editable content (ADR-180) — shared by the
 // page header and the SEO metadata below.
 const CONTENT_FALLBACK = {
@@ -102,12 +160,17 @@ export default async function MessagesPage({
   // user client (am_room_member / am_participant SELECT policies); the DM
   // participants' profiles, which RLS would otherwise hide from sub-crew/
   // cross-region viewers, come from the message_peer_profiles DEFINER RPC.
-  const { data: myProfile } = await supabase
+  const { data: myProfile, error: myProfileErr } = await supabase
     .from('profiles')
     .select('id, community_role, membership_tier')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
+  // The redirect below cannot tell "this account has no profile yet" from "the profile read
+  // failed", and it answers both with /onboarding — which sends a fully onboarded member back
+  // through signup. The redirect stays (bouncing to onboarding is still the safer of the two
+  // wrong answers), but the two causes are no longer indistinguishable in the logs.
+  noteFailedRead('my profile', myProfileErr)
   if (!myProfile) redirect('/onboarding')
   const myProfileId = myProfile.id as string
   const canCreateRoom =
@@ -134,22 +197,35 @@ export default async function MessagesPage({
       .eq('profile_id', myProfileId),
   ])
 
-  // Public profile fields for everyone I share a DM / room with (caller-scoped).
-  const { data: peerRows } = peerRes
+  // Public profile fields for everyone I share a DM / room with (caller-scoped). This one read
+  // failing is the loudest degradation on the page: with no peer map EVERY 1:1 row falls back to
+  // "Unknown" with a placeholder initial, which looks like data loss rather than a failed read.
+  const { data: peerRows, error: peerErr } = peerRes
+  noteFailedRead('peer profiles (message_peer_profiles)', peerErr)
   const peerMap = new Map(((peerRows ?? []) as Profile[]).map(p => [p.id, p]))
 
   const peerIds = [...peerMap.keys()]
 
   // ── Second-wave input id-lists, computed synchronously from the first wave ─────
-  const { data: myMemberships } = myMembershipsRes
+  // A failed membership read empties joinedRoomIds, which silently cascades: no "Your threads"
+  // rooms, no room unread counts, and every room the member HAS joined reappears under Discover
+  // as if they had never joined it. Worth a line of its own for that reason.
+  const { data: myMemberships, error: myMembershipsErr } = myMembershipsRes
+  noteFailedRead('room memberships', myMembershipsErr)
   const joinedRoomIds = (myMemberships ?? []).map((m: { room_id: string }) => m.room_id)
 
-  const { data: myTuned } = myTunedRes
+  const { data: myTuned, error: myTunedErr } = myTunedRes
+  noteFailedRead('tuned channels', myTunedErr)
   const tunedChannelIds = ((myTuned ?? []) as { topical_channel_id: string }[]).map(c => c.topical_channel_id)
 
   // Migrated group threads now live as private rooms; filter them out so they don't double-show
   // (conversation copy + room copy). `migrated_to_room_id` isn't in the generated types yet.
-  const { data: myPartsRaw } = myPartsRawRes
+  // The DM list itself. This read carries a PostgREST embed hint
+  // (`conversations!conversation_id(...)`), so it is the one query on the page that can 400 on a
+  // schema change alone — a renamed FK or a dropped `migrated_to_room_id` would empty a member's
+  // entire DM list while the page still rendered a cheerful "No threads yet".
+  const { data: myPartsRaw, error: myPartsErr } = myPartsRawRes
+  noteFailedRead('my conversations', myPartsErr)
   const myParts = ((myPartsRaw ?? []) as unknown as Array<{
     conversation_id: string
     last_read_at: string | null
@@ -185,54 +261,54 @@ export default async function MessagesPage({
     args: Record<string, unknown>,
   ) => Promise<{ data: unknown; error: unknown }>
 
-  const [onlineRes, myRoomsRes, channelRoomsRes, allPartsRes, summariesRes, roomUnreadRes, pageContent] =
+  const [onlineRows, myRoomsRes, channelRoomsRes, allPartsRes, summariesRes, roomUnreadRes, pageContent] =
     await Promise.all([
-      peerIds.length > 0
-        ? createAdminClient().from('profiles').select('id, last_seen_at').in('id', peerIds)
-        : Promise.resolve({ data: [] as { id: string; last_seen_at: string | null }[] }),
+      readPeerPresence(peerIds),
       joinedRoomIds.length > 0
         ? supabase.from('rooms').select(roomCols).in('id', joinedRoomIds)
             .order('last_message_at', { ascending: false, nullsFirst: false })
-        : Promise.resolve({ data: [] }),
+        : Promise.resolve({ data: [], error: null }),
       tunedChannelIds.length > 0
         ? (supabase).from('rooms').select(roomCols).eq('visibility', 'channel')
             .in('scope_id', tunedChannelIds)
             .order('last_message_at', { ascending: false, nullsFirst: false })
-        : Promise.resolve({ data: [] }),
+        : Promise.resolve({ data: [], error: null }),
       convIds.length > 0
         ? supabase.from('conversation_participants').select('conversation_id, profile_id')
             .in('conversation_id', convIds).neq('profile_id', myProfileId)
-        : Promise.resolve({ data: [] }),
+        : Promise.resolve({ data: [], error: null }),
       convIds.length > 0
-        ? (rpc('dm_conversation_summaries', { _convs: convIds }) as Promise<{ data: ConvSummary[] | null }>)
-        : Promise.resolve({ data: [] as ConvSummary[] }),
+        ? (rpc('dm_conversation_summaries', { _convs: convIds }) as Promise<{ data: ConvSummary[] | null; error: unknown }>)
+        : Promise.resolve({ data: [] as ConvSummary[], error: null }),
       joinedRoomIds.length > 0
-        ? (rpc('room_unread_counts', { _rooms: joinedRoomIds }) as Promise<{ data: RoomUnread[] | null }>)
-        : Promise.resolve({ data: [] as RoomUnread[] }),
+        ? (rpc('room_unread_counts', { _rooms: joinedRoomIds }) as Promise<{ data: RoomUnread[] | null; error: unknown }>)
+        : Promise.resolve({ data: [] as RoomUnread[], error: null }),
       resolvePageContent('/messages', CONTENT_FALLBACK),
     ])
 
-  // Liveness (Phase D): who among my DM peers is active now (last_seen_at is public).
-  const onlineIds = new Set(
-    ((onlineRes.data ?? []) as { id: string; last_seen_at: string | null }[])
-      .filter(s => isOnline(s.last_seen_at)).map(s => s.id),
-  )
+  // Liveness (Phase D): who among my DM peers is active now (last_seen_at is public). Already
+  // error-checked and degraded inside readPeerPresence, so this is a plain array by here.
+  const onlineIds = new Set(onlineRows.filter(s => isOnline(s.last_seen_at)).map(s => s.id))
 
   // ── Rooms ─────────────────────────────────────────────────────────
+  noteFailedRead('my rooms', myRoomsRes.error)
   const myRooms: RoomRow[] = ((myRoomsRes.data ?? []) as Omit<RoomRow, 'isMember'>[])
     .map(r => ({ ...r, isMember: true }))
 
   // Discover: public rooms not yet joined (fetched in the first wave above).
-  const { data: publicRoomsData } = publicRoomsRes
+  const { data: publicRoomsData, error: publicRoomsErr } = publicRoomsRes
+  noteFailedRead('discover rooms', publicRoomsErr)
   const discoverRooms: RoomRow[] = ((publicRoomsData ?? []) as Omit<RoomRow, 'isMember'>[])
     .filter(r => !joinedRoomIds.includes(r.id))
     .map(r => ({ ...r, isMember: false }))
 
   // Channel open rooms for the channels I'm tuned into (Phase B). Untyped client (scope_id not typed).
+  noteFailedRead('channel rooms', channelRoomsRes.error)
   const channelRooms: RoomRow[] = ((channelRoomsRes.data ?? []) as unknown as Omit<RoomRow, 'isMember'>[])
     .map(r => ({ ...r, isMember: false }))
 
   // ── DMs (1:1 only — Phase B) ──────────────────────────────────────
+  noteFailedRead('conversation participants', allPartsRes.error)
   const otherPartMap: Record<string, Profile[]> = {}
   for (const p of (allPartsRes.data ?? []) as { conversation_id: string; profile_id: string }[]) {
     const cid = p.conversation_id
@@ -243,7 +319,9 @@ export default async function MessagesPage({
   }
 
   // Per-conversation newest message + the caller's unread count from the window RPC (no shared-budget
-  // starvation). Fail-safe: empty on error.
+  // starvation). Fail-safe: empty on error — which reads as every conversation showing "No
+  // messages yet" with a zero badge, so it needs the log line more than most.
+  noteFailedRead('DM summaries (dm_conversation_summaries)', summariesRes.error)
   const summaryByConv: Record<string, ConvSummary> = {}
   for (const s of (summariesRes.data ?? []) as ConvSummary[]) summaryByConv[s.conversation_id] = s
 
@@ -273,6 +351,7 @@ export default async function MessagesPage({
 
   // Per-room unread map — feeds both the header badge total and the "Unread first"
   // sort, from the one grouped RPC read.
+  noteFailedRead('room unread counts (room_unread_counts)', roomUnreadRes.error)
   const roomUnreadMap = new Map(
     ((roomUnreadRes.data ?? []) as RoomUnread[]).map(r => [r.room_id, Number(r.unread_count)]),
   )

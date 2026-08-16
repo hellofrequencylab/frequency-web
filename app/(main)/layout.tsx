@@ -684,6 +684,46 @@ export default async function MainLayout({
   return (
     <>
       {themeCss ? <style id="fx-theme" dangerouslySetInnerHTML={{ __html: themeCss }} /> : null}
+      {/* ── THE DENSITY AXIS COULD NOT REACH THE ELEMENT THAT READS IT ────────────────────────
+          `[data-generation]` is set on the SHELL ROOT (components/app-shell.tsx), and each of the
+          eight preset blocks in app/globals.css declares `--density-root` (spacious 112.5%, bold
+          103%, kids 115%, and so on). But the only rule that consumes it is
+
+              html { font-size: var(--density-root, 106.25%); }
+
+          and custom properties inherit DOWNWARD only. A variable declared on a div inside <body>
+          is invisible to <html>, so every preset's density number resolved to the 106.25% fallback
+          and the whole axis was inert — on all eight presets, since the day it shipped. Nothing
+          threw, nothing looked broken, and the Theme Studio happily offered a Density control
+          (components/admin/theme-studio/tokens.ts) that moved a number nothing read. The other
+          feel tokens were fine: `--type-scale`, `--radius-*`, `--motion-*`, `--ornament` and
+          `--tap-min` are all read by descendants of the shell root, which is why only this one axis
+          was dead and why it stayed dead so quietly.
+
+          `rem` resolves against the ROOT element and nothing else, so the fix has to put the
+          attribute on <html>. It CANNOT move to app/layout.tsx: line ~627 of this file records the
+          deliberate reason the per-request cookie and DB-theme reads live here and not there —
+          resolving the theme in the root layout would make every public marketing and /discover
+          page dynamic. So the resolved value is stamped from here, synchronously, by a script that
+          the browser executes as it parses this chunk (the same mechanism app/layout.tsx already
+          uses to restore `data-skin` from localStorage before first paint). No flash: the value is
+          server-resolved and the write happens before the shell below it is parsed.
+
+          The shell root keeps its own `data-generation`. Both matching is harmless — same attribute,
+          same value, and the inner declaration simply wins inside the shell — and it means the
+          tokens now also reach UI PORTALED to document.body (toasts, dialogs, the view-as popover),
+          which sat outside the shell root and had been getting baseline feel tokens all along.
+
+          `balanced` is an explicit no-op preset, so a default install renders byte-identically;
+          only a member or Space that actually chose a preset sees anything change. */}
+      <script
+        // The injected value is a server-resolved id from a closed registry (lib/theme/generations,
+        // passed through `resolveGeneration`'s guard) and JSON-encoded on the way in, so no member
+        // string reaches this sink. The `themeCss` <style> directly above takes the same shape.
+        dangerouslySetInnerHTML={{
+          __html: `document.documentElement.setAttribute('data-generation',${JSON.stringify(theme.generation)})`,
+        }}
+      />
     <AppShell
       railFold={railFold}
       skin={theme.skin}

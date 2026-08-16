@@ -311,6 +311,31 @@ were right all along.
 whether its baseline is a size outlier among its own states. Recapturing costs one
 dispatch; hunting a layout bug that does not exist costs a lot more.
 
+### `/discover`, and the one surface whose height the database sets
+
+`/discover` is the only captured route that re-queries on **every** request. It calls
+`createClient()` (`cookies()`), so it is fully dynamic, and its six reads are `.rpc()`
+POSTs, which Next's data cache never stores — `revalidate = 3600` buys it nothing.
+Three of those reads are order- or clock-sensitive (`public_circles` by
+`member_count DESC`, `public_posts` by `created_at DESC`, `public_events` by
+`starts_at >= now()`), so the top six circles, the newest three posts and the upcoming
+event window can all differ between two captures minutes apart.
+
+Read a `/discover` failure by **viewport before state**:
+
+| Shape | Reading |
+|---|---|
+| Size mismatch worth one or two text lines, **mobile only**, all four desktop captures green | The database moved. One heading wrapped in the single-column mobile grid and was absorbed on desktop by an `h-full` sibling. **Recapture.** |
+| Both viewports move, or all four states move together | A real layout change. **Do not recapture** until you know what moved. |
+
+Measured (run `31826333373`): mobile `390x9701` against a `390x9677` baseline on three of
+four states, desktop unchanged, and the retries reported 76,014 then 82,853 differing
+pixels at identical dimensions. Nothing in this harness can pin that: the render is stable
+per request, a mask preserves the box it paints over, `maxDiffPixelRatio` never runs on a
+size mismatch, and even capture-time CSS (`stylePath`) cannot hold a section that vanishes
+when its query comes back empty. `viewportOnly` was tried and reverted — it is per surface,
+not per project, so it cost eight baselines to buy an occasional recapture (ADR-1042).
+
 ## A visual failure that has nothing to do with your diff
 
 `pr-compare` judges the **merge result** against baselines taken from the **branch**. Vercel builds

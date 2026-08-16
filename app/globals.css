@@ -253,16 +253,52 @@
      Use --tab-bar-h when you need the bar's own box (the bar itself, a viewport-height calc).
      Use --tab-bar-clearance when you are PLACING something above it — INCLUDING the content
      column's own bottom pad, because rule 3 of the mobile stacking contract
-     (components/sidebar/game-stats-dock.tsx) is "clear 115.5px, not 93.5px": the catch's top
-     edge is the real top of the bar.
+     (components/sidebar/game-stats-dock.tsx) is "clear the LANE, not the bar": the top of the
+     tallest thing that breaks upward out of the bottom edge is the real top of the bar.
 
      --tab-bar-lift IS THE CATCH'S OVERHANG, NAMED ONCE (DAWN 2026-08-11, Q6). It was a 22px
      literal here AND a second `-translate-y-[22px]` literal in app-shell.tsx, so the disc's
      position and the clearance it needs were two independent numbers that happened to agree.
-     One name, two readers. */
+     One name, two readers.
+
+     ── 🔴 AMENDED 2026-08-16: THE CATCH IS NO LONGER THE TALLEST THING IN THE LANE ──────────
+     Owner, off a phone capture of /feed: the Capture composer's send button — the whole point
+     of that box, and a CONTROL, not content — was painted over by the round amber chat
+     launcher. That is this exact bug, one floor up, and by the same mechanism the paragraph
+     above describes for the teaser pill and the RSVP bar.
+
+     The launcher (the `!slot` branch of components/vera/vera-launcher.tsx) is SLOT 0b of the
+     mobile stacking contract: a 46.75px tab whose BOTTOM is `var(--tab-bar-h)` — correctly
+     taken from the token — and which is then translated back down so a fixed peek stays
+     showing above the bar. That peek was a 26px literal, a 36px literal in the waiting state,
+     and a `before:-top-4` invisible hit band, all three private to that file. So the lane's
+     top was 22px (the catch) as far as every OTHER file could tell, while the tab actually
+     reached 53px: 36 + 17. The last 31px of every mobile scroll column, in the rightmost
+     72.25px of it, sat under a control that no amount of scrolling could clear.
+
+     WHY THE ALERT PEEK AND THE HIT BAND ARE BOTH IN THE NUMBER, rather than the 26 you can see:
+       • --dock-tab-peek-alert, not --dock-tab-peek, because the tab rides 10px higher whenever
+         something is waiting. Clearance that tracked the unread count would REFLOW the page the
+         moment a message arrived; the lane is furniture and has one height.
+       • --dock-tab-reach, because that band is invisible and still takes the tap. Content under
+         it looks free and is not — which is precisely the "cannot reliably press it" the owner
+         reported. A clearance that only cleared the pixels you can see would leave 17px of the
+         send button eating its taps into the chat panel.
+
+     `max()` and not a sum: slot 0a (the catch, centred) and slot 0b (the tab, right corner) do
+     not stack — they are two things breaking upward out of the same edge in different columns,
+     so the lane's top is the taller of them. Adding a third occupant means adding a term here,
+     and every consumer of --tab-bar-clearance (the shell's content column, the RSVP bar, the
+     teaser pill, the toast lane, the Quest CTA, the notification popover's max-height) gets it
+     without an edit. That is the whole reason this is one name and not six literals. */
   --tab-bar-lift:      22px;
   --tab-bar-h:         calc(3.5rem + env(safe-area-inset-bottom));
-  --tab-bar-clearance: calc(var(--tab-bar-h) + var(--tab-bar-lift));
+  /* SLOT 0b — the chat tab's peel, named once and read by the launcher itself. */
+  --dock-tab-peek:       26px;
+  --dock-tab-peek-alert: 36px;
+  --dock-tab-reach:      1rem;
+  --dock-tab-rise:       calc(var(--dock-tab-peek-alert) + var(--dock-tab-reach));
+  --tab-bar-clearance: calc(var(--tab-bar-h) + max(var(--tab-bar-lift), var(--dock-tab-rise)));
   /* The sticky app header, same reasoning: 3.5rem plus the TOP inset under viewport-fit=cover. */
   --app-header-h:      calc(3.5rem + env(safe-area-inset-top));
 

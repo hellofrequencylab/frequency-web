@@ -20,6 +20,7 @@ import {
   Flame,
   Bug,
   Gift,
+  Palette,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
@@ -651,7 +652,22 @@ function AccountDropdown({
         // `.glass` is unlayered, so it beats a Tailwind border/background utility outright —
         // it owns both here, and adding them back would be dead text of exactly the kind
         // check:bridge exists to catch.
-        <div className="glass lift-3 animate-cue-pop absolute right-0 top-full mt-2 w-60 rounded-card py-1 z-50 max-h-[80vh] overflow-y-auto">
+        // 🔴 `max-h-[80vh]` PUT THE SIGN OUT ROW BEHIND THE TAB BAR, and the z-index cannot save it.
+        // This header is `sticky … z-30`, and a positioned element with a z-index CREATES A STACKING
+        // CONTEXT — so this panel's `z-50` only orders it against its siblings inside the header. The
+        // mobile tab bar is `z-40` in the ROOT context (see MobileTabBar), which puts the whole bar,
+        // and the raised Zap catch that stands 22px proud of it, on top of this menu.
+        //
+        // Measured at the 17px root: the panel opens at 68px (`--app-header-h` + `mt-2`), so on a
+        // 320x568 iPhone SE its bottom lands at 522 against a catch that starts at 486 — 36px of menu
+        // behind the bar, which is exactly the Sign out row. At 390x844 it is 15px. Only 360x800
+        // happened to clear.
+        //
+        // `vh` compounded it: on a phone that is the LARGE viewport (URL bar out of the way), so the
+        // panel was already measured against ~15px more than the member could see before the tab bar
+        // was counted at all. Same cap as the notifications sheet, built from the same two tokens
+        // rather than from literals that happen to agree today.
+        <div className="glass lift-3 animate-cue-pop absolute right-0 top-full mt-2 w-60 rounded-card py-1 z-50 max-h-[80dvh] max-sm:max-h-[calc(100dvh-var(--app-header-h)-var(--tab-bar-clearance)-1rem)] overflow-y-auto">
 
           {/* Header */}
           <div className="px-3 py-2.5 border-b border-border">
@@ -694,13 +710,33 @@ function AccountDropdown({
               )}
               {s.items.map(renderAccountLink)}
               {s.label === 'You' && (
-                <button
-                  onClick={() => { cycleTheme() }}
-                  className="flex items-center gap-2.5 px-3 py-2 text-body-sm text-text hover:bg-surface-elevated w-full text-left transition-colors"
-                >
-                  <ThemeIcon className="w-4 h-4 text-subtle" />
-                  {themeLabel}
-                </button>
+                <>
+                  <button
+                    onClick={() => { cycleTheme() }}
+                    className="flex items-center gap-2.5 px-3 py-2 text-body-sm text-text hover:bg-surface-elevated w-full text-left transition-colors"
+                  >
+                    <ThemeIcon className="w-4 h-4 text-subtle" />
+                    {themeLabel}
+                  </button>
+                  {/* 🔴 THERE WAS NO APPEARANCE LINK, while three comments in this file said there
+                      was. They all describe "Appearance" as fixed chrome woven into the You group,
+                      and what is actually woven in is the light/dark CYCLE button above — a
+                      different control with a different job. Grepping `/settings#appearance` across
+                      the app finds the href in a route-map and in tests, and in no menu.
+                      So the three-axis picker (palette, feel, seasonal accent) was reachable only by
+                      opening Settings and scrolling past Profile, which on a phone is most of a
+                      screen of scrolling to reach a surface the account menu claims to offer.
+                      The cycle button stays: mode is the thing people change often and it is worth a
+                      one-tap control. This is the way to everything else it cannot express. */}
+                  <Link
+                    href="/settings#appearance"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-2.5 px-3 py-2 text-body-sm text-text hover:bg-surface-elevated transition-colors"
+                  >
+                    <Palette className="w-4 h-4 text-subtle" />
+                    Appearance
+                  </Link>
+                </>
               )}
               {s.label === 'Community' && (
                 <button
@@ -2082,7 +2118,7 @@ export default function AppShell({
             that can give ground without anything becoming unreachable.
             `flex-1` stays: it is what grows the cluster to meet `lg:min-w-72` and keep the
             account block aligned to the right rail. */}
-        <div className="flex flex-1 shrink-0 items-center justify-end gap-1 pl-2.5 pr-2 md:gap-2 md:pl-4 lg:pr-0">
+        <div className="flex flex-1 shrink-0 items-center justify-end gap-1 pl-1 pr-2 sm:pl-2.5 md:gap-2 md:pl-4 lg:pr-0">
 
           {/* Demo-content toggle — sits to the LEFT of Search (desktop). Members
               hide/show seeded demo content for themselves; sized to match Search. */}
@@ -2131,8 +2167,19 @@ export default function AppShell({
               border. Below lg (no right rail) it's a natural-width right-aligned cluster. */}
           <div className="flex items-center justify-end gap-1 sm:ml-1 sm:border-l sm:border-border sm:pl-1.5 md:gap-2 lg:ml-0 lg:min-w-72 lg:justify-start lg:pl-3 lg:pr-4">
             {/* Community actions: mindless · friends · messages · notifications · daily streak. */}
-            {/* Mindless — the global practice timer overlay, openable from anywhere. */}
-            <MindlessLaunch />
+            {/* Mindless — the global practice timer overlay, openable from anywhere.
+                🔴 DESKTOP ONLY (owner, 2026-08-16: "We don't need the mindless icon in the menu on
+                mobile"). It is not a taste call about clutter, it is the header's WIDTH BUDGET. The
+                mobile bar has one flexible child — the wordmark — so every pinned control in this
+                cluster is subtracted from the brand before anything else gives way, and the lotus
+                plus its gap is ~42px of a ~360px line. Removing it is what buys the mark back its
+                full 163px at 390 and 360 (components/layout/brand-mark.tsx).
+                Nothing becomes unreachable: the timer is the whole point of The Quest tab in the
+                bottom bar, and every practice card opens it directly. This is the one header
+                control on a phone whose destination is already a primary tab. */}
+            <span className="hidden md:inline-flex">
+              <MindlessLaunch />
+            </span>
             {/* Friends — all sizes (mobile reaches Messages via the button on /network/friends). */}
             <HoverTip label="Friends">
               <Link
@@ -2172,8 +2219,12 @@ export default function AppShell({
                 the Vault dock, bottom right (components/sidebar/game-stats-dock.tsx). The
                 top bar is the system, and the system does not keep score. */}
 
-            {/* Account — its own divider, pushed to the far right of the block on lg+. */}
-            <div className="flex items-center gap-1.5 ml-2 pl-2.5 border-l border-border md:gap-2 md:pl-2.5 lg:ml-auto">
+            {/* Account — its own divider, pushed to the far right of the block on lg+.
+                The divider and its two paddings are ~19px, and below sm they were buying a hairline
+                at the wordmark's expense. The account avatar is already visually distinct (a filled
+                initials disc among outline glyphs), so the rule has nothing left to explain on a
+                phone; from sm up, where the room exists, it is unchanged. */}
+            <div className="flex items-center gap-1.5 ml-1 sm:ml-2 sm:border-l sm:border-border sm:pl-2.5 md:gap-2 lg:ml-auto">
               <AccountDropdown
                 profile={profile}
                 profileHref={profileHref}

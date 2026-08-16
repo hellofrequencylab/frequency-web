@@ -31,13 +31,25 @@
 #                    console) by minting a session first — see below
 #
 # ── capture_shell, and why it is opt-in ───────────────────────────────────────────────────
-# The four member-shell surfaces have NEVER had baselines, because sign-in is magic-link only
-# and the suite could not authenticate itself (ADR-948's 🔴 amendment). With the secrets in
-# place this flag mints a session per run and brings them into the matrix. It defaults OFF so
-# the first capture is something you chose, not something a routine baseline refresh did to
-# you: `update_baselines + capture_shell` writes 12 brand-new PNGs (16 with PW_SPACE_SLUG),
-# and `update_a11y + capture_shell` seeds the shell's a11y debt, which is what stops the first
-# PR run reaching /feed from failing on debt that predates it.
+# ⚠️ THIS PARAGRAPH DESCRIBED A WORLD THAT ENDED. It said the four member-shell surfaces "have
+# NEVER had baselines" and that `update_baselines + capture_shell` writes "12 brand-new PNGs".
+# Both were true the day it was written and neither is true now: the shell surfaces HAVE
+# committed baselines, and on 2026-08-16 (#2141) `pr-compare` failed 8 of them as ordinary
+# comparisons against existing PNGs while reporting "App shell covered: 4/4 surfaces, 16/16
+# checks". Reading the old text cost that PR a cancelled capture run, which then left a PARTIAL
+# baseline commit on the branch and a binary merge conflict for the next run to trip over.
+#
+# What is still true: sign-in is magic-link only, so the suite could not authenticate itself
+# until the secrets landed (ADR-948's 🔴 amendment), and this flag is what mints a session per
+# run and brings the shell into the matrix. It defaults OFF because a shell capture costs a
+# session mint and roughly doubles the run, not because it is a first-ever baseline any more.
+#
+# 🔴 SO PICK THE FLAG BY WHAT MOVED. A public-surface recapture (`/discover` and friends) wants
+# `update_baselines` ALONE — adding capture_shell rewrites shell PNGs your change never touched.
+# A change to the header, the rails, the tab bar or the dock clearance DOES move the shell, and
+# then you want both, because leaving them stale hands the next PR a failure it did not cause.
+# `update_a11y + capture_shell` still seeds the shell's a11y debt so the first PR run reaching
+# /feed does not fail on debt that predates it.
 #
 # Secrets it needs: SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL, PW_MEMBER_EMAIL.
 # Repo variables it reads: PW_ROOM_PATH (default /channels), PW_SPACE_SLUG (adds the console).

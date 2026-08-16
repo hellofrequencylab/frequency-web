@@ -3,7 +3,7 @@ title: Your settings
 description: Where to update your profile, preferences, and account.
 category: getting-started
 order: 12
-updated: 2026-08-11
+updated: 2026-08-16
 audience: member
 featureKeys: [settings, notifications]
 status: published
@@ -12,12 +12,15 @@ status: published
 Settings is where you tune your account and how Frequency reaches you. It's all
 one page now: pick a section with the chips at the top, or just scroll.
 
+Two ways in. Open the account menu at the top right and choose **Appearance** to
+land straight on the look-and-feel section, or open Settings and scroll.
+
 ## What you'll find there
 
 Settings is one page. Each area below is a section you can scroll to, in this order:
 
 - **Profile**: your display name, handle, photo, **header image** (the banner across the top of your profile), bio, and region. This is what other members see.
-- **Appearance**: pick your look. Light or dark, the **Feel** (how dense or roomy things sit), and a **Seasonal accent** you can pin on or switch off. If more than one palette is available, you can pick that too.
+- **Appearance**: pick your look. Light or dark, the **Feel** (how dense or roomy things sit, which now changes text size and spacing across the whole site), and a **Seasonal accent** you can pin on or switch off. If more than one palette is available, you can pick that too. The account menu at the top right also carries a one-tap light and dark switch, and a link straight to this section.
 - **Notifications**: choose what you're told about and how (in-app, email, push, and text where enabled), pick how often, and mute a single Circle or Space. See [Notifications](/help/getting-started/notifications) and "Choosing what reaches you" below.
 - **Connections and location**: control how you're found by people nearby (see below).
 - **Account and privacy**: sign-in, account-level controls, and your privacy choices.

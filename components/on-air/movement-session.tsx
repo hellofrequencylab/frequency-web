@@ -167,10 +167,32 @@ function phaseTone(kind: PhaseKind): { text: string; ring: string; bg: string; l
 
 /** The takeover shell, matching the Mindless Overlay (fixed, dvh-sized so the
  *  controls never hide behind mobile browser chrome). */
-function Overlay({ children, flash = false }: { children: React.ReactNode; flash?: boolean }) {
+function Overlay({
+  children,
+  flash = false,
+  fit = false,
+}: {
+  children: React.ReactNode
+  flash?: boolean
+  /** One screen, no page scroll — the reveal stage only. Same contract, and the same reason, as
+   *  the Mindless overlay's `fit` (components/on-air/session.tsx): a Get Moving session ends on
+   *  the SAME four reveal cards, so a fix applied to one of the two takeovers and not the other
+   *  is a fix that lasts until the next member finishes a walk instead of a sit. */
+  fit?: boolean
+}) {
   return (
-    <div className="fixed inset-x-0 top-0 z-50 h-[100dvh] overflow-y-auto bg-canvas">
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-6 py-5">{children}</div>
+    <div
+      className={`fixed inset-x-0 top-0 z-50 h-[100dvh] bg-canvas ${
+        fit ? 'overflow-hidden' : 'overflow-y-auto'
+      }`}
+    >
+      <div
+        className={`mx-auto flex w-full max-w-md flex-col px-6 ${
+          fit ? 'h-full min-h-0 py-3' : 'min-h-[100dvh] py-5'
+        }`}
+      >
+        {children}
+      </div>
       {/* The warm-up "one" flash as the run begins. Semantic tokens (move accent); hidden under
           prefers-reduced-motion. */}
       {flash && (
@@ -999,7 +1021,8 @@ export function MovementSession({
   if (stage === 'reveal' && payload) {
     const hasNext = !!queuePosition && queuePosition.index + 1 < queuePosition.total
     return (
-      <Overlay>
+      // `fit` — one viewport, no page scroll. See the Mindless reveal stage for the whole note.
+      <Overlay fit>
         {/* Sequenced run (P6): a progress chip; when more remain, closing this rolls into the next. */}
         {queuePosition && (
           <div className="mx-auto shrink-0 rounded-pill bg-surface-elevated px-3 py-1.5 text-center text-meta font-medium text-muted">
