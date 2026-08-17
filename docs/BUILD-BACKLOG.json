@@ -475,7 +475,8 @@
         "kind": "manual",
         "evidence": "Progress is the per-slug count in scripts/render-path-bodies.txt; a probe would need a target number per slug rather than a boolean.",
         "checked": "2026-08-17"
-      }
+      },
+      "notes": "FINDING 2026-08-17 that makes the remaining slugs cheaper and safer than this row assumed: the legacy bodies on five routes are ALREADY UNREACHABLE. Every gated route resolves published -> template -> legacy, and the template rung is a static import that is always well-formed, so `data` can never be null and the `data ? <BlockRender/> : <Legacy/>` branch cannot be taken. For about, spaces, the-lab, the-quest and the-community this is deletion of dead code, not a swap needing visual proof, and THE PIXELS CANNOT MOVE - which is a stronger guarantee than a snapshot comparison. DONE: `about`, 327 -> 75 lines, ledger 3 -> 0. REMAINING, in the committed order, one per PR: spaces (284 lines, 2 -> 0), the-lab (382, 3 -> 0), the-quest (498, 2 -> 0), the-community (635, 5 -> 0), then home (939, 5 -> 0) LAST because Splash carries the live-proof band and its own header/footer chrome. 🔴 PRICING IS DIFFERENT AND MUST NOT BE BATCHED WITH THEM: its fallback is the coded page rather than getTemplate('pricing'), and it carries live take-rate bindings. Never freeze those figures into a document."
     },
     {
       "id": "LIVE-007",
@@ -1754,7 +1755,7 @@
     {
       "id": "LIVE-032",
       "title": "Recapture the visual baselines the beta cutover and the skin fix deliberately changed",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
@@ -1764,9 +1765,10 @@
       "detail": "TWO deliberate changes moved pixels and both need a re-photograph; neither is a regression. (1) /pricing on ALL FOUR skins x desktop and mobile: the beta cutover removed the struck-through anchors, the beta captions and two FAQs, so the page is 258px shorter (18083 -> 17825) and pr-compare fails 8 of 80 with 72 passing. MEASURED in CI on f899596. (2) midnight-dark everywhere: LIVE-008 fixed a selector that could never match, so the skin now paints its real palette instead of the generic .dark one with midnight's LIGHT feel underneath — every midnight-dark baseline is a photograph of the wrong rendering. The @a11y run will also report white-on-#F0AD4E unwaived; the waiver was deliberately NOT pre-added, because that list records ratios axe actually reported and inventing one fabricates a measurement. Recapture by dispatching .github/workflows/e2e-manual.yml with base_url set to this branch's preview and update_baselines + capture_shell (the skin fix moves the SHELL as well as the marketing pages, which is the case that file's header says needs both flags), then update_a11y + capture_shell for the ratchet. Capturing in CI is not a workaround for a missing tool here — it is the only correct environment, because a baseline is only valid against a deployment of the same kind as the one pr-compare photographs.",
       "verify": {
         "kind": "manual",
-        "evidence": "Measured in CI 2026-08-17 on f899596: pr-compare reports 8 failed / 72 passed, every failure /pricing, dimensions 390x18083 expected vs 390x17825 received. NOT repo-probeable, and the reason recorded here until 2026-08-17 was wrong: it said this container has no browser. It does — Chromium 1194 is preinstalled at /opt/pw-browsers and `npx playwright --version` reports the pinned 1.62.1. The real blocker is the network policy: CONNECT to vercel.com and to the preview host both return 403 at the agent proxy (confirmed against $HTTPS_PROXY/__agentproxy/status, which logged both denials). No browser can photograph a host it cannot reach, and a baseline captured against anything else would be invalid anyway.",
+        "evidence": "MEASURED in CI 2026-08-17 (pr-compare on cc3f6f5, run 32077852358): 80 visual checks PASSED, 0 failed, and 'App shell covered: 4/4 surfaces, 16/16 checks'. Recaptured by dispatching e2e-manual with update_baselines and WITHOUT capture_shell: the 8 failures were all /pricing across four skins x two viewports, and the shell was already passing 16/16, so capture_shell would have rewritten 16 good PNGs for nothing. The commit touched exactly 8 files, all /pricing, which is the failure set exactly. pr-compare is still red, but on the @a11y half only (8 midnight-dark contrast contexts, OWN-014) - the @visual half this row owns is green.",
         "checked": "2026-08-17"
-      }
+      },
+      "notes": "The row also claimed 'every midnight-dark baseline is a photograph of the wrong rendering'. THAT WAS NOT BORNE OUT: midnight-dark passed everywhere except /pricing, and /pricing failed on all four skins equally, which is the beta cutover shortening the page rather than a skin problem. The skin fix did change midnight-dark's palette, but the change was not pixel-visible on the captured surfaces - it surfaced as CONTRAST findings instead, which is OWN-014."
     },
     {
       "id": "OWN-022",
@@ -1903,6 +1905,22 @@
         "cmd": "node -e \"const fs=require('fs');const pj=JSON.parse(fs.readFileSync('package.json','utf8'));const pb=(pj.scripts||{}).postbuild||'';if(!pb)process.exit(79);if(!fs.existsSync('scripts/check-shell-weight.mjs')||!fs.existsSync('scripts/check-cache-budget.mjs'))process.exit(79);const missing=['check-shell-weight.mjs','check-cache-budget.mjs'].filter(f=>pb.indexOf(f)<0);if(missing.length){console.error('not wired into postbuild yet: '+missing.join(', '));process.exit(1)}process.exit(0)\""
       },
       "notes": "The probe is deliberately the CONSEQUENCE and not the intent: it fails while the two scripts are absent from postbuild and passes the moment they are wired in, so closing this row requires the wiring rather than a note saying it was considered. It exits 79 if either script is missing or postbuild is unreadable, so a reshaped package.json reports \"cannot tell\" instead of a clean sweep of nothing."
+    },
+    {
+      "id": "LIVE-036",
+      "title": "The viewport bucket is normalized, posted, and then dropped on write",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/api/vitals/route.ts",
+        "ref": "LIVE-030 follow-up / ADR-922"
+      },
+      "detail": "Found while writing the vitals route test (LIVE-030), not by looking for it. lib/analytics/vitals.ts exports vitalProps() and its comment says the sink reads the wire shape from it, but app/api/vitals/route.ts builds the props bag INLINE and omits `vp` - the viewport bucket (Lift 7d, ADR-922). So the bucket is computed on the client, posted over the wire, and then silently dropped on write: it never reaches interaction_events, and every query that would segment Core Web Vitals by viewport returns nothing. Nothing fails, which is why it survived. NOT FIXED IN THAT PASS DELIBERATELY: editing the route invalidates its digest in scripts/authz-route-ledger.json, which forces a re-read of the handler's authorization verdict, and that is a separate act from a field fix. The test asserts a SUBSET of allowed prop keys rather than an exact list, so it stays green when the fix lands and still fails if a person-level key is ever added.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R='app/api/vitals/route.ts';if(!fs.existsSync(R))process.exit(79);const s=fs.readFileSync(R,'utf8');const i=s.indexOf('props:');if(i<0)process.exit(79);const seg=s.slice(i,i+400);if(seg.indexOf('vp')<0){console.error('the vitals route still drops vp: the viewport bucket never reaches interaction_events');process.exit(1)}process.exit(0)\""
+      }
     }
   ]
 }
