@@ -190,7 +190,7 @@
     },
     {
       "id": "OWN-010",
-      "title": "Sync the ~24 products/prices to Stripe — the catalog is still empty while billing is live",
+      "title": "Stripe: 18 active price ids in the map do not exist in the live account",
       "status": "blocked",
       "lane": "owner",
       "size": "S",
@@ -198,10 +198,10 @@
         "file": "docs/BUILD-LIST.md",
         "ref": "§B Stripe billing, step 3"
       },
-      "detail": "THE SHARPEST FINDING OF THE OWNER SWEEP. billing_live is ON (OWN-009) and the Stripe live catalog is completely empty, so nothing is purchasable. The code degrades correctly rather than dangerously — resolveLoadoutPriceId returns null, the base item is fatal so createCheckout returns null, and *Sellable() returns false, so no member is ever charged at a wrong price — but the net product state is a billing switch that is on with nothing behind it. Run /admin/pricing → 'Sync products to Stripe'. Safe: it creates the catalog and charges nobody.",
+      "detail": "CORRECTED 2026-08-17 — the earlier framing ('the catalog is empty, and the code degrades safely') was wrong in the direction that costs money. pricing_stripe_prices holds 40 rows, 18 of them ACTIVE, written 2026-06-23 and 2026-07-25. The live account holds zero products, and GET /v1/prices/price_1TlcFHPUaeZ72k09yK1E13ye returns 'No such price'. The old row reasoned that resolveLoadoutPriceId returns null so createCheckout returns null and nobody is charged wrongly. It does NOT return null: space-plan-checkout.ts:165 returns whatever the DB map holds and never validates it against Stripe, so lineItems fills with a dead id and checkout.sessions.create throws at the moment a real customer clicks pay. beta_grace runs to 2026-09-01, so isBetaPricingActive() is true and checkout uses the plain (non-_list) keys — exactly the 18 dead ones. No financial exposure (Stripe rejects unknown prices outright), but checkout is BROKEN, not gracefully disabled. OPEN QUESTION FOR THE OWNER: whether the app's STRIPE_SECRET_KEY belongs to acct_1TdurHPhyalyRPP1 (the only account the connector can see). If it points at a different account the 18 ids may be valid and this measurement does not describe production. Verify by comparing the live secret key's last 4 in the Stripe dashboard against the Vercel Production value. CREW IS NOT PART OF THIS: it is pay-what-you-want and always was — createMembershipCheckout mints an inline price at the member's chosen amount and never reads the catalog, so the crew_monthly/crew_annual rows are vestigial for member checkout (owner confirmed 2026-08-17).",
       "verify": {
         "kind": "manual",
-        "evidence": "Stripe live account acct_1TdurHPhyalyRPP1, 2026-08-17: GET /v1/products → data: [], GET /v1/prices → data: [], GET /v1/subscriptions (status=all) → data: []. Zero of everything.",
+        "evidence": "Measured 2026-08-17 against acct_1TdurHPhyalyRPP1 (livemode, the only connected account): GET /v1/products -> data: [], and a direct GET of active map id price_1TlcFHPUaeZ72k09yK1E13ye -> 'No such price'. Map state read from prod: 40 rows, 18 archived=false. Code path read at lib/billing/space-plan-checkout.ts:165 and :273.",
         "checked": "2026-08-17"
       }
     },
@@ -1712,6 +1712,23 @@
       "verify": {
         "kind": "manual",
         "evidence": "Observed 2026-08-17 in the build log for deployment HFda7FHVybGxMCM6BKBhwxzcGAzy (commit 67bd24a): 'Build cache size 1.53 GB exceeds limit of 1.50 GB. Invalidating cache.' Not repo-probeable — the cache size is a property of the Vercel build, not of the tree.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "OWN-021",
+      "title": "Create the stable Crew product and set STRIPE_PRODUCT_CREW, or every subscriber mints their own",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "docs/PRICING.md",
+        "ref": "Crew PWYW, ADR at DECISIONS.md:16249"
+      },
+      "detail": "Crew is pay-what-you-want, so createMembershipCheckout mints an ad-hoc inline recurring price per checkout at the member's chosen amount. It parents those prices to process.env.STRIPE_PRODUCT_CREW specifically 'so the ad-hoc prices roll up under ONE product instead of littering the dashboard with a product per subscriber', and falls back to inline product_data when unset. The live account has ZERO products, so the variable cannot be pointing at a valid one: as it stands every Crew subscriber creates a separate Stripe product. Fix is one product plus one env var, and it is worth doing BEFORE the first Crew signup rather than cleaning up afterwards. .env.example:194 already reserves the key.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "lib/billing/checkout.ts:66 reads process.env.STRIPE_PRODUCT_CREW with a `|| null` fallback to inline product_data. .env.example:194 has STRIPE_PRODUCT_CREW= (blank). Live account acct_1TdurHPhyalyRPP1 returned zero products on 2026-08-17, so no valid product id can be set.",
         "checked": "2026-08-17"
       }
     }
