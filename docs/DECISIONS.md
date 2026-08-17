@@ -25155,3 +25155,206 @@ fixed in the same pass") converted from convention into a gate. The cost is real
 doc must keep naming things in backticks, and a deliberate deletion means editing `ABSENT` with a
 reason. Same shape as ADR-219's correction in this ledger — that entry's status was still
 "Accepted" nine weeks after ADR-305 superseded it, which no gate covers and a reader must.
+
+---
+
+## ADR-1054: Anonymous sign-ins stay OFF on the Frequency project, so the sub-app declares the capability instead of assuming it
+
+**Status.** Accepted (2026-08-17) · `supabase/config.toml`,
+`scripts/maintenance/accepted-advisories.json`, `supabase/anonymous-sign-ins-policy.test.ts`
+(auto-discovered by vitest, so it runs in the `test` context branch protection requires) ·
+mirrored by `resonance/docs/DECISIONS.md` ADR-019 and ISOLATION rule 8 · closes backlog row
+`HYG-005`.
+
+**Context.** Two live instructions asked for opposite settings on the **same Supabase project**,
+and neither knew about the other.
+
+| Side | What it required | Where it was written |
+|---|---|---|
+| Frequency | Anonymous sign-ins **disabled** | `supabase/config.toml` (`enable_anonymous_sign_ins = false`), the June advisor sweeps, owner row `OWN-008` |
+| `resonance/` | Anonymous sign-ins **enabled** | `resonance` ADR-015 ("Requires 'Anonymous sign-ins' enabled in the project's Auth settings"), its Section 3 GO gate, `resonance/lib/auth/client.ts` |
+
+They collide because `resonance` ADR-008 puts the sub-app **inside** the Frequency project: the
+org is on the free plan, capped at two projects, and both are in use (`Frequency Community`,
+`hook` — confirmed 2026-08-17). So there is one Auth configuration and two claims on it.
+
+The measurement settles which claim is live. The security advisors on `Frequency Community`
+returned **164 findings on 2026-08-17 and not one `auth_allow_anonymous_sign_ins`** — that lint
+fires only when the setting is on, so it is off. The June sweeps recorded it firing 136–147 times,
+so this is a real change, not a missing check. **The side that needs the setting is the side that
+is currently inert**, and it is the sub-app.
+
+**Decision.** Anonymous sign-ins stay **disabled** on the Frequency project. `resonance/` stops
+requiring them.
+
+Three things make the reasoning hold rather than just the outcome:
+
+1. **The code says so, and prose said the other thing.** Frequency's position is in
+   `supabase/config.toml` and in a machine-read allowlist; `resonance`'s was in an ADR sentence
+   and a doc comment. AGENTS.md: when the code and a plan doc disagree, the code wins and the doc
+   gets fixed in the same pass. That is this pass.
+2. **No ADR ever settled it, on either side.** Frequency's disable came from advisor triage
+   (`AUDIT-2026-06`, `PATCH-LIST`, `MASTER-TODO`) and an owner action, never a decision record —
+   which is precisely why a second plan could contradict it for months without tripping anything.
+   This ADR is the missing record, and it is the reason the conflict was invisible rather than a
+   two-ADR standoff.
+3. **Cost falls on the parked side.** Frequency is live and never calls `signInAnonymously`
+   anywhere; enabling the setting buys it nothing and widens the auth surface of the production
+   platform. `resonance` is `parked` (`DEF-RESON`, "nothing built yet"). Charging a live platform
+   an account-level auth widening for an unbuilt sub-app is the wrong direction, and the sub-app's
+   own isolation contract already refuses shared-project coupling for schemas and publications.
+   Auth toggles are the same class, now named as **ISOLATION rule 8**.
+
+**What changed in `resonance/`.** `signInAnonymously()` is no longer called blind.
+`standaloneAnonymousAuthEnabled()` (`resonance/lib/config.ts`) reads
+`NEXT_PUBLIC_RESONANCE_ANONYMOUS_AUTH`, defaults **off**, and `ensureSession()` returns null
+without a round trip when the capability was not granted. Three surfaces
+(`RoomShell`, `/dev/space`, `/dev/games`) used to render "Enable Anonymous sign-ins in the
+Supabase project's Auth settings, then reload" — an instruction to reconfigure the live platform's
+project, shown to whoever happened to open a dev route. They now share one string that says guest
+sessions are off for this deployment. The paths the plan actually depends on are untouched:
+**embedded mode** on a host-signed JWT (ADR-017), and **standalone after breakout** on a project
+`resonance` owns.
+
+**What this does NOT do, deliberately.** It does not ask the owner to flip anything. Standalone
+anonymous entry becomes a **post-breakout** capability rather than a pending owner request,
+because a request that sits in a queue is a conflict that has not been resolved, only postponed.
+If a future owner decides otherwise, the change is: enable "Anonymous sign-ins" on
+`Frequency Community`, flip `enable_anonymous_sign_ins` in `supabase/config.toml`, and set
+`NEXT_PUBLIC_RESONANCE_ANONYMOUS_AUTH=true`. All three are named by the guard, so it fails until
+they agree — which is the point.
+
+**Consequences.** The guard pins four properties at once: the declared project config, the absence
+of any `signInAnonymously` call in Frequency's own tree, the sub-app's call site being gated, and
+`auth_allow_anonymous_sign_ins` staying **out** of the maintenance sweep's accepted list so a
+re-enable surfaces as a NEW finding rather than silence. It also fails on the copy: a UI or doc
+string telling a reader to enable anonymous sign-ins in "the Supabase project's Auth settings" is
+how the conflict propagated in the first place, so it is the one phrasing the test names outright.
+
+## ADR-1056: Three DAWN effect classes retired, and the effect layer now has to name its orphans
+
+**Status.** Accepted (2026-08-17) · `app/globals.css` (the three rules are gone) +
+`lib/theme/effect-adoption.test.ts` (vitest auto-discovers it, so it runs in the `test` job branch
+protection already requires) · closes backlog row `LIVE-024`.
+
+**Context.** The 2026-08-04 DAWN port copied the effect kit into `app/globals.css` wholesale.
+Porting is cheap and adopting is not, so three of the ported classes — `.scanlines`, `.vignette`
+and `.edge-light` — sat in the sheet for a year at zero adopters. The header comment above them
+asserted the opposite in prose: that the rebuilt marketing pages "each call for them". They did not.
+A className-position scan of every `.ts`/`.tsx` file under `app/`, `components/` and `lib/` found no
+call site for any of the three; no markup or JSON file in the tree carries them in a `class`
+attribute; and stored block content cannot supply one, because `sanitizeInlineHtml`
+(`lib/entity-blocks/block-content.ts`) strips every attribute except a safe `<a href>`. Meanwhile
+both roles they claimed were already served by classes that ARE adopted: `.bg-slat` carries the
+ink-band texture `.scanlines` wanted (9 files) and `.light-strip` the amber seam `.edge-light`
+wanted (6). A duplicate of an adopted class is worse than a merely unused one: it splits the
+vocabulary, and the next author picks by coin toss.
+
+**Decision.** Delete all three rules. Adopting them was the alternative and it was rejected: giving
+a class a home means changing what a live marketing page looks like, which is a design decision
+with no design brief behind it, taken to make a stylesheet tidy.
+
+Deleting them is not the durable half. `design_handoff/dawn/tokens/effects.css` still ships all
+three, and `design_handoff/SYNC.md` routes effect classes into `app/globals.css` value-for-value,
+so the next "sync DAWN" round offers the same three back with no call site and nothing would
+notice. The retirement is therefore held by a guard rather than by a commit message:
+`lib/theme/effect-adoption.test.ts` fails if any of the three reappears in the sheet, fails if any
+acquires a call site while the sheet lacks the rule, and — the general form — fails if ANY class
+defined in the effect layer has zero adopters and is not on a recorded-orphan ratchet.
+
+**Consequences.** The measurement that decided this found six more orphans in the same layer:
+`amber-underline`, `animate-glow`, `animate-warmup`, `grain`, `halo` and `slat-fade`. LIVE-024
+named three, so the other six are RECORDED rather than deleted — a ratchet that may shrink and may
+never grow, the same contract as `scripts/adoption-baselines.json`. Deleting a class nobody asked
+about is how a visual regression arrives with no trail; listing it is what makes the next decision
+about it possible. Adopting one now fails the build until it is taken off the list, which is the
+gain being banked instead of quietly absorbed.
+
+One methodological note is worth keeping, because it nearly produced a gate that measured nothing:
+half these class names are ordinary English. A scan of every string literal in the tree reported 54
+adopters for `spot`, 2 for `halo` and 1 for `grain`, and every one was prose — a comment about a
+"calm neutral halo", a Spotlight card style whose enum value is `'glass'`, a copy string offering to
+save your spot. The guard therefore reads only string literals in a `className=` / `cn()` position,
+and proves the instrument on fixtures before trusting its silence. A count that flatters the sheet
+is the same failure as a probe that greps for its own title (ADR-970).
+
+## ADR-1055 — `ZigZag`'s successor is `MediaText`, not `Zigzag`, and the fail-safe finally gets a gate (2026-08-17)
+
+**Status.** Accepted · migration `supabase/migrations/20270305000000_pages_retire_orphan_block_types.sql`
+(**authored, NOT applied** — for the owner, two steps per [ADR-963](DECISIONS.md)) ·
+guard `scripts/check-stored-blocks.mjs` + `scripts/check-stored-blocks.test.ts` ·
+corpus `scripts/stored-block-types.json` · closes backlog row `LIVE-028` ·
+executes [ADR-977](DECISIONS.md) D-9 · corrects [ADR-978](DECISIONS.md) on the target block.
+
+**Context.** [ADR-977](DECISIONS.md) D-9 found five block types in stored `pages.data` that resolve
+to nothing in the block registry, and ruled they get a hotfix PR ahead of the editor program.
+[ADR-978](DECISIONS.md) then shipped the *survival* half: the loader keeps any well-formed
+document, the public renderer skips a block it cannot resolve, and the editor shows a labelled
+placeholder. Nothing was destroyed. **Nothing was fixed, either** — the five still render as
+nothing, which on `about` is 6 of 8 authored sections.
+
+Re-measured against production 2026-08-17. **The row's numbers hold exactly**: five types, three
+draft pages, 17 orphan blocks.
+
+| Slug | Status | Orphan blocks |
+|---|---|---|
+| `about` | draft | `PageHero`×1 · `ImageBand`×1 · `ZigZag`×3 · `BetaCTA`×1 — 6 of 8 |
+| `how-it-works` | draft | `PageHero`×1 · `ZigZag`×3 · `BetaCTA`×1 — 5 of 7 |
+| `the-lab` | draft | `PageHero`×1 · `ImageBand`×1 · `ZigZag`×2 · `FeatureGallery`×1 · `BetaCTA`×1 — 6 of 8 |
+
+`home` and `the-community` are clean in both columns; `published_data` carries no orphan anywhere;
+all 18 Space `pageDocs` documents resolve. The blast radius is exactly the three drafts.
+
+⚠️ **[`EDITOR-BLOCK-INVENTORY`](EDITOR-BLOCK-INVENTORY.md) §D P0 struck `how-it-works` from the
+list, and that strike was right about the editor and wrong about the data.** The slug is not in
+`EDITABLE_PAGES`, so `/edit/how-it-works` redirects and no operator can open it — but its row still
+sits in `pages` with five orphan blocks in it, and a migration that skips it leaves a third of the
+defect behind for whoever un-retires that slug. Fixed in the same pass.
+
+**Decision 1 — migrate all five; delete none.** Every stored prop key is a legal field key on its
+target and every stored option value is a legal option there, so `target_defaults || stored_props`
+is lossless: not one authored byte is dropped, `props.id` survives, and there is no QUARANTINE
+entry to declare. Deletion was never the cheaper option here, only the faster one.
+
+| Orphan | Target | Evidence |
+|---|---|---|
+| `PageHero` | `Hero` (`variant: 'minimal'`) | Hero's fields ⊇ PageHero's four props; `minimal` is the text-only variant |
+| `ImageBand` | `Image` (`mode: 'single'`) | `media.tsx:114` — "standardizes the old ImageBand" |
+| `ZigZag` | **`MediaText`** | `media.tsx:60` — "standardizes the old ZigZag" |
+| `FeatureGallery` | `Gallery` | `media.tsx:215` — "standardizes the old FeatureGallery" |
+| `BetaCTA` | `CallToAction` (`tone: 'ink'`) | `sections.tsx:259` — "matches BetaCTA" |
+
+🔴 **Decision 2, and the finding that matters — both prior ADRs compared `ZigZag` against the
+wrong block.** ADR-977 called `ZigZag` ⇄ `Zigzag` "a pure casing divergence"; ADR-978 corrected
+that to "a retired block with a similar name" and refused the alias because it would drop
+`kicker`/`tone`/`imgAspect` and mis-map `titleAccent`/`side`. **The refusal was right and the
+comparison was still against the wrong candidate.** `Zigzag` is not `ZigZag`'s successor.
+`MediaText` is, its own header says so, and it is a name-for-name, option-for-option **superset**
+of all twelve props these blocks store — `side`, `imgAspect`, `kicker`, `titleAccent` and `tone`
+included, with every stored value (`left`/`right`, `portrait`/`landscape`, `canvas`/`surface`) a
+declared option on the target. The migration is exact, not lossy.
+
+**Two ADRs reached "this is a real data migration with decisions in it" and neither read
+`media.tsx`'s block headers**, where four of the five successors are named outright. The lesson is
+the repo's own rule arriving from an unusual direction: *when the code and a plan doc disagree, the
+code wins* — and here the code was not merely more current than the doc, it was **the primary
+source nobody consulted**, three sessions running.
+
+**Decision 3 — the fail-safe gets a gate.** AGENTS.md: *every fail-safe needs a gate that notices
+it fired.* ADR-978's fail-safe had none, which is why the same five types had to be found by hand
+twice. `check:stored-blocks` closes it: a frozen census of every block type in every stored Puck
+document (types only — no tenant copy), checked against the **live** registry under vitest, with a
+`quarantine` whose entries must each name a successor that resolves *and* a migration in the tree
+that performs that exact rewrite. A quarantine entry therefore cannot outlive its fix, and the list
+empties when the owner applies the migration and re-captures.
+
+**Consequences.** ✅ The three drafts become editable and publishable as authored, once applied.
+✅ The census hands `check:doc-safety` (E0) a real corpus for free, as D-9 predicted.
+⚠️ **The migration is UNAPPLIED on purpose**, so `check:migrations` rule 4 reports it as
+`unpairedRepo` ("authored but never applied") in any credentialled environment; CI has no
+credentials and skips, loudly. ⚠️ **The census is a snapshot.** It catches the direction that keeps
+biting — the registry retires a type the data still names, checked live on every run — and cannot
+see an orphan written *after* the capture date. That needs a credentialled job this repo does not
+have, and it is recorded rather than papered over, exactly as `check:migrations` records the same
+gap for the ledger. ⚠️ The `BetaCTA → CallToAction` rewrite freezes today's `BETA_CTA_LABEL` /
+`BETA_CTA_HREF` into three stored documents, because a stored document cannot reference a constant.

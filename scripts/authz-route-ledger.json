@@ -1,0 +1,162 @@
+{
+  "note": [
+    "The ROUTE half of the authz-contract gate (scripts/check-authz-guards.mjs, ADR-246/ADR-275).",
+    "",
+    "Every Route Handler (a `route.ts|tsx` file under app/ — Next 16 file convention, see",
+    "node_modules/next/dist/docs/01-app/01-getting-started/15-route-handlers.md) must carry an",
+    "EXPLICIT authorization verdict. A handler earns one of two ways:",
+    "",
+    "  1. MACHINE-DETECTED — the file calls a recognised gate (ROUTE_GATE in check-authz-guards.mjs:",
+    "     requireAdmin / assertOwner / getCallerProfile / auth.getUser / rejectUnauthorizedCron /",
+    "     verify…Signature / webhooks.constructEvent / …). Nothing is recorded here for those.",
+    "  2. HUMAN-ASSERTED — an entry below. These routes have NO route-level gate, by design. The",
+    "     verdict is a person's reading of the code on the `checked` date. It is NOT proof.",
+    "",
+    "This file is therefore a DEBT LEDGER, not a certificate. Read every entry that way.",
+    "",
+    "WHY THE DIGEST. `digest` pins the route's normalised body (comments and blank lines stripped,",
+    "sha256, first 16 hex). The whole complaint that opened LIVE-022 was that the 2026-08-04 hand",
+    "audit was clean on the day and 'nothing catches a bad one tomorrow'. The digest is tomorrow:",
+    "edit a ledgered route's CODE and the gate fails until a human re-reads it and re-records the",
+    "verdict. Prose edits above the code do not trip it, because the verdict is about the code.",
+    "",
+    "TO RE-RECORD after an intentional change: re-read the handler, confirm the verdict still holds,",
+    "then run `node scripts/check-authz-guards.mjs --print-digest <path>` and paste the new value",
+    "with a fresh `checked` date. Re-recording without re-reading is the one thing that makes this",
+    "file a lie.",
+    "",
+    "TO REMOVE an entry: give the route a real gate. That is always the better fix.",
+    "",
+    "There are no globs and no wildcards here on purpose — a directory-wide assertion is exactly the",
+    "blanket-green failure ADR-970 names. One line per route, one reason per line."
+  ],
+  "verdicts": {
+    "public": "Anonymous by design. No caller-scoped data crosses the boundary; the response is the same for every visitor, or the write is deliberately identity-free.",
+    "token-credential": "The URL token IS the credential. The handler verifies it (HMAC decode / signed-state) before trusting anything, and the data is scoped to whatever that token resolves to.",
+    "model-gated": "No gate in the route on purpose: the authorization is enforced by the RPC / loader it calls, which self-scopes to the publicly visible set. The route can only narrow, never widen.",
+    "delegated": "The gate lives in the server action or helper this route forwards to, which verifies the caller's token itself. Same posture as `// authz-delegated:` in the lib scan.",
+    "self-scoped": "Acts only on the caller's own session; there is no other principal it could act on."
+  },
+  "entries": {
+    "app/(help)/help/ask/route.ts": {
+      "verdict": "public",
+      "reason": "Public 'Ask Vera' help endpoint — the help centre itself is public. Reads no caller identity and returns only RAG answers over published help content. Per-IP rate limited (denial-of-wallet, not authz).",
+      "checked": "2026-08-17",
+      "digest": "b410904535f4dcf9"
+    },
+    "app/(main)/e/c/[token]/route.ts": {
+      "verdict": "token-credential",
+      "reason": "Email click-tracking redirect. decodeSendToken HMAC-authenticates the token and verifyClickUrl binds the exact destination to it, so `u` cannot be swapped even by a holder of a real token. Fail-safe: anything short of all checks redirects to the site root.",
+      "checked": "2026-08-17",
+      "digest": "98f01abe07e55598"
+    },
+    "app/(main)/e/o/[token]/route.ts": {
+      "verdict": "token-credential",
+      "reason": "Email open-tracking pixel. decodeSendToken HMAC-authenticates the token before any event is recorded; a forged token records nothing. Always returns the 1x1 GIF so a recipient never sees a broken image.",
+      "checked": "2026-08-17",
+      "digest": "e7117c594318d227"
+    },
+    "app/(main)/people/[handle]/vcard/route.ts": {
+      "verdict": "public",
+      "reason": "Public 'Save contact' vCard behind a member's own profile QR. Reads through the admin client but selects only columns the public profile page already shows, and buildVcf emits ONLY the fields the member opted into via `vcard`; 404 when they have not enabled a card.",
+      "checked": "2026-08-17",
+      "digest": "2b3c2bc5554cc766"
+    },
+    "app/api/csp-report/route.ts": {
+      "verdict": "public",
+      "reason": "CSP violation sink. Browsers post reports with no session, so it cannot be authenticated. Stores nothing, never throws, always 204; the handler only logs three truncated fields.",
+      "checked": "2026-08-17",
+      "digest": "1ccfe160dced8b06"
+    },
+    "app/api/site-icons/route.ts": {
+      "verdict": "public",
+      "reason": "Loom icon picker search over the installed @iconify-json packages (ADR-505). No database, no session, no env read; identical response for every visitor. `q` is truncated and `limit` clamped so a crafted request cannot walk the sets twice.",
+      "checked": "2026-08-17",
+      "digest": "3c015da367bd5235"
+    },
+    "app/api/status/error-budget/route.ts": {
+      "verdict": "public",
+      "reason": "Read-only error-budget discovery (H0-8, docs/SLOs.md). Pure arithmetic over lib/observability/slos.ts, which is already published in the docs. No DB, no env, no secret, no live measurement.",
+      "checked": "2026-08-17",
+      "digest": "f05e4e4671d54148"
+    },
+    "app/api/status/route.ts": {
+      "verdict": "public",
+      "reason": "Read-only status index (H0-8). Serves the static SLO contract plus VERCEL_GIT_*/VERCEL_ENV build identity. Its own route.test.ts fails the suite on ANY other process.env read, which is what keeps the 'no secret' promise true.",
+      "checked": "2026-08-17",
+      "digest": "7e6daa1f5d89d024"
+    },
+    "app/api/status/slos/route.ts": {
+      "verdict": "public",
+      "reason": "Read-only SLO discovery (H0-8). Serves the static targets from lib/observability/slos.ts, the same numbers as docs/SLOs.md. No DB, no env, no secret, no live measurement.",
+      "checked": "2026-08-17",
+      "digest": "58079235785eb139"
+    },
+    "app/api/unsubscribe/route.ts": {
+      "verdict": "delegated",
+      "reason": "RFC 8058 one-click unsubscribe. Mailbox providers POST with no session by spec. The handler forwards to processUnsubscribe / processSpaceUnsubscribe (app/unsubscribe/actions.ts), which verify the signed `t` token themselves; the route never touches the DB.",
+      "checked": "2026-08-17",
+      "digest": "3fc981e53410c8ea"
+    },
+    "app/api/vitals/route.ts": {
+      "verdict": "public",
+      "reason": "Core Web Vitals field sink, anonymous by design: vitals describe the page and device, not a member. Writes through the admin client but never resolves or stores a profile_id (rows land with profile_id NULL and surface NULL), which is what keeps it outside the `analytics` consent scope. Batch cap + normalizer bound each request.",
+      "checked": "2026-08-17",
+      "digest": "de279e9429acefab"
+    },
+    "app/auth/signout/route.ts": {
+      "verdict": "self-scoped",
+      "reason": "Signs out whatever session the request carries and clears the impersonation cookie. There is no other principal it could act on, and it is POST-only so a prefetched GET cannot trigger it.",
+      "checked": "2026-08-17",
+      "digest": "613bb35db77f49f1"
+    },
+    "app/dev/og-root-card/route.tsx": {
+      "verdict": "public",
+      "reason": "Dev-only generator for the committed root share card (ADR-1002). Renders a pure function of build-time constants (SITE_NAME, SITE_TAGLINE, hero.jpg, logo) — no DB, no session, no caller input. Output is identical bytes on every request.",
+      "checked": "2026-08-17",
+      "digest": "0678782509573d1f"
+    },
+    "app/events/[slug]/event.ics/route.ts": {
+      "verdict": "model-gated",
+      "reason": "Unauthenticated .ics export by design (SEC-9): the link is the share. It cannot leak more than the public event page because a draft / private / circle_only / cancelled event is MASKED in-handler — generic title, no venue, no description, STATUS only.",
+      "checked": "2026-08-17",
+      "digest": "eb2402ec957cb9ce"
+    },
+    "app/events/calendar.ics/route.ts": {
+      "verdict": "model-gated",
+      "reason": "Master public calendar feed (EC3, ADR-800). Calendar apps poll with no cookie. public_calendar_feed() takes no arguments and self-gates entirely in-function (published + PUBLIC only, non-cancelled, upcoming, network-visible active spaces), so the route has no way to widen it.",
+      "checked": "2026-08-17",
+      "digest": "3e5b4ff80618b8ff"
+    },
+    "app/events/calendar/[token]/route.ts": {
+      "verdict": "token-credential",
+      "reason": "Personal subscribable ICS feed (Events B-4). The [token] in the path IS the credential — a member's own secret, rotatable — and the feed contains only events they personally RSVP'd to. Resolved with the admin client exactly like the per-event .ics route.",
+      "checked": "2026-08-17",
+      "digest": "932ba1c644c3a188"
+    },
+    "app/llms-full.txt/route.ts": {
+      "verdict": "public",
+      "reason": "AIO corpus for answer engines (docs/CONTENT-VOICE §8). Published help articles plus the pricing ladder read from lib/pricing/pricing-grid.ts — the same model /pricing renders. Everything it emits is already on a public page.",
+      "checked": "2026-08-17",
+      "digest": "a51d6261becdee20"
+    },
+    "app/llms.txt/route.ts": {
+      "verdict": "public",
+      "reason": "Curated AIO brand summary (ADR-916). Reads through the admin client for live public counts and the operator's pricing config, all of which /pricing and the public pages already show. No caller identity anywhere.",
+      "checked": "2026-08-17",
+      "digest": "372fb0a695788236"
+    },
+    "app/podcasts/[spaceSlug]/[showSlug]/rss.xml/route.ts": {
+      "verdict": "model-gated",
+      "reason": "Public podcast RSS (Airwaves P3, ADR-608). Apple/Spotify/Overcast poll with no cookie, so it must resolve anonymously. assembleShowFeed IS the visibility floor: it returns null for a missing / draft / private-feed Show, and the route 404s all three identically (no existence leak).",
+      "checked": "2026-08-17",
+      "digest": "e8d17d3fb24721b6"
+    },
+    "app/spaces/[slug]/calendar.ics/route.ts": {
+      "verdict": "model-gated",
+      "reason": "Public per-Space ICS feed (EC1, ADR-800). The handler refuses a private or suspended space BEFORE reading events, then hands the space_id to space_public_calendar_feed, which returns only published, public/unlisted, non-cancelled events.",
+      "checked": "2026-08-17",
+      "digest": "73c80bfdd12fd0b4"
+    }
+  }
+}

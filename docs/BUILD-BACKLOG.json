@@ -759,7 +759,7 @@
     {
       "id": "LIVE-022",
       "title": "check:authz cannot see app/api/** at all",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "M",
       "source": {
@@ -768,12 +768,10 @@
       },
       "detail": "54 routes, 15 of them bypassing RLS. All 15 were hand-audited clean on the day. Nothing catches a bad one tomorrow. The guard is also file-level rather than function-level, and check:admin-client counts imports rather than soundness across 733 files.",
       "verify": {
-        "kind": "grep-present",
-        "pattern": "app/api",
-        "paths": [
-          "scripts/check-authz-guards.mjs"
-        ]
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),cp=require('child_process');const f='scripts/check-authz-guards.test.ts';if(!fs.existsSync(f)||!fs.existsSync('node_modules/vitest/vitest.mjs'))process.exit(79);const r=cp.spawnSync(process.execPath,['node_modules/vitest/vitest.mjs','run',f],{stdio:'ignore',timeout:110000});if(r.error||r.signal!==null||r.status===null||r.status===127)process.exit(79);process.exit(r.status)\""
+      },
+      "notes": "Closed 2026-08-17. The row's ORIGINAL probe was grep-present /app/api/ in check-authz-guards.mjs — the second shape-not-truth probe caught this session, and it went stale-green the moment the file was touched. 72 route handlers now carry a verdict, 55 of them under app/api/ which the gate previously could not see at all. 52 call a real gate; 20 are asserted in scripts/authz-route-ledger.json and the guard SAYS SO in its own output — 'HUMAN-ASSERTED, not verified: they are safe because someone read them' — with each one's digest pinned so an edit forces a re-read. That distinction is the point: a gate that closed this gap by blanket-asserting 55 routes safe would have been worse than the gap, because it would then read as coverage (ADR-970)."
     },
     {
       "id": "LIVE-023",
@@ -1644,7 +1642,7 @@
     {
       "id": "HYG-005",
       "title": "Resolve the anonymous-sign-ins conflict between the main app and resonance/",
-      "status": "open",
+      "status": "done",
       "lane": "hygiene",
       "size": "XS",
       "source": {
@@ -1653,10 +1651,10 @@
       },
       "detail": "Two live instructions contradict each other. The main app's advisor-driven action is to DISABLE anonymous sign-ins (OWN-008, now done). resonance/'s auth rung requires them ENABLED, on the same Supabase project. Whoever schedules resonance hits this on day one. Decide now, on paper: separate project, or a different auth strategy for the sub-app.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Found 2026-08-17 by reading both plans against each other; not previously recorded anywhere.",
-        "checked": "2026-08-17"
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const f=require('fs');const r=p=>{try{return f.readFileSync(p,'utf8')}catch(e){process.exit(79)}};const t=r('supabase/config.toml'),c=r('resonance/lib/auth/client.ts'),s=r('resonance/components/dj/RoomShell.tsx');const g=c.search(/if\\\\s*\\\\(\\\\s*!\\\\s*standaloneAnonymousAuthEnabled\\\\s*\\\\(\\\\s*\\\\)\\\\s*\\\\)\\\\s*return/);const off=/^enable_anonymous_sign_ins\\\\s*=\\\\s*false/m.test(t);const gated=g>-1&&g<c.indexOf('signInAnonymously');const clean=!/Enable Anonymous sign-ins in/.test(s);process.exit(off&&gated&&clean?0:1)\""
+      },
+      "notes": "Closed 2026-08-17 by ADR-1054, the decision that had never been written. THAT is why the conflict survived: neither side had an ADR. Frequency's position lived in config.toml and a machine-read allowlist; resonance's lived in one sentence of a different app's ADR-015. Two plans contradicted each other for months and nothing could trip. Frequency wins — it is live, never calls signInAnonymously, and charging a production platform an account-level auth widening for a parked sub-app is backwards. resonance now gates its call behind NEXT_PUBLIC_RESONANCE_ANONYMOUS_AUTH, default OFF, and three dev surfaces stopped instructing whoever opened them to go flip the live project's Auth settings. Generalized as ISOLATION.md contract rule 8: never require a change to the shared project's account-level settings."
     },
     {
       "id": "HYG-006",
