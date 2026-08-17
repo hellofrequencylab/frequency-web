@@ -285,7 +285,9 @@ export function readModel(io = {}) {
   if (!Array.isArray(parsed.crons)) {
     throw new Error(`${VERCEL_JSON} has no \`crons\` array. With no jobs to check there is nothing this can report but a vacuous pass.`)
   }
-  const jobs = parsed.crons.map((c) => {
+  // The cast is the shape the `Array.isArray` guard above has just established; `JSON.parse` gives
+  // back `any`, and without it every consumer of `jobs` (assess, renderText, the tests) is untyped.
+  const jobs = /** @type {{ path?: string, schedule?: string }[]} */ (parsed.crons).map((c) => {
     const job = String(c.path || '').replace(/^\/api\/cron\//, '').replace(/^\/+/, '')
     const schedule = parseSchedule(String(c.schedule || ''))
     return {
