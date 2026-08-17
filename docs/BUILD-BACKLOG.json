@@ -1909,7 +1909,7 @@
     {
       "id": "LIVE-036",
       "title": "The viewport bucket is normalized, posted, and then dropped on write",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
@@ -1919,8 +1919,9 @@
       "detail": "Found while writing the vitals route test (LIVE-030), not by looking for it. lib/analytics/vitals.ts exports vitalProps() and its comment says the sink reads the wire shape from it, but app/api/vitals/route.ts builds the props bag INLINE and omits `vp` - the viewport bucket (Lift 7d, ADR-922). So the bucket is computed on the client, posted over the wire, and then silently dropped on write: it never reaches interaction_events, and every query that would segment Core Web Vitals by viewport returns nothing. Nothing fails, which is why it survived. NOT FIXED IN THAT PASS DELIBERATELY: editing the route invalidates its digest in scripts/authz-route-ledger.json, which forces a re-read of the handler's authorization verdict, and that is a separate act from a field fix. The test asserts a SUBSET of allowed prop keys rather than an exact list, so it stays green when the fix lands and still fails if a person-level key is ever added.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const R='app/api/vitals/route.ts';if(!fs.existsSync(R))process.exit(79);const s=fs.readFileSync(R,'utf8');const i=s.indexOf('props:');if(i<0)process.exit(79);const seg=s.slice(i,i+400);if(seg.indexOf('vp')<0){console.error('the vitals route still drops vp: the viewport bucket never reaches interaction_events');process.exit(1)}process.exit(0)\""
-      }
+        "cmd": "node -e \"const fs=require('fs');const R='app/api/vitals/route.ts',V='lib/analytics/vitals.ts';if(!fs.existsSync(R)||!fs.existsSync(V))process.exit(79);const r=fs.readFileSync(R,'utf8'),v=fs.readFileSync(V,'utf8');const bad=[];const i=v.indexOf('export function vitalProps');if(i<0)process.exit(79);const body=v.slice(i,v.indexOf(String.fromCharCode(10)+'}',i));if(body.indexOf('.vp')<0&&body.indexOf('vp:')<0)bad.push('vitalProps no longer emits vp, the viewport bucket');if(r.indexOf('props: vitalProps(')<0)bad.push('the vitals route builds its own props bag again instead of calling vitalProps; that duplication is what dropped vp on write');if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
+      },
+      "notes": "Closed 2026-08-17. The route now writes props: vitalProps(v) instead of a second copy of the same object literal, so the wire shape and the written shape cannot drift again - which is the actual cause, not the missing field. MY FIRST PROBE WAS WRONG IN AN INSTRUCTIVE WAY: it looked for 'vp' near the route's `props:` literal, so it kept failing AFTER the fix, because the fix DELETED the literal it was reading. A probe written against the broken shape can outlive the break. It now asserts the two things that must both hold - vitalProps still emits vp, and the route still calls it rather than hand-rolling the bag. The authz digest was re-recorded, not bypassed: editing the handler invalidated it by design, so the `public` verdict was re-read. Nothing about the boundary moved (no session, no headers or cookies, profile_id NULL on every row whatever the payload claims, which the route test asserts with an attacker-shaped body), and vp is a property of the PAGE VIEW rather than the person (ADR-922)."
     }
   ]
 }
