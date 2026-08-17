@@ -212,14 +212,23 @@ describe('standard pricing carries no founding rate (the owner decision, ADR-106
     expect(onFounding.every((p) => p.metadata.variant === 'founding')).toBe(true)
   })
 
-  it('Business: same split, $19 off the $29 product', async () => {
+  it('Business gets NO founding product — the beta offer is Collective\'s alone (ADR-1067)', async () => {
     await syncPricingCatalogToStripe('op-1')
-    const standardId = rowFor('business_base_month_list')?.productId
-    const foundingId = rowFor('business_base_month')?.productId
-    expect(foundingId).not.toBe(standardId)
-    expect(productById(foundingId)?.name).toBe('Frequency Business (Founding rate)')
-    expect(priceById(rowFor('business_base_month')?.priceId)?.unit_amount).toBe(1900)
+    // The owner's instruction: exactly ONE beta offer exists, it is Collective's, it is unlisted, and it
+    // is granted by hand. Business had carried a $19 founding anchor from the old ladder; left in place
+    // it would have minted a second Product and an immutable $19 Price nobody asked for.
+    expect(store.products.some((p) => p.metadata.frequency_pricing_key === 'business_base_founding')).toBe(false)
+    expect(store.products.some((p) => p.name === 'Frequency Business (Founding rate)')).toBe(false)
+    // Both keys still resolve, both to the ONE standard product at the list amount.
+    expect(rowFor('business_base_month')?.productId).toBe(rowFor('business_base_month_list')?.productId)
+    expect(priceById(rowFor('business_base_month')?.priceId)?.unit_amount).toBe(2900)
     expect(priceById(rowFor('business_base_month_list')?.priceId)?.unit_amount).toBe(2900)
+  })
+
+  it('COLLECTIVE IS THE ONLY ITEM IN THE WHOLE CATALOG WITH A FOUNDING PRODUCT', async () => {
+    await syncPricingCatalogToStripe('op-1')
+    const founding = store.products.filter((p) => p.metadata.frequency_product_line === 'founding')
+    expect(founding.map((p) => p.metadata.frequency_catalog_item)).toEqual(['collective_base'])
   })
 
   it('a FLAT item gets no founding product at all, because it has no founding rate to separate', async () => {
@@ -233,7 +242,8 @@ describe('standard pricing carries no founding rate (the owner decision, ADR-106
       expect(rowFor(`${key}_month`)?.productId).toBe(rowFor(`${key}_month_list`)?.productId)
       expect(rowFor(`${key}_month`)?.priceId).toBeTruthy()
     }
-    expect(store.products.filter((p) => p.metadata.frequency_product_line === 'founding')).toHaveLength(2)
+    // ONE founding product in the whole catalog, and it is Collective's (ADR-1067).
+    expect(store.products.filter((p) => p.metadata.frequency_product_line === 'founding')).toHaveLength(1)
   })
 
   it('the founding product is looked up by its OWN stable metadata key', async () => {
@@ -298,7 +308,7 @@ describe('a re-sync is idempotent', () => {
     expect(written.map((r) => `${r.key}:${r.productId}:${r.priceId}`)).toEqual(rowsAfterFirst)
     expect(second.synced.map((s) => s.key)).toEqual(first.synced.map((s) => s.key))
     // 5 items x 2 lines... only two items carry a founding rate, so: 5 standard + 2 founding products.
-    expect(store.products).toHaveLength(7)
+    expect(store.products).toHaveLength(6)
     expect(store.prices).toHaveLength(20)
   })
 

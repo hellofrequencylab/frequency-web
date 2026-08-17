@@ -188,9 +188,10 @@ describe('beta pricing: the crossed-out anchor idiom (ADR-463)', () => {
     (p) => (PRICING_DEFAULTS.plan[p].list_cents ?? 0) > PRICING_DEFAULTS.plan[p].monthly_cents,
   )
 
-  it('window OPEN: shows Business and Collective at their beta rate under a struck list price', () => {
+  it('window OPEN: shows COLLECTIVE at its beta rate under a struck list price (ADR-1067)', () => {
     const byId = Object.fromEntries(spaceOfferings(open).map((o) => [o.id, o]))
-    expect(anchored).toEqual(['business', 'collective'])
+    // Derived from the config, not hand-listed, so a second anchored plan appearing fails HERE.
+    expect(anchored).toEqual(['collective'])
     for (const plan of anchored) {
       const price = PRICING_DEFAULTS.plan[plan]
       expect(byId[plan]!.monthly, plan).toBe(`${formatCents(price.monthly_cents)}/mo`)

@@ -1855,6 +1855,40 @@
         "cmd": "node -e \"const fs=require('fs');let d;try{d=JSON.parse(fs.readFileSync('docs/BUILD-BACKLOG.json','utf8'))}catch{process.exit(79)}const rows=(d.entries||[]).filter(e=>e.verify&&e.verify.kind==='cmd'&&e.id!=='LIVE-034');if(rows.length<15)process.exit(79);const RUNNER=/\\\\b(vitest|jest|playwright\\\\s+test)\\\\b|\\\\b(pnpm|npm|yarn)\\\\s+(run\\\\s+)?test\\\\b/;const bad=rows.filter(e=>RUNNER.test(e.verify.cmd)).map(e=>e.id);if(bad.length){console.error('probe(s) spawn a test runner: '+bad.join(', '));process.exit(1)}process.exit(0)\""
       },
       "notes": "Re-measured 2026-08-17, after the ten suite-spawning probes were rewritten to measure the same consequence in-process: the guard costs 6.2s, down from 23.1s on the same tree with the same clock. What is left, in order: PROG-DAWN9 2.8s, LIVE-014 1.2s (it runs check-labels.mjs over the whole tsx tree), every other probe under 350ms. THE PROBE BELOW USED TO TIME THE GUARD BY RUNNING THE GUARD, and that was wrong twice over. It was a FORK BOMB: the child ran this same probe, which spawned another child, without end; 55 live processes were counted on 2026-08-17, each orphaned chain outliving the run that started it. That, not the vitest spawns, is why backlog-contract.test.ts still timed out after its limit was raised to 240s. And even fenced against re-entry it doubled every invocation forever: 6.2s of probe work cost 12.5s of wall clock, here and in CI. So the row now probes the CAUSE instead — no verify.cmd may spawn a test runner — which costs milliseconds and cannot re-enter. The row cannot police itself, so its own id is excluded from that scan; a floor of 15 cmd probes makes an unreadable or reshaped file exit 79 rather than report a clean sweep of nothing. The WALL-CLOCK ceiling did not disappear with the timing probe: it moved to backlog-contract.test.ts's ripgrep-parity arm, which already runs the guard twice by design and now fails if either run exceeds 20s. Cause measured for free on every probe run, consequence measured for free in the suite that was paying for it anyway."
+    },
+    {
+      "id": "OWN-025",
+      "title": "The \"Founding Business offer\" email promises a rate that no longer exists",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "lib/beta/launch-emails.ts",
+        "ref": "ADR-1067"
+      },
+      "detail": "FOUNDING_BUSINESS (lib/beta/launch-emails.ts, mirrored in lib/beta/email-templates.ts) is seeded into Email Studio as a campaign offering local businesses \"A Founding Business gets its own Space to post events and offers and the lowest rate we will ever set, kept for good. Take the year before September 1\". ADR-1067 removed the Business founding rate, so there is no price behind that promise: Business is a flat $29/mo, $290/yr, and the only beta rate in the catalog is Collective's unlisted $49/$490. Nothing is mis-sold TODAY because these are seeded drafts rather than sends, and the campaign links to /pricing rather than to a checkout at a named rate. But if it goes out as written it offers a founding rate the catalog cannot charge. Owner decides which: retire the email, or repoint the offer at Collective (whose rate IS grantable, and whose September 1 framing already matches). The badge and Space copy are reusable either way. NOT a code fix to guess at - the email is an offer, and which offer to make is the owner's call.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Read 2026-08-17: lib/beta/launch-emails.ts FOUNDING_BUSINESS is present and its editorial block still says \"the lowest rate we will ever set, kept for good\", while catalogItem(\"business_base\") now ships foundingCents == listCents == 2900 (ADR-1067) and the sync mints no \"Frequency Business (Founding rate)\" product. Not repo-probeable: whether an email may be SENT is a business decision, and a probe that asserted the email's absence would force a fix the owner may not want.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "OWN-026",
+      "title": "A SECOND path can still stamp a lifetime $19 on a Founding Business, and it is not the catalog",
+      "status": "open",
+      "lane": "owner",
+      "size": "S",
+      "source": {
+        "file": "lib/pricing/founding.ts",
+        "ref": "ADR-1067 / ADR-875"
+      },
+      "detail": "ADR-1067 removed the Business founding rate from the CATALOG, which is what the Stripe sync mints from. It does NOT touch FOUNDING_DEFAULT.business_monthly_cents in lib/pricing/founding.ts, still 1900. That constant is live on a different path: the beta founder push (ADR-875, tightened by ADR-880) runs space-subscriptions.ts -> beta-founding.ts -> grantFoundingStatus, which stamps locked_rate_cents on the new founding row from the amount the caller passes, FALLING BACK to business_monthly_cents when the caller does not know it (lib/founding/status.ts:281 and again on the update branch at :353). Those are LIFETIME terms - the rate and the marketplace take that Space keeps for good. IT CANNOT FIRE BY ACCIDENT TODAY: the grant returns no_window unless the `founding` pricing_settings row carries an explicit grace `until` date (betaGraceEndsAtMs returns null for empty), and that setting lives in production, which this container deliberately cannot read. So this is not \"it is off\" - it is \"it is off unless you set it, and only you can see whether you did\". THE DECISION IS THE OWNER'S, because it is not obviously the same question they answered. They said Business has normal pricing and only Collective gets a beta offer. But the Founding Business PROGRAM is a whole feature - badges, city caps, spots remaining - and killing its rate is not the same as declining to advertise a beta price. Either (a) set business_monthly_cents to 2900 so a Founding Business gets recognition at the normal rate, or (b) keep 1900 deliberately as a hand-granted lifetime term, the same shape as the Collective grant. Do NOT let it sit at 1900 by inattention: that is how a lifetime discount gets given away by a fallback.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Read 2026-08-17: lib/pricing/founding.ts FOUNDING_DEFAULT.business_monthly_cents === 1900, and lib/founding/status.ts:281/:353 stamp it as locked_rate_cents when the caller passes none. The catalog change in ADR-1067 does not reach this constant. Not repo-probeable: whether 1900 is correct depends on whether the owner intends to keep running the Founding Business program, and on a production setting (the founding grace `until`) that this container has no read access to.",
+        "checked": "2026-08-17"
+      }
     }
   ]
 }

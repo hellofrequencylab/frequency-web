@@ -22,7 +22,7 @@
 >    was already the house rule; it is now the only discount, so the copy leads with it.
 > 5. **Not changed by this, and not to be assumed:** the FEATURE-GATE grace window (`beta_grace`) still
 >    ends **2026-09-01** (selling and gating are separate decisions, ADR-874), and
->    `FOUNDING_DEFAULT.business_monthly_cents` is still **$19** for the Founding Business grant.
+>    `FOUNDING_DEFAULT.business_monthly_cents` is still **$19** for the Founding Business grant — NOT changed by ADR-1067, which touched only the catalog. See OWN-026.
 > 6. **Grandfathering cost nothing in Stripe and is not nothing in fact.** 0 subscription items, 0
 >    Stripe customers, 0 webhook events on 2026-08-17 — and one member who paid **$490 in cash** for the
 >    annual Collective beta rate with no lock anywhere in the system (backlog `OWN-022`).
@@ -41,8 +41,10 @@
 > 8. **In STRIPE, the founding rates hang on their own Product** ([ADR-1062](DECISIONS.md)). Owner:
 >    *"standard pricing does not have a founding or beta rate ... Regular pricing + a founding beta
 >    product."* `syncPricingCatalogToStripe` mints **Frequency Collective** ($79 / $790) and, separately,
->    **Frequency Collective (Founding rate)** ($49 / $490) — same for Business. A flat item (Independent,
->    Non Profit, Vera AI) has no founding rate to separate, so it gets no second product. **No price KEY
+>    **Frequency Collective (Founding rate)** ($49 / $490) — and Collective ALONE (ADR-1067: the owner's
+>    instruction is one unlisted beta offer, granted by hand). A flat item (Business, Independent,
+>    Non Profit, Vera AI) has no founding rate to separate, so it gets no second product. **6 products,
+>    20 prices.** **No price KEY
 >    moved**: `collective_base_year` is still `collective_base_year`, so the grant and every lock resolve
 >    exactly what they resolved before, and both variants stay ACTIVE in Stripe so the grant can charge
 >    them.
@@ -119,9 +121,10 @@
 > enforcement and the picker UI are follow-ups; this change is the MAP, which the surfaces derive from.
 
 > ## ✅ The public ladder is SEVEN sellable tiers, and `/pricing` DERIVES them (ADR-1052, 2026-07-28).
-> **The ladder, all of it sellable:** Member $0 · **Crew $9** · **Free Space** · **Business $29 with a $19
-> beta rate** · **Collective $79 with a $49 beta rate** · **Non Profit $39** · **Independent $249**. ⚠️ The
-> two beta rates are CLOSED (ADR-1060, the banner at the top): Business is $29 and Collective is $79.
+> **The ladder, all of it sellable:** Member $0 · **Crew $9** · **Free Space** · **Business $29** ·
+> **Collective $79** · **Non Profit $39** · **Independent $249**. ⚠️ The public window is CLOSED
+> (ADR-1060) and Business no longer has a beta rate at all (ADR-1067): the ONLY beta rate in the catalog
+> is Collective's $49 / $490, which is unlisted and granted by hand.
 > While the window was open they were grandfathered: a subscriber keeps the rate for as long as they
 > keep the plan. Non Profit,
 > Independent, and the free tiers have ONE price and never render a struck anchor.

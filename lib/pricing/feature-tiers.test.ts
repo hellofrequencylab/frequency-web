@@ -152,10 +152,13 @@ describe('placeholder pricing — nothing charges (the go-live switch)', () => {
       expect(tierPriceCents('plan', plan, true), plan).toBe(amounts.foundingCents)
       expect(tierPriceCents('plan', plan, false), plan).toBe(amounts.listCents)
     }
-    // Business has a beta rate too. That it had no constant of its own is exactly the bug.
-    expect(SPACE_PLAN_PRICE_CENTS.business.foundingCents).toBeLessThan(
-      SPACE_PLAN_PRICE_CENTS.business.listCents,
+    // COLLECTIVE is the only plan with a beta rate (ADR-1067): exactly one unlisted offer, granted by
+    // hand. Business used to carry $19 under its $29 list; it is flat now, and this asserts BOTH halves
+    // so the day a second beta rate reappears, it reappears deliberately.
+    expect(SPACE_PLAN_PRICE_CENTS.collective.foundingCents).toBeLessThan(
+      SPACE_PLAN_PRICE_CENTS.collective.listCents,
     )
+    expect(SPACE_PLAN_PRICE_CENTS.business.foundingCents).toBe(SPACE_PLAN_PRICE_CENTS.business.listCents)
   })
 
   it('a ladder rung quotes the price the checkout charges TODAY, matching /pricing', () => {

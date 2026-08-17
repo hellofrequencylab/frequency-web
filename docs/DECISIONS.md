@@ -25959,3 +25959,47 @@ database (Loom blocks, saved page-editor content, seeded Journeys), copy under `
 not `.md`, or the runtime output of any AI path — `lib/ai/voice.ts` governs that by prompt, not by
 gate. Widening further means adding a key to `COPY_KEYS` or a rendering seam, never a word to the
 rules.
+
+---
+
+## ADR-1067: Exactly one beta offer exists, it is Collective's, and it is unlisted
+
+**Status:** Accepted · owner decision 2026-08-17 · enforced by `lib/billing/pricing-catalog-sync.test.ts`
+("COLLECTIVE IS THE ONLY ITEM IN THE WHOLE CATALOG WITH A FOUNDING PRODUCT") and
+`lib/pricing/feature-tiers.test.ts`
+**Context:** [ADR-1062](#adr-1062) split the catalog into standard and founding Products so a beta rate
+could be sold privately without appearing on the pricing page. It derived the founding Products from the
+catalog, which still carried the 2026-07-24 ladder: Business at **$19 under its $29 list**, Collective at
+**$49 under its $79 list**. The sync would therefore have minted **two** founding Products.
+
+The owner's instruction is one: *"I only want a Beta offer for collective. It's a secret offer that's not
+listed that I can grant people. Everything else has the normal pricing."*
+
+This was caught before the first sync, which matters because **Stripe Prices are immutable**. An
+unwanted $19 Price minted once cannot be edited — only archived — and this repo's sync deliberately never
+archives a Price, because the founding ids must stay usable in a NEW subscription for the per-Space grant
+([ADR-1061](#adr-1061)) to charge against.
+
+**Decision:** `business_base` ships `foundingCents == listCents`. That is the existing idiom for "no beta
+rate" — Independent, Non Profit and Vera AI already use it — so `catalogItemHasFoundingRate` returns
+false, no second Product is minted, and the `business_base_*` founding KEY still resolves, to the standard
+Product at the standard amount. The frozen 20-key set is unchanged; only which Product a key hangs on and
+at what amount.
+
+**Consequences:** The catalog mints **6 Products / 20 Prices**, one of which is
+`Frequency Collective (Founding rate)` at $49/mo · $490/yr. Every public surface quotes Business at a
+plain $29 with **no strike** — `list_cents` is dropped entirely rather than set equal to the charge, so a
+card cannot render "$29" crossed out over "$29". Fifteen assertions across eight files encoded the old
+$19, and each was updated to state the new invariant rather than deleted.
+
+**This does not touch anyone already locked at $19.** A lock is a RECORD on the subscription, read back by
+`space-subscriptions-reconcile.ts` and `founding-payment.ts`, never a lookup into the catalog — which is
+why those tests keep their `1900` fixtures.
+
+⚠️ **One live artifact still promises the retired rate.** `lib/beta/launch-emails.ts` seeds a "Founding
+Business offer" campaign into Email Studio, offering local businesses *"the lowest rate we will ever set,
+kept for good"* with a September 1 deadline. There is no longer a Business founding price behind it. It is
+a seeded draft, not a send, so nothing is mis-sold today — but it must be retired or repointed at
+Collective before it goes out. Tracked as OWN-025.
+
+⚠️ **And the catalog is not the only place a Business rate lives.** `FOUNDING_DEFAULT.business_monthly_cents` (`lib/pricing/founding.ts`) is still **1900**, and the beta founder push ([ADR-875](#adr-875)) stamps it as `locked_rate_cents` — a LIFETIME term — when the caller passes no amount (`lib/founding/status.ts:281`, `:353`). It cannot fire without an explicit grace `until` date in `pricing_settings`, which is production state this decision could not read, so it was flagged rather than changed: retiring the Founding Business *program* is a different question from declining to advertise a beta *price*, and it is the owner's. Tracked as OWN-026.

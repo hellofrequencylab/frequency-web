@@ -91,11 +91,12 @@ describe('pricing table model', () => {
     expect(tierListAnchor(col, 'month')).toBe('$79')
   })
 
-  it('during beta: Business headline reads $19/mo struck under the $29 list (ADR-811)', () => {
+  it('during beta: Business reads a plain $29/mo with NO strike — it has no beta rate (ADR-1067)', () => {
     const biz = pricingTiers(true).find((t) => t.id === 'business')!
-    expect(tierHeadline(biz, 'month')).toBe('$19/mo')
-    expect(biz.price.month.listCents).toBe(2900) // $29 list
-    expect(tierListAnchor(biz, 'month')).toBe('$29') // struck over the $19 beta anchor
+    expect(tierHeadline(biz, 'month')).toBe('$29/mo')
+    expect(biz.price.month.listCents).toBe(2900)
+    // No anchor to strike: a strike here would render $29 crossed out over $29.
+    expect(tierListAnchor(biz, 'month')).toBeNull()
   })
 
   it('after beta auto-revert: Business + Collective show list only, no strike (ADR-811)', () => {

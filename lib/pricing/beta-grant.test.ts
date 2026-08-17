@@ -113,7 +113,9 @@ describe('loadoutChargePriceKey — the arm resolves a REAL, DIFFERENT Stripe pr
     expect(catalogAmounts('collective_base', 'month').listCents).toBe(7900) // published
     expect(catalogAmounts('collective_base', 'year').foundingCents).toBe(49000) // two months free
     expect(catalogAmounts('collective_base', 'year').listCents).toBe(79000)
-    expect(catalogAmounts('business_base', 'month').foundingCents).toBe(1900)
+    // Business carries NO beta rate (ADR-1067): both keys mean the same money, so a grant on a
+    // Business Space cannot mis-price it downward.
+    expect(catalogAmounts('business_base', 'month').foundingCents).toBe(2900)
     expect(catalogAmounts('business_base', 'month').listCents).toBe(2900)
   })
 
@@ -283,9 +285,7 @@ describe('the public grid is IDENTICAL with and without a granted Space', () => 
     const { labels, cents } = spacePlanQuotes(true)
     expect(labels).toContain('$49/mo')
     expect(labels).toContain('$490/yr')
-    expect(labels).toContain('$19/mo')
     expect(cents).toContain(4900)
-    expect(cents).toContain(1900)
     expect(readableTexts(true).some((t) => t.includes('Beta rate'))).toBe(true)
   })
 
