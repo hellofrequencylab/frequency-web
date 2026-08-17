@@ -781,12 +781,12 @@
     },
     {
       "id": "HYG-002",
-      "title": "BUILD-LIST 4.1 claims Programs is built; it was retired",
-      "status": "open",
+      "title": "The Programs rows were stale in BOTH directions; all four corrected",
+      "status": "done",
       "lane": "hygiene",
       "size": "XS",
       "source": { "file": "docs/BUILD-LIST.md", "ref": "P4 row 4.1" },
-      "detail": "STALE IN THE DANGEROUS DIRECTION. The row reads '✅ already built: 4 frameworks live in content/programs/'. That directory does not exist, there is no member /programs route, and 20261113000000 dropped the program arm from the catalog RPC while 20261114000000 dropped the tables. 'Already built' now reads as 'do not schedule' for a thing that no longer exists — and THREE downstream rows inherit the error: P5's 'Programs content depth', P3.3's 'Paywalled Programs', and DESIGN.md's 'Program detail to DetailTemplate'.",
+      "detail": "The best argument in the repo for why status left prose. THREE successive states, each recorded and each outlived: (1) BUILD-LIST 4.1 said Programs was '✅ already built: 4 frameworks in content/programs/'; (2) the 2026-08-11 audit correctly found that retired — directory gone, no member route, 20261113000000 dropped the catalog arm, 20261114000000 dropped the tables — and rewrote the row to 'RETIRED, needs a re-scope, names a feature with no substrate'; (3) THAT correction was itself already stale when written, because ADR-864 had rebuilt Programs on Channels on 2026-07-27. A Program is now a topical_channel carrying a blueprint (Program = template_id set, Chapter = a circle in that channel, owner_space_id NULL = Frequency-run), shipped in 20270110000000, with lib/channels/programs.ts exporting isProgram under test, ADR-870 adding a blueprint discriminator, and an operator surface at spaces/[slug]/settings/program. Corrected 2026-08-17 across all four rows: 4.1 (shipped, do not re-scope), 3.3 (the paywall has a substrate again — the open question is WHAT is gated, not whether anything exists), P5 (re-pointed: 'add to Circle' is the Remix flow starting a Chapter), and DESIGN.md's /programs/[slug] row (retired — that route does not exist and will not, since Programs render as channels).",
       "verify": {
         "kind": "grep-absent",
         "pattern": "already built.*content/programs",
