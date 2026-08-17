@@ -33,6 +33,7 @@ import path from 'node:path'
 import {
   arityOf,
   functionNamesIn,
+  LOOP_COVERED,
   LOOP_REVOKES,
   namesAnonRole,
   parseLedger,
@@ -205,6 +206,60 @@ describe('check:function-grants — the arms that must FAIL', () => {
     const { code, out } = run(fx.dir)
     expect(code).toBe(1)
     expect(out).toContain('`rebuilt_rpc` is marked `internal` but anon can still execute it')
+  })
+
+  it('FAILS a LOOP_COVERED claim whose loop runs BEFORE the function exists', () => {
+    // The one declared exception is a checkable fact, not a licence. A catalog loop is a one-shot
+    // over the catalog as it stood when it ran, and replay is version-ordered — so a function
+    // created AFTER the loop is not covered by it. This is exactly what 20270224000100 corrected.
+    // Proven by pointing the real entry at a tree where the ordering is inverted.
+    fx.add(
+      '20261231000000_revoke_trigger_fn_rest_execute.sql',
+      'do $$ declare f record; begin for f in select oid from pg_proc loop\n' +
+        "  execute format('revoke execute on function %s from public, anon, authenticated', f.oid);\n" +
+        'end loop; end $$;\n',
+    )
+    // Created AFTER the loop, so a fresh replay never reaches it.
+    fx.add(
+      '20270101000000_late.sql',
+      'create function public.after_crew_completion_verified() returns trigger language plpgsql as $x$ begin return new; end $x$;\n',
+    )
+    fx.ledger('after_crew_completion_verified  internal\n')
+    const { code, out } = run(fx.dir)
+    expect(code).toBe(1)
+    expect(out).toContain('does NOT sort before it')
+    expect(out).toContain('A catalog loop is a ONE-SHOT')
+  })
+
+  it('ACCEPTS a LOOP_COVERED function created before its loop, and says so out loud', () => {
+    fx.add(
+      '20261009000000_early.sql',
+      'create function public.after_crew_completion_verified() returns trigger language plpgsql as $x$ begin return new; end $x$;\n',
+    )
+    fx.add(
+      '20261231000000_revoke_trigger_fn_rest_execute.sql',
+      'do $$ declare f record; begin for f in select oid from pg_proc loop\n' +
+        "  execute format('revoke execute on function %s from public, anon, authenticated', f.oid);\n" +
+        'end loop; end $$;\n',
+    )
+    fx.ledger('after_crew_completion_verified  internal\n')
+    const { code, out } = run(fx.dir)
+    expect(code).toBe(0)
+    // A declared exception that prints nothing is a declared exception nobody re-reads.
+    expect(out).toContain('rest on a CATALOG LOOP rather than a named revoke')
+    expect(out).toContain('after_crew_completion_verified')
+  })
+
+  it('FAILS a LOOP_COVERED claim pointing at a migration that is not a catalog loop', () => {
+    fx.add(
+      '20261009000000_early.sql',
+      'create function public.after_crew_completion_verified() returns trigger language plpgsql as $x$ begin return new; end $x$;\n',
+    )
+    fx.add('20261231000000_revoke_trigger_fn_rest_execute.sql', '-- somebody emptied this out\n')
+    fx.ledger('after_crew_completion_verified  internal\n')
+    const { code, out } = run(fx.dir)
+    expect(code).toBe(1)
+    expect(out).toContain('not a catalog-driven revoke any more')
   })
 
   it('FAILS on an unparseable ledger line rather than skipping it', () => {
@@ -399,6 +454,59 @@ describe('the real tree', () => {
     // from the live set AND declared safe, which is two ways of not being checked.
     const { entries } = parseLedger(readFileSync(LEDGER, 'utf8'))
     for (const fn of Object.keys(RETIRED_BY_DYNAMIC_SQL)) expect(entries.has(fn), fn).toBe(false)
+  })
+
+  it('LOOP_COVERED stays a named exception, not a habit', () => {
+    // A declared exception that grows is a declared exception that has become a workaround. One
+    // entry, verified by the guard itself (loop exists, is a catalog loop, and runs after the
+    // create). If this floor needs raising, the honest move is a named revoke instead.
+    expect(Object.keys(LOOP_COVERED).length).toBeLessThanOrEqual(1)
+    const { entries } = parseLedger(readFileSync(LEDGER, 'utf8'))
+    for (const fn of Object.keys(LOOP_COVERED)) {
+      // It only means anything on a row that claims to be closed.
+      expect(entries.get(fn)?.verdict, fn).not.toBe('public')
+    }
+  })
+
+  it('the OWN-006 proposal is staged OUTSIDE supabase/migrations/', () => {
+    // 🔴 THE REGRESSION TEST FOR 663762b. This SQL was committed as a migration, and CI's `checks`
+    // job went red: check:migrations rule 4 (ADR-1007) fails a repo file with no ledger row,
+    // because such a file replays on every fresh environment while production has never run it.
+    // A migration file is an assertion that production HAS run it; until an owner applies this,
+    // that assertion is false. It stays a proposal.
+    const names = new Set(readdirSync(MIGRATIONS))
+    expect(names.has('20270304000000_revoke_browser_execute_on_service_only_rpcs.sql')).toBe(false)
+    const proposal = 'docs/proposals/OWN-006-revoke-browser-execute.sql'
+    const sql = readFileSync(path.join(ROOT, proposal), 'utf8')
+    // The SQL itself must have survived the move, or the proposal is a memo about nothing.
+    expect(sql).toMatch(/revoke\s+execute\s+on\s+function\s+public\.public_calendar_feed\(\)\s+from\s+public,\s*anon,\s*authenticated/i)
+    expect(sql).toContain('docs/proposals/')
+  })
+
+  it('no ledger row claims a function is closed on the strength of the withdrawn proposal', () => {
+    // The other half of the same regression. The twelve functions that proposal revokes are still
+    // anon-executable in the tree AND in production, so their verdict must say `public`. If this
+    // ever fails, either the proposal was applied — in which case the migration belongs in
+    // supabase/migrations/ and this test should be updated in that same change — or the ledger has
+    // gone back to recording intentions.
+    const { entries } = parseLedger(readFileSync(LEDGER, 'utf8'))
+    const proposed = [
+      'public_calendar_feed',
+      'space_public_calendar_feed',
+      'event_calendar_feed',
+      'match_help_chunks',
+      'nodes_geo',
+      'node_within_range',
+      'my_orbit',
+      'near_misses',
+      'relationship_timeline',
+      'welcome_targets',
+      'your_impact',
+      'ensure_calendar_token',
+    ]
+    const migrations = new Set(readdirSync(MIGRATIONS))
+    if (migrations.has('20270304000000_revoke_browser_execute_on_service_only_rpcs.sql')) return
+    for (const fn of proposed) expect(entries.get(fn)?.verdict, fn).toBe('public')
   })
 
   it('states what it cannot see, every time it passes', () => {

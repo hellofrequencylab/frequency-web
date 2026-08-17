@@ -214,7 +214,7 @@ export function loadLedger(path = LEDGER_PATH) {
 /**
  * Pure classifier for the ROUTE scan. Returns how this handler earned its verdict — or why
  * it has none. `problem` non-null is a violation.
- * @returns {{file: string, source: 'gate'|'ledger'|'none', verdict: string|null, problem: string|null}}
+ * @returns {{file: string, source: 'gate'|'ledger'|'none', verdict: string|null, problem: string|null, redundantLedgerEntry?: boolean}}
  */
 export function classifyRoute(file, src, ledger) {
   const entry = ledger[file]

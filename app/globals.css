@@ -2592,8 +2592,8 @@ h1, h2, h3, h4, h5, h6 {
     color-mix(in srgb, var(--color-on-ink) 13%, transparent) 0%, transparent 72%);
 }
 
-/* ── dot-grid — a sparse dot lattice. The cream-surface texture, where grain would
-   read as noise and scanlines cannot go: schematics, plans, operator pages. */
+/* ── dot-grid — a sparse dot lattice. The cream-surface texture, for the surfaces
+   where grain would read as noise: schematics, plans, operator pages. */
 .dot-grid::before {
   content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
   background-image: radial-gradient(color-mix(in srgb, var(--color-ink) 16%, transparent) 1px, transparent 1px);
@@ -2616,31 +2616,30 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ── THE TEXTURE LAYER (DAWN effects.css, ported 2026-08-04) ──────────────────
-   Five atmosphere effects that DAWN specifies and this codebase never had, plus
-   two small ones. They are not decoration: the marketing pages that were rebuilt
-   to the DAWN reference — about, the-lab, pricing, the-quest, circles, operators —
-   each call for them, and shipped flat without them. Between them they appear in
-   43 places across DAWN's own kit files.
+   Atmosphere effects ported from DAWN's kit. They are not decoration: the marketing
+   pages rebuilt to the DAWN reference — about, the-lab, pricing, the-quest, circles,
+   operators — call for them.
 
    Every one is a ::before / ::after on a positioned parent, pointer-events: none,
    so none of them can intercept a click or change layout. Each is composited from
    TOKENS (--color-ink, --color-primary, --color-on-ink) rather than fixed rgba, so
    Midnight retunes them for free — which is most of the point of porting them
-   rather than hand-rolling a gradient per page. */
+   rather than hand-rolling a gradient per page.
 
-/* scanlines — the fine horizontal rule pattern over an ink band. soft-light so it
-   reads as texture in the surface rather than as lines drawn on top of it. */
-.scanlines { position: relative; }
-.scanlines::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: repeating-linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--color-on-ink) 5%, transparent) 0px,
-    color-mix(in srgb, var(--color-on-ink) 5%, transparent) 1px,
-    transparent 1px, transparent 4px
-  );
-  opacity: 0.55; mix-blend-mode: soft-light;
-}
+   RETIRED 2026-08-17 (ADR-1056, backlog LIVE-024): `.scanlines`, `.vignette` and
+   `.edge-light` were deleted from this layer. All three were ported speculatively and
+   reached zero adopters in app/ + components/ + lib/ in the year they sat here, while
+   the roles they claimed were already filled by classes that ARE adopted — `.bg-slat`
+   carries the ink-band texture (9 files) and `.light-strip` the amber seam (6). A
+   contract class nobody calls is a lie in the stylesheet, and a duplicate of an adopted
+   one is worse: it splits the vocabulary.
+
+   DO NOT PASTE THEM BACK IN A DAWN SYNC. `design_handoff/dawn/tokens/effects.css` still
+   ships all three, so the next "sync DAWN" round will offer them again; SYNC.md's
+   effect-class row means "sync the classes this repo carries", not "adopt every class
+   DAWN ships". `lib/theme/effect-adoption.test.ts` fails the build if any of the three
+   reappears in this file, and fails if any effect here reaches zero adopters — so
+   re-adding one is only possible together with the call site that justifies it. */
 
 /* grain — film grain, as an inline SVG turbulence so it costs no request and
    cannot 404. 5.5% opacity: present as tooth, invisible as pattern. */
@@ -2648,22 +2647,6 @@ h1, h2, h3, h4, h5, h6 {
 .grain::after {
   content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.055;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-/* vignette — darkens the corners of a photographic band so overlaid copy holds
-   its contrast at the edges, where a scrim alone is thinnest. */
-.vignette { position: relative; }
-.vignette::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse 78% 68% at 50% 46%, transparent 42%, color-mix(in srgb, var(--color-ink) 62%, transparent) 100%);
-}
-
-/* edge-light — a single amber hairline along the top edge, fading at both ends.
-   The seam DAWN puts between a dark beat and what precedes it. */
-.edge-light { position: relative; }
-.edge-light::before {
-  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px; pointer-events: none;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-primary) 62%, transparent) 22%, color-mix(in srgb, var(--color-primary) 62%, transparent) 78%, transparent);
 }
 
 /* halo — a soft amber bloom behind an element. z-index 0 with inset -45%, so it

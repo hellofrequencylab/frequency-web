@@ -64,6 +64,13 @@ const VITEST_ENFORCED: Record<string, string> = {
   // `internal` verdict, which is the whole point of the guard), plus real-tree assertions
   // including that the guard exits 0 on the tree as committed.
   'check:function-grants': 'scripts/check-function-grants.test.ts',
+  // Added 2026-08-17 (LIVE-028, ADR-1055). Its CLI half is pure node and cannot read the TSX
+  // block registry, so the ENFORCING arm — "every block type in stored page data resolves against
+  // the live config.components" — has to run under vitest, where the registry is importable. The
+  // sibling test drives the shared classifier against broken fixtures for every arm (including
+  // the real census with its quarantine stripped, which must still name all five orphans) as well
+  // as against the real tree, so neither half can go quietly vacuous.
+  'check:stored-blocks': 'scripts/check-stored-blocks.test.ts',
 }
 
 function packageScripts(): Record<string, string> {

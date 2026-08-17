@@ -17,6 +17,14 @@ import {
   MIN_API_ROUTE_FILES,
 } from './check-authz-guards.mjs'
 
+type RouteResult = {
+  file: string
+  source: 'gate' | 'ledger' | 'none'
+  verdict: string | null
+  problem: string | null
+  redundantLedgerEntry?: boolean
+}
+
 // LIVE-022. The point of these tests is NOT "the route scan exists" — a gate that exists and
 // never fires is the shape-not-truth failure this repo has been bitten by five times. Every test
 // below measures a CONSEQUENCE: that the gate reaches app/api at all, and that it says NO to a
@@ -139,7 +147,7 @@ describe('scanRoutes', () => {
   it('reports the verdict-less route and only that one', () => {
     const files = { 'app/api/a/route.ts': GATED_ROUTE, 'app/api/b/route.ts': BARE_ROUTE }
     const out = scanRoutes(Object.keys(files), {}, read(files))
-    expect(out.violations.map((v) => v.file)).toEqual(['app/api/b/route.ts'])
+    expect(out.violations.map((v: RouteResult) => v.file)).toEqual(['app/api/b/route.ts'])
   })
 
   it('FAILS a ledger entry whose route no longer exists', () => {
@@ -206,7 +214,7 @@ describe('the real tree', () => {
 
   it('has a verdict for every route handler and no orphaned ledger entries', () => {
     const { routes } = runChecks()
-    expect(routes.violations.map((v) => `${v.file} (${v.problem})`)).toEqual([])
+    expect(routes.violations.map((v: RouteResult) => `${v.file} (${v.problem})`)).toEqual([])
     expect(routes.orphans).toEqual([])
   })
 
@@ -223,8 +231,8 @@ describe('the real tree', () => {
     // everything got asserted. If the assertion ledger ever outgrows the gated set, the route
     // scan has stopped measuring anything.
     const { routes } = runChecks()
-    const gated = routes.results.filter((r) => r.source === 'gate').length
-    const asserted = routes.results.filter((r) => r.source === 'ledger').length
+    const gated = routes.results.filter((r: RouteResult) => r.source === 'gate').length
+    const asserted = routes.results.filter((r: RouteResult) => r.source === 'ledger').length
     expect(asserted).toBeLessThan(gated)
   })
 })

@@ -793,7 +793,7 @@
     {
       "id": "LIVE-024",
       "title": "Adopt or retire edge-light, scanlines and vignette",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
@@ -802,10 +802,10 @@
       },
       "detail": "Three effect classes at zero adopters. Either give them a home or delete them: a contract class nobody calls is a lie in the stylesheet. Smallest item on the board.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Needs an adopter count per class; a grep for the class name matches its own definition.",
-        "checked": "2026-08-17"
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const f='lib/theme/effect-adoption.test.ts';if(!fs.existsSync(f)||!fs.existsSync('node_modules/vitest/vitest.mjs'))process.exit(79);const r=require('child_process').spawnSync(process.execPath,['node_modules/vitest/vitest.mjs','run',f],{stdio:'ignore',timeout:110000});if(r.error||r.signal!==null||r.status===null||r.status===127)process.exit(79);process.exit(r.status)\""
+      },
+      "notes": "Closed 2026-08-17 (ADR-1056). All three retired — zero adopters each, and edge-light was additionally a DUPLICATE of the adopted .light-strip, which is --ornament-aware where edge-light was not. The row undercounted by half: six more zero-adopter classes sit in the same layer (amber-underline, animate-glow, animate-warmup, grain, halo, slat-fade). Those were NOT deleted — deleting a class nobody asked about is how an untraceable visual regression arrives — they are held in a ratchet that fails if one gains an adopter without being banked. The instrument matters here: a naive all-string scan reported 54 adopters for 'spot', 2 for 'halo', 1 for 'grain', every one of them English prose. The guard is scoped to className=/cn() positions, and the re-entry path is guarded too — design_handoff ships all three and SYNC.md routes effect classes back into globals.css value-for-value."
     },
     {
       "id": "LIVE-025",
@@ -868,11 +868,10 @@
         "file": "docs/BUILD-LIST.md",
         "ref": "ADR-977 D-9"
       },
-      "detail": "Explicitly ruled to land as a SEPARATE PR ahead of the editor program, not folded into E0.",
+      "detail": "Explicitly ruled to land as a SEPARATE PR ahead of the editor program, not folded into E0. | 2026-08-17: counts CONFIRMED against production — five types, three draft pages, 17 orphan blocks, and in two of the three pages the orphans are 6 of 8 blocks. Migration written and validated by running its mapping CTEs as a SELECT (all 17 map, node ids preserved, key sets match each target's field list) but held in docs/proposals/ UNAPPLIED — a file in supabase/migrations/ asserts production has run it. The probe exits 1 today BY DESIGN and goes to 0 when the owner applies it and re-captures the census. TWO DOC CORRECTIONS FELL OUT: EDITOR-BLOCK-INVENTORY struck how-it-works off the list because no operator can open it — true of the EDITOR, false of the DATA, whose five orphans are still there; and ADR-977/978 both compared ZigZag against the wrong block. Its successor is MediaText, which media.tsx:60 states in its own header and which is a name-for-name superset of all twelve stored props. Two ADRs concluded 'real decisions here' without reading the block files.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Needs the stored-document scan that identified the five types.",
-        "checked": "2026-08-17"
+        "kind": "cmd",
+        "cmd": "node scripts/check-stored-blocks.mjs --probe"
       }
     },
     {

@@ -1,0 +1,107 @@
+{
+  "what": "A census of every block TYPE present in stored page documents in production, per store. Types only — no tenant copy, no props, no ids. The guard (scripts/check-stored-blocks.test.ts) asserts every type recorded here resolves in the live block registry (lib/page-editor/config.tsx), so retiring a block that stored data still names fails CI instead of silently blanking a section on someone's page.",
+  "why": "ADR-978 stopped an unknown type from DESTROYING a document, but nothing noticed that five types were already orphaned — they were found by hand, twice (ADR-977 D-9, then again for LIVE-028). A fail-safe with no gate that notices it fired is an invisible regression (AGENTS.md, Deploy safety).",
+  "howToRecapture": "Run the SQL in `recaptureQuery` against production (read-only) and rewrite `stores` from the result, then set `capturedAt`. Re-capture after applying a document migration; the guard reads the registry live, so it does NOT need a re-capture when the registry changes.",
+  "scope": "The Puck-shaped registry only (lib/page-editor/config.tsx). The Spotlight union (lib/spotlight/blocks/schema.ts) and the entity-block registry (lib/entity-blocks/registry.ts) are separate catalogs with separate storage and are NOT covered here.",
+  "capturedAt": "2026-08-17",
+  "project": "Frequency Community (azsqfeonabsbmemvddqd)",
+  "recaptureQuery": "with docs as (select 'pages.data' as store, slug as doc_key, data as doc from pages where data is not null union all select 'pages.published_data', slug, published_data from pages where published_data is not null union all select 'spaces.preferences.puck', slug, preferences->'puck' from spaces where preferences ? 'puck' union all select 'spaces.preferences.pageDocs', s.slug||'#'||d.key, d.value from spaces s, lateral jsonb_each(coalesce(s.preferences->'pageDocs','{}'::jsonb)) d), items as (select store, doc_key, e->>'type' as type from docs, lateral jsonb_array_elements(doc->'content') e where jsonb_typeof(doc->'content')='array') select store, type, count(*) as blocks, count(distinct doc_key) as docs from items group by store, type order by store, type;",
+  "stores": [
+    {
+      "store": "pages.data",
+      "note": "The marketing draft documents. `home` and `the-community` are clean; `about`, `how-it-works` and `the-lab` carry the quarantined five.",
+      "documents": 5,
+      "types": {
+        "BetaCTA": { "blocks": 3, "docs": 3 },
+        "CallToAction": { "blocks": 4, "docs": 2 },
+        "CircleFirstNight": { "blocks": 2, "docs": 2 },
+        "FeatureGallery": { "blocks": 1, "docs": 1 },
+        "FeatureGrid": { "blocks": 2, "docs": 1 },
+        "Heading": { "blocks": 3, "docs": 2 },
+        "Hero": { "blocks": 2, "docs": 2 },
+        "ImageBand": { "blocks": 2, "docs": 2 },
+        "Marquee": { "blocks": 2, "docs": 2 },
+        "MediaText": { "blocks": 4, "docs": 2 },
+        "PageHero": { "blocks": 3, "docs": 3 },
+        "RolesPath": { "blocks": 2, "docs": 2 },
+        "Statement": { "blocks": 8, "docs": 5 },
+        "Text": { "blocks": 3, "docs": 2 },
+        "ZigZag": { "blocks": 8, "docs": 3 }
+      }
+    },
+    {
+      "store": "pages.published_data",
+      "note": "What the public site actually serves. Clean, and asserted clean again at the foot of the migration.",
+      "documents": 2,
+      "types": {
+        "CallToAction": { "blocks": 4, "docs": 2 },
+        "CircleFirstNight": { "blocks": 2, "docs": 2 },
+        "FeatureGrid": { "blocks": 2, "docs": 1 },
+        "Heading": { "blocks": 3, "docs": 2 },
+        "Hero": { "blocks": 2, "docs": 2 },
+        "Marquee": { "blocks": 2, "docs": 2 },
+        "MediaText": { "blocks": 4, "docs": 2 },
+        "RolesPath": { "blocks": 2, "docs": 2 },
+        "Statement": { "blocks": 2, "docs": 2 },
+        "Text": { "blocks": 3, "docs": 2 }
+      }
+    },
+    {
+      "store": "spaces.preferences.pageDocs",
+      "note": "18 Space profile documents, one per Space. All 12 types resolve. `spaces.preferences.puck` (the pre-pageDocs legacy slot) has zero rows.",
+      "documents": 18,
+      "types": {
+        "SpaceAbout": { "blocks": 18, "docs": 18 },
+        "SpaceBooking": { "blocks": 18, "docs": 18 },
+        "SpaceBusiness": { "blocks": 18, "docs": 18 },
+        "SpaceCallout": { "blocks": 18, "docs": 18 },
+        "SpaceCommunity": { "blocks": 18, "docs": 18 },
+        "SpaceContact": { "blocks": 18, "docs": 18 },
+        "SpaceEvents": { "blocks": 18, "docs": 18 },
+        "SpaceFAQ": { "blocks": 9, "docs": 9 },
+        "SpaceHighlights": { "blocks": 18, "docs": 18 },
+        "SpaceOfferings": { "blocks": 18, "docs": 18 },
+        "SpacePractices": { "blocks": 18, "docs": 18 },
+        "SpaceReviews": { "blocks": 18, "docs": 18 }
+      }
+    }
+  ],
+  "quarantineRule": "A type may appear here ONLY while a migration that retires it is in the tree. The guard checks that migration exists and maps this exact type to this exact successor, so a quarantine entry cannot outlive its fix. The list may only shrink: it empties when the owner applies the migration and re-captures the census. There is no line-level escape hatch — losing a tenant's authored block is not something a comment may authorise.",
+  "quarantine": [
+    {
+      "type": "PageHero",
+      "successor": "Hero",
+      "migration": "supabase/migrations/20270305000000_pages_retire_orphan_block_types.sql",
+      "adr": "ADR-1055",
+      "why": "Hero's field list is a superset of PageHero's four props; variant 'minimal' is the text-only paint PageHero was."
+    },
+    {
+      "type": "ImageBand",
+      "successor": "Image",
+      "migration": "supabase/migrations/20270305000000_pages_retire_orphan_block_types.sql",
+      "adr": "ADR-1055",
+      "why": "components/page-editor/blocks/media.tsx:114 — 'A single image renders as the full-width band (standardizes the old ImageBand)'."
+    },
+    {
+      "type": "ZigZag",
+      "successor": "MediaText",
+      "migration": "supabase/migrations/20270305000000_pages_retire_orphan_block_types.sql",
+      "adr": "ADR-1055",
+      "why": "components/page-editor/blocks/media.tsx:60 — 'MediaText ... (standardizes the old ZigZag)'. NOT the registry's `Zigzag`, which ADR-978 correctly refused: MediaText is a name-for-name superset of all 12 stored props."
+    },
+    {
+      "type": "FeatureGallery",
+      "successor": "Gallery",
+      "migration": "supabase/migrations/20270305000000_pages_retire_orphan_block_types.sql",
+      "adr": "ADR-1055",
+      "why": "components/page-editor/blocks/media.tsx:215 — 'GalleryMediaBlock — image grid (standardizes the old FeatureGallery)'. The stored item shape {image,title,body} is Gallery's arrayFields exactly."
+    },
+    {
+      "type": "BetaCTA",
+      "successor": "CallToAction",
+      "migration": "supabase/migrations/20270305000000_pages_retire_orphan_block_types.sql",
+      "adr": "ADR-1055",
+      "why": "components/page-editor/blocks/sections.tsx:259 — 'Dark ink variant: full-bleed with light-strip seams + amber glow (matches BetaCTA)'."
+    }
+  ]
+}

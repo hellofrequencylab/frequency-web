@@ -23,11 +23,31 @@
 #
 # HOW THE VERDICTS WERE SEEDED -- FROM THE LIVE CATALOG, NOT FROM THE SQL. Measured against
 # production (azsqfeonabsbmemvddqd) on 2026-08-17 with has_function_privilege:
-#   public         = anon holds EXECUTE today and that is accepted
+#   public         = anon holds EXECUTE today
 #   authenticated  = anon does not, authenticated does
 #   internal       = neither
-# Twelve rows then differ from that measurement on purpose: they are OWN-006's decisions,
-# applied by 20270304000000, where a function anon can reach today is one no browser calls.
+#
+# 🔴 THIS FILE DESCRIBES THE TREE AS IT IS, NOT AS IT OUGHT TO BE. Every row matches the measured
+# state; no row records an intention. That distinction was learned the expensive way in this very
+# file. The first version moved TWELVE rows to `internal` / `authenticated` on the strength of a
+# revoke migration that had been AUTHORED BUT NEVER APPLIED, so the ledger asserted twelve
+# functions were closed while anon could call all twelve in production. The migration then failed
+# CI on a separate rule and had to leave the tree, and the ledger's twelve claims would have
+# survived it -- a gate reading green over exactly the exposure it exists to report.
+#
+# So: `public` here is a statement of FACT (anon can execute it), not an endorsement. 59 of these
+# are `public` and only about fourteen are deliberate front-door entry points. The gap between
+# those two numbers IS the finding, it is the open row OWN-006, and the proposed revokes are
+# staged in docs/proposals/OWN-006-revoke-browser-execute.sql -- outside supabase/migrations/,
+# because a file in there asserts production has run it. When an owner applies that proposal, the
+# thirteen functions it names move to `internal` / `authenticated` IN THE SAME CHANGE, and this
+# gate will refuse the change if they do not.
+#
+# ONE ROW IS NEITHER MEASURED-OPEN NOR NAMED-CLOSED. `after_crew_completion_verified` is `internal`
+# and carries no revoke of its own: 20261231000000 closed it inside a catalog-driven `do $$` loop.
+# The guard does not take that on trust -- it verifies the function's create migration sorts BEFORE
+# the loop, so a version-ordered replay genuinely reaches it, and it prints the exception on every
+# passing run. See LOOP_COVERED in scripts/check-function-grants.mjs.
 #
 # THE PARSE WAS CROSS-CHECKED AGAINST THE CATALOG BEFORE THIS FILE WAS WRITTEN, and the check
 # earned its keep twice. Replaying supabase/migrations/ yields exactly the 148 non-extension
@@ -48,7 +68,8 @@
 #   · `st_estimatedextent` (3 overloads) -- owned by extension `postgis` and granted by
 #     `supabase_admin`, so no migration of ours can revoke them.
 #
-# 47 public · 26 authenticated · 75 internal · 148 total
+# 59 public · 20 authenticated · 69 internal · 148 total  (measured 2026-08-17; 59 `public` is the
+# state of the database, not a target -- see OWN-006)
 
 accept_bundle_invite_atomic          internal
 adjust_ticket_sold                   internal
@@ -89,8 +110,8 @@ enforce_member_not_suspended         internal
 enforce_membership_tier_circle_link  public
 engagement_event_counts              public
 engagement_prop_counts               public
-ensure_calendar_token                authenticated
-event_calendar_feed                  internal
+ensure_calendar_token                public
+event_calendar_feed                  public
 feed_for_viewer                      authenticated
 find_contact_matches                 internal
 friendships_freeze_identity          internal
@@ -117,7 +138,7 @@ log_crew_completion_atomic           internal
 maintain_engagement_on_reaction      public
 maintain_engagement_on_reply         public
 mark_signup_lead_converted           authenticated
-match_help_chunks                    internal
+match_help_chunks                    public
 match_library_assets                 internal
 match_practices                      authenticated
 match_room_messages                  authenticated
@@ -134,21 +155,21 @@ mkt_interest_demand                  internal
 mkt_leader_activity                  internal
 my_friendships                       authenticated
 my_notifications                     authenticated
-my_orbit                             authenticated
+my_orbit                             public
 my_unread_message_count              authenticated
 my_unread_notification_count         authenticated
-near_misses                          authenticated
+near_misses                          public
 nearby_events                        public
 node_capture_counts                  internal
-node_within_range                    internal
-nodes_geo                            internal
+node_within_range                    public
+nodes_geo                            public
 practice_admin_facets                internal
 practices_touch_updated_at           public
 prevent_economy_self_edit            internal
 prevent_role_self_escalation         internal
 provision_channel_room               internal
 public_active_circle_count           public
-public_calendar_feed                 internal
+public_calendar_feed                 public
 public_circle_by_id                  public
 public_circles                       public
 public_event_by_slug                 public
@@ -165,7 +186,7 @@ record_streak_tick                   internal
 redeem_store_item_atomic             internal
 refresh_member_engagement_scores     internal
 refresh_resonance_density_cells      internal
-relationship_timeline                authenticated
+relationship_timeline                public
 reserve_ticket_atomic                internal
 reset_season                         internal
 resonance_neighbors                  internal
@@ -179,7 +200,7 @@ set_event_geog                       internal
 set_node_geo                         internal
 set_updated_at                       public
 similar_library_assets               internal
-space_public_calendar_feed           internal
+space_public_calendar_feed           public
 sync_contact_from_profile            internal
 sync_event_scope_arc                 internal
 sync_post_scope_arc                  internal
@@ -196,5 +217,5 @@ trg_stewardships_recompute_level     internal
 update_signup_lead                   public
 visible_room_member_profiles         authenticated
 vitals_p75                           internal
-welcome_targets                      authenticated
-your_impact                          authenticated
+welcome_targets                      public
+your_impact                          public

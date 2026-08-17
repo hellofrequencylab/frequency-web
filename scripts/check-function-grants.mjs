@@ -71,9 +71,18 @@
 //     connect to a database and it never will — that is `pnpm check:migrations`' rule 4, which
 //     compares the repo against the live ledger head (ADR-1007). PRODUCTION TODAY HAS 29
 //     anon-executable and 49 authenticated-executable SECURITY DEFINER functions in `public`
-//     (measured 2026-08-17). THIS GUARD DOES NOT CLOSE ANY OF THEM. It holds the line once
-//     OWN-006's sweep migration is applied; until then a green run here means "the repo states a
-//     decision for every function", not "the database enforces it".
+//     (measured 2026-08-17). THIS GUARD CLOSES NONE OF THEM. A green run here means "the repo
+//     states a decision for every function", not "the database enforces it".
+//
+//     🔴 AND A GREEN RUN HERE CANNOT BE MADE TO MEAN MORE BY EDITING THE LEDGER, which was tried
+//     and caught. The first ledger moved twelve functions to `internal` / `authenticated` on the
+//     strength of a revoke migration that was authored and never applied. The migration then
+//     failed check:migrations rule 4 — a repo file with no ledger row — and had to leave the tree
+//     for docs/proposals/. Had the ledger's twelve claims stayed, this gate would have printed a
+//     tick over the exact 29 functions it exists to report. The rule that falls out: A VERDICT
+//     DESCRIBES THE TREE, NEVER AN INTENTION. `public` means "anon can execute this", not
+//     "anon should". 59 rows say `public` and roughly fourteen are deliberate front doors; that
+//     gap is OWN-006, and it is an open row, not a silence.
 //   · MCP `apply_migration` and `execute_sql` write to prod without leaving a file, so the
 //     repo⇄ledger bijection (ADR-963) is the only thing making "in a migration" approximate "in the
 //     database". That bijection has broken three times, twice in one day.
@@ -83,10 +92,11 @@
 //     spelled exactly as pg_get_function_identity_arguments renders it, which is not something a
 //     migration author can be expected to get right by hand.
 //   · DYNAMIC SQL. Catalog-driven `do $$ ... execute format(...)` loops are invisible to a regex.
-//     Two exist here and both are declared below (RETIRED_BY_DYNAMIC_SQL, LOOP_REVOKES) rather than
-//     silently absorbed, because a parser that cannot see a statement is a parser that cannot
-//     protect the object it touched. A catalog loop is also a ONE-SHOT: it sees the catalog as it
-//     stood the moment it ran, so every function created after it needs its own revoke.
+//     Two exist here and both are declared below (RETIRED_BY_DYNAMIC_SQL, LOOP_REVOKES, LOOP_COVERED)
+//     rather than silently absorbed, because a parser that cannot see a statement is a parser that
+//     cannot protect the object it touched. A catalog loop is also a ONE-SHOT: it sees the catalog
+//     as it stood the moment it ran, so every function created after it needs its own revoke — and
+//     LOOP_COVERED verifies exactly that ordering rather than believing the claim.
 //   · SCHEMAS OTHER THAN `public`. Functions in `private` are not on the PostgREST surface at all,
 //     which is the whole reason 18 RLS helpers were moved there in 20270101000000.
 //   · WHETHER THE BODY IS SAFE. `public` is an unverified assertion that a signed-out visitor is
@@ -168,6 +178,32 @@ export const LOOP_REVOKES = [
   '20261231000000_revoke_trigger_fn_rest_execute.sql',
   '20270224000100_revoke_friendships_freeze_identity_execute.sql',
 ]
+
+/**
+ * The ONE function whose closed state in production this repo cannot reproduce with a named
+ * revoke, declared rather than hidden. `after_crew_completion_verified` is `anon=false` in prod and
+ * no migration names it — 20261231000000 closed it inside a `do $$` loop over pg_proc.
+ *
+ * ⚠️ THIS IS NOT A LICENCE, AND IT IS NOT TAKEN ON TRUST. A catalog loop only covers functions that
+ * ALREADY EXIST when it runs, and replay is version-ordered, so the claim "the loop covers it" is a
+ * checkable fact: the function's create migration must sort STRICTLY BEFORE the loop's. The guard
+ * verifies exactly that below, plus that the named migration really is a catalog-driven revoke.
+ * 20270224000100 exists because friendships_freeze_identity FAILED that test — created at
+ * 20270221000000, after the loop — and needed its own revoke. A new trigger function added today
+ * cannot be waved through here: it would sort after the loop and this entry would fail.
+ *
+ * Every entry is a function this repo would rather name explicitly. OWN-006's proposal
+ * (docs/proposals/OWN-006-revoke-browser-execute.sql) includes the named revoke that empties this
+ * map; until an owner applies it, `public` would be a lie (anon genuinely cannot execute it) and
+ * a hard failure would be a gate nobody can make green. So it is declared, verified, and COUNTED
+ * IN THE PASSING OUTPUT so it can never read as ordinary coverage.
+ */
+export const LOOP_COVERED = {
+  after_crew_completion_verified: '20261231000000_revoke_trigger_fn_rest_execute.sql',
+}
+
+/** What a LOOP_COVERED migration must actually be: a catalog-driven revoke, not a hand-list. */
+const CATALOG_LOOP_PROOF = [/do\s*\$\$/i, /pg_proc/i, /revoke/i]
 
 /**
  * Blank BOTH comment forms, preserving length so nothing shifts. Lifted verbatim in spirit from
@@ -475,11 +511,48 @@ export function audit(files, ledgerText) {
     )
   }
 
+  // 2b. A LOOP_COVERED claim is a checkable fact, so check it. The loop must exist, must really be
+  //     a catalog-driven revoke, and must run AFTER the function was created — otherwise a
+  //     version-ordered replay walks a catalog the function is not in yet and covers nothing.
+  const loopCovered = new Set()
+  for (const [fn, file] of Object.entries(LOOP_COVERED)) {
+    const s = live.get(fn)
+    if (!s) continue
+    const text = byName.get(file)
+    if (text === undefined) {
+      problems.push(
+        `✗ check:function-grants — LOOP_COVERED credits \`${file}\` for \`${fn}\`, and that\n` +
+          `    migration does not exist. Delete the entry and give \`${fn}\` a named revoke.\n`,
+      )
+      continue
+    }
+    if (!CATALOG_LOOP_PROOF.every((re) => re.test(text))) {
+      problems.push(
+        `✗ check:function-grants — LOOP_COVERED credits \`${file}\` for \`${fn}\`, but that file is\n` +
+          `    not a catalog-driven revoke any more. Re-verify against the catalog, then fix the entry.\n`,
+      )
+      continue
+    }
+    if (!(s.createdIn && s.createdIn < file)) {
+      problems.push(
+        `✗ check:function-grants — LOOP_COVERED claims \`${file}\` covers \`${fn}\`, but \`${fn}\` is\n` +
+          `    created in ${s.createdIn ?? '(unknown)'}, which does NOT sort before it.\n\n` +
+          `    🔴 A catalog loop is a ONE-SHOT over the catalog as it stood when it ran, and replay is\n` +
+          `    version-ordered — so a fresh \`db reset\` walks a catalog this function is not in yet and\n` +
+          `    revokes nothing. This is exactly what 20270224000100 was written to correct.\n` +
+          `    Give \`${fn}\` its own revoke:\n\n` +
+          `      revoke execute on function public.${fn}(<args>) from public, anon, authenticated;\n`,
+      )
+      continue
+    }
+    loopCovered.add(fn)
+  }
+
   // 3. `internal` and `authenticated` must both be backed by a REAL, role-explicit revoke.
   for (const [fn, { verdict, line }] of [...entries].sort()) {
     if (verdict === 'public') continue
     const s = live.get(fn)
-    if (!s || s.anonRevoked) continue
+    if (!s || s.anonRevoked || loopCovered.has(fn)) continue
     let why
     if (s.regrantedIn.length > 0) {
       why =
@@ -511,7 +584,7 @@ export function audit(files, ledgerText) {
     )
   }
 
-  return { problems, live, entries }
+  return { problems, live, entries, loopCovered }
 }
 
 function main() {
@@ -535,7 +608,7 @@ function main() {
   }
   const files = names.map((f) => ({ name: f, text: readFileSync(join(MIGRATIONS, f), 'utf8') }))
 
-  const { problems, live, entries } = audit(files, readFileSync(LEDGER, 'utf8'))
+  const { problems, live, entries, loopCovered } = audit(files, readFileSync(LEDGER, 'utf8'))
 
   for (const p of problems) console.error(p)
   if (problems.length > 0) {
@@ -547,14 +620,25 @@ function main() {
   for (const [, { verdict }] of entries) counts[verdict]++
   console.log(
     `✓ Function-grant contract: ${live.size} live public function(s), every one with a verdict ` +
-      `(${counts.public} public · ${counts.authenticated} authenticated · ${counts.internal} internal, ` +
-      `all with a role-explicit anon revoke).`,
+      `(${counts.public} public · ${counts.authenticated} authenticated · ${counts.internal} internal).`,
   )
   console.log(
     `  ⚠️ This read ${MIGRATIONS}/, NOT the database. Prod held 29 anon-executable and 49 ` +
       `authenticated-executable\n     SECURITY DEFINER functions in \`public\` when last measured ` +
       `(2026-08-17). Applied state is check:migrations' job.`,
   )
+  console.log(
+    `  ⚠️ ${counts.public} function(s) are declared reachable by \`anon\`. That is a DECLARATION, not` +
+      ` a finding:\n     the gate cannot read a function body. OWN-006 is the open row that revisits it.`,
+  )
+  if (loopCovered.size > 0) {
+    // Never let a declared exception read as ordinary coverage. It gets a line every single run.
+    console.log(
+      `  ⚠️ ${loopCovered.size} function(s) rest on a CATALOG LOOP rather than a named revoke: ` +
+        `${[...loopCovered].sort().join(', ')}.\n     Verified to sort before their loop, so a replay ` +
+        `covers them — but a named revoke is better, and OWN-006 carries it.`,
+    )
+  }
 }
 
 if (process.argv[1] && process.argv[1].endsWith('check-function-grants.mjs')) main()
