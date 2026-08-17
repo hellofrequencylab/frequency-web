@@ -134,17 +134,20 @@ The Frequency team`,
   },
   {
     key: 'graduation',
-    label: 'Sept 1 graduation (Opening Beta pricing closes)',
+    // The pricing deadline this email was built on is gone (owner, 2026-08-17, ADR-1057: full price,
+    // two months free on the year). September 1 still ends the FEATURE-GATE grace window (ADR-874), so
+    // the email keeps its slot and its date and is about that instead. Mirrors launch-emails.ts.
+    label: 'Sept 1 graduation (full access ends)',
     phaseKey: 'P4',
     segment: 'members',
-    subject: 'Opening Beta pricing closes September 1',
+    subject: 'Full access ends September 1',
     body: `Hi,
 
-The Beta is wrapping up. The Opening Beta price holds through September 1, and after that the list price takes over.
+The Beta is wrapping up. Every Space has had the full set of tools while we were in it, whatever plan it was on. On September 1 each plan starts doing what it says, so this is a good week to work out which one fits how you actually use Frequency.
 
-If you have been meaning to lock it in, now is the time.
+Every plan is one price, the same whenever you start. Pay for the year and you get two months free.
 
-[Lock in the Opening Beta price](https://frequencylocal.com/pricing)
+[See the plans](https://frequencylocal.com/pricing)
 
 Either way, thank you for helping us get Frequency off the ground. The community you see today exists because you showed up early.
 

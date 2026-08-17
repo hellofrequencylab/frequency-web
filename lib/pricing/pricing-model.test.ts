@@ -27,17 +27,21 @@ function hasEmDash(s: string): boolean {
 }
 
 describe('loadout-strip math (computed from the catalog, never hardcoded)', () => {
-  // ADR-811: the paid base is Business at its $19 founding anchor; Vera AI ($20) is the only
-  // add-on. Coaches/healers and community builders turn it on ($39); studios and event hosts run on
-  // Business alone ($19). The strip headlines the FOUNDING total (the charged price).
-  it('matches the doors: +Vera AI personas $39, Business-only personas $19 (founding)', () => {
+  // ADR-811 + ADR-1057: the paid base is Business, and Vera AI (+$20/mo) is the only add-on. The beta
+  // window is CLOSED (owner, 2026-08-17: full price), so the base headlines at its $29 LIST price, which
+  // is the price the checkout now takes. Coaches/healers and community builders turn the add-on on
+  // ($29 + $20 = $49); studios and event hosts run on Business alone ($29). The add-on never carried a
+  // beta anchor (founding == list), so only the base moved.
+  it('matches the doors: +Vera AI personas $49, Business-only personas $29 (list)', () => {
     const expected: Record<string, string> = {
-      'coaches-and-healers': '$39/mo',
-      'community-builders': '$39/mo',
-      studios: '$19/mo',
-      'event-hosts': '$19/mo',
+      'coaches-and-healers': '$49/mo',
+      'community-builders': '$49/mo',
+      studios: '$29/mo',
+      'event-hosts': '$29/mo',
     }
-    const strip = loadoutStrip()
+    // Explicitly the closed window, so the row this asserts is the one the owner's decision produces
+    // rather than whatever the clock happens to say.
+    const strip = loadoutStrip(false)
     for (const [slug, label] of Object.entries(expected)) {
       const row = strip.find((r) => r.id === slug)
       expect(row, slug).toBeDefined()

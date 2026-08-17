@@ -195,7 +195,7 @@ const FOUNDING_BUSINESS: BetaLaunchEmail = {
   phaseKey: 'P2',
   segment: 'members',
   subject: 'Put your business on Frequency as a Founding Business',
-  preheader: 'Your own Space, the Opening Beta rate, and we set it up with you.',
+  preheader: 'Your own Space, a Founding Business spot, and we set it up with you.',
   blockJson: emailLayout([
     {
       id: 'photoHero',
@@ -283,27 +283,34 @@ const REFERRAL_CONTEST: BetaLaunchEmail = {
   ]),
 }
 
-// ── 7. Sept 1 graduation, Opening Beta pricing closes (P4) ────────────────────────────────────────────────
+// ── 7. Sept 1 graduation, full access ends (P4) ───────────────────────────────────────────────────────────
+// 🔴 THIS EMAIL USED TO SELL A DEADLINE THAT NO LONGER EXISTS. It was "Opening Beta pricing closes
+// September 1", built entirely on the beta price expiring. The owner closed that window early on
+// 2026-08-17 (ADR-1057: full price, and two months free on the year instead), so every sentence of the
+// old draft was an offer the checkout would refuse. What IS still true about September 1 is the OTHER
+// beta window, the feature-gate grace period (`beta_grace`, ADR-874): every Space has had full access to
+// every tool and on September 1 each plan starts doing what it says. So the email keeps its slot and its
+// date and changes what it is about. No countdown on a price, because there is no longer a price moving.
 const GRADUATION: BetaLaunchEmail = {
   key: 'graduation',
-  label: 'Sept 1 graduation (Opening Beta pricing closes)',
+  label: 'Sept 1 graduation (full access ends)',
   phaseKey: 'P4',
   segment: 'members',
-  subject: 'Opening Beta pricing closes September 1',
-  preheader: 'The Opening Beta price holds through September 1, then it is gone.',
+  subject: 'Full access ends September 1',
+  preheader: 'Every Space has had every tool. On September 1 each plan starts doing what it says.',
   blockJson: emailLayout([
-    { id: 'displayHeading', content: { text: 'Opening Beta pricing closes September 1', font: 'display' } },
+    { id: 'displayHeading', content: { text: 'Full access ends September 1', font: 'display' } },
     {
       id: 'prose',
       content: {
-        text: 'Hi,\n\nThe Beta is wrapping up. The Opening Beta price holds through September 1, and after that the list price takes over.',
+        text: 'Hi,\n\nThe Beta is wrapping up. Every Space has had the full set of tools while we were in it, whatever plan it was on. On September 1 each plan starts doing what it says, so this is a good week to work out which one fits how you actually use Frequency.',
       },
     },
-    { id: 'text', content: { text: 'If you have been meaning to lock it in, now is the time.' } },
+    { id: 'text', content: { text: 'Every plan is one price, the same whenever you start. Pay for the year and you get two months free.' } },
     { id: 'divider', content: {} },
     {
       id: 'button',
-      content: { label: 'Lock in the Opening Beta price', url: 'https://frequencylocal.com/pricing', align: 'center' },
+      content: { label: 'See the plans', url: 'https://frequencylocal.com/pricing', align: 'center' },
     },
     {
       id: 'quote',

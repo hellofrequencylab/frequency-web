@@ -10,8 +10,14 @@
 //
 //     "You are using Collective tools"
 //     "Memberships start September 1. Everything stays open until then."
-//     "Subscribe before September 1 to hold the beta rate and add the Founding Business badge
-//      to your Space."
+//     "Take the yearly plan before September 1 to add the Founding Business badge to your Space."
+//
+// THE INVITE NO LONGER MENTIONS A BETA RATE (ADR-1057). It used to read "to hold the beta rate and
+// add the badge", which was true only while the beta pricing window was open. The owner closed that
+// window on 2026-08-17 ("scratch the beta pricing and just charge full price"), and this notice keys
+// off the SEPARATE feature-gate grace window (`beta_grace`, still ending September 1), so it kept
+// rendering an offer the checkout would refuse. The badge half was always the real invitation and it
+// is still true, so that is what is left.
 //
 // NOTHING IS PREVENTED. There is no lock, no wall, and no word here claiming one — a source-shape
 // test asserts this file never says "locked" / "unlock" / "unavailable", so a later rewrite that
@@ -135,7 +141,8 @@ export interface BetaNotice {
   title: string
   /** When memberships start, and that nothing changes before then. */
   body: string
-  /** The invitation: subscribe early, hold the beta rate, earn the Founding badge. */
+  /** The invitation: back the year early, earn the Founding badge. (No rate claim: the beta pricing
+   *  window is closed, ADR-1057.) */
   invite: string
   cta: string
   href: string
@@ -160,9 +167,9 @@ export function betaStartLabel(endsAtMs: number | null | undefined): string | nu
  *  names them.
  *
  *  THE INVITE NAMES THE YEARLY PLAN, not "subscribe" (ADR-880). The badge is earned by backing the
- *  year, early, with money that actually moved: a monthly subscriber holds the beta rate but does not
- *  become a founder, and a trial that never charges earns nothing. The copy has to say the same thing
- *  the code grants on. */
+ *  year, early, with money that actually moved: a monthly subscriber does not become a founder, and a
+ *  trial that never charges earns nothing. The copy has to say the same thing the code grants on, and
+ *  since ADR-1057 it says nothing about a rate, because there is no longer a beta rate to hold. */
 export function betaNoticeCopy(
   target: BetaNoticeTarget,
   graceEndsAtMs: number | null | undefined,
@@ -178,7 +185,7 @@ export function betaNoticeCopy(
     key: betaNoticeKey(target),
     title: `You are using ${label} tools`,
     body: `Memberships start ${when}. Everything stays open until then.`,
-    invite: `Take the yearly plan before ${when} to hold the beta rate and ${badge}.`,
+    invite: `Take the yearly plan before ${when} to ${badge}.`,
     cta: BETA_NOTICE_CTA,
     href: BETA_NOTICE_HREF,
   }

@@ -15,10 +15,34 @@
 
 import type { CatalogAmounts } from '@/lib/billing/pricing-keys'
 
-/** The instant the beta window closes: midnight Pacific on 2026-09-01 (PDT = UTC-7), i.e. beta pricing is
- *  offered through the end of Aug 31 Pacific and list pricing takes over on Sep 1. Owner-editable: moving
- *  this one constant shifts the whole auto-revert (checkout price + every pricing surface). */
-export const BETA_PRICING_ENDS_AT = '2026-09-01T07:00:00.000Z'
+/** The instant the beta window closes. Owner-editable: moving this one constant shifts the whole
+ *  auto-revert (checkout price + every pricing surface).
+ *
+ *  CLOSED EARLY — owner decision, 2026-08-17: "scratch the beta pricing and just charge full price."
+ *  It was 2026-09-01T07:00:00.000Z (midnight Pacific on Sep 1). It is now a past instant, so the
+ *  window is shut and list pricing is what every surface shows and every checkout charges.
+ *
+ *  WHAT IT MOVES, and nothing else: Business $19 -> $29 and Collective $49 -> $79 monthly, with the
+ *  annual figures following at 10x (see yearlyFromMonthly — two months free is the house rule and is
+ *  unchanged by this). Independent, Nonprofit and the AI add-on already carried listCents ==
+ *  foundingCents, so their prices do not move at all.
+ *
+ *  🔴 ONE PERSON IS OWED A BETA RATE AND THE CODE CANNOT SEE IT. The grandfathering below protects a
+ *  Space that subscribed through Stripe during the window by re-billing its LOCKED price id. On
+ *  2026-08-17 there were zero such Spaces — 0 rows in space_subscription_items, 0 profiles carrying a
+ *  stripe_customer_id, 0 stripe_webhook_events ever received. That measurement is true and it is NOT
+ *  the whole story: @ishasetlumi claimed the Collective beta rate and PAID IN CASH, and her Space
+ *  (`templeofaset`) carries plan='collective' granted directly in the database. She has no
+ *  subscription item, so she has no lock, so `resolveLoadoutPriceId` has nothing to re-bill. She paid
+ *  $490 — the ANNUAL Collective beta rate ($49 x 10, two months free), so she has bought a full year,
+ *  not a month. Two obligations follow and neither is recorded anywhere the code can read: she must
+ *  not be charged at all until that year runs out, and when it renews it renews at $490, not the $790
+ *  list annual. OWN-022 carries both. The founding price still exists in Stripe to point a lock at,
+ *  because the catalog sync mints BOTH variants active.
+ *
+ *  The general lesson is worth more than the instance: an obligation settled outside the system is
+ *  invisible to every gate in it. Cash paid is still a promise made. */
+export const BETA_PRICING_ENDS_AT = '2026-08-17T00:00:00.000Z'
 
 /** Is the beta anchor pricing still in effect at `now`? True before the cutover, false on/after it.
  *  FAIL-SAFE: an unparseable constant would make this false (charge list, never under-charge). */

@@ -3,27 +3,45 @@ import { BETA_PRICING_ENDS_AT, isBetaPricingActive, effectiveCatalogAmounts } fr
 
 // Beta pricing window (ADR-811): the $19 Business / $49 Collective anchors auto-revert to list on the
 // cutover. These are the PURE helpers behind that; the checkout key switch + the display are wired on top.
+//
+// THE CONSTANT IS OWNER-EDITABLE, SO NOTHING HERE PINS ITS VALUE (ADR-1057). This file used to assert
+// `BETA_PRICING_ENDS_AT === '2026-09-01T07:00:00.000Z'` and to probe the window with hand-typed August
+// dates. When the owner closed the window early on 2026-08-17 ("scratch the beta pricing and just charge
+// full price"), both broke on a date rather than on a behaviour, and the fix would have been to re-type
+// the same trap. Every instant below is now derived FROM the constant, so the next move of the cutover
+// changes exactly one line of source and no test.
 
 describe('the beta pricing window', () => {
   const cutover = Date.parse(BETA_PRICING_ENDS_AT)
+  const DAY = 24 * 60 * 60 * 1000
 
   it('the cutover constant parses to a real instant', () => {
     expect(Number.isFinite(cutover)).toBe(true)
-    // 2026-09-01T07:00:00Z = midnight Pacific on Sep 1 (the documented cutover).
-    expect(BETA_PRICING_ENDS_AT).toBe('2026-09-01T07:00:00.000Z')
+    // The SHAPE, not the value: a canonical UTC ISO-8601 instant that round-trips. A local-time or
+    // zoneless string would parse in the server's zone and move the cutover by the deploy region.
+    expect(BETA_PRICING_ENDS_AT).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/)
+    expect(new Date(cutover).toISOString()).toBe(BETA_PRICING_ENDS_AT)
+  })
+
+  it('the window is CLOSED right now (owner closed it 2026-08-17: full price, no beta rate)', () => {
+    // The decision itself, pinned as a consequence rather than as a date: whatever the constant says, the
+    // live clock must be past it, so every surface shows list and every checkout charges list. This is
+    // the assertion that fails if someone re-opens the window without an owner decision to do so.
+    expect(isBetaPricingActive()).toBe(false)
+    expect(cutover).toBeLessThanOrEqual(Date.now())
   })
 
   it('is active strictly BEFORE the cutover', () => {
     expect(isBetaPricingActive(new Date(cutover - 1000))).toBe(true)
-    expect(isBetaPricingActive(new Date('2026-07-24T00:00:00Z'))).toBe(true)
-    expect(isBetaPricingActive(new Date('2026-08-31T23:59:59Z'))).toBe(true)
+    expect(isBetaPricingActive(new Date(cutover - DAY))).toBe(true)
+    expect(isBetaPricingActive(new Date(cutover - 365 * DAY))).toBe(true)
   })
 
   it('is NOT active AT or AFTER the cutover (fail-safe to list, never under-charge)', () => {
     expect(isBetaPricingActive(new Date(cutover))).toBe(false) // boundary: the instant it ends
     expect(isBetaPricingActive(new Date(cutover + 1000))).toBe(false)
-    expect(isBetaPricingActive(new Date('2026-09-02T00:00:00Z'))).toBe(false)
-    expect(isBetaPricingActive(new Date('2027-01-01T00:00:00Z'))).toBe(false)
+    expect(isBetaPricingActive(new Date(cutover + DAY))).toBe(false)
+    expect(isBetaPricingActive(new Date(cutover + 365 * DAY))).toBe(false)
   })
 })
 

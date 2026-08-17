@@ -54,7 +54,7 @@ function pricingIntro(stepUp: string): string {
 /** The shared what-does-it-cost FAQ answer, with the per-niche "you keep 100% of ..." clause and an
  *  optional extra sentence (the community-builders Collective line). One template, five doors. */
 function costAnswer(keep: string, extra = ''): string {
-  return `Nothing to start selling. A free Space takes payments from day one at ${RATE.free} on the sales the network introduces, and 0% on the people already yours. Business is ${P.businessList} a month, or ${P.businessBeta} at the Opening Beta price through September 1, 2026: it takes that rate to ${RATE.business}, and adds memberships and campaigns. You keep 100% of ${keep} either way.${extra} You always see the full number, nothing hidden.`
+  return `Nothing to start selling. A free Space takes payments from day one at ${RATE.free} on the sales the network introduces, and 0% on the people already yours. Business is ${P.businessList} a month, or two months free if you pay for the year: it takes that rate to ${RATE.business}, and adds memberships and campaigns. You keep 100% of ${keep} either way.${extra} You always see the full number, nothing hidden.`
 }
 
 // ── The small, consistent feature-icon set (drawn once, house tokens) ─────────────────────────────
@@ -535,7 +535,7 @@ export const COMMUNITY_FUNNEL: FunnelConfig = {
       q: 'What does it actually cost?',
       a: costAnswer(
         'the memberships you sell',
-        ` When you grow a team and host collaborators, Collective adds that for ${P.collectiveBeta} a month at the Opening Beta price under the ${P.collectiveList} list, at a ${RATE.collective} network rate.`,
+        ` When you grow a team and host collaborators, Collective adds that for ${P.collectiveList} a month, at a ${RATE.collective} network rate.`,
       ),
     },
     { q: 'Can I take my members with me?', a: 'Yes, any time. Export your whole member list whenever you want.' },
