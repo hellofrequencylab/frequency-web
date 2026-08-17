@@ -1699,6 +1699,23 @@
           ".github/workflows/pr-compare-fallback.yml"
         ]
       }
+    },
+    {
+      "id": "LIVE-029",
+      "title": "Every Vercel build now throws its cache away: 1.53 GB against a 1.50 GB limit",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DEPLOY-SAFETY.md",
+        "ref": "observed in the 67bd24a build log, 2026-08-17"
+      },
+      "detail": "The build log ends: `Build cache size 1.53 GB exceeds limit of 1.50 GB. Invalidating cache. Next build will start with an empty cache.` It is 2% over, so every build pays a full cold compile and the next one is guaranteed to overflow again — the steady state is no cache at all. Nothing fails, which is the problem: this is a swallowed regression of exactly the shape ADR-1003 names, visible only to someone reading the tail of a green build. It also compounds the artifact risk the deploy-safety rules exist for, since a cold build is the slowest path to the ENOSPC cliff. Fix by trimming what enters the cache, not by assuming the limit will move. Measure first: the same log reports input source code at 2,890 MB and node_modules at 948 MB.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Observed 2026-08-17 in the build log for deployment HFda7FHVybGxMCM6BKBhwxzcGAzy (commit 67bd24a): 'Build cache size 1.53 GB exceeds limit of 1.50 GB. Invalidating cache.' Not repo-probeable — the cache size is a property of the Vercel build, not of the tree.",
+        "checked": "2026-08-17"
+      }
     }
   ]
 }
