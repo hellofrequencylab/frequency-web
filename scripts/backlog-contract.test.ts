@@ -12,7 +12,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { execFileSync, execSync } from 'node:child_process'
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync, cpSync } from 'node:fs'
+import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync, statSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
@@ -29,6 +29,22 @@ function run(guard: string, cwd: string): { code: number; out: string } {
     const e = err as { status?: number; stdout?: string; stderr?: string }
     return { code: e.status ?? 1, out: `${e.stdout ?? ''}${e.stderr ?? ''}` }
   }
+}
+
+/** Resolve a binary from PATH without shelling out. The first version ran `command -v` and then
+ *  `ln -sf`, which builds shell commands out of absolute paths CodeQL is right to flag — and which
+ *  is a small instance of the very dependency this file exists to pin. */
+function whichSync(bin: string): string | null {
+  for (const dir of (process.env.PATH ?? '').split(path.delimiter)) {
+    if (!dir) continue
+    const candidate = path.join(dir, bin)
+    try {
+      if (statSync(candidate).isFile()) return candidate
+    } catch {
+      /* not in this directory */
+    }
+  }
+  return null
 }
 
 /** The guard has a MIN_ENTRIES floor of 40, so every fixture needs ballast. Parked rows are never
@@ -226,7 +242,7 @@ describe('check:one-list — the frozen planning-doc set', () => {
 
   it('FAILS a truncated allowlist rather than silently permitting everything', () => {
     const real = path.join(dir, 'scripts/planning-docs.txt')
-    const saved = execSync(`cat ${JSON.stringify(real)}`, { encoding: 'utf8' })
+    const saved = readFileSync(real, 'utf8')
     writeFileSync(real, '# too short\ndocs/SOME-PLAN.md\n')
     const { code, out } = run(ONE_LIST_GUARD, dir)
     writeFileSync(real, saved)
@@ -248,12 +264,8 @@ describe('the probe engine does not depend on ambient tooling', () => {
     const stub = mkdtempSync(path.join(tmpdir(), 'nopath-'))
     // Everything a probe legitimately needs (node, git, a shell) — but deliberately not `rg`.
     for (const bin of ['node', 'git', 'sh', 'bash', 'env']) {
-      try {
-        const real = execSync(`command -v ${bin}`, { encoding: 'utf8', shell: '/bin/bash' }).trim()
-        if (real) execSync(`ln -sf ${JSON.stringify(real)} ${JSON.stringify(path.join(stub, bin))}`)
-      } catch {
-        /* not present on this machine either; fine */
-      }
+      const real = whichSync(bin)
+      if (real) symlinkSync(real, path.join(stub, bin))
     }
 
     const withRg = run(BACKLOG_GUARD, ROOT)
@@ -296,13 +308,12 @@ describe('the real tree', () => {
   it('keeps every backlog source pointing at a file that exists', () => {
     // A row whose source doc was deleted is a row that outlived its justification. The guard
     // enforces this; asserting it here as well makes the intent legible next to the fixtures.
-    const doc = JSON.parse(execSync(`cat ${JSON.stringify(path.join(ROOT, 'docs/BUILD-BACKLOG.json'))}`, { encoding: 'utf8' }))
+    const doc = JSON.parse(readFileSync(path.join(ROOT, 'docs/BUILD-BACKLOG.json'), 'utf8'))
     const missing = doc.entries
       .filter((e: { source?: { file?: string } }) => e.source?.file)
       .filter((e: { source: { file: string } }) => {
         try {
-          execSync(`test -f ${JSON.stringify(path.join(ROOT, e.source.file))}`)
-          return false
+          return !statSync(path.join(ROOT, e.source.file)).isFile()
         } catch {
           return true
         }
