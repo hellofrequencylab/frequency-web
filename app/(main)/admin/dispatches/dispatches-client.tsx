@@ -197,10 +197,11 @@ function DispatchForm({
                 {pollOptions.length > 2 && (
                   <button
                     type="button"
+                    aria-label={`Remove option ${i + 1}`}
                     onClick={() => setPollOptions(pollOptions.filter((_, j) => j !== i))}
                     className="shrink-0 p-1 text-subtle hover:text-danger transition-colors"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="w-3.5 h-3.5" aria-hidden />
                   </button>
                 )}
               </div>

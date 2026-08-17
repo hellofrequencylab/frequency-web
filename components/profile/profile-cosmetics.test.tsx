@@ -79,6 +79,37 @@ export function wiringProblems(source: string): string[] {
 const PROFILE_PAGE = 'app/(main)/people/[handle]/page.tsx'
 const profileSource = readFileSync(PROFILE_PAGE, 'utf8')
 
+const ADMIN_STORE_PAGE = 'app/(main)/admin/store/page.tsx'
+const adminStoreSource = readFileSync(ADMIN_STORE_PAGE, 'utf8')
+
+/**
+ * Problems with the operator's fulfillment queue (empty = wired).
+ *
+ * The OTHER half of LIVE-013: a `feature` / `membership` SKU is honored by a PERSON, so
+ * `classifyRedemption` routes it to `{ kind: 'pending' }` — "an operator will hand this over". A
+ * guest pass was sold that way on 2026-06-27 and no operator surface in the product had ever listed
+ * it, so "pending" meant nothing at all. Same chain as `wiringProblems`: the redemptions must be
+ * READ, filtered into a queue, and that queue must be the thing rendered.
+ */
+export function queueProblems(source: string): string[] {
+  const problems: string[] = []
+  if (!/\.from\('store_redemptions'\)/.test(source)) {
+    problems.push('store_redemptions is never read — an operator cannot see what a member is owed')
+  }
+  const bound = /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*\(\(redemptionRows/.exec(source)
+  if (!bound) {
+    problems.push('the fetched redemptions are not derived into a queue')
+  } else if (!new RegExp(`rows=\\{\\s*${bound[1]}\\s*\\}`).test(source)) {
+    problems.push(`the queue "${bound[1]}" is built and then never rendered`)
+  }
+  // Scoped to the perks a person actually delivers: a cosmetic applies itself, so listing one
+  // would be busywork that trains an operator to ignore the list.
+  for (const category of ['feature', 'membership']) {
+    if (!source.includes(`'${category}'`)) problems.push(`the queue does not include ${category} perks`)
+  }
+  return problems
+}
+
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 
 describe('the vocabulary is real, so nothing below passes vacuously', () => {
@@ -193,6 +224,23 @@ describe('THE WIRING — the public profile is what paints them, and it still do
     // A second copy of these components somewhere else is how the registry and the render drift
     // apart again, which is the whole reason there is exactly one module.
     expect(profileSource).toMatch(/from '@\/components\/profile\/profile-cosmetics'/)
+  })
+})
+
+describe('THE OTHER HALF — a perk only a person can hand over is visible to an operator', () => {
+  it(`${ADMIN_STORE_PAGE} reads the redemptions and renders the queue it derives`, () => {
+    expect(queueProblems(adminStoreSource)).toEqual([])
+  })
+
+  it('🔴 building the queue and not rendering it is reported', () => {
+    // The shape the defect actually had: the record existed, and no surface showed it.
+    const mutated = adminStoreSource.replace(/rows=\{queue\}/g, 'rows={[]}')
+    expect(mutated).not.toBe(adminStoreSource)
+    expect(queueProblems(mutated)).toEqual([expect.stringContaining('is built and then never rendered')])
+  })
+
+  it('🔴 never reading the redemptions at all is reported', () => {
+    expect(queueProblems('export default function Page() { return null }').length).toBeGreaterThanOrEqual(3)
   })
 })
 

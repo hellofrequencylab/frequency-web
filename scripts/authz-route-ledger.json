@@ -6,13 +6,21 @@
     "node_modules/next/dist/docs/01-app/01-getting-started/15-route-handlers.md) must carry an",
     "EXPLICIT authorization verdict. A handler earns one of two ways:",
     "",
-    "  1. MACHINE-DETECTED — the file calls a recognised gate (ROUTE_GATE in check-authz-guards.mjs:",
-    "     requireAdmin / assertOwner / getCallerProfile / auth.getUser / rejectUnauthorizedCron /",
-    "     verify…Signature / webhooks.constructEvent / …). Nothing is recorded here for those.",
+    "  1. MACHINE-DETECTED — EVERY exported HTTP method reaches a recognised gate (ROUTE_GATE in",
+    "     check-authz-guards.mjs: requireAdmin / assertOwner / getCallerProfile / auth.getUser /",
+    "     rejectUnauthorizedCron / verify…Signature / webhooks.constructEvent / …), the gate is not",
+    "     inside an if/else/switch/catch branch, and nothing queries through the RLS-bypassing admin",
+    "     client above it (R1/R2/R3, ADR-1070). Nothing is recorded here for those.",
     "  2. HUMAN-ASSERTED — an entry below. These routes have NO route-level gate, by design. The",
     "     verdict is a person's reading of the code on the `checked` date. It is NOT proof.",
     "",
     "This file is therefore a DEBT LEDGER, not a certificate. Read every entry that way.",
+    "",
+    "A GATE TOKEN THAT DOES NOT GATE BELONGS HERE, NOT IN THE CODE (ADR-1070). Three routes were moved",
+    "into this file on 2026-08-17 for exactly that reason: each called a real gate on one branch, or",
+    "after a service-role read, and was therefore green for a line that authorized nothing. Deleting",
+    "that line would have flipped them red without changing one byte of their authorization. An entry",
+    "here is the stronger record — a reason a person wrote, pinned to the body by a digest.",
     "",
     "WHY THE DIGEST. `digest` pins the route's normalised body (comments and blank lines stripped,",
     "sha256, first 16 hex). The whole complaint that opened LIVE-022 was that the 2026-08-04 hand",
@@ -62,6 +70,12 @@
       "checked": "2026-08-17",
       "digest": "2b3c2bc5554cc766"
     },
+    "app/api/check-handle/route.ts": {
+      "verdict": "public",
+      "reason": "Handle-availability probe for signup (LIVE-031 re-read). Anonymous by design and per-IP rate limited; the whole response is one boolean over the handle_is_available SECURITY DEFINER RPC, which never says WHOSE row holds a taken handle. The auth.getUser() inside `if (excludeUserId)` is not a gate: it only lets a signed-in member re-check their OWN handle without being told it is taken, and every other path answers without it.",
+      "checked": "2026-08-17",
+      "digest": "d5e68749660ab570"
+    },
     "app/api/csp-report/route.ts": {
       "verdict": "public",
       "reason": "CSP violation sink. Browsers post reports with no session, so it cannot be authenticated. Stores nothing, never throws, always 204; the handler only logs three truncated fields.",
@@ -103,6 +117,12 @@
       "reason": "Core Web Vitals field sink, anonymous by design: vitals describe the page and device, not a member. Writes through the admin client but never resolves or stores a profile_id (rows land with profile_id NULL and surface NULL), which is what keeps it outside the `analytics` consent scope. Batch cap + normalizer bound each request.",
       "checked": "2026-08-17",
       "digest": "de279e9429acefab"
+    },
+    "app/auth/callback/route.ts": {
+      "verdict": "token-credential",
+      "reason": "Supabase PKCE / magic-link landing (LIVE-031 re-read). The one-time `code` in the URL IS the credential: exchangeCodeForSession verifies it with Supabase and mints the session, and no branch below runs unless that exchange succeeded — a missing or bad code redirects to /sign-in with an error. The auth.getUser() the scan used to detect is three branches down inside a swallowed analytics block, so it never gated anything; the redirect target is separately clamped to a same-origin path.",
+      "checked": "2026-08-17",
+      "digest": "bd5b4aab21a2c6e6"
     },
     "app/auth/signout/route.ts": {
       "verdict": "self-scoped",
@@ -151,6 +171,12 @@
       "reason": "Public podcast RSS (Airwaves P3, ADR-608). Apple/Spotify/Overcast poll with no cookie, so it must resolve anonymously. assembleShowFeed IS the visibility floor: it returns null for a missing / draft / private-feed Show, and the route 404s all three identically (no existence leak).",
       "checked": "2026-08-17",
       "digest": "e8d17d3fb24721b6"
+    },
+    "app/q/[slug]/route.ts": {
+      "verdict": "self-scoped",
+      "reason": "Universal QR / dynamic-code resolver (LIVE-031 re-read). The pre-gate admin read is the code row itself, looked up by the PUBLIC slug printed on the poster — service-role only because qr_codes carries no client read policy — and nothing caller-scoped is projected. getMyProfileId() is not the gate; it answers WHO scanned. Every side effect (scan log, joinCircle, checkInEvent, captureQrContact, lead grab) is bound to that session-resolved profile id, never to a client-supplied one, and an anonymous scanner only ever gets cookies plus a redirect.",
+      "checked": "2026-08-17",
+      "digest": "e16086597e3fc255"
     },
     "app/spaces/[slug]/calendar.ics/route.ts": {
       "verdict": "model-gated",

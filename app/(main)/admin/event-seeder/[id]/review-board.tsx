@@ -413,13 +413,14 @@ function FieldRow({
                 <Button
                   size="sm"
                   variant="ghost"
+                  aria-label="Cancel"
                   onClick={() => {
                     setEditing(false)
                     setDraft(field.value)
                   }}
                   disabled={pending}
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-3.5 w-3.5" aria-hidden />
                 </Button>
               </>
             ) : (

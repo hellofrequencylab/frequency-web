@@ -489,12 +489,10 @@
       },
       "detail": "Unblocked — DawnHowToSteps exists and owns its HowTo JSON-LD, with a dedicated test. Needs a shared templates/article.ts seed. Same ordering constraint as LIVE-006 relative to E3.",
       "verify": {
-        "kind": "grep-present",
-        "pattern": "article",
-        "paths": [
-          "lib/page-editor/templates"
-        ]
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const D='lib/page-editor/data.ts',A='lib/page-editor/templates/article.ts';if(!fs.existsSync(D)||!fs.existsSync(A))process.exit(79);const s=fs.readFileSync(D,'utf8');const i=s.indexOf('EDITABLE_PAGES');if(i<0)process.exit(79);const o=s.indexOf('= [',i),c=s.indexOf(']',o);if(o<0||c<0)process.exit(79);const seg=s.slice(o,c);if(seg.indexOf('home')<0)process.exit(79);const need=[\"calm-down-fast\", \"friendship-as-an-adult\", \"how-to-be-more-social\", \"how-to-build-community\", \"how-to-start-a-circle\", \"loneliness\", \"tools-for-community-builders\", \"what-is-frequency\"];const q=String.fromCharCode(39);const miss=need.filter(function(x){return seg.indexOf(q+x+q)<0});if(miss.length){console.error('not yet in EDITABLE_PAGES: '+miss.join(', '));process.exit(1)}process.exit(0)\""
+      },
+      "notes": "Probe replaced 2026-08-17. It was grep-present /article/ in lib/page-editor/templates, which went green the moment a file named article.ts appeared - shape, not truth. The shared seed IS built (templates/article.ts, ADR-1068) and that is what this row's DETAIL asked for, but the row's TITLE is the claim that has to hold, and the eight articles have not joined: EDITABLE_PAGES still holds exactly the eight marketing primaries, and the seed's own header records that it has no live consumer until the first article enrolls. The probe now names the eight non-redirect article routes and fails until each is in the list, with a floor (the list must still contain 'home') so a reshaped file exits 79 rather than reporting a clean sweep of nothing."
     },
     {
       "id": "LIVE-008",
@@ -1721,7 +1719,7 @@
     {
       "id": "LIVE-030",
       "title": "20 route handlers are green by human assertion, and 11 of them claim `public`",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "M",
       "source": {
@@ -1733,12 +1731,12 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const want=[['app/api/vitals/route.ts','app/api/vitals/route.test.ts'],['app/(main)/people/[handle]/vcard/route.ts','app/(main)/people/[handle]/vcard/route.test.ts'],['app/llms.txt/route.ts','app/llms.txt/route.test.ts']];if(want.some(([r])=>!fs.existsSync(r)))process.exit(79);const bad=[];for(const [route,test] of want){if(!fs.existsSync(test)){bad.push(test+' (missing)');continue}const s=fs.readFileSync(test,'utf8');if(!/from '\\\\.\\\\/route'/.test(s))bad.push(test+\\\" (does not import './route')\\\");else if((s.match(/expect\\\\(/g)||[]).length<3)bad.push(test+' (fewer than 3 assertions)');}if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
       },
-      "notes": "TWO CORRECTIONS, 2026-08-17. (1) THE PATHS IN THE ORIGINAL PROBE WERE WRONG and the row could therefore never have closed: it wanted app/api/llms.txt/route.test.ts and app/api/people/[handle]/vcard/route.test.ts, and neither route lives there. The real files are app/llms.txt/route.ts and app/(main)/people/[handle]/vcard/route.ts — confirmed against the 11 public-asserted entries in scripts/authz-route-ledger.json. Only app/api/vitals was right. A probe that names a path nothing will ever create fails forever and reads as outstanding work rather than as a broken instrument, which is the same class of defect this backlog exists to catch. (2) THE PROBE NO LONGER SPAWNS VITEST. It used to run the three suites to prove they pass, which would have grown check:backlog by ~2s on the day this row closed — the exact regression LIVE-034 was filed for, and LIVE-034's cause probe now fails the build on it. `pnpm test` already runs every route.test.ts in CI, so a passing suite is proved once, there, and re-running it here is duplicated work rather than independent evidence. What this probe owns instead is that the PIN EXISTS and is load-bearing: each test file sits beside its route, imports './route' (so it exercises the handler rather than describing it), and carries at least three assertions. A stub that imports nothing, or an empty describe block, fails."
+      "notes": "Closed 2026-08-17. The three asserted-public routes that touch the admin client now carry per-route tests: app/api/vitals, app/(main)/people/[handle]/vcard and app/llms.txt, 27 assertions between them. They pin what each must NEVER return rather than that it returns something - vitals writes profile_id NULL whatever the payload says, answers with an EMPTY body so the sink cannot echo a payload back, never reads headers or cookies, caps the batch and truncates the session id. VERIFIED ADVERSARIALLY, and the first attempt is worth recording: breaking the route to bank `profileId` did NOT fail the suite, which looked like a vacuous test. It was not - the attacker-shaped fixture sends `profile_id`, and re-running the break with that key failed exactly as it should ('expected 00000000-...-0001 to be null'). A break that does not fire is a claim about the TEST that has to be checked before it is believed."
     },
     {
       "id": "LIVE-031",
       "title": "check:authz is file-level: it sees a gate is called, not that it runs on every path",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "M",
       "source": {
@@ -1750,7 +1748,8 @@
         "kind": "manual",
         "evidence": "scripts/check-authz-guards.mjs header states the file-level limit explicitly. Confirmed 2026-08-17: the classifier tests src for gate tokens per FILE, with no per-export analysis.",
         "checked": "2026-08-17"
-      }
+      },
+      "notes": "Closed 2026-08-17 (ADR-1070). check:authz was FILE-level: it saw a gate called somewhere in the file, so an early return before the gate, a gate on one branch of an if, and a gated GET beside an ungated POST all read as green. It now requires EVERY exported HTTP method to pass three structural rules, following the body through a wrapper's local handler (27 cron routes) and into file-local helpers: R1 per-export, R2 the gate is not nested inside if/else/switch/catch, R3 no createAdminClient() query above the gate. R3 IS A DELIBERATE NARROWING AND THE MEASUREMENT IS WHY. A literal 'any return before the gate' rule was tried against the real corpus first: it fires on 10 of the 52 gated handlers and all ten are validation (400 on a malformed body, 429 on rate limit, an empty list for a blank query). Shipping that would have been 100% false positives on day one, which is the ADR-970 shape - a guard that cannot fire honestly gets routed around and then reads as coverage. What is dangerous is not returning early, it is answering from the service-role client before you know who is asking, and that is what R3 measures. IT FOUND THREE REAL FALSE GREENS, each re-verdicted as a digest-pinned human reading: check-handle (auth.getUser inside an if, over a SECURITY DEFINER RPC) -> public; auth/callback (auth.getUser three branches deep in a swallowed analytics block; the real credential check is exchangeCodeForSession) -> token-credential; q/[slug] (service-role read of the code row before getMyProfileId, which answers WHO scanned, not MAY they) -> self-scoped. Counts moved 52 gated / 20 asserted to 49 / 23, and the standing 'the ledger must never outgrow the gated set' test still holds."
     },
     {
       "id": "LIVE-032",
@@ -1788,20 +1787,20 @@
     },
     {
       "id": "LIVE-033",
-      "title": "143 controls across 67 files may have no accessible name, and nothing measures it",
-      "status": "open",
+      "title": "17 controls across 14 files had no accessible name, and nothing measured it",
+      "status": "done",
       "lane": "live",
       "size": "L",
       "source": {
         "file": "scripts/check-labels.mjs",
         "ref": "LIVE-014 follow-up"
       },
-      "detail": "LIVE-014 asked the wrong question — 'is this label associated' — and the answer was already zero. The honest question is 'does this CONTROL have an accessible name', and it reports 143 candidates across 67 files (circle-builder, practice-builder, block-edit-panel, search-overlay and others). It was deliberately NOT gated, and the reason is the point: the scan cannot yet resolve label-WRAPPING components (Labeled, StudioField, Field render <label>{children}</label>), so an unknown share are false positives and the gate would fire on correct code — ADR-970's route-around. The work is: resolve wrapper components repo-wide, re-measure, then ratchet the residue. Materially bigger than LIVE-014 was, and it is the row LIVE-014 should have been.",
+      "detail": "RE-MEASURED 2026-08-17 with a real TypeScript JSX parse and all eight naming paths the accessible-name computation actually has. The original figure was 143 'may have no accessible name'; the honest number is 17, in 14 files, out of 3,605 controls judged across 1,884 files. 126 of the 143 - 88% - were FALSE POSITIVES, because the first scan could not resolve label-WRAPPING components and could not read an element's CONTENTS; those two blind spots alone account for 2,091 correctly-named controls. All four files the row named as examples (circle-builder, practice-builder, block-edit-panel, search-overlay) contained ZERO real violations. The 17 were real: 13 icon-only buttons wrapping a bare lucide icon (announced as 'button' and nothing else), 2 sr-only file inputs, and 4 slug fields whose visible caption was a <span> rather than a <label> - exactly the class check:labels documents itself as unable to see. All 17 are fixed, so the guard ships at ZERO with no allowlist and no ratchet file: nothing to waive and nothing to quietly grow. Named by: 1,808 contents, 735 aria-label, 428 placeholder (weak), 283 wrapping label, 174 htmlFor, 105 title, 53 label prop, 13 spread (unknowable), 6 aria-labelledby.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Reported by the LIVE-014 agent 2026-08-17 from its own brace-aware JSX scan over 1,992 .tsx files: 143 unnamed-control candidates in 67 files, share of false positives unknown pending wrapper-component resolution. Not gated, deliberately.",
-        "checked": "2026-08-17"
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='scripts/check-a11y-names.mjs',T='scripts/check-a11y-names.test.ts',C='.github/workflows/ci.yml',P='package.json';if(!fs.existsSync(C)||!fs.existsSync(P))process.exit(79);const bad=[];if(!fs.existsSync(S))bad.push('the guard is gone: '+S);if(!fs.existsSync(T))bad.push('the guard has no test, so nothing proves it can fire: '+T);const pj=JSON.parse(fs.readFileSync(P,'utf8'));if(!((pj.scripts||{})['check:a11y-names']||'').length)bad.push('no check:a11y-names script in package.json');const ci=fs.readFileSync(C,'utf8');const i=ci.indexOf('guards=(');const j=i<0?-1:ci.indexOf(')',i);if(i<0||j<0)process.exit(79);if(ci.slice(i,j).indexOf('a11y-names')<0)bad.push('a11y-names is not in the ci.yml guards array, so no pull request runs it');if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
+      },
+      "notes": "Proved both ways on the REAL tree, not fixtures. Fires: an injected icon-only button in spark-dropzone.tsx failed by file and line. Does not fire, same file and same icon, when named by visible text, by aria-labelledby, or by a wrapping native label. The decisive pair is in hubs-client.tsx: an identical <Input> FAILS bare and is SILENT inside <Field label=\"Hub name\">, which is the 143-count killer isolated. ⚠️ 428 controls are named ONLY by a placeholder - a name that disappears the moment the member types. That is counted rather than failed, because axe-core 4.13's own label rule accepts non-empty-placeholder, and a static gate stricter than the axe pass already running in e2e would be routed around and then read as coverage. The number prints on every green run instead of being buried. Tightening it is a product call and a new row, not a parser change. PROBE COST, and why this one does not re-run the guard (ADR-1063). Pointing the probe at `node scripts/check-a11y-names.mjs` was correct in spirit and took check:backlog from 6.0s to 16.8s, because the guard parses 1,884 files with the TypeScript compiler. That is the exact regression LIVE-034 was filed for, and it also blew the ripgrep-parity arm, which runs the whole guard twice. The guard already runs on every pull request from the ci.yml guards array, so re-running it here is duplicated work rather than independent evidence. The probe therefore asserts the PIN IS LIVE - the script exists, it has a test so something proves it can fire, package.json exposes it, and ci.yml's guards array names it - in milliseconds. Unwire it from CI and this row reopens."
     },
     {
       "id": "OWN-023",

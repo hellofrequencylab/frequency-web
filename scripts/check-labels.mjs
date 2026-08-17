@@ -43,12 +43,15 @@
 //                         list of already-labelled rows is a heading, not a label.
 //
 // WHAT IT CANNOT SEE, so green here is not "every control is named":
-//   · A control named by a bare <span> sibling — there is no <label> to find. That class was swept
-//     by hand in `qr-splash-form.tsx` and `event-cohost-chooser.tsx`; the axe pass in the e2e run
-//     is what catches the rest. It is NOT gated here on purpose: the honest test is "this control
-//     has no accessible name", and a scan for it cannot yet resolve the label-WRAPPING components
-//     (`Labeled`, `StudioField`, `Field`) that legitimately name ~1,200 controls, so it would fire
-//     on correct code. A gate that cannot fire honestly gets routed around (ADR-970).
+//   · A control named by a bare <span> sibling — there is no <label> to find. ✅ THAT HALF IS NOW
+//     GATED, next door: `pnpm check:a11y-names` (scripts/check-a11y-names.mjs, ADR-1069) asks the
+//     honest question — "does this CONTROL have an accessible name" — and it can resolve the
+//     label-WRAPPING components (`Field`, `StudioField`, `Labeled`) that this comment said were the
+//     blocker. It runs at ZERO with no allowlist. The gap between the two questions was real: it
+//     found 17 unnamed controls in 14 files while this gate read clean, four of them exactly the
+//     bare-<span> shape named here. The rest of THIS comment's warning still stands, though — see
+//     that file's own "what it still cannot see", and the axe pass in the e2e run remains the gate
+//     on the rendered tree.
 //   · An `htmlFor` whose value is a bare identifier or a computed expression — it is usually a
 //     prop threaded in by a wrapper (`<label htmlFor={htmlFor}>`), so the target lives in the
 //     CALLER. Unknowable is not a violation; rules 3 and 4 skip those two shapes deliberately.

@@ -282,6 +282,7 @@ export function CircleSettingsModule() {
             <span className="shrink-0">/circles/</span>
             <Input
               variant="seamless"
+              aria-label="Permalink"
               value={permalink}
               onChange={(e) => setPermalink(e.target.value)}
               disabled={permaPending}

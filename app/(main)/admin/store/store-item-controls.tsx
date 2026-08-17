@@ -176,10 +176,12 @@ export function NewItemButton() {
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <h2 className="text-body-sm font-semibold text-text">New store item</h2>
               <button
+                type="button"
+                aria-label="Close"
                 onClick={() => setOpen(false)}
                 className="rounded p-1 text-subtle hover:text-muted transition-colors"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" aria-hidden />
               </button>
             </div>
             <div className="p-5">
@@ -234,10 +236,12 @@ export function EditItemButton({ item }: { item: StoreItem }) {
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <h2 className="text-body-sm font-semibold text-text">Edit {item.name}</h2>
               <button
+                type="button"
+                aria-label="Close"
                 onClick={() => setOpen(false)}
                 className="rounded p-1 text-subtle hover:text-muted transition-colors"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" aria-hidden />
               </button>
             </div>
             <div className="p-5">

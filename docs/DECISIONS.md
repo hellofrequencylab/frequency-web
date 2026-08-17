@@ -26167,3 +26167,202 @@ a seeded draft, not a send, so nothing is mis-sold today — but it must be reti
 Collective before it goes out. Tracked as OWN-025.
 
 ⚠️ **And the catalog is not the only place a Business rate lives.** `FOUNDING_DEFAULT.business_monthly_cents` (`lib/pricing/founding.ts`) is still **1900**, and the beta founder push ([ADR-875](#adr-875)) stamps it as `locked_rate_cents` — a LIFETIME term — when the caller passes no amount (`lib/founding/status.ts:281`, `:353`). It cannot fire without an explicit grace `until` date in `pricing_settings`, which is production state this decision could not read, so it was flagged rather than changed: retiring the Founding Business *program* is a different question from declining to advertise a beta *price*, and it is the owner's. Tracked as OWN-026.
+
+## ADR-1068: A retired marketing body is deleted, not left as a fallback, and the template becomes the gated last rung
+
+**Status:** Accepted · enforced by `scripts/check-render-path.test.ts` (the `about 0` row in
+`scripts/render-path-bodies.txt`) + `lib/page-editor/templates/templates.test.ts` (now derived from
+`EDITABLE_PAGES` rather than hand-typed) + `lib/page-editor/templates/article.test.ts`
+
+**Context:** [ADR-967](#adr-967) built `check:render-path` to hold the line while the marketing
+routes carried two truths at once: a Puck document an operator edits, and a bespoke coded body only a
+developer can change. It counts, it does not retire. [UX-MATURITY-PLAN](UX-MATURITY-PLAN.md) Lift 5c
+is the retirement itself, one slug per PR, in the committed order
+`circles → about → spaces → the-lab → the-quest → the-community → pricing`.
+
+Reading the first one closely turned up something the scoreboard could not say. Every gated route
+resolves `published → template → legacy`, and the middle rung is a **static import** that is always
+well-formed. So on `about`, `spaces`, `the-lab`, `the-quest` and `the-community` the third rung was
+**already unreachable**: `data` could not be null, and the `data ? <BlockRender/> : <Legacy…/>`
+branch could not be taken. Those five route files total **2,126 lines**, most of it a coded page no
+visitor had been served since the templates landed. The ledger counted them as duality; they were
+closer to dead weight in the per-function output [`check:build-budget`](DEPLOY-SAFETY.md) weighs.
+
+That reframes the retirement. It is not a risky swap needing visual proof per slug — for those five
+it is a deletion of unreachable code, and the *pixels cannot move*, which is a stronger claim than a
+snapshot comparison can make. `pricing` is genuinely different and keeps its own sequencing: its
+fallback is the coded page and NOT `getTemplate('pricing')`, and it carries live take-rate bindings.
+`home` is unreachable too (`app/page.tsx:221` already says so in a comment), but its 939 lines carry
+the live-proof band and its own header/footer chrome, so it stays last in the order on size, not on
+doubt.
+
+**Decision.**
+
+1. **Delete the body; never demote it to a fallback.** `about` retires to metadata + server data +
+   `<BlockRender>` (75 lines, from 327). `git log -p` is the only remaining copy. A "kept just in
+   case" branch is exactly the second truth the lift exists to remove, and an unreachable one is
+   worse than a reachable one because nothing renders it and nothing gates it.
+
+2. **The template is now the LAST rung, so it gets a gate.** With the coded body gone, a template
+   that stopped resolving would serve a **blank page**, silently — the failure mode AGENTS.md names
+   ("every fail-safe needs a gate that notices it fired"). `templates.test.ts` used to assert
+   renderability over a **hand-typed** list of eight slugs; it now reads the slug list from
+   `EDITABLE_PAGES` through the same `gatedSlugs()` parser `check:render-path` uses, with the same
+   non-triviality floor. A slug joining the editor is now covered by construction, and a retired
+   slug's failure message says *why* there is nothing behind it.
+
+3. **The ledger row goes to `0` in the same PR, and `0` means template-only.** The exact-match
+   ratchet already refuses a silent fall; the row now also carries the note that the body was
+   **deleted rather than moved**, which is the one thing a component count provably cannot tell.
+
+4. **Lift 5d's eight seeker articles get ONE generator, not eight template files**
+   (`lib/page-editor/templates/article.ts`). The six marketing primaries are six different pages;
+   the eight articles are eight instances of one page, the article grammar in
+   [CONTENT-VOICE](CONTENT-VOICE.md) §10.9. Making that grammar the **shape of the spec** — `answer`
+   and `faq` are required fields — is what stops the answer-first opening from quietly going missing
+   on article six. Its schema story is the reason the lift was blocked and is now not: `FAQPage` from
+   the `Accordion` block, `HowTo` from `DawnHowToSteps`, `Article` from `<BlockDocJsonLd>` at the
+   route, `BreadcrumbList` from the route. All four survive the conversion, and each has its own
+   assertion built from the **real** schema builder rather than from the block's presence
+   (`howToStepsSchema` is fail-closed, so "the block is there" is not evidence).
+
+**Consequences.** `about` is the second slug on a single render path; its words are editable and no
+longer exist in code. The remaining Lift 5c order is unchanged, and the four other unreachable-legacy
+slugs (`spaces`, `the-lab`, `the-quest`, `the-community`) are now known to be deletions rather than
+swaps — file them as their own rows, still one per PR, because the *ledger* edit is what makes each
+one reviewable. ⚠️ `articleTemplate()` has **no live consumer** until the first article is enrolled;
+that is deliberate under the one-slug-per-PR rule, and `article.test.ts` runs it through the current
+block config so it breaks loudly on a block rename rather than on enrollment day. ⚠️ Both lifts still
+land **before** editor phase E3 ([ADR-974](#adr-974)), which replaces `EDITABLE_PAGES` with per-Space
+resolution: run them in the other order and each undoes the other.
+
+---
+
+## ADR-1069: The accessible-name gate measures the CONTROL, and the honest count was 17, not 143
+
+**Status:** Accepted · enforced by `pnpm check:a11y-names` (`scripts/check-a11y-names.mjs`, in the
+`guards=( )` array of `.github/workflows/ci.yml`) + `scripts/check-a11y-names.test.ts`
+
+**Context:** [ADR-966](#adr-966) and [ADR-1057](#adr-1057) built `check:labels`, which asks "is this
+`<label>` associated with a control". That gate has held at zero for a week, and its own header says
+why zero is not the answer anyone wanted: a control named by a bare `<span>` sibling has no `<label>`
+to find, so it is invisible there. The honest question is the other one, "does this CONTROL have an
+accessible name", and nothing asked it.
+
+LIVE-033 was filed to ask it, carrying a first measurement: **143 candidates across 67 files**. That
+number came from a brace-aware TEXT scan which could not resolve the label-WRAPPING components
+(`Field`, `StudioField`, `Labeled`) and could not read an element's CONTENTS. The row said so in its
+own detail, and said the share of false positives was unknown.
+
+It was 88%. Re-measured with a real JSX parse and all eight naming paths the accessible-name
+computation actually has — visible text, `aria-label`, `aria-labelledby`, `title`, an `<svg><title>`,
+a wrapping `<label>` (including wrapper COMPONENTS, resolved by import to a fixpoint), an `htmlFor`
+that reaches the control, and the `placeholder`/`alt`/`value` fallbacks — **3,605 controls were
+judged and 17 had no name, across 14 files**. 126 of the 143 were correct code, most of them the
+283 controls that `<Field label="…">` names by wrapping them. None of the four files the row named
+as examples (`circle-builder`, `practice-builder`, `block-edit-panel`, `search-overlay`) contained a
+single real one.
+
+This is the ADR-970 failure caught before it shipped rather than after. A gate at 143 would have
+fired on `<Field label="Board name"><Input /></Field>` on its first run, earned an allowlist that
+week, and then read as coverage.
+
+**Decision.**
+
+1. **`check:a11y-names` judges controls, not labels**, over `app/` + `components/`: the intrinsics
+   `<button> <a href> <input> <textarea> <select>`, the kit primitives that render one and name none
+   of it themselves (`Input`, `Textarea`, `Select`, `Checkbox`, `Switch`, `Button` — resolved BY
+   IMPORT, so a local component sharing a kit name is not judged), and anything carrying a literal
+   interactive `role=`. `IconButton`/`IconLink` are deliberately absent: their `label: string` prop
+   is required, so the type checker is already their gate.
+2. **All 17 were FIXED in the same change, so the gate ships at zero with no allowlist and no
+   ratchet file.** There is nothing here to waive and nothing to quietly grow. 13 were icon-only
+   buttons wrapping a bare lucide icon, 2 were `sr-only` file inputs, and 4 were slug fields whose
+   visible caption was a `<span>`, not a `<label>` — precisely the class `check:labels` documents
+   itself as unable to see.
+3. **`placeholder` counts as a name, and the run prints how many rely on it.** That is what
+   axe-core 4.13's own `label` rule accepts (`non-empty-placeholder` is in its `any:` list), and the
+   e2e axe pass already runs in this repo: a static gate that disagreed with it on **428** controls
+   would be the stricter-than-the-runtime kind that gets routed around. A placeholder is a weak name
+   — it vanishes the moment you type — so the number is published on every green run rather than
+   hidden inside it. Tightening it is a product decision, not a parser change.
+4. **Unknowable is not a violation**, the same call `check:labels` makes for a computed `htmlFor`. A
+   `{...spread}`, a `{label}` expression, or an unknown component child all pass; 686 controls pass
+   on that alone. The one component class resolved well enough to judge is a lucide-react icon,
+   which renders `<svg>` with no `<title>` — and that is the whole icon-only-button defect.
+5. **Three floors, because every step of this scan can stop finding things.** `MIN_FILES` 500,
+   `MIN_JUDGED` 2,500 (3,605 live) and `MIN_WRAPPERS` 4 (6 live, naming 283 controls). The third is
+   the one that matters: if wrapper discovery broke, every `<Field>`-wrapped control would read as a
+   violation, which is the 143 failure returning by the back door.
+
+**Consequences.** ✅ The half of the a11y contract nothing measured is now gated, at zero, in CI
+beside `check:labels`. ✅ `scripts/check-a11y-names.test.ts` drives every arm from fixtures in both
+directions, and the false-positive half is the longer one on purpose — it is what decides whether
+the gate survives. ⚠️ Green here is not "the app is accessible": this gate cannot judge whether a
+name is any GOOD ("Close" and "Click here" both pass — `docs/CONTENT-VOICE.md` owns that), and it
+cannot see a name assembled at runtime. The axe pass in `test/e2e` remains the gate on the rendered
+tree, where the name is finally real. ⚠️ 428 controls are named only by a placeholder; that is a
+real, published, un-fixed number, not a clean bill of health.
+
+## ADR-1070: An authorization verdict is earned PER PATH, or it is a human reading pinned to a digest
+
+**Status:** Accepted · enforced by `pnpm check:authz` (`scripts/check-authz-guards.mjs`, in the
+`guards=( )` array of `.github/workflows/ci.yml`) + `scripts/check-authz-guards.test.ts`
+
+**Context:** [ADR-246](#adr-246)/[ADR-275](#adr-275) built the authz-contract gate; LIVE-022 gave it
+a ROUTE scan after discovering that all 72 Route Handlers had been read and then dismissed on line
+one of a classifier that required `'use server'`. That scan asked one question — `ROUTE_GATE.test(src)`
+— and LIVE-031 was filed the same day to say so in the gate's own header: it sees that a gate is
+CALLED somewhere in a file, never that it runs on every path through every exported method.
+
+Measured against the real corpus, that gap was not hypothetical. Of the 52 routes green BY GATE, two
+earned it from a token that gates nothing: `app/api/check-handle` calls `auth.getUser()` inside
+`if (excludeUserId)` (a same-caller refinement on one branch of a public availability probe), and
+`app/auth/callback` calls it three branches deep inside a swallowed analytics block, while its real
+credential check is `exchangeCodeForSession`. A third, `app/q/[slug]`, reads through the service-role
+client before `getMyProfileId()` — which is not its gate either, but "who scanned". Delete the
+incidental line in any of the three and the route would have gone from green to failing without one
+byte of its authorization changing. A verdict that can be created and destroyed by an unrelated edit
+was never measuring authorization.
+
+**Decision.** A route earns `gated` only when EVERY exported HTTP method passes three structural
+rules, each of which follows the handler body (through a wrapper's local `handler`, as 27 cron routes
+use, and into file-local helpers, as `app/u/scan` uses):
+
+1. **R1 · per-export** — each exported method must reach a gate itself. GET gated and POST not is a
+   failure, which is the case LIVE-031 named first.
+2. **R2 · dominance** — the gate must not sit inside an `if`/`else`/`switch`/`catch` branch. A gate on
+   one branch does not run on the others.
+3. **R3 · precedence** — no RLS-BYPASSING query (a `createAdminClient()` followed by `.from(`/`.rpc(`)
+   above the gate.
+
+**R3 is deliberately NOT "any return before the gate", and that narrowing is the load-bearing part
+of this decision.** Ten of the 52 gated handlers return early — a 400 on a malformed body, the rate
+limiter's 429, an empty list for a blank query — and all ten are validation. The blanket rule would
+have been 100% false positives on its first run: the [ADR-970](#adr-970) shape, where a gate nobody
+can keep green earns an allowlist that week and then reads as coverage. What is dangerous is not
+returning early. It is ANSWERING FROM THE SERVICE-ROLE CLIENT before you know who is asking.
+
+Where a rule fires on a route that is genuinely fine, the fix is NOT to widen the rule. It is an
+entry in `scripts/authz-route-ledger.json`: a verdict, a sentence of reasoning, a `checked` date and
+the normalised-body digest. That is strictly stronger than the false green it replaces, because the
+digest forces a re-read on the next edit while an incidental gate token was pinned to nothing. The
+three routes above were re-read and ledgered on 2026-08-17 (`public`, `token-credential`,
+`self-scoped`); the counts moved from 52 gated / 20 asserted to 49 / 23, and the standing test that
+the ledger must never outgrow the gated set still holds with room.
+
+The same principle runs the other way for LIVE-030: the three routes that are `public` BY ASSERTION
+while touching the admin client (`/api/vitals`, the member vCard, `/llms.txt`) now each carry a
+`route.test.ts` beside them pinning what they must never return — a `profile_id` on a vitals row, a
+column the vCard's `.select(...)` never projected, a member row inside `/llms.txt`'s aggregate counts.
+Assertion where nothing else is possible; verification at the sharp end.
+
+**Consequences.** ✅ The three shapes LIVE-031 named now fail, proved by fixtures that assert the OLD
+predicate passed them first — without that assertion, "the new rule fails this" would prove nothing.
+✅ Six control fixtures (validation-then-gate, the cron wrapper, the shared gate helper, try/catch,
+destructured route params) prove the rules did not go the other way. ⚠️ This is still not a prover,
+and the gate's header lists what it cannot see: whether the gate's RESULT is honoured
+(`const denied = rejectUnauthorizedCron(req)` with no `if (denied) return denied` reads as gated), a
+gate inside a callback, and anything about the gate's own correctness. ⚠️ An export whose body is not
+in the file — a gate reached only through an IMPORTED wrapper — fails CLOSED. "I could not read it"
+is not "it is fine", the same call `loadLedger` makes on a missing ledger.
