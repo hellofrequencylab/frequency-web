@@ -509,8 +509,8 @@
       "detail": "Create Event (the worst, 17) is fixed and Field exists as the shared labelled-control primitive. Next by volume: circle-builder (12), movement-session (9), events/drafts/[id]/editor (9), the six onboarding *-render files. Mechanical: wrap in Field, thread htmlFor/id where the control is real, or role=\"group\" + aria-labelledby for button groups. Re-measured 2026-08-17: 44 files still contain a bare <Label.",
       "verify": {
         "kind": "cmd",
-        "cmd": "test $(rg -l '<Label' app components | wc -l) -lt 10",
-        "note": "Passes when the population drops under 10 files. 44 at seed."
+        "cmd": "node -e \"const{readdirSync,statSync,readFileSync}=require('fs');const{join}=require('path');let n=0;const walk=d=>{for(const f of readdirSync(d)){if(f==='node_modules')continue;const p=join(d,f);const s=statSync(p);if(s.isDirectory())walk(p);else if(/[.]tsx?$/.test(f)&&readFileSync(p,'utf8').includes('<Label'))n++}};walk('app');walk('components');process.exit(n<10?0:1)\"",
+        "note": "Passes when the population drops under 10 files; 44 at seed. Deliberately node-only: the first version was `test $(rg -l '<Label' … | wc -l) -lt 10`, which yields 0 and FALSELY PASSES on any runner without ripgrep — the same missing-instrument bug that inverted every grep probe on CI."
       }
     },
     {

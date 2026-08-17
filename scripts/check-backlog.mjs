@@ -38,7 +38,7 @@
 //   node scripts/check-backlog.mjs --report  # print the working view (open + owner rows), exit 0
 //   node scripts/check-backlog.mjs --lane owner   # filter the report to one lane
 
-import { readFileSync, existsSync, statSync } from 'node:fs'
+import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs'
 import { execSync } from 'node:child_process'
 import { join } from 'node:path'
 
@@ -132,37 +132,77 @@ function validate(entries) {
   return problems
 }
 
+const SKIP_DIRS = new Set(['node_modules', '.git', '.next', 'dist', 'coverage'])
+
+/** Every file under a path, following directories. */
+function filesUnder(target, acc = []) {
+  const st = statSync(target)
+  if (st.isFile()) {
+    acc.push(target)
+    return acc
+  }
+  for (const name of readdirSync(target)) {
+    if (SKIP_DIRS.has(name)) continue
+    filesUnder(join(target, name), acc)
+  }
+  return acc
+}
+
+/** Search in PURE NODE. This deliberately does not shell out.
+ *
+ *  🔴 IT USED TO CALL RIPGREP, AND THAT SHIPPED A GATE THAT LIED. `rg` is on this repo's dev
+ *  machines and NOT on the GitHub runner, and the implementation caught the spawn failure the same
+ *  way it caught "no match" — so on CI every probe inverted at once: all six `grep-absent` rows
+ *  reported DONE and both `grep-present` rows reported NOT DONE. Eight confident, wrong answers
+ *  from one missing binary, and the local run was green the whole time.
+ *
+ *  That is this repo's named failure mode in its purest form: an instrument that cannot tell
+ *  "I looked and found nothing" from "I could not look". The fix is not to detect ripgrep — it is
+ *  to not need it, so the question cannot be asked again on some future runner image. */
+function patternMatches(pattern, paths) {
+  // `m` so ^ and $ anchor per line, which is what every probe in the file is written against.
+  const re = new RegExp(pattern, 'm')
+  for (const p of paths) {
+    for (const file of filesUnder(p)) {
+      let text
+      try {
+        text = readFileSync(file, 'utf8')
+      } catch {
+        continue // unreadable or binary — not a match, and not an error worth failing on
+      }
+      if (re.test(text)) return true
+    }
+  }
+  return false
+}
+
 /** Run one probe. Returns true (DONE), false (NOT DONE), or null (cannot tell). */
 function runProbe(p) {
-  try {
-    if (p.kind === 'manual') return null
+  if (p.kind === 'manual') return null
 
-    if (p.kind === 'cmd') {
+  if (p.kind === 'cmd') {
+    // ⚠️ A `cmd` probe carries the same hazard the ripgrep bug above demonstrated: a pipeline whose
+    // tool is missing can still exit 0 and read as DONE. Keep cmd probes to `node -e`, which is
+    // guaranteed present wherever this guard runs at all.
+    try {
       execSync(p.cmd, { stdio: 'pipe', timeout: 120_000 })
       return true
-    }
-
-    // grep-present / grep-absent. Paths that do not exist count as "no match", which is the
-    // correct reading: a deleted file cannot contain the thing.
-    const paths = p.paths.filter((f) => existsSync(f))
-    if (paths.length === 0) return p.kind === 'grep-absent'
-
-    let matched = false
-    try {
-      const flags = p.flags ?? '-rIn'
-      execSync(`rg ${flags} -e ${JSON.stringify(p.pattern)} ${paths.map((f) => JSON.stringify(f)).join(' ')}`, {
-        stdio: 'pipe',
-        timeout: 60_000,
-      })
-      matched = true
     } catch {
-      matched = false // ripgrep exits 1 on no match
+      return false // a non-zero exit is a real answer: NOT DONE
     }
-    return p.kind === 'grep-present' ? matched : !matched
-  } catch {
-    // A cmd probe that exits non-zero means NOT DONE, which is a real answer, not an error.
-    return p.kind === 'cmd' ? false : null
   }
+
+  // Paths that do not exist count as "no match" — a deleted file cannot contain the thing.
+  const paths = p.paths.filter((f) => existsSync(f))
+  if (paths.length === 0) return p.kind === 'grep-absent'
+
+  let matched
+  try {
+    matched = patternMatches(p.pattern, paths)
+  } catch {
+    return null // a bad regex is "cannot tell", never a silent verdict
+  }
+  return p.kind === 'grep-present' ? matched : !matched
 }
 
 function daysSince(iso) {

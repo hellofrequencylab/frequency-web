@@ -235,6 +235,58 @@ describe('check:one-list — the frozen planning-doc set', () => {
   })
 })
 
+describe('the probe engine does not depend on ambient tooling', () => {
+  // 🔴 THE REGRESSION THIS PINS. The first version searched by shelling out to `rg`, which exists on
+  // this repo's dev machines and NOT on the GitHub runner — and it caught the spawn failure the same
+  // way it caught "no match". On CI every probe inverted at once: all six `grep-absent` rows reported
+  // DONE and both `grep-present` rows reported NOT DONE. Eight confident wrong answers from one
+  // missing binary, while the local run stayed green.
+  //
+  // The assertion is deliberately a COMPARISON rather than a fixed expectation: the guard must give
+  // the SAME answer with and without ripgrep on PATH. That holds no matter how the backlog changes.
+  it('gives identical results with and without ripgrep on PATH', () => {
+    const stub = mkdtempSync(path.join(tmpdir(), 'nopath-'))
+    // Everything a probe legitimately needs (node, git, a shell) — but deliberately not `rg`.
+    for (const bin of ['node', 'git', 'sh', 'bash', 'env']) {
+      try {
+        const real = execSync(`command -v ${bin}`, { encoding: 'utf8', shell: '/bin/bash' }).trim()
+        if (real) execSync(`ln -sf ${JSON.stringify(real)} ${JSON.stringify(path.join(stub, bin))}`)
+      } catch {
+        /* not present on this machine either; fine */
+      }
+    }
+
+    const withRg = run(BACKLOG_GUARD, ROOT)
+    const withoutRg = (() => {
+      try {
+        const out = execFileSync('node', [BACKLOG_GUARD], {
+          cwd: ROOT,
+          encoding: 'utf8',
+          stdio: 'pipe',
+          env: { ...process.env, PATH: stub },
+        })
+        return { code: 0, out }
+      } catch (err) {
+        const e = err as { status?: number; stdout?: string; stderr?: string }
+        return { code: e.status ?? 1, out: `${e.stdout ?? ''}${e.stderr ?? ''}` }
+      }
+    })()
+
+    rmSync(stub, { recursive: true, force: true })
+
+    expect(
+      withoutRg.code,
+      `The guard changed its verdict when ripgrep left PATH (with: ${withRg.code}, without: ${withoutRg.code}).\n` +
+        `A probe that cannot tell "I looked and found nothing" from "I could not look" reports\n` +
+        `confident nonsense on any runner missing the tool. Search in pure node.\n\n${withoutRg.out}`,
+    ).toBe(withRg.code)
+
+    // Same verdict AND same counts — a matching exit code alone could hide compensating errors.
+    const counts = (s: string) => s.match(/\d+ open\/blocked · \d+ parked · \d+ done/)?.[0]
+    expect(counts(withoutRg.out)).toBe(counts(withRg.out))
+  })
+})
+
 describe('the real tree', () => {
   it('satisfies both contracts', () => {
     expect(run(BACKLOG_GUARD, ROOT).code, 'pnpm check:backlog').toBe(0)
