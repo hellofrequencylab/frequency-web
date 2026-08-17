@@ -26,6 +26,18 @@
 > 6. **Grandfathering cost nothing in Stripe and is not nothing in fact.** 0 subscription items, 0
 >    Stripe customers, 0 webhook events on 2026-08-17 — and one member who paid **$490 in cash** for the
 >    annual Collective beta rate with no lock anywhere in the system (backlog `OWN-022`).
+> 7. **The beta rate is still reachable, privately, per Space** ([ADR-1061](DECISIONS.md)). The owner
+>    had already offered it to a couple of people: *"I want to keep that open for them. But I don't
+>    want to advertise that Beta pricing as a package on the website."* `spaces.beta_price_grant` is a
+>    per-Space flag that ONLY the checkout reads. The charge decision is the pure
+>    `loadoutChargeArm` (`lib/pricing/beta.ts`): **lock** (re-bill the Space's grandfathered
+>    `locked_price_id`) → **founding** (the window is open **or** this Space carries the grant) →
+>    **list**. No pricing surface, funnel door or `effectiveCatalogAmounts` call takes a Space, so the
+>    public grid cannot move; `lib/pricing/beta-grant.test.ts` sweeps every number and label a visitor
+>    reads for a leaked beta amount. **The grant carries no expiry** because the first successful
+>    checkout writes the lock, and the lock wins from then on. Operator control: `/admin/spaces/[id]`
+>    → "Beta price grant" (janitor-gated, audited). Schema: `docs/proposals/OWN-023-space-beta-price-grant.sql`,
+>    a proposal, not a migration — the code fail-safes to list pricing until it is applied.
 
 > ## ✅ CURRENT (money model): selling is FREE on every tier; the RATE is the ladder (ADR-914, 2026-07-30).
 >
