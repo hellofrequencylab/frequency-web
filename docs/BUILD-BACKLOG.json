@@ -258,7 +258,7 @@
     },
     {
       "id": "OWN-014",
-      "title": "Decide the amber-as-display-text contrast failure: swap to primary-strong, or waive it",
+      "title": "Decide the amber-on-button contrast failure — and note the row's own proposed remedy does not work in midnight-dark",
       "status": "open",
       "lane": "owner",
       "size": "S",
@@ -266,11 +266,11 @@
         "file": "docs/FINALIZE-PLAN.md",
         "ref": "§7c, amber as DISPLAY TEXT"
       },
-      "detail": "~30 marketing sites render text-primary as the accent word inside a display heading, measuring 2.18-2.86:1 against a 3:1 bar. It fails the LARGE-text floor, so no size or weight rescues it. The 2026-08-06 white-on-amber waiver is scoped in words to a decorative fill and does not cover this. --color-primary-strong (#965C12) already exists and is already used for the links directly beneath these same headings. A design call either way, and it moves every marketing visual baseline.",
+      "detail": "MEASURED 2026-08-17 in CI, not estimated. The failing pair is WHITE TEXT ON THE AMBER BUTTON, not amber as text: #FFFFFF on #F0AD4E is 1.95:1 against a 4.5:1 requirement. Amber as TEXT is fine (#F0AD4E on the midnight-dark surface #161C28 is 8.77:1). 🔴 THIS ROW'S ORIGINAL REMEDY - 'swap to primary-strong' - IS A NO-OP IN MIDNIGHT-DARK. That skin sets --color-primary-strong to #F0AD4E, the SAME value as --color-primary, so the swap changes nothing. It works in midnight-LIGHT, where primary-strong is #8C5410 and white on it measures 6.19:1. Anyone applying the fix as written would see light mode go green, dark mode stay red, and reasonably conclude the guard was flaky. WHY IT SURFACED NOW: LIVE-008 fixed a selector that could never match, so midnight-dark paints its real palette instead of falling back to the generic .dark one. The failure is PRE-EXISTING and was invisible, not introduced. It costs 8 contexts on the a11y ratchet, all midnight-dark desktop, contrast only: /, /about, /discover, /pricing and /the-lab 0 -> 3; /the-quest 0 -> 4; /spaces 2 -> 6; /the-community 3 -> 7. TWO OPTIONS, both measured: (A) keep the brand amber and darken the FOREGROUND on it - #1C2535 on #F0AD4E is 7.90:1, #161C28 is 8.77:1. The brand colour is untouched and only the text on the button moves. (B) give midnight-dark a genuine primary-strong and keep white text - #7A4A0E gives 7.46:1, #8C5410 gives 6.19:1 (the value midnight-light already uses). (A) is the smaller change and preserves the accent exactly; (B) matches how the light skin already solves it. It is a BRAND decision either way, which is why it is not being made in code.",
       "verify": {
         "kind": "manual",
-        "evidence": "Unchanged; still counted as debt inside the a11y baselines.",
-        "checked": "2026-08-12"
+        "evidence": "Measured in CI 2026-08-17 (run 32077367930, `pnpm a11y:baselines`): 8 midnight-dark desktop contexts regressed, contrast only, and the capture REFUSED to raise the baselines rather than laundering the rise. Ratios computed from the tokens in app/globals.css: #FFFFFF on #F0AD4E = 1.95:1; #FFFFFF on #8C5410 = 6.19:1; #1C2535 on #F0AD4E = 7.90:1. Not repo-probeable: which remedy to take is a brand decision, and a probe asserting either one would force a choice the owner has not made.",
+        "checked": "2026-08-17"
       }
     },
     {
