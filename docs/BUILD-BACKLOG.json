@@ -1725,6 +1725,56 @@
         "evidence": "lib/billing/checkout.ts:66 reads process.env.STRIPE_PRODUCT_CREW with a `|| null` fallback to inline product_data. .env.example:194 has STRIPE_PRODUCT_CREW= (blank). Live account acct_1TdurHPhyalyRPP1 returned zero products on 2026-08-17, so no valid product id can be set.",
         "checked": "2026-08-17"
       }
+    },
+    {
+      "id": "LIVE-030",
+      "title": "20 route handlers are green by human assertion, and 11 of them claim `public`",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "scripts/authz-route-ledger.json",
+        "ref": "LIVE-022 follow-up"
+      },
+      "detail": "check:authz now sees all 72 route handlers, but 52 are green because a gate was DETECTED and 20 because a human read them and said so. The ledger states this in its own header rather than hiding it, and pins each route's normalized-body digest so an edit forces a re-read — but a reason is not a proof. The sharp end is the three asserted `public` routes that touch the admin client: app/api/vitals, app/api/people/[handle]/vcard, app/api/llms.txt. Give each a per-route test pinning what it must never return, the way app/api/status/route.test.ts already pins its 'no secret' promise. That converts the highest-risk assertions into verifications and leaves the genuinely-trivial ones asserted.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const want=['app/api/vitals/route.test.ts','app/api/people/[handle]/vcard/route.test.ts','app/api/llms.txt/route.test.ts'];if(!fs.existsSync('app/api'))process.exit(79);const missing=want.filter(f=>!fs.existsSync(f));if(missing.length)process.exit(1);if(!fs.existsSync('node_modules/vitest/vitest.mjs'))process.exit(79);const r=require('child_process').spawnSync(process.execPath,['node_modules/vitest/vitest.mjs','run',...want],{stdio:'ignore',timeout:110000});if(r.error||r.signal!==null||r.status===null||r.status===127)process.exit(79);process.exit(r.status)\""
+      }
+    },
+    {
+      "id": "LIVE-031",
+      "title": "check:authz is file-level: it sees a gate is called, not that it runs on every path",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "scripts/check-authz-guards.mjs",
+        "ref": "LIVE-022 follow-up"
+      },
+      "detail": "LIVE-022 closed the VISIBILITY half — app/api/** was invisible because the classifier's first predicate required 'use server', which a Next 16 Route Handler never is. The granularity half is untouched and the guard's own header says so: it detects that a recognised gate is called SOMEWHERE in the file, not that it runs before every write on every path through every exported method. A route exporting GET and POST where only GET is gated reads as green. Stated here rather than left in an agent report, because an unrecorded limitation is how a partial gate comes to be read as full coverage (ADR-970).",
+      "verify": {
+        "kind": "manual",
+        "evidence": "scripts/check-authz-guards.mjs header states the file-level limit explicitly. Confirmed 2026-08-17: the classifier tests src for gate tokens per FILE, with no per-export analysis.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "LIVE-032",
+      "title": "Recapture the midnight-dark visual baselines now that the skin actually paints",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "test/e2e/a11y-waivers.ts",
+        "ref": "LIVE-008 follow-up"
+      },
+      "detail": "LIVE-008 fixed a selector that could never match, so midnight-dark now renders its real palette instead of the generic .dark one with midnight's LIGHT feel underneath. Two consequences the fix deliberately did NOT paper over: the @visual baselines for midnight-dark are of the wrong rendering and need recapture, and the @a11y run will now report white-on-#F0AD4E unwaived. The agent declined to pre-add that waiver, correctly — the waiver list records ratios axe ACTUALLY reported, and inventing an entry would fabricate a measurement. This is a capture-and-list job, not a judgement call: the owner decision already floors it at 1.95 in check-contrast.mjs.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Raised by the LIVE-008 agent 2026-08-17 as a known consequence of its own fix. Not repo-probeable: it needs an axe run and a visual capture, neither of which runs in this container.",
+        "checked": "2026-08-17"
+      }
     }
   ]
 }
