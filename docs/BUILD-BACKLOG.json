@@ -1784,7 +1784,7 @@
         "file": "lib/pricing/beta.ts",
         "ref": "beta cutover, 2026-08-17"
       },
-      "detail": "@ishasetlumi paid $490 IN CASH for the annual Collective beta rate ($49 x 10, two months free). Her Space `templeofaset` (cb611bac-7956-4652-9993-440c430d494b) carries plan='collective' granted directly in the database; last_plan_event_at 2026-07-27. She has NO subscription item, NO locked_price_id and NO stripe_customer_id, so nothing in the system records what she is owed. TWO OBLIGATIONS, both currently invisible to every gate: (1) she must not be billed until her paid year runs out, roughly 2027-07; (2) when it renews it renews at the beta $490, not the $790 list annual — the code's own rule is that a Space subscribing during the window keeps its rate for life. The mechanism that would honour this is resolveLoadoutPriceId's per-Space price lock, which reads a locked price id off the subscription item; onboarding her to Stripe WITHOUT writing that lock is what silently overcharges her. The founding collective_base price is still minted active by the catalog sync, so there is a real price id to lock to. THE GENERAL POINT IS BIGGER THAN THIS ROW: an obligation settled outside the system is invisible inside it. The 2026-08-17 measurement '0 subscriptions, so nobody holds a beta rate' was true of Stripe and false of the business, and it was one cash payment away from being acted on.",
+      "detail": "@ishasetlumi paid $490 IN CASH for the annual Collective beta rate ($49 x 10, two months free). Her Space `templeofaset` (cb611bac-7956-4652-9993-440c430d494b) carries plan='collective' granted directly in the database; last_plan_event_at 2026-07-27. She has NO subscription item, NO locked_price_id and NO stripe_customer_id, so nothing in the system records what she is owed. TWO OBLIGATIONS, both currently invisible to every gate: (1) she must not be billed until her paid year runs out, roughly 2027-07; (2) when it renews it renews at the beta $490, not the $790 list annual — the code's own rule is that a Space subscribing during the window keeps its rate for life. The mechanism that would honour this is resolveLoadoutPriceId's per-Space price lock, which reads a locked price id off the subscription item; onboarding her to Stripe WITHOUT writing that lock is what silently overcharges her. The founding collective_base price is still minted active by the catalog sync, so there is a real price id to lock to. THE GENERAL POINT IS BIGGER THAN THIS ROW: an obligation settled outside the system is invisible inside it. The 2026-08-17 measurement '0 subscriptions, so nobody holds a beta rate' was true of Stripe and false of the business, and it was one cash payment away from being acted on. | 2026-08-17, from the OWN-023 work: the grant fixes her RATE and not her DATE. createSpaceLoadoutCheckout sets trial_period_days from the 14-day pricing setting, not from a paid-through date, so granting her the beta rate would still start billing her inside a year she has already bought. The date half belongs to the manual-agreement machinery (ADR-872, manual_agreements.paid_through) plus a trial covering the remaining term. Marking this row handled against a mechanism that fixes only the rate would recreate the original failure in a nicer font.",
       "verify": {
         "kind": "manual",
         "evidence": "Measured 2026-08-17: profiles.handle='ishasetlumi' (cf78ac3f-4f5d-4158-aa10-6cac3e842206) has membership_tier=crew, is_founding_member=false, locked_price_id=null, stripe_customer_id=null. spaces.slug='templeofaset' has plan='collective', owner_profile_id=that profile, last_plan_event_at 2026-07-27. space_subscription_items is empty (0 rows) across the whole table, so no lock exists for any Space. Amount and cash tender reported by the owner.",
@@ -1805,6 +1805,40 @@
       "verify": {
         "kind": "manual",
         "evidence": "Reported by the LIVE-014 agent 2026-08-17 from its own brace-aware JSX scan over 1,992 .tsx files: 143 unnamed-control candidates in 67 files, share of false positives unknown pending wrapper-component resolution. Not gated, deliberately.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "OWN-023",
+      "title": "The beta rate is grantable per Space, privately, and no public surface moves",
+      "status": "done",
+      "lane": "owner",
+      "size": "M",
+      "source": {
+        "file": "lib/pricing/beta.ts",
+        "ref": "loadoutChargeArm, ADR-1061"
+      },
+      "detail": "CODE HALF ONLY — OWN-024 is the owner half. spaces.beta_price_grant is a private flag ONLY the checkout reads. resolveLoadoutPriceId decides on the pure three-armed loadoutChargeArm: lock (re-bill the grandfathered locked_price_id) -> founding (the window is open OR this Space carries the grant) -> list. No expiry, because the grant is SPENT by the first successful checkout: the reconciler writes the charged price as the lock and arm 1 wins forever after, so revoking it later cannot raise anyone's rate. Read in its OWN PostgREST request rather than added to the existing space select, because an undeployed column fails the WHOLE request with 42703 — the profiles.email bug already recorded in that file. Fail-safe FALSE: unreadable means charge list, never less. The panel distinguishes not_deployed from granted:false and says 'Not available yet' instead of showing a toggle that would look enabled and quietly do nothing.",
+      "notes": "Proven by consequence: the test pins the EXACT set of prices a visitor is quoted across offering cards, JSON-LD, plan rows and the /pricing table, and asserts $19/$49/$190/$490 are absent. Five mutants each take it red. Mutant B — leaking the beta rate to /pricing — ESCAPED the first draft, which is why the sweep was widened to the surfaces reading effectiveCatalogAmounts rather than its display twin. Security posture measured rather than assumed: SELECT on spaces is column-level so a new column is invisible to anon/authenticated, but UPDATE is TABLE-level and the column inherits it; a column-level revoke cannot help, so the proposal states the condition to watch instead of pretending to close it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),cp=require('child_process');const t=['lib/pricing/beta-grant.test.ts','lib/billing/space-plan-checkout.test.ts'];if(t.some(f=>!fs.existsSync(f))||!fs.existsSync('node_modules/vitest/vitest.mjs'))process.exit(79);const r=cp.spawnSync(process.execPath,['node_modules/vitest/vitest.mjs','run',...t],{stdio:'ignore',timeout:110000});if(r.error||r.signal!==null||r.status===null||r.status===127)process.exit(79);process.exit(r.status)\""
+      }
+    },
+    {
+      "id": "OWN-024",
+      "title": "Apply the beta-price-grant migration, then grant the Spaces that were promised the rate",
+      "status": "open",
+      "lane": "owner",
+      "size": "S",
+      "source": {
+        "file": "docs/proposals/OWN-023-space-beta-price-grant.sql",
+        "ref": "ADR-1061"
+      },
+      "detail": "Promote docs/proposals/OWN-023-space-beta-price-grant.sql per its banner (move to supabase/migrations/20270304000100_space_beta_price_grant.sql, apply, repair the ledger), regenerate lib/database.types.ts, drop the untyped cast in lib/billing/space-beta-grant.ts, then grant each Space at /admin/spaces/<id> -> Beta price grant. Until then EVERY checkout charges list and the operator panel says so rather than offering a dead toggle. Version 20270304000100 deliberately leaves 20270304000000 to OWN-006, which already claims it.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Not applied as of 2026-08-17: production ledger head is 20270303000100 and information_schema.columns has no beta_price_% column on public.spaces. Verify with: select count(*) from public.spaces where beta_price_grant;",
         "checked": "2026-08-17"
       }
     }
