@@ -1,5 +1,9 @@
 # Block inventory and consolidation map (E2 input)
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **The answer, first.** **304 block rows across five systems**, not the ~138 across three the plan
 > first estimated. They map to **~49** with **no capability dropped** — every collapse is a
 > `variant`, a `binding.source`, or a `density`. Three fields carry almost all of it:

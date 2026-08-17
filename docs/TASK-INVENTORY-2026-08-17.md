@@ -1,5 +1,9 @@
 # Task inventory — every open item on every list (2026-08-17)
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **What this is.** A full sweep of every to-do list, plan doc, backlog, audit tail, checkbox and
 > in-code marker in the repo, consolidated into one inventory. It is a **census, not a new plan** —
 > sequencing authority stays with [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md),

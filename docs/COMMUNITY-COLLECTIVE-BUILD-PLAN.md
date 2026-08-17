@@ -1,5 +1,9 @@
 # Community Collective, end-to-end rebuild plan
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **Status:** ✅ Approved (2026-07-23). The full implementation plan for the repositioning + repricing in
 > [COMMUNITY-COLLECTIVE-STRATEGY.md](COMMUNITY-COLLECTIVE-STRATEGY.md) (the source of truth) and
 > [ADR-811](DECISIONS.md). Grounded in a full scan of the live codebase. **Every phase ships behind

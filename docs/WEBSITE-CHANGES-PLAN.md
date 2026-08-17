@@ -1,5 +1,9 @@
 # Website Changes: best-practices implementation plan
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **The answer, first.** Your request is six workstreams. Two are fast, high-impact, low-risk and should ship first (Post boxes, Practice logging). One is a new feature on existing rails (Timers + Movement). Three are a single coordinated, shell-level IA overhaul that must be designed together and ships last (Settings drawer + QR & Share, Navigation + Mega-menu, Template/block coverage). The research below grounds every item in the real code, and **§1 lists the decisions I need from you before I write any implementation code.**
 
 **Status:** ✅ SHIPPED. Prepared 2026-06-20; built and merged 2026-06-20 to 2026-06-21 across PRs #953 to #961 (ADR-345 to ADR-349). Waves 1, 2, 3, 5a, 5b are live; Wave 4 batches 1 to 3 are done and the broad `<PageModules>` long tail is tracked in [`PAGE-FRAMEWORK.md`](PAGE-FRAMEWORK.md) §8.4. See the shipped block below (after §8).

@@ -1,5 +1,9 @@
 # Entity Spaces: Best-Practice Build-Out Plan
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 **Status:** ⏳ Plan / strategy (no code). Prepared 2026-06-19.
 **Scope:** Fully-featured, templated, eventually white-label spaces for four verticals (**Practitioners, Businesses, Event Spaces, Non-Profits**), each with their own Events, Circles, Practices, Journeys, branded profile/landing pages, member-management admin, and a QR studio / splash-page builder, leading to full business suites with CRM + email marketing.
 

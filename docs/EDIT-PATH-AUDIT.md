@@ -1,5 +1,9 @@
 # Edit-path audit: can every nav surface be edited?
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > Snapshot 2026-06-06. "Can an operator create/edit/delete the content this page
 > shows, in-app?" Source surfaces: `lib/nav-areas.ts` (NAV_AREAS) + the Growth Studio
 > launchpad (`app/(main)/growth/page.tsx`). Re-run when surfaces are added.

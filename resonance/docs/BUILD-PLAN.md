@@ -1,5 +1,9 @@
 # Build plan
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](../../docs/BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](../../docs/DECISIONS.md)).
+
 > **How we use this doc:** we build **one section at a time**, and only on your
 > explicit go-ahead. Each section is shippable, has a clear Definition of Done,
 > and earns its keep before the next begins. Nothing here is built yet.

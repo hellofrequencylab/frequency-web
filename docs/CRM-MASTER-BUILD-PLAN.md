@@ -1,5 +1,9 @@
 # CRM · Messaging · Email · QR — Master Build Plan
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **What this is.** The zoomed-out, fully-phased build plan for Frequency's operator system:
 > the modular CRM, the interaction timeline, the email + template engine, funnels/segmentation,
 > the subscription center, Vera's intelligence layer, CSV import, and the QR lead-grab engine —

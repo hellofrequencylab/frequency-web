@@ -1,5 +1,9 @@
 # Etsy-Grade Commerce — Build Spec
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **What this is.** A phased ladder that raises `commerce_products` from a thin bulletin listing to a
 > marketplace-grade shopping experience, WITHOUT forking the commerce spine of ADR-596. Every phase is
 > additive schema + UI over the one `commerce_products` engine. Payments are gated to Business accounts

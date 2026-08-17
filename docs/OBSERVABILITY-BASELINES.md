@@ -1,5 +1,9 @@
 # Observability Baselines & SLOs
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **Status: scaffold live (2026-06-29).** This is the home for H0-6 (performance
 > baseline), H0-7 (cost baseline), and H0-8 (SLOs) from
 > [`FOUNDATION-HARDENING-PLAN.md`](FOUNDATION-HARDENING-PLAN.md). It defines the

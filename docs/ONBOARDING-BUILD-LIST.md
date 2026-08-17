@@ -1,5 +1,9 @@
 # Onboarding & Vera: prioritized build list
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **Purpose.** The single, ranked, execute-from list for the onboarding push: get a real
 > beta cohort *in the door, excited, and creating a profile + content*, coached by Vera,
 > deeply integrated. Written after a full docs+code audit (2026-06-06). Companion specs:

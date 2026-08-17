@@ -1,5 +1,9 @@
 # Business Accounts — Reconciled Plan (current source of truth)
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **Status:** ✅ Reconciled to `origin/main` on 2026-07-06. This supersedes the historical planning
 > docs ([BUSINESS-ACCOUNTS-STRATEGY](BUSINESS-ACCOUNTS-STRATEGY.md),
 > [PRODUCTION-PLAN](BUSINESS-ACCOUNTS-PRODUCTION-PLAN.md), [OVERVIEW](BUSINESS-ACCOUNTS-OVERVIEW.md),

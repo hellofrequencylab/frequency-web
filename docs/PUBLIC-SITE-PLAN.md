@@ -1,5 +1,9 @@
 # Public Site & Funnel Plan
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **Status: PROPOSED (June 2026).** Companion to [`docs/CONTENT-VOICE.md`](CONTENT-VOICE.md)
 > (voice, always wins on register) and [`docs/NAMING.md`](NAMING.md) (terminology,
 > always wins on names). Grounded in the feature survey, the existing-public audit,

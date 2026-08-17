@@ -1,5 +1,9 @@
 # Chat consolidation — one messaging function, site-wide
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > Owner directive (2026-07-25): combine the two chat instances (the public "Chat with us" → CRM, and
 > the member-area dock) into ONE box site-wide. De-emphasize "talk to a human" — make it a **send-us-a-
 > message / support-request form**, not a live-response widget. Once started, a request shows as a

@@ -1,5 +1,9 @@
 # Chat Shell — the site-wide unified dock (Web + Mobile)
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **Owner directive (2026-07-25).** One chat system, site-wide, in the NEWER popup shell style
 > (the ADR-816 live-chat widget's panel language), carrying ALL the functionality of both builds:
 > **Messaging up front · Vera in the other tab · Help + Contact in a second section that opens

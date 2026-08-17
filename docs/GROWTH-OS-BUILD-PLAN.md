@@ -1,5 +1,9 @@
 # Growth OS — the launch build plan (funnels, flywheel, splash, admin suites)
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **The cohesive, step-by-step build plan for Frequency's growth + launch layer.** Locked by
 > owner decision **2026-06-28**: build the whole growth machine structurally, as config-driven
 > engines each with a full admin suite, on a hardened foundation, ahead of the rough launch dates.

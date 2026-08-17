@@ -1,5 +1,9 @@
 # The apps, elements and placement audit — 2026-08-04
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **The question this answers.** "Can I pull up any function and place it on a page at any
 > time?" The honest answer today is **no**, and this document is the map of why, what is
 > registered where, and what stands between here and yes. Method: three independent

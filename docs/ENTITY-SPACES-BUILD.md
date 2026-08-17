@@ -1,5 +1,9 @@
 # Entity Spaces: build doc (the design foundation + master production list)
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **The answer, first.** An entity profile is **not a new layout**. It is the existing
 > **Detail template** (context band + tabs, `components/templates/detail-template.tsx`)
 > composed from a new set of registered **entity modules**, with a per-`type` default

@@ -1,0 +1,92 @@
+# THE FROZEN PLANNING-DOC SET — read scripts/check-one-list.mjs before editing.
+#
+# Every markdown file whose NAME looks like a plan, list, roadmap, audit or status report.
+# This repo consolidated into 'the one master list' five times and drifted five times, so
+# the set is now frozen: adding a file here is a deliberate act with a reason, not a habit.
+#
+# Each file listed must carry, in its first 25 lines, EITHER a pointer to
+# docs/BUILD-BACKLOG.json (it defers status to the one list) OR a SUPERSEDED banner
+# (it is history). A planning doc that claims neither is how a fifth rival master list is born.
+#
+# Frozen 2026-08-17 at 81 files.
+ROADMAP.md
+SEO-AEO-PLAN.md
+docs/A-PLUS-ROADMAP.md
+docs/ADMIN-BUILD-PLAN.md
+docs/APPS-CATALOG-AUDIT.md
+docs/APPS-CONVERSION-PLAN.md
+docs/AUDIT-2026-06-15.md
+docs/AUDIT-2026-06-25.md
+docs/AUDIT-2026-06-27.md
+docs/AUDIT-2026-06.md
+docs/BACKLOG.md
+docs/BASELINE-ASSESSMENT.md
+docs/BASELINE-TODO-2026-08-12.md
+docs/BOOKING-PLAN.md
+docs/BUILD-CATALOG.md
+docs/BUILD-LIST.md
+docs/BUILD-PHASES.md
+docs/BUILD-SEQUENCE.md
+docs/BUSINESS-ACCOUNTS-PRODUCTION-PLAN.md
+docs/BUSINESS-ACCOUNTS-RECONCILED-PLAN.md
+docs/BUSINESS-MODEL-PLAN.md
+docs/BUSINESS-SPACE-BACKEND-SURVEY.md
+docs/CHAT-CONSOLIDATION-PLAN.md
+docs/CHAT-SHELL-PLAN.md
+docs/CHECKLIST.md
+docs/CIRCLES-C3-PLAN.md
+docs/COMMUNITY-COLLECTIVE-BUILD-PLAN.md
+docs/CRM-COMMS-AUDIT-2026-07-25.md
+docs/CRM-EVERYWHERE-BUILD-PLAN.md
+docs/CRM-INTERACTION-TRACKING-PLAN.md
+docs/CRM-MASTER-BUILD-PLAN.md
+docs/DEVELOPMENT-MAP.md
+docs/EDIT-PATH-AUDIT.md
+docs/EDITOR-BLOCK-INVENTORY.md
+docs/EMAIL-CAMPAIGNS-FUNNELS-PLAN.md
+docs/EMAIL-EDITOR-PLAN.md
+docs/ENTITY-SPACES-BUILD.md
+docs/ENTITY-SPACES-PLAN.md
+docs/ETSY-GRADE-PLAN.md
+docs/EVENTS-AUDIT.md
+docs/EVENTS-SERIES-BUILD-PLAN.md
+docs/FINALIZE-PLAN.md
+docs/FOUNDATION-HARDENING-PLAN.md
+docs/GAMIFICATION-AUDIT.md
+docs/GROWTH-OS-BUILD-PLAN.md
+docs/HANDOFF-2026-08-12.md
+docs/LOOM-EVERYWHERE-PLAN.md
+docs/MARKETING-BUILD-PLAN.md
+docs/MARKETING-FUNNEL-PLAN.md
+docs/MASTER-PLAN.md
+docs/MASTER-TODO.md
+docs/MEDIA-PLATFORM-PLAN.md
+docs/MENU-AUDIT-2026-08-06.md
+docs/META-SCAN-STATUS.md
+docs/MOBILE-NAV-PLAN.md
+docs/OBSERVABILITY-BASELINES.md
+docs/ONBOARDING-BUILD-LIST.md
+docs/OPEN-THREADS.md
+docs/PATCH-LIST.md
+docs/PLATFORM-MASTER-PLAN.md
+docs/PRACTICE-DEPTH-BUILD.md
+docs/PRICING-LADDER-PLAN.md
+docs/PROFILE-REDESIGN-PLAN.md
+docs/PROFILE-STUDIO-PLAN.md
+docs/PUBLIC-SITE-PLAN.md
+docs/PUCK-MIGRATION-PLAN.md
+docs/REDESIGN-STATUS.md
+docs/REMAINING-WORK.md
+docs/RETHEME-PLAN.md
+docs/SHOP-MARKETPLACE-PLAN.md
+docs/SITE-AUDIT-2026-06-29.md
+docs/SPACE-MODES-PLAN.md
+docs/SPACES-MANAGEMENT-AUDIT-2026-07-21.md
+docs/TASK-INVENTORY-2026-08-17.md
+docs/UX-MATURITY-PLAN.md
+docs/WEBSITE-CHANGES-PLAN.md
+docs/naming/INVENTORY-CODE.md
+docs/naming/INVENTORY-CONTENT.md
+docs/naming/INVENTORY-DOCS.md
+docs/naming/PLAN.md
+resonance/docs/BUILD-PLAN.md

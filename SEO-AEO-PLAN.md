@@ -1,5 +1,9 @@
 # Frequency — SEO / AEO Plan
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](docs/BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](docs/DECISIONS.md)).
+
 **Status:** Phases 1–3 COMPLETE and pushed to `origin/main` (2026-05-28).
 **Owner:** Daniel.
 - Phase 1 (safety + foundation): leak closed, column-safe RPCs live, landing rewired, robots/sitemap/OG. Migrations pushed to prod.

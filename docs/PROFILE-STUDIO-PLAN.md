@@ -1,5 +1,9 @@
 # Profile Studio — the expressive-profile plan
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 **Status:** Proposed (2026-06-27). A research-backed plan, not yet built. One framework that
 lets a member shape their profile — from a calm, on-brand default to a fully expressive "studio"
 mode — earns cosmetics through practice (not payment), gives each member a living streak

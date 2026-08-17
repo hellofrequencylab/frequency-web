@@ -1,5 +1,9 @@
 # Loom everywhere — the phased plan to route every image upload through the Loom picker
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 **Goal:** every image upload in the app opens the ONE Loom picker popup
 (`components/loom/loom-picker.tsx`). No surface keeps a bare file input or a paste-URL-only
 control. A person's uploads live in their personal Loom (`library_assets.created_by`); an image

@@ -25004,3 +25004,87 @@ the next person to recapture will hit them:
    three of eight PNGs. The next run then captured all eight, hit `git pull --rebase` against that
    partial, and died on a **binary merge conflict**: two commits touching one PNG is not something
    git can auto-resolve. If a capture run has to be stopped, let it finish and revert the commit.
+
+---
+
+## ADR-1043: A list nothing can verify is a rumour, so status moves out of prose and into a probe
+
+**2026-08-17 · Accepted**
+
+**Context.** This repo has consolidated its work into "the one master list" **five separate times**,
+and each of the five says so in its own header: `MASTER-TODO` ("This is the one list. It supersedes
+the scattered open tails…"), `BUILD-LIST` ("The single, prioritized, execute-from list for the whole
+platform"), `MASTER-PLAN` ("one consolidated, ordered work list"), `BUILD-CATALOG` ("Reconciled
+master index of ALL unfinished work") and `BUILD-SEQUENCE` ("the single front-door that orders every
+track"). Four of the five are now wrong.
+
+None of them was wrong when it was written. Each was a real consolidation that then drifted, which
+is the part worth being precise about: **the drift was not carelessness, it was structural.** A
+markdown checkbox has no relationship to the code, so nothing can verify it, so the only thing
+keeping it true is a human remembering to come back. Nobody does, and the cost compounds silently.
+
+The 2026-08-17 census measured that cost. Sweeping 232 planning documents took a full session and
+found **22 items that were DONE and still listed as open**, three plan docs asking for work that had
+already shipped, and one row — BUILD-LIST 4.1 — that was stale in the direction that actually costs a
+session: it said Programs was "already built: 4 frameworks live in `content/programs/`" when that
+directory, the member route and the tables had all been dropped by later migrations. A reader
+scheduling from that row would have gone looking for a feature that no longer exists.
+
+Worse, the same session found the *inverse* failure in the owner list. The single highest-priority
+red item on the board — "the Vercel Build Command is unverified, so both artifact gates may never
+have run" — was **closed by one look at a production build log**, which prints both gates passing.
+It had sat red for a week. Two more owner rows (leaked-password protection, anonymous sign-ins) were
+already satisfied and still listed, and one — "0 of 24 products synced" — turned out to be true *and*
+newly urgent, because `billing_live` had since been switched on, leaving a billing switch on with an
+empty catalog behind it.
+
+**Decision.** Status moves out of prose entirely. There is one backlog, `docs/BUILD-BACKLOG.json`,
+and **every row states how it will be proven**:
+
+- `grep-present` / `grep-absent` — a pattern that must (not) appear in named paths.
+- `cmd` — a command that must exit 0.
+- `manual` — carries `evidence` and a `checked` date, for the rows a repo genuinely cannot probe.
+
+`pnpm check:backlog` runs every probe and **fails in both directions**: a row marked `open` whose
+probe passes is a stale row, and a row marked `done` whose probe fails is a regression or a row that
+was never true. Both arms matter — a gate that only catches un-closed work still lets a "done" row
+rot, which is half of what the census found.
+
+`pnpm check:one-list` freezes the set of planning-shaped documents (`scripts/planning-docs.txt`, 75
+files) so a sixth rival master list cannot appear by habit, and requires every one of them to declare
+**in its first 25 lines** whether its status lives in the backlog or whether it is history. Three docs
+failed that on day one — `FOUNDATION-HARDENING-PLAN`, `ENTITY-MANAGEMENT-OVERHAUL` and
+`GROWTH-OS-BUILD-PLAN` — and a reader genuinely could not tell whether the whole hardening track was
+live or archived.
+
+**This is not a new idea in this repo; it is the pattern that already works, applied to a new
+subject.** `scripts/adoption-baselines.json` plus `check:adoption` has held **17 debt classes without
+a single drift**, while the prose describing those same numbers was wrong in five places at once.
+`AGENTS.md` already states the principle outright — *"The machine-readable state beats prose"*. Tasks
+were simply the one place it had never been applied.
+
+**Consequences.**
+
+- **The gate found its 23rd stale item on its first run**, before this ADR was written: `LIVE-019`
+  ("NAMING.md defines no Drafts noun") was marked open, and the probe found a full owner ruling
+  already in `NAMING.md` resolving both the definition and the proposals-vs-autosave collision. That
+  is the whole argument for the mechanism, delivered by the mechanism, unprompted.
+- **It also caught a bad probe of mine in the same run.** The original `LIVE-019` probe was a bare
+  `/Drafts/` against `NAMING.md`, which would have passed on any incidental mention — the
+  shape-not-truth failure this repo names in four separate ADRs, committed here and caught here. The
+  probe is now anchored to the ruling's heading. **A probe must measure the consequence, never
+  restate the row's own title.**
+- **Manual rows never fail the build.** ADR-970's lesson is explicit: a gate that cannot fire
+  honestly gets routed around, and then it reads as coverage. "Upgrade Healthchecks.io" and "recruit
+  five test users" cannot be probed from a repo, so they go stale loudly at 120 days and never red.
+- **Parked rows are not probed at all.** "You could do this now" is true of everything parked and
+  therefore says nothing.
+- **Prose is not banned, and specs are not the problem.** `EDITOR-ARCHITECTURE`, `PAGE-FRAMEWORK` and
+  `STUDIO` are worth more than any list, and the rule does not touch them. It is narrower than it
+  first looks: documents may explain the work; they may not be the record of whether it is done.
+
+**The failure mode this does not fix, stated so nobody assumes it does.** A probe can prove a
+pattern is present and cannot prove the work was done *well*. `LIVE-001` will go green when
+`row-card.tsx` contains `press`, not when RowCard feels right under a thumb. The probe is a floor
+against forgetting, not a substitute for review — and where a row's quality bar matters more than its
+existence, the honest choice is `manual` with real evidence rather than a probe that flatters it.

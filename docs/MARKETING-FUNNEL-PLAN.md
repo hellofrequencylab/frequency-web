@@ -1,5 +1,9 @@
 # Marketing + Funnel development plan
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > Forward-facing site audit + the plan to get it launch-ready. Vision is locked (owner, 2026-07-02):
 > the through-line is **building Third Spaces**. Two pillars that must stay distinct but both be
 > represented: **Community** = the worldwide movement (broaden the framing from the loneliness

@@ -1,5 +1,9 @@
 # Circles C3 — remove Space Communities, replace it with Circles
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 **Status:** ⏳ proposed, awaiting owner approval. Nothing here is built.
 **Authority:** [ADR-1013](DECISIONS.md) §3 (the removal ruling) · [ADR-1015](DECISIONS.md) (Circle
 privacy, two axes) · [ADR-1014](DECISIONS.md) (Circle roles) · [ADR-584/585/586/587](DECISIONS.md)

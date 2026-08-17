@@ -1,5 +1,9 @@
 # The member profile: header, layout, associations, and chat
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **The answer.** The header is not primarily a colour problem. It is a collision problem: the name and the buttons are laid out in one row that lets them land on top of each other, and no contrast algorithm can rescue overlapping text. Fix the layout first (day one, two commits, no maths), take four controls off the photograph, and only then correct the two real measurement bugs in the contrast system that already ships. Alongside that: move `Block` and `Act as` to the join-date line as asked; make `Reconnect` open the chat dock and retire the direct-message pages behind a flag this sprint (the room pages need a real port first, and this plan says so plainly instead of deferring the whole ask); and add an associations panel that shows what a member has built, what they are in together with you, and, on your own profile, everything you are part of. The page also gets a floor so a brand-new member's profile is never a void.
 
 | | |

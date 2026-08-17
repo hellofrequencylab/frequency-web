@@ -1,5 +1,9 @@
 # Repeating events: one card, one page, one indexed home
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **The answer.** A repeating event is stored as one real database row per date, so a daily event that
 > runs for two months is about 61 separate events. Nothing on the HTML side ever knew that, so browse
 > lists, search, discover, the sitemap and the recommendation index all showed the same gathering

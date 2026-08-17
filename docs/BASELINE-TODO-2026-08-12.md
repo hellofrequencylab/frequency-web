@@ -1,5 +1,9 @@
 # Frequency Web — baseline to-do, 2026-08-12
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **Provenance.** Produced 2026-08-12 by a 13-agent fan-out (six parallel dimension scans, each
 > adversarially refuted by a second agent, then synthesised). 47 findings survived verification.
 > Companion to [`DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md) and ADR-1002/1003. White Label (W1-W5, E10)

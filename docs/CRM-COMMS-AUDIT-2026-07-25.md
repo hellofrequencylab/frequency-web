@@ -1,5 +1,9 @@
 # CRM + Messaging — tenancy & cohesion audit (2026-07-25)
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > A full scan of the CRM/comms stack against the owner's locked architecture: **the platform
 > Resonance CRM is the PRIMARY (full member directory + threaded communication); each Space entity
 > has its OWN CRM with shared functionality but COMPLETELY SEPARATE data, with safeties so nothing

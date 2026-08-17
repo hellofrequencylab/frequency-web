@@ -1,0 +1,855 @@
+{
+  "meta": {
+    "version": 1,
+    "title": "The one list",
+    "seeded": "2026-08-17",
+    "authority": "This file is the ONLY record of what is done. Prose docs explain the work; they do not track it.",
+    "howToRead": "pnpm backlog          — the working view (open + blocked)\npnpm backlog --lane owner — one lane\npnpm check:backlog    — prove every row against the tree (runs in CI)",
+    "rules": [
+      "A row's status is proven by its verify probe, not by memory. If they disagree, CI fails.",
+      "A probe must measure the CONSEQUENCE in the tree, never restate the row's own title. A probe that passes by existing is the shape-not-truth failure this repo names in four ADRs.",
+      "Manual rows never fail the build (ADR-970). They carry evidence + a checked date and go stale loudly.",
+      "Parked rows are not probed: 'you could do this now' is true of everything parked and therefore says nothing.",
+      "Never delete a probe to make CI pass. That is precisely how the previous five master lists drifted."
+    ],
+    "lanes": {
+      "owner": "Config or a decision. No code unblocks it.",
+      "live": "The committed near-term queue.",
+      "program": "A named multi-phase program. Needs a scheduling decision, not a start.",
+      "deferred": "Specced and deliberately parked.",
+      "hygiene": "Debt in the record or the instruments."
+    },
+    "supersedes": [
+      "docs/MASTER-TODO.md",
+      "docs/BUILD-CATALOG.md",
+      "docs/BUILD-SEQUENCE.md",
+      "docs/MASTER-PLAN.md",
+      "docs/BACKLOG.md",
+      "docs/OPEN-THREADS.md",
+      "docs/REMAINING-WORK.md",
+      "docs/CHECKLIST.md",
+      "docs/PATCH-LIST.md",
+      "docs/DEVELOPMENT-MAP.md",
+      "docs/BUILD-PHASES.md",
+      "ROADMAP.md"
+    ]
+  },
+
+  "entries": [
+    {
+      "id": "OWN-001",
+      "title": "Vercel Build Command runs pnpm build, so both artifact gates actually run",
+      "status": "done",
+      "lane": "owner",
+      "size": "S",
+      "source": { "file": "docs/FINALIZE-PLAN.md", "ref": "CP-1 / §7c" },
+      "detail": "Ranked the #1 red item for a week: 'the only load-bearing fact nobody has verified'. vercel.json has no buildCommand, so the worry was that a dashboard override skipped pnpm lifecycle scripts and neither postbuild gate had ever run. MEASURED against the real production build log 2026-08-17, which is the artifact rather than the config: both gates run and both pass.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Vercel deploy dpl_FTHVtXSqfKC1VdHE6uvADJPNu18d build log: '> frequency-web@0.1.0 postbuild' then '✅ check:build-budget — 5.82 GB across 499 functions, under the 8 GB budget' and '✅ check:og-trace — sharp ships to all 16 rasterising route(s), and to 67 other function(s) (budget 100)'. pnpm@10.33.0 with no .npmrc, so enable-pre-post-scripts defaults true.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "OWN-002",
+      "title": "Seed the beta test account + PW_STORAGE_STATE secret",
+      "status": "open",
+      "lane": "owner",
+      "size": "S",
+      "source": { "file": "docs/FINALIZE-PLAN.md", "ref": "§7c" },
+      "detail": "44 of 84 a11y tests and the entire member-shell visual suite do not run without it. The signed-in product is unmeasured, not clean — and that is the half of the product members actually use.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Not re-checked in this pass. Requires reading the repo Actions secrets, which is owner-only.",
+        "checked": "2026-08-12"
+      }
+    },
+    {
+      "id": "OWN-003",
+      "title": "Create the Vercel Protection Bypass secret (VERCEL_AUTOMATION_BYPASS_SECRET)",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": { "file": "docs/UX-MATURITY-PLAN.md", "ref": "Addendum 2026-08-04, gate corrections" },
+      "detail": "Deployment Protection serves its interstitial to Playwright, so preview suites test the wall rather than the app (viewport-tall captures, /login redirects). Until it exists, every e2e verdict is valid against production only.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Not re-checked. Owner-only (Vercel + Actions secrets).",
+        "checked": "2026-08-12"
+      }
+    },
+    {
+      "id": "OWN-004",
+      "title": "Flip pr-compare, check:adoption and check:contrast to required in branch protection",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": { "file": "docs/UX-MATURITY-PLAN.md", "ref": "§5 the constraint that governs the plan" },
+      "detail": "All three are green. Until they are required, the adoption ratchet is the only thing holding the line and it cannot see a visual regression. Note pr-compare was made required at some point and the fallback workflow exists to keep docs-only PRs mergeable.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Not re-checked. Requires reading ruleset 17640795, owner-only.",
+        "checked": "2026-08-12"
+      }
+    },
+    {
+      "id": "OWN-005",
+      "title": "Upgrade Healthchecks.io so all 27 crons are monitored",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": { "file": "docs/FINALIZE-PLAN.md", "ref": "§7c, Upgrade Healthchecks.io" },
+      "detail": "Free tier caps at 20 checks; vercel.json declares 27 crons. The first 20 to ping win the slots, so WHICH 7 go unmonitored is decided by schedule order rather than importance. Also set each check's period from the real schedule: auto-created checks arrive at 1 day, so process-queue (every 2 min) could be dead most of a day before anyone is paged.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const v=require('./vercel.json'); if ((v.crons||[]).length<=20) process.exit(0); process.exit(1)\"",
+        "note": "Passes when the cron count drops to what the free tier covers. If the account is upgraded instead, close this row manually and record the plan in evidence."
+      }
+    },
+    {
+      "id": "OWN-006",
+      "title": "Sweep every `revoke ... from public` block in supabase/migrations",
+      "status": "open",
+      "lane": "owner",
+      "size": "M",
+      "source": { "file": "docs/BUILD-LIST.md", "ref": "P8, ADR-959" },
+      "detail": "Supabase's ALTER DEFAULT PRIVILEGES grants anon/authenticated on new objects as EXPLICIT per-role grants, which REVOKE ... FROM public does not touch. The statement succeeds and removes nothing. The idiom recurs throughout the migration history and every instance has the same hole. Audit with has_function_privilege against prod, never by reading the SQL — the SQL reads correct.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "MEASURED 2026-08-17 via Supabase advisors on azsqfeonabsbmemvddqd: exactly 29 anon_security_definer_function_executable + 49 authenticated_security_definer_function_executable warnings, confirming the finding and its count. Named examples: capture_guest_rsvp, capture_signup_lead, ensure_calendar_token, event_calendar_feed, handle_is_available, match_help_chunks, my_orbit, near_misses, node_within_range, nodes_geo, public_active_circle_count, public_calendar_feed.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "OWN-007",
+      "title": "Supabase Auth: leaked-password protection enabled",
+      "status": "done",
+      "lane": "owner",
+      "size": "XS",
+      "source": { "file": "docs/UX-MATURITY-PLAN.md", "ref": "Lift 3 owner action" },
+      "detail": "Listed as a standing owner action 'flagged since June' across four docs. The advisor that reports it disabled is absent from a full security run, which is the signal that it is on.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Supabase security advisors, 2026-08-17: 164 advisories returned and ZERO relate to leaked-password protection. Supabase emits an advisory whenever it is disabled, so absence is the positive signal.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "OWN-008",
+      "title": "Supabase Auth: anonymous sign-ins disabled",
+      "status": "done",
+      "lane": "owner",
+      "size": "XS",
+      "source": { "file": "docs/MASTER-TODO.md", "ref": "Owner actions" },
+      "detail": "Listed as open. No advisory reports it. NOTE A REAL CONFLICT before closing this permanently: resonance/docs/BUILD-PLAN.md's auth rung explicitly requires anonymous sign-ins to be ENABLED. Those two cannot both be satisfied; see HYG-005.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Supabase security advisors, 2026-08-17: no anonymous-sign-in advisory among 164 results.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "OWN-009",
+      "title": "platform_flags.billing_live is ON",
+      "status": "done",
+      "lane": "owner",
+      "size": "XS",
+      "source": { "file": "docs/BUILD-LIST.md", "ref": "§B Stripe billing, step 6" },
+      "detail": "BUILD-LIST's go-live table still lists this as '📋 do last'. It has been on for weeks. billingLive() = billingEnabled() (env keys) AND this flag.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "SELECT on platform_flags, prod azsqfeonabsbmemvddqd, 2026-08-17: billing_live = true, ai_enabled = true, demo_mode = false.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "OWN-010",
+      "title": "Sync the ~24 products/prices to Stripe — the catalog is still empty while billing is live",
+      "status": "blocked",
+      "lane": "owner",
+      "size": "S",
+      "source": { "file": "docs/BUILD-LIST.md", "ref": "§B Stripe billing, step 3" },
+      "detail": "THE SHARPEST FINDING OF THE OWNER SWEEP. billing_live is ON (OWN-009) and the Stripe live catalog is completely empty, so nothing is purchasable. The code degrades correctly rather than dangerously — resolveLoadoutPriceId returns null, the base item is fatal so createCheckout returns null, and *Sellable() returns false, so no member is ever charged at a wrong price — but the net product state is a billing switch that is on with nothing behind it. Run /admin/pricing → 'Sync products to Stripe'. Safe: it creates the catalog and charges nobody.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Stripe live account acct_1TdurHPhyalyRPP1, 2026-08-17: GET /v1/products → data: [], GET /v1/prices → data: [], GET /v1/subscriptions (status=all) → data: []. Zero of everything.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "OWN-011",
+      "title": "Google OAuth verification: clear Safe Browsing, then submit + record the demo video",
+      "status": "open",
+      "lane": "owner",
+      "size": "M",
+      "source": { "file": "docs/BUILD-LIST.md", "ref": "§A Google Contacts import, steps 6-8" },
+      "detail": "The feature is live behind Google's 100-user unverified cap. Safe Browsing review was requested 2026-06-23 and MUST clear before verification is submitted. The ~90 second shot list and the scope justification are already written in the source doc; nothing needs drafting.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Not re-checkable from the repo or the connected services — Google Cloud Console only.",
+        "checked": "2026-08-12"
+      }
+    },
+    {
+      "id": "OWN-012",
+      "title": "Flip practices public so the crawlable practice surfaces stop rendering empty",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": { "file": "docs/OPEN-THREADS.md", "ref": "C5" },
+      "detail": "/discover/practices, the four per-Pillar landing pages and the slug detail pages are all built, in the sitemap and crawlable — and render empty, because no practice has is_public set. One toggle on /admin/content. Highest SEO return per second of effort on the whole list.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Not re-measured in this pass; last recorded state was 0 public practices in prod.",
+        "checked": "2026-06-25"
+      }
+    },
+    {
+      "id": "OWN-013",
+      "title": "Submit sitemap.xml to Google Search Console and Bing",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": { "file": "docs/FINALIZE-PLAN.md", "ref": "§7c" },
+      "detail": "app/sitemap.ts is live and advertised in robots.txt. Nothing has been submitted, so crawl coverage of the programmatic hubs depends on discovery alone.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "External to the repo (Search Console / Bing Webmaster).",
+        "checked": "2026-08-12"
+      }
+    },
+    {
+      "id": "OWN-014",
+      "title": "Decide the amber-as-display-text contrast failure: swap to primary-strong, or waive it",
+      "status": "open",
+      "lane": "owner",
+      "size": "S",
+      "source": { "file": "docs/FINALIZE-PLAN.md", "ref": "§7c, amber as DISPLAY TEXT" },
+      "detail": "~30 marketing sites render text-primary as the accent word inside a display heading, measuring 2.18-2.86:1 against a 3:1 bar. It fails the LARGE-text floor, so no size or weight rescues it. The 2026-08-06 white-on-amber waiver is scoped in words to a decorative fill and does not cover this. --color-primary-strong (#965C12) already exists and is already used for the links directly beneath these same headings. A design call either way, and it moves every marketing visual baseline.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Unchanged; still counted as debt inside the a11y baselines.",
+        "checked": "2026-08-12"
+      }
+    },
+    {
+      "id": "OWN-015",
+      "title": "Approve or reject Circles C3 (remove Space Communities, replace with Circles)",
+      "status": "open",
+      "lane": "owner",
+      "size": "M",
+      "source": { "file": "docs/CIRCLES-C3-PLAN.md", "ref": "Status" },
+      "detail": "Proposed, nothing built, zero live data behind the feature. Two risks the decision must absorb: the SpaceCommunity BLOCK is misnamed and actually renders Circles, and 18 of 20 live Spaces have it in a saved layout, so a careless rename silently drops it (unknown block types are skipped). And nothing replaces reaching everyone who FOLLOWS a Space — a Circle does not cover that, and the plan says ship that gap as its own decision rather than pretend otherwise.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "docs/CIRCLES-C3-PLAN.md still reads 'proposed, awaiting owner approval. Nothing here is built.'",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "OWN-016",
+      "title": "Schedule or keep parked: App Platform A1-A5 and White Label E10",
+      "status": "open",
+      "lane": "owner",
+      "size": "—",
+      "source": { "file": "docs/BUILD-LIST.md", "ref": "App Platform + white-label, resume condition" },
+      "detail": "The TECHNICAL resume condition is met and has been for a while: tenancy walls up, 26 tables policied, pgTAP four-seat cross-tenant matrix passing in db-tests CI. Only the scheduling call remains. Do not re-list 'run the pgTAP suite' as work — it runs and it is green.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "BUILD-LIST records the db-tests run green on 2026-08-11 plus the eight before it.",
+        "checked": "2026-08-12"
+      }
+    },
+    {
+      "id": "OWN-017",
+      "title": "Resume or keep parked: the quarterly moderated research round",
+      "status": "open",
+      "lane": "owner",
+      "size": "—",
+      "source": { "file": "docs/FINALIZE-PLAN.md", "ref": "§7c parked" },
+      "detail": "Five members, one hour each, quarterly, on the Vercel preview of a design-sync branch. About two hours per quarter. Lift 1 sits at literal zero — docs/research/findings/ holds only its README and no round has ever run. Scored 40/100 and named the single largest distance from world-class. It is the ONLY item on any list that no amount of engineering can close.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const f=fs.readdirSync('docs/research/findings').filter(n=>n!=='README.md');process.exit(f.length>0?0:1)\"",
+        "note": "Passes the moment a real findings file lands."
+      }
+    },
+    {
+      "id": "OWN-018",
+      "title": "Delete the four dead branches",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": { "file": "docs/BASELINE-TODO-2026-08-12.md", "ref": "CP-9" },
+      "detail": "feat/studio-kernel, claude/studio-reland, fix/codeql-allowlist, fix/codeql-seeder-write-allowlist. All four verified BY CONTENT (a squash merge leaves no ancestry, so --is-ancestor proves nothing) to hold nothing main lacks. DO NOT resurrect feat/studio-kernel — it still carries app/opengraph-image.tsx, the root metadata image that caused the ENOSPC outage.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Verified file-by-file 2026-08-12; GitHub API was down during the 2026-08-17 pass so branch state was not re-read.",
+        "checked": "2026-08-12"
+      }
+    },
+    {
+      "id": "OWN-019",
+      "title": "Send the /the-community design gap to DAWN",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": { "file": "docs/UX-MATURITY-PLAN.md", "ref": "Lift 5b" },
+      "detail": "The only marketing route without a DAWN reference frame, and it blocks 5b's template regeneration for that page. Everything else in the conversion order can proceed without it.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Flagged in the reverse-sync; no reference frame received.",
+        "checked": "2026-08-12"
+      }
+    },
+    {
+      "id": "OWN-020",
+      "title": "Config and env: the remaining unset keys",
+      "status": "open",
+      "lane": "owner",
+      "size": "S",
+      "source": { "file": "docs/MASTER-TODO.md", "ref": "Owner actions" },
+      "detail": "VAPID push keys (push is dark without them), RESEND_WEBHOOK_SECRET (email metrics dark), verify frequencylocal.com in Resend plus SPF/DKIM/DMARC subdomain isolation (blocking for volume), secret-scanning push protection, dismiss 3 CodeQL false positives, Supabase → Pro for capacity and backups. CRON_SECRET and ANTHROPIC_API_KEY appear satisfied — ai_enabled is true and the crons are firing — but were not individually read.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "ai_enabled=true measured 2026-08-17, implying ANTHROPIC_API_KEY is set. The rest are Vercel/Resend dashboard state, not readable here.",
+        "checked": "2026-08-17"
+      }
+    },
+
+    {
+      "id": "LIVE-001",
+      "title": "Lift 8b: RowCard gets a ring and .press on its surface",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": { "file": "docs/INTERACTION-STATES.md", "ref": "§5 item 5" },
+      "detail": "Brings the third card primitive level with EntityCard. Today the surface never rings or presses.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "press",
+        "paths": ["components/ui/cards/row-card.tsx"]
+      }
+    },
+    {
+      "id": "LIVE-002",
+      "title": "Lift 8b: a loading prop on IconButton, matching Button's",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": { "file": "docs/INTERACTION-STATES.md", "ref": "§5 item 7" },
+      "detail": "Icon-only controls are exactly the ones where a tap leaves no other evidence it landed.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "loading",
+        "paths": ["components/ui/icon-button.tsx"]
+      }
+    },
+    {
+      "id": "LIVE-003",
+      "title": "Lift 8b: a visible busy state on ConfirmSubmitButton",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": { "file": "docs/INTERACTION-STATES.md", "ref": "§5 item 8" },
+      "detail": "The ref guard already blocks the second fire; nothing tells the member the first one took.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Needs a probe once the component's busy-state API is chosen; a bare grep for 'busy' would pass on a comment.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "LIVE-004",
+      "title": "Lift 8b: an in-flight cue on DirectorySearch",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": { "file": "docs/INTERACTION-STATES.md", "ref": "§5 item 9" },
+      "detail": "It fetches. Until it says so, an empty result and a pending one look identical.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Same reason as LIVE-003 — the probe follows the implementation choice.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "LIVE-005",
+      "title": "Lift 8d: check:elements requires a state test for every new ui primitive",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": { "file": "docs/UX-MATURITY-PLAN.md", "ref": "Lift 8d" },
+      "detail": "The gate that stops 8b's sweep from being re-earned every quarter: a new components/ui/* primitive must ship a colocated test naming its required states.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "required state|interaction state",
+        "paths": ["scripts/check-elements.mjs"]
+      }
+    },
+    {
+      "id": "LIVE-006",
+      "title": "Lift 5c: retire the coded marketing bodies, one slug per PR",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": { "file": "docs/UX-MATURITY-PLAN.md", "ref": "Lift 5c / Sequencing 'Now'" },
+      "detail": "Committed order in scripts/render-path-bodies.txt: about → spaces → the-lab → the-quest → the-community → pricing (partial). check:render-path ships an EXACT-MATCH ratchet, so the PR retiring a body edits the baseline in the same PR — a fall is not auto-accepted here. MUST land before EDITOR E3, which replaces EDITABLE_PAGES in the opposite direction.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Progress is the per-slug count in scripts/render-path-bodies.txt; a probe would need a target number per slug rather than a boolean.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "LIVE-007",
+      "title": "Lift 5d: the eight seeker articles join EDITABLE_PAGES",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": { "file": "docs/UX-MATURITY-PLAN.md", "ref": "Lift 5d" },
+      "detail": "Unblocked — DawnHowToSteps exists and owns its HowTo JSON-LD, with a dedicated test. Needs a shared templates/article.ts seed. Same ordering constraint as LIVE-006 relative to E3.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "article",
+        "paths": ["lib/page-editor/templates"]
+      }
+    },
+    {
+      "id": "LIVE-008",
+      "title": "The .dark [data-skin=\"midnight\"] selector never matches on the <html> path",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": { "file": "docs/FINALIZE-PLAN.md", "ref": "§ .dark [data-skin] never matches" },
+      "detail": "A descendant combinator cannot match an element against itself. app/layout.tsx stamps data-skin on documentElement (the global skin preview path, including marketing); only the shell root is a descendant. So midnight-dark renders a MIXTURE: the generic .dark palette with midnight's light-mode overrides under it. The comment at app/layout.tsx:142-143 asserts the opposite, which is why it survived. One selector, but it repaints every midnight-dark surface, so it wants its own pass with a baseline recapture.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "^\\s*\\.dark \\[data-skin=\"midnight\"\\]",
+        "paths": ["app/globals.css"]
+      }
+    },
+    {
+      "id": "LIVE-009",
+      "title": "The app shell statically imports the entire admin module registry",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": { "file": "docs/FINALIZE-PLAN.md", "ref": "§10.8" },
+      "detail": "settings-panel.tsx imports MODULE_COMPONENTS from components/admin/modules/module-map — a 'use client' pure registry with 38 static imports and no hooks, handlers or browser APIs. It reaches crypto-browserify/stream-browserify: 406 kB raw / 121 kB gzip on EVERY authed page, verified as a blocking script tag in served HTML. Fix: next/dynamic per module, import module IDS not components, and add import 'server-only' to lib/journey-plans and lib/practices so the class fails the build. NOTE: needs a route-level first-load measurement, which the agent container cannot produce (next build fails page-data collection without service-role creds).",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "^import \\{ MODULE_COMPONENTS \\}",
+        "paths": ["components/layout/settings-panel.tsx"]
+      }
+    },
+    {
+      "id": "LIVE-010",
+      "title": "Sentry ships on all 385 routes whether or not a DSN is set",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": { "file": "docs/FINALIZE-PLAN.md", "ref": "§10.10" },
+      "detail": "instrumentation-client.ts imports @sentry/nextjs at module scope. The file's own comment is right about NETWORK traffic and wrong about BYTES: ~150 kB of a 233 kB baseline chunk, on every route including every preview. Gate the import behind NEXT_PUBLIC_SENTRY_DSN.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "^import \\* as Sentry from '@sentry/nextjs'",
+        "paths": ["instrumentation-client.ts"]
+      }
+    },
+    {
+      "id": "LIVE-011",
+      "title": "revalidate = 3600 is dead on the four /discover detail routes",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": { "file": "docs/FINALIZE-PLAN.md", "ref": "§10.9" },
+      "detail": "SPLIT FROM THE INDEX PAGES ON PURPOSE. circles/[id], events/[slug], events/organizer/[handle] and journeys/[slug] declare revalidate and simply lack generateStaticParams — the correlation is exact and the fix touches no auth. Safe to do alone.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "generateStaticParams",
+        "paths": ["app/discover/circles/[id]/page.tsx", "app/discover/journeys/[slug]/page.tsx"]
+      }
+    },
+    {
+      "id": "LIVE-012",
+      "title": "Decide how /discover index pages resolve isAuthed without killing ISR",
+      "status": "blocked",
+      "lane": "live",
+      "size": "M",
+      "source": { "file": "docs/FINALIZE-PLAN.md", "ref": "§10.9, §10.12" },
+      "detail": "Three index pages call createClient() → cookies() purely for an isAuthed boolean, killing ISR and adding an auth round trip per crawl. DO NOT 'just remove the auth read' — it silently breaks sign-in destinations: isAuthed feeds communityHref, and proxy.ts builds its redirect by rewriting the pathname and NEVER setting next=, so the destination is lost. Two real options: (a) make the proxy set next= (strictly better product behaviour but changes where every signed-out deep link lands across 122 protected routes), or (b) resolve isAuthed client-side via the authMode=\"client\" pattern app/discover/layout.tsx already uses. Same decision governs (main)/layout.tsx. Owner call.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Blocked on an auth-navigation decision, not on engineering.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "LIVE-013",
+      "title": "Members pay Gems for cosmetics that nothing renders, and there is no fulfillment queue",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": { "file": "docs/FINALIZE-PLAN.md", "ref": "§9.1 / §10.15" },
+      "detail": "All 5 borders, 5 flairs and 4 titles have exactly one reader: a text chip in the Vault summary. Worse, the 13 SKUs actually on today's shelf carry metadata = '{}', so classifyRedemption routes every one to 'pending' — including five whose copy promises a visible profile change. The receipt appears on the profile; the EFFECT never does. No fulfillment queue exists in the operator surface. This one spends real member currency, so it outranks the bundle-size rows on member trust.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Needs a DB read of store_items metadata plus a decision on whether to build the effect or stop selling it.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "LIVE-014",
+      "title": "~105 unassociated <Label> uses across ~40 files",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": { "file": "docs/META-SCAN-STATUS.md", "ref": "Accessibility" },
+      "detail": "Create Event (the worst, 17) is fixed and Field exists as the shared labelled-control primitive. Next by volume: circle-builder (12), movement-session (9), events/drafts/[id]/editor (9), the six onboarding *-render files. Mechanical: wrap in Field, thread htmlFor/id where the control is real, or role=\"group\" + aria-labelledby for button groups. Re-measured 2026-08-17: 44 files still contain a bare <Label.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "test $(rg -l '<Label' app components | wc -l) -lt 10",
+        "note": "Passes when the population drops under 10 files. 44 at seed."
+      }
+    },
+    {
+      "id": "LIVE-015",
+      "title": "The header wordmark's keyboard focus indicator is explicitly deleted",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": { "file": "docs/META-SCAN-STATUS.md", "ref": "Accessibility" },
+      "detail": "app/globals.css removes the focus ring from the wordmark — the first tab stop on every page.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Needs a targeted read of the rule at globals.css:1028 rather than a whole-file grep.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "LIVE-016",
+      "title": "Vera's chat transcript is not a live region, so replies are never announced",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": { "file": "docs/META-SCAN-STATUS.md", "ref": "Accessibility" },
+      "detail": "A screen-reader user gets no notification that Vera answered.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Probe needs the specific transcript component path, not yet pinned.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "LIVE-017",
+      "title": "N+1 in the sitemap: one podcast_shows query per networked Space",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": { "file": "docs/META-SCAN-STATUS.md", "ref": "Performance" },
+      "detail": "app/sitemap.ts fires up to 200 round trips in a single request. The sitemap is the surface crawlers hit hardest.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Needs a read of the loop at app/sitemap.ts:379 to confirm the shape after any fix.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "LIVE-018",
+      "title": "Widen check:canon past content/ to member-facing strings in app/ and lib/",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": { "file": "docs/META-SCAN-STATUS.md", "ref": "Naming and voice" },
+      "detail": "EVERY canon break the 2026-07-27 scan found was outside check:canon's current scope: Dispatches called 'broadcasts' in three visible strings, the console labelled 'Broadcasts' in the rail and 'Dispatches' in the sub-header, eight search destinations still labelled 'Marketplace', two surfaces selling 'cohorts' (the one word the canon bans), and lowercase 'zaps'/'gems earned' on stat pills. Widening the gate retires the whole class rather than the five instances.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "'app'|\"app\"",
+        "paths": ["scripts/check-canon.mjs"]
+      }
+    },
+    {
+      "id": "LIVE-019",
+      "title": "Define Drafts in NAMING.md and resolve the proposals-vs-autosave collision",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": { "file": "docs/BASELINE-TODO-2026-08-12.md", "ref": "E-2" },
+      "detail": "CLOSED BY THIS GATE ON ITS FIRST RUN — the 23rd instance of the bug this whole exercise is about. Two docs still listed it open ('NAMING.md still defines no Drafts noun'). NAMING.md now carries a full owner ruling: Drafts is ONE member surface at /drafts, /events/drafts folded in as a third row kind and redirects, the three kinds are told apart by a badge rather than separate pages, the lowercase common noun is explicitly unaffected, and ADR-1030 even governs sentence-initial capitalisation. Both halves resolved, including the collision.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "^## Drafts: one surface, every unfinished thing",
+        "paths": ["docs/NAMING.md"],
+        "note": "Anchored to the ruling's heading. The earlier probe was a bare /Drafts/, which would have passed on any incidental mention — the shape-not-truth failure this repo names in four ADRs, committed here and caught here."
+      }
+    },
+    {
+      "id": "LIVE-020",
+      "title": "Build a function-grant guard",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": { "file": "docs/BASELINE-TODO-2026-08-12.md", "ref": "E-4" },
+      "detail": "There is no repo-side gate for function grants at all: check-grants.mjs covers tables only, and nothing anywhere references has_function_privilege. 29 anon-executable SECURITY DEFINER functions currently rest on a human remembering to read an advisor. Pairs directly with OWN-006, which is the one-time sweep this would then hold.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "has_function_privilege",
+        "paths": ["scripts"]
+      }
+    },
+    {
+      "id": "LIVE-021",
+      "title": "tsconfig excludes scripts/, so the CI guard tests are never typechecked",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": { "file": "docs/META-SCAN-STATUS.md", "ref": "Docs and repo hygiene" },
+      "detail": "Every guard this repo relies on has its test file outside the typechecker. Given how much of the safety story is 'a gate catches it', the gates themselves being untyped is the sharpest instrument gap on the list.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "\"scripts\"",
+        "paths": ["tsconfig.json"]
+      }
+    },
+    {
+      "id": "LIVE-022",
+      "title": "check:authz cannot see app/api/** at all",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": { "file": "docs/META-SCAN-STATUS.md", "ref": "2026-08-04 open" },
+      "detail": "54 routes, 15 of them bypassing RLS. All 15 were hand-audited clean on the day. Nothing catches a bad one tomorrow. The guard is also file-level rather than function-level, and check:admin-client counts imports rather than soundness across 733 files.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "app/api",
+        "paths": ["scripts/check-authz-guards.mjs"]
+      }
+    },
+    {
+      "id": "LIVE-023",
+      "title": "Three shell a11y baselines are ceilings, not readings",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": { "file": "docs/BUILD-LIST.md", "ref": "DAWN conversion, owed to the owner" },
+      "detail": "/feed (12), /settings (7) and /spaces/…/manage (8), all dawn-light desktop, were seeded as RAW totals without subtracting waivers because the run log truncated at 5 nodes. The node cap is now 40, so the next run prints the real number. Until then these are the three widest holes in the a11y gate.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Requires an e2e a11y run to re-seed; the suite needs the beta account from OWN-002.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "LIVE-024",
+      "title": "Adopt or retire edge-light, scanlines and vignette",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": { "file": "docs/UX-MATURITY-PLAN.md", "ref": "Addendum §3 package 4" },
+      "detail": "Three effect classes at zero adopters. Either give them a home or delete them: a contract class nobody calls is a lie in the stylesheet. Smallest item on the board.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Needs an adopter count per class; a grep for the class name matches its own definition.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "LIVE-025",
+      "title": "R7: unify the eyebrow",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": { "file": "docs/UX-MATURITY-PLAN.md", "ref": "Addendum §3 package 5" },
+      "detail": "Split TEN ways — tracking-wide 484, wider 77, widest 75, 62 arbitrary values — against 3 adopters of the eyebrow utility. The dominant hand-rolled value is 7.2x tighter than --tracking-eyebrow. Largely mechanical, and it is the single most visible type tell on the site. Scored +3.0.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Wants its own adoption-baselines.json ratchet class rather than a boolean probe.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "LIVE-026",
+      "title": "The rail ladder: Auto / Open / Strip, persisted, plus a desktop left-rail fold",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": { "file": "docs/UX-MATURITY-PLAN.md", "ref": "Addendum §3 package 7" },
+      "detail": "Today the right rail is binary, its state lives in useState keyed on pathname so it RESETS ON EVERY NAVIGATION, and the left rail has a compact mode with no user control at all. DAWN's law is a three-position standing instruction honoured until the window is too narrow. Scored +3.0.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Needs a persisted-state probe once the storage key is chosen.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "LIVE-027",
+      "title": "Send the four prod-ahead tokens back to DAWN",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": { "file": "docs/UX-MATURITY-PLAN.md", "ref": "Addendum §4 finding 3" },
+      "detail": "--color-focus-ring, --color-text-on-primary, --color-text-on-broadcast and --color-text-subtle are all CORRECT in production and wrong in DAWN's artifact. SYNC.md requires these go back on the next round or the next handoff silently reintroduces the AA failures they fixed.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Closes when the next outbound DAWN handoff carries them.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "LIVE-028",
+      "title": "D-9: hotfix the five orphan block types in three draft pages",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": { "file": "docs/BUILD-LIST.md", "ref": "ADR-977 D-9" },
+      "detail": "Explicitly ruled to land as a SEPARATE PR ahead of the editor program, not folded into E0.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Needs the stored-document scan that identified the five types.",
+        "checked": "2026-08-17"
+      }
+    },
+
+    {
+      "id": "PROG-E0",
+      "title": "Editor E0: foundations + the CRDT",
+      "status": "parked",
+      "lane": "program",
+      "size": "XL",
+      "source": { "file": "docs/EDITOR-ARCHITECTURE.md", "ref": "E0" },
+      "detail": "Node-id keying, unknown-block byte-for-byte preservation, immutable page_versions with publish as a pointer swap, app_instances writers (absorbs A2), undo + base_revision, the render_path runtime flag per surface, surface-vocabulary reconciliation, plus Yjs over Supabase Realtime. Gated on FINALIZE 1.2/1.3. E0-E3 carry roughly half the program's risk and produce almost nothing visible — say so at the start, not when someone asks why nothing has shipped.",
+      "verify": { "kind": "manual", "evidence": "Program phase; scheduling decision pending.", "checked": "2026-08-17" }
+    },
+    { "id": "PROG-E1", "title": "Editor E1: the block contract", "status": "parked", "lane": "program", "size": "L", "source": { "file": "docs/EDITOR-ARCHITECTURE.md", "ref": "E1" }, "detail": "One registry, defineBlock, Zod content, up/down migrations, reads live|authored, the binding layer, plus check:blocks + check:surface-binding + check:email-blocks.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+    { "id": "PROG-E2", "title": "Editor E2: Loom projection + usage index, THEN consolidate", "status": "parked", "lane": "program", "size": "XL", "source": { "file": "docs/EDITOR-ARCHITECTURE.md", "ref": "E2" }, "detail": "Re-scope before a target is locked. The real count is 304 block types across FIVE systems mapping to ~49 held as a range — a 6:1 cut, not 2:1. Four audits found nine first-draft figures wrong, always undercounting fragmentation; treat the next unmeasured number here as a floor. 'Which tenants use this block' must be answerable BEFORE the first retirement.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+    { "id": "PROG-E3", "title": "Editor E3: axis work + capture the four missing baselines", "status": "parked", "lane": "program", "size": "L", "source": { "file": "docs/EDITOR-ARCHITECTURE.md", "ref": "E3" }, "detail": "Widen kinds[] to member, density as a declared property, Site's four things. E3 HAS NO INSTRUMENT: the 72 visual baselines cover none of its four target surfaces and no phase owned capturing them, so 'zero visual diff' is decorative until someone does. That capture belongs in this phase. Must land AFTER LIVE-006/007.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+    { "id": "PROG-E4", "title": "Editor E4: the canvas — the first demonstrable phase", "status": "parked", "lane": "program", "size": "L", "source": { "file": "docs/EDITOR-ARCHITECTURE.md", "ref": "E4" }, "detail": "Same-origin iframe + one React tree via createPortal, bubbleEvent + coordinate translation, inline Tiptap on y-prosemirror, live cursors, device switcher at real viewports.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+    { "id": "PROG-E5", "title": "Editor E5: inspector + responsive, touch-native", "status": "parked", "lane": "program", "size": "L", "source": { "file": "docs/EDITOR-ARCHITECTURE.md", "ref": "E5" }, "detail": "Fields derived from schemas, sparse breakpoint overrides with provenance, container queries, and the bottom-sheet inspector with no hover dependency.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+    { "id": "PROG-E6", "title": "Editor E6: direct manipulation + the touch gesture model", "status": "parked", "lane": "program", "size": "XL", "source": { "file": "docs/EDITOR-ARCHITECTURE.md", "ref": "E6" }, "detail": "Drag/drop, layer tree, keyboard model, spacing handles, presets-first inserter, long-press drag. The keyboard path must be complete AND the full authoring path must finish on a phone.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+    { "id": "PROG-E7", "title": "Editor E7: functional blocks + member Stripe Connect", "status": "parked", "lane": "program", "size": "XL", "source": { "file": "docs/EDITOR-ARCHITECTURE.md", "ref": "E7" }, "detail": "Five transactional widgets made placeable, the form block, and member Connect: onboarding, capability checks, platform fee, payouts, tax. O-1's scope needs rewriting against lib/billing/connect.ts before anyone estimates this.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+    { "id": "PROG-E8", "title": "Editor E8: Vera, creation-time only", "status": "parked", "lane": "program", "size": "L", "source": { "file": "docs/EDITOR-ARCHITECTURE.md", "ref": "E8" }, "detail": "Streaming, per-Space retrieval, composer generalized past 15 blocks and one surface, structural + validator layers (no CSS validator — D-1 deleted it), bounded critic, ghosted diff review.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+    { "id": "PROG-E9", "title": "Editor E9: Loom authoring", "status": "parked", "lane": "program", "size": "M", "source": { "file": "docs/EDITOR-ARCHITECTURE.md", "ref": "E9" }, "detail": "Layer-2 config editing, per-surface settings console, the declarative composer, check:loom-integrity. An operator composes a function without a deploy and cannot write JavaScript.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+    { "id": "PROG-E10", "title": "Editor E10: Sites — absorbs White Label W1-W5", "status": "parked", "lane": "program", "size": "L", "source": { "file": "docs/EDITOR-ARCHITECTURE.md", "ref": "E10" }, "detail": "Domains, host routing, per-tenant theming and SEO. Subdomain on any paid plan, custom domain as the upgrade. W1-W5 are re-pointed here, not deleted — read them as the scope inventory, never schedule them independently. W4 is additionally blocked on Stripe Connect.", "verify": { "kind": "manual", "evidence": "Program phase; owner-gated (OWN-016).", "checked": "2026-08-17" } },
+
+    { "id": "PROG-A1", "title": "App Platform A1: feature modules with enforced boundaries", "status": "parked", "lane": "program", "size": "M", "source": { "file": "docs/BUILD-LIST.md", "ref": "A1" }, "detail": "modules/<app>/{components,server,db,index.ts} with an ESLint import-boundary rule (public API via barrel only); CRM, booking, email-design and QR first. Generalizes then retires check:crm-parity.", "verify": { "kind": "manual", "evidence": "Owner-gated (OWN-016).", "checked": "2026-08-17" } },
+    { "id": "PROG-A3", "title": "App Platform A3: enablement inside RLS", "status": "parked", "lane": "program", "size": "M", "source": { "file": "docs/BUILD-LIST.md", "ref": "A3" }, "detail": "Module-table policies also check the enablement key, so a disabled module's data is unreachable even via direct API.", "verify": { "kind": "manual", "evidence": "Owner-gated.", "checked": "2026-08-17" } },
+    { "id": "PROG-A4", "title": "App Platform A4: flagship packaged apps", "status": "parked", "lane": "program", "size": "L", "source": { "file": "docs/BUILD-LIST.md", "ref": "A4" }, "detail": "CRM as ONE module on /admin/crm, /spaces/[slug]/crm and entity consoles, each reading only its tenant's rows. Then booking, then email design. pgTAP enablement tests per app.", "verify": { "kind": "manual", "evidence": "Owner-gated.", "checked": "2026-08-17" } },
+    { "id": "PROG-A5", "title": "App Platform A5: the freemium meters go live", "status": "parked", "lane": "program", "size": "M", "source": { "file": "docs/BUILD-LIST.md", "ref": "A5" }, "detail": "200 contacts, 300 sends/mo, 3 QR codes, 1 journey, 1 seat — currently decorative — enforced at the module boundary with upgrade prompts, behind the existing gatesLive switch.", "verify": { "kind": "manual", "evidence": "Owner-gated.", "checked": "2026-08-17" } },
+
+    { "id": "PROG-D1", "title": "Loom D1: finish Studio ingest + search", "status": "parked", "lane": "program", "size": "M", "source": { "file": "docs/BUILD-LIST.md", "ref": "Loom D1" }, "detail": "Shipped, but the ingest extras are still pending: checksum dedupe, EXIF strip, dims/colors/blurhash, the rendition set, and FTS-ranked/trigram search.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+    { "id": "PROG-D2", "title": "Loom D2: the AssetField seam + backfill", "status": "parked", "lane": "program", "size": "L", "source": { "file": "docs/BUILD-LIST.md", "ref": "Loom D2" }, "detail": "One Upload / Pick from library / Paste URL control replacing ImageField everywhere; blocks store an asset REFERENCE plus a URL cache; render resolves reference → CDN url; backfill existing site-media URLs into the catalog and rewrite references.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+    { "id": "PROG-D3", "title": "Loom D3: editor + non-destructive versions", "status": "parked", "lane": "program", "size": "L", "source": { "file": "docs/BUILD-LIST.md", "ref": "Loom D3" }, "detail": "Filerobot image editor; an edit saves a new library_versions row; rollback via is_current; on-the-fly rendition resolver.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+    { "id": "PROG-D4", "title": "Loom D4: organization at scale + the usage index, BUILT FROM ZERO", "status": "parked", "lane": "program", "size": "L", "source": { "file": "docs/BUILD-LIST.md", "ref": "Loom D4" }, "detail": "Collections, saved views, tag governance, and the usage index. RE-SCOPED: the old plan said 'wire library_usages', which assumed the table exists. It does not — created 20260920000000:101 and DROPPED five days later at 20260925000000:17, with ADR-979 deleting every reader after finding the read discarded its error and silently returned []. The replacement is block_usage per ADR-975: an app_instances trigger plus a periodic JSONB scan, treated as disposable. Size grows accordingly.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+    { "id": "PROG-D5", "title": "Loom D5: per-space Looms", "status": "parked", "lane": "program", "size": "L", "source": { "file": "docs/BUILD-LIST.md", "ref": "Loom D5" }, "detail": "Space-scoped libraries, upload-to-library, fork-on-edit, quotas, a per-space console, client-facing RLS, capability keys and entitlements.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+    { "id": "PROG-D6", "title": "Loom D6: the privacy system", "status": "parked", "lane": "program", "size": "L", "source": { "file": "docs/BUILD-LIST.md", "ref": "Loom D6" }, "detail": "library-private bucket, signed URLs, storage RLS, download gating + audit, EXIF strip enforced, optional watermark/proofing. The hooks (is_protected, download_policy, expires_at) are already in the schema.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+    { "id": "PROG-D7", "title": "Loom D7: semantic + AI", "status": "parked", "lane": "program", "size": "L", "source": { "file": "docs/BUILD-LIST.md", "ref": "Loom D7" }, "detail": "Populate embedding, hybrid FTS+vector RRF ranking, AI auto-tag and colour extraction, background removal / upscale. Later the Weave generative composer.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+
+    { "id": "PROG-P4", "title": "Re-theme P4: universal browse hero", "status": "parked", "lane": "program", "size": "M", "source": { "file": "docs/BUILD-LIST.md", "ref": "Re-theme P4" }, "detail": "The 24 plain IndexTemplate pages adopt heroOverlay so the hero is everywhere.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+    { "id": "PROG-P5", "title": "Re-theme P5: entity headers onto PageHero", "status": "parked", "lane": "program", "size": "L", "source": { "file": "docs/BUILD-LIST.md", "ref": "Re-theme P5" }, "detail": "Fold the 43 DetailTemplate band pages onto the one PageHero grammar, so entity and index become one component.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+    { "id": "PROG-P6", "title": "Re-theme P6: the copy cascade", "status": "parked", "lane": "program", "size": "L", "source": { "file": "docs/BUILD-LIST.md", "ref": "Re-theme P6" }, "detail": "Generalize page_content into a site → section → page inherit-cascade, widen editable fields to body copy and images, and extend check:canon to .tsx. Overlaps LIVE-018.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+    { "id": "PROG-P7", "title": "Re-theme P7: per-Space / white-label theming depth", "status": "parked", "lane": "program", "size": "L", "source": { "file": "docs/BUILD-LIST.md", "ref": "Re-theme P7" }, "detail": "Widen the child-theme override surface (surfaces + type), operator theme controls, and a theme-contract compile check.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+    { "id": "PROG-P9", "title": "Re-theme P9: marketing ↔ in-app reconciliation (optional)", "status": "parked", "lane": "program", "size": "M", "source": { "file": "docs/BUILD-LIST.md", "ref": "Re-theme P9" }, "detail": "Align the marketing brand system with the app tokens where they diverge.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+
+    { "id": "PROG-DAWN2", "title": "DAWN Phase 2: build the missing primitives (blocks Phase 3)", "status": "parked", "lane": "program", "size": "L", "source": { "file": "docs/DAWN-CONVERSION.md", "ref": "Phase 2" }, "detail": "11 of DAWN's 30 primitives do not exist or have under two call sites, so HALF the sweep volume is blocked on building them first. Badge, RankBadge, Stat, Select, Checkbox, CounterRow, Toast, Avatar. Watch the trap this phase already hit: several landed with ZERO importers.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+    { "id": "PROG-DAWN3", "title": "DAWN Phase 3: the mechanical sweeps (~3,124 sites)", "status": "parked", "lane": "program", "size": "XL", "source": { "file": "docs/DAWN-CONVERSION.md", "ref": "Phase 3" }, "detail": "The bulk. Of ~3,176 elements, 3,124 (98%) are raw button/input/select/textarea that never reach a primitive. Gated on PROG-DAWN2.", "verify": { "kind": "manual", "evidence": "Program phase; tracked live by the adoption ratchet.", "checked": "2026-08-17" } },
+    { "id": "PROG-DAWN9", "title": "DAWN Phase 9: fix the two instrument defects", "status": "open", "lane": "hygiene", "size": "S", "source": { "file": "docs/DAWN-CONVERSION.md", "ref": "Phase 9" }, "detail": "Found independently by two agents, which is what makes them findings rather than opinions. raw-input's lookahead excludes only type=\"hidden\", so ~18 type=\"file\" triggers behind hidden/sr-only are PERMANENTLY un-retirable debt inside a ratchet. And white-black-literals does not exclude app/print/**, though DAWN-CONVERSION §1 names it a carve-out, so its floor is permanently 2. Both mean a ratchet can never reach its true floor. Unscheduled, and it should not be.", "verify": { "kind": "manual", "evidence": "Editing a ratchet moves every count under an agent measuring against it, so this lands on a settled tree with its own re-freeze.", "checked": "2026-08-17" } },
+
+    { "id": "PROG-PRAC4", "title": "Practice library Phase 4: valuation authority, Vera curation, health dashboard", "status": "parked", "lane": "program", "size": "L", "source": { "file": "docs/BUILD-LIST.md", "ref": "Practice library Phase 4" }, "detail": "computePracticeReward() wired as the valuation authority plus the per-Pillar Zap attribution ledger (the primary/secondary split's payoff — the columns shipped in Phase 1); Vera auto-suggest/auto-tag/auto-summary/voice-check; and the library health dashboard with coverage gaps by Pillar. Also carries four Phase-1 leftovers including server-backed saved views and a DataTable selection slot.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+    { "id": "PROG-SPOT", "title": "Spotlight: Guestbook and stickers/decals", "status": "parked", "lane": "program", "size": "L", "source": { "file": "docs/BUILD-LIST.md", "ref": "Spotlight socials" }, "detail": "Guestbook needs a spotlight_guestbook table (RLS: owner reads all, anyone-signed-in writes), moderation, rate-limiting and the read-side render. Stickers are an absolute-positioned decorative layer with validated coordinates and an allowlisted set. Plus three deferred embed providers and the earned-cosmetics lane.", "verify": { "kind": "manual", "evidence": "Program phase.", "checked": "2026-08-17" } },
+
+    { "id": "DEF-ETSY", "title": "Marketplace Etsy-Grade P3-P7", "status": "parked", "lane": "deferred", "size": "XL", "source": { "file": "docs/MASTER-TODO.md", "ref": "Marketplace future phases" }, "detail": "Shipping and delivery; faceted discovery and ranking; cart + multi-seller checkout (one intent, N destination charges, each take rate preserved); orders, fulfillment and order-scoped messaging; promotions, payout reporting and tax posture. Deferred by owner 2026-07-11.", "verify": { "kind": "manual", "evidence": "Owner-deferred.", "checked": "2026-08-17" } },
+    { "id": "DEF-BOOK", "title": "Booking P1-P4", "status": "parked", "lane": "deferred", "size": "L", "source": { "file": "docs/MASTER-TODO.md", "ref": "Booking future phases" }, "detail": "Service types and durations; availability rules with buffers, notice and blackouts; self-serve reschedule/cancel plus reminders and ICS; deposits on the commerce spine (largely the dormant bookable_services hold-first seam), dark behind payoutsLive(). Deferred by owner 2026-07-12.", "verify": { "kind": "manual", "evidence": "Owner-deferred.", "checked": "2026-08-17" } },
+    { "id": "DEF-HOUS", "title": "Housing: natal-chart matching + Resonance match alerts", "status": "parked", "lane": "deferred", "size": "M", "source": { "file": "docs/MASTER-TODO.md", "ref": "Housing" }, "detail": "Natal-chart compatibility beyond the shipped sun-sign quiet-5%, as an opt-in both-sides factor — NEEDS AN EPHEMERIS/COMPUTE DECISION BEFORE BUILD. Alerts are the notification layer on matching RPCs that already exist.", "verify": { "kind": "manual", "evidence": "Owner-deferred.", "checked": "2026-08-17" } },
+    { "id": "DEF-MONEY", "title": "Money verticals D1-D5 + the money foundation", "status": "parked", "lane": "deferred", "size": "XL", "source": { "file": "docs/DEVELOPMENT-MAP.md", "ref": "D1-D5" }, "detail": "The Collective (first commerce), freemium Vault cash-in, affiliate commission ledger, Donations & Grants (the Foundation rail), Lab Spaces. Plus the entity partition and entity-tagged financial_transactions, the inter-entity Lab bridge, physical merch fulfillment and the Frequency Shop. Gated on PMF and a legal entity, not on engineering.", "verify": { "kind": "manual", "evidence": "Gated on legal + PMF.", "checked": "2026-08-17" } },
+    { "id": "DEF-RESON", "title": "resonance/: 18 rungs, nothing built", "status": "parked", "lane": "deferred", "size": "XL", "source": { "file": "resonance/docs/BUILD-PLAN.md", "ref": "Sections 0-18" }, "detail": "Its own plan says 'Nothing here is built yet.' Build order never reorders: sync engine → DJ loop → gamification → embed → then the world. Each rung ends in a manual GO gate. Voice via WebRTC and fiat cash-out are explicit follow-ups. NOTE the conflict in HYG-005: its auth rung needs anonymous sign-ins ENABLED, which OWN-008 disabled.", "verify": { "kind": "manual", "evidence": "Sub-app, not started.", "checked": "2026-08-17" } },
+    { "id": "DEF-A2P", "title": "A2P 10DLC brand + campaign registration", "status": "open", "lane": "deferred", "size": "M", "source": { "file": "docs/A2P-REGISTRATION.md", "ref": "TL;DR" }, "detail": "14 filing steps, not started, and CARRIER REVIEW RUNS 10-15 DAYS — so the clock should start well before the SMS features need it. Blocks the SMS card-scan nudge and 1:1 SMS. Needs a Standard EIN-backed brand with the IRS record matched exactly, a Mixed use-case campaign, sample messages, STOP/HELP on the Messaging Service, and both SIDs recorded to env.",
+      "verify": { "kind": "manual", "evidence": "Operator filing packet; nothing in the repo changes until the SIDs land in env.", "checked": "2026-08-17" } },
+    { "id": "DEF-MOBILE", "title": "Mobile: Expo/RN on the shared contract", "status": "parked", "lane": "deferred", "size": "XL", "source": { "file": "docs/BUILD-PHASES.md", "ref": "Mobile" }, "detail": "An Expo/RN app on the shared RPC contract and capability model, native camera/QR + NFC + geofencing + push, a Postgres sync-engine pilot on one surface, and a decision on the stack and contract transport.", "verify": { "kind": "manual", "evidence": "Owner-deferred.", "checked": "2026-08-17" } },
+    { "id": "DEF-HARDEN", "title": "Foundation hardening H1-H5", "status": "parked", "lane": "deferred", "size": "XL", "source": { "file": "docs/FOUNDATION-HARDENING-PLAN.md", "ref": "H1-H5" }, "detail": "The sharpest cluster is H4 reliability: no cron retry/backoff or DLQ, no retry/DLQ/lag alerting on the 2-minute process-queue, no Stripe webhook retry/DLQ (so a failed webhook can strand an order in pending), backup and DR unverified (PITR tier, a rehearsed restore, a defined RPO/RTO), no incident runbooks, and no load/soak harness — which means every H3 scale claim is unprovable. H2 adds GDPR/CCPA erasure and export, which does not exist at all today. H3 is metric-gated and correctly not now.", "verify": { "kind": "manual", "evidence": "Track doc had no banner until this pass; see HYG-001.", "checked": "2026-08-17" } },
+    { "id": "DEF-DOMAIN", "title": "The domain feature backlog (~120 items across 15 areas)", "status": "parked", "lane": "deferred", "size": "XL", "source": { "file": "docs/BACKLOG.md", "ref": "§A-§V" }, "detail": "Items no current plan absorbed, kept as a body rather than 120 rows because none is individually scheduled: CRM follow-ups, the Network rework, circles/discovery, two-way inbox and @mentions, Quest/gamification depth, operator Growth Studio, Vera/AI (including the governance kernel and Proactive Vera), signup-lead recovery, the 12-item theme system, roles/personas long tails, IA, moderation and trust, and the 11 owner UI calls from the 2026-06-05 screenshot review. Promote an item to its own row when it is scheduled — that is the intended flow, not a workaround.", "verify": { "kind": "manual", "evidence": "Full text preserved in docs/TASK-INVENTORY-2026-08-17.md §8 and the source docs.", "checked": "2026-08-17" } },
+
+    {
+      "id": "HYG-001",
+      "title": "Every planning doc declares whether its status is live or history",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": { "file": "docs/TASK-INVENTORY-2026-08-17.md", "ref": "§11" },
+      "detail": "The census found three docs with no banner at all — FOUNDATION-HARDENING-PLAN, ENTITY-MANAGEMENT-OVERHAUL and GROWTH-OS-BUILD-PLAN — while BUILD-SEQUENCE still listed their Wave 0 as 'next', so a reader could not tell whether the whole hardening track was live. Turning the rule into a gate found the real number was not three but FIFTY-SEVEN. All 57 now carry the banner and check:one-list holds the line.",
+      "verify": { "kind": "cmd", "cmd": "node scripts/check-one-list.mjs" }
+    },
+    {
+      "id": "HYG-002",
+      "title": "BUILD-LIST 4.1 claims Programs is built; it was retired",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": { "file": "docs/BUILD-LIST.md", "ref": "P4 row 4.1" },
+      "detail": "STALE IN THE DANGEROUS DIRECTION. The row reads '✅ already built: 4 frameworks live in content/programs/'. That directory does not exist, there is no member /programs route, and 20261113000000 dropped the program arm from the catalog RPC while 20261114000000 dropped the tables. 'Already built' now reads as 'do not schedule' for a thing that no longer exists — and THREE downstream rows inherit the error: P5's 'Programs content depth', P3.3's 'Paywalled Programs', and DESIGN.md's 'Program detail to DetailTemplate'.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "already built.*content/programs",
+        "paths": ["docs/BUILD-LIST.md"]
+      }
+    },
+    {
+      "id": "HYG-003",
+      "title": "Seven ADR numbers are used twice (090 three times)",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "S",
+      "source": { "file": "docs/META-SCAN-STATUS.md", "ref": "Docs and repo hygiene" },
+      "detail": "ADR-088 through 094 each appear twice, 090 three times, leaving 75 cross-references ambiguous. check:adr passes because it only asserts that a cited number RESOLVES, not that it resolves uniquely.",
+      "verify": { "kind": "manual", "evidence": "Needs a de-duplication pass plus a rule change in check-adr.mjs.", "checked": "2026-08-17" }
+    },
+    {
+      "id": "HYG-004",
+      "title": "ARCHITECTURE.md documents deleted cron endpoints, a removed fallback, and shadcn",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "S",
+      "source": { "file": "docs/META-SCAN-STATUS.md", "ref": "Docs and repo hygiene" },
+      "detail": "Also: ADR-219 is still marked Accepted after ADR-305 retired it, and the em-dash sweep covers 23 files — the rule is violated in AGENTS.md itself.",
+      "verify": { "kind": "manual", "evidence": "Prose corrections; a probe would restate the row.", "checked": "2026-08-17" }
+    },
+    {
+      "id": "HYG-005",
+      "title": "Resolve the anonymous-sign-ins conflict between the main app and resonance/",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": { "file": "resonance/docs/BUILD-PLAN.md", "ref": "auth rung" },
+      "detail": "Two live instructions contradict each other. The main app's advisor-driven action is to DISABLE anonymous sign-ins (OWN-008, now done). resonance/'s auth rung requires them ENABLED, on the same Supabase project. Whoever schedules resonance hits this on day one. Decide now, on paper: separate project, or a different auth strategy for the sub-app.",
+      "verify": { "kind": "manual", "evidence": "Found 2026-08-17 by reading both plans against each other; not previously recorded anywhere.", "checked": "2026-08-17" }
+    },
+    {
+      "id": "HYG-006",
+      "title": "A-6's OG-card headroom was reported against the wrong budget",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": { "file": "docs/META-SCAN-STATUS.md", "ref": "2026-08-12 open, per-entity OG cards" },
+      "detail": "The row read '67 incidental functions against a budget of 70' and concluded that adding four ordinary pages under spaces/[slug] would fail a disk gate. The real budget is 100, so the headroom is 33 functions, not 3. The finding is real but its urgency was overstated by an order of magnitude; corrected here rather than left to drive a premature refactor.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Production build log 2026-08-17: 'check:og-trace — sharp ships to all 16 rasterising route(s), and to 67 other function(s) by segment inheritance (budget 100)'.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "HYG-007",
+      "title": "pr-compare-fallback posts the required status without a retry",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "S",
+      "source": { "file": "docs/TASK-INVENTORY-2026-08-17.md", "ref": "found in CI 2026-08-17" },
+      "detail": "The workflow exists to break a FOREVER-deadlock: pr-compare is a required context posted by a path-filtered job, so a docs-only PR never gets it and cannot merge, with no admin bypass. Its posting step was a single un-retried curl — so the deadlock-breaker was one transient 503 away from BEING the deadlock, which is exactly what happened on PR #2142. Now retries transient codes only (429/5xx/connection) with backoff, then READS THE STATUS BACK to prove the context exists under the name branch protection consumes.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "statuses API returned",
+        "paths": [".github/workflows/pr-compare-fallback.yml"]
+      }
+    }
+  ]
+}

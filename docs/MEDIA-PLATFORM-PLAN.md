@@ -1,5 +1,9 @@
 # Airwaves: audio, video, and podcast hosting on Frequency (phased implementation plan)
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **The answer up front.** Build the recordings platform in five phases (P0 to P4) on the
 > spines Frequency already has. Ship the member-facing name **Airwaves** (the surface), a
 > **Recording** (the item; **Episode** inside a Show), and a **Show** (the podcast series /

@@ -1,5 +1,9 @@
 # Site Re-Theme Plan — every surface unified, one parent to change
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > ⚠️ **Historical sequencing (2026-07-18).** The near-term order of operations now lives in [UX-MATURITY-PLAN.md](UX-MATURITY-PLAN.md) §Sequencing ([ADR-925](DECISIONS.md)) interleaved with the DAWN rounds (`design_handoff/SYNC.md`); this doc remains the phase-detail reference for the re-theme (P1–P8) linked from [BUILD-LIST.md](BUILD-LIST.md).
 
 > **The goal.** Any look change (a color, a corner radius, a heading font, a header, a card, a line of

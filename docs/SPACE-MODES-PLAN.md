@@ -1,5 +1,9 @@
 # Space Modes — type-as-operating-mode plan (roles surface + settings + marketing focus)
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **Note (2026-07-01, ADR-491).** `lib/spaces/blueprints.ts` and the four-template layer
 > (`lib/spaces/templates.ts`) have been DELETED. The public Space profile is now
 > operator-composed feature-block pages; the surviving per-type defaults (accent / primary-CTA

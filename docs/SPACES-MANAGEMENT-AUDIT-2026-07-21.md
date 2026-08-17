@@ -1,5 +1,9 @@
 # Business Spaces Management — Full Audit & Repair (2026-07-21)
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 A systematic survey of the entire Business Spaces management system (the `/manage` console, all
 settings surfaces, CRM, Booking, Donations/Memberships/Tickets, Shop/Marketplace, Email/Automation,
 Airwaves/Journeys/Practices/Loom, QR/Insights, lifecycle) covering every function, unwired/orphaned

@@ -1,5 +1,9 @@
 # Marketing Redesign: Status & Handoff
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > ⚠️ **This doc covers the MARKETING / public-site redesign.** For the **in-app** design overhaul
 > (interior `(main)` pages, the design kit, Phases 0 to 3), see [REDESIGN-INAPP.md](REDESIGN-INAPP.md).
 

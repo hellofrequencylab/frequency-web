@@ -1,5 +1,9 @@
 # Business Space back-end management — full survey
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 **A wall-to-wall map of the operator console for a business/nonprofit Space:** the five hub
 clusters (Resonance · Marketing · Offerings & Money · Content & Programs · Profile & Settings),
 every module in each, how each is routed, gated, and stored, and where the wiring is still
