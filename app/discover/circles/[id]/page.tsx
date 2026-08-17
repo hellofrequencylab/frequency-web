@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Users, MapPin, ChevronLeft } from 'lucide-react'
-import { getPublicCircleById } from '@/lib/discover'
+import { getPublicCircleById, getPublicCircles } from '@/lib/discover'
 import { SignInCta } from '@/components/discover/cards'
 import { RippleRings } from '@/components/marketing/vector-art'
 import { DetailTemplate } from '@/components/templates'
@@ -11,6 +11,18 @@ import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, circleSchema } from '@/lib/jsonld'
 
 export const revalidate = 3600
+
+// Pre-render the public circles the discover layer already lists (the same
+// redaction-safe RPC the index and the sitemap read, capped at 200 server-side and
+// ordered by member_count, so the set is bounded and the busiest circles are the
+// ones that land in the prerender manifest). Without this the route never enters
+// that manifest and `revalidate` above is inert. Newer circles still render on
+// demand (dynamicParams defaults true) and join the set on revalidate.
+// Falls back to [] when Supabase credentials are absent (CI / preview without env vars).
+export async function generateStaticParams() {
+  const circles = await getPublicCircles(200).catch(() => [])
+  return circles.map((c) => ({ id: c.id }))
+}
 
 export async function generateMetadata({
   params,

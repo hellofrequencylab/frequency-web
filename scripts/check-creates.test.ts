@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest'
-// @ts-expect-error — plain .mjs guard script, no types
 import {
   entityWriteSites,
   routesThroughGovernedLayer,

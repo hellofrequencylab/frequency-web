@@ -97,6 +97,26 @@ async function getOrganizer(handle: string): Promise<Organizer | null> {
   }
 }
 
+// Pre-render the hosts the sitemap already advertises. public_organizer_handles is
+// the companion of the RPC above and carries the same ADR-899 gate, so we only
+// prerender handles that have at least one listable upcoming event, and its _limit
+// bounds the set (500, matching app/sitemap.ts). Without this the route never enters
+// the prerender manifest and `revalidate` above is inert. A host whose first public
+// event lands later still renders on demand (dynamicParams defaults true).
+// Falls back to [] when Supabase credentials are absent (CI / preview without env vars).
+export async function generateStaticParams() {
+  try {
+    const supabase = createPublicClient()
+    const { data } = await supabase.rpc('public_organizer_handles', { _limit: 500 })
+    if (!Array.isArray(data)) return []
+    return (data as { handle: string }[])
+      .filter((h) => !!h.handle)
+      .map((h) => ({ handle: h.handle }))
+  } catch {
+    return []
+  }
+}
+
 export async function generateMetadata({
   params,
 }: {

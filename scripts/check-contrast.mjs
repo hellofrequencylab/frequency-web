@@ -68,6 +68,7 @@ export const STATES = [
 // still want measured so nobody reaches for it. See the rank family below.
 // ═══════════════════════════════════════════════════════════════════════════════════════════
 
+/** @type {Record<string, number>} — keyed by a pair's `role`, which is a free string in PAIRS. */
 export const ROLE_MINIMUM = { body: 4.5, large: 3.0, edge: 3.0 }
 
 // ── The rank spectrum ────────────────────────────────────────────────────────────────────
@@ -122,6 +123,17 @@ const RANK_PAIRS = RANK_KEYS.flatMap((r) => [
   { fg: '#FFFFFF', bg: `--rank-${r}`, role: 'edge', note: `white glyph on the ${r} core — the pairing to avoid` },
 ])
 
+/**
+ * @typedef {object} ContrastPair
+ * @property {string} fg foreground token name, or a literal color
+ * @property {string} bg background token name, or a literal color
+ * @property {string} role keys ROLE_MINIMUM
+ * @property {string} note why this pair is measured
+ * @property {string[]} [only] restricts a pair to the states where the surface actually exists
+ * @property {number} [bgAlpha] measure fg against `bg` composited at this alpha, not the raw token
+ */
+
+/** @type {ContrastPair[]} */
 export const PAIRS = [
   // ── Body copy on every app surface ──────────────────────────────────────────────────────
   { fg: '--color-text', bg: '--color-canvas', role: 'body', note: 'body copy on the app canvas' },
@@ -367,7 +379,8 @@ export const WAIVERS = [
 // CSS parsing
 // ═══════════════════════════════════════════════════════════════════════════════════════════
 
-/** Strip /* … *\/ comments (globals.css has no // comments — it is real CSS). */
+/** Strip /* … *\/ comments (globals.css has no // comments — it is real CSS).
+ *  @param {string} src */
 export function stripCssComments(src) {
   return src.replace(/\/\*[\s\S]*?\*\//g, '')
 }

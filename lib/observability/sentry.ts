@@ -10,6 +10,17 @@
 // This module is the ONE place that decides "is Sentry on?" and builds the init
 // options, so the three runtime configs (server, edge, client) stay identical in
 // the parts that matter. Each runtime config calls maybeInit() at module load.
+//
+// ⚠️ THE STATIC IMPORT BELOW IS WHY THIS MODULE IS SERVER-EAGER / CLIENT-LAZY.
+// Importing it pulls the whole SDK in with it. The server and edge configs want
+// exactly that — Sentry's Node instrumentation has to be installed synchronously,
+// before the modules it patches load — so sentry.server.config.ts and
+// sentry.edge.config.ts import this file at module scope and that is correct.
+// instrumentation-client.ts must NOT: on the browser side the same static import
+// would put ~150 kB in the baseline chunk of every route. The client reaches this
+// module through a gated `import()` instead, and `startClientSentry()` below is the
+// entry point it lands on. Keep it that way — a new static import of this module
+// from anything on the client entry path silently undoes it.
 
 import * as Sentry from '@sentry/nextjs'
 
@@ -78,4 +89,23 @@ export function maybeInitSentry(
     // Never let a monitoring misconfiguration break the app.
     return false
   }
+}
+
+/** The App Router client-navigation hook Next calls on every transition. Named here
+ *  so instrumentation-client.ts can type its wrapper WITHOUT importing the SDK — a
+ *  `type` import is erased at compile time and contributes no bytes. */
+export type RouterTransitionHook = typeof Sentry.captureRouterTransitionStart
+
+/**
+ * Browser entry point, reached only through the DSN-gated `import()` in
+ * instrumentation-client.ts. Initialises the client SDK and hands back the router
+ * transition hook, so the SDK namespace never has to escape this module.
+ *
+ * Safe to call unconditionally: `maybeInitSentry()` still re-checks the DSN, so if
+ * the gate ever loads this module without one, nothing initialises and the returned
+ * hook resolves against the inert client — a no-op, as before.
+ */
+export function startClientSentry(): RouterTransitionHook {
+  maybeInitSentry()
+  return Sentry.captureRouterTransitionStart
 }

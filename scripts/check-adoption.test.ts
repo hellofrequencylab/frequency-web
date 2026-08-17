@@ -22,7 +22,31 @@ import {
 // a baseline must account for itself, a basis change invalidates the comparison, and a rise is refused
 // unless it is explicitly allowed and explained.
 
-const frozen = (value: number, over: Record<string, unknown> = {}) => ({
+// The provenance stamp `check-adoption.mjs` writes onto a baseline entry. `from`/`basis` are
+// present only on the directions that need them (`raised`/`lowered` carry `from`, a `rebased`
+// stamp carries the fingerprint it was rebased onto), which is why they are optional here.
+type Frozen = {
+  at: string
+  value: number
+  direction: string
+  reason: string
+  from?: number
+  basis?: string
+}
+
+type Entry = {
+  key: string
+  description: string
+  mode: string
+  patterns: string[]
+  include: string[]
+  exclude: string[]
+  baseline: number
+  frozen?: Frozen
+  history?: Frozen[]
+}
+
+const frozen = (value: number, over: Partial<Frozen> = {}): Frozen => ({
   at: '2026-08-04',
   value,
   direction: 'seed',
@@ -30,7 +54,7 @@ const frozen = (value: number, over: Record<string, unknown> = {}) => ({
   ...over,
 })
 
-const entry = {
+const entry: Entry = {
   key: 'literal-radius',
   description: 'literal rounded-* instead of the role radii',
   mode: 'matches',

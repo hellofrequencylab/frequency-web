@@ -333,6 +333,9 @@ export function readModel(io = {}) {
  *   'not-established' no monitor resolves and this is not the deployment runtime. Advisory: it is
  *                    the state of every laptop and every CI runner, and reading it as failure
  *                    would fail builds for a fact about someone else's dashboard.
+ *
+ * @param {ReturnType<typeof readModel>} model
+ * @param {Record<string, string | undefined>} [env] a plain env bag; `process.env` is one
  */
 export function assess(model, env = process.env) {
   const { jobs, unscheduled } = model
