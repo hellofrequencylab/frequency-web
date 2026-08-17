@@ -1,0 +1,68 @@
+# check:elements — UI-STATE-TEST LEDGER (Lift 8d of docs/UX-MATURITY-PLAN.md).
+#
+# Every `components/ui/*.tsx` primitive listed here ships WITHOUT a colocated state test.
+# They are PRE-EXISTING DEBT, grandfathered on 2026-08-17 so the gate can start refusing NEW
+# primitives without one. A primitive that is NOT on this list and has no state test FAILS.
+#
+# What counts as a state test (docs/INTERACTION-STATES.md §6, the machine-checkable proxy):
+# a `components/ui/*.test.tsx` that IMPORTS the primitive's module and NAMES at least three of
+# the nine states from §1 in its own `describe`/`it` titles. Titles only — a `.press` buried in a
+# className assertion is exercising a state, not naming one, and §6 asks for the naming.
+#
+# RATCHET — this list may only SHRINK, and it is enforced in BOTH directions:
+#   · a primitive here that GAINS a state test FAILS the gate until it is removed from this file
+#     (that is the whole point: coverage bought must be banked, or the list stops meaning anything);
+#   · an entry naming a file that no longer exists FAILS too (a deleted primitive is not debt).
+# Both are fixed by one command, after the test lands:
+#   node scripts/check-elements.mjs --update
+#
+# ADDING an entry is a deliberate, reviewable act and needs a reason the diff carries:
+#   node scripts/check-elements.mjs --update --allow-raise --reason="why"
+#
+# ⚠️ WHY THE LIST IS LONG, AND WHY THAT IS NOT ALL DEBT. The gate cannot classify a primitive,
+# and INTERACTION-STATES §2 assigns the required state set BY CLASS: an Action control owes six
+# states, a Field four, but a Display badge owes only `rest` and a Reading only `rest` + `empty`.
+# A badge can therefore never name three states honestly. So this gate OVER-REPORTS by design —
+# it can only ever call a primitive undertested, never certify an untested one — and the badges,
+# icons and image widgets below are on the list because of their class, not because they are
+# neglected. A new one of those belongs here too, added with `--allow-raise --reason=`, which is
+# a one-line reviewable claim about its class rather than a test written to satisfy a regex.
+#
+# 42 primitives · 6 with a state test · 36 grandfathered (2026-08-17)
+
+components/ui/avatar.tsx
+components/ui/badge.tsx
+components/ui/confirm-submit-button.tsx
+components/ui/counter.tsx
+components/ui/demo-badge.tsx
+components/ui/dialog.tsx
+components/ui/directory-search.tsx
+components/ui/editor-shell.tsx
+components/ui/empty-state.tsx
+components/ui/facet-dropdown.tsx
+components/ui/featured-badge.tsx
+components/ui/gate-notice.tsx
+components/ui/header-image-field.tsx
+components/ui/hover-tip.tsx
+components/ui/icon.tsx
+components/ui/image-cropper.tsx
+components/ui/image-focal-picker.tsx
+components/ui/image-upload.tsx
+components/ui/info-tip.tsx
+components/ui/meter.tsx
+components/ui/multi-image-upload.tsx
+components/ui/progress-track.tsx
+components/ui/rank-badge.tsx
+components/ui/route-error.tsx
+components/ui/section-header.tsx
+components/ui/sidebar-card.tsx
+components/ui/skeleton.tsx
+components/ui/staff-edit-button.tsx
+components/ui/starter-badge.tsx
+components/ui/stat-card.tsx
+components/ui/stat.tsx
+components/ui/streak-meter.tsx
+components/ui/toast.tsx
+components/ui/unclaimed-badge.tsx
+components/ui/underline-tabs.tsx
+components/ui/verified-badge.tsx

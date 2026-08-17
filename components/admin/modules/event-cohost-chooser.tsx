@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { UserPlus, Check, X } from 'lucide-react'
@@ -11,7 +11,7 @@ import {
   type EditorCohostRow,
 } from '@/app/(main)/events/[slug]/social-actions'
 import { isError } from '@/lib/action-result'
-import { Input, labelClasses } from '@/components/ui/field'
+import { Input, Label } from '@/components/ui/field'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
@@ -40,6 +40,7 @@ export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: s
   const [current, setCurrent] = useState<EditorCohostRow[]>([])
   const [pending, startTransition] = useTransition()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const uid = useId()
 
   const reload = useCallback(() => {
     listEventCohostsForEditor(eventId).then(setCurrent).catch(() => {})
@@ -96,13 +97,19 @@ export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: s
 
   return (
     <div className="space-y-2 rounded-card border border-border bg-surface-elevated/40 p-3">
-      <span className={labelClasses}>
+      {/* Named the search box by a bare <span>, which names nothing: a screen reader announced it
+          as "edit text, blank" and clicking the word "Cohosts" focused nothing. It cannot be a
+          <Field>, because the icon band between the caption and the control is the box the input
+          lives in, so the explicit form is the one that fits: a `useId()` pair, instance-scoped
+          because an editor can render more than one of these. */}
+      <Label htmlFor={`${uid}-cohost-search`} className="block">
         Cohosts <span className="font-normal text-subtle">(invite someone to help host)</span>
-      </span>
+      </Label>
 
       <div className="flex items-center gap-2 rounded-control border border-border bg-surface px-3 py-1.5">
         <UserPlus className="h-4 w-4 shrink-0 text-subtle" />
         <Input
+          id={`${uid}-cohost-search`}
           variant="seamless"
           type="text"
           value={query}

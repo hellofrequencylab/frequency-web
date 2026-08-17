@@ -450,7 +450,7 @@
     {
       "id": "LIVE-005",
       "title": "Lift 8d: check:elements requires a state test for every new ui primitive",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
@@ -459,12 +459,10 @@
       },
       "detail": "The gate that stops 8b's sweep from being re-earned every quarter: a new components/ui/* primitive must ship a colocated test naming its required states.",
       "verify": {
-        "kind": "grep-present",
-        "pattern": "required state|interaction state",
-        "paths": [
-          "scripts/check-elements.mjs"
-        ]
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const f='scripts/check-ui-states.test.ts';if(!fs.existsSync(f)||!fs.existsSync('node_modules/vitest/vitest.mjs'))process.exit(79);const r=require('child_process').spawnSync(process.execPath,['node_modules/vitest/vitest.mjs','run',f],{stdio:'ignore',timeout:110000});if(r.error||r.signal!==null||r.status===null||r.status===127)process.exit(79);process.exit(r.status)\""
+      },
+      "notes": "Closed 2026-08-17. 42 primitives, 6 carry a state test, 36 grandfathered in scripts/ui-state-test-ledger.txt — a SET of paths, not a count, because one primitive gaining a test and one arriving without cancel out inside a total (the ADR-1007 defect). Stricter than its two siblings on purpose: a graduated or vanished entry FAILS rather than warns, because the number is a published metric and an unbanked win makes it fiction. The definition of 'state test' is INTERACTION-STATES.md's, not invented: names 3+ of the nine states in test titles, titles only — exercising a state in a className assertion is not naming it. 36 is not 36 units of neglect: a Display badge owes only `rest`, so the gate over-reports by design and can never certify an untested primitive as covered. Two counts in INTERACTION-STATES.md §6 were wrong and are corrected."
     },
     {
       "id": "LIVE-006",
@@ -614,8 +612,8 @@
     },
     {
       "id": "LIVE-014",
-      "title": "~105 unassociated <Label> uses across ~40 files",
-      "status": "open",
+      "title": "check:labels accepted an htmlFor without checking it reached anything",
+      "status": "done",
       "lane": "live",
       "size": "M",
       "source": {
@@ -625,9 +623,9 @@
       "detail": "Create Event (the worst, 17) is fixed and Field exists as the shared labelled-control primitive. Next by volume: circle-builder (12), movement-session (9), events/drafts/[id]/editor (9), the six onboarding *-render files. Mechanical: wrap in Field, thread htmlFor/id where the control is real, or role=\"group\" + aria-labelledby for button groups. Re-measured 2026-08-17: 44 files still contain a bare <Label.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const{readdirSync,statSync,readFileSync}=require('fs');const{join}=require('path');let n=0;const walk=d=>{for(const f of readdirSync(d)){if(f==='node_modules')continue;const p=join(d,f);const s=statSync(p);if(s.isDirectory())walk(p);else if(/[.]tsx?$/.test(f)&&readFileSync(p,'utf8').includes('<Label'))n++}};walk('app');walk('components');process.exit(n<10?0:1)\"",
-        "note": "Passes when the population drops under 10 files; 44 at seed. Deliberately node-only: the first version was `test $(rg -l '<Label' … | wc -l) -lt 10`, which yields 0 and FALSELY PASSES on any runner without ripgrep — the same missing-instrument bug that inverted every grep probe on CI."
-      }
+        "cmd": "node -e \"const fs=require('fs');const f='scripts/check-labels.test.ts';if(!fs.existsSync(f)||!fs.existsSync('node_modules/vitest/vitest.mjs'))process.exit(79);const r=require('child_process').spawnSync(process.execPath,['node_modules/vitest/vitest.mjs','run',f],{stdio:'ignore',timeout:110000});if(r.error||r.signal!==null||r.status===null||r.status===127)process.exit(79);process.exit(r.status)\""
+      },
+      "notes": "Closed 2026-08-17, and the row was WRONG. The real count of labels naming nothing is ZERO, not ~105: the row's probe was readFileSync().includes('<Label'), which counts 132 correctly associated labels and 43 SVG captions. ADR-966's sweep had already taken the real population to zero. Measured with a brace-aware JSX parser over 1,992 files, separating wrapping (implicit association), wrapper components, useId template pairs and prop passthrough. THE ACTUAL DEFECT WAS IN THE GATE: rule 2 passed any label carrying an htmlFor without ever asking whether it reached anything, so htmlFor='event-scop' beside id='event-scope' passed — the exact defect ADR-966 exists for. The file admitted it in a comment. New rules 3 and 4 resolve the target and require it to be labelable; a double-quoted import or an aliased `Label as X` previously made every <Label> in a file invisible to EVERY rule. One real defect fixed: the cohost search box. MIN_RESOLVED floor added so a parser that stops deciding fails loudly instead of printing a tick over an unchecked repo."
     },
     {
       "id": "LIVE-015",
@@ -1772,6 +1770,40 @@
       "verify": {
         "kind": "manual",
         "evidence": "Raised by the LIVE-008 agent 2026-08-17 as a known consequence of its own fix. Not repo-probeable: it needs an axe run and a visual capture, neither of which runs in this container.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "OWN-022",
+      "title": "A paying customer's entitlement exists only in the owner's memory: @ishasetlumi, $490 cash",
+      "status": "open",
+      "lane": "owner",
+      "size": "S",
+      "source": {
+        "file": "lib/pricing/beta.ts",
+        "ref": "beta cutover, 2026-08-17"
+      },
+      "detail": "@ishasetlumi paid $490 IN CASH for the annual Collective beta rate ($49 x 10, two months free). Her Space `templeofaset` (cb611bac-7956-4652-9993-440c430d494b) carries plan='collective' granted directly in the database; last_plan_event_at 2026-07-27. She has NO subscription item, NO locked_price_id and NO stripe_customer_id, so nothing in the system records what she is owed. TWO OBLIGATIONS, both currently invisible to every gate: (1) she must not be billed until her paid year runs out, roughly 2027-07; (2) when it renews it renews at the beta $490, not the $790 list annual — the code's own rule is that a Space subscribing during the window keeps its rate for life. The mechanism that would honour this is resolveLoadoutPriceId's per-Space price lock, which reads a locked price id off the subscription item; onboarding her to Stripe WITHOUT writing that lock is what silently overcharges her. The founding collective_base price is still minted active by the catalog sync, so there is a real price id to lock to. THE GENERAL POINT IS BIGGER THAN THIS ROW: an obligation settled outside the system is invisible inside it. The 2026-08-17 measurement '0 subscriptions, so nobody holds a beta rate' was true of Stripe and false of the business, and it was one cash payment away from being acted on.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Measured 2026-08-17: profiles.handle='ishasetlumi' (cf78ac3f-4f5d-4158-aa10-6cac3e842206) has membership_tier=crew, is_founding_member=false, locked_price_id=null, stripe_customer_id=null. spaces.slug='templeofaset' has plan='collective', owner_profile_id=that profile, last_plan_event_at 2026-07-27. space_subscription_items is empty (0 rows) across the whole table, so no lock exists for any Space. Amount and cash tender reported by the owner.",
+        "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "LIVE-033",
+      "title": "143 controls across 67 files may have no accessible name, and nothing measures it",
+      "status": "open",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "scripts/check-labels.mjs",
+        "ref": "LIVE-014 follow-up"
+      },
+      "detail": "LIVE-014 asked the wrong question — 'is this label associated' — and the answer was already zero. The honest question is 'does this CONTROL have an accessible name', and it reports 143 candidates across 67 files (circle-builder, practice-builder, block-edit-panel, search-overlay and others). It was deliberately NOT gated, and the reason is the point: the scan cannot yet resolve label-WRAPPING components (Labeled, StudioField, Field render <label>{children}</label>), so an unknown share are false positives and the gate would fire on correct code — ADR-970's route-around. The work is: resolve wrapper components repo-wide, re-measure, then ratchet the residue. Materially bigger than LIVE-014 was, and it is the row LIVE-014 should have been.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Reported by the LIVE-014 agent 2026-08-17 from its own brace-aware JSX scan over 1,992 .tsx files: 143 unnamed-control candidates in 67 files, share of false positives unknown pending wrapper-component resolution. Not gated, deliberately.",
         "checked": "2026-08-17"
       }
     }

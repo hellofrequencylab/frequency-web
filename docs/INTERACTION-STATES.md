@@ -201,21 +201,50 @@ control-level gaps the tables above mark ⚠️.
 
 ## 6. The gate
 
-📋 Not built yet. Lift 8d extends `check:elements`: a new `components/ui/*` primitive must
-ship a colocated `*.test.tsx` that names the state strings its class requires (§2), else CI
-fails. Machine-checkable proxy, deliberately: the test file exists and mentions the states.
+Lift 8d's gate lives in `scripts/check-elements.mjs`, as the plan asked — a second contract in
+that file, next to the unrelated embeddable-elements one it shares a name with. A
+`components/ui/*.tsx` primitive that is NOT on the frozen ledger and ships no colocated state
+test fails it. Run it by hand with `node scripts/check-elements.mjs`; in CI it is
+`scripts/check-ui-states.test.ts`, which vitest auto-discovers, so it cannot be dropped from a
+guards array.
 
-**Seventeen** primitives carry colocated tests today (`ls components/ui/*.test.tsx`, read
-2026-08-12 and identical on `origin/main`), and they name states rather than just rendering:
-`button.test.tsx` has `describe` blocks for rest+hover, pressed, disabled and loading;
-`icon-button.test.tsx` walks every variant's required states; `switch.test.tsx` covers
-hover, pressed and focus; `field.test.tsx` covers the error, disabled and focus looks for
-Input, Textarea and Field.
+**The machine-checkable proxy, stated exactly.** A primitive has a state test iff some
+`components/ui/*.test.tsx` (a) imports that module and (b) names **at least three** of the nine
+§1 states in its own `describe`/`it` titles. Titles only: a `.press` inside a className
+assertion exercises a state, it does not name one, and naming is what this section always asked
+for. Three, not two, because `avatar.test.tsx` says "focus" about a focal *point* and
+`.dimmed` about a receded avatar — it scores 2, and it is not a state test.
 
-Against §5's own populations that is **3 of 5 action controls** (`button`, `icon-button`,
-`switch`) and **3 of 5 fields** (the three `field.tsx` rows). The gate's remaining
-population is `confirm-submit-button`, `staff-edit-button`, `directory-search` and
-`facet-dropdown` — so 8d costs four test files plus the check, not fourteen.
+**The counts, measured not estimated (2026-08-17).**
+
+| | |
+|---|---|
+| `components/ui/*.tsx` primitives | **42** |
+| ship a state test | **6** — `button`, `checkbox`, `field`, `icon-button`, `select`, `switch` |
+| grandfathered in `scripts/ui-state-test-ledger.txt` | **36** |
+
+⚠️ **Two corrections to the paragraph this replaces.** It counted *seventeen* colocated test
+files and named *four* of them as state tests. Seventeen files is right and it is the wrong
+unit — a test file is not a primitive, and `badge.test.tsx` covers five. And the four were six:
+`select.test.tsx` and `select-checkbox.test.tsx` name focus, error and disabled and always
+did. It also said 8d "costs four test files plus the check". It cost **zero**: the debt is
+frozen, not swept, which is the only version of this gate that could ship without a sweep in
+front of it.
+
+**The ledger is a ratchet, and it only shrinks.** Same shape as `scripts/templates-baseline.txt`
+and `scripts/admin-client-baseline.txt` — a SET of paths, so one primitive gaining a test and
+one arriving without one can never net to zero. It is stricter than both of those in one way, on
+purpose: a ledger entry that *gains* a state test **fails** until it is removed (`--update`
+banks it), because the number in this section is a published metric and an unbanked win makes it
+fiction.
+
+**Why 36 is not 36 units of neglect.** The gate cannot classify a primitive, and §2 assigns the
+required set BY CLASS: a Display badge owes only `rest`, a Reading owes `rest` + `empty`.
+Neither can honestly name three states. So the gate over-reports by design — it can call a
+primitive undertested, never certify an untested one — and the badges, icons and image widgets on
+the ledger are there for their class. A new one belongs there too:
+`node scripts/check-elements.mjs --update --allow-raise --reason="why"`, a one-line reviewable
+claim rather than a test written to satisfy a regex.
 
 ---
 
