@@ -725,7 +725,7 @@
     {
       "id": "LIVE-020",
       "title": "Build a function-grant guard",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "M",
       "source": {
@@ -734,12 +734,10 @@
       },
       "detail": "There is no repo-side gate for function grants at all: check-grants.mjs covers tables only, and nothing anywhere references has_function_privilege. 29 anon-executable SECURITY DEFINER functions currently rest on a human remembering to read an advisor. Pairs directly with OWN-006, which is the one-time sweep this would then hold.",
       "verify": {
-        "kind": "grep-present",
-        "pattern": "has_function_privilege",
-        "paths": [
-          "scripts"
-        ]
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),cp=require('child_process');const f='scripts/check-function-grants.test.ts';if(!fs.existsSync(f)||!fs.existsSync('node_modules/vitest/vitest.mjs'))process.exit(79);const r=cp.spawnSync(process.execPath,['node_modules/vitest/vitest.mjs','run',f],{stdio:'ignore',timeout:110000});if(r.error||r.signal!==null||r.status===null||r.status===127)process.exit(79);process.exit(r.status)\""
+      },
+      "notes": "Closed 2026-08-17. The row's ORIGINAL probe was grep-present /has_function_privilege/ in scripts — shape-not-truth, and it proved it: the moment the new guard file appeared it passed by the string existing, and check:backlog correctly failed the row as stale within minutes. Replaced with one that runs the guard's own failure-arm suite, which asserts among other things that `revoke ... from public` does NOT satisfy an `internal` verdict — the exact hole (ADR-959) the guard exists for. Measures 148 live public functions, every one carrying a verdict: 47 public, 26 authenticated, 75 internal with role-explicit anon revokes. IT READS supabase/migrations/, NOT THE DATABASE, and says so in its own output: prod still held 29 anon- and 49 authenticated-executable SECURITY DEFINER functions when last measured. This guard holds the line; OWN-006 is the sweep that closes the gap."
     },
     {
       "id": "LIVE-021",

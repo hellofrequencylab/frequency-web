@@ -57,6 +57,13 @@ const VITEST_ENFORCED: Record<string, string> = {
   // path/route/cron the doc names exists — pure source reading, so vitest is its home by the
   // rule above rather than a 23rd entry in the ci.yml array.
   'check:arch-doc': 'scripts/check-arch-doc.test.ts',
+  // Added 2026-08-17 (LIVE-020). The function sibling of check:grants: it replays
+  // supabase/migrations/ and compares against scripts/function-grants.txt — source reading only,
+  // so vitest is its home by the rule above. Its sibling test does BOTH halves: broken fixtures
+  // asserting each arm FAILS (including that `revoke ... from public` does not satisfy an
+  // `internal` verdict, which is the whole point of the guard), plus real-tree assertions
+  // including that the guard exits 0 on the tree as committed.
+  'check:function-grants': 'scripts/check-function-grants.test.ts',
 }
 
 function packageScripts(): Record<string, string> {
