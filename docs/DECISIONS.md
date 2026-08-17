@@ -26422,3 +26422,107 @@ question, and the member-shell surfaces' committed PNGs are where it lives. ⚠�
 is still CSS (`hidden md:flex` / `hidden lg:flex`) and still untested here, deliberately: measuring a
 viewport is only possible on the client, and folding on a value the server cannot know is how the
 flash gets shipped in the first place.
+
+---
+
+## ADR-1072: The eyebrow's DEFINITION was locked and its ADOPTION was unmeasured, so the role is guarded where the code names it and ratcheted everywhere else
+
+**Status:** Accepted · enforced by `lib/theme/eyebrow-role.test.ts` (two new assertions in `pnpm test`,
+blocking) and the `handrolled-eyebrow` class in `scripts/adoption-baselines.json`
+(`pnpm check:adoption`, advisory by ADR-928's own reasoning)
+
+**Context.** ADR-925 §Lift 8 and the 2026-08-05 DAWN-parity addendum both score the eyebrow at 🔴, and
+`app/globals.css` has locked the role since 2026-08-05: 0.75rem / 0.18em / bold / uppercase, behind an
+`@utility eyebrow` and a `--tracking-eyebrow` token, with `lib/theme/eyebrow-role.test.ts` asserting
+seven things about that declaration. All seven were green on 2026-08-17 while the product rendered the
+eyebrow ten different ways, because **every one of them reads the stylesheet and none of them reads a
+call site.** A definition nobody calls is not a role. This is the repo's own named failure mode one
+level up: the gate measured the SHAPE of the role rather than whether anything used it.
+
+**The population is not one thing, and that is why R7 was mis-sized.** LIVE-025 records the sweep as
+"largely mechanical" over ~698 sites. Measured 2026-08-17 with the ratchet harness: **615** sites carry
+`uppercase` beside a literal tracking value (`tracking-wide` 436 · `widest` 59 · `wider` 60 · 20
+arbitrary em values), against 87 call sites on the `eyebrow` utility and 69 on `tracking-eyebrow`. But
+the dominant class string is `text-2xs font-semibold uppercase tracking-wide text-muted` — 11px, and a
+large share of the population is **pill badges** (`rounded-pill px-2 py-0.5 …`) and dense table
+headers. Converting those to the role means 11px → 12px, semibold → bold, and 0.025em → 0.18em, a
+**7.2×** tracking change that widens the label inside a `px-2.5` pill it was sized to fit. A blanket
+codemod is not a consistency fix, it is an un-reviewed visual change to several hundred surfaces, and
+it needs a design ruling plus a full `pr-compare` recapture. There is also a second implementation
+nobody has reconciled: `components/page-editor/blocks/kit.tsx` exports an `<Eyebrow>` component with
+~26 adopters that renders `text-body-sm` (0.875rem) — DAWN's declared eyebrow size, and precisely the
+half of the DAWN split this repo resolved DOWN. Which register wins is the owner's call, not a sweep's.
+
+**Decision.** Split the problem at the line a machine can settle.
+
+1. **Where the code itself says "eyebrow", the eyebrow role.** A slot whose value the author named
+   `eyebrow` is the one population with no judgment in it. There were fifteen; **seven hand-rolled the
+   role** across five different letter-spacings, all in the shared kit: `EditorShell`, `Toast`,
+   `StudioWindow`, `SparkShell`, `EntityHeader`, `JourneyBuilder`, `HostCohostSection`. All seven now
+   compose the `eyebrow` utility, and `eyebrow-role.test.ts` fails, by name and by class list, on any
+   `eyebrow` slot that sets `uppercase` without resolving through the role tokens.
+2. **Two resolutions count, not one.** The composite `eyebrow` utility, or `tracking-eyebrow` beside
+   `uppercase`. The second is admitted deliberately: the marketing register sets the same role at
+   `--text-body-sm` over a photograph and reads the tracking token to do it, so demanding the
+   composite class there would be a size change wearing a consistency fix's clothes.
+3. **Everything else is a ratchet, seeded AFTER the sweep.** `handrolled-eyebrow` is frozen at **608**,
+   not the 615 found, so reverting any of the seven raises it and the class reports 🔴. `tracking-tight`
+   and `tracking-normal` are excluded from the pattern: on `font-display uppercase` those are display
+   headings, and a class that fires on the wrong subject is how a gate gets muted (ADR-970).
+
+**Consequences.** ✅ Reverting one converted slot was proved to fail both gates — `eyebrow-role.test.ts`
+names `components/ui/toast.tsx` and its class list, and `check:adoption` exits 1 with 608 → 609. ✅ The
+scan asserts it finds ≥10 slots, so a rename cannot turn the gate into a green over nothing (ADR-962).
+⚠️ **This moves pixels** on the seven surfaces: toast eyebrows go 10px → 12px, the studio and Spark
+chrome go 0.1em → 0.18em, and `EntityHeader` renders inside `/admin` space consoles, one of the twelve
+committed `pr-compare` baselines. ⚠️ The 608 are **not** claimed to be eyebrows; the class is named for
+the split, not for the role, and reaching 0 is not the goal. ⚠️ The `<Eyebrow>` component's 0.875rem
+and the utility's 0.75rem still disagree, and closing that is a design decision with a marketing
+recapture behind it — it is not a bug to fix in passing.
+
+---
+
+## ADR-1073: The four tokens where production is ahead of DAWN are a derived ledger, because the prose list had already gone stale in the direction that un-fixes things
+
+**Status:** Accepted · enforced by `lib/theme/dawn-divergence.test.ts` (`pnpm test`) against
+`design_handoff/PROD-AHEAD.md`
+
+**Context.** `design_handoff/SYNC.md` § "Going the other way" makes sync two-directional: when the repo
+changes something DAWN documents, it goes back on the next round, or the next inbound handoff —
+applied faithfully, as SYNC.md instructs — overwrites it. Four colour tokens have been waiting since
+2026-08-05 (LIVE-027), and three of them are AA fixes: `--color-focus-ring` (1.75:1 → 3.87:1, PR
+#2036), `--color-text-on-broadcast`, `--color-text-subtle`.
+
+**The fourth row is already false, and it is false in the dangerous direction.** The plan doc lists
+`--color-text-on-primary` as DAWN `#FFFFFF` / production `#1A1206`, "white on amber fails AA; ink
+passes". Production has been `#FFFFFF` since 2026-08-06 and the two files now agree. What happened was
+a SPLIT, not a revert: the moment on-primary became ink, every rank core inherited an ink glyph and
+gold — the lightest core in the spectrum by design — fell to **2.46:1**, so the glyph moved to its own
+`--color-text-on-rank`. Sending the old row would ask DAWN to make on-primary ink again, reintroducing
+from the sheet whose entire purpose is preventing regressions the exact failure the split fixed. It sat
+wrong for eleven days in the document that was supposed to carry it, which is the ordinary behaviour of
+a hand-maintained difference list, not an unlucky one.
+
+**Decision.** Do not write the list; derive it and compare. `lib/theme/dawn-divergence.test.ts` parses
+the `:root` and `.dark` palettes out of `app/globals.css` and `design_handoff/dawn/tokens/colors.css`
+and asserts the divergence set equals a ledger written out in full, hexes visible in the diff. It fails
+three ways, which are the three ways an outbound sheet lies: an **undeclared** divergence (it would go
+back as "no change"), a **stale** row where the two have since converged (the `--color-text-on-primary`
+defect), and a **value drift** on either side. A fourth assertion requires every declared token to be
+named in `design_handoff/PROD-AHEAD.md` with its live hex — the standing sheet the next outbound
+handoff copies — so "it goes back on the next round" is a fact the build checks rather than an
+intention someone holds.
+
+Selector matching is anchored to the start of a line. This is not a style point: `globals.css` opens
+with `@custom-variant dark (&:where(.dark, .dark *))`, and the first version of the parser matched
+that, brace-walked through half the stylesheet, and reported **49** dark-mode divergences, all fiction.
+
+**Consequences.** ✅ The real set is **8 value divergences** (6 light, 2 dark) plus **12 tokens DAWN has
+no row for**, including `--color-text-on-rank` and the three `on-media` aliases, all now on one sheet.
+✅ Both failure directions proved by breaking and restoring: dropping `--color-text-on-rank` from the
+sheet fails the naming assertion; giving DAWN production's focus ring fails the ledger as a stale row.
+✅ `docs/UX-MATURITY-PLAN.md` §4 finding 3 is corrected in the same pass, per AGENTS.md's rule that the
+code wins and the doc gets fixed with it. ⚠️ Scope is `tokens/colors.css` only — type, spacing, effects
+and the Midnight skin are not yet derived, so a divergence there is still prose-managed. ⚠️ LIVE-027
+does not close on this: the ledger is now un-losable, but the row closes when an outbound handoff
+actually carries it.
