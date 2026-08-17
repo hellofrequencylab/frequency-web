@@ -25280,8 +25280,9 @@ is the same failure as a probe that greps for its own title (ADR-970).
 
 ## ADR-1055 — `ZigZag`'s successor is `MediaText`, not `Zigzag`, and the fail-safe finally gets a gate (2026-08-17)
 
-**Status.** Accepted · migration `supabase/migrations/20270305000000_pages_retire_orphan_block_types.sql`
-(**authored, NOT applied** — for the owner, two steps per [ADR-963](DECISIONS.md)) ·
+**Status.** Accepted · migration **staged** at `docs/proposals/LIVE-028-retire-orphan-block-types.sql`
+(**authored, NOT applied** — for the owner; promote to `supabase/migrations/`, then two steps per
+[ADR-963](DECISIONS.md)) ·
 guard `scripts/check-stored-blocks.mjs` + `scripts/check-stored-blocks.test.ts` ·
 corpus `scripts/stored-block-types.json` · closes backlog row `LIVE-028` ·
 executes [ADR-977](DECISIONS.md) D-9 · corrects [ADR-978](DECISIONS.md) on the target block.
@@ -25358,3 +25359,33 @@ see an orphan written *after* the capture date. That needs a credentialled job t
 have, and it is recorded rather than papered over, exactly as `check:migrations` records the same
 gap for the ledger. ⚠️ The `BetaCTA → CallToAction` rewrite freezes today's `BETA_CTA_LABEL` /
 `BETA_CTA_HREF` into three stored documents, because a stored document cannot reference a constant.
+
+**Addendum (2026-08-17, same day).** Two corrections landed after the first CI run, and both are
+worth keeping because each is a general rule this repo had already paid for once.
+
+**1. An unapplied migration may not sit in `supabase/migrations/`.** A file in that directory *is*
+an assertion that production has run it, and CI arms `check:migrations` rule 4
+([ADR-1007](DECISIONS.md)) with real credentials — so it fails on any repo file above the applied
+ledger head. The SQL is therefore staged at `docs/proposals/LIVE-028-retire-orphan-block-types.sql`
+with a promotion banner, where it makes no claim; promotion is step 1 of applying it. The
+quarantine points at the staged path and still **reads the SQL** to confirm the rewrite, so
+relocating the file is caught rather than excused.
+
+**2. A gate must not fail on a state only its owner can clear.** The first version exited 1 for any
+orphan, declared or not, while being wired into the required `test` context — which made every
+unrelated PR unmergeable until an owner applied a migration. That is exactly
+[ADR-970](DECISIONS.md)'s shape: a gate nobody can clear gets routed around, and then it reads as
+coverage. The two questions are now answered separately:
+
+| Input | Guard (`check:stored-blocks`, required job) | Probe (`--probe`, read by `check:backlog`) |
+|---|---|---|
+| Undeclared orphan in stored data | 🔴 **FAIL** | — |
+| Declared orphan, claims verified | ✅ **PASS, printed in full every run** | 1 · NOT DONE |
+| Quarantine entry rotted (successor gone, SQL absent, or SQL retargeted) | 🔴 **FAIL** | — |
+| Census unreadable or below its floors | ⚠️ 79 · cannot tell | ⚠️ 79 · cannot tell |
+
+The two answers differ on the same input **on purpose**: the guard asks "did something regress that
+a PR can fix", the probe asks "is LIVE-028 done". LIVE-028's row is `open`, so a probe saying NOT
+DONE is exactly consistent, and a probe that went green on the declared state would close a row
+whose work has not happened. The anti-rot arms are untouched — they are what stop a quarantine
+becoming a permanent hole, and none of them need an owner.

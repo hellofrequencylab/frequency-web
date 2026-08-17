@@ -193,11 +193,24 @@ retired types still render as nothing on a live page** — the fix protects the 
 not restore the blocks.
 
 ⏳ **The restore is authored and unapplied ([ADR-1055](DECISIONS.md)).**
-`supabase/migrations/20270305000000_pages_retire_orphan_block_types.sql` rewrites all 17 blocks
-losslessly (`target_defaults || stored_props`, `props.id` preserved) and waits for the owner.
+`docs/proposals/LIVE-028-retire-orphan-block-types.sql` rewrites all 17 blocks losslessly
+(`target_defaults || stored_props`, `props.id` preserved) and waits for the owner. It is **staged
+outside `supabase/migrations/` on purpose**: a file there asserts production has run it, and CI
+arms `check:migrations` rule 4 ([ADR-1007](DECISIONS.md)) with real credentials, so an unapplied
+file in that directory fails the build. Promotion is step 1 of applying it.
+
 ✅ **The fail-safe now has a gate**: `check:stored-blocks` (`scripts/stored-block-types.json` +
-`scripts/check-stored-blocks.test.ts`) fails when stored page data names a type the live registry
-does not know, so a sixth orphan is caught by CI rather than by the next hand audit.
+`scripts/check-stored-blocks.test.ts`). It fails when stored page data names a type the live
+registry does not know, so a sixth orphan is caught by CI rather than by the next hand audit.
+
+⚠️ **A DECLARED orphan passes it, loudly, and that is deliberate.** The five above are known, name
+their successor and the SQL that performs the rewrite, and clear only on an OWNER action. Failing
+a required job on them would make every unrelated PR unmergeable until that action happened — the
+[ADR-970](DECISIONS.md) shape where a gate nobody can clear gets routed around and then reads as
+coverage. So the guard prints them in full on every run and exits 0; an **undeclared** orphan, or a
+quarantine entry whose successor no longer resolves or whose SQL no longer performs that rewrite,
+still fails hard. `--probe` keeps the opposite verdict on the same input — it answers "is LIVE-028
+done", and the answer is no.
 
 ### ⚠️ P1 — live placements, cannot drop without a migration
 
