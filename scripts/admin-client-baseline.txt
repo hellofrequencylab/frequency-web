@@ -811,3 +811,9 @@ lib/walkthroughs/progress.ts
 lib/zaps.ts
 test/authz/check-authz-lib.test.ts
 test/contract/tenancy-entity-modules.test.ts
+# Added 2026-08-17 (LIVE-022). NOT a real service-role import: the string the ratchet matches sits
+# inside a template literal — BARE_ROUTE, the fixture route handler this test feeds to the classifier
+# to prove check:authz says NO to an ungated privileged endpoint. The fixture has to depict a real
+# RLS bypass or it would not exercise the arm it exists for. The ratchet reads text, so it cannot see
+# the backticks; declaring it here is the sanctioned path the guard's own message points at.
+scripts/check-authz-guards.test.ts
