@@ -598,17 +598,28 @@
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    SKINS — the lateral (white-label) axis. A skin is a token-set applied via
-   [data-skin="<id>"] on the shell root (a DESCENDANT of <html>). The skin axis is
-   ORTHOGONAL to the light/dark MODE: `.dark` (on <html>) picks the mode; [data-skin]
-   picks the palette + feel. Because [data-skin] sits on a descendant, a skin's
-   dark-mode overrides MUST use the descendant selector `.dark [data-skin="<id>"]`
-   (NOT `[data-skin].dark`). The custom-property cascade lets a token redefined on the
-   shell element override the inherited :root/.dark value for that subtree — the same
-   pattern `.theme-light-lock` above uses.
+   [data-skin="<id>"]. The skin axis is ORTHOGONAL to the light/dark MODE: `.dark`
+   (always on <html>) picks the mode; [data-skin] picks the palette + feel.
+
+   [data-skin] LANDS ON TWO DIFFERENT ELEMENTS, and a skin's dark block must cover BOTH:
+     · on <html> ITSELF — the pre-paint script in app/layout.tsx writes the `freq-skin`
+       localStorage preview onto documentElement (so a skin previews on marketing too),
+       and test/e2e/surfaces.ts stamps the render states the same way.
+     · on a DESCENDANT — the authed shell root (components/layout/app-shell.tsx), the
+       Spotlight shell, and the appearance-picker preview strips.
+   So the dark override is authored as a SELECTOR LIST — the compound `.dark[data-skin]`
+   for the <html> case AND the descendant `.dark [data-skin]` for the subtree case. A
+   descendant combinator cannot match an element against ITSELF, so the descendant form
+   alone silently no-ops on the <html> path (LIVE-008: midnight-dark rendered the generic
+   .dark palette with midnight's LIGHT feel under it). Both parts are (0,2,0) and authored
+   after `.dark` (0,1,0), so they win in either shape. The custom-property cascade lets a
+   token redefined on the shell element override the inherited :root/.dark value for that
+   subtree — the same pattern `.theme-light-lock` above uses.
 
    Registry: lib/theme/skins.ts (typed mirror). The guardrail test skins.test.ts reads
-   this file and asserts every non-default skin id has BOTH a light and a dark block, so
-   CSS + registry can never drift. Add a skin = add its blocks here AND a SkinDef there.
+   this file and asserts every non-default skin id has BOTH a light and a dark block, and
+   that the dark block actually MATCHES both DOM shapes (jsdom, not a regex on the words),
+   so CSS + registry can never drift. Add a skin = add its blocks here AND a SkinDef there.
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 /* default = DAWN. The :root (light) + .dark (dark) values above ARE this skin; it adds
@@ -752,11 +763,13 @@
   --brand-wash:         rgba(232, 134, 54, 0.55);
 }
 
-/* midnight (dark mode). The descendant selector `.dark [data-skin="midnight"]` is
-   REQUIRED (mode lives on <html>, skin on the shell descendant). Deep cool slate /
-   indigo-leaning surfaces — a true cinematic midnight rather than DAWN's warm espresso —
-   with the warm amber accent kept. Body text on canvas holds ≥ ~4.5:1. Sharper radii
-   match the light-mode midnight feel. */
+/* midnight (dark mode). BOTH selector forms are REQUIRED — mode is always on <html>, but
+   the skin lands EITHER on that same <html> (the freq-skin preview script / the e2e state
+   stamp) OR on a shell descendant. Keep the list in that order; see the SKINS header.
+   Deep cool slate / indigo-leaning surfaces — a true cinematic midnight rather than DAWN's
+   warm espresso — with the warm amber accent kept. Body text on canvas holds ≥ ~4.5:1.
+   Sharper radii match the light-mode midnight feel. */
+.dark[data-skin="midnight"],
 .dark [data-skin="midnight"] {
   color-scheme: dark;
 
@@ -1978,18 +1991,29 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
-/* Two surfaces opt OUT of the global focus ring (owner directives, 2026-06-21).
-   These live UNLAYERED with higher specificity than the generic rules above, so they
-   win the cascade — a Tailwind `focus-visible:shadow-none` utility sits in @layer and
+/* ONE surface opts OUT of the global focus ring (owner directive, 2026-06-21).
+   It lives UNLAYERED with higher specificity than the generic rules above, so it
+   wins the cascade — a Tailwind `focus-visible:shadow-none` utility sits in @layer and
    would lose to the unlayered ring above, so the opt-out has to live here too.
    - The Composer text field: the box itself lifts on focus-within, so a hard ring on
-     the textarea doubled up. Typing now reads clean, with no boxed outline.
-   - The header wordmark: a home link with its own press/hover affordance; it no longer
-     paints a focus ring when clicked. */
+     the textarea doubled up. Typing now reads clean, with no boxed outline — and the
+     lift is still a visible focus affordance, which is what makes the opt-out legal.
+
+   🔴 `.brandmark-link` USED TO BE ON THIS LIST, AND IT WAS THE ONE ENTRY THAT COULD NOT BE.
+   The directive it carried was "it no longer paints a focus ring WHEN CLICKED" — but the
+   rule it was written as suppressed `:focus-visible`, and `:focus-visible` is precisely the
+   state a mouse click on a link does NOT enter. So the opt-out did nothing at all for the
+   pointer case it was asked to fix, and deleted the entire indicator for the case nobody
+   asked about: the in-app header wordmark is the first tab stop on every signed-in page
+   (app-shell.tsx renders it immediately after the skip link), so a keyboard user landed on
+   it with nothing painted anywhere on screen. The link's own hover/press affordances are
+   pointer-driven and do not fire on tab, so there was no substitute indicator either —
+   a straight WCAG 2.4.7 failure on the very first stop. The wordmark now takes the same
+   `--color-focus-ring` every other link, button and field takes, from the generic rule
+   above; there is no bespoke wordmark focus style to keep in sync. If the pointer complaint
+   returns, the honest fix is a `:focus:not(:focus-visible)` rule, never a `:focus-visible`
+   one. Guarded by components/layout/brandmark-focus.test.ts. */
 :where([data-tour-anchor="composer"]) textarea:focus-visible {
-  box-shadow: none;
-}
-.brandmark-link:focus-visible {
   box-shadow: none;
 }
 /* The admin command-bar search field is borderless on a canvas band (owner directive), so the

@@ -8,16 +8,18 @@
 // human sees it, on every skin and both modes at once.
 //
 // THE FOUR STATES, and how a value is resolved. The axes are plain CSS cascade:
-//   · mode  = `.dark` on <html>            · skin = `[data-skin]` on a shell descendant
-// The state-defining blocks are `:root`, `[data-skin="…"]`, `.dark`, and `.dark [data-skin="…"]`.
+//   · mode  = `.dark` on <html>   · skin = `[data-skin]` on <html> ITSELF or a shell descendant
+// The state-defining blocks are `:root`, `[data-skin="…"]`, `.dark`, and the skin's dark block —
+// authored as the LIST `.dark[data-skin="…"], .dark [data-skin="…"]` so it covers both places
+// the skin attribute lands (LIVE-008: the descendant form alone never matched <html>).
 // All are UNLAYERED, so the winner per token is (highest specificity, then latest in the file):
 //   dawn-light     :root
 //   dawn-dark      :root  <  .dark
 //   midnight-light :root  <  [data-skin="midnight"]
-//   midnight-dark  :root  <  [data-skin="midnight"]  <  .dark  <  .dark [data-skin="midnight"]
+//   midnight-dark  :root  <  [data-skin="midnight"]  <  .dark  <  .dark[data-skin="midnight"]
 // (`[data-skin]` and `.dark` tie on specificity (0,1,0); `.dark` is authored later, so it wins —
-// which is why the dark-midnight overrides need the two-part `.dark [data-skin="midnight"]`
-// selector. This resolver reproduces that rule rather than assuming an order.)
+// which is why the dark-midnight overrides need a two-part (0,2,0) selector. This resolver
+// reproduces that rule rather than assuming an order.)
 // The `data-occasion` and `data-generation` axes are deliberately OUT of scope: occasion is an
 // opt-in seasonal overlay and generation is feel-only (it sets no palette token, by contract).
 //
@@ -439,14 +441,33 @@ export function declarations(body) {
  * Does a state-defining selector apply to `state`, and at what specificity?
  * Returns null for any selector that is not one of the four state axes (occasion, generation,
  * component classes, element selectors) — those are out of the contract by design.
+ *
+ * A rule may carry a SELECTOR LIST, and the skin dark blocks do: `data-skin` lands on <html>
+ * itself (the freq-skin preview script; the e2e state stamp) as well as on a shell descendant,
+ * so the block is authored as `.dark[data-skin="x"], .dark [data-skin="x"]`. Each part of a
+ * list is an independent selector, so the rule applies at the weight of the strongest part
+ * that applies. Scoring the raw prelude instead would return null for the whole list and
+ * DROP the block — the gate would silently stop measuring the state it exists to cover.
  */
 export function selectorWeight(selector, state) {
-  const s = selector.replace(/\s+/g, ' ').trim()
+  let best = null
+  for (const part of selector.split(',')) {
+    const w = partWeight(part, state)
+    if (w !== null && (best === null || w > best)) best = w
+  }
+  return best
+}
+
+/** Weight for ONE selector in a list (no commas). See selectorWeight. */
+function partWeight(part, state) {
+  const s = part.replace(/\s+/g, ' ').trim()
   if (s === ':root') return 10
   const skin = s.match(/^\[data-skin="([a-z-]+)"\]$/)
   if (skin) return skin[1] === state.skin ? 10 : null
   if (s === '.dark') return state.mode === 'dark' ? 10 : null
-  const darkSkin = s.match(/^\.dark \[data-skin="([a-z-]+)"\]$/)
+  // Both stamping shapes score 20: compound (skin on <html>, alongside `.dark`) and descendant
+  // (skin on the shell root). Same specificity (0,2,0), same state, different DOM.
+  const darkSkin = s.match(/^\.dark ?\[data-skin="([a-z-]+)"\]$/)
   if (darkSkin) return state.mode === 'dark' && darkSkin[1] === state.skin ? 20 : null
   // 30, above every skin/mode rule: the lock sits on a DESCENDANT of <html>, and the nearest
   // declaring ancestor wins for custom properties, so it outranks .dark by position rather
