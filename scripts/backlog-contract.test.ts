@@ -347,7 +347,13 @@ describe('the probe engine does not depend on ambient tooling', () => {
   //
   // The assertion is deliberately a COMPARISON rather than a fixed expectation: the guard must give
   // the SAME answer with and without ripgrep on PATH. That holds no matter how the backlog changes.
-  it('gives identical results with and without ripgrep on PATH', () => {
+  // ⏱️ TIMEOUT, and why it is not the default 30s. This test runs the WHOLE guard twice — once with
+  // ripgrep on PATH and once without. The guard costs ~6s (measured 2026-08-17, down from 23.9s: ten
+  // closed rows carried a probe that spawned a vitest run to prove its consequence, and each now
+  // measures the same consequence in-process instead). ~13s of real work, 60s of budget — headroom
+  // for a loaded runner, without the allowance itself becoming the place a regression hides. That is
+  // what GUARD_BUDGET_MS below is for: the timeout catches a hang, the budget catches a creep.
+  it('gives identical results with and without ripgrep on PATH', { timeout: 60_000 }, () => {
     const stub = mkdtempSync(path.join(tmpdir(), 'nopath-'))
     // Everything a probe legitimately needs (node, git, a shell) — but deliberately not `rg`.
     for (const bin of ['node', 'git', 'sh', 'bash', 'env']) {
@@ -355,7 +361,9 @@ describe('the probe engine does not depend on ambient tooling', () => {
       if (real) symlinkSync(real, path.join(stub, bin))
     }
 
+    const startedAt = Date.now()
     const withRg = run(BACKLOG_GUARD, ROOT)
+    const guardMs = Date.now() - startedAt
     const withoutRg = (() => {
       try {
         const out = execFileSync('node', [BACKLOG_GUARD], {
@@ -383,6 +391,28 @@ describe('the probe engine does not depend on ambient tooling', () => {
     // Same verdict AND same counts — a matching exit code alone could hide compensating errors.
     const counts = (s: string) => s.match(/\d+ open\/blocked · \d+ parked · \d+ done/)?.[0]
     expect(counts(withoutRg.out)).toBe(counts(withRg.out))
+
+    // ⏱️ THE WALL-CLOCK CEILING (LIVE-034), and why it lives here rather than in a probe.
+    //
+    // The guard reached 23.9s because ten closed rows each proved their consequence by spawning a
+    // vitest run — honest, and +2s per row closed the same way, with 39 rows still open. LIVE-034's
+    // first probe measured that by TIMING check:backlog, which meant running check:backlog: it
+    // re-entered itself (55 orphaned processes were counted before it was fenced) and, even fenced,
+    // doubled the cost of every invocation forever to report the cost of one.
+    //
+    // So the row probes the CAUSE in milliseconds — no `verify.cmd` may spawn a test runner — and the
+    // CONSEQUENCE is measured here, where the guard is already being run twice for an unrelated
+    // reason and the measurement is therefore free. A probe that starts costing seconds without
+    // naming a test runner still shows up, as this assertion, instead of disappearing into the
+    // 60s timeout as a slightly slower green.
+    const GUARD_BUDGET_MS = 20_000
+    expect(
+      guardMs,
+      `check:backlog took ${(guardMs / 1000).toFixed(1)}s, over its ${GUARD_BUDGET_MS / 1000}s budget.\n` +
+        'Something added expensive work to a probe. Find it, and measure that consequence in-process\n' +
+        'rather than by spawning a suite — see LIVE-034 in docs/BUILD-BACKLOG.json for the nine rows\n' +
+        'that were converted and the pattern each used. Raising this number is not the fix.',
+    ).toBeLessThan(GUARD_BUDGET_MS)
   })
 })
 

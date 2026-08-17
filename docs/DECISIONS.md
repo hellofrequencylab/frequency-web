@@ -25846,3 +25846,41 @@ as historical wording instead. The catalog sync had **no test at all** before th
 one-product-four-prices shape was recorded only in comments and docs — so nothing had to be loosened
 to make the split pass; the coverage is new.
 
+---
+
+## ADR-1063: A probe measures the CAUSE of its own cost; the wall-clock ceiling lives in the suite that was already paying for it
+
+**Status:** Accepted · enforced by LIVE-034's probe (`docs/BUILD-BACKLOG.json`) and the
+`GUARD_BUDGET_MS` assertion in `scripts/backlog-contract.test.ts`
+**Context:** `pnpm check:backlog` reached **23.9s**, growing roughly **+2s per row closed**, because
+ten closed rows each proved their consequence by spawning a full `vitest` run. That was the honest
+instrument — the probe contract ([ADR-1043](#adr-1043)) demands the consequence, not the title — but
+it was also duplicated work: `pnpm test` had just run those same files in CI. It had already turned
+CI red once, blowing the default 30s timeout on `backlog-contract.test.ts`'s ripgrep-parity arm,
+which runs the whole guard twice by design.
+
+The first attempt to hold the line made it worse. LIVE-034's original probe measured the guard's cost
+**by running the guard**, so the child ran the same probe, which spawned another child, without end —
+**55 live processes** were counted on 2026-08-17, in chains orphaned to PID 1 that outlive the run
+that started them. That, not the vitest spawns, is why the parity arm still timed out after its limit
+was raised to 240s. Fencing it against re-entry fixed the recursion but left the deeper problem: to
+report a 6.2s cost it paid 12.5s of wall clock, on every invocation, forever, including in CI.
+
+**Decision:** Split the two measurements by what each is cheap to see.
+1. **The probe measures the cause, statically:** no row's `verify.cmd` may spawn a test runner
+   (`vitest` / `jest` / `playwright test` / `pnpm|npm|yarn test`). Milliseconds, and it cannot
+   re-enter. LIVE-034's own id is excluded — a row cannot police itself — and a floor of 15 `cmd`
+   probes makes an unreadable or reshaped file exit `79` (indeterminate) rather than report a clean
+   sweep of nothing ([ADR-1043](#adr-1043)'s "cannot look" ≠ "looked and found nothing").
+2. **The suite measures the consequence, for free:** the parity arm already runs the guard twice for
+   an unrelated reason, so it now times one of those runs against a 20s budget.
+3. **Nine probes were converted, not deleted.** Each measures the same consequence in-process —
+   importing the guard and calling its audit, or parsing the artifact it is a claim about — and each
+   was proved to fail by breaking the thing it watches and restoring it. Result: **23.1s → 6.2s**.
+
+**Consequences:** When a row's consequence is genuinely "a test passes", the probe asserts the pin
+**exists and is load-bearing** (the file sits beside its subject, imports it rather than describing
+it, carries real assertions) and lets `pnpm test` prove it green once, in the place that already runs
+it. Do **not** answer a budget failure by raising `GUARD_BUDGET_MS` — that is the allowance-as-hiding-place
+failure [ADR-970](#adr-970) names, and the same move that let this guard reach 24s while staying green.
+A probe that gets slow *without* naming a test runner still fails, as the budget assertion.
