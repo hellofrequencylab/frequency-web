@@ -1416,6 +1416,41 @@
         "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 1 -> 3. Both are real raw textareas the pseudo-comment was eating, in app/onboarding/form.tsx and lib/onboarding/step-registry.tsx; measured on the COMMITTED tree the class goes 1 -> 3 across the corpus change alone, with no in-flight movement in the worktree. A class whose floor was 1 was hiding two thirds of itself.",
         "from": 1
       }
+    },
+    {
+      "key": "handrolled-eyebrow",
+      "description": "Uppercase text tracked by a LITERAL (tracking-wide / wider / widest / an arbitrary em) instead of the eyebrow role token. The eyebrow is the small uppercase tracked label, and `app/globals.css` locks it at 0.75rem / 0.18em / bold behind the `eyebrow` utility and `--tracking-eyebrow`. Production splits it TEN ways. Deliberately a RATCHET and not a sweep: the population is heterogeneous — genuine eyebrows sit beside pill badges and dense table headers where 0.18em would blow the pill out — so each site is a judgment, not a rename. The half a machine CAN settle is guarded outright by lib/theme/eyebrow-role.test.ts, which fails on any slot the code itself names `eyebrow` that hand-rolls the role. `tracking-tight` and `tracking-normal` are excluded: on `font-display uppercase` they are display headings, not eyebrows, and counting them would make the class fire on the wrong subject.",
+      "mode": "matches",
+      "patterns": [
+        "\\buppercase\\b[^\"'`\\n<>]{0,140}?\\btracking-(?:wide|wider|widest)\\b",
+        "\\buppercase\\b[^\"'`\\n<>]{0,140}?\\btracking-\\[",
+        "\\btracking-(?:wide|wider|widest)\\b[^\"'`\\n<>]{0,140}?\\buppercase\\b",
+        "\\btracking-\\[[^\"'`\\n<>]{0,140}?\\buppercase\\b"
+      ],
+      "include": [
+        "{app,components,lib}/**/*.{ts,tsx,mts}"
+      ],
+      "exclude": [
+        "**/*.{test,spec}.{ts,tsx}"
+      ],
+      "baseline": 608,
+      "frozen": {
+        "at": "2026-08-17",
+        "value": 608,
+        "direction": "seed",
+        "basis": "b2a90e60b032",
+        "reason": "New class for LIVE-025 (R7, docs/UX-MATURITY-PLAN.md Addendum 2026-08-05 §3 package 5), seeded at 608 AFTER the kit sweep in the same change, not before it: measured 615 on the tree as found, 608 once the seven slots the code itself names `eyebrow` were moved onto the role utility (EditorShell, Toast, StudioWindow, SparkShell, EntityHeader, JourneyBuilder, HostCohostSection — five different letter-spacings for one named role). Seeding at the post-sweep number is what makes reverting any of the seven fail this gate. The window is bounded by quotes, backticks, angle brackets and newlines so a match can never leave the class list it started in; the longest match measured across all 608 is 35 characters.",
+        "from": 0
+      },
+      "history": [
+        {
+          "at": "2026-08-17",
+          "from": 0,
+          "to": 608,
+          "direction": "seed",
+          "reason": "Seeded at the measured post-sweep count. The role has been LOCKED in app/globals.css since 2026-08-05 and lib/theme/eyebrow-role.test.ts has guarded its DEFINITION ever since — one size, one tracking, one weight, bridged into @theme — and every one of those assertions was green while the product rendered the eyebrow ten ways, because nothing measured ADOPTION. This class is that measurement."
+        }
+      ]
     }
   ]
 }

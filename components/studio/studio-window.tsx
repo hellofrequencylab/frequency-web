@@ -88,7 +88,7 @@ export function StudioWindow({
         {/* Chrome bar — skipped when the entity owns its own header (hideChrome). Esc still closes. */}
         {!hideChrome && (
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
-            <p className="text-meta font-semibold uppercase tracking-widest text-primary-strong">{eyebrow}</p>
+            <p className="eyebrow text-primary-strong">{eyebrow}</p>
             <button
               type="button"
               onClick={onClose}

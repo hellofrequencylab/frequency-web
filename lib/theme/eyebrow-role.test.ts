@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { join, relative, sep } from 'node:path'
 
 // THE EYEBROW ROLE, GUARDED.
 //
@@ -96,5 +96,96 @@ describe('the eyebrow role has one answer', () => {
     expect(themeBlock).toContain('--text-eyebrow:')
     expect(themeBlock).toContain('--tracking-eyebrow:')
     expect(themeBlock).toContain('--text-eyebrow--line-height:')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// THE ROLE IS DEFINED ABOVE. THIS HALF IS WHETHER ANYONE USES IT.
+//
+// Every assertion above this line reads `app/globals.css` and proves the DEFINITION is coherent:
+// one size, one tracking, one weight, bridged into @theme. All seven passed on 2026-08-17 while
+// the product rendered the eyebrow TEN different ways, because a definition nobody calls is not a
+// role — it is a comment with a selector on it.
+//
+// So this block measures the other half, and it measures it where it is unambiguous. A slot the
+// code itself calls `eyebrow` is the one population where nobody has to guess whether a small
+// uppercase tracked label is "really" an eyebrow: the author already named it. On 2026-08-17 there
+// were fifteen such slots and SEVEN of them hand-rolled the role — `text-2xs font-semibold
+// uppercase tracking-wide` in EditorShell, `text-3xs font-bold uppercase tracking-wider` in Toast,
+// `tracking-widest` in StudioWindow and SparkShell, `tracking-wide` in EntityHeader, JourneyBuilder
+// and HostCohostSection — five different letter-spacings for one named role, none of them the
+// role's own 0.18em, in the shared kit that every surface below inherits.
+//
+// WHAT COUNTS AS RESOLVING THE ROLE. Either the composite `eyebrow` utility (the whole role in one
+// class) or the `tracking-eyebrow` token beside `uppercase`. The second form is admitted
+// deliberately: the marketing register sets the same role at --text-body-sm over a photograph and
+// reads the tracking token to do it, so demanding the composite class there would be a size change
+// dressed up as a consistency fix. Both forms resolve to the token; a literal does not, and that is
+// the line this test draws.
+//
+// WHAT THIS DELIBERATELY DOES NOT CLAIM. It does not say the ~615 unnamed hand-rolled sites are
+// eyebrows — most of the population is pill badges and dense table headers, where 0.18em would blow
+// the pill out, and sorting them is a per-site judgment. That population is held by the
+// `handrolled-eyebrow` ratchet class in `scripts/adoption-baselines.json`, which can only shrink.
+// This test owns the half a machine can settle: where the code says "eyebrow", the eyebrow role.
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+
+const ROOTS = ['app', 'components'] as const
+
+/** Every `.tsx` under `app/` + `components/`, tests excluded, as POSIX repo-relative paths. */
+function tsxFiles(): string[] {
+  const out: string[] = []
+  const walk = (dir: string) => {
+    for (const name of readdirSync(dir)) {
+      const full = join(dir, name)
+      if (statSync(full).isDirectory()) {
+        if (name === 'node_modules' || name === '.next') continue
+        walk(full)
+        continue
+      }
+      if (!full.endsWith('.tsx') || /\.(test|spec)\.tsx$/.test(full)) continue
+      out.push(relative(process.cwd(), full).split(sep).join('/'))
+    }
+  }
+  for (const root of ROOTS) walk(join(process.cwd(), root))
+  return out.sort()
+}
+
+/** An element whose ONLY child is the value the author named `eyebrow`, with its own class list. */
+const EYEBROW_SLOT =
+  /className=(?:"([^"]*)"|\{`([^`]*)`\}|\{'([^']*)'\})[^>]*>\s*\{\s*eyebrow\s*\}/g
+
+/** The two forms that resolve the role through its tokens. Anything else is hand-rolled. */
+const RESOLVES_ROLE = /(?:^|\s)eyebrow(?:\s|$)|\btracking-eyebrow\b/
+
+function eyebrowSlots(): { file: string; classes: string }[] {
+  const found: { file: string; classes: string }[] = []
+  for (const file of tsxFiles()) {
+    // Whitespace is collapsed so a slot split across lines by the formatter reads the same as an
+    // inline one. Without it the gate would grade code by how Prettier happened to wrap it.
+    const text = readFileSync(join(process.cwd(), file), 'utf8').replace(/\s+/g, ' ')
+    EYEBROW_SLOT.lastIndex = 0
+    let m: RegExpExecArray | null
+    while ((m = EYEBROW_SLOT.exec(text)) !== null) {
+      found.push({ file, classes: (m[1] ?? m[2] ?? m[3] ?? '').trim() })
+    }
+  }
+  return found
+}
+
+describe('the eyebrow role is what a slot named `eyebrow` renders', () => {
+  it('finds the slots at all — a green over an empty scan is the failure this guards', () => {
+    // ADR-962: a gate that cannot see its own subject reads as coverage. If a refactor renames the
+    // prop or changes the JSX shape, this fails LOUDLY instead of quietly passing over nothing.
+    expect(eyebrowSlots().length).toBeGreaterThanOrEqual(10)
+  })
+
+  it('never hand-rolls the role in a slot the code itself calls an eyebrow', () => {
+    const handRolled = eyebrowSlots()
+      .filter((s) => /\buppercase\b/.test(s.classes) && !RESOLVES_ROLE.test(s.classes))
+      .map((s) => `${s.file} — className="${s.classes}"`)
+
+    // Named, not counted: the point of the message is that the fix is one class per line.
+    expect(handRolled).toEqual([])
   })
 })

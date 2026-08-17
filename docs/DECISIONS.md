@@ -26366,3 +26366,59 @@ and the gate's header lists what it cannot see: whether the gate's RESULT is hon
 gate inside a callback, and anything about the gate's own correctness. ⚠️ An export whose body is not
 in the file — a gate reached only through an IMPORTED wrapper — fails CLOSED. "I could not read it"
 is not "it is fine", the same call `loadLedger` makes on a missing ledger.
+
+## ADR-1071: The rail ladder's persistence had no gate, and the cookie is a CLIENT fallback, not only a server one
+
+**Status:** Accepted · enforced by `lib/layout/rail-fold-persistence.test.ts` (vitest, jsdom, in
+`pnpm test`) beside the existing `lib/layout/rail-fold.test.ts`
+
+**Context.** ADR-925's rail ladder (`lib/layout/rail-fold.ts`, LIVE-026) is a three-position standing
+instruction — Auto / Open / Strip — for each rail, persisted to `localStorage` with a cookie mirror so
+the SERVER can paint the fold on the first frame. All three parts are built and two of them are
+gated: `resolveRailFold` / `nextRailFold` fail five assertions if the ladder is flattened to a binary,
+and the desktop left-rail fold fails `rail-fold.test.ts:225` if `compact={leftStrip}` is dropped.
+
+**The persisted half was gated by nothing, and that was measurable.** `rail-fold.test.ts` runs in the
+default `node` environment, where there is no `window` and no `document` — so `writeStoredRailFolds`
+returns on its first line and `readStoredRailFolds` returns Auto, in every one of its cases. Measured
+2026-08-17: replacing the entire body of `writeStoredRailFolds` with `return` left **all 38 of that
+file's tests passing**. Deleting `railFold={railFold}` from the shell mount in `app/(main)/layout.tsx`
+— the whole no-flash path — left **288 tests across `lib/layout`, `components/layout`,
+`check:shell-weight` and the theme-root suites passing**, and `tsc` green, because this repo does not
+set `noUnusedLocals`. A member could have lost their standing instruction on every reload and the
+suite would have stayed green.
+
+**And the fail-safe undid itself.** `writeStoredRailFolds` is deliberately built to survive blocked
+localStorage (private mode, strict privacy settings): the `setItem` throw is swallowed and the cookie
+still lands. `readStoredRailFolds` then read localStorage and nothing else. So in exactly that case
+the server would paint the folded strip from the cookie, hydration would render it — and the first
+client snapshot would read blocked storage, answer Auto, and shove the rail back open one frame after
+paint. The member watches the instruction be honoured and then revoked. This is the swallowed-error
+shape AGENTS.md names: a fail-safe fired, and the next line of code cancelled it.
+
+**Decision.**
+
+1. **`readStoredRailFolds` falls back to the cookie when localStorage has nothing to say** — no
+   value, or a throwing accessor. localStorage stays the source of truth whenever it answers; the
+   cookie answers only when it does not, and it is the same value the server just painted from, so
+   the two snapshots `useSyncExternalStore` compares can no longer disagree.
+2. **The persistence is asserted in jsdom, in its own file.** The environment pragma is per file, and
+   moving `rail-fold.test.ts` wholesale to jsdom would silently change what `railFoldsSnapshot()`
+   reads in each of its existing cases. Every assertion is written as the consequence a member would
+   notice — choosing Strip and reloading still shows Strip; the FIRST frame of that reload is folded
+   too; a browser that refuses localStorage still keeps the instruction — never as the shape of a
+   function.
+3. **The server's half is drift-guarded from the same file.** `app/(main)/layout.tsx` must read the
+   cookie AND pass `railFold` to the shell. A prop that exists is shape; a prop that is *handed over*
+   is the consequence, and it was the half one line could silently take.
+
+**Consequences.** ✅ Gutting the write fails 6 of the 13 new assertions; removing the cookie fallback
+fails 1; deleting `railFold={railFold}` fails 1 — each proved by breaking and restoring. ✅ LIVE-026's
+`verify` can stop being `manual`: the storage key is `freq-rail-fold` for both stores, and a `cmd`
+probe can now execute the whole round trip under `node --experimental-strip-types` (the module has no
+runtime dependencies), which keeps it clear of LIVE-034's rule that no probe may spawn a test runner.
+⚠️ This does not gate the RENDERED fold — that a folded rail actually paints a 56px strip is a visual
+question, and the member-shell surfaces' committed PNGs are where it lives. ⚠️ The narrow-window yield
+is still CSS (`hidden md:flex` / `hidden lg:flex`) and still untested here, deliberately: measuring a
+viewport is only possible on the client, and folding on a value the server cannot know is how the
+flash gets shipped in the first place.
