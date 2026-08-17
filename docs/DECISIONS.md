@@ -25664,3 +25664,94 @@ touched here and are the owner's to make: `beta_grace` still ends **2026-09-01**
 separate dates, ADR-874), and `FOUNDING_DEFAULT.business_monthly_cents` is still **$19**, so a Founding
 Business minted by the beta founder push is still stamped with a lifetime rate that no longer
 corresponds to any purchasable price.
+
+## ADR-1061: The beta rate stays open for the people who were promised it, as a private per-Space grant
+
+**Status.** Accepted (2026-08-17) · owner decision, the same day as [ADR-1060](DECISIONS.md) closed the
+window · pure decision in `lib/pricing/beta.ts` (`loadoutChargeArm` / `loadoutChargePriceKey`), IO in
+`lib/billing/space-beta-grant.ts`, consumed by `lib/billing/space-plan-checkout.ts`
+(`resolveLoadoutPriceId`) · operator surface on `/admin/spaces/[id]` ("Beta price grant") ·
+tests `lib/pricing/beta-grant.test.ts` · schema staged in
+`docs/proposals/OWN-023-space-beta-price-grant.sql`, **not applied** · amends
+[ADR-1060](DECISIONS.md) and the grandfathering rule in [ADR-460](DECISIONS.md).
+
+**Context.** The owner, hours after closing the beta window: *"I still have a couple people that I've
+offered the Beta pricing to, and I want to keep that open for them. But I don't want to advertise
+that Beta pricing as a package on the website. I just want regular pricing."* Two requirements that
+pull against each other, and the machinery already in the repo served neither.
+
+🔴 **The grandfathering machinery works perfectly and preserves the wrong number.**
+`resolveLoadoutPriceId` consults `readLockedPriceId(spaceId, itemKey)` first and re-bills a lock
+forever if one exists — but the lock is a **record, not a grant**.
+`lib/billing/space-subscriptions.ts` writes `locked_price_id` while reconciling a subscription,
+capturing whatever checkout actually charged. With the window shut, `chargeList` is true, a person
+promised $49 checks out at $79, and their lock faithfully records $79 for life. The lock cannot know
+its number is wrong; it can only carry the number it was given. Nothing else fit either:
+`spaces.is_comped` means FREE, not discounted, and no beta, override or grant column existed anywhere
+in `spaces` or the pricing tables (asked of the production catalog, not of the migrations).
+
+**Decision.** A **private, per-Space grant** — `spaces.beta_price_grant` — that only the checkout
+reads.
+
+1. **Not the window.** `BETA_PRICING_ENDS_AT` is ONE global constant, and the whole reason it is one
+   constant is that the checkout and every pricing surface read the same answer, so the page can never
+   quote a rate the checkout has stopped charging ([ADR-880](DECISIONS.md)). Re-opening it for two
+   people would put $49 back on `/pricing` for everyone, which is precisely the half of the sentence
+   the owner said no to. A per-Space fact is the only shape that satisfies both halves.
+2. **The charge decision becomes three arms, and it is PURE.** `loadoutChargeArm({ lockedPriceId,
+   betaActive, spaceHasBetaGrant })` returns `lock` when the Space holds a locked price id (a live
+   subscription's own price is not ours to re-decide), else `founding` when the window is open **OR**
+   this Space carries the grant, else `list`. No React, no Supabase, no clock of its own — the same
+   discipline as the rest of `lib/pricing/*`, which is what makes the money decision testable without
+   a database. `loadoutChargePriceKey` maps the two non-lock arms onto the catalog key namespace; the
+   `lock` arm is not representable there, because a lock is a concrete price id and not a key.
+3. **The grant needs no expiry, and the code says why.** It is **spent by the first successful
+   checkout**: the reconciler records the charged founding price as the item's lock, arm 1 wins from
+   then on, and the grant is never consulted again. Revoking it afterwards cannot raise anyone's rate;
+   leaving it set costs nothing. An expiry column would be a second promise to keep in sync with the
+   first.
+4. **Three columns, not one.** `beta_price_grant boolean not null default false` is the decision (a
+   boolean, not a rate: the founding price ids are already minted active by the catalog sync, so
+   inventing an amount here would be a second source of truth for money). `beta_price_granted_at` +
+   `beta_price_granted_by` are the audit stamps, cleared on revoke so they always describe the grant
+   currently in force. They are not decoration: the failure this feature closes (`OWN-022`) is an
+   obligation that lived only in the owner's memory, and a bare boolean records THAT a promise exists
+   while still losing who made it. The append-only history of every flip is `admin_audit_log`
+   (`space.beta_price_grant`).
+5. **NO public surface may see it.** `effectiveCatalogAmounts`, `effectiveTierPrice`, `spacePlanRows`,
+   `spaceOfferings`, `spaceFeatureGrid` and the funnel config are unchanged, and their beta input
+   remains a single boolean about the WINDOW — there is no per-Space parameter to thread a grant
+   through, so surfacing one would require changing those signatures. `beta-grant.test.ts` asserts the
+   consequence rather than the shape: it walks every number and every string a visitor can read off
+   the offering cards, the price rows and every comparison cell, and fails if 4900 / 49000 / 1900 /
+   19000 or a `$49` / `$490` / `$19` / `$190` label or the words "Beta rate" appear anywhere.
+6. **The migration is a PROPOSAL, in `docs/proposals/`.** A file in `supabase/migrations/` asserts
+   production has run it, and CI arms `check:migrations` rule 4 against the real ledger
+   ([ADR-1007](DECISIONS.md)). The code is live and correct without the column.
+
+**Consequences.** The shipped code has to behave sanely against a database that does not have the
+column yet, and "sanely" is not "silently". Selecting a column PostgREST does not know fails the
+**whole** request with `42703` — the exact bug that once cost this checkout the owner's saved Stripe
+customer id by selecting a non-existent `profiles.email` — so the grant is never read as part of
+another select. `readSpaceBetaPriceGrant` is its own request and returns `unavailable / not_deployed`
+on 42703, **distinct** from a clean read of `granted: false`. The checkout collapses both to "no
+grant" (fail-safe FALSE: an unreadable answer charges list, never under-charges) while the operator
+panel renders the apply-this-first instruction instead of a toggle that would look enabled and quietly
+do nothing — a fail-safe with a gate that notices it fired.
+
+The grant is **janitor-gated and lives on the platform admin surface**, never in
+`/spaces/[slug]/settings`: a Space owner who can reach it is a self-serve discount. The write path is
+the service-role admin client, which is also what stands between the column and the browser —
+`spaces` grants UPDATE at TABLE level to `anon` and `authenticated` (relacl `anon=awdDxtm`), so the new
+column inherits that privilege the moment it exists, and the only thing denying those writes is that
+`spaces` carries exactly one RLS policy and it is for SELECT. A column-level revoke would not help
+(Postgres will not revoke a column privilege held at table level), so the proposal states the condition
+to watch instead of pretending to close it: **an UPDATE policy added to `spaces` later must exclude
+this column.** Reads are already closed — `spaces` grants SELECT at COLUMN level (31 of 44 columns),
+and a newly added column is not covered by a column-level grant, so the flag is invisible to both
+browser roles with no statement needed.
+
+Not fixed here, and worth naming: `OWN-022` itself. @ishasetlumi paid $490 in cash and has no
+subscription, so the grant is the mechanism that would make her eventual Stripe checkout bill $490
+rather than $790 — but somebody still has to set it on `templeofaset` and honour the paid year first.
+The grant makes the promise **recordable**; it does not go looking for promises nobody wrote down.
