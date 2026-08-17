@@ -1,5 +1,9 @@
 # Baseline assessment & cleanup roadmap (2026-06-13)
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 A senior-level systems assessment of `frequency-web` across five dimensions, plus the
 phased roadmap to reach a clean, hand-off-ready, best-practice baseline and scale into
 the Frequency **Foundation** (nonprofit community) + **Labs** (for-profit member-management

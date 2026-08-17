@@ -1,5 +1,9 @@
 # The Owner's CRM: full interaction tracking + the comms system, reconciled
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **What this is.** A deep scan of the CRM, email, funnel, and subscription systems against
 > the owner's vision for a "super slick CRM with full tracking of every interaction," plus a
 > sequenced build to close the gap. It **consolidates**, it does not restate: the architecture

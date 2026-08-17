@@ -1,5 +1,9 @@
 # Naming Canon 2026 — Phase 0 Content Inventory (member-facing)
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](../BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](../DECISIONS.md)).
+
 **Status: ⏳ read-only inventory — no renames performed.**
 Scope: every string a member or visitor can read — help/program markdown, UI strings in
 `app/**` + `components/**`, email/notification/onboarding copy, Vera prompts, SEO/AIO

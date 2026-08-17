@@ -1,5 +1,9 @@
 # Platform Master Plan — one multi-tenant white-label engine
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **The single re-prioritized critical path** that unifies the Multi-Tenant White-Label spec
 > (owner, 2026-06-29), the Entity Management Overhaul ([ADR-441](DECISIONS.md)), the Spaces
 > architecture ([ADR-249](DECISIONS.md)/[SPACES.md](SPACES.md)), the Hook harvest, Foundation

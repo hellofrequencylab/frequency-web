@@ -1,5 +1,9 @@
 # Mobile navigation plan
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **Goal.** Keep the mobile app as clean as possible while making sure every critical feature is
 > forward-facing and every feature has a home. The **left role-based rail stays exactly as it is**
 > (owner directive). This plan re-prioritizes the **bottom bar**, prioritizes the **top-right user

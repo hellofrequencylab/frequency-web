@@ -1,5 +1,9 @@
 # Admin Reorganization: phased build-out plan
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **Status: PROPOSED (June 2026).** The execution plan for the audit in
 > [`docs/ADMIN-IA-PROPOSAL.md`](ADMIN-IA-PROPOSAL.md). The proposal is the *why*
 > (root causes, the disambiguation, the target IA); this is the *how* (phased,

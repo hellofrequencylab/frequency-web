@@ -1,5 +1,9 @@
 # Practice Depth — build plan
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **Earn the tier you actually reach.** A practice ships with a recommended time; the member
 > adjusts it on their own page, day to day; the **tier (Zaps) is earned by how long they actually
 > practice**, with a live "go a little deeper" pull at every step. Every end-of-session message and

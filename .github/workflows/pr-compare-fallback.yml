@@ -105,21 +105,88 @@ jobs:
             echo "::notice::No changed file can move pixels. Posting pr-compare on e2e's behalf."
           fi
 
+      # 🔴 THIS POST MUST RETRY, AND IT MUST BE READ BACK. A single un-retried call here
+      # reproduces the exact forever-deadlock the header describes, because the deadlock is
+      # caused by the context being ABSENT and a failed POST leaves it absent.
+      #
+      # PR #2142 (one file, under `docs/`) hit it on 2026-08-17. The decide step above worked
+      # perfectly — it read the changed-file list, correctly found nothing that can move
+      # pixels, and logged "Posting pr-compare on e2e's behalf". Then the statuses API
+      # answered **503** ("No server is currently available to service your request ... Please
+      # try resubmitting"), `--fail-with-body` turned that into exit 22, and the job went red
+      # with the status never posted. GitHub's own error text asks for a resubmit; the step had
+      # no way to give it one.
+      #
+      # So a transient blip on GitHub's side was enough to put a clean docs PR into a state
+      # with no exit — the deadlock-breaker itself became the single point of failure. Hence:
+      #
+      #   1. RETRY, but only on transient codes (429 + 5xx + connection failure). A 403 or a
+      #      422 is a real defect — a bad token, a wrong SHA — and retrying it five times just
+      #      delays the honest failure.
+      #   2. READ IT BACK. A 201 is the API's word that it accepted the write; the read is
+      #      proof the required context actually EXISTS on this SHA under the exact name
+      #      branch protection consumes. Posting to the wrong context name would otherwise
+      #      report success and still deadlock, which is this repo's named failure mode: a
+      #      fail-safe firing with nothing to notice it did.
       - name: Post pr-compare
         if: steps.decide.outputs.e2e == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          set -euo pipefail
-          curl -sS -X POST \
+          # NOT `-e`: curl's exit code is inspected per attempt rather than aborting the step.
+          set -uo pipefail
+
+          api="${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}"
+          attempt=1
+          max=5
+          delay=2
+
+          while : ; do
+            code=$(curl -sS -o /tmp/post.out -w '%{http_code}' -X POST \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "${api}/statuses/${HEAD_SHA}" \
+              -d '{
+                "state": "success",
+                "context": "pr-compare",
+                "description": "No rendering input changed, so the visual suite was not run.",
+                "target_url": "'"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"'"
+              }') || code=000
+
+            [ "$code" = "201" ] && break
+
+            case "$code" in
+              000|429|500|502|503|504) ;;
+              *)
+                echo "::error::statuses API returned ${code}, which is not transient. Not retrying."
+                cat /tmp/post.out || true
+                exit 1
+                ;;
+            esac
+
+            if [ "$attempt" -ge "$max" ]; then
+              echo "::error::statuses API still returning ${code} after ${max} attempts. pr-compare is NOT posted, so this PR is blocked until this job is re-run."
+              cat /tmp/post.out || true
+              exit 1
+            fi
+
+            echo "::warning::statuses API returned ${code} (attempt ${attempt}/${max}). Retrying in ${delay}s."
+            sleep "$delay"
+            delay=$((delay * 2))
+            attempt=$((attempt + 1))
+          done
+
+          # The read-back. Without this the step asserts "the API accepted my write", when what
+          # the merge actually depends on is "the context exists on this SHA".
+          if ! curl -sS --fail-with-body \
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
-            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/statuses/${{ github.event.pull_request.head.sha }}" \
-            -d '{
-              "state": "success",
-              "context": "pr-compare",
-              "description": "No rendering input changed, so the visual suite was not run.",
-              "target_url": "'"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"'"
-            }' \
-            --fail-with-body
-          echo "::notice::Posted pr-compare=success. This asserts only that no rendering input changed."
+            "${api}/commits/${HEAD_SHA}/status" \
+            | python3 -c 'import json,sys; sys.exit(0 if any(s["context"] == "pr-compare" for s in json.load(sys.stdin)["statuses"]) else 1)'
+          then
+            echo "::error::Posted pr-compare and got 201, but the context is absent when read back on ${HEAD_SHA}. Do not trust the write; investigate before merging."
+            exit 1
+          fi
+
+          echo "::notice::Posted pr-compare=success and verified it on ${HEAD_SHA}. This asserts only that no rendering input changed."

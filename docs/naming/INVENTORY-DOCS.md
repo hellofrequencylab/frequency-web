@@ -1,5 +1,9 @@
 # Naming Canon 2026 — Phase 0 inventory: DOCUMENTATION
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](../BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](../DECISIONS.md)).
+
 > **Read-only inventory** (branch `naming-canon-2026`). Scope: `docs/**/*.md`, `README.md`,
 > `AGENTS.md`, `CLAUDE.md`, `.claude/**`, `design_handoff/**`. Excludes code, `content/`,
 > `node_modules`, and the sibling Phase-0 artifacts `docs/naming/INVENTORY-CODE.md` /

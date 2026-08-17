@@ -27,6 +27,30 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
   destroys the evidence.
 - **Every fail-safe needs a gate that notices it fired.** A swallowed error is an invisible regression.
 
+# The one list — there is exactly one backlog, and it is not a document
+
+**[`docs/BUILD-BACKLOG.json`](docs/BUILD-BACKLOG.json) is the ONLY record of what is done**
+([ADR-1043](docs/DECISIONS.md)). Run **`pnpm backlog`** to see the working view.
+
+- **Never open a new plan / TODO / roadmap / audit file.** `pnpm check:one-list` freezes the set of
+  planning-shaped docs and fails a PR that adds one. Findings from an audit become **backlog entries**,
+  not a new document. This repo consolidated into "the one master list" **five times** and drifted five
+  times; the frozen set is what stops a sixth.
+- **Never record status in prose.** Docs explain the work — specs, architecture and rationale are why
+  this repo is legible. They do not track whether it is done, because prose cannot be verified. Every
+  planning doc must say so in its first 25 lines; the gate checks it.
+- **Every row states how it will be proven.** `pnpm check:backlog` runs each row's probe and fails
+  **both ways**: a row marked `open` whose probe passes is stale, and a row marked `done` whose probe
+  fails is a regression. It caught its 23rd stale item on its first run.
+- **A probe measures the CONSEQUENCE, never the row's own title.** A `grep-present` for the words in
+  the title passes by existing — the shape-not-truth failure named in four ADRs. Probe for the import
+  that must be gone, the export that must exist, the command that must exit 0.
+- **Rows a repo cannot probe are `manual`** with `evidence` + a `checked` date. They go stale loudly at
+  120 days and **never fail the build** (ADR-970: a gate that cannot fire honestly gets routed around,
+  and then it reads as coverage).
+- **To close a row, make its probe pass — never delete the probe.** That is precisely how the previous
+  five lists drifted.
+
 # Which plan is live — read this before picking up "what's next"
 
 The repo carries years of planning documents, and **five of them describe themselves as the

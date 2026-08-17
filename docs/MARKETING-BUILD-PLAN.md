@@ -1,5 +1,9 @@
 # Marketing Pages: phased build-out plan
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **Status: PROPOSED (June 2026).** The execution plan for the public-facing site.
 > Strategy companion to [`docs/PUBLIC-SITE-PLAN.md`](PUBLIC-SITE-PLAN.md) (the funnel
 > research) re-pointed to the cold-start, philosophy-led launch. Voice is governed by

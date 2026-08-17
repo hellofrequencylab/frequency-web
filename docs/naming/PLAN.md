@@ -1,5 +1,9 @@
 # Naming Canon 2026 — Phase 1 change plan (committed before execution)
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](../BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](../DECISIONS.md)).
+
 Canon: [docs/NAMING.md](../NAMING.md) · ADR-208. Inventories: INVENTORY-{CODE,DOCS,CONTENT}.md.
 Branch-only; migrations authored, NOT applied to prod until merge approval.
 

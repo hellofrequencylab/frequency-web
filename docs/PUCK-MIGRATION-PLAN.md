@@ -1,5 +1,9 @@
 # Migration plan: off the deprecated `@measured/puck`
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **Recommendation:** own the block layer in-house. Keep the persisted Puck `Data`
 > shape (`{ content, root }`) byte-for-byte so **no stored document is migrated**, then
 > (1) pin the dependency now, (2) replace the public `<Render>` with a small in-house

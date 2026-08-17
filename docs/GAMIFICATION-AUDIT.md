@@ -1,5 +1,9 @@
 # Gamification audit: categorization, the points log, and program gaps
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 **Date:** 2026-06-06 · **Decision:** [ADR-139](DECISIONS.md) · **Model:**
 [GLOSSARY.md](GLOSSARY.md) → "Gamification" · [ECONOMY-AND-JOURNEYS.md](ECONOMY-AND-JOURNEYS.md)
 

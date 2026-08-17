@@ -1,5 +1,9 @@
 # Converting the site to the apps / theme / skin system — phased plan
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 The target (docs/EMBEDDABLE-ELEMENTS.md): every reusable feature is a **canonical app** invoked by
 key, **configured once** (role-gated) and applied site-wide, framed by the **rail/shell** ("theme")
 and painted by **design tokens** ("skin"). This is the WordPress mental model (theme / child theme /

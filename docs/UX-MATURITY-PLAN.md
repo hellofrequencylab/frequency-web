@@ -1,5 +1,9 @@
 # UX maturity plan — the eight lifts from 74 to 90+
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **What this is.** The 2026-08-04 rebuild grading scored the redesign 74/100 against a
 > best-in-class bar: world-class token architecture and design ops (90s), mid-migration
 > screen craft (65), and a missing user-evidence loop (40). The owner directed the eight

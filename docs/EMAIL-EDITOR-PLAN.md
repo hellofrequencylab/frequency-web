@@ -1,5 +1,9 @@
 # Email Block Editor — Settings & Blocks Plan
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 **Status:** ✅ Built. Owner directive captured 2026-07-12; shipped since. The Features block carries
 an `eyebrow` and no images, the Card grid renders images + stat boxes (a big number + label), the
 icon token resolves as a Lucide site-icon or emoji (`lib/entity-blocks/icon-tokens.ts`,

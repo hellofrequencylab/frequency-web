@@ -1,5 +1,9 @@
 # Events System: Audit & Status (2026-06-09)
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > Full verification sweep of the Events build (P0 + Wave 2) against
 > [`EVENTS-SYSTEM.md`](EVENTS-SYSTEM.md): completeness, **security**, **SEO/AIO**, and
 > integration. Legend: ✅ done · ◑ partial · ❌ not built · 👤 needs a human/ops action.

@@ -1,5 +1,9 @@
 # Site Audit — 2026-06-29 (clean-start sweep)
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > A full read-only scan across **bugs/wiring · performance · SEO-AIO · security**, plus a lint
 > baseline and the dead-link sweep, run to give a clean starting point. **Bottom line: the
 > codebase is mature and healthy.** No broken links, lint-clean (2 trivial test warnings), strong

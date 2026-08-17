@@ -1,5 +1,9 @@
 # Shop & Marketplace Rework — Build Spec
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **Status:** Phases **0-7 + 9 shipped** on `feat/shop-marketplace-rework` (2026-07-09), adversarially
 > reviewed + fixed. **Decision record:** ADR-596 · **Naming:** [`NAMING.md` → Marketplace & Commerce](NAMING.md).
 >

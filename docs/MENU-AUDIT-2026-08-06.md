@@ -1,5 +1,9 @@
 # Menu system audit — 2026-08-06
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 **Status:** ✅ Audit + the redesign it produced. The audit stands as written below (it is the
 record of what was wrong); **ADR-953 to ADR-957** are the answers, shipped in the same PR.
 

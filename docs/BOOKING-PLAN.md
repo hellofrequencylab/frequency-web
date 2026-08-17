@@ -1,5 +1,9 @@
 # Booking: Calendly-Grade Build Spec
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **What this is.** A phased ladder that raises Space booking from v1 (one flat weekly availability set
 > per Space, one implicit offering, confirm-only) to a Calendly-grade scheduling system: reusable service
 > types, real availability schedules with buffers and notice rules, member self-serve reschedule / cancel

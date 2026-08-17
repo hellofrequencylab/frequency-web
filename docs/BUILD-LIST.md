@@ -1,5 +1,9 @@
 # Master build list — Frequency web
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **Finish line (2026-08-10): [`FINALIZE-PLAN.md`](FINALIZE-PLAN.md)** ([ADR-960](DECISIONS.md)) — the
 > seven phases that take the current build to fully functional: restore the instruments (the visual
 > suite has been red on every run since 2026-08-06) · close the access layer (1,907 anon/authenticated

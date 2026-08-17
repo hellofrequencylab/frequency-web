@@ -1,5 +1,9 @@
 # Foundation Hardening & Scale Plan
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> This document is the spec and the rationale. It does **not** record what is done, because prose
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
+
 > **The hardening-first, best-practice-first execution sequence.** This is the active build
 > order locked by owner decision **2026-06-28**: make the platform world-class and
 > scale-ready **before** adding more features, finish the web foundation fully, then build the
