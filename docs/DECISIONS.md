@@ -25751,7 +25751,18 @@ this column.** Reads are already closed — `spaces` grants SELECT at COLUMN lev
 and a newly added column is not covered by a column-level grant, so the flag is invisible to both
 browser roles with no statement needed.
 
-Not fixed here, and worth naming: `OWN-022` itself. @ishasetlumi paid $490 in cash and has no
-subscription, so the grant is the mechanism that would make her eventual Stripe checkout bill $490
-rather than $790 — but somebody still has to set it on `templeofaset` and honour the paid year first.
-The grant makes the promise **recordable**; it does not go looking for promises nobody wrote down.
+**The motivating instance is real, and the grant covers exactly half of it.** @ishasetlumi paid
+**$490 in cash** for the annual Collective beta rate; her Space `templeofaset`
+(`cb611bac-7956-4652-9993-440c430d494b`) carries `plan='collective'` granted straight into the
+database, with no subscription item and therefore no lock (backlog `OWN-022`). She is precisely the
+case this exists for, and setting `beta_price_grant` on her Space is what makes her eventual Stripe
+onboarding resolve `collective_base_year` ($490) instead of `collective_base_year_list` ($790), and
+then lock that price for life. 🔴 **It does not settle the other obligation.** She has already paid
+for a year, so she must not be charged again until roughly **2027-07**, and nothing in this decision
+delays a charge: `createSpaceLoadoutCheckout` sets `trial_period_days` from the 14-day pricing
+setting, not from a paid-through date. That half belongs to the manual agreement machinery
+([ADR-872](DECISIONS.md), `manual_agreements.paid_through`) plus a trial long enough to cover the
+remaining term, and it is deliberately NOT claimed here — writing "OWN-022 is handled" against a
+mechanism that fixes the rate and not the date would recreate the original failure in a nicer font.
+The grant makes a promise **recordable**; it does not go looking for promises nobody wrote down, and
+it does not invent the ones it cannot see.
