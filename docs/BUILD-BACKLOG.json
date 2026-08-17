@@ -557,7 +557,8 @@
         "paths": [
           "instrumentation-client.ts"
         ]
-      }
+      },
+      "notes": "Artifact-verified 2026-08-17, not inferred: built with no DSN and read the emitted chunks. The 236,682-byte Sentry SDK chunk appears in 0 of 4,149 client entry lists across all 404 page_client-reference-manifest.js files, and the baseline chunk in rootMainFiles contains only the gated async loader. app/error, app/global-error and components/ui/route-error.tsx still import the SDK statically; Turbopack keeps those in async groups, so they are not a baseline regression and were deliberately left alone."
     },
     {
       "id": "LIVE-011",
