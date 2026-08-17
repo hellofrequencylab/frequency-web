@@ -295,8 +295,10 @@ export function report(census, { probe = false, io = {} } = {}) {
   }
   lines.push(
     '',
-    '    Re-verified on this run: each successor resolves in the live registry, and each migration',
-    '    exists and performs that exact rewrite. Promote + apply the SQL, then re-capture',
+    '    Re-verified on THIS run: each migration exists and performs that exact rewrite. That each',
+    '    successor still resolves, and that no OTHER stored type has gone unresolvable, needs the',
+    '    TSX registry and is asserted by scripts/check-stored-blocks.test.ts under `pnpm test`.',
+    '    Promote + apply the SQL, then re-capture',
     `    ${CENSUS_PATH}; this list empties and \`--probe\` goes 1 -> 0.`,
     '',
     '    This is a PASS, not coverage: an UNDECLARED orphan still fails, and so does an entry whose',
