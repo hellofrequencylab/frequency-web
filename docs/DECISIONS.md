@@ -25766,3 +25766,83 @@ remaining term, and it is deliberately NOT claimed here — writing "OWN-022 is 
 mechanism that fixes the rate and not the date would recreate the original failure in a nicer font.
 The grant makes a promise **recordable**; it does not go looking for promises nobody wrote down, and
 it does not invent the ones it cannot see.
+
+## ADR-1062: A founding rate is not part of standard pricing, so in Stripe it is not part of the standard product
+
+**Status.** Accepted (2026-08-17) · owner decision, implemented in `lib/billing/pricing-products.ts`
+(`syncPricingCatalogToStripe`, `catalogProductMetaKey`, `catalogProductLabel`,
+`catalogItemHasFoundingRate`) · tests `lib/billing/pricing-catalog-sync.test.ts` · amends
+[ADR-460](DECISIONS.md) (which put all four prices on one Product) · follows
+[ADR-1060](DECISIONS.md) (the window closed) and [ADR-1061](DECISIONS.md) (the private per-Space
+grant) · **no schema change, no migration, no price KEY change.**
+
+**Context.** The owner, reading the catalog we were about to sync: *"Holy fuck, standard pricing does
+not have a founding or beta rate."* And the shape they asked for: *"Regular pricing + a founding beta
+product."*
+
+`syncPricingCatalogToStripe` minted ONE Product per catalog item and hung FOUR Prices on it:
+`{ founding, list } x { month, year }`. So `Frequency Collective` carried $79 **and** $49, and
+`Frequency Business` carried $29 **and** $19. That was correct while the beta window was open, because
+the founding amount was the amount everyone was charged. [ADR-1060](DECISIONS.md) closed the window
+that morning: the list price is now what checkout charges, and the founding rate is reachable ONLY
+through a grandfathered lock or the private per-Space grant. A product carrying both reads, to anyone
+opening the Stripe dashboard, as if the beta rate were still part of the offering. It is not, and the
+dashboard is where an operator goes to answer "what do we sell".
+
+Nothing had shipped yet: the live account (`acct_1TdurHPhyalyRPP1`) held **zero products** when this
+was written, so this is the shape of the FIRST sync, not a migration of existing Stripe objects. No
+archive-and-replace path was written, because there is nothing to replace.
+
+**Decision — split the product, keep the key.**
+
+1. **Two product lines, one per item.** The **standard** Product carries only the LIST prices. A
+   **founding** Product carries the founding rates: `Frequency Collective (Founding rate)` with $49 /
+   $490, beside `Frequency Collective` with $79 / $790. The parenthetical matches the catalog's own
+   naming convention (`Frequency Vera AI (add-on)`), reads plainly in the dashboard, and carries no em
+   dash ([CONTENT-VOICE](CONTENT-VOICE.md)).
+2. **Only an item that HAS a founding rate gets one.** `catalogItemHasFoundingRate` asks the
+   operator-resolved amounts whether `foundingCents < listCents` on either interval. Independent, Non
+   Profit, Vera AI and the operator seat ship `founding == list`: they have no beta rate to separate,
+   and minting `Frequency Independent (Founding rate)` at exactly the standard price would INVENT the
+   thing the owner asked us to delete. Their founding-variant key still exists, still resolves, and
+   points at the standard product at the standard amount. Today that means seven Products for five
+   synced items.
+3. **The metadata scheme keeps one lookup field.** Products are found by
+   `metadata['frequency_pricing_key']`, unchanged: the standard product keeps the bare item key
+   (`collective_base`) so a re-sync finds the same object the old code would have, and the founding
+   product takes `collective_base_founding` — a value that cannot collide with a price key
+   (`<item>_<interval>` / `..._list`) or with another item. Two descriptive fields ride along,
+   `frequency_catalog_item` and `frequency_product_line`, so a human can pair the two products of one
+   item without parsing names. **Price metadata is untouched**, because
+   `space-subscription-items.ts` and `founding-payment.ts` read `frequency_pricing_key` back off a
+   charged price to identify the catalog item.
+4. **NOT ONE PRICE KEY MOVES, and that is the whole risk of this change.** `pricing_stripe_prices` is
+   keyed by KEY, not by product; `stripe_product_id` is a column on the row. `resolveStripePriceId`,
+   `resolveLoadoutPriceId`, the ADR-1061 grant and every lock resolve a KEY. A product split that
+   quietly renamed `collective_base_year` would silently break the one promise ADR-1061 exists to
+   keep. The new test freezes the entire written key set as a literal and re-derives it from
+   `catalogPriceKey`, so a rename fails loudly rather than at someone's renewal.
+5. **Every Price stays ACTIVE in Stripe.** The sync creates prices and never calls
+   `prices.update({ active: false })` — asserted directly, because a price archived in Stripe **cannot
+   be used in a new subscription**, which is precisely what the grant needs the founding price for. The
+   `archived` flag on a map row is an annotation on the row and has never been Stripe's `active`.
+6. **A failure to mint the founding product does not block the standard offering.** The list prices
+   still sync; the founding keys report an error. They deliberately do NOT fall back to the standard
+   product, which would put the beta rate back where the owner just removed it.
+
+**Idempotency is the property a sync is judged on, so it is proven rather than asserted.** The test
+runs the whole sync twice against an in-memory Stripe and asserts `products.create` and `prices.create`
+are called ZERO times on the second pass, with every product id, price id and map row identical. A
+name drifted on an existing product is corrected in place (`products.update`), never duplicated. The
+same fake catches the inverse mistake: reverting the product selection to "everything on the standard
+product" fails three assertions.
+
+**Consequences.** The admin price panel now shows two different `stripe_product_id` values for one
+item — the founding rows point at the founding product — which is the intended readout, not drift.
+The `archived` column keeps its current values (founding `false`, list `true`) even though ADR-1060
+inverted which one is sold: nothing reads it to decide a charge, so flipping it under this change would
+be an unrelated semantic edit with no gate watching it. It is documented in [PRICING.md](PRICING.md)
+as historical wording instead. The catalog sync had **no test at all** before this — the
+one-product-four-prices shape was recorded only in comments and docs — so nothing had to be loosened
+to make the split pass; the coverage is new.
+

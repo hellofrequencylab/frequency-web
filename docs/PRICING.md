@@ -38,6 +38,14 @@
 >    checkout writes the lock, and the lock wins from then on. Operator control: `/admin/spaces/[id]`
 >    → "Beta price grant" (janitor-gated, audited). Schema: `docs/proposals/OWN-023-space-beta-price-grant.sql`,
 >    a proposal, not a migration — the code fail-safes to list pricing until it is applied.
+> 8. **In STRIPE, the founding rates hang on their own Product** ([ADR-1062](DECISIONS.md)). Owner:
+>    *"standard pricing does not have a founding or beta rate ... Regular pricing + a founding beta
+>    product."* `syncPricingCatalogToStripe` mints **Frequency Collective** ($79 / $790) and, separately,
+>    **Frequency Collective (Founding rate)** ($49 / $490) — same for Business. A flat item (Independent,
+>    Non Profit, Vera AI) has no founding rate to separate, so it gets no second product. **No price KEY
+>    moved**: `collective_base_year` is still `collective_base_year`, so the grant and every lock resolve
+>    exactly what they resolved before, and both variants stay ACTIVE in Stripe so the grant can charge
+>    them.
 
 > ## ✅ CURRENT (money model): selling is FREE on every tier; the RATE is the ladder (ADR-914, 2026-07-30).
 >
@@ -419,16 +427,35 @@ amount is the real price charged today (Pro $19). **Yearly = two months free = 1
 
 **Price-row keys.** The founding (charged) price is `<item>_<interval>` (e.g. `pro_base_month`,
 `addon_marketing_year`, `nonprofit_seat_month`, `organization_year`); the **list anchor** is the same
-key plus `_list` (`pro_base_month_list`), synced `archived=true` (read only for the anchor amount, never
-sold). Retired legacy keys (`practitioner_*`, `business_*`, `whitelabel_*`) are **kept
+key plus `_list` (`pro_base_month_list`), synced `archived=true`. ⚠️ Two clauses of that sentence are
+now historical: since [ADR-1060](DECISIONS.md) the **`_list` key is the one checkout charges**, and the
+`archived` flag is a row annotation nothing reads to decide a charge (`resolveStripePriceId` ignores it),
+so it no longer says "not sold". The key STRINGS are unchanged and are frozen by
+`lib/billing/pricing-catalog-sync.test.ts`. Retired legacy keys (`practitioner_*`, `business_*`, `whitelabel_*`) are **kept
 resolvable but archived, never deleted** (`RETIRED_CATALOG_KEYS`), so a grandfathered locked price id
 still resolves. (`supporter_*` was retired here too until the 2026-07 overhaul un-retired it, ADR-818.)
 
-**Catalog sync.** `lib/billing/pricing-products.ts` `syncPricingCatalogToStripe()` walks the catalog:
-one Product per item (looked up by the same `frequency_pricing_key` metadata, idempotent) with its four
-Prices (founding active, list archived-anchor), then archives the retired keys. Same gates as the P2
-sync: env-gated (`billingEnabled()`), admin-triggered (the `syncStripeCatalog` action), never a live
-call on import/boot/test, a clean no-op when Stripe is unconfigured.
+**Catalog sync.** `lib/billing/pricing-products.ts` `syncPricingCatalogToStripe()` walks the catalog and
+mints, per item, the **standard** Product carrying the LIST prices plus — only when the item really is
+discounted below list — a **separate founding Product** carrying the founding/beta rates (ADR-1062), then
+archives the retired keys. Same gates as the P2 sync: env-gated (`billingEnabled()`), admin-triggered
+(the `syncStripeCatalog` action), never a live call on import/boot/test, a clean no-op when Stripe is
+unconfigured.
+
+| | Standard Product | Founding Product |
+|---|---|---|
+| Name in the dashboard | `Frequency Collective` | `Frequency Collective (Founding rate)` |
+| Lookup metadata (`frequency_pricing_key`) | `collective_base` | `collective_base_founding` |
+| Prices on it | `collective_base_month_list` $79 · `collective_base_year_list` $790 | `collective_base_month` $49 · `collective_base_year` $490 |
+| Exists for | every synced item | only an item with `foundingCents < listCents` (today: Business, Collective) |
+
+Both Products also carry `frequency_catalog_item` (the item they belong to) and `frequency_product_line`
+(`standard` / `founding`), so a human can pair them without parsing names. **The price-row KEYS are
+untouched by the split** — a Product is where a Price hangs, and `pricing_stripe_prices` is keyed by the
+KEY, so `resolveStripePriceId` / the per-Space grant / a lock all resolve exactly what they did before
+(`lib/billing/pricing-catalog-sync.test.ts` freezes the whole key set). **No Price is ever archived in
+Stripe** by the sync: `archived` on a map row is an annotation on the row, never Stripe's `active`, and
+the founding price ids must stay usable in a NEW subscription for the ADR-1061 grant to charge them.
 
 **Multi-item subscription.** A Space buys Pro as **one subscription with multiple items**: the Pro base
 plus **one price item per active add-on**, with **quantity items** for Team + Nonprofit seats.
