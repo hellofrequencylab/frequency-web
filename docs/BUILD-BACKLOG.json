@@ -505,7 +505,7 @@
     {
       "id": "LIVE-008",
       "title": "The .dark [data-skin=\"midnight\"] selector never matches on the <html> path",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
@@ -514,12 +514,10 @@
       },
       "detail": "A descendant combinator cannot match an element against itself. app/layout.tsx stamps data-skin on documentElement (the global skin preview path, including marketing); only the shell root is a descendant. So midnight-dark renders a MIXTURE: the generic .dark palette with midnight's light-mode overrides under it. The comment at app/layout.tsx:142-143 asserts the opposite, which is why it survived. One selector, but it repaints every midnight-dark surface, so it wants its own pass with a baseline recapture.",
       "verify": {
-        "kind": "grep-absent",
-        "pattern": "^\\s*\\.dark \\[data-skin=\"midnight\"\\]",
-        "paths": [
-          "app/globals.css"
-        ]
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),cp=require('child_process');const f='lib/theme/skin-dom-selectors.test.ts';if(!fs.existsSync(f)||!fs.existsSync('node_modules/vitest/vitest.mjs'))process.exit(79);const r=cp.spawnSync(process.execPath,['node_modules/vitest/vitest.mjs','run',f],{stdio:'ignore',timeout:110000});if(r.error||r.signal!==null||r.status===null||r.status===127)process.exit(79);process.exit(r.status)\""
+      },
+      "notes": "Closed 2026-08-17. Non-vacuity proven by the parent, not taken on report: reverting to the descendant-only selector fails skin-dom-selectors.test.ts with 'A descendant combinator cannot match an element against itself'. The second half matters more than the row did — authoring the selector LIST would have silently dropped the block from check-contrast's resolver, which scored the raw prelude and returned null for any comma-separated selector, so the contrast gate would have kept printing green for midnight-dark while measuring nothing there (ADR-970). Fixed in the same pass; selectorWeight now scores each part of a list independently."
     },
     {
       "id": "LIVE-009",

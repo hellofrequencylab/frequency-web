@@ -12,7 +12,9 @@ import type { Locator, Page } from '@playwright/test'
    app/globals.css defines TWO orthogonal axes:
      · MODE  — `.dark` on <html>  (`@custom-variant dark (&:where(.dark, .dark *))`)
      · SKIN  — `[data-skin="default" | "midnight"]`, whose dark-mode overrides are
-               authored as the DESCENDANT selector `.dark [data-skin="midnight"]`.
+               authored as the selector LIST `.dark[data-skin="midnight"],
+               .dark [data-skin="midnight"]` — this harness stamps BOTH axes on <html>
+               (applyState below), and only the compound half matches that (LIVE-008).
    Four combinations, four looks: DAWN light/dark and Midnight light/dark. */
 
 export type SkinId = 'default' | 'midnight'

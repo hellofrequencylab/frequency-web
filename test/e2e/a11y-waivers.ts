@@ -89,10 +89,18 @@ export const A11Y_WAIVERS: readonly ContrastWaiver[] = [
   // ── The primary button fill, in the three ambers that actually paint ────────
   // `--color-primary` resolves to a different amber per render state. These are the values the
   // browser painted, not the values the token file declares, and the difference matters: the
-  // fourth declared amber (`#F0AD4E`, `.dark [data-skin="midnight"]`) never reaches the screen
-  // in this harness, because both `.dark` and `[data-skin]` are stamped on <html> and a
-  // DESCENDANT combinator cannot match an element against itself. It is therefore NOT listed:
-  // a waiver for a colour nothing paints is noise that would quietly cover a future regression.
+  // fourth declared amber (`#F0AD4E`, midnight dark) did not reach the screen in the frozen run,
+  // because both `.dark` and `[data-skin]` are stamped on <html> and a DESCENDANT combinator
+  // cannot match an element against itself. It is therefore NOT listed: a waiver for a colour
+  // nothing paints is noise that would quietly cover a future regression.
+  //
+  // THAT PREMISE ENDED with LIVE-008 (2026-08-17): app/globals.css now also carries the compound
+  // `.dark[data-skin="midnight"]`, so midnight dark renders its own palette and #F0AD4E DOES
+  // paint. The entry stays absent until a real capture measures it — this list records ratios
+  // that axe reported, never ratios inferred from a token file. Expect the next @a11y run on a
+  // midnight-dark surface to report white-on-#F0AD4E; it is the same owner palette decision
+  // already waived for the other three ambers (and floored at 1.95 for 'Midnight dark' in
+  // scripts/check-contrast.mjs), so it is a capture-and-list job, not a new decision.
   {
     rule: 'color-contrast',
     fg: '#ffffff',
