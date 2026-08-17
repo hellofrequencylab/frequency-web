@@ -251,6 +251,93 @@ describe('check:one-list — the frozen planning-doc set', () => {
   })
 })
 
+describe('a cmd probe that could not run is not a verdict', () => {
+  // 🔴 THE REGRESSION THIS PINS — the ripgrep bug's mirror image, one probe kind over. The first
+  // version ran the command in a try/catch and returned NOT DONE for anything that threw. But
+  // "exited 1" and "was SIGKILLed by the OOM killer" and "the binary does not exist" are three
+  // different facts, and only the first is an answer. Folding them together means a `done` row
+  // whose probe got killed reads as a REGRESSION and fails the build — a confident accusation
+  // against healthy code. It happened: a tsc probe killed by a concurrent `next build` made this
+  // file's own ripgrep-parity test disagree with itself.
+  //
+  // A row that stays open is not the safe direction either. `check:backlog` fails BOTH ways by
+  // design, so an unaskable probe has to land on "cannot tell" — counted as unprovable, never
+  // converted into a claim about the tree.
+  let dir: string
+  beforeAll(() => {
+    dir = mkdtempSync(path.join(tmpdir(), 'cmdprobe-'))
+  })
+  afterAll(() => rmSync(dir, { recursive: true, force: true }))
+
+  // `kill -9 $$` makes the shell kill itself, so spawnSync reports signal SIGKILL with a null exit
+  // status — the same shape the OOM killer produces, without needing to exhaust memory to get it.
+  // The missing binary yields the shell's own 127.
+  for (const [label, cmd] of [
+    ['killed by a signal', 'kill -9 $$'],
+    ['a command that does not exist', 'frequency-no-such-binary-8f3a1c'],
+  ] as const) {
+    it(`does not call a done row regressed when its probe was ${label}`, () => {
+      writeBacklog(dir, [
+        ...ballast(),
+        {
+          id: 'CMD-001',
+          title: 'a row whose probe cannot be asked right now',
+          status: 'done',
+          lane: 'hygiene',
+          size: 'S',
+          verify: { kind: 'cmd', cmd },
+        },
+      ])
+      const r = run(BACKLOG_GUARD, dir)
+      expect(
+        r.code,
+        `An unaskable probe was converted into a verdict against a healthy row.\n${r.out}`,
+      ).toBe(0)
+      expect(r.out).not.toContain('CMD-001')
+    })
+  }
+
+  it('lets a probe declare its own indeterminacy with exit 79', () => {
+    // The engine can see a probe killed by a signal. It CANNOT see a probe whose own child was
+    // killed — that arrives as the probe exiting non-zero, identical in shape to a real verdict.
+    // LIVE-021's probe spawns tsc, so this is not hypothetical. Any probe that spawns something
+    // reports indeterminacy itself, and 79 is the word for it.
+    writeBacklog(dir, [
+      ...ballast(),
+      {
+        id: 'CMD-003',
+        title: 'a probe whose own child died',
+        status: 'done',
+        lane: 'hygiene',
+        size: 'S',
+        verify: { kind: 'cmd', cmd: `node -e "const{spawnSync}=require('child_process');const r=spawnSync('sh',['-c','kill -9 $$']);process.exit(r.signal!==null?79:0)"` },
+      },
+    ])
+    const r = run(BACKLOG_GUARD, dir)
+    expect(r.code, `exit 79 was treated as a verdict rather than a shrug.\n${r.out}`).toBe(0)
+    expect(r.out).not.toContain('CMD-003')
+  })
+
+  it('still calls a done row regressed when its probe genuinely exits non-zero', () => {
+    // The other half: making "cannot tell" cheap must not make the gate unable to fire. `exit 1` is
+    // a real answer and has to keep failing the build, or the fix above would be a hole.
+    writeBacklog(dir, [
+      ...ballast(),
+      {
+        id: 'CMD-002',
+        title: 'a row whose probe was asked and said no',
+        status: 'done',
+        lane: 'hygiene',
+        size: 'S',
+        verify: { kind: 'cmd', cmd: 'exit 1' },
+      },
+    ])
+    const r = run(BACKLOG_GUARD, dir)
+    expect(r.code).toBe(1)
+    expect(r.out).toContain('CMD-002')
+  })
+})
+
 describe('the probe engine does not depend on ambient tooling', () => {
   // 🔴 THE REGRESSION THIS PINS. The first version searched by shelling out to `rg`, which exists on
   // this repo's dev machines and NOT on the GitHub runner — and it caught the spawn failure the same
