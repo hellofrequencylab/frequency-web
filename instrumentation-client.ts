@@ -19,15 +19,16 @@
 // fallback is deliberately NOT consulted here — it is never inlined into the browser
 // bundle, so it could only ever read `undefined` on this side.
 //
-// See lib/observability/sentry.ts for the shared gating + init options.
+// See lib/observability/sentry-client.ts for the browser-only surface (it explains why the
+// client hook cannot live in the shared module) and lib/observability/sentry.ts for the gate.
 
-import type { RouterTransitionHook } from '@/lib/observability/sentry'
+import type { RouterTransitionHook } from '@/lib/observability/sentry-client'
 
 /** Set once the Sentry chunk has loaded; stays undefined when Sentry is disabled. */
 let routerTransitionHook: RouterTransitionHook | undefined
 
 if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-  void import('@/lib/observability/sentry')
+  void import('@/lib/observability/sentry-client')
     .then((sentry) => {
       routerTransitionHook = sentry.startClientSentry()
     })

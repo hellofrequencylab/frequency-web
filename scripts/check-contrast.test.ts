@@ -68,7 +68,8 @@ describe('check-contrast — WCAG math', () => {
   })
 
   it('is symmetric — order of the pair does not change the ratio', () => {
-    expect(contrastRatio('#3D352A', '#FAF8F4')).toBeCloseTo(contrastRatio('#FAF8F4', '#3D352A'), 10)
+    // `!`: contrastRatio returns null only for an unparseable color, and both of these are literal hex.
+    expect(contrastRatio('#3D352A', '#FAF8F4')).toBeCloseTo(contrastRatio('#FAF8F4', '#3D352A')!, 10)
   })
 
   it('computes relative luminance at the endpoints', () => {

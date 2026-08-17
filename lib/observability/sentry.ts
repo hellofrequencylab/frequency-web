@@ -18,9 +18,9 @@
 // sentry.edge.config.ts import this file at module scope and that is correct.
 // instrumentation-client.ts must NOT: on the browser side the same static import
 // would put ~150 kB in the baseline chunk of every route. The client reaches this
-// module through a gated `import()` instead, and `startClientSentry()` below is the
-// entry point it lands on. Keep it that way — a new static import of this module
-// from anything on the client entry path silently undoes it.
+// module through a gated `import()` of ./sentry-client.ts instead. Keep it that way
+// — a new STATIC import of this module from anything on the client entry path
+// silently undoes it, and no source-level gate would notice.
 
 import * as Sentry from '@sentry/nextjs'
 
@@ -91,21 +91,8 @@ export function maybeInitSentry(
   }
 }
 
-/** The App Router client-navigation hook Next calls on every transition. Named here
- *  so instrumentation-client.ts can type its wrapper WITHOUT importing the SDK — a
- *  `type` import is erased at compile time and contributes no bytes. */
-export type RouterTransitionHook = typeof Sentry.captureRouterTransitionStart
-
-/**
- * Browser entry point, reached only through the DSN-gated `import()` in
- * instrumentation-client.ts. Initialises the client SDK and hands back the router
- * transition hook, so the SDK namespace never has to escape this module.
- *
- * Safe to call unconditionally: `maybeInitSentry()` still re-checks the DSN, so if
- * the gate ever loads this module without one, nothing initialises and the returned
- * hook resolves against the inert client — a no-op, as before.
- */
-export function startClientSentry(): RouterTransitionHook {
-  maybeInitSentry()
-  return Sentry.captureRouterTransitionStart
-}
+/*  The client-navigation hook and `startClientSentry` used to live here. They moved to
+ *  `./sentry-client.ts` because `Sentry.captureRouterTransitionStart` does NOT exist in
+ *  @sentry/nextjs's edge build, and this module is imported by `sentry.edge.config.ts` — which
+ *  failed the Vercel build outright while `tsc --noEmit` stayed clean. Keep this file free of
+ *  client-exclusive SDK members: all three runtimes import it. */
