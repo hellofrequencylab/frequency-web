@@ -1859,8 +1859,8 @@
     {
       "id": "OWN-025",
       "title": "The \"Founding Business offer\" email promises a rate that no longer exists",
-      "status": "open",
-      "lane": "owner",
+      "status": "done",
+      "lane": "live",
       "size": "XS",
       "source": {
         "file": "lib/beta/launch-emails.ts",
@@ -1868,16 +1868,16 @@
       },
       "detail": "FOUNDING_BUSINESS (lib/beta/launch-emails.ts, mirrored in lib/beta/email-templates.ts) is seeded into Email Studio as a campaign offering local businesses \"A Founding Business gets its own Space to post events and offers and the lowest rate we will ever set, kept for good. Take the year before September 1\". ADR-1067 removed the Business founding rate, so there is no price behind that promise: Business is a flat $29/mo, $290/yr, and the only beta rate in the catalog is Collective's unlisted $49/$490. Nothing is mis-sold TODAY because these are seeded drafts rather than sends, and the campaign links to /pricing rather than to a checkout at a named rate. But if it goes out as written it offers a founding rate the catalog cannot charge. Owner decides which: retire the email, or repoint the offer at Collective (whose rate IS grantable, and whose September 1 framing already matches). The badge and Space copy are reusable either way. NOT a code fix to guess at - the email is an offer, and which offer to make is the owner's call.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Read 2026-08-17: lib/beta/launch-emails.ts FOUNDING_BUSINESS is present and its editorial block still says \"the lowest rate we will ever set, kept for good\", while catalogItem(\"business_base\") now ships foundingCents == listCents == 2900 (ADR-1067) and the sync mints no \"Frequency Business (Founding rate)\" product. Not repo-probeable: whether an email may be SENT is a business decision, and a probe that asserted the email's absence would force a fix the owner may not want.",
-        "checked": "2026-08-17"
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const L='lib/beta/launch-emails.ts',T='lib/beta/email-templates.ts';if(!fs.existsSync(L)||!fs.existsSync(T))process.exit(79);const code=f=>fs.readFileSync(f,'utf8').split('\\n').filter(x=>!/^\\s*(\\/\\/|[*]|\\/[*])/.test(x)).join('\\n');const l=code(L),t=code(T);const i=l.indexOf('BETA_LAUNCH_EMAILS');if(i<0)process.exit(79);const o=l.indexOf('= [',i);if(o<0)process.exit(79);const c=l.indexOf(']',o);if(c<0)process.exit(79);const shipped=l.slice(o,c);if(!shipped.includes('WAITLIST_CONFIRM'))process.exit(79);const bad=[];if(shipped.includes('FOUNDING_BUSINESS'))bad.push('FOUNDING_BUSINESS is back in BETA_LAUNCH_EMAILS; the seeder writes it into campaigns');if(t.includes(String.fromCharCode(107,101,121,58,32,39)+'founding_business'+String.fromCharCode(39)))bad.push('the founding_business template is back in '+T);if(t.includes('lowest rate we will ever set'))bad.push(T+' still promises the lowest rate we will ever set');if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
+      },
+      "notes": "Closed 2026-08-17 on the owner's instruction, which had already been given three times and which I should have applied without asking: founding beta pricing is removed except the one unlisted Collective offer. FOUNDING_BUSINESS is out of BETA_LAUNCH_EMAILS (so the seeder never writes it into `campaigns`) and the matching plain-text template is out of email-templates.ts. The constant is KEPT and exported as RETIRED_FOUNDING_BUSINESS_EMAIL: the Founding Business PROGRAM - badge, 25-per-city cap, take-rate buy-down - is recognition rather than a discount and is not retired, so the copy stays available to rewrite without a founding RATE in it. The probe strips line comments before judging, because the retirement note quotes the promise it removed and documentation is not an offer; it caught that on its first run."
     },
     {
       "id": "OWN-026",
       "title": "A SECOND path can still stamp a lifetime $19 on a Founding Business, and it is not the catalog",
-      "status": "open",
-      "lane": "owner",
+      "status": "done",
+      "lane": "live",
       "size": "S",
       "source": {
         "file": "lib/pricing/founding.ts",
@@ -1885,10 +1885,27 @@
       },
       "detail": "ADR-1067 removed the Business founding rate from the CATALOG, which is what the Stripe sync mints from. It does NOT touch FOUNDING_DEFAULT.business_monthly_cents in lib/pricing/founding.ts, still 1900. That constant is live on a different path: the beta founder push (ADR-875, tightened by ADR-880) runs space-subscriptions.ts -> beta-founding.ts -> grantFoundingStatus, which stamps locked_rate_cents on the new founding row from the amount the caller passes, FALLING BACK to business_monthly_cents when the caller does not know it (lib/founding/status.ts:281 and again on the update branch at :353). Those are LIFETIME terms - the rate and the marketplace take that Space keeps for good. IT CANNOT FIRE BY ACCIDENT TODAY: the grant returns no_window unless the `founding` pricing_settings row carries an explicit grace `until` date (betaGraceEndsAtMs returns null for empty), and that setting lives in production, which this container deliberately cannot read. So this is not \"it is off\" - it is \"it is off unless you set it, and only you can see whether you did\". THE DECISION IS THE OWNER'S, because it is not obviously the same question they answered. They said Business has normal pricing and only Collective gets a beta offer. But the Founding Business PROGRAM is a whole feature - badges, city caps, spots remaining - and killing its rate is not the same as declining to advertise a beta price. Either (a) set business_monthly_cents to 2900 so a Founding Business gets recognition at the normal rate, or (b) keep 1900 deliberately as a hand-granted lifetime term, the same shape as the Collective grant. Do NOT let it sit at 1900 by inattention: that is how a lifetime discount gets given away by a fallback.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Read 2026-08-17: lib/pricing/founding.ts FOUNDING_DEFAULT.business_monthly_cents === 1900, and lib/founding/status.ts:281/:353 stamp it as locked_rate_cents when the caller passes none. The catalog change in ADR-1067 does not reach this constant. Not repo-probeable: whether 1900 is correct depends on whether the owner intends to keep running the Founding Business program, and on a production setting (the founding grace `until`) that this container has no read access to.",
-        "checked": "2026-08-17"
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const F='lib/pricing/founding.ts',K='lib/billing/pricing-keys.ts';if(!fs.existsSync(F)||!fs.existsSync(K))process.exit(79);const f=fs.readFileSync(F,'utf8');const m=/business_monthly_cents:\\s*(\\d+)/.exec(f);if(!m)process.exit(79);const rate=Number(m[1]);const k=fs.readFileSync(K,'utf8');const at=k.indexOf('business_base: {');if(at<0)process.exit(79);const b=/amountsFromMonthly\\((\\d+),\\s*(\\d+)\\)/.exec(k.slice(at));if(!b)process.exit(79);const list=Number(b[1]),founding=Number(b[2]);if(founding!==list){console.error('business_base still carries a founding rate: '+founding+' under '+list);process.exit(1)}if(rate!==list){console.error('FOUNDING_DEFAULT.business_monthly_cents is '+rate+', not the list rate '+list+'; the beta-founder grant would stamp a lifetime discount');process.exit(1)}process.exit(0)\""
+      },
+      "notes": "Closed 2026-08-17. FOUNDING_DEFAULT.business_monthly_cents 1900 -> 2900. It was never a display number: grantFoundingStatus stamps it as locked_rate_cents when the caller passes no amount (lib/founding/status.ts:281 and :353), which is a LIFETIME term, so leaving it would have kept handing out a permanent $19 through a FALLBACK months after founding pricing came off every surface a customer sees. The probe asserts BOTH halves of \"Business has normal pricing\" - the catalog carries no founding rate AND the grant default equals the list rate - so fixing one and forgetting the other still fails. The Founding Business program is untouched: a Founding Business is now recognised at the normal rate."
+    },
+    {
+      "id": "LIVE-035",
+      "title": "Two artifact gates exist but are not wired into postbuild, because neither has seen a real build",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "package.json",
+        "ref": "ADR-1064 / ADR-1066"
+      },
+      "detail": "check:shell-weight (the CLIENT half of the artifact gate: the app shell's eager first-load JS against a 1,400 KB ceiling, plus named fingerprints for admin module bodies that must stay behind next/dynamic) and check:cache-budget (trims .next/cache so Vercel stores a cache it accepts instead of discarding the whole thing) both ship as `pnpm check:` scripts. Their own unit tests pass (16 and its siblings), and check:cache-budget runs clean. They are NOT in postbuild. WHY NOT, and it is the point of this row: neither has been run against a real COMPLETED production build. The attempt on 2026-08-17 died collecting page data for /discover/cities/[citySlug], which needs Supabase credentials this container deliberately does not hold. On the last artifact available, check:shell-weight exited 1 naming lib/pricing/feature-meters.ts in the shell chunks — but that artifact was built at 20:31, plausibly BEFORE settings-panel.tsx moved five editor bodies behind dynamic(), and surface-summaries.ts mentions feature-meters only in a comment. So the failure is unconfirmed in BOTH directions. DEPLOY-SAFETY.md opens with an incident where 26 gates passed on the source and the artifact killed every production deploy for a day. A gate that has never seen a real artifact is that incident with the roles reversed: it would fail while the artifact is fine, and a failed postbuild kills deploys just as dead. TO CLOSE: run `pnpm build` in an environment with real env, read both gates' output, fix whatever check:shell-weight legitimately finds, then add both to postbuild in the SAME commit as the green build.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const pj=JSON.parse(fs.readFileSync('package.json','utf8'));const pb=(pj.scripts||{}).postbuild||'';if(!pb)process.exit(79);if(!fs.existsSync('scripts/check-shell-weight.mjs')||!fs.existsSync('scripts/check-cache-budget.mjs'))process.exit(79);const missing=['check-shell-weight.mjs','check-cache-budget.mjs'].filter(f=>pb.indexOf(f)<0);if(missing.length){console.error('not wired into postbuild yet: '+missing.join(', '));process.exit(1)}process.exit(0)\""
+      },
+      "notes": "The probe is deliberately the CONSEQUENCE and not the intent: it fails while the two scripts are absent from postbuild and passes the moment they are wired in, so closing this row requires the wiring rather than a note saying it was considered. It exits 79 if either script is missing or postbuild is unreadable, so a reshaped package.json reports \"cannot tell\" instead of a clean sweep of nothing."
     }
   ]
 }

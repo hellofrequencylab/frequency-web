@@ -44,6 +44,8 @@
     "check:seo": "node scripts/check-seo.mjs",
     "check:og-trace": "node scripts/check-og-trace.mjs",
     "check:build-budget": "node scripts/check-build-budget.mjs",
+    "check:cache-budget": "node scripts/check-cache-budget.mjs",
+    "check:shell-weight": "node scripts/check-shell-weight.mjs",
     "check:stored-blocks": "node scripts/check-stored-blocks.mjs",
     "check:cosmetic-renders": "node scripts/check-cosmetic-renders.mjs",
     "check:studio": "node scripts/check-studio.mjs",

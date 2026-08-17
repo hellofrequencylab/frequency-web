@@ -322,17 +322,32 @@ const GRADUATION: BetaLaunchEmail = {
   ]),
 }
 
-/** The 7 beta launch emails, in launch order. The Studio's left rail renders them as themed, editable cards;
- *  the seeder writes each into `campaigns` with `block_json` = `blockJson`. */
+/** The 6 beta launch emails, in launch order. The Studio's left rail renders them as themed, editable cards;
+ *  the seeder writes each into `campaigns` with `block_json` = `blockJson`.
+ *
+ *  🔴 FOUNDING_BUSINESS IS RETIRED AND DELIBERATELY NOT IN THIS LIST (ADR-1067, OWN-025). Its offer was
+ *  "the lowest rate we will ever set, kept for good ... take the year before September 1", and the price
+ *  behind that promise no longer exists: Business is a flat $29/mo, $290/yr, and the ONLY beta rate in
+ *  the catalog is Collective's unlisted $49/$490, which is granted by hand rather than claimed from an
+ *  email. An email in this array is SEEDED INTO `campaigns` and is one click from being sent, so leaving
+ *  it here would keep a sellable-looking offer for a rate checkout cannot charge.
+ *
+ *  The constant below is kept, not deleted, because the Founding Business PROGRAM is not retired — the
+ *  badge, the 25-per-city cap and the take-rate buy-down are recognition, not a discount. If the owner
+ *  wants to make that offer again, the copy is here to edit; what it must not do is quote a founding
+ *  RATE. Re-adding it to this array without rewriting that sentence puts the promise straight back. */
 export const BETA_LAUNCH_EMAILS: readonly BetaLaunchEmail[] = [
   WAITLIST_CONFIRM,
   WAVE_SOON,
   INVITE,
   FOUNDING_MEMBER,
-  FOUNDING_BUSINESS,
   REFERRAL_CONTEST,
   GRADUATION,
 ]
+
+/** Retired (OWN-025). Exported so it is not dead code and so the retirement is greppable, but NOT part
+ *  of `BETA_LAUNCH_EMAILS`, so the seeder never writes it into `campaigns`. */
+export const RETIRED_FOUNDING_BUSINESS_EMAIL: BetaLaunchEmail = FOUNDING_BUSINESS
 
 /** A flattened text of an email's authored block content (subject + every string leaf of the layout), for the
  *  em-dash voice guard the seeder runs before inserting. Pure. */

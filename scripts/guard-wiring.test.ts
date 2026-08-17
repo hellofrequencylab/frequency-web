@@ -26,7 +26,18 @@ const WORKFLOW_DIR = path.join(ROOT, '.github', 'workflows')
  *  can fix, which is why this exits 0" — it could not fail — while FOUR docs claimed it warned in
  *  CI. It was deleted rather than wired (ADR-1011). Prefer that outcome to a long-lived entry
  *  here: a guard nobody runs is a claim nobody checks. */
-const UNWIRED: Record<string, string> = {}
+const UNWIRED: Record<string, string> = {
+  // LIVE-035. Both are ARTIFACT gates: they read `.next` from a real build, so the CI array is the
+  // wrong home (CI never builds — DEPLOY-SAFETY.md, ADR-1003) and `postbuild` is the right one. They
+  // are not there YET, deliberately, because neither has been run against a real COMPLETED production
+  // build: the 2026-08-17 attempt died collecting page data for /discover/cities/[citySlug], which
+  // needs credentials the agent container does not hold. DEPLOY-SAFETY.md opens with an outage caused
+  // by gates that passed while the artifact was broken; wiring an UNPROVEN gate into postbuild is that
+  // failure reversed, and a red postbuild kills deploys just as dead. One green build decides it, and
+  // the wiring lands in the SAME commit as that build. Removing these two entries is how this row closes.
+  'check:cache-budget': 'artifact gate, awaiting one green production build before postbuild (LIVE-035)',
+  'check:shell-weight': 'artifact gate, awaiting one green production build before postbuild (LIVE-035)',
+}
 
 /** ── THE FOURTH HOME: enforced by a vitest test (ADR-1011) ────────────────────────────────────
  *

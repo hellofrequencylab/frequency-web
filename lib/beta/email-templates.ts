@@ -91,25 +91,12 @@ This is for the Beta group only, and it closes when the Beta does. No pressure. 
 Thanks for being here,
 The Frequency team`,
   },
-  {
-    key: 'founding_business',
-    label: 'Founding Business offer',
-    phaseKey: 'P2',
-    segment: 'members',
-    subject: 'Put your business on Frequency as a Founding Business',
-    body: `Hi,
-
-You run something local, and the people on Frequency are your neighbors. We would like to offer you a Founding Business spot before this opens up.
-
-A Founding Business gets its own Space to post events and offers and the lowest rate we will ever set, kept for good. Take the year before September 1 and the Space also wears the Founding Business badge. We will help you set the whole thing up ourselves.
-
-[Claim a Founding Business spot](https://frequencylocal.com/pricing)
-
-This is open to the Beta group only and closes when the Beta does. Want to talk it through first? Just reply to this email.
-
-Talk soon,
-The Frequency team`,
-  },
+  // 🔴 RETIRED: the 'founding_business' template used to sit here (ADR-1067, OWN-025). It offered local
+  //    businesses "the lowest rate we will ever set, kept for good ... take the year before September 1",
+  //    and there is no Business founding rate any more — Business is a flat $29/mo, $290/yr, and the one
+  //    remaining beta rate is Collective's unlisted $49/$490, granted by hand rather than claimed from an
+  //    email. Removed rather than reworded because the offer WAS the rate. The Founding Business program
+  //    itself (badge, 25-per-city cap, take-rate buy-down) is recognition, not a discount, and survives.
   {
     key: 'referral_contest',
     label: 'Referral + Circle-starter contest',

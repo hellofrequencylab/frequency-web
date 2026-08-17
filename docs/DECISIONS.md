@@ -25887,6 +25887,74 @@ A probe that gets slow *without* naming a test runner still fails, as the budget
 
 ---
 
+## ADR-1064: Vercel's build cache is node_modules plus `.next/cache`, and the half that grows now gets trimmed instead of costing the half that matters
+
+**Status:** Accepted · enforced by `pnpm check:cache-budget` (`scripts/check-cache-budget.mjs`, in `postbuild`)
+
+**Context:** Builds were ending on a line nobody read: `Build cache size 1.53 GB exceeds limit of
+1.50 GB. Invalidating cache. Next build will start with an empty cache.` (deployment
+`HFda7FHVybGxMCM6BKBhwxzcGAzy`, 2026-08-17 17:28). Nothing failed. The board was green and the cost —
+a cold install of all 804 packages **and** a cold compile, on a build that had a usable cache a
+second earlier — was visible only in the tail of a passing log. [ADR-1003](#adr-1003)'s shape exactly:
+a real regression with no gate looking at it.
+
+[`DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md) §9 had measured the sawtooth on 2026-08-12 and concluded
+**leave it alone** — worth ~13s, and cold builds are what re-expose the `next/font` Google flake.
+That verdict rested on an assumption that turns out to be wrong: that the build cache *is* the
+Turbopack cache. It is not.
+
+**What the cache actually contains**, from `@vercel/next`'s `prepareCache` (the builder's own source,
+30 lines): `node_modules/**`, `<distDir>/cache/**`, `.yarn/cache/**`. Nothing else. So:
+
+| Term | Measured | Behaviour |
+|---|---|---|
+| `node_modules` | **948 MB** restored, **1073 MB** fresh (Vercel's own "Folder sizes on disk") | Flat. Identical on every warm build in the sample. |
+| `.next/cache` | ~92 MiB after a clean build → **618 MiB** at the invalidation | The entire variance. |
+
+The arithmetic is unit-independent and that is what makes it proof: node_modules is reported as
+**948 MB on every warm build**, so **100%** of the 1.14 GB → 1.53 GB movement is `.next/cache`.
+Baseline, clean: 1.14 GB. Warm reuses, in order: 1.19, 1.21, 1.23, 1.24, 1.25 … 1.53 → discarded.
+
+That inverts §9's conclusion. The install is ~65% of Vercel's 1.50 GB ceiling and it is the **half
+worth keeping**: a warm install finishes in **1s**, a cold one downloads 804 packages in **~15s**.
+The compiler cache is the half that grows, and it is worth **~13s**. Today the cheap half
+periodically evicts the valuable one, and the build then pays for both.
+
+**Decision:** Measure the cache where the artifact is — in `postbuild`, on Vercel's real build,
+after `next build` has written it and before Vercel packs it — and split the response in two:
+
+1. **Fail-safe:** if the sum would exceed the ceiling, drop `.next/cache` subdirectories
+   biggest-first until it fits. Vercel then stores a cache it will *accept*. The next build takes a
+   cold compile instead of a cold compile **and** a cold install **and** a silent discard. Deleting
+   biggest-first rather than by the name `turbopack` is deliberate: which member of `.next/cache` is
+   growing cannot be seen from outside a Vercel build, and a trim keyed on one name would quietly
+   free nothing the day the answer changes — the silent-exclude failure rule 6 already caught once.
+2. **The gate that notices it fired** ([AGENTS.md](../AGENTS.md)): `node_modules` carries its own
+   budget of **1.25 GiB** and **fails the build**. The trim can absorb the compiler cache growing;
+   nothing can absorb the install growing, because that term decides whether a cache is possible at
+   all. Above it the trim would fire on every build and the cache would be a cache in name only.
+
+**Consequences:** Every build now prints what Vercel is about to store and what it is made of —
+the composition nobody could see before, which is why this could only be diagnosed by subtracting
+two numbers in a log tail. §9's font-flake objection is answered rather than overruled: the
+Turbopack cache stays **on**, so most builds keep their module reuse; only a build that would have
+been discarded whole loses it, and that build keeps its install. The floor budget is a **ratchet in
+spirit** — it may fall, and raising it needs a reason in the commit, because the cheapest way to
+make any budget green is to edit the budget ([ADR-1002](#adr-1002)). The largest single line under it
+is `@supabase/cli-linux-x64` at **155 MB**, a devDependency binary no build step touches; it stays
+because `test:rls` and `.github/workflows/db-tests.yml` run `supabase db start` through it, so
+cutting it is a workflow change and not a config line. ⚠️ There is **no Vercel setting that raises
+the 1.50 GB ceiling** — the only cache control the platform exposes is turning the cache off for a
+deployment — so this is built under, never negotiated with.
+
+
+⚠️ **NOT in `postbuild` yet (LIVE-035).** It ships as `pnpm check:cache-budget`. It has never run
+against a real completed production build — the 2026-08-17 attempt died collecting page data for
+`/discover/cities/[citySlug]`, which needs credentials the agent container does not hold. It also
+**mutates**: it deletes `.next/cache` subdirectories, which is a different risk class from a gate that
+only measures, and deserves one supervised run before it trims a production build unattended.
+---
+
 ## ADR-1065: "Member-facing" is an AST seam plus an audience, not a grep, which is what let the canon guard leave `content/`
 
 **Status:** Accepted · enforced by `scripts/check-canon.mjs` (scan 3) + `scripts/check-canon.test.ts`
@@ -25960,6 +26028,102 @@ not `.md`, or the runtime output of any AI path — `lib/ai/voice.ts` governs th
 gate. Widening further means adding a key to `COPY_KEYS` or a rendering seam, never a word to the
 rules.
 
+---
+
+## ADR-1066: The client bundle gets the artifact gate the deploy already had, and a fingerprint is what makes `dynamic()` checkable
+
+**Status:** Accepted · enforced by `pnpm check:shell-weight` (`scripts/check-shell-weight.mjs`, in
+`postbuild`) + `scripts/check-shell-weight.test.ts` (vitest auto-discovers it, so it cannot be
+forgotten in CI's guards array)
+
+**Context:** [ADR-1003](#adr-1003) drew the line this repo now lives by — *every gate measured the
+SOURCE, none measured the ARTIFACT* — and closed it for the **server**: `check:build-budget` weighs
+what the deploy writes to disk, `check:og-trace` weighs how far up the tree a rasteriser attached.
+The **client** half stayed open, and it had already cost something.
+
+dc47b89 (2026-08-12) found `app/(main)/layout.tsx` → `app-shell.tsx` → `AdminBar` →
+`settings-panel.tsx` → `module-map.tsx` → 42 admin modules with no code-split boundary anywhere on
+the path. Every member page shipped the entire OPERATOR console; `admin-bar.tsx` then returned null
+unless the viewer could open the rail, so members downloaded and parsed all of it to render nothing.
+Measured against the first-party vitals sink ([ADR-922](#adr-922)) and the production build: median
+`app/(main)` route **2.78 MB** eager JS against **1.30 MB** outside the shell, FCP p75 **4,623 ms**
+against **3,274 ms**, TTFB p75 **155 ms** — the server was never the problem. That commit fixed it in
+one file and ended: *"⚠️ THERE IS NO GUARD FOR THIS … the repo has NOTHING measuring client
+first-load JS, which is how 1.8 MB accumulated unnoticed."* [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json)
+carried the remainder as LIVE-009.
+
+Two things had to be settled before a gate was possible.
+
+**A source rule cannot answer the question.** `dynamic()` and a static import are one keyword apart in
+review and 1.6 MB apart in the build; nothing readable from source computes bytes a phone parses. So
+this reads `.next`, like its two siblings — specifically
+`entryJSFiles['[project]/app/(main)/layout']` in the real client-reference manifests, which **is** the
+set of chunks fetched before the shell hydrates, on every one of ~300 routes beneath it. It is the
+client-side twin of the fan-out rule: a byte here is a byte times every route.
+
+**A byte ceiling alone is too blunt to name a regression, and a grep for `dynamic` is
+shape-not-truth.** The gate therefore also asserts by **fingerprint**: a literal that exists in
+exactly one lazily-mounted module must not appear in the shell's eager chunks. This is not a new
+trick — it is precisely how dc47b89 *proved* the bug was real, by finding `"This nexus is archived"`,
+a string that exists only in `nexus-danger-module.tsx`, inside a chunk every member downloads. A
+fingerprint in those bytes is not evidence a module is *near* the shell; it is the module's compiled
+body, on every route.
+
+**Decision:**
+
+1. **Measure the shell's eager first-load JS in `postbuild`**, on the real build, with two arms: a
+   **budget** (1,400 KB, against **957 KB measured 2026-08-17 across 20 chunks**) for the general
+   class, and **named fingerprints** for the specific regression, so the failure says which module
+   came back rather than that a number moved. ⚠️ **The budget is the loose arm and that is
+   deliberate.** A paired A/B on one tree — only `settings-panel.tsx` differing — measured 1,023 KB
+   raw / 299 KB gzip across 22 chunks before, 957 KB / 280 KB across 20 after. **66 KB is well
+   inside any ceiling worth setting**, so a byte budget alone would have watched this change happen
+   in either direction and said nothing. Arm A catches "the shell doubled"; only Arm B catches "one
+   module came back", and it named all six on the counterfactual build.
+2. **Make the needles fail both ways.** A fingerprint missing from its source file, missing from every
+   built chunk, or a positive control absent from the shell's chunks, **fails the guard**. "Absent
+   from the shell" is worthless if the string was never findable — that is the vacuous pass this repo
+   has named in four ADRs, and a fingerprint guard is the easiest possible place to make it.
+3. **Give it a PR-time half**, following `scripts/build-fanout.test.ts`: the artifact arm can only run
+   on Vercel, and on this repo `main` is protected and **merging deploys**, so its first opportunity to
+   fire is *after* the merge. The vitest half asserts the source property (no static import of an admin
+   module from the two mount sites) and keeps the fingerprints honest, on the PR that breaks them.
+4. **Finish the split the backlog row asked for.** The five editor bodies `settings-panel.tsx` mounts
+   by hand — the `allExtraItems` frozen debt ([MENU-CONTRACT.md](MENU-CONTRACT.md)) plus the operator
+   "Page" group — and `SurfaceSummaryCard` move behind `next/dynamic`.
+
+**Consequences:** 35 modules and ~413 KB of source leave the shell's static client graph (176 files /
+2,288 KB → 141 / 1,874 KB, measured by walking runtime import edges from `app-shell.tsx` with
+`'use server'` files treated as the reference stubs they compile to). The largest single line was not
+an admin module at all: `surface-summary-card.tsx` imports `lib/pricing/feature-meters`, which pulled
+the **whole pricing catalog** — plans, tiers, keys, beta gates, 8 modules and ~160 KB — onto every
+member page to render an allowance nudge only an operator sees. It has its own fingerprint row now.
+
+⚠️ **This is HOW the rail loads, not WHAT is in it.** No catalog row, no menu resolution, and no rail
+render machinery changed; `allExtraItems` keeps its 6 frozen rows and `pnpm check:menu` passes
+unchanged. **Three static admin imports remain, on purpose**, listed with their measured cost in
+`SYNCHRONOUS_ADMIN_IMPORTS`: `module-map` (14.3 KB — every value in it is already `dynamic()`, but the
+rail needs the KEY SET synchronously to decide which sections exist), `surface-summaries` (6.0 KB —
+the card-vs-row branch itself) and `surface-link-row` (1.9 KB). That list is a **ratchet**: it may
+shrink, an entry nothing imports any more fails the build, and it does not grow.
+
+The remaining known gap is honest and named: this gate weighs the **shell layout entry**, not each
+route's own eager JS. A page that ships 2 MB of its own is invisible to it. That is the next row, not
+a silent exception.
+
+**LIVE-009's own probe is superseded by this**, and the row should be re-pointed: `grep-absent` for
+`^import { MODULE_COMPONENTS }` in `settings-panel.tsx` is satisfied by a cosmetic edit worth **14.3
+KB** and left unsatisfied by the 413 KB that actually moved — a probe that measures its own title
+rather than the consequence, which [ADR-1043](#adr-1043) forbids. The consequence is measured here.
+
+
+⚠️ **NOT in `postbuild` yet (LIVE-035), and that is the honest state.** Its own unit tests pass, but on
+the only artifact available it exited 1 naming `lib/pricing/feature-meters.ts` — and that artifact was
+built BEFORE `settings-panel.tsx` moved five editor bodies behind `dynamic()`, while
+`surface-summaries.ts` mentions `feature-meters` only in a comment. The failure is unconfirmed in both
+directions. This document opens with an outage caused by gates that measured the source while the
+artifact was broken; wiring an unproven gate into `postbuild` is that same failure reversed, and a red
+`postbuild` kills deploys just as dead. One green production build decides it.
 ---
 
 ## ADR-1067: Exactly one beta offer exists, it is Collective's, and it is unlisted
