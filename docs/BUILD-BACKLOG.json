@@ -1629,19 +1629,18 @@
     },
     {
       "id": "HYG-004",
-      "title": "ARCHITECTURE.md documents deleted cron endpoints, a removed fallback, and shadcn",
-      "status": "open",
+      "title": "ARCHITECTURE.md was wrong in 17 places, and nothing could contradict it",
+      "status": "done",
       "lane": "hygiene",
       "size": "S",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "Docs and repo hygiene"
       },
-      "detail": "Also: ADR-219 is still marked Accepted after ADR-305 retired it, and the em-dash sweep covers 23 files — the rule is violated in AGENTS.md itself.",
+      "detail": "Closed 2026-08-17. SEVENTEEN wrong claims, not the three the row named. Worst: it documented the Rewards Economy v2 cron pair (coop-pulse, practice-streaks) as running daily when the v3 teardown deleted both routes and their libs and NO cron replaced them; '19 cron endpoints' against 27 actually scheduled; 'two Supabase clients' against four; createAdminClient at '~930 call sites' against 1,352 across 670 files; and a role hierarchy that stopped existing at ADR-208, which split it into two independent axes. One claim drifted the OTHER way: ADR-011 carried an open instruction saying ARCHITECTURE.md's shadcn mention should be corrected, but the doc was already right and the ADR was the stale side. Now guarded by check:arch-doc, which fails when the doc names a path, route or cron the tree lacks, asserts three negative claims stay absent so a warning cannot rot into a lie, and exits 79 rather than 0 when it cannot establish an answer. Its own first draft was vacuous — it resolved routes the way the router does, so a catch-all certified an invented /ghost-route; matching is now literal by default and a test pins both behaviours.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Prose corrections; a probe would restate the row.",
-        "checked": "2026-08-17"
+        "kind": "cmd",
+        "cmd": "node -e \"import('./scripts/check-arch-doc.mjs').then((m)=>{const r=m.runCheck();if(m.floorViolation(r)||r.claimedCount===null)process.exit(79);process.exit(r.drift.length===0?0:1)}).catch(()=>process.exit(79))\""
       }
     },
     {

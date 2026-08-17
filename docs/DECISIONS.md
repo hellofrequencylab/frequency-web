@@ -25093,3 +25093,65 @@ pattern is present and cannot prove the work was done *well*. `LIVE-001` will go
 `row-card.tsx` contains `press`, not when RowCard feels right under a thumb. The probe is a floor
 against forgetting, not a substitute for review — and where a row's quality bar matters more than its
 existence, the honest choice is `manual` with real evidence rather than a probe that flatters it.
+
+## ADR-1053: ARCHITECTURE.md is the one doc that must be TRUE, so its claims are checked by a machine
+
+**Status.** Accepted (2026-08-17) · `scripts/check-arch-doc.mjs` + `scripts/check-arch-doc.test.ts`
+(`pnpm check:arch-doc`, declared in `VITEST_ENFORCED` in `scripts/guard-wiring.test.ts`, so it runs
+in the `test` job branch protection already requires) · closes backlog row `HYG-004`.
+
+**Context.** [ARCHITECTURE.md](ARCHITECTURE.md) was describing a tree that had moved out from under
+it. It documented two cron endpoints deleted a month earlier with the Rewards Economy v3 teardown
+(`coop-pulse`, `practice-streaks` — ADR-219, retired by ADR-305), a `lib/site.ts` fallback to a
+`vercel.app` host that no longer existed together with a whole paragraph of remediation advice for
+a problem already fixed, "19 Vercel Cron endpoints" when `vercel.json` scheduled 27, a route
+(`app/(main)/broadcast`) removed when broadcasting became a per-surface capability, four Supabase
+client paths missing their `lib/` prefix, a role ladder that had since split into two independent
+axes (ADR-208), a trigger column list naming two dropped columns, four of six notification
+categories, and a pointer to `BACKLOG.md` — a doc carrying a superseded banner — as "what's left".
+
+None of that was noticed by anything, because nothing builds from `docs/`. The first reader to find
+out is whoever follows a claim, and increasingly that reader is an AI session, which then reasons
+confidently from a description of a system that is not there. This is the same failure class as
+ADR-1011 (four docs claiming a deleted script warned in CI), the `pr-compare` comment corrected on
+2026-08-12, and the migration count that compared equal while one file was missing and one
+migration unapplied.
+
+**Decision.** Treat ARCHITECTURE.md differently from the rest of `docs/`: it is the LIVE
+description of the tree, so its concrete claims are a contract and get a gate.
+`scripts/check-arch-doc.mjs` reads the doc and the tree in pure Node — no `rg`, no `grep`, no
+subprocess — and fails when the doc names a repo path, a URL route or a cron job that does not
+exist, or when its stated cron count disagrees with `vercel.json`.
+
+Three things make it more than a spell-checker:
+
+- **Negative claims are assertions too.** The doc names some things precisely because they must
+  *not* exist ("do not rename `proxy.ts` to `middleware.ts`"; "the v2 crons are gone"). Those live
+  in an `ABSENT` map with a reason each, and the guard fails if one of them comes back. A warning
+  that quietly becomes false is the same bug in a mirror. Same contract as `UNWIRED` in
+  `scripts/guard-wiring.test.ts`.
+- **Route checking is LITERAL by default.** The first version resolved routes "the way the router
+  does", consuming `[dynamic]` segments — and cheerfully certified an invented `/ghost-route`,
+  because a catch-all under `app/` would serve it. True, and useless: a check that cannot fail
+  reads as coverage while providing none (ADR-970). A doc naming `/sign-in` means the literal page;
+  to claim a dynamic route, write the bracketed segment out.
+- **It cannot report health on a corpus of zero.** Four floors (doc bytes, crons parsed from
+  `vercel.json`, path claims extracted, cron claims extracted) separate "I looked and found
+  nothing" from "I could not look", and the exit code says which: `0` clean, `1` drift, **`79` not
+  established**. An unreadable doc returns an empty string rather than throwing, because a crash
+  exits 1 and would report "the doc is wrong" when the truth is "the doc could not be opened".
+
+**Scope is deliberately one file.** `scripts/check-docs-links.mjs` checks markdown links across all
+of `docs/` and explicitly does *not* check backticked code paths, because an ADR describing a file
+that later moved is history, not rot. That reasoning is right for the ledger and wrong for this
+one doc. Widening this guard to another doc means that doc has also signed up to be true — a real
+commitment, not a tidying step.
+
+**Consequences.** ARCHITECTURE.md now carries a dated "verified against the tree" banner and states
+its cron count as a checkable number. A PR that deletes a route, renames a lib module or changes
+the cron schedule fails `test` until the doc is corrected in the same pass, which is the rule
+AGENTS.md already states ("when the code and a plan doc disagree, the code wins, and the doc gets
+fixed in the same pass") converted from convention into a gate. The cost is real and accepted: the
+doc must keep naming things in backticks, and a deliberate deletion means editing `ABSENT` with a
+reason. Same shape as ADR-219's correction in this ledger — that entry's status was still
+"Accepted" nine weeks after ADR-305 superseded it, which no gate covers and a reader must.
