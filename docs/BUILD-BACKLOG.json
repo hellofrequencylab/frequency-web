@@ -378,7 +378,7 @@
     {
       "id": "LIVE-001",
       "title": "Lift 8b: RowCard gets a ring and .press on its surface",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
@@ -387,12 +387,10 @@
       },
       "detail": "Brings the third card primitive level with EntityCard. Today the surface never rings or presses.",
       "verify": {
-        "kind": "grep-present",
-        "pattern": "press",
-        "paths": [
-          "components/ui/cards/row-card.tsx"
-        ]
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='components/cards/row-card.tsx',T='components/cards/row-card.test.tsx';if(!fs.existsSync(S)||!fs.existsSync(T))process.exit(79);const s=fs.readFileSync(S,'utf8'),t=fs.readFileSync(T,'utf8');const code=s.split(String.fromCharCode(10)).filter(x=>x.trim().indexOf('//')!==0&&x.trim().indexOf('*')!==0).join(String.fromCharCode(10));const bad=[];if(code.indexOf('press')<0)bad.push('RowCard no longer applies .press');if(code.indexOf('ring-focus')<0)bad.push('RowCard no longer applies ring-focus');if(t.indexOf('expect(')<0)bad.push('no assertions in '+T);if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
+      },
+      "notes": "Closed 2026-08-17. The probe was grep-present 'press' in components/ui/cards/row-card.tsx - A PATH NOTHING OCCUPIES (the file is components/cards/row-card.tsx), so the row could never have closed and read as outstanding work rather than as a broken instrument. Same defect class as LIVE-030's probe, found the same day. It now checks the real file for both halves of INTERACTION-STATES section 2: .press (the one sanctioned pressed look) and ring-focus (the card focus ring; the global ring is a box-shadow and lift-1 paints over it)."
     },
     {
       "id": "LIVE-002",
@@ -414,7 +412,7 @@
     {
       "id": "LIVE-003",
       "title": "Lift 8b: a visible busy state on ConfirmSubmitButton",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
@@ -423,15 +421,15 @@
       },
       "detail": "The ref guard already blocks the second fire; nothing tells the member the first one took.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Needs a probe once the component's busy-state API is chosen; a bare grep for 'busy' would pass on a comment.",
-        "checked": "2026-08-17"
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='components/ui/confirm-submit-button.tsx',T='components/ui/confirm-submit-button.test.tsx';if(!fs.existsSync(S)||!fs.existsSync(T))process.exit(79);const s=fs.readFileSync(S,'utf8'),t=fs.readFileSync(T,'utf8');const code=s.split(String.fromCharCode(10)).filter(x=>x.trim().indexOf('//')!==0&&x.trim().indexOf('*')!==0).join(String.fromCharCode(10));const bad=[];if(code.indexOf('aria-busy={')<0)bad.push('ConfirmSubmitButton does not set aria-busy while submitting');if(code.indexOf('dimmed')<0)bad.push('the .dimmed pending look is gone; there is no VISIBLE busy state');if(code.indexOf('disabled={busy')>=0)bad.push('it flips disabled on busy, which cancels the form submission it is guarding');if((t.split('expect(').length-1)<3)bad.push('fewer than 3 assertions in '+T);if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
+      },
+      "notes": "Closed 2026-08-17. Was manual, waiting on the implementation choice, and the choice is made: .dimmed plus aria-busy, NOT disabled. The probe pins the thing that must never change - flipping the button to disabled inside the submit handler CANCELS the form submission it is guarding, so a bare 'is there a busy state' check would pass the exact bug this component exists to avoid."
     },
     {
       "id": "LIVE-004",
       "title": "Lift 8b: an in-flight cue on DirectorySearch",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
@@ -440,10 +438,10 @@
       },
       "detail": "It fetches. Until it says so, an empty result and a pending one look identical.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Same reason as LIVE-003 — the probe follows the implementation choice.",
-        "checked": "2026-08-17"
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='components/ui/directory-search.tsx',T='components/ui/directory-search.test.tsx';if(!fs.existsSync(S)||!fs.existsSync(T))process.exit(79);const s=fs.readFileSync(S,'utf8'),t=fs.readFileSync(T,'utf8');const code=s.split(String.fromCharCode(10)).filter(x=>x.trim().indexOf('//')!==0&&x.trim().indexOf('*')!==0).join(String.fromCharCode(10));const bad=[];if(code.indexOf('useTransition()')<0)bad.push('DirectorySearch does not CALL useTransition(), so it cannot know a search is in flight');const i=code.indexOf('aria-busy={');const seg=i<0?'':code.slice(i,code.indexOf('}',i));if(i<0||seg.indexOf('isPending')<0)bad.push('aria-busy is not driven by isPending');if(code.indexOf('Searching')<0)bad.push('the live-region text is gone; a spinning glyph announces nothing to a screen reader');if((t.split('expect(').length-1)<3)bad.push('fewer than 3 assertions in '+T);if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
+      },
+      "notes": "Closed 2026-08-17. Was manual pending the implementation. The probe requires useTransition to be CALLED, not merely imported: the first version matched the token and passed while the component tracked nothing, because the import line alone satisfied it. It also requires aria-busy to be DRIVEN BY isPending rather than hardcoded, and the 'Searching...' live-region text to survive - a spinning glyph announces nothing to a screen reader, so the cue has two halves and only one of them is visible."
     },
     {
       "id": "LIVE-005",
