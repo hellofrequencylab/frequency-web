@@ -71,6 +71,21 @@ const VITEST_ENFORCED: Record<string, string> = {
   // the real census with its quarantine stripped, which must still name all five orphans) as well
   // as against the real tree, so neither half can go quietly vacuous.
   'check:stored-blocks': 'scripts/check-stored-blocks.test.ts',
+  // Added 2026-08-17 (LIVE-023, ADR-1058). Reads test/e2e/a11y-baselines.json and asserts the
+  // ratchet's numbers are what they claim to be: a bare integer is a READING checked with
+  // equality, and anything weaker is a declared ceiling carrying a written reason and provenance.
+  // Pure file reading, so vitest is its home by the rule above. Its sibling test drives every arm
+  // with a fixture that must FAIL — including the hand-edit guard in both directions — as well as
+  // the real tree, so it cannot go quietly vacuous.
+  'check:a11y-baselines': 'scripts/check-a11y-baselines.test.ts',
+  // Added 2026-08-17 (LIVE-013). Same split as check:stored-blocks, for the same reason: the CLI
+  // half is pure node and can only PARSE the render registry (lib/store/cosmetics.ts is
+  // TypeScript), so the enforcing arm — "every purchasable cosmetic/title SKU on the live shelf
+  // resolves to something the product paints" — runs under vitest where the registry is
+  // importable. Its sibling test cross-checks the parser against the live module (the parser
+  // shipped a real false-positive on its first run, reading a type annotation as the record) and
+  // drives every arm against fixtures that must FAIL, plus the real shelf census.
+  'check:cosmetic-renders': 'scripts/check-cosmetic-renders.test.ts',
 }
 
 function packageScripts(): Record<string, string> {

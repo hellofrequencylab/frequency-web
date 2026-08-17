@@ -19,6 +19,13 @@
 // "and N other things I have not looked at". Waived elements are subtracted before the count is
 // compared, so the ratchet only ever measures what nobody has decided about. ADR-985.
 //
+// ── READING vs CEILING (ADR-1058) ─────────────────────────────────────────────
+// A bare integer in the baselines file is a READING and is compared with EQUALITY, so an
+// improvement fails exactly as loudly as a regression and the win has to be written down. Only
+// an entry that explicitly declares itself a ceiling — with a written `why` and provenance the
+// static gate checks — gets the weaker `<=`. The comparison itself lives in `a11y-ratchet.ts`
+// so it can be proven to fire in both directions on a runner with no browser.
+//
 // ── Why it runs in the DEFAULT smoke run ──────────────────────────────────────
 // `pnpm test:e2e` is `playwright test --grep-invert @visual`, i.e. everything that is not
 // the snapshot suite. @a11y deliberately stays IN that default run and the invert pattern
@@ -43,6 +50,7 @@ import { join } from 'node:path'
 import { AxeBuilder } from '@axe-core/playwright'
 import { test, type TestInfo, type Page } from '@playwright/test'
 import type { Result } from 'axe-core'
+import { RECAPTURE, judge, resolveBaseline, type A11yBaselinesDoc } from './a11y-ratchet'
 import { describeWaived, partitionWaived } from './a11y-waivers'
 import {
   DEFAULT_STATE,
@@ -103,30 +111,19 @@ function describeViolation(violation: Result, index: number): string {
 
 // The frozen per-surface debt. Read once; a missing entry means "must be clean" ($defaultMax 0),
 // so a NEW surface joins the suite at zero tolerance rather than inheriting somebody else's debt.
-interface A11yBaselines {
-  $defaultMax?: number
-  surfaces?: Record<string, number>
-}
+let baselinesCache: A11yBaselinesDoc | null = null
 
-let baselinesCache: A11yBaselines | null = null
-
-function baselines(): A11yBaselines {
+function baselines(): A11yBaselinesDoc {
   if (baselinesCache) return baselinesCache
   try {
     // Resolved from the project root (Playwright's cwd), not import.meta — this spec is
     // transpiled to CJS, where import.meta is unavailable.
     const raw = readFileSync(join(process.cwd(), 'test', 'e2e', 'a11y-baselines.json'), 'utf8')
-    baselinesCache = JSON.parse(raw) as A11yBaselines
+    baselinesCache = JSON.parse(raw) as A11yBaselinesDoc
   } catch {
     baselinesCache = {}
   }
   return baselinesCache
-}
-
-/** How many serious+ ELEMENTS this (surface, state, project) context is allowed to carry today. */
-function baselineFor(context: string): number {
-  const b = baselines()
-  return b.surfaces?.[context] ?? b.$defaultMax ?? 0
 }
 
 function report(
@@ -176,15 +173,22 @@ function report(
     return
   }
 
-  const allowed = baselineFor(context)
+  const baseline = resolveBaseline(baselines(), context)
+  const { ok, verdict, allowed, kind } = judge(total, baseline)
 
   // A RATCHET, not a wall. The first honest run against real pages found violations older
   // than this suite (the brand amber used as text, ~1,842 sites), which is a judgment-heavy
   // sweep of its own. Blocking on day one would either stall unrelated work or get the suite
-  // muted, and a muted gate is worse than no gate. So the frozen count is the bar: a RISE
-  // fails loudly, a fall is reported and should be re-frozen. Same contract as the adoption
-  // baselines. See test/e2e/a11y-baselines.json.
-  if (total <= allowed) {
+  // muted, and a muted gate is worse than no gate. So the frozen count is the bar.
+  //
+  // What changed on 2026-08-17 (ADR-1058) is which DIRECTION the bar is open in. It used to be
+  // open downwards for every context: `total <= allowed`, with a fall recorded as an annotation.
+  // An annotation inside a green run is not a record — it is why `/spaces` sat at a stale 44
+  // through a fix that had already landed. A bare integer is now a READING and is checked with
+  // equality, so a fall fails too and the number gets re-recorded from a real capture. Only an
+  // entry that declares itself a ceiling, with a written reason the static gate checks, keeps
+  // the old one-sided comparison. See test/e2e/a11y-ratchet.ts.
+  if (ok) {
     if (blocking.length > 0) {
       testInfo.annotations.push({
         type: 'a11y-debt',
@@ -193,24 +197,46 @@ function report(
           blocking.map((v) => `${v.id}×${v.nodes.length}`).join(', '),
       })
     }
-    // A fall is news: say so, so the baseline gets tightened instead of drifting upward.
+    // A fall under a CEILING is the news that retires it. (Under a reading it is a failure
+    // instead, handled below, because a reading that is no longer true has stopped measuring.)
     //
     // This deliberately does NOT require `blocking.length > 0`. The waivers land most of the
     // marketing contexts on exactly zero remaining elements against a non-zero baseline, and a
     // fall all the way to clean is the most re-freezable news there is — the old shape would
     // have printed nothing precisely then.
-    if (total < allowed) {
+    if (verdict === 'improved') {
       testInfo.annotations.push({
         type: 'a11y-improved',
-        description: `${context} is now ${total} (baseline ${allowed}) — lower the baseline in test/e2e/a11y-baselines.json.`,
+        description:
+          `${context} measured ${total} against a CEILING of ${allowed}. That ceiling exists only ` +
+          `because nobody had measured this surface — this run did. Retire it: ${RECAPTURE}`,
       })
     }
     return
   }
 
+  if (verdict === 'improved-unrecorded') {
+    throw new Error(
+      [
+        `Accessibility IMPROVED on ${context}: ${total} serious+ element(s), and the recorded READING is ${allowed}.`,
+        '',
+        'This is not a regression, and it still fails. A reading is an assertion that the measured',
+        'value IS that number, so a fall means the file has stopped describing the product — the',
+        'exact state /spaces was left in at a stale 44 while the defect it counted had already been',
+        'fixed. A green run with an annotation nobody reads is how that survived (ADR-1058).',
+        '',
+        `Write the win down: ${RECAPTURE}`,
+        '',
+        'If this context genuinely varies run to run, that is the one case a ceiling is the right',
+        'instrument. Declare it as one in test/e2e/a11y-baselines.json — with the measured range as',
+        'its `why` — and `pnpm check:a11y-baselines` will hold the paperwork.',
+      ].join('\n'),
+    )
+  }
+
   throw new Error(
     [
-      `Accessibility REGRESSION on ${context}: ${total} serious+ element(s), baseline allows ${allowed}.`,
+      `Accessibility REGRESSION on ${context}: ${total} serious+ element(s), the recorded ${kind} is ${allowed}.`,
       waivedCount > 0
         ? `(${waivedCount} further element(s) matched a named waiver and are NOT counted above — see the a11y-waived annotations.)`
         : '',
@@ -229,6 +255,8 @@ function report(
       '  3. Raise the entry in test/e2e/a11y-baselines.json — LAST, and only for a surface being',
       '     measured for the first time. Raising it to swallow a known thing also permits every',
       '     unknown thing up to that number (ADR-980). Baselines are debt, and debt gets a name.',
+      '     A raise now takes `--force --reason "<why>"` and lands as a DECLARED ceiling carrying',
+      '     that reason; `pnpm check:a11y-baselines` fails on a number that moved without one.',
     ].join('\n'),
   )
 }

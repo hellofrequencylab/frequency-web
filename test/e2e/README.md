@@ -120,6 +120,37 @@ Baselines live in `test/e2e/__screenshots__/visual.spec.ts/` and are named
 Member-shell files are the `app-*` ones (`app-feed`, `app-room`, `app-settings`,
 `app-space-console`) and are captured only with `capture_shell` ticked.
 
+### A reading is not a ceiling (a11y counts)
+
+`test/e2e/a11y-baselines.json` holds one post-waiver serious+ count per
+`(surface, state, project)`. Since ADR-1058 a **bare integer is a READING**, and
+`test/e2e/a11y-ratchet.ts` asserts **equality** against it — so an improvement
+fails the gate exactly as loudly as a regression, and the win gets written back
+into the file instead of drifting into an annotation nobody reads.
+
+| Form in the file | Comparison | A rise | A fall |
+|---|---|---|---|
+| `"/about [dawn-light, desktop]": 3` — a **reading** | `total === 3` | 🔴 fails | 🔴 fails, re-record it |
+| `{ "ceiling": 12, "why": …, "retiredBy": …, "frozen": …, "history": … }` | `total <= 12` | 🔴 fails | ✅ passes, retire the ceiling |
+
+A ceiling is the weaker claim and therefore an **exception with paperwork**: it
+must say why it is not a reading, name the command that would retire it, and
+carry the same `frozen` + `history` provenance `scripts/adoption-baselines.json`
+uses. `pnpm check:a11y-baselines` enforces that on every PR with no browser —
+`frozen.value` must equal `ceiling`, the history must chain, and a declared
+direction must match its own arithmetic, so a number cannot move at all without
+a written reason in the same diff. It prints every live ceiling on every run.
+
+Three ceilings exist today — `/feed`, `/settings` and `/spaces/<slug>/manage` in
+`dawn-light, desktop` — and only because they were seeded from **raw pre-waiver
+totals** when the run log truncated at five nodes. Converting them honestly needs
+an axe run against a deployment; a capture retires each one into the reading it
+was always a placeholder for.
+
+Re-record after a capture with `pnpm a11y:baselines`. Accepting a regression now
+takes `--force --reason "<why>"`, and the accepted number lands as a declared
+ceiling carrying that reason.
+
 ## Environment
 
 | Variable | Required | Purpose |

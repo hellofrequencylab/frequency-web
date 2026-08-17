@@ -5,6 +5,8 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { RANK_LABELS } from '@/lib/season-ranks'
 import { RankBadge } from '@/components/ui/rank-badge'
 import { amplitudeLevel, formatAmplitude } from '@/lib/amplitude'
+import { CosmeticBorder, CosmeticFlair, CosmeticTitle } from '@/components/profile/profile-cosmetics'
+import { resolveBorder, resolveFlair, resolveTitle } from '@/lib/store/cosmetics'
 
 // Vault layout module: Your Vault — Amplitude (the lifetime layer), the earning ledger, and
 // equipped winnings.
@@ -15,6 +17,11 @@ export async function VaultSummary() {
   const ownedCount = d.items.filter((i) => (i as { owned?: boolean }).owned).length
   const hasAmplitude = d.amplitude > 0
   const { equipped } = d
+  // Resolve once: a value the registry cannot paint reads as nothing equipped, rather than as a
+  // label over an empty box.
+  const border = resolveBorder(equipped.border)
+  const flair = resolveFlair(equipped.flair)
+  const title = resolveTitle(equipped.title)
 
   return (
     <section>
@@ -52,22 +59,27 @@ export async function VaultSummary() {
           <ArrowRight className="h-3.5 w-3.5 shrink-0" />
         </Link>
 
-        {/* Equipped winnings */}
-        {(equipped.border || equipped.flair || equipped.title) && (
+        {/* Equipped winnings.
+            ⚠️ THIS BLOCK USED TO BE THE ONLY READER OF THE THREE COSMETIC COLUMNS IN THE PRODUCT
+            (backlog LIVE-013), and it printed the raw stored string: "Border: indigo". A member
+            who spent 2,500 Gems on Prismatic got six grey words on the page they bought it from,
+            visible to nobody else. It now shows the REAL cosmetic — the same components the
+            member's profile paints — so this reads as a preview of what other people see, which
+            is what "Equipped" was always claiming. */}
+        {(border || flair || title) && (
           <div className="mt-4 border-t border-success/40 pt-3">
             <span className="text-meta font-semibold uppercase tracking-wider text-signal">Equipped</span>
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {equipped.border && (
-                <span className="rounded-md bg-success-bg px-2 py-0.5 text-meta text-success">
-                  Border: {equipped.border.replace('ring-', '').replace('-500', '')}
-                </span>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              {border && (
+                <CosmeticBorder value={equipped.border}>
+                  <span className="block h-7 w-7 rounded-pill bg-success-bg" aria-hidden />
+                </CosmeticBorder>
               )}
-              {equipped.flair && (
-                <span className="rounded-md bg-success-bg px-2 py-0.5 text-meta text-success">Flair: {equipped.flair}</span>
-              )}
-              {equipped.title && (
-                <span className="rounded-md bg-success-bg px-2 py-0.5 text-meta text-success">Title: {equipped.title}</span>
-              )}
+              <CosmeticFlair value={equipped.flair} />
+              <CosmeticTitle value={equipped.title} />
+              <span className="text-meta text-success">
+                {[border?.label, flair?.label, title].filter(Boolean).join(' · ')}
+              </span>
             </div>
           </div>
         )}

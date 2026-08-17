@@ -25389,3 +25389,209 @@ a PR can fix", the probe asks "is LIVE-028 done". LIVE-028's row is `open`, so a
 DONE is exactly consistent, and a probe that went green on the declared state would close a row
 whose work has not happened. The anti-rot arms are untouched — they are what stop a quarantine
 becoming a permanent hole, and none of them need an owner.
+
+## ADR-1057 — An `htmlFor` is not an association until it reaches a control, so `check:labels` now resolves every one (2026-08-17)
+
+**Status.** Accepted · guard `scripts/check-labels.mjs` rules 3–4 + `scripts/check-labels.test.ts`
+· extends [ADR-966](DECISIONS.md) · closes backlog row `LIVE-014`.
+
+**Context — the row was measuring a string, not a defect.** `LIVE-014` reads
+"~105 unassociated `<Label>` uses across ~40 files", and its probe counts files whose text
+contains `<Label`. Re-measured 2026-08-17 with a brace-aware JSX scan over all 1,992 `.tsx` files
+in the repo:
+
+| Population | Count |
+|---|---|
+| Files containing the string `<Label` | 44 |
+| `<Label` opening tags in `app/` + `components/` | 204 |
+| …SVG captions from `onboarding/renders/frame.tsx` (no control to name, by construction) | 43 |
+| …carrying an explicit `htmlFor` | 132 |
+| …wrapping their control (implicit association) or the primitive's own definition | 29 |
+| **`<Label>`/`<label>` that names nothing — the actual defect** | **0** |
+
+The 105 was never a defect count. [ADR-966](DECISIONS.md)'s sweep and `pnpm check:labels` had
+already taken the population to zero, and `check:labels` holds it there. The row is closed by
+measurement, not by a sweep.
+
+🔴 **What the re-measure DID find is that the gate holding the line accepts shape for truth.**
+Rule 2 passes any label carrying an `htmlFor` attribute — it never asks whether the attribute
+reaches anything. So `<Label htmlFor="event-scop">` beside `<Select id="event-scope">` renders
+precisely the label ADR-966 was built to catch: a screen reader announces "combo box, blank", and
+clicking the text focuses nothing. The file said so itself — *"All 125 were verified by hand on
+2026-08-10; a static cross-file id check is future work."* A hand-verified population is a
+population that was correct on one date.
+
+**Decision 1 — resolve every decidable `htmlFor` (rule 3).** A string-literal or template-literal
+`htmlFor` must match an `id` in the same file. Template literals compare by source text, which is
+what makes the `useId()` shape checkable: `htmlFor={\`${uid}-name\`}` against
+`id={\`${uid}-name\`}`.
+
+**Decision 2 — the target has to be able to hold a name (rule 4).** An id that sits only on a
+`<div>`/`<p>`/`<button>` is not labelable, so the association is void even with both halves
+present. Only plain lowercase elements are judged.
+
+**Decision 3 — unknowable is not a violation, and the two shapes are named.** A bare-identifier or
+computed `htmlFor` is a prop threaded in by a wrapper, and its target lives in the caller
+(`connections/new/creator.tsx`, `page-editor/mobile/field-form.tsx` both render
+`<label htmlFor={htmlFor}>`). A capitalised carrier may forward `id` to a real control
+(`PillarSelect` → `<Select id={id}>`). Both are skipped. 306 of the repo's `htmlFor`s are
+decidable and all 306 resolve, so the rules ship green with zero false positives.
+
+**Decision 4 — the recogniser stopped being defeatable by punctuation.** `<Label>` counted as the
+field primitive only when the file matched a hard-single-quoted import of the literal name, so
+`import { Label } from "@/components/ui/field"` and `import { Label as FieldLabel } from '…'` each
+made every `<Label>` in that file invisible to every rule. Verified against the pre-change script:
+a double-quoted bare `<Label>` beside its `<Input>` **exits 0** on the old gate and 1 on the new.
+Same lesson `check:admin-client` learned from `await import(…)` — a gate you step around by
+changing quote style is not a gate.
+
+**Decision 5 — a floor on what the new rules DECIDE, not just on what they find.** `MIN_RESOLVED`
+(250, against 306 measured) fails the build if the parser quietly reclassifies literals as
+unknowable, because then rules 3–4 would skip everything and print ✓ over an unchecked repo. That
+is the missing-instrument failure `MIN_LABELS` already guards one rule up, and the same one that
+inverted the grep probes on CI.
+
+**Decision 6 — this is NOT a new debt class in `scripts/adoption-baselines.json`, and the reason
+is the ratchet's own contract.** The ratchet freezes a nonzero count and holds it; here the floor
+is already **zero**, and a hard gate at zero is strictly stronger than any ratchet — the very next
+site fails CI. More decisively, the ratchet counts regex matches over file text with no notion of
+enclosure, and it cannot express "this `htmlFor` reaches an `<input>`" or "this caption sits
+inside a `<label>`". A proximity regex for the caption class would fire on the *correct* wrapped
+shape (`<label><span className={labelClasses}>…</span><Input /></label>`, 21 live sites), i.e. it
+would punish correct code — a gate that cannot fire honestly gets routed around
+([ADR-970](DECISIONS.md)). The parser gate is the right instrument; the ratchet is the right
+instrument for undifferentiated literal counts.
+
+**Consequences.** One real defect surfaced and was fixed in the same pass:
+`components/admin/modules/event-cohost-chooser.tsx` named its cohost search box with a bare
+`<span className={labelClasses}>`, which names nothing — now a `useId()`-scoped `Label htmlFor` /
+`Input id` pair.
+
+⚠️ **Left open, deliberately, and it is the bigger number.** A scan for the honest question —
+*this control has no accessible name* — reports 143 candidates across 67 files, but it cannot yet
+resolve the label-WRAPPING components (`Labeled`, `StudioField`, `Field`) that legitimately name
+controls by wrapping them, so an unknown share of the 143 are false positives. It is not gated
+here for exactly the reason Decision 6 gives. Resolving wrapper components repo-wide, then
+ratcheting the residue, is its own row.
+
+## ADR-1058: A baseline number is a READING, and a ceiling is an exception that has to say why
+
+**Status.** Accepted (2026-08-17) · `test/e2e/a11y-ratchet.ts` (the judgement) +
+`scripts/check-a11y-baselines.mjs` (the static gate, wired through `VITEST_ENFORCED` in
+`scripts/guard-wiring.test.ts`) + `test/e2e/a11y-baselines.json` · closes backlog row `LIVE-023`.
+
+**Context.** `test/e2e/a11y.spec.ts` compared every one of its 49 frozen counts with
+`total <= allowed`. Every number in the file was therefore a CEILING — "this surface may carry up
+to N" — whatever the prose around it said, and the file's own header called three of them
+ceilings as though the other 46 were something else. They were not. The cost of a ceiling is
+exact: every unit of headroom under one is a place an unrelated, never-examined serious violation
+can sit while CI prints a tick. `/feed` at 12 permitted twelve.
+
+The three named in `LIVE-023` were the extreme case rather than a different species. `/feed` (12),
+`/settings` (7) and `/spaces/<slug>/manage` (8), all `dawn-light, desktop`, were seeded on
+2026-08-11 from RAW pre-waiver totals, because the node cap in the spec was 5 at the time and the
+run log truncated before the post-waiver residual could be computed. Every node that *was* visible
+on all three was an accepted palette pair, so the real numbers are believed to be 0–3.
+
+The other half of the same hole is the direction the old comparison was open in. A fall was
+recorded as a test ANNOTATION inside a passing run, which is not a record anybody reads: the
+file's own header documents `/spaces` sitting at a stale 44 through a fix (ADR-929) that had
+already landed. And a raise was governed by "say why in the commit" — a convention, not a gate,
+and one nothing can read afterwards. `scripts/adoption-baselines.json` closed exactly this hole in
+March by requiring `frozen` + `history` on every number; the a11y file had the same hole and no
+such rule. Both failures were live again on 2026-08-17 in two other guards, which is what made
+this the row worth doing.
+
+**Decision.** A bare integer in `a11y-baselines.json` is a **READING**, asserted with EQUALITY. A
+regression fails, and so does an improvement — the win gets written back into the file rather than
+drifting into an annotation. Re-recording is one command (`pnpm a11y:baselines`), so failing on
+good news costs a re-run.
+
+Anything weaker is an **exception with paperwork**. A ceiling is an object carrying `ceiling`,
+`why` (what is missing before it can become a reading), `retiredBy` (the command that replaces it),
+`frozen` and `history`. `pnpm check:a11y-baselines` runs on the tree with no browser and enforces
+three rules borrowed wholesale from the adoption ratchet: `frozen.value` must equal `ceiling` (the
+hand-edit guard, and it fires in BOTH directions), each history step's `from` must be the previous
+step's `value`, and a declared `direction` must match its own arithmetic — so a raise cannot be
+filed as a re-freeze. `--force` on the merge script now requires `--reason "<why>"`, and the
+accepted number lands as a declared ceiling carrying that reason, printed on every subsequent run.
+
+**What was deliberately NOT done.** The three ceilings were not converted to readings. Doing so
+needs an axe run against a deployment with the beta member session (`OWN-002`), which no agent
+container can produce, and writing down the believed 0–3 instead would be a fabricated baseline —
+strictly worse than an honest ceiling, because it would fail CI for a reason nobody could
+reproduce. They stay, now declared, with the command that retires them written into each one. A
+capture replaces the whole object with the bare integer it measured.
+
+**Consequences.** The 46 measured contexts became readings in the same pass, so the next honest
+capture will fail on several of them in the IMPROVING direction — the file's own header predicts
+"Expect 0" for three shell contexts whose defects were fixed. That is the instrument working:
+`pnpm a11y:baselines` writes the new numbers and the diff shows what was bought. If a surface ever
+proves to vary run to run — the one case where a ceiling is genuinely the right instrument — the
+answer is to declare it one with the measured range as its `why`, not to reopen `<=` for
+everything. Non-vacuity is proven in both directions by `test/e2e/a11y-ratchet.test.ts` (a reading
+fails at N−1 and at N+1) and `scripts/check-a11y-baselines.test.ts` (a ceiling raised or lowered
+without its provenance fails), neither of which needs a browser.
+
+## ADR-1059: A cosmetic the store will charge for must be one the product can paint
+
+**Status.** Accepted (2026-08-17) · `lib/store/cosmetics.ts` (the render registry) +
+`lib/store/fulfillment.ts` (the classifier) + `components/profile/profile-cosmetics.tsx` (the
+render) + `scripts/check-cosmetic-renders.mjs` / `.test.ts` (the gate, wired through
+`VITEST_ENFORCED` in `scripts/guard-wiring.test.ts`) + `scripts/store-shelf.json` (the corpus) ·
+closes the code half of backlog row `LIVE-013`; the data half is
+`docs/proposals/LIVE-013-cosmetic-fulfillment.sql`.
+
+**Context.** The Vault Store sold fourteen profile cosmetics — five borders, five flairs, four
+titles. Redeeming one wrote `profiles.profile_border` / `profile_flair` / `custom_title`, and
+those three columns had exactly ONE reader in the product: a chip in the buyer's own Vault that
+printed the raw stored string ("Border: indigo"). "A glowing indigo border around your avatar"
+(250 Gems) changed nothing anyone else could see. Five further SKUs on the shelf carried
+`metadata = {}`, so `classifyRedemption` routed them to `pending` — the path whose contract is
+"the redemption row IS the fulfillment record an operator acts on" — and no operator surface ever
+listed those rows. `guest-pass` sat in that hole from 2026-06-27.
+
+Measured against production 2026-08-17 before any change: **4 redemptions all time, 3 paid, 950
+Gems, ONE real member**. Small, and real: the trap had sprung once, 51 days earlier, and the
+member is still owed.
+
+**Decision.** Deliverability is a property of the RENDER, not of the metadata.
+
+1. **One registry owns both halves.** `lib/store/cosmetics.ts` maps a stored column value to the
+   thing that paints it. Adding a border means adding a row there, which is also what makes it
+   render — so the vocabulary cannot drift from the renderer. The stored value stays DATA
+   (`ring-<colour>-500`, a class from a palette this design system does not ship); the class it
+   paints is a DAWN rank-spectrum token.
+2. **Refuse before charging, not after.** `classifyRedemption` gains a fourth outcome,
+   `undeliverable`, for a cosmetic/title SKU that resolves to nothing. It is REFUSED rather than
+   banked as `pending`, because `pending` is a promise a person keeps and no person can hand
+   someone a profile border. The shelf marks the same SKUs "Not ready yet" from the same registry,
+   so the card and the server action can never disagree.
+3. **A perk that a person honors gets a place a person can see it.** `/admin/store` now lists
+   every paid feature/membership redemption, oldest first. Read-only: recording that one was
+   honored needs a column `store_redemptions` does not have, and that ALTER is in the proposal for
+   the owner. A queue that shows the work shipped now beats a complete one that ships never.
+4. **A SKU bridge, declared and narrow.** `waveform-border` is on sale with no `type` in its
+   metadata but unambiguous copy, so the code bridges it and it delivers today. The other four
+   untyped SKUs (`s1-flair-set`, `animated-banner`, `callsign-plate`, `custom-title-slot`) are not
+   bridged: a "set" does not fit a single-value column, and a banner, a callsign plate and a
+   member-authored title each need a surface that does not exist. Inventing renders for those
+   would be guessing at product with Gems already spent.
+
+**Alternatives rejected.** *Deactivate all fourteen cosmetics and stop selling profile cosmetics.*
+Rejected: thirteen of them needed a ring, an icon or a word beside a name, and a member who has
+already paid should get the thing rather than a refund for a product decision. *Fail CI on the
+four undeliverable SKUs.* Rejected on [ADR-970](DECISIONS.md) grounds — their fix is production
+SQL no PR can run, so a hard fail would hold every unrelated change hostage and get routed around.
+They are DECLARED in the census quarantine and printed loudly on every run; the anti-rot arm fails
+if such an entry outlives its fix, and `--probe` still answers NOT DONE, which is what keeps the
+backlog row honest while it waits.
+
+**Consequences.** The gate measures the consequence, not the wording: for every purchasable SKU in
+a category that promises a visible profile change, does it resolve to something that paints?
+Undeclared gap → fail. Its parser half shipped a real false positive on its first run (it read a
+`Record<string, { … }>` TYPE ANNOTATION as the record's keys and declared all five flair SKUs
+broken), which is why the sibling test cross-checks the parser against the live module rather than
+trusting it. Non-vacuity is proven twice: fixtures that must fail on every arm, and a live
+mutation (deleting the `waveform-border` bridge) that took the CLI to exit 1 and failed the
+real-shelf assertion.

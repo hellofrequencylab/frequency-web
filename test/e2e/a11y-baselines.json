@@ -5,6 +5,37 @@
     "axe was pointed at real pages for the first time on 2026-08-04. Counts are frozen per",
     "(surface, state, project): a RISE fails, a fall is re-frozen (ADR-928).",
     "",
+    "==================================================================================",
+    "2026-08-17 -- A BARE INTEGER IS NOW A READING, AND EQUALITY IS HOW IT IS CHECKED",
+    "==================================================================================",
+    "",
+    "Until today every number in this file was compared with `total <= allowed`, so every one of",
+    "them was a CEILING whatever the prose said about it. That is the weaker claim, and its cost",
+    "is exact: every unit of headroom under a ceiling is a place a real regression can sit while",
+    "CI prints a tick. The three shell entries below were the extreme case -- 12, 7 and 8 seeded",
+    "as RAW pre-waiver totals whose true residual was believed to be 0-3 -- but the same hole was",
+    "open, smaller, under all 49.",
+    "",
+    "So the default flipped (ADR-1058). A bare integer is a READING: the value measured here IS",
+    "this number, and test/e2e/a11y-ratchet.ts asserts EQUALITY against it. A regression fails,",
+    "and so does an IMPROVEMENT -- because a file that has stopped describing the product is the",
+    "failure mode that let /spaces sit at a stale 44, and an annotation nobody reads in a green",
+    "run is not a record. Re-recording is one command, so failing on good news costs a re-run.",
+    "",
+    "A ceiling is still available where a number genuinely cannot be asserted, but it is now an",
+    "EXCEPTION WITH PAPERWORK: an object carrying `ceiling`, `why` (what is missing before it can",
+    "become a reading), `retiredBy` (the command that replaces it), and the same `frozen` +",
+    "`history` provenance scripts/adoption-baselines.json has demanded since 2026-08-04.",
+    "`pnpm check:a11y-baselines` enforces that statically, with no browser, on every PR:",
+    "frozen.value must equal ceiling, history must chain, and a declared direction must match the",
+    "arithmetic -- so a raise cannot be filed as a re-freeze and a number cannot move at all",
+    "without a written reason in the same diff. It also prints every live ceiling on every run.",
+    "",
+    "The three below stay ceilings, and NOT because a ceiling is right for them -- because",
+    "converting them honestly needs an axe run against a deployment with the beta storage state",
+    "(backlog OWN-002), and inventing the number instead would be a fabricated baseline, which is",
+    "strictly worse than an honest ceiling. Retire them the moment a real capture lands.",
+    "",
     "STATE (re-derived from this file 2026-08-13): 49 contexts, 187 serious+ elements, 18 clean.",
     "The line below is kept because its -63 explanation is still true of /pricing; the 40/156/15",
     "it quoted was the 2026-08-04 capture and had drifted as surfaces were added. Re-derive rather",
@@ -40,6 +71,7 @@
     "",
     "Every number here is debt with a date on it. Lower them; never raise them.",
     "Re-freeze with: PW_A11Y_UPDATE=1 pnpm test:e2e:a11y && pnpm a11y:baselines",
+    "Check the FILE (no browser needed) with: pnpm check:a11y-baselines",
     "",
     "==================================================================================",
     "2026-08-11 -- WHAT THESE NUMBERS NOW COUNT, AND THE NINE THAT WERE JUST SEEDED",
@@ -85,6 +117,12 @@
     "rather than 5, so the NEXT run prints every element and reports the real number as an",
     "`a11y-improved` annotation. Tighten these three the moment it does; until then they are the",
     "widest holes in this gate.",
+    "",
+    "(2026-08-17: those three are now DECLARED ceilings rather than bare integers that happened to",
+    "be compared loosely -- same numbers, same reasons, but each one now carries its `why` and its",
+    "provenance inline, `pnpm check:a11y-baselines` refuses to let any of them move without a",
+    "written reason, and every other number in this file became a reading checked with equality.",
+    "A capture that measures one of them replaces the whole object with a bare integer.)",
     "",
     "NOT WAIVED, and staying failed on purpose: amber used as DISPLAY TEXT (`.text-primary`",
     "headlines, 2.18-2.86:1 against a 3:1 bar) and the `.text-text/10` watermark numerals in the",
@@ -139,7 +177,27 @@
     "/discover [midnight-dark, contrast only, desktop]": 0,
     "/discover [midnight-light, contrast only, desktop]": 5,
     "/feed [dawn-dark, contrast only, desktop]": 0,
-    "/feed [dawn-light, desktop]": 12,
+    "/feed [dawn-light, desktop]": {
+      "ceiling": 12,
+      "why": "Not a reading. Seeded on 2026-08-11 from the RAW pre-waiver total, because the run log printed only the first 5 of this context's 11 nodes and the post-waiver residual was therefore never computed. Every node that WAS visible was an accepted palette pair, so the true reading is believed to be 0-3, not 12. Nothing has measured this surface since: re-seeding it from belief would be a fabricated baseline, which is worse than the ceiling.",
+      "retiredBy": "PW_A11Y_UPDATE=1 pnpm test:e2e:a11y && pnpm a11y:baselines (needs PW_BASE_URL + the beta storage state from backlog row OWN-002)",
+      "frozen": {
+        "at": "2026-08-11",
+        "value": 12,
+        "from": null,
+        "direction": "seed",
+        "reason": "First floor for a surface that had never been measured (FINALIZE 1.3). Raw total, waivers not subtracted, because the node cap in a11y.spec.ts was 5 at capture time."
+      },
+      "history": [
+        {
+          "at": "2026-08-11",
+          "value": 12,
+          "from": null,
+          "direction": "seed",
+          "reason": "First floor for a surface that had never been measured (FINALIZE 1.3). Raw total, waivers not subtracted, because the node cap in a11y.spec.ts was 5 at capture time."
+        }
+      ]
+    },
     "/feed [dawn-light, mobile]": 2,
     "/pricing [dawn-dark, contrast only, desktop]": 0,
     "/pricing [dawn-light, desktop]": 0,
@@ -147,7 +205,27 @@
     "/pricing [midnight-dark, contrast only, desktop]": 0,
     "/pricing [midnight-light, contrast only, desktop]": 0,
     "/settings [dawn-dark, contrast only, desktop]": 0,
-    "/settings [dawn-light, desktop]": 7,
+    "/settings [dawn-light, desktop]": {
+      "ceiling": 7,
+      "why": "Not a reading. Seeded on 2026-08-11 from the RAW pre-waiver total, because the run log printed only the first 5 of this context's 7 nodes and the post-waiver residual was therefore never computed. Every node that WAS visible was an accepted palette pair, so the true reading is believed to be 0-3, not 7. Nothing has measured this surface since: re-seeding it from belief would be a fabricated baseline, which is worse than the ceiling.",
+      "retiredBy": "PW_A11Y_UPDATE=1 pnpm test:e2e:a11y && pnpm a11y:baselines (needs PW_BASE_URL + the beta storage state from backlog row OWN-002)",
+      "frozen": {
+        "at": "2026-08-11",
+        "value": 7,
+        "from": null,
+        "direction": "seed",
+        "reason": "First floor for a surface that had never been measured (FINALIZE 1.3). Raw total, waivers not subtracted, because the node cap in a11y.spec.ts was 5 at capture time."
+      },
+      "history": [
+        {
+          "at": "2026-08-11",
+          "value": 7,
+          "from": null,
+          "direction": "seed",
+          "reason": "First floor for a surface that had never been measured (FINALIZE 1.3). Raw total, waivers not subtracted, because the node cap in a11y.spec.ts was 5 at capture time."
+        }
+      ]
+    },
     "/settings [dawn-light, mobile]": 1,
     "/spaces [dawn-dark, contrast only, desktop]": 2,
     "/spaces [dawn-light, desktop]": 14,
@@ -155,7 +233,27 @@
     "/spaces [midnight-dark, contrast only, desktop]": 2,
     "/spaces [midnight-light, contrast only, desktop]": 14,
     "/spaces/danieltyack/manage [dawn-dark, contrast only, desktop]": 0,
-    "/spaces/danieltyack/manage [dawn-light, desktop]": 8,
+    "/spaces/danieltyack/manage [dawn-light, desktop]": {
+      "ceiling": 8,
+      "why": "Not a reading. Seeded on 2026-08-11 from the RAW pre-waiver total, because the run log printed only the first 5 of this context's 8 nodes and the post-waiver residual was therefore never computed. Every node that WAS visible was an accepted palette pair, so the true reading is believed to be 0-3, not 8. Nothing has measured this surface since: re-seeding it from belief would be a fabricated baseline, which is worse than the ceiling.",
+      "retiredBy": "PW_A11Y_UPDATE=1 pnpm test:e2e:a11y && pnpm a11y:baselines (needs PW_BASE_URL + the beta storage state from backlog row OWN-002)",
+      "frozen": {
+        "at": "2026-08-11",
+        "value": 8,
+        "from": null,
+        "direction": "seed",
+        "reason": "First floor for a surface that had never been measured (FINALIZE 1.3). Raw total, waivers not subtracted, because the node cap in a11y.spec.ts was 5 at capture time."
+      },
+      "history": [
+        {
+          "at": "2026-08-11",
+          "value": 8,
+          "from": null,
+          "direction": "seed",
+          "reason": "First floor for a surface that had never been measured (FINALIZE 1.3). Raw total, waivers not subtracted, because the node cap in a11y.spec.ts was 5 at capture time."
+        }
+      ]
+    },
     "/spaces/danieltyack/manage [dawn-light, mobile]": 1,
     "/the-community [dawn-dark, contrast only, desktop]": 3,
     "/the-community [dawn-light, desktop]": 11,
