@@ -53,7 +53,7 @@ jobs:
       # changed-file list comes from the API below rather than a `git diff`, so no history is
       # needed. An earlier draft cloned the full history for that diff, which is a real cost to
       # pay on every pull request for a job that usually posts nothing.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
