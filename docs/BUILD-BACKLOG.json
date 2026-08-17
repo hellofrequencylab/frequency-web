@@ -634,7 +634,7 @@
     {
       "id": "LIVE-015",
       "title": "The header wordmark's keyboard focus indicator is explicitly deleted",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
@@ -643,15 +643,15 @@
       },
       "detail": "app/globals.css removes the focus ring from the wordmark — the first tab stop on every page.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Needs a targeted read of the rule at globals.css:1028 rather than a whole-file grep.",
-        "checked": "2026-08-17"
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),cp=require('child_process');const f='components/layout/brandmark-focus.test.ts';if(!fs.existsSync(f)||!fs.existsSync('node_modules/vitest/vitest.mjs'))process.exit(79);const r=cp.spawnSync(process.execPath,['node_modules/vitest/vitest.mjs','run',f],{stdio:'ignore',timeout:110000});if(r.error||r.signal!==null||r.status===null||r.status===127)process.exit(79);process.exit(r.status)\""
+      },
+      "notes": "Closed 2026-08-17. The rule was `.brandmark-link:focus-visible { box-shadow: none }`, written to suppress a ring 'when clicked' — but :focus-visible is exactly the state a pointer click does not enter, so it never affected the pointer case and removed the indicator from the first tab stop on every signed-in page. Fixed by deleting it; the wordmark now inherits the generic --color-focus-ring."
     },
     {
       "id": "LIVE-016",
       "title": "Vera's chat transcript is not a live region, so replies are never announced",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
@@ -660,10 +660,10 @@
       },
       "detail": "A screen-reader user gets no notification that Vera answered.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Probe needs the specific transcript component path, not yet pinned.",
-        "checked": "2026-08-17"
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),cp=require('child_process');const f='test/a11y/vera-transcript.a11y.test.tsx';if(!fs.existsSync(f)||!fs.existsSync('node_modules/vitest/vitest.mjs'))process.exit(79);const r=cp.spawnSync(process.execPath,['node_modules/vitest/vitest.mjs','run',f],{stdio:'ignore',timeout:110000});if(r.error||r.signal!==null||r.status===null||r.status===127)process.exit(79);process.exit(r.status)\""
+      },
+      "notes": "Closed 2026-08-17. There are THREE Vera transcripts, not one (the 'shared implementation' comment in vera-chat.tsx was stale) — vera-chat, vera-lightbox and vera-concierge each carried their own. All three now carry role=log + aria-live=polite. Replies arrive whole, not token-streamed (conciergeTurn is awaited once and returns the complete string), so polite is correct; aria-relevant=additions and aria-atomic=false are set so a future streaming rewrite has to confront the machine-gun problem deliberately. The concierge transcript needed a new wrapper element: it was a sibling of the composer, so a whole-panel region would have narrated the member back to themselves as they typed."
     },
     {
       "id": "LIVE-017",
