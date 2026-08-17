@@ -1,5 +1,5 @@
 -- Demo Seed Studio now generates a neighborhood Hub (run by a Guide) over each
--- seeded set of circles (engine.ts / ADR-093). Hubs need the same is_demo contract
+-- seeded set of circles (engine.ts / ADR-1050). Hubs need the same is_demo contract
 -- as the other demo-able tables (docs/DEMO-SYSTEM.md) so they recede, toggle, and
 -- purge with the rest of the layer — without it, a purged demo guide leaves an
 -- orphaned hub behind (hubs.guide_id is ON DELETE SET NULL, not cascade).

@@ -78,7 +78,7 @@ heavier browse pages (Circles index w/ map, Search, Broadcast). See the review b
 
 ---
 
-## Shipped status (2026-06-05): kit COMPLETED + conformance sweep (ADR-090)
+## Shipped status (2026-06-05): kit COMPLETED + conformance sweep (ADR-1046)
 
 A fresh design-team audit (5 reviewers, one per page cluster) swept **every** interior `(main)`
 page and confirmed the language was right but **half-adopted**, and that the system itself had

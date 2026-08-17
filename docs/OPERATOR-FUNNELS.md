@@ -82,7 +82,7 @@ Studio's element grid.
 
 ⚠️ The Coaches brief's **~~$79~~ $49/mo** pair is stale. Our whole site prices from one catalog
 (`lib/billing/pricing-keys.ts`), where Business now carries **$29 list with a $19 Opening Beta rate**
-(ADR-875), and the anchor idiom is already uniform (`monthly_cents` charged, `list_cents` struck). So the
+(ADR-1052), and the anchor idiom is already uniform (`monthly_cents` charged, `list_cents` struck). So the
 brief needs no new number set: the 3-row funnel pricing beat reads its dollar figures from the catalog, so
 the strike and the price show consistently on the funnel, `/pricing`, and the doors, and numbers never drift.
 

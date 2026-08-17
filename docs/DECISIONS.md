@@ -170,9 +170,14 @@ shadcn/ui in the stack. The shipped code uses **none** — UI is hand-written Ta
 **Decision:** Keep components hand-written against the DAWN semantic-token layer; do not
 add a component-library dependency.
 **Consequences:** No component-library version surface; full control of markup/markup-tokens.
-(Trust the code over the docs here — `ARCHITECTURE.md`'s shadcn/ui mention is stale and
-should be corrected.) Styling tokens live in `app/globals.css`; see
+Styling tokens live in `app/globals.css`; see
 [ARCHITECTURE.md](ARCHITECTURE.md#styling--design-tokens-dawn).
+**Correction landed 2026-08-17 (HYG-004).** This entry used to end "`ARCHITECTURE.md`'s
+shadcn/ui mention is stale and should be corrected" — an open instruction left sitting in the
+ledger. It has been carried out: ARCHITECTURE.md now states the negative outright, and
+`package.json` still carries no shadcn or Radix dependency. The primitives are in
+`components/ui`; the Server-Component icon path is `components/ui/icon.tsx` (ADR-505,
+[ICONS.md](ICONS.md)), which arrived after this decision and does not change it.
 
 ## ADR-012: Season ranks renamed off martial-arts; Luminary auto-caps at Conduit
 
@@ -2127,7 +2132,7 @@ codes (next) and Google-Analytics tie-in build on this.
 ---
 ## ADR-090: Beautiful codes via an isomorphic styled SVG renderer (no new dep)
 
-**Status:** Accepted · 2026-06-05 · `lib/qr/style.ts`, `lib/qr/render-styled.ts`, `app/(main)/admin/qr/style-editor.tsx`. No migration (reuses `qr_codes.style` jsonb from ADR-089).
+**Status:** Accepted · 2026-06-05 · `lib/qr/style.ts`, `lib/qr/render-styled.ts`, `app/(main)/admin/qr/style-editor.tsx`. No migration (reuses `qr_codes.style` jsonb from ADR-1045).
 
 **Context:** Phase 2 of the QR platform. The owner wants visually rich codes — brand colors +
 gradients, center logo/avatar, module & eye shapes, a "scan me" frame. The `qrcode` dep only
@@ -2153,7 +2158,7 @@ rasterizer is added (logged as a follow-up). Phases 3–4 (per-member codes, cha
 the styler for free.
 
 ---
-## ADR-090: Page-template kit completed — five shells, one `PageHeading`, declarative rail chrome
+## ADR-1046: Page-template kit completed — five shells, one `PageHeading`, declarative rail chrome
 
 **Status:** Accepted · 2026-06-05 · `components/templates/` (`page-heading`, `focus-template`, `dashboard-template`, `index.ts` barrel + refactored `index`/`stream`), `lib/layout/page-chrome.ts` (+ `.test.ts`), `components/layout/app-shell.tsx`
 
@@ -2167,11 +2172,11 @@ the styler for free.
 **Consequences:** Adopting `FocusTemplate` simultaneously fixed the wrong-rail bug on `/events/new`, `/practices/*/edit`, `/upgrade`, `/crm`, `/outreach`, `/codes`, `/connections/*`, `/g/*`, `/n/*` (one config, nine pages). Interior pages now become *assembly, not authoring*; remaining work is mechanical adoption tracked in [REDESIGN-INAPP.md](REDESIGN-INAPP.md). No data-fetching or capability gating changed — this is presentational chrome + a rail map only.
 
 ---
-## ADR-089: Dynamic QR links as a first-class `qr_codes` entity (the "Both" model)
+## ADR-1045: Dynamic QR links as a first-class `qr_codes` entity (the "Both" model)
 
 **Status:** Accepted · 2026-06-05 · migration `20260605010000_qr_codes_dynamic_links` (applied to prod), `app/q/[slug]/`, `app/(main)/admin/qr/` (Dynamic links + Analytics tabs), `lib/qr/{codes,analytics}.ts`
 
-**Context:** Phase 1 of the QR platform (after ADR-088). The owner wants retargetable
+**Context:** Phase 1 of the QR platform (after ADR-1044). The owner wants retargetable
 "dynamic links" + scan analytics, alongside the in-app earning codes — and a code should be
 able to point *either* at an action *or* at any URL ("Both"). The node engine (`nodes`) is
 purpose-built for verified physical capture (secrets, coords, anti-cheat) and shouldn't be
@@ -2196,7 +2201,7 @@ regenerated. Phases 2–4 (beautiful editor on `style`, per-member referral/acti
 challenges/campaigns) build on this entity.
 
 ---
-## ADR-088: QR Studio authors codes on the existing node engine (no new schema)
+## ADR-1044: QR Studio authors codes on the existing node engine (no new schema)
 
 **Status:** Accepted · 2026-06-04 · `app/(main)/admin/qr/`, `lib/qr/`, `app/api/qr/`, `app/(main)/codes/`
 
@@ -2368,7 +2373,7 @@ go-build-it intent.
 vocabulary for newcomers to learn (Hub/Nexus); offset by clearer sense of scale. Circle-creation
 volume rises — the momentum-gated room provisioning (ADR-088) is the pressure valve.
 
-## ADR-090: Demo content v2 — a year-old, viral, local Encinitas community
+## ADR-1047: Demo content v2 — a year-old, viral, local Encinitas community
 
 **Decision.** Replace the first-generation demo seed (the old North County SD `c…`
 cast and the five out-of-area national metros `d…`) with one fully-local demo
@@ -2416,7 +2421,7 @@ adoptions) is deterministic + idempotent and cascades away with the cast.
 
 ---
 
-## ADR-091: Demo Seed Studio + the seed -> claim -> decay model
+## ADR-1048: Demo Seed Studio + the seed -> claim -> decay model
 
 **Decision.** Evolve demo content from a one-off hand-seeded cast into a
 repeatable **growth engine**. Three pillars: (1) a janitor-only **Seed Studio**
@@ -2459,12 +2464,12 @@ may need a background job (noted for P1b).
 
 ---
 
-## ADR-092: Retire the hand-built 250-cast; the Seed Studio is the demo seeding path
+## ADR-1049: Retire the hand-built 250-cast; the Seed Studio is the demo seeding path
 
 **Decision.** Abandon the one-off 250-person Encinitas demo cast — its seed
 migrations (`20260605000001`-`…000300`) and the `DEMO-CAST.md` casting bible are
 removed. All demo content is now generated on demand by the **Seed Studio**
-wizard (ADR-091) and cleaned by the purge button + nightly decay. The practices
+wizard (ADR-1048) and cleaned by the purge button + nightly decay. The practices
 rich-content schema (`20260605000000`) is kept; the demo practice rows are purged
 with the rest. The live database is swept of all `is_demo` content via the
 `/admin/demo` purge.
@@ -2472,7 +2477,7 @@ with the rest. The live database is swept of all `is_demo` content via the
 **Why.** A static hand-seeded community proved brittle to apply (SQL-editor /
 MCP-approval / economy-guard friction) and is not the product direction. The
 wizard makes any area seedable, previewable, and reversible — so we keep the
-engine, not the one-off cast. Supersedes the *seeding* portion of ADR-090
+engine, not the one-off cast. Supersedes the *seeding* portion of ADR-1047
 (its `is_demo` / `demo_mode` / purge infrastructure still stands).
 
 **Consequences.** Fresh databases no longer ship a prebuilt demo community;
@@ -2482,7 +2487,7 @@ seed UUIDs) so it survives the purge.
 
 ---
 
-## ADR-093: Seed Studio generates the full connection web — AI palette + templates, zero side effects
+## ADR-1050: Seed Studio generates the full connection web — AI palette + templates, zero side effects
 
 **Decision.** The Seed Studio engine (`lib/demo/engine.ts`) seeds the *whole* web
 of local-community connections, not just circles/people/posts: an event **cadence**
@@ -2518,11 +2523,11 @@ purge, and the nightly decay pass.
 journey writes go through the untyped admin handle (repo convention,
 `lib/journey-plans.ts`). Large "thriving" seeds still make hundreds of sequential
 inserts (the ID-capturing loops); the heavy engagement rows are batch-inserted, but
-a background job remains the path for very large areas (carried from ADR-091).
+a background job remains the path for very large areas (carried from ADR-1048).
 
 ---
 
-## ADR-094: Beta induction sequences — one template, audience-targeted copy, cohort tags
+## ADR-1051: Beta induction sequences — one template, audience-targeted copy, cohort tags
 
 **Decision.** The beta induction (ADR-068) becomes **audience-parameterized** rather
 than one-size-fits-all. A *sequence* (`lib/onboarding/beta-sequences.ts`) bundles a
@@ -2889,7 +2894,7 @@ obvious next iterations. Regenerate DB types to drop the untyped casts later.
 
 ## ADR-103: Seed Studio generates a naturally-grown neighborhood (hub/guide, walls, friendships, dispatches)
 
-**Status:** Accepted · `lib/demo/engine.ts`, `lib/demo/decay.ts`, `app/(main)/admin/demo/**`, `supabase/migrations/20260605090000_hubs_is_demo.sql`. Extends ADR-091/092/093.
+**Status:** Accepted · `lib/demo/engine.ts`, `lib/demo/decay.ts`, `app/(main)/admin/demo/**`, `supabase/migrations/20260605090000_hubs_is_demo.sql`. Extends ADR-1048/1049/1050.
 
 **Context.** The Seed Studio produced circles + in-circle conversation + events +
 practices + journeys, but the result read as isolated circles, not a *community*.
@@ -2961,7 +2966,7 @@ design reference, not a hardcode. No app-logic change — purely amounts + one f
 
 **Status:** Accepted · `supabase/migrations/20260605120000_qr_scan_medium.sql`,
 `app/(main)/admin/qr/nfc-writer.tsx`, `lib/qr/links.ts` (`withMedium`), `app/q/[slug]/route.ts`.
-Extends the QR platform (ADR-089→094) and the physical `nodes` engine.
+Extends the QR platform (ADR-1044/1045, ADR-090→094) and the physical `nodes` engine.
 
 **Context.** `nodes` already supported `type='nfc'`, and the verify/capture/award
 pipeline is type-agnostic — but there was no way to actually *program* a physical NFC
@@ -2998,7 +3003,7 @@ tap attribution (in `captures`) remain open follow-ups.
 **Status:** Accepted · `supabase/migrations/20260605130000_node_geo.sql`,
 `app/(main)/admin/qr/actions.ts`, `app/(main)/admin/qr/qr-studio.tsx` (NodeForm),
 `app/(main)/n/[nodeId]/{actions,claim-button}.tsx`. Surfaces the existing `nodes`
-proximity engine (ADR-088 capture pipeline).
+proximity engine (ADR-1044 capture pipeline).
 
 **Context.** `nodes` already had `location` (PostGIS geography) + `proximity_m`, and
 `verifyCapture` already enforced proximity via the `node_within_range` RPC — but
@@ -3284,7 +3289,7 @@ scanned. Time-windowing + CSV export are the obvious next iterations.
 
 **Status:** Accepted · `lib/qr/links.ts` (`nodeUrl` secret), `lib/engagement/verify.ts` (already checked),
 `app/(main)/admin/qr/actions.ts`, `app/(main)/n/[nodeId]/{page,claim-button,actions}.tsx`,
-`app/api/qr/route.ts`, `app/print/qr/page.tsx`. Completes ADR-088's `secret` field.
+`app/api/qr/route.ts`, `app/print/qr/page.tsx`. Completes ADR-1044's `secret` field.
 
 **Context.** `nodes.secret` and the `verifyCapture` signature check existed, but nothing
 **authored** a secret or **carried** it — so a `/n/<id>` URL guessed/forged from just a
@@ -3404,7 +3409,7 @@ a stop is a one-line data edit in `lib/onboarding/spotlight.ts`.
 
 **Status:** Accepted · `lib/core/capabilities.ts`, `app/(main)/circles/[slug]/page.tsx`,
 `app/(main)/admin/circles/{page.tsx,circles-client.tsx}`. Builds on the capability resolver
-(CAPABILITIES-AND-MOBILE.md) and the demo-claim flow (ADR-091). Parallels ADR-118's "admins
+(CAPABILITIES-AND-MOBILE.md) and the demo-claim flow (ADR-1048). Parallels ADR-118's "admins
 curate any practice."
 
 **Context.** Circle management (`circle.editSettings` and friends) was granted to the host, the
@@ -6130,7 +6135,7 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 
 ## ADR-211: Onboarding-splash overhaul — code templates retired, `beta-default` reserved slug, live-preview editor, Home SEO row
 
-**Status:** Accepted · `lib/onboarding/beta-sequences.ts` (BETA_SEQUENCES now `{}`, reserved `DEFAULT_SEQUENCE='beta-default'` base built from the VERA script), `lib/onboarding/resolve-sequence.ts` (`resolveDefaultSequence`, default-slug handling, versions list excludes the reserved slug), `app/onboarding/beta/page.tsx` + `actions.ts` (copy + cohort tag resolve through the DB layer), `app/onboarding/beta/induction.tsx` (data-driven beat headings with `*accent*` markup, `initialBeat` prop), `app/(main)/pages/splash/*` (the Beta splash live-preview editor), `app/(main)/pages/sequences/*` (recategorized "Splash pages" manager, DB versions only, role-promotion-overlays coming-soon card), `app/(main)/pages/home/*` + `app/page.tsx` + `lib/layout/editable-content.ts` (Home SEO row via ADR-180 page_content, route `/`), `lib/attribution/{server,backfill}.ts` (`beta-default` carries no channel signal) — builds on ADR-068/094 (induction + sequences), ADR-162 (DB override layer), ADR-180/206 (page content)
+**Status:** Accepted · `lib/onboarding/beta-sequences.ts` (BETA_SEQUENCES now `{}`, reserved `DEFAULT_SEQUENCE='beta-default'` base built from the VERA script), `lib/onboarding/resolve-sequence.ts` (`resolveDefaultSequence`, default-slug handling, versions list excludes the reserved slug), `app/onboarding/beta/page.tsx` + `actions.ts` (copy + cohort tag resolve through the DB layer), `app/onboarding/beta/induction.tsx` (data-driven beat headings with `*accent*` markup, `initialBeat` prop), `app/(main)/pages/splash/*` (the Beta splash live-preview editor), `app/(main)/pages/sequences/*` (recategorized "Splash pages" manager, DB versions only, role-promotion-overlays coming-soon card), `app/(main)/pages/home/*` + `app/page.tsx` + `lib/layout/editable-content.ts` (Home SEO row via ADR-180 page_content, route `/`), `lib/attribution/{server,backfill}.ts` (`beta-default` carries no channel signal) — builds on ADR-068/1051 (induction + sequences), ADR-162 (DB override layer), ADR-180/206 (page content)
 **Context:** The three hardcoded launch sequences (`early-adopter`/`personal`/`founding-partner`) were authored before the DB override layer existed; owning copy in code meant a deploy per word change, the admin list mixed immutable code rows with editable DB versions, and the DEFAULT flow (what every plain `/onboarding/beta` visit runs) had no first-class editor — only the split `/admin/vera` induction fields, which the flow partially ignored (beats 0–1 hardcoded their headings in JSX). Home `'/'` is deliberately excluded from Puck (a published draft would shadow the coded splash) but that also left its SEO strings unreachable.
 **Decision:** (1) Retire the three code templates: `BETA_SEQUENCES` ships empty (interfaces + helpers kept), and the reserved slug **`beta-default`** names the base VERA flow. `resolveSequence(null|''|'beta-default')` returns the coded script merged with the legacy `vera_config` induction layer and then the `beta-default` DB override — the editor's copy wins, older `/admin/vera` edits keep applying underneath. The default keeps `marketingTag='beta_early_adopter'` so the default cohort stays ONE registered segment across the rename; attribution treats `beta-default` as no channel signal (plain visits aren't "video"). `/beta/<slug>` 404s naturally while no code sequence exists. (2) The sequences admin is reframed as **Splash pages** (DB versions only) with an inert "Role promotion overlays — Coming soon" category card (no functionality). (3) **`/pages/splash`** is a janitor-gated live-preview editor for the default flow: per-beat inputs (all `VeraCopy` strings + the three oath labels) on the left, and on the right the REAL `<BetaInduction>` rendered in preview mode at half scale with the edited copy and an `initialBeat` switcher — the preview cannot drift from production markup. Beats 0–1 now render their headings from copy; headings support `*word*` accent markup (the splash-statement convention) so the default "You're a *Founder.*" keeps its highlight. Save = `sequence_overrides['beta-default']`; Reset deletes the row. (4) **Home row** on `/pages` (visually distinct, "Coded page") links to `/pages/home`, a janitor-gated title + meta-description editor through ADR-180 `page_content` route `'/'`; `app/page.tsx` `generateMetadata` reads `resolvePageContent('/')` with the coded strings as fallback. The body stays code; no Puck.
 **Consequences:** `tagBetaCohort` now resolves through the DB layer, so wizard-built versions stamp THEIR tag (previously they silently fell back to the default's). Legacy `?seq=early-adopter`-style links resolve as blank clones unless a DB row exists — acceptable: those slugs were never circulated beyond the team, and old `fq_beta_seq` cookies still map in attribution. The Home OG description previously carried a bespoke longer blurb; it now mirrors the meta description (one editable pair, consistent with `pageContentMetadata` everywhere else). `vitest.config.ts` excludes `**/node_modules/**` + `.claude/**` so parallel agent worktrees can't pollute the suite. The `/pages/sequences/[slug]/edit` splash-only editor route 404s with no code sequences (its upload action is still used by the wizard); teardown list updated in BETA-INDUCTION.md.
@@ -6192,7 +6197,7 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 
 ## ADR-219: Rewards Economy v2 — Amplitude (lifetime XP), flat 5:1 conversion + rank bonus, practice weight classes, per-practice streaks + Practice Shelf, S1 award set
 
-**Status:** Accepted · migration `20260614200000_rewards_economy_v2.sql`, `lib/amplitude.ts`, `lib/zaps.ts`, `lib/journey-rewards.ts`, `lib/practices.ts`, `lib/practice-streak.ts`, `lib/practice-shelf.ts`, `lib/practice-streaks-job.ts`, `lib/coop-pulse.ts`, `lib/awards/{secret,witnessed,cosmetics}.ts`, `lib/achievements.ts`, `lib/gems.ts`, `app/api/cron/{coop-pulse,practice-streaks}/route.ts`, store actions/pages, profile Practice Shelf + give-award UI, admin metrics panel. **Supersedes** the ADR-037/060 lifetime-rank *display* (the `lifetime_rank` column + ratchet stay — the ADR-168 retro rule `seasoned_agent` reads it), **retires** the Gem tiers (New→Legend), **deletes** `MEMBER_ZAP_RATE` (reverses the ADR-140 throttle; it was inert in Beta), and **resolves** the provisional `ZAP_TO_GEM_RATES` rank ladder flagged in NAMING.md.
+**Status:** ~~Accepted~~ **Superseded by [ADR-305](DECISIONS.md)** (Rewards Economy v3, 2026-06-18) — kept as the record of what v2 was and why. Most of what this ADR shipped no longer exists: the v3 teardown (`supabase/migrations/20260702000001_rewards_v3_teardown.sql`) dropped the Co-op Pulse / Carrier Wave / Synchrony surface, the Practice Shelf, peer "Witnessed" and secret awards and the side quests, and **deleted both of this ADR's cron endpoints** (`coop-pulse`, `practice-streaks`) along with `lib/coop-pulse.ts` and `lib/practice-streaks-job.ts`. v3 pays out inline from one classifier instead. Read [REWARDS-ECONOMY.md](REWARDS-ECONOMY.md) for the live model; the paragraph below describes the retired one. *Originally shipped as:* migration `20260614200000_rewards_economy_v2.sql`, `lib/amplitude.ts`, `lib/zaps.ts`, `lib/journey-rewards.ts`, `lib/practices.ts`, `lib/practice-streak.ts`, `lib/practice-shelf.ts`, `lib/practice-streaks-job.ts`, `lib/coop-pulse.ts`, `lib/awards/{secret,witnessed,cosmetics}.ts`, `lib/achievements.ts`, `lib/gems.ts`, `app/api/cron/{coop-pulse,practice-streaks}/route.ts`, store actions/pages, profile Practice Shelf + give-award UI, admin metrics panel. **Supersedes** the ADR-037/060 lifetime-rank *display* (the `lifetime_rank` column + ratchet stay — the ADR-168 retro rule `seasoned_agent` reads it), **retires** the Gem tiers (New→Legend), **deletes** `MEMBER_ZAP_RATE` (reverses the ADR-140 throttle; it was inert in Beta), and **resolves** the provisional `ZAP_TO_GEM_RATES` rank ladder flagged in NAMING.md.
 **Context:** The June 2026 gamification brief ("Rewards Economy v2 + Amplitude + Season 1 Awards") supersedes the provisional economy items in GAMIFICATION-AUDIT.md: a lifetime layer that never resets, a simpler conversion, per-practice progression, new bonus mechanics, a 15-challenge season template, and the S1 award set.
 **Decision (and the calls the brief left open):**
 - **Amplitude** = lifetime cumulative Zaps, hosting-class actions (`event_host`, `program_run`, `circle_start`, `circle_activate`) at 2×. Accrued ONLY in `after_zap_transaction()`; level = largest L where `50·L·(L+1) ≤ amplitude`, derived on read. Milestones 1k/5k/10k/25k/50k/100k; 1k+5k seeded as achievements for S1.
@@ -6470,7 +6475,7 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 ## ADR-240: Member design system — unify the member app onto the canvas+tile standard
 
 **Status:** Accepted · `docs/MEMBER-DESIGN-SYSTEM.md` (the spec), `app/(main)/**` (non-admin), the member kit. Conformance pass; phased per cluster.
-**Context:** The owner: take the refined admin canvas+tile look and apply it across the member-facing side for one uniform site, with the rule that **primary member pages feature streaks and gamified stats only** (no operator metrics). An audit of ~102 member + marketing surfaces found the system already ~85% adopted (the in-app overhaul, ADR-061/090): the five shared templates (Stream/Index/Detail/Dashboard/Focus), `EntityCard`/`PersonCard`/`StatCard`, and the gamification components (`StreakStrip`/`GamificationPanel`/`JourneyBoard`) are on-grammar. The clunkiness is the ~15% that drifted plus the absence of a codified member-specific stat law.
+**Context:** The owner: take the refined admin canvas+tile look and apply it across the member-facing side for one uniform site, with the rule that **primary member pages feature streaks and gamified stats only** (no operator metrics). An audit of ~102 member + marketing surfaces found the system already ~85% adopted (the in-app overhaul, ADR-061/1046): the five shared templates (Stream/Index/Detail/Dashboard/Focus), `EntityCard`/`PersonCard`/`StatCard`, and the gamification components (`StreakStrip`/`GamificationPanel`/`JourneyBoard`) are on-grammar. The clunkiness is the ~15% that drifted plus the absence of a codified member-specific stat law.
 **Decision:**
 - **`docs/MEMBER-DESIGN-SYSTEM.md`** is the binding member standard: one site / three rooms (marketing editorial · member canvas+tiles · admin canvas+tiles, sharing one token layer); 8 principles ("design for the body, not the dashboard"); the **gamified-stat law** (zaps/gems/streak/season rank are the ONLY member tiles; one `StandingTiles` component; rank from `lib/season-ranks.ts` only; everything else is content, not a stat); the five-template taxonomy + a Wizard pattern for onboarding; the component grammar (`EntityCard`/`RowCard`, `UnderlineTabs`, the standing kit, `RoleActions`, `EmptyState`); states + cross-link discipline; the marketing boundary; and a phased conformance rollout.
 - **No rebuild** — finish and enforce the existing kit. Do-not-touch: the five templates, the shared cards, the gamification components, and the ~70 conforming pages.
@@ -15566,7 +15571,7 @@ The durable rule: **a status row with no consumer is a rumour — but the surfac
 
 The durable rule: **the switch that opens the shop is not the switch that empties the shelves, and if one flag does both, neither is a decision anybody can make.**
 
-## ADR-875 — The pricing page is DERIVED: seven sellable tiers, one grid built from the entitlement key sets, and the beta rate lives in the pricing config (2026-07-28)
+## ADR-1052 — The pricing page is DERIVED: seven sellable tiers, one grid built from the entitlement key sets, and the beta rate lives in the pricing config (2026-07-28)
 
 **Status.** Accepted.
 

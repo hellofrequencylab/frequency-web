@@ -52,6 +52,7 @@
     "check:one-list": "node scripts/check-one-list.mjs",
     "check:adr": "node scripts/check-adr.mjs",
     "check:docs-links": "node scripts/check-docs-links.mjs",
+    "check:arch-doc": "node scripts/check-arch-doc.mjs",
     "check:cron-freshness": "node scripts/cron-freshness.mjs",
     "maintenance:ledger-parity": "node scripts/maintenance/ledger-parity.mjs",
     "help:coverage": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-coverage.mts",

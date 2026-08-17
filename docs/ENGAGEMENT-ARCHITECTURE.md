@@ -66,7 +66,7 @@ Studio with two kinds of code plus an analytics view:
 1. **Check-in codes** = `nodes` rows. Pure authoring on top of the pipeline below (verify →
    ledger → zaps → `practice.verified` / partner redemption is already wired) — create/edit/
    retire, no new schema. Encode `SITE_URL/n/<nodeId>`.
-2. **Dynamic links** = `qr_codes` rows (ADR-089). A retargetable short link, `SITE_URL/q/<slug>`,
+2. **Dynamic links** = `qr_codes` rows (ADR-1045). A retargetable short link, `SITE_URL/q/<slug>`,
    that either **redirects to any URL** *or* **runs a check-in node** (`destination_type` =
    `url` | `node`). The resolver `app/q/[slug]` logs the scan (`record_qr_scan` RPC →
    `qr_scans` + cached `scan_count`) then redirects to the *current* destination — so one

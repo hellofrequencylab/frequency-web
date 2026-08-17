@@ -1,4 +1,4 @@
-// Demographic-aware palette for the Seed Studio (ADR-091). ONE cheap model call
+// Demographic-aware palette for the Seed Studio (ADR-1048). ONE cheap model call
 // per area turns a real place into a believable demographic palette — names that
 // fit the locale, the activities that actually happen there, a one-line vibe, and
 // journey titles — which the deterministic template engine then expands into

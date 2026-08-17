@@ -53,6 +53,10 @@ const VITEST_ENFORCED: Record<string, string> = {
   'check:elements': 'scripts/check-elements.test.ts',
   'check:render-path': 'scripts/check-render-path.test.ts',
   'check:creates': 'scripts/check-creates.test.ts',
+  // Added 2026-08-17 (HYG-004). Reads docs/ARCHITECTURE.md + the real tree and asserts every
+  // path/route/cron the doc names exists — pure source reading, so vitest is its home by the
+  // rule above rather than a 23rd entry in the ci.yml array.
+  'check:arch-doc': 'scripts/check-arch-doc.test.ts',
 }
 
 function packageScripts(): Record<string, string> {

@@ -71,7 +71,7 @@
 > **Still inert.** Every gate short-circuits to grant while `featureGatesLive()` is false. Call-site
 > enforcement and the picker UI are follow-ups; this change is the MAP, which the surfaces derive from.
 
-> ## ✅ The public ladder is SEVEN sellable tiers, and `/pricing` DERIVES them (ADR-875, 2026-07-28).
+> ## ✅ The public ladder is SEVEN sellable tiers, and `/pricing` DERIVES them (ADR-1052, 2026-07-28).
 > **The ladder, all of it sellable:** Member $0 · **Crew $9** · **Free Space** · **Business $29 with a $19
 > beta rate** · **Collective $79 with a $49 beta rate** · **Non Profit $39** · **Independent $249**. The two
 > beta rates are grandfathered: a subscriber keeps the rate for as long as they keep the plan. Non Profit,

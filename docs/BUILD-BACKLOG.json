@@ -1613,19 +1613,18 @@
     },
     {
       "id": "HYG-003",
-      "title": "Seven ADR numbers are used twice (090 three times)",
-      "status": "open",
+      "title": "Eight ADR numbers were used twice, and the guard was printing a tick over all of them",
+      "status": "done",
       "lane": "hygiene",
       "size": "S",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "Docs and repo hygiene"
       },
-      "detail": "ADR-088 through 094 each appear twice, 090 three times, leaving 75 cross-references ambiguous. check:adr passes because it only asserts that a cited number RESOLVES, not that it resolves uniquely.",
+      "detail": "Closed 2026-08-17. EIGHT collisions, not seven — 9 extra declarations, ADR-090 three times — counted in pure Node rather than trusted from the row. The renumbering is the smaller half. `check:adr` ALREADY EXISTED and was ALREADY WIRED into ci.yml, and it passed on all eight: it compared each count against a frozen GRANDFATHERED map, so it measured 'no worse than the day it shipped' while a reader took the tick for 'no duplicates'. That is ADR-962's vacuous-pass and ADR-970's cannot-fire-honestly in one gate. The map is gone; the rule is now flat and names both claimants' line numbers. Which claimant KEPT each number was decided on repo evidence (COMMS-STRATEGY.md:52 records the double-booking in the repo's own words; DEVELOPMENT-MAP dates; citation weight), not on file position — file order in a number-sorted ledger records the number, not the authoring order. 40 citations repointed, each individually unambiguous.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Needs a de-duplication pass plus a rule change in check-adr.mjs.",
-        "checked": "2026-08-17"
+        "kind": "cmd",
+        "cmd": "node -e \"import('node:fs').then(async(fs)=>{try{const m=await import('./scripts/check-adr.mjs');const live=m.runCheck(fs.readFileSync('docs/DECISIONS.md','utf8'));const fx=m.runCheck('## ADR-001: a'+String.fromCharCode(10)+'## ADR-001: b');if(live.total<800||fx.collisions.length!==1)process.exit(79);process.exit(live.collisions.length===0?0:1)}catch{process.exit(79)}}).catch(()=>process.exit(79))\""
       }
     },
     {
