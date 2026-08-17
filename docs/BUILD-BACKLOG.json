@@ -801,25 +801,25 @@
     },
     {
       "id": "LIVE-025",
-      "title": "R7: unify the eyebrow",
-      "status": "open",
+      "title": "R7: the eyebrow role is no longer hand-rolled where the code itself names it",
+      "status": "done",
       "lane": "live",
       "size": "M",
       "source": {
         "file": "docs/UX-MATURITY-PLAN.md",
         "ref": "Addendum §3 package 5"
       },
-      "detail": "Split TEN ways — tracking-wide 484, wider 77, widest 75, 62 arbitrary values — against 3 adopters of the eyebrow utility. The dominant hand-rolled value is 7.2x tighter than --tracking-eyebrow. Largely mechanical, and it is the single most visible type tell on the site. Scored +3.0.",
+      "detail": "THE ROW'S PREMISE WAS WRONG AND THE MEASUREMENT SAYS SO. It called this 'largely mechanical' over ~698 sites with 3 adopters. Measured 2026-08-17: 615 sites pair `uppercase` with a LITERAL tracking value (tracking-wide 436, widest 59, wider 60, 20 arbitrary), against 87 already on the `eyebrow` utility and 69 on `tracking-eyebrow`. 87 adopters, not 3. The population is NOT one role, which is why a sweep is the wrong instrument: the dominant string is 11px `text-2xs font-semibold uppercase tracking-wide text-muted`, and a large share are pill badges (rounded-pill px-2 py-0.5) and dense table headers. Sweeping them means 11px -> 12px, semibold -> bold and 0.025em -> 0.18em - a 7.2x tracking change that widens a label inside a px-2.5 pill it was sized to fit. That is an unreviewed visual change to several hundred surfaces, not a rename. WHAT SHIPPED is the half a machine can settle: of the 15 slots the CODE ITSELF names `eyebrow`, SEVEN hand-rolled the role across five different letter-spacings, all in the shared kit - EditorShell, Toast, StudioWindow, SparkShell, EntityHeader, JourneyBuilder, HostCohostSection. All seven now compose the utility. The rest is a ratchet, seeded at the POST-sweep 608 rather than the 615 found, which is what makes reverting any of the seven raise it.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Wants its own adoption-baselines.json ratchet class rather than a boolean probe.",
-        "checked": "2026-08-17"
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const T='lib/theme/eyebrow-role.test.ts',B='scripts/adoption-baselines.json';if(!fs.existsSync(T)||!fs.existsSync(B))process.exit(79);const t=fs.readFileSync(T,'utf8');let base;try{base=JSON.parse(fs.readFileSync(B,'utf8'))}catch(e){process.exit(79)}if(!Array.isArray(base.entries)||base.entries.length<5)process.exit(79);const row=base.entries.find(function(r){return r&&r.key==='handrolled-eyebrow'});const bad=[];if(t.indexOf('never hand-rolls the role in a slot the code itself calls an eyebrow')<0)bad.push('the blocking assertion is gone from '+T);if(!row)bad.push('the handrolled-eyebrow ratchet row is gone from '+B);else if(typeof row.baseline!=='number')bad.push('the handrolled-eyebrow row carries no baseline');if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
+      },
+      "notes": "ADR-1072. The structural finding is the one worth keeping: lib/theme/eyebrow-role.test.ts had seven assertions, all green, ALL READING globals.css AND NONE READING A CALL SITE. The definition was locked while the product rendered the role ten ways - a guard on the definition cannot see adoption. 🔴 STILL OPEN AND AN OWNER CALL, tracked as OWN-027: there is a SECOND eyebrow implementation nobody reconciled. components/page-editor/blocks/kit.tsx exports an <Eyebrow> component with about 26 adopters rendering text-body-sm (0.875rem) - DAWN's declared eyebrow size, i.e. the exact half of the DAWN split that globals.css resolved DOWN to 0.75rem on 2026-08-05. Which register wins is a design decision, not a refactor. The ratchet is ADVISORY by design (check:adoption is continue-on-error in ci.yml); the blocking half is the vitest assertion. Both are in the probe because losing either would leave the other reading as coverage."
     },
     {
       "id": "LIVE-026",
       "title": "The rail ladder: Auto / Open / Strip, persisted, plus a desktop left-rail fold",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "M",
       "source": {
@@ -828,10 +828,10 @@
       },
       "detail": "Today the right rail is binary, its state lives in useState keyed on pathname so it RESETS ON EVERY NAVIGATION, and the left rail has a compact mode with no user control at all. DAWN's law is a three-position standing instruction honoured until the window is too narrow. Scored +3.0.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Needs a persisted-state probe once the storage key is chosen.",
-        "checked": "2026-08-17"
-      }
+        "kind": "cmd",
+        "cmd": "node --experimental-strip-types --no-warnings -e \"const fs=require('fs');const S='components/layout/app-shell.tsx',L='app/(main)/layout.tsx',M='lib/layout/rail-fold.ts';if(![S,L,M].every(f=>fs.existsSync(f)))process.exit(79);const store=new Map();globalThis.window={localStorage:{getItem:k=>store.has(k)?store.get(k):null,setItem:(k,v)=>store.set(k,String(v))}};let jar='';globalThis.document={get cookie(){return jar},set cookie(v){jar=String(v).split(';')[0]}};import('./lib/layout/rail-fold.ts').then(m=>{const want={left:'strip',right:'open'};m.setRailFolds(want);m.resetRailFoldsCache();const after=m.railFoldsSnapshot();if(after.left!==want.left||after.right!==want.right){console.error('a reload lost the fold: '+JSON.stringify(after));process.exit(1)}const p=m.RAIL_FOLD_COOKIE+'=';const server=m.readRailFoldCookie(jar.startsWith(p)?jar.slice(p.length):'');if(server.left!==want.left||server.right!==want.right){console.error('the first frame would not be folded: '+JSON.stringify(server));process.exit(1)}if(m.resolveRailFold('open',true)!=='open'||m.resolveRailFold('strip',false)!=='strip'||m.resolveRailFold('auto',true)!=='strip'||m.resolveRailFold('auto',false)!=='open'){console.error('the ladder is not three-position');process.exit(1)}const shell=fs.readFileSync(S,'utf8'),layout=fs.readFileSync(L,'utf8');const missing=[];if(!shell.includes('compact={leftStrip}'))missing.push('desktop left-rail fold (compact={leftStrip})');if(!/resolveRailFold\\(folds\\.left, autoStrip\\)/.test(shell)||!/resolveRailFold\\(folds\\.right, autoStrip\\)/.test(shell))missing.push('both rails read the ladder');if(/path:\\s*pathname/.test(shell))missing.push('the fold is keyed on the pathname again');if(!layout.includes('readRailFoldCookie(jar.get(RAIL_FOLD_COOKIE)?.value)')||!layout.includes('railFold={railFold}'))missing.push('the server reads the cookie and passes railFold');if(missing.length){console.error(missing.join('; '));process.exit(1)}process.exit(0)},e=>{console.error(e.message);process.exit(79)})\""
+      },
+      "notes": "Closed 2026-08-17 (ADR-1071). THE ROW WAS STALE ON THE IMPLEMENTATION AND RIGHT ABOUT THE GAP. The three-position ladder and the desktop left-rail fold were already built and already gated. The PERSISTED half had nothing behind it: replacing the whole body of writeStoredRailFolds with `return` left all 38 tests in rail-fold.test.ts PASSING, and deleting railFold from the shell mount in app/(main)/layout.tsx - the entire no-flash path - left 288 tests passing with tsc green. Cause: that suite runs in environment 'node', so with no window and no document both storage functions return on their first line in every case. AND IT SURFACED A REAL DEFECT. writeStoredRailFolds is built to survive blocked localStorage (the setItem throw is swallowed, the cookie still lands) but readStoredRailFolds read localStorage and nothing else. In exactly that case the server paints the folded strip from the cookie, hydration renders it, and the first client snapshot reads blocked storage, answers Auto, and shoves the rail open one frame after paint - the fail-safe fired and the next line cancelled it. The read now falls back to the cookie. The probe EXECUTES the round trip rather than grepping for it: it fakes window.localStorage and document.cookie, chooses Strip/Open, drops the in-memory snapshot (a reload) and asserts the fold comes back AND that the cookie the server reads agrees. Verified myself, not just reported: gutting the write prints 'a reload lost the fold' and exits 1; removing compact={leftStrip} names the desktop fold and exits 1. No baseline recapture needed - the rail's state at rest is unchanged, and the new behaviour only fires when localStorage is empty AND a cookie exists, which a fresh capture browser never has."
     },
     {
       "id": "LIVE-027",
@@ -1922,6 +1922,23 @@
         "cmd": "node -e \"const fs=require('fs');const R='app/api/vitals/route.ts',V='lib/analytics/vitals.ts';if(!fs.existsSync(R)||!fs.existsSync(V))process.exit(79);const r=fs.readFileSync(R,'utf8'),v=fs.readFileSync(V,'utf8');const bad=[];const i=v.indexOf('export function vitalProps');if(i<0)process.exit(79);const body=v.slice(i,v.indexOf(String.fromCharCode(10)+'}',i));if(body.indexOf('.vp')<0&&body.indexOf('vp:')<0)bad.push('vitalProps no longer emits vp, the viewport bucket');if(r.indexOf('props: vitalProps(')<0)bad.push('the vitals route builds its own props bag again instead of calling vitalProps; that duplication is what dropped vp on write');if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
       },
       "notes": "Closed 2026-08-17. The route now writes props: vitalProps(v) instead of a second copy of the same object literal, so the wire shape and the written shape cannot drift again - which is the actual cause, not the missing field. MY FIRST PROBE WAS WRONG IN AN INSTRUCTIVE WAY: it looked for 'vp' near the route's `props:` literal, so it kept failing AFTER the fix, because the fix DELETED the literal it was reading. A probe written against the broken shape can outlive the break. It now asserts the two things that must both hold - vitalProps still emits vp, and the route still calls it rather than hand-rolling the bag. The authz digest was re-recorded, not bypassed: editing the handler invalidated it by design, so the `public` verdict was re-read. Nothing about the boundary moved (no session, no headers or cookies, profile_id NULL on every row whatever the payload claims, which the route test asserts with an attacker-shaped body), and vp is a property of the PAGE VIEW rather than the person (ADR-922)."
+    },
+    {
+      "id": "OWN-027",
+      "title": "Two eyebrow registers exist and neither is wrong: pick the one that wins",
+      "status": "open",
+      "lane": "owner",
+      "size": "S",
+      "source": {
+        "file": "components/page-editor/blocks/kit.tsx",
+        "ref": "LIVE-025 / ADR-1072"
+      },
+      "detail": "Surfaced by LIVE-025, and it is a design decision rather than a refactor, which is why it is not being made in code. There are TWO eyebrow implementations and nobody reconciled them. (1) app/globals.css locks the `eyebrow` utility at 0.75rem / 0.18em / bold, and 87 sites use it. (2) components/page-editor/blocks/kit.tsx exports an <Eyebrow> component with about 26 adopters rendering text-body-sm, 0.875rem - which is DAWN's DECLARED eyebrow size, i.e. precisely the half of the DAWN split that globals.css resolved DOWN to 0.75rem on 2026-08-05. So the block kit is not drifting by accident; it is rendering the value DAWN published, and the CSS is rendering the value this repo chose instead. Beyond those two there is a third de-facto register: 615 sites pair uppercase with a literal tracking, dominated by an 11px `text-2xs font-semibold uppercase tracking-wide text-muted`, and many of those are pill badges and dense table headers where 0.18em would widen the label past the pill that was sized to fit it. THE CALL: which size is the eyebrow - 0.75rem (globals.css, what most of the kit uses) or 0.875rem (DAWN's declaration, what the block kit renders)? Whichever loses gets retired, and its adopters move in a bounded sweep with a visual recapture. Deciding it also settles what goes back to DAWN in the next handoff, since design_handoff/PROD-AHEAD.md already carries the divergence.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Measured 2026-08-17 via the adoption harness: 87 sites on the `eyebrow` utility, 69 on `tracking-eyebrow`, ~26 on kit.tsx's <Eyebrow> at 0.875rem, and 608 remaining literal-tracking sites after the seven named slots were unified. Not repo-probeable: a probe asserting either register would force a choice the owner has not made, and a gate that encodes an undecided design question is the shape-not-truth failure this backlog exists to prevent.",
+        "checked": "2026-08-17"
+      }
     }
   ]
 }
