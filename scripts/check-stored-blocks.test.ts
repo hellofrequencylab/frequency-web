@@ -174,10 +174,21 @@ describe('the migration and the quarantine cannot drift apart', () => {
   })
 
   it('the migration is scoped to `data` and asserts `published_data` clean rather than rewriting it', () => {
-    const sql = readFileSync(join(ROOT, 'supabase/migrations/20270305000000_pages_retire_orphan_block_types.sql'), 'utf8')
+    const sql = readFileSync(join(ROOT, 'docs/proposals/LIVE-028-retire-orphan-block-types.sql'), 'utf8')
     expect(sql).toContain('update public.pages p')
     expect(sql).toContain("set data = jsonb_set(p.data, '{content}', r.content)")
     expect(sql).toContain('raise exception')
+  })
+
+  it('the SQL is STAGED outside supabase/migrations/ and says why, so nobody moves it back', () => {
+    // A file in supabase/migrations/ asserts "production has run this". CI arms check:migrations
+    // rule 4 (ADR-1007) with real credentials, so an unapplied file there fails the build — it
+    // already did once, for this very file. Pinned here because "put the migration in the
+    // migrations directory" is the obvious instinct and it is wrong until the owner applies it.
+    expect(existsSync(join(ROOT, 'supabase/migrations/20270305000000_pages_retire_orphan_block_types.sql'))).toBe(false)
+    const sql = readFileSync(join(ROOT, 'docs/proposals/LIVE-028-retire-orphan-block-types.sql'), 'utf8')
+    expect(sql).toContain('THIS FILE LIVES OUTSIDE supabase/migrations/ ON PURPOSE')
+    expect(sql).toContain('TO PROMOTE')
   })
 })
 
@@ -253,8 +264,8 @@ describe('NON-VACUITY — the detector fires', () => {
     c.stores[0].types = { ...c.stores[0].types, ZigZag: { blocks: 1, docs: 1 } }
     c.quarantine = [{
       type: 'ZigZag',
-      successor: 'Quote',  // the real migration maps it to MediaText
-      migration: 'supabase/migrations/20270305000000_pages_retire_orphan_block_types.sql',
+      successor: 'Quote',  // the real SQL maps it to MediaText
+      migration: 'docs/proposals/LIVE-028-retire-orphan-block-types.sql',
     }]
     expect(
       classify(c, known, {
@@ -283,21 +294,106 @@ describe('NON-VACUITY — the detector fires', () => {
   })
 })
 
+// ── THE SPLIT: a declared orphan passes loudly, an undeclared one fails ───────────────────────
+//
+// 🔴 THE FAILURE THIS CLOSES. The first version of this guard exited 1 for ANY orphan, declared or
+// not. It is wired into `test`, a REQUIRED context, so it made every unrelated PR unmergeable
+// until an OWNER applied a migration — a gate no contributor can clear, which ADR-970 says gets
+// routed around and then reads as coverage. The two questions are different and now get different
+// answers, and both halves are asserted here so neither can quietly swing back.
+
+const io = {
+  fileExists: (p: string) => existsSync(join(ROOT, p)),
+  readFile: (p: string) => readFileSync(join(ROOT, p), 'utf8'),
+}
+
+describe('THE SPLIT — declared orphans pass loudly, undeclared ones fail', () => {
+  it('the GUARD passes on today\'s real tree, even with five declared orphans outstanding', () => {
+    const r = report(census, { io })
+    expect(
+      r.code,
+      'The guard runs in a required job. A declared orphan whose fix is a staged migration waiting ' +
+        'on the owner must NOT fail it — no PR can clear that, and a gate nobody can clear gets ' +
+        'routed around.',
+    ).toBe(0)
+  })
+
+  it('…and ANNOUNCES them, so a pass can never read as ordinary coverage', () => {
+    const text = report(census, { io }).lines.join('\n')
+    expect(text).toContain('DECLARED')
+    expect(text).toContain('waiting on an OWNER action')
+    for (const q of census.quarantine as Required<QuarantineRow>[]) {
+      expect(text, `${q.type} is quarantined but never printed`).toContain(`${q.type} -> ${q.successor}`)
+      expect(text).toContain(q.migration)
+    }
+    // The distinction itself is stated in the output, not just implied by the exit code.
+    expect(text).toContain('an UNDECLARED orphan still fails')
+  })
+
+  it('🔴 …but an UNDECLARED orphan is NOT something the guard can announce its way past', () => {
+    // The undeclared arm lives in classify(), which needs the registry; report() is pure node and
+    // deliberately does not duplicate it. This is the assertion that the two halves together
+    // still fail on the case that matters — the same census, one type left out of the quarantine.
+    const oneUndeclared = {
+      ...census,
+      quarantine: (census.quarantine as QuarantineRow[]).filter((q) => q.type !== 'ZigZag'),
+    }
+    expect(report(oneUndeclared, { io }).code).toBe(0) // the pure-node half cannot see it…
+    expect(classify(oneUndeclared, REGISTRY_TYPES, io).unresolved).toEqual(['ZigZag']) // …this one does.
+  })
+
+  it('🔴 a ROTTED quarantine entry still FAILS the guard — that arm kept its teeth', () => {
+    const rotted = {
+      ...census,
+      quarantine: [{ type: 'ZigZag', successor: 'MediaText', migration: 'docs/proposals/does-not-exist.sql' }],
+    }
+    const r = report(rotted, { io })
+    expect(r.code).toBe(1)
+    expect(r.lines.join('\n')).toContain('no longer name a migration that performs their rewrite')
+  })
+
+  it('🔴 a quarantine entry pointing at real SQL that maps it SOMEWHERE ELSE also fails the guard', () => {
+    // Existing is not enough. The guard reads the SQL on every run, so relocating the file (as
+    // happened when it moved to docs/proposals/) is caught, and so is silently retargeting it.
+    const wrongTarget = {
+      ...census,
+      quarantine: [{
+        type: 'ZigZag',
+        successor: 'Quote',
+        migration: 'docs/proposals/LIVE-028-retire-orphan-block-types.sql',
+      }],
+    }
+    expect(report(wrongTarget, { io }).code).toBe(1)
+  })
+
+  it('the guard is silent-and-green only when there is genuinely nothing to say', () => {
+    const r = report({ ...census, quarantine: [] }, { io })
+    expect(r.code).toBe(0)
+    expect(r.lines.join('\n')).toContain('nothing quarantined')
+    expect(r.lines.join('\n')).not.toContain('DECLARED')
+  })
+})
+
 // ── The probe's three outcomes, all three exercised ───────────────────────────────────────────
 
 describe('the probe answers 0 / 1 / 79 and never confuses them', () => {
   it('79 — a census below its floors is INDETERMINATE, never a verdict', () => {
     const empty: Census = { capturedAt: 'x', stores: [], quarantine: [] }
-    expect(report(empty).code).toBe(INDETERMINATE)
+    expect(report(empty, { probe: true }).code).toBe(INDETERMINATE)
+    expect(report(empty, { io }).code).toBe(INDETERMINATE)
   })
 
-  it('1 — orphans remain (today\'s real state, because the migration is unapplied)', () => {
-    expect(report(census).code).toBe(1)
+  it('1 — the probe says NOT DONE while a declared orphan remains, unlike the guard', () => {
+    // Deliberately the opposite verdict to the guard above, on the same input. The probe answers
+    // "is LIVE-028 done?", and the answer is no until the owner applies the SQL. check:backlog
+    // reads this; the row is `open`, so open + NOT DONE is exactly consistent.
+    expect(report(census, { probe: true }).code).toBe(1)
+    expect(report(census, { io }).code).toBe(0)
   })
 
   it('0 — an empty quarantine over a real corpus is the done state', () => {
     const fixed = { ...census, quarantine: [] }
-    expect(report(fixed).code).toBe(0)
+    expect(report(fixed, { probe: true }).code).toBe(0)
   })
 
   it('loadCensus throws on a missing file rather than manufacturing an empty corpus', () => {

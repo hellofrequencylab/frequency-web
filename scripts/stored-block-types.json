@@ -66,40 +66,41 @@
       }
     }
   ],
-  "quarantineRule": "A type may appear here ONLY while a migration that retires it is in the tree. The guard checks that migration exists and maps this exact type to this exact successor, so a quarantine entry cannot outlive its fix. The list may only shrink: it empties when the owner applies the migration and re-captures the census. There is no line-level escape hatch — losing a tenant's authored block is not something a comment may authorise.",
+  "quarantineRule": "A type may appear here ONLY while a migration that retires it is in the tree. The guard READS that SQL and confirms it maps this exact type to this exact successor — existing is not enough — so a quarantine entry cannot outlive its fix. It also fails if the registry has since started resolving the type, or if the successor does not resolve. The list may only shrink: it empties when the owner promotes and applies the migration and re-captures the census. There is no line-level escape hatch — losing a tenant's authored block is not something a comment may authorise.",
+  "whyTheMigrationIsNotInSupabaseMigrations": "A file in supabase/migrations/ IS an assertion that production has run it, and CI arms check:migrations rule 4 (ADR-1007) with real credentials — so an unapplied file there fails the build. The SQL is staged in docs/proposals/ with a promotion banner instead, where it makes no claim. `migration` below points at that staged path; it moves to supabase/migrations/ at promotion time, which is also when this quarantine empties.",
   "quarantine": [
     {
       "type": "PageHero",
       "successor": "Hero",
-      "migration": "supabase/migrations/20270305000000_pages_retire_orphan_block_types.sql",
+      "migration": "docs/proposals/LIVE-028-retire-orphan-block-types.sql",
       "adr": "ADR-1055",
       "why": "Hero's field list is a superset of PageHero's four props; variant 'minimal' is the text-only paint PageHero was."
     },
     {
       "type": "ImageBand",
       "successor": "Image",
-      "migration": "supabase/migrations/20270305000000_pages_retire_orphan_block_types.sql",
+      "migration": "docs/proposals/LIVE-028-retire-orphan-block-types.sql",
       "adr": "ADR-1055",
       "why": "components/page-editor/blocks/media.tsx:114 — 'A single image renders as the full-width band (standardizes the old ImageBand)'."
     },
     {
       "type": "ZigZag",
       "successor": "MediaText",
-      "migration": "supabase/migrations/20270305000000_pages_retire_orphan_block_types.sql",
+      "migration": "docs/proposals/LIVE-028-retire-orphan-block-types.sql",
       "adr": "ADR-1055",
       "why": "components/page-editor/blocks/media.tsx:60 — 'MediaText ... (standardizes the old ZigZag)'. NOT the registry's `Zigzag`, which ADR-978 correctly refused: MediaText is a name-for-name superset of all 12 stored props."
     },
     {
       "type": "FeatureGallery",
       "successor": "Gallery",
-      "migration": "supabase/migrations/20270305000000_pages_retire_orphan_block_types.sql",
+      "migration": "docs/proposals/LIVE-028-retire-orphan-block-types.sql",
       "adr": "ADR-1055",
       "why": "components/page-editor/blocks/media.tsx:215 — 'GalleryMediaBlock — image grid (standardizes the old FeatureGallery)'. The stored item shape {image,title,body} is Gallery's arrayFields exactly."
     },
     {
       "type": "BetaCTA",
       "successor": "CallToAction",
-      "migration": "supabase/migrations/20270305000000_pages_retire_orphan_block_types.sql",
+      "migration": "docs/proposals/LIVE-028-retire-orphan-block-types.sql",
       "adr": "ADR-1055",
       "why": "components/page-editor/blocks/sections.tsx:259 — 'Dark ink variant: full-bleed with light-strip seams + amber glow (matches BetaCTA)'."
     }

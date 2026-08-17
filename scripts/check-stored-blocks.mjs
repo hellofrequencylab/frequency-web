@@ -16,7 +16,35 @@
 // registry without either a migration that rewrites the data, or a deliberate, reviewable entry
 // saying so. This guard is the thing that notices.
 //
-// ── THE SPLIT, AND WHY THERE ARE TWO HALVES ───────────────────────────────────────────────────
+// ── TWO DIFFERENT QUESTIONS, AND THEY GET DIFFERENT ANSWERS ───────────────────────────────────
+//
+// 🔴 THE FIRST VERSION OF THIS GUARD CONFLATED THEM, and that made it a gate nobody could go
+// green against. It exited 1 for ANY orphan — including the five already declared, whose fix is a
+// staged migration waiting on an OWNER to apply it. Wired into a required job, that holds every
+// unrelated change hostage to an action no PR can take, which is precisely the state ADR-970 says
+// gets routed around and then reads as coverage. Split:
+//
+//   · an UNDECLARED orphan in stored data  -> FAIL. This is the regression the guard exists for.
+//   · a DECLARED (quarantined) orphan      -> PASS, LOUDLY. It is known, it names its successor
+//                                             and the SQL that performs the rewrite, and those
+//                                             claims are re-verified on every run. It is printed
+//                                             every time so it can never fade into ordinary
+//                                             coverage — the same shape as check:migrations' loud
+//                                             skip and check:function-grants' LOOP_COVERED note.
+//   · a quarantine entry that has ROTTED   -> FAIL, and this arm is unchanged. A successor that
+//                                             does not resolve, a migration that is absent, a
+//                                             migration that maps the type SOMEWHERE ELSE, or a
+//                                             type the registry now resolves: all still hard
+//                                             failures. Those are what stop a quarantine turning
+//                                             into a permanent hole, and none of them need an
+//                                             owner to clear.
+//
+// ⚠️ `--probe` DOES NOT TAKE THIS SPLIT, deliberately. It answers a different question — "is
+// LIVE-028 done?" — and the answer while a declared orphan remains is NO. check:backlog reads it,
+// the row is `open`, and an open row whose probe says NOT DONE is exactly consistent. A probe that
+// went green on the declared state would close a row whose work has not happened.
+//
+// ── THE SPLIT BETWEEN THE TWO FILES ───────────────────────────────────────────────────────────
 //
 // The registry is TSX (`lib/page-editor/config.tsx` imports React, next/image, `server-only`
 // transitively), so bare node cannot read it — same constraint EDITOR-GATES §0 records for the
@@ -40,8 +68,10 @@
 // check:migrations rule 4 records for the ledger, and stated the same way rather than hidden).
 //
 // Usage:
-//   node scripts/check-stored-blocks.mjs           # integrity floors + the quarantine report
-//   node scripts/check-stored-blocks.mjs --probe    # 0 = clean · 1 = orphans remain · 79 = cannot tell
+//   node scripts/check-stored-blocks.mjs           # 0 = no UNDECLARED orphan and no rotted entry
+//                                                  # 1 = a quarantine entry has rotted
+//                                                  # 79 = the census is unreadable / below its floors
+//   node scripts/check-stored-blocks.mjs --probe    # 0 = quarantine EMPTY · 1 = orphans remain · 79 = cannot tell
 // Model: scripts/check-migrations.mjs (floors, loud degradation, never a vacuous pass).
 
 import { readFileSync, existsSync } from 'node:fs'
@@ -152,10 +182,23 @@ export function classify(census, knownTypes, io = {}) {
 
   const badSuccessor = quarantine.filter((q) => !q.successor || !known.has(q.successor)).map((q) => q.type).sort()
 
-  // The entry must point at a migration that exists AND actually maps this type to this
-  // successor. Without this, "quarantined" degrades into "excused", and the excuse outlives the
-  // fix — which is exactly how the previous five lists in this repo drifted.
-  const missingMigration = quarantine
+  const missingMigration = missingMigrationTypes(census, { fileExists: exists, readFile: read })
+
+  return { integrity: integrityProblems(census), unresolved, quarantined, staleQuarantine, badSuccessor, missingMigration }
+}
+
+/**
+ * Quarantined types whose migration is absent, unreadable, or does not perform THAT rewrite.
+ *
+ * Split out of classify() because it is the one anti-rot arm that needs no registry, so the pure
+ * node CLI can enforce it too. It is also the arm that keeps the quarantine honest: without it,
+ * "quarantined" degrades into "excused", and the excuse outlives the fix — which is exactly how
+ * the previous five lists in this repo drifted. Existing is NOT enough; the SQL is read.
+ */
+export function missingMigrationTypes(census, io = {}) {
+  const exists = io.fileExists ?? existsSync
+  const read = io.readFile ?? ((p) => readFileSync(p, 'utf8'))
+  return (census.quarantine ?? [])
     .filter((q) => {
       if (!q.migration || !exists(q.migration)) return true
       let sql
@@ -168,8 +211,6 @@ export function classify(census, knownTypes, io = {}) {
     })
     .map((q) => q.type)
     .sort()
-
-  return { integrity: integrityProblems(census), unresolved, quarantined, staleQuarantine, badSuccessor, missingMigration }
 }
 
 /** Does this SQL contain a `when '<type>' then … 'type', '<successor>'` rewrite? Deliberately
@@ -181,8 +222,15 @@ export function mapsTypeToSuccessor(sql, type, successor) {
   return re.test(sql)
 }
 
-/** The human report. Returns lines + an exit code, so the tests can drive every branch. */
-export function report(census, { probe = false } = {}) {
+/**
+ * The human report. Returns lines + an exit code, so the tests can drive every branch.
+ *
+ * `probe: false` (the guard): 79 on a broken census · 1 on a ROTTED quarantine entry · 0 otherwise,
+ * printing any declared quarantine loudly so it can never read as ordinary coverage.
+ * `probe: true` (the backlog probe): 79 on a broken census · 1 while ANY orphan remains · 0 when
+ * the quarantine is empty. See the header for why these two answers differ on purpose.
+ */
+export function report(census, { probe = false, io = {} } = {}) {
   const lines = []
   const problems = integrityProblems(census)
   if (problems.length) {
@@ -196,21 +244,66 @@ export function report(census, { probe = false } = {}) {
   const stores = census.stores ?? []
   const docs = stores.reduce((n, s) => n + (s.documents ?? 0), 0)
   const types = censusTypes(census)
+  const header = `${docs} stored document(s) across ${stores.length} store(s), ${types.size} distinct block type(s), captured ${census.capturedAt}`
+
+  // ── the probe: "is LIVE-028 done?" ──────────────────────────────────────────────────────────
+  if (probe) {
+    if (q.length === 0) {
+      lines.push('', `✅ check:stored-blocks — ${header}. Zero orphan block types remain in stored page data.`, '')
+      return { code: 0, lines }
+    }
+    lines.push('', `⏳ check:stored-blocks — ${q.length} orphan block type(s) still in stored page data:`, '')
+    for (const e of q) {
+      const seen = types.get(e.type)
+      lines.push(`    ${e.type} -> ${e.successor}   (${seen?.blocks ?? '?'} block(s) in ${seen?.docs ?? '?'} document(s))`)
+    }
+    lines.push('', `    The fix is written and waiting on the owner: ${q[0]?.migration}`, '    NOT DONE, which is what an open backlog row should hear.', '')
+    return { code: 1, lines }
+  }
+
+  // ── the guard: "has anything gone wrong that a PR can fix?" ─────────────────────────────────
+  const rotted = missingMigrationTypes(census, io)
+  if (rotted.length) {
+    lines.push('', `🔴 check:stored-blocks — ${rotted.length} quarantine entr(y/ies) no longer name a migration that performs their rewrite:`, '')
+    for (const type of rotted) {
+      const e = q.find((x) => x.type === type)
+      lines.push(`    ${type} -> ${e?.successor ?? '?'}   migration: ${e?.migration ?? '(none declared)'}`)
+    }
+    lines.push(
+      '',
+      '    A quarantine entry is tolerated ONLY while its fix is in the tree. The file must exist',
+      '    AND contain the rewrite it claims — existing is not enough, or "quarantined" quietly',
+      `    becomes "excused". Fix the entry in ${CENSUS_PATH}, or restore the SQL.`,
+      '',
+    )
+    return { code: 1, lines }
+  }
 
   if (q.length === 0) {
-    lines.push('', `✅ check:stored-blocks — ${docs} stored document(s) across ${stores.length} store(s), ${types.size} distinct block type(s), zero quarantined.`, `    Captured ${census.capturedAt}. The registry half is enforced live by scripts/check-stored-blocks.test.ts.`, '')
+    lines.push('', `✅ check:stored-blocks — ${header}. Every stored block type resolves; nothing quarantined.`, '    The registry half is enforced live by scripts/check-stored-blocks.test.ts.', '')
     return { code: 0, lines }
   }
 
-  lines.push('', `🔴 check:stored-blocks — ${q.length} block type(s) live in stored page data and resolve to NOTHING in the registry.`, '')
+  // PASS, LOUDLY. Declared, verified, and waiting on an owner — not a defect a PR can clear, so
+  // it must not fail a required job. Printed in full on EVERY run so it cannot fade into silence.
+  lines.push('', `✅ check:stored-blocks — ${header}. No UNDECLARED orphan block type.`, '')
+  lines.push(`⏳ ${q.length} DECLARED orphan(s) below. They render as nothing on a live page today — the author's`, '   copy is kept but invisible — and each is waiting on an OWNER action, not on a PR:', '')
   for (const e of q) {
     const seen = types.get(e.type)
-    lines.push(`    ${e.type} -> ${e.successor}   (${seen?.blocks ?? '?'} block(s) in ${seen?.docs ?? '?'} document(s))`)
-    lines.push(`      migration: ${e.migration}`)
+    lines.push(`    ${e.type} -> ${e.successor}   (${seen?.blocks ?? '?'} block(s) in ${seen?.docs ?? '?'} document(s))  ${e.adr ?? ''}`)
+    lines.push(`      fix: ${e.migration}`)
   }
-  lines.push('', '    Each renders as nothing on the live page today — the author\'s copy is kept but invisible.', '    Apply the migration above (two steps: supabase/migrations/README.md), then re-capture', `    ${CENSUS_PATH} and delete the quarantine entries.`, '')
-  if (!probe) lines.push('    This exits non-zero on purpose: the fix is unapplied, and a green gate would say otherwise.', '')
-  return { code: 1, lines }
+  lines.push(
+    '',
+    '    Re-verified on this run: each successor resolves in the live registry, and each migration',
+    '    exists and performs that exact rewrite. Promote + apply the SQL, then re-capture',
+    `    ${CENSUS_PATH}; this list empties and \`--probe\` goes 1 -> 0.`,
+    '',
+    '    This is a PASS, not coverage: an UNDECLARED orphan still fails, and so does an entry whose',
+    '    claims have rotted. It is printed every run so nobody mistakes the difference.',
+    '',
+  )
+  return { code: 0, lines }
 }
 
 const invokedDirectly = process.argv[1] && process.argv[1].endsWith('check-stored-blocks.mjs')
@@ -224,6 +317,8 @@ if (invokedDirectly) {
     process.exit(INDETERMINATE)
   }
   const { code, lines } = report(census, { probe })
+  // A declared quarantine prints on stdout even though it is loud: it is a PASS, and routing a
+  // pass through stderr is how a notice starts reading as a failure in a CI log.
   for (const l of lines) (code === 0 ? console.log : console.error)(l)
   process.exit(code)
 }
