@@ -33,7 +33,7 @@ const RATE = {
   nonprofit: R(NETWORK_TAKE_RATE_DEFAULT.nonprofit),
 }
 const CAT = pricingCatalog()
-// 🔴 THE OPENING BETA PRICE IS CLOSED (owner, 2026-08-17, ADR-1057): every plan is sold at its LIST
+// 🔴 THE OPENING BETA PRICE IS CLOSED (owner, 2026-08-17, ADR-1060): every plan is sold at its LIST
 // price, so the yearly figures below read the LIST year, not the founding one. Quoting the founding
 // year here would print $190 beside a $29 monthly, a yearly nobody can buy. The list and founding
 // amounts are equal on the plans that never carried a beta anchor (Non Profit, Independent).

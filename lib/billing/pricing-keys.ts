@@ -419,8 +419,11 @@ function amountsFromMonthly(listMonthlyCents: number, foundingMonthlyCents: numb
 // (run-your-practice depth); the Resonance Engine add-on +$20/mo (optional on any paid plan); Non Profit
 // $39/mo FLAT (the full Collective toolkit, for verified 501(c)(3)s, donations built in). NEVER per seat.
 // Collective ($79 list / $49 beta) + Independent ($249 flat) are sellable catalog bases (ADR-811 go-live).
-// The $19/$49 beta anchors auto-revert to list on 2026-09-01 (lib/pricing/beta.ts) via a checkout key
-// switch. Yearly derives as two months free. An item carries the same list + founding when no separate
+// 🔴 THE $19/$49 BETA ANCHORS ARE NO LONGER CHARGED. They auto-reverted to list via the checkout key
+// switch when the owner closed the window on 2026-08-17 (lib/pricing/beta.ts BETA_PRICING_ENDS_AT,
+// ADR-1060: "scratch the beta pricing and just charge full price"). The founding amounts stay in the
+// catalog because both variants are minted active in Stripe and a grandfathered lock still points at
+// one; nothing displays or charges them while `isBetaPricingActive()` is false. Yearly derives as two months free. An item carries the same list + founding when no separate
 // anchor is published (founding == list reads flat today; the field still exists so a future anchor is a
 // one-line edit, never a schema change). The marketing/team/branding add-on items are RETIRED (their
 // depth folds into the Business base, ADR-472); only addon_ai (the Resonance Engine) remains as an add-on.

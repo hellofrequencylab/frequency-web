@@ -25595,3 +25595,72 @@ broken), which is why the sibling test cross-checks the parser against the live 
 trusting it. Non-vacuity is proven twice: fixtures that must fail on every arm, and a live
 mutation (deleting the `waveform-border` bridge) that took the CLI to exit 1 and failed the
 real-shelf assertion.
+
+## ADR-1060: The Opening Beta price is closed early, and the only discount left is the one that was always there
+
+**Status.** Accepted (2026-08-17) · owner decision, implemented as a one-constant move in
+`lib/pricing/beta.ts` (`BETA_PRICING_ENDS_AT`: `2026-09-01T07:00:00.000Z` → `2026-08-17T00:00:00.000Z`)
+· carried through `lib/pricing/beta.test.ts`, `pricing-grid.test.ts`, `pricing-model.test.ts`,
+`beta-notice.ts`/`.test.ts`, `lib/page-editor/templates/pricing.ts`, `lib/marketing/funnel-config.ts`,
+`lib/beta/launch-emails.ts` + `email-templates.ts`, `app/(marketing)/what-is-frequency/page.tsx`,
+`content/help/spaces/plans-and-pricing.md` · amends [ADR-811](DECISIONS.md) (which set the beta
+anchors) and [ADR-1052](DECISIONS.md) (which derived the public ladder from them).
+
+**Context.** The owner: *"scratch the beta pricing and just charge full price. They can get 2 months
+free for purchasing the year."* The beta window was an auto-revert built to need no manual step: one
+constant, read by the checkout (`resolveLoadoutPriceId` switches Stripe price keys on it) and by every
+pricing surface (`effectiveCatalogAmounts` / `effectiveTierPrice` collapse the founding anchor into the
+list price once it is past). Closing the window early is therefore not a repricing exercise. It is a
+date.
+
+**Decision.** Move the cutover to a past instant. Nothing else in the pricing model changes.
+
+1. **Scope, measured rather than assumed: exactly two plans move.** Business **$19 → $29/mo** and
+   Collective **$49 → $79/mo**, with the annuals following through `yearlyFromMonthly` at 10x
+   (**$190 → $290**, **$490 → $790**). Independent, Non Profit and the Vera AI add-on already carried
+   `listCents == foundingCents` in the catalog, so their prices do not move at all, and no surface
+   showed them a strike to lose.
+2. **The second half of the owner's sentence was already the house rule.** "Two months free on the
+   year" is `ANNUAL_MONTHS_FREE = 2`, the single source of the annual math the catalog itself derives
+   from. It is UNCHANGED by this decision; what changes is that it is now the only discount on the
+   page, so the copy leads with it where the beta line used to sit.
+3. **The strike and the beta caption must disappear, not be renumbered.** Post-cutover there is no beta
+   rate, so a crossed-out $29 beside a charged $29, or a "Beta rate. Yours for as long as you keep the
+   plan." caption beside a rate that is not a beta rate, would be a false claim on the page that sells
+   the plan. `pricing-grid.test.ts` now asserts the closed-window state directly and sweeps EVERY
+   offering and every rendered comparison cell for a surviving anchor or beta caption. The ADR-463
+   idiom keeps its coverage through an explicit `betaActive: true` arm rather than being deleted: the
+   window is one editable constant away from re-opening.
+4. **A test may not pin the constant it is meant to guard.** `beta.test.ts` pinned the literal
+   `'2026-09-01T07:00:00.000Z'` and probed the window with hand-typed August dates, so an owner moving
+   the date broke a test that was supposed to describe behaviour. Every instant is now derived from
+   `BETA_PRICING_ENDS_AT` itself, and the constant is asserted on its SHAPE (a canonical UTC ISO
+   instant that round-trips) plus one behavioural fact that outlives any move: the window is closed at
+   the live clock.
+
+**Grandfathering cost nothing, and the measurement that says so is narrower than it looks.** The
+window's promise was that a Space subscribing during it keeps its rate for life, honoured by re-billing
+the locked Stripe price id on its subscription item. Measured in production on 2026-08-17, before the
+change: **0 rows in `space_subscription_items`, 0 profiles carrying a `stripe_customer_id`, 0
+`stripe_webhook_events` ever received.** No Stripe subscriber existed to lose a rate.
+
+🔴 **That is true of Stripe and false of the business.** `@ishasetlumi` paid **$490 in cash** for the
+annual Collective beta rate ($49 x 10, two months free) and her Space `templeofaset` carries
+`plan='collective'` granted directly in the database. She has no subscription item, so she has no lock,
+so there is nothing for `resolveLoadoutPriceId` to re-bill: she must not be billed until her paid year
+runs out (roughly 2027-07), and it renews at $490, not the $790 list annual. Both obligations live only
+in backlog row `OWN-022` and in this paragraph. The general lesson is worth more than the instance: an
+obligation settled outside the system is invisible to every gate inside it, and "0 subscriptions, so
+nobody holds a beta rate" was one cash payment away from being acted on.
+
+**Consequences.** Member-facing copy that offered the beta price is now false and was rewritten, not
+merely renumbered: the seeded `/pricing` CMS document (tier cards, footnote, two FAQ answers), the five
+funnel doors' cost answer, `/what-is-frequency`, the help centre's plans page, and the beta grace notice
+(`beta-notice.ts`), which renders off the SEPARATE `beta_grace` window and so kept inviting members to
+"hold the beta rate" after the rate was gone. The P4 launch email existed only to sell the pricing
+deadline; it keeps its slot and its date and is now about what actually happens on September 1, which is
+the feature-gate grace window ending ([ADR-874](DECISIONS.md)). Two decisions are deliberately NOT
+touched here and are the owner's to make: `beta_grace` still ends **2026-09-01** (selling and gating are
+separate dates, ADR-874), and `FOUNDING_DEFAULT.business_monthly_cents` is still **$19**, so a Founding
+Business minted by the beta founder push is still stamped with a lifetime rate that no longer
+corresponds to any purchasable price.

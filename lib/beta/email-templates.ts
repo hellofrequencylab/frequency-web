@@ -134,7 +134,7 @@ The Frequency team`,
   },
   {
     key: 'graduation',
-    // The pricing deadline this email was built on is gone (owner, 2026-08-17, ADR-1057: full price,
+    // The pricing deadline this email was built on is gone (owner, 2026-08-17, ADR-1060: full price,
     // two months free on the year). September 1 still ends the FEATURE-GATE grace window (ADR-874), so
     // the email keeps its slot and its date and is about that instead. Mirrors launch-emails.ts.
     label: 'Sept 1 graduation (full access ends)',

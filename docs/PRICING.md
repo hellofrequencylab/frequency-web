@@ -1,5 +1,32 @@
 # Pricing & entitlements
 
+> ## ✅ CURRENT (the ladder): the Opening Beta price is CLOSED, and yearly is the only discount (ADR-1060, 2026-08-17).
+>
+> Owner-ruled: *"scratch the beta pricing and just charge full price. They can get 2 months free for
+> purchasing the year."* This overrides every beta rate quoted anywhere below this banner.
+>
+> 1. **The charged ladder is the LIST ladder.** Member $0 · Crew pay-what-you-want (floor $4.99) ·
+>    Free Space · **Business $29** · **Collective $79** · Non Profit $39 · Independent $249 ·
+>    Vera AI add-on +$20. **Exactly two figures moved** (Business $19 → $29, Collective $49 → $79,
+>    annuals following at 10x: $190 → $290 and $490 → $790). Independent, Non Profit and the add-on
+>    already had `listCents == foundingCents`, so they did not move.
+> 2. **No struck anchor renders anywhere, and no "Beta rate" caption.** `effectiveCatalogAmounts` /
+>    `effectiveTierPrice` collapse the founding anchor into the list price once the window is past, so
+>    the strike and its caption stop rendering on their own. A crossed-out $29 beside a charged $29
+>    would be a false claim, and `pricing-grid.test.ts` sweeps every offering and every comparison cell
+>    for one.
+> 3. **The mechanism is ONE constant**, `BETA_PRICING_ENDS_AT` in `lib/pricing/beta.ts`, now a past
+>    instant. The checkout key switch and every pricing surface read the same answer, so display and
+>    billing cannot diverge. Re-opening the window is a one-line edit; no test pins the date.
+> 4. **Two months free on the year is unchanged** (`ANNUAL_MONTHS_FREE = 2`, `yearlyFromMonthly`). It
+>    was already the house rule; it is now the only discount, so the copy leads with it.
+> 5. **Not changed by this, and not to be assumed:** the FEATURE-GATE grace window (`beta_grace`) still
+>    ends **2026-09-01** (selling and gating are separate decisions, ADR-874), and
+>    `FOUNDING_DEFAULT.business_monthly_cents` is still **$19** for the Founding Business grant.
+> 6. **Grandfathering cost nothing in Stripe and is not nothing in fact.** 0 subscription items, 0
+>    Stripe customers, 0 webhook events on 2026-08-17 — and one member who paid **$490 in cash** for the
+>    annual Collective beta rate with no lock anywhere in the system (backlog `OWN-022`).
+
 > ## ✅ CURRENT (money model): selling is FREE on every tier; the RATE is the ladder (ADR-914, 2026-07-30).
 >
 > Owner-ruled. This overrides every rate and every seller rule stated anywhere below this banner.
@@ -73,8 +100,10 @@
 
 > ## ✅ The public ladder is SEVEN sellable tiers, and `/pricing` DERIVES them (ADR-1052, 2026-07-28).
 > **The ladder, all of it sellable:** Member $0 · **Crew $9** · **Free Space** · **Business $29 with a $19
-> beta rate** · **Collective $79 with a $49 beta rate** · **Non Profit $39** · **Independent $249**. The two
-> beta rates are grandfathered: a subscriber keeps the rate for as long as they keep the plan. Non Profit,
+> beta rate** · **Collective $79 with a $49 beta rate** · **Non Profit $39** · **Independent $249**. ⚠️ The
+> two beta rates are CLOSED (ADR-1060, the banner at the top): Business is $29 and Collective is $79.
+> While the window was open they were grandfathered: a subscriber keeps the rate for as long as they
+> keep the plan. Non Profit,
 > Independent, and the free tiers have ONE price and never render a struck anchor.
 >
 > **The anchor idiom (ADR-463) is now uniform across `pricing_settings`:** `monthly_cents` is what is
@@ -103,10 +132,12 @@
 > **The PUBLIC ladder (founder's ladder, ADR-878, updated 2026-07-30):** Member $0 · **Crew: pay what
 > you want**, floor $4.99/mo, $24.99 suggested, no list anchor (see "Crew is PWYW" below) ·
 > **Free Space** (the first level of
-> Space) · Business $29 ($19 Opening Beta) · Collective $79 ($49 Opening Beta) · Non Profit $39 flat ·
+> Space) · Business $29 (the $19 Opening Beta price is CLOSED, ADR-1060) · Collective $79 (same, the
+> $49 beta price is closed) · Non Profit $39 flat ·
 > the **Vera AI** add-on +$20 (catalog key `addon_ai`) · operator seats owner-priced. **Independent
 > (~$249) is NOT listed or sold** (`plan_independent_enabled` OFF; machinery dormant, grandfathered
-> spaces keep resolving). All founder-vocabulary surfaces read "Opening Beta price."
+> spaces keep resolving). ⚠️ "Opening Beta price" is RETIRED as a copy phrase (ADR-1060): no surface may
+> offer a beta rate, because the checkout no longer charges one.
 >
 > **Supporter is NOT on the ladder (ADR-878).** ADR-458 retired it as a tier (it became the
 > pay-what-you-want `profiles.is_supporter` badge); ADR-818 briefly sold it again at $12; ADR-878 removed

@@ -65,9 +65,9 @@ export function pricingCatalog(): Record<CatalogItemKey, ResolvedCatalogItem> {
  *  FAQ answers, persona pages, funnel beats) interpolates THESE instead of hardcoding "$29"/"$19"/...,
  *  so a catalog change reflows every sentence that quotes a price. PURE data. */
 export interface PriceStrings {
-  /** Business list, and since the beta window closed (ADR-1057) the price a Space is charged, e.g. "$29". */
+  /** Business list, and since the beta window closed (ADR-1060) the price a Space is charged, e.g. "$29". */
   businessList: string
-  /** 🔴 THE BETA ANCHOR, WHICH IS NO LONGER CHARGED (ADR-1057). Kept because the window is one editable
+  /** 🔴 THE BETA ANCHOR, WHICH IS NO LONGER CHARGED (ADR-1060). Kept because the window is one editable
    *  constant away from re-opening, but NO copy surface may quote it while `isBetaPricingActive()` is
    *  false: a sentence that offers "$19 at the Opening Beta price" is an offer the checkout refuses. */
   businessBeta: string
@@ -107,7 +107,7 @@ export const PLAN_STORY = {
   meters: 'Everything is included. Paid plans raise the limits.',
   /** The honest yearly framing. It used to carry the Opening Beta line ("beta rates hold through the
    *  Summer of Frequency"), which stopped being true when the owner closed the window on 2026-08-17
-   *  (ADR-1057). What replaces it is the deal that survived: the same price whenever you start, and two
+   *  (ADR-1060). What replaces it is the deal that survived: the same price whenever you start, and two
    *  months free on the year. */
   founding: 'Every plan is one price, the same whenever you start, and paying for the year is two months free.',
 } as const
@@ -354,7 +354,7 @@ export interface PersonaLoadout {
  *  Engine on (Business + Resonance = $29 + $20/mo at list); studios and event hosts run on Business
  *  ($29/mo); nonprofits run the flat Nonprofit plan ($39/mo). The monthly totals come from the catalog,
  *  never hardcoded, so a catalog change reflows every figure — the figures here moved on their own when
- *  the owner closed the beta window (ADR-1057) and the strip flipped to list. */
+ *  the owner closed the beta window (ADR-1060) and the strip flipped to list. */
 export const PERSONA_LOADOUTS: readonly PersonaLoadout[] = [
   { slug: 'coaches-and-healers', label: 'Coaches and healers', addons: ['ai'], note: 'Packages, scheduling, and a client CRM that suggests who to follow up with.' },
   { slug: 'studios', label: 'Studios', addons: [], note: 'Classes, memberships, and check-in at the door.' },

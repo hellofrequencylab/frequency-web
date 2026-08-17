@@ -286,7 +286,7 @@ const REFERRAL_CONTEST: BetaLaunchEmail = {
 // ── 7. Sept 1 graduation, full access ends (P4) ───────────────────────────────────────────────────────────
 // 🔴 THIS EMAIL USED TO SELL A DEADLINE THAT NO LONGER EXISTS. It was "Opening Beta pricing closes
 // September 1", built entirely on the beta price expiring. The owner closed that window early on
-// 2026-08-17 (ADR-1057: full price, and two months free on the year instead), so every sentence of the
+// 2026-08-17 (ADR-1060: full price, and two months free on the year instead), so every sentence of the
 // old draft was an offer the checkout would refuse. What IS still true about September 1 is the OTHER
 // beta window, the feature-gate grace period (`beta_grace`, ADR-874): every Space has had full access to
 // every tool and on September 1 each plan starts doing what it says. So the email keeps its slot and its

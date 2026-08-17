@@ -92,8 +92,12 @@ dismissal contract. See the commits on `claude/frequency-design-theming-lfz5sv`.
 > nothing can consume gets worked around, not obeyed.
 > **Still open in this phase:** `white-black-literals` is **27**, not 266. ⏳ Re-measured
 > 2026-08-11 via `node scripts/check-adoption.mjs` (`✅ held`, frozen 2026-08-06 `lowered`).
-> The 266 figure was the 2026-08-05 census and predates the four-territory sweep. Two of the
-> remaining 27 are the `app/print/qr/*` carve-out named in §1 and are the floor by design.
+> The 266 figure was the 2026-08-05 census and predates the four-territory sweep.
+> **Superseded 2026-08-17 (PROG-DAWN9): the class is 0, not 27.** This line used to say two of the
+> 27 were the `app/print/qr/*` carve-out and were the floor by design. Re-derived, **all 27** carried
+> a `KEEP <utility>: <reason>` comment, so the floor was 27 and none of it was retirable. The entry
+> now declares an `escape`, a written carve-out no longer counts, and the floor is 0 — see the
+> Phase 9 queue.
 
 Not drift. These are sites where switching skin, generation or mode **does nothing**, so the
 product is visibly wrong on any look but the default.
@@ -101,7 +105,7 @@ product is visibly wrong on any look but the default.
 | Item | Count | Size | Note |
 | :--- | ---: | :---: | :--- |
 | `lib/gamification.ts` `TIER_CONFIG` / `DIFFICULTY_CONFIG` | 48 | S | raw Tailwind palette classes in ONE exported file; propagates to every achievement, badge and leaderboard surface. The whole `raw-palette` ratchet |
-| `white-black-literals` | ~~266~~ → **27** | ~~M~~ **S** | hardcoded monochromes; the ratchet's own description calls this the only *bug* class in the census. **Was 266 (2026-08-05 census); live is 27** per `node scripts/check-adoption.mjs`, frozen 2026-08-06 `lowered`. 2 of the 27 are the `app/print/qr/*` carve-out and cannot go |
+| `white-black-literals` | ~~266~~ → **27** | ~~M~~ **S** | hardcoded monochromes; the ratchet's own description calls this the only *bug* class in the census. **Was 266 (2026-08-05 census), then 27; live is 0** per `node scripts/check-adoption.mjs`, re-frozen 2026-08-17 `rebased`. All 27 of the 2026-08-06 remainder were written carve-outs carrying `KEEP <utility>: <reason>`, not 2 of them |
 
 > **Correction (2026-08-05).** An earlier revision of this doc, and the session handoff it came
 > from, listed `--radius-cover` here as a phantom token that "compiles to nothing." **That is
@@ -532,14 +536,26 @@ or display that does not compile `app/globals.css` is asserting about a string, 
 | ⏳ First member-shell baselines | S | ~~"The four shell surfaces have **never had a PNG**."~~ **They have. 12 shell PNGs are committed**: `ls test/e2e/__screenshots__/visual.spec.ts/ \| grep -cE '^app-'` → `12`, namely `app-feed`, `app-settings` and `app-space-console`, each × light/dark × desktop/mobile. Captured across #2049 (the first shell capture) and #2077 (the Space console). **What is genuinely still owed is narrower than this row, and in two named pieces:** (1) `app-room` has **no** baseline. #2064 deleted all four because `PW_ROOM_PATH` defaulted to the protected `/channels`, the visit bounced, and the PNGs were pixel-for-pixel the marketing home page; point `PW_ROOM_PATH` at a room the beta account is actually in. (2) **No shell a11y baseline exists at all.** `test/e2e/a11y-baselines.json` holds 40 surface entries and **not one** is an `app-*` key, so `/feed` and `/settings` are held to `$defaultMax: 0` against debt that predates the gate. `e2e-manual.yml` → `capture_shell` + `update_a11y` |
 | ✅ `PW_REQUIRE_SHELL=1` | XS | **Done 2026-08-06.** The ratchet: before the credential a zero-app-surface run announces, after it the same run fails, so an expiring credential cannot silently re-open the blind spot. Now read as `vars.PW_REQUIRE_SHELL \|\| secrets.PW_REQUIRE_SHELL` — it belongs in Variables, but a ratchet that stays silently off because it was typed into the Secrets tab is the exact failure it exists to prevent, so it does not depend on aim. 🔴 One consequence worth knowing: a **one-character secret** makes GitHub redact that character everywhere in the run log — with `1` as a secret, every height, test count and line number came back as `***`. Keep it in Variables |
 | `pr-compare` required | XS | Approved (ADR-948) — but **strictly after** the rows above. Required-and-blind is worse than advisory-and-blind: it turns a known gap into a merge gate asserting the shell is fine |
-| 🔴 `raw-input` counts controls no primitive can receive | XS | Found independently by **two** sweep agents, which is what makes it worth a row. The lookahead is `(?!(?:[^>]\|=>)*?type=["']hidden)` — it excludes `type="hidden"` and nothing else. But ~18 sites are `<input type="file">` held behind `className="hidden"` or `sr-only` and fired by a sibling button. They are not fields, they have no chrome, and routing them through a text-field primitive is cosmetic misuse — so they are **permanently un-retirable debt inside a ratchet**, which is the same "puts zero out of reach" reasoning the existing lookahead was written for. Fix is a second lookahead for `type="file"` co-occurring with `hidden`/`sr-only`; write it order-independently, since `className` may precede `type` |
-| 🔴 `white-black-literals` floor is permanently 2 | XS | It excludes `lib/og/**` and the OG/Twitter image routes but **not** `app/print/**`, even though §1 of this doc names `app/print/qr/*` as a carve-out and both sites carry a `// KEEP bg-white` comment explaining that a QR scanner needs true white, not a themed surface. So the class can never reach zero and the last two sites will read as debt forever. Either exclude `app/print/**` or state in the entry that 2 is the floor by design |
+| ✅ `raw-input` counts controls no primitive can receive | XS | **Done 2026-08-17 (PROG-DAWN9), 119 → 87, and the row it replaces under-counted the population by half.** The lookahead was `(?!(?:[^>]|=>)*?type=["']hidden)` — `type="hidden"` and nothing else. The queue said "~18" `type="file"` triggers; a **TypeScript-AST census of the entry own scope says 37**, and **0 of the 37 are visible** — every one is held behind `hidden`/`sr-only` and fired by a sibling button, so no text-field primitive can receive it. Fixed with a second, **order-independent** lookahead (a nested lookahead over the same span, not a sequence, because `className` may precede `type`), covering the bare `hidden` attribute as well as the class. **A VISIBLE `<input type="file">` still counts** — the carve-out exempts the trigger shape, not the element. It only lands because of the corpus row below: on the old corpus the new lookahead reached **15 of 37**, since the `accept` glob had already blanked the `className` that proves concealment |
+| ✅ `white-black-literals` floor is permanently ~~2~~ **27** | XS | **Done 2026-08-17 (PROG-DAWN9), 27 → 0, and the row it replaces understated the floor by 25.** Re-derived: **all 27** remaining sites carry a `KEEP <utility>: <reason>` comment — QR quiet zones a scanner needs true white for, video letterboxes, an email preview frame, a tick on an operator own hex — so **not one was retirable** and the floor was 27, of which `app/print/**` is only 2. The sharper consequence is not the unreachable floor: **a total cannot tell a carve-out from new debt, so the two were fungible in it.** Retire one annotated site, add one bare `bg-white`, and the gate read **27 → 27, ✅ held, green** — over the class its own description calls "the only bug class in the census". Fixed by **measuring the consequence instead of widening the allowance**: the entry declares an `escape`, and a match whose own line or attached comment block states `KEEP <utility>: <reason>` does not count. Floor **0**, so the next unjustified monochrome fails CI; `app/print/**` needs no exclusion glob because both its sites already carry their reason. An `exclude` would have settled 2 of 27 and blinded the gate to every future literal under that directory |
+| ✅ **The corpus itself: `stripComments` treated a string as code** | S | **Found underneath the two rows above, 2026-08-17 (PROG-DAWN9), and it is why the first one was 40% inert.** `stripComments` blanked block comments with a regex, and a regex cannot tell a comment opener from two characters inside a string. A file input `accept` glob ends with a slash next to a star, so **every one of the 37 file inputs opened a comment that ran to the next close-comment token anywhere in the file** — usually a later JSDoc. Measured over `{app,components,lib}`: **101 files, 121,627 characters of real markup blanked**, hiding **23 debt sites across six classes** (literal-radius −11, raw-input −5, raw-px-arbitrary −3, raw-textarea −2, raw-select −1, shadow-literals −1). A **false FALL** — the one direction a ratchet must never be wrong in, and the direction the `//` half of the same function was hand-guarded against. `literal-radius` therefore read **2,281 against a 2,287 floor and printed a green shrink while its true count was 2,292**. `CORPUS_BASIS` → `strip-comments@2`; the scan tracks string and template literals, stays length-preserving, and is asserted to be **strictly un-blanking versus @1**, so the correction can only reveal debt and never hide it. All 17 baselines re-frozen per key, each reason decomposing instrument delta from in-flight worktree movement |
 
-**Why these two are recorded rather than fixed on the spot.** Both were found while four sweep agents
-were live. Editing a ratchet moves every count under an agent that is measuring against it, which is
-exactly how three commit messages on this branch ended up citing a `literal-radius` floor that was
-already stale when written. An instrument correction is a change to the *question*, so it lands on a
-settled tree with its own re-freeze and its own reason — never interleaved with the sweeps it grades.
+**Why these two were recorded rather than fixed on the spot, and what landing them cost.** Both were
+found while four sweep agents were live. Editing a ratchet moves every count under an agent that is
+measuring against it, which is exactly how three commit messages on this branch ended up citing a
+`literal-radius` floor that was already stale when written. An instrument correction is a change to
+the *question*, so it lands with its own re-freeze and its own reason — never interleaved with the
+sweeps it grades.
+
+> **The tree was still not settled when they landed (2026-08-17), so the re-freeze says so per key.**
+> Fourteen tracked files and seven untracked ones were dirty from other agents. Every baseline was
+> therefore measured **three ways** — committed tree under the old corpus, committed tree under the
+> new one, and the working tree — so each `frozen.reason` can state how much of its delta is the
+> instrument and how much is somebody else's sweep. Sixteen of the seventeen carry **zero** in-flight
+> movement; `literal-radius` is the one that does not (+11 instrument, −3 in flight, net 2287 → 2292)
+> and its reason names both halves. A rebase that cannot separate those two numbers is the thing this
+> paragraph was warning about; publishing the decomposition is what makes it re-checkable rather than
+> trusted.
 
 **Sequencing note.** Every sweep after this point is measured by these instruments. Fixing them
 first is not overhead — a sweep verified by a gate that cannot see its subject produces a number,

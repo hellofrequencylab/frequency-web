@@ -1368,8 +1368,8 @@
     },
     {
       "id": "PROG-DAWN9",
-      "title": "DAWN Phase 9: fix the two instrument defects",
-      "status": "open",
+      "title": "Three instrument defects, and the third was blanking 121,627 characters of real markup",
+      "status": "done",
       "lane": "hygiene",
       "size": "S",
       "source": {
@@ -1378,10 +1378,10 @@
       },
       "detail": "Found independently by two agents, which is what makes them findings rather than opinions. raw-input's lookahead excludes only type=\"hidden\", so ~18 type=\"file\" triggers behind hidden/sr-only are PERMANENTLY un-retirable debt inside a ratchet. And white-black-literals does not exclude app/print/**, though DAWN-CONVERSION §1 names it a carve-out, so its floor is permanently 2. Both mean a ratchet can never reach its true floor. Unscheduled, and it should not be.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Editing a ratchet moves every count under an agent measuring against it, so this lands on a settled tree with its own re-freeze.",
-        "checked": "2026-08-17"
-      }
+        "kind": "cmd",
+        "cmd": "node scripts/prog-dawn9-probe.mjs"
+      },
+      "notes": "Closed 2026-08-17. The row named two defects and got both counts wrong; the third and worst was not in the row at all. (1) raw-input's lookahead: 37 concealed file triggers, not ~18, and 0 of the 37 are visible. (2) white-black-literals: the floor was permanently 27, not 2, and the sharper defect the row missed is that A TOTAL CANNOT TELL A CARVE-OUT FROM NEW DEBT — retire one annotated site, add one bare bg-white, and it reads 27 -> 27 '✅ held'. Now 0 with a per-site KEEP <utility>: <reason> escape, so the decisive case FAILS. (3) THE ONE NOBODY KNEW: stripComments treated a string literal as code, so a file input's accept glob ending slash-star opened a block comment that ran to the next close token — 121,627 characters of real markup blanked across 101 files, hiding 23 debt sites in 6 classes. A FALSE FALL: literal-radius read 2,281 against a 2,287 floor and printed '✅ shrank' while the true count was 2,292, a RISE. It also made fix (1) 40% inert, because the glob had already blanked the className that proves concealment. Five floors moved UP as a result — none is new design debt, all are sites the corpus was hiding, each recorded `rebased` and flagged on every run. Tests assert @2 is strictly un-blanking versus @1, so the corpus change can only reveal debt, never hide it."
     },
     {
       "id": "PROG-PRAC4",

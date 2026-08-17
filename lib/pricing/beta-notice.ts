@@ -12,7 +12,7 @@
 //     "Memberships start September 1. Everything stays open until then."
 //     "Take the yearly plan before September 1 to add the Founding Business badge to your Space."
 //
-// THE INVITE NO LONGER MENTIONS A BETA RATE (ADR-1057). It used to read "to hold the beta rate and
+// THE INVITE NO LONGER MENTIONS A BETA RATE (ADR-1060). It used to read "to hold the beta rate and
 // add the badge", which was true only while the beta pricing window was open. The owner closed that
 // window on 2026-08-17 ("scratch the beta pricing and just charge full price"), and this notice keys
 // off the SEPARATE feature-gate grace window (`beta_grace`, still ending September 1), so it kept
@@ -142,7 +142,7 @@ export interface BetaNotice {
   /** When memberships start, and that nothing changes before then. */
   body: string
   /** The invitation: back the year early, earn the Founding badge. (No rate claim: the beta pricing
-   *  window is closed, ADR-1057.) */
+   *  window is closed, ADR-1060.) */
   invite: string
   cta: string
   href: string
@@ -169,7 +169,7 @@ export function betaStartLabel(endsAtMs: number | null | undefined): string | nu
  *  THE INVITE NAMES THE YEARLY PLAN, not "subscribe" (ADR-880). The badge is earned by backing the
  *  year, early, with money that actually moved: a monthly subscriber does not become a founder, and a
  *  trial that never charges earns nothing. The copy has to say the same thing the code grants on, and
- *  since ADR-1057 it says nothing about a rate, because there is no longer a beta rate to hold. */
+ *  since ADR-1060 it says nothing about a rate, because there is no longer a beta rate to hold. */
 export function betaNoticeCopy(
   target: BetaNoticeTarget,
   graceEndsAtMs: number | null | undefined,

@@ -27,7 +27,7 @@ function hasEmDash(s: string): boolean {
 }
 
 describe('loadout-strip math (computed from the catalog, never hardcoded)', () => {
-  // ADR-811 + ADR-1057: the paid base is Business, and Vera AI (+$20/mo) is the only add-on. The beta
+  // ADR-811 + ADR-1060: the paid base is Business, and Vera AI (+$20/mo) is the only add-on. The beta
   // window is CLOSED (owner, 2026-08-17: full price), so the base headlines at its $29 LIST price, which
   // is the price the checkout now takes. Coaches/healers and community builders turn the add-on on
   // ($29 + $20 = $49); studios and event hosts run on Business alone ($29). The add-on never carried a

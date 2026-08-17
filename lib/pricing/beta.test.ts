@@ -4,7 +4,7 @@ import { BETA_PRICING_ENDS_AT, isBetaPricingActive, effectiveCatalogAmounts } fr
 // Beta pricing window (ADR-811): the $19 Business / $49 Collective anchors auto-revert to list on the
 // cutover. These are the PURE helpers behind that; the checkout key switch + the display are wired on top.
 //
-// THE CONSTANT IS OWNER-EDITABLE, SO NOTHING HERE PINS ITS VALUE (ADR-1057). This file used to assert
+// THE CONSTANT IS OWNER-EDITABLE, SO NOTHING HERE PINS ITS VALUE (ADR-1060). This file used to assert
 // `BETA_PRICING_ENDS_AT === '2026-09-01T07:00:00.000Z'` and to probe the window with hand-typed August
 // dates. When the owner closed the window early on 2026-08-17 ("scratch the beta pricing and just charge
 // full price"), both broke on a date rather than on a behaviour, and the fix would have been to re-type

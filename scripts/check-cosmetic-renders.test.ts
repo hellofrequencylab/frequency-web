@@ -13,7 +13,6 @@ import {
   integrityProblems,
   classify,
   report,
-  // @ts-expect-error — pure-node guard, no types (repo pattern: scripts/check-stored-blocks.mjs).
 } from './check-cosmetic-renders.mjs'
 import {
   BORDER_RENDERS,
@@ -56,6 +55,9 @@ describe('check:cosmetic-renders — the parser agrees with the live registry', 
   })
 
   it('extracts exactly the border, flair and bridged vocabularies the module exports', () => {
+    // Narrowed here rather than asserted per line: the sibling test above proves it parses, and a
+    // non-null assertion on each line would hide a genuine null behind four separate `!`s.
+    if (parsed === null) throw new Error('the registry did not parse — see the sibling test')
     expect([...parsed.borders].sort()).toEqual([...live.borders].sort())
     expect([...parsed.flairs].sort()).toEqual([...live.flairs].sort())
     expect([...parsed.bridged].sort()).toEqual([...live.bridged].sort())

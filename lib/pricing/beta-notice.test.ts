@@ -201,7 +201,7 @@ describe('betaNoticeCopy (what a member actually reads)', () => {
     )
   })
 
-  it('promises no beta rate, because there is not one to hold (ADR-1057)', () => {
+  it('promises no beta rate, because there is not one to hold (ADR-1060)', () => {
     // The grace window (September 1) and the PRICING window are separate decisions on separate dates,
     // and the owner closed the pricing one early on 2026-08-17. This notice renders off the grace
     // window, so while it kept saying "hold the beta rate" it was offering a price the checkout had

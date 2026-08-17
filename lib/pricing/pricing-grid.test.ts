@@ -173,7 +173,7 @@ describe('offerings: every sellable tier is on the page', () => {
 
 // ── The beta anchors, shown honestly and only where the config carries one ──────────────────────────
 //
-// THE WINDOW IS CLOSED (owner, 2026-08-17, ADR-1057): full price, no beta rate. So the state this page
+// THE WINDOW IS CLOSED (owner, 2026-08-17, ADR-1060): full price, no beta rate. So the state this page
 // is actually IN is the closed one, and it is asserted first and hardest — including that the strike and
 // its caption are GONE. The ADR-463 idiom itself is still live code (the window is one editable constant
 // and the checkout still switches keys on it), so its open-window arm is kept alive by passing an

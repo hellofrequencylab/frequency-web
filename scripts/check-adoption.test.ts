@@ -9,6 +9,8 @@ import {
   auditProvenance,
   mergeBaselines,
   loadConfig,
+  countEntry,
+  stripComments,
 } from './check-adoption.mjs'
 
 // Locks the adoption-debt RATCHET harness (Lift 2a, docs/UX-MATURITY-PLAN.md). countEntry/evaluate are
@@ -460,5 +462,192 @@ describe('check-adoption — the corrected patterns measure what they name', () 
     for (const s of ['text-primary', 'bg-surface', 'border-border-strong', 'text-on-primary']) {
       expect(s.match(re), `${s} is a semantic role`).toBeNull()
     }
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════════════════════════════════════
+// PHASE 9 — the two instrument defects (docs/DAWN-CONVERSION.md §4 queue), plus the corpus defect
+// underneath them that made the first fix 40% inert. Landed 2026-08-17 (PROG-DAWN9).
+// ═══════════════════════════════════════════════════════════════════════════════════════════════
+
+describe('check-adoption — stripComments: a string literal is not code (strip-comments@2)', () => {
+  // 🔴 THE BUG. `stripComments` blanked block comments with a regex, and a regex cannot tell a
+  // comment opener from two characters inside a string. Every file input in the repo carries an
+  // `accept` glob whose last two characters are a slash and a star, which opened a comment that ran
+  // to the next close-comment token anywhere in the file. Measured over {app,components,lib}: 101
+  // files, 121,627 characters of REAL markup blanked, hiding 23 debt sites across six classes — so
+  // literal-radius printed "✅ shrank" (2,281 against a 2,287 floor) while its true count was 2,292.
+  //
+  // The @1 blanker, kept verbatim, so the fix is asserted against the thing it replaced rather than
+  // against a description of it.
+  const strip1 = (text: string) => {
+    const blank = (m: string) => m.replace(/[^\n]/g, ' ')
+    return text
+      .replace(/\/\*[\s\S]*?\*\//g, blank)
+      .replace(/(^|\n)([ \t]*\/\/[^\n]*)/g, (_m, lead: string, body: string) => lead + blank(body))
+  }
+
+  const fileInput = [
+    '<input type="file" accept="image/*" className="hidden rounded-lg" />',
+    'const x = 1',
+    '/** a JSDoc block, whose closing token is what the pseudo-comment ran to. */',
+    '<div className="rounded-lg" />',
+  ].join('\n')
+
+  it('does NOT treat an accept glob inside a string as a comment opener', () => {
+    // @1 swallowed everything from the glob to the end of the JSDoc: the input's own className, the
+    // statement below it, and the rounded-lg two lines down all left the corpus.
+    expect(strip1(fileInput)).not.toContain('const x = 1')
+    expect((strip1(fileInput).match(/rounded-lg/g) ?? []).length).toBe(1)
+    // @2 keeps every one of them.
+    expect(stripComments(fileInput)).toContain('const x = 1')
+    expect((stripComments(fileInput).match(/rounded-lg/g) ?? []).length).toBe(2)
+  })
+
+  it('still blanks the comments it was written to blank', () => {
+    expect(stripComments('/* shadow-lg */').trim()).toBe('')
+    expect(stripComments('  // shadow-lg, quoted in prose').trim()).toBe('')
+    expect(stripComments('{/* KEEP bg-white: a scanner needs true white. */}').replace(/[{}\s]/g, '')).toBe('')
+    // …and still does NOT blank a trailing `//`, because the `//` in an https:// URL would take a
+    // real class down with it — a false FALL, the direction a ratchet must never be wrong in.
+    expect(stripComments('<a className="rounded-lg" /> // see https://x.dev')).toContain('rounded-lg')
+  })
+
+  it('is LENGTH-PRESERVING, which is what lets a match map back onto its source line', () => {
+    for (const s of [fileInput, '/* a */ b', '  // c\nd', '`tpl ${/* x */ y}`']) {
+      expect(stripComments(s)).toHaveLength(s.length)
+      expect(stripComments(s).split('\n')).toHaveLength(s.split('\n').length)
+    }
+  })
+
+  it('can only ever UN-blank relative to @1, so the correction cannot hide debt', () => {
+    // The safety property, asserted rather than asserted-about: every character @2 blanks, @1 blanked
+    // too. A corpus change able to blank MORE could book a phantom sweep.
+    for (const s of [fileInput, 'a/*b*/c', "x = 'a/*b' + c\n/* real */", '`t/*u`\n// v', 'p // q']) {
+      const a = strip1(s)
+      const b = stripComments(s)
+      for (let i = 0; i < s.length; i++) {
+        if (b[i] === ' ' && s[i] !== ' ') {
+          expect(a[i], `@2 blanked char ${i} of ${JSON.stringify(s)} that @1 kept`).toBe(' ')
+        }
+      }
+    }
+  })
+
+  it('an unterminated quote in JSX prose stops at the newline (bounded, and in the safe direction)', () => {
+    const src = '<p>don\'t</p>\n/* shadow-lg */\n<div className="rounded-lg" />'
+    expect(stripComments(src)).toContain('rounded-lg')
+    expect(stripComments(src)).not.toContain('shadow-lg')
+  })
+})
+
+describe('check-adoption — `escape`: a carve-out is a written reason, not a wider glob', () => {
+  // 🔴 THE BUG (Phase 9 queue, second item). `white-black-literals` read 27 and had read 27 since
+  // 2026-08-06. All 27 carried a `KEEP <util>: <reason>` comment — QR quiet zones, video letterboxes,
+  // an email preview frame — so not one was retirable and the floor was 27. The queue recorded the
+  // floor as 2 (the `app/print/**` pair). Both numbers are the same defect: a total cannot tell a
+  // justified carve-out from new debt, so the two are FUNGIBLE in it. Retire one annotated site, add
+  // one bare `bg-white`, and the gate reads 27 → 27, "✅ held", green.
+  const mono = {
+    key: 'white-black-literals',
+    description: 'hardcoded monochromes',
+    mode: 'matches',
+    patterns: ['(?:-white\\b|white/\\d+|(?<!font)-black\\b)'],
+    escape: { pattern: 'KEEP\\s+[\\w/-]+:\\s*\\S' },
+    include: ['{app,components}/**/*.tsx'],
+    exclude: [],
+    baseline: 0,
+  }
+  const count = (text: string) => countEntry(mono, [{ path: 'app/a.tsx', text: stripComments(text), source: text }]).count
+
+  it('counts a bare monochrome and NOT one that carries a stated reason', () => {
+    expect(count('<div className="bg-white" />')).toBe(1)
+    expect(count('// KEEP bg-white: a QR reader needs a true-white quiet zone.\n<div className="bg-white" />')).toBe(0)
+  })
+
+  it('reaches an annotation across a `return (` and through a multi-line JSX comment', () => {
+    // Both shapes are live in the repo, and a fixed three-line window mis-read both of them.
+    expect(count(['// KEEP bg-white: these sheets are printed.', 'return (', '  <div className="bg-white" />'].join('\n'))).toBe(0)
+    expect(
+      count(
+        [
+          '{/* KEEP text-white: the tick sits on the operator’s own chosen hex, which is a',
+          '    literal colour and not a themed surface, so no token resolves against it. */}',
+          '{active && <Check className="text-white" />}',
+        ].join('\n'),
+      ),
+    ).toBe(0)
+  })
+
+  it('does NOT let one annotation cover two literals — the second site counts', () => {
+    // The hole an exclude glob has and this does not: a carve-out exempts the site it was written
+    // about, and the next one has to say its own piece.
+    const two = [
+      '// KEEP bg-white: a QR reader needs a true-white quiet zone.',
+      '<div className="bg-white" />',
+      '<div className="bg-white" />',
+    ].join('\n')
+    expect(count(two)).toBe(1)
+  })
+
+  it('does NOT reach across a blank line, so an annotation cannot drift onto later code', () => {
+    expect(count(['// KEEP bg-white: a QR reader needs a true-white quiet zone.', '', '<div className="bg-white" />'].join('\n'))).toBe(1)
+  })
+
+  it('demands a utility AND a reason — a bare shrug does not buy an exemption', () => {
+    expect(count('// KEEP\n<div className="bg-white" />')).toBe(1)
+    expect(count('// KEEP bg-white:\n<div className="bg-white" />')).toBe(1)
+    expect(count('// keep it white\n<div className="bg-white" />')).toBe(1)
+  })
+
+  it('is part of the measurement BASIS, so loosening it cannot pass as the same question', () => {
+    expect(basisFingerprint(mono)).not.toEqual(basisFingerprint({ ...mono, escape: { pattern: 'KEEP' } }))
+    expect(basisFingerprint(mono)).not.toEqual(basisFingerprint({ ...mono, escape: undefined }))
+  })
+
+  it('REFUSES to be declared in files mode rather than silently ignoring it', () => {
+    // A declared-but-unhonoured escape would read as annotation-aware while counting everything —
+    // the exact shape of the defect it was added to fix.
+    expect(() =>
+      countEntry({ ...mono, mode: 'files' }, [{ path: 'app/a.tsx', text: 'bg-white', source: 'bg-white' }]),
+    ).toThrow(/cannot be honoured in mode "files"/)
+  })
+})
+
+describe('check-adoption — raw-input: a concealed file trigger is not a field', () => {
+  // 🔴 THE BUG (Phase 9 queue, first item). The lookahead excluded `type="hidden"` and nothing else,
+  // so `<input type="file">` triggers — held behind `hidden` or `sr-only` and fired by a sibling
+  // button — counted as un-adopted fields. No text-field primitive can receive them, so they were
+  // permanently un-retirable debt INSIDE a ratchet, for exactly the reason `type="hidden"` was
+  // excluded in the first place. The queue said "~18"; a TypeScript-AST census of the entry's own
+  // scope says 37, and 0 of the 37 are visible.
+  const config = loadConfig()
+  const re = () => new RegExp(config.entries.find((e: { key: string }) => e.key === 'raw-input')!.patterns[0], 'g')
+  const n = (s: string) => (s.match(re()) ?? []).length
+
+  it('does not count a file trigger held behind hidden or sr-only, in EITHER attribute order', () => {
+    expect(n('<input ref={r} type="file" accept="image/*" className="hidden" onChange={(e) => go(e)} />')).toBe(0)
+    expect(n('<input type="file" accept={DOC_TYPES} className="sr-only" />')).toBe(0)
+    // className may precede type — which is why this is a nested lookahead and not a sequence.
+    expect(n('<input className="hidden" type="file" />')).toBe(0)
+    expect(n('<input className="sr-only" ref={r} type="file" multiple />')).toBe(0)
+    // …and the bare boolean attribute, which is how one call site spells it.
+    expect(n('<input ref={r} type="file" accept="image/*" hidden disabled={busy} />')).toBe(0)
+  })
+
+  it('STILL counts a VISIBLE file input, which is a control a primitive could own', () => {
+    // The non-vacuity of the carve-out: it exempts the trigger SHAPE, not the element. A styled,
+    // on-screen file field is debt exactly like any other raw control.
+    expect(n('<input type="file" className="w-full rounded-control border" />')).toBe(1)
+    expect(n('<input type="file" />')).toBe(1)
+    // `aria-hidden` is not `hidden`; the lookbehind is what keeps it out.
+    expect(n('<input type="file" aria-hidden />')).toBe(1)
+  })
+
+  it('does not let a concealment class on a DIFFERENT element excuse a real control', () => {
+    expect(n('<input type="text" name="q" />\n<span className="hidden" />')).toBe(1)
+    expect(n('<input name="q" />\n<input type="file" className="hidden" />')).toBe(1)
+    // The type="hidden" carve-out is untouched.
+    expect(n('<input type="hidden" name="csrf" />')).toBe(0)
   })
 })
