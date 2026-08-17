@@ -2764,7 +2764,7 @@ export async function logPractice(input: {
     if (spark.sparked && spark.amount > 0) {
       const base = journey ?? { bonuses: [], zaps: 0, gems: 0 }
       journey = {
-        bonuses: [...base.bonuses, { label: `A Spark. Plus ${spark.amount} gems.`, kind: 'gems', amount: spark.amount }],
+        bonuses: [...base.bonuses, { label: `A Spark. Plus ${spark.amount} Gems.`, kind: 'gems', amount: spark.amount }],
         zaps: base.zaps,
         gems: base.gems + spark.amount,
       }

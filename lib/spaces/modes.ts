@@ -191,8 +191,8 @@ const COACHING_COHORT: ModeProfile = {
   type: 'business',
   variant: 'cohort',
   modeLabel: 'Coach',
-  focusLabel: 'Programs and cohorts',
-  tagline: 'Run a curriculum and enroll cohorts into your programs.',
+  focusLabel: 'Programs and enrollment',
+  tagline: 'Run a curriculum and enroll people into your programs.',
   navEmphasis: ['crm', 'members', 'email', 'qr'],
   defaultToggles: ['members', 'qr'],
   pipeline: [
@@ -207,7 +207,7 @@ const COACHING_COHORT: ModeProfile = {
   recommendedAddons: ['ai', 'marketing'],
   nextBestActions: [
     { label: 'Open enrollment', surface: 'space.crm' },
-    { label: 'Welcome your cohort', surface: 'space.comms' },
+    { label: 'Welcome your students', surface: 'space.comms' },
   ],
 }
 

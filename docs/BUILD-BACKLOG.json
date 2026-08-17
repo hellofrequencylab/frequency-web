@@ -397,7 +397,7 @@
     {
       "id": "LIVE-002",
       "title": "Lift 8b: a loading prop on IconButton, matching Button's",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
@@ -406,12 +406,10 @@
       },
       "detail": "Icon-only controls are exactly the ones where a tap leaves no other evidence it landed.",
       "verify": {
-        "kind": "grep-present",
-        "pattern": "loading",
-        "paths": [
-          "components/ui/icon-button.tsx"
-        ]
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='components/ui/icon-button.tsx',T='components/ui/icon-button.test.tsx';if(!fs.existsSync(S)||!fs.existsSync(T))process.exit(79);const src=fs.readFileSync(S,'utf8'),test=fs.readFileSync(T,'utf8');const cut=src.indexOf('export function IconLink');if(cut<0)process.exit(79);const B=src.slice(0,cut),L=src.slice(cut);function a(s,k){let i=0;while((i=s.indexOf(k+'={',i))>=0){const aria=s.slice(Math.max(0,i-5),i).endsWith('aria-');const e=s.indexOf('}',i);if(e>0&&s.slice(i,e).includes('loading')&&(k.indexOf('aria-')===0||!aria))return true;i+=k.length}return false}const bad=[];if(!a(B,'disabled'))bad.push('IconButton does not disable while loading; a second tap re-fires the action');if(!a(B,'aria-busy'))bad.push('IconButton does not set aria-busy while loading');if(!a(L,'aria-disabled'))bad.push('IconLink does not set aria-disabled while loading');if(!a(L,'aria-busy'))bad.push('IconLink does not set aria-busy while loading');if(!test.includes('does not fire the handler again'))bad.push('the double-fire assertion is gone from '+T);if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
+      },
+      "notes": "Closed 2026-08-17. The probe that flagged this row as stale was `grep-present /loading/` in the component, which passes because the WORD appears anywhere in the file, including in a comment describing the prop it is supposed to be proving. Replaced with the consequence: IconButton must disable while loading (so a second tap cannot re-fire the action) and set aria-busy; IconLink must use the aria pair INSTEAD of the real `disabled`, because a real disabled drops it out of the tab order mid-navigation; and the double-fire assertion must still exist in the test file. ONE TRAP WORTH RECORDING: both controls live in one file and the string 'aria-disabled=' CONTAINS 'disabled=', so an unscoped regex let each component satisfy the other's check. Two of four deliberate breaks passed before that was caught, which is exactly why a probe is not trusted until it has been seen to fail. It now splits the file at IconLink and judges each half alone; all four breaks fire. A SECOND trap cost another round: the first scoped version used a regex, and this string travels JSON -> shell -> `node -e`, where a lone backslash does not survive intact - \"\\\\b\" arrived as a literal BACKSPACE, so every check silently matched nothing and the row read as regressed. The probe is now backslash-free, scanning with indexOf instead of RegExp, and was re-proved through the guard's own shell rather than only standalone."
     },
     {
       "id": "LIVE-003",
@@ -684,7 +682,7 @@
     {
       "id": "LIVE-018",
       "title": "Widen check:canon past content/ to member-facing strings in app/ and lib/",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "M",
       "source": {
@@ -693,12 +691,10 @@
       },
       "detail": "EVERY canon break the 2026-07-27 scan found was outside check:canon's current scope: Dispatches called 'broadcasts' in three visible strings, the console labelled 'Broadcasts' in the rail and 'Dispatches' in the sub-header, eight search destinations still labelled 'Marketplace', two surfaces selling 'cohorts' (the one word the canon bans), and lowercase 'zaps'/'gems earned' on stat pills. Widening the gate retires the whole class rather than the five instances.",
       "verify": {
-        "kind": "grep-present",
-        "pattern": "'app'|\"app\"",
-        "paths": [
-          "scripts/check-canon.mjs"
-        ]
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const{pathToFileURL}=require('url'),{join}=require('path');import(pathToFileURL(join(process.cwd(),'scripts/check-canon.mjs')).href).then(m=>{if(!m||!m.scanCodeSeam||!Array.isArray(m.SEAM_ROOTS))process.exit(79);if(!['app','lib'].every(x=>m.SEAM_ROOTS.includes(x))){console.error('SEAM_ROOTS no longer covers app/ and lib/: '+m.SEAM_ROOTS.join(', '));process.exit(1)}const r=m.scanCodeSeam();if(!r||!Array.isArray(r.files)||typeof r.strings!=='number')process.exit(79);if(r.files.length<m.MIN_SEAM_FILES||r.strings<m.MIN_SEAM_STRINGS)process.exit(79);if(r.found.length){console.error(r.found.length+' member-facing canon violation(s)');process.exit(1)}process.exit(0)},()=>process.exit(79))\""
+      },
+      "notes": "Closed 2026-08-17. The probe that flagged this row as stale was `grep-present /'app'|\"app\"/` in check-canon.mjs, which passes on the mere appearance of the string 'app' - shape, not truth. Replaced with the consequence, measured in-process: import the guard, assert SEAM_ROOTS still covers app/ AND lib/, run scanCodeSeam() over the real tree and require zero member-facing violations. MEASURED: 3,398 files under app/ + lib/ + components/, 22,437 member-facing strings judged, 0 violations. The floors (MIN_SEAM_FILES 2000, MIN_SEAM_STRINGS 15000) make a guard that stops finding the corpus exit 79 rather than report a clean sweep of nothing. Proved BOTH ways: a real banned string ('Find your tribe') under a copy key fails it, narrowing SEAM_ROOTS fails it by name, and the SAME words in a comment and in an internal identifier do NOT fire it - the false-positive half is what keeps a widened guard from being routed around."
     },
     {
       "id": "LIVE-019",

@@ -190,7 +190,7 @@ describe('the toasts that compose it', () => {
     expect(toast.textContent).toContain('First Light')
     expect(toast.textContent).toContain('You logged your first practice.')
     expect(toast.textContent).toContain('Gold')
-    expect(toast.textContent).toContain('+50 zaps')
+    expect(toast.textContent).toContain('+50 Zaps')  // proper noun (NAMING.md, ADR-1065)
     // The tier tint reaches the frame through `skin`, off the rank spectrum.
     expect(toast.className).toContain('bg-rank-gold')
     // Its own fixed width is layout the caller owns, not something the primitive assumes.
@@ -220,7 +220,7 @@ describe('the toasts that compose it', () => {
       )
     })
     // zapsReward 0 shows no reward line (a zero is not a reward).
-    expect(c.querySelector('[role="status"]')!.textContent).not.toContain('zaps')
+    expect(c.querySelector('[role="status"]')!.textContent).not.toContain('Zaps')
     act(() => c.querySelector<HTMLButtonElement>('button[aria-label="Dismiss"]')!.click())
     expect(c.querySelector('[role="status"]')).toBeNull()
   })

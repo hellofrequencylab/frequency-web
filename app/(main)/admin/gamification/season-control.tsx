@@ -77,7 +77,7 @@ export function SeasonControl({
       </div>
       {err && <p className="mt-2 text-meta text-danger">{err}</p>}
       <p className="mt-2 text-meta text-subtle">
-        Ending a season mints trophies, converts each member&rsquo;s season zaps to gems,
+        Ending a season mints trophies, converts each member&rsquo;s season Zaps to Gems,
         resets ranks / streaks / challenges, and opens the next season.
       </p>
     </div>

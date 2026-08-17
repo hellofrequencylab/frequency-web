@@ -25884,3 +25884,78 @@ it, carries real assertions) and lets `pnpm test` prove it green once, in the pl
 it. Do **not** answer a budget failure by raising `GUARD_BUDGET_MS` — that is the allowance-as-hiding-place
 failure [ADR-970](#adr-970) names, and the same move that let this guard reach 24s while staying green.
 A probe that gets slow *without* naming a test runner still fails, as the budget assertion.
+
+---
+
+## ADR-1065: "Member-facing" is an AST seam plus an audience, not a grep, which is what let the canon guard leave `content/`
+
+**Status:** Accepted · enforced by `scripts/check-canon.mjs` (scan 3) + `scripts/check-canon.test.ts`
+(vitest auto-discovers it, so it cannot be forgotten in CI's guards array)
+**Supersedes:** the scoping note in `check-canon.mjs` that said `.tsx`/`.ts` "needs human judgement"
+
+**Context:** The canon guard read `content/**/*.md` only, on the reasoning that copy in code is
+"mixed with code/comments/tokens". Meanwhile **every** canon break the 2026-07-27 meta scan found
+was in `app/` or `lib/`: Dispatches called "broadcasts" in visible strings, an admin console
+labelled "Broadcasts" in the rail and "Dispatches" in its sub-header, lowercase `zaps`/`gems` on
+stat pills, two surfaces selling "cohorts" — the one word [ADR-252](#adr-252) bans. The guard was
+green over the only place the drift lived (LIVE-018).
+
+The reason it had not been widened is real. `app/` + `lib/` + `components/` hold **25,000+ string
+literals**, and almost none of them are copy: identifiers, comments, log lines, database columns,
+enum values, ADR citations, Tailwind classes, route paths, test fixtures. Worse, three of the words
+the canon retires are **explicitly kept** by `NAMING.md` in exactly those positions — `broadcast`
+survives as the schema, the `featureKeys` entry, and the design token `text-broadcast-*`. A grep
+for the retired words over `lib/` fires overwhelmingly on copy the canon *requires*. That guard
+gets routed around, and then it reads as coverage ([ADR-970](#adr-970)).
+
+**Decision:** A string is **member-facing** when three machine-checkable things hold, and the guard
+never looks at anything else:
+
+1. **SEAM** — it occupies a copy POSITION in the TypeScript AST: a JSX text node, or a string /
+   template literal that is the value of a JSX attribute or object property whose name is in
+   `COPY_KEYS` (`label`, `title`, `description`, `placeholder`, `blurb`, …). Comments, identifiers,
+   imports, `className`, routes, columns, enum values and log arguments are invisible **by
+   construction** — there is no list of things to remember to skip, because the parser never hands
+   them over. `*.test.ts` / `*.spec.ts` are not walked at all, so a guard's own test may pin a
+   violation on purpose.
+2. **PROSE** — the value reads as human text, not a machine token. Whitespace means prose; a lone
+   token is prose only if it is one plain word. This is the whole difference between the label
+   `'Broadcast'` (judged) and `'text-broadcast-strong'`, `'--color-broadcast'`, `'bg-broadcast'`,
+   `'zaps_total'` (not judged) — all of which sit in `label:` / `name:` keys in this repo today.
+3. **AUDIENCE** — the rule's audience covers the file, and **the split is the canon's own**.
+   `CONTENT-VOICE` bans the em dash in "brand/**member-facing** copy"; `NAMING.md` says "cohort is
+   **internal/research framing only**". Those two rules are `member`. `NAMING.md` §Dispatch says
+   "every visible label, help article, notification topic, **and admin heading** says Dispatch", and
+   `AGENTS.md` says the canons govern "everything a member, visitor, **or operator** can read" — so
+   proper-noun casing, the retired product noun, and the ADR-811 money model are `everyone`.
+
+An operator analytics console reading "weekly retention cohorts" is **correct copy**; a rule that
+failed it would be a rule banning the canon. That, not convenience, is why the audience axis exists.
+
+**Consequences:** The seam scan judges **17,190 member-facing strings across 3,398 files in ~5s**,
+and found **36 real violations** on its first run — 12 lowercase Zaps/Gems, 10 retired `broadcast`
+nouns (including the Studio entity label and the help-center feature label), 6 "cohorts" in
+marketing and Space-mode copy, 7 em dashes in Journey templates, persona states, a demo event title
+and the RSVP reminder **email**, and the retired **pay-it-forward** tier still sitting in the
+page-editor pricing block's defaults. All 36 are fixed; the guard is at zero.
+
+Two lists keep it honest, both printed on every run and both capped:
+
+- **`SURFACES`** classifies the operator consoles that `admin/` and `manage/` path segments miss.
+  It is a **classification, never a waiver** — a file on it is still judged by every `everyone`
+  rule, which is precisely how the two `broadcast` nouns in `lib/nav/studio.ts` (an operator
+  catalog) were caught.
+- **`EXCEPTIONS`** is the waiver list: two entries, each citing the `NAMING.md` line that licenses
+  it (both are the design-token swatch labelling itself). Capped at four. It must shrink.
+
+Floors follow the house pattern (`MIN_TARGETS` here, `MIN_RESOLVED` in `check-labels.mjs`): the scan
+fails if it reads fewer than 2,000 files or extracts fewer than 12,000 strings, because "I read
+nothing and found nothing" is not a clean bill of health.
+
+**What is still unscanned, honestly:** the seam sees copy that reaches a human through a *named*
+key. It does **not** see a bare string returned from a helper and rendered later
+(`return 'Broadcast sent'`), a `throw new Error('…')` surfaced in a toast, copy stored in the
+database (Loom blocks, saved page-editor content, seeded Journeys), copy under `content/` that is
+not `.md`, or the runtime output of any AI path — `lib/ai/voice.ts` governs that by prompt, not by
+gate. Widening further means adding a key to `COPY_KEYS` or a rendering seam, never a word to the
+rules.

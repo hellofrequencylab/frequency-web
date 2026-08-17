@@ -28,15 +28,13 @@
 # neglected. A new one of those belongs here too, added with `--allow-raise --reason=`, which is
 # a one-line reviewable claim about its class rather than a test written to satisfy a regex.
 #
-# 42 primitives · 6 with a state test · 36 grandfathered (2026-08-17)
+# 42 primitives · 8 with a state test · 34 grandfathered (2026-08-17)
 
 components/ui/avatar.tsx
 components/ui/badge.tsx
-components/ui/confirm-submit-button.tsx
 components/ui/counter.tsx
 components/ui/demo-badge.tsx
 components/ui/dialog.tsx
-components/ui/directory-search.tsx
 components/ui/editor-shell.tsx
 components/ui/empty-state.tsx
 components/ui/facet-dropdown.tsx

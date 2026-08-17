@@ -2568,6 +2568,37 @@ h1, h2, h3, h4, h5, h6 {
               0 40px 80px -24px color-mix(in srgb, var(--color-ink) 34%, transparent);
 }
 
+/* ── ring-focus — the focus indicator for a LIFTED surface ─────────────────────
+   The card kit's focus-visible state (docs/INTERACTION-STATES.md §1), and it exists because
+   the global ring further up this file cannot reach a card that carries a lift.
+
+   🔴 EVERY focus ring this system owns is a `box-shadow`: the
+   `:where(button, a, select, summary, [tabindex]):focus-visible` rule above, and Tailwind's
+   `ring-*` utilities, which compile into `@layer utilities`. `.lift-1/2/3` above ALSO set
+   `box-shadow`, and they are UNLAYERED — an unlayered declaration beats every layer outright,
+   whatever the specificity. So a card carrying a lift painted its drop shadow straight over its
+   own focus ring, and the failure was silent in both directions: RowCard's whole-row anchor
+   showed nothing at all when you tabbed onto it (a WCAG 2.4.7 failure on every list surface),
+   and EntityCard's four `has-[:focus-visible]:ring-*` utilities had been dead CSS since the day
+   they were written. Nothing could see it — tsc and eslint read className as a string, and
+   check:phantom only asks whether a class emits a rule, not whether that rule survives the
+   cascade. components/cards/card-focus-ring.test.ts is the thing that can: it compiles this
+   sheet and reads the layers back.
+
+   `outline` is the way out, because `.lift-*` never touches it, so there is nothing to
+   out-rank on that property. The one competitor is the global `outline: none`, and
+   `.ring-focus:focus-visible` (0,2,0) beats `:where(a):focus-visible` (0,1,0).
+
+   Two arms because the kit's cards come in two shapes: a surface that IS the anchor (RowCard's
+   link row, where the surface itself takes focus) and a surface that CONTAINS the focusable
+   thing (EntityCard, whose body link sits inside the card box). Same token as every other focus
+   affordance, so check:contrast measures one colour for all of them. */
+.ring-focus:focus-visible,
+.ring-focus:has(:focus-visible) {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
 /* ── sheen — a slow diagonal light sweep across a dark object on hover, the way a
    hand passing over cedar catches the LED. The hover companion to lift; it moves
    light, not the object. Needs position:relative + overflow:hidden on the host. */

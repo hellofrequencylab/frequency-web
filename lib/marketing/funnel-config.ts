@@ -486,15 +486,15 @@ export const COMMUNITY_FUNNEL: FunnelConfig = {
     steps: [
       { title: 'Make your Space.', body: 'Your community page, your Circles, and your memberships, ready in a few minutes. Free to start, always.' },
       { title: 'Bring your people in.', body: 'Import your list or share your Frequency card. Everyone lands in Contacts.' },
-      { title: 'Open your Circles.', body: 'Run memberships and cohorts, and let the right members find each other.' },
+      { title: 'Open your Circles.', body: 'Offer memberships and Runs, and let the right members find each other.' },
     ],
     caption: 'Set up in an afternoon, not a weekend.',
   },
   features: [
     {
       icon: 'contact',
-      title: 'Circles, cohorts, and memberships, in one place.',
-      body: 'Run standing Circles and cohorts with memberships and recurring billing, and keep a member list that knows who is who.',
+      title: 'Circles, Runs, and memberships, in one place.',
+      body: 'Host standing Circles and Runs with memberships and recurring billing, and keep a member list that knows who is who.',
     },
     {
       icon: 'spark',

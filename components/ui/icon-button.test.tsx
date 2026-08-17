@@ -108,7 +108,91 @@ describe('IconButton variant="tinted"', () => {
   })
 })
 
+// ── loading: the state icon-only controls need most ──────────────────────────
+// A tap on a text button at least leaves a pressed label behind. A tap on a bare glyph leaves no
+// evidence at all that it landed, which is why INTERACTION-STATES §5 sweep item 7 put `loading`
+// on this primitive right after Button's. Same contract as Button's: `aria-busy`, the double-fire
+// blocked, and nothing swapped in.
+
+describe('IconButton loading', () => {
+  it('marks itself busy and blocks the double-fire', () => {
+    const el = mount(
+      <IconButton label="Delete" loading>
+        <svg />
+      </IconButton>,
+    ).querySelector('button')!
+    expect(el.getAttribute('aria-busy')).toBe('true')
+    expect(el.disabled).toBe(true)
+  })
+
+  it('a second tap while the first is in flight does not fire the handler again', () => {
+    // The consequence, not the prop. `loading` exists to stop one delete becoming two.
+    let fired = 0
+    const el = mount(
+      <IconButton label="Delete" loading onClick={() => { fired += 1 }}>
+        <svg />
+      </IconButton>,
+    ).querySelector('button')!
+    act(() => { el.click() })
+    act(() => { el.click() })
+    expect(fired).toBe(0)
+  })
+
+  it('the same control DOES fire when it is not loading — the guard is not just a dead handler', () => {
+    // The control for the assertion above: without this, a component that never fires its
+    // onClick at all would pass the double-fire test perfectly.
+    let fired = 0
+    const el = mount(
+      <IconButton label="Delete" onClick={() => { fired += 1 }}>
+        <svg />
+      </IconButton>,
+    ).querySelector('button')!
+    act(() => { el.click() })
+    expect(fired).toBe(1)
+  })
+
+  it('swaps NOTHING in: at 32px a spinner is not a detail, it is the whole control', () => {
+    const el = mount(
+      <IconButton label="Delete" loading>
+        <svg data-testid="glyph" />
+      </IconButton>,
+    ).querySelector('button')!
+    expect(el.querySelector('[data-testid="glyph"]')).not.toBeNull()
+    expect(el.className).not.toContain('animate-spin')
+    // The fade from the shared base is the cue, and it is a `disabled:` variant — so the busy
+    // control reads at 50% without a second pending vocabulary being invented for it.
+    expect(el.className).toContain('disabled:opacity-50')
+  })
+
+  it('is absent by default — a plain icon button is never busy', () => {
+    const el = mount(
+      <IconButton label="Delete">
+        <svg />
+      </IconButton>,
+    ).querySelector('button')!
+    expect(el.getAttribute('aria-busy')).toBeNull()
+    expect(el.disabled).toBe(false)
+  })
+})
+
 describe('IconLink', () => {
+  it('a loading icon-link is busy and unclickable, but keeps its place in the tab order', () => {
+    // An anchor has no `disabled`, so the guard is the ARIA pair the shared base turns into
+    // `pointer-events-none` + the fade — the same branch Button's `asChild` takes. It does NOT
+    // take tabIndex={-1}: pulling focus out from under a keyboard user mid-navigation is a worse
+    // bug than the one being fixed.
+    const el = mount(
+      <IconLink label="Next" href="/x" loading>
+        <svg />
+      </IconLink>,
+    ).querySelector('a')!
+    expect(el.getAttribute('aria-busy')).toBe('true')
+    expect(el.getAttribute('aria-disabled')).toBe('true')
+    expect(el.getAttribute('tabindex')).toBeNull()
+    expect(el.className).toContain('aria-disabled:pointer-events-none')
+  })
+
+
   it('a disabled icon-link leaves the tab order and says so to assistive tech', () => {
     const el = mount(
       <IconLink label="Back" href="/x" disabled>

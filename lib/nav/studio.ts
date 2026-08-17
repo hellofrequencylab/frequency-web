@@ -307,7 +307,7 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
     adminGroups: [{ domain: 'marketing', section: 'Analytics' }] },
   { id: 'marketing-market-read', href: '/admin/marketing/market-read', label: 'Market read', desc: 'Demand, geography, and content performance.', icon: 'Telescope', min: 'host', staffDomain: 'marketing',
     adminGroups: [{ domain: 'marketing', section: 'Analytics' }], adminNav: { section: 'vera-ai' } },
-  { id: 'marketing-control-panel', href: '/admin/marketing/messaging/control-panel', label: 'Control panel', desc: 'Who got what: every campaign email and broadcast Dispatch, per recipient, with where it landed.', icon: 'Send', min: 'host', staffDomain: 'marketing',
+  { id: 'marketing-control-panel', href: '/admin/marketing/messaging/control-panel', label: 'Control panel', desc: 'Who got what: every campaign email and Dispatch, per recipient, with where it landed.', icon: 'Send', min: 'host', staffDomain: 'marketing',
     adminGroups: [{ domain: 'marketing', section: 'Analytics' }], adminNav: { section: 'growth', heading: 'Marketing' } },
   { id: 'marketing-agent', href: '/admin/marketing/agent', label: 'Marketing agent', desc: 'Ask the AI operator to draft, segment, and run the busywork.', icon: 'Bot', min: 'host', staffDomain: 'marketing',
     adminGroups: [{ domain: 'marketing', section: 'AI operator' }], adminNav: { section: 'vera-ai' } },
@@ -576,7 +576,7 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
   },
   {
     key: 'marketing', label: 'Marketing',
-    blurb: 'Campaigns and outbound. Funnels, automations, broadcasts, and the read on how they land.',
+    blurb: 'Campaigns and outbound. Funnels, automations, Dispatches, and the read on how they land.',
     href: '/admin/growth', icon: 'Megaphone', min: 'host', staffDomain: 'marketing',
     primary: false, related: ['crm', 'vera-ai', 'acquisition'],
     links: [

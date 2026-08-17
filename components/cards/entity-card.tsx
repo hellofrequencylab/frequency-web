@@ -83,7 +83,12 @@ export function EntityCard({
   const coverAspectClass = coverAspect === 'short' ? 'aspect-[16/7]' : 'aspect-[16/9]'
   return (
     <div
-      className={`group press relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface lift-1 transition-[colors,transform] hover:border-primary-bg has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/50 has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-canvas motion-reduce:transition-none ${
+      // `ring-focus` replaced four `has-[:focus-visible]:ring-*` utilities that had never painted
+      // a pixel: a Tailwind ring is a `box-shadow` in `@layer utilities`, `lift-1` is a
+      // `box-shadow` with no layer at all, and unlayered beats every layer. The card's focus ring
+      // is an `outline` now, which `lift-1` does not touch. See app/globals.css `.ring-focus` and
+      // components/cards/card-focus-ring.test.ts.
+      className={`group press relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface lift-1 transition-[colors,transform] hover:border-primary-bg ring-focus motion-reduce:transition-none ${
         dimmed ? 'dimmed' : ''
       }`}
     >

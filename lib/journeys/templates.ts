@@ -44,7 +44,7 @@ export const JOURNEY_TEMPLATES: JourneyTemplate[] = [
   {
     id: 'four-week-reset',
     name: '4-Week Reset',
-    description: 'A focused four-phase reset — one phase a week. Great for a habit or mindset shift.',
+    description: 'A focused four-phase reset, one phase a week. Great for a habit or mindset shift.',
     emoji: '🌱',
     phases: [
       phase('Week 1 · Set the foundation', [L('video', 'Welcome + what to expect'), L('reading', 'The core idea'), L('exercise', 'Your starting point')]),

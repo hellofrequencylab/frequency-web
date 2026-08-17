@@ -19,7 +19,7 @@ Legend: ✅ present · ⚠️ partial · 🔴 missing · ➖ not required for th
 | **rest** | Nothing is happening. | Semantic tokens only. No hex, ever. |
 | **hover** | A pointer is over it. Pointer-only; never the sole carrier of meaning. | `hover:` utilities on color/border/shadow. |
 | **active / pressed** | The pointer or key is down. | `.press` (a 0.99 scale on `:active`), or a `active:` color step. Never a new shadow. |
-| **focus-visible** | Keyboard focus is here. | The global ring in `app/globals.css` (amber for chrome, neutral for fields). Do not re-declare it unless you are overriding on purpose. |
+| **focus-visible** | Keyboard focus is here. | The global ring in `app/globals.css` (amber for chrome, neutral for fields). Do not re-declare it unless you are overriding on purpose. A surface carrying `.lift-*` is the one exception and it is not optional: the lift's own `box-shadow` is unlayered and eats the global ring, so a lifted card takes `.ring-focus` (§5). |
 | **loading** | A result is coming and there is nothing yet. | `Skeleton` for content shape; `aria-busy="true"` on the region; a disabled control with its label unchanged. |
 | **empty** | The request succeeded and there is genuinely nothing. | `EmptyState` with the right variant. Never a blank pane, never a spinner that never resolves. |
 | **error** | The thing failed, or the input is invalid. | `aria-invalid` + the danger border on fields; `EmptyState variant="error"` or `RouteError` for a surface. |
@@ -117,39 +117,49 @@ prerequisite, not something this contract can assume.
 Measured against §2 by reading every file, **re-measured 2026-08-12** against `origin/main`.
 This table is the scoreboard; update it in the same PR as each sweep.
 
-**Headline: 25 of 29 kit entries (86%) are at full required-state coverage, and 7 of the 10
-action + field controls are.** The 2026-08-04 reading of this table was *"0 of 10"*; PR #2084
-(`ec80e693c`) shipped five of the six sweep items below and it went unrecorded here for a week.
-The four entries still short are named in the sweep list at the end of this section, and they
-are what Lift 8b is now scoped to.
+**Headline: 29 of 29 kit entries (100%) are at full required-state coverage, including all 10
+action + field controls.** The 2026-08-04 reading of this table was *"0 of 10"*; PR #2084
+(`ec80e693c`) shipped five of the six sweep items and it went unrecorded here for a week. Lift 8b
+closed the remaining four (LIVE-001…LIVE-004).
 
-### Action controls — 3 / 5 ✅
+🔴 **And it found the reason the ring had never worked.** RowCard was scoped as "copy
+EntityCard's `has-[:focus-visible]:ring-*`", and those four utilities had never painted a pixel:
+a Tailwind ring is a `box-shadow` in `@layer utilities`, `.lift-1` is a `box-shadow` in no layer
+at all, and an unlayered declaration beats every layer whatever its specificity. So every lifted
+card in the kit was painting its drop shadow over its own focus indicator, and no gate could see
+it — tsc and eslint read a className as a string, and `check:phantom` asks whether a class emits
+a rule, not whether that rule survives the cascade. The card focus ring is now `.ring-focus` in
+`app/globals.css`, an `outline` (the one property `.lift-*` does not touch), and
+`components/cards/card-focus-ring.test.ts` compiles the real sheet and reads the layers back, so
+the claim under test is "the indicator wins" rather than "the class is spelled right".
+
+### Action controls — 5 / 5 ✅
 
 | Component | rest | hover | pressed | focus | loading | disabled | Verdict |
 |---|---|---|---|---|---|---|---|
 | `ui/button.tsx` Button | ✅ | ✅ | ✅ `.press` (`:69`) | ✅ global | ✅ `loading` prop (`:95`, `aria-busy`) | ✅ | ✅ |
-| `ui/icon-button.tsx` IconButton / IconLink | ✅ | ✅ | ✅ `.press` (`:51`) | ✅ explicit | 🔴 | ✅ `disabled:` + `aria-disabled:` | ⚠️ no `loading` prop |
-| `ui/confirm-submit-button.tsx` | ✅ | ✅ | ✅ inherits `buttonClasses()` | ✅ global | ⚠️ `useRef` re-entrancy guard only (`:25-39`) | ✅ | ⚠️ blocks the double-fire but shows nothing |
+| `ui/icon-button.tsx` IconButton / IconLink | ✅ | ✅ | ✅ `.press` (`:51`) | ✅ explicit | ✅ `loading` prop (`aria-busy`, nothing swapped in) | ✅ `disabled:` + `aria-disabled:` | ✅ |
+| `ui/confirm-submit-button.tsx` | ✅ | ✅ | ✅ inherits `buttonClasses()` | ✅ global | ✅ `useRef` guard + `aria-busy` and `.dimmed` | ✅ | ✅ |
 | `ui/staff-edit-button.tsx` | ✅ | ✅ | ✅ `.press` (`:23`) | ✅ global | ➖ | ➖ | ✅ |
 | `ui/switch.tsx` Switch | ✅ | ✅ gated on `inert` (`:49`) | ✅ `.press` (`:45`) | ✅ explicit | ✅ `pending` → `aria-busy` + `.dimmed` | ✅ | ✅ |
 
-### Fields — 4 / 5 ✅
+### Fields — 5 / 5 ✅
 
 | Component | rest | focus | error | disabled | Verdict |
 |---|---|---|---|---|---|
 | `ui/field.tsx` Input | ✅ | ✅ neutral halo | ✅ `aria-[invalid=true]:border-danger` (`:33`) | ✅ | ✅ |
 | `ui/field.tsx` Textarea | ✅ | ✅ | ✅ same `fieldClasses` | ✅ | ✅ |
 | `ui/field.tsx` Field | ✅ | ➖ | ✅ `error` slot in an `aria-live` region (`:186`, `:197`) | ➖ | ✅ |
-| `ui/directory-search.tsx` | ✅ | ✅ | ➖ | ✅ (`:14`, `:57`, `:65`) | ⚠️ no in-flight cue; it fetches, so §1 "loading" applies even though the Field class does not require it |
+| `ui/directory-search.tsx` | ✅ | ✅ | ➖ | ✅ | ✅ in-flight cue: `useTransition` → glyph swap + `aria-busy` + an `aria-live` status line |
 | `ui/facet-dropdown.tsx` | ✅ | ✅ + Esc | ➖ | ✅ (`:21`, `:85-86`) | ✅ |
 
-### Cards — 4 / 5 ✅
+### Cards — 5 / 5 ✅
 
 | Component | rest | hover | pressed | focus | Verdict |
 |---|---|---|---|---|---|
 | `cards/entity-card.tsx` | ✅ | ✅ | ✅ `.press` | ✅ `has-[:focus-visible]` | ✅ **the exemplar** |
 | `cards/person-card.tsx` | ✅ | ✅ | ✅ | ✅ | ✅ inherits EntityCard |
-| `cards/row-card.tsx` | ✅ | ✅ | 🔴 | ⚠️ inner link only | ⚠️ surface never rings or presses (`:100`) |
+| `cards/row-card.tsx` | ✅ | ✅ | ✅ `.press` on the link row | ✅ `ring-focus` on the link row | ✅ the managed + destination-less rows owe neither, on purpose |
 | `ui/stat-card.tsx` | ✅ | ✅ linked variant | ✅ `.press` on the linked variant (`:127`) | ✅ global | ✅ the unlinked tile is inert on purpose, so it owes neither |
 | `ui/sidebar-card.tsx` | ✅ | ➖ | ➖ | ➖ | ✅ non-interactive container |
 
@@ -184,8 +194,8 @@ are what Lift 8b is now scoped to.
 
 ### The sweep list, in payoff order
 
-Five of the six shipped in PR #2084 (`ec80e693c`). What is left is item 5 plus the three
-control-level gaps the tables above mark ⚠️.
+Five of the six shipped in PR #2084 (`ec80e693c`); item 5 and the three control-level gaps were
+Lift 8b (`LIVE-001`…`LIVE-004`).
 
 | # | Fix | Reach | State |
 |---|---|---|---|
@@ -193,11 +203,11 @@ control-level gaps the tables above mark ⚠️.
 | 2 | `aria-invalid` + danger border in `fieldClasses`, and an `error` slot on `Field` | Every form on the site gains an error state from one file. | ✅ shipped |
 | 3 | A `loading` prop on Button (`aria-busy`, label unchanged, fixed width) | Removes the "did my tap register" gap on every submit. | ✅ shipped |
 | 4 | Switch: hover, `.press`, and a pending look | The settings surfaces are all switches. | ✅ shipped |
-| 5 | RowCard: ring + `.press` on the surface | Brings the third card primitive level with EntityCard. | ⏳ open |
+| 5 | RowCard: ring + `.press` on the surface | Brings the third card primitive level with EntityCard. | ✅ shipped |
 | 6 | StreakMeter empty reading, Skeleton `aria-hidden` | Small, and both are visible to a screen reader today. | ✅ shipped |
-| 7 | A `loading` prop on IconButton, matching Button's | Icon-only controls are the ones where a tap leaves no other evidence it landed. | ⏳ open |
-| 8 | A visible busy state on `ConfirmSubmitButton` | The ref guard already blocks the second fire; nothing tells the member the first one took. | ⏳ open |
-| 9 | An in-flight cue on `DirectorySearch` | It fetches. Until it says so, an empty result and a pending one look identical. | ⏳ open |
+| 7 | A `loading` prop on IconButton, matching Button's | Icon-only controls are the ones where a tap leaves no other evidence it landed. | ✅ shipped |
+| 8 | A visible busy state on `ConfirmSubmitButton` | The ref guard already blocks the second fire; nothing tells the member the first one took. | ✅ shipped |
+| 9 | An in-flight cue on `DirectorySearch` | It fetches. Until it says so, an empty result and a pending one look identical. | ✅ shipped |
 
 ## 6. The gate
 
@@ -215,13 +225,13 @@ assertion exercises a state, it does not name one, and naming is what this secti
 for. Three, not two, because `avatar.test.tsx` says "focus" about a focal *point* and
 `.dimmed` about a receded avatar — it scores 2, and it is not a state test.
 
-**The counts, measured not estimated (2026-08-17).**
+**The counts, measured not estimated (2026-08-17, banked after Lift 8b).**
 
 | | |
 |---|---|
 | `components/ui/*.tsx` primitives | **42** |
-| ship a state test | **6** — `button`, `checkbox`, `field`, `icon-button`, `select`, `switch` |
-| grandfathered in `scripts/ui-state-test-ledger.txt` | **36** |
+| ship a state test | **8** — `button`, `checkbox`, `confirm-submit-button`, `directory-search`, `field`, `icon-button`, `select`, `switch` |
+| grandfathered in `scripts/ui-state-test-ledger.txt` | **34** |
 
 ⚠️ **Two corrections to the paragraph this replaces.** It counted *seventeen* colocated test
 files and named *four* of them as state tests. Seventeen files is right and it is the wrong
@@ -238,7 +248,7 @@ purpose: a ledger entry that *gains* a state test **fails** until it is removed 
 banks it), because the number in this section is a published metric and an unbanked win makes it
 fiction.
 
-**Why 36 is not 36 units of neglect.** The gate cannot classify a primitive, and §2 assigns the
+**Why 34 is not 34 units of neglect.** The gate cannot classify a primitive, and §2 assigns the
 required set BY CLASS: a Display badge owes only `rest`, a Reading owes `rest` + `empty`.
 Neither can honestly name three states. So the gate over-reports by design — it can call a
 primitive undertested, never certify an untested one — and the badges, icons and image widgets on
