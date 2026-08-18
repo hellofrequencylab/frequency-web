@@ -147,6 +147,30 @@ jobs:
           restore-keys: tsbuildinfo-${{ hashFiles('pnpm-lock.yaml', 'tsconfig.json') }}-
       - name: Install
         run: pnpm install --frozen-lockfile
+      # PR SIZE RULES (docs/WORKFLOW.md §PR size and merge rules, owner-directed 2026-08-18).
+      # The PR is the unit of blast radius on a repo where merging deploys to production: a
+      # 215-file PR passed every gate and killed deploys for a day (ADR-1002), and a 322-file
+      # PR reached production after a size concern went unanswered. >15 changed files warns;
+      # >40 FAILS this required job unless the PR title carries [sweep] — reserved for
+      # single-purpose mechanical changes where every file takes the same one edit.
+      - name: PR size gate
+        if: github.event_name == 'pull_request'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --quiet --depth=1 origin "${BASE_SHA}"
+          count=$(git diff --name-only "${BASE_SHA}"...HEAD | wc -l | tr -d ' ')
+          echo "Changed files vs base: ${count}"
+          if [ "${count}" -gt 40 ]; then
+            case "${PR_TITLE}" in
+              *"[sweep]"*) echo "::notice title=PR size::${count} files, allowed by the [sweep] tag (single-purpose mechanical change)";;
+              *) echo "::error title=PR size::${count} changed files exceeds the 40-file gate (docs/WORKFLOW.md). Split by backlog row, or tag the title [sweep] if every file takes the same one mechanical edit."; exit 1;;
+            esac
+          elif [ "${count}" -gt 15 ]; then
+            echo "::warning title=PR size::${count} changed files is past the 15-file guidance (docs/WORKFLOW.md). Fine if it is one honest row; consider splitting otherwise."
+          fi
       - name: Typecheck
         run: pnpm exec tsc --noEmit
 
