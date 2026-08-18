@@ -177,84 +177,24 @@
     "/discover [midnight-dark, contrast only, desktop]": 3,
     "/discover [midnight-light, contrast only, desktop]": 0,
     "/feed [dawn-dark, contrast only, desktop]": 0,
-    "/feed [dawn-light, desktop]": {
-      "ceiling": 12,
-      "why": "Not a reading. Seeded on 2026-08-11 from the RAW pre-waiver total, because the run log printed only the first 5 of this context's 11 nodes and the post-waiver residual was therefore never computed. Every node that WAS visible was an accepted palette pair, so the true reading is believed to be 0-3, not 12. Nothing has measured this surface since: re-seeding it from belief would be a fabricated baseline, which is worse than the ceiling.",
-      "retiredBy": "PW_A11Y_UPDATE=1 pnpm test:e2e:a11y && pnpm a11y:baselines (needs PW_BASE_URL + the beta storage state from backlog row OWN-002)",
-      "frozen": {
-        "at": "2026-08-11",
-        "value": 12,
-        "from": null,
-        "direction": "seed",
-        "reason": "First floor for a surface that had never been measured (FINALIZE 1.3). Raw total, waivers not subtracted, because the node cap in a11y.spec.ts was 5 at capture time."
-      },
-      "history": [
-        {
-          "at": "2026-08-11",
-          "value": 12,
-          "from": null,
-          "direction": "seed",
-          "reason": "First floor for a surface that had never been measured (FINALIZE 1.3). Raw total, waivers not subtracted, because the node cap in a11y.spec.ts was 5 at capture time."
-        }
-      ]
-    },
-    "/feed [dawn-light, mobile]": 2,
+    "/feed [dawn-light, desktop]": 0,
+    "/feed [dawn-light, mobile]": 0,
     "/pricing [dawn-dark, contrast only, desktop]": 0,
     "/pricing [dawn-light, desktop]": 0,
     "/pricing [dawn-light, mobile]": 0,
     "/pricing [midnight-dark, contrast only, desktop]": 3,
     "/pricing [midnight-light, contrast only, desktop]": 0,
     "/settings [dawn-dark, contrast only, desktop]": 0,
-    "/settings [dawn-light, desktop]": {
-      "ceiling": 7,
-      "why": "Not a reading. Seeded on 2026-08-11 from the RAW pre-waiver total, because the run log printed only the first 5 of this context's 7 nodes and the post-waiver residual was therefore never computed. Every node that WAS visible was an accepted palette pair, so the true reading is believed to be 0-3, not 7. Nothing has measured this surface since: re-seeding it from belief would be a fabricated baseline, which is worse than the ceiling.",
-      "retiredBy": "PW_A11Y_UPDATE=1 pnpm test:e2e:a11y && pnpm a11y:baselines (needs PW_BASE_URL + the beta storage state from backlog row OWN-002)",
-      "frozen": {
-        "at": "2026-08-11",
-        "value": 7,
-        "from": null,
-        "direction": "seed",
-        "reason": "First floor for a surface that had never been measured (FINALIZE 1.3). Raw total, waivers not subtracted, because the node cap in a11y.spec.ts was 5 at capture time."
-      },
-      "history": [
-        {
-          "at": "2026-08-11",
-          "value": 7,
-          "from": null,
-          "direction": "seed",
-          "reason": "First floor for a surface that had never been measured (FINALIZE 1.3). Raw total, waivers not subtracted, because the node cap in a11y.spec.ts was 5 at capture time."
-        }
-      ]
-    },
-    "/settings [dawn-light, mobile]": 1,
+    "/settings [dawn-light, desktop]": 0,
+    "/settings [dawn-light, mobile]": 0,
     "/spaces [dawn-dark, contrast only, desktop]": 2,
     "/spaces [dawn-light, desktop]": 2,
     "/spaces [dawn-light, mobile]": 2,
     "/spaces [midnight-dark, contrast only, desktop]": 6,
     "/spaces [midnight-light, contrast only, desktop]": 2,
     "/spaces/danieltyack/manage [dawn-dark, contrast only, desktop]": 0,
-    "/spaces/danieltyack/manage [dawn-light, desktop]": {
-      "ceiling": 8,
-      "why": "Not a reading. Seeded on 2026-08-11 from the RAW pre-waiver total, because the run log printed only the first 5 of this context's 8 nodes and the post-waiver residual was therefore never computed. Every node that WAS visible was an accepted palette pair, so the true reading is believed to be 0-3, not 8. Nothing has measured this surface since: re-seeding it from belief would be a fabricated baseline, which is worse than the ceiling.",
-      "retiredBy": "PW_A11Y_UPDATE=1 pnpm test:e2e:a11y && pnpm a11y:baselines (needs PW_BASE_URL + the beta storage state from backlog row OWN-002)",
-      "frozen": {
-        "at": "2026-08-11",
-        "value": 8,
-        "from": null,
-        "direction": "seed",
-        "reason": "First floor for a surface that had never been measured (FINALIZE 1.3). Raw total, waivers not subtracted, because the node cap in a11y.spec.ts was 5 at capture time."
-      },
-      "history": [
-        {
-          "at": "2026-08-11",
-          "value": 8,
-          "from": null,
-          "direction": "seed",
-          "reason": "First floor for a surface that had never been measured (FINALIZE 1.3). Raw total, waivers not subtracted, because the node cap in a11y.spec.ts was 5 at capture time."
-        }
-      ]
-    },
-    "/spaces/danieltyack/manage [dawn-light, mobile]": 1,
+    "/spaces/danieltyack/manage [dawn-light, desktop]": 0,
+    "/spaces/danieltyack/manage [dawn-light, mobile]": 0,
     "/the-community [dawn-dark, contrast only, desktop]": 3,
     "/the-community [dawn-light, desktop]": 3,
     "/the-community [dawn-light, mobile]": 3,
@@ -269,6 +209,9 @@
     "/the-quest [dawn-light, desktop]": 0,
     "/the-quest [dawn-light, mobile]": 0,
     "/the-quest [midnight-dark, contrast only, desktop]": 4,
-    "/the-quest [midnight-light, contrast only, desktop]": 0
+    "/the-quest [midnight-light, contrast only, desktop]": 0,
+    "/nearby [dawn-dark, contrast only, desktop]": 0,
+    "/nearby [dawn-light, desktop]": 0,
+    "/nearby [dawn-light, mobile]": 0
   }
 }
