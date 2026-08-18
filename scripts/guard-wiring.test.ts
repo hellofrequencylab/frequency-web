@@ -27,22 +27,28 @@ const WORKFLOW_DIR = path.join(ROOT, '.github', 'workflows')
  *  CI. It was deleted rather than wired (ADR-1011). Prefer that outcome to a long-lived entry
  *  here: a guard nobody runs is a claim nobody checks. */
 const UNWIRED: Record<string, string> = {
-  // LIVE-035, now ONE entry rather than two. Both are ARTIFACT gates: they read `.next` from a real
-  // build, so the CI array is the wrong home (CI never builds — DEPLOY-SAFETY.md, ADR-1003) and
-  // `postbuild` is the right one. `check:cache-budget` moved there on 2026-08-18 (ADR-1081) once a
-  // production log settled the two questions that were holding it: that `postbuild` runs at all
-  // (`Running "pnpm run build"` → `prebuild` → `postbuild` printing 6.04 GB across 499 functions),
-  // and that neither of its arms fires on today's numbers (node_modules 947 MB against a 1.25 GiB
-  // floor; packed cache ~1.27 GB against a 1.38 GiB trim point).
+  // LIVE-035. Both are ARTIFACT gates: they read `.next` from a real build, so the CI array is the
+  // wrong home (CI never builds — DEPLOY-SAFETY.md, ADR-1003) and `postbuild` is the right one.
+  // Neither is there, and on 2026-08-18 `check:cache-budget` was wired in and then TAKEN BACK OUT
+  // before merge, because a preview build printed what no amount of reading could:
   //
-  // `check:shell-weight` stays here because nothing settles it the same way. Its one reading exited 1
-  // naming lib/pricing/feature-meters.ts, on an artifact built plausibly BEFORE settings-panel.tsx
-  // moved five editor bodies behind `dynamic()` — so the failure is unconfirmed in BOTH directions,
-  // and no log can adjudicate it because this gate has never printed on a completed build.
-  // DEPLOY-SAFETY.md opens with an outage caused by gates that passed while the artifact was broken;
-  // wiring an UNPROVEN gate into postbuild is that failure reversed, and a red postbuild kills deploys
-  // just as dead. One green build decides it, and the wiring lands in the SAME commit as that build.
-  // Removing this last entry is how LIVE-035 closes.
+  //     ⚠️  check:cache-budget — TRIMMED the build cache before Vercel could reject it.
+  //        What the build was about to hand back measured 2.40 GiB, over the 1.38 GiB trim point.
+  //        drops the cheap half instead: .next/cache/turbopack (1520 MiB).
+  //
+  // The gate compares RAW bytes on disk against Vercel's PACKED ceiling, and the two are ~2:1 apart,
+  // not the ~3% its header assumes. Production was uploading 1.26–1.29 GB and restoring it every
+  // build; the trim would have deleted a 1.5 GiB compiler cache on every build to prevent an
+  // overflow that was not happening. See ADR-1081 and LIVE-048.
+  //
+  // `check:shell-weight` has never printed at all. Its one reading exited 1 naming
+  // lib/pricing/feature-meters.ts, on an artifact built plausibly BEFORE settings-panel.tsx moved
+  // five editor bodies behind `dynamic()`, so it is unconfirmed in BOTH directions.
+  //
+  // The rule these two keep proving: DEPLOY-SAFETY.md opens with an outage caused by gates that
+  // passed while the artifact was broken, and wiring an UNPROVEN gate into postbuild is that failure
+  // reversed. One green build decides it, and the wiring lands in the SAME commit as that build.
+  'check:cache-budget': 'artifact gate, threshold disproved by a real build 2026-08-18 (LIVE-048)',
   'check:shell-weight': 'artifact gate, awaiting one green production build before postbuild (LIVE-035)',
 }
 

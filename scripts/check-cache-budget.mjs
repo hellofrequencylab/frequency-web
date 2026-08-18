@@ -55,10 +55,35 @@
 //     uploaded build cache   1.26 / 1.28 / 1.29 GB   — under the 1.50 GB ceiling
 //     "Restored build cache from previous deployment (…)"  — present on every one
 //
-// So on the day this was wired in, NEITHER arm fires: 947 MB is 30% under the 1.25 GiB floor, and
-// ~1.27 GB is under the 1.38 GiB trim point. It goes in as a REPORTER first and a gate second,
-// which is the only honest way to add something to `postbuild` (AGENTS.md: a build-blocking gate
-// that has never seen a real artifact is the 2026-08-11 incident with the roles reversed).
+// 🔴 AND THEN A REAL BUILD DISPROVED THE THRESHOLD. This file was wired into `postbuild` on
+// 2026-08-18 on the reasoning that neither arm could fire, and the preview build of that very
+// change printed:
+//
+//     ⚠️  check:cache-budget — TRIMMED the build cache before Vercel could reject it.
+//        What the build was about to hand back measured 2.40 GiB, over the 1.38 GiB trim point.
+//        drops the cheap half instead: .next/cache/turbopack (1520 MiB).
+//     ✅ check:cache-budget — Vercel will store 0.91 GiB (node_modules 933 MiB + .next/cache 0 MiB)
+//
+// The FLOOR arm was right: 933 MiB, 27% clear of its budget. The TRIM arm is calibrated against the
+// wrong quantity. `measure()` sums RAW BYTES ON DISK; Vercel's 1.50 GB ceiling applies to the PACKED
+// archive. The comment below claiming the two "have run ~3% apart" is the error: on this build raw
+// was 2.40 GiB and the packed upload of the equivalent tree was 1.26–1.29 GB, about 2:1. Turbopack's
+// cache is highly compressible and it is the term that dominates.
+//
+// The consequence of believing it: production was uploading 1.26–1.29 GB, under the ceiling, and
+// logging "Restored build cache from previous deployment" on every build. The trim would have
+// deleted a 1.5 GiB compiler cache on EVERY build to prevent an overflow that was not happening,
+// turning a working cache into a guaranteed cold compile forever. So the wiring was taken back out
+// before it merged, and this file is unwired again (LIVE-048, ADR-1081).
+//
+// 🔒 DO NOT RE-WIRE THIS UNTIL THE TRIM POINT IS EXPRESSED IN THE SAME UNITS VERCEL USES. Measuring
+// the packed size means packing, which is not free; the cheaper honest route is a calibration
+// constant derived from several real builds (raw measured here, packed read off the upload line),
+// carried with its measurements. Either way the number has to come from builds, not from reading.
+// It goes in as a REPORTER first and a gate second, which is the only honest way to add something
+// to `postbuild` (AGENTS.md: a build-blocking gate that has never seen a real artifact is the
+// 2026-08-11 incident with the roles reversed) — and note that this file DID pass its own unit
+// tests, ran clean locally after the orphan correction, and was still wrong.
 //
 // ⚠️ RUNNING THIS IN A LONG-LIVED DEV CONTAINER OVER-REPORTS, and by a lot. `pnpm` leaves
 // unreferenced store entries in `node_modules/.pnpm` when a dependency version changes, and

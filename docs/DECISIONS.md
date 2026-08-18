@@ -26958,17 +26958,48 @@ the dashboard, so this is a no-op against today's behaviour and closes the hole 
 about: a dashboard edit that silently takes the lifecycle away, and with it every artifact gate, with
 no diff anywhere.
 
-**Decision 2 — wire `check:cache-budget`, and only that one.** LIVE-029's symptom (`Build cache size
-1.53 GB exceeds limit of 1.50 GB. Invalidating cache.`) is not reproducing: three consecutive
-production builds today uploaded 1.26 / 1.28 / 1.29 GB and each one logged `Restored build cache from
-previous deployment`. The acute failure is gone. Nothing was preventing its return, and the
-instrument that would has been sitting unwired for a day.
+**Decision 2 — try to wire `check:cache-budget`, and let a real build decide. It said no.**
 
-It goes in as a reporter before it is a gate, which is the only honest way to add to `postbuild`
-(AGENTS.md). On today's numbers **neither arm fires**: node_modules is 947 MB against a 1.25 GiB
-floor (30% clear) and the packed total is ~1.27 GB against a 1.38 GiB trim point. The ordering is
-read off the same log rather than assumed — postbuild 19:13:34, `Creating build cache...` 19:14:02,
-so the trim lands 28 seconds before the pack.
+LIVE-029's symptom (`Build cache size 1.53 GB exceeds limit of 1.50 GB. Invalidating cache.`) is not
+reproducing: three consecutive production builds uploaded 1.26 / 1.28 / 1.29 GB and each logged
+`Restored build cache from previous deployment`. The acute failure is gone; nothing was preventing
+its return, and the instrument that would had been sitting unwired since the day it was written. So
+it went into `postbuild`, with the prediction — reasoned from those same logs — that **neither arm
+could fire**: node_modules 947 MB against a 1.25 GiB floor, and a packed total of ~1.27 GB against a
+1.38 GiB trim point. The PR said in as many words: do not merge until the preview build prints this
+gate green.
+
+**The preview build printed this:**
+
+```
+⚠️  check:cache-budget — TRIMMED the build cache before Vercel could reject it.
+   What the build was about to hand back measured 2.40 GiB, over the 1.38 GiB trim point.
+   drops the cheap half instead: .next/cache/turbopack (1520 MiB).
+✅ check:cache-budget — Vercel will store 0.91 GiB (node_modules 933 MiB + .next/cache 0 MiB)
+```
+
+**The floor arm was right and the trim arm is calibrated against the wrong quantity.** node_modules
+measured 933 MiB, 27% clear of its budget, which is what the orphan analysis predicted. But
+`measure()` sums RAW BYTES ON DISK, and Vercel's 1.50 GB ceiling applies to the PACKED archive. The
+script's own comment claims the two "have run ~3% apart"; on this build raw was 2.40 GiB while the
+packed upload of an equivalent tree was 1.26–1.29 GB. **About 2:1.** Turbopack's cache is highly
+compressible and it is the term that dominates.
+
+So the trim would have deleted a 1.5 GiB compiler cache on EVERY build, to prevent an overflow that
+was not happening, converting a working warm cache into a guaranteed cold compile forever. The
+wiring was taken back out before merge and `check:cache-budget` returns to the `UNWIRED` list, now
+with the measurement rather than a caution. LIVE-048 carries the calibration.
+
+**The prediction was wrong by a factor of two, and every cheap check agreed with it.** The script
+passed its own unit tests. It ran clean locally once the container's orphaned `pnpm` entries were
+subtracted. Three independent numbers agreed on node_modules. The reasoning about packed-vs-raw was
+simply never questioned, because nothing in the repo could question it. This is the exact shape of
+the 2026-08-11 incident — careful gates, all green, measuring the wrong thing — and the only reason
+it cost a revert instead of a day of dead deploys is that the merge was held for one build's output.
+
+**The ordering, at least, held.** Read off the same log rather than assumed: postbuild 19:13:34,
+`Creating build cache...` 19:14:02, so a trim does land 28 seconds before the pack. Whenever the
+threshold is right, the placement will be.
 
 **`check:shell-weight` deliberately does NOT ship here.** It has an unconfirmed failure on the last
 artifact available and no way to confirm it without a real build. Wiring one proven gate and holding
@@ -26984,9 +27015,15 @@ have failed every production build on the strength of a local run**, and it is w
 script's header so the next reader checks for orphans before believing a local failure.
 
 **Consequences.** ✅ OWN-029 is answered from evidence rather than parked on the owner, and pinned so
-the answer lives in git. ✅ LIVE-029 closes with the trim running on every build. ✅ LIVE-035 narrows
-to `check:shell-weight` alone. ⚠️ `check:build-budget` has risen every time it has been read — 5.59 →
-5.81 → 6.04 GB — and AGENTS.md now records the trend rather than only the latest figure, because the
-headroom is not the interesting number. ⚠️ The first production run of the new gate is the proof; if
-it fails, `postbuild` fails and deploys stop, so this PR is merged only after a preview build has
-printed the gate's output green.
+the answer lives in git — that half is proven and ships. ✅ LIVE-029's symptom is documented as
+not-reproducing, with the three builds that show it. 🔴 LIVE-029 does NOT close: the instrument that
+would prevent a recurrence is miscalibrated, and closing the row on a gate that would have made
+builds permanently slower would be worse than leaving it open. ✅ LIVE-048 minted for the
+calibration, with the measurement in hand. ⚠️ LIVE-035 keeps both gates rather than narrowing to
+one. ⚠️ `check:build-budget` has risen every time it has been read — 5.59 → 5.81 → 6.04 GB — and
+AGENTS.md now records the trend rather than only the latest figure, because the headroom is not the
+interesting number.
+
+**The transferable rule, restated because this ADR is now its best evidence:** hold the merge for one
+real build's output, and read what it prints. It cost four minutes. The alternative was a gate that
+deletes a working cache on every deploy, discovered later, by someone wondering why builds got slow.

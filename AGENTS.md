@@ -19,24 +19,32 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
 - **The artifact is gated in `postbuild`, not CI** — CI never builds, Vercel does. **`postbuild` is
   proven to run**: a real production log ([ADR-1081](docs/DECISIONS.md)) shows `Running "pnpm run
   build"`, then `prebuild`, then `postbuild` printing its gates. `vercel.json` now pins
-  `buildCommand: pnpm build` so a dashboard edit cannot silently take the lifecycle away. Three gates
+  `buildCommand: pnpm build` so a dashboard edit cannot silently take the lifecycle away. Two gates
   run there and fail the build:
   - `check:build-budget` — total per-function output under 8 GB; **measured 6.04 GB across 499
     functions, 2026-08-18**, up from 5.81 GB (2026-08-13) and 5.59 GB before that. It has risen every
     time it has been read; the trend, not the headroom, is the thing to watch.
   - `check:og-trace` — sharp reaching 67 functions of a 100 budget.
-  - `check:cache-budget` ([ADR-1064](docs/DECISIONS.md)) — trims `.next/cache` so Vercel stores a
-    cache it will accept, and fails on `node_modules` over 1.25 GiB. **Measured on Vercel 2026-08-18:
-    node_modules 947 MB, uploaded cache 1.26–1.29 GB against a 1.50 GB ceiling**, so neither arm fires
-    today. ⚠️ It over-reports in a long-lived dev container, where `pnpm` leaves ~0.5 GB of orphaned
-    store entries no lockfile references; check for those before believing a local failure.
 
-  ⚠️ **`check:shell-weight` ([ADR-1066](docs/DECISIONS.md)) is still NOT wired** (LIVE-035). It is the
-  CLIENT half — the app shell's eager first-load JS (**957 KB across 20 chunks, 2026-08-17**, ceiling
-  1,400 KB) plus named fingerprints for admin module bodies that must stay behind `next/dynamic` — and
-  it has an unconfirmed failure on the last artifact available. A build-blocking gate that has never
-  seen a real artifact is the 2026-08-11 incident with the roles reversed. Wire it in once a green
-  build proves it.
+  ⚠️ **Two gates are still NOT wired, and one of them was wired and taken back out on 2026-08-18**
+  (LIVE-035, LIVE-048, [ADR-1081](docs/DECISIONS.md)):
+  - `check:cache-budget` ([ADR-1064](docs/DECISIONS.md)) compares **raw bytes on disk** against
+    Vercel's **packed** 1.50 GB ceiling, and the two are about **2:1** apart, not the ~3% its header
+    assumed. Its preview build measured 2.40 GiB raw and trimmed a **1,520 MiB Turbopack cache** — to
+    prevent an overflow that was not happening, since production uploads 1.26–1.29 GB and logs
+    `Restored build cache from previous deployment` every time. Its floor arm was right
+    (node_modules 933 MiB, 27% clear). Do not re-wire until the trim point is expressed in the units
+    Vercel actually applies.
+  - `check:shell-weight` ([ADR-1066](docs/DECISIONS.md)) is the CLIENT half — the app shell's eager
+    first-load JS (**957 KB across 20 chunks, 2026-08-17**, ceiling 1,400 KB) plus named fingerprints
+    for admin module bodies that must stay behind `next/dynamic` — and it has an unconfirmed failure
+    on the last artifact available.
+
+  **The rule that keeps being right:** a build-blocking gate that has never seen a real artifact is
+  the 2026-08-11 incident with the roles reversed. `check:cache-budget` passed its own unit tests,
+  ran clean locally, was reasoned about carefully — and was still wrong, by a factor of two, in a way
+  only a real build could show. Wire a gate in the SAME change as the green build that proves it, and
+  read what it prints before merging.
 - **When the budget gate fires, fix the fan-out, do not raise the budget.** Anything reachable from a
   root layout, a ROOT metadata file, or a shared server module is multiplied by every route beneath it.
   That rule has a client twin: anything statically reachable from `components/layout/app-shell.tsx`
