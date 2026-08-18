@@ -1688,19 +1688,18 @@
     },
     {
       "id": "LIVE-029",
-      "title": "Every Vercel build now throws its cache away: 1.53 GB against a 1.50 GB limit",
+      "title": "Nothing prevents the build cache overflowing again, because the gate that would is calibrated in the wrong units",
       "status": "open",
       "lane": "live",
       "size": "S",
       "source": {
-        "file": "docs/DEPLOY-SAFETY.md",
-        "ref": "observed in the 67bd24a build log, 2026-08-17"
+        "file": "scripts/check-cache-budget.mjs",
+        "ref": "ADR-1081 / ADR-1064; preview build GyKdz12oPgfc5roSqmv6F8Nq3nyK, 2026-08-18"
       },
-      "detail": "The build log ends: `Build cache size 1.53 GB exceeds limit of 1.50 GB. Invalidating cache. Next build will start with an empty cache.` It is 2% over, so every build pays a full cold compile and the next one is guaranteed to overflow again — the steady state is no cache at all. Nothing fails, which is the problem: this is a swallowed regression of exactly the shape ADR-1003 names, visible only to someone reading the tail of a green build. It also compounds the artifact risk the deploy-safety rules exist for, since a cold build is the slowest path to the ENOSPC cliff. Fix by trimming what enters the cache, not by assuming the limit will move. Measure first: the same log reports input source code at 2,890 MB and node_modules at 948 MB.",
+      "detail": "RE-MEASURED 2026-08-18, and the row changed shape rather than closing. THE SYMPTOM IS GONE: three consecutive production builds (18:46, 19:01, 19:09) uploaded 1.26 / 1.28 / 1.29 GB against the 1.50 GB ceiling and every one logged 'Restored build cache from previous deployment'. No invalidation line anywhere. The 1.53 GB reading the row was filed on does not reproduce. WHAT IS STILL TRUE is the second half of the original row: nothing PREVENTS a recurrence. scripts/check-cache-budget.mjs was written for exactly that on 2026-08-17 and has never run on a real build. It was wired into postbuild in #2159 and TAKEN BACK OUT before merge, because the preview build of that change printed what no amount of reading could: 'TRIMMED the build cache before Vercel could reject it. What the build was about to hand back measured 2.40 GiB, over the 1.38 GiB trim point. drops the cheap half instead: .next/cache/turbopack (1520 MiB).' THE FLOOR ARM WAS RIGHT (node_modules 933 MiB, 27% clear of its 1.25 GiB budget, exactly as predicted). THE TRIM ARM IS CALIBRATED AGAINST THE WRONG QUANTITY: measure() sums RAW BYTES ON DISK and Vercel's ceiling applies to the PACKED archive. Raw 2.40 GiB versus a packed upload of 1.26-1.29 GB is about 2:1, not the ~3% the script's header assumes, because the Turbopack cache compresses hard and is the dominant term. Wired as-is it would delete a 1.5 GiB compiler cache on EVERY build to prevent an overflow that is not happening, turning a working warm cache into a guaranteed cold compile forever. TO CLOSE: fix the calibration (LIVE-048), then wire the gate in the SAME change as a preview build that prints it green. Do NOT close this row by deleting the guard or by declaring the symptom gone: the symptom being gone is why there is time to get the instrument right, not a reason to skip it.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Observed 2026-08-17 in the build log for deployment HFda7FHVybGxMCM6BKBhwxzcGAzy (commit 67bd24a): 'Build cache size 1.53 GB exceeds limit of 1.50 GB. Invalidating cache.' Not repo-probeable — the cache size is a property of the Vercel build, not of the tree.",
-        "checked": "2026-08-17"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const P='package.json',S='scripts/check-cache-budget.mjs';if(!fs.existsSync(P)||!fs.existsSync(S))process.exit(79);const pb=(JSON.parse(fs.readFileSync(P,'utf8')).scripts||{}).postbuild||'';if(!pb)process.exit(79);if(pb.indexOf('check-cache-budget')<0){console.error('nothing trims the build cache before Vercel packs it: check-cache-budget is not in postbuild ('+pb+')');process.exit(1)}process.exit(0)\""
       }
     },
     {
@@ -1895,7 +1894,7 @@
     },
     {
       "id": "LIVE-035",
-      "title": "Two artifact gates exist but are not wired into postbuild, because neither has seen a real build",
+      "title": "Two artifact gates exist but are not wired into postbuild, and a real build has now disproved one of them",
       "status": "open",
       "lane": "live",
       "size": "S",
@@ -1903,10 +1902,10 @@
         "file": "package.json",
         "ref": "ADR-1064 / ADR-1066"
       },
-      "detail": "check:shell-weight (the CLIENT half of the artifact gate: the app shell's eager first-load JS against a 1,400 KB ceiling, plus named fingerprints for admin module bodies that must stay behind next/dynamic) and check:cache-budget (trims .next/cache so Vercel stores a cache it accepts instead of discarding the whole thing) both ship as `pnpm check:` scripts. Their own unit tests pass (16 and its siblings), and check:cache-budget runs clean. They are NOT in postbuild. WHY NOT, and it is the point of this row: neither has been run against a real COMPLETED production build. The attempt on 2026-08-17 died collecting page data for /discover/cities/[citySlug], which needs Supabase credentials this container deliberately does not hold. On the last artifact available, check:shell-weight exited 1 naming lib/pricing/feature-meters.ts in the shell chunks — but that artifact was built at 20:31, plausibly BEFORE settings-panel.tsx moved five editor bodies behind dynamic(), and surface-summaries.ts mentions feature-meters only in a comment. So the failure is unconfirmed in BOTH directions. DEPLOY-SAFETY.md opens with an incident where 26 gates passed on the source and the artifact killed every production deploy for a day. A gate that has never seen a real artifact is that incident with the roles reversed: it would fail while the artifact is fine, and a failed postbuild kills deploys just as dead. TO CLOSE: run `pnpm build` in an environment with real env, read both gates' output, fix whatever check:shell-weight legitimately finds, then add both to postbuild in the SAME commit as the green build.",
+      "detail": "RE-STATED 2026-08-18 (ADR-1081). The row's SEQUENCING blocker is gone and its SUBSTANCE grew. The blocker was OWN-029's question about whether postbuild runs at all; a production log answered it (both prebuild and postbuild fire, and check:build-budget prints 6.04 GB across 499 functions), and vercel.json now pins buildCommand so a dashboard edit cannot take the lifecycle away. check:cache-budget was then wired in and TAKEN BACK OUT before merge. Its preview build measured 2.40 GiB raw and trimmed a 1520 MiB Turbopack cache, because the gate compares raw bytes on disk against Vercel's PACKED 1.50 GB ceiling and the two are ~2:1 apart, not the ~3% its header assumes. Its floor arm was correct (node_modules 933 MiB). The calibration is LIVE-048; this row still owns the WIRING of both gates. check:shell-weight has never printed on a completed build at all. Its one reading exited 1 naming lib/pricing/feature-meters.ts, on an artifact built plausibly BEFORE settings-panel.tsx moved five editor bodies behind dynamic(), and surface-summaries.ts mentions feature-meters only in a comment, so the failure is unconfirmed in BOTH directions. The 2026-08-17 attempt to run a real build here died collecting page data for /discover/cities/[citySlug], which needs Supabase credentials this container deliberately does not hold - but a PR's own PREVIEW BUILD runs the full postbuild and prints it, which is how check:cache-budget was caught. That is the route: wire, push, read the preview output, and only merge on green. TO CLOSE: both gates in postbuild, each landing in the same change as the preview build that printed it green.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const pj=JSON.parse(fs.readFileSync('package.json','utf8'));const pb=(pj.scripts||{}).postbuild||'';if(!pb)process.exit(79);if(!fs.existsSync('scripts/check-shell-weight.mjs')||!fs.existsSync('scripts/check-cache-budget.mjs'))process.exit(79);const missing=['check-shell-weight.mjs','check-cache-budget.mjs'].filter(f=>pb.indexOf(f)<0);if(missing.length){console.error('not wired into postbuild yet: '+missing.join(', '));process.exit(1)}process.exit(0)\""
+        "cmd": "node -e \"const fs=require('fs');const P='package.json';if(!fs.existsSync(P)||!fs.existsSync('scripts/check-shell-weight.mjs')||!fs.existsSync('scripts/check-cache-budget.mjs'))process.exit(79);const pb=(JSON.parse(fs.readFileSync(P,'utf8')).scripts||{}).postbuild||'';if(!pb)process.exit(79);const missing=['check-shell-weight','check-cache-budget'].filter(g=>pb.indexOf(g)<0);if(missing.length){console.error('not in postbuild, so nothing measures the artifact on a real build: '+missing.join(', '));process.exit(1)}process.exit(0)\""
       },
       "notes": "The probe is deliberately the CONSEQUENCE and not the intent: it fails while the two scripts are absent from postbuild and passes the moment they are wired in, so closing this row requires the wiring rather than a note saying it was considered. It exits 79 if either script is missing or postbuild is unreadable, so a reshaped package.json reports \"cannot tell\" instead of a clean sweep of nothing. UPDATE 2026-08-18: check:shell-weight now runs cleanly against a real (if incomplete) build in this container - 947 KB across 20 chunks, 494 client-reference manifests read, positive control present. The build still cannot COMPLETE here (page-data collection needs service-role credentials), so the postbuild wiring still waits on one green production build."
     },
@@ -2061,17 +2060,17 @@
     {
       "id": "OWN-029",
       "title": "Prove the Vercel Build Command runs pnpm build, then pin it in vercel.json",
-      "status": "open",
+      "status": "done",
       "lane": "owner",
       "size": "XS",
       "source": {
         "file": "vercel.json",
-        "ref": "TASK-INVENTORY-2026-08-17 §4a #1 / ADR-1002"
+        "ref": "ADR-1081; production build dpl_2KiiaUjD5jCPwUZdVWJtsKb4ADor, 2026-08-18"
       },
-      "detail": "vercel.json holds only a crons array — no buildCommand (re-verified 2026-08-18). Both artifact gates (check:build-budget, check:og-trace) run as postbuild lifecycle scripts, so IF the dashboard Build Command was ever overridden to skip pnpm lifecycle scripts, neither gate has ever run — and they are the two that would have caught the 2026-08-11 ENOSPC. The owner checks the dashboard setting first (an agent cannot see it), then pins buildCommand: pnpm build into vercel.json so the answer lives in git. Sequenced BEFORE LIVE-035 wires the two new gates into postbuild: wiring gates into a lifecycle that may not run is coverage theater.",
+      "detail": "CLOSED 2026-08-18, and the row's own premise was what needed retiring. It read 'the owner checks the dashboard setting first (an agent cannot see it)'. An agent CAN see it: the Vercel build log is readable through the MCP and answers the question in four lines. Production build dpl_2KiiaUjD5jCPwUZdVWJtsKb4ADor: 'Running \"pnpm run build\"' at 19:12:22, then the prebuild script, then 'frequency-web@0.1.0 postbuild' at 19:13:34 printing 'check:build-budget - 6.04 GB across 499 functions, under the 8 GB budget'. Both lifecycle hooks fire and the gate prints a real measurement, so the two artifact gates HAVE been running all along. vercel.json now pins buildCommand: pnpm build, which wins over the dashboard, so the hole the row was really about - a dashboard edit that silently takes the lifecycle away, and every artifact gate with it, leaving no diff anywhere - is closed. Cost of not re-testing the premise: this row and LIVE-035 sat parked for a week behind a question that took one tool call.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');if(!fs.existsSync('vercel.json'))process.exit(79);const v=JSON.parse(fs.readFileSync('vercel.json','utf8'));if(v.buildCommand!=='pnpm build'){console.error('vercel.json buildCommand is '+(v.buildCommand?JSON.stringify(v.buildCommand):'ABSENT'));process.exit(1)}process.exit(0)\""
+        "cmd": "node -e \"const fs=require('fs');if(!fs.existsSync('vercel.json'))process.exit(79);const v=JSON.parse(fs.readFileSync('vercel.json','utf8'));if(v.buildCommand!=='pnpm build'){console.error('vercel.json does not pin buildCommand to pnpm build (got '+JSON.stringify(v.buildCommand)+'), so a dashboard edit can still take the postbuild gates away');process.exit(1)}process.exit(0)\""
       }
     },
     {
@@ -2138,6 +2137,38 @@
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const M='components/on-air/movement-session.tsx',S='components/on-air/session.tsx';for(const f of [M,S])if(!fs.existsSync(f))process.exit(79);const strip=s=>s.replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const m=strip(fs.readFileSync(M,'utf8')),s=strip(fs.readFileSync(S,'utf8'));const bad=[];const mg=(m.match(/<Group label=/g)||[]).length,sg=(s.match(/<Group label=/g)||[]).length;if(mg+sg<12){console.error('only '+(mg+sg)+' named control group(s) on the On Air setup screens, expected 12');process.exit(1)}const mb=(m.match(/<Label>/g)||[]).length;if(mb)bad.push(mb+' heading(s) in movement-session.tsx still name nothing');const sb=(s.match(/<Label>([^<]*)<\\\\/Label>/g)||[]);if(sb.length!==2)bad.push('session.tsx has '+sb.length+' bare heading(s); exactly 2 are deliberate (the read-only Minutes row, and the disclosure button own name)');for(const f of [M,S]){const src=fs.readFileSync(f,'utf8');const g=src.slice(src.indexOf('function Group('));if(!/role=\\\"group\\\"/.test(g)||!/aria-labelledby=\\\\{id\\\\}/.test(g)||!/useId\\\\(\\\\)/.test(g))bad.push(f+': the Group atom no longer binds its heading to its controls')}if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
+      }
+    },
+    {
+      "id": "LIVE-047",
+      "title": "The check:backlog cost ceiling is asserted on wall clock, so a loaded box fails it instead of a slow probe",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "scripts/backlog-contract.test.ts",
+        "ref": "LIVE-034 / ADR-1063 follow-up; observed 2026-08-18"
+      },
+      "detail": "OBSERVED 2026-08-18, once, in a full `pnpm test` run: 'check:backlog took 23.8s, over its 20s budget. Something added expensive work to a probe.' Nothing had. MEASURED on the same tree, unloaded: origin/main 13.38s and 13.39s, the branch under test 13.49s and 13.50s. Three probes added that day (OWN-029, LIVE-029, LIVE-035, all single-file reads) cost about 110 ms between them, 0.8%, against 6.5s of headroom. A second full run of the identical tree passed. THE ASSERTION MEASURES THE WRONG QUANTITY. It spawns check:backlog and times its WALL CLOCK, from inside a suite that is at that moment running 838 test files across 4 cores. What it reads is contention, and contention is not a property of any probe. Its own message then sends the next reader hunting for expensive work that does not exist, and tells them - correctly, for the failure it was designed for - that raising the number is not the fix. So the honest failure mode and the noisy one are indistinguishable, on the one gate whose whole job is telling those two apart. The budget itself is right and should stay: LIVE-034 closed a real 24s regression and the ceiling is what stopped it recurring. What needs to change is the CLOCK. Measure the guard's CPU time rather than its elapsed time, or run this one assertion outside the parallel pool. NOT A FIX: raising GUARD_BUDGET_MS, which would blind the gate to the growth it exists to catch.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const F='scripts/backlog-contract.test.ts';if(!fs.existsSync(F))process.exit(79);const s=fs.readFileSync(F,'utf8');if(s.indexOf('GUARD_BUDGET_MS')<0)process.exit(79);if(!/cpuUsage|GUARD_BUDGET_CPU|loadInvariant|process\\\\.hrtime\\\\.bigint\\\\(\\\\)[\\\\s\\\\S]{0,400}cpu/i.test(s)){console.error('the check:backlog budget is still asserted on wall clock, so it fails on a loaded box rather than on an expensive probe');process.exit(1)}process.exit(0)\""
+      }
+    },
+    {
+      "id": "LIVE-048",
+      "title": "check:cache-budget's trim killed two builds: wrong threshold units, and it can delete the fetch cache",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "scripts/check-cache-budget.mjs",
+        "ref": "ADR-1081; preview build GyKdz12oPgfc5roSqmv6F8Nq3nyK, 2026-08-18"
+      },
+      "detail": "MEASURED, not suspected. The gate was wired into postbuild in #2159 and its preview build printed: 'TRIMMED the build cache before Vercel could reject it. What the build was about to hand back measured 2.40 GiB, over the 1.38 GiB trim point. drops the cheap half instead: .next/cache/turbopack (1520 MiB).' The wiring was reverted before merge. THE DEFECT: measure() sums raw bytes on disk; Vercel's 1.50 GB ceiling applies to the packed archive. On the same tree, raw 2.40 GiB versus a packed upload of 1.26-1.29 GB is about 2:1. The script's header asserts the two 'have run ~3% apart', and that sentence is the whole bug - everything downstream of it is arithmetic. Turbopack's cache compresses hard and is the dominant term, so the error scales with the half that grows. CONSEQUENCE, MEASURED RATHER THAN ESTIMATED, and it is worse than 'builds get slower'. The one trim this gate ever ran emptied .next/cache on claude/cache-gate, and the NEXT TWO BUILDS ON THAT BRANCH BOTH DIED: each compiled in ~2.4 minutes and then hung in 'Collecting page data using 3 workers', hitting BUILD_EXCEEDED_MAXIMUM_TIME at 46 minutes. Every other build that day was green, including four production deploys. A CONTROL separated the two suspects: claude/build-pin carried the identical vercel.json buildCommand line and nothing else, on a branch cut from main so its build restored a healthy cache, and it reported 'Build Completed in /vercel/output [59s]'. 59 seconds against two dead builds. The pin is exonerated; the emptied cache is the cause. A SECOND DEFECT, and it is the one that makes this M rather than S: .next/cache is not only Turbopack's compiler cache, it also holds the INCREMENTAL FETCH CACHE. Page-data collection prerenders hundreds of routes that each read Supabase; warm those reads are local, cold every one goes to the network and the build never finishes. The trim drops directories BIGGEST-FIRST rather than by name - deliberately, so a future growth elsewhere is still caught - and that generality is exactly what lets it delete the half the build cannot proceed without. Fixing the threshold is necessary and NOT sufficient: whatever the number becomes, the trim must drop the compiler cache BY NAME or drop nothing. The floor arm is unaffected and was correct: node_modules 933 MiB against 1.25 GiB. TO CLOSE, BOTH HALVES. (a) Make the trim drop only what is safe to lose - name the compiler cache rather than sorting by size - so a firing trim can never take the fetch cache with it. (b) Express the trim point in the units Vercel applies. Measuring the packed size means packing, which is not free on a build; the cheaper honest route is a calibration constant derived from SEVERAL real builds - raw measured by this script, packed read off the build log's 'Uploading build cache [N GB]' line - carried in the file with its measurements and its date, so it can be re-checked rather than trusted. Then re-wire under LIVE-035, in the same change as a preview build that prints it green. NOT A FIX: raising TRIM_AT_GIB to a number that happens to stop it firing, which would leave the units wrong and the gate blind at a different size. A NOTE ON THIS ROW'S OWN PROBE, because it made the mistake twice while being written. First it matched the word 'calibration', which the commit had just added to the file's header explaining the bug - a grep that passes by existing. Rewritten to require a declared CONSTANT, it then matched nothing even with the constant present: it stripped block comments first, and this file's header documents the globs Vercel caches (node_modules/**, .next/cache/**), so a slash next to a star opened a comment that ran to the next close token and blanked the declaration. That is the same defect CORPUS_BASIS strip-comments@2 was written for in the adoption scanner. It now strips line comments only.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='scripts/check-cache-budget.mjs';if(!fs.existsSync(S))process.exit(79);const s=fs.readFileSync(S,'utf8');if(s.indexOf('TRIM_AT_GIB')<0)process.exit(79);const code=s.split('\\\\n').filter(l=>!/^\\\\s*(\\\\/\\\\/|\\\\*)/.test(l)).join('\\\\n');if(!/^\\\\s*const\\\\s+[A-Z0-9_]*(PACK|RATIO|CALIBRA)[A-Z0-9_]*\\\\s*=\\\\s*[0-9]/m.test(code)){console.error('the trim point is still computed from raw bytes: no declared packed-size constant, only prose');process.exit(1)}process.exit(0)\""
       }
     }
   ]
