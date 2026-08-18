@@ -189,9 +189,18 @@ jobs:
         # On a fork PR these are empty and the guard degrades to the same loud skip rather than a
         # false pass — the skip states what was proved and what was not. That is deliberate: the
         # failure mode of a credential-less run must never be a silent green.
+        #
+        # 🔴 WHY THE REF IS GATED ON THE TOKEN. "On a fork PR these are empty" was true of the
+        # secret and FALSE of the var. GitHub withholds `secrets.*` from Dependabot and fork runs;
+        # it does NOT withhold `vars.*`, which are repository configuration. So the pair arrived
+        # half-armed by the platform's design rather than by anyone's mistake, and check:migrations
+        # correctly failed every Dependabot PR (#2144/#2145/#2146, 2026-08-17) with a message about
+        # a guard someone armed and stopped comparing — a diagnosis that pointed at a human who did
+        # not exist. Gating the ref on the token restores the tri-state the guard actually wants:
+        # both set = compare, NEITHER set = loud skip, one set = a real half-arming to shout about.
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' && vars.SUPABASE_PROJECT_REF || '' }}
         run: |
           set -uo pipefail
           failed=()
