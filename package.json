@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.33.0",
   "scripts": {
     "prebuild": "node scripts/copy-maplibre-worker.mjs",
-    "postbuild": "node scripts/check-build-budget.mjs && node scripts/check-og-trace.mjs",
+    "postbuild": "node scripts/check-build-budget.mjs && node scripts/check-og-trace.mjs && node scripts/check-cache-budget.mjs",
     "predev": "node scripts/copy-maplibre-worker.mjs",
     "dev": "next dev",
     "build": "next build",

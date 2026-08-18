@@ -27,15 +27,22 @@ const WORKFLOW_DIR = path.join(ROOT, '.github', 'workflows')
  *  CI. It was deleted rather than wired (ADR-1011). Prefer that outcome to a long-lived entry
  *  here: a guard nobody runs is a claim nobody checks. */
 const UNWIRED: Record<string, string> = {
-  // LIVE-035. Both are ARTIFACT gates: they read `.next` from a real build, so the CI array is the
-  // wrong home (CI never builds — DEPLOY-SAFETY.md, ADR-1003) and `postbuild` is the right one. They
-  // are not there YET, deliberately, because neither has been run against a real COMPLETED production
-  // build: the 2026-08-17 attempt died collecting page data for /discover/cities/[citySlug], which
-  // needs credentials the agent container does not hold. DEPLOY-SAFETY.md opens with an outage caused
-  // by gates that passed while the artifact was broken; wiring an UNPROVEN gate into postbuild is that
-  // failure reversed, and a red postbuild kills deploys just as dead. One green build decides it, and
-  // the wiring lands in the SAME commit as that build. Removing these two entries is how this row closes.
-  'check:cache-budget': 'artifact gate, awaiting one green production build before postbuild (LIVE-035)',
+  // LIVE-035, now ONE entry rather than two. Both are ARTIFACT gates: they read `.next` from a real
+  // build, so the CI array is the wrong home (CI never builds — DEPLOY-SAFETY.md, ADR-1003) and
+  // `postbuild` is the right one. `check:cache-budget` moved there on 2026-08-18 (ADR-1081) once a
+  // production log settled the two questions that were holding it: that `postbuild` runs at all
+  // (`Running "pnpm run build"` → `prebuild` → `postbuild` printing 6.04 GB across 499 functions),
+  // and that neither of its arms fires on today's numbers (node_modules 947 MB against a 1.25 GiB
+  // floor; packed cache ~1.27 GB against a 1.38 GiB trim point).
+  //
+  // `check:shell-weight` stays here because nothing settles it the same way. Its one reading exited 1
+  // naming lib/pricing/feature-meters.ts, on an artifact built plausibly BEFORE settings-panel.tsx
+  // moved five editor bodies behind `dynamic()` — so the failure is unconfirmed in BOTH directions,
+  // and no log can adjudicate it because this gate has never printed on a completed build.
+  // DEPLOY-SAFETY.md opens with an outage caused by gates that passed while the artifact was broken;
+  // wiring an UNPROVEN gate into postbuild is that failure reversed, and a red postbuild kills deploys
+  // just as dead. One green build decides it, and the wiring lands in the SAME commit as that build.
+  // Removing this last entry is how LIVE-035 closes.
   'check:shell-weight': 'artifact gate, awaiting one green production build before postbuild (LIVE-035)',
 }
 

@@ -42,7 +42,32 @@
 //
 // It runs as `postbuild`, on Vercel's real build, AFTER `next build` has written the cache and
 // BEFORE Vercel packs it — the same reason `check:build-budget` runs there. CI never builds, so a
-// source-level gate could not see any of this.
+// source-level gate could not see any of this. That ordering is not assumed, it is READ OFF A REAL
+// PRODUCTION LOG (dpl_2KiiaUjD5jCPwUZdVWJtsKb4ADor, 2026-08-18): postbuild at 19:13:34, "Build
+// Completed" 19:13:37, "Creating build cache..." 19:14:02. The trim lands 28 seconds before the
+// pack.
+//
+// ── WHAT A REAL BUILD SAYS, so the next reader does not have to take the numbers on trust ──────
+// Three consecutive production builds on 2026-08-18 (18:46, 19:01, 19:09), from Vercel's own
+// "Folder sizes on disk" report and its cache-upload line:
+//
+//     node_modules            947 MB   (identical on all three)
+//     uploaded build cache   1.26 / 1.28 / 1.29 GB   — under the 1.50 GB ceiling
+//     "Restored build cache from previous deployment (…)"  — present on every one
+//
+// So on the day this was wired in, NEITHER arm fires: 947 MB is 30% under the 1.25 GiB floor, and
+// ~1.27 GB is under the 1.38 GiB trim point. It goes in as a REPORTER first and a gate second,
+// which is the only honest way to add something to `postbuild` (AGENTS.md: a build-blocking gate
+// that has never seen a real artifact is the 2026-08-11 incident with the roles reversed).
+//
+// ⚠️ RUNNING THIS IN A LONG-LIVED DEV CONTAINER OVER-REPORTS, and by a lot. `pnpm` leaves
+// unreferenced store entries in `node_modules/.pnpm` when a dependency version changes, and
+// `pnpm install --frozen-lockfile` does not remove them. In the container this was wired from,
+// node_modules measured 1.44 GiB — over the floor, exit 1 — of which 0.49 GiB was orphans absent
+// from `pnpm-lock.yaml`: two copies of `next`, two of `@supabase/cli-linux-x64` at 154 MB each, two
+// of `@next/swc-linux-x64-gnu`. Subtract them and it is 0.96 GiB, which is Vercel's 947 MB. A
+// Vercel build installs from the lockfile into an empty tree and never has them. If this fails
+// locally, check for orphans before believing it.
 // ─────────────────────────────────────────────────────────────────────────────
 import { lstatSync, readdirSync, rmSync, existsSync } from 'node:fs'
 import path from 'node:path'

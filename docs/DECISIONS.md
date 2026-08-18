@@ -26928,3 +26928,65 @@ straight at the member route; the pass already ran on every request through the 
 is a comparison, not a round trip. ⚠️ This removes the last consumer of the `isAuthed` prop from
 `CircleCard`, `EventRow`, `PostPreview` and `DiscoverLocator` — any future caller that wants
 auth-aware link behaviour should reach for `authMode="client"`, not re-introduce a server read.
+
+## ADR-1081: The build lifecycle was provable all along, so the cache gate stops waiting and `buildCommand` stops being a dashboard setting
+
+**Context.** Two artifact gates run as `postbuild`, and `postbuild` only fires if Vercel's Build
+Command goes through a package-manager lifecycle. Nothing in the repo said it did. OWN-029 recorded
+the doubt honestly and parked it on the owner, in these words: *"the owner checks the dashboard
+setting first (an agent cannot see it)."* LIVE-035 then sequenced two further gates behind that
+check, on the correct reasoning that *"wiring gates into a lifecycle that may not run is coverage
+theater."*
+
+**The premise was false, and that is the finding.** An agent can see it. The build log is readable
+through the Vercel MCP, and it answers the question in four lines
+(`dpl_2KiiaUjD5jCPwUZdVWJtsKb4ADor`, production, 2026-08-18):
+
+```
+19:12:22  Running "pnpm run build"
+19:12:23  > frequency-web@0.1.0 prebuild /vercel/path0
+19:13:34  > frequency-web@0.1.0 postbuild /vercel/path0
+19:13:35  ✅ check:build-budget — 6.04 GB across 499 functions, under the 8 GB budget.
+```
+
+`prebuild` and `postbuild` both fire, and the gate prints a real measurement. The lifecycle runs.
+A row that says a thing cannot be checked is worth re-testing before it is worked around, because
+the cost of believing it was two rows parked for a week behind a question that took one tool call.
+
+**Decision 1 — pin it.** `vercel.json` gains `"buildCommand": "pnpm build"`. `vercel.json` wins over
+the dashboard, so this is a no-op against today's behaviour and closes the hole the row was really
+about: a dashboard edit that silently takes the lifecycle away, and with it every artifact gate, with
+no diff anywhere.
+
+**Decision 2 — wire `check:cache-budget`, and only that one.** LIVE-029's symptom (`Build cache size
+1.53 GB exceeds limit of 1.50 GB. Invalidating cache.`) is not reproducing: three consecutive
+production builds today uploaded 1.26 / 1.28 / 1.29 GB and each one logged `Restored build cache from
+previous deployment`. The acute failure is gone. Nothing was preventing its return, and the
+instrument that would has been sitting unwired for a day.
+
+It goes in as a reporter before it is a gate, which is the only honest way to add to `postbuild`
+(AGENTS.md). On today's numbers **neither arm fires**: node_modules is 947 MB against a 1.25 GiB
+floor (30% clear) and the packed total is ~1.27 GB against a 1.38 GiB trim point. The ordering is
+read off the same log rather than assumed — postbuild 19:13:34, `Creating build cache...` 19:14:02,
+so the trim lands 28 seconds before the pack.
+
+**`check:shell-weight` deliberately does NOT ship here.** It has an unconfirmed failure on the last
+artifact available and no way to confirm it without a real build. Wiring one proven gate and holding
+one unproven gate is the whole point of the rule; wiring both because they were named in the same
+sentence is not.
+
+**A measurement that only a dirty container produces.** Run locally, the gate exits 1: node_modules
+reads 1.44 GiB, over its floor. 0.49 GiB of that is orphaned `node_modules/.pnpm` entries absent from
+`pnpm-lock.yaml` — two copies of `next`, two of `@supabase/cli-linux-x64` at 154 MB each, two of
+`@next/swc-linux-x64-gnu` — which `pnpm install --frozen-lockfile` does not remove and a Vercel build
+never has. Subtract them: 0.96 GiB, which is Vercel's 947 MB. **This nearly shipped a gate that would
+have failed every production build on the strength of a local run**, and it is written into the
+script's header so the next reader checks for orphans before believing a local failure.
+
+**Consequences.** ✅ OWN-029 is answered from evidence rather than parked on the owner, and pinned so
+the answer lives in git. ✅ LIVE-029 closes with the trim running on every build. ✅ LIVE-035 narrows
+to `check:shell-weight` alone. ⚠️ `check:build-budget` has risen every time it has been read — 5.59 →
+5.81 → 6.04 GB — and AGENTS.md now records the trend rather than only the latest figure, because the
+headroom is not the interesting number. ⚠️ The first production run of the new gate is the proof; if
+it fails, `postbuild` fails and deploys stop, so this PR is merged only after a preview build has
+printed the gate's output green.
