@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
 import { getPublicCircles, getPublicCounts, getPublicEvents } from '@/lib/discover'
 import { CircleCard, SignInCta } from '@/components/discover/cards'
 import { CommunityProof } from '@/components/discover/community-proof'
@@ -40,12 +39,6 @@ export const metadata: Metadata = {
 export const revalidate = 3600
 
 export default async function DiscoverCirclesPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const isAuthed = !!user
-
   const [circles, counts, events] = await Promise.all([
     getPublicCircles(200),
     getPublicCounts(),
@@ -125,7 +118,7 @@ export default async function DiscoverCirclesPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {circles.map((c) => (
                 <div key={c.id} className="rounded-card transition-shadow hover:shadow-pop">
-                  <CircleCard circle={c} isAuthed={isAuthed} />
+                  <CircleCard circle={c} />
                 </div>
               ))}
             </div>

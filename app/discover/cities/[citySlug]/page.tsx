@@ -18,7 +18,6 @@ import {
   Button,
 } from '@/components/marketing/marketing-ui'
 import { Stat } from '@/components/ui/stat'
-import { createClient } from '@/lib/supabase/server'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, circleListSchema, eventListSchema } from '@/lib/jsonld'
 import { SITE_NAME, SITE_URL, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
@@ -79,12 +78,6 @@ export default async function DiscoverCityPage({
   const { citySlug } = await params
   const hub = await getDensityCity(citySlug)
   if (!hub) notFound()
-
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const isAuthed = !!user
 
   const { city, circles, events } = hub
   const canonical = `/discover/cities/${citySlug}`
@@ -150,7 +143,7 @@ export default async function DiscoverCityPage({
             />
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {circles.map((c) => (
-                <CircleCard key={c.id} circle={c} isAuthed={isAuthed} />
+                <CircleCard key={c.id} circle={c} />
               ))}
             </div>
           </div>
@@ -172,7 +165,7 @@ export default async function DiscoverCityPage({
             />
             <div className="space-y-3">
               {events.map((e) => (
-                <EventRow key={e.id} event={e} isAuthed={isAuthed} />
+                <EventRow key={e.id} event={e} />
               ))}
             </div>
             <div className="mt-8">

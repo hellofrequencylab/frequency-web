@@ -28,7 +28,6 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, BETA_CTA_LABEL, BETA_CTA_HREF, SOCIAL_PROOF_FLOOR, FOUNDING_PLACE } from '@/lib/site'
 import { resolvePageContent } from '@/lib/page-content'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
-import { communityHref } from '@/lib/community-href'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
 import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
@@ -886,7 +885,7 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
     <article className="rounded-card border border-border bg-surface lift-2">
       <div className="p-5">
         {a?.handle ? (
-          <Link href={communityHref(`/people/${a.handle}`, false)} className="flex items-start gap-3 mb-3 group">
+          <Link href={`/people/${a.handle}`} className="flex items-start gap-3 mb-3 group">
             {identity}
           </Link>
         ) : (
@@ -929,7 +928,7 @@ function EventRow({ event }: { event: LiveEvent }) {
         </p>
       </div>
       <Link
-        href={communityHref(`/events/${event.slug}`, false)}
+        href={`/events/${event.slug}`}
         className="flex shrink-0 items-center gap-1 text-body-sm font-semibold text-primary-strong hover:underline"
       >
         Join <ArrowRight className="h-3 w-3" aria-hidden />

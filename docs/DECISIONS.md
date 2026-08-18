@@ -26874,3 +26874,57 @@ re-exported from their old homes so no server caller changed, `season-ranks` fix
 behaving correctly. ⚠️ The gate sees static imports only, so runtime reachability, unresolvable
 barrel chains, and any credential other than this one module remain outside its field of view — the
 header says so, because a gate that overstates its reach is the thing this ADR is about.
+
+## ADR-1080: Signed-out routing belongs to the middleware, not to a boolean threaded through card props, so the /discover indexes render statically again
+
+**Context.** Every page under `app/discover` declares `export const revalidate = 3600`. Six of them
+also awaited `supabase.auth.getUser()`. That is a dynamic API, so all six were force-dynamic: the
+`revalidate` line above them was a request the render itself was voiding, silently, with no build
+warning. Every visitor and every crawler paid two auth round trips plus the page's own full query
+set, on every hit, for one boolean.
+
+The boolean's only consumer was `lib/community-href.ts`, an eleven-line helper that rewrote a card's
+`href` to `/sign-in?next=<path>` when the reader was signed out.
+
+**The blocker in the backlog row had already dissolved.** LIVE-012 was filed `blocked` on an owner
+decision, and warned in capitals against "just removing the auth read" because *"proxy.ts builds its
+redirect by rewriting the pathname and NEVER setting `next=`, so the destination is lost."* That was
+true when it was written and false by the time it was picked up: #2132 (2026-08-13) taught the proxy
+to set `?next=<pathname+search>`, which `/sign-in` re-validates into the short-lived `fq_post_login`
+cookie that `/auth/callback` honours. Reading the code before acting on the row is the only reason
+this shipped as a deletion rather than as the client-side re-plumbing the row's option (b) proposed.
+
+**Decision.** Delete `lib/community-href.ts`. Social cards link straight at the member path, and the
+middleware decides what a signed-out reader gets. Three families, three outcomes, and the rewrite was
+making the worse choice in two of them:
+
+| Path | With the rewrite | With the middleware |
+| --- | --- | --- |
+| `/people/<handle>` | `/sign-in?next=/people/<handle>` | identical — the proxy builds the same URL |
+| `/circles/<slug>` | a sign-in wall | the public twin at `/discover/circles/<id>` (`lib/nav/public-twin.ts`, #2132) |
+| `/events/<slug>` | a sign-in wall | the event itself, which is anon-readable (`isPublicEventView`) |
+
+Crawlers gain the same way. `/circles` and `/people` are `robots.ts`-disallowed, so a bot now skips
+the link entirely instead of fetching a `/sign-in?next=` it can only discover is `noindex` once it
+has spent the budget.
+
+**The tell was already in the tree.** `app/page.tsx` called `communityHref(path, false)` with a
+hardcoded literal at both of its call sites. The splash had already decided the boolean was not worth
+an auth read and taken the sign-in wall rather than pay for it; the /discover pages paid and got a
+worse destination.
+
+**A page-level guard, not a note.** `app/discover/static-render.test.ts` asserts that no `page.tsx`
+or `layout.tsx` under `app/discover` reaches for a dynamic API, that the tree it scans is non-empty,
+and that every page still declares `revalidate` — so the property being guarded stays worth
+something. It measures the CONSEQUENCE (this route can render statically) rather than the fix (these
+six reads are gone), which is what makes a seventh page fail on the day it is written. It was watched
+failing: re-adding a `getUser()` to `circles/page.tsx` names that file and no other.
+
+**Consequences.** ✅ Six pages honour their own `revalidate` again, and `app/discover/layout.tsx`'s
+`authMode="client"` (which already paid for the layout half) is no longer undone by the pages under
+it. ✅ A signed-out visitor following a shared Circle or event link sees the thing instead of a form.
+⚠️ A signed-IN member now takes one middleware pass on these links where the href previously pointed
+straight at the member route; the pass already ran on every request through the matcher, so the cost
+is a comparison, not a round trip. ⚠️ This removes the last consumer of the `isAuthed` prop from
+`CircleCard`, `EventRow`, `PostPreview` and `DiscoverLocator` — any future caller that wants
+auth-aware link behaviour should reach for `authMode="client"`, not re-introduce a server read.
