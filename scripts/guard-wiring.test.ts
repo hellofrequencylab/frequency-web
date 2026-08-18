@@ -28,14 +28,27 @@ const WORKFLOW_DIR = path.join(ROOT, '.github', 'workflows')
  *  here: a guard nobody runs is a claim nobody checks. */
 const UNWIRED: Record<string, string> = {
   // LIVE-035. Both are ARTIFACT gates: they read `.next` from a real build, so the CI array is the
-  // wrong home (CI never builds — DEPLOY-SAFETY.md, ADR-1003) and `postbuild` is the right one. They
-  // are not there YET, deliberately, because neither has been run against a real COMPLETED production
-  // build: the 2026-08-17 attempt died collecting page data for /discover/cities/[citySlug], which
-  // needs credentials the agent container does not hold. DEPLOY-SAFETY.md opens with an outage caused
-  // by gates that passed while the artifact was broken; wiring an UNPROVEN gate into postbuild is that
-  // failure reversed, and a red postbuild kills deploys just as dead. One green build decides it, and
-  // the wiring lands in the SAME commit as that build. Removing these two entries is how this row closes.
-  'check:cache-budget': 'artifact gate, awaiting one green production build before postbuild (LIVE-035)',
+  // wrong home (CI never builds — DEPLOY-SAFETY.md, ADR-1003) and `postbuild` is the right one.
+  // Neither is there, and on 2026-08-18 `check:cache-budget` was wired in and then TAKEN BACK OUT
+  // before merge, because a preview build printed what no amount of reading could:
+  //
+  //     ⚠️  check:cache-budget — TRIMMED the build cache before Vercel could reject it.
+  //        What the build was about to hand back measured 2.40 GiB, over the 1.38 GiB trim point.
+  //        drops the cheap half instead: .next/cache/turbopack (1520 MiB).
+  //
+  // The gate compares RAW bytes on disk against Vercel's PACKED ceiling, and the two are ~2:1 apart,
+  // not the ~3% its header assumes. Production was uploading 1.26–1.29 GB and restoring it every
+  // build; the trim would have deleted a 1.5 GiB compiler cache on every build to prevent an
+  // overflow that was not happening. See ADR-1081 and LIVE-048.
+  //
+  // `check:shell-weight` has never printed at all. Its one reading exited 1 naming
+  // lib/pricing/feature-meters.ts, on an artifact built plausibly BEFORE settings-panel.tsx moved
+  // five editor bodies behind `dynamic()`, so it is unconfirmed in BOTH directions.
+  //
+  // The rule these two keep proving: DEPLOY-SAFETY.md opens with an outage caused by gates that
+  // passed while the artifact was broken, and wiring an UNPROVEN gate into postbuild is that failure
+  // reversed. One green build decides it, and the wiring lands in the SAME commit as that build.
+  'check:cache-budget': 'artifact gate, threshold disproved by a real build 2026-08-18 (LIVE-048)',
   'check:shell-weight': 'artifact gate, awaiting one green production build before postbuild (LIVE-035)',
 }
 

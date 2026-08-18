@@ -42,7 +42,80 @@
 //
 // It runs as `postbuild`, on Vercel's real build, AFTER `next build` has written the cache and
 // BEFORE Vercel packs it — the same reason `check:build-budget` runs there. CI never builds, so a
-// source-level gate could not see any of this.
+// source-level gate could not see any of this. That ordering is not assumed, it is READ OFF A REAL
+// PRODUCTION LOG (dpl_2KiiaUjD5jCPwUZdVWJtsKb4ADor, 2026-08-18): postbuild at 19:13:34, "Build
+// Completed" 19:13:37, "Creating build cache..." 19:14:02. The trim lands 28 seconds before the
+// pack.
+//
+// ── WHAT A REAL BUILD SAYS, so the next reader does not have to take the numbers on trust ──────
+// Three consecutive production builds on 2026-08-18 (18:46, 19:01, 19:09), from Vercel's own
+// "Folder sizes on disk" report and its cache-upload line:
+//
+//     node_modules            947 MB   (identical on all three)
+//     uploaded build cache   1.26 / 1.28 / 1.29 GB   — under the 1.50 GB ceiling
+//     "Restored build cache from previous deployment (…)"  — present on every one
+//
+// 🔴 AND THEN A REAL BUILD DISPROVED THE THRESHOLD. This file was wired into `postbuild` on
+// 2026-08-18 on the reasoning that neither arm could fire, and the preview build of that very
+// change printed:
+//
+//     ⚠️  check:cache-budget — TRIMMED the build cache before Vercel could reject it.
+//        What the build was about to hand back measured 2.40 GiB, over the 1.38 GiB trim point.
+//        drops the cheap half instead: .next/cache/turbopack (1520 MiB).
+//     ✅ check:cache-budget — Vercel will store 0.91 GiB (node_modules 933 MiB + .next/cache 0 MiB)
+//
+// The FLOOR arm was right: 933 MiB, 27% clear of its budget. The TRIM arm is calibrated against the
+// wrong quantity. `measure()` sums RAW BYTES ON DISK; Vercel's 1.50 GB ceiling applies to the PACKED
+// archive. The comment below claiming the two "have run ~3% apart" is the error: on this build raw
+// was 2.40 GiB and the packed upload of the equivalent tree was 1.26–1.29 GB, about 2:1. Turbopack's
+// cache is highly compressible and it is the term that dominates.
+//
+// The consequence of believing it: production was uploading 1.26–1.29 GB, under the ceiling, and
+// logging "Restored build cache from previous deployment" on every build. The trim would have
+// deleted a 1.5 GiB cache on EVERY build to prevent an overflow that was not happening. So the
+// wiring was taken back out before it merged, and this file is unwired again (LIVE-048, ADR-1081).
+//
+// 🔴 AND THE COST IS NOT WHAT THE FAIL-SAFE NOTE BELOW SAYS IT IS. That note promises "a cold
+// compile (~13s)" and calls the trim "a chosen partial loss". MEASURED, on the two builds that
+// followed the one trim this file ever ran:
+//
+//     branch build, EMPTY .next/cache   compiled in 2.3 min, then hung in "Collecting page data
+//                                       using 3 workers" and hit BUILD_EXCEEDED_MAXIMUM_TIME at 46
+//                                       minutes. The next one hung the same way and also failed.
+//     same buildCommand, HEALTHY cache  Build Completed in 59 SECONDS.
+//
+// 59 seconds against two dead builds, and the control that separates them is exactly this cache:
+// `claude/build-pin` carried the identical `vercel.json` change on a branch cut from main and
+// finished in 59s, so nothing about the source was responsible.
+//
+// WHY, and it is the part the note above got wrong about its own subject: `.next/cache` is not only
+// Turbopack's compiler cache. It also holds the INCREMENTAL FETCH CACHE, and page-data collection
+// prerenders hundreds of routes that each read Supabase. Warm, those reads are served locally.
+// Cold, every one goes to the network, three workers deep, and the build never finishes. The trim
+// deletes "the cheap half" by name and by size; by CONSEQUENCE it deletes the half the build cannot
+// proceed without. On `main` that is a failed production deploy.
+//
+// So the ordering of the fix matters: correcting the packed-vs-raw threshold (LIVE-048) is
+// necessary and NOT sufficient. Whatever the threshold becomes, the trim must not be able to remove
+// the fetch cache — drop `.next/cache/turbopack` specifically, or nothing.
+//
+// 🔒 DO NOT RE-WIRE THIS UNTIL THE TRIM POINT IS EXPRESSED IN THE SAME UNITS VERCEL USES. Measuring
+// the packed size means packing, which is not free; the cheaper honest route is a calibration
+// constant derived from several real builds (raw measured here, packed read off the upload line),
+// carried with its measurements. Either way the number has to come from builds, not from reading.
+// It goes in as a REPORTER first and a gate second, which is the only honest way to add something
+// to `postbuild` (AGENTS.md: a build-blocking gate that has never seen a real artifact is the
+// 2026-08-11 incident with the roles reversed) — and note that this file DID pass its own unit
+// tests, ran clean locally after the orphan correction, and was still wrong.
+//
+// ⚠️ RUNNING THIS IN A LONG-LIVED DEV CONTAINER OVER-REPORTS, and by a lot. `pnpm` leaves
+// unreferenced store entries in `node_modules/.pnpm` when a dependency version changes, and
+// `pnpm install --frozen-lockfile` does not remove them. In the container this was wired from,
+// node_modules measured 1.44 GiB — over the floor, exit 1 — of which 0.49 GiB was orphans absent
+// from `pnpm-lock.yaml`: two copies of `next`, two of `@supabase/cli-linux-x64` at 154 MB each, two
+// of `@next/swc-linux-x64-gnu`. Subtract them and it is 0.96 GiB, which is Vercel's 947 MB. A
+// Vercel build installs from the lockfile into an empty tree and never has them. If this fails
+// locally, check for orphans before believing it.
 // ─────────────────────────────────────────────────────────────────────────────
 import { lstatSync, readdirSync, rmSync, existsSync } from 'node:fs'
 import path from 'node:path'
