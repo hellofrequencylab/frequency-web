@@ -5,7 +5,7 @@ import { RotateCcw } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
-import { SPACE_ROLES, type SpaceRole } from '@/lib/spaces/membership'
+import { SPACE_ROLES, type SpaceRole } from '@/lib/spaces/membership-core'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 import { setTypeFunctionDefault } from '@/app/(main)/admin/spaces/defaults/actions'
 

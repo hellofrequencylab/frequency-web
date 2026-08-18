@@ -14,7 +14,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { LedgerEntry, ProvenanceLedger } from '@/lib/importer/schema'
-import { LISTING_KINDS } from '@/lib/marketplace'
+import { LISTING_KINDS } from '@/lib/marketplace-core'
 import { PROPERTY_TYPES, AMENITIES } from '@/lib/listings/types'
 import type { ListingDetail, ListingDraft, ListingSeedKind } from '@/lib/listing-seeder/types'
 

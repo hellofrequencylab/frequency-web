@@ -42,6 +42,7 @@
     "check:grants": "node scripts/check-grants.mjs",
     "check:function-grants": "node scripts/check-function-grants.mjs",
     "check:admin-client": "node scripts/check-admin-client.mjs",
+    "check:client-boundary": "node scripts/check-client-server-boundary.mjs",
     "check:seo": "node scripts/check-seo.mjs",
     "check:og-trace": "node scripts/check-og-trace.mjs",
     "check:build-budget": "node scripts/check-build-budget.mjs",

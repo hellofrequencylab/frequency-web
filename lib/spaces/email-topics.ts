@@ -8,7 +8,7 @@
 // Marketing / Event update / Announcement, mapping onto marketing / events / dispatches).
 
 import type { NotificationTopic } from '@/lib/notification-preferences'
-import { CONTACT_TOPICS } from '@/lib/comms/contact-preferences'
+import { CONTACT_TOPICS } from '@/lib/comms/contact-topics'
 
 /** The default topic. A campaign with no explicit topic sends exactly as the pre-topic path did (the
  *  send loop only ever gated on 'marketing'), so back-compat is byte-identical. */

@@ -5,6 +5,11 @@
 // market_listings table is new, so we read/write through an untyped handle until
 // `supabase gen types` is re-run (repo convention — see lib/journey-plans.ts).
 
+// ── `import 'server-only'` IS THE POINT OF THE LINE BELOW, NOT DECORATION (LIVE-037) ──────────
+// The header above already said "Server-only." A comment enforces nothing: two client components
+// imported LISTING_KINDS from here and shipped the service-role client to the browser. The
+// directive makes that a BUILD FAILURE that names the importer.
+import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveSeedOwnerProfileId } from '@/lib/listing-seeder/seed-owner'
 import type { ListingDetail, ListingPickupPrecision } from '@/lib/listing-seeder/types'
@@ -14,21 +19,12 @@ function db(): SupabaseClient {
   return createAdminClient()
 }
 
-export type ListingKind = 'offer' | 'request' | 'free' | 'lend'
-export type ListingStatus = 'active' | 'claimed' | 'closed'
-
-export const LISTING_KINDS: { key: ListingKind; label: string; blurb: string }[] = [
-  { key: 'offer', label: 'Offering', blurb: 'Something to sell or hand on' },
-  { key: 'free', label: 'Free', blurb: 'Giving it away' },
-  { key: 'lend', label: 'To lend', blurb: 'Borrow and return' },
-  { key: 'request', label: 'Looking for', blurb: 'Something you need' },
-]
-
-/** One compact item-detail chip (Condition, Brand, Dimensions, ...) shown in the listing right rail. */
-export interface ListingDetailField {
-  label: string
-  value: string
-}
+// The vocabulary lives in ./marketplace-core (dependency-free) so client components can read
+// it without dragging this module's admin client into the browser (LIVE-037). Re-exported here
+// so every existing server caller is unchanged.
+export { LISTING_KINDS } from './marketplace-core'
+export type { ListingKind, ListingStatus, ListingDetailField, ListingPatch } from './marketplace-core'
+import type { ListingKind, ListingStatus, ListingDetailField, ListingPatch } from './marketplace-core'
 
 export interface MarketListing {
   id: string
@@ -202,22 +198,6 @@ export async function createListing(authorId: string, input: ListingInput): Prom
   // A freshly created row is never a "seeded, unclaimed" browse state yet (the seeder mints its claim
   // token in a separate step right after); reads recompute it. Default false keeps the shape honest.
   return { ...(data as unknown as MarketListing), seededUnclaimed: false }
-}
-
-export interface ListingPatch {
-  title?: string
-  description?: string | null
-  kind?: ListingKind
-  category?: string | null
-  priceNote?: string | null
-  neighborhood?: string | null
-  city?: string | null
-  images?: string[]
-  latitude?: number | null
-  longitude?: number | null
-  details?: ListingDetailField[]
-  pickupAddress?: string | null
-  pickupPrecision?: 'area' | 'exact'
 }
 
 export async function updateListing(id: string, patch: ListingPatch): Promise<void> {

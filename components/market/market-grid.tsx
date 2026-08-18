@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { MapPin, Navigation, Loader2, Tag } from 'lucide-react'
 import { distanceKm } from '@/lib/distance'
 import { getBrowserPosition } from '@/lib/geo-browser'
-import { LISTING_KINDS, type ListingKind } from '@/lib/marketplace'
+import { LISTING_KINDS, type ListingKind } from '@/lib/marketplace-core'
 import { useMarketQuery, marketMatch } from '@/components/marketplace/market-search'
 import { UnclaimedBadge } from '@/components/ui/unclaimed-badge'
 

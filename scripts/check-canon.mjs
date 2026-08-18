@@ -316,9 +316,9 @@ export const EXCEPTIONS = [
     why: 'the theme studio LABELS the design token. NAMING.md §Dispatch keeps "the design token (text-broadcast-*)" as one of the three named survivors, so the swatch has to be able to say its own name.',
   },
   {
-    file: 'lib/walkthroughs.ts',
+    file: 'lib/walkthroughs-core.ts',
     rule: '"broadcast" as a NOUN (the member-facing noun is Dispatch)',
-    why: 'ACCENT_TOKENS labels the same design token for the walkthrough slide editor swatch (NAMING.md §Dispatch, the design-token survivor).',
+    why: 'ACCENT_TOKENS labels the same design token for the walkthrough slide editor swatch (NAMING.md §Dispatch, the design-token survivor). It moved here from lib/walkthroughs.ts when the model split from the admin-client reads (LIVE-037); the waiver followed the code, and the guard is what noticed it had not.',
   },
 ]
 export const MAX_EXCEPTIONS = 4

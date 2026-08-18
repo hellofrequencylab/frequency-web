@@ -13,7 +13,7 @@ import {
   type SpaceModuleFamily,
 } from '@/lib/admin/modules/space-modules'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
-import { SPACE_ROLES, type SpaceRole } from '@/lib/spaces/membership'
+import { SPACE_ROLES, type SpaceRole } from '@/lib/spaces/membership-core'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Switch } from '@/components/ui/switch'
 import { setSpaceFeatureEnabled, setSpaceFeatureMinRole, saveSpaceModuleMenu } from './actions'

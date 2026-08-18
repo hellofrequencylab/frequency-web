@@ -8,7 +8,7 @@
 // import from '@/lib/spaces/invites' keeps working unchanged.
 
 import { SITE_URL } from '@/lib/site'
-import { type SpaceRole } from '@/lib/spaces/membership'
+import { type SpaceRole } from '@/lib/spaces/membership-core'
 
 /** An invite's lifecycle. pending = outstanding; accepted = the invitee was seated; revoked = the
  *  owner withdrew it before accept. */

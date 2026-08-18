@@ -9,7 +9,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getOnboardingStatus, type OnboardingStatus } from '@/lib/onboarding/status'
 import { getPracticeStreak, type PracticeStreakState } from '@/lib/practice-streak'
 import { getMemberJourneyProgress, type MemberJourneyProgress } from '@/lib/journeys/progress'
-import { rankForCompletion, journeysFinishedThisSeason, getRankDef, SEASON_RANKS, RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
+import { rankForCompletion, getRankDef, SEASON_RANKS, RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
+import { journeysFinishedThisSeason } from '@/lib/quest/completion-read'
 
 // --- the ladder ------------------------------------------------------------
 
