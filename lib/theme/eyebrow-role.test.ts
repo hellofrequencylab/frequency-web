@@ -189,3 +189,101 @@ describe('the eyebrow role is what a slot named `eyebrow` renders', () => {
     expect(handRolled).toEqual([])
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// THE SECOND REGISTER IS RETIRED. THIS BLOCK IS WHAT STOPS IT COMING BACK.
+//
+// Everything above was written while the SIZE was still an open design question, and it shows: the
+// slot scan admits two resolutions, the composite `eyebrow` utility (0.75rem) OR `tracking-eyebrow`
+// beside `uppercase`, precisely so it would not force a size on the marketing register that sets the
+// same role at `--text-body-sm` (0.875rem) over a photograph. That tolerance was correct and
+// deliberate (ADR-1072 §2) and it stays: those sites are unchanged.
+//
+// What was NOT a register but a second IMPLEMENTATION is now settled. `components/page-editor/blocks/
+// kit.tsx` exported an `<Eyebrow>` atom that hand-rolled the whole role at `text-body-sm font-bold
+// uppercase tracking-eyebrow` — DAWN's DECLARED 0.875rem, i.e. exactly the half of DAWN's own split
+// that globals.css resolved DOWN on 2026-08-05 — and about 25 block call sites imported it, plus a
+// verbatim copy of its class string in the Space canvas that previews those same blocks. So the
+// product had a class that meant 0.75rem and an import that meant 0.875rem, and which one a page got
+// depended on which one its author reached for. The owner decided it on 2026-08-18: **0.75rem wins**
+// (ADR-1075). The atom now COMPOSES the utility and declares none of it.
+//
+// WHY THIS IS A DIFFERENT ASSERTION FROM THE ONE ABOVE, and not a stricter setting of it. The scan
+// above grades a call site by the classes on ITS OWN element, so it can never see an atom: an
+// `<Eyebrow>` adopter writes no classes at all. This one grades the DECLARATION — every place in the
+// repo that pairs the Space-theme marker `font-eyebrow` with type of its own. That pairing is the
+// exact signature of a second block-kit eyebrow, it is what the three retired declarations looked
+// like, and it is a shape a marketing eyebrow (no `font-eyebrow`) can never accidentally take.
+//
+// WHAT THIS DELIBERATELY DOES NOT CLAIM. Not that every `font-eyebrow` site resolves the whole role —
+// six Space-widget headers pair it with `text-2xs`, a smaller register that is the ratchet's business
+// (`handrolled-eyebrow`, ADR-1072 §3), not this decision's. The claim is narrower and it is the one
+// OWN-027 actually earns: **the retired 0.875rem eyebrow does not exist any more, anywhere.**
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+
+/** The size class the retired register was built on. `--text-body-sm` IS 0.875rem. */
+const RETIRED_SIZE = /\btext-body-sm\b/
+/** The Space page theme's per-role kicker marker (ADR-578) — carried only by a block-kit eyebrow. */
+const KIT_MARKER = /\bfont-eyebrow\b/
+
+/** Every class-string literal in the repo's tsx, whatever syntax holds it. */
+function classStrings(): { file: string; classes: string }[] {
+  const found: { file: string; classes: string }[] = []
+  // `className="…"` / `={`…`}` / `={'…'}`, plus bare `const FOO = '…'` class constants, which is how
+  // the Space canvas held its copy. Both forms mattered: fixing only the JSX would have left the
+  // canvas previewing a size the page no longer renders.
+  const PATTERNS = [
+    /className=(?:"([^"]*)"|\{`([^`]*)`\}|\{'([^']*)'\})/g,
+    /=\s*(?:'([^']*)'|"([^"]*)"|`([^`]*)`)/g,
+  ]
+  for (const file of tsxFiles()) {
+    const text = readFileSync(join(process.cwd(), file), 'utf8')
+    for (const pattern of PATTERNS) {
+      pattern.lastIndex = 0
+      let m: RegExpExecArray | null
+      while ((m = pattern.exec(text)) !== null) {
+        const value = m.slice(1).find((g) => g !== undefined)
+        if (value) found.push({ file, classes: value.replace(/\s+/g, ' ').trim() })
+      }
+    }
+  }
+  return found
+}
+
+describe('the block kit declares the eyebrow exactly once, and not at all', () => {
+  it('still finds the block-kit eyebrow at all — a green over an empty scan is not a pass', () => {
+    // ADR-962, same reason as the scan above. If `font-eyebrow` is renamed or the atom is deleted,
+    // this fails loudly instead of quietly asserting nothing about nothing.
+    const marked = classStrings().filter((c) => KIT_MARKER.test(c.classes))
+    expect(marked.length).toBeGreaterThanOrEqual(8)
+  })
+
+  it('composes the role in the atom, so an adopter cannot pick a size', () => {
+    // The atom is the ONE place ~25 block call sites get their eyebrow from. If it resolves the role,
+    // all of them do; if it re-declares the role, all of them silently follow it off the token.
+    const kit = readFileSync(
+      join(process.cwd(), 'components', 'page-editor', 'blocks', 'kit.tsx'),
+      'utf8',
+    ).replace(/\s+/g, ' ')
+    const atom = kit.match(/export function Eyebrow\([\s\S]*?<p([^>]*)>/)
+    expect(atom, 'the <Eyebrow> atom was not found in kit.tsx').not.toBeNull()
+    const classes = atom![1]
+    expect(classes).toMatch(/(?:^|[\s`'"{])eyebrow(?:\s|`|'|")/)
+    // Every constituent of the role comes from the utility. Any of these beside it is the atom
+    // declaring the role a second time, which is how the two registers got 17% apart to begin with.
+    for (const restated of [/\btext-(?:body-sm|xs|2xs|3xs|meta|eyebrow)\b/, /\btracking-/, /\bfont-(?:bold|semibold|black|medium)\b/, /\buppercase\b/]) {
+      expect(classes, `the <Eyebrow> atom restates the role: ${restated}`).not.toMatch(restated)
+    }
+  })
+
+  it('never pairs the block-kit marker with the retired 0.875rem size, anywhere', () => {
+    // The repo-wide half. `font-eyebrow` + `text-body-sm` was the exact signature of the second
+    // implementation, in all three places it lived — kit.tsx's atom and the Space canvas's two class
+    // constants. Reintroducing it in a NEW file fails here by path and by class list.
+    const reintroduced = classStrings()
+      .filter((c) => KIT_MARKER.test(c.classes) && RETIRED_SIZE.test(c.classes))
+      .map((c) => `${c.file} — "${c.classes}"`)
+
+    expect(reintroduced).toEqual([])
+  })
+})

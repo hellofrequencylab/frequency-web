@@ -26629,3 +26629,72 @@ reachable in the client layer from ten other `'use client'` entry points, via `l
 cannot complete here, so Next never prints its per-route table. The shell-entry figures above are real
 — they come from the emitted client-reference manifests — but the "median `app/(main)` route" style
 measurement in ADR-1066 is not reproducible in this container.
+
+---
+
+## ADR-1075: The eyebrow had two implementations because it had two OWNERS — a class and an import — so the losing one stops declaring the role and starts composing it
+
+**Status:** Accepted · owner decision 2026-08-18 (backlog `OWN-027`) · enforced by three new
+assertions in `lib/theme/eyebrow-role.test.ts` (`pnpm test`, blocking)
+
+**Context.** ADR-1072 locked half of this and said so in its own consequences: "the `<Eyebrow>`
+component's 0.875rem and the utility's 0.75rem still disagree, and closing that is a design decision."
+`app/globals.css` had resolved DAWN's self-contradiction DOWN to 0.75rem on 2026-08-05;
+`components/page-editor/blocks/kit.tsx` exported an `<Eyebrow>` atom rendering `text-body-sm` —
+0.875rem, DAWN's DECLARED size, i.e. precisely the half the stylesheet had resolved AWAY from. Neither
+was drifting by accident. The class rendered what this repo chose; the import rendered what DAWN
+published; which one a page got depended on whether its author wrote a class or an import.
+
+**The measurement that made it a decision and not a bug.** ~25 block call sites imported the atom. The
+`app/globals.css` note from 2026-08-05 claimed the resolution moved no pixels, and inside the
+stylesheet that was true — nothing had reached 0.875rem THROUGH the utility. It was never true of the
+product, and `design_handoff/CHANGES.md` carried the "net rendered change was zero" sentence outbound
+to DAWN for thirteen days while ~25 marketing-page eyebrows rendered the value the sentence said had
+been resolved away. A resolution applied to a token and not to its consumers is a resolution in one
+file.
+
+**Decision. 0.75rem wins** (the owner's call, 2026-08-18; the reasoning is ADR-1072's and
+`globals.css`'s — 0.875rem is `--text-body-sm`, so an eyebrow at that size is exactly as large as the
+sentence it labels and stops reading as a label at all).
+
+1. **The atom stops declaring the role.** `font-eyebrow text-body-sm font-bold uppercase
+   tracking-eyebrow mb-4` → `eyebrow font-eyebrow mb-4`. Every constituent now comes from the one
+   utility. **The COMPONENT is kept and its REGISTER is retired**, and the distinction is the whole
+   point: `<Eyebrow>` is not a second register, it is the seam through which ~25 call sites reach
+   one. Deleting it would scatter `data-text-role="eyebrow"` (ADR-580's per-element control target)
+   and `font-eyebrow` (ADR-578's Space-theme hook) across 25 sites and hand each of them a size
+   again, which is the hand-rolling the utility exists to end.
+2. **The canvas copy moves with it.** `components/entity-blocks/space-canvas/space-canvas-block.tsx`
+   held `EYEBROW_CLS` / `EYEBROW_INK_CLS`, a verbatim copy of the atom's class string whose own
+   comment says it exists to "match kit.tsx's Eyebrow". Not scope creep: that file is the Space
+   WYSIWYG canvas, so leaving it at 0.875rem would have made the editor preview a size the published
+   page no longer renders — this change would have CREATED that defect, not inherited it.
+3. **Scope held deliberately.** The 608 `handrolled-eyebrow` ratchet sites are untouched (ADR-1072
+   §3), and so is the marketing register — ~29 sites pairing `text-body-sm` with `tracking-eyebrow`,
+   which ADR-1072 §2 admits on purpose. `check:adoption` output is **byte-identical** before and
+   after, verified by running it against a pristine `git archive HEAD` and diffing.
+
+**The assertion, and why it is a different one from ADR-1072's.** That scan grades a call site by the
+classes on its own element, so it structurally cannot see an atom: an `<Eyebrow>` adopter writes no
+classes at all, and all ~25 were invisible to it. The new block grades the **declaration**. It fails
+three ways: the atom carrying any size / tracking / weight / transform beside `eyebrow`; the
+`font-eyebrow` marker paired with `text-body-sm` anywhere in `app/` + `components/`; and a scan
+finding fewer than 8 `font-eyebrow` sites at all (ADR-962 — a rename must not green it over nothing).
+
+**Consequences.** ✅ All three proved by reintroduction and restore: putting `text-body-sm` back in
+the atom fails two assertions naming `components/page-editor/blocks/kit.tsx` and its class list;
+putting it back in `EYEBROW_CLS` fails the repo-wide one naming the canvas; renaming `font-eyebrow`
+fails the floor at `0 >= 8`. ✅ `design_handoff/CHANGES.md` §1b is corrected in the same pass per
+AGENTS.md's code-wins rule — both the stale "net rendered change was zero" and a `semibold` that
+ADR-1072 had already made `bold`. ⚠️ **This moves pixels: −14% type on every block-kit eyebrow**, and
+the page-editor blocks render the captured marketing surfaces. Rendering each repo-shipped template
+and counting `data-text-role="eyebrow"`: **home 4 · spaces 5 · the-community 5 · the-quest 3 ·
+pricing 8**, and **about 0 · the-lab 0 · circles 0**. Those five need a `pr-compare` recapture; the
+member surfaces (`/feed`, `/settings`, `/nearby`) and `/discover` reach the atom from no import path
+at all. ⚠️ The template counts are the REPO's answer, not production's: each marketing route prefers
+`getPublishedData(slug)` over its template, so a published doc that adds a Heading block puts
+`/about` or `/the-lab` in scope too. ⚠️ One second-order effect a shorter class list hides:
+`text-body-sm` also emitted a line-height and the composite `eyebrow` utility emits none, so leading
+is now inherited — the same trade the seven slots in ADR-1072 already took. Giving the utility
+`line-height: var(--text-eyebrow--line-height)` would make it fully self-sufficient, but it would
+move the ~87 sites already on it, so it is a separate change and not a passing tidy-up.

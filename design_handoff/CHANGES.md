@@ -363,14 +363,30 @@ or the token. Production had inherited both.
 its own size.** The reasoning, in case DAWN wants to resolve the other way: 0.875rem is also
 `--text-body-sm`, so an eyebrow at that size is exactly as large as the sentence it is meant to
 label, and stops reading as a label at all. `--text-meta` is documented as the content FLOOR,
-which is where a small uppercase chrome label belongs. Net rendered change for us was zero.
+which is where a small uppercase chrome label belongs.
 
 **Suggestion:** make `--text-eyebrow` the single declaration and have `.eyebrow` read it, rather
 than keeping a role token that nothing uses. A token whose own class ignores it will drift again.
 
-The eyebrow now has one answer on both axes here — **0.75rem / 0.18em / semibold / uppercase** —
-guarded by `lib/theme/eyebrow-role.test.ts`, which reads `globals.css` from disk and fails if the
-utility and the token ever point at different values again.
+**And DAWN should know it cost us something, because this paragraph said it had not.** It read
+"net rendered change for us was zero" from 2026-08-05 until 2026-08-18, and that was true only of
+the *stylesheet*: no site had reached 0.875rem through the utility. It was never true of the
+product. `components/page-editor/blocks/kit.tsx` exported an `<Eyebrow>` component rendering
+`--text-body-sm`, about 25 block call sites imported it, and a copy of its class string drove the
+Space editor canvas — so for thirteen days the repo held a resolved token and an unresolved
+product, and DAWN's declared 0.875rem kept rendering on the marketing pages under an import
+instead of a class. Settled 2026-08-18: the component composes the role and the second register is
+gone (ADR-1075). The reason to send this rather than quietly fix it is DAWN's half of the
+suggestion above — **a token whose own class ignores it drifts, and so does a role whose own
+component ignores it.** One declaration, and every consumer reaches the role by one name.
+
+The eyebrow now has one answer on both axes here — **0.75rem / 0.18em / bold / uppercase**. (Bold,
+not semibold: that was a THIRD DAWN self-contradiction, `readme.md` §4 saying "uppercase, bold"
+against the `.eyebrow` class's semibold, resolved to bold on the evidence of production's own
+count — see ADR-1072. Worth fixing in DAWN alongside the two above.) Guarded by
+`lib/theme/eyebrow-role.test.ts`, which reads `globals.css` from disk and fails if the utility and
+the token ever point at different values again, and now also fails if any component re-declares
+the role instead of composing it.
 
 **2. Four tokens where production is ahead** (contrast fixes DAWN has not picked up):
 

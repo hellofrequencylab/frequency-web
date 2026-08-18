@@ -52,10 +52,14 @@ const DESIGN_IDS: ReadonlySet<string> = new Set(DESIGN_ENTITY_BLOCK_IDS)
 const STRUCTURAL_PREVIEW_IDS: ReadonlySet<string> = new Set(['links', 'embed', 'recording'])
 
 // ── Canvas typography, matched to the published design components so the page style shows while editing. ──
-// `font-eyebrow` matches kit.tsx's Eyebrow: the Space page theme's per-role kicker hook (ADR-578), a
-// bare marker with no bold-scoped rule, so the canvas previews the same treatment the page renders.
-const EYEBROW_CLS = 'font-eyebrow text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong'
-const EYEBROW_INK_CLS = 'font-eyebrow text-body-sm font-bold uppercase tracking-eyebrow text-primary'
+// `eyebrow` + `font-eyebrow` are copied from kit.tsx's Eyebrow ON PURPOSE, because this canvas exists to
+// show the published block's own style while editing: the `eyebrow` utility is the role (0.75rem / 0.18em
+// / bold / uppercase) and `font-eyebrow` is the Space page theme's per-role kicker hook (ADR-578), a bare
+// marker with no bold-scoped rule. These carried the retired 0.875rem register until 2026-08-18
+// (ADR-1075); a canvas a size out from the page it previews is a WYSIWYG editor telling the author a lie,
+// which is why they move with the atom and why the size lives in neither file.
+const EYEBROW_CLS = 'eyebrow font-eyebrow text-primary-strong'
+const EYEBROW_INK_CLS = 'eyebrow font-eyebrow text-primary'
 /** A design-block heading (DesignHeading default): the Anton display face at the published FLUID CLAMP, so the
  *  canvas heading is not dramatically smaller than the page (parity fix 5). */
 const HEADING_CLS = 'font-display text-[clamp(1.875rem,5.5vw,3rem)] uppercase leading-[1.05] text-text'

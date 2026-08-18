@@ -121,6 +121,31 @@ import { BlockRender } from './block-render'
 //     role and ignored both the density lever and the shared-gap correction — but it is a
 //     visible tightening on every page that renders a Statement, so it is written down as a
 //     value change rather than absorbed into a class-rename snapshot bump.
+//
+//   2026-08-18 · the eyebrow decision (OWN-027 / ADR-1075). The kit's `<Eyebrow>` atom stopped
+//     DECLARING the role and started COMPOSING it: `font-eyebrow text-body-sm font-bold uppercase
+//     tracking-eyebrow mb-4` → `eyebrow font-eyebrow mb-4`. EIGHT goldens moved — every one that
+//     renders a Heading block, which is all of them except the pure Text/Statement fixtures.
+//
+//     THE DIFF, read element by element rather than counted. In all eight, the ONLY element that
+//     changed is the `data-text-role="eyebrow"` `<p>`, and the only attribute that changed on it is
+//     `class`. No element was added, removed or moved. The nested-eyebrow case (the `withLive`
+//     golden) is the useful control: its DEEPLY nested Heading eyebrow moved and the LiveStats
+//     eyebrow three lines above it — `text-body-sm font-bold uppercase tracking-eyebrow`, hand-rolled
+//     in `components/marketing/blocks.tsx` and NOT an `<Eyebrow>` adopter — is byte-identical. That
+//     is the scope line holding: the component retired, not every string that looks like it.
+//
+//     A REAL VALUE CHANGE, stated plainly for the same reason the entry above states one. The class
+//     list is shorter but it is not a rename: `text-body-sm` (0.875rem) is gone and the `eyebrow`
+//     utility's `--text-eyebrow` (0.75rem) takes over, a **−14%** type step on every block-kit
+//     eyebrow. Tracking, weight, transform and face are unchanged — 0.18em came from
+//     `tracking-eyebrow` and now comes from the utility's `letter-spacing`, 700 came from
+//     `font-bold` and now comes from `--weight-bold`, and `--font-grotesk` is unported so the
+//     utility's `font-family` falls through to `--font-sans`, the face this `<p>` already inherited.
+//     One second-order effect, named because a shorter class list hides it: `text-body-sm` also
+//     emitted a line-height (`calc(1.25 / 0.875)`) and the composite `eyebrow` utility emits none,
+//     so leading is now inherited — the same trade the seven slots converted in ADR-1072 already
+//     took, on a single-line label that carries its own `mb-4`.
 // ─────────────────────────────────────────────────────────────────────────────
 
 type BlockItem = { type: string; props: Record<string, unknown> }
@@ -167,7 +192,7 @@ describe('BlockRender golden markup (frozen; was byte-identical to Puck rsc <Ren
     const html = block(data)
     expect(html).toContain('Gather your ') // accent word "people" is wrapped in a span
     expect(html).toContain('bold')
-    expect(html).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="font-eyebrow text-body-sm font-bold uppercase tracking-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Gather your <span class="text-primary-strong">people</span></h2></div></section><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><div class="text-body-lg text-muted leading-relaxed space-y-4"><p>Some <strong class="font-semibold text-text">bold</strong> and <em>italic</em> copy.</p></div></div></section><section class="bg-marketing-canvas mk-cream px-6 mk-tight "><p class="font-display uppercase max-w-3xl mx-auto text-center text-text text-[clamp(2rem,6.5vw,3.75rem)] leading-[1.1]">A <span class="text-primary-strong">bold</span> statement.</p></section>"`)
+    expect(html).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="eyebrow font-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Gather your <span class="text-primary-strong">people</span></h2></div></section><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><div class="text-body-lg text-muted leading-relaxed space-y-4"><p>Some <strong class="font-semibold text-text">bold</strong> and <em>italic</em> copy.</p></div></div></section><section class="bg-marketing-canvas mk-cream px-6 mk-tight "><p class="font-display uppercase max-w-3xl mx-auto text-center text-text text-[clamp(2rem,6.5vw,3.75rem)] leading-[1.1]">A <span class="text-primary-strong">bold</span> statement.</p></section>"`)
   })
 
   it('threads metadata through the config root (space layout preset wraps children)', () => {
@@ -183,8 +208,8 @@ describe('BlockRender golden markup (frozen; was byte-identical to Puck rsc <Ren
     const withoutSpace = block(data, {})
     expect(withSpace).not.toBe(withoutSpace)
     expect(withSpace).toContain('space-y-16') // the "sections" preset rhythm
-    expect(withSpace).toMatchInlineSnapshot(`"<div class="space-y-16 py-10 sm:space-y-20 sm:py-14"><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="font-eyebrow text-body-sm font-bold uppercase tracking-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Space page</h2></div></section></div>"`)
-    expect(withoutSpace).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="font-eyebrow text-body-sm font-bold uppercase tracking-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Space page</h2></div></section>"`)
+    expect(withSpace).toMatchInlineSnapshot(`"<div class="space-y-16 py-10 sm:space-y-20 sm:py-14"><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="eyebrow font-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Space page</h2></div></section></div>"`)
+    expect(withoutSpace).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="eyebrow font-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Space page</h2></div></section>"`)
   })
 
   it('threads metadata into a top-level block (LiveStats reads puck.metadata.live)', () => {
@@ -214,7 +239,7 @@ describe('BlockRender golden markup (frozen; was byte-identical to Puck rsc <Ren
     }
     const html = block(data)
     expect(html).toContain('Inside a container')
-    expect(html).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto"><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="font-eyebrow text-body-sm font-bold uppercase tracking-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Inside a container</h2></div></section><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><div class="text-body-lg text-muted leading-relaxed space-y-4"><p>Nested body.</p></div></div></section></div></div></section>"`)
+    expect(html).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto"><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="eyebrow font-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Inside a container</h2></div></section><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><div class="text-body-lg text-muted leading-relaxed space-y-4"><p>Nested body.</p></div></div></section></div></div></section>"`)
   })
 
   it('nested slots: Columns renders col1 / col2 / col3 (3-column)', () => {
@@ -229,7 +254,7 @@ describe('BlockRender golden markup (frozen; was byte-identical to Puck rsc <Ren
         }),
       ],
     }
-    expect(block(data)).toMatchInlineSnapshot(`"<section class="px-6 py-12 sm:py-16 bg-surface "><div class="max-w-5xl mx-auto grid gap-8 md:grid-cols-3 items-start"><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="font-eyebrow text-body-sm font-bold uppercase tracking-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Col one</h2></div></section></div><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><div class="text-body-lg text-muted leading-relaxed space-y-4"><p>Col two</p></div></div></section></div><div><section class="bg-marketing-canvas mk-cream px-6 mk-tight "><p class="font-display uppercase max-w-3xl mx-auto text-center text-text text-[clamp(2rem,6.5vw,3.75rem)] leading-[1.1]">Col three</p></section></div></div></section>"`)
+    expect(block(data)).toMatchInlineSnapshot(`"<section class="px-6 py-12 sm:py-16 bg-surface "><div class="max-w-5xl mx-auto grid gap-8 md:grid-cols-3 items-start"><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="eyebrow font-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Col one</h2></div></section></div><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><div class="text-body-lg text-muted leading-relaxed space-y-4"><p>Col two</p></div></div></section></div><div><section class="bg-marketing-canvas mk-cream px-6 mk-tight "><p class="font-display uppercase max-w-3xl mx-auto text-center text-text text-[clamp(2rem,6.5vw,3.75rem)] leading-[1.1]">Col three</p></section></div></div></section>"`)
   })
 
   it('nested slots: SpaceLayout main/side, under a space-metadata root', () => {
@@ -244,7 +269,7 @@ describe('BlockRender golden markup (frozen; was byte-identical to Puck rsc <Ren
         }),
       ],
     }
-    expect(block(data, { space: { layoutPreset: 'stack' } })).toMatchInlineSnapshot(`"<div class="space-y-12 py-8 sm:space-y-14 sm:py-10"><section class="w-full"><div class="grid gap-10 lg:grid-cols-3 lg:gap-14"><div class="space-y-14 lg:col-span-2"><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="font-eyebrow text-body-sm font-bold uppercase tracking-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Main region</h2></div></section></div></div><aside class="space-y-6 lg:sticky lg:top-24 lg:self-start"><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><div class="text-body-lg text-muted leading-relaxed space-y-4"><p>Side region</p></div></div></section></div></aside></div></section></div>"`)
+    expect(block(data, { space: { layoutPreset: 'stack' } })).toMatchInlineSnapshot(`"<div class="space-y-12 py-8 sm:space-y-14 sm:py-10"><section class="w-full"><div class="grid gap-10 lg:grid-cols-3 lg:gap-14"><div class="space-y-14 lg:col-span-2"><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="eyebrow font-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Main region</h2></div></section></div></div><aside class="space-y-6 lg:sticky lg:top-24 lg:self-start"><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><div class="text-body-lg text-muted leading-relaxed space-y-4"><p>Side region</p></div></div></section></div></aside></div></section></div>"`)
   })
 
   it('deep slot recursion + metadata threaded into a slotted LiveStats', () => {
@@ -268,7 +293,7 @@ describe('BlockRender golden markup (frozen; was byte-identical to Puck rsc <Ren
     const withoutLive = block(data, {})
     expect(withLive).not.toBe(withoutLive)
     expect(withLive).toContain('Deeply nested heading')
-    expect(withLive).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto"><div><section class="px-6 py-12 sm:py-16 bg-surface "><div class="max-w-5xl mx-auto grid gap-8 md:grid-cols-2 items-start"><div><section class="bg-surface px-6 py-24 sm:py-28 "><div class="max-w-3xl mx-auto text-center"><p class="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-4">Not a someday idea</p><h2 class="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)] mb-12">It’s already happening.</h2><div class="grid grid-cols-3 gap-6 max-w-xl mx-auto"><div><p class="font-display text-stat tabular-nums leading-none text-text">1,234</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Members</p></div><div><p class="font-display text-stat tabular-nums leading-none text-text">56</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Circles</p></div><div><p class="font-display text-stat tabular-nums leading-none text-text">0</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Events soon</p></div></div></div></section></div><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="font-eyebrow text-body-sm font-bold uppercase tracking-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Deeply nested heading</h2></div></section></div></div></section></div></div></section>"`)
+    expect(withLive).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto"><div><section class="px-6 py-12 sm:py-16 bg-surface "><div class="max-w-5xl mx-auto grid gap-8 md:grid-cols-2 items-start"><div><section class="bg-surface px-6 py-24 sm:py-28 "><div class="max-w-3xl mx-auto text-center"><p class="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-4">Not a someday idea</p><h2 class="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)] mb-12">It’s already happening.</h2><div class="grid grid-cols-3 gap-6 max-w-xl mx-auto"><div><p class="font-display text-stat tabular-nums leading-none text-text">1,234</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Members</p></div><div><p class="font-display text-stat tabular-nums leading-none text-text">56</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Circles</p></div><div><p class="font-display text-stat tabular-nums leading-none text-text">0</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Events soon</p></div></div></div></section></div><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="eyebrow font-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Deeply nested heading</h2></div></section></div></div></section></div></div></section>"`)
   })
 
   it('skips unknown block types instead of throwing', () => {
@@ -284,7 +309,7 @@ describe('BlockRender golden markup (frozen; was byte-identical to Puck rsc <Ren
     expect(html).toContain('Real block')
     expect(html).toContain('Another real block')
     expect(html).not.toContain('ThisBlockDoesNotExist')
-    expect(html).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="font-eyebrow text-body-sm font-bold uppercase tracking-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Real block</h2></div></section><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><div class="text-body-lg text-muted leading-relaxed space-y-4"><p>Another real block</p></div></div></section>"`)
+    expect(html).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="eyebrow font-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Real block</h2></div></section><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><div class="text-body-lg text-muted leading-relaxed space-y-4"><p>Another real block</p></div></div></section>"`)
   })
 
   it('renders an empty document to empty markup', () => {
