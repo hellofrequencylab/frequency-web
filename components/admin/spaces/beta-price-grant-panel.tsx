@@ -44,7 +44,7 @@ export function BetaPriceGrantPanel({
 
   if (state.kind === 'unavailable') {
     return (
-      <div className="rounded-2xl border border-warning/60 bg-warning-bg p-4">
+      <div className="rounded-card border border-warning/60 bg-warning-bg p-4">
         <p className="text-body-sm font-semibold text-text">Not available yet</p>
         <p className="mt-1 text-body-sm text-muted">{state.message}</p>
       </div>
@@ -59,8 +59,8 @@ export function BetaPriceGrantPanel({
         <span
           className={
             granted
-              ? 'rounded-full bg-success-bg px-3 py-1 text-meta font-semibold text-success'
-              : 'rounded-full bg-surface-elevated px-3 py-1 text-meta font-semibold text-muted'
+              ? 'rounded-pill bg-success-bg px-3 py-1 text-meta font-semibold text-success'
+              : 'rounded-pill bg-surface-elevated px-3 py-1 text-meta font-semibold text-muted'
           }
         >
           {granted ? 'Beta rate granted' : 'Regular pricing'}

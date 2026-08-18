@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2292,
+      "baseline": 2291,
       "frozen": {
-        "at": "2026-08-17",
-        "value": 2292,
-        "direction": "rebased",
+        "at": "2026-08-18",
+        "value": 2291,
+        "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 2287 -> 2292, and this is the ONE key in this pass that also carries other work, so both halves are stated. On the COMMITTED tree the corpus change alone is 2284 -> 2295, +11 real rounded-* utilities unmasked in 7 files (events/[slug]/page.tsx +3, crew/page.tsx +2, loom-image-popup.tsx +2, and one each in crm/intelligence, asset-av-panel, messages/[id], layout-editor). A sweep in flight in this shared worktree accounts for a further -3, giving 2292. Note what the old instrument was reporting: 2281 against a 2287 floor, printed as a green shrink, while the true count was above the floor.",
-        "from": 2287
+        "reason": "The beta-price-grant panel's three literal radii (one rounded-2xl card, two rounded-full pills) moved onto rounded-card / rounded-pill: identical pixels at the base skin and skin-responsive everywhere else. Pays off the +2 that arrived with the panel in #2143 rather than banking it.",
+        "from": 2292
       },
       "history": [
         {
@@ -203,6 +203,13 @@
           "to": 2292,
           "direction": "rebased",
           "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 2287 -> 2292, and this is the ONE key in this pass that also carries other work, so both halves are stated. On the COMMITTED tree the corpus change alone is 2284 -> 2295, +11 real rounded-* utilities unmasked in 7 files (events/[slug]/page.tsx +3, crew/page.tsx +2, loom-image-popup.tsx +2, and one each in crm/intelligence, asset-av-panel, messages/[id], layout-editor). A sweep in flight in this shared worktree accounts for a further -3, giving 2292. Note what the old instrument was reporting: 2281 against a 2287 floor, printed as a green shrink, while the true count was above the floor."
+        },
+        {
+          "at": "2026-08-18",
+          "from": 2292,
+          "to": 2291,
+          "direction": "lowered",
+          "reason": "The beta-price-grant panel's three literal radii (one rounded-2xl card, two rounded-full pills) moved onto rounded-card / rounded-pill: identical pixels at the base skin and skin-responsive everywhere else. Pays off the +2 that arrived with the panel in #2143 rather than banking it."
         }
       ]
     },
