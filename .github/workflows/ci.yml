@@ -157,11 +157,13 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          # The API's own count, not a git diff: the checkout is depth-1, so BASE...HEAD has no
+          # merge base on the runner and `git diff` exits 128 (this step's first version did
+          # exactly that). GitHub already counted the PR's files; use its number.
+          CHANGED: ${{ github.event.pull_request.changed_files }}
         run: |
           set -euo pipefail
-          git fetch --quiet --depth=1 origin "${BASE_SHA}"
-          count=$(git diff --name-only "${BASE_SHA}"...HEAD | wc -l | tr -d ' ')
+          count="${CHANGED}"
           echo "Changed files vs base: ${count}"
           if [ "${count}" -gt 40 ]; then
             case "${PR_TITLE}" in
