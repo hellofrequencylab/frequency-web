@@ -7,7 +7,10 @@
 //     node --experimental-strip-types scripts/help-index.mts
 
 import { createHash } from 'node:crypto'
-import { getAllCategories } from '../lib/help/content.ts'
+// content-core, NOT content: this script runs with no `pnpm install` (see help-index.yml), so it
+// must not reach anything in node_modules. content.ts imports react for request memoisation,
+// which a one-shot CLI neither needs nor can resolve here. ADR-1078.
+import { loadCategoriesFromDisk, selectCategories } from '../lib/help/content-core.ts'
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -56,7 +59,7 @@ async function embed(text: string): Promise<number[]> {
 
 async function main() {
   const runStart = new Date().toISOString()
-  const cats = await getAllCategories() // published only
+  const cats = selectCategories(await loadCategoriesFromDisk()) // published only
   const rows: Record<string, unknown>[] = []
 
   for (const cat of cats) {
