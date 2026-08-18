@@ -12,15 +12,17 @@ ladder, ADR-811; every yearly price is two months free):
 
 | Plan | Who buys it | Price |
 |---|---|---|
-| **Business** | a Space | $29/mo list, $19/mo founding beta charged today |
-| **Collective** | a Space | $79/mo list, $49/mo founding beta charged today |
+| **Business** | a Space | $29/mo, charged today (the $19 beta rate is closed) |
+| **Collective** | a Space | $79/mo, charged today (the $49 beta rate is closed) |
 | **Non Profit** | a verified 501(c)(3) Space | $39/mo flat, never per seat |
 | **Independent** | a Space going white-label, off the network | $249/mo flat, no founding discount |
 | **Crew** | a member | **Pay what you want**, from $4.99/mo (floor), $24.99 suggested |
 | **Supporter** | not a tier | A badge earned by paying at or above the suggested Crew amount |
 
-The founding beta anchors ($19 Business, $49 Collective) auto-revert to list on 2026-09-01
-(`lib/pricing/beta.ts`); a Space that bought at the founding rate keeps it. The Collective beta
+⚠️ The founding beta anchors ($19 Business, $49 Collective) HAVE reverted to list: the owner closed the
+window early on **2026-08-17** ([ADR-1060](DECISIONS.md)), so `BETA_PRICING_ENDS_AT`
+(`lib/pricing/beta.ts`) is a past instant and the checkout charges $29 / $79. A Space that had bought at
+the founding rate would keep it; none had (0 subscription items on 2026-08-17). The Collective beta
 price is one cell of `SPACE_PLAN_PRICE_CENTS` (`lib/pricing/feature-tiers.ts`), read by every
 surface that shows it, and resolved through `tierPriceCents` exactly as the checkout does. (It had
 its own `COLLECTIVE_BETA_CENTS` constant until 2026-08-10; a per-tier patch is a list of tiers
@@ -136,9 +138,11 @@ paid-gates date and the gates will follow the master billing switch exactly.
   gone; founding pricing lives in the plan catalog itself as the founding beta rates above.
 - **Founding Members (personal).** A paid Founding Member is flagged for life and grandfathered at their
   rate. The founding rate and seat cap are edited in the `Founding rates` section of `/admin/pricing`.
-- **Founding Businesses.** A Space that buys a plan at today's founding beta rate ($19 Business, $49
-  Collective) is grandfathered at that price for the life of its subscription. The locked Founding
-  Business display values are also edited under `Founding rates`.
+- **Founding Businesses.** ⚠️ There is no beta rate to buy at any more ([ADR-1060](DECISIONS.md)): a
+  Space subscribing today pays $29 / $79. The grandfather mechanism itself is unchanged (a locked Stripe
+  price id on the subscription item), and `FOUNDING_DEFAULT.business_monthly_cents` is still **$19**, so
+  the beta-founder grant still stamps a $19 lifetime rate that nothing sells. Whether that stays is an
+  open owner decision. The locked Founding Business display values are edited under `Founding rates`.
 - **Business plan (ongoing).** A Space owner buys it from their Space billing settings once the plan is
   enabled and billing is live. It includes a trial with a card upfront. Business is the full-depth tier;
   free is a usage state within Business, not a separate plan.

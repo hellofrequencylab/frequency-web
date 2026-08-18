@@ -67,7 +67,7 @@ export function MessagingControlPanel({ data }: { data: ControlPanelData }) {
       <div className="rounded-2xl border border-border bg-surface px-4 py-3 text-body-sm text-muted">
         <p className="font-semibold text-text">Reading this panel</p>
         <p className="mt-1">
-          Every row is one person and one message: a campaign email or a broadcast Dispatch, and where it
+          Every row is one person and one message: a campaign email or a Dispatch, and where it
           landed. A status moves from Sent to Delivered to Opened to Clicked as the recipient engages.
           Skipped and Suppressed mean the send-gate held the message back (a turned-off preference, a
           missing consent, or a bounced address), so it never left. Filter by campaign, by person, or by

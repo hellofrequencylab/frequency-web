@@ -118,8 +118,13 @@ export function AwardDialog({
                   <div className="mt-1 flex items-center gap-2 rounded-lg border border-border px-3 py-2">
                     <span className="text-body-sm text-text flex-1">{selectedMember.display_name}</span>
                     <span className="text-meta text-subtle">@{selectedMember.handle}</span>
-                    <button onClick={() => setSelectedMember(null)} className="text-subtle hover:text-muted">
-                      <X className="w-3.5 h-3.5" />
+                    <button
+                      type="button"
+                      aria-label="Clear the chosen member"
+                      onClick={() => setSelectedMember(null)}
+                      className="text-subtle hover:text-muted"
+                    >
+                      <X className="w-3.5 h-3.5" aria-hidden />
                     </button>
                   </div>
                 ) : (

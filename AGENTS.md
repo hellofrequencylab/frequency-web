@@ -19,9 +19,17 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
 - **The artifact is gated in `postbuild`, not CI** — CI never builds, Vercel does. `check:build-budget`
   (total per-function output under 8 GB; **measured 5.81 GB across 499 functions, 2026-08-13**, up
   from 5.59 GB) and `check:og-trace` (sharp reaching 67 functions of a 100 budget) run on the real
-  build and fail it.
+  build and fail it. `check:shell-weight` ([ADR-1066](docs/DECISIONS.md)) is the CLIENT half — the app
+  shell's eager first-load JS (**957 KB across 20 chunks, 2026-08-17**, ceiling 1,400 KB) plus named
+  fingerprints for admin module bodies that must stay behind `next/dynamic` — and `check:cache-budget`
+  ([ADR-1064](docs/DECISIONS.md)) trims the build cache. ⚠️ **Both are `pnpm check:` scripts, NOT in
+  `postbuild` yet** (LIVE-035): neither has been run against a real completed production build, and a
+  build-blocking gate that has never seen a real artifact is the 2026-08-11 incident with the roles
+  reversed. Wire them in once a green build proves them.
 - **When the budget gate fires, fix the fan-out, do not raise the budget.** Anything reachable from a
   root layout, a ROOT metadata file, or a shared server module is multiplied by every route beneath it.
+  That rule has a client twin: anything statically reachable from `components/layout/app-shell.tsx`
+  is parsed on every phone on every route under `app/(main)`, whether or not it renders.
 - **Run the control before theorising** — redeploying the last known-good tree took three minutes and
   excluded platform, region, container and account in one shot. **Let builds finish**; cancelling
   destroys the evidence.

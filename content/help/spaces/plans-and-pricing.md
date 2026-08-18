@@ -3,7 +3,7 @@ title: Plans and pricing
 description: What each Space plan costs, what it includes, and how to pick the one that fits.
 category: spaces
 order: 2
-updated: 2026-07-30
+updated: 2026-08-17
 audience: member
 featureKeys: [billing]
 status: published
@@ -22,9 +22,8 @@ is how you actually run things. This page covers what each plan costs and what i
 | **Non Profit** | $39 | $390 | Verified nonprofits, with the full Collective toolkit |
 | **Independent** | $249 | $2,490 | White label, run on your own terms, disconnected from the network |
 
-Those are the list prices. **During the Opening Beta, Business is $19 a month and Collective is $49 a
-month**, and a Space that subscribes at the Opening Beta rate keeps that rate for as long as it keeps
-the plan. See "During the beta" below.
+Those are the prices, and they are the same whenever you start. There is no beta rate any more: the
+Opening Beta pricing closed on 17 August 2026.
 
 Paying yearly gives you **two months free**: a yearly plan is ten months of the monthly price.
 
@@ -99,6 +98,5 @@ You can change plans whenever you like. See [Billing](/help/spaces/billing) for 
 **Every Space has full access until September 1**, whatever plan it is on. Take your time, try the
 tools, and find out what you actually need before you pay for it.
 
-You can subscribe now if you want to. The price you lock during the Opening Beta is the price you
-keep, and paying early is what holds it. On September 1 the plans start doing what they say: the
-tools each one includes stay with that plan.
+You can subscribe now if you want to, at the same price you would pay later. On September 1 the plans
+start doing what they say: the tools each one includes stay with that plan.

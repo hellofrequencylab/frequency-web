@@ -16,13 +16,12 @@ function placedIds(rows: { cells: string[][] }[] | undefined): string[] {
 }
 
 describe('beta launch emails', () => {
-  it('ships the 7 emails in launch order, each with the required fields', () => {
+  it('ships the 6 emails in launch order, each with the required fields', () => {
     const order = [
       'waitlist_confirm',
       'wave_soon',
       'invite',
       'founding_member',
-      'founding_business',
       'referral_contest',
       'graduation',
     ]

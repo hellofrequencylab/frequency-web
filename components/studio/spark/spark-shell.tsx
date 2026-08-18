@@ -169,7 +169,7 @@ export function SparkShell({
         aria-label={stepLabel ? `Step ${step} of ${totalSteps}: ${stepLabel}` : `Step ${step} of ${totalSteps}`}
         className="mt-7 animate-[slideUp_0.35s_ease-out] outline-none motion-reduce:animate-none"
       >
-        <p className="mb-1.5 text-meta font-semibold uppercase tracking-widest text-primary-strong">{eyebrow}</p>
+        <p className="eyebrow mb-1.5 text-primary-strong">{eyebrow}</p>
         {headingLevel === 1 ? (
           <h1 className="text-page-title font-bold text-text">{title}</h1>
         ) : (

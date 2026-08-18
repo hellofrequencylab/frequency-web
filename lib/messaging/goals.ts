@@ -113,7 +113,7 @@ export const MESSAGING_GOALS: readonly MessagingGoal[] = [
   },
   {
     key: 'announce',
-    label: 'Announce or broadcast',
+    label: 'Announce or update',
     object: 'campaign',
     blurb: 'A one-time update to members: news, a change, or a heads up.',
     suggestedName: 'Announcement',

@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest'
-// @ts-expect-error — plain .mjs guard script, no types
 import { checkVocab, MIN_SCANNED_FILES } from './check-vocab.mjs'
 
 // The vocabulary contract (ADR-879 / ADR-887, enforced per ADR-889), moved out of the CI guards

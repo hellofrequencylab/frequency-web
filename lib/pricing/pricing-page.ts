@@ -65,13 +65,15 @@ export function pricingCatalog(): Record<CatalogItemKey, ResolvedCatalogItem> {
  *  FAQ answers, persona pages, funnel beats) interpolates THESE instead of hardcoding "$29"/"$19"/...,
  *  so a catalog change reflows every sentence that quotes a price. PURE data. */
 export interface PriceStrings {
-  /** Business list, e.g. "$29". */
+  /** Business list, and since the beta window closed (ADR-1060) the price a Space is charged, e.g. "$29". */
   businessList: string
-  /** Business Opening Beta anchor (the charged price during beta), e.g. "$19". */
+  /** 🔴 THE BETA ANCHOR, WHICH IS NO LONGER CHARGED (ADR-1060). Kept because the window is one editable
+   *  constant away from re-opening, but NO copy surface may quote it while `isBetaPricingActive()` is
+   *  false: a sentence that offers "$19 at the Opening Beta price" is an offer the checkout refuses. */
   businessBeta: string
-  /** Collective list, e.g. "$79". */
+  /** Collective list, and the charged price today, e.g. "$79". */
   collectiveList: string
-  /** Collective Opening Beta anchor, e.g. "$49". */
+  /** The Collective beta anchor. Same caution as `businessBeta`: not charged while the window is shut. */
   collectiveBeta: string
   /** Non Profit flat, e.g. "$39". */
   nonprofit: string
@@ -103,8 +105,11 @@ export const PLAN_STORY = {
     'Frequency is where your local community happens. Connection is free. Businesses pay for reach and scale, never for access to people. Paid plans raise the limits.',
   /** The meter framing: paid is how much, never whether. */
   meters: 'Everything is included. Paid plans raise the limits.',
-  /** The honest founding-rate framing, tied to the Summer of Frequency banner language. */
-  founding: 'Opening Beta rates hold through the Summer of Frequency and stay locked for as long as you keep the plan.',
+  /** The honest yearly framing. It used to carry the Opening Beta line ("beta rates hold through the
+   *  Summer of Frequency"), which stopped being true when the owner closed the window on 2026-08-17
+   *  (ADR-1060). What replaces it is the deal that survived: the same price whenever you start, and two
+   *  months free on the year. */
+  founding: 'Every plan is one price, the same whenever you start, and paying for the year is two months free.',
 } as const
 
 // ── The three commercial tiers (the pricing TABLE columns) ──────────────────────────────────────────
@@ -346,9 +351,10 @@ export interface PersonaLoadout {
 
 /** The FIVE persona doors (ADR-590): one system, presented by who they are. Each resolves to Business,
  *  Business + Resonance, or the Nonprofit plan. Coaches/healers and community builders turn the Resonance
- *  Engine on (Business + Resonance = $19 + $20/mo at founding); studios and event hosts run on Business
- *  ($19/mo founding); nonprofits run the flat Nonprofit plan ($39/mo). The monthly totals come from the
- *  catalog, never hardcoded, so a catalog change reflows every figure. */
+ *  Engine on (Business + Resonance = $29 + $20/mo at list); studios and event hosts run on Business
+ *  ($29/mo); nonprofits run the flat Nonprofit plan ($39/mo). The monthly totals come from the catalog,
+ *  never hardcoded, so a catalog change reflows every figure — the figures here moved on their own when
+ *  the owner closed the beta window (ADR-1060) and the strip flipped to list. */
 export const PERSONA_LOADOUTS: readonly PersonaLoadout[] = [
   { slug: 'coaches-and-healers', label: 'Coaches and healers', addons: ['ai'], note: 'Packages, scheduling, and a client CRM that suggests who to follow up with.' },
   { slug: 'studios', label: 'Studios', addons: [], note: 'Classes, memberships, and check-in at the door.' },

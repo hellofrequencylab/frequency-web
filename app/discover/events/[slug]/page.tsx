@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { CalendarDays, MapPin, Lock } from 'lucide-react'
-import { getPublicEventBySlug, formatEventDateTime, hasEventEnded } from '@/lib/discover'
+import { getPublicEventBySlug, getPublicEvents, formatEventDateTime, hasEventEnded } from '@/lib/discover'
 import { getEventEnrichment } from '../_data'
 import { SignInCta } from '@/components/discover/cards'
 import { FrequencyArcs } from '@/components/marketing/vector-art'
@@ -14,6 +14,19 @@ import { seriesRobots, seriesSeoFactsBySlug, suppressPastNoindex } from '@/lib/e
 import { getSeriesDisplayConfig } from '@/lib/events/series-config'
 
 export const revalidate = 3600
+
+// Pre-render the UPCOMING public events, through the same column-safe RPC the
+// /discover/events listing reads: it only returns published, public, non-removed,
+// non-demo events that have not started yet, and caps at 200 server-side, so the
+// set is bounded and past events never bloat the prerender manifest. Without this
+// the route never enters that manifest and `revalidate` above is inert. Anything
+// else (a past event someone still holds a link to) renders on demand
+// (dynamicParams defaults true).
+// Falls back to [] when Supabase credentials are absent (CI / preview without env vars).
+export async function generateStaticParams() {
+  const events = await getPublicEvents(200).catch(() => [])
+  return events.map((e) => ({ slug: e.slug }))
+}
 
 export async function generateMetadata({
   params,

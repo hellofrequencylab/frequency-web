@@ -107,7 +107,7 @@ Context header band + context tabs + body + **scope-aware** right rail.
 > holds hardest on the events DETAIL page (`/events/<slug>`), which ALWAYS keeps `'global'`;
 > a past change dropped it and was reverted.
 
-> **Update (§8, ADR-090):** Focus and Dashboard are now **real templates** too:
+> **Update (§8, ADR-1046):** Focus and Dashboard are now **real templates** too:
 > `FocusTemplate` (a centered, single-task compose/edit/settings surface) and
 > `DashboardTemplate` (the metric-led operator workspace). With **`WizardShell`** (the
 > multi-step flow shell), **`RailGrid`** (a filter rail beside a fluid card grid), and
@@ -342,7 +342,7 @@ forces a big-bang rewrite.
 
 ## 8. The kit today: eight shells + one chrome map (build a page)
 
-> **Update 2026-06-05 (ADR-090):** the template kit is now complete and the
+> **Update 2026-06-05 (ADR-1046):** the template kit is now complete and the
 > shell's rail treatment is **declarative**. "Focus" and "Dashboard" are no longer
 > informal: they're real templates next to Stream / Index / Detail. A page is now
 > *two lines of decision*: pick a template, register a rail.
@@ -797,7 +797,7 @@ how a published draft shadows a coded experience, or an in-app page loses its ch
 
 - **One shell, EIGHT page shells (Stream / Index / Detail / Dashboard / Focus /
   WizardShell / RailGrid / Admin)**, all on one `PageHeading` grammar; the rail is a
-  declarative `page-chrome.ts` map, not shell-baked conditionals (ADR-090). See §8.1
+  declarative `page-chrome.ts` map, not shell-baked conditionals (ADR-1046). See §8.1
   for the full canon + the count reconciliation (`HeaderSidebarTemplate` and
   `TwoColumnTemplate` were deleted 2026-08-05 with zero usages).
 - **The right rail shows on EVERY member page** (owner directive 2026-06-20,

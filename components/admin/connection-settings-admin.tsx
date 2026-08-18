@@ -178,7 +178,7 @@ export function ConnectionSettingsAdmin({ settings }: { settings: ConnectionSett
       >
         <div className="grid grid-cols-2 gap-3">
           <label className="block space-y-1.5">
-            <span className={labelClasses}>Introduction (gems)</span>
+            <span className={labelClasses}>Introduction (Gems)</span>
             <Input
               type="number"
               min={0}
@@ -190,7 +190,7 @@ export function ConnectionSettingsAdmin({ settings }: { settings: ConnectionSett
             <span className="block text-meta text-subtle">For an introduction that becomes a real connection.</span>
           </label>
           <label className="block space-y-1.5">
-            <span className={labelClasses}>Welcome (gems)</span>
+            <span className={labelClasses}>Welcome (Gems)</span>
             <Input
               type="number"
               min={0}

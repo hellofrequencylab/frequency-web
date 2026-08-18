@@ -380,11 +380,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // 404 otherwise), and the index is advertised only when a Space has ≥1 such Show — so an empty
     // podcasts index (which itself 404s) never enters the crawl.
     //
-    // ONE query for every Space, not one per Space (FINALIZE-PLAN §9.9). The old loop issued a read
-    // per networked Space inside this route's degrading try/catch, so a slow database dropped the
-    // entire podcast surface out of the index without a word. Failure behaviour is unchanged and
+    // ONE grouped read for every Space, not one per Space (FINALIZE-PLAN §9.9). The old loop issued
+    // a read per networked Space inside this route's degrading try/catch, so a slow database dropped
+    // the entire podcast surface out of the index without a word. The batch is O(rows), not O(Spaces):
+    // it pages at PostgREST's max_rows rather than passing a `.limit()` the server silently ignores,
+    // so a network past 1000 public Shows still gets every URL. Failure behaviour is unchanged and
     // now lives in the reader: listPublicShowsBySpace returns an empty Map rather than throwing, so
-    // a failure costs the podcast entries and nothing else in the sitemap.
+    // a failure costs the podcast entries and nothing else in the sitemap. The emitted URL set is
+    // pinned against the old per-Space loop in app/sitemap.test.ts.
     let podcastRoutes: MetadataRoute.Sitemap = [];
     try {
       const showsBySpace = await listPublicShowsBySpace(spaces.map((s) => s.id));

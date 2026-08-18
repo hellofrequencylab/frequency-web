@@ -1036,10 +1036,13 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
           ctaLabel: 'Join the Beta', ctaHref: '/beta', ctaStyle: 'primary',
         },
         {
-          name: 'Pay it forward', price: '$25+', strikePrice: '', cadence: '/mo',
+          // ADR-811 retired the "pay-it-forward" money model (a tier that funds someone else's
+          // membership). The sanctioned opt-in mission tier is the Founding Steward, and the
+          // sanctioned register is "back the build" (CONTENT-VOICE §1a).
+          name: 'Founding Steward', price: '$25+', strikePrice: '', cadence: '/mo',
           priceNote: 'When paid memberships launch',
-          tagline: 'Hold the door for a neighbor.', highlight: 'normal', badge: 'none',
-          features: [{ text: 'Everything in Crew, full access' }, { text: 'Fund a membership for someone who can’t pay yet' }],
+          tagline: 'Back the build.', highlight: 'normal', badge: 'none',
+          features: [{ text: 'Everything in Crew, full access' }, { text: 'Back the build of what comes next' }],
           ctaLabel: 'Join the Beta', ctaHref: '/beta', ctaStyle: 'secondary',
         },
       ],

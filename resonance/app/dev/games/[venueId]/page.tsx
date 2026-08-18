@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import { NO_STANDALONE_SESSION_MESSAGE } from "@/lib/auth/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useProfile } from "@/components/profile/useProfile";
 import { TriviaRoom } from "@/components/games/TriviaRoom";
@@ -32,9 +33,7 @@ export default function GamesRoute() {
         ) : !userId ? (
           <Card padding="lg" className="space-y-2 border-alert/40">
             <h1 className="font-display text-xl text-text">Could not start a session</h1>
-            <p className="text-sm text-mute">
-              Enable Anonymous sign-ins in the Supabase project Auth settings, then reload.
-            </p>
+            <p className="text-sm text-mute">{NO_STANDALONE_SESSION_MESSAGE}</p>
           </Card>
         ) : (
           <TriviaRoom

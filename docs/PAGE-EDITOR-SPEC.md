@@ -145,7 +145,12 @@ export async function generateMetadata() { /* from page.seo_* */ }
   editor JS**. Public bundle unchanged.
 - **ISR + revalidate-on-publish** → static-fast, updates the moment you publish.
 - **Fallback to the current hardcoded page** if no DB row yet → zero downtime
-  during migration.
+  during migration. ⚠️ That third rung is being RETIRED slug by slug (Lift 5c,
+  [ADR-1068](DECISIONS.md)): the real chain is `published → template → legacy`, and the
+  middle rung is a static import that is always well-formed, so the legacy branch was
+  already unreachable. `circles`, `about`, `spaces` and `the-lab` no longer have one —
+  `LegacyTheLab` in the sketch above is gone. `scripts/render-path-bodies.txt` is the
+  live scoreboard.
 - The splash root `/` keeps its auth branch (logged-in → `/feed`); only the
   logged-out marketing render becomes data-driven.
 

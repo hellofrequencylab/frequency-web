@@ -11,7 +11,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { normalizeVitalBatch } from '@/lib/analytics/vitals'
+import { normalizeVitalBatch, vitalProps } from '@/lib/analytics/vitals'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,13 +36,12 @@ export async function POST(req: NextRequest) {
         kind: 'web_vital',
         surface: null, // NULL keeps these rows out of interaction_surface_stats
         path: v.path,
-        props: {
-          metric: v.name,
-          value: v.value,
-          rating: v.rating,
-          mid: v.id,
-          nav: v.navigationType ?? 'navigate',
-        },
+        // `vitalProps`, NOT a second copy of the same object literal. The inline version this
+        // replaces omitted `vp` (the viewport bucket, ADR-922), so the client computed it, posted
+        // it, and the write silently dropped it — every viewport-segmented Core Web Vitals query
+        // returned nothing, and nothing failed. One builder means the wire shape and the written
+        // shape cannot drift again (LIVE-036).
+        props: vitalProps(v),
         occurred_at: new Date(Math.min(Date.now(), v.t)).toISOString(),
       })),
     )

@@ -165,9 +165,19 @@ export const pairsDigest = (rows) => sha256(rows.map((r) => `${r.version}\t${r.n
 const sha256 = (s) => createHash('sha256').update(s, 'utf8').digest('hex')
 
 /**
+ * @typedef {object} MigrationRow
+ * @property {string} version the `20260811003019` timestamp prefix
+ * @property {string} name the slug after it
+ */
+
+/**
  * Compare the two sets on BOTH columns.
  *
  * Throws on a corpus below MIN_ROWS rather than returning parity: see MIN_ROWS.
+ *
+ * @param {MigrationRow[]} repo
+ * @param {MigrationRow[]} ledger
+ * @param {{ min?: number }} [opts]
  */
 export function compare(repo, ledger, { min = MIN_ROWS } = {}) {
   if (repo.length < min || ledger.length < min) {

@@ -39,7 +39,7 @@ export function EditorShell({
         <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-4 sm:px-6">
           <div className="min-w-0">
             {eyebrow && (
-              <p className="text-2xs font-semibold uppercase tracking-wide text-muted">{eyebrow}</p>
+              <p className="eyebrow text-muted">{eyebrow}</p>
             )}
             {title && <h2 className="truncate text-body font-bold text-text">{title}</h2>}
           </div>

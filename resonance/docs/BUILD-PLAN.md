@@ -68,17 +68,26 @@ ladder (seats are open take/leave for now); reordering another DJ's queue.
 tests landed; live multi-client check is the remaining gate. 🚪
 
 ### Section 3 — Identity & profiles (minimal)  🔨
-- [x] Standalone Supabase Auth, anonymous-first (real session, no signup wall; ADR-015)
+- [x] Standalone Supabase Auth, anonymous-first (real session, no signup wall; ADR-015),
+      gated on a declared capability that is OFF in the shared project (ADR-019)
 - [x] `profiles` (per world) table (migration `0004`, applied) + get/upsert (`/api/profile`)
 - [x] Server resolves identity from the verified Bearer JWT; routes stop trusting body `userId`
 - [x] Lurker (present/chat/vote) → set a name → DJ on-ramp gated in UI (`/dev/dj`)
 - [x] Temporary demo-identity stub removed (ADR-014 retired)
-- [ ] 🚪 **GO (manual):** enable "Anonymous sign-ins" in Supabase Auth settings, then
-      open `/dev/dj`: confirm a guest can vote/chat, naming unlocks the decks, and
-      identity persists across reloads
+- [ ] 🚪 **GO (manual):** open `/dev/dj` with a **host-issued JWT** (embedded mode,
+      ADR-017) and confirm a guest can vote/chat, naming unlocks the decks, and identity
+      persists across reloads
 
-**DoD:** users have a persistent identity and can lurk before DJing. Code + build
-green; live check is the remaining gate (one Auth setting to flip). 🚪
+**Standalone guest identity is deferred to breakout, not to an owner toggle (ADR-019).**
+`signInAnonymously()` needs "Anonymous sign-ins" enabled on the *project*, and it is off
+on the shared Frequency project and stays off (Frequency `ADR-1054`). Do NOT ask for it
+to be flipped there: that widens the live platform's auth surface for a parked sub-app,
+and it is the shared-project coupling ISOLATION rule 8 forbids. The capability defaults
+off (`NEXT_PUBLIC_RESONANCE_ANONYMOUS_AUTH`) and turns on with the breakout, on a
+project we own.
+
+**DoD:** users have a persistent identity and can lurk before DJing, **on the embedded
+path**. Code + build green; live check is the remaining gate. 🚪
 
 ### Section 4 — Gamification core  🔨
 - [x] `zaps_ledger` (append-only, balance = sum), `reputation`, `seasons` tables (migration `0005`, applied)

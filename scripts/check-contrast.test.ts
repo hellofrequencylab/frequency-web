@@ -68,7 +68,8 @@ describe('check-contrast — WCAG math', () => {
   })
 
   it('is symmetric — order of the pair does not change the ratio', () => {
-    expect(contrastRatio('#3D352A', '#FAF8F4')).toBeCloseTo(contrastRatio('#FAF8F4', '#3D352A'), 10)
+    // `!`: contrastRatio returns null only for an unparseable color, and both of these are literal hex.
+    expect(contrastRatio('#3D352A', '#FAF8F4')).toBeCloseTo(contrastRatio('#FAF8F4', '#3D352A')!, 10)
   })
 
   it('computes relative luminance at the endpoints', () => {
@@ -99,6 +100,32 @@ describe('check-contrast — the four-state cascade', () => {
     expect(selectorWeight('[data-skin="midnight"]', dawnDark)).toBeNull()
     expect(selectorWeight('.dark [data-occasion="solstice"]', dawnDark)).toBeNull()
     expect(selectorWeight('.rank-badge', dawnDark)).toBeNull()
+  })
+
+  // LIVE-008. `data-skin` lands on <html> ITSELF (the freq-skin preview script, the e2e state
+  // stamp) as well as on a shell descendant, so a skin's dark block is authored as the LIST
+  // `.dark[data-skin="x"], .dark [data-skin="x"]`. A resolver that scores the raw prelude sees
+  // neither form, returns null, and DROPS the whole block — the gate would keep printing a
+  // confident Midnight-dark number while measuring the generic `.dark` palette instead. That is
+  // the shape-not-truth failure this repo keeps naming, so it gets its own lock.
+  it('scores a selector LIST at the weight of its strongest applying part', () => {
+    const midnightDark = { key: 'Midnight dark', mode: 'dark', skin: 'midnight' }
+    const dawnDark = { key: 'DAWN dark', mode: 'dark', skin: 'default' }
+    const list = '.dark[data-skin="midnight"],\n.dark [data-skin="midnight"]'
+    expect(selectorWeight(list, midnightDark)).toBe(20)
+    // Both halves score alone, and at the same (0,2,0) weight — same state, different DOM shape.
+    expect(selectorWeight('.dark[data-skin="midnight"]', midnightDark)).toBe(20)
+    expect(selectorWeight('.dark [data-skin="midnight"]', midnightDark)).toBe(20)
+    // A list still applies to no other state.
+    expect(selectorWeight(list, dawnDark)).toBeNull()
+  })
+
+  it('keeps the real midnight dark block in the cascade (not just the words in the file)', () => {
+    const css = readFileSync(join('app', 'globals.css'), 'utf8')
+    const t = resolveTokens(css, { key: 'Midnight dark', mode: 'dark', skin: 'midnight' })
+    // Midnight's own deep cool slate, NOT DAWN dark's warm timber (#17120B). If the dark block
+    // ever stops being scored, this silently reverts to the generic dark canvas.
+    expect(deref(t, '--color-canvas')).toBe('#0C1018')
   })
 
   it('resolves DAWN light from :root alone', () => {

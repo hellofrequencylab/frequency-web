@@ -4,14 +4,32 @@
 // DECISIONS.md is cited BY NUMBER from other docs, commit messages, and code comments
 // ("see ADR-509"). A duplicate number breaks every one of those citations at once: the
 // reference silently becomes ambiguous, and a reader lands on whichever entry they find
-// first. This happened for real — two parallel numbering series collided and left seven
-// numbers (088-094, 875) each naming two or three unrelated decisions, so "ADR-090"
-// currently means three different things. Those are grandfathered below; renumbering
-// them would break existing citations, which is the exact harm this guard prevents.
+// first. This happened for real: three concurrent sessions (QR platform, community comms,
+// demo Seed Studio) plus a page-kit entry and a pricing entry collided on EIGHT numbers,
+// 088-094 and 875, with 090 naming three unrelated decisions at once.
 //
-// The guard enforces one thing a reviewer cannot eyeball across a 16k-line ledger:
-// every NEW ADR number is unique. Intentional variants keep working: a letter suffix
-// (ADR-544b) parses as its own id.
+// ── RESOLVED 2026-08-17 (HYG-003). There is no grandfather list any more. ─────────────
+// Nine later claimants were renumbered to the end of the sequence, keeping the number with
+// the decision the repo's live citations already meant, and every citation of a moved entry
+// was repointed in the same pass:
+//   ADR-1044 ← 088 QR Studio authors codes on the node engine
+//   ADR-1045 ← 089 Dynamic QR links as a first-class `qr_codes` entity
+//   ADR-1046 ← 090 Page-template kit completed
+//   ADR-1047 ← 090 Demo content v2
+//   ADR-1048 ← 091 Demo Seed Studio + seed/claim/decay
+//   ADR-1049 ← 092 Retire the hand-built 250-cast
+//   ADR-1050 ← 093 Seed Studio generates the full connection web
+//   ADR-1051 ← 094 Beta induction sequences
+//   ADR-1052 ← 875 The pricing page is DERIVED
+// 088/089 stayed with the community-communication pair (COMMS-STRATEGY.md §"ADRs" names
+// them and says the QR/demo sessions double-booked those numbers), 090-094 stayed with the
+// QR platform (DEVELOPMENT-MAP.md logs that series by number across 2026-06-04/05), and 875
+// stayed with the beta founder push (26 of its 30 live citations are that decision).
+//
+// The guard enforces one thing a reviewer cannot eyeball across a 25k-line ledger:
+// EVERY ADR number is unique — not "no worse than a frozen baseline", which is what let
+// eight collisions sit in the tree while this file reported ✓. Intentional variants keep
+// working: a letter suffix (ADR-544b) parses as its own id.
 //
 // Usage: `node scripts/check-adr.mjs` (or `pnpm check:adr`). Exits 1 on violation.
 // Model: scripts/check-migrations.mjs (same bug class: a ledger keyed on an id that
@@ -26,12 +44,10 @@ const LEDGER = join('docs', 'DECISIONS.md')
 // ADR-057 and ADR-156a -- and a `^## ` regex simply does not see them. When the citation
 // scan below was first switched on it therefore reported six FULLY WRITTEN decisions as
 // missing, including ADR-056 (the RLS SECURITY DEFINER pattern) which is cited from 17
-// live migrations and a contract test. Verified collision-safe: widening adds no new
-// duplicate ids beyond the already-grandfathered 088-094 and 875.
+// live migrations and a contract test. Verified collision-safe: widening introduces no
+// duplicate ids.
 const HEADING = /^#{2,3} ADR-(\d+[a-z]?)\b/
 
-// Historical collisions, frozen at their current counts. A number here may appear
-// exactly this many times; appearing MORE means a new collision was just added.
 /** ADR numbers CITED in the tree that have no entry, frozen on 2026-08-04. EIGHT of them.
  *
  *  A RATCHET, not a waiver, and the same contract as scripts/adoption-baselines.json and the
@@ -61,35 +77,28 @@ const KNOWN_MISSING = new Set([
   // the ADR, or rewording the citation if it was never a decision.
 ])
 
-const GRANDFATHERED = new Map([
-  ['088', 2],
-  ['089', 2],
-  ['090', 3],
-  ['091', 2],
-  ['092', 2],
-  ['093', 2],
-  ['094', 2],
-  ['875', 2],
-])
-
+/** Every ADR number, and the ledger lines it is declared on.
+ *
+ *  ⚠️ NO ALLOWANCE ARGUMENT, deliberately. The previous version compared each count against a
+ *  frozen GRANDFATHERED map, so the eight live collisions it was written to describe made it
+ *  print ✓ — the guard measured "no WORSE than the day it shipped", and a reader took the tick
+ *  for "no duplicates". The baseline is now the rule: a number appearing twice is a failure,
+ *  whatever the history. Line numbers ride along so the failure names both claimants. */
 export function runCheck(text = readFileSync(LEDGER, 'utf8')) {
   const counts = new Map()
-  for (const line of text.split('\n')) {
+  text.split('\n').forEach((line, i) => {
     const m = HEADING.exec(line)
-    if (!m) continue
+    if (!m) return
     const id = m[1]
-    counts.set(id, (counts.get(id) ?? 0) + 1)
-  }
+    if (!counts.has(id)) counts.set(id, [])
+    counts.get(id).push(i + 1)
+  })
 
   const collisions = [...counts.entries()]
-    .filter(([id, n]) => n > (GRANDFATHERED.get(id) ?? 1))
-    .map(([id, n]) => ({ id, count: n, allowed: GRANDFATHERED.get(id) ?? 1 }))
+    .filter(([, lines]) => lines.length > 1)
+    .map(([id, lines]) => ({ id, count: lines.length, lines }))
 
-  const stale = [...GRANDFATHERED.entries()]
-    .filter(([id, n]) => (counts.get(id) ?? 0) < n)
-    .map(([id, n]) => ({ id, expected: n, found: counts.get(id) ?? 0 }))
-
-  return { total: counts.size, collisions, stale, defined: new Set(counts.keys()) }
+  return { total: counts.size, collisions, defined: new Set(counts.keys()) }
 }
 
 /** Every `ADR-NNN` CITED anywhere in the repo that has no `## ADR-NNN` heading.
@@ -128,12 +137,12 @@ export function findDanglingCitations(defined) {
 }
 
 function main() {
-  const { total, collisions, stale, defined } = runCheck()
+  const { total, collisions, defined } = runCheck()
   const dangling = findDanglingCitations(defined)
 
-  if (collisions.length === 0 && stale.length === 0 && dangling.length === 0) {
+  if (collisions.length === 0 && dangling.length === 0) {
     console.log(
-      `✓ ADR contract: ${total} distinct ADR number(s), no new duplicates, ` +
+      `✓ ADR contract: ${total} distinct ADR number(s), each declared exactly once, ` +
         'and every cited number resolves to an entry.',
     )
     return
@@ -141,11 +150,15 @@ function main() {
 
   console.error('\n✗ ADR ledger check failed:\n')
 
+  const max = Math.max(0, ...[...defined].map((d) => parseInt(d, 10)).filter(Number.isFinite))
+
   for (const c of collisions) {
     console.error(
-      `  • ADR-${c.id} appears ${c.count}× (allowed ${c.allowed}). A citation to "ADR-${c.id}"\n` +
-        '    is now ambiguous. Renumber the NEW entry to the next free number (see the top\n' +
-        '    of the ledger for the current max), keeping the old entries untouched.\n',
+      `  • ADR-${c.id} is declared ${c.count}× — ${LEDGER} lines ${c.lines.join(', ')}.\n` +
+        `    Every citation of "ADR-${c.id}" is now ambiguous: a reader lands on whichever\n` +
+        `    entry they find first. Renumber the LATER claimant to ADR-${max + 1} (the next\n` +
+        '    free number) and repoint the citations that meant IT — not the ones that meant\n' +
+        '    the entry keeping the number.\n',
     )
   }
 
@@ -154,14 +167,6 @@ function main() {
       `  • ADR-${d.id} is CITED but never written. First seen: ${d.firstSeen}\n` +
         '    A citation is a promise that a reader can go and find the reasoning. Either add\n' +
         `    the entry at that number, or correct the citation to the ADR that really covers it.\n`,
-    )
-  }
-
-  for (const s of stale) {
-    console.error(
-      `  • Grandfather list is stale: ADR-${s.id} expected ${s.expected}× but found ${s.found}×.\n` +
-        '    If duplicates were deliberately resolved, shrink GRANDFATHERED in\n' +
-        '    scripts/check-adr.mjs to match.\n',
     )
   }
 

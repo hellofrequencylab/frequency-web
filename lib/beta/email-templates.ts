@@ -91,25 +91,12 @@ This is for the Beta group only, and it closes when the Beta does. No pressure. 
 Thanks for being here,
 The Frequency team`,
   },
-  {
-    key: 'founding_business',
-    label: 'Founding Business offer',
-    phaseKey: 'P2',
-    segment: 'members',
-    subject: 'Put your business on Frequency as a Founding Business',
-    body: `Hi,
-
-You run something local, and the people on Frequency are your neighbors. We would like to offer you a Founding Business spot before this opens up.
-
-A Founding Business gets its own Space to post events and offers and the lowest rate we will ever set, kept for good. Take the year before September 1 and the Space also wears the Founding Business badge. We will help you set the whole thing up ourselves.
-
-[Claim a Founding Business spot](https://frequencylocal.com/pricing)
-
-This is open to the Beta group only and closes when the Beta does. Want to talk it through first? Just reply to this email.
-
-Talk soon,
-The Frequency team`,
-  },
+  // 🔴 RETIRED: the 'founding_business' template used to sit here (ADR-1067, OWN-025). It offered local
+  //    businesses "the lowest rate we will ever set, kept for good ... take the year before September 1",
+  //    and there is no Business founding rate any more — Business is a flat $29/mo, $290/yr, and the one
+  //    remaining beta rate is Collective's unlisted $49/$490, granted by hand rather than claimed from an
+  //    email. Removed rather than reworded because the offer WAS the rate. The Founding Business program
+  //    itself (badge, 25-per-city cap, take-rate buy-down) is recognition, not a discount, and survives.
   {
     key: 'referral_contest',
     label: 'Referral + Circle-starter contest',
@@ -134,17 +121,20 @@ The Frequency team`,
   },
   {
     key: 'graduation',
-    label: 'Sept 1 graduation (Opening Beta pricing closes)',
+    // The pricing deadline this email was built on is gone (owner, 2026-08-17, ADR-1060: full price,
+    // two months free on the year). September 1 still ends the FEATURE-GATE grace window (ADR-874), so
+    // the email keeps its slot and its date and is about that instead. Mirrors launch-emails.ts.
+    label: 'Sept 1 graduation (full access ends)',
     phaseKey: 'P4',
     segment: 'members',
-    subject: 'Opening Beta pricing closes September 1',
+    subject: 'Full access ends September 1',
     body: `Hi,
 
-The Beta is wrapping up. The Opening Beta price holds through September 1, and after that the list price takes over.
+The Beta is wrapping up. Every Space has had the full set of tools while we were in it, whatever plan it was on. On September 1 each plan starts doing what it says, so this is a good week to work out which one fits how you actually use Frequency.
 
-If you have been meaning to lock it in, now is the time.
+Every plan is one price, the same whenever you start. Pay for the year and you get two months free.
 
-[Lock in the Opening Beta price](https://frequencylocal.com/pricing)
+[See the plans](https://frequencylocal.com/pricing)
 
 Either way, thank you for helping us get Frequency off the ground. The community you see today exists because you showed up early.
 

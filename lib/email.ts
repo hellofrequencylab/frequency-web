@@ -755,7 +755,7 @@ export async function sendGuestEventReminderEmail(params: {
       <hr style="${dividerStyle}">
       <p style="font-size:13px;color:#8F8675;">
         You are getting this because this address was used to RSVP to ${escapeHtml(eventTitle)}.
-        Plans change, and that is okay — you can say so on the event page.
+        Plans change, and that is okay. You can say so on the event page.
       </p>
     `),
     text: `${whenLabel}: ${eventTitle}
@@ -767,7 +767,7 @@ ${location ? `Where: ${location}\n` : ''}
 View event: ${eventUrl}
 
 You are getting this because this address was used to RSVP to ${eventTitle}.
-Plans change, and that is okay — you can say so on the event page.
+Plans change, and that is okay. You can say so on the event page.
 `,
   })
 }

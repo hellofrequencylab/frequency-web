@@ -478,7 +478,7 @@ cleanly by audience and this section pins which is which.
   "The Community Collective"** immediately below, which is a different name and keeps its article.
 - **The tier ladder (named tiers are now canonical, superseding the ADR-552 "no tier names" clause):**
   **Member** (free) · **Crew** (personal, pay what you want from $4.99) · **Business** ($29) ·
-  **Collective** ($79, beta $49) ·
+  **Collective** ($79) ·
   **Non Profit** ($39) · **Independent** (white-label, ~$249). "Business" and "Non Profit" remain the two
   space *designators* (the public chip); **Collective** and **Independent** are the higher space tiers.
 - **"Collective" (capitalized) means two things ON PURPOSE, and they nest:** the **brand** (Frequency, the

@@ -49,9 +49,9 @@
 > (capture → ledger → zaps → `practice.verified` / partner redemption) was already built; this
 > adds in-app code authoring (`/admin/qr`, host+), server-side QR image rendering (`lib/qr/`,
 > `qrcode` dep), a same-site-only `/api/qr` download endpoint, and a member personal connect
-> code at `/codes`, no migration. Closes part of vertical 3's 🟡 wiring (ADR-088).
+> code at `/codes`, no migration. Closes part of vertical 3's 🟡 wiring (ADR-1044).
 >
-> **2026-06-05:** QR platform **Phase 1, dynamic links + analytics** (ADR-089). New `qr_codes`
+> **2026-06-05:** QR platform **Phase 1, dynamic links + analytics** (ADR-1045). New `qr_codes`
 > entity: retargetable `/q/<slug>` codes that redirect to any URL *or* run an earning node (the
 > "Both" model), a scan log (`qr_scans` + `record_qr_scan` RPC), and a Studio analytics tab.
 > Migration `20260605010000` applied to prod. Roadmap: Phase 2 beautiful editor → Phase 3
@@ -95,7 +95,7 @@
 > **2026-06-05:** QR Studio polish, dynamic links now build from a **curated in-site destination
 > picker** (each option shows its funnel value; `lib/qr/destinations.ts`), and the logo editor gains
 > **square/circle crop** + **color/gradient tint** (alpha-mask recolor for monochrome marks). Extends
-> ADR-089/090, no migration.
+> ADR-1045/090, no migration.
 >
 > **2026-06-05:** QR polish backlog #1, **referral-credit chaining**. The `/q` resolver now drops the
 > `fq_ref` cookie for any anonymous scan of an **owner-owned** code (member codes + crew marketing

@@ -119,6 +119,9 @@ export function importSpecifiers(src) {
 /**
  * Resolve a first-party import to a repo-relative file, or null. Only `@/…` and relative
  * specifiers resolve; a bare package name is third-party and never a route module.
+ * @param {string} spec
+ * @param {string} fromFile
+ * @param {(f: string) => boolean} [exists] repo-relative probe
  */
 export function resolveImport(spec, fromFile, exists = existsSync) {
   let base
@@ -196,6 +199,9 @@ export function headerViolations(src) {
 
 /**
  * Walk a route entry and the co-located modules it delegates to.
+ * @param {string[]} entries
+ * @param {(f: string) => string} [read] repo-relative reader (the default hits the filesystem)
+ * @param {(f: string) => boolean} [exists] repo-relative probe
  * @returns {Map<string, string>} module path → the route entry that reaches it (itself, for entries)
  */
 export function delegationClosure(entries, read = (f) => readFileSync(f, 'utf8'), exists = existsSync) {

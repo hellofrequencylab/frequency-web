@@ -85,17 +85,29 @@ export function Band({ tone, width, align, layout, defaultPad, children }: BandP
 
 // ── Typographic atoms ─────────────────────────────────────────────────────────
 
+// THE eyebrow, and the only one this kit declares.
+//
+// Until 2026-08-18 this atom hand-rolled the role at `text-body-sm font-bold uppercase tracking-eyebrow`
+// — 0.875rem, DAWN's DECLARED eyebrow size, and precisely the half of DAWN's own split that
+// `app/globals.css` resolved DOWN to 0.75rem on 2026-08-05 (ADR-1072). So the product carried two
+// eyebrow registers 17% apart and neither was a mistake: the `eyebrow` utility rendered what this repo
+// chose, this component rendered what DAWN published, and which one you got depended on whether you
+// wrote a class or an import. The owner settled it on 2026-08-18 — **0.75rem wins** (ADR-1075) — and
+// this component stopped declaring the role and started composing it.
+//
+// What each class is doing, because three of them look alike and only one sets type:
+//   `eyebrow`     — the ROLE, whole, from globals.css: 0.75rem / 0.18em / bold / uppercase / grotesk.
+//                   Nothing here may re-state any of those; a size class beside this one IS the second
+//                   register coming back, and `lib/theme/eyebrow-role.test.ts` fails by name on it.
+//   `font-eyebrow` — the SEPARATE Space page theme hook (ADR-578): a bare marker with no base rule, so
+//                   per-theme kicker treatment attaches without touching the default computed style.
+//   `data-text-role="eyebrow"` — the PER-ELEMENT text-styling marker (ADR-580, item 4): the block
+//                   editor's Eyebrow controls target it alone, and the Body controls skip it.
 export function Eyebrow({ children, ink }: { children: React.ReactNode; ink?: boolean }) {
   return (
-    // `data-text-role="eyebrow"` marks this element for PER-ELEMENT text styling (ADR-580, item 4): the block
-    // editor's Eyebrow controls target it alone, and the Body controls skip it (it is itself a <p>).
-    // `font-eyebrow` is the SEPARATE Space page theme hook (ADR-578): per-theme kicker treatment with no
-    // bold-scoped rule, so the default look keeps this exact computed style.
     <p
       data-text-role="eyebrow"
-      className={`font-eyebrow text-body-sm font-bold uppercase tracking-eyebrow mb-4 ${
-        ink ? 'text-primary' : 'text-primary-strong'
-      }`}
+      className={`eyebrow font-eyebrow mb-4 ${ink ? 'text-primary' : 'text-primary-strong'}`}
     >
       {children}
     </p>

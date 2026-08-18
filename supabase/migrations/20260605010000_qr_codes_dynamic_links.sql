@@ -1,5 +1,5 @@
 -- QR platform, Phase 1: dynamic links + scan analytics.
--- (docs/ENGAGEMENT-ARCHITECTURE.md authoring section, ADR-088/089.)
+-- (docs/ENGAGEMENT-ARCHITECTURE.md authoring section, ADR-1044/1045.)
 --
 -- `qr_codes` is the managed, retargetable code the QR Studio edits. A code either
 -- redirects to any URL ('url') or runs the in-app earn pipeline by pointing at a

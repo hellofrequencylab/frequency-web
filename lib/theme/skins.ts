@@ -2,13 +2,17 @@
 // applied via [data-skin]) is declared, so the core never edits to add one
 // (ADR-249/250, docs/SPACES.md, docs/EXPANSION-FRAMEWORK.md). A skin is the lateral
 // (white-label) axis of a Space: orthogonal to the light/dark MODE (.dark on <html>),
-// it selects the palette + feel for the in-app subtree via [data-skin] on the shell root.
+// it selects the palette + feel via [data-skin] — on the shell root for a real Space, and
+// on <html> ITSELF for the localStorage `freq-skin` preview (app/layout.tsx) and the e2e
+// render-state stamp.
 //
 // This registry is the typed mirror of the CSS: every id here MUST have matching
-// `[data-skin="<id>"]` and `.dark [data-skin="<id>"]` blocks in app/globals.css (the
-// `default` skin inherits :root/.dark and needs no overrides). The guardrail test in
-// skins.test.ts reads globals.css from disk and enforces that pairing forever, so the
-// CSS and the registry can never quietly drift apart.
+// `[data-skin="<id>"]` and dark blocks in app/globals.css, the dark one authored as the LIST
+// `.dark[data-skin="<id>"], .dark [data-skin="<id>"]` so it covers BOTH of those placements
+// (LIVE-008: the descendant form alone can never match <html> against itself). The `default`
+// skin inherits :root/.dark and needs no overrides. Two guardrail tests read globals.css from
+// disk: skins.test.ts enforces the pairing, and skin-dom-selectors.test.ts enforces that the
+// dark selectors actually MATCH both DOM shapes — so CSS and registry cannot quietly drift.
 //
 // Imported statically (no runtime registration), so the registry is deterministic
 // regardless of import order — same pattern as lib/verticals/registry.ts.

@@ -419,8 +419,11 @@ function amountsFromMonthly(listMonthlyCents: number, foundingMonthlyCents: numb
 // (run-your-practice depth); the Resonance Engine add-on +$20/mo (optional on any paid plan); Non Profit
 // $39/mo FLAT (the full Collective toolkit, for verified 501(c)(3)s, donations built in). NEVER per seat.
 // Collective ($79 list / $49 beta) + Independent ($249 flat) are sellable catalog bases (ADR-811 go-live).
-// The $19/$49 beta anchors auto-revert to list on 2026-09-01 (lib/pricing/beta.ts) via a checkout key
-// switch. Yearly derives as two months free. An item carries the same list + founding when no separate
+// 🔴 THE $19/$49 BETA ANCHORS ARE NO LONGER CHARGED. They auto-reverted to list via the checkout key
+// switch when the owner closed the window on 2026-08-17 (lib/pricing/beta.ts BETA_PRICING_ENDS_AT,
+// ADR-1060: "scratch the beta pricing and just charge full price"). The founding amounts stay in the
+// catalog because both variants are minted active in Stripe and a grandfathered lock still points at
+// one; nothing displays or charges them while `isBetaPricingActive()` is false. Yearly derives as two months free. An item carries the same list + founding when no separate
 // anchor is published (founding == list reads flat today; the field still exists so a future anchor is a
 // one-line edit, never a schema change). The marketing/team/branding add-on items are RETIRED (their
 // depth folds into the Business base, ADR-472); only addon_ai (the Resonance Engine) remains as an add-on.
@@ -431,11 +434,20 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     perSeat: false,
     // Business is the run-your-practice base (ADR-811): CRM, email, reporting, your own website. Automation,
     // team roles, multi-pipeline, and collaborators live at COLLECTIVE; white-label at INDEPENDENT.
-    // FOUNDING ladder (owner, 2026-07-24): $19 founding under the $29 list. This makes the founding+list
-    // spread a clean progression: $19 -> $29 -> $49 -> $79 (Business founding/list, Collective founding/list),
-    // with +$10/+$20/+$30 gaps. Yearly derives as two months free ($190 founding / $290 list).
-    // Per-seat Team billing rides this tier's seat machinery, not a separate add-on item.
-    ...amountsFromMonthly(2900, 1900), // list $29, founding $19 (ADR-811 Community Collective)
+    //
+    // 🔴 NO FOUNDING RATE, BY OWNER DECISION 2026-08-17 (ADR-1067). This carried $19 founding under the
+    // $29 list, from the 2026-07-24 ladder. The owner's instruction is that exactly ONE beta offer exists
+    // and it is COLLECTIVE's: an unlisted rate they grant by hand. Everything else is normal pricing. A
+    // founding amount here is not a harmless leftover — `catalogItemHasFoundingRate` mints a second Stripe
+    // Product from it, and Stripe Prices are IMMUTABLE, so an unwanted $19 minted once can only be
+    // archived, never edited. founding == list is how an item says "no beta rate" (the same shape
+    // Independent, Non Profit and Vera AI already use); the founding KEY still resolves, to the standard
+    // product at the standard amount.
+    //
+    // ⚠️ This does NOT touch anyone already locked at $19. A lock is a RECORD on the subscription, read
+    // back by space-subscriptions-reconcile.ts and founding-payment.ts, not a lookup into this table —
+    // which is why those tests keep their 1900 fixtures.
+    ...amountsFromMonthly(2900, 2900), // list $29, no founding rate (ADR-1067)
   },
   addon_ai: {
     key: 'addon_ai',

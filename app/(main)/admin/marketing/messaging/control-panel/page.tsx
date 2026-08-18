@@ -43,7 +43,7 @@ export default async function MessagingControlPanelPage({
       title="Control panel"
       icon={Send}
       width="wide"
-      description="Who got what. Every campaign email and every broadcast Dispatch, per recipient, with where the message landed. This is a read-only ledger: it reports what the send-gate already did, it never sends anything itself."
+      description="Who got what. Every campaign email and every Dispatch, per recipient, with where the message landed. This is a read-only ledger: it reports what the send-gate already did, it never sends anything itself."
     >
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard label="Recipients" value={counts.recipients.toLocaleString()} icon={Users} detail="in this view" />

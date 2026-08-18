@@ -60,6 +60,7 @@ import { productSchema, howToSchema } from '@/lib/jsonld'
 import { richParagraphs, richPlainText, safeHref } from '@/lib/page-editor/richtext'
 import { focalField, focalClass } from '@/lib/page-editor/image-controls'
 import { imgField } from '@/lib/page-editor/fields'
+import { cn } from '@/lib/utils'
 import type { LivePricing } from '@/lib/page-editor/live-pricing'
 import {
   accentize,
@@ -204,13 +205,15 @@ export function PhotoTrioBlock({
   const figures = (items ?? [])
     .filter((i) => i.image)
     .map((i) => ({ img: i.image!, alt: i.alt ?? '', title: i.title ?? '', caption: i.caption ?? '' }))
-  const chrome = [
-    shape === 'arc' ? 'arc-top mk-arc -mt-px' : '',
-    texture === 'dots' ? 'dot-grid' : '',
+  // cn(), not an array join: the effect-layer adoption gate (lib/theme/effect-adoption.test.ts)
+  // only counts a class name that sits in a className= / cn() position, because half these names
+  // are ordinary English. A joined array reads as zero adopters and `arc-top`/`dot-grid` fail the
+  // orphan check while being called on every render.
+  const chrome = cn(
+    shape === 'arc' && 'arc-top mk-arc -mt-px',
+    texture === 'dots' && 'dot-grid',
     'relative overflow-hidden',
-  ]
-    .filter(Boolean)
-    .join(' ')
+  )
   return (
     <Section tone={t} width="wide" className={chrome} pad={pad} vis={vis}>
       <div className="relative z-10">
@@ -423,7 +426,7 @@ export function BuildTimelineBlock({
   // numerals carry the accent (about's 01/02/03); in a set WITH one, only the
   // chosen card's numeral does (the-lab's Now/2027/2028).
   const hasChosen = shown.some((i) => i.highlight === 'chosen')
-  const chrome = texture === 'dots' ? 'dot-grid relative overflow-hidden' : ''
+  const chrome = cn(texture === 'dots' && 'dot-grid relative overflow-hidden')
   return (
     <Section
       tone={t}

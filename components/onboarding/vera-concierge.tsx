@@ -89,35 +89,49 @@ export function VeraConcierge() {
 
   return (
     <div className="space-y-3">
-      {messages.map((m, i) => (
-        <div key={i} className={m.from === 'you' ? 'flex justify-end' : 'flex justify-start'}>
-          <div
-            className={
-              m.from === 'you'
-                ? 'max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-3.5 py-2 text-body-sm text-on-primary'
-                : 'max-w-[85%] rounded-2xl rounded-bl-sm border border-border bg-surface px-3.5 py-2 text-body-sm text-text'
-            }
-          >
-            {m.text}
+      {/* Live region — same contract as the companion transcript in
+          components/vera/vera-chat.tsx: append-only `log`, `polite` because a turn arrives whole
+          (one awaited `conciergeTurn`, no token stream), `additions` + non-atomic so only the new
+          bubble is spoken. The transcript is wrapped in its own element so the composer and the
+          "Find your circle" link below stay OUTSIDE the region. */}
+      <div
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions"
+        aria-atomic="false"
+        aria-label="Conversation with Vera"
+        className="space-y-3"
+      >
+        {messages.map((m, i) => (
+          <div key={i} className={m.from === 'you' ? 'flex justify-end' : 'flex justify-start'}>
+            <div
+              className={
+                m.from === 'you'
+                  ? 'max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-3.5 py-2 text-body-sm text-on-primary'
+                  : 'max-w-[85%] rounded-2xl rounded-bl-sm border border-border bg-surface px-3.5 py-2 text-body-sm text-text'
+              }
+            >
+              {m.text}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
 
-      {pending && <p className="text-meta text-subtle">Vera is thinking…</p>}
+        {pending && <p className="text-meta text-subtle">Vera is thinking…</p>}
 
-      {proposals.map((p, i) => (
-        <div key={i} className="rounded-card border border-border bg-surface-elevated p-3">
-          <p className="text-meta text-muted">{proposalLabel(p)}</p>
-          <div className="mt-2 flex gap-2">
-            <button type="button" onClick={() => allow(p)} className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg px-3 py-1.5 text-meta font-semibold text-success hover:opacity-80">
-              <Check className="h-3.5 w-3.5" /> {p.tool === 'join_circle' ? 'Join' : p.tool === 'draft_intro' ? 'Post' : 'Allow'}
-            </button>
-            <button type="button" onClick={() => setProposals((ps) => ps.filter((x) => x !== p))} className="inline-flex items-center gap-1.5 rounded-lg bg-surface px-3 py-1.5 text-meta font-medium text-muted hover:text-danger">
-              <X className="h-3.5 w-3.5" /> Skip
-            </button>
+        {proposals.map((p, i) => (
+          <div key={i} className="rounded-card border border-border bg-surface-elevated p-3">
+            <p className="text-meta text-muted">{proposalLabel(p)}</p>
+            <div className="mt-2 flex gap-2">
+              <button type="button" onClick={() => allow(p)} className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg px-3 py-1.5 text-meta font-semibold text-success hover:opacity-80">
+                <Check className="h-3.5 w-3.5" /> {p.tool === 'join_circle' ? 'Join' : p.tool === 'draft_intro' ? 'Post' : 'Allow'}
+              </button>
+              <button type="button" onClick={() => setProposals((ps) => ps.filter((x) => x !== p))} className="inline-flex items-center gap-1.5 rounded-lg bg-surface px-3 py-1.5 text-meta font-medium text-muted hover:text-danger">
+                <X className="h-3.5 w-3.5" /> Skip
+              </button>
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
 
       {!done && (
         <>

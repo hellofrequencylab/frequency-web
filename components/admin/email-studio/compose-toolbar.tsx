@@ -135,7 +135,7 @@ export function ComposeToolbar({
                   replyMode !== 'conversation' ? 'bg-surface text-primary-strong lift-1' : 'text-muted'
                 }`}
               >
-                Broadcast
+                Announcement
               </button>
               <button
                 type="button"

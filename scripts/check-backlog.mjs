@@ -39,13 +39,20 @@
 //   node scripts/check-backlog.mjs --lane owner   # filter the report to one lane
 
 import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs'
-import { execSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
 
 const FILE = 'docs/BUILD-BACKLOG.json'
 
 /** A manual row's evidence goes stale; it does not go wrong. Warn, never fail. */
 const MANUAL_STALE_DAYS = 120
+
+/** The exit code a `cmd` probe uses to say "I could not look" — see runProbe(). The engine detects
+ *  a probe killed by a signal on its own, but not one whose OWN child died: that surfaces as the
+ *  probe process exiting non-zero, indistinguishable from a real verdict. A probe that spawns
+ *  anything must therefore report indeterminacy itself, and this is the code it uses. 79 is outside
+ *  every range a tool here returns meaningfully (0/1 verdicts, 2 for usage, 127 for not-found). */
+const PROBE_INDETERMINATE = 79
 
 const LANES = ['owner', 'live', 'program', 'deferred', 'hygiene']
 const STATUSES = ['open', 'done', 'parked', 'blocked']
@@ -184,12 +191,22 @@ function runProbe(p) {
     // ⚠️ A `cmd` probe carries the same hazard the ripgrep bug above demonstrated: a pipeline whose
     // tool is missing can still exit 0 and read as DONE. Keep cmd probes to `node -e`, which is
     // guaranteed present wherever this guard runs at all.
-    try {
-      execSync(p.cmd, { stdio: 'pipe', timeout: 120_000 })
-      return true
-    } catch {
-      return false // a non-zero exit is a real answer: NOT DONE
-    }
+    //
+    // 🔴 AND THE MIRROR OF IT. The first version wrapped this in try/catch and returned `false` for
+    // everything that threw — which folded four different outcomes into one confident verdict. A
+    // tsc probe that the OOM killer SIGKILLs, or that hits the timeout, or whose binary is absent
+    // (shell exit 127), had NOT FAILED; it had not been ASKED. On a `done` row that reads as
+    // "NOT DONE" and the guard fails the build accusing a healthy row of regressing. It is exactly
+    // the ripgrep bug wearing different clothes, and it caught us once already: a probe killed by a
+    // concurrent `next build` made this script's own parity test disagree with itself.
+    //
+    // So only a real exit code is a real answer. Death by signal, timeout, spawn failure and 127
+    // are all "cannot tell", which the caller counts as unprovable and never converts to a verdict.
+    const r = spawnSync(p.cmd, { shell: true, stdio: 'pipe', timeout: 120_000 })
+    if (r.error || r.signal !== null || r.status === null) return null // killed, timed out, unspawnable
+    if (r.status === 127) return null // the shell could not find the command — not an answer
+    if (r.status === PROBE_INDETERMINATE) return null // the probe told us it could not look
+    return r.status === 0
   }
 
   // Paths that do not exist count as "no match" — a deleted file cannot contain the thing.
