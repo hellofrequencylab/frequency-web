@@ -20,7 +20,7 @@ import { loadRootSpaceId } from '@/lib/spaces/store'
 // the legacy fallback, so nothing breaks before a template publishes.
 //
 // ⚠️ THAT THIRD RUNG IS BEING RETIRED, one slug per PR (UX-MATURITY-PLAN Lift 5c,
-// ADR-1068). `circles` and `about` have none: their template is the LAST rung, and
+// ADR-1068). `circles`, `about` and `spaces` have none: their template is the LAST rung, and
 // lib/page-editor/templates/templates.test.ts reads THIS constant to make sure every
 // gated slug still has a template the current block config can render. The live
 // scoreboard is scripts/render-path-bodies.txt, not this comment.

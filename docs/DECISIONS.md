@@ -26170,9 +26170,10 @@ Collective before it goes out. Tracked as OWN-025.
 
 ## ADR-1068: A retired marketing body is deleted, not left as a fallback, and the template becomes the gated last rung
 
-**Status:** Accepted · enforced by `scripts/check-render-path.test.ts` (the `about 0` row in
-`scripts/render-path-bodies.txt`) + `lib/page-editor/templates/templates.test.ts` (now derived from
-`EDITABLE_PAGES` rather than hand-typed) + `lib/page-editor/templates/article.test.ts`
+**Status:** Accepted · enforced by `scripts/check-render-path.test.ts` (every `<slug> 0` row in
+`scripts/render-path-bodies.txt` — `about`, then `spaces`, as the order works through) +
+`lib/page-editor/templates/templates.test.ts` (now derived from `EDITABLE_PAGES` rather than
+hand-typed) + `lib/page-editor/templates/article.test.ts`
 
 **Context:** [ADR-967](#adr-967) built `check:render-path` to hold the line while the marketing
 routes carried two truths at once: a Puck document an operator edits, and a bespoke coded body only a

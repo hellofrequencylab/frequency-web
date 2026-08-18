@@ -13,7 +13,7 @@
 # with the duality. A top-level component is a structural fact. Lines are printed by the gate as
 # context and never checked.
 #
-# RETIREMENT ORDER (FINALIZE-PLAN §5.2, by risk): ~~circles~~ -> ~~about~~ -> spaces -> the-lab ->
+# RETIREMENT ORDER (FINALIZE-PLAN §5.2, by risk): ~~circles~~ -> ~~about~~ -> ~~spaces~~ -> the-lab ->
 # the-quest -> the-community -> pricing. Each retirement is gated on the visual suite proving the
 # template equivalent, one slug per PR. `pricing` is partial only: it carries LIVE take-rate
 # bindings, and its figures must never be frozen into a document.
@@ -29,7 +29,12 @@ about           0   # ✅ RETIRED 2026-08-17 (Lift 5c, ADR-1068). LegacyAbout + 
                     #    moved: `git log -p app/(marketing)/about/page.tsx` is the only copy left.
                     #    The body was already unreachable (getTemplate('about') is always well-formed),
                     #    so the retirement moved no pixels. Template-only from here.
-spaces          2   # LegacySpaces + GuideLink (285 lines)
+spaces          0   # ✅ RETIRED 2026-08-18 (Lift 5c, ADR-1068). LegacySpaces + GuideLink deleted, not
+                    #    moved: `git log -p app/(marketing)/spaces/page.tsx` is the only copy left.
+                    #    The body was already unreachable (getTemplate('spaces') is a static 18-block
+                    #    document, always well-formed), so the retirement moved no pixels. The two
+                    #    sections only the coded body carried were recovered into the template in
+                    #    Lift 5b. Template-only from here.
 the-lab         3   # LegacyTheLab + Room + BuildStep (382 lines)
 the-community   5   # LegacyTheCommunity + Step + Layer + Hold + DayBeat (635 lines)
 the-quest       2   # LegacyTheQuest + Guard (498 lines)
