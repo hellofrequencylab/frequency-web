@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
 import {
   getTopicalChannels,
   getPublicCircles,
@@ -85,12 +84,6 @@ export const metadata: Metadata = {
 export const revalidate = 3600
 
 export default async function DiscoverHubPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const isAuthed = !!user
-
   const [channels, circles, events, posts, counts, cityClusters] = await Promise.all([
     getTopicalChannels(),
     getPublicCircles(6),
@@ -180,7 +173,7 @@ export default async function DiscoverHubPage() {
                 interest: c.channel_name,
                 memberCount: c.member_count,
               }))}
-              isAuthed={isAuthed}
+             
             />
           ) : (
             <div className="mx-auto max-w-2xl rounded-card border border-border bg-marketing-canvas p-8 text-center">
@@ -260,7 +253,7 @@ export default async function DiscoverHubPage() {
             </div>
             <div className="mt-9 space-y-3">
               {events.map((e) => (
-                <EventRow key={e.id} event={e} isAuthed={isAuthed} />
+                <EventRow key={e.id} event={e} />
               ))}
             </div>
             <div className="text-center mt-8">
@@ -294,7 +287,7 @@ export default async function DiscoverHubPage() {
             </div>
             <div className="mt-9 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {circles.map((c) => (
-                <CircleCard key={c.id} circle={c} isAuthed={isAuthed} />
+                <CircleCard key={c.id} circle={c} />
               ))}
             </div>
             <div className="text-center mt-8">
@@ -342,7 +335,7 @@ export default async function DiscoverHubPage() {
             </div>
             <div className="space-y-3 mb-3">
               {posts.map((p) => (
-                <PostPreview key={p.id} post={p} isAuthed={isAuthed} />
+                <PostPreview key={p.id} post={p} />
               ))}
             </div>
             <SignInCta

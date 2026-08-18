@@ -7,7 +7,6 @@ import { MapPin, Search, Users } from 'lucide-react'
 import type { MapCity } from './discover-map'
 import { distanceKm } from '@/lib/distance'
 import { getApproxLocationByIP } from '@/lib/geolocation'
-import { communityHref } from '@/lib/community-href'
 
 // maplibre is client-only.
 const DiscoverMap = dynamic(() => import('./discover-map'), {
@@ -34,11 +33,9 @@ export type LocatorCircle = {
 export function DiscoverLocator({
   cities,
   circles = [],
-  isAuthed = false,
 }: {
   cities: MapCity[]
   circles?: LocatorCircle[]
-  isAuthed?: boolean
 }) {
   const [center, setCenter] = useState<[number, number] | null>(null)
   const [query, setQuery] = useState('')
@@ -121,7 +118,7 @@ export function DiscoverLocator({
               {matches.map((c) => (
                 <li key={c.slug}>
                   <Link
-                    href={communityHref(`/circles/${c.slug}`, isAuthed)}
+                    href={`/circles/${c.slug}`}
                     className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-surface-elevated"
                   >
                     <span className="flex min-w-0 flex-col">

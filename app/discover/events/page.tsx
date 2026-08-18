@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
 import { getPublicEvents, getPublicCounts } from '@/lib/discover'
 import { EventRow, SignInCta } from '@/components/discover/cards'
 import { CommunityProof } from '@/components/discover/community-proof'
@@ -36,12 +35,6 @@ export const metadata: Metadata = {
 export const revalidate = 3600
 
 export default async function DiscoverEventsPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const isAuthed = !!user
-
   const [events, counts] = await Promise.all([
     getPublicEvents(50),
     getPublicCounts(),
@@ -121,7 +114,7 @@ export default async function DiscoverEventsPage() {
               <div className="space-y-3">
                 {events.map((e) => (
                   <div key={e.id} className="transition-transform hover:-translate-y-0.5">
-                    <EventRow event={e} isAuthed={isAuthed} />
+                    <EventRow event={e} />
                   </div>
                 ))}
               </div>

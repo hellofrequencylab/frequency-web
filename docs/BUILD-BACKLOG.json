@@ -577,18 +577,17 @@
     {
       "id": "LIVE-012",
       "title": "Decide how /discover index pages resolve isAuthed without killing ISR",
-      "status": "blocked",
+      "status": "done",
       "lane": "live",
       "size": "M",
       "source": {
-        "file": "docs/FINALIZE-PLAN.md",
-        "ref": "§10.9, §10.12"
+        "file": "app/discover/static-render.test.ts",
+        "ref": "ADR-1080; docs/FINALIZE-PLAN.md 10.9, 10.12; proxy.ts next= carry from #2132"
       },
-      "detail": "Three index pages call createClient() → cookies() purely for an isAuthed boolean, killing ISR and adding an auth round trip per crawl. DO NOT 'just remove the auth read' — it silently breaks sign-in destinations: isAuthed feeds communityHref, and proxy.ts builds its redirect by rewriting the pathname and NEVER setting next=, so the destination is lost. Two real options: (a) make the proxy set next= (strictly better product behaviour but changes where every signed-out deep link lands across 122 protected routes), or (b) resolve isAuthed client-side via the authMode=\"client\" pattern app/discover/layout.tsx already uses. Same decision governs (main)/layout.tsx. Owner call.",
+      "detail": "CLOSED 2026-08-18, and the row's OWN BLOCKER had already dissolved. It read 'proxy.ts builds its redirect by rewriting the pathname and NEVER setting next=, so the destination is lost' and called for an owner decision between two options. #2132 (2026-08-13) had already taken option (a): proxy.ts sets ?next=<pathname+search> on its sign-in redirect and /sign-in re-validates it into the fq_post_login cookie that /auth/callback honours. Re-read before acting, which is the only reason this did not ship the wrong fix. That made lib/community-href.ts redundant AND wrong: it rewrote every signed-out card link to /sign-in?next=<path>, which for /people is exactly what the proxy now does anyway, and for /circles/<slug> and /events/<slug> is strictly WORSE - the first has a public twin the proxy deliberately lets through (lib/nav/public-twin.ts) and the second is anon-readable outright (isPublicEventView), so both were being sent to a login wall in front of a page they could already see. So the boolean is gone, community-href.ts is deleted, and the six pages that awaited supabase.auth.getUser() for it (discover/{,circles/,events/,places/[citySlug]/,cities/[citySlug]/,events/in/[city]/[category]/}page.tsx) render statically again, honouring the export const revalidate = 3600 each already declared. Crawlers gain too: /circles and /people are robots-disallowed, so a bot now skips the link instead of fetching a /sign-in?next= it can only discover is noindex. app/page.tsx passed a hardcoded false, which is the tell that the splash had already decided the boolean was not worth an auth read.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Blocked on an auth-navigation decision, not on engineering.",
-        "checked": "2026-08-17"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),path=require('path');const ROOT='app/discover';if(!fs.existsSync(ROOT))process.exit(79);const walk=(d,o)=>{for(const e of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,e.name);if(e.isDirectory())walk(p,o);else if(/^(page|layout)[.]tsx$/.test(e.name))o.push(p)}return o};const files=walk(ROOT,[]);if(files.length<16)process.exit(79);const bad=[];for(const f of files){const code=fs.readFileSync(f,'utf8').split('\\n').filter(l=>!/^\\s*([/][/]|[*]|[/][*])/.test(l)).join('\\n');if(/[.]auth[.]get(User|Session)\\s*[(]/.test(code)||/from\\s+['\\\"]@[/]lib[/]supabase[/]server['\\\"]/.test(code)||/\\bcookies\\s*[(]\\s*[)]/.test(code))bad.push(f)}if(fs.existsSync('lib/community-href.ts'))bad.push('lib/community-href.ts still exists');if(bad.length){console.error('force-dynamic under /discover: '+bad.join(', '));process.exit(1)}process.exit(0)\""
       }
     },
     {

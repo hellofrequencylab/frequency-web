@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 import { EventRow } from '@/components/discover/cards'
 import {
   FrequencyArcs,
@@ -78,12 +77,6 @@ export default async function CityCategoryHubPage({ params }: Params) {
   const hub = await getCityCategoryHub(city, category)
   if (!hub || hub.events.length === 0) notFound()
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const isAuthed = !!user
-
   const path = `/discover/events/in/${hub.citySlug}/${cat.slug}`
 
   // Sibling categories that also have events in this city — internal links that
@@ -128,7 +121,7 @@ export default async function CityCategoryHubPage({ params }: Params) {
         <div className="mt-2 space-y-3">
           {hub.events.map((e) => (
             <div key={e.id} className="transition-transform hover:-translate-y-0.5">
-              <EventRow event={e} isAuthed={isAuthed} />
+              <EventRow event={e} />
             </div>
           ))}
         </div>

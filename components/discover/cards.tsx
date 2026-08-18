@@ -7,12 +7,27 @@ import { eventDateBadge, formatEventDate } from '@/lib/discover'
 import type { PublicCircle, PublicEvent, PublicPost, TopicalChannel } from '@/lib/discover'
 import type { JourneyPlan } from '@/lib/journey-plans'
 import { Button, Card } from '@/components/marketing/marketing-ui'
-import { communityHref } from '@/lib/community-href'
 
 // Presentational building blocks shared by the /discover hub and detail pages.
-// Social items (circles, events, authors) route to the real in-app community
-// item via communityHref — straight there when authed, through /sign-in?next=
-// when not. Topic cards stay on the public /discover/topics browse.
+// Social items (circles, events, authors) link STRAIGHT AT the real in-app community
+// item. Topic cards stay on the public /discover/topics browse.
+//
+// These links used to run through communityHref(path, isAuthed), which rewrote them to
+// `/sign-in?next=<path>` for a signed-out reader — and that boolean was the only reason six
+// statically-rendered /discover pages awaited `supabase.auth.getUser()`, which is a dynamic API
+// and silently voided every one of their `export const revalidate = 3600` (LIVE-012).
+//
+// The rewrite is now redundant, and it was also making the WORSE choice of the two:
+//   · proxy.ts sets `?next=<destination>` on its own sign-in redirect (since #2132), so a
+//     signed-out visitor who lands on a protected path keeps their destination anyway — the
+//     rewrite bought nothing on /people;
+//   · /circles/<slug> is no longer a bounce at all. It has a public twin, so proxy.ts lets it
+//     through and the (main) layout redirects to /discover/circles/<id> — the reader SEES the
+//     Circle instead of a sign-in form;
+//   · /events/<slug> is anon-readable outright (isPublicEventView), so the rewrite was sending
+//     people to a login wall in front of an already-public page.
+// Crawlers gain too: /circles and /people are robots-disallowed, so a bot now skips these links
+// entirely instead of fetching a /sign-in?next= dead end it can only discover is noindex.
 
 // ── Channel card ──────────────────────────────────────────────────────────────
 
@@ -46,9 +61,9 @@ export function ChannelCard({
 
 // ── Circle card ───────────────────────────────────────────────────────────────
 
-export function CircleCard({ circle, isAuthed = false }: { circle: PublicCircle; isAuthed?: boolean }) {
+export function CircleCard({ circle }: { circle: PublicCircle }) {
   return (
-    <Link href={communityHref(`/circles/${circle.slug}`, isAuthed)} className="group block h-full">
+    <Link href={`/circles/${circle.slug}`} className="group block h-full">
       <Card tone="feature" pad="p-5" className="h-full hover:border-border-strong transition-colors flex flex-col">
       <div className="flex items-start justify-between gap-3 mb-2">
         {/* min-w-0 + break-words: a flex child cannot shrink below its min-content width, and
@@ -87,10 +102,10 @@ export function CircleCard({ circle, isAuthed = false }: { circle: PublicCircle;
 
 // ── Event row ─────────────────────────────────────────────────────────────────
 
-export function EventRow({ event, isAuthed = false }: { event: PublicEvent; isAuthed?: boolean }) {
+export function EventRow({ event }: { event: PublicEvent }) {
   const badge = eventDateBadge(event.starts_at)
   return (
-    <Link href={communityHref(`/events/${event.slug}`, isAuthed)} className="block">
+    <Link href={`/events/${event.slug}`} className="block">
       <Card
         tone="feature"
         className="flex items-center gap-4 px-5 py-4 hover:border-border-strong hover:shadow-pop transition-all"
@@ -156,7 +171,7 @@ export function JourneyCard({ journey }: { journey: JourneyPlan }) {
 
 // ── Post preview (read-only social proof) ─────────────────────────────────────
 
-export function PostPreview({ post, isAuthed = false }: { post: PublicPost; isAuthed?: boolean }) {
+export function PostPreview({ post }: { post: PublicPost }) {
   const initials = post.author_display_name ? getInitials(post.author_display_name) : '?'
   const avatar = post.author_avatar_url ? (
     <Image
@@ -190,7 +205,7 @@ export function PostPreview({ post, isAuthed = false }: { post: PublicPost; isAu
     <article className="rounded-2xl border border-border bg-surface lift-1 p-4">
       {post.author_handle ? (
         <Link
-          href={communityHref(`/people/${post.author_handle}`, isAuthed)}
+          href={`/people/${post.author_handle}`}
           className="flex items-start gap-3 mb-3 group"
         >
           {identity}
