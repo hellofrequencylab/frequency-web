@@ -2060,22 +2060,6 @@
       }
     },
     {
-      "id": "LIVE-044",
-      "title": "About 45 files render a <Label> nothing is associated with",
-      "status": "open",
-      "lane": "live",
-      "size": "M",
-      "source": {
-        "file": "components/ui/field.tsx",
-        "ref": "TASK-INVENTORY-2026-08-17 §6d"
-      },
-      "detail": "Re-verified 2026-08-18: 45 files under app/ + components/ contain <Label. Create Event (the worst, 17) was already fixed and Field exists as the shared primitive, so this is mechanical: wrap in Field, or thread htmlFor/id, or role=group + aria-labelledby for button groups. Next by volume: circle-builder.tsx (12), movement-session.tsx (9), events/drafts/[id]/editor.tsx (9), the six onboarding *-render.tsx. The probe passes at <=8 files, headroom for the handful whose Label is genuinely decorative; if the sweep proves that number wrong, change the threshold WITH the sweep, not instead of it.",
-      "verify": {
-        "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');function walk(d,out){let es;try{es=fs.readdirSync(d,{withFileTypes:true})}catch{return out}for(const e of es){const p=d+'/'+e.name;if(e.isDirectory())walk(p,out);else if(p.endsWith('.tsx')&&!/\\.test\\./.test(e.name)&&fs.readFileSync(p,'utf8').includes('<Label'))out.push(p)}return out}if(!fs.existsSync('components')||!fs.existsSync('app'))process.exit(79);const files=[...walk('app',[]),...walk('components',[])];if(files.length>8){console.error(files.length+' files still render <Label> (target <=8)');process.exit(1)}process.exit(0)\""
-      }
-    },
-    {
       "id": "OWN-029",
       "title": "Prove the Vercel Build Command runs pnpm build, then pin it in vercel.json",
       "status": "open",
@@ -2139,6 +2123,22 @@
         "kind": "manual",
         "evidence": "BUILD-LIST W6 row reads 'stays deferred and is not part of the editor program' (re-read 2026-08-18).",
         "checked": "2026-08-18"
+      }
+    },
+    {
+      "id": "LIVE-046",
+      "title": "Nine on-air setup groups head a button grid with a <p> that names nothing programmatically",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "components/on-air/movement-session.tsx",
+        "ref": "Refuted LIVE-044; components/ui/field.tsx group guidance / ADR-966"
+      },
+      "detail": "THIS ROW IS WHAT SURVIVED A RETRACTION, and the retraction is the point. LIVE-044 claimed ~45 files render a <Label> nothing is associated with, minted 2026-08-18 from the census's ~105 figure plus a `grep -rl \"<Label\"`. MEASURED THE SAME DAY, IT IS FALSE: pnpm check:labels passes with 612 labels, every one naming exactly one control, 307 htmlFor targets resolving. The 45 were an SVG drawing primitive of the same name in components/onboarding/renders/*, substring hits (PillarLabel, labelClasses), the words '<Label>' inside COMMENTS explaining why a <p role=group> was used instead, and files that already thread htmlFor. WHAT IS ACTUALLY THERE, and it is small: components/on-air/{movement-session,session}.tsx each define a LOCAL `function Label` that renders a <p> (movement-session.tsx:1520, session.tsx:2195) - correctly a <p> and not a <label>, so no element is mislabelled and check:labels has nothing to say. Nine of them head a grid of ModeButton/Chip controls without the second half of the pattern: no id, no role='group', no aria-labelledby, so a screen reader reaches the buttons with no group name. The fix is the pattern components/ui/field.tsx already documents and five other files already apply.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const f='components/on-air/movement-session.tsx';if(!fs.existsSync(f))process.exit(79);const s=fs.readFileSync(f,'utf8');if(s.indexOf('<Label')<0)process.exit(79);const bare=(s.match(/<Label>/g)||[]).length;const wired=(s.match(/aria-labelledby=/g)||[]).length;if(wired<bare){console.error(bare+' group heading(s), '+wired+' wired with aria-labelledby');process.exit(1)}process.exit(0)\""
       }
     }
   ]
