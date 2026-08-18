@@ -224,7 +224,7 @@ jobs:
           # check:og-trace) deliberately live in `postbuild` instead, because CI never builds —
           # Vercel does. See docs/DEPLOY-SAFETY.md and ADR-1003.
           guards=(
-            authz canon menu gate-parity workflows labels help tokens phantom bridge contrast
+            authz canon menu gate-parity workflows labels a11y-names help tokens phantom bridge contrast
             headers seo rls grants admin-client migrations adr docs-links templates
             backlog one-list
           )

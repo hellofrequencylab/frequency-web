@@ -263,7 +263,9 @@ export function robotsDirective(src) {
 }
 
 /** Every layout.tsx from app/ down to the page's own directory, nearest last. A layout's metadata
- *  is inherited, so a subtree noindexed at the top (app/(main)/pages/layout.tsx) is declared. */
+ *  is inherited, so a subtree noindexed at the top (app/(main)/pages/layout.tsx) is declared.
+ *  @param {string} file
+ *  @param {(f: string) => boolean} [exists] repo-relative probe */
 export function layoutChain(file, exists = existsSync) {
   const out = []
   let dir = dirname(file)

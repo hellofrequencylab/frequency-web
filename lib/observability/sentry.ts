@@ -10,6 +10,17 @@
 // This module is the ONE place that decides "is Sentry on?" and builds the init
 // options, so the three runtime configs (server, edge, client) stay identical in
 // the parts that matter. Each runtime config calls maybeInit() at module load.
+//
+// ⚠️ THE STATIC IMPORT BELOW IS WHY THIS MODULE IS SERVER-EAGER / CLIENT-LAZY.
+// Importing it pulls the whole SDK in with it. The server and edge configs want
+// exactly that — Sentry's Node instrumentation has to be installed synchronously,
+// before the modules it patches load — so sentry.server.config.ts and
+// sentry.edge.config.ts import this file at module scope and that is correct.
+// instrumentation-client.ts must NOT: on the browser side the same static import
+// would put ~150 kB in the baseline chunk of every route. The client reaches this
+// module through a gated `import()` of ./sentry-client.ts instead. Keep it that way
+// — a new STATIC import of this module from anything on the client entry path
+// silently undoes it, and no source-level gate would notice.
 
 import * as Sentry from '@sentry/nextjs'
 
@@ -79,3 +90,9 @@ export function maybeInitSentry(
     return false
   }
 }
+
+/*  The client-navigation hook and `startClientSentry` used to live here. They moved to
+ *  `./sentry-client.ts` because `Sentry.captureRouterTransitionStart` does NOT exist in
+ *  @sentry/nextjs's edge build, and this module is imported by `sentry.edge.config.ts` — which
+ *  failed the Vercel build outright while `tsc --noEmit` stayed clean. Keep this file free of
+ *  client-exclusive SDK members: all three runtimes import it. */

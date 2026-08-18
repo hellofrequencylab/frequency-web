@@ -1,0 +1,221 @@
+# Function-grant contract — one EXECUTE verdict per live `public` function (LIVE-020, ADR-959).
+# Enforced by `pnpm check:function-grants` (scripts/check-function-grants.mjs).
+#
+#   public         a signed-out visitor must be able to call it. Reached as `anon` through
+#                  lib/supabase/public.ts, or through lib/supabase/server.ts on a page a
+#                  signed-out visitor can load.
+#   authenticated  signed-in callers invoke it with the anon key; anon must NOT. REQUIRES an
+#                  explicit `revoke ... from ... anon` in a migration -- the gate checks.
+#   internal       service_role only (or a trigger function, or an RLS helper). REQUIRES the
+#                  same explicit revoke.
+#
+# BOTH non-`public` verdicts are load-bearing here, which is where this file differs from
+# scripts/table-grants.txt. On a table, RLS is the second lock and `authenticated` describes a
+# policy. A SECURITY DEFINER function bypasses RLS by construction, so the grant is the ONLY
+# lock and "signed-in only" is a claim about the grant and nothing else.
+#
+# WHY THIS FILE EXISTS. PostgREST publishes every function in `public` as an RPC. Supabase's
+# `ALTER DEFAULT PRIVILEGES IN SCHEMA public` grants anon and authenticated EXECUTE on each new
+# one as EXPLICIT per-role grants, and Postgres separately grants EXECUTE to the pseudo-role
+# PUBLIC. `revoke ... from public` does not touch the first; `revoke ... from anon` does not
+# touch the second. Either statement alone succeeds and locks nothing (ADR-959). The gate
+# therefore demands a revoke that NAMES THE ROLE, and rejects a public-only revoke by name.
+#
+# HOW THE VERDICTS WERE SEEDED -- FROM THE LIVE CATALOG, NOT FROM THE SQL. Measured against
+# production (azsqfeonabsbmemvddqd) on 2026-08-17 with has_function_privilege:
+#   public         = anon holds EXECUTE today
+#   authenticated  = anon does not, authenticated does
+#   internal       = neither
+#
+# 🔴 THIS FILE DESCRIBES THE TREE AS IT IS, NOT AS IT OUGHT TO BE. Every row matches the measured
+# state; no row records an intention. That distinction was learned the expensive way in this very
+# file. The first version moved TWELVE rows to `internal` / `authenticated` on the strength of a
+# revoke migration that had been AUTHORED BUT NEVER APPLIED, so the ledger asserted twelve
+# functions were closed while anon could call all twelve in production. The migration then failed
+# CI on a separate rule and had to leave the tree, and the ledger's twelve claims would have
+# survived it -- a gate reading green over exactly the exposure it exists to report.
+#
+# So: `public` here is a statement of FACT (anon can execute it), not an endorsement. 59 of these
+# are `public` and only about fourteen are deliberate front-door entry points. The gap between
+# those two numbers IS the finding, it is the open row OWN-006, and the proposed revokes are
+# staged in docs/proposals/OWN-006-revoke-browser-execute.sql -- outside supabase/migrations/,
+# because a file in there asserts production has run it. When an owner applies that proposal, the
+# thirteen functions it names move to `internal` / `authenticated` IN THE SAME CHANGE, and this
+# gate will refuse the change if they do not.
+#
+# ONE ROW IS NEITHER MEASURED-OPEN NOR NAMED-CLOSED. `after_crew_completion_verified` is `internal`
+# and carries no revoke of its own: 20261231000000 closed it inside a catalog-driven `do $$` loop.
+# The guard does not take that on trust -- it verifies the function's create migration sorts BEFORE
+# the loop, so a version-ordered replay genuinely reaches it, and it prints the exception on every
+# passing run. See LOOP_COVERED in scripts/check-function-grants.mjs.
+#
+# THE PARSE WAS CROSS-CHECKED AGAINST THE CATALOG BEFORE THIS FILE WAS WRITTEN, and the check
+# earned its keep twice. Replaying supabase/migrations/ yields exactly the 148 non-extension
+# functions production holds in `public` -- 148 <=> 148, zero drift in either direction. Getting
+# there caught a parser that processed every create before every drop (nine functions lost to
+# `drop ...; create ...` in one file) and a name-granular liveness model that erased
+# `record_qr_scan` when one of its two overloads was dropped. A gate cannot protect an object
+# its parser cannot see.
+#
+# `public` is a DECLARATION the gate does not verify -- it cannot read a function body and it
+# cannot tell an anon-safe aggregate from an anon-reachable oracle. That is
+# supabase/migrations/fail-open-guards.test.ts's job (ADR-961). Keep both. If you are unsure,
+# write `internal`: it is the only verdict that fails closed.
+#
+# NOT LISTED, on purpose:
+#   · the 18 RLS helpers moved to schema `private` by 20270101000000 -- off the REST surface
+#     entirely, and declared in RETIRED_BY_DYNAMIC_SQL in the guard.
+#   · `st_estimatedextent` (3 overloads) -- owned by extension `postgis` and granted by
+#     `supabase_admin`, so no migration of ours can revoke them.
+#
+# 59 public · 20 authenticated · 69 internal · 148 total  (measured 2026-08-17; 59 `public` is the
+# state of the database, not a target -- see OWN-006)
+
+accept_bundle_invite_atomic          internal
+adjust_ticket_sold                   internal
+advance_challenge_progress           internal
+after_achievement_unlocked           internal
+after_crew_completion                internal
+after_crew_completion_verified       internal
+after_gem_transaction                internal
+after_store_redemption               internal
+after_zap_transaction                internal
+apply_bundle_seating_atomic          internal
+apply_membership_event_atomic        internal
+award_gems_atomic                    internal
+capture_guest_rsvp                   public
+capture_signup_lead                  public
+challenge_outcomes                   public
+check_hub_circle_limit               public
+circle_momentum                      authenticated
+circle_templates_touch_updated_at    public
+circles_near                         public
+claim_guest_rsvps                    authenticated
+claim_outbox_jobs                    internal
+claim_season_certificate             internal
+claim_space_plan_event               internal
+community_library                    authenticated
+create_bundle_invite_atomic          internal
+dashboard_health_summary             internal
+dashboard_space_health_summary       internal
+decrement_commerce_stock_atomic      internal
+default_space_id_to_root             internal
+delete_topical_channel               internal
+density_by_city                      internal
+dm_conversation_summaries            authenticated
+enforce_circle_access_shape          public
+enforce_circle_member_cap            internal
+enforce_event_rsvp_capacity          internal
+enforce_member_not_suspended         internal
+enforce_membership_tier_circle_link  public
+engagement_event_counts              public
+engagement_prop_counts               public
+ensure_calendar_token                public
+event_calendar_feed                  public
+feed_for_viewer                      authenticated
+find_contact_matches                 internal
+friendships_freeze_identity          internal
+funnel_rollup                        authenticated
+get_my_group_ids                     internal
+gift_gems_atomic                     internal
+handle_is_available                  public
+handle_new_auth_user                 internal
+housing_astro_compat                 public
+housing_element_pair                 public
+housing_lifestyle_agreement          public
+housing_match_candidates             authenticated
+housing_roommate_matches             authenticated
+housing_safe_date                    public
+housing_safe_int                     public
+housing_sign_element                 public
+housing_sign_modality                public
+housing_sun_sign                     public
+interaction_surface_stats            internal
+is_blocked_between                   public
+journey_funnel                       internal
+lead_entry_points_no_overwrite       public
+log_crew_completion_atomic           internal
+maintain_engagement_on_reaction      public
+maintain_engagement_on_reply         public
+mark_signup_lead_converted           authenticated
+match_help_chunks                    public
+match_library_assets                 internal
+match_practices                      authenticated
+match_room_messages                  authenticated
+member_engagement_stats              public
+member_interaction_stats             internal
+members_near                         internal
+merge_practices                      internal
+merge_tags                           internal
+message_peer_profiles                authenticated
+mkt_content_performance              internal
+mkt_geo                              internal
+mkt_growth                           internal
+mkt_interest_demand                  internal
+mkt_leader_activity                  internal
+my_friendships                       authenticated
+my_notifications                     authenticated
+my_orbit                             public
+my_unread_message_count              authenticated
+my_unread_notification_count         authenticated
+near_misses                          public
+nearby_events                        public
+node_capture_counts                  internal
+node_within_range                    public
+nodes_geo                            public
+practice_admin_facets                internal
+practices_touch_updated_at           public
+prevent_economy_self_edit            internal
+prevent_role_self_escalation         internal
+provision_channel_room               internal
+public_active_circle_count           public
+public_calendar_feed                 public
+public_circle_by_id                  public
+public_circles                       public
+public_event_by_slug                 public
+public_events                        public
+public_featured_posts                public
+public_member_count                  public
+public_organizer_events              public
+public_organizer_handles             public
+public_posts                         public
+qr_stats_summary                     internal
+recompute_community_level            internal
+record_qr_scan                       internal
+record_streak_tick                   internal
+redeem_store_item_atomic             internal
+refresh_member_engagement_scores     internal
+refresh_resonance_density_cells      internal
+relationship_timeline                public
+reserve_ticket_atomic                internal
+reset_season                         internal
+resonance_neighbors                  internal
+room_unread_counts                   authenticated
+rooms_maintain_member_count          public
+rooms_touch_last_message             public
+scoped_feed_for_viewer               authenticated
+search_handles_public                authenticated
+search_practices_hybrid              internal
+set_event_geog                       internal
+set_node_geo                         internal
+set_updated_at                       public
+similar_library_assets               internal
+space_public_calendar_feed           public
+sync_contact_from_profile            internal
+sync_event_scope_arc                 internal
+sync_post_scope_arc                  internal
+trg_circle_auto_activate             public
+trg_decrement_circle_member_count    public
+trg_decrement_member_count           public
+trg_decrement_reply_count            internal
+trg_hub_auto_activate                public
+trg_increment_circle_member_count    public
+trg_increment_member_count           public
+trg_increment_reply_count            internal
+trg_nexus_auto_activate              public
+trg_stewardships_recompute_level     internal
+update_signup_lead                   public
+visible_room_member_profiles         authenticated
+vitals_p75                           internal
+welcome_targets                      public
+your_impact                          public

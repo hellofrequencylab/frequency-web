@@ -169,9 +169,9 @@ function Row({
           {editing ? (
             <div className="mt-1.5">
               {long ? (
-                <Textarea rows={4} value={draft} onChange={(e) => setDraft(e.target.value)} disabled={busy} />
+                <Textarea rows={4} aria-label={field.label} value={draft} onChange={(e) => setDraft(e.target.value)} disabled={busy} />
               ) : (
-                <Input value={draft} onChange={(e) => setDraft(e.target.value)} disabled={busy} />
+                <Input aria-label={field.label} value={draft} onChange={(e) => setDraft(e.target.value)} disabled={busy} />
               )}
               <div className="mt-2 flex gap-2">
                 <button

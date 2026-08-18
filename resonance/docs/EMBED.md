@@ -2,8 +2,10 @@
 
 A host page mounts a Resonance world in an iframe and federates its own login,
 so members never sign up twice. The host signs a short-lived RS256 JWT,
-Resonance verifies it, and the world runs inside the host's page. With no token
-and no env set, the same build still runs standalone with an anonymous session.
+Resonance verifies it, and the world runs inside the host's page. With no token,
+the same build falls back to a standalone anonymous session **where the Supabase
+project grants it** (ADR-019); on the shared Frequency project it does not, so the
+host JWT is the only identity there.
 
 ## At a glance
 
@@ -12,7 +14,7 @@ and no env set, the same build still runs standalone with an anonymous session.
 | Mount | iframe to `/embed/{venueId}`, or the `embed.js` helper | `public/embed.js` |
 | Identity | host signs an RS256 JWT, Resonance verifies it | `lib/auth/host-identity.ts` |
 | Live bridge | origin-checked `postMessage` both ways | `lib/embed/origins.ts`, `components/embed/useEmbedBridge.ts` |
-| No token | anonymous standalone session (no env needed) | `components/embed/EmbedFrame.tsx` |
+| No token | anonymous standalone session, only if `NEXT_PUBLIC_RESONANCE_ANONYMOUS_AUTH=true` (ADR-019) | `components/embed/EmbedFrame.tsx` |
 
 ## 1. How to embed
 
@@ -108,10 +110,15 @@ The bridge events are typed in `lib/integration/embed-contract.ts`:
 
 ## 4. Standalone fallback (no token)
 
-The same build runs on its own with nothing configured. If no host token arrives
-shortly after load, `EmbedFrame` signs in with an anonymous Supabase session and
-mounts the room, identical to the rest of the app. Nothing about embedding is
-required for standalone to work, and no env weakens it.
+If no host token arrives shortly after load, `EmbedFrame` asks for a standalone
+anonymous session and mounts the room, identical to the rest of the app. Nothing
+about embedding is required for that to work, and no env weakens it.
+
+**It is not free, though.** Anonymous sign-in is a capability of the Supabase
+PROJECT, not of this code, and it is off on the shared Frequency project and stays
+off (ADR-019, ISOLATION rule 8). `ensureSession()` therefore returns null there and
+the fallback does not mount. Turn it on only on a project we own, with
+`NEXT_PUBLIC_RESONANCE_ANONYMOUS_AUTH=true`. A host that signs a JWT is unaffected.
 
 ## Host setup checklist
 

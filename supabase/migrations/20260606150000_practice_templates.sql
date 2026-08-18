@@ -4,7 +4,7 @@
 -- The library practices become explicit TEMPLATES a member can "claim": a
 -- Vera-guided wizard forks a private, owned copy and personalizes it (title /
 -- cadence / steps) to that member, who then logs it for zaps + a streak. This
--- mirrors the demo-circle claim (ADR-091) applied to practices — the same
+-- mirrors the demo-circle claim (ADR-1048) applied to practices — the same
 -- "make it yours" loop that gamifies healthy living.
 --
 -- Pure data + one additive flag:

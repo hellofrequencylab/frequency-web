@@ -136,9 +136,10 @@ describe('a11y waivers · what must NOT match', () => {
     expect(waiverForNode('color-contrast', fillNode('#362f24', '#211a10'))).toBeNull()
   })
 
-  it('never waives a declared amber that the harness proved never paints', () => {
-    // `.dark [data-skin="midnight"]`'s #F0AD4E: declared in globals.css, never rendered,
-    // deliberately absent from the list.
+  it('never waives a declared amber the harness has not measured', () => {
+    // Midnight dark's #F0AD4E: declared in globals.css and, since LIVE-008 fixed the selector,
+    // actually painted — but never yet MEASURED by a capture, so deliberately absent from the
+    // list. It is listed only when a run reports it, with that run's ratio.
     expect(waiverForNode('color-contrast', fillNode('#ffffff', '#f0ad4e'))).toBeNull()
   })
 

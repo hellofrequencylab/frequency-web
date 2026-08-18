@@ -145,27 +145,72 @@ Every one of the 304 maps to exactly one target, with no unmapped remainder.
 
 ### 🔴 P0 — five stored types resolve to nothing ([ADR-977](DECISIONS.md) D-9)
 
-| Slug | Status | Orphan types |
-|---|---|---|
-| `about` | draft | `BetaCTA`, `ImageBand`, `PageHero`, `ZigZag` |
-| `the-lab` | draft | `BetaCTA`, `FeatureGallery`, `ImageBand`, `PageHero`, `ZigZag` |
-| ~~`how-it-works`~~ | draft | ⚠️ **Not at risk** — it is not in `EDITABLE_PAGES` (a retired 308 redirect), so `/edit/how-it-works` redirects to `/pages` and the editor can never open it. An earlier draft counted it and overstated the blast radius by a third |
+Re-measured against production 2026-08-17 for [ADR-1055](DECISIONS.md). **17 orphan blocks, five
+types, three draft rows** — the D-9 counts hold exactly.
 
-None of the five is among the 88.
+| Slug | Status | Orphan blocks |
+|---|---|---|
+| `about` | draft | `PageHero`×1, `ImageBand`×1, `ZigZag`×3, `BetaCTA`×1 — **6 of 8** |
+| `how-it-works` | draft | `PageHero`×1, `ZigZag`×3, `BetaCTA`×1 — **5 of 7** |
+| `the-lab` | draft | `PageHero`×1, `ImageBand`×1, `ZigZag`×2, `FeatureGallery`×1, `BetaCTA`×1 — **6 of 8** |
+
+None of the five is among the 88. `home` / `the-community` are clean in both columns,
+`published_data` carries no orphan anywhere, and all 18 Space `pageDocs` documents resolve.
+
+⚠️ **`how-it-works` is back on the list, and the strike that removed it was half right.** It is not
+in `EDITABLE_PAGES` (a retired 308 redirect), so `/edit/how-it-works` redirects and no operator can
+open it — **that is a statement about the editor, not about the data.** The row still sits in
+`pages` with five orphan blocks in it, and a migration scoped to the two "at risk" slugs leaves a
+third of the defect behind for whoever un-retires the slug. The blast radius through the *editor*
+is two pages; the blast radius in *storage* is three.
 
 ⚠️ **`ZigZag` is NOT a casing typo for the registry's `Zigzag`** ([ADR-978](DECISIONS.md)). The
 resemblance is a trap: their props only partly overlap — `titleAccent` vs `accentWord`, `side` vs
 `mediaSide`, and `kicker` / `tone` / `imgAspect` have no home in `Zigzag` at all — so aliasing one to
 the other would **silently drop three fields and mis-map two**, which is the same data loss arriving
-by a quieter route. It is a *retired block with a similar name*, and remapping it is a data migration
-with real decisions in it.
+by a quieter route.
 
-✅ **Shipped ([ADR-978](DECISIONS.md)).** `isRenderable()` was `content.every(…)`, so publishing
-either affected page replaced it with the code template and the draft was gone. The loader now keeps
-any well-formed document, the public routes render it minus the unresolvable blocks, and an
-unresolvable block shows a labelled placeholder in the editor only. **The five retired types still
-render as nothing on a live page** — the fix protects the author's data, it does not restore the
-blocks.
+🔴 **…and `Zigzag` was the wrong candidate to be comparing it against** ([ADR-1055](DECISIONS.md)).
+`ZigZag`'s successor is **`MediaText`**, which says so in its own header
+(`components/page-editor/blocks/media.tsx:60` — *"standardizes the old ZigZag"*) and is a
+name-for-name, option-for-option **superset** of all twelve stored props. Four of the five
+successors are named outright in the block files; two ADRs concluded "this is a data migration with
+real decisions in it" without reading them.
+
+| Orphan | Successor | Where the code says so |
+|---|---|---|
+| `PageHero` | `Hero` (`variant: 'minimal'`) | inferred — Hero's fields ⊇ PageHero's four props |
+| `ImageBand` | `Image` (`mode: 'single'`) | `media.tsx:114` |
+| `ZigZag` | `MediaText` | `media.tsx:60` |
+| `FeatureGallery` | `Gallery` | `media.tsx:215` |
+| `BetaCTA` | `CallToAction` (`tone: 'ink'`) | `sections.tsx:259` |
+
+✅ **Survival shipped ([ADR-978](DECISIONS.md)).** `isRenderable()` was `content.every(…)`, so
+publishing either affected page replaced it with the code template and the draft was gone. The
+loader now keeps any well-formed document, the public routes render it minus the unresolvable
+blocks, and an unresolvable block shows a labelled placeholder in the editor only. **The five
+retired types still render as nothing on a live page** — the fix protects the author's data, it does
+not restore the blocks.
+
+⏳ **The restore is authored and unapplied ([ADR-1055](DECISIONS.md)).**
+`docs/proposals/LIVE-028-retire-orphan-block-types.sql` rewrites all 17 blocks losslessly
+(`target_defaults || stored_props`, `props.id` preserved) and waits for the owner. It is **staged
+outside `supabase/migrations/` on purpose**: a file there asserts production has run it, and CI
+arms `check:migrations` rule 4 ([ADR-1007](DECISIONS.md)) with real credentials, so an unapplied
+file in that directory fails the build. Promotion is step 1 of applying it.
+
+✅ **The fail-safe now has a gate**: `check:stored-blocks` (`scripts/stored-block-types.json` +
+`scripts/check-stored-blocks.test.ts`). It fails when stored page data names a type the live
+registry does not know, so a sixth orphan is caught by CI rather than by the next hand audit.
+
+⚠️ **A DECLARED orphan passes it, loudly, and that is deliberate.** The five above are known, name
+their successor and the SQL that performs the rewrite, and clear only on an OWNER action. Failing
+a required job on them would make every unrelated PR unmergeable until that action happened — the
+[ADR-970](DECISIONS.md) shape where a gate nobody can clear gets routed around and then reads as
+coverage. So the guard prints them in full on every run and exits 0; an **undeclared** orphan, or a
+quarantine entry whose successor no longer resolves or whose SQL no longer performs that rewrite,
+still fails hard. `--probe` keeps the opposite verdict on the same input — it answers "is LIVE-028
+done", and the answer is no.
 
 ### ⚠️ P1 — live placements, cannot drop without a migration
 

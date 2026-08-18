@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest'
-// @ts-expect-error — plain .mjs guard script, no types
 import { checkCrmParity, surfaceFloorFailure, SURFACES } from './check-crm-parity.mjs'
 
 // Locks the CRM / comms parity contract (ADR-817, docs/CRM-COMMS-CONTRACT.md) inside the test suite.

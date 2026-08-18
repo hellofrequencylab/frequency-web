@@ -4,6 +4,11 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
+    // `scripts/*.mts` run on `node --experimental-strip-types`, where Node does NO extension
+    // resolution: `import { X } from '../lib/help/content.ts'` MUST carry the `.ts`. That is
+    // runtime-load-bearing, so the checker accommodates it rather than the other way round.
+    // Safe here because `noEmit` is on — nothing is ever emitted with a `.ts` specifier in it.
+    "allowImportingTsExtensions": true,
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
@@ -30,5 +35,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "scripts", "supabase/functions", "resonance"]
+  "exclude": ["node_modules", "supabase/functions", "resonance"]
 }

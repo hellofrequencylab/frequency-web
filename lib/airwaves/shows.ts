@@ -92,6 +92,10 @@ function mapShow(r: Record<string, unknown>): Show {
 
 // ── Reads ────────────────────────────────────────────────────────────────────────────────────────
 
+/** PostgREST's `max_rows` cap, and the page size for the batched read below. Matching it exactly
+ *  means a short page is an unambiguous end-of-data signal. */
+const SHOW_PAGE = 1000
+
 /** A Space's Shows, newest first (owner console). FAIL-SAFE to []. */
 export async function listShowsForSpace(spaceId: string): Promise<Show[]> {
   const sid = (spaceId ?? '').trim()
@@ -121,29 +125,49 @@ export async function listShowsForSpace(spaceId: string): Promise<Show[]> {
  * public podcast pages render (they 404 otherwise), so a draft or private feed can never be
  * advertised. FAIL-SAFE: an empty Map on any error or on an empty input, never a throw, so the
  * caller degrades to "no podcast URLs" rather than to no sitemap.
+ *
+ * PAGED, and it has to be. `.limit(n)` does NOT raise PostgREST's `max_rows` (1000 —
+ * supabase/config.toml, and the same on hosted); the cap is applied SERVER-SIDE and service_role does
+ * not escape it. Collapsing the N+1 into one read therefore replaced 200 small queries with a single
+ * one that silently returned its first 1000 rows and reported no error — and because the batch is
+ * ordered created_at DESC across ALL Spaces, the rows it dropped were whole trailing Spaces, whose
+ * podcasts index and Show URLs then vanished from the sitemap with nothing to notice it. Same paging
+ * idiom as lib/connections/store.ts.
  */
 export async function listPublicShowsBySpace(spaceIds: string[]): Promise<Map<string, Show[]>> {
   const ids = [...new Set((spaceIds ?? []).map((id) => (id ?? '').trim()).filter(Boolean))]
   const grouped = new Map<string, Show[]>()
   if (ids.length === 0) return grouped
+  // The per-Space reader caps at 200; keep the same ceiling per Space across the batch.
+  const ceiling = Math.min(ids.length * 200, 5000)
   try {
-    const { data } = await db()
-      .from('podcast_shows')
-      .select(SHOW_SELECT)
-      .in('space_id', ids)
-      .eq('status', 'published')
-      .eq('feed_visibility', 'public')
-      .order('created_at', { ascending: false })
-      // The per-Space reader caps at 200; keep the same ceiling per Space across the batch.
-      .limit(Math.min(ids.length * 200, 5000))
-    for (const row of (data as Array<Record<string, unknown>> | null) ?? []) {
-      const show = mapShow(row)
-      // Belt-and-braces: the SQL already filters, but the mapper coerces unknown values, so a row
-      // that does not survive normalisation is dropped rather than advertised.
-      if (show.status !== 'published' || show.feedVisibility !== 'public') continue
-      const bucket = grouped.get(show.spaceId)
-      if (bucket) bucket.push(show)
-      else grouped.set(show.spaceId, [show])
+    for (let fetched = 0; fetched < ceiling; ) {
+      const size = Math.min(SHOW_PAGE, ceiling - fetched)
+      const { data } = await db()
+        .from('podcast_shows')
+        .select(SHOW_SELECT)
+        .in('space_id', ids)
+        .eq('status', 'published')
+        .eq('feed_visibility', 'public')
+        // created_at DESC is the emitted order (the per-Space reader's order, preserved per bucket
+        // by the grouping below). `id` breaks ties into a TOTAL order, without which two Shows
+        // sharing a created_at could straddle a page boundary and be skipped or repeated.
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: true })
+        .range(fetched, fetched + size - 1)
+      const batch = (data as Array<Record<string, unknown>> | null) ?? []
+      for (const row of batch) {
+        const show = mapShow(row)
+        // Belt-and-braces: the SQL already filters, but the mapper coerces unknown values, so a row
+        // that does not survive normalisation is dropped rather than advertised.
+        if (show.status !== 'published' || show.feedVisibility !== 'public') continue
+        const bucket = grouped.get(show.spaceId)
+        if (bucket) bucket.push(show)
+        else grouped.set(show.spaceId, [show])
+      }
+      // A short page is an unambiguous end-of-data signal, because `size` never exceeds max_rows.
+      if (batch.length < size) break
+      fetched += batch.length
     }
     return grouped
   } catch {

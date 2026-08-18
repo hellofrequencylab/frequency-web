@@ -133,7 +133,7 @@ export function Toast({
       )}
       <div className="min-w-0 flex-1">
         {eyebrow && (
-          <p className="text-3xs font-bold uppercase tracking-wider text-muted">{eyebrow}</p>
+          <p className="eyebrow text-muted">{eyebrow}</p>
         )}
         <p className="text-body-sm font-bold text-text">{title}</p>
         {children && <p className="mt-0.5 text-meta leading-relaxed text-muted">{children}</p>}

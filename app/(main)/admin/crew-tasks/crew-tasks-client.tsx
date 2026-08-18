@@ -182,7 +182,7 @@ function VerificationQueue({ items }: { items: PendingVerification[] }) {
               </p>
               <p className="text-meta text-subtle">
                 {new Date(c.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                {' · '}{c.zaps_earned} zaps pending
+                {' · '}{c.zaps_earned} Zaps pending
               </p>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
@@ -268,7 +268,7 @@ export function CrewTasksClient({ tasks, pendingVerifications = [] }: { tasks: C
               </div>
 
               <span className="text-body-sm font-bold text-primary-strong shrink-0">
-                +{task.zaps_value} zaps
+                +{task.zaps_value} Zaps
               </span>
 
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -128,7 +128,7 @@ export interface Offering {
   /** True for the column its band highlights: Crew on the member ladder, Collective on the Space
    *  ladder. That is the DAWN 2 pricing reference's "Best choice" pair
    *  (design_handoff/dawn/ui_kits/marketing/pricing.html), whose structure the owner adopted for
-   *  /pricing wholesale; no ADR names a different featured plan (ADR-875/878/914 shape the ladder,
+   *  /pricing wholesale; no ADR names a different featured plan (ADR-1052/878/914 shape the ladder,
    *  not the crown), so the adopted reference is the canon and the page float reads THIS flag. */
   featured: boolean
   cta: { label: string; href: string }

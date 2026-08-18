@@ -46,6 +46,86 @@ export default async function AdminStorePage() {
 
   const rows = (items ?? []) as StoreItem[]
 
+  // ── THE FULFILLMENT QUEUE (backlog LIVE-013) ────────────────────────────────────────────────
+  //
+  // `classifyRedemption` routes a feature/membership SKU to `{ kind: 'pending' }` — "the
+  // store_redemptions row IS the fulfillment record an operator acts on". That was true of the
+  // row and false of the operator: nothing in /manage or /admin ever listed those rows, so the
+  // only place a paid perk existed was a "Recorded ✓" flash on the member's own screen. Measured
+  // against production 2026-08-17: one Guest Pass, 150 Gems, bought 2026-06-27, never surfaced.
+  //
+  // READ-ONLY on purpose. Marking one honored needs a column `store_redemptions` does not have;
+  // the ALTER is proposed in docs/proposals/LIVE-013-cosmetic-fulfillment.sql and is the owner's
+  // to apply. A queue that shows the work is the part that needed no schema, and shipping it now
+  // beats shipping nothing while the column waits.
+  const { data: redemptionRows } = await admin
+    .from('store_redemptions')
+    .select('id, redeemed_at, gems_spent, store_items!item_id ( slug, name, category ), profiles!profile_id ( handle, display_name )')
+    .gt('gems_spent', 0)
+    .order('redeemed_at', { ascending: true })
+    .limit(500)
+
+  type QueueRow = {
+    id: string
+    redeemed_at: string
+    gems_spent: number
+    store_items: { slug: string; name: string; category: StoreCategory } | null
+    profiles: { handle: string | null; display_name: string | null } | null
+  }
+
+  // Only the perks a PERSON delivers. A cosmetic/title applies itself, a collectible is the chip
+  // in the member's collection, and `streak-freeze` banks its own token in-app (ADR-305).
+  const queue = ((redemptionRows ?? []) as unknown as QueueRow[]).filter(
+    (r) =>
+      r.store_items !== null &&
+      (r.store_items.category === 'feature' || r.store_items.category === 'membership') &&
+      r.store_items.slug !== 'streak-freeze',
+  )
+
+  const queueColumns: ColumnDef<QueueRow>[] = [
+    {
+      key: 'member',
+      header: 'Member',
+      render: (r) => (
+        <div className="min-w-0">
+          <span className="truncate text-body-sm font-medium text-text">{r.profiles?.display_name ?? 'Unknown member'}</span>
+          {r.profiles?.handle && <span className="mt-0.5 block truncate text-meta text-subtle">@{r.profiles.handle}</span>}
+        </div>
+      ),
+    },
+    {
+      key: 'item',
+      header: 'Owed',
+      render: (r) => (
+        <div className="min-w-0">
+          <span className="truncate text-body-sm text-text">{r.store_items?.name}</span>
+          <span className="mt-0.5 block truncate text-meta text-subtle">{r.store_items?.slug}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'gems_spent',
+      header: 'Gems paid',
+      align: 'right',
+      type: 'number',
+      render: (r) => (
+        <span className="flex items-center justify-end gap-1 tabular-nums">
+          <Gem className="h-3 w-3 shrink-0 text-primary" aria-hidden />
+          {r.gems_spent.toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      key: 'redeemed_at',
+      header: 'Waiting since',
+      render: (r) => (
+        <span className="text-meta text-muted">
+          {new Date(r.redeemed_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+        </span>
+      ),
+    },
+  ]
+
   const columns: ColumnDef<StoreItem>[] = [
     {
       key: 'name',
@@ -137,6 +217,26 @@ export default async function AdminStorePage() {
               icon={Package}
               title="No items yet"
               description="Add the first Vault Store item using the button above."
+            />
+          }
+        />
+      </AdminSection>
+
+      <AdminSection
+        title={`To honor (${queue.length})`}
+        description="Perks a member already paid Gems for that a person has to hand over: a guest pass, a seat at the table, a name on a node. Oldest first."
+      >
+        <DataTable
+          caption="Redeemed perks awaiting fulfillment"
+          columns={queueColumns}
+          rows={queue}
+          getRowId={(r) => r.id}
+          empty={
+            <EmptyState
+              variant="first-use"
+              icon={Package}
+              title="Nothing waiting"
+              description="No member is owed a hand-delivered perk right now."
             />
           }
         />

@@ -60,7 +60,7 @@ export function RoleManager({ members }: { members: RoleMember[] }) {
           <div>
             <h2 className="text-body-sm font-semibold text-text">Members · advancement</h2>
             <p className="text-meta text-muted">
-              Sorted by contribution (season zaps). Promote anyone ready to advance.
+              Sorted by contribution (season Zaps). Promote anyone ready to advance.
             </p>
           </div>
         </div>

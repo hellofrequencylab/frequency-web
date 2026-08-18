@@ -135,6 +135,8 @@ export function IconButton({
   tone,
   className,
   children,
+  loading = false,
+  disabled,
   ref,
   ...props
 }: {
@@ -142,6 +144,17 @@ export function IconButton({
   variant?: IconButtonVariant
   tone?: IconButtonTone
   children: ReactNode
+  /** A result is coming. Marks the control `aria-busy` and disables it, so a second tap cannot
+   *  fire the same action twice (INTERACTION-STATES §1 "loading", §4 rule 4). The same contract
+   *  as `Button`'s `loading`, and the same refusal at the centre of it: NOTHING IS SWAPPED IN.
+   *  Button leaves its label alone because a "Saving…" swap changes the control's width (§4
+   *  rule 3); an icon-only control has no label to leave alone, so the temptation is a spinner
+   *  in the glyph slot — which at 32px is not a detail of the control, it IS the control, and it
+   *  invents a second pending vocabulary beside `.dimmed` and the disabled fade. The fade from
+   *  `disabled:opacity-50` on the shared base is the cue. This is the state icon controls need
+   *  most: a tap on a text button at least leaves a pressed label behind, and a tap on a bare
+   *  glyph leaves no evidence at all that it landed. */
+  loading?: boolean
   ref?: Ref<HTMLButtonElement>
 } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'aria-label'>) {
   return (
@@ -150,6 +163,8 @@ export function IconButton({
       type="button"
       aria-label={label}
       title={label}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
       className={cn(iconControl(variant, tone), className)}
       {...props}
     >
@@ -167,6 +182,7 @@ export function IconLink({
   className,
   children,
   disabled,
+  loading = false,
   ref,
   ...props
 }: {
@@ -183,6 +199,14 @@ export function IconLink({
    * the control must stay in place to keep a row's layout stable.
    */
   disabled?: boolean
+  /**
+   * The navigation this control starts is already in flight. Same pair `Button`'s `asChild`
+   * branch uses for a styled link — `aria-busy` plus `aria-disabled`, which the shared base
+   * turns into `pointer-events-none` + the fade — so the first tap cannot be re-fired while it
+   * is still resolving. Unlike `disabled` it does NOT leave the tab order: pulling focus out
+   * from under a keyboard user mid-navigation is a worse bug than the one being fixed.
+   */
+  loading?: boolean
   ref?: Ref<HTMLAnchorElement>
 } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'aria-label' | 'href'>) {
   return (
@@ -191,7 +215,8 @@ export function IconLink({
       href={href}
       aria-label={label}
       title={label}
-      aria-disabled={disabled || undefined}
+      aria-disabled={disabled || loading || undefined}
+      aria-busy={loading || undefined}
       tabIndex={disabled ? -1 : undefined}
       className={cn(iconControl(variant, tone), className)}
       {...props}

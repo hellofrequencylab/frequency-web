@@ -251,6 +251,93 @@ describe('check:one-list — the frozen planning-doc set', () => {
   })
 })
 
+describe('a cmd probe that could not run is not a verdict', () => {
+  // 🔴 THE REGRESSION THIS PINS — the ripgrep bug's mirror image, one probe kind over. The first
+  // version ran the command in a try/catch and returned NOT DONE for anything that threw. But
+  // "exited 1" and "was SIGKILLed by the OOM killer" and "the binary does not exist" are three
+  // different facts, and only the first is an answer. Folding them together means a `done` row
+  // whose probe got killed reads as a REGRESSION and fails the build — a confident accusation
+  // against healthy code. It happened: a tsc probe killed by a concurrent `next build` made this
+  // file's own ripgrep-parity test disagree with itself.
+  //
+  // A row that stays open is not the safe direction either. `check:backlog` fails BOTH ways by
+  // design, so an unaskable probe has to land on "cannot tell" — counted as unprovable, never
+  // converted into a claim about the tree.
+  let dir: string
+  beforeAll(() => {
+    dir = mkdtempSync(path.join(tmpdir(), 'cmdprobe-'))
+  })
+  afterAll(() => rmSync(dir, { recursive: true, force: true }))
+
+  // `kill -9 $$` makes the shell kill itself, so spawnSync reports signal SIGKILL with a null exit
+  // status — the same shape the OOM killer produces, without needing to exhaust memory to get it.
+  // The missing binary yields the shell's own 127.
+  for (const [label, cmd] of [
+    ['killed by a signal', 'kill -9 $$'],
+    ['a command that does not exist', 'frequency-no-such-binary-8f3a1c'],
+  ] as const) {
+    it(`does not call a done row regressed when its probe was ${label}`, () => {
+      writeBacklog(dir, [
+        ...ballast(),
+        {
+          id: 'CMD-001',
+          title: 'a row whose probe cannot be asked right now',
+          status: 'done',
+          lane: 'hygiene',
+          size: 'S',
+          verify: { kind: 'cmd', cmd },
+        },
+      ])
+      const r = run(BACKLOG_GUARD, dir)
+      expect(
+        r.code,
+        `An unaskable probe was converted into a verdict against a healthy row.\n${r.out}`,
+      ).toBe(0)
+      expect(r.out).not.toContain('CMD-001')
+    })
+  }
+
+  it('lets a probe declare its own indeterminacy with exit 79', () => {
+    // The engine can see a probe killed by a signal. It CANNOT see a probe whose own child was
+    // killed — that arrives as the probe exiting non-zero, identical in shape to a real verdict.
+    // LIVE-021's probe spawns tsc, so this is not hypothetical. Any probe that spawns something
+    // reports indeterminacy itself, and 79 is the word for it.
+    writeBacklog(dir, [
+      ...ballast(),
+      {
+        id: 'CMD-003',
+        title: 'a probe whose own child died',
+        status: 'done',
+        lane: 'hygiene',
+        size: 'S',
+        verify: { kind: 'cmd', cmd: `node -e "const{spawnSync}=require('child_process');const r=spawnSync('sh',['-c','kill -9 $$']);process.exit(r.signal!==null?79:0)"` },
+      },
+    ])
+    const r = run(BACKLOG_GUARD, dir)
+    expect(r.code, `exit 79 was treated as a verdict rather than a shrug.\n${r.out}`).toBe(0)
+    expect(r.out).not.toContain('CMD-003')
+  })
+
+  it('still calls a done row regressed when its probe genuinely exits non-zero', () => {
+    // The other half: making "cannot tell" cheap must not make the gate unable to fire. `exit 1` is
+    // a real answer and has to keep failing the build, or the fix above would be a hole.
+    writeBacklog(dir, [
+      ...ballast(),
+      {
+        id: 'CMD-002',
+        title: 'a row whose probe was asked and said no',
+        status: 'done',
+        lane: 'hygiene',
+        size: 'S',
+        verify: { kind: 'cmd', cmd: 'exit 1' },
+      },
+    ])
+    const r = run(BACKLOG_GUARD, dir)
+    expect(r.code).toBe(1)
+    expect(r.out).toContain('CMD-002')
+  })
+})
+
 describe('the probe engine does not depend on ambient tooling', () => {
   // 🔴 THE REGRESSION THIS PINS. The first version searched by shelling out to `rg`, which exists on
   // this repo's dev machines and NOT on the GitHub runner — and it caught the spawn failure the same
@@ -260,7 +347,13 @@ describe('the probe engine does not depend on ambient tooling', () => {
   //
   // The assertion is deliberately a COMPARISON rather than a fixed expectation: the guard must give
   // the SAME answer with and without ripgrep on PATH. That holds no matter how the backlog changes.
-  it('gives identical results with and without ripgrep on PATH', () => {
+  // ⏱️ TIMEOUT, and why it is not the default 30s. This test runs the WHOLE guard twice — once with
+  // ripgrep on PATH and once without. The guard costs ~6s (measured 2026-08-17, down from 23.9s: ten
+  // closed rows carried a probe that spawned a vitest run to prove its consequence, and each now
+  // measures the same consequence in-process instead). ~13s of real work, 60s of budget — headroom
+  // for a loaded runner, without the allowance itself becoming the place a regression hides. That is
+  // what GUARD_BUDGET_MS below is for: the timeout catches a hang, the budget catches a creep.
+  it('gives identical results with and without ripgrep on PATH', { timeout: 60_000 }, () => {
     const stub = mkdtempSync(path.join(tmpdir(), 'nopath-'))
     // Everything a probe legitimately needs (node, git, a shell) — but deliberately not `rg`.
     for (const bin of ['node', 'git', 'sh', 'bash', 'env']) {
@@ -268,7 +361,9 @@ describe('the probe engine does not depend on ambient tooling', () => {
       if (real) symlinkSync(real, path.join(stub, bin))
     }
 
+    const startedAt = Date.now()
     const withRg = run(BACKLOG_GUARD, ROOT)
+    const guardMs = Date.now() - startedAt
     const withoutRg = (() => {
       try {
         const out = execFileSync('node', [BACKLOG_GUARD], {
@@ -296,6 +391,28 @@ describe('the probe engine does not depend on ambient tooling', () => {
     // Same verdict AND same counts — a matching exit code alone could hide compensating errors.
     const counts = (s: string) => s.match(/\d+ open\/blocked · \d+ parked · \d+ done/)?.[0]
     expect(counts(withoutRg.out)).toBe(counts(withRg.out))
+
+    // ⏱️ THE WALL-CLOCK CEILING (LIVE-034), and why it lives here rather than in a probe.
+    //
+    // The guard reached 23.9s because ten closed rows each proved their consequence by spawning a
+    // vitest run — honest, and +2s per row closed the same way, with 39 rows still open. LIVE-034's
+    // first probe measured that by TIMING check:backlog, which meant running check:backlog: it
+    // re-entered itself (55 orphaned processes were counted before it was fenced) and, even fenced,
+    // doubled the cost of every invocation forever to report the cost of one.
+    //
+    // So the row probes the CAUSE in milliseconds — no `verify.cmd` may spawn a test runner — and the
+    // CONSEQUENCE is measured here, where the guard is already being run twice for an unrelated
+    // reason and the measurement is therefore free. A probe that starts costing seconds without
+    // naming a test runner still shows up, as this assertion, instead of disappearing into the
+    // 60s timeout as a slightly slower green.
+    const GUARD_BUDGET_MS = 20_000
+    expect(
+      guardMs,
+      `check:backlog took ${(guardMs / 1000).toFixed(1)}s, over its ${GUARD_BUDGET_MS / 1000}s budget.\n` +
+        'Something added expensive work to a probe. Find it, and measure that consequence in-process\n' +
+        'rather than by spawning a suite — see LIVE-034 in docs/BUILD-BACKLOG.json for the nine rows\n' +
+        'that were converted and the pattern each used. Raising this number is not the fix.',
+    ).toBeLessThan(GUARD_BUDGET_MS)
   })
 })
 

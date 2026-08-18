@@ -25,6 +25,8 @@ interface StoreItem {
   icon: string
   stock: number | null
   owned: boolean
+  /** LIVE-013: nothing in the product renders this cosmetic, so it is not for sale. */
+  undeliverable?: boolean
 }
 
 export function StoreGrid({ items, balance }: { items: StoreItem[]; balance: number }) {
@@ -92,6 +94,12 @@ function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
             ) : item.owned ? (
               <span className="text-meta font-semibold text-signal-strong flex items-center gap-1">
                 <Check className="w-3.5 h-3.5" /> Owned
+              </span>
+            ) : item.undeliverable ? (
+              // Not "sold out" and not disabled-with-a-price: this one is not on sale at all,
+              // because nothing in the product would show it once bought (LIVE-013).
+              <span className="text-meta font-medium text-subtle flex items-center gap-1">
+                <Lock className="w-3 h-3" /> Not ready yet
               </span>
             ) : outOfStock ? (
               <span className="text-meta font-medium text-subtle flex items-center gap-1">

@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest'
-// @ts-expect-error — .mjs guard module, no type declarations (same shape as the other guard tests)
 import { tokenViolations, runCheck } from './check-tokens.mjs'
 
 // Self-test for the token guard. Written after an audit found three ways it read green while real

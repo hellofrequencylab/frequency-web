@@ -16,7 +16,11 @@ const accepted = {
   },
 }
 
-const lint = (name, level, target) => ({ name, level, metadata: target ? { name: target } : {} })
+const lint = (name: string, level: string, target?: string) => ({
+  name,
+  level,
+  metadata: target ? { name: target } : {},
+})
 
 describe('diffAdvisors', () => {
   it('silences accepted-by-name advisories', () => {

@@ -50,6 +50,10 @@ import { ProfileAssociations } from '@/components/profile/profile-associations'
 import { DetailTemplate, PageHero, HERO_ACTION_CLASS_ADAPTIVE } from '@/components/templates'
 import { resolveHeaderElement } from '@/lib/elements/header'
 import { ProfileAvatar } from '@/components/profile/profile-avatar'
+// The bought cosmetics, finally rendered (backlog LIVE-013). The store has charged Gems for
+// borders, flairs and titles since the gem-store migration; until these three components landed,
+// the only reader of the columns they write was a text chip in the buyer's own Vault.
+import { CosmeticBorder, CosmeticFlair, CosmeticTitle } from '@/components/profile/profile-cosmetics'
 import { ProfileSpotlightBlocks } from '@/components/profile/profile-spotlight-blocks'
 import { OwnerProfileLayoutPreview } from '@/components/profile/owner-profile-layout-preview'
 import { ShareRefProvider } from '@/components/qr/share-ref-context'
@@ -94,6 +98,9 @@ export default async function ProfilePage({
       current_streak,
       lifetime_gems,
       lifetime_zaps,
+      profile_border,
+      profile_flair,
+      custom_title,
       is_demo,
       is_system,
       vcard,
@@ -139,6 +146,12 @@ export default async function ProfilePage({
   const role = (profile.community_role ?? 'member') as CommunityRole
   const isDemo = (profile as { is_demo?: boolean }).is_demo ?? false
   const initials = getInitials(profile.display_name)
+  // The equipped cosmetics (LIVE-013). Read off the same single profile read as everything else
+  // in the band; each renderer no-ops on null or on a value the registry cannot paint, so a
+  // member who equipped nothing gets exactly the band they had before.
+  const equippedBorder = (profile as { profile_border?: string | null }).profile_border ?? null
+  const equippedFlair = (profile as { profile_flair?: string | null }).profile_flair ?? null
+  const equippedTitle = (profile as { custom_title?: string | null }).custom_title ?? null
   const regionName = (profile.nexus_regions as unknown as { name: string } | null)?.name
   const joinedDate = new Date(profile.created_at as string).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
@@ -310,6 +323,11 @@ export default async function ProfilePage({
       BELOW the header with the stats, not over the photo. */}
   const badges = (
     <span className="flex items-center gap-2 flex-wrap">
+      {/* The bought cosmetics (LIVE-013). They ride WITH the status chips rather than over the
+          cover: a flair and a title are things this member chose to wear, and they read beside
+          Founder / rank, not competing with the name lockup. The border rides the avatar. */}
+      <CosmeticFlair value={equippedFlair} />
+      <CosmeticTitle value={equippedTitle} />
       <FoundingBadge founding={profile.is_founding_member} className="text-meta leading-tight" />
       {isSupporter && <SupporterBadge />}
       {rankEndorsed && (
@@ -484,7 +502,11 @@ export default async function ProfilePage({
             // No `initialZoneTones` is passed: the server does not know the answer, and the honest
             // unmeasured render (halo, no plate, no tone guess) is what the sensor then corrects.
             actionsLabel="Profile actions"
-            leading={<ProfileAvatar src={profile.avatar_url} name={profile.display_name} initials={initials} dimmed={isDemo} focus={avatarFocus} />}
+            leading={
+              <CosmeticBorder value={equippedBorder}>
+                <ProfileAvatar src={profile.avatar_url} name={profile.display_name} initials={initials} dimmed={isDemo} focus={avatarFocus} />
+              </CosmeticBorder>
+            }
             eyebrow={roleBadge}
             title={profile.display_name}
             subtitle={<span className="font-medium text-on-media/90">@{profile.handle as string}</span>}

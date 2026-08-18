@@ -142,7 +142,10 @@ export function tabRows(src) {
   return [...out].sort()
 }
 
-/** Does the page behind an href read `searchParams` at all? */
+/** Does the page behind an href read `searchParams` at all?
+ *  @param {string} href
+ *  @param {(f: string) => string} [read] repo-relative reader (the default hits the filesystem)
+ *  @param {(f: string) => boolean} [exists] repo-relative probe */
 export function pageReadsSearchParams(href, read = (f) => readFileSync(f, 'utf8'), exists = existsSync) {
   const path = href.split('?')[0].replace(/^\//, '')
   const file = [`app/(main)/${path}/page.tsx`, `app/${path}/page.tsx`].find((p) => exists(p))
@@ -171,7 +174,10 @@ export function catalogRows(src) {
   return rows
 }
 
-/** The page-level `requireAdmin(min, { staff })` a route actually runs, or null when it has none. */
+/** The page-level `requireAdmin(min, { staff })` a route actually runs, or null when it has none.
+ *  @param {string} href
+ *  @param {(f: string) => string} [read] repo-relative reader (the default hits the filesystem)
+ *  @param {(f: string) => boolean} [exists] repo-relative probe */
 export function pageGate(href, read = (f) => readFileSync(f, 'utf8'), exists = existsSync) {
   const rel = href.replace(/^\//, '')
   const file = [`app/(main)/${rel}/page.tsx`, `app/${rel}/page.tsx`].find((p) => exists(p))

@@ -110,7 +110,7 @@ export const NEXUS_MANIFEST: EntityManifest = {
 
 export const BROADCAST_MANIFEST: EntityManifest = {
   entity: 'broadcast',
-  label: 'Broadcast',
+  label: 'Dispatch',
   verify: 'none',
   sections: [{ key: 'basics', title: 'Basics', desc: 'What you are sending, and who hears it.' }],
   fields: [

@@ -44,6 +44,8 @@ function routeExists(href: string): boolean {
 //   * the take-rate row is the real network rate the fee code charges;
 //   * the page source contains no hard-coded dollar figure at all.
 
+import { yearlyFromMonthly } from '@/lib/billing/pricing-keys'
+import { isBetaPricingActive } from './beta'
 import { catalogConfigByKey, defaultCatalogConfig } from './catalog-config'
 import { formatCents } from './display'
 import { FEATURE_GATES, meetsGate } from './gates'
@@ -123,14 +125,22 @@ describe('offerings: every sellable tier is on the page', () => {
     const [, crew] = memberOfferings(input)
     // Crew is pay-what-you-want: the configured amount is the FLOOR, so the label reads "from".
     expect(crew!.monthly).toBe(`from ${formatCents(PRICING_DEFAULTS.tier.crew.monthly_cents)}/mo`)
+    // The CHARGED amount for a plan, resolved through the beta window exactly as effectiveTierPrice
+    // does: during the window the founding `monthly_cents`, after it the `list_cents` anchor (which is
+    // only ever set when it is strictly above the monthly). Written as a derivation, not as a pair of
+    // numbers, so the owner closing the window early (2026-08-17) moves the expectation with the code.
+    const betaActive = isBetaPricingActive()
     for (const o of spaceOfferings(input)) {
       if (o.tier === 'free') {
         expect(o.monthly).toBe('Free')
         continue
       }
       const price = PRICING_DEFAULTS.plan[o.tier as Exclude<SpacePlan, 'free'>]
-      expect(o.monthly).toBe(`${formatCents(price.monthly_cents)}/mo`)
-      expect(o.yearly).toBe(`${formatCents(price.annual_cents!)}/yr`)
+      const charged = betaActive ? price.monthly_cents : Math.max(price.monthly_cents, price.list_cents ?? 0)
+      expect(o.monthly).toBe(`${formatCents(charged)}/mo`)
+      // Two months free, from the ONE piece of annual math the catalog itself uses. Reading
+      // `price.annual_cents` would only be right in the window it was authored for.
+      expect(o.yearly).toBe(`${formatCents(yearlyFromMonthly(charged))}/yr`)
     }
   })
 
@@ -162,18 +172,66 @@ describe('offerings: every sellable tier is on the page', () => {
 })
 
 // ── The beta anchors, shown honestly and only where the config carries one ──────────────────────────
+//
+// THE WINDOW IS CLOSED (owner, 2026-08-17, ADR-1060): full price, no beta rate. So the state this page
+// is actually IN is the closed one, and it is asserted first and hardest — including that the strike and
+// its caption are GONE. The ADR-463 idiom itself is still live code (the window is one editable constant
+// and the checkout still switches keys on it), so its open-window arm is kept alive by passing an
+// explicit `betaActive: true` rather than by deleting the coverage. Each arm names its window; neither
+// depends on the clock.
 
 describe('beta pricing: the crossed-out anchor idiom (ADR-463)', () => {
-  it('shows Business and Collective at their beta rate under a struck list price', () => {
-    const byId = Object.fromEntries(spaceOfferings(input).map((o) => [o.id, o]))
-    expect(byId.business!.monthly).toBe(`${formatCents(1900)}/mo`)
-    expect(byId.business!.listAnchor).toBe(formatCents(2900))
-    expect(byId.collective!.monthly).toBe(`${formatCents(4900)}/mo`)
-    expect(byId.collective!.listAnchor).toBe(formatCents(7900))
+  const open = { ...input, betaActive: true }
+  const closed = { ...input, betaActive: false }
+  /** The two plans the config gives a beta anchor. Derived, so a third one joining them is not missed. */
+  const anchored = (['business', 'collective'] as const).filter(
+    (p) => (PRICING_DEFAULTS.plan[p].list_cents ?? 0) > PRICING_DEFAULTS.plan[p].monthly_cents,
+  )
+
+  it('window OPEN: shows COLLECTIVE at its beta rate under a struck list price (ADR-1067)', () => {
+    const byId = Object.fromEntries(spaceOfferings(open).map((o) => [o.id, o]))
+    // Derived from the config, not hand-listed, so a second anchored plan appearing fails HERE.
+    expect(anchored).toEqual(['collective'])
+    for (const plan of anchored) {
+      const price = PRICING_DEFAULTS.plan[plan]
+      expect(byId[plan]!.monthly, plan).toBe(`${formatCents(price.monthly_cents)}/mo`)
+      expect(byId[plan]!.listAnchor, plan).toBe(formatCents(price.list_cents!))
+      expect(byId[plan]!.betaNote, plan).toBe(BETA_RATE_NOTE)
+    }
+  })
+
+  it('window CLOSED: the list price IS the price, and no strike or beta caption survives anywhere', () => {
+    const byId = Object.fromEntries(spaceOfferings(closed).map((o) => [o.id, o]))
+    for (const plan of anchored) {
+      const list = PRICING_DEFAULTS.plan[plan].list_cents!
+      // The number the checkout now charges, and its two-months-free yearly, both read from the config.
+      expect(byId[plan]!.monthly, plan).toBe(`${formatCents(list)}/mo`)
+      expect(byId[plan]!.monthlyCents, plan).toBe(list)
+      expect(byId[plan]!.yearly, plan).toBe(`${formatCents(yearlyFromMonthly(list))}/yr`)
+    }
+    // 🔴 THE POINT OF THIS ARM. A closed window must leave nothing struck and nothing captioned: a
+    // crossed-out $29 beside a charged $29, or a "Beta rate" line beside a rate that is no longer a beta
+    // rate, is a false claim on the page that sells the plan. Swept across EVERY offering, not just the
+    // two that moved, so the idiom cannot come back on a column nobody thought to check.
+    for (const o of allOfferings(closed)) {
+      expect(o.listAnchor, `${o.id} must carry no struck anchor once the window is closed`).toBeNull()
+      expect(o.betaNote, `${o.id} must carry no beta caption once the window is closed`).toBeNull()
+      const copy = `${o.monthly} ${o.yearly ?? ''} ${o.billing} ${o.tagline} ${o.forWho} ${o.takeRate}`
+      expect(copy, `${o.id}`).not.toContain(BETA_RATE_NOTE)
+      expect(copy, `${o.id} must not frame its price as a beta rate`).not.toMatch(/beta/i)
+    }
+    // And no cell of either rendered comparison grid mentions one either.
+    for (const grid of [spaceFeatureGrid(closed), memberFeatureGrid(closed)]) {
+      for (const r of grid.groups.flatMap((g) => g.rows)) {
+        for (const cell of r.cells) expect(cell.text, `row ${r.key}`).not.toMatch(/beta/i)
+      }
+    }
   })
 
   it('states the beta lock exactly where an anchor is, and nowhere else', () => {
-    for (const o of allOfferings(input)) {
+    // Asserted in the OPEN window: with the window shut every anchor is null, so this would pass by
+    // having nothing to say. The rule under test is the pairing, and only an open window exercises it.
+    for (const o of allOfferings(open)) {
       expect(o.betaNote).toBe(o.listAnchor ? BETA_RATE_NOTE : null)
     }
     // The lock is the grandfather promise, not a countdown or a scarcity line.
@@ -181,7 +239,7 @@ describe('beta pricing: the crossed-out anchor idiom (ADR-463)', () => {
   })
 
   it('invents no beta rate for Non Profit or Independent (single price, no strike)', () => {
-    const byId = Object.fromEntries(spaceOfferings(input).map((o) => [o.id, o]))
+    const byId = Object.fromEntries(spaceOfferings(open).map((o) => [o.id, o]))
     for (const id of ['free', 'nonprofit', 'independent']) {
       expect(byId[id]!.listAnchor).toBeNull()
       expect(byId[id]!.betaNote).toBeNull()
@@ -190,7 +248,7 @@ describe('beta pricing: the crossed-out anchor idiom (ADR-463)', () => {
 
   it('drops the anchor when the config no longer carries one (derived, not hard-coded)', () => {
     const flat = {
-      ...input,
+      ...open,
       values: {
         ...PRICING_DEFAULTS,
         plan: { ...PRICING_DEFAULTS.plan, business: { monthly_cents: 2900, annual_cents: 29000 } },

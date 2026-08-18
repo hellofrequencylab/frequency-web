@@ -49,9 +49,10 @@ each surface gets and *how it's governed* once anyone can post in open Channel r
 | 16 | First build | **Location feed + onboarding** |
 
 ADRs: **ADR-088** (architecture) and **ADR-089** (hierarchy visibility + always-offer-start)
-in `DECISIONS.md`. *(Note: concurrent QR/demo sessions double-booked ADR-088/089/090 in
-`DECISIONS.md`; a single coordinated renumber pass is needed, not fixed here to avoid
-churning a file three sessions are editing.)*
+in `DECISIONS.md`. *(The concurrent QR and demo sessions that double-booked those numbers
+were renumbered on 2026-08-17. The QR platform's first two phases are now ADR-1044 and
+ADR-1045, the page-template kit is ADR-1046, and the demo/seed entries are ADR-1047
+through ADR-1051. `pnpm check:adr` now fails on any duplicate ADR number.)*
 
 ## Dialed refinements (owner review, 2026-06-05)
 

@@ -119,7 +119,10 @@ export function composesShell(src) {
   return SHELLS.some((s) => new RegExp(`<${s}\\b`).test(code))
 }
 
-/** Walk up from a page to app/, asking each layout.tsx whether it composes a shell. */
+/** Walk up from a page to app/, asking each layout.tsx whether it composes a shell.
+ *  @param {string} pagePath
+ *  @param {(f: string) => string} [read] repo-relative reader (the default hits the filesystem)
+ *  @param {(f: string) => boolean} [exists] repo-relative probe */
 export function ancestorComposes(pagePath, read = (f) => readFileSync(f, 'utf8'), exists = existsSync) {
   let dir = dirname(pagePath)
   for (;;) {

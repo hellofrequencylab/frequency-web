@@ -162,7 +162,7 @@ const HOME_FAQ = [
   },
   {
     q: 'What does it cost?',
-    a: `The community is free, forever. Browsing, joining a Circle, and showing up never cost anything, and a business never pays for access to people; paid plans raise the limits. A free member creates events, takes RSVPs, and sells tickets at the Member rate; Crew is pay what you want, ${CREW_NOTE.fromLabel} a month, turns on The Quest, buys that rate down, and is free for the whole beta. If you run a practice or a Space, you keep 100% of your own bookings on one honest price, and we earn only on a sale the network introduced (${NETWORK_RATES}), never on someone who is already yours. There is no card today, and a Space that subscribes at the Opening Beta rate keeps that rate for as long as it keeps the plan.`,
+    a: `The community is free, forever. Browsing, joining a Circle, and showing up never cost anything, and a business never pays for access to people; paid plans raise the limits. A free member creates events, takes RSVPs, and sells tickets at the Member rate; Crew is pay what you want, ${CREW_NOTE.fromLabel} a month, turns on The Quest, buys that rate down, and is free for the whole beta. If you run a practice or a Space, you keep 100% of your own bookings on one honest price, and we earn only on a sale the network introduced (${NETWORK_RATES}), never on someone who is already yours. There is no card today, and every plan is one price, the same whenever you start, with two months free if you pay for the year.`,
   },
   {
     q: 'Is there a catch?',

@@ -152,6 +152,13 @@ deployment was triggered without cache"* — it was **also cold**. Two cold buil
 outcomes. Reasoning from a plausible mechanism instead of looking for the control is exactly the
 `node_modules` mistake in §3, made again by the same process nine hours later.
 
+⚠️ **Superseded on 2026-08-17 — the paragraph below is kept because its measurements are still
+right and its conclusion is instructive. See rule 10, at the end of this section.**
+It reads "leave it alone" because it assumed the build cache *is* the Turbopack cache. It is not:
+`@vercel/next`'s `prepareCache` caches `node_modules/**` **and** `.next/cache/**`, and the install is
+the bigger, flatter and far more valuable half. A correct fact and a wrong assumption gave a wrong
+verdict for five days ([ADR-1064](DECISIONS.md)).
+
 **The cache is a real but separate finding, and the measured answer is to leave it alone.** It is
 discarded on **6 of 38 builds (15.8%)** because Turbopack's cache grows past Vercel's 1.50 GB limit
 — a sawtooth of ~1.07 GB clean, ~1.33 GB warm, then 1.64 GB and invalidated, so it survives about
@@ -167,11 +174,90 @@ families in `app/layout.tsx` — not just Nunito, and not by reusing `lib/og/loa
 carries two weights as TTF where the layout needs six as woff2. 🔴 Whoever does it must **not** put
 the files in `public/fonts/`: that glob is what [ADR-1010](DECISIONS.md) spent 612 MB removing.
 
+### 10. The build cache is `node_modules` **plus** `.next/cache`, and only one half of it grows. 🔒 `check:cache-budget`
+
+**Read the builder, not the guess.** `@vercel/next`'s `prepareCache` is thirty lines and it is the
+whole contract — the cache is exactly `node_modules/**`, `<distDir>/cache/**`, `.yarn/cache/**`.
+Everything below follows from that, and §9's wrong verdict followed from not having read it.
+
+| Term | Measured 2026-08-17 | Behaviour | Worth |
+|---|---|---|---|
+| `node_modules` | **948 MB** restored / **1073 MB** fresh | Flat — identical on every warm build | warm install **1s** vs **~15s** cold for 804 packages |
+| `.next/cache` | ~92 MiB clean → **618 MiB** at invalidation | **All** of the growth | ~13s of compile (§9) |
+
+**The proof needs no unit convention.** node_modules is reported as 948 MB on *every* warm build, so
+100% of the 1.14 GB → 1.53 GB movement is `.next/cache`. The observed run: 1.14 clean, then 1.19,
+1.21, 1.23, 1.24, 1.25 … 1.53 → `Invalidating cache`.
+
+- **The cheap half evicts the valuable half, and the build pays both.** Vercel discards the cache
+  **whole**, so a compiler cache worth 13s periodically costs an install worth 15s — plus 804
+  package downloads' worth of network flake, on a repo that has already lost a deploy to a
+  third-party fetch (§9).
+- **The trim runs, and the floor fails.** `scripts/check-cache-budget.mjs` drops `.next/cache`
+  subdirectories biggest-first when the sum would exceed the ceiling, so Vercel stores a cache it
+  accepts. Separately, `node_modules` over **1.25 GiB** fails the build: a trim can absorb the
+  compiler cache growing, nothing can absorb the install growing. Fail-safe plus the gate that
+  notices it fired (rule 6), in one file.
+- **⚠️ There is no setting that raises the 1.50 GB ceiling.** No `vercel.json` key, no project
+  option, no plan toggle — the only cache control Vercel exposes is turning it off for a deployment.
+  Build under it.
+- **Every build now prints the composition.** `check:cache-budget` names what Vercel is about to
+  store and what it is made of. Before it, the only instrument was subtracting two numbers in a log
+  tail — and note the trap §9 records: `Build cache: <1 MB` in the build report does **not** measure
+  the build cache.
+
+### 11. The bytes a member's phone parses are an artifact too. 🔒 `check:shell-weight`
+
+Rules 1 and 10 weigh what the **deploy** writes. Nothing weighed what the **browser** downloads, and
+that gap had already been paid for: dc47b89 found the entire operator admin console statically
+reachable from `app/(main)/layout.tsx`, so every member shipped **2.78 MB** of eager JS against
+**1.30 MB** outside the shell, to render an admin rail `admin-bar.tsx` returns `null` from. FCP p75
+was 4,623 ms against 3,274 ms while TTFB p75 was 155 ms — **the server was fast the whole time**.
+That commit fixed it and said so plainly: *there is no guard for this*.
+
+`check:shell-weight` ([ADR-1066](DECISIONS.md#adr-1066)) is that guard, and it is built to work the
+same way its two siblings do — on the real build — because `dynamic()` and a static import are one
+keyword apart in review and 1.6 MB apart in the artifact.
+
+> 🔴 **IT IS NOT IN `postbuild` YET, AND THAT IS DELIBERATE (LIVE-035).** Both this and
+> `check:cache-budget` ship as `pnpm check:` scripts only. Neither has been run against a real
+> COMPLETED production build: the attempt on 2026-08-17 died collecting page data for
+> `/discover/cities/[citySlug]`, which needs Supabase credentials the agent container deliberately does
+> not hold. A build-blocking gate that has never seen a real artifact is this document's own incident
+> with the roles reversed — the 2026-08-11 outage was gates that passed while the artifact was broken;
+> this would be a gate that fails while the artifact is fine, and it kills deploys just as dead. Run
+> both against one green production build, then wire them into `postbuild` in the same commit. It reads
+`entryJSFiles['[project]/app/(main)/layout']` from the client-reference manifests, which **is** the
+shell's eager first-load JS, and holds it to a budget (**957 KB measured 2026-08-17**, ceiling 1,400
+KB). It then does the thing a byte count cannot: it looks for **fingerprints** — literals that exist
+in exactly one lazily-mounted admin module — and names any module whose body reappears in those
+chunks. That is not a new trick; it is how dc47b89 proved the bug was real, by finding
+`"This nexus is archived"` inside a chunk every member downloads.
+
+- **The budget is the loose arm, on purpose.** A paired A/B on one tree measured 1,023 KB raw /
+  299 KB gzip before ADR-1066 and 957 / 280 after. **66 KB fits inside any ceiling worth setting** —
+  a byte budget alone would have watched six admin bodies enter the shell and said nothing. The
+  fingerprints named all six. Rule 2 still applies to the budget; the fingerprints are what make the
+  gate specific.
+
+- **The fingerprints fail both ways.** A needle missing from its source file, missing from every
+  built chunk, or a positive control missing from the shell's chunks **fails the guard**. "Absent
+  from the shell" proves nothing if the string was never findable — rule 6's lesson, applied to the
+  gate itself.
+- **It has a PR-time half.** `scripts/check-shell-weight.test.ts` asserts the source property and the
+  fingerprints' integrity in `test`, because rule 5 means the artifact arm's first chance to fire is
+  *after* the merge.
+- **What it does NOT cover:** it weighs the shell **layout** entry, not each route's own eager JS. A
+  single page shipping 2 MB of its own is invisible to it.
+
 ---
 
 ## The checklist, before merging anything structural
 
-1. `pnpm build` locally, then read the `postbuild` output. Both gates must be ✅.
+1. `pnpm build` locally, then read the `postbuild` output. **Every** gate must be ✅ —
+   `check:build-budget` (rule 1), `check:og-trace` (rule 6), `check:shell-weight` (rule 11),
+   `check:cache-budget` (rule 10). A ⚠️ trim line from the last one is not a failure, but it is
+   telling you the cache is at its ceiling.
 2. `pnpm exec tsc --noEmit` · `pnpm lint` · `pnpm test` (which now carries six of the contract
    guards directly — ADR-1011) · the 20 guards in `ci.yml`'s `guards=( )` array.
 3. Migrations: is every file in `supabase/migrations/` actually applied, and does the applied ledger

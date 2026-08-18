@@ -653,15 +653,28 @@ afternoon and buy 5 of them.** Package 10 is not a project, it is a habit.
    `app/globals.css` told the reader the halving rule "has never fired", so a spacing bug the rule
    causes would have been diagnosed against a comment saying it cannot happen. All three are
    corrected as of 2026-08-12.*
-3. **Four tokens where production is ahead of DAWN, and DAWN does not know.** `SYNC.md` §"Going
-   the other way" requires these go back on the next round:
+3. **Tokens where production is ahead of DAWN, and DAWN does not know.** `SYNC.md` §"Going
+   the other way" requires these go back on the next round.
 
-   | Token | DAWN | Production | Why production is right |
-   | :--- | :--- | :--- | :--- |
-   | `--color-focus-ring` | `#E2912F` | `#B86A15` | PR #2036, 1.75:1 → 3.87:1 |
-   | `--color-text-on-primary` | `#FFFFFF` | `#1A1206` | white on amber fails AA; ink passes |
-   | `--color-text-on-broadcast` | `#FFFFFF` | `#1A1206` | same, on the broadcast cyan |
-   | `--color-text-subtle` | `#8F8675` | `#6E6558` | the contrast sweep darkened it |
+   ⚠️ **CORRECTED 2026-08-17 — one of the original four rows is stale, and stale in the direction
+   that un-fixes something.** This table is no longer maintained by hand: the live set is derived
+   from both stylesheets by `lib/theme/dawn-divergence.test.ts` and written to
+   [`design_handoff/PROD-AHEAD.md`](../design_handoff/PROD-AHEAD.md), which the next outbound handoff
+   copies ([ADR-1073](DECISIONS.md)). Read the sheet, not this table.
+
+   | Token | Mode | DAWN | Production | Why production is right |
+   | :--- | :--- | :--- | :--- | :--- |
+   | `--color-focus-ring` | light | `#E2912F` | `#B86A15` | PR #2036, 1.75:1 → 3.87:1 |
+   | `--color-text-on-broadcast` | both | `#FFFFFF` | `#1A1206` | white on the broadcast cyan fails AA |
+   | `--color-text-subtle` | light | `#8F8675` | `#6E6558` | the contrast sweep darkened it |
+   | `--color-text-subtle` | dark | `#7E735F` | `#A2957D` | same sweep, on the espresso ground |
+   | `--color-primary-strong` | light | `#9A5E12` | `#965C12` | one rounding step; the sweep measured ours |
+   | `--color-surface-post` | both | a hex | `var(--color-surface)` | aliased so a skin moves both |
+   | ~~`--color-text-on-primary`~~ | — | `#FFFFFF` | `#FFFFFF` | 🔴 **DO NOT SEND.** Production reverted to white on 2026-08-06 and split the rank-core glyph into `--color-text-on-rank`, because ink on-primary dropped the gold core to 2.46:1. The two files agree; sending the old row would ask DAWN to reintroduce the failure the split fixed. |
+
+   Plus **12 tokens DAWN has no row for at all** (`--color-text-on-rank`, the three `on-media`
+   aliases, `--color-chrome-hover`, and the `text-on-danger/warning/success` split), listed in the
+   sheet as additions rather than corrections.
 
 ### 4b. The work breakdown
 

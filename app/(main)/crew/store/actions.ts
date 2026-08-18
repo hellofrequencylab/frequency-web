@@ -10,7 +10,8 @@ import { canCashIn, deriveTier } from '@/lib/core/entitlement'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 import { featureAllowed } from '@/lib/pricing/gates'
 import { featureGatesLive } from '@/lib/pricing/settings'
-import { classifyRedemption } from '@/lib/store/fulfillment'
+import { classifyRedemption, UNDELIVERABLE_MESSAGE } from '@/lib/store/fulfillment'
+import { isUndeliverable } from '@/lib/store/cosmetics'
 import { computeSpendableBalance, fetchGiftsSent } from '@/lib/store/balance'
 import { RANK_ORDER, rankIndex } from '@/lib/season-ranks'
 import { giftGems, type GiftGemsResult } from '@/lib/rewards/gifts'
@@ -162,12 +163,21 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
   // ({ pending }); a membership BILLING CREDIT (membership-1mo/3mo) is REFUSED because we
   // can't grant it until the Stripe billing-credit rail exists (OPEN-THREADS A3). Those
   // two SKUs are also deactivated in migration 20260627000000; this guards reactivation.
-  const plan = classifyRedemption(item.metadata)
+  const plan = classifyRedemption(item.metadata, { slug: item.slug, category: item.category })
   if (plan.kind === 'refuse') {
     return fail('Membership credits aren’t redeemable yet. They unlock when billing credits launch, and your Gems stay safe.')
   }
+  // LIVE-013: a cosmetic/title SKU that resolves to nothing renderable is REFUSED here, before
+  // the charge. It used to fall through to `pending`, which means "an operator will honor this" —
+  // and no operator can hand-deliver a profile border. Five live SKUs sat in that hole. The grid
+  // marks them unavailable too, so this arm is the server-side authority, not the only stop.
+  if (plan.kind === 'undeliverable') {
+    return fail(UNDELIVERABLE_MESSAGE)
+  }
   const cosmeticType = plan.kind === 'cosmetic' ? plan.cosmeticType : null
-  const cosmeticValue = (item.metadata as { value?: string } | null)?.value
+  // The VALUE comes from the plan, not from the raw metadata: the registry is what knows the
+  // bridged value for a SKU whose metadata never got one.
+  const cosmeticValue = plan.kind === 'cosmetic' ? plan.value : undefined
 
   // Charge ATOMICALLY: redeem_store_item_atomic (migration 20260726000000) takes
   // pg_advisory_xact_lock on the buyer, rechecks the spendable balance AND the capped-SKU
@@ -330,6 +340,17 @@ export async function getStoreData() {
     items: onShelf.map(item => ({
       ...item,
       owned: ownedIds.has(item.id),
+      // LIVE-013: a cosmetic/title SKU nothing can paint is shown as not-ready instead of
+      // buyable. Computed HERE rather than in the card so the shelf and the server action read
+      // the same registry — a card that offered a Redeem button the action then refused would
+      // just move the broken promise one click later.
+      undeliverable: isUndeliverable({
+        slug: item.slug,
+        category: item.category,
+        gem_cost: item.gem_cost,
+        is_active: item.is_active,
+        metadata: item.metadata,
+      }),
     })),
     // Spendable = earned − store spend − gifts sent (lib/store/balance, the one source).
     balance: computeSpendableBalance({

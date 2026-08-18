@@ -195,7 +195,7 @@ const FOUNDING_BUSINESS: BetaLaunchEmail = {
   phaseKey: 'P2',
   segment: 'members',
   subject: 'Put your business on Frequency as a Founding Business',
-  preheader: 'Your own Space, the Opening Beta rate, and we set it up with you.',
+  preheader: 'Your own Space, a Founding Business spot, and we set it up with you.',
   blockJson: emailLayout([
     {
       id: 'photoHero',
@@ -283,27 +283,34 @@ const REFERRAL_CONTEST: BetaLaunchEmail = {
   ]),
 }
 
-// ── 7. Sept 1 graduation, Opening Beta pricing closes (P4) ────────────────────────────────────────────────
+// ── 7. Sept 1 graduation, full access ends (P4) ───────────────────────────────────────────────────────────
+// 🔴 THIS EMAIL USED TO SELL A DEADLINE THAT NO LONGER EXISTS. It was "Opening Beta pricing closes
+// September 1", built entirely on the beta price expiring. The owner closed that window early on
+// 2026-08-17 (ADR-1060: full price, and two months free on the year instead), so every sentence of the
+// old draft was an offer the checkout would refuse. What IS still true about September 1 is the OTHER
+// beta window, the feature-gate grace period (`beta_grace`, ADR-874): every Space has had full access to
+// every tool and on September 1 each plan starts doing what it says. So the email keeps its slot and its
+// date and changes what it is about. No countdown on a price, because there is no longer a price moving.
 const GRADUATION: BetaLaunchEmail = {
   key: 'graduation',
-  label: 'Sept 1 graduation (Opening Beta pricing closes)',
+  label: 'Sept 1 graduation (full access ends)',
   phaseKey: 'P4',
   segment: 'members',
-  subject: 'Opening Beta pricing closes September 1',
-  preheader: 'The Opening Beta price holds through September 1, then it is gone.',
+  subject: 'Full access ends September 1',
+  preheader: 'Every Space has had every tool. On September 1 each plan starts doing what it says.',
   blockJson: emailLayout([
-    { id: 'displayHeading', content: { text: 'Opening Beta pricing closes September 1', font: 'display' } },
+    { id: 'displayHeading', content: { text: 'Full access ends September 1', font: 'display' } },
     {
       id: 'prose',
       content: {
-        text: 'Hi,\n\nThe Beta is wrapping up. The Opening Beta price holds through September 1, and after that the list price takes over.',
+        text: 'Hi,\n\nThe Beta is wrapping up. Every Space has had the full set of tools while we were in it, whatever plan it was on. On September 1 each plan starts doing what it says, so this is a good week to work out which one fits how you actually use Frequency.',
       },
     },
-    { id: 'text', content: { text: 'If you have been meaning to lock it in, now is the time.' } },
+    { id: 'text', content: { text: 'Every plan is one price, the same whenever you start. Pay for the year and you get two months free.' } },
     { id: 'divider', content: {} },
     {
       id: 'button',
-      content: { label: 'Lock in the Opening Beta price', url: 'https://frequencylocal.com/pricing', align: 'center' },
+      content: { label: 'See the plans', url: 'https://frequencylocal.com/pricing', align: 'center' },
     },
     {
       id: 'quote',
@@ -315,17 +322,32 @@ const GRADUATION: BetaLaunchEmail = {
   ]),
 }
 
-/** The 7 beta launch emails, in launch order. The Studio's left rail renders them as themed, editable cards;
- *  the seeder writes each into `campaigns` with `block_json` = `blockJson`. */
+/** The 6 beta launch emails, in launch order. The Studio's left rail renders them as themed, editable cards;
+ *  the seeder writes each into `campaigns` with `block_json` = `blockJson`.
+ *
+ *  🔴 FOUNDING_BUSINESS IS RETIRED AND DELIBERATELY NOT IN THIS LIST (ADR-1067, OWN-025). Its offer was
+ *  "the lowest rate we will ever set, kept for good ... take the year before September 1", and the price
+ *  behind that promise no longer exists: Business is a flat $29/mo, $290/yr, and the ONLY beta rate in
+ *  the catalog is Collective's unlisted $49/$490, which is granted by hand rather than claimed from an
+ *  email. An email in this array is SEEDED INTO `campaigns` and is one click from being sent, so leaving
+ *  it here would keep a sellable-looking offer for a rate checkout cannot charge.
+ *
+ *  The constant below is kept, not deleted, because the Founding Business PROGRAM is not retired — the
+ *  badge, the 25-per-city cap and the take-rate buy-down are recognition, not a discount. If the owner
+ *  wants to make that offer again, the copy is here to edit; what it must not do is quote a founding
+ *  RATE. Re-adding it to this array without rewriting that sentence puts the promise straight back. */
 export const BETA_LAUNCH_EMAILS: readonly BetaLaunchEmail[] = [
   WAITLIST_CONFIRM,
   WAVE_SOON,
   INVITE,
   FOUNDING_MEMBER,
-  FOUNDING_BUSINESS,
   REFERRAL_CONTEST,
   GRADUATION,
 ]
+
+/** Retired (OWN-025). Exported so it is not dead code and so the retirement is greppable, but NOT part
+ *  of `BETA_LAUNCH_EMAILS`, so the seeder never writes it into `campaigns`. */
+export const RETIRED_FOUNDING_BUSINESS_EMAIL: BetaLaunchEmail = FOUNDING_BUSINESS
 
 /** A flattened text of an email's authored block content (subject + every string leaf of the layout), for the
  *  em-dash voice guard the seeder runs before inserting. Pure. */

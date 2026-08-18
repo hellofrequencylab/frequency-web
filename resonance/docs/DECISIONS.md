@@ -91,8 +91,12 @@ as an `Authorization: Bearer` header; route handlers resolve identity via
 `auth.getUser(token)` and never trust a client-supplied user id. Profiles are
 keyed by `(world_id, auth_user_id)` with NO FK to `auth.users` (ADR-002), so the
 schema stays liftable. The same server seam will verify a host-issued JWT when
-embedded (Section 5). Requires "Anonymous sign-ins" enabled in the project's Auth
-settings.
+embedded (Section 5).
+
+**Amended 2026-08-17 by ADR-019.** The original text ended "Requires 'Anonymous
+sign-ins' enabled in the project's Auth settings" — a requirement this app cannot
+place on the shared project. The JWT half of this ADR stands unchanged; the
+anonymous half is now a capability the deployment declares, not an assumption.
 
 ### ADR-016 — Zaps are earned on verified play-through; awards are idempotent and self-deal-proof ✅
 A DJ earns Zaps only when a play finishes (fired from `advance`), equal to the
@@ -130,3 +134,34 @@ Zaps/reputation are computed in-app on an append-only ledger with verified
 play-through awards, then **mirrored** to the host (Frequency's Zaps + The Field)
 over webhooks/postMessage. We do not write into Frequency's tables. Keeps the
 economy consistent while preserving isolation.
+
+### ADR-019 — The shared project grants no Auth settings, so anonymous sign-in is a declared capability ✅
+Amends ADR-015; generalized into ISOLATION rule 8. Frequency's Supabase project has
+**"Anonymous sign-ins" disabled**, and it stays disabled: Frequency itself never calls
+`signInAnonymously`, and enabling it widens the live platform's auth surface for a
+sub-app that is parked. ADR-015 required the opposite, so for as long as ADR-008 holds
+(we live in the shared project) that requirement could not be met. Frequency's
+`docs/DECISIONS.md` **ADR-1054** is the settling decision on the platform side; this is
+its mirror.
+
+**What changes here.** `signInAnonymously()` is no longer called blind. A deployment
+DECLARES whether the project it points at grants the capability
+(`NEXT_PUBLIC_RESONANCE_ANONYMOUS_AUTH`, default off, read via
+`standaloneAnonymousAuthEnabled()` in `lib/config.ts`). `ensureSession()` returns null
+without a round trip when it is off, and the three surfaces that used to say "enable
+Anonymous sign-ins in the Supabase project's Auth settings" now share one string that
+does not instruct anyone to change the live platform's configuration.
+
+**What this costs.** On the shared project there is no standalone guest identity: a
+visitor reaching a Resonance surface directly gets no session. The two paths that DO
+work are unaffected, and they are the ones the plan actually depends on: **embedded
+mode**, where the host signs a federated JWT (ADR-017), and **a dedicated project**
+after the breakout (ISOLATION), where the owner enables the setting on infrastructure
+that is ours. Standalone anonymous entry is therefore a **post-breakout** capability,
+not an MVP one, and Section 3's gate says so.
+
+**Why not just ask the owner to flip it.** Because the ask is not local. It is an
+account-level setting on the project running the live platform, made for an app with
+no traffic, and it would sit on until someone remembered why. The isolation contract
+already refuses shared-project coupling for schemas and publications for exactly this
+reason; auth toggles are the same class and are now named in rule 8.

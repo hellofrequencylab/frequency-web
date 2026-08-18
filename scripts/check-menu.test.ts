@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest'
-// @ts-expect-error — plain .mjs guard script, no types
 import { menuViolations, moduleShapeViolations, handDeclaredMenuRows, laneViolations, menuSurface, runCheck } from './check-menu.mjs'
 
 // Locks the admin-menu contract guard (ADR-553 · ADR-927, docs/MENU-CONTRACT.md). The guard's rules are
