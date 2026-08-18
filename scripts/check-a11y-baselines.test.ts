@@ -48,15 +48,40 @@ describe('the file that actually ships', () => {
 
   // Not incidental. If a future edit widens the ceiling set, this is the line that makes somebody
   // look at it — a ceiling is headroom a regression can hide in, and the set of them should only
-  // ever shrink. These three are LIVE-023's, blocked on an axe run against a real deployment.
-  it('declares exactly the three LIVE-023 ceilings, and nothing else', () => {
+  // ever shrink. It did its job on 2026-08-18: the eight OWN-014 entries below were added and this
+  // assertion failed in CI until they were named here on purpose.
+  //
+  // TWO GROUPS, and they are owed different things.
+  //   • The three LIVE-023 ceilings are blocked on an axe run against a real deployment (OWN-002).
+  //     Nothing has measured those surfaces honestly, so a number would be invented.
+  //   • The eight OWN-014 ceilings are the opposite case: they ARE measured, at 3/3/3/3/3/4/6/7,
+  //     and they are carried by an explicit owner decision on 2026-08-18 rather than fixed in that
+  //     change. The failing pair is white on the amber button, #FFFFFF on #F0AD4E = 1.95:1 against
+  //     a 4.5:1 requirement, revealed (not caused) when LIVE-008 fixed a selector that could never
+  //     match. Both remedies are one line and recorded on OWN-014; whichever is picked retires all
+  //     eight in the same pass.
+  it('declares exactly the LIVE-023 and OWN-014 ceilings, and nothing else', () => {
     const { ceilings, readings } = validate(shipped)
     expect(ceilings.map((c: { context: string }) => c.context).sort()).toEqual([
+      '/ [midnight-dark, contrast only, desktop]',
+      '/about [midnight-dark, contrast only, desktop]',
+      '/discover [midnight-dark, contrast only, desktop]',
       '/feed [dawn-light, desktop]',
+      '/pricing [midnight-dark, contrast only, desktop]',
       '/settings [dawn-light, desktop]',
+      '/spaces [midnight-dark, contrast only, desktop]',
       '/spaces/danieltyack/manage [dawn-light, desktop]',
+      '/the-community [midnight-dark, contrast only, desktop]',
+      '/the-lab [midnight-dark, contrast only, desktop]',
+      '/the-quest [midnight-dark, contrast only, desktop]',
     ])
-    expect(readings).toBeGreaterThanOrEqual(40)
+    // 38, LOWERED FROM 40 ON 2026-08-18, AND THAT IS A LOSS RATHER THAN A TIDY-UP. This floor
+    // exists so the assertion above cannot pass over nothing, and it fell only because eight
+    // contexts that WERE readings became ceilings by owner decision. Nothing improved; eight
+    // surfaces stopped being asserted by equality. It goes back to 46 the moment OWN-014 is
+    // applied, and that is the number to restore it to — not 40, which was itself only the
+    // floor before this change.
+    expect(readings).toBeGreaterThanOrEqual(38)
   })
 
   it('every ceiling names what would retire it, so none of them is permanent', () => {
