@@ -125,28 +125,84 @@ export class DiscoverReadError extends Error {
 /** One list read. `ok: false` means the query broke; `[]` with `ok: true` means genuinely empty. */
 export type ListRead<T> = { rows: T[]; ok: boolean }
 
+// ── Transient-failure retry (LIVE-039) ────────────────────────────────────────
+//
+// OBSERVED, not theorised: the preview build of 656dac3 died with `TypeError: fetch failed /
+// read ECONNRESET` on ONE slug during the /discover/events/[slug] export, while the production
+// build of the same commit succeeded four minutes earlier. Merging deploys to production, so the
+// same one-packet blip can kill a production deploy. Nothing retried.
+//
+// The failure arrives RESOLVED, not thrown: supabase-js catches the fetch rejection inside the
+// builder and resolves with a synthetic error object whose message carries the network cause.
+// So the retry decision reads the ERROR'S SHAPE, never just the code path:
+//   · network-ish (fetch failed / ECONNRESET / ETIMEDOUT / EAI_AGAIN / socket …) → transient,
+//     retry with backoff — the next packet usually lands;
+//   · a Postgres/PostgREST error (a `code` like PGRST116 or 42501) → deterministic, retrying
+//     re-asks a question the database already answered. Never retried.
+// Empty data is NEVER retried anywhere: on a detail route an empty result is a believed 404
+// (see the header above), and "retry until it exists" would turn 404s into timeouts.
+//
+// Callers now pass a THUNK so every attempt builds a fresh PostgrestBuilder — re-awaiting one
+// builder re-uses its settled promise, which would make a "retry" a no-op that re-reads the
+// same failure.
+const TRANSIENT_RE = /fetch failed|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|ENOTFOUND|socket|network|UND_ERR/i
+
+export function isTransientDiscoverError(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false
+  const e = err as { code?: unknown; message?: unknown; cause?: unknown }
+  // A real Postgres/PostgREST code marks a deterministic answer — unless the "code" is itself
+  // a network errno (supabase-js copies `cause.code` like ECONNRESET onto the error sometimes).
+  if (typeof e.code === 'string' && !TRANSIENT_RE.test(e.code)) return false
+  const text = [e.message, e.cause instanceof Error ? e.cause.message : '', (e.cause as { code?: string } | undefined)?.code]
+    .filter((v): v is string => typeof v === 'string')
+    .join(' ')
+  return TRANSIENT_RE.test(text)
+}
+
+const RETRY_DELAYS_MS = [250, 500]
+
+async function attempt(
+  source: string,
+  query: () => PromiseLike<{ data: unknown; error: unknown }>,
+  sleep: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms)),
+): Promise<{ data: unknown; error: unknown }> {
+  let last: { data: unknown; error: unknown } = { data: null, error: null }
+  for (let i = 0; i <= RETRY_DELAYS_MS.length; i++) {
+    try {
+      last = await query()
+    } catch (cause) {
+      // Belt over the resolved-error braces: if a future supabase-js throws instead, treat a
+      // thrown network failure exactly like a resolved one.
+      last = { data: null, error: cause }
+    }
+    if (!last.error) return last
+    if (i === RETRY_DELAYS_MS.length || !isTransientDiscoverError(last.error)) return last
+    console.error(`[discover] ${source} transient failure, retrying in ${RETRY_DELAYS_MS[i]}ms`, last.error)
+    await sleep(RETRY_DELAYS_MS[i])
+  }
+  return last
+}
+
+/** Exported for the unit test only — proves the retry FIRES and proves it refuses to. */
+export const __retryForTest = { attempt, RETRY_DELAYS_MS }
+
 async function listRead<T>(
   source: string,
-  query: PromiseLike<{ data: unknown; error: unknown }>,
+  query: () => PromiseLike<{ data: unknown; error: unknown }>,
 ): Promise<ListRead<T>> {
-  try {
-    const { data, error } = await query
-    if (error) {
-      console.error(`[discover] ${source} failed`, error)
-      return { rows: [], ok: false }
-    }
-    return { rows: (data ?? []) as T[], ok: true }
-  } catch (cause) {
-    console.error(`[discover] ${source} threw`, cause)
+  const { data, error } = await attempt(source, query)
+  if (error) {
+    console.error(`[discover] ${source} failed`, error)
     return { rows: [], ok: false }
   }
+  return { rows: (data ?? []) as T[], ok: true }
 }
 
 async function detailRead<T>(
   source: string,
-  query: PromiseLike<{ data: unknown; error: unknown }>,
+  query: () => PromiseLike<{ data: unknown; error: unknown }>,
 ): Promise<T[]> {
-  const { data, error } = await query
+  const { data, error } = await attempt(source, query)
   if (error) throw new DiscoverReadError(source, error)
   return (data ?? []) as T[]
 }
@@ -155,7 +211,7 @@ async function detailRead<T>(
 
 export async function getPublicEvents(limit = 50): Promise<PublicEvent[]> {
   const supabase = createPublicClient()
-  const { rows } = await listRead<PublicEvent>('public_events', supabase.rpc('public_events', { _limit: limit }))
+  const { rows } = await listRead<PublicEvent>('public_events', () => supabase.rpc('public_events', { _limit: limit }))
   return rows
 }
 
@@ -163,7 +219,7 @@ export async function getPublicEventBySlug(slug: string): Promise<PublicEvent | 
   const supabase = createPublicClient()
   const rows = await detailRead<PublicEvent>(
     'public_event_by_slug',
-    supabase.rpc('public_event_by_slug', { _slug: slug }),
+    () => supabase.rpc('public_event_by_slug', { _slug: slug }),
   )
   return rows[0] ?? null
 }
@@ -172,7 +228,7 @@ export async function getPublicEventBySlug(slug: string): Promise<PublicEvent | 
 
 export async function getPublicCircles(limit = 50): Promise<PublicCircle[]> {
   const supabase = createPublicClient()
-  const { rows } = await listRead<PublicCircle>('public_circles', supabase.rpc('public_circles', { _limit: limit }))
+  const { rows } = await listRead<PublicCircle>('public_circles', () => supabase.rpc('public_circles', { _limit: limit }))
   return rows
 }
 
@@ -180,7 +236,7 @@ export async function getPublicCircleById(id: string): Promise<PublicCircle | nu
   const supabase = createPublicClient()
   const rows = await detailRead<PublicCircle>(
     'public_circle_by_id',
-    supabase.rpc('public_circle_by_id', { _id: id }),
+    () => supabase.rpc('public_circle_by_id', { _id: id }),
   )
   return rows[0] ?? null
 }
@@ -202,7 +258,7 @@ export async function getPublicCirclesByChannel(
 
 export async function getPublicPosts(limit = 20): Promise<PublicPost[]> {
   const supabase = createPublicClient()
-  const { rows } = await listRead<PublicPost>('public_posts', supabase.rpc('public_posts', { _limit: limit }))
+  const { rows } = await listRead<PublicPost>('public_posts', () => supabase.rpc('public_posts', { _limit: limit }))
   return rows
 }
 
