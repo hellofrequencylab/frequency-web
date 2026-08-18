@@ -1929,8 +1929,8 @@
     {
       "id": "OWN-027",
       "title": "Two eyebrow registers exist and neither is wrong: pick the one that wins",
-      "status": "open",
-      "lane": "owner",
+      "status": "done",
+      "lane": "live",
       "size": "S",
       "source": {
         "file": "components/page-editor/blocks/kit.tsx",
@@ -1938,10 +1938,10 @@
       },
       "detail": "Surfaced by LIVE-025, and it is a design decision rather than a refactor, which is why it is not being made in code. There are TWO eyebrow implementations and nobody reconciled them. (1) app/globals.css locks the `eyebrow` utility at 0.75rem / 0.18em / bold, and 87 sites use it. (2) components/page-editor/blocks/kit.tsx exports an <Eyebrow> component with about 26 adopters rendering text-body-sm, 0.875rem - which is DAWN's DECLARED eyebrow size, i.e. precisely the half of the DAWN split that globals.css resolved DOWN to 0.75rem on 2026-08-05. So the block kit is not drifting by accident; it is rendering the value DAWN published, and the CSS is rendering the value this repo chose instead. Beyond those two there is a third de-facto register: 615 sites pair uppercase with a literal tracking, dominated by an 11px `text-2xs font-semibold uppercase tracking-wide text-muted`, and many of those are pill badges and dense table headers where 0.18em would widen the label past the pill that was sized to fit it. THE CALL: which size is the eyebrow - 0.75rem (globals.css, what most of the kit uses) or 0.875rem (DAWN's declaration, what the block kit renders)? Whichever loses gets retired, and its adopters move in a bounded sweep with a visual recapture. Deciding it also settles what goes back to DAWN in the next handoff, since design_handoff/PROD-AHEAD.md already carries the divergence.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Measured 2026-08-17 via the adoption harness: 87 sites on the `eyebrow` utility, 69 on `tracking-eyebrow`, ~26 on kit.tsx's <Eyebrow> at 0.875rem, and 608 remaining literal-tracking sites after the seven named slots were unified. Not repo-probeable: a probe asserting either register would force a choice the owner has not made, and a gate that encodes an undecided design question is the shape-not-truth failure this backlog exists to prevent.",
-        "checked": "2026-08-17"
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const K='components/page-editor/blocks/kit.tsx',T='lib/theme/eyebrow-role.test.ts';if(!fs.existsSync(K)||!fs.existsSync(T))process.exit(79);const k=fs.readFileSync(K,'utf8'),t=fs.readFileSync(T,'utf8');if(k.indexOf('Eyebrow')<0)process.exit(79);const bad=[];const code=k.split(String.fromCharCode(10)).filter(function(x){var s=x.trim();return s.indexOf('//')!==0&&s.indexOf('*')!==0}).join(String.fromCharCode(10));if(code.indexOf('text-body-sm')>=0)bad.push('the block kit declares text-body-sm again: the retired 0.875rem eyebrow register is back');if(t.indexOf('composes the role in the atom')<0)bad.push('the assertion that the atom may not restate the role is gone from '+T);if(t.indexOf('never pairs the block-kit marker with the retired')<0)bad.push('the retired-size assertion is gone from '+T);if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
+      },
+      "notes": "DECIDED AND IMPLEMENTED 2026-08-18 (ADR-1075). Owner's call: 0.75rem wins. The block kit's <Eyebrow> atom now COMPOSES the `eyebrow` utility and declares none of the role, so an adopter can no longer pick a size by choosing an import. The framing worth keeping is the ADR's: the eyebrow had two implementations because it had two OWNERS, a class and an import. globals.css locked 0.75rem; the atom hand-rolled the same role at text-body-sm, 0.875rem - DAWN's DECLARED size, and precisely the half of DAWN's own split this repo resolved down on 2026-08-05. Two registers 17% apart and NEITHER was a mistake, which is exactly why it needed a decision rather than a refactor. Verified by breaking it, not on report: reintroducing 'text-body-sm font-bold uppercase tracking-eyebrow' inside the atom fails with 'the <Eyebrow> atom restates the role', and restoring goes green. Three assertions hold it, including a non-vacuity arm so a green over an empty scan is not a pass. The 608 literal-tracking sites are deliberately untouched and stay a ratchet: genuine eyebrows sit beside pill badges and dense table headers where 0.18em would widen a label past the pill it was sized to fit."
     },
     {
       "id": "LIVE-037",
@@ -1957,6 +1957,22 @@
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const A='lib/supabase/admin.ts';if(!fs.existsSync(A))process.exit(79);const want=['lib/crm/relationships.ts','lib/crm/pipeline.ts','lib/personas.ts','lib/walkthroughs.ts','lib/marketplace.ts'];const present=want.filter(function(f){return fs.existsSync(f)});if(present.length<4)process.exit(79);const missing=present.filter(function(f){return fs.readFileSync(f,'utf8').indexOf(\\\"'server-only'\\\")<0});if(missing.length){console.error('still no server-only guard on: '+missing.join(', '));process.exit(1)}process.exit(0)\""
+      }
+    },
+    {
+      "id": "LIVE-038",
+      "title": "The retired 0.875rem eyebrow is still rendering, spelled by hand on ~29 marketing sites",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "components/marketing/marketing-ui.tsx",
+        "ref": "OWN-027 / ADR-1075 follow-up"
+      },
+      "detail": "OWN-027 retired the 0.875rem eyebrow register and ADR-1075 made the block kit's atom compose the 0.75rem role. The register did NOT stop rendering: about 29 sites still hand-write it as `text-body-sm` paired with `tracking-eyebrow`, which is the same 0.875rem the owner just retired, spelled without going through the atom. components/marketing/marketing-ui.tsx x5, app/page.tsx x4, app/(marketing)/{beta,subscribe,rsvp,start,the-quest}, components/marketing/blocks.tsx, components/templates/page-hero.tsx x2, and the rest. ADR-1072 section 2 admits these deliberately, so they are not a regression - but that admission predates the owner's decision, and the decision is what makes them stale. Until they move, a visitor sees two eyebrow sizes on the same marketing page depending on whether the section came from a block or from the route file. 🔴 SCOPE WARNING, and it is why this is its own row: sweeping these moves ALL TWELVE captured surfaces, not the eight ADR-1075 moved. Do it as one change with a full recapture, not folded into anything else. SEPARATE AND SMALLER, from the same report: two hand-rolled eyebrows inside the block kit itself are NOT atom adopters - blocks/spaces.tsx:147 (photo-hero over an image, exactly ADR-1072 section 2's carve-out) and the Features pair at entity-blocks/content-block-view.tsx:205 + space-canvas-block.tsx:740 (already 0.75rem but tracking-[0.12em], which is the 608 ratchet's business and converting them would decrement it).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),path=require('path');const roots=['app','components'];let hits=0,files=0,ex=[];const walk=function(dir){for(const e of fs.readdirSync(dir,{withFileTypes:true})){if(e.name==='node_modules'||e.name[0]==='.')continue;const p2=path.join(dir,e.name);if(e.isDirectory()){walk(p2);continue}if(!/[.]tsx$/.test(e.name)&&!/[.]ts$/.test(e.name))continue;files++;const lines=fs.readFileSync(p2,'utf8').split(String.fromCharCode(10));for(const L of lines){const t=L.trim();if(t.indexOf('//')===0||t.indexOf('*')===0)continue;if(L.indexOf('text-body-sm')>=0&&L.indexOf('tracking-eyebrow')>=0){hits++;if(ex.length<3)ex.push(p2)}}}};for(const r of roots)if(fs.existsSync(r))walk(r);if(files<500)process.exit(79);if(hits>0){console.error(hits+' site(s) still hand-write the retired 0.875rem eyebrow, e.g. '+ex.join(', '));process.exit(1)}process.exit(0)\""
       }
     }
   ]
