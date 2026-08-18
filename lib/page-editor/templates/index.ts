@@ -22,11 +22,11 @@ import { generateDefaultProfilePage } from './profile-default'
 // nav). Build / Practice / Spread were FOLDED into the six primaries: their routes
 // are now 308 redirect stubs, so they no longer need templates.
 //
-// ⚠️ FOR A RETIRED SLUG THIS MAP IS THE LAST RUNG. `circles`, `about` and `spaces` no
-// longer carry a coded body (Lift 5c, ADR-1068), so deleting or breaking their entry
-// serves a BLANK page rather than falling back to anything. templates.test.ts asserts every
-// EDITABLE_PAGES slug resolves here and renders under the current config, which is
-// what makes that failure loud instead of silent.
+// ⚠️ FOR A RETIRED SLUG THIS MAP IS THE LAST RUNG. `circles`, `about`, `spaces` and
+// `the-lab` no longer carry a coded body (Lift 5c, ADR-1068), so deleting or breaking
+// their entry serves a BLANK page rather than falling back to anything. templates.test.ts
+// asserts every EDITABLE_PAGES slug resolves here and renders under the current config,
+// which is what makes that failure loud instead of silent.
 const TEMPLATES: Record<string, Data> = {
   home,
   about,

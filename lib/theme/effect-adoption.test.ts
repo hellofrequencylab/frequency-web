@@ -126,6 +126,14 @@ export function classLists(src: string): string[] {
       if (pending) {
         pending = false
         ctxDepth = depth
+      } else if (c === '(' && ctxDepth < 0 && marker.test(src.slice(Math.max(0, i - 24), i + 1))) {
+        // A BARE helper call — `const chrome = cn('dot-grid', …)` — with no `className=` ahead of
+        // it. The doc comment above has always claimed `cn(` is a counted position; it was not,
+        // because this branch consumed the `(` and `continue`d before the marker test below could
+        // ever see it, so only `cn()` sitting INSIDE a `className={…}` was ever detected. A class
+        // list built in a helper and handed to className read as zero adopters, which is a false
+        // orphan: the gate reporting "nothing calls this" when it means "I could not see the call".
+        ctxDepth = depth
       }
       i++
       continue
@@ -136,16 +144,8 @@ export function classLists(src: string): string[] {
       i++
       continue
     }
-    if (c === '=' || c === '(') {
-      if (marker.test(src.slice(Math.max(0, i - 24), i + 1))) {
-        if (c === '(') {
-          depth++
-          ctxDepth = depth
-          i++
-          continue
-        }
-        pending = true
-      }
+    if (c === '=') {
+      if (marker.test(src.slice(Math.max(0, i - 24), i + 1))) pending = true
     }
     i++
   }
@@ -238,6 +238,22 @@ describe('the adoption instrument is not vacuous', () => {
     expect(tokens).toContain('scanlines')
     expect(tokens).toContain('edge-light')
     expect(classLists(fixture).length).toBe(3) // the comment and the bare string contribute nothing
+  })
+
+  it('counts a BARE helper call, not only one sitting inside className={…}', () => {
+    // The regression that made `arc-top` and `dot-grid` read as orphans on 2026-08-18 while
+    // components/page-editor/blocks/dawn.tsx called both on every render: the class list was
+    // assembled in a helper one line above the JSX. This is ordinary React, so a gate that cannot
+    // see it does not measure adoption — it measures how close the strings sit to the angle bracket.
+    const fixture = [
+      "const chrome = cn(shape === 'arc' && 'arc-top mk-arc', texture === 'dots' && 'dot-grid')",
+      'return <Section className={chrome} />',
+    ].join('\n')
+    const tokens = classLists(fixture).flatMap((s) => s.split(/\s+/))
+    expect(tokens).toContain('arc-top')
+    expect(tokens).toContain('dot-grid')
+    // and the context still CLOSES with the call: a literal after it is not swept in
+    expect(classLists("const a = cn('grain')\nconst b = 'halo'")).toEqual(['grain'])
   })
 
   it('detects a CSS rule, and is not fooled by a class named only in a comment', () => {

@@ -1,6 +1,3 @@
-import { createAdminClient } from '@/lib/supabase/admin'
-import { HOME_TZ, dayInZone } from '@/lib/time/zone'
-
 // CRM pipeline data layer (ADR-102). The crm_* tables aren't in the generated DB
 // types yet, so every read/write goes through an untyped client cast (the same
 // pattern used across lib/studio + lib/page-editor). The crm_* tables now carry
@@ -9,6 +6,9 @@ import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 // 20260905000000_crm_rls_convergence). This layer still reads/writes through the
 // service-role admin client (RLS bypass), so callers must gate first — the global
 // CRM tool gates on staff (see app/(main)/admin/crm/actions.ts requireCrm() -> janitor).
+//
+// The ROW SHAPES and the money formatter live in lib/crm/pipeline-core.ts and are re-exported
+// below, so every existing server caller is unchanged. CLIENT code must import from there.
 //
 // PER-SPACE TENANCY (ENTITY-SPACES-BUILD Phase 2). Every read here takes an OPTIONAL
 // `spaceId`. It is purely ADDITIVE and BACKWARD-COMPATIBLE:
@@ -19,6 +19,40 @@ import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 //     per-space pipeline sees only their own rows (cross-space isolation).
 // The column was backfilled to the root space, so existing data is root-owned and the
 // per-space pipeline for the root space still sees it (the global tool ignores space_id).
+//
+// ── 🔴 `import 'server-only'` IS THE POINT OF THE LINE BELOW, NOT DECORATION (LIVE-037) ──────────
+// This file was always a service-role read/write layer, and the header above said so. It was not
+// enforced: `pipeline-board.tsx` and `deal-detail.tsx` are both 'use client' and imported
+// `formatMoney` from here, so the admin client, @supabase/supabase-js and a crypto-browserify
+// polyfill graph were in both of those bundles. The directive turns the intent into a BUILD
+// FAILURE: any client module that reaches this file now breaks the build, by name, instead of
+// quietly shipping the database to a phone. The shapes + the formatter live in
+// lib/crm/pipeline-core.ts so a client CAN import them.
+import 'server-only'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { HOME_TZ, dayInZone } from '@/lib/time/zone'
+import type {
+  CrmActivity,
+  CrmContact,
+  CrmDeal,
+  CrmStage,
+  PersonLite,
+  SpaceTask,
+  StageKind,
+} from '@/lib/crm/pipeline-core'
+
+// The shapes + the formatter, re-exported so no existing importer changes (ADR-1074's rule:
+// extract the leaf, re-export it from the old home, then make the comment a directive).
+export { formatMoney } from '@/lib/crm/pipeline-core'
+export type {
+  StageKind,
+  CrmStage,
+  PersonLite,
+  CrmDeal,
+  CrmActivity,
+  CrmContact,
+  SpaceTask,
+} from '@/lib/crm/pipeline-core'
 
 function db() {
   return createAdminClient()
@@ -34,44 +68,6 @@ function scopeBySpace<Q extends { eq: (col: string, val: string) => Q }>(
   spaceId?: string,
 ): Q {
   return spaceId ? query.eq('space_id', spaceId) : query
-}
-
-export type StageKind = 'open' | 'won' | 'lost'
-export type CrmStage = { id: string; name: string; sort_order: number; kind: StageKind }
-
-export type PersonLite = { id: string; display_name: string; handle: string | null; avatar_url: string | null }
-
-export type CrmDeal = {
-  id: string
-  title: string
-  contact_name: string | null
-  contact_id: string | null
-  profile_id: string | null
-  stage_id: string | null
-  value: number
-  currency: string
-  status: StageKind
-  source: string | null
-  expected_close_date: string | null
-  owner_id: string | null
-  created_by: string | null
-  created_at: string
-  updated_at: string
-  closed_at: string | null
-  owner: PersonLite | null
-  member: PersonLite | null
-}
-
-export type CrmActivity = {
-  id: string
-  deal_id: string | null
-  kind: 'note' | 'call' | 'email' | 'meeting' | 'task'
-  body: string
-  due_at: string | null
-  completed_at: string | null
-  created_by: string | null
-  created_at: string
-  author: PersonLite | null
 }
 
 const PERSON_COLS = 'id, display_name, handle, avatar_url'
@@ -163,17 +159,6 @@ export async function countContacts(spaceId?: string): Promise<number> {
   } catch {
     return 0
   }
-}
-
-export type CrmContact = {
-  id: string
-  email: string
-  display_name: string | null
-  consent_state: string
-  created_at: string | null
-  /** Imported custom fields, keyed by their stable registry key -> value (from `contacts.meta.custom`).
-   *  Only populated by the single-contact `getContact` read; the list read leaves it undefined. */
-  custom?: Record<string, string>
 }
 
 // A Space's CRM contacts (the per-space people list). Optional spaceId scopes to one Space;
@@ -268,7 +253,7 @@ function hydrateDeal(d: Record<string, unknown>, people: Map<string, PersonLite>
 // shows, so the preview and the seed can never disagree. These are service-role writes (the crm_* tables
 // now carry owner/space-scoped RLS policies — 20260905000000_crm_rls_convergence — but the service-role
 // client bypasses RLS, so the caller gates on the Space owner / admin before calling), matching the
-// lib/crm/pipeline.ts read posture.
+// read posture of the rest of this file.
 
 import type { SpaceType } from '@/lib/spaces/types'
 import { seedStagesForSpace, platformPipelineStages, isPipelineLane, type PipelineLane } from './stage-templates'
@@ -356,18 +341,6 @@ export async function getFirstOpenStage(spaceId: string): Promise<{ id: string; 
 // always scoped by space_id. The board's Tasks panel reads these and labels each one with the deal /
 // contact it points at. WRITES live in lib/crm/space-tasks.ts (owner-gated, space-scoped); this file
 // only READS (fail-safe, [] on error), matching the rest of the per-space pipeline read layer.
-
-export type SpaceTask = {
-  id: string
-  title: string
-  due_at: string | null
-  completed_at: string | null
-  deal_id: string | null
-  contact_id: string | null
-  created_at: string
-  /** A short label for what the task points at (deal title or contact name), resolved at read time. */
-  linkLabel: string | null
-}
 
 /** PURE: split a Space's tasks into OPEN (due-soon first, then undated, then by creation) and DONE
  *  (most recently completed first). Deterministic with a stable id tiebreak so equal timestamps keep a
@@ -480,16 +453,6 @@ async function resolveContactLabels(ids: string[], spaceId: string): Promise<Map
     /* fall through to the partial / empty map */
   }
   return map
-}
-
-// ── Presentation helpers ──────────────────────────────────────────────────────
-
-export function formatMoney(value: number, currency = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value || 0)
 }
 
 export type PipelineMetrics = {

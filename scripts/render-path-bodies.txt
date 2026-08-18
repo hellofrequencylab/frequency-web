@@ -13,7 +13,7 @@
 # with the duality. A top-level component is a structural fact. Lines are printed by the gate as
 # context and never checked.
 #
-# RETIREMENT ORDER (FINALIZE-PLAN §5.2, by risk): ~~circles~~ -> ~~about~~ -> ~~spaces~~ -> the-lab ->
+# RETIREMENT ORDER (FINALIZE-PLAN §5.2, by risk): ~~circles~~ -> ~~about~~ -> ~~spaces~~ -> ~~the-lab~~ ->
 # the-quest -> the-community -> pricing. Each retirement is gated on the visual suite proving the
 # template equivalent, one slug per PR. `pricing` is partial only: it carries LIVE take-rate
 # bindings, and its figures must never be frozen into a document.
@@ -35,7 +35,12 @@ spaces          0   # ✅ RETIRED 2026-08-18 (Lift 5c, ADR-1068). LegacySpaces +
                     #    document, always well-formed), so the retirement moved no pixels. The two
                     #    sections only the coded body carried were recovered into the template in
                     #    Lift 5b. Template-only from here.
-the-lab         3   # LegacyTheLab + Room + BuildStep (382 lines)
+the-lab         0   # ✅ RETIRED 2026-08-18 (Lift 5c, ADR-1068). LegacyTheLab + Room + BuildStep deleted,
+                    #    not moved: `git log -p app/(marketing)/the-lab/page.tsx` is the only copy left.
+                    #    The body was already unreachable (getTemplate('the-lab') is a static 7-block
+                    #    document, always well-formed), so the retirement moved no pixels. Every section
+                    #    it drew is in the template word for word. The only thing deleted with it was
+                    #    THE_LAB_FAQ, which neither rung rendered. Template-only from here.
 the-community   5   # LegacyTheCommunity + Step + Layer + Hold + DayBeat (635 lines)
 the-quest       2   # LegacyTheQuest + Guard (498 lines)
 pricing         7   # PlanCard + RateLine + PlanPrice + PlanCta + IndependentStrip + ExtraCard + ComparisonBlock (860 lines)
