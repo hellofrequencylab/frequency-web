@@ -8,7 +8,7 @@
 // practice is the unit, not the duration. "Just log" skips the timer entirely
 // so On Air is never a tax on logging.
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Check,
@@ -1661,8 +1661,7 @@ export function OnAirSession({
           the left; cues + the Dispatches link on the right. One column on mobile. */}
       <div className="space-y-5">
         <div className="space-y-5 lg:space-y-6">
-        <div>
-          <Label>Mode</Label>
+        <Group label="Mode">
           {/* Six modes (item #1). Meditate / Stillness / Ritual / Journal all run the same silent
               countdown, differing by label, icon, default length, and subline; Breathe is the
               guided rings; Just Log is the instant log. A log-only practice (timer_kind 'none')
@@ -1707,7 +1706,7 @@ export function OnAirSession({
                 : 'This practice is log-only.'}
             </p>
           )}
-        </div>
+        </Group>
 
         {/* Just Log: an optional note captured before logging (the One Small Reach entry point).
             Journal's note lives on the live screen instead, so it isn't shown here. */}
@@ -1725,8 +1724,7 @@ export function OnAirSession({
         )}
 
         {mode === 'breath' && (
-          <div>
-            <Label>Pattern</Label>
+          <Group label="Pattern">
             <div className="mt-2 grid grid-cols-3 gap-2">
               {BREATH_PATTERNS.map((p) => (
                 <button
@@ -1774,7 +1772,7 @@ export function OnAirSession({
                 <PhaseSlider label="Let go" min={CUSTOM_PHASE_MIN} value={customOut} onChange={setCustomOut} />
               </div>
             )}
-          </div>
+          </Group>
         )}
 
         {mode !== 'log' && durationLocked && (
@@ -1789,8 +1787,7 @@ export function OnAirSession({
         )}
 
         {mode !== 'log' && !durationLocked && (
-          <div>
-            <Label>Minutes</Label>
+          <Group label="Minutes">
             {/* The silent-timer sit modes (Meditate / Journal / Stillness / Ritual) use the SAME
                 single-row layout as Get Moving's Walk (items #2, #3): five preset chips in one
                 row, the +/- stepper on its own row beneath. Breathe keeps its own shorter,
@@ -1821,7 +1818,7 @@ export function OnAirSession({
                 <Plus className="h-3.5 w-3.5" />
               </IconButton>
             </div>
-          </div>
+          </Group>
         )}
         </div>
 
@@ -2192,9 +2189,51 @@ function InstructionsPopup({
   )
 }
 
-function Label({ children }: { children: React.ReactNode }) {
+function Label({ id, children }: { id?: string; children: React.ReactNode }) {
   return (
-    <p className="text-meta font-semibold uppercase tracking-wider text-subtle">{children}</p>
+    <p id={id} className="text-meta font-semibold uppercase tracking-wider text-subtle">
+      {children}
+    </p>
+  )
+}
+
+/** A setup heading and the controls it names, BOUND TOGETHER (LIVE-046).
+ *
+ * The old shape was a bare `<Label>` over a grid of ModeButton/Chip controls. That `<Label>` is a
+ * `<p>`, which is correct - none of these headings names a single control, so a real `<label>`
+ * would be wrong and `pnpm check:labels` rightly had nothing to say about them. But nothing
+ * carried the OTHER half of the pattern, so a screen reader arrived at the buttons with no idea
+ * what the choice was about: "Walk, button. Run, button." with no "Mode" anywhere.
+ *
+ * `components/ui/field.tsx` already documents the remedy for exactly this case - "several controls
+ * -> `<p className={labelClasses} id="x">` + `role="group" aria-labelledby="x"`" - and five other
+ * files apply it. This component is that pattern made unskippable: the heading and the group are
+ * one call, so a future setup section cannot get one without the other. `useId` keeps the ids
+ * unique across the branches that render two "Minutes" headings.
+ *
+ * The role goes on the EXISTING wrapper rather than a new one, so the DOM and every margin are
+ * byte-for-byte what they were. This changes what the page announces, not how it looks.
+ *
+ * NOT every heading in these two files belongs here, and the two exceptions are the reason this is
+ * a component rather than a sweep: `session.tsx` has a "Minutes" heading over a READ-ONLY row (no
+ * control, so no group) and a "Sounds & Settings" heading inside a `<button aria-expanded>`, where
+ * it IS that button's accessible name already. Both stay a plain `<Label>`.
+ */
+function Group({
+  label,
+  className,
+  children,
+}: {
+  label: React.ReactNode
+  className?: string
+  children: React.ReactNode
+}) {
+  const id = useId()
+  return (
+    <div role="group" aria-labelledby={id} className={className}>
+      <Label id={id}>{label}</Label>
+      {children}
+    </div>
   )
 }
 

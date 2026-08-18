@@ -24,7 +24,7 @@
 // VOICE (docs/CONTENT-VOICE.md): plain, warm labels. No em or en dashes. Proper
 // nouns (Tabata, EMOM) carry the magic. Tokens only, never hex (docs/THEME.md).
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Minus,
@@ -1284,8 +1284,7 @@ export function MovementSession({
         {/* Mode — the SAME display as the six Mindless modes (C.1): a 3-up grid of
             icon-over-label tiles. The chosen mode's blurb sits as a one-line subline
             below the grid (no narrated feelings, no em or en dashes). */}
-        <div>
-          <Label>Mode</Label>
+        <Group label="Mode">
           <div className="mt-2 grid grid-cols-3 gap-2">
             {MOVEMENT_MODES.map((m) => (
               <ModeButton
@@ -1300,13 +1299,12 @@ export function MovementSession({
           <p className="mt-2 text-2xs text-muted">
             {MOVEMENT_MODES.find((m) => m.mode === mode)?.blurb}
           </p>
-        </div>
+        </Group>
 
         {/* Per-mode preset / tuning */}
         {mode === 'walk' && (
           <div className="space-y-5">
-            <div>
-              <Label>Minutes</Label>
+            <Group label="Minutes">
               <div className="mt-2 grid grid-cols-5 gap-2">
                 {WALK_DURATION_PRESETS.map((m) => (
                   <Chip key={m} active={m === walkMinutes} onClick={() => setWalkMinutes(m)}>
@@ -1320,9 +1318,8 @@ export function MovementSession({
                 onLess={() => setWalkMinutes((m) => Math.max(1, m - 1))}
                 onMore={() => setWalkMinutes((m) => Math.min(240, m + 1))}
               />
-            </div>
-            <div>
-              <Label>Reminders</Label>
+            </Group>
+            <Group label="Reminders">
               <div className="mt-2 grid grid-cols-3 gap-2">
                 {WALK_INTERVAL_PRESETS.map((iv) => (
                   <Chip key={iv.value} active={iv.value === walkIntervalMin} onClick={() => setWalkIntervalMin(iv.value)}>
@@ -1331,14 +1328,13 @@ export function MovementSession({
                 ))}
               </div>
               <p className="mt-1.5 text-2xs text-muted">A gentle chime on the minute, if you want a nudge.</p>
-            </div>
+            </Group>
           </div>
         )}
 
         {mode === 'run' && (
           <div className="space-y-5">
-            <div>
-              <Label>Minutes</Label>
+            <Group label="Minutes">
               <div className="mt-2 grid grid-cols-4 gap-2">
                 {RUN_DURATION_PRESETS.map((m) => (
                   <Chip key={m} active={m === runMinutes} onClick={() => setRunMinutes(m)}>
@@ -1352,9 +1348,8 @@ export function MovementSession({
                 onLess={() => setRunMinutes((m) => Math.max(1, m - 1))}
                 onMore={() => setRunMinutes((m) => Math.min(240, m + 1))}
               />
-            </div>
-            <div>
-              <Label>Split cues</Label>
+            </Group>
+            <Group label="Split cues">
               <div className="mt-2 grid grid-cols-3 gap-2">
                 {RUN_INTERVAL_PRESETS.map((iv) => (
                   <Chip key={iv.value} active={iv.value === runIntervalMin} onClick={() => setRunIntervalMin(iv.value)}>
@@ -1363,13 +1358,12 @@ export function MovementSession({
                 ))}
               </div>
               <p className="mt-1.5 text-2xs text-muted">A chime on the minute to mark your splits, if you want them.</p>
-            </div>
+            </Group>
           </div>
         )}
 
         {mode === 'yoga' && (
-          <div>
-            <Label>Flow</Label>
+          <Group label="Flow">
             <div className="mt-2 grid grid-cols-3 gap-2">
               {YOGA_PRESETS.map((y) => (
                 <Chip key={y.kind} active={y.kind === yogaKind} onClick={() => setYogaKind(y.kind)} title={y.blurb}>
@@ -1380,13 +1374,12 @@ export function MovementSession({
             <p className="mt-1.5 text-2xs text-muted">
               {YOGA_PRESETS.find((y) => y.kind === yogaKind)?.blurb}
             </p>
-          </div>
+          </Group>
         )}
 
         {mode === 'stretch' && (
           <div className="space-y-5">
-            <div>
-              <Label>Minutes</Label>
+            <Group label="Minutes">
               <div className="mt-2 grid grid-cols-4 gap-2">
                 {STRETCH_DURATION_PRESETS.map((m) => (
                   <Chip key={m} active={m === stretchMinutes} onClick={() => setStretchMinutes(m)}>
@@ -1400,9 +1393,8 @@ export function MovementSession({
                 onLess={() => setStretchMinutes((m) => Math.max(1, m - 1))}
                 onMore={() => setStretchMinutes((m) => Math.min(240, m + 1))}
               />
-            </div>
-            <div>
-              <Label>Switch sides</Label>
+            </Group>
+            <Group label="Switch sides">
               <div className="mt-2 grid grid-cols-3 gap-2">
                 {STRETCH_INTERVAL_PRESETS.map((iv) => (
                   <Chip
@@ -1415,7 +1407,7 @@ export function MovementSession({
                 ))}
               </div>
               <p className="mt-1.5 text-2xs text-muted">A soft chime to switch sides, if you want one.</p>
-            </div>
+            </Group>
           </div>
         )}
 
@@ -1427,8 +1419,7 @@ export function MovementSession({
 
         {mode === 'strength' && (
           <div className="space-y-5">
-            <div>
-              <Label>Shape</Label>
+            <Group label="Shape">
               <div className="mt-2 grid grid-cols-4 gap-2">
                 {STRENGTH_PRESETS.map((w) => (
                   <Chip key={w.kind} active={w.kind === strengthKind} onClick={() => pickStrength(w.kind)} title={w.blurb}>
@@ -1439,7 +1430,7 @@ export function MovementSession({
               <p className="mt-1.5 text-2xs text-muted">
                 {STRENGTH_PRESETS.find((w) => w.kind === strengthKind)?.blurb}
               </p>
-            </div>
+            </Group>
             <div className="grid grid-cols-3 gap-3">
               <Tune label="Work" value={`${workSec}s`} onLess={() => setWorkSec((s) => clampSeconds(s - 5))} onMore={() => setWorkSec((s) => clampSeconds(s + 5))} />
               <Tune label="Rest" value={restSec === 0 ? 'none' : `${restSec}s`} onLess={() => setRestSec((s) => Math.max(0, s - 5))} onMore={() => setRestSec((s) => Math.min(600, s + 5))} />
@@ -1517,8 +1508,52 @@ export function MovementSession({
 
 // --- small setup atoms ------------------------------------------------------
 
-function Label({ children }: { children: React.ReactNode }) {
-  return <p className="text-meta font-semibold uppercase tracking-wider text-subtle">{children}</p>
+function Label({ id, children }: { id?: string; children: React.ReactNode }) {
+  return (
+    <p id={id} className="text-meta font-semibold uppercase tracking-wider text-subtle">
+      {children}
+    </p>
+  )
+}
+
+/** A setup heading and the controls it names, BOUND TOGETHER (LIVE-046).
+ *
+ * The old shape was a bare `<Label>` over a grid of ModeButton/Chip controls. That `<Label>` is a
+ * `<p>`, which is correct - none of these headings names a single control, so a real `<label>`
+ * would be wrong and `pnpm check:labels` rightly had nothing to say about them. But nothing
+ * carried the OTHER half of the pattern, so a screen reader arrived at the buttons with no idea
+ * what the choice was about: "Walk, button. Run, button." with no "Mode" anywhere.
+ *
+ * `components/ui/field.tsx` already documents the remedy for exactly this case - "several controls
+ * -> `<p className={labelClasses} id="x">` + `role="group" aria-labelledby="x"`" - and five other
+ * files apply it. This component is that pattern made unskippable: the heading and the group are
+ * one call, so a future setup section cannot get one without the other. `useId` keeps the ids
+ * unique across the branches that render two "Minutes" headings.
+ *
+ * The role goes on the EXISTING wrapper rather than a new one, so the DOM and every margin are
+ * byte-for-byte what they were. This changes what the page announces, not how it looks.
+ *
+ * NOT every heading in these two files belongs here, and the two exceptions are the reason this is
+ * a component rather than a sweep: `session.tsx` has a "Minutes" heading over a READ-ONLY row (no
+ * control, so no group) and a "Sounds & Settings" heading inside a `<button aria-expanded>`, where
+ * it IS that button's accessible name already. Both stay a plain `<Label>`.
+ */
+function Group({
+  label,
+  className,
+  children,
+}: {
+  label: React.ReactNode
+  className?: string
+  children: React.ReactNode
+}) {
+  const id = useId()
+  return (
+    <div role="group" aria-labelledby={id} className={className}>
+      <Label id={id}>{label}</Label>
+      {children}
+    </div>
+  )
 }
 
 /** A mode tile, matching the Mindless ModeButton (C.1): an icon over a label in a
