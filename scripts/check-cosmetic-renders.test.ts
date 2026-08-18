@@ -118,12 +118,13 @@ describe('the live shelf', () => {
     expect(v.incompleteQuarantine).toEqual([])
   })
 
-  it('still carries the four declared, un-deliverable SKUs (so this suite is not passing on an empty set)', () => {
-    // ⚠️ NON-VACUITY, on the real corpus. If this drops to zero because the owner applied the
-    // proposal SQL and re-captured, DELETE the quarantine entries and this expectation together —
-    // `staleQuarantine` above will already be failing to remind you.
+  it('carries no quarantined SKUs: 20270312000000 was applied 2026-08-18 and the shelf re-captured', () => {
+    // The instruction this test used to carry has been followed: the SQL was applied (with the
+    // owner's explicit authorization), the four undeliverable SKUs are off the shelf, and the
+    // quarantine entries were deleted together with the old expectation. Non-vacuity now lives
+    // entirely in the fixture block below, which still proves every refusal arm fires.
     const v = classify(census, live)
-    expect(v.quarantined).toEqual(['animated-banner', 'callsign-plate', 'custom-title-slot', 's1-flair-set'])
+    expect(v.quarantined).toEqual([])
   })
 })
 
@@ -220,7 +221,15 @@ describe('non-vacuity — the guard fires on a shelf that should be refused', ()
 
 describe('the probe answers the row, not the gate', () => {
   it('says NOT DONE while any purchasable SKU is undeliverable, declared or not', () => {
-    expect(report(census, live, { probe: true }).code).toBe(1)
+    // The live shelf went clean on 2026-08-18, so the 1-arm is proven on a fixture: the real
+    // shelf plus one active, priced SKU whose metadata names nothing deliverable.
+    const relapse = structuredClone(census)
+    relapse.shelf.push({ slug: 'mystery-thing', category: 'cosmetic', gem_cost: 100, is_active: true, metadata: {} })
+    expect(report(relapse, live, { probe: true }).code).toBe(1)
+  })
+
+  it('says DONE on the live shelf, agreeing with the closed row', () => {
+    expect(report(census, live, { probe: true }).code).toBe(0)
   })
 
   it('says DONE only when nothing is left', () => {

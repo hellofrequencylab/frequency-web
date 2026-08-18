@@ -26,7 +26,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
@@ -468,19 +468,19 @@ describe('the real tree', () => {
     }
   })
 
-  it('the OWN-006 proposal is staged OUTSIDE supabase/migrations/', () => {
-    // 🔴 THE REGRESSION TEST FOR 663762b. This SQL was committed as a migration, and CI's `checks`
-    // job went red: check:migrations rule 4 (ADR-1007) fails a repo file with no ledger row,
-    // because such a file replays on every fresh environment while production has never run it.
-    // A migration file is an assertion that production HAS run it; until an owner applies this,
-    // that assertion is false. It stays a proposal.
+  it('the OWN-006 revokes are APPLIED and live in supabase/migrations/ with a ledger row behind them', () => {
+    // The inversion of the 663762b regression pin. That incident was a migration file with NO
+    // ledger row; on 2026-08-18 the revokes were applied to production (owner-authorized, via MCP)
+    // and the ledger repaired to this exact version, so the file's assertion is now TRUE and it
+    // lives where applied migrations live. The proposal is gone: a proposal that outlives its
+    // apply is a second source of truth.
     const names = new Set(readdirSync(MIGRATIONS))
-    expect(names.has('20270304000000_revoke_browser_execute_on_service_only_rpcs.sql')).toBe(false)
-    const proposal = 'docs/proposals/OWN-006-revoke-browser-execute.sql'
-    const sql = readFileSync(path.join(ROOT, proposal), 'utf8')
-    // The SQL itself must have survived the move, or the proposal is a memo about nothing.
+    expect(names.has('20270304000000_revoke_browser_execute_on_service_only_rpcs.sql')).toBe(true)
+    expect(existsSync(path.join(ROOT, 'docs/proposals/OWN-006-revoke-browser-execute.sql'))).toBe(false)
+    const sql = readFileSync(path.join(MIGRATIONS, '20270304000000_revoke_browser_execute_on_service_only_rpcs.sql'), 'utf8')
+    // The SQL itself survived the move, or the migration is a memo about nothing.
     expect(sql).toMatch(/revoke\s+execute\s+on\s+function\s+public\.public_calendar_feed\(\)\s+from\s+public,\s*anon,\s*authenticated/i)
-    expect(sql).toContain('docs/proposals/')
+    expect(sql).toContain('APPLIED to production 2026-08-18')
   })
 
   it('no ledger row claims a function is closed on the strength of the withdrawn proposal', () => {

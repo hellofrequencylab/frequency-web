@@ -123,7 +123,7 @@
     {
       "id": "OWN-006",
       "title": "Sweep every `revoke ... from public` block in supabase/migrations",
-      "status": "open",
+      "status": "done",
       "lane": "owner",
       "size": "M",
       "source": {
@@ -133,9 +133,10 @@
       "detail": "Supabase's ALTER DEFAULT PRIVILEGES grants anon/authenticated on new objects as EXPLICIT per-role grants, which REVOKE ... FROM public does not touch. The statement succeeds and removes nothing. The idiom recurs throughout the migration history and every instance has the same hole. Audit with has_function_privilege against prod, never by reading the SQL — the SQL reads correct.",
       "verify": {
         "kind": "manual",
-        "evidence": "MEASURED 2026-08-17 via Supabase advisors on azsqfeonabsbmemvddqd: exactly 29 anon_security_definer_function_executable + 49 authenticated_security_definer_function_executable warnings, confirming the finding and its count. Named examples: capture_guest_rsvp, capture_signup_lead, ensure_calendar_token, event_calendar_feed, handle_is_available, match_help_chunks, my_orbit, near_misses, node_within_range, nodes_geo, public_active_circle_count, public_calendar_feed.",
-        "checked": "2026-08-17"
-      }
+        "evidence": "Applied + post-verified against the live catalog 2026-08-18: anon SECURITY DEFINER EXECUTE count 17, authenticated 43. Re-verify with the has_function_privilege query in migration 20270304000000.",
+        "checked": "2026-08-18"
+      },
+      "notes": "APPLIED 2026-08-18 with the owner's explicit authorization, via MCP apply_migration as supabase/migrations/20270304000000_revoke_browser_execute_on_service_only_rpcs.sql. The sweep's audit WAS the proposal: 29 anon-executable SECURITY DEFINER functions measured, 14 traced to legitimate signed-out call sites and kept, 3 PostGIS overloads out of scope, 13 revoked (7 to service_role-only, 6 to signed-in-only). Post-verified with has_function_privilege: Group A false/false, Group B false/true, schema-wide counts anon 29->17 and authenticated 49->43, exactly as predicted. scripts/function-grants.txt moved the 13 verdicts in the same change."
     },
     {
       "id": "OWN-007",
@@ -593,7 +594,7 @@
     {
       "id": "LIVE-013",
       "title": "A member paid 950 Gems for things that rendered nowhere",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "M",
       "source": {
@@ -605,7 +606,7 @@
         "kind": "cmd",
         "cmd": "node scripts/check-cosmetic-renders.mjs --probe"
       },
-      "notes": "2026-08-17, MEASURED against production: the trap sprang once. 4 redemptions exist in the whole database; 3 were paid, totalling 950 Gems, all by ONE real member (@aidentyack, not a demo account), all within 15 minutes on 2026-06-27 — 51 days ago. 750 Gems for a 'custom title' that wrote custom_title='OG' to a column NOTHING rendered; 50 for a flair set whose empty metadata routed it to a fulfillment queue that did not exist; 150 for a guest-pass correctly marked 'an operator will honour this' — and no operator surface in the product has ever listed it. FIXED BY RENDERING, not by un-selling: 13 of 14 cosmetics now paint, and his OG title is visible on his profile with no data edit. 4 SKUs that cannot honestly render (a 'set' into a single-value column, a banner, a callsign plate, a member-authored title) are refused BEFORE charging and quarantined — inventing renders for those would be guessing at product with Gems already spent. Row stays OPEN: the probe exits 1 until the owner applies docs/proposals/LIVE-013-cosmetic-fulfillment.sql, which also makes good the 50-Gem flair."
+      "notes": "2026-08-17, MEASURED against production: the trap sprang once. 4 redemptions exist in the whole database; 3 were paid, totalling 950 Gems, all by ONE real member (@aidentyack, not a demo account), all within 15 minutes on 2026-06-27 — 51 days ago. 750 Gems for a 'custom title' that wrote custom_title='OG' to a column NOTHING rendered; 50 for a flair set whose empty metadata routed it to a fulfillment queue that did not exist; 150 for a guest-pass correctly marked 'an operator will honour this' — and no operator surface in the product has ever listed it. FIXED BY RENDERING, not by un-selling: 13 of 14 cosmetics now paint, and his OG title is visible on his profile with no data edit. 4 SKUs that cannot honestly render (a 'set' into a single-value column, a banner, a callsign plate, a member-authored title) are refused BEFORE charging and quarantined — inventing renders for those would be guessing at product with Gems already spent. Row stays OPEN: the probe exits 1 until the owner applies docs/proposals/LIVE-013-cosmetic-fulfillment.sql, which also makes good the 50-Gem flair. APPLIED 2026-08-18 with the owner's explicit authorization, via MCP apply_migration as supabase/migrations/20270312000000_store_cosmetic_fulfillment.sql (path 2A, DELIVER): the four undeliverable SKUs are off the shelf, @aidentyack's profile_flair = 'star' with the receipt metadata recording the make-good, waveform-border's metadata is proper, fulfilled_at/fulfilled_by + the partial index exist, and the flair copy describes the profile. scripts/store-shelf.json re-captured (27 rows, quarantine emptied); check:cosmetic-renders is a clean check with all 15 purchasable cosmetic/title SKUs resolving."
     },
     {
       "id": "LIVE-014",
@@ -855,7 +856,7 @@
     {
       "id": "LIVE-028",
       "title": "D-9: hotfix the five orphan block types in three draft pages",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
@@ -866,7 +867,8 @@
       "verify": {
         "kind": "cmd",
         "cmd": "node scripts/check-stored-blocks.mjs --probe"
-      }
+      },
+      "notes": "APPLIED 2026-08-18 with the owner's explicit authorization, via MCP apply_migration as supabase/migrations/20270305000000_pages_retire_orphan_block_types.sql. The in-file post-assert ran inside the apply transaction; re-measured after: zero retired types in either pages column, and the three drafts carry only registry types. scripts/stored-block-types.json re-captured (24 distinct types; MIN_TYPES moved 25->20 WITH the change, since the world legitimately shrank by the five retired types); quarantine emptied. The code half (ADR-978 skip-unknown) had already stopped the drafts being destroyed; this was the render half."
     },
     {
       "id": "PROG-E0",
@@ -1831,15 +1833,15 @@
       "lane": "owner",
       "size": "S",
       "source": {
-        "file": "docs/proposals/OWN-023-space-beta-price-grant.sql",
+        "file": "supabase/migrations/20270304000100_space_beta_price_grant.sql",
         "ref": "ADR-1061"
       },
       "detail": "Promote docs/proposals/OWN-023-space-beta-price-grant.sql per its banner (move to supabase/migrations/20270304000100_space_beta_price_grant.sql, apply, repair the ledger), regenerate lib/database.types.ts, drop the untyped cast in lib/billing/space-beta-grant.ts, then grant each Space at /admin/spaces/<id> -> Beta price grant. Until then EVERY checkout charges list and the operator panel says so rather than offering a dead toggle. Version 20270304000100 deliberately leaves 20270304000000 to OWN-006, which already claims it.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Not applied as of 2026-08-17: production ledger head is 20270303000100 and information_schema.columns has no beta_price_% column on public.spaces. Verify with: select count(*) from public.spaces where beta_price_grant;",
-        "checked": "2026-08-17"
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const p='supabase/migrations/20270304000100_space_beta_price_grant.sql';if(!fs.existsSync(p))process.exit(79);console.error('machinery applied; the row stays open until the promised Spaces are actually granted (owner names them)');process.exit(1)\""
+      },
+      "notes": "MACHINERY LIVE 2026-08-18: migration 20270304000100 applied (columns + partial index verified; browser roles cannot read or write the column; zero rows granted). WHAT REMAINS IS THE GRANTING, which needs the owner to name the Spaces: /admin/spaces/<space id> -> 'Beta price grant' -> Grant the beta rate (janitor-gated, stamps who/when, writes admin_audit_log). Sequence for @ishasetlumi (OWN-022): grant her Space FIRST, then onboard her to billing, or she is charged list price and the lock records it for life."
     },
     {
       "id": "LIVE-034",

@@ -1,43 +1,8 @@
--- 🔴 A PROPOSAL, NOT A MIGRATION. It lives in docs/proposals/ ON PURPOSE.
---
--- A file in supabase/migrations/ is an ASSERTION THAT PRODUCTION HAS RUN IT. That is not a
--- convention, it is enforced: check:migrations rule 4 (ADR-1007) compares this repo against
--- `supabase_migrations.schema_migrations` and fails on a repo file with no ledger row, because such
--- a file replays on every fresh environment while the live database has never seen it. Until the
--- owner applies this, that assertion would be FALSE, so the file may not sit there.
---
--- 🔴 THIS ALREADY HAPPENED, ON THIS EXACT FILE. It was committed into supabase/migrations/ as
--- 20270304000000 in 663762b and CI's `checks` job went red: the applied ledger head was
--- 20270303000100 and this version had no row. The local run had printed a LOUD SKIP — check:migrations
--- degrades to a skip when it has no credentials, and CI arms it with SUPABASE_ACCESS_TOKEN +
--- SUPABASE_PROJECT_REF — and the skip was read as a pass. "I could not look" is not "I looked and
--- found nothing", which is the failure this repo keeps re-learning. A local green on
--- check:migrations proves the TREE is well-formed and NOTHING about what production has applied.
---
--- WHY IT IS NOT APPLIED: revoking EXECUTE in production is a security change with an outage mode —
--- a revoke on a function the public site actually calls takes the page down — and the
--- classification below is the owner's call, not an agent's. OWN-006 stays open until they make it.
---
--- ── TO PROMOTE IT, IN THIS ORDER. All three steps, or none. ────────────────────────────────────
---
---   1. MOVE this file to
---      supabase/migrations/20270304000000_revoke_browser_execute_on_service_only_rpcs.sql
---      Keep the version: 20270304000000 sorts after the head it was written against,
---      20270303000100. If another migration has landed since, take the next free version instead of
---      reusing this one — check:migrations rule 1 fails a duplicate version, and a duplicate is
---      silently SKIPPED on a fresh replay rather than erroring.
---   2. APPLY it (mcp apply_migration, or `supabase db push` if the ledger is clean).
---   3. REPAIR THE LEDGER so the row carries version 20270304000000 rather than the wall-clock
---      version apply_migration mints, and delete the tool-minted twin. Full recipe, including the
---      two traps that have bitten before: supabase/migrations/README.md. This is the step everybody
---      forgets, and skipping it is what left thirteen orphan rows in the ledger by 2026-08-10.
---
---   THEN update scripts/function-grants.txt in the SAME change. The thirteen functions below move
---   from `public` to `internal` (Group A) or `authenticated` (Group B), and check:function-grants
---   will demand exactly that the moment the revokes are in the tree. Until then the ledger records
---   them as `public`, because that is what they are.
---
--- Verified against production 2026-08-17. Nothing below has been executed.
+-- APPLIED to production 2026-08-18 via MCP apply_migration; ledger repaired to this version
+-- the same day (name revoke_browser_execute_on_service_only_rpcs). Post-verified: Group A all
+-- anon=false/authed=false, Group B all anon=false/authed=true; schema-wide SECURITY DEFINER
+-- EXECUTE counts moved anon 29 -> 17 and authenticated 49 -> 43, exactly as predicted below.
+-- Authored as docs/proposals/OWN-006-revoke-browser-execute.sql (backlog OWN-006, ADR-959).
 --
 -- ═══════════════════════════════════════════════════════════════════════════════════════════════
 -- OWN-006 — take the browser roles off thirteen SECURITY DEFINER RPCs that no browser calls.
