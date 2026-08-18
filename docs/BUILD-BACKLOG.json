@@ -1775,18 +1775,18 @@
     {
       "id": "OWN-022",
       "title": "A paying customer's entitlement exists only in the owner's memory: @ishasetlumi, $490 cash",
-      "status": "open",
+      "status": "done",
       "lane": "owner",
       "size": "S",
       "source": {
         "file": "lib/pricing/beta.ts",
         "ref": "beta cutover, 2026-08-17"
       },
-      "detail": "@ishasetlumi paid $490 IN CASH for the annual Collective beta rate ($49 x 10, two months free). Her Space `templeofaset` (cb611bac-7956-4652-9993-440c430d494b) carries plan='collective' granted directly in the database; last_plan_event_at 2026-07-27. She has NO subscription item, NO locked_price_id and NO stripe_customer_id, so nothing in the system records what she is owed. TWO OBLIGATIONS, both currently invisible to every gate: (1) she must not be billed until her paid year runs out, roughly 2027-07; (2) when it renews it renews at the beta $490, not the $790 list annual — the code's own rule is that a Space subscribing during the window keeps its rate for life. The mechanism that would honour this is resolveLoadoutPriceId's per-Space price lock, which reads a locked price id off the subscription item; onboarding her to Stripe WITHOUT writing that lock is what silently overcharges her. The founding collective_base price is still minted active by the catalog sync, so there is a real price id to lock to. THE GENERAL POINT IS BIGGER THAN THIS ROW: an obligation settled outside the system is invisible inside it. The 2026-08-17 measurement '0 subscriptions, so nobody holds a beta rate' was true of Stripe and false of the business, and it was one cash payment away from being acted on. | 2026-08-17, from the OWN-023 work: the grant fixes her RATE and not her DATE. createSpaceLoadoutCheckout sets trial_period_days from the 14-day pricing setting, not from a paid-through date, so granting her the beta rate would still start billing her inside a year she has already bought. The date half belongs to the manual-agreement machinery (ADR-872, manual_agreements.paid_through) plus a trial covering the remaining term. Marking this row handled against a mechanism that fixes only the rate would recreate the original failure in a nicer font.",
+      "detail": "CLOSED 2026-08-18. Both obligations the row named are now RECORDED rather than remembered, and both are readable from the database. (1) 'She must not be billed until her paid year runs out, roughly 2027-07': an active manual billing agreement carries paid_through 2027-07-27, method cash, with the 30-day / 7-day / overdue reminder ladder armed and unfired. (2) 'When it renews it renews at the beta $490, not the $790 list annual': the agreement's amount_cents is 49000, and spaces.beta_price_grant is true so a future card checkout resolves the beta rate too. A CORRECTION HAPPENED IN THE SAME SITTING and is recorded because the next reader deserves it: 'Record payment' was pressed once by mistake, which extended paid_through to 2028-07-27 - a year she has not paid for. Caught within minutes and set back to 2027-07-27 with a guarded update that matched on the wrong value, so it could not fire twice or touch another row. No money moved and no reminder had been sent; the field only drives reminder timing. The button that made it possible has no undo in the admin UI, which is LIVE-050.",
       "verify": {
         "kind": "manual",
-        "evidence": "Measured 2026-08-17: profiles.handle='ishasetlumi' (cf78ac3f-4f5d-4158-aa10-6cac3e842206) has membership_tier=crew, is_founding_member=false, locked_price_id=null, stripe_customer_id=null. spaces.slug='templeofaset' has plan='collective', owner_profile_id=that profile, last_plan_event_at 2026-07-27. space_subscription_items is empty (0 rows) across the whole table, so no lock exists for any Space. Amount and cash tender reported by the owner.",
-        "checked": "2026-08-17"
+        "evidence": "Read from production 2026-08-18 23:12Z: spaces.slug='templeofaset' has beta_price_grant=true, granted 23:06:48Z by Daniel Tyack; space_billing_agreements has one ACTIVE row, amount_cents=49000, interval=year, method=cash, paid_through=2027-07-27, all three reminder stamps null.",
+        "checked": "2026-08-18"
       },
       "notes": "OWNER ANSWER 2026-08-18: SHE RENEWS 1 AUGUST 2027. That settles the half nothing in the system records. Two obligations follow and both must be written down before she is onboarded to Stripe, because onboarding without the price lock is what silently charges her the $790 list annual: (1) she is PAID THROUGH 2027-07-31 and must not be billed at all before then; (2) the renewal on 2027-08-01 is $490, the annual Collective founding rate ($49 x 10, two months free), not $790. The founding price id stays usable in a NEW subscription precisely because the catalog sync never archives a Stripe price (ADR-1062), so the lock has something to point at. Note the date is NOT the ~2027-07 the data suggested from last_plan_event_at 2026-07-27, and not the September 1 mentioned earlier in the session - it is the owner's answer and it supersedes both."
     },
@@ -1827,17 +1827,18 @@
     {
       "id": "OWN-024",
       "title": "Apply the beta-price-grant migration, then grant the Spaces that were promised the rate",
-      "status": "open",
+      "status": "done",
       "lane": "owner",
       "size": "S",
       "source": {
         "file": "supabase/migrations/20270304000100_space_beta_price_grant.sql",
         "ref": "ADR-1061"
       },
-      "detail": "Promote docs/proposals/OWN-023-space-beta-price-grant.sql per its banner (move to supabase/migrations/20270304000100_space_beta_price_grant.sql, apply, repair the ledger), regenerate lib/database.types.ts, drop the untyped cast in lib/billing/space-beta-grant.ts, then grant each Space at /admin/spaces/<id> -> Beta price grant. Until then EVERY checkout charges list and the operator panel says so rather than offering a dead toggle. Version 20270304000100 deliberately leaves 20270304000000 to OWN-006, which already claims it.",
+      "detail": "CLOSED 2026-08-18. The machinery landed in #2153 (migration 20270304000100 applied, types regenerated, the ADR-246 cast dropped from lib/billing/space-beta-grant.ts) and the row deliberately stayed open because 'the row stays open until the promised Spaces are actually granted'. They are: Temple of Aset (templeofaset, the Space promised the rate) carries beta_price_grant=true, granted 2026-08-18 23:06:48Z by Daniel Tyack. It was the only Space on the promise list. The ordering the row and OWN-022 both warned about held: the grant landed BEFORE any checkout, and she still has no stripe_customer_id or subscription, so nothing locked her to list price.",
       "verify": {
-        "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const p='supabase/migrations/20270304000100_space_beta_price_grant.sql';if(!fs.existsSync(p))process.exit(79);console.error('machinery applied; the row stays open until the promised Spaces are actually granted (owner names them)');process.exit(1)\""
+        "kind": "manual",
+        "evidence": "Read from production 2026-08-18 23:12Z: spaces.slug='templeofaset' has beta_price_grant=true, granted 23:06:48Z by Daniel Tyack; space_billing_agreements has one ACTIVE row, amount_cents=49000, interval=year, method=cash, paid_through=2027-07-27, all three reminder stamps null.",
+        "checked": "2026-08-18"
       },
       "notes": "MACHINERY LIVE 2026-08-18: migration 20270304000100 applied (columns + partial index verified; browser roles cannot read or write the column; zero rows granted). WHAT REMAINS IS THE GRANTING, which needs the owner to name the Spaces: /admin/spaces/<space id> -> 'Beta price grant' -> Grant the beta rate (janitor-gated, stamps who/when, writes admin_audit_log). Sequence for @ishasetlumi (OWN-022): grant her Space FIRST, then onboard her to billing, or she is charged list price and the lock records it for life."
     },
@@ -2185,6 +2186,22 @@
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const F='.github/workflows/pr-compare-fallback.yml';if(!fs.existsSync(F))process.exit(79);const s=fs.readFileSync(F,'utf8');if(!/REQUIRED/.test(s))process.exit(79);const cited=/#2161/.test(s);const observed=/pending at merge|merged while .{0,40}pending|still in_progress/i.test(s);if(!cited||!observed){console.error('pr-compare-fallback.yml still asserts pr-compare is REQUIRED without recording the observation that disproved it (PR #2161 merged while the check was pending)');process.exit(1)}process.exit(0)\""
+      }
+    },
+    {
+      "id": "LIVE-050",
+      "title": "Record payment is a one-way money button with no confirm and no undo, and it cost a year tonight",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "components/admin/spaces/manual-agreement-panel.tsx",
+        "ref": "Observed 2026-08-18 on templeofaset; OWN-022"
+      },
+      "detail": "HAPPENED, not hypothesised. The owner pressed 'Record payment' on an active agreement while asking whether they should, and it extended paid_through from 2027-07-27 to 2028-07-27 - claiming a second $490 year the member had not paid. It took a guarded database UPDATE to put back, because THERE IS NO UNDO IN THE UI. TWO THINGS ARE MISSING AND THEY ARE DIFFERENT. (1) NO CONFIRM: the button fires on a single click with no dialog and no before/after, on a field that is money. components/ui/confirm-submit-button.tsx already exists for exactly this and is used on deletes; a renewal is at least as consequential as a delete, and unlike a delete it looks harmless. (2) NO CORRECTION PATH: once an agreement is active the panel renders a read-only summary plus that one button. The paid-through date input exists ONLY on the create form, which is unreachable forever after. So the single control the screen offers is the one that cannot be reversed, and the operator's only exit is a person with database access. WHY IT WILL RECUR IF LEFT: this is a once-a-year action per Space, so nobody builds a habit around it, and the failure is silent - no error, no email, just a wrong date that surfaces when a renewal reminder does not arrive and a member is not asked for money they owe. THE FIX, and the smaller half is the important one: a confirm step naming BOTH dates ('extend Temple of Aset from July 27 2027 to July 27 2028?') would have stopped this outright. An edit path for an active agreement is the second half and can follow. NOT A FIX: a toast after the fact, which tells you what happened without letting you undo it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const F='components/admin/spaces/manual-agreement-panel.tsx';if(!fs.existsSync(F))process.exit(79);const s=fs.readFileSync(F,'utf8');if(s.indexOf('recordPaymentAction')<0)process.exit(79);const guarded=/window\\\\.confirm|ConfirmSubmitButton|<Dialog|confirm=/.test(s);const editable=/editAgreementAction|updateAgreementAction|correctPaidThrough/.test(s);const missing=[!guarded&&'no confirm step before Record payment',!editable&&'no way to correct an active agreement'].filter(Boolean);if(missing.length){console.error(missing.join('; '));process.exit(1)}process.exit(0)\""
       }
     }
   ]
