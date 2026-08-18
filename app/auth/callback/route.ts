@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { track } from '@/lib/analytics/track'
 import { claimGuestSeatsOnSignIn, type SessionClient } from '@/lib/events/guest-seat-claim'
 
-// Must match the cookie set in app/sign-in/page.tsx.
+// Must match the cookie set in app/sign-in/actions.ts (stashNext).
 const POST_LOGIN_COOKIE = 'fq_post_login'
 
 // Supabase redirects here after a magic-link click or OAuth consent.
@@ -112,8 +112,7 @@ export async function GET(request: Request) {
     }
   }
 
-  // Something went wrong. Send the user back to sign-in with a message.
-  return NextResponse.redirect(
-    `${origin}/sign-in?error=${encodeURIComponent('Could not sign in. Please try again.')}`
-  )
+  // Something went wrong. Send the user back to sign-in with a CODE, not a sentence — the form
+  // owns the wording now, and only codes it recognises render at all (app/sign-in/errors.ts).
+  return NextResponse.redirect(`${origin}/sign-in?error=callback`)
 }

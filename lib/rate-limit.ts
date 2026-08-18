@@ -51,15 +51,43 @@ export function tooMany(): Response {
 }
 
 /**
+ * What an UNCONFIGURED limiter should answer in production. Default `'deny'` — the existing
+ * behaviour for every caller, and the right one for an abuse-prone endpoint: a missing Upstash
+ * integration must not silently unthrottle a public write.
+ *
+ * `'allow'` is for the handful of endpoints where a denial is WORSE THAN NO LIMIT. Sign-in is
+ * the case that forced this option to exist. A fail-closed limiter on the front door turns one
+ * absent environment variable into a total outage: nobody signs in, nobody signs up, and every
+ * member is locked out of a product that is otherwise running perfectly. That is ADR-1041's
+ * lesson ("a gate whose only outcome is no is not a gate, it is an outage") applied before the
+ * fact rather than after it. The cost of the other choice is bounded and recoverable: for as
+ * long as KV is absent, sign-in is throttled by nothing, which is exactly where it stood before
+ * any limiter existed.
+ *
+ * Choose `'allow'` only when the endpoint's failure mode is LOCKOUT rather than ABUSE, and say
+ * so at the call site.
+ */
+export type UnconfiguredPolicy = 'deny' | 'allow'
+
+/**
  * Is this request within the limit? `true` = allowed. Scoped by `bucket` (the endpoint
  * name) + `id` (usually the IP), so each endpoint has its own window. When Upstash isn't
  * configured it FAILS CLOSED in production (deny) so a missing integration can't leave public
  * endpoints unthrottled, but no-ops to `true` in dev/test/preview. Still fails OPEN on a Redis
  * error at runtime — a transient KV hiccup must never take the site down.
+ *
+ * `whenUnconfigured: 'allow'` overrides the production half of that for endpoints where being
+ * denied is worse than being unthrottled. See `UnconfiguredPolicy`.
  */
-export async function rateLimitOk(bucket: string, id: string, limit: number, window: Window): Promise<boolean> {
+export async function rateLimitOk(
+  bucket: string,
+  id: string,
+  limit: number,
+  window: Window,
+  { whenUnconfigured = 'deny' }: { whenUnconfigured?: UnconfiguredPolicy } = {},
+): Promise<boolean> {
   const rl = limiterFor(limit, window)
-  if (!rl) return !IS_PRODUCTION
+  if (!rl) return whenUnconfigured === 'allow' || !IS_PRODUCTION
   try {
     const { success } = await rl.limit(`${bucket}:${id}`)
     return success

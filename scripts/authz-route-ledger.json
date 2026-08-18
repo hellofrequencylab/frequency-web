@@ -120,9 +120,9 @@
     },
     "app/auth/callback/route.ts": {
       "verdict": "token-credential",
-      "reason": "Supabase PKCE / magic-link landing (LIVE-031 re-read). The one-time `code` in the URL IS the credential: exchangeCodeForSession verifies it with Supabase and mints the session, and no branch below runs unless that exchange succeeded — a missing or bad code redirects to /sign-in with an error. The auth.getUser() the scan used to detect is three branches down inside a swallowed analytics block, so it never gated anything; the redirect target is separately clamped to a same-origin path.",
-      "checked": "2026-08-17",
-      "digest": "bd5b4aab21a2c6e6"
+      "reason": "Supabase PKCE / magic-link landing (LIVE-031 re-read). The one-time `code` in the URL IS the credential: exchangeCodeForSession verifies it with Supabase and mints the session, and no branch below runs unless that exchange succeeded — a missing or bad code redirects to /sign-in with an error. The auth.getUser() the scan used to detect is three branches down inside a swallowed analytics block, so it never gated anything; the redirect target is separately clamped to a same-origin path. RE-READ 2026-08-18 (LIVE-043): the only change is the FAILURE redirect, which now sends a fixed code (?error=callback) instead of a free-text sentence, plus a comment correction naming app/sign-in/actions.ts as the cookie writer. No gate was added, moved or removed, and the change strictly narrows what a caller can put on the sign-in page. Verdict unchanged.",
+      "checked": "2026-08-18",
+      "digest": "4a42683b67fd395b"
     },
     "app/auth/signout/route.ts": {
       "verdict": "self-scoped",
