@@ -14,13 +14,13 @@ import {
   selectCategories,
   searchIndexFrom,
   helpHref,
-} from './content-core'
+} from './content-core.ts'
 import type {
   HelpArticle,
   HelpCategory,
   HelpSearchEntry,
   HelpStatus,
-} from './content-core'
+} from './content-core.ts'
 
 export type { HelpArticle, HelpCategory, HelpSearchEntry, HelpStatus }
 export { helpHref }
