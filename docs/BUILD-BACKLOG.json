@@ -1979,7 +1979,7 @@
     {
       "id": "LIVE-039",
       "title": "One dropped TCP connection during prerender kills the whole deploy, and nothing retries",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
@@ -1988,11 +1988,10 @@
       },
       "detail": "OBSERVED, not theorised. The preview build of 656dac3 failed while the PRODUCTION build of the SAME COMMIT succeeded four minutes earlier. The failure: `TypeError: fetch failed / Caused by: Error: read ECONNRESET` on a Supabase read, which the reader wraps as DiscoverReadError and rethrows, and Next reports 'Export encountered an error on /discover/events/[slug]/page: breathe-connect-expand-2026-09-10, exiting the build.' One transient reset on one slug ended the export. WHY IT MATTERS BEYOND ONE FLAKY PREVIEW: `main` is protected and MERGING DEPLOYS TO PRODUCTION (AGENTS.md). This same read runs during the production export, so the same blip takes down a production deploy, and the only evidence would be a stack trace that looks like a code fault. The build is otherwise healthy - the report says 'No memory or disk space problems detected'. THE FIX IS NOT A BARE try/catch. Swallowing the error would silently ship a /discover with missing events, which is the fail-safe-with-no-gate pattern AGENTS.md names ('every fail-safe needs a gate that notices it fired'). The honest shape is a bounded retry with backoff around the read for RETRYABLE transport faults only (ECONNRESET, ETIMEDOUT, fetch failed), leaving a genuine query error - bad SQL, RLS denial, missing column - fatal exactly as it is now. If a retry is exhausted the build should still fail, loudly, with the slug named. A count of retries consumed belongs in the build log so a rising number is visible before it becomes an outage.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Build log of dpl_EongopaE2ToCbTjFCPVapKgoTuhn (preview, 656dac3, 2026-08-18 03:04): ECONNRESET during export of /discover/events/[slug], build exited 1. dpl_4P4EuJ8Z6E51jwnEucBBWzxfi534 (production, SAME commit 656dac3) reached READY in 4m28s. Not repo-probeable today: the fault is a transport error from an external service, and a probe cannot summon one. It becomes probeable once the retry exists - inject a failing fetch and assert the read survives N transient faults and still fails on the N+1th.",
-        "checked": "2026-08-18"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const a='lib/discover.ts',b='lib/discover.test.ts';if(!fs.existsSync(a))process.exit(79);const s=fs.readFileSync(a,'utf8');const wired=s.includes('isTransientDiscoverError')&&s.includes('RETRY_DELAYS_MS');const tested=fs.existsSync(b)&&fs.readFileSync(b,'utf8').includes('calls).toBe(3)');if(!wired||!tested){console.error('discover retry '+(wired?'':'not wired ')+(tested?'':'not test-proven'));process.exit(1)}process.exit(0)\""
       },
-      "notes": "The source path on this row was WRONG when filed (lib/discover/reads.ts, guessed from the stack trace) and check:backlog rejected it within seconds: \"source file does not exist\". That is the same broken-instrument defect this session fixed in LIVE-030, LIVE-001 and a probe of my own - a row pointing at a path nothing occupies reads as outstanding work rather than as a mistake. The guard now catches it at filing time, which is why it never reached a commit. DiscoverReadError is defined in lib/discover.ts."
+      "notes": "DONE 2026-08-18. The discover read seam (lib/discover.ts listRead/detailRead) now retries TRANSIENT failures twice with 250/500ms backoff. The observed killer arrived RESOLVED, not thrown - supabase-js catches the fetch rejection and resolves with a synthetic error whose message carries the network cause - so the retry decision reads the error's SHAPE: network-ish (fetch failed/ECONNRESET/ETIMEDOUT/EAI_AGAIN/...) retries, a Postgres/PostgREST code never does, and empty data is NEVER retried (a detail-route empty result is a believed 404; retry-until-it-exists turns 404s into timeouts). Call sites pass thunks so each attempt builds a fresh PostgrestBuilder - re-awaiting one builder re-reads its settled failure. lib/discover.test.ts proves the retry FIRES (two transient failures then success = three calls) and REFUSES (deterministic error = one call), per the watch-it-fail rule."
     },
     {
       "id": "LIVE-040",
