@@ -66,6 +66,31 @@ drafts** to approve. Docs: https://code.claude.com/docs/en/claude-code-on-the-we
   or the `Support` label can be created/used.
 - **Scheduled sessions not yet created:** do the two above to close the automation loop.
 
+## PR size and merge rules (adopted 2026-08-18, owner-directed)
+
+`main` is protected and **merging deploys to production**, so the PR is the unit of both review
+and blast radius. Two production incidents shaped these rules: a 215-file PR passed every gate
+and killed deploys for a day (2026-08-11, ADR-1002), and a 322-file PR reached production after a
+size concern went unanswered. The rules are enforced by a `checks`-job step in `ci.yml`, so a
+violation fails a REQUIRED check rather than relying on memory.
+
+1. **One backlog row per PR.** The PR closes exactly one `BUILD-BACKLOG.json` row (or is a pure
+   process/docs change closing none). The row's probe flips green IN the same PR: `check:backlog`
+   fails a PR whose fix lands without its row, and a row whose fix did not.
+2. **Guidance: 15 files or fewer.** Past 15 changed files the CI step prints a warning
+   annotation. Not a failure: some honest single-row fixes touch 20 files.
+3. **Hard gate: 40 files.** Above 40 changed files the `checks` job FAILS unless the PR title
+   carries a `[sweep]` tag, reserved for single-purpose mechanical changes (a codemod, a rename,
+   a label-association sweep) where every file gets the same one edit. A `[sweep]` PR still
+   closes exactly one row.
+4. **Auto-merge on green is the default** (owner directive, 2026-08-18). Every PR arms GitHub
+   auto-merge (squash); the required checks (`checks` + `analyze` + `lint` + `test`) are the
+   reviewer. Anything a gate cannot see (visual equivalence on a page retirement, a schema
+   change) stays a draft until a human looks.
+5. **Never merge a red or part-green PR by hand** to beat the queue: the required set exists
+   because each check has caught a real production defect.
+6. **Rollback is a revert PR**, never a force-push to `main`.
+
 ## Scaling to a team
 
 The setup above is right-sized for a **single developer on the free tier**. When you add a
