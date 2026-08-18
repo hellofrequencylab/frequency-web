@@ -16,16 +16,38 @@ production deploy with `ENOSPC` for a day: every gate measured the SOURCE, none 
 ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAFETY.md)
 ([ADR-1002](docs/DECISIONS.md), [ADR-1003](docs/DECISIONS.md)).
 
-- **The artifact is gated in `postbuild`, not CI** — CI never builds, Vercel does. `check:build-budget`
-  (total per-function output under 8 GB; **measured 5.81 GB across 499 functions, 2026-08-13**, up
-  from 5.59 GB) and `check:og-trace` (sharp reaching 67 functions of a 100 budget) run on the real
-  build and fail it. `check:shell-weight` ([ADR-1066](docs/DECISIONS.md)) is the CLIENT half — the app
-  shell's eager first-load JS (**957 KB across 20 chunks, 2026-08-17**, ceiling 1,400 KB) plus named
-  fingerprints for admin module bodies that must stay behind `next/dynamic` — and `check:cache-budget`
-  ([ADR-1064](docs/DECISIONS.md)) trims the build cache. ⚠️ **Both are `pnpm check:` scripts, NOT in
-  `postbuild` yet** (LIVE-035): neither has been run against a real completed production build, and a
-  build-blocking gate that has never seen a real artifact is the 2026-08-11 incident with the roles
-  reversed. Wire them in once a green build proves them.
+- **The artifact is gated in `postbuild`, not CI** — CI never builds, Vercel does. **`postbuild` is
+  proven to run**: a real production log ([ADR-1081](docs/DECISIONS.md)) shows `Running "pnpm run
+  build"`, then `prebuild`, then `postbuild` printing its gates. `vercel.json` now pins
+  `buildCommand: pnpm build` so a dashboard edit cannot silently take the lifecycle away. Two gates
+  run there and fail the build:
+  - `check:build-budget` — total per-function output under 8 GB; **measured 6.04 GB across 499
+    functions, 2026-08-18**, up from 5.81 GB (2026-08-13) and 5.59 GB before that. It has risen every
+    time it has been read; the trend, not the headroom, is the thing to watch.
+  - `check:og-trace` — sharp reaching 67 functions of a 100 budget.
+
+  ⚠️ **Two gates are still NOT wired, and one of them was wired and taken back out on 2026-08-18**
+  (LIVE-035, LIVE-048, [ADR-1081](docs/DECISIONS.md)):
+  - `check:cache-budget` ([ADR-1064](docs/DECISIONS.md)) has **two** defects and **killed two builds**
+    proving it. It compares **raw bytes on disk** against Vercel's **packed** 1.50 GB ceiling — about
+    **2:1** apart, not the ~3% its header assumed — so it trimmed a **1,520 MiB** cache to prevent an
+    overflow that was not happening. The next two builds on that branch each compiled in ~2.4 min and
+    then hung in *Collecting page data*, hitting **`BUILD_EXCEEDED_MAXIMUM_TIME` at 46 minutes**. A
+    control settled it: the same `vercel.json` change alone, on a branch with a healthy cache,
+    **finished in 59 seconds**. `.next/cache` is not only the compiler cache — it holds the
+    **incremental fetch cache**, and prerendering hundreds of Supabase-reading routes without it never
+    finishes. Its floor arm was right (node_modules 933 MiB, 27% clear). **Do not re-wire until the
+    trim drops the compiler cache BY NAME and the threshold is in Vercel's units** (LIVE-048).
+  - `check:shell-weight` ([ADR-1066](docs/DECISIONS.md)) is the CLIENT half — the app shell's eager
+    first-load JS (**957 KB across 20 chunks, 2026-08-17**, ceiling 1,400 KB) plus named fingerprints
+    for admin module bodies that must stay behind `next/dynamic` — and it has an unconfirmed failure
+    on the last artifact available.
+
+  **The rule that keeps being right:** a build-blocking gate that has never seen a real artifact is
+  the 2026-08-11 incident with the roles reversed. `check:cache-budget` passed its own unit tests,
+  ran clean locally, was reasoned about carefully — and was still wrong, by a factor of two, in a way
+  only a real build could show. Wire a gate in the SAME change as the green build that proves it, and
+  read what it prints before merging.
 - **When the budget gate fires, fix the fan-out, do not raise the budget.** Anything reachable from a
   root layout, a ROOT metadata file, or a shared server module is multiplied by every route beneath it.
   That rule has a client twin: anything statically reachable from `components/layout/app-shell.tsx`
@@ -58,6 +80,17 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
   and then it reads as coverage).
 - **To close a row, make its probe pass — never delete the probe.** That is precisely how the previous
   five lists drifted.
+- **🔴 RE-TEST A ROW'S PREMISE BEFORE YOU WORK IT, especially when the row says it cannot be tested.**
+  A probe measures whether the work is done; nothing measures whether the row is still *true*. Five
+  rows were re-measured on 2026-08-18 and five premises had expired ([ADR-1082](docs/DECISIONS.md)).
+  Two were fixed by a PR nobody had circled back to (LIVE-012 and LIVE-043 both said the proxy never
+  sets `next=`; #2132 had taught it to, five days earlier). Three said an agent could not look —
+  *"an agent cannot see it"*, *"requires reading the repo Actions secrets, which is owner-only"* —
+  and in every case the secret was unreadable but its **consequence** was printed in a log: a build
+  log shows whether `postbuild` ran, and a CI log shows `VERCEL_AUTOMATION_BYPASS_SECRET: ***` and
+  sixteen authenticated shell checks passing. **A blocker phrased as "cannot be checked" is a claim
+  with an expiry date, and it is the cheapest thing in the backlog to get wrong**: those three rows
+  sat on the owner for a week and each took one tool call.
 
 # Which plan is live — read this before picking up "what's next"
 

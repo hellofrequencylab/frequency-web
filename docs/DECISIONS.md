@@ -26928,3 +26928,198 @@ straight at the member route; the pass already ran on every request through the 
 is a comparison, not a round trip. ⚠️ This removes the last consumer of the `isAuthed` prop from
 `CircleCard`, `EventRow`, `PostPreview` and `DiscoverLocator` — any future caller that wants
 auth-aware link behaviour should reach for `authMode="client"`, not re-introduce a server read.
+
+## ADR-1081: The build lifecycle was provable all along, so the cache gate stops waiting and `buildCommand` stops being a dashboard setting
+
+**Context.** Two artifact gates run as `postbuild`, and `postbuild` only fires if Vercel's Build
+Command goes through a package-manager lifecycle. Nothing in the repo said it did. OWN-029 recorded
+the doubt honestly and parked it on the owner, in these words: *"the owner checks the dashboard
+setting first (an agent cannot see it)."* LIVE-035 then sequenced two further gates behind that
+check, on the correct reasoning that *"wiring gates into a lifecycle that may not run is coverage
+theater."*
+
+**The premise was false, and that is the finding.** An agent can see it. The build log is readable
+through the Vercel MCP, and it answers the question in four lines
+(`dpl_2KiiaUjD5jCPwUZdVWJtsKb4ADor`, production, 2026-08-18):
+
+```
+19:12:22  Running "pnpm run build"
+19:12:23  > frequency-web@0.1.0 prebuild /vercel/path0
+19:13:34  > frequency-web@0.1.0 postbuild /vercel/path0
+19:13:35  ✅ check:build-budget — 6.04 GB across 499 functions, under the 8 GB budget.
+```
+
+`prebuild` and `postbuild` both fire, and the gate prints a real measurement. The lifecycle runs.
+A row that says a thing cannot be checked is worth re-testing before it is worked around, because
+the cost of believing it was two rows parked for a week behind a question that took one tool call.
+
+**Decision 1 — pin it.** `vercel.json` gains `"buildCommand": "pnpm build"`. `vercel.json` wins over
+the dashboard, so this is a no-op against today's behaviour and closes the hole the row was really
+about: a dashboard edit that silently takes the lifecycle away, and with it every artifact gate, with
+no diff anywhere.
+
+**Decision 2 — try to wire `check:cache-budget`, and let a real build decide. It said no.**
+
+LIVE-029's symptom (`Build cache size 1.53 GB exceeds limit of 1.50 GB. Invalidating cache.`) is not
+reproducing: three consecutive production builds uploaded 1.26 / 1.28 / 1.29 GB and each logged
+`Restored build cache from previous deployment`. The acute failure is gone; nothing was preventing
+its return, and the instrument that would had been sitting unwired since the day it was written. So
+it went into `postbuild`, with the prediction — reasoned from those same logs — that **neither arm
+could fire**: node_modules 947 MB against a 1.25 GiB floor, and a packed total of ~1.27 GB against a
+1.38 GiB trim point. The PR said in as many words: do not merge until the preview build prints this
+gate green.
+
+**The preview build printed this:**
+
+```
+⚠️  check:cache-budget — TRIMMED the build cache before Vercel could reject it.
+   What the build was about to hand back measured 2.40 GiB, over the 1.38 GiB trim point.
+   drops the cheap half instead: .next/cache/turbopack (1520 MiB).
+✅ check:cache-budget — Vercel will store 0.91 GiB (node_modules 933 MiB + .next/cache 0 MiB)
+```
+
+**The floor arm was right and the trim arm is calibrated against the wrong quantity.** node_modules
+measured 933 MiB, 27% clear of its budget, which is what the orphan analysis predicted. But
+`measure()` sums RAW BYTES ON DISK, and Vercel's 1.50 GB ceiling applies to the PACKED archive. The
+script's own comment claims the two "have run ~3% apart"; on this build raw was 2.40 GiB while the
+packed upload of an equivalent tree was 1.26–1.29 GB. **About 2:1.** Turbopack's cache is highly
+compressible and it is the term that dominates.
+
+So the trim would have deleted a 1.5 GiB compiler cache on EVERY build, to prevent an overflow that
+was not happening, converting a working warm cache into a guaranteed cold compile forever. The
+wiring was taken back out before merge and `check:cache-budget` returns to the `UNWIRED` list, now
+with the measurement rather than a caution. LIVE-048 carries the calibration.
+
+**The prediction was wrong by a factor of two, and every cheap check agreed with it.** The script
+passed its own unit tests. It ran clean locally once the container's orphaned `pnpm` entries were
+subtracted. Three independent numbers agreed on node_modules. The reasoning about packed-vs-raw was
+simply never questioned, because nothing in the repo could question it. This is the exact shape of
+the 2026-08-11 incident — careful gates, all green, measuring the wrong thing — and the only reason
+it cost a revert instead of a day of dead deploys is that the merge was held for one build's output.
+
+**The ordering, at least, held.** Read off the same log rather than assumed: postbuild 19:13:34,
+`Creating build cache...` 19:14:02, so a trim does land 28 seconds before the pack. Whenever the
+threshold is right, the placement will be.
+
+**`check:shell-weight` deliberately does NOT ship here.** It has an unconfirmed failure on the last
+artifact available and no way to confirm it without a real build. Wiring one proven gate and holding
+one unproven gate is the whole point of the rule; wiring both because they were named in the same
+sentence is not.
+
+**A measurement that only a dirty container produces.** Run locally, the gate exits 1: node_modules
+reads 1.44 GiB, over its floor. 0.49 GiB of that is orphaned `node_modules/.pnpm` entries absent from
+`pnpm-lock.yaml` — two copies of `next`, two of `@supabase/cli-linux-x64` at 154 MB each, two of
+`@next/swc-linux-x64-gnu` — which `pnpm install --frozen-lockfile` does not remove and a Vercel build
+never has. Subtract them: 0.96 GiB, which is Vercel's 947 MB. **This nearly shipped a gate that would
+have failed every production build on the strength of a local run**, and it is written into the
+script's header so the next reader checks for orphans before believing a local failure.
+
+**Consequences.** ✅ OWN-029 is answered from evidence rather than parked on the owner, and pinned so
+the answer lives in git — that half is proven and ships. ✅ LIVE-029's symptom is documented as
+not-reproducing, with the three builds that show it. 🔴 LIVE-029 does NOT close: the instrument that
+would prevent a recurrence is miscalibrated, and closing the row on a gate that would have made
+builds permanently slower would be worse than leaving it open. ✅ LIVE-048 minted for the
+calibration, with the measurement in hand. ⚠️ LIVE-035 keeps both gates rather than narrowing to
+one. ⚠️ `check:build-budget` has risen every time it has been read — 5.59 → 5.81 → 6.04 GB — and
+AGENTS.md now records the trend rather than only the latest figure, because the headroom is not the
+interesting number.
+
+**The transferable rule, restated because this ADR is now its best evidence:** hold the merge for one
+real build's output, and read what it prints. It cost four minutes.
+
+---
+
+**🔴 POSTSCRIPT, WRITTEN AN HOUR LATER, AND IT IS WORSE THAN THE ABOVE.** The paragraph before this
+one guessed the alternative was "builds got slow". It was not. The one trim this gate ever ran
+emptied `.next/cache` on `claude/cache-gate`, and **the next two builds on that branch both died**:
+
+```
+877eb38  compiled in 2.3 min, hung in "Collecting page data using 3 workers …",
+         BUILD_EXCEEDED_MAXIMUM_TIME at 46 minutes
+6cc40a4  same shape, same step, also failed
+```
+
+Every other build that day was green, including four production deploys, so the suspects were two:
+the `buildCommand` pin this ADR also ships, or the emptied cache. **A control separated them.**
+`claude/build-pin` carried the identical `vercel.json` line and nothing else, on a branch cut from
+`main` so its build restored a healthy cache:
+
+```
+Build Completed in /vercel/output [59s]
+Uploading build cache [1.33 GB]
+```
+
+**59 seconds against two dead builds.** The pin is exonerated; the emptied cache is the cause, and
+it is measured rather than argued.
+
+**The mechanism, and it is the thing the script's own header got wrong about its own subject.**
+`.next/cache` is not only Turbopack's compiler cache — it also holds the **incremental fetch cache**.
+Page-data collection prerenders hundreds of routes that each read Supabase; warm, those reads are
+local, and cold, every one goes to the network three workers deep and the build never finishes. The
+trim's comment calls `.next/cache/turbopack` "the cheap half" and drops directories **biggest-first**
+rather than by name, deliberately, so that a future growth elsewhere is still caught. That
+generality is exactly what makes it able to delete the half the build cannot proceed without.
+
+**So LIVE-048's fix is necessary and not sufficient.** Correcting raw-versus-packed gets the
+threshold right; it does not stop a correct threshold from deleting the wrong directory when it does
+fire. Whatever the number becomes, the trim must drop the compiler cache **by name** or drop
+nothing.
+
+**And the four minutes bought more than it looked like.** Had this merged, the first production
+deploy after it would have been the 46-minute one — a failed deploy of `main`, from a gate whose
+stated purpose was protecting the build. That is ADR-1002's incident with the roles reversed for the
+second time in one ADR, and the only thing standing between the two was the decision to read one
+build's output before merging.
+## ADR-1082: A row's premise expires, and nothing in the one-list contract was checking it
+
+**Context.** `docs/BUILD-BACKLOG.json` is the only status record, and `pnpm check:backlog` keeps it
+honest in both directions: a row marked `open` whose probe passes is stale, and a row marked `done`
+whose probe fails is a regression. That machinery is good and it caught its 23rd stale item on its
+first run. It has one blind spot, and 2026-08-18 found it five times in one day.
+
+**A probe measures whether the WORK is done. Nothing measures whether the ROW is still true.** A
+row's `detail` carries its premise — why the work is needed, what is blocking it, who has to act —
+and that prose is exactly the thing the one-list rule forbids trusting anywhere else.
+
+**Five expired premises, in two shapes.**
+
+*Shape one: someone already fixed it and nobody circled back.* LIVE-012 and LIVE-043 both warned, in
+capitals, that a destination is lost because `proxy.ts` "NEVER" sets `next=`. #2132 taught it to on
+2026-08-13, five days earlier. LIVE-012 was `blocked` on an owner decision between two options, one
+of which had already been taken. Acting on the row as written would have shipped the *other* option
+on top of the one already in the tree.
+
+*Shape two: the row says it cannot be checked.* Three rows carried that as their probe:
+
+| Row | What it said | What settled it |
+|---|---|---|
+| OWN-029 | "the owner checks the dashboard setting first (**an agent cannot see it**)" | The build log: `Running "pnpm run build"` → `prebuild` → `postbuild` printing its gates. |
+| OWN-002 | "Requires reading the repo Actions secrets, which is **owner-only**" | `pr-compare`'s env: `PW_STORAGE_STATE: .../member.json`, then 16/16 authenticated shell checks passing. |
+| OWN-003 | "Not re-checked. **Owner-only** (Vercel + Actions secrets)" | The same env: `VERCEL_AUTOMATION_BYPASS_SECRET: ***`, and `preflight` letting the suite run instead of reporting `skipped`. |
+
+Every one of those statements was **true about the secret and false about the question**. The secret
+is unreadable. Whether it is *set* is printed in a log, because the whole point of a secret is that
+something consumes it, and the thing that consumes it says whether it worked. `e2e.yml` even builds
+this readout on purpose: its `preflight` job exists so an absent bypass secret produces `skipped`
+rather than a vacuous green, and its header says "when this one says skipped, nothing was tested".
+The instrument for answering OWN-003 was written into the repo before OWN-003 was filed.
+
+**Decision.** A rule in AGENTS.md beside the probe rules: re-test a row's premise before working it,
+and treat "cannot be checked" as a claim with an expiry date rather than a property. Where a fact is
+genuinely unreadable, look for the thing that CONSUMES it and read what that thing printed.
+
+**Not a new gate, and deliberately so.** The obvious move is a machine check on premise freshness,
+and there is nothing to check: a premise is prose about the world, and a repo cannot diff prose
+against reality. `manual` rows already go stale loudly at 120 days, which is the right instrument for
+a fact a repo cannot see and the wrong one for a fact it was never asked to look for. What was
+missing is a habit, so this ships as a habit with five worked examples attached — the same reason
+ADR-970 refuses to build a gate that cannot fire honestly.
+
+**Consequences.** ✅ OWN-002, OWN-003 and OWN-029 close without the owner touching anything, and the
+statement given to them in the 2026-08-17 audit — "the member-facing product is unmeasured, not
+clean" — is retracted: 80 visual checks pass, 16 of them authenticated. ✅ OWN-004 rescopes to one
+decision instead of three clicks: `pr-compare` is already a required context (the whole existence of
+`pr-compare-fallback.yml` proves it), `check:contrast` already sits in the required `checks` job's
+guards array, and `check:adoption` is advisory *on purpose* under ADR-970 — so requiring it is a
+decision to overturn, not a task to do. ⚠️ The audit that produced these rows was careful and still
+carried five expired premises forward, which is the honest measure of how quiet this failure is.
