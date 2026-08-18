@@ -70,10 +70,16 @@ export const LAZY_MOUNT_SITES = [
  *  an allowlist without numbers is where the next 1.6 MB hides. Anything that renders a body belongs
  *  behind `next/dynamic`, however small it looks today. */
 export const SYNCHRONOUS_ADMIN_IMPORTS = [
-  // The id -> component map. `nodeForApp` needs the KEY SET synchronously: an id with no inline body
-  // draws nothing, and that decision feeds the section count. Every VALUE in it is already
-  // `dynamic()`, so this costs the map and 42 loader stubs, not 42 modules. 1 file, 14.3 KB.
-  '@/components/admin/modules/module-map',
+  // The KEY SET of the id -> component map, and nothing else. `nodeForApp` needs it synchronously:
+  // an id with no inline body draws nothing, and that decision feeds the section count. 1 file,
+  // 3.7 KB, ZERO imports — it is 38 strings in a `Set`, and most of the file is the comment saying why.
+  //
+  // ⚠️ IT USED TO BE `module-map` ITSELF (LIVE-009): 14.3 KB of registry plus 42 `next/dynamic`
+  // loader stubs and the chunk-manifest entries naming their 42 chunks, imported into the shell to
+  // answer a membership test. The values are now reached through `AdminModuleBody`, which
+  // `settings-panel.tsx` mounts with `dynamic()`. The ratchet shrank in weight, not in length:
+  // three entries, but the biggest one no longer references a single component.
+  '@/components/admin/modules/module-ids',
   // The plain link row a `link` surface draws. 1 file, 1.9 KB — no data, no imports of its own worth
   // splitting, and it is on the path for nearly every row.
   '@/components/admin/modules/surface-link-row',

@@ -26527,3 +26527,105 @@ code wins and the doc gets fixed with it. ⚠️ Scope is `tokens/colors.css` on
 and the Midnight skin are not yet derived, so a divergence there is still prose-managed. ⚠️ LIVE-027
 does not close on this: the ledger is now un-losable, but the row closes when an outbound handoff
 actually carries it.
+
+## ADR-1074: The shell asks the admin registry a membership question, so it imports the ids and not the bodies — and two "server-only" comments become directives
+
+**Status:** Accepted · enforced by `scripts/check-shell-weight.test.ts` (source arm, `pnpm test`),
+`scripts/check-shell-weight.mjs` (artifact arm) and `components/admin/modules/module-map.test.ts`
+
+**Context.** dc47b89 put the 42 catalog admin modules behind `next/dynamic`, and ADR-1066 did the
+same for the five bodies `settings-panel.tsx` mounts by hand, then built the guard that measures the
+result. One door stayed open, and ADR-1066's own allowlist named it: `settings-panel.tsx` still
+imported `MODULE_COMPONENTS` — the whole registry — because `nodeForApp` needs one fact
+**synchronously**. An id with no inline body draws nothing, that decision feeds the section count,
+the section count feeds `hasContent`, and `hasContent` decides whether the rail renders at all. A
+body that arrives late is fine; a *membership test* that arrives late paints empty section headers on
+the way to finding out.
+
+The registry was never needed to answer it. `settings-panel.tsx` sits on the shell's static path
+(`app/(main)/layout.tsx` → `app-shell.tsx` → `AdminBar` → here) with no code-split boundary, so every
+member on every route under `app/(main)` was parsing `module-map.tsx` — 14.3 KB of registry, 42
+`next/dynamic` loader stubs, and the chunk-manifest entries naming their 42 chunks — to compute
+`id in map`.
+
+**The second half was worse, and it was invisible because it was written down.** LIVE-009 also asked
+for `import 'server-only'` on `lib/journey-plans.ts` and `lib/practices.ts`. Both files already
+*said* "Server-only" in their header comment. Neither was:
+
+| Client entry point | imports | which reaches |
+| --- | --- | --- |
+| `components/journey/v2/journey-settings.tsx` (`'use client'`) | `normalizeJourneyMeeting` from `lib/journey-plans` | `createAdminClient`, `@supabase/supabase-js`, `lib/practices`, `lib/zaps`, `lib/achievements`, `lib/automations`, `lib/queue/outbox`, a crypto-browserify polyfill graph |
+| `components/circles/builder/circle-builder.tsx` (`'use client'`) | `PILLAR_SLUGS` from `lib/pillars` → `getMemberPractices` from `lib/practices` | the same graph |
+
+A pure coercion function, and an array of four strings — each parked in a file whose other exports
+open the service-role client. This is exactly the failure `lib/analytics/sanitize.ts` documents in
+its header ("a bundler follows modules, not intentions"), the version that cost ~627 KB raw on 390 of
+481 routes, recurring in two more places. It is also why the directive could not simply be added: the
+build would have failed, correctly.
+
+**Decision.**
+
+1. **Split the membership test from the registry.** `components/admin/modules/module-ids.ts` is the
+   key set and nothing else: 38 strings in a `Set`, **zero imports**, 3.7 KB.
+   `components/admin/modules/module-body.tsx` is the one component on the shell's path that reads
+   `MODULE_COMPONENTS`, and `settings-panel.tsx` mounts it with `dynamic()`. `nodeForApp` becomes
+   `INLINE_MODULE_IDS.has(id) ? <AdminModuleBody id={id}/> : null` — the same branch on the same
+   condition, with the bodies on the other side of a chunk. (The `/manage` console keeps its direct
+   import: it is reached from its own route, not from a layout that wraps ~300 pages.)
+2. **Shrink the ratchet rather than lengthen it.** `SYNCHRONOUS_ADMIN_IMPORTS` still holds three
+   entries, but the largest now points at `module-ids` instead of `module-map`: an allowed
+   synchronous import that references no component at all.
+3. **Extract the pure halves, then make the comment a build failure.** `lib/journeys/meeting.ts` (the
+   touchpoint shape + `normalizeJourneyMeeting`) and `lib/pillars/slugs.ts` (`PillarSlug` +
+   `PILLAR_SLUGS`) are dependency-free; their old homes re-export them, so every server caller and
+   every `import type` is untouched. `lib/journey-plans.ts` and `lib/practices.ts` then take
+   `import 'server-only'`, which is what turns "we intend this to stay on the server" into something
+   the build checks.
+
+**This changes HOW the rail loads a body, never WHAT is in the menu** (ADR-553,
+[MENU-CONTRACT.md](MENU-CONTRACT.md)). No catalog row moved, no per-scope menu was declared, the
+`allExtraItems` frozen-debt count is unchanged at 6, and `pnpm check:menu` reports the same 21 frozen
+rows across 3 files.
+
+**Consequences.**
+
+✅ **Measured, paired A/B on one tree** (only `settings-panel.tsx` differs between the two builds),
+2026-08-18, over `entryJSFiles['[project]/app/(main)/layout']` — the shell's eager first-load JS:
+
+| | raw | gzip | chunks |
+| --- | --- | --- | --- |
+| static `MODULE_COMPONENTS` import | 955.8 KB | 279.4 KB | 20 |
+| after | **946.5 KB** | **277.4 KB** | 20 |
+
+✅ The static client graph reachable from `app-shell.tsx` loses `module-map.tsx` exactly: 408 → 407
+files, 5,046.3 KB → 5,032.3 KB of source.
+
+🔴 **The number in the LIVE-009 row — 406 KB raw / 121 KB gzip reaching crypto-browserify on every
+authed page — was already spent by dc47b89 and is not what this pass recovered.** The honest figure
+for the registry import alone is the 9.3 KB above. The row was written before the 42 modules moved
+and never re-measured; the crypto-browserify half of it is real, but it lives in the two `server-only`
+files, not in `module-map.tsx`.
+
+✅ **Both regression directions proved by breaking them.** Re-adding the static import fails
+`scripts/check-shell-weight.test.ts` twice, by name: on "`settings-panel.tsx` has no static import of
+a components/admin module" (reporting `@/components/admin/modules/module-map`) and on the anti-rot
+arm ("`@/components/admin/modules/module-ids` is in `SYNCHRONOUS_ADMIN_IMPORTS` but nothing imports it
+any more"). `components/admin/modules/module-map.test.ts` fails the other way: an id with no
+component (a module that silently vanishes from the rail) and a component with no id (an empty
+section box) are separate named assertions over a non-triviality floor.
+
+✅ The `server-only` directives are verified against a **real client compile**: `next build` reaches
+"Compiled successfully" in this container before dying on page-data collection for
+`/discover/cities/[citySlug]` (no service-role credentials). A client module still reaching either
+file would have failed that compile, not the step after it.
+
+⚠️ **The class is wider than the two files this closes.** `lib/supabase/admin.ts` is still statically
+reachable in the client layer from ten other `'use client'` entry points, via `lib/crm/relationships`,
+`lib/crm/contacts-roster`, `lib/crm/pipeline`, `lib/personas`, `lib/walkthroughs`, `lib/billing/tips`,
+`lib/spaces/membership`, `lib/marketplace`, `lib/season-ranks` → `lib/quest/completion-read`, and
+`lib/events/event-stats`. Every one is the same shape. They are backlog rows, not silence.
+
+⚠️ **What still needs a real build to confirm:** a route-level first-load number. Page-data collection
+cannot complete here, so Next never prints its per-route table. The shell-entry figures above are real
+— they come from the emitted client-reference manifests — but the "median `app/(main)` route" style
+measurement in ADR-1066 is not reproducible in this container.

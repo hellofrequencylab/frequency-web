@@ -516,7 +516,7 @@
     {
       "id": "LIVE-009",
       "title": "The app shell statically imports the entire admin module registry",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "M",
       "source": {
@@ -530,7 +530,8 @@
         "paths": [
           "components/layout/settings-panel.tsx"
         ]
-      }
+      },
+      "notes": "Closed 2026-08-18 (ADR-1074). TWO CORRECTIONS TO THIS ROW'S OWN NUMBERS, both measured. (1) THE HEADLINE WAS STALE. '406 kB raw / 121 kB gzip reaching crypto-browserify on every authed page' was already spent by dc47b89 when the 42 catalog modules moved behind dynamic(); nobody re-measured afterwards. A paired A/B on one tree with only settings-panel.tsx differing puts the registry import itself at 9.3 KB raw / 2.0 KB gzip (955.8 -> 946.5 KB raw over entryJSFiles for app/(main)/layout). Real, and 40x smaller than the row claimed. A number quoted once and never re-derived is how a row keeps promising a win that was already banked. (2) THE crypto-browserify HALF WAS REAL, and it was NOT in module-map. It came through lib/journey-plans and lib/pillars, both of which SAID 'Server-only' in their headers and neither of which was: journey-settings.tsx imported normalizeJourneyMeeting and circle-builder.tsx imported PILLAR_SLUGS - a pure coercion function and an array of four strings - and each dragged createAdminClient, @supabase/supabase-js, lib/practices, lib/zaps, lib/achievements, lib/automations and crypto-browserify into the client graph. Both are extracted to dependency-free modules (lib/journeys/meeting.ts, lib/pillars/slugs.ts), re-exported from their old homes so no server caller changed, and the originals now carry a real `import 'server-only'`. Proved against a real client compile: next build reaches 'Compiled successfully in 3.7min', which a client module still reaching either file could not do. The rail keeps ONE synchronous fact - INLINE_MODULE_IDS, 38 strings with zero imports - because an id with no inline body draws nothing, and that feeds the section count that feeds hasContent. Verified the gate myself: re-adding the static import fails check-shell-weight.test.ts by name, twice."
     },
     {
       "id": "LIVE-010",
@@ -1906,7 +1907,7 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const pj=JSON.parse(fs.readFileSync('package.json','utf8'));const pb=(pj.scripts||{}).postbuild||'';if(!pb)process.exit(79);if(!fs.existsSync('scripts/check-shell-weight.mjs')||!fs.existsSync('scripts/check-cache-budget.mjs'))process.exit(79);const missing=['check-shell-weight.mjs','check-cache-budget.mjs'].filter(f=>pb.indexOf(f)<0);if(missing.length){console.error('not wired into postbuild yet: '+missing.join(', '));process.exit(1)}process.exit(0)\""
       },
-      "notes": "The probe is deliberately the CONSEQUENCE and not the intent: it fails while the two scripts are absent from postbuild and passes the moment they are wired in, so closing this row requires the wiring rather than a note saying it was considered. It exits 79 if either script is missing or postbuild is unreadable, so a reshaped package.json reports \"cannot tell\" instead of a clean sweep of nothing."
+      "notes": "The probe is deliberately the CONSEQUENCE and not the intent: it fails while the two scripts are absent from postbuild and passes the moment they are wired in, so closing this row requires the wiring rather than a note saying it was considered. It exits 79 if either script is missing or postbuild is unreadable, so a reshaped package.json reports \"cannot tell\" instead of a clean sweep of nothing. UPDATE 2026-08-18: check:shell-weight now runs cleanly against a real (if incomplete) build in this container - 947 KB across 20 chunks, 494 client-reference manifests read, positive control present. The build still cannot COMPLETE here (page-data collection needs service-role credentials), so the postbuild wiring still waits on one green production build."
     },
     {
       "id": "LIVE-036",
@@ -1940,6 +1941,22 @@
         "kind": "manual",
         "evidence": "Measured 2026-08-17 via the adoption harness: 87 sites on the `eyebrow` utility, 69 on `tracking-eyebrow`, ~26 on kit.tsx's <Eyebrow> at 0.875rem, and 608 remaining literal-tracking sites after the seven named slots were unified. Not repo-probeable: a probe asserting either register would force a choice the owner has not made, and a gate that encodes an undecided design question is the shape-not-truth failure this backlog exists to prevent.",
         "checked": "2026-08-17"
+      }
+    },
+    {
+      "id": "LIVE-037",
+      "title": "Ten more client entry points still drag the service-role client into the browser graph",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/supabase/admin.ts",
+        "ref": "LIVE-009 follow-up / ADR-1074"
+      },
+      "detail": "LIVE-009 fixed two instances and revealed the CLASS. lib/supabase/admin.ts is still statically reachable in the client layer from ten other 'use client' entry points, every one the same shape: a client component imports a constant or a small helper out of a module that also opens the service-role client, and the whole graph follows. The paths are via lib/crm/relationships, lib/crm/contacts-roster, lib/crm/pipeline, lib/personas, lib/walkthroughs, lib/billing/tips, lib/spaces/membership, lib/marketplace, lib/season-ranks -> lib/quest/completion-read, and lib/events/event-stats. THE FIX IS THE ONE LIVE-009 USED, and it is small per instance: extract the leaf the client actually needs into a dependency-free module, re-export it from the old home so no server caller changes, then put a real `import 'server-only'` on the original so the class FAILS THE BUILD instead of being re-litigated. The header comment saying 'Server-only' is what both LIVE-009 files had, and it stopped nothing. Worth doing in batches with a build between them, because `server-only` fails at compile and the failure names the importer, so each batch is self-diagnosing.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const A='lib/supabase/admin.ts';if(!fs.existsSync(A))process.exit(79);const want=['lib/crm/relationships.ts','lib/crm/pipeline.ts','lib/personas.ts','lib/walkthroughs.ts','lib/marketplace.ts'];const present=want.filter(function(f){return fs.existsSync(f)});if(present.length<4)process.exit(79);const missing=present.filter(function(f){return fs.readFileSync(f,'utf8').indexOf(\\\"'server-only'\\\")<0});if(missing.length){console.error('still no server-only guard on: '+missing.join(', '));process.exit(1)}process.exit(0)\""
       }
     }
   ]

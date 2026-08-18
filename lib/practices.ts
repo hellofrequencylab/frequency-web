@@ -7,7 +7,18 @@
 // The practices/* tables are new; until `supabase gen types` is re-run they are not
 // in the generated Database types, so this module reads/writes through an untyped
 // admin handle. Drop the cast after regen (see docs/START-HERE.md).
-
+//
+// ── 🔴 `import 'server-only'` IS THE POINT OF THE LINE BELOW, NOT DECORATION (LIVE-009) ──────────
+// "Server-only" on line 5 was a comment, and it was not true: `lib/pillars.ts` imported
+// `getMemberPractices` from here, and `circle-builder.tsx` ('use client') imported `PILLAR_SLUGS`
+// from lib/pillars — so the service-role admin client, @supabase/supabase-js, lib/zaps,
+// lib/achievements, lib/automations, lib/queue/outbox and a crypto-browserify polyfill graph were
+// all in the circle builder's browser bundle, to supply four strings. The directive turns the
+// comment into a BUILD FAILURE: a client module that reaches this file breaks the build instead of
+// quietly shipping the database to a phone. The closed slug set lives in lib/pillars/slugs.ts, and
+// the TYPES exported here (`TimerKind`, `MindlessMode`, `Practice`, `PartialToday`, …) are erased by
+// the compiler, so the dozen `import type` client callers are unaffected.
+import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { recordEngagementEvent } from '@/lib/engagement/events'
