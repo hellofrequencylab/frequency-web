@@ -51,37 +51,27 @@ describe('the file that actually ships', () => {
   // ever shrink. It did its job on 2026-08-18: the eight OWN-014 entries below were added and this
   // assertion failed in CI until they were named here on purpose.
   //
-  // ONLY THE LIVE-023 THREE ARE CEILINGS NOW, and the reason is the good one.
+  // 🔴 ZERO CEILINGS, AND THAT IS THE POINT OF LIVE-023.
   //
-  // The eight OWN-014 entries were declared as ceilings on 2026-08-18 and a capture run against a
-  // real deployment REPLACED THEM WITH READINGS the same night — exactly what this guard's own
-  // output promises ("they stay listed here until a run replaces them with readings"). That is a
-  // TIGHTENING, not a loss: a ceiling only catches a rise, while a reading is an assertion that the
-  // measured value IS that number, so it fails in BOTH directions. The amber debt is still carried,
-  // at the same 3/3/3/3/3/4/6/7, and it is now held more strictly than when it was waived.
+  // This assertion has now fired three times in one night, each time because the waiver list
+  // CHANGED, and each change was a tightening:
+  //   11 → 3  a capture replaced the eight OWN-014 amber waivers with readings.
+  //    3 → 0  the member session finally minted (OWN-002/OWN-003), so /feed, /settings, /nearby
+  //           and the Space console were measured for the first time — all twelve contexts at 0 —
+  //           and the three placeholders that existed only because "nothing has measured these
+  //           surfaces honestly" stopped being needed.
   //
-  // The failing pair is white on the amber button, #FFFFFF on #F0AD4E = 1.95:1 against a 4.5:1
-  // requirement, revealed (not caused) when LIVE-008 fixed a selector that could never match. Both
-  // remedies are one line and recorded on OWN-014; whichever is picked retires all eight, and the
-  // readings will fall, which this file will then notice as an improvement to write down.
-  //
-  // What remains a ceiling is the three LIVE-023 shell surfaces, and they are the genuine case for
-  // one: they are blocked on an axe run behind a member session (OWN-002). Nothing has measured
-  // them honestly, so any number here would be invented.
-  it('declares exactly the LIVE-023 shell ceilings, and nothing else', () => {
+  // A ceiling is headroom a regression can sit in while this prints a tick. There is none left:
+  // every one of the 52 contexts is held to EQUALITY, so a rise fails and a fall fails too.
+  // Keep it that way. If a future change wants a ceiling back, it has to argue for it here, and
+  // the only honest argument is the one LIVE-023 made — that nothing has measured the surface.
+  it('declares NO ceilings at all: every context is held to equality', () => {
     const { ceilings, readings } = validate(shipped)
-    expect(ceilings.map((c: { context: string }) => c.context).sort()).toEqual([
-      '/feed [dawn-light, desktop]',
-      '/settings [dawn-light, desktop]',
-      '/spaces/danieltyack/manage [dawn-light, desktop]',
-    ])
-    // 38, LOWERED FROM 40 ON 2026-08-18, AND THAT IS A LOSS RATHER THAN A TIDY-UP. This floor
-    // exists so the assertion above cannot pass over nothing, and it fell only because eight
-    // contexts that WERE readings became ceilings by owner decision. Nothing improved; eight
-    // surfaces stopped being asserted by equality. It goes back to 46 the moment OWN-014 is
-    // applied, and that is the number to restore it to — not 40, which was itself only the
-    // floor before this change.
-    expect(readings).toBeGreaterThanOrEqual(38)
+    expect(ceilings.map((c: { context: string }) => c.context).sort()).toEqual([])
+    // Non-vacuity: an empty ceiling list means nothing unless the readings are real and numerous.
+    // 50, against 52 measured on 2026-08-18 — up from a floor of 38 when eight contexts were
+    // waived and the member shell was unmeasured. `readings` is a COUNT, not an array.
+    expect(readings).toBeGreaterThanOrEqual(50)
   })
 
   it('every ceiling names what would retire it, so none of them is permanent', () => {

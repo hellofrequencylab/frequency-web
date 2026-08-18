@@ -769,7 +769,7 @@
     {
       "id": "LIVE-023",
       "title": "All 49 a11y baselines were ceilings, not three",
-      "status": "blocked",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
@@ -782,7 +782,7 @@
         "cmd": "node -e \"const fs=require('fs');const f='test/e2e/a11y-baselines.json';if(!fs.existsSync(f))process.exit(79);let d;try{d=JSON.parse(fs.readFileSync(f,'utf8'))}catch{process.exit(79)}const s=d.surfaces;if(!s||Object.keys(s).length<40)process.exit(79);const c=Object.entries(s).filter(([,v])=>typeof v==='object'&&v!==null&&'ceiling' in v);if(c.length)console.error('still ceilings: '+c.map(([k,v])=>k+'='+v.ceiling).join(', '));process.exit(c.length===0?0:1)\""
       },
       "blocked_by": "OWN-002",
-      "notes": "2026-08-17: the row said three baselines were ceilings. ALL 49 were — the comparison was `total <= allowed`, with no equality assertion anywhere in the spec. The three were merely ADDITIONALLY known-inflated (seeded from raw pre-waiver totals). Second half of the same hole: an improvement only produced a testInfo annotation inside a PASSING run, which is how /spaces sat at a stale 44 through ADR-929's fix. And a raise needed only `--force` with 'say why in the commit' — a commit message is not something a gate can read. MECHANISM IS NOW DONE (ADR-1058): a bare integer is a READING checked with equality, so an improvement fails and forces a re-record; 46 of 49 converted. The three remain DECLARED ceilings that cannot move silently — each carries why/retiredBy/frozen/history and a raise now requires a written reason. BLOCKED on OWN-002: converting the last three needs an axe run against a deployment with the beta storage state. The true residual is BELIEVED to be 0-3 rather than 12/7/8, and the agent deliberately did NOT write that down — a fabricated baseline fails CI for a reason nobody can reproduce, which is worse than an honest ceiling."
+      "notes": "Closed 2026-08-18, and it closed because the OWNER unblocked it rather than because code changed. The row was BLOCKED on OWN-002/OWN-003: three shell ceilings existed for the honest reason that NOTHING HAD EVER MEASURED /feed, /settings, /nearby or the Space console, so any number would have been invented. The moment the member-session secrets landed, `pnpm e2e:session` minted in 9 seconds, the a11y suite reached all four shell surfaces for the first time, and a capture recorded what is actually there: ALL TWELVE shell contexts at 0 serious violations. THE WAIVER LIST IS NOW EMPTY. 52 readings held to EQUALITY, 0 declared ceilings — so a rise fails and a fall fails too, on every context. The count went 49 ceilings -> 11 -> 3 -> 0 across one night: the eight amber waivers became readings when a capture measured them, and these last three became readings when the session made them measurable. scripts/check-a11y-baselines.test.ts now asserts the ceiling list is EMPTY, with a floor of 50 readings so the empty list cannot be a pass over nothing. That assertion fired three times tonight, every time because the list shrank."
     },
     {
       "id": "LIVE-024",
