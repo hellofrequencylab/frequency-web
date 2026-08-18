@@ -140,9 +140,9 @@ export function NewGroupDMCompose({
                     </span>
                   )}
                   <span className="font-medium text-primary-strong">{r.display_name}</span>
-                  <button type="button" onClick={() => removeRecipient(r.id)}
+                  <button type="button" aria-label={`Remove ${r.display_name}`} onClick={() => removeRecipient(r.id)}
                     className="text-primary-strong hover:text-primary-strong dark:hover:text-primary-strong">
-                    <X className="w-3 h-3" />
+                    <X className="w-3 h-3" aria-hidden />
                   </button>
                 </span>
               ))}

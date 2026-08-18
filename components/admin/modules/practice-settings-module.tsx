@@ -157,6 +157,7 @@ export function PracticeSettingsModule() {
             <span className="shrink-0">/practices/</span>
             <Input
               variant="seamless"
+              aria-label="Permalink"
               value={permalink}
               onChange={(e) => setPermalink(e.target.value)}
               disabled={permaPending}

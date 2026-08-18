@@ -33,9 +33,13 @@ const RATE = {
   nonprofit: R(NETWORK_TAKE_RATE_DEFAULT.nonprofit),
 }
 const CAT = pricingCatalog()
-const BUSINESS_YEAR_BETA = formatLoadoutCents(CAT.business_base.year.foundingCents)
-const COLLECTIVE_YEAR_BETA = formatLoadoutCents(CAT.collective_base.year.foundingCents)
-const NONPROFIT_YEAR = formatLoadoutCents(CAT.nonprofit_seat.year.foundingCents)
+// 🔴 THE OPENING BETA PRICE IS CLOSED (owner, 2026-08-17, ADR-1060): every plan is sold at its LIST
+// price, so the yearly figures below read the LIST year, not the founding one. Quoting the founding
+// year here would print $190 beside a $29 monthly, a yearly nobody can buy. The list and founding
+// amounts are equal on the plans that never carried a beta anchor (Non Profit, Independent).
+const BUSINESS_YEAR = formatLoadoutCents(CAT.business_base.year.listCents)
+const COLLECTIVE_YEAR = formatLoadoutCents(CAT.collective_base.year.listCents)
+const NONPROFIT_YEAR = formatLoadoutCents(CAT.nonprofit_seat.year.listCents)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PRICING — the honest, warm version. Copies THE COMMUNITY's shape and rhythm.
@@ -158,8 +162,8 @@ export const data: Data = {
             ctaLabel: 'Start free', ctaHref: '/sign-in', ctaStyle: 'secondary',
           },
           {
-            name: 'Business', livePriceKey: 'business', price: P.businessBeta, strikePrice: P.businessList, cadence: '/mo',
-            priceNote: `Opening Beta price through 2026-09-01, then ${P.businessList}. Or ${BUSINESS_YEAR_BETA} a year. 0% on your own bookings, ${RATE.business} only on business the network sends you.`,
+            name: 'Business', livePriceKey: 'business', price: P.businessList, strikePrice: '', cadence: '/mo',
+            priceNote: `Or ${BUSINESS_YEAR} a year, which is two months free. 0% on your own bookings, ${RATE.business} only on business the network sends you.`,
             tagline: 'Own your audience.',
             highlight: 'featured', badge: 'none',
             features: [
@@ -171,8 +175,8 @@ export const data: Data = {
             ctaLabel: 'Start a Space', ctaHref: '/spaces', ctaStyle: 'primary',
           },
           {
-            name: 'Collective', livePriceKey: 'collective', price: P.collectiveBeta, strikePrice: P.collectiveList, cadence: '/mo',
-            priceNote: `Opening Beta price through 2026-09-01, then ${P.collectiveList}. Or ${COLLECTIVE_YEAR_BETA} a year. 0% on your own, ${RATE.collective} only on business the network sends you.`,
+            name: 'Collective', livePriceKey: 'collective', price: P.collectiveList, strikePrice: '', cadence: '/mo',
+            priceNote: `Or ${COLLECTIVE_YEAR} a year, which is two months free. 0% on your own, ${RATE.collective} only on business the network sends you.`,
             tagline: 'Be the venue.',
             highlight: 'normal', badge: 'none',
             features: [
@@ -198,7 +202,7 @@ export const data: Data = {
         items: [
           {
             name: 'Non Profit', livePriceKey: 'nonprofit', price: P.nonprofit, strikePrice: '', cadence: '/mo',
-            priceNote: `Flat, no beta discount. Or ${NONPROFIT_YEAR} a year. ${RATE.nonprofit} take-rate, always. Verified 501(c)(3).`,
+            priceNote: `Flat. Or ${NONPROFIT_YEAR} a year, which is two months free. ${RATE.nonprofit} take-rate, always. Verified 501(c)(3).`,
             tagline: 'The full Collective toolkit for a verified 501(c)(3).',
             highlight: 'normal', badge: 'none',
             features: [
@@ -209,7 +213,7 @@ export const data: Data = {
             ctaLabel: 'Get verified', ctaHref: '/spaces', ctaStyle: 'secondary',
           },
         ],
-        footnote: 'Business and Collective hold their Opening Beta price through 2026-09-01, then they revert to list. A plan you start during the beta keeps its rate.',
+        footnote: 'Every plan is one price, the same whenever you start. Pay yearly and you get two months free.',
         tone: 'canvas', width: 'wide', align: 'left', layout: { spaceTop: 'sm', spaceBottom: 'default', visibility: 'all' },
       },
     },
@@ -368,9 +372,9 @@ export const data: Data = {
         id: 'pr-faq', eyebrow: 'Straight answers', title: 'Questions, answered plainly.', titleAccent: '',
         items: [
           { q: 'Is being a Member really free?', a: 'Yes. The Member tier is free, forever. You can browse Circles and Events, attend gatherings in person, earn Zaps, and message Vera up to 10 times a day, all without paying.' },
-          { q: 'What is the Opening Beta price?', a: `The Opening Beta price is the lower rate every early Space plan holds while we are in beta: Business at ${P.businessBeta} under the ${P.businessList} list, and Collective at ${P.collectiveBeta} under the ${P.collectiveList} list. A plan you start during the beta keeps its rate. Crew is pay what you want: anything from ${CREW_NOTE.foundingLabel} a month, ${CREW_NOTE.suggestedLabel} suggested, and every amount buys the same access.` },
+          { q: 'Is there a discount for paying yearly?', a: `Yes. Pay yearly on any plan and you get two months free: Business is ${BUSINESS_YEAR} a year instead of ${P.businessList} a month, and Collective is ${COLLECTIVE_YEAR} a year instead of ${P.collectiveList} a month. Crew is pay what you want: anything from ${CREW_NOTE.foundingLabel} a month, ${CREW_NOTE.suggestedLabel} suggested, and every amount buys the same access.` },
           { q: 'What is the difference between Member and Crew?', a: `Member is the free tier, forever, and the community itself is never behind it. Both tiers can sell: a free Member can run a ticketed event and get paid. Crew takes the rate on network-sourced sales from ${RATE.memberFree} down to ${RATE.member}, lifts the caps, and adds the full game, with Gems, Vault cash-in, your own Quest to author, unlimited Vera, and the leaderboard, for whatever you choose to pay, from ${CREW_NOTE.foundingLabel} a month. Those two are the whole member ladder.` },
-          { q: 'What is the Opening Beta price on Space plans?', a: `Business and Collective are open at an Opening Beta price during our beta: Business at ${P.businessBeta} a month under the ${P.businessList} list, and Collective at ${P.collectiveBeta} a month under the ${P.collectiveList} list. Both hold through 2026-09-01, then revert to list. Non Profit (${P.nonprofit}) is flat, with no beta discount.` },
+          { q: 'What do the Space plans cost?', a: `Business is ${P.businessList} a month or ${BUSINESS_YEAR} a year, and Collective is ${P.collectiveList} a month or ${COLLECTIVE_YEAR} a year. Non Profit is ${P.nonprofit} a month, flat, for a verified 501(c)(3). Every plan is the same price whenever you start, and yearly is two months free.` },
           { q: 'How does the take-rate work?', a: `You keep 100% of the business you bring yourself, always, on every tier. Someone who already follows you, is on your list, or has bought from you before is yours, and Frequency takes nothing on them. There is a rate only on someone the network introduces, and every step up buys it down: a free Member or a free Space is ${RATE.memberFree}, Crew is ${RATE.member}, Business is ${RATE.business}, Collective is ${RATE.collective}, and Non Profit is ${RATE.nonprofit}.` },
           { q: 'What about refunds?', a: 'Every plan is month to month, and you can cancel at any time. Cancel and your plan simply runs out its paid period. No contracts, no lock-in.' },
           { q: 'Can I buy my way into a Host or Guide role?', a: 'No, and that is on purpose. Host, Guide, and Mentor are earned by showing up and looking after the people around you. Those roles come from the community, never from a checkout page.' },

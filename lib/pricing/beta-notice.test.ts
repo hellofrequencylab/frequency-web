@@ -194,11 +194,23 @@ describe('betaNoticeCopy (what a member actually reads)', () => {
 
   it('invites a Space to the Founding Business badge, and a member to the Founder badge', () => {
     expect(betaNoticeCopy(collective, SEPT)!.invite).toBe(
-      'Take the yearly plan before September 1 to hold the beta rate and add the Founding Business badge to your Space.',
+      'Take the yearly plan before September 1 to add the Founding Business badge to your Space.',
     )
     expect(betaNoticeCopy(crew, SEPT)!.invite).toBe(
-      'Take the yearly plan before September 1 to hold the beta rate and add the Founder badge to your profile.',
+      'Take the yearly plan before September 1 to add the Founder badge to your profile.',
     )
+  })
+
+  it('promises no beta rate, because there is not one to hold (ADR-1060)', () => {
+    // The grace window (September 1) and the PRICING window are separate decisions on separate dates,
+    // and the owner closed the pricing one early on 2026-08-17. This notice renders off the grace
+    // window, so while it kept saying "hold the beta rate" it was offering a price the checkout had
+    // already stopped charging. Asserted on the rendered copy, for every target, so the sentence
+    // cannot quietly come back.
+    for (const t of [business, collective, crew]) {
+      const copy = betaNoticeCopy(t, SEPT)!
+      expect(`${copy.title} ${copy.body} ${copy.invite} ${copy.cta}`).not.toMatch(/beta rate|beta price/i)
+    }
   })
 
   it('points at the pricing page and carries the per-tier dismissal key', () => {

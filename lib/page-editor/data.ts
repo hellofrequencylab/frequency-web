@@ -16,8 +16,16 @@ import { loadRootSpaceId } from '@/lib/spaces/store'
 // Marketing-site rebuild: every PRIMARY public page is editor-backed and renders the
 // getPublishedData -> getTemplate -> legacy chain. The six primaries (Home, The
 // Community, The Quest, The Lab, Spaces, About) each ship a designed template as the
-// default; the bespoke coded experience stays as the legacy fallback under each route,
-// so nothing breaks before a template publishes. Home keeps its live counts OFF (honest
+// default; where a route still has one, the bespoke coded experience sits under it as
+// the legacy fallback, so nothing breaks before a template publishes.
+//
+// ⚠️ THAT THIRD RUNG IS BEING RETIRED, one slug per PR (UX-MATURITY-PLAN Lift 5c,
+// ADR-1068). `circles`, `about` and `spaces` have none: their template is the LAST rung, and
+// lib/page-editor/templates/templates.test.ts reads THIS constant to make sure every
+// gated slug still has a template the current block config can render. The live
+// scoreboard is scripts/render-path-bodies.txt, not this comment.
+//
+// Home keeps its live counts OFF (honest
 // empty state): the home template ships the qualitative founding framing, never invented
 // numbers. Pricing keeps its template (linked from Spaces; off the primary nav).
 // Every editor route, the Pages directory, and publish/draft/unpublish gate on

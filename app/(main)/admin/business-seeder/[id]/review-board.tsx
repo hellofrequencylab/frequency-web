@@ -558,8 +558,8 @@ function FieldRow({
                   {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                   Save
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => { setEditing(false); setDraft(field.value) }} disabled={pending}>
-                  <X className="h-3.5 w-3.5" />
+                <Button size="sm" variant="ghost" aria-label="Cancel" onClick={() => { setEditing(false); setDraft(field.value) }} disabled={pending}>
+                  <X className="h-3.5 w-3.5" aria-hidden />
                 </Button>
               </>
             ) : (

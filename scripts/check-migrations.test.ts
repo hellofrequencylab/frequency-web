@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import {
   LEDGER_ENV,
   ledgerCheck,
@@ -345,5 +347,67 @@ describe('the guard is read-only against production', () => {
     expect(sent[0].trim().toLowerCase().startsWith('select ')).toBe(true)
     expect(sent[0]).not.toMatch(/\b(insert|update|delete|drop|alter|create|truncate)\b/i)
     expect(sent[0]).toContain('supabase_migrations.schema_migrations')
+  })
+})
+
+// ── the workflow half: the guard must never be half-armed BY THE PLATFORM ──────────────────────
+//
+// On 2026-08-17 every Dependabot PR (#2144 actions/checkout, #2145 codeql-action, #2146 the
+// minor-and-patch group) failed this guard, and the message accused a maintainer of arming
+// SUPABASE_PROJECT_REF while leaving SUPABASE_ACCESS_TOKEN unset. No maintainer had done anything:
+// GitHub withholds `secrets.*` from Dependabot and fork runs and does NOT withhold `vars.*`, so the
+// pair arrives split on those runs by design. The guard's tri-state was right; its INPUT was wrong.
+//
+// The rule below reads the real ci.yml and proves the consequence, not the wording: under a run
+// with no secrets, the ref resolves EMPTY and the guard reaches `skipped` rather than a failure.
+describe('ci.yml arms the ledger pair all-or-nothing (Dependabot + fork runs)', () => {
+  const CI = readFileSync(join(process.cwd(), '.github', 'workflows', 'ci.yml'), 'utf8')
+
+  /** Resolve one `NAME: ${{ … }}` env line the way Actions would on a run with NO secrets.
+   *  Only the two shapes ci.yml actually uses are understood; anything else throws rather than
+   *  guessing, so a future rewrite into an unrecognised expression fails here instead of silently
+   *  re-splitting the pair. */
+  function resolveWithoutSecrets(expr: string): string {
+    const body = expr.trim().replace(/^\$\{\{/, '').replace(/\}\}$/, '').trim()
+    if (/^secrets\.[A-Za-z_][A-Za-z0-9_]*$/.test(body)) return '' // withheld on these runs
+    const gated = body.match(
+      /^secrets\.[A-Za-z_][A-Za-z0-9_]*\s*!=\s*''\s*&&\s*vars\.[A-Za-z_][A-Za-z0-9_]*\s*\|\|\s*''$/,
+    )
+    if (gated) return '' // the secret is empty, so the whole conjunction is
+    throw new Error(
+      `Unrecognised env expression in ci.yml: ${expr}\n` +
+        'Gate the var on the secret — `${{ secrets.TOKEN != \'\' && vars.REF || \'\' }}` — so a run\n' +
+        'without secrets reads as NEITHER set. See the block comment above this test.',
+    )
+  }
+
+  function ciEnv(name: string): string {
+    const m = CI.match(new RegExp(`^\\s*${name}:\\s*(\\$\\{\\{.*\\}\\})\\s*$`, 'm'))
+    expect(m, `${name} is not set in .github/workflows/ci.yml`).toBeTruthy()
+    return resolveWithoutSecrets(m![1])
+  }
+
+  it('resolves BOTH to empty when secrets are withheld, not one of each', () => {
+    expect(ciEnv('SUPABASE_ACCESS_TOKEN')).toBe('')
+    expect(ciEnv('SUPABASE_PROJECT_REF')).toBe('')
+  })
+
+  it('and that pair reaches a loud SKIP, which is what unblocks Dependabot', async () => {
+    const r = await ledgerCheck({
+      env: {
+        [LEDGER_ENV.TOKEN]: ciEnv('SUPABASE_ACCESS_TOKEN'),
+        [LEDGER_ENV.REF]: ciEnv('SUPABASE_PROJECT_REF'),
+      },
+      argv: [],
+      total: MIN_ROWS,
+      io: {
+        repo: { readdir: () => [] },
+        fetch: async () => {
+          throw new Error('a skipped run must not reach the network')
+        },
+      },
+    })
+    expect(r.status).toBe('skipped')
+    expect(r.ok).toBe(true)
   })
 })

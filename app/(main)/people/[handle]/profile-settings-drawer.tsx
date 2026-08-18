@@ -83,8 +83,13 @@ export function ProfileSettingsDrawer({
           <aside className="fixed right-0 top-0 z-[160] flex h-full w-80 max-w-[92vw] flex-col overflow-y-auto border-l border-border bg-surface lift-3">
             <div className="sticky top-0 flex items-center justify-between border-b border-border bg-surface px-4 py-3">
               <p className="text-body-sm font-bold text-text">Member settings</p>
-              <button type="button" onClick={() => setOpen(false)} className="rounded-md p-1 text-muted hover:text-text">
-                <X className="h-4 w-4" />
+              <button
+                type="button"
+                aria-label="Close"
+                onClick={() => setOpen(false)}
+                className="rounded-md p-1 text-muted hover:text-text"
+              >
+                <X className="h-4 w-4" aria-hidden />
               </button>
             </div>
 

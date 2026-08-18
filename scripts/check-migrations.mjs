@@ -184,6 +184,8 @@ export function parseArgs(argv = []) {
  * The `partial` kind exists because "one of the two vars is set" is NOT the same state as "no
  * database configured". It means someone armed this and it silently stopped working — the exact
  * shape of regression this repo keeps buying, so it resolves to a failure rather than a skip.
+ *
+ * @param {{ env?: Record<string, string | undefined>, argv?: string[] }} [opts]
  */
 export function resolveLedgerSource({ env = {}, argv = [] } = {}) {
   const { ledgerFile, requireLedger, noLedger } = parseArgs(argv)
@@ -264,6 +266,8 @@ function skipLines(reason, total) {
 /**
  * Rule 4, end to end. Returns a status and the lines to print rather than printing itself, so the
  * tests can drive every branch — including the ones that must FAIL — without a live database.
+ *
+ * @param {{ env?: Record<string, string | undefined>, argv?: string[], io?: object, total?: number }} [opts]
  */
 export async function ledgerCheck({ env = {}, argv = [], io = {}, total = 0 } = {}) {
   const source = resolveLedgerSource({ env, argv })

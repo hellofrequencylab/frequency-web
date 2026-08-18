@@ -23,7 +23,8 @@ import {
   type SpacePlanKey,
 } from './pricing-keys'
 import { itemKeyForCatalogKey, readLockedPriceId } from './space-subscription-items'
-import { isBetaPricingActive } from '@/lib/pricing/beta'
+import { isBetaPricingActive, loadoutChargeArm, loadoutChargePriceKey } from '@/lib/pricing/beta'
+import { spaceHasBetaPriceGrant } from './space-beta-grant'
 import { profileAccountEmail } from '@/lib/profiles/account-email'
 
 /** The per-plan enable flag for a space plan (must be ON, with billing live, to sell it). */
@@ -159,25 +160,42 @@ export interface SpaceLoadout {
   interval: BillingInterval
 }
 
-/** Resolve the Stripe price id to CHARGE for a catalog item: the Space's locked (grandfathered)
- *  founding price if it holds one for this item, else the synced FOUNDING price for the interval. Null
- *  when not synced (the item is skipped rather than charged at the wrong price). */
+/** Resolve the Stripe price id to CHARGE for a catalog item, on the three-armed rule in
+ *  `loadoutChargeArm` (lib/pricing/beta.ts, the pure decision):
+ *
+ *    1. LOCK     — the Space holds a grandfathered `locked_price_id` for this item: re-bill it.
+ *    2. FOUNDING — no lock, and either the beta WINDOW is open or this Space carries the private
+ *                  per-Space GRANT (`spaces.beta_price_grant`, ADR-1061). Charge the founding key.
+ *    3. LIST     — everything else. The default since the window closed (ADR-1060).
+ *
+ *  BETA AUTO-REVERT (ADR-811) + THE PRIVATE GRANT (ADR-1061): both variants of every price are minted
+ *  active by the catalog sync, so arms 2 and 3 are a pure key switch with no re-sync and no new Stripe
+ *  object — the $49 a granted Space pays is the same price id the window charged everyone.
+ *
+ *  🔴 THE GRANT IS SPENT BY THE FIRST CHECKOUT. Once this Space subscribes, the reconciler records the
+ *  charged price id as its lock, arm 1 wins from then on, and the grant is never consulted again. That
+ *  is why the grant needs no expiry date and why revoking it later cannot raise anyone's rate.
+ *
+ *  `hasBetaGrant` is resolved ONCE per checkout by the caller and threaded in, rather than re-read per
+ *  item: it is one fact about the Space, and reading it in here would issue a query per line item.
+ *
+ *  Null when the key is not synced (the item is skipped rather than charged at the wrong price). */
 async function resolveLoadoutPriceId(
   spaceId: string,
   catalogKey: CatalogItemKey,
   interval: BillingInterval,
+  hasBetaGrant: boolean,
 ): Promise<string | null> {
   const itemKey = itemKeyForCatalogKey(catalogKey)
-  if (itemKey) {
-    const locked = await readLockedPriceId(spaceId, itemKey)
-    if (locked) return locked // re-bill the grandfathered founding price (the lock) — beta subscribers keep it
-  }
-  // BETA AUTO-REVERT (ADR-811): during the beta window we charge the FOUNDING (beta) price — the plain
-  // catalog key; on/after the cutover we charge the LIST price — the _list variant. Both are minted active
-  // by the catalog sync and resolve the same way, so this is a pure key switch with no re-sync. A Space
-  // that already locked a beta price is grandfathered above and never reaches this line.
-  const chargeList = !isBetaPricingActive()
-  return resolveStripePriceId(catalogPriceKey(catalogKey, interval, chargeList))
+  const locked = itemKey ? await readLockedPriceId(spaceId, itemKey) : null
+  const arm = loadoutChargeArm({
+    lockedPriceId: locked,
+    betaActive: isBetaPricingActive(),
+    spaceHasBetaGrant: hasBetaGrant,
+  })
+  // The lock is a concrete price id, not a catalog key, so it returns straight out.
+  if (arm === 'lock') return locked
+  return resolveStripePriceId(loadoutChargePriceKey(catalogKey, interval, arm))
 }
 
 /** The catalog item keys + their seat-ness a loadout maps to. PURE (ADR-552). Business -> business_base
@@ -266,11 +284,18 @@ export async function createSpaceLoadoutCheckout(
       ? Math.max(0, Math.floor(space.seat_quantity))
       : 0
   const seatQuantity = Math.max(1, Math.floor(loadout.seatQuantity ?? storedSeats ?? 1))
-  // Build one line item per catalog item, charging the founding (or locked) price. Seat items carry the
-  // chosen quantity. An item with no synced price is skipped (never charged at the wrong price).
+  // THE PRIVATE BETA PRICE GRANT (ADR-1061), read ONCE for the whole loadout. Its own request, not a
+  // column on the select above: `spaces.beta_price_grant` ships in a proposal migration the owner
+  // applies by hand, and adding an undeployed column to that select would fail the WHOLE PostgREST
+  // request with 42703 and take every checkout down — the exact bug the `profiles.email` comment above
+  // records. FAIL-SAFE FALSE: unreadable means charge list, never under-charge.
+  const hasBetaGrant = await spaceHasBetaPriceGrant(spaceId)
+  // Build one line item per catalog item, charging the locked / founding / list price per
+  // `resolveLoadoutPriceId`. Seat items carry the chosen quantity. An item with no synced price is
+  // skipped (never charged at the wrong price).
   const lineItems: { price: string; quantity: number }[] = []
   for (const { key, perSeat } of catalogKeysForLoadout(loadout)) {
-    const priceId = await resolveLoadoutPriceId(spaceId, key, interval)
+    const priceId = await resolveLoadoutPriceId(spaceId, key, interval, hasBetaGrant)
     if (!priceId) {
       // The base item failing to resolve is fatal (no plan to sell); a missing add-on price just drops
       // that add-on from the loadout rather than blocking the whole checkout.

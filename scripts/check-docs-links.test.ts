@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest'
-// @ts-expect-error — .mjs guard module, no type declarations (same shape as the other guard tests)
 import { runCheck, mdFiles, floorViolation, MIN_FILES, MIN_LINKS } from './check-docs-links.mjs'
 
 // This guard's failure mode was not a wrong answer, it was a vacuous one: `runCheck` reported

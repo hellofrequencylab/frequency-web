@@ -81,15 +81,16 @@ Studio's element grid.
 ## 7. Pricing reconciliation (one honest source)
 
 ⚠️ The Coaches brief's **~~$79~~ $49/mo** pair is stale. Our whole site prices from one catalog
-(`lib/billing/pricing-keys.ts`), where Business now carries **$29 list with a $19 Opening Beta rate**
-(ADR-875), and the anchor idiom is already uniform (`monthly_cents` charged, `list_cents` struck). So the
+(`lib/billing/pricing-keys.ts`), where Business is **$29** (the $19 Opening Beta rate is CLOSED,
+[ADR-1060](DECISIONS.md), so nothing renders a strike on it any more), and the anchor idiom is uniform (`monthly_cents` charged, `list_cents` struck). So the
 brief needs no new number set: the 3-row funnel pricing beat reads its dollar figures from the catalog, so
 the strike and the price show consistently on the funnel, `/pricing`, and the doors, and numbers never drift.
 
 Break-even math is truthful, and it runs off the **network** rate, not a free-seller rate: a free tier
 cannot sell at all (ADR-913), so the honest comparison is **Crew 8% vs Business 5%**, a 3-point saving on
-network-sourced sales only. Business at its **$19** Opening Beta rate crosses at about **$633/mo** in
-network-sourced sales; at the **$29** list, about **$967/mo** (~"$1,000"). Own-audience sales and tips are
+network-sourced sales only. Business at **$29**, the price charged today, crosses at about **$967/mo**
+(~"$1,000") in network-sourced sales. (At the retired $19 beta rate it was about $633/mo; that figure is
+history, not an offer.) Own-audience sales and tips are
 0% on both sides of that comparison, so they never enter the math.
 
 ## 8. Phases

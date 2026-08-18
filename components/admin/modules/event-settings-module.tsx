@@ -714,6 +714,7 @@ export function EventSettingsModule() {
             <span className="shrink-0">/events/</span>
             <Input
               variant="seamless"
+              aria-label="Permalink"
               value={permalink}
               onChange={(e) => setPermalink(e.target.value)}
               disabled={permaPending}

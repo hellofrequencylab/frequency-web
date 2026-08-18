@@ -172,8 +172,8 @@ A static (ISR) table on the commercial pricing page. Shape:
 | Take-rate (network-sourced sales only) | 5% | 0% | custom |
 
 > ⚠️ **Prices and plan names in this table are historical** (the Pro / Nonprofit / Organization shape).
-> The live ladder and the live rates are in [PRICING.md](PRICING.md): Business $29 with a $19 Opening Beta
-> rate, Collective $79 with a $49 beta rate, Non Profit $39, and a take-rate that applies to
+> The live ladder and the live rates are in [PRICING.md](PRICING.md): Business $29, Collective $79 (the
+> $19 / $49 Opening Beta rates are closed, [ADR-1060](DECISIONS.md)), Non Profit $39, and a take-rate that applies to
 > **network-sourced sales only** (Crew 8% · Business and Collective 5% · Non Profit 0%), with **0% on a
 > sale to the seller's own audience and 0% on every tip** (ADR-913). The retired 10% and 3% rungs must not
 > be quoted from here.

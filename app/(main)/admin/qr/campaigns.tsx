@@ -237,7 +237,7 @@ function CampaignForm({
             placeholder="e.g. Downtown Scavenger Hunt"
           />
         </Field>
-        <Field label="Reward (zaps)">
+        <Field label="Reward (Zaps)">
           <Input
             type="number"
             min={0}

@@ -92,7 +92,7 @@ export function QrStudio({
             <div>
               <h2 className="text-body-sm font-bold text-text">New code</h2>
               <p className="text-meta text-muted mt-0.5">
-                A scannable code that earns zaps and a verified practice on check-in.
+                A scannable code that earns Zaps and a verified practice on check-in.
               </p>
             </div>
             {!creating && (
@@ -227,7 +227,7 @@ function NodeCard({
 
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-meta text-muted">
             <span className="inline-flex items-center gap-1">
-              <Zap className="w-3 h-3 text-primary" /> {node.zaps_value} zaps
+              <Zap className="w-3 h-3 text-primary" /> {node.zaps_value} Zaps
             </span>
             <span>{node.captures} check-in{node.captures === 1 ? '' : 's'}</span>
           </div>

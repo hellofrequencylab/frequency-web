@@ -46,10 +46,14 @@ describe('the clean catalog shape (collapsed · ADR-552)', () => {
     expect(catalogItems()).toHaveLength(6)
   })
 
-  it('Business base: $29 list with a $19 founding anchor, not per seat (ADR-811)', () => {
+  it('Business base: $29 flat, and NO founding rate — there is exactly one beta offer and it is not this one (ADR-1067)', () => {
     const biz = catalogItem('business_base')
-    expect(biz.month.foundingCents).toBe(1900) // founding ladder: $19 under the $29 list
     expect(biz.month.listCents).toBe(2900)
+    // founding == list is how an item says "no beta rate". This is the assertion that stops a second
+    // "(Founding rate)" Product being minted: Stripe Prices are immutable, so an unwanted $19 minted
+    // once can only be archived, never edited.
+    expect(biz.month.foundingCents).toBe(2900)
+    expect(biz.year.foundingCents).toBe(biz.year.listCents)
     expect(biz.perSeat).toBe(false)
   })
 

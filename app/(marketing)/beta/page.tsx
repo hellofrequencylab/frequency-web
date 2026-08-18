@@ -33,7 +33,8 @@ const WHAT_YOU_GET = [
   { Icon: Sparkles, label: 'A say in what it becomes', body: 'Early members shape the Circles, the rituals, and the room from day one.' },
   // Membership is PAY WHAT YOU WANT, so there is no launch price for a member to lock. This card used
   // to promise one, which is a promise about a number that does not exist. Say the true version: the
-  // member picks the amount, and a Space that subscribes at the Opening Beta rate keeps that rate.
+  // member picks the amount. (Nor is there a Space price to lock any more: the Opening Beta pricing
+  // closed on 2026-08-17, ADR-1060.)
   { Icon: ShieldCheck, label: 'You set what you pay', body: 'Free for the whole beta, no card. When paid membership launches it is pay what you want, and you can change your amount whenever.' },
 ]
 

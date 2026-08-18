@@ -13,9 +13,13 @@ import { ImageUpload } from '@/components/ui/image-upload'
 import { HeaderImageField } from '@/components/ui/header-image-field'
 import { isError } from '@/lib/action-result'
 import { saveJourneyMeta, setJourneyRewards, setJourneyVisibility, setJourneyDelivery, submitJourneyForReview, setJourneyAttributes, setJourneyMeeting, setJourneyHeaderFocus } from '@/app/(main)/journeys/actions'
-import { normalizeJourneyMeeting } from '@/lib/journey-plans'
+// The pure meeting coercion, NOT from '@/lib/journey-plans' — that module is `server-only` (it
+// opens the service-role client), and this is a client component. lib/journeys/meeting.ts is the
+// dependency-free half it re-exports (LIVE-009).
+import { normalizeJourneyMeeting } from '@/lib/journeys/meeting'
+import type { JourneyMeeting, JourneyTouchpoint } from '@/lib/journeys/meeting'
 import { readJourneyCoverFocus } from '@/lib/journeys/header'
-import type { PlanStatus, PlanVisibility, StoredVeraReview, JourneyMeeting, JourneyTouchpoint } from '@/lib/journey-plans'
+import type { PlanStatus, PlanVisibility, StoredVeraReview } from '@/lib/journey-plans'
 import { Toggle } from '@/components/admin/toggle'
 import { JourneyEventLink } from './journey-event-link'
 import { Input, Textarea } from '@/components/ui/field'

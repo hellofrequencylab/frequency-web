@@ -419,7 +419,7 @@ export function JourneyBuilder({
             set on the left, and the Journey Details quick-stats card on the right. */}
         <header className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0 flex-1">
-            <div className="mb-1.5 text-meta font-semibold uppercase tracking-wide text-primary-strong">{eyebrow}</div>
+            <div className="eyebrow mb-1.5 text-primary-strong">{eyebrow}</div>
             <div className="text-text">{title}</div>
             {/* No max-width: title + subtitle share the column width, so their right edges line up. */}
             <div className="mt-1.5">{description}</div>

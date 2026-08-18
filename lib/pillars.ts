@@ -1,14 +1,19 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMemberPractices } from '@/lib/practices'
+import type { PillarSlug } from '@/lib/pillars/slugs'
 
 // The 4 Pillars are the `pillars` table (Mind · Body · Spirit · Expression) — the
 // organizing axis for practices (practices.domain_id) and, next, the open Journeys
 // library (backlog §Q1). Surfaced product-wide as "Channels"; here we read them as
 // the typed pillar set so callers don't re-query the taxonomy ad hoc.
-
-export type PillarSlug = 'mind' | 'body' | 'spirit' | 'expression'
-
-export const PILLAR_SLUGS: readonly PillarSlug[] = ['mind', 'body', 'spirit', 'expression']
+//
+// This module is SERVER-ONLY by construction — `getMemberPractices` above makes it so, and
+// `lib/practices.ts` now says so with a directive rather than a comment. The closed slug set moved
+// to lib/pillars/slugs.ts (LIVE-009) because `circle-builder.tsx` ('use client') imports
+// `PILLAR_SLUGS`, which pulled this whole graph into the browser. Re-exported here so the ~50
+// existing importers are unchanged; CLIENT code must import from '@/lib/pillars/slugs'.
+export { PILLAR_SLUGS } from '@/lib/pillars/slugs'
+export type { PillarSlug } from '@/lib/pillars/slugs'
 
 export interface Pillar {
   id: string

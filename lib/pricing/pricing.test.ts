@@ -336,11 +336,14 @@ describe('seeded defaults are sane (mirror the migration)', () => {
 
   it('plan defaults reflect the Community Collective launch numbers (ADR-811)', () => {
     // The ANCHOR IDIOM (ADR-463): monthly_cents is what is CHARGED, list_cents is the crossed-out
-    // anchor above it. Business and Collective ship a beta rate; Non Profit and Independent do not.
+    // anchor above it. COLLECTIVE ALONE ships a beta rate (ADR-1067) — one unlisted offer, granted by
+    // hand. Business, Non Profit and Independent are all plain list pricing.
     const plan = PRICING_DEFAULTS.plan
-    expect(plan.business.monthly_cents).toBe(1900) // $19 beta, charged
-    expect(plan.business.annual_cents).toBe(19000) // $190
-    expect(plan.business.list_cents).toBe(2900) // $29 list, the struck anchor
+    expect(plan.business.monthly_cents).toBe(2900) // $29, charged, no beta rate
+    expect(plan.business.annual_cents).toBe(29000) // $290, two months free
+    // NO anchor at all, rather than an anchor equal to the charge: the model drops list_cents when
+    // there is nothing to strike, which is what stops the card rendering "$29" crossed out over "$29".
+    expect(plan.business.list_cents).toBeUndefined()
     expect(plan.collective.monthly_cents).toBe(4900) // $49 beta, charged
     expect(plan.collective.list_cents).toBe(7900) // $79 list
     expect(plan.nonprofit.monthly_cents).toBe(3900) // $39 flat, verified 501c3, no beta rate
@@ -379,11 +382,11 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
     const row = priceRow('business', 'Business', PRICING_DEFAULTS.plan.business)
     expect(row.key).toBe('business')
     expect(row.label).toBe('Business')
-    expect(row.monthly).toBe('$19')
-    expect(row.annual).toBe('$190')
-    expect(row.list).toBe('$29') // the crossed-out anchor the beta rate sits under
-    expect(row.monthlyCents).toBe(1900)
-    expect(row.annualCents).toBe(19000)
+    expect(row.monthly).toBe('$29')
+    expect(row.annual).toBe('$290')
+    expect(row.list).toBeNull() // no strike: there is no beta rate for it to sit under
+    expect(row.monthlyCents).toBe(2900)
+    expect(row.annualCents).toBe(29000)
   })
 
   it('memberTierRows is Crew alone, from the operator values, with no strike (ADR-878)', () => {
@@ -418,7 +421,7 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
     expect(rows.map((r) => r.key)).toEqual(['business', 'collective', 'nonprofit', 'independent'])
     expect(rows.map((r) => r.label)).toEqual(['Business', 'Collective', 'Non Profit', 'Independent'])
     // every paid plan carries an annual line (two months free)
-    expect(rows.find((r) => r.key === 'business')?.annual).toBe('$190')
+    expect(rows.find((r) => r.key === 'business')?.annual).toBe('$290')
     expect(rows.find((r) => r.key === 'nonprofit')?.annual).toBe('$390')
     expect(rows.find((r) => r.key === 'independent')?.annual).toBe('$2,490')
     // an anchor reads only where the config carries one

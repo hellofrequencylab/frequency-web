@@ -7,7 +7,7 @@ tuned for a member instead of an operator. With the marketing language
 ([`DESIGN-LANGUAGE.md`](DESIGN-LANGUAGE.md)) and the admin spec, this is the third leg of
 **one uniform site**. ADR-240.
 
-> The kit is already ~85% adopted (the in-app overhaul, ADR-061/090). This finishes and
+> The kit is already ~85% adopted (the in-app overhaul, ADR-061/1046). This finishes and
 > enforces it: composition, not reinvention. Voice + naming bind every word
 > (docs/NAMING.md, docs/CONTENT-VOICE.md): no em dashes in member copy.
 

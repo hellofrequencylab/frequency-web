@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { NO_STANDALONE_SESSION_MESSAGE } from "@/lib/auth/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useProfile } from "@/components/profile/useProfile";
 import { Room } from "./Room";
@@ -27,9 +28,7 @@ export function RoomShell({
     return (
       <Card className="space-y-1 border-alert">
         <h1 className="font-display text-lg text-text">Couldn&apos;t start a session</h1>
-        <p className="text-sm text-soft">
-          Enable Anonymous sign-ins in the Supabase project&apos;s Auth settings, then reload.
-        </p>
+        <p className="text-sm text-soft">{NO_STANDALONE_SESSION_MESSAGE}</p>
       </Card>
     );
   }

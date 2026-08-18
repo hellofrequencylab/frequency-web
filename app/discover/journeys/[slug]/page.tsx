@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Flame } from 'lucide-react'
-import { getPublicJourney } from '@/lib/journey-plans'
+import { getPublicJourney, listPublicJourneys } from '@/lib/journey-plans'
 import { getPillars, pillarsById } from '@/lib/pillars'
 import {
   StoryBlock,
@@ -33,6 +33,20 @@ import { journeySchema, breadcrumbSchema } from '@/lib/jsonld'
 // metadata, and JSON-LD (HowTo). Reuses the same discovery widgets so the public face
 // and the member face stay in lockstep. Voice is v2; no em dashes.
 export const revalidate = 3600
+
+// Pre-render the public library. listPublicJourneys applies exactly the gate this
+// page's own getPublicJourney applies (visibility 'public', status not 'rejected')
+// and returns them ordered by adopt_count, so slicing keeps the most-adopted
+// Journeys in the prerender manifest and bounds the set as the library grows.
+// Without this the route never enters that manifest and `revalidate` above is inert.
+// The tail still renders on demand (dynamicParams defaults true).
+// Falls back to [] when Supabase credentials are absent (CI / preview without env vars).
+const PRERENDER_LIMIT = 200
+
+export async function generateStaticParams() {
+  const journeys = await listPublicJourneys().catch(() => [])
+  return journeys.slice(0, PRERENDER_LIMIT).map((j) => ({ slug: j.slug }))
+}
 
 export async function generateMetadata({
   params,

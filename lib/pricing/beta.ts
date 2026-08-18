@@ -13,12 +13,42 @@
 // PURE + framework-free (no Supabase/Next), like the rest of lib/pricing/*: it takes `now` (defaulted to
 // the live clock at the one call site that reads it) so every consumer stays testable with a fixed date.
 
-import type { CatalogAmounts } from '@/lib/billing/pricing-keys'
+import {
+  catalogPriceKey,
+  type BillingInterval,
+  type CatalogAmounts,
+  type CatalogItemKey,
+} from '@/lib/billing/pricing-keys'
 
-/** The instant the beta window closes: midnight Pacific on 2026-09-01 (PDT = UTC-7), i.e. beta pricing is
- *  offered through the end of Aug 31 Pacific and list pricing takes over on Sep 1. Owner-editable: moving
- *  this one constant shifts the whole auto-revert (checkout price + every pricing surface). */
-export const BETA_PRICING_ENDS_AT = '2026-09-01T07:00:00.000Z'
+/** The instant the beta window closes. Owner-editable: moving this one constant shifts the whole
+ *  auto-revert (checkout price + every pricing surface).
+ *
+ *  CLOSED EARLY — owner decision, 2026-08-17 (ADR-1060): "scratch the beta pricing and just charge
+ *  full price. They can get 2 months free for purchasing the year."
+ *  It was 2026-09-01T07:00:00.000Z (midnight Pacific on Sep 1). It is now a past instant, so the
+ *  window is shut and list pricing is what every surface shows and every checkout charges.
+ *
+ *  WHAT IT MOVES, and nothing else: Business $19 -> $29 and Collective $49 -> $79 monthly, with the
+ *  annual figures following at 10x (see yearlyFromMonthly — two months free is the house rule and is
+ *  unchanged by this). Independent, Nonprofit and the AI add-on already carried listCents ==
+ *  foundingCents, so their prices do not move at all.
+ *
+ *  🔴 ONE PERSON IS OWED A BETA RATE AND THE CODE CANNOT SEE IT. The grandfathering below protects a
+ *  Space that subscribed through Stripe during the window by re-billing its LOCKED price id. On
+ *  2026-08-17 there were zero such Spaces — 0 rows in space_subscription_items, 0 profiles carrying a
+ *  stripe_customer_id, 0 stripe_webhook_events ever received. That measurement is true and it is NOT
+ *  the whole story: @ishasetlumi claimed the Collective beta rate and PAID IN CASH, and her Space
+ *  (`templeofaset`) carries plan='collective' granted directly in the database. She has no
+ *  subscription item, so she has no lock, so `resolveLoadoutPriceId` has nothing to re-bill. She paid
+ *  $490 — the ANNUAL Collective beta rate ($49 x 10, two months free), so she has bought a full year,
+ *  not a month. Two obligations follow and neither is recorded anywhere the code can read: she must
+ *  not be charged at all until that year runs out, and when it renews it renews at $490, not the $790
+ *  list annual. OWN-022 carries both. The founding price still exists in Stripe to point a lock at,
+ *  because the catalog sync mints BOTH variants active.
+ *
+ *  The general lesson is worth more than the instance: an obligation settled outside the system is
+ *  invisible to every gate in it. Cash paid is still a promise made. */
+export const BETA_PRICING_ENDS_AT = '2026-08-17T00:00:00.000Z'
 
 /** Is the beta anchor pricing still in effect at `now`? True before the cutover, false on/after it.
  *  FAIL-SAFE: an unparseable constant would make this false (charge list, never under-charge). */
@@ -35,6 +65,83 @@ export function isBetaPricingActive(now: Date = new Date()): boolean {
 export function effectiveCatalogAmounts(amounts: CatalogAmounts, betaActive: boolean): CatalogAmounts {
   if (betaActive) return amounts
   return { listCents: amounts.listCents, foundingCents: amounts.listCents }
+}
+
+// ── THE PRIVATE BETA PRICE GRANT (ADR-1061) — a per-Space grant, never a public offer ────────────
+// The owner, 2026-08-17, the same day they closed the window above: *"I still have a couple people
+// that I've offered the Beta pricing to, and I want to keep that open for them. But I don't want to
+// advertise that Beta pricing as a package on the website. I just want regular pricing."*
+//
+// Two requirements that pull in opposite directions, and one mechanism that serves both: the PUBLIC
+// ladder is list ($29 / $79) and the beta framing is gone, while a NAMED Space still checks out at the
+// founding rate. Re-opening `BETA_PRICING_ENDS_AT` cannot do this — it is one global constant read by
+// every pricing surface, so moving it would put the beta rate back on `/pricing` for everyone. The
+// grant is therefore a per-Space fact (`spaces.beta_price_grant`) that ONLY the checkout reads.
+//
+// 🔴 THE GRANT IS NOT THE LOCK, AND THAT IS THE WHOLE POINT. The grandfathering machinery below the
+// window (readLockedPriceId) is a RECORD, not a promise: `space_subscriptions.ts` writes
+// `locked_price_id` from whatever checkout actually charged. With the window shut, a person promised
+// $49 would check out at $79 and their lock would faithfully record $79 — forever. The lock preserves
+// a number; it cannot know the number is wrong. The grant is what makes the FIRST charge right, and
+// once that charge happens the lock takes over and re-bills it for the life of the subscription. That
+// is exactly why the grant carries NO EXPIRY: it is consumed by the first successful checkout and is
+// irrelevant from then on. Leaving it set costs nothing (the lock arm wins ahead of it); revoking it
+// after they subscribe changes nothing either.
+//
+// PURE + framework-free, like the rest of this file: the caller resolves the three facts and this
+// decides. That is what makes the charge decision testable without a database.
+
+/** Which price a loadout item is charged at. Three arms, checked in this order:
+ *  - `lock`     — the Space already holds a grandfathered `locked_price_id` for this item. Re-bill it,
+ *                 whatever it is. A lock is a live subscription's own price and outranks everything.
+ *  - `founding` — no lock, and either the beta WINDOW is open (everyone gets it) or THIS Space carries
+ *                 the private grant (only they do). Charge the founding catalog key.
+ *  - `list`     — no lock, no window, no grant. Charge the `_list` catalog key. The default. */
+export type LoadoutChargeArm = 'lock' | 'founding' | 'list'
+
+/** The three facts the charge decision needs. Resolved by the caller (IO), decided here (pure). */
+export interface LoadoutChargeInput {
+  /** The Space's grandfathered locked price id for THIS item, or null/blank when it holds none
+   *  (`readLockedPriceId`, which already fail-safes a lapsed / canceled item to null). */
+  lockedPriceId?: string | null
+  /** Is the global beta window open at `now`? (`isBetaPricingActive()`.) */
+  betaActive: boolean
+  /** Does THIS Space carry the private beta price grant? (`spaces.beta_price_grant`, read fail-safe
+   *  FALSE — an unreadable answer charges list, so a failure never under-charges.) */
+  spaceHasBetaGrant: boolean
+}
+
+/** Decide which price arm a loadout item is charged at. PURE + total (ADR-1061).
+ *
+ *  The order is the meaning: a lock wins if present, because a live subscription's own price is not
+ *  ours to re-decide; otherwise the founding rate is charged when EITHER the window is open (the
+ *  public offer) or this Space was privately granted it; otherwise list.
+ *
+ *  FAIL-SAFE DIRECTION (inherited from isBetaPricingActive): every unknown resolves toward LIST. A
+ *  blank / whitespace lock id is treated as no lock rather than as a price id, so a malformed row can
+ *  never be handed to Stripe as a price. */
+export function loadoutChargeArm(input: LoadoutChargeInput): LoadoutChargeArm {
+  const locked = (input.lockedPriceId ?? '').trim()
+  if (locked) return 'lock'
+  if (input.betaActive || input.spaceHasBetaGrant) return 'founding'
+  return 'list'
+}
+
+/** The `pricing_stripe_prices` key a loadout item resolves to on a NON-lock arm. PURE.
+ *
+ *  The founding arm takes the plain catalog key (`collective_base_month`) and the list arm takes the
+ *  `_list` variant (`collective_base_month_list`). Both variants are minted ACTIVE by the catalog sync,
+ *  which is what makes the grant a pure key switch with no re-sync and no new Stripe object: the $49
+ *  price a granted Space is charged is the same price id the window used to charge everyone.
+ *
+ *  The `lock` arm is deliberately not representable here — a lock is a concrete price id, not a key,
+ *  so a caller that reaches this function has already ruled it out. */
+export function loadoutChargePriceKey(
+  catalogKey: CatalogItemKey,
+  interval: BillingInterval,
+  arm: Exclude<LoadoutChargeArm, 'lock'>,
+): string {
+  return catalogPriceKey(catalogKey, interval, arm === 'list')
 }
 
 // ── THE BETA GRACE WINDOW (ADR-874) — selling and gating are different decisions ─────────────────

@@ -147,7 +147,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'crm-playbooks-runs', label: 'Recent runs', description: 'What ran lately, and how it landed. A wave-off teaches the next night’s ranking.' },
 
   // ── Community dashboard blocks (/admin/community) — the people and their spaces, as one operator home ──
-  { id: 'community-structure', label: 'Structure & people', description: 'The shape of the live site and who is in it: circles, channels, events, regions, broadcasts, the roster, and the staff team, with cumulative membership growth.' },
+  { id: 'community-structure', label: 'Structure & people', description: 'The shape of the live site and who is in it: circles, channels, events, regions, Dispatches, the roster, and the staff team, with cumulative membership growth.' },
   { id: 'community-trust-safety', label: 'Trust & safety', description: 'The live queue, led by what needs attention now: open reports, support tickets, partner verification, and recent moderation.' },
   { id: 'community-feed-reach', label: 'Feed reach', description: 'The open-feed switch: open the feed for a young community, or keep the reach gate on so a member sees their own circles and nearby posts.' },
   { id: 'community-manage', label: 'Manage', description: 'One card per working surface in Community, each with a live stat and a link straight to the surface that edits it.' },

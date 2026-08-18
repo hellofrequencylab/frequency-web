@@ -10,7 +10,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { SectionHeader } from '@/components/ui/section-header'
 import { isError } from '@/lib/action-result'
 import { createTask, updateTask, setTaskDone, deleteTask } from '@/lib/crm/space-tasks-actions'
-import type { SpaceTask } from '@/lib/crm/pipeline'
+import type { SpaceTask } from '@/lib/crm/pipeline-core'
 import { IconButton } from '@/components/ui/icon-button'
 
 // PER-SPACE TASKS PANEL (client, CRM-STRATEGY §6/§7). The interactive surface for a Space's CRM tasks:

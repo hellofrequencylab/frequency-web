@@ -220,7 +220,7 @@ reason on every run until a sweep brings them down. That is working as designed.
 |---|---|
 | **`CRON_SECRET`** | `lib/cron-auth.ts` is fail-closed in prod. Without it **every** cron 401s: the outbox drain (all email/push/SMS), importer research, automation + drip runners, event reminders, scheduled publish, demo-decay |
 | **`ANTHROPIC_API_KEY`** + flip `platform_flags.ai_enabled` | The whole AI/Vera stack is inert without it |
-| **Enable Supabase Auth leaked-password protection**; **disable anonymous sign-ins** | Two standing advisors since June. Anon sign-ins fire 147× but the code never calls it — unused attack surface |
+| **Enable Supabase Auth leaked-password protection**; **disable anonymous sign-ins** | Two standing advisors since June. Anon sign-ins fired 147× but the code never calls it — unused attack surface. **Both done; anonymous sign-ins stay off by [ADR-1054](DECISIONS.md)** |
 | **VAPID push keys** (P4.5) · **`RESEND_WEBHOOK_SECRET`** (P4.10 email metrics) | Push and email metrics dark |
 | **Verify `frequencylocal.com` in Resend** + SPF/DKIM/DMARC subdomain isolation | Blocking for email volume (ADR-046) |
 | **Submit `sitemap.xml`** to Google Search Console + Bing | Crawl coverage of the programmatic hubs |
@@ -569,9 +569,10 @@ testing harness** so H3 claims are provable.
 reorder: **sync engine → DJ loop → gamification → embed → then the world.** Each rung ends in a
 manual 🚪 GO gate:
 
-sync engine · DJ loop · anonymous auth (**needs "Anonymous sign-ins" enabled in Supabase Auth —
-note this conflicts with §4d's advisor-driven instruction to disable them; reconcile before either
-lands**) · Awesome votes · host embed + webhook · room directory · watch rooms · lounges · avatars +
+sync engine · DJ loop · standalone auth (**settled 2026-08-17 by [ADR-1054](DECISIONS.md) and
+resonance ADR-019: the shared project keeps anonymous sign-ins OFF, so the sub-app gates the call
+behind a capability that defaults off. The rung ships on the host-signed JWT; standalone guest
+identity waits for breakout**) · Awesome votes · host embed + webhook · room directory · watch rooms · lounges · avatars +
 emotes · events + RSVP · lobby headcount · proximity chat (**voice via WebRTC is a deliberate
 follow-up beyond rung 1**) · room decoration · cosmetics economy · identity federation · trivia
 rounds · creator earnings (**fiat cash-out via Stripe Connect deferred; earnings accrue in Zaps**) ·
@@ -786,7 +787,7 @@ Wave 3.
 | **BUILD-SEQUENCE §5 open decisions** | (1) legal entities live date — gates the money go-live · (2) which entity sells the paid membership tier (ADR-031) · (3) the inter-entity bridge mechanism (ADR-038) · (4) web's long-term role once mobile leads · (5) **data residency posture** (H3-12) |
 | **BACKLOG §C economy calls** | `awardZaps` auto-promotes to `luminary` past the earned gate · store-redeem TOCTOU race · `lifetime_gems` doubling as the spendable wallet (**note: the rail read is now fixed; this is the remaining semantics question**) · gem-farm posture |
 | **Owner product calls (CHECKLIST, still unanswered)** | "Interests" one word or two · **the "tune in" verb** · reward economy point values per action · **physical merch fulfillment** (the store spends gems today; trading gems for physical goods is a different posture) · **physical rollout & safety** — who may place ghost nodes, partner rules · **web's long-term role once mobile leads** |
-| **Anonymous sign-ins conflict** | §4d says **disable** them (advisor, 147 unused calls). `resonance/`'s auth rung says **enable** them. **Reconcile before either lands** |
+| **Anonymous sign-ins conflict** | ✅ **Settled 2026-08-17, [ADR-1054](DECISIONS.md).** They stay disabled; `resonance/` stopped requiring them and now declares the capability (default off). Pinned by `supabase/anonymous-sign-ins-policy.test.ts` |
 
 ---
 

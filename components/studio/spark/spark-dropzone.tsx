@@ -104,6 +104,7 @@ export function SparkDropzone({
             <input
               ref={docRef}
               type="file"
+              aria-label="Upload a document"
               accept={DOC_TYPES}
               className="sr-only"
               onChange={(e) => {
@@ -129,6 +130,7 @@ export function SparkDropzone({
             <input
               ref={imageRef}
               type="file"
+              aria-label="Add photos"
               accept={IMAGE_TYPES}
               multiple
               className="sr-only"

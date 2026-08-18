@@ -14,7 +14,22 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-/** Robustly locate the lints array in a get_advisors payload (it has been seen wrapped a few ways). */
+/**
+ * One advisory as `get_advisors` returns it.
+ *
+ * @typedef {object} Lint
+ * @property {string} name the advisory rule, e.g. `rls_disabled_in_public`
+ * @property {string} [level] ERROR | WARN | INFO — defaulted to INFO when absent
+ * @property {Record<string, string>} metadata the object it points at, however the payload spells it
+ * @property {string} [target] an older spelling of the same thing
+ */
+
+/**
+ * Robustly locate the lints array in a get_advisors payload (it has been seen wrapped a few ways).
+ *
+ * @param {unknown} payload
+ * @returns {Lint[]}
+ */
 export function findLints(payload) {
   if (Array.isArray(payload)) return payload[0]?.name ? payload : []
   if (payload && typeof payload === 'object') {
@@ -35,6 +50,9 @@ function targetOf(lint) {
 /**
  * PURE diff (testable): given one or more advisor payloads and the accepted-risk allowlist,
  * return the fresh (non-accepted) lints grouped by level.
+ *
+ * @param {unknown[]} payloads
+ * @param {{ acceptedByName?: Record<string, string>, acceptedByTarget?: Record<string, string[]> }} accepted
  */
 export function diffAdvisors(payloads, accepted) {
   const acceptedByName = accepted.acceptedByName ?? {}

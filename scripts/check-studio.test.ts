@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest'
-// @ts-expect-error — plain .mjs guard script, no types
 import { runCheck, corpus, corpusFloorFailure, MIN_KERNEL_FILES, MIN_STUDIO_FILES, WHY } from './check-studio.mjs'
 
 // The LAYERING half of the Studio contract (ADR-986 · docs/STUDIO.md), moved out of the CI guards

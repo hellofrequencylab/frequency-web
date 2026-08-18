@@ -61,7 +61,7 @@ export function HostCohostSection({
 
   return (
     <section className="rounded-2xl border border-border bg-surface p-4">
-      <p className="mb-3 text-meta font-semibold uppercase tracking-wide text-subtle">{eyebrow}</p>
+      <p className="eyebrow mb-3 text-subtle">{eyebrow}</p>
 
       {/* 1. THE HOST. A hosting Space is the attribution and the person in host_id drops to the
           organizer credit below it; otherwise the person host leads with the Message Host CTA. */}

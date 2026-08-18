@@ -115,7 +115,28 @@ export function VeraChat({ opening, veraTease }: { opening: VeraOpeningSeed; ver
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+      {/* The transcript is a LIVE REGION, or Vera answers into silence for anyone using a screen
+          reader: the reply lands in a scroll container nobody's focus is in, so nothing is spoken.
+          `role="log"` (not `status`/`alert`) is the right primitive because this is an append-only
+          record where order matters and only the NEW entry is news.
+          Politeness is `polite` because a turn arrives WHOLE: `conciergeTurn` is awaited once and
+          the entire reply is appended in a single `setMessages`. There is no token-by-token stream
+          anywhere in this path, so there is no machine-gun to defend against — but the defence is
+          spelled out anyway so a future streaming rewrite has to confront it:
+          `aria-relevant="additions"` announces only nodes that were ADDED (never a re-read of the
+          whole thread, and never in-place text mutation, which is exactly what token streaming
+          would produce), and `aria-atomic="false"` keeps the announcement to the new bubble instead
+          of the entire transcript. The composer stays OUTSIDE this element on purpose — typing into
+          a live region makes a screen reader narrate the member back to themselves. */}
+      <div
+        ref={scrollRef}
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions"
+        aria-atomic="false"
+        aria-label="Conversation with Vera"
+        className="flex-1 space-y-3 overflow-y-auto px-4 py-4"
+      >
         {messages.map((m, i) => (
           <div key={i} className={m.from === 'you' ? 'flex justify-end' : 'flex justify-start'}>
             <div className={m.from === 'you' ? YOU_BUBBLE : VERA_BUBBLE}>

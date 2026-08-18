@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2287,
+      "baseline": 2292,
       "frozen": {
-        "at": "2026-08-13",
-        "value": 2287,
-        "direction": "raised",
-        "basis": "6a00b952da5c",
-        "reason": "+3 arrived on main from other branches while PR #2132 was open; every sample site the gate names is a file that PR never touched. Banked rather than swept because retiring a literal rounded-* means choosing a role radius per site, which is the Lift 2 pass and not this change.",
-        "from": 2284
+        "at": "2026-08-17",
+        "value": 2292,
+        "direction": "rebased",
+        "basis": "db695768f455",
+        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 2287 -> 2292, and this is the ONE key in this pass that also carries other work, so both halves are stated. On the COMMITTED tree the corpus change alone is 2284 -> 2295, +11 real rounded-* utilities unmasked in 7 files (events/[slug]/page.tsx +3, crew/page.tsx +2, loom-image-popup.tsx +2, and one each in crm/intelligence, asset-av-panel, messages/[id], layout-editor). A sweep in flight in this shared worktree accounts for a further -3, giving 2292. Note what the old instrument was reporting: 2281 against a 2287 floor, printed as a green shrink, while the true count was above the floor.",
+        "from": 2287
       },
       "history": [
         {
@@ -196,6 +196,13 @@
           "to": 2287,
           "direction": "raised",
           "reason": "+3 arrived on main from other branches while PR #2132 was open; every sample site the gate names is a file that PR never touched. Banked rather than swept because retiring a literal rounded-* means choosing a role radius per site, which is the Lift 2 pass and not this change."
+        },
+        {
+          "at": "2026-08-17",
+          "from": 2287,
+          "to": 2292,
+          "direction": "rebased",
+          "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 2287 -> 2292, and this is the ONE key in this pass that also carries other work, so both halves are stated. On the COMMITTED tree the corpus change alone is 2284 -> 2295, +11 real rounded-* utilities unmasked in 7 files (events/[slug]/page.tsx +3, crew/page.tsx +2, loom-image-popup.tsx +2, and one each in crm/intelligence, asset-av-panel, messages/[id], layout-editor). A sweep in flight in this shared worktree accounts for a further -3, giving 2292. Note what the old instrument was reporting: 2281 against a 2287 floor, printed as a green shrink, while the true count was above the floor."
         }
       ]
     },
@@ -214,11 +221,11 @@
       ],
       "baseline": 0,
       "frozen": {
-        "at": "2026-08-05",
+        "at": "2026-08-17",
         "value": 0,
         "direction": "rebased",
-        "basis": "4e516bacbecf",
-        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
+        "basis": "f0af41c90d28",
+        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob ending slash-star no longer opens a block comment running to the next JSDoc close. Over app+components+lib that had blanked 121627 characters of real markup in 101 files. This class counts 0 and counted 0 both before and after, on the committed tree and in the worktree; only the fingerprint moves.",
         "from": 0
       },
       "history": [
@@ -249,6 +256,13 @@
           "to": 0,
           "direction": "rebased",
           "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
+        },
+        {
+          "at": "2026-08-17",
+          "from": 0,
+          "to": 0,
+          "direction": "rebased",
+          "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob ending slash-star no longer opens a block comment running to the next JSDoc close. Over app+components+lib that had blanked 121627 characters of real markup in 101 files. This class counts 0 and counted 0 both before and after, on the committed tree and in the worktree; only the fingerprint moves."
         }
       ]
     },
@@ -265,14 +279,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 50,
+      "baseline": 51,
       "frozen": {
-        "at": "2026-08-13",
-        "value": 50,
-        "direction": "raised",
-        "basis": "50ae235138cf",
-        "reason": "+1 arrived on main from another branch. Banked: the fix is the DAWN lift-* depth language, and the new site needs the same per-site judgement as the other 49.",
-        "from": 49
+        "at": "2026-08-17",
+        "value": 51,
+        "direction": "rebased",
+        "basis": "9b2a23dd2c68",
+        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 50 -> 51. The +1 is one real shadow literal in lib/onboarding/step-registry.tsx that the pseudo-comment had been hiding, not new code: measured on the COMMITTED tree the class goes 50 -> 51 across the corpus change alone, with no in-flight movement in the worktree. Debt the gate was blind to, now guarded.",
+        "from": 50
       },
       "history": [
         {
@@ -309,12 +323,19 @@
           "to": 50,
           "direction": "raised",
           "reason": "+1 arrived on main from another branch. Banked: the fix is the DAWN lift-* depth language, and the new site needs the same per-site judgement as the other 49."
+        },
+        {
+          "at": "2026-08-17",
+          "from": 50,
+          "to": 51,
+          "direction": "rebased",
+          "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 50 -> 51. The +1 is one real shadow literal in lib/onboarding/step-registry.tsx that the pseudo-comment had been hiding, not new code: measured on the COMMITTED tree the class goes 50 -> 51 across the corpus change alone, with no in-flight movement in the worktree. Debt the gate was blind to, now guarded."
         }
       ]
     },
     {
       "key": "white-black-literals",
-      "description": "Hardcoded monochromes (-white / -black / white\\/NN) that ignore theme generations — the only bug class in the census",
+      "description": "Hardcoded monochromes (-white / -black / white\\/NN) that ignore theme generations -- the only bug class in the census. A site carrying a `KEEP <utility>: <reason>` comment on its own line or in the comment block attached above it is a WRITTEN carve-out and does not count, so the floor is 0 and the next unjustified monochrome fails CI. Carve-outs are exempted by their stated reason, never by a directory glob: an exclude for app/print/** would blind the gate to every future literal under it, justified or not.",
       "mode": "matches",
       "patterns": [
         "(?:-white\\b|white/\\d+|(?<!font)-black\\b)"
@@ -329,13 +350,13 @@
         "app/dev/og-root-card/route.tsx",
         "app/**/twitter-image.tsx"
       ],
-      "baseline": 27,
+      "baseline": 0,
       "frozen": {
-        "at": "2026-08-12",
-        "value": 27,
+        "at": "2026-08-17",
+        "value": 0,
         "direction": "rebased",
-        "basis": "d47792c78573",
-        "reason": "Scope parity only, no sweep and no code change: app/opengraph-image.tsx moved to app/dev/og-root-card/route.tsx (ADR-1002) so Next stops inheriting the root share card into every page metadata module, which was putting sharp + libvips into 403 serverless functions. The file is the same raster surface it always was — Satori cannot read the CSS token cascade, which is why app/**/opengraph-image.tsx and lib/og/** are already carved out here — so the new path joins the same three carve-outs. Only the basis moves; the counts are unchanged at the same numbers.",
+        "basis": "d9c79af27bfa",
+        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 27 -> 0, an instrument correction with no code changed. All 27 sites carried a KEEP <utility>: <reason> comment - QR quiet zones a scanner needs true white for, video letterboxes, an email preview frame, a tick on an operator's own hex - so not one was retirable and the real floor was 27, not the 2 the DAWN Phase 9 queue recorded. Worse than an unreachable floor: a total cannot tell a carve-out from new debt, so the two were fungible in it, and retiring one annotated site while adding one bare bg-white read 27 -> 27 held and green. The entry now declares an escape: a match whose own line or attached comment block states KEEP <utility>: <reason> is a written carve-out and does not count. The floor is 0, so the next unjustified monochrome fails CI, and app/print/** needs no exclusion glob because its two sites already carry their reason.",
         "from": 27
       },
       "history": [
@@ -394,8 +415,18 @@
           "to": 27,
           "direction": "rebased",
           "reason": "Scope parity only, no sweep and no code change: app/opengraph-image.tsx moved to app/dev/og-root-card/route.tsx (ADR-1002) so Next stops inheriting the root share card into every page metadata module, which was putting sharp + libvips into 403 serverless functions. The file is the same raster surface it always was — Satori cannot read the CSS token cascade, which is why app/**/opengraph-image.tsx and lib/og/** are already carved out here — so the new path joins the same three carve-outs. Only the basis moves; the counts are unchanged at the same numbers."
+        },
+        {
+          "at": "2026-08-17",
+          "from": 27,
+          "to": 0,
+          "direction": "rebased",
+          "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 27 -> 0, an instrument correction with no code changed. All 27 sites carried a KEEP <utility>: <reason> comment - QR quiet zones a scanner needs true white for, video letterboxes, an email preview frame, a tick on an operator's own hex - so not one was retirable and the real floor was 27, not the 2 the DAWN Phase 9 queue recorded. Worse than an unreachable floor: a total cannot tell a carve-out from new debt, so the two were fungible in it, and retiring one annotated site while adding one bare bg-white read 27 -> 27 held and green. The entry now declares an escape: a match whose own line or attached comment block states KEEP <utility>: <reason> is a written carve-out and does not count. The floor is 0, so the next unjustified monochrome fails CI, and app/print/** needs no exclusion glob because its two sites already carry their reason."
         }
-      ]
+      ],
+      "escape": {
+        "pattern": "KEEP\\s+[\\w/-]+:\\s*\\S"
+      }
     },
     {
       "key": "subtle-tiny-type",
@@ -413,12 +444,12 @@
       ],
       "baseline": 0,
       "frozen": {
-        "at": "2026-08-13",
+        "at": "2026-08-17",
         "value": 0,
-        "direction": "lowered",
-        "basis": "2616a25fff84",
-        "reason": "Swept, not banked: 26 -> 0. Every text-subtle paired with text-2xs/text-3xs moved to text-muted across 9 files. This class is sub-AA by construction (Lift 3), so of the five that rose it was the only one that was an accessibility regression rather than styling debt. Re-frozen at 0 rather than back at its old 22, so the class cannot quietly refill.",
-        "from": 22
+        "direction": "rebased",
+        "basis": "6e51e9f4683e",
+        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob ending slash-star no longer opens a block comment running to the next JSDoc close. Over app+components+lib that had blanked 121627 characters of real markup in 101 files. This class counts 0 and counted 0 both before and after, on the committed tree and in the worktree; only the fingerprint moves.",
+        "from": 0
       },
       "history": [
         {
@@ -455,6 +486,13 @@
           "to": 0,
           "direction": "lowered",
           "reason": "Swept, not banked: 26 -> 0. Every text-subtle paired with text-2xs/text-3xs moved to text-muted across 9 files. This class is sub-AA by construction (Lift 3), so of the five that rose it was the only one that was an accessibility regression rather than styling debt. Re-frozen at 0 rather than back at its old 22, so the class cannot quietly refill."
+        },
+        {
+          "at": "2026-08-17",
+          "from": 0,
+          "to": 0,
+          "direction": "rebased",
+          "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob ending slash-star no longer opens a block comment running to the next JSDoc close. Over app+components+lib that had blanked 121627 characters of real markup in 101 files. This class counts 0 and counted 0 both before and after, on the committed tree and in the worktree; only the fingerprint moves."
         }
       ]
     },
@@ -475,12 +513,12 @@
       ],
       "baseline": 514,
       "frozen": {
-        "at": "2026-08-13",
+        "at": "2026-08-17",
         "value": 514,
-        "direction": "raised",
-        "basis": "9bcf47d8a607",
-        "reason": "+2 arrived on main from other branches. Banked: retiring a raw <button> carrying a bg-primary fill means composing the Button primitive, which changes behaviour per site and is not a mechanical replace.",
-        "from": 512
+        "direction": "rebased",
+        "basis": "c478ed64ec1e",
+        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob ending slash-star no longer opens a block comment running to the next JSDoc close. Over app+components+lib that had blanked 121627 characters of real markup in 101 files. No site in this class sat inside a region the old blanker was eating: 514 before and 514 after, measured on the committed tree and again in the worktree. Only the fingerprint moves.",
+        "from": 514
       },
       "history": [
         {
@@ -573,6 +611,13 @@
           "to": 514,
           "direction": "raised",
           "reason": "+2 arrived on main from other branches. Banked: retiring a raw <button> carrying a bg-primary fill means composing the Button primitive, which changes behaviour per site and is not a mechanical replace."
+        },
+        {
+          "at": "2026-08-17",
+          "from": 514,
+          "to": 514,
+          "direction": "rebased",
+          "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob ending slash-star no longer opens a block comment running to the next JSDoc close. Over app+components+lib that had blanked 121627 characters of real markup in 101 files. No site in this class sat inside a region the old blanker was eating: 514 before and 514 after, measured on the committed tree and again in the worktree. Only the fingerprint moves."
         }
       ]
     },
@@ -594,12 +639,12 @@
       ],
       "baseline": 8,
       "frozen": {
-        "at": "2026-08-06",
+        "at": "2026-08-17",
         "value": 8,
-        "direction": "lowered",
-        "basis": "d2bda376c3f2",
-        "reason": "12 -> 8. Four more hand-rolled progress bars replaced by ProgressTrack, continuing the pass that retired the standing-hero and challenges-season copies.",
-        "from": 12
+        "direction": "rebased",
+        "basis": "d2ed9520aa4f",
+        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob ending slash-star no longer opens a block comment running to the next JSDoc close. Over app+components+lib that had blanked 121627 characters of real markup in 101 files. No site in this class sat inside a region the old blanker was eating: 8 before and 8 after, measured on the committed tree and again in the worktree. Only the fingerprint moves.",
+        "from": 8
       },
       "history": [
         {
@@ -636,6 +681,13 @@
           "to": 8,
           "direction": "lowered",
           "reason": "12 -> 8. Four more hand-rolled progress bars replaced by ProgressTrack, continuing the pass that retired the standing-hero and challenges-season copies."
+        },
+        {
+          "at": "2026-08-17",
+          "from": 8,
+          "to": 8,
+          "direction": "rebased",
+          "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob ending slash-star no longer opens a block comment running to the next JSDoc close. Over app+components+lib that had blanked 121627 characters of real markup in 101 files. No site in this class sat inside a region the old blanker was eating: 8 before and 8 after, measured on the committed tree and again in the worktree. Only the fingerprint moves."
         }
       ]
     },
@@ -705,12 +757,12 @@
       },
       "baseline": 0,
       "frozen": {
-        "at": "2026-08-11",
+        "at": "2026-08-17",
         "value": 0,
         "direction": "rebased",
-        "basis": "5d34a406051a",
-        "reason": "Rebased 24 -> 0 by the 2026-08-11 triage, and both halves of that move are in this diff. TWO sites were owed to the kit and converged: app/discover/practices/practice-card.tsx now composes EntityCard, and components/journeys/journey-manage-card.tsx composes RowCard with its lifecycle bar in the new footer slot. The other 22 are named in the entry's `exclude` list, each with a one-line reason in `excludeReasons`, because this class keys off the FILENAME *-card.tsx and cannot tell a browse card from a QR panel, a settings form, a feed prompt, a detail pane, or the ModuleCard chrome primitive itself. That blindness is exactly why the number never moved in either direction since it was seeded. At baseline 0 the ratchet is STRICTER than it was at 24: the next uncategorised *-card.tsx fails CI instead of hiding inside an undifferentiated count.",
-        "from": 24
+        "basis": "7d03df5ee63f",
+        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob ending slash-star no longer opens a block comment running to the next JSDoc close. Over app+components+lib that had blanked 121627 characters of real markup in 101 files. This class counts 0 and counted 0 both before and after, on the committed tree and in the worktree; only the fingerprint moves.",
+        "from": 0
       },
       "history": [
         {
@@ -733,6 +785,13 @@
           "to": 0,
           "direction": "rebased",
           "reason": "Rebased 24 -> 0 by the 2026-08-11 triage, and both halves of that move are in this diff. TWO sites were owed to the kit and converged: app/discover/practices/practice-card.tsx now composes EntityCard, and components/journeys/journey-manage-card.tsx composes RowCard with its lifecycle bar in the new footer slot. The other 22 are named in the entry's `exclude` list, each with a one-line reason in `excludeReasons`, because this class keys off the FILENAME *-card.tsx and cannot tell a browse card from a QR panel, a settings form, a feed prompt, a detail pane, or the ModuleCard chrome primitive itself. That blindness is exactly why the number never moved in either direction since it was seeded. At baseline 0 the ratchet is STRICTER than it was at 24: the next uncategorised *-card.tsx fails CI instead of hiding inside an undifferentiated count."
+        },
+        {
+          "at": "2026-08-17",
+          "from": 0,
+          "to": 0,
+          "direction": "rebased",
+          "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob ending slash-star no longer opens a block comment running to the next JSDoc close. Over app+components+lib that had blanked 121627 characters of real markup in 101 files. This class counts 0 and counted 0 both before and after, on the committed tree and in the worktree; only the fingerprint moves."
         }
       ]
     },
@@ -781,12 +840,12 @@
       },
       "baseline": 0,
       "frozen": {
-        "at": "2026-08-11",
+        "at": "2026-08-17",
         "value": 0,
         "direction": "rebased",
-        "basis": "b7ae5f8e6193",
-        "reason": "Rebased 14 -> 0 by the 2026-08-11 triage, and both halves of that move are in this diff. TWO sites were owed to the kit and converged: components/events/upcoming-event-rows.tsx now composes RowCard in link mode, with its dimension-matched skeleton moved alongside it (the flat h-16 was matched to the markup that was replaced and would now be 12px short), and components/spaces/space-practice-row.tsx composes RowCard with its lifecycle bar in the new footer slot. The other 12 are named in the entry's `exclude` list, each with a one-line reason in `excludeReasons`: this class keys off the FILENAME SUBSTRING *row*.tsx, so it was counting action clusters (*-row-actions, row-controls), form-control settings strips, rail chrome, a borderless credit line, and grow-network.tsx, which matched only because the word grow contains row. At baseline 0 the ratchet is STRICTER than it was at 14: the next uncategorised row fails CI instead of hiding inside an undifferentiated count.",
-        "from": 14
+        "basis": "ffc42394aad3",
+        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob ending slash-star no longer opens a block comment running to the next JSDoc close. Over app+components+lib that had blanked 121627 characters of real markup in 101 files. This class counts 0 and counted 0 both before and after, on the committed tree and in the worktree; only the fingerprint moves.",
+        "from": 0
       },
       "history": [
         {
@@ -809,6 +868,13 @@
           "to": 0,
           "direction": "rebased",
           "reason": "Rebased 14 -> 0 by the 2026-08-11 triage, and both halves of that move are in this diff. TWO sites were owed to the kit and converged: components/events/upcoming-event-rows.tsx now composes RowCard in link mode, with its dimension-matched skeleton moved alongside it (the flat h-16 was matched to the markup that was replaced and would now be 12px short), and components/spaces/space-practice-row.tsx composes RowCard with its lifecycle bar in the new footer slot. The other 12 are named in the entry's `exclude` list, each with a one-line reason in `excludeReasons`: this class keys off the FILENAME SUBSTRING *row*.tsx, so it was counting action clusters (*-row-actions, row-controls), form-control settings strips, rail chrome, a borderless credit line, and grow-network.tsx, which matched only because the word grow contains row. At baseline 0 the ratchet is STRICTER than it was at 14: the next uncategorised row fails CI instead of hiding inside an undifferentiated count."
+        },
+        {
+          "at": "2026-08-17",
+          "from": 0,
+          "to": 0,
+          "direction": "rebased",
+          "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob ending slash-star no longer opens a block comment running to the next JSDoc close. Over app+components+lib that had blanked 121627 characters of real markup in 101 files. This class counts 0 and counted 0 both before and after, on the committed tree and in the worktree; only the fingerprint moves."
         }
       ]
     },
@@ -828,12 +894,12 @@
       ],
       "baseline": 0,
       "frozen": {
-        "at": "2026-08-05",
+        "at": "2026-08-17",
         "value": 0,
-        "direction": "lowered",
-        "basis": "0a2d583d1e76",
-        "reason": "Swept to ZERO — the first movement since this class was seeded. The three hand-rolled strips (admin page-layout, the messaging console, and the member housing category nav) now compose UnderlineTabs, which DAWN names as the one tab vocabulary. UnderlineTabs gained a menu disclosure for a long tail and an aria-label prop, both additive: the item type is a union and the label defaults to the previously hardcoded string, so all existing call sites are untouched.",
-        "from": 3
+        "direction": "rebased",
+        "basis": "06dca4dc8881",
+        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob ending slash-star no longer opens a block comment running to the next JSDoc close. Over app+components+lib that had blanked 121627 characters of real markup in 101 files. This class counts 0 and counted 0 both before and after, on the committed tree and in the worktree; only the fingerprint moves.",
+        "from": 0
       },
       "history": [
         {
@@ -849,6 +915,13 @@
           "to": 0,
           "direction": "lowered",
           "reason": "Swept to ZERO — the first movement since this class was seeded. The three hand-rolled strips (admin page-layout, the messaging console, and the member housing category nav) now compose UnderlineTabs, which DAWN names as the one tab vocabulary. UnderlineTabs gained a menu disclosure for a long tail and an aria-label prop, both additive: the item type is a union and the label defaults to the previously hardcoded string, so all existing call sites are untouched."
+        },
+        {
+          "at": "2026-08-17",
+          "from": 0,
+          "to": 0,
+          "direction": "rebased",
+          "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob ending slash-star no longer opens a block comment running to the next JSDoc close. Over app+components+lib that had blanked 121627 characters of real markup in 101 files. This class counts 0 and counted 0 both before and after, on the committed tree and in the worktree; only the fingerprint moves."
         }
       ]
     },
@@ -872,14 +945,14 @@
         "components/ui/icon.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 115,
+      "baseline": 118,
       "frozen": {
-        "at": "2026-08-12",
-        "value": 115,
-        "direction": "lowered",
-        "basis": "0ed9a314744e",
-        "reason": "One site retired with a component deleted on this branch (ADR-1006). Distinct from the 2026-08-12 rebase recorded against this key, which moved the basis for the root share card without changing any code; this one is a real deletion.",
-        "from": 116
+        "at": "2026-08-17",
+        "value": 118,
+        "direction": "rebased",
+        "basis": "8afdfcd88c01",
+        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 115 -> 118. All three are in components/admin/email-studio/loom/loom-image-popup.tsx, whose file input opened the pseudo-comment; measured on the COMMITTED tree the class goes 115 -> 118 across the corpus change alone, with no in-flight movement in the worktree. Debt the gate was blind to, now guarded.",
+        "from": 115
       },
       "history": [
         {
@@ -923,6 +996,13 @@
           "to": 115,
           "direction": "lowered",
           "reason": "One site retired with a component deleted on this branch (ADR-1006). Distinct from the 2026-08-12 rebase recorded against this key, which moved the basis for the root share card without changing any code; this one is a real deletion."
+        },
+        {
+          "at": "2026-08-17",
+          "from": 115,
+          "to": 118,
+          "direction": "rebased",
+          "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 115 -> 118. All three are in components/admin/email-studio/loom/loom-image-popup.tsx, whose file input opened the pseudo-comment; measured on the COMMITTED tree the class goes 115 -> 118 across the corpus change alone, with no in-flight movement in the worktree. Debt the gate was blind to, now guarded."
         }
       ]
     },
@@ -941,12 +1021,12 @@
       ],
       "baseline": 96,
       "frozen": {
-        "at": "2026-08-05",
+        "at": "2026-08-17",
         "value": 96,
-        "direction": "lowered",
-        "basis": "8cd8fa7502b5",
-        "reason": "EARNED FALL, 300 -> 96, and overdue: the display sweep bought these 204 sites across three shipped commits and the ratchet was never re-frozen behind any of them. Measured per revision: 300 -> 112 in 6056d0a82 (#2046), 112 -> 104 in 959ddb678 (#2048), 104 -> 96 in 77bb066e5 (\"Give the page title a fluid role\"), and 96 ever since. The script printed \"A sweep landed. Re-freeze so the new floor holds\" on every run across all three and it was read as decoration. A floor 204 above reality is not a ratchet: anyone could have put 204 display literals back and CI would have stayed green, which is the same green-over-its-own-subject failure Phase 9 exists to end. Distinct in kind from the raw-button-bg entry re-frozen in this same pass - that one changed a PATTERN with no code behind it and is recorded as rebased; this is code that was actually swept, so it is lowered and the credit belongs to the sweep.",
-        "from": 300
+        "direction": "rebased",
+        "basis": "64ff33cabd79",
+        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. No site in this class sat inside a region the old blanker was eating: 96 before and 96 after, measured on the committed tree and again in the worktree. Only the fingerprint moves.",
+        "from": 96
       },
       "history": [
         {
@@ -969,6 +1049,13 @@
           "to": 96,
           "direction": "lowered",
           "reason": "EARNED FALL, 300 -> 96, and overdue: the display sweep bought these 204 sites across three shipped commits and the ratchet was never re-frozen behind any of them. Measured per revision: 300 -> 112 in 6056d0a82 (#2046), 112 -> 104 in 959ddb678 (#2048), 104 -> 96 in 77bb066e5 (\"Give the page title a fluid role\"), and 96 ever since. The script printed \"A sweep landed. Re-freeze so the new floor holds\" on every run across all three and it was read as decoration. A floor 204 above reality is not a ratchet: anyone could have put 204 display literals back and CI would have stayed green, which is the same green-over-its-own-subject failure Phase 9 exists to end. Distinct in kind from the raw-button-bg entry re-frozen in this same pass - that one changed a PATTERN with no code behind it and is recorded as rebased; this is code that was actually swept, so it is lowered and the credit belongs to the sweep."
+        },
+        {
+          "at": "2026-08-17",
+          "from": 96,
+          "to": 96,
+          "direction": "rebased",
+          "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. No site in this class sat inside a region the old blanker was eating: 96 before and 96 after, measured on the committed tree and again in the worktree. Only the fingerprint moves."
         }
       ]
     },
@@ -991,11 +1078,11 @@
       ],
       "baseline": 0,
       "frozen": {
-        "at": "2026-08-12",
+        "at": "2026-08-17",
         "value": 0,
         "direction": "rebased",
-        "basis": "ed246d19cfb9",
-        "reason": "Scope parity only, no sweep and no code change: app/opengraph-image.tsx moved to app/dev/og-root-card/route.tsx (ADR-1002) so Next stops inheriting the root share card into every page metadata module, which was putting sharp + libvips into 403 serverless functions. The file is the same raster surface it always was — Satori cannot read the CSS token cascade, which is why app/**/opengraph-image.tsx and lib/og/** are already carved out here — so the new path joins the same three carve-outs. Only the basis moves; the counts are unchanged at the same numbers.",
+        "basis": "aabb3e36d023",
+        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob ending slash-star no longer opens a block comment running to the next JSDoc close. Over app+components+lib that had blanked 121627 characters of real markup in 101 files. This class counts 0 and counted 0 both before and after, on the committed tree and in the worktree; only the fingerprint moves.",
         "from": 0
       },
       "history": [
@@ -1026,6 +1113,13 @@
           "to": 0,
           "direction": "rebased",
           "reason": "Scope parity only, no sweep and no code change: app/opengraph-image.tsx moved to app/dev/og-root-card/route.tsx (ADR-1002) so Next stops inheriting the root share card into every page metadata module, which was putting sharp + libvips into 403 serverless functions. The file is the same raster surface it always was — Satori cannot read the CSS token cascade, which is why app/**/opengraph-image.tsx and lib/og/** are already carved out here — so the new path joins the same three carve-outs. Only the basis moves; the counts are unchanged at the same numbers."
+        },
+        {
+          "at": "2026-08-17",
+          "from": 0,
+          "to": 0,
+          "direction": "rebased",
+          "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob ending slash-star no longer opens a block comment running to the next JSDoc close. Over app+components+lib that had blanked 121627 characters of real markup in 101 files. This class counts 0 and counted 0 both before and after, on the committed tree and in the worktree; only the fingerprint moves."
         }
       ]
     },
@@ -1045,12 +1139,12 @@
       ],
       "baseline": 3,
       "frozen": {
-        "at": "2026-08-11",
+        "at": "2026-08-17",
         "value": 3,
-        "direction": "lowered",
-        "basis": "772c3e554a45",
-        "reason": "Tinted/selected variant added to IconButton. 6 to 3. The two app-shell sites are deliberately untouched: MENU-CONTRACT governed and visual-snapshot sensitive.",
-        "from": 6
+        "direction": "rebased",
+        "basis": "1e0d98756efd",
+        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. No site in this class sat inside a region the old blanker was eating: 3 before and 3 after, measured on the committed tree and again in the worktree. Only the fingerprint moves.",
+        "from": 3
       },
       "history": [
         {
@@ -1101,6 +1195,13 @@
           "to": 3,
           "direction": "lowered",
           "reason": "Tinted/selected variant added to IconButton. 6 to 3. The two app-shell sites are deliberately untouched: MENU-CONTRACT governed and visual-snapshot sensitive."
+        },
+        {
+          "at": "2026-08-17",
+          "from": 3,
+          "to": 3,
+          "direction": "rebased",
+          "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. No site in this class sat inside a region the old blanker was eating: 3 before and 3 after, measured on the committed tree and again in the worktree. Only the fingerprint moves."
         }
       ]
     },
@@ -1118,7 +1219,7 @@
         "**/*.{test,spec}.tsx",
         "components/ui/select.tsx"
       ],
-      "baseline": 3,
+      "baseline": 4,
       "history": [
         {
           "at": "2026-08-05",
@@ -1147,23 +1248,30 @@
           "to": 3,
           "direction": "lowered",
           "reason": "tone prop added to Select, for chip filters whose active state is a border/bg swap. 6 to 3."
+        },
+        {
+          "at": "2026-08-17",
+          "from": 3,
+          "to": 4,
+          "direction": "rebased",
+          "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 3 -> 4. The +1 is one real raw select in lib/onboarding/step-registry.tsx, hidden behind that file's own file-input accept glob; measured on the COMMITTED tree the class goes 3 -> 4 across the corpus change alone, with no in-flight movement in the worktree."
         }
       ],
       "frozen": {
-        "at": "2026-08-11",
-        "value": 3,
-        "direction": "lowered",
-        "basis": "08ace42d7483",
-        "reason": "tone prop added to Select, for chip filters whose active state is a border/bg swap. 6 to 3.",
-        "from": 6
+        "at": "2026-08-17",
+        "value": 4,
+        "direction": "rebased",
+        "basis": "d05cddf02065",
+        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 3 -> 4. The +1 is one real raw select in lib/onboarding/step-registry.tsx, hidden behind that file's own file-input accept glob; measured on the COMMITTED tree the class goes 3 -> 4 across the corpus change alone, with no in-flight movement in the worktree.",
+        "from": 3
       }
     },
     {
       "key": "raw-input",
-      "description": "Raw <input> elements instead of the field primitives (components/ui/field.tsx, components/ui/checkbox.tsx). Counts OPENING TAGS; <Field>/<Checkbox> never match because JSX components are capitalised. type=\"hidden\" is excluded by a lookahead over the tag's own attributes: a hidden input is form serialisation, not a control, so no primitive can receive it and counting it would put zero out of reach and fail CI on a legitimate hidden field.",
+      "description": "Raw <input> elements instead of the field primitives (components/ui/field.tsx, components/ui/checkbox.tsx). Counts OPENING TAGS; <Field>/<Checkbox> never match because JSX components are capitalised. TWO kinds of tag are excluded by lookaheads bounded to the tag's own attributes, both because no primitive can receive them and counting them would put zero permanently out of reach: type=\"hidden\" (form serialisation, not a control), and type=\"file\" carrying hidden/sr-only (a trigger fired by a sibling button, with no chrome of its own). The file lookahead is ORDER-INDEPENDENT -- className may precede type -- because it is a nested lookahead over the same span rather than a sequence.",
       "mode": "matches",
       "patterns": [
-        "<input\\b(?!(?:[^>=]|=>|=(?!>))*?type=[\"']hidden)"
+        "<input\\b(?!(?:[^>=]|=>|=(?!>))*?type=[\"']hidden)(?!(?=(?:[^>=]|=>|=(?!>))*?type=[\"']file)(?:[^>=]|=>|=(?!>))*?(?:className=[\"'][^\"']*(?:\\bhidden\\b|\\bsr-only\\b)|(?<![-\\w])hidden(?=[\\s/>])))"
       ],
       "include": [
         "{app,components,lib}/**/*.tsx"
@@ -1173,7 +1281,7 @@
         "components/ui/field.tsx",
         "components/ui/checkbox.tsx"
       ],
-      "baseline": 119,
+      "baseline": 87,
       "history": [
         {
           "at": "2026-08-05",
@@ -1230,15 +1338,22 @@
           "to": 119,
           "direction": "raised",
           "reason": "+1 arrived on main from another branch. Banked: the fix is the Field/Checkbox primitives in components/ui, a per-site change rather than a rename."
+        },
+        {
+          "at": "2026-08-17",
+          "from": 119,
+          "to": 87,
+          "direction": "rebased",
+          "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 119 -> 87, an INSTRUMENT correction in both halves and no code retired. The lookahead excluded type=hidden and nothing else, so 37 file-picker triggers counted as un-adopted fields; every one is held behind hidden or sr-only and fired by a sibling button, so no text-field primitive can receive it, which is the same reasoning the type=hidden lookahead was written for. A second, order-independent lookahead now excludes type=file co-occurring with hidden or sr-only, and a VISIBLE file input still counts. The DAWN Phase 9 queue estimated ~18; a TypeScript-AST census of this entry's own scope says 37, 0 of them visible. The corpus fix is what makes this land: on the old corpus the new lookahead reached only 15 of the 37, because the accept glob had already blanked the className that proves concealment. 119 -> 124 (corpus) -> 87 (lookahead)."
         }
       ],
       "frozen": {
-        "at": "2026-08-13",
-        "value": 119,
-        "direction": "raised",
-        "basis": "23c25a5145a1",
-        "reason": "+1 arrived on main from another branch. Banked: the fix is the Field/Checkbox primitives in components/ui, a per-site change rather than a rename.",
-        "from": 118
+        "at": "2026-08-17",
+        "value": 87,
+        "direction": "rebased",
+        "basis": "a76a8556a0ed",
+        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 119 -> 87, an INSTRUMENT correction in both halves and no code retired. The lookahead excluded type=hidden and nothing else, so 37 file-picker triggers counted as un-adopted fields; every one is held behind hidden or sr-only and fired by a sibling button, so no text-field primitive can receive it, which is the same reasoning the type=hidden lookahead was written for. A second, order-independent lookahead now excludes type=file co-occurring with hidden or sr-only, and a VISIBLE file input still counts. The DAWN Phase 9 queue estimated ~18; a TypeScript-AST census of this entry's own scope says 37, 0 of them visible. The corpus fix is what makes this land: on the old corpus the new lookahead reached only 15 of the 37, because the accept glob had already blanked the className that proves concealment. 119 -> 124 (corpus) -> 87 (lookahead).",
+        "from": 119
       }
     },
     {
@@ -1255,7 +1370,7 @@
         "**/*.{test,spec}.tsx",
         "components/ui/field.tsx"
       ],
-      "baseline": 1,
+      "baseline": 3,
       "history": [
         {
           "at": "2026-08-05",
@@ -1284,16 +1399,58 @@
           "to": 1,
           "direction": "lowered",
           "reason": "Borderless variant added to Textarea, for auto-grow composers sitting inside already-bordered cards. 6 to 1."
+        },
+        {
+          "at": "2026-08-17",
+          "from": 1,
+          "to": 3,
+          "direction": "rebased",
+          "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 1 -> 3. Both are real raw textareas the pseudo-comment was eating, in app/onboarding/form.tsx and lib/onboarding/step-registry.tsx; measured on the COMMITTED tree the class goes 1 -> 3 across the corpus change alone, with no in-flight movement in the worktree. A class whose floor was 1 was hiding two thirds of itself."
         }
       ],
       "frozen": {
-        "at": "2026-08-11",
-        "value": 1,
-        "direction": "lowered",
-        "basis": "42a90640e4e9",
-        "reason": "Borderless variant added to Textarea, for auto-grow composers sitting inside already-bordered cards. 6 to 1.",
-        "from": 6
+        "at": "2026-08-17",
+        "value": 3,
+        "direction": "rebased",
+        "basis": "14f50a1abe56",
+        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 1 -> 3. Both are real raw textareas the pseudo-comment was eating, in app/onboarding/form.tsx and lib/onboarding/step-registry.tsx; measured on the COMMITTED tree the class goes 1 -> 3 across the corpus change alone, with no in-flight movement in the worktree. A class whose floor was 1 was hiding two thirds of itself.",
+        "from": 1
       }
+    },
+    {
+      "key": "handrolled-eyebrow",
+      "description": "Uppercase text tracked by a LITERAL (tracking-wide / wider / widest / an arbitrary em) instead of the eyebrow role token. The eyebrow is the small uppercase tracked label, and `app/globals.css` locks it at 0.75rem / 0.18em / bold behind the `eyebrow` utility and `--tracking-eyebrow`. Production splits it TEN ways. Deliberately a RATCHET and not a sweep: the population is heterogeneous — genuine eyebrows sit beside pill badges and dense table headers where 0.18em would blow the pill out — so each site is a judgment, not a rename. The half a machine CAN settle is guarded outright by lib/theme/eyebrow-role.test.ts, which fails on any slot the code itself names `eyebrow` that hand-rolls the role. `tracking-tight` and `tracking-normal` are excluded: on `font-display uppercase` they are display headings, not eyebrows, and counting them would make the class fire on the wrong subject.",
+      "mode": "matches",
+      "patterns": [
+        "\\buppercase\\b[^\"'`\\n<>]{0,140}?\\btracking-(?:wide|wider|widest)\\b",
+        "\\buppercase\\b[^\"'`\\n<>]{0,140}?\\btracking-\\[",
+        "\\btracking-(?:wide|wider|widest)\\b[^\"'`\\n<>]{0,140}?\\buppercase\\b",
+        "\\btracking-\\[[^\"'`\\n<>]{0,140}?\\buppercase\\b"
+      ],
+      "include": [
+        "{app,components,lib}/**/*.{ts,tsx,mts}"
+      ],
+      "exclude": [
+        "**/*.{test,spec}.{ts,tsx}"
+      ],
+      "baseline": 608,
+      "frozen": {
+        "at": "2026-08-17",
+        "value": 608,
+        "direction": "seed",
+        "basis": "b2a90e60b032",
+        "reason": "New class for LIVE-025 (R7, docs/UX-MATURITY-PLAN.md Addendum 2026-08-05 §3 package 5), seeded at 608 AFTER the kit sweep in the same change, not before it: measured 615 on the tree as found, 608 once the seven slots the code itself names `eyebrow` were moved onto the role utility (EditorShell, Toast, StudioWindow, SparkShell, EntityHeader, JourneyBuilder, HostCohostSection — five different letter-spacings for one named role). Seeding at the post-sweep number is what makes reverting any of the seven fail this gate. The window is bounded by quotes, backticks, angle brackets and newlines so a match can never leave the class list it started in; the longest match measured across all 608 is 35 characters.",
+        "from": 0
+      },
+      "history": [
+        {
+          "at": "2026-08-17",
+          "from": 0,
+          "to": 608,
+          "direction": "seed",
+          "reason": "Seeded at the measured post-sweep count. The role has been LOCKED in app/globals.css since 2026-08-05 and lib/theme/eyebrow-role.test.ts has guarded its DEFINITION ever since — one size, one tracking, one weight, bridged into @theme — and every one of those assertions was green while the product rendered the eyebrow ten ways, because nothing measured ADOPTION. This class is that measurement."
+        }
+      ]
     }
   ]
 }

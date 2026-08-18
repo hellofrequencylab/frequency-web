@@ -221,7 +221,7 @@ async function resolveContextRefs(
       /* fail-safe */
     }
   }
-  if (broadcastId) refs.push({ label: 'From a broadcast', href: null })
+  if (broadcastId) refs.push({ label: 'From a Dispatch', href: null })
   if (campaignId) refs.push({ label: 'From an email campaign', href: null })
   return refs
 }
