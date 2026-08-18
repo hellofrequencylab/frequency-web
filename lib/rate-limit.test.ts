@@ -40,3 +40,31 @@ describe('rateLimitOk (unconfigured limiter)', () => {
     expect(await rateLimitOk('subscribe', '1.2.3.4', 5, '10 m')).toBe(false)
   })
 })
+
+describe('rateLimitOk whenUnconfigured: allow', () => {
+  // The escape hatch sign-in needed (LIVE-043). Fail-closed is right for a public write and
+  // catastrophic for the front door: an absent KV token would deny every sign-in and every
+  // sign-up on a product that is otherwise up. These two cases are the whole contract — the
+  // override changes the UNCONFIGURED answer in production and changes nothing else.
+  it('allows in production when Upstash is absent, where the default would deny', async () => {
+    vi.stubEnv('KV_REST_API_URL', '')
+    vi.stubEnv('KV_REST_API_TOKEN', '')
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('VERCEL_ENV', 'production')
+    const { rateLimitOk } = await loadRateLimit()
+    // Same call, same env, opposite answers: that IS the option.
+    expect(await rateLimitOk('signin:ip', '1.2.3.4', 10, '10 m')).toBe(false)
+    expect(await rateLimitOk('signin:ip', '1.2.3.4', 10, '10 m', { whenUnconfigured: 'allow' })).toBe(true)
+  })
+
+  it("passing 'deny' explicitly is the default, so no existing caller changed", async () => {
+    vi.stubEnv('KV_REST_API_URL', '')
+    vi.stubEnv('KV_REST_API_TOKEN', '')
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('VERCEL_ENV', '')
+    const { rateLimitOk } = await loadRateLimit()
+    expect(await rateLimitOk('subscribe', '1.2.3.4', 5, '10 m', { whenUnconfigured: 'deny' })).toBe(false)
+    expect(await rateLimitOk('subscribe', '1.2.3.4', 5, '10 m', {})).toBe(false)
+  })
+})
+
