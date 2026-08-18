@@ -477,7 +477,7 @@
         "evidence": "Progress is the per-slug count in scripts/render-path-bodies.txt; a probe would need a target number per slug rather than a boolean.",
         "checked": "2026-08-17"
       },
-      "notes": "FINDING 2026-08-17 that makes the remaining slugs cheaper and safer than this row assumed: the legacy bodies on five routes are ALREADY UNREACHABLE. Every gated route resolves published -> template -> legacy, and the template rung is a static import that is always well-formed, so `data` can never be null and the `data ? <BlockRender/> : <Legacy/>` branch cannot be taken. For about, spaces, the-lab, the-quest and the-community this is deletion of dead code, not a swap needing visual proof, and THE PIXELS CANNOT MOVE - which is a stronger guarantee than a snapshot comparison. DONE: `about`, 327 -> 75 lines, ledger 3 -> 0. REMAINING, in the committed order, one per PR: spaces (284 lines, 2 -> 0), the-lab (382, 3 -> 0), the-quest (498, 2 -> 0), the-community (635, 5 -> 0), then home (939, 5 -> 0) LAST because Splash carries the live-proof band and its own header/footer chrome. 🔴 PRICING IS DIFFERENT AND MUST NOT BE BATCHED WITH THEM: its fallback is the coded page rather than getTemplate('pricing'), and it carries live take-rate bindings. Never freeze those figures into a document."
+      "notes": "FINDING 2026-08-17 that makes the remaining slugs cheaper and safer than this row assumed: the legacy bodies on five routes are ALREADY UNREACHABLE. Every gated route resolves published -> template -> legacy, and the template rung is a static import that is always well-formed, so `data` can never be null and the `data ? <BlockRender/> : <Legacy/>` branch cannot be taken. For about, spaces, the-lab, the-quest and the-community this is deletion of dead code, not a swap needing visual proof, and THE PIXELS CANNOT MOVE - which is a stronger guarantee than a snapshot comparison. DONE: `about`, 327 -> 75 lines, ledger 3 -> 0. REMAINING, in the committed order, one per PR: spaces (284 lines, 2 -> 0), the-lab (382, 3 -> 0), the-quest (498, 2 -> 0), the-community (635, 5 -> 0), then home (939, 5 -> 0) LAST because Splash carries the live-proof band and its own header/footer chrome. 🔴 PRICING IS DIFFERENT AND MUST NOT BE BATCHED WITH THEM: its fallback is the coded page rather than getTemplate('pricing'), and it carries live take-rate bindings. Never freeze those figures into a document. UPDATE 2026-08-18: DONE so far - about (327 -> 75, ledger 3 -> 0), spaces (284 -> 81, 2 -> 0), the-lab (382 -> 86, 3 -> 0). Remaining in order: the-quest (498, 2 -> 0), the-community (635, 5 -> 0), home (939, 5 -> 0) LAST; pricing stays out of the series. check:render-path now reports 4 slugs on the template alone (was 2 before tonight), 19 coded components across 3,284 route lines (was 24 / 3,580). the-lab's unreachability was verified for that slug specifically, not inherited: 7 blocks, every type a string literal, getTemplate identity stable across calls, so isWellFormed is invariant."
     },
     {
       "id": "LIVE-007",
@@ -1992,6 +1992,22 @@
         "checked": "2026-08-18"
       },
       "notes": "The source path on this row was WRONG when filed (lib/discover/reads.ts, guessed from the stack trace) and check:backlog rejected it within seconds: \"source file does not exist\". That is the same broken-instrument defect this session fixed in LIVE-030, LIVE-001 and a probe of my own - a row pointing at a path nothing occupies reads as outstanding work rather than as a mistake. The guard now catches it at filing time, which is why it never reached a commit. DiscoverReadError is defined in lib/discover.ts."
+    },
+    {
+      "id": "LIVE-040",
+      "title": "/the-lab emits no FAQPage, and has not since its template landed",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/page-editor/templates/the-lab.ts",
+        "ref": "LIVE-006 the-lab retirement"
+      },
+      "detail": "Found while retiring the-lab's coded body, and it is NOT caused by that retirement. THE_LAB_FAQ carried five Q&A and its faqSchema() call sat on the LEGACY branch of `data ? <BlockRender/> : <Legacy/>` - the branch that could never be taken, because the template is a static literal and `data` is never null. So /the-lab has emitted no FAQPage structured data since the template landed. The retirement deleted the source copy; it did not change what Google sees, which was already nothing. MEASURED, and NARROWER THAN FIRST REPORTED: lib/page-editor/templates/the-quest.ts contains 1 Accordion block and the-lab.ts contains 0. the-quest is therefore FINE - its Accordion emits the FAQPage through BlockDocJsonLd, exactly as its own code comment says. This row is /the-lab alone. THE FIX IS A CONTENT DECISION, not a schema patch: adding faqSchema back without visible Q&A on the page would assert markup for copy a visitor cannot see, which CONTENT-VOICE section 8b forbids and Google penalises. The honest fix is an Accordion block in the-lab's template carrying the five questions, which emits the FAQPage as a consequence of rendering them. That MOVES PIXELS on /the-lab across four skins and two viewports, so it needs a baseline recapture in the same PR. The five drafted answers are good and are preserved in git history at the retirement commit.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const T='lib/page-editor/templates/the-lab.ts';if(!fs.existsSync(T))process.exit(79);const s=fs.readFileSync(T,'utf8');if(s.indexOf('content:')<0)process.exit(79);if(s.indexOf('Accordion')<0){console.error('the-lab template has no Accordion, so /the-lab still emits no FAQPage');process.exit(1)}process.exit(0)\""
+      }
     }
   ]
 }

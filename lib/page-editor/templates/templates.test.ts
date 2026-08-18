@@ -13,9 +13,9 @@ import { gatedSlugs, parseLedger, MIN_SLUGS } from '../../../scripts/check-rende
 // ⚠️ 2026-08-17 (Lift 5c, ADR-1068): the slug list is no longer typed out here. It is READ from
 // `EDITABLE_PAGES` with the same parser `check:render-path` uses, because a hand-typed list makes
 // this gate silently partial the moment a slug joins the editor — and a slug can now join with NO
-// coded body behind it. For a retired slug (`about`, `circles`, `spaces`) the template is the LAST rung: if
-// it stopped resolving there is nothing to fall back to and the route renders a blank page. So the
-// coverage has to follow the constant, not a copy of it.
+// coded body behind it. For a retired slug (`about`, `circles`, `spaces`, `the-lab`) the template is
+// the LAST rung: if it stopped resolving there is nothing to fall back to and the route renders a
+// blank page. So the coverage has to follow the constant, not a copy of it.
 
 const slugs = gatedSlugs(readFileSync(resolve(process.cwd(), 'lib/page-editor/data.ts'), 'utf8'))
 const ledger = parseLedger(readFileSync(resolve(process.cwd(), 'scripts/render-path-bodies.txt'), 'utf8')).entries
