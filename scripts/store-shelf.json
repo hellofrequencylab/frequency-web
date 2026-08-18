@@ -3,63 +3,262 @@
   "why": "Backlog LIVE-013. The store charged Gems for five borders, five flairs and four titles whose only reader in the whole product was a text chip in the buyer's own Vault, and for five more SKUs whose metadata was `{}`, which routed them to an operator queue that did not exist. Three real paid redemptions (950 Gems, one member, 2026-06-27) had already happened. `scripts/check-cosmetic-renders.mjs` measures this shelf against the render registry (lib/store/cosmetics.ts), so a SKU that can be bought and cannot be shown fails CI instead of quietly taking someone's currency.",
   "howToRecapture": "Run the SQL in `recaptureQuery` against production (READ-ONLY) and rewrite `shelf` from the result, then set `capturedAt`. Re-capture after any /admin/store edit that adds, activates, reprices or re-metadatas a SKU. The guard reads the registry live, so it does NOT need a re-capture when the registry changes.",
   "scope": "store_items only. The three cosmetic COLUMNS on profiles (profile_border / profile_flair / custom_title) are the delivery target and are read live by the registry; profile_theme is a separate system (lib/theme/profile-skins.ts, rendered by the Spotlight shell) and is not sold in the store, so it is out of scope here.",
-  "capturedAt": "2026-08-17",
+  "capturedAt": "2026-08-18",
   "project": "Frequency Community (azsqfeonabsbmemvddqd)",
   "recaptureQuery": "select slug, category::text as category, gem_cost, is_active, metadata from store_items where is_active and gem_cost > 0 order by category, slug;",
   "shelf": [
-    { "slug": "badge-benefactor", "category": "collectible", "gem_cost": 2000, "is_active": true, "metadata": { "type": "collectible", "badge": "benefactor" } },
-    { "slug": "badge-patron", "category": "collectible", "gem_cost": 500, "is_active": true, "metadata": { "type": "collectible", "badge": "patron" } },
-    { "slug": "badge-pioneer", "category": "collectible", "gem_cost": 100, "is_active": true, "metadata": { "type": "collectible", "badge": "pioneer" } },
-    { "slug": "season-zero", "category": "collectible", "gem_cost": 100, "is_active": true, "metadata": { "s1_exclusive": true } },
-    { "slug": "animated-banner", "category": "cosmetic", "gem_cost": 250, "is_active": true, "metadata": {} },
-    { "slug": "border-amber", "category": "cosmetic", "gem_cost": 250, "is_active": true, "metadata": { "type": "border", "value": "ring-amber-500" } },
-    { "slug": "border-emerald", "category": "cosmetic", "gem_cost": 500, "is_active": true, "metadata": { "type": "border", "value": "ring-emerald-500" } },
-    { "slug": "border-gradient", "category": "cosmetic", "gem_cost": 2500, "is_active": true, "metadata": { "type": "border", "value": "ring-gradient" } },
-    { "slug": "border-indigo", "category": "cosmetic", "gem_cost": 250, "is_active": true, "metadata": { "type": "border", "value": "ring-indigo-500" } },
-    { "slug": "border-violet", "category": "cosmetic", "gem_cost": 1000, "is_active": true, "metadata": { "type": "border", "value": "ring-violet-500" } },
-    { "slug": "callsign-plate", "category": "cosmetic", "gem_cost": 300, "is_active": true, "metadata": {} },
-    { "slug": "flair-crown", "category": "cosmetic", "gem_cost": 750, "is_active": true, "metadata": { "type": "flair", "value": "crown" } },
-    { "slug": "flair-fire", "category": "cosmetic", "gem_cost": 150, "is_active": true, "metadata": { "type": "flair", "value": "flame" } },
-    { "slug": "flair-gem", "category": "cosmetic", "gem_cost": 300, "is_active": true, "metadata": { "type": "flair", "value": "gem" } },
-    { "slug": "flair-lightning", "category": "cosmetic", "gem_cost": 500, "is_active": true, "metadata": { "type": "flair", "value": "zap" } },
-    { "slug": "flair-star", "category": "cosmetic", "gem_cost": 150, "is_active": true, "metadata": { "type": "flair", "value": "star" } },
-    { "slug": "s1-flair-set", "category": "cosmetic", "gem_cost": 50, "is_active": true, "metadata": {} },
-    { "slug": "waveform-border", "category": "cosmetic", "gem_cost": 150, "is_active": true, "metadata": { "s1_exclusive": true } },
-    { "slug": "early-registration", "category": "feature", "gem_cost": 75, "is_active": true, "metadata": {} },
-    { "slug": "founders-table-seat", "category": "feature", "gem_cost": 500, "is_active": true, "metadata": { "s1_exclusive": true, "requires_rank": "adept" } },
-    { "slug": "listening-room-seat", "category": "feature", "gem_cost": 250, "is_active": true, "metadata": { "s1_exclusive": true } },
-    { "slug": "name-a-node", "category": "feature", "gem_cost": 300, "is_active": true, "metadata": {} },
-    { "slug": "pitch-a-journey", "category": "feature", "gem_cost": 400, "is_active": true, "metadata": {} },
-    { "slug": "s1-emote-pack", "category": "feature", "gem_cost": 60, "is_active": true, "metadata": {} },
-    { "slug": "streak-freeze", "category": "feature", "gem_cost": 50, "is_active": true, "metadata": {} },
-    { "slug": "guest-pass", "category": "membership", "gem_cost": 150, "is_active": true, "metadata": {} },
-    { "slug": "custom-title-slot", "category": "title", "gem_cost": 200, "is_active": true, "metadata": {} },
-    { "slug": "title-architect", "category": "title", "gem_cost": 1500, "is_active": true, "metadata": { "type": "title", "value": "Architect" } },
-    { "slug": "title-legend", "category": "title", "gem_cost": 2000, "is_active": true, "metadata": { "type": "title", "value": "Legend" } },
-    { "slug": "title-og", "category": "title", "gem_cost": 750, "is_active": true, "metadata": { "type": "title", "value": "OG" } },
-    { "slug": "title-trailblazer", "category": "title", "gem_cost": 500, "is_active": true, "metadata": { "type": "title", "value": "Trailblazer" } }
+    {
+      "slug": "badge-benefactor",
+      "category": "collectible",
+      "gem_cost": 2000,
+      "is_active": true,
+      "metadata": {
+        "type": "collectible",
+        "badge": "benefactor"
+      }
+    },
+    {
+      "slug": "badge-patron",
+      "category": "collectible",
+      "gem_cost": 500,
+      "is_active": true,
+      "metadata": {
+        "type": "collectible",
+        "badge": "patron"
+      }
+    },
+    {
+      "slug": "badge-pioneer",
+      "category": "collectible",
+      "gem_cost": 100,
+      "is_active": true,
+      "metadata": {
+        "type": "collectible",
+        "badge": "pioneer"
+      }
+    },
+    {
+      "slug": "season-zero",
+      "category": "collectible",
+      "gem_cost": 100,
+      "is_active": true,
+      "metadata": {
+        "s1_exclusive": true
+      }
+    },
+    {
+      "slug": "border-amber",
+      "category": "cosmetic",
+      "gem_cost": 250,
+      "is_active": true,
+      "metadata": {
+        "type": "border",
+        "value": "ring-amber-500"
+      }
+    },
+    {
+      "slug": "border-emerald",
+      "category": "cosmetic",
+      "gem_cost": 500,
+      "is_active": true,
+      "metadata": {
+        "type": "border",
+        "value": "ring-emerald-500"
+      }
+    },
+    {
+      "slug": "border-gradient",
+      "category": "cosmetic",
+      "gem_cost": 2500,
+      "is_active": true,
+      "metadata": {
+        "type": "border",
+        "value": "ring-gradient"
+      }
+    },
+    {
+      "slug": "border-indigo",
+      "category": "cosmetic",
+      "gem_cost": 250,
+      "is_active": true,
+      "metadata": {
+        "type": "border",
+        "value": "ring-indigo-500"
+      }
+    },
+    {
+      "slug": "border-violet",
+      "category": "cosmetic",
+      "gem_cost": 1000,
+      "is_active": true,
+      "metadata": {
+        "type": "border",
+        "value": "ring-violet-500"
+      }
+    },
+    {
+      "slug": "flair-crown",
+      "category": "cosmetic",
+      "gem_cost": 750,
+      "is_active": true,
+      "metadata": {
+        "type": "flair",
+        "value": "crown"
+      }
+    },
+    {
+      "slug": "flair-fire",
+      "category": "cosmetic",
+      "gem_cost": 150,
+      "is_active": true,
+      "metadata": {
+        "type": "flair",
+        "value": "flame"
+      }
+    },
+    {
+      "slug": "flair-gem",
+      "category": "cosmetic",
+      "gem_cost": 300,
+      "is_active": true,
+      "metadata": {
+        "type": "flair",
+        "value": "gem"
+      }
+    },
+    {
+      "slug": "flair-lightning",
+      "category": "cosmetic",
+      "gem_cost": 500,
+      "is_active": true,
+      "metadata": {
+        "type": "flair",
+        "value": "zap"
+      }
+    },
+    {
+      "slug": "flair-star",
+      "category": "cosmetic",
+      "gem_cost": 150,
+      "is_active": true,
+      "metadata": {
+        "type": "flair",
+        "value": "star"
+      }
+    },
+    {
+      "slug": "waveform-border",
+      "category": "cosmetic",
+      "gem_cost": 150,
+      "is_active": true,
+      "metadata": {
+        "type": "border",
+        "value": "waveform",
+        "s1_exclusive": true
+      }
+    },
+    {
+      "slug": "early-registration",
+      "category": "feature",
+      "gem_cost": 75,
+      "is_active": true,
+      "metadata": {}
+    },
+    {
+      "slug": "founders-table-seat",
+      "category": "feature",
+      "gem_cost": 500,
+      "is_active": true,
+      "metadata": {
+        "s1_exclusive": true,
+        "requires_rank": "adept"
+      }
+    },
+    {
+      "slug": "listening-room-seat",
+      "category": "feature",
+      "gem_cost": 250,
+      "is_active": true,
+      "metadata": {
+        "s1_exclusive": true
+      }
+    },
+    {
+      "slug": "name-a-node",
+      "category": "feature",
+      "gem_cost": 300,
+      "is_active": true,
+      "metadata": {}
+    },
+    {
+      "slug": "pitch-a-journey",
+      "category": "feature",
+      "gem_cost": 400,
+      "is_active": true,
+      "metadata": {}
+    },
+    {
+      "slug": "s1-emote-pack",
+      "category": "feature",
+      "gem_cost": 60,
+      "is_active": true,
+      "metadata": {}
+    },
+    {
+      "slug": "streak-freeze",
+      "category": "feature",
+      "gem_cost": 50,
+      "is_active": true,
+      "metadata": {}
+    },
+    {
+      "slug": "guest-pass",
+      "category": "membership",
+      "gem_cost": 150,
+      "is_active": true,
+      "metadata": {}
+    },
+    {
+      "slug": "title-architect",
+      "category": "title",
+      "gem_cost": 1500,
+      "is_active": true,
+      "metadata": {
+        "type": "title",
+        "value": "Architect"
+      }
+    },
+    {
+      "slug": "title-legend",
+      "category": "title",
+      "gem_cost": 2000,
+      "is_active": true,
+      "metadata": {
+        "type": "title",
+        "value": "Legend"
+      }
+    },
+    {
+      "slug": "title-og",
+      "category": "title",
+      "gem_cost": 750,
+      "is_active": true,
+      "metadata": {
+        "type": "title",
+        "value": "OG"
+      }
+    },
+    {
+      "slug": "title-trailblazer",
+      "category": "title",
+      "gem_cost": 500,
+      "is_active": true,
+      "metadata": {
+        "type": "title",
+        "value": "Trailblazer"
+      }
+    }
   ],
   "quarantineProposal": "docs/proposals/LIVE-013-cosmetic-fulfillment.sql",
-  "quarantine": [
-    {
-      "slug": "s1-flair-set",
-      "reason": "A SET of flair icons. `profiles.profile_flair` holds ONE value, so a set has nowhere to land. One member paid 50 Gems for it on 2026-06-27 and nothing was delivered; the proposal makes that good.",
-      "resolution": "deactivate"
-    },
-    {
-      "slug": "animated-banner",
-      "reason": "There is no banner slot on a member profile. `profiles` has no column for one and the profile band paints a cover image the member uploads, not a bought asset.",
-      "resolution": "deactivate"
-    },
-    {
-      "slug": "callsign-plate",
-      "reason": "No callsign field exists on a profile. Delivering this is a product surface, not a render.",
-      "resolution": "deactivate"
-    },
-    {
-      "slug": "custom-title-slot",
-      "reason": "Sells the RIGHT to author a title, and there is no editor for a member to author one with. The four fixed-title SKUs deliver; this one needs a compose surface first.",
-      "resolution": "deactivate"
-    }
-  ]
+  "quarantine": []
 }

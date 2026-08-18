@@ -86,12 +86,17 @@ export const INDETERMINATE = 79
 /** Floors. A census that shrank to nothing would make every assertion below vacuously true, and a
  *  ✓ printed over nothing is the one thing a gate must never do (ADR-962).
  *
- *  Measured 2026-08-17: 3 stores, 25 documents, 27 distinct types. The floors sit deliberately
+ *  Measured 2026-08-17: 3 stores, 25 documents, 27 distinct types. Re-measured 2026-08-18 after
+ *  20270305000000 rewrote the five orphan types into successors already present in the census:
+ *  3 stores, 25 documents, 24 distinct types — the world legitimately shrank by the exact five
+ *  the migration retired, so MIN_TYPES moves 25 -> 20 WITH that change (this is a re-capture,
+ *  not a floor-lowered-to-pass; the recaptureQuery output is the diff's own evidence).
+ *  The floors sit deliberately
  *  below those so ordinary churn does not trip them. Lower one ONLY alongside a real deletion,
  *  and name the deletion. Never to make a run green. */
 export const MIN_STORES = 3
 export const MIN_DOCUMENTS = 20
-export const MIN_TYPES = 25
+export const MIN_TYPES = 20
 
 /** Read the census. Throws rather than returning a default: an empty census is the one input that
  *  would sail through classify() looking like a clean run. */

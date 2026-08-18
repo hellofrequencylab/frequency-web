@@ -24,7 +24,7 @@
 //     `type`/`value` pair, so `classifyRedemption` routed them to "pending" and an operator queue
 //     that did not exist. Only entries whose delivery is UNAMBIGUOUS from the SKU's own copy live
 //     here; everything else stays undeliverable and comes off the shelf. This is a bridge, not a
-//     home: `docs/proposals/LIVE-013-cosmetic-fulfillment.sql` writes the metadata properly, and
+//     home: `supabase/migrations/20270312000000_store_cosmetic_fulfillment.sql (applied 2026-08-18)` writes the metadata properly, and
 //     when that is applied the bridge row is redundant (the guard keeps agreeing either way).
 //
 // PURE. No React, no Next, no Supabase — it is imported by a server action, a Server Component,

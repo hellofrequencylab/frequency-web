@@ -12,7 +12,7 @@
 // checkout resolves. It touches no plan, no entitlement, no public surface.
 //
 // 🔴 THE COLUMN MAY NOT EXIST YET. The migration is staged in
-// docs/proposals/OWN-023-space-beta-price-grant.sql and is the owner's to apply — a file in
+// supabase/migrations/20270304000100_space_beta_price_grant.sql, APPLIED 2026-08-18 — a file in
 // supabase/migrations/ asserts production has run it (check:migrations rule 4, ADR-1007). Selecting a
 // column PostgREST does not know fails the WHOLE request with 42703, and this repo has already been
 // bitten by exactly that: space-plan-checkout.ts once selected a non-existent `profiles.email` and
@@ -50,23 +50,12 @@ const UNDEFINED_COLUMN = '42703'
 /** The grant columns, as one select list. Named once so the reader and the writer cannot drift. */
 const GRANT_COLUMNS = 'beta_price_grant, beta_price_granted_at, beta_price_granted_by'
 
-/** The untyped admin surface this module needs (ADR-246: the columns are not in the generated types
- *  until the migration lands, so the typed client would reject them at compile time). */
-interface UntypedSpaces {
-  from: (t: string) => {
-    select: (c: string) => {
-      eq: (c1: string, v1: string) => {
-        maybeSingle: () => Promise<{ data: unknown; error: { code?: string; message?: string } | null }>
-      }
-    }
-    update: (v: Record<string, unknown>) => {
-      eq: (c: string, v1: string) => Promise<{ error: { code?: string; message?: string } | null }>
-    }
-  }
-}
-
-function spaces(): UntypedSpaces {
-  return createAdminClient() as unknown as UntypedSpaces
+/** The typed admin client. The interim UntypedSpaces cast (ADR-246) is gone: the migration was
+ *  applied to production on 2026-08-18 and the columns are in the generated types. The 42703
+ *  branch below stays on purpose — a fresh environment that has not replayed the migration should
+ *  still degrade to an instruction, not an error. */
+function spaces() {
+  return createAdminClient()
 }
 
 /**
@@ -89,7 +78,7 @@ export async function readSpaceBetaPriceGrant(
           kind: 'unavailable',
           reason: 'not_deployed',
           message:
-            'The beta price grant column is not in the database yet. Apply docs/proposals/OWN-023-space-beta-price-grant.sql first.',
+            'The beta price grant column is not in this database yet. Apply migration 20270304000100_space_beta_price_grant first.',
         }
       }
       return { kind: 'unavailable', reason: 'error', message: error.message ?? 'Could not read the grant.' }
@@ -150,7 +139,8 @@ export async function setSpaceBetaPriceGrant(
   actorId: string | null,
 ): Promise<SpaceBetaPriceGrantWrite> {
   if (!spaceId) return { ok: false, error: 'We could not find that space.' }
-  const patch: Record<string, unknown> = granted
+  // Typed now that the columns are in the generated types; the shape is the update row itself.
+  const patch = granted
     ? {
         beta_price_grant: true,
         beta_price_granted_at: new Date().toISOString(),
@@ -164,7 +154,7 @@ export async function setSpaceBetaPriceGrant(
       return {
         ok: false,
         error:
-          'The beta price grant column is not in the database yet. Apply docs/proposals/OWN-023-space-beta-price-grant.sql first.',
+          'The beta price grant column is not in this database yet. Apply migration 20270304000100_space_beta_price_grant first.',
       }
     }
     return { ok: false, error: error.message ?? 'Could not save that change.' }

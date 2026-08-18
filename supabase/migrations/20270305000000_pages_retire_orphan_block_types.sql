@@ -1,13 +1,10 @@
--- ⚠️ THIS FILE LIVES OUTSIDE supabase/migrations/ ON PURPOSE.
--- A file in supabase/migrations/ asserts "production has run this". Until the owner applies it
--- that assertion is false, and check:migrations rule 4 (ADR-1007) fails on it in CI, where the
--- ledger arm is ARMED with real credentials. Sitting here it makes no claim.
---
--- TO PROMOTE, in this order:
---   1. move this file to supabase/migrations/20270305000000_pages_retire_orphan_block_types.sql
---   2. apply it
---   3. repair the ledger to 20270305000000 per supabase/migrations/README.md
---   4. re-capture scripts/stored-block-types.json; check:stored-blocks then goes 1 -> 0
+-- APPLIED to production 2026-08-18 via MCP apply_migration; ledger repaired to this version the
+-- same day (name pages_retire_orphan_block_types). The in-file post-assert ran inside the apply
+-- transaction and raised nothing; re-measured after: zero retired types in either pages column, and
+-- the three drafts now carry only registry types (CallToAction, Gallery, Hero, Image, MediaText,
+-- Statement). scripts/stored-block-types.json re-captured in the same change. Authored as
+-- docs/proposals/LIVE-028-retire-orphan-block-types.sql (backlog LIVE-028, ADR-1055, ADR-977 D-9).
+-- The outer begin/commit from the proposal is removed: the apply path is already transactional.
 --
 -- RETIRE THE FIVE ORPHAN BLOCK TYPES IN pages.data (ADR-1055, backlog LIVE-028, ADR-977 D-9).
 --
@@ -137,7 +134,6 @@
 -- an operator adds later whose id happens to start with one of these five words, which is why it
 -- lives here as a runbook rather than as a second migration.
 
-begin;
 
 -- Assert the corpus is the one this migration was written against. A rewrite that silently
 -- matches nothing is indistinguishable from a rewrite that worked, which is the failure this
@@ -149,9 +145,17 @@ begin
   if to_regclass('public.pages') is null then
     raise exception 'public.pages does not exist — wrong database, aborting';
   end if;
+  -- An EMPTY corpus means two different things, and conflating them broke the replay.
+  -- At APPLY time (production, 2026-08-18) empty would have meant "wrong database, or the corpus
+  -- vanished" — worth aborting over, which is what the proposal wrote. On REPLAY (db-tests boots a
+  -- fresh Supabase and runs every migration in order) empty is simply CORRECT: no seed data has
+  -- been inserted, the rewrite matches nothing, and that is a faithful no-op rather than a failure.
+  -- The abort therefore became a false red on a job whose whole purpose is proving a fresh replay
+  -- works. The wrong-database check above KEEPS its teeth; this one degrades to a notice, so a
+  -- human reading the log still sees that the rewrite had nothing to touch.
   select count(*) into n_pages from public.pages;
   if n_pages < 1 then
-    raise exception 'public.pages is empty — nothing to migrate, aborting rather than reporting success';
+    raise notice 'public.pages is empty — the block-type rewrite matches nothing here (expected on a fresh replay; at apply time this was 5 documents)';
   end if;
 end $$;
 
@@ -327,4 +331,3 @@ begin
   end if;
 end $$;
 
-commit;

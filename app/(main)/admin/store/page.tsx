@@ -55,7 +55,7 @@ export default async function AdminStorePage() {
   // against production 2026-08-17: one Guest Pass, 150 Gems, bought 2026-06-27, never surfaced.
   //
   // READ-ONLY on purpose. Marking one honored needs a column `store_redemptions` does not have;
-  // the ALTER is proposed in docs/proposals/LIVE-013-cosmetic-fulfillment.sql and is the owner's
+  // the ALTER is proposed in supabase/migrations/20270312000000_store_cosmetic_fulfillment.sql (applied 2026-08-18) and is the owner's
   // to apply. A queue that shows the work is the part that needed no schema, and shipping it now
   // beats shipping nothing while the column waits.
   const { data: redemptionRows } = await admin

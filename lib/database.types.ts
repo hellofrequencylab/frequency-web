@@ -4437,6 +4437,72 @@ export type Database = {
           },
         ]
       }
+      event_intake: {
+        Row: {
+          applied_at: string | null
+          budget_spent: number
+          created_at: string
+          created_by: string
+          draft: Json
+          error: string | null
+          id: string
+          inputs: Json
+          ledger: Json
+          mode: string
+          raw_sources: Json
+          status: string
+          target_event_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string | null
+          budget_spent?: number
+          created_at?: string
+          created_by: string
+          draft?: Json
+          error?: string | null
+          id?: string
+          inputs?: Json
+          ledger?: Json
+          mode?: string
+          raw_sources?: Json
+          status?: string
+          target_event_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string | null
+          budget_spent?: number
+          created_at?: string
+          created_by?: string
+          draft?: Json
+          error?: string | null
+          id?: string
+          inputs?: Json
+          ledger?: Json
+          mode?: string
+          raw_sources?: Json
+          status?: string
+          target_event_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_intake_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_intake_target_event_id_fkey"
+            columns: ["target_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_media: {
         Row: {
           caption: string | null
@@ -4737,11 +4803,15 @@ export type Database = {
           created_at: string | null
           decline_reason: string | null
           event_id: string
+          guest_claimed_at: string | null
+          guest_claimed_by: string | null
+          guest_email: string | null
+          guest_name: string | null
           id: string
           muted: boolean
           plus_one_names: Json
           plus_ones: number
-          profile_id: string
+          profile_id: string | null
           reminder_24h_sent_at: string | null
           reminder_2h_sent_at: string | null
           reminder_7d_sent_at: string | null
@@ -4752,11 +4822,15 @@ export type Database = {
           created_at?: string | null
           decline_reason?: string | null
           event_id: string
+          guest_claimed_at?: string | null
+          guest_claimed_by?: string | null
+          guest_email?: string | null
+          guest_name?: string | null
           id?: string
           muted?: boolean
           plus_one_names?: Json
           plus_ones?: number
-          profile_id: string
+          profile_id?: string | null
           reminder_24h_sent_at?: string | null
           reminder_2h_sent_at?: string | null
           reminder_7d_sent_at?: string | null
@@ -4767,11 +4841,15 @@ export type Database = {
           created_at?: string | null
           decline_reason?: string | null
           event_id?: string
+          guest_claimed_at?: string | null
+          guest_claimed_by?: string | null
+          guest_email?: string | null
+          guest_name?: string | null
           id?: string
           muted?: boolean
           plus_one_names?: Json
           plus_ones?: number
-          profile_id?: string
+          profile_id?: string | null
           reminder_24h_sent_at?: string | null
           reminder_2h_sent_at?: string | null
           reminder_7d_sent_at?: string | null
@@ -4783,6 +4861,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_rsvps_guest_claimed_by_fkey"
+            columns: ["guest_claimed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -5078,6 +5163,7 @@ export type Database = {
           region: string | null
           removed_at: string | null
           removed_reason: string | null
+          rsvp_requires_approval: boolean
           scope_circle_id: string | null
           scope_id: string
           scope_region_id: string | null
@@ -5142,6 +5228,7 @@ export type Database = {
           region?: string | null
           removed_at?: string | null
           removed_reason?: string | null
+          rsvp_requires_approval?: boolean
           scope_circle_id?: string | null
           scope_id: string
           scope_region_id?: string | null
@@ -5206,6 +5293,7 @@ export type Database = {
           region?: string | null
           removed_at?: string | null
           removed_reason?: string | null
+          rsvp_requires_approval?: boolean
           scope_circle_id?: string | null
           scope_id?: string
           scope_region_id?: string | null
@@ -5788,6 +5876,51 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      household_bundle_invites: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          owner_profile_id: string
+          responded_at: string | null
+          status: string
+          to_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          owner_profile_id: string
+          responded_at?: string | null
+          status?: string
+          to_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          owner_profile_id?: string
+          responded_at?: string | null
+          status?: string
+          to_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "household_bundle_invites_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "household_bundle_invites_to_profile_id_fkey"
+            columns: ["to_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       housing_listings: {
         Row: {
@@ -10687,7 +10820,11 @@ export type Database = {
           home_lat: number | null
           home_lng: number | null
           home_timezone: string | null
+          household_bundle_event_at: string | null
           household_bundle_id: string | null
+          household_bundle_prior_tier: string | null
+          household_bundle_seats: number | null
+          household_bundle_tier: string | null
           id: string
           is_active: boolean | null
           is_crew_lead: boolean | null
@@ -10767,7 +10904,11 @@ export type Database = {
           home_lat?: number | null
           home_lng?: number | null
           home_timezone?: string | null
+          household_bundle_event_at?: string | null
           household_bundle_id?: string | null
+          household_bundle_prior_tier?: string | null
+          household_bundle_seats?: number | null
+          household_bundle_tier?: string | null
           id?: string
           is_active?: boolean | null
           is_crew_lead?: boolean | null
@@ -10847,7 +10988,11 @@ export type Database = {
           home_lat?: number | null
           home_lng?: number | null
           home_timezone?: string | null
+          household_bundle_event_at?: string | null
           household_bundle_id?: string | null
+          household_bundle_prior_tier?: string | null
+          household_bundle_seats?: number | null
+          household_bundle_tier?: string | null
           id?: string
           is_active?: boolean | null
           is_crew_lead?: boolean | null
@@ -12025,6 +12170,65 @@ export type Database = {
           {
             foreignKeyName: "sequence_overrides_updated_by_fkey"
             columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signup_leads: {
+        Row: {
+          attribution: Json
+          converted_at: string | null
+          converted_profile_id: string | null
+          created_at: string
+          display_name: string | null
+          email: string
+          first_name: string | null
+          handle: string | null
+          id: string
+          last_name: string | null
+          payload: Json
+          source: string
+          step_reached: number
+          updated_at: string
+        }
+        Insert: {
+          attribution?: Json
+          converted_at?: string | null
+          converted_profile_id?: string | null
+          created_at?: string
+          display_name?: string | null
+          email: string
+          first_name?: string | null
+          handle?: string | null
+          id?: string
+          last_name?: string | null
+          payload?: Json
+          source: string
+          step_reached?: number
+          updated_at?: string
+        }
+        Update: {
+          attribution?: Json
+          converted_at?: string | null
+          converted_profile_id?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string
+          first_name?: string | null
+          handle?: string | null
+          id?: string
+          last_name?: string | null
+          payload?: Json
+          source?: string
+          step_reached?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signup_leads_converted_profile_id_fkey"
+            columns: ["converted_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -13789,6 +13993,9 @@ export type Database = {
       spaces: {
         Row: {
           about: string | null
+          beta_price_grant: boolean
+          beta_price_granted_at: string | null
+          beta_price_granted_by: string | null
           brand_accent: string | null
           brand_logo_url: string | null
           brand_name: string | null
@@ -13835,6 +14042,9 @@ export type Database = {
         }
         Insert: {
           about?: string | null
+          beta_price_grant?: boolean
+          beta_price_granted_at?: string | null
+          beta_price_granted_by?: string | null
           brand_accent?: string | null
           brand_logo_url?: string | null
           brand_name?: string | null
@@ -13881,6 +14091,9 @@ export type Database = {
         }
         Update: {
           about?: string | null
+          beta_price_grant?: boolean
+          beta_price_granted_at?: string | null
+          beta_price_granted_by?: string | null
           brand_accent?: string | null
           brand_logo_url?: string | null
           brand_name?: string | null
@@ -13926,6 +14139,13 @@ export type Database = {
           visibility?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "spaces_beta_price_granted_by_fkey"
+            columns: ["beta_price_granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "spaces_claimed_by_fkey"
             columns: ["claimed_by"]
@@ -14106,6 +14326,8 @@ export type Database = {
       }
       store_redemptions: {
         Row: {
+          fulfilled_at: string | null
+          fulfilled_by: string | null
           gems_spent: number
           id: string
           item_id: string
@@ -14114,6 +14336,8 @@ export type Database = {
           redeemed_at: string
         }
         Insert: {
+          fulfilled_at?: string | null
+          fulfilled_by?: string | null
           gems_spent: number
           id?: string
           item_id: string
@@ -14122,6 +14346,8 @@ export type Database = {
           redeemed_at?: string
         }
         Update: {
+          fulfilled_at?: string | null
+          fulfilled_by?: string | null
           gems_spent?: number
           id?: string
           item_id?: string
@@ -14130,6 +14356,13 @@ export type Database = {
           redeemed_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "store_redemptions_fulfilled_by_fkey"
+            columns: ["fulfilled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "store_redemptions_item_id_fkey"
             columns: ["item_id"]
@@ -14205,6 +14438,50 @@ export type Database = {
         }
         Relationships: []
       }
+      studio_draft: {
+        Row: {
+          answers: Json
+          created_at: string
+          label: string | null
+          profile_id: string
+          route: string | null
+          scope: string
+          step: number
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string
+          label?: string | null
+          profile_id: string
+          route?: string | null
+          scope: string
+          step?: number
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          label?: string | null
+          profile_id?: string
+          route?: string | null
+          scope?: string
+          step?: number
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "studio_draft_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       studio_site_changes: {
         Row: {
           action_key: string
@@ -14243,6 +14520,47 @@ export type Database = {
           {
             foreignKeyName: "studio_site_changes_actor_id_fkey"
             columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      studio_steer: {
+        Row: {
+          created_at: string
+          directions: string | null
+          entity: string
+          entity_id: string
+          locked: string[]
+          mood: string | null
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          directions?: string | null
+          entity: string
+          entity_id: string
+          locked?: string[]
+          mood?: string | null
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          directions?: string | null
+          entity?: string
+          entity_id?: string
+          locked?: string[]
+          mood?: string | null
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "studio_steer_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -15421,6 +15739,15 @@ export type Database = {
         Returns: unknown
       }
       _st_within: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
+      accept_bundle_invite_atomic: {
+        Args: {
+          _invite: string
+          _member: string
+          _seats_fallback: number
+          _tier_fallback: string
+        }
+        Returns: Json
+      }
       addauth: { Args: { "": string }; Returns: boolean }
       addgeometrycolumn:
         | {
@@ -15467,6 +15794,18 @@ export type Database = {
         Args: { _challenge: string; _profile: string; _target: number }
         Returns: Json
       }
+      apply_bundle_seating_atomic: {
+        Args: {
+          _active: boolean
+          _customer_id?: string
+          _event_at: string
+          _owner: string
+          _seat_ids: string[]
+          _seats: number
+          _tier: string
+        }
+        Returns: Json
+      }
       apply_membership_event_atomic: {
         Args: {
           _customer_id?: string
@@ -15487,6 +15826,24 @@ export type Database = {
           _profile: string
         }
         Returns: Json
+      }
+      capture_guest_rsvp: {
+        Args: { p_email: string; p_event_id: string; p_name?: string }
+        Returns: string
+      }
+      capture_signup_lead: {
+        Args: {
+          p_attribution?: Json
+          p_display_name?: string
+          p_email: string
+          p_first_name?: string
+          p_handle?: string
+          p_last_name?: string
+          p_payload?: Json
+          p_source?: string
+          p_step?: number
+        }
+        Returns: string
       }
       challenge_outcomes: {
         Args: never
@@ -15526,6 +15883,7 @@ export type Database = {
           type: string
         }[]
       }
+      claim_guest_rsvps: { Args: { p_profile_id: string }; Returns: undefined }
       claim_outbox_jobs: {
         Args: { _limit?: number }
         Returns: {
@@ -15576,6 +15934,15 @@ export type Database = {
           unit_count: number
           unit_label: string
         }[]
+      }
+      create_bundle_invite_atomic: {
+        Args: {
+          _invitee: string
+          _owner: string
+          _seats_fallback: number
+          _ttl_days?: number
+        }
+        Returns: Json
       }
       dashboard_health_summary: {
         Args: never
@@ -15894,6 +16261,16 @@ export type Database = {
         }[]
       }
       is_blocked_between: { Args: { a: string; b: string }; Returns: boolean }
+      journey_funnel: {
+        Args: { _days?: number; _journey_key: string; _steps: Json }
+        Returns: {
+          identity: string
+          linked: boolean
+          step_index: number
+          step_key: string
+          subjects: number
+        }[]
+      }
       log_crew_completion_atomic: {
         Args: {
           _profile: string
@@ -15904,6 +16281,10 @@ export type Database = {
         Returns: string
       }
       longtransactionsenabled: { Args: never; Returns: boolean }
+      mark_signup_lead_converted: {
+        Args: { p_lead_id: string; p_profile_id: string }
+        Returns: undefined
+      }
       match_help_chunks: {
         Args: {
           match_count?: number
@@ -16146,16 +16527,16 @@ export type Database = {
           venue_name: string
         }[]
       }
-      node_within_range: {
-        Args: { p_lat: number; p_lng: number; p_node_id: string }
-        Returns: boolean
-      }
       node_capture_counts: {
         Args: never
         Returns: {
-          node_id: string
           captures: number
+          node_id: string
         }[]
+      }
+      node_within_range: {
+        Args: { p_lat: number; p_lng: number; p_node_id: string }
+        Returns: boolean
       }
       nodes_geo: {
         Args: never
@@ -16214,7 +16595,6 @@ export type Database = {
           key: string
         }[]
       }
-      profile_zap_total: { Args: { _profile: string }; Returns: number }
       public_active_circle_count: { Args: never; Returns: number }
       public_calendar_feed: {
         Args: never
@@ -17073,6 +17453,18 @@ export type Database = {
         Returns: unknown
       }
       unlockrows: { Args: { "": string }; Returns: number }
+      update_signup_lead: {
+        Args: {
+          p_display_name?: string
+          p_first_name?: string
+          p_handle?: string
+          p_last_name?: string
+          p_lead_id: string
+          p_payload?: Json
+          p_step?: number
+        }
+        Returns: undefined
+      }
       updategeometrysrid: {
         Args: {
           catalogn_name: string
@@ -17092,6 +17484,17 @@ export type Database = {
           id: string
           is_admin: boolean
           joined_at: string
+        }[]
+      }
+      vitals_p75: {
+        Args: { _days?: number; _path_template?: string; _viewport?: string }
+        Returns: {
+          metric: string
+          p75: number
+          path: string
+          prev_p75: number
+          prev_samples: number
+          samples: number
         }[]
       }
       welcome_targets: {
@@ -17355,4 +17758,3 @@ export const Constants = {
     },
   },
 } as const
-

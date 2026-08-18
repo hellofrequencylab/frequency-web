@@ -137,18 +137,21 @@ describe('THE INVARIANT — stored page data may not name a block the registry h
     ).toEqual([])
   })
 
-  it('reports the five orphans found in production, and no others', () => {
-    // The live state as of 2026-08-17. This list SHRINKS to [] when the owner applies
-    // 20270305000000 and re-captures the census; it must never grow without an ADR.
-    expect(result.quarantined).toEqual(['BetaCTA', 'FeatureGallery', 'ImageBand', 'PageHero', 'ZigZag'])
+  it('reports no quarantined types: 20270305000000 was applied 2026-08-18 and the census re-captured', () => {
+    // The pre-apply state (the five orphans) is preserved as fixtures in the NON-VACUITY block
+    // below, so the detector arms stay proven even though the live census is clean. This list
+    // must never grow without an ADR.
+    expect(result.quarantined).toEqual([])
   })
 })
 
 describe('the migration and the quarantine cannot drift apart', () => {
-  it('the SQL maps every quarantined type to the successor the census claims', () => {
-    for (const q of census.quarantine as Required<QuarantineRow>[]) {
-      const sql = readFileSync(join(ROOT, q.migration), 'utf8')
-      expect(mapsTypeToSuccessor(sql, q.type, q.successor), `${q.migration} does not map ${q.type} -> ${q.successor}`).toBe(true)
+  it('the APPLIED migration maps each of the five retired types to its recorded successor', () => {
+    // The quarantine is empty now, so this iterates the pinned historical mapping instead —
+    // the migration file is permanent and a later edit that broke a mapping would break replays.
+    const sql = readFileSync(join(ROOT, APPLIED_MIGRATION), 'utf8')
+    for (const [type, successor] of FIVE_MAPPINGS) {
+      expect(mapsTypeToSuccessor(sql, type, successor), `${APPLIED_MIGRATION} does not map ${type} -> ${successor}`).toBe(true)
     }
   })
 
@@ -164,31 +167,31 @@ describe('the migration and the quarantine cannot drift apart', () => {
       FeatureGallery: ['eyebrow', 'heading', 'items'],
       BetaCTA: ['heading', 'headingAccent', 'body'],
     }
-    for (const q of census.quarantine as Required<QuarantineRow>[]) {
-      const target = config.components[q.successor]
+    for (const [type, successor] of FIVE_MAPPINGS) {
+      const target = config.components[successor]
       const fields = Object.keys(target?.fields ?? {})
-      for (const key of STORED_PROPS[q.type] ?? []) {
-        expect(fields, `${q.type}.${key} has no home on ${q.successor}`).toContain(key)
+      for (const key of STORED_PROPS[type] ?? []) {
+        expect(fields, `${type}.${key} has no home on ${successor}`).toContain(key)
       }
     }
   })
 
   it('the migration is scoped to `data` and asserts `published_data` clean rather than rewriting it', () => {
-    const sql = readFileSync(join(ROOT, 'docs/proposals/LIVE-028-retire-orphan-block-types.sql'), 'utf8')
+    const sql = readFileSync(join(ROOT, APPLIED_MIGRATION), 'utf8')
     expect(sql).toContain('update public.pages p')
     expect(sql).toContain("set data = jsonb_set(p.data, '{content}', r.content)")
     expect(sql).toContain('raise exception')
   })
 
-  it('the SQL is STAGED outside supabase/migrations/ and says why, so nobody moves it back', () => {
-    // A file in supabase/migrations/ asserts "production has run this". CI arms check:migrations
-    // rule 4 (ADR-1007) with real credentials, so an unapplied file there fails the build — it
-    // already did once, for this very file. Pinned here because "put the migration in the
-    // migrations directory" is the obvious instinct and it is wrong until the owner applies it.
-    expect(existsSync(join(ROOT, 'supabase/migrations/20270305000000_pages_retire_orphan_block_types.sql'))).toBe(false)
-    const sql = readFileSync(join(ROOT, 'docs/proposals/LIVE-028-retire-orphan-block-types.sql'), 'utf8')
-    expect(sql).toContain('THIS FILE LIVES OUTSIDE supabase/migrations/ ON PURPOSE')
-    expect(sql).toContain('TO PROMOTE')
+  it('the SQL was PROMOTED into supabase/migrations/ when it was applied, and only then', () => {
+    // The inversion of the pre-apply pin. A file in supabase/migrations/ asserts "production has
+    // run this"; that assertion became TRUE on 2026-08-18 (applied via MCP with the owner's
+    // explicit authorization, ledger repaired to this version), so the file lives there now and
+    // the proposal is gone — a proposal that outlives its apply is a second source of truth.
+    expect(existsSync(join(ROOT, APPLIED_MIGRATION))).toBe(true)
+    expect(existsSync(join(ROOT, 'docs/proposals/LIVE-028-retire-orphan-block-types.sql'))).toBe(false)
+    const sql = readFileSync(join(ROOT, APPLIED_MIGRATION), 'utf8')
+    expect(sql).toContain('APPLIED to production 2026-08-18')
   })
 })
 
@@ -213,12 +216,16 @@ describe('NON-VACUITY — the detector fires', () => {
     expect(classify(c, known).unresolved).toEqual(['AlsoRetired'])
   })
 
-  it('🔴 the real five would ALL be reported if their quarantine entries were deleted', () => {
-    // The strongest form of the proof: run the REAL census and the REAL registry with the
-    // quarantine emptied. If this list were ever empty, the guard would be measuring nothing and
-    // the arm above would be green for the wrong reason.
-    const stripped = { ...census, quarantine: [] }
-    expect(classify(stripped, REGISTRY_TYPES).unresolved).toEqual([
+  it('🔴 the historical five would ALL be reported if they re-entered a census undeclared', () => {
+    // The live census is clean since the 2026-08-18 apply, so the strongest form of this proof
+    // now runs on a fixture: the REAL registry against a census carrying the five retired types
+    // with no quarantine. If this list were ever empty, the guard would be measuring nothing.
+    const relapse = structuredClone(census)
+    for (const [type] of FIVE_MAPPINGS) {
+      relapse.stores[0].types = { ...relapse.stores[0].types, [type]: { blocks: 1, docs: 1 } }
+    }
+    relapse.quarantine = []
+    expect(classify(relapse, REGISTRY_TYPES).unresolved).toEqual([
       'BetaCTA',
       'FeatureGallery',
       'ImageBand',
@@ -302,14 +309,31 @@ describe('NON-VACUITY — the detector fires', () => {
 // routed around and then reads as coverage. The two questions are different and now get different
 // answers, and both halves are asserted here so neither can quietly swing back.
 
+const APPLIED_MIGRATION = 'supabase/migrations/20270305000000_pages_retire_orphan_block_types.sql'
+const FIVE_MAPPINGS: ReadonlyArray<readonly [string, string]> = [
+  ['BetaCTA', 'CallToAction'],
+  ['FeatureGallery', 'Gallery'],
+  ['ImageBand', 'Image'],
+  ['PageHero', 'Hero'],
+  ['ZigZag', 'MediaText'],
+]
+/** A census carrying ONE declared quarantine entry pointing at the applied migration — the
+ *  pre-apply shape, preserved as a fixture so the announce / split / probe arms stay proven. */
+function quarantinedCensus() {
+  const c = structuredClone(census)
+  c.stores[0].types = { ...c.stores[0].types, ZigZag: { blocks: 2, docs: 1 } }
+  c.quarantine = [{ type: 'ZigZag', successor: 'MediaText', migration: APPLIED_MIGRATION }]
+  return c
+}
+
 const io = {
   fileExists: (p: string) => existsSync(join(ROOT, p)),
   readFile: (p: string) => readFileSync(join(ROOT, p), 'utf8'),
 }
 
 describe('THE SPLIT — declared orphans pass loudly, undeclared ones fail', () => {
-  it('the GUARD passes on today\'s real tree, even with five declared orphans outstanding', () => {
-    const r = report(census, { io })
+  it('the GUARD passes with a declared orphan outstanding (fixture; the live tree has none)', () => {
+    const r = report(quarantinedCensus(), { io })
     expect(
       r.code,
       'The guard runs in a required job. A declared orphan whose fix is a staged migration waiting ' +
@@ -319,13 +343,12 @@ describe('THE SPLIT — declared orphans pass loudly, undeclared ones fail', () 
   })
 
   it('…and ANNOUNCES them, so a pass can never read as ordinary coverage', () => {
-    const text = report(census, { io }).lines.join('\n')
+    // The live quarantine emptied on 2026-08-18, so the announce arm is proven on the fixture.
+    const text = report(quarantinedCensus(), { io }).lines.join('\n')
     expect(text).toContain('DECLARED')
     expect(text).toContain('waiting on an OWNER action')
-    for (const q of census.quarantine as Required<QuarantineRow>[]) {
-      expect(text, `${q.type} is quarantined but never printed`).toContain(`${q.type} -> ${q.successor}`)
-      expect(text).toContain(q.migration)
-    }
+    expect(text).toContain('ZigZag -> MediaText')
+    expect(text).toContain(APPLIED_MIGRATION)
     // The distinction itself is stated in the output, not just implied by the exit code.
     expect(text).toContain('an UNDECLARED orphan still fails')
   })
@@ -334,10 +357,8 @@ describe('THE SPLIT — declared orphans pass loudly, undeclared ones fail', () 
     // The undeclared arm lives in classify(), which needs the registry; report() is pure node and
     // deliberately does not duplicate it. This is the assertion that the two halves together
     // still fail on the case that matters — the same census, one type left out of the quarantine.
-    const oneUndeclared = {
-      ...census,
-      quarantine: (census.quarantine as QuarantineRow[]).filter((q) => q.type !== 'ZigZag'),
-    }
+    const oneUndeclared = quarantinedCensus()
+    oneUndeclared.quarantine = [] // the type is in the census, the declaration is not
     expect(report(oneUndeclared, { io }).code).toBe(0) // the pure-node half cannot see it…
     expect(classify(oneUndeclared, REGISTRY_TYPES, io).unresolved).toEqual(['ZigZag']) // …this one does.
   })
@@ -360,7 +381,7 @@ describe('THE SPLIT — declared orphans pass loudly, undeclared ones fail', () 
       quarantine: [{
         type: 'ZigZag',
         successor: 'Quote',
-        migration: 'docs/proposals/LIVE-028-retire-orphan-block-types.sql',
+        migration: APPLIED_MIGRATION,
       }],
     }
     expect(report(wrongTarget, { io }).code).toBe(1)
@@ -384,11 +405,10 @@ describe('the probe answers 0 / 1 / 79 and never confuses them', () => {
   })
 
   it('1 — the probe says NOT DONE while a declared orphan remains, unlike the guard', () => {
-    // Deliberately the opposite verdict to the guard above, on the same input. The probe answers
-    // "is LIVE-028 done?", and the answer is no until the owner applies the SQL. check:backlog
-    // reads this; the row is `open`, so open + NOT DONE is exactly consistent.
-    expect(report(census, { probe: true }).code).toBe(1)
-    expect(report(census, { io }).code).toBe(0)
+    // Deliberately the opposite verdict to the guard, on the same input — proven on the fixture
+    // now that the live quarantine emptied (2026-08-18). The live census gets the 0 arm below.
+    expect(report(quarantinedCensus(), { probe: true }).code).toBe(1)
+    expect(report(quarantinedCensus(), { io }).code).toBe(0)
   })
 
   it('0 — an empty quarantine over a real corpus is the done state', () => {
