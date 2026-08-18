@@ -1,15 +1,31 @@
-# Posts the REQUIRED `pr-compare` context for the pull requests e2e.yml deliberately skips.
+# Posts the `pr-compare` context for the pull requests e2e.yml deliberately skips.
 #
-# 🔴 THE DEADLOCK THIS CLOSES. `pr-compare` is a required status context (ruleset 17640795) and it
-# is posted by a job in `e2e.yml`, which is path-filtered to the things that can move pixels. A pull
-# request touching none of those paths never triggers that workflow, so the context is never posted.
-# GitHub renders a required-but-never-posted context as "Expected — Waiting for status to be
-# reported" and blocks the merge FOREVER. Not slowly. Not until a retry. Forever.
+# 🔴 READ THIS BEFORE CITING THIS FILE: `pr-compare` IS NOT A REQUIRED CONTEXT TODAY.
+# RULESET 17640795, read 2026-08-18 — required: checks, analyze, lint, test, Vercel. NOT pr-compare.
+# Neither is any other visual gate. That one line is the fact; everything below it is the history.
+#
+# This file used to OPEN by calling it required, and that sentence got cited as evidence to close a
+# backlog row before anyone had opened the ruleset (OWN-004, corrected by LIVE-049). The disproof
+# came from the merge queue, not from prose: PR #2161 merged on auto-merge at 21:45:31 on
+# 2026-08-18 while its `pr-compare` check run was still `in_progress`. That run finished green seven
+# minutes AFTER the merge, and the merged SHA carried exactly one commit status, Vercel's, so no
+# substitute stood in for it. A required context cannot be pending at merge. The rule this cost us
+# is in AGENTS.md now: a claim in a comment is a claim, and it has an expiry date (ADR-1082).
+#
+# ⚠️ THE WORKFLOW STAYS ANYWAY, AND DELETING IT IS NOT THE CLEANUP IT LOOKS LIKE. It exists to close
+# a real deadlock, and the deadlock returns the moment anyone re-requires `pr-compare`.
+#
+# THE DEADLOCK. When `pr-compare` IS required, it is posted by a job in `e2e.yml`, which is
+# path-filtered to the things that can move pixels. A pull request touching none of those paths
+# never triggers that workflow, so the context is never posted. GitHub renders a
+# required-but-never-posted context as "Expected — Waiting for status to be reported" and blocks the
+# merge FOREVER. Not slowly. Not until a retry. Forever.
 #
 # PR #2107 (two files, both under `docs/`) hit it on 2026-08-12 and could not be merged by ANY
 # means: `bypass_actors` is null on that ruleset, so rulesets do not exempt repo admins either. The
 # only exits were to pollute a clean docs PR with an unrelated code touch, or to un-require the gate
-# for everybody. This workflow is the third exit.
+# for everybody. This workflow is the third exit, and it is why re-requiring the gate is now a
+# one-checkbox change instead of a rebuild.
 #
 # ⚠️ WHY THIS IS NOT A VACUOUS GREEN. `e2e.yml` goes to real trouble to make sure a job that tested
 # nothing reports `skipped` rather than `success` — its `preflight` job exists for exactly that, and
@@ -43,8 +59,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Deliberately NOT named `pr-compare` — see the header. This job's own check run is advisory and
-  # is not a required context; the thing branch protection consumes is the status it POSTS.
+  # Deliberately NOT named `pr-compare` — see the header. This job's own check run is advisory, and
+  # as of 2026-08-18 so is the status it POSTS; the naming rule below still matters, because it is
+  # what makes re-requiring `pr-compare` safe rather than a way to overwrite a red visual gate.
   fallback:
     name: pr-compare fallback (docs-only PRs)
     runs-on: ubuntu-latest

@@ -84,9 +84,22 @@ violation fails a REQUIRED check rather than relying on memory.
    a label-association sweep) where every file gets the same one edit. A `[sweep]` PR still
    closes exactly one row.
 4. **Auto-merge on green is the default** (owner directive, 2026-08-18). Every PR arms GitHub
-   auto-merge (squash); the required checks (`checks` + `analyze` + `lint` + `test`) are the
-   reviewer. Anything a gate cannot see (visual equivalence on a page retirement, a schema
-   change) stays a draft until a human looks.
+   auto-merge (squash); the required checks are the reviewer. Anything a gate cannot see (visual
+   equivalence on a page retirement, a schema change) stays a draft until a human looks.
+
+   **The required set, read from ruleset 17640795 on 2026-08-18 — five contexts, and this list is
+   the only authority on it:** `checks`, `analyze`, `lint`, `test`, `Vercel`. Do not restate it
+   from a workflow comment; one such comment was wrong for six days and got cited as evidence
+   (LIVE-049). Two absences are deliberate and both change what "green" promises:
+
+   - **`pr-compare` is NOT required**, so the visual suite is advisory. "Auto-merge on green" means
+     the code was compiled, linted, typechecked and tested, and the preview deployed. It does not
+     mean anything about pixels. A PR that moves rendering, retires a page, or recaptures baselines
+     is exactly the case rule 4 sends to a human.
+   - **"Require branches to be up to date before merging" is OFF**, so a PR merges on the CI it ran
+     against ITS base, not against current `main`. Two PRs that pass alone can still break `main`
+     together. Merge one at a time when they touch the same surface, and re-base anything that has
+     sat while other PRs landed.
 5. **Never merge a red or part-green PR by hand** to beat the queue: the required set exists
    because each check has caught a real production defect.
 6. **Rollback is a revert PR**, never a force-push to `main`.
