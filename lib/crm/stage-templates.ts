@@ -11,7 +11,7 @@
 // per CONTENT-VOICE (no em/en dashes).
 
 import type { SpaceType } from '@/lib/spaces/types'
-import type { StageKind } from './pipeline'
+import type { StageKind } from './pipeline-core'
 import { resolveMode } from '@/lib/spaces/modes'
 
 /** One seed stage in a template: a label + its kind (open / won / lost), which drives the deal status +

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { isError } from '@/lib/action-result'
-import type { StageKind } from '@/lib/crm/pipeline'
+import type { StageKind } from '@/lib/crm/pipeline-core'
 import { Input } from '@/components/ui/field'
 import {
   createStage,
