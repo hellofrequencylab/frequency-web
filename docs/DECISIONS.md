@@ -26698,3 +26698,80 @@ at all. ⚠️ The template counts are the REPO's answer, not production's: each
 is now inherited — the same trade the seven slots in ADR-1072 already took. Giving the utility
 `line-height: var(--text-eyebrow--line-height)` would make it fully self-sufficient, but it would
 move the ~87 sites already on it, so it is a separate change and not a passing tidy-up.
+
+## ADR-1076: `secrets.*` is withheld from Dependabot and `vars.*` is not, so an all-or-nothing credential pair must be gated in the workflow, not merely documented
+
+**Context.** `check:migrations` compares the repo's migration set against production's ledger. It is
+armed by two values and it deliberately treats a HALF-armed pair as a failure rather than a skip:
+both set means "compare", neither means "no database here, skip loudly", and one set means a guard
+someone armed has quietly stopped comparing anything. That tri-state is right, and ADR-1003's
+incident is why. `ci.yml` read the token from `secrets.SUPABASE_ACCESS_TOKEN` and the ref from
+`vars.SUPABASE_PROJECT_REF`, with a comment stating "on a fork PR these are empty".
+
+**The finding.** That comment was true of the secret and false of the var. GitHub withholds
+`secrets.*` from Dependabot runs (they read a separate Dependabot store) and from fork PRs; it does
+not withhold `vars.*`, which are repository configuration and always resolve. So on exactly those
+runs the pair arrived split **by the platform's design**, and the guard fired correctly on an input
+that no human had produced. Three Dependabot PRs (#2144 `actions/checkout`, #2145 `codeql-action`,
+#2146 the minor-and-patch group) were red for a day, each with a message accusing a maintainer of
+arming one half. The apparent cause — a stale branch — was a coincidence: all three were also
+behind `main`, which is what a reader notices first and is not what was failing them.
+
+**Decision.** Gate the var on the secret in the workflow:
+`SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' && vars.SUPABASE_PROJECT_REF || '' }}`.
+A credential-less run now resolves BOTH to empty, which is the "neither set" arm the guard already
+handles as a loud skip. The half-armed arm stays a failure and now means only what it says: a real
+half-arming, by a person, worth shouting about.
+
+**Why not relax the guard.** Because the guard was not wrong. Making `check:migrations` tolerate a
+half-armed pair would trade a false alarm on Dependabot for a silent green on the one comparison
+that ADR-1003 exists to keep honest. The defect was in what the workflow handed it.
+
+**Consequences.** ✅ Proved both directions in `scripts/check-migrations.test.ts`: it reads the real
+`ci.yml`, resolves each env expression the way Actions would on a run with no secrets, and asserts
+both come out empty and that the pair reaches `status: 'skipped'` without touching the network.
+Restoring the bare `vars.*` form fails it. ✅ The resolver understands only the two expression shapes
+`ci.yml` uses and **throws on anything else** rather than guessing, so a future rewrite fails here
+instead of silently re-splitting the pair. ⚠️ A repo-wide `vars.*`-paired-with-`secrets.*` lint was
+written and **withdrawn**: it flagged 12 more sites (`e2e*.yml`'s optional `PW_*` config,
+`maintenance.yml`'s two steps that already skip when either is empty) where a split pair is harmless,
+so it graded a SHAPE and would have shipped needing a frozen-debt list on its first run. The rule
+that matters is "a guard which FAILS half-armed must be handed all-or-nothing", and today exactly one
+step is in that class. ⚠️ Any future guard given the same tri-state needs the same workflow gating;
+this ADR is the reference, not a general lint.
+
+## ADR-1077: The effect-adoption gate could not see a class list built in a helper, so `cn()` became a counted position in fact and not only in its doc comment
+
+**Context.** `lib/theme/effect-adoption.test.ts` (ADR-1056, backlog LIVE-024) fails an effect class
+defined in `globals.css` that nothing calls. It measures adoption deliberately narrowly — only string
+literals sitting in a `className=` / `cn()` / `clsx()` position — because half these class names are
+ordinary English and a plain grep reported 54 "adopters" for `spot`, every one of them prose.
+
+**The finding.** The extractor's doc comment listed `cn(` as a counted position and its self-test
+covered `className={cn('scanlines', …)}`. But the bare form — `const chrome = cn(…)` one line above
+the JSX, which is ordinary React — was never detected: the generic open-bracket branch consumed the
+`(`, incremented depth and `continue`d before the marker test below it could ever run, so that
+branch was unreachable. Only a `cn()` already inside a `className={…}` was ever seen. Retiring the
+coded body on `/the-lab` (ADR-1068) moved `arc-top` and `dot-grid` from literal `className=`
+attributes into exactly that helper shape in `components/page-editor/blocks/dawn.tsx`, and the gate
+reported two orphans that are called on every render.
+
+**Decision.** Fix the extractor so a bare helper call opens a class context, and cover it with a
+self-test that also proves the context CLOSES with the call (a literal on the next line is not swept
+in). Keep `dawn.tsx` on `cn()` rather than inlining the classes back into the JSX to satisfy the
+instrument, and keep the gate's strictness otherwise unchanged.
+
+**Why this is a fix and not a waiver.** The distinction the gate exists to draw is "nothing calls
+this" versus "I could not see the call", and it was reporting the first while meaning the second — a
+false orphan, whose remedy under the gate's own message is to delete a rule that is in use. Widening
+a mis-scoped instrument to what it always claimed is not the same act as raising a baseline to admit
+a real regression.
+
+**Consequences.** ✅ All 14 assertions in the file pass, including the recorded-orphan ratchet: the
+wider instrument revealed no listed orphan as secretly adopted, so nothing had to be banked. ✅ The
+false orphans are gone without touching `globals.css` or the `RECORDED_ORPHANS` list. ⚠️ Every class
+this gate has ever scored was scored by the narrow reading, so a class retired for zero adopters
+before today was retired on a count that could not see helper-built lists. The three in ADR-1056
+(`scanlines`, `vignette`, `edge-light`) were re-checked under the wider instrument and still read
+zero. ⚠️ The same blind spot shape applies to any other gate built on a `className=` scan; this one
+is now covered by its own self-test, and the others are not audited here.
