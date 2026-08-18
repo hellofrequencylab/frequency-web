@@ -81,7 +81,7 @@ export default function SubscribePage() {
       {/* ── How it works ───────────────────────────────────────────────────── */}
       <Section tone="canvas">
         <div className="text-center mb-10">
-          <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-4">
+          <p className="eyebrow text-primary-strong mb-4">
             How it works
           </p>
           <h2 className="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)]">
@@ -104,7 +104,7 @@ export default function SubscribePage() {
       {/* ── FAQ ────────────────────────────────────────────────────────────── */}
       <Section tone="surface">
         <div className="mb-8">
-          <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-4">
+          <p className="eyebrow text-primary-strong mb-4">
             Straight answers
           </p>
           <h2 className="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)]">

@@ -70,7 +70,7 @@ export function FunnelHero({ config }: { config: FunnelConfig }) {
           the text column. */}
       <div className="grid items-center gap-10 lg:grid-cols-2">
         <div>
-          <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong">{hero.eyebrow}</p>
+          <p className="eyebrow text-primary-strong">{hero.eyebrow}</p>
           <h1 className="mt-4 font-display text-4xl uppercase leading-[1.02] text-text sm:text-5xl lg:text-6xl">
             {hero.h1}
           </h1>
@@ -84,7 +84,7 @@ export function FunnelHero({ config }: { config: FunnelConfig }) {
             </Button>
           </div>
           <p className="mt-4 text-body-sm text-subtle">{hero.microcopy}</p>
-          <p className="mt-6 text-body-sm font-semibold uppercase tracking-eyebrow text-muted">{hero.trustLine}</p>
+          <p className="mt-6 eyebrow text-muted">{hero.trustLine}</p>
         </div>
         <div className="order-first lg:order-last">
           <div className="mx-auto max-w-lg rounded-3xl border border-border bg-surface p-6 shadow-pop sm:p-8">

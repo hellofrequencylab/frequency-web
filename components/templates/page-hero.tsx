@@ -273,7 +273,7 @@ export function PageHero({
               {leading && <span className="shrink-0">{leading}</span>}
               <div className={`min-w-0${adaptiveText ? ' hero-zone' : ''}`} {...zoneProps('lockup', adaptiveText, initialZoneTones)}>
                 {eyebrow && (
-                  <div className="mb-1.5 flex flex-wrap items-center gap-2 text-meta font-bold uppercase tracking-eyebrow text-primary sm:text-body-sm">{eyebrow}</div>
+                  <div className="mb-1.5 flex flex-wrap items-center gap-2 text-meta font-bold uppercase tracking-eyebrow text-primary">{eyebrow}</div>
                 )}
                 <h1 className={`font-display uppercase leading-[1] text-balance ${titleTone} text-[clamp(1.25rem,3vw,2rem)] break-words`}>
                   {title}
@@ -322,7 +322,7 @@ export function PageHero({
               would render `text-on-media` that nothing ever resolves. */}
           <div className={adaptiveText ? 'hero-zone' : undefined} {...zoneProps('lockup', adaptiveText, initialZoneTones)}>
             {eyebrow && (
-              <p className="mb-3 text-body-sm font-bold uppercase tracking-eyebrow text-primary sm:mb-4">{eyebrow}</p>
+              <p className="mb-3 eyebrow text-primary sm:mb-4">{eyebrow}</p>
             )}
             <h1 className={`font-display uppercase leading-[0.95] text-balance ${titleTone} text-[clamp(1.75rem,6vw,3.75rem)]`}>
               {title}

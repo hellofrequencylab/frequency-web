@@ -117,11 +117,27 @@ describe('the eyebrow role has one answer', () => {
 // role's own 0.18em, in the shared kit that every surface below inherits.
 //
 // WHAT COUNTS AS RESOLVING THE ROLE. Either the composite `eyebrow` utility (the whole role in one
-// class) or the `tracking-eyebrow` token beside `uppercase`. The second form is admitted
-// deliberately: the marketing register sets the same role at --text-body-sm over a photograph and
-// reads the tracking token to do it, so demanding the composite class there would be a size change
-// dressed up as a consistency fix. Both forms resolve to the token; a literal does not, and that is
-// the line this test draws.
+// class) or the `tracking-eyebrow` token beside `uppercase`. Both resolve to the token; a literal
+// does not, and that is the line this test draws.
+//
+// ⚠️ THE SECOND FORM'S JUSTIFICATION SHRANK ON 2026-08-18, and the sentence that stood here is why
+// this note exists. It read: "the marketing register sets the same role at --text-body-sm over a
+// photograph and reads the tracking token to do it, so demanding the composite class there would be
+// a size change dressed up as a consistency fix." That was accurate when written and describes
+// almost nothing now. LIVE-038 moved 25 sites off `text-body-sm … tracking-eyebrow` and onto the
+// composite — the size change was the POINT, not a side effect, because the owner had already
+// retired 0.875rem (ADR-1075) and those sites were the register still rendering it.
+//
+// What is left of the carve-out is ONE site: `components/page-editor/blocks/spaces.tsx`, a
+// photo-hero whose eyebrow sits on `text-on-ink/80` over an image — ADR-1072 §2's deliberate
+// exception, kept out of the sweep on purpose. `components/templates/page-hero.tsx` keeps the
+// token form too, but for a different reason worth not confusing with it: its base was ALREADY
+// 0.75rem (`text-meta`) and only its `sm:` step-up was the retired register, so dropping the
+// step-up completed the retirement and moving it to the composite would be a font-family and
+// line-height change this row never asked for.
+//
+// So the second form stays admitted, and the reason is now a named exception rather than a
+// register.
 //
 // WHAT THIS DELIBERATELY DOES NOT CLAIM. It does not say the ~615 unnamed hand-rolled sites are
 // eyebrows — most of the population is pill badges and dense table headers, where 0.18em would blow

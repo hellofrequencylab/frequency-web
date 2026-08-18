@@ -146,6 +146,39 @@ import { BlockRender } from './block-render'
 //     emitted a line-height (`calc(1.25 / 0.875)`) and the composite `eyebrow` utility emits none,
 //     so leading is now inherited — the same trade the seven slots converted in ADR-1072 already
 //     took, on a single-line label that carries its own `mb-4`.
+//
+//   2026-08-18 (later, same day) · LIVE-038 — the register the entry above deliberately left alone.
+//     Read that entry's control paragraph first, because THIS entry is what happened to it. It named
+//     the LiveStats eyebrow in `components/marketing/blocks.tsx` as the useful control: hand-rolled
+//     `text-body-sm font-bold uppercase tracking-eyebrow`, NOT an `<Eyebrow>` adopter, and
+//     byte-identical across all eight goldens. "That is the scope line holding: the component
+//     retired, not every string that looks like it."
+//
+//     The scope line was right for that change and wrong to leave standing. ADR-1075 retired
+//     0.875rem as a SIZE, not as a component, and 25 sites went on hand-writing it — so a visitor
+//     saw two eyebrow registers on the same marketing page depending on whether a section came from
+//     a block or from the route file. So the control is now converted too, and TWO goldens moved:
+//     the two metadata-threading cases, which are the only ones that render LiveStats.
+//
+//     THE DIFF, read element by element rather than counted. In both, exactly one `<p>` changed —
+//     LiveStats' eyebrow, from `text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong
+//     mb-4` to `eyebrow text-primary-strong mb-4` — and the only attribute that changed on it is
+//     `class`. The three stat LABELS three lines below it (`mt-3 text-meta font-bold uppercase
+//     tracking-eyebrow text-subtle`) are byte-identical in both, which is this entry's own control:
+//     they are already 0.75rem and were never the retired register, so they must not move, and they
+//     did not. Metadata threading — the actual subject of both tests — still delivers 1,234 / 56 / 0
+//     from `puck.metadata.live`. No element added, removed or moved; slot recursion, root wrapping
+//     and unknown-type skipping untouched.
+//
+//     SAME VALUE CHANGE as the entry above, now applied to the other half of the population: −14% on
+//     the type step, tracking/weight/transform/face unchanged, and the same inherited-leading trade.
+//     Committed pixel baselines for the marketing pages move with it and are recaptured in the same
+//     PR — that is the whole reason LIVE-038 was its own row rather than folded into ADR-1075's.
+//
+//     ONE SITE STILL HAND-WRITES IT, on purpose: `components/page-editor/blocks/spaces.tsx`, the
+//     photo-hero whose eyebrow sits on `text-on-ink/80` over an image (ADR-1072 §2). It renders in
+//     none of these goldens. If a future diff here shows THAT string appearing again anywhere else,
+//     it is a regression and this log is the evidence that nothing else was expected to move.
 // ─────────────────────────────────────────────────────────────────────────────
 
 type BlockItem = { type: string; props: Record<string, unknown> }
@@ -222,7 +255,7 @@ describe('BlockRender golden markup (frozen; was byte-identical to Puck rsc <Ren
     // The live counts change the rendered markup, so a threading regression would
     // surface as a snapshot diff here (and as a differing pair below).
     expect(withLive).not.toBe(withoutLive)
-    expect(withLive).toMatchInlineSnapshot(`"<section class="bg-surface px-6 py-24 sm:py-28 "><div class="max-w-3xl mx-auto text-center"><p class="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-4">Not a someday idea</p><h2 class="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)] mb-12">It’s already happening.</h2><div class="grid grid-cols-3 gap-6 max-w-xl mx-auto"><div><p class="font-display text-stat tabular-nums leading-none text-text">1,234</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Members</p></div><div><p class="font-display text-stat tabular-nums leading-none text-text">56</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Circles</p></div><div><p class="font-display text-stat tabular-nums leading-none text-text">0</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Events soon</p></div></div></div></section>"`)
+    expect(withLive).toMatchInlineSnapshot(`"<section class="bg-surface px-6 py-24 sm:py-28 "><div class="max-w-3xl mx-auto text-center"><p class="eyebrow text-primary-strong mb-4">Not a someday idea</p><h2 class="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)] mb-12">It’s already happening.</h2><div class="grid grid-cols-3 gap-6 max-w-xl mx-auto"><div><p class="font-display text-stat tabular-nums leading-none text-text">1,234</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Members</p></div><div><p class="font-display text-stat tabular-nums leading-none text-text">56</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Circles</p></div><div><p class="font-display text-stat tabular-nums leading-none text-text">0</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Events soon</p></div></div></div></section>"`)
   })
 
   it('nested slot: Container renders its `content` slot as nested items', () => {
@@ -293,7 +326,7 @@ describe('BlockRender golden markup (frozen; was byte-identical to Puck rsc <Ren
     const withoutLive = block(data, {})
     expect(withLive).not.toBe(withoutLive)
     expect(withLive).toContain('Deeply nested heading')
-    expect(withLive).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto"><div><section class="px-6 py-12 sm:py-16 bg-surface "><div class="max-w-5xl mx-auto grid gap-8 md:grid-cols-2 items-start"><div><section class="bg-surface px-6 py-24 sm:py-28 "><div class="max-w-3xl mx-auto text-center"><p class="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-4">Not a someday idea</p><h2 class="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)] mb-12">It’s already happening.</h2><div class="grid grid-cols-3 gap-6 max-w-xl mx-auto"><div><p class="font-display text-stat tabular-nums leading-none text-text">1,234</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Members</p></div><div><p class="font-display text-stat tabular-nums leading-none text-text">56</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Circles</p></div><div><p class="font-display text-stat tabular-nums leading-none text-text">0</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Events soon</p></div></div></div></section></div><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="eyebrow font-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Deeply nested heading</h2></div></section></div></div></section></div></div></section>"`)
+    expect(withLive).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto"><div><section class="px-6 py-12 sm:py-16 bg-surface "><div class="max-w-5xl mx-auto grid gap-8 md:grid-cols-2 items-start"><div><section class="bg-surface px-6 py-24 sm:py-28 "><div class="max-w-3xl mx-auto text-center"><p class="eyebrow text-primary-strong mb-4">Not a someday idea</p><h2 class="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)] mb-12">It’s already happening.</h2><div class="grid grid-cols-3 gap-6 max-w-xl mx-auto"><div><p class="font-display text-stat tabular-nums leading-none text-text">1,234</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Members</p></div><div><p class="font-display text-stat tabular-nums leading-none text-text">56</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Circles</p></div><div><p class="font-display text-stat tabular-nums leading-none text-text">0</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Events soon</p></div></div></div></section></div><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="eyebrow font-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Deeply nested heading</h2></div></section></div></div></section></div></div></section>"`)
   })
 
   it('skips unknown block types instead of throwing', () => {

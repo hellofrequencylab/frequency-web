@@ -62,7 +62,7 @@ export function PersonaChooser({
 
   return (
     <div>
-      <p className="text-center text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong">{prompt}</p>
+      <p className="text-center eyebrow text-primary-strong">{prompt}</p>
 
       <div className="mx-auto mt-7 grid max-w-3xl gap-3 sm:grid-cols-2">
         {personas.map((id) => {

@@ -65,7 +65,7 @@ export default function BetaPage() {
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-start">
           {/* Why you're here */}
           <div>
-            <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-4">
+            <p className="eyebrow text-primary-strong mb-4">
               What you&apos;re joining
             </p>
             <h2 className="font-display uppercase text-text text-display-h2 mb-7">
@@ -120,7 +120,7 @@ export default function BetaPage() {
       {/* ── How it works after you sign up ───────────────────────────────── */}
       <Section tone="canvas">
         <div className="text-center mb-12">
-          <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-4">
+          <p className="eyebrow text-primary-strong mb-4">
             What happens next
           </p>
           <h2 className="font-display uppercase text-text text-display-h2">
