@@ -26928,3 +26928,57 @@ straight at the member route; the pass already ran on every request through the 
 is a comparison, not a round trip. ⚠️ This removes the last consumer of the `isAuthed` prop from
 `CircleCard`, `EventRow`, `PostPreview` and `DiscoverLocator` — any future caller that wants
 auth-aware link behaviour should reach for `authMode="client"`, not re-introduce a server read.
+
+## ADR-1082: A row's premise expires, and nothing in the one-list contract was checking it
+
+**Context.** `docs/BUILD-BACKLOG.json` is the only status record, and `pnpm check:backlog` keeps it
+honest in both directions: a row marked `open` whose probe passes is stale, and a row marked `done`
+whose probe fails is a regression. That machinery is good and it caught its 23rd stale item on its
+first run. It has one blind spot, and 2026-08-18 found it five times in one day.
+
+**A probe measures whether the WORK is done. Nothing measures whether the ROW is still true.** A
+row's `detail` carries its premise — why the work is needed, what is blocking it, who has to act —
+and that prose is exactly the thing the one-list rule forbids trusting anywhere else.
+
+**Five expired premises, in two shapes.**
+
+*Shape one: someone already fixed it and nobody circled back.* LIVE-012 and LIVE-043 both warned, in
+capitals, that a destination is lost because `proxy.ts` "NEVER" sets `next=`. #2132 taught it to on
+2026-08-13, five days earlier. LIVE-012 was `blocked` on an owner decision between two options, one
+of which had already been taken. Acting on the row as written would have shipped the *other* option
+on top of the one already in the tree.
+
+*Shape two: the row says it cannot be checked.* Three rows carried that as their probe:
+
+| Row | What it said | What settled it |
+|---|---|---|
+| OWN-029 | "the owner checks the dashboard setting first (**an agent cannot see it**)" | The build log: `Running "pnpm run build"` → `prebuild` → `postbuild` printing its gates. |
+| OWN-002 | "Requires reading the repo Actions secrets, which is **owner-only**" | `pr-compare`'s env: `PW_STORAGE_STATE: .../member.json`, then 16/16 authenticated shell checks passing. |
+| OWN-003 | "Not re-checked. **Owner-only** (Vercel + Actions secrets)" | The same env: `VERCEL_AUTOMATION_BYPASS_SECRET: ***`, and `preflight` letting the suite run instead of reporting `skipped`. |
+
+Every one of those statements was **true about the secret and false about the question**. The secret
+is unreadable. Whether it is *set* is printed in a log, because the whole point of a secret is that
+something consumes it, and the thing that consumes it says whether it worked. `e2e.yml` even builds
+this readout on purpose: its `preflight` job exists so an absent bypass secret produces `skipped`
+rather than a vacuous green, and its header says "when this one says skipped, nothing was tested".
+The instrument for answering OWN-003 was written into the repo before OWN-003 was filed.
+
+**Decision.** A rule in AGENTS.md beside the probe rules: re-test a row's premise before working it,
+and treat "cannot be checked" as a claim with an expiry date rather than a property. Where a fact is
+genuinely unreadable, look for the thing that CONSUMES it and read what that thing printed.
+
+**Not a new gate, and deliberately so.** The obvious move is a machine check on premise freshness,
+and there is nothing to check: a premise is prose about the world, and a repo cannot diff prose
+against reality. `manual` rows already go stale loudly at 120 days, which is the right instrument for
+a fact a repo cannot see and the wrong one for a fact it was never asked to look for. What was
+missing is a habit, so this ships as a habit with five worked examples attached — the same reason
+ADR-970 refuses to build a gate that cannot fire honestly.
+
+**Consequences.** ✅ OWN-002, OWN-003 and OWN-029 close without the owner touching anything, and the
+statement given to them in the 2026-08-17 audit — "the member-facing product is unmeasured, not
+clean" — is retracted: 80 visual checks pass, 16 of them authenticated. ✅ OWN-004 rescopes to one
+decision instead of three clicks: `pr-compare` is already a required context (the whole existence of
+`pr-compare-fallback.yml` proves it), `check:contrast` already sits in the required `checks` job's
+guards array, and `check:adoption` is advisory *on purpose* under ADR-970 — so requiring it is a
+decision to overturn, not a task to do. ⚠️ The audit that produced these rows was careful and still
+carried five expired premises forward, which is the honest measure of how quiet this failure is.
