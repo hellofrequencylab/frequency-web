@@ -10,6 +10,11 @@
 // redirect also reconciles via recordTipFromSessionId, so a tip is never lost if
 // the webhook isn't wired yet (mirrors the membership checkout pattern).
 
+// ── `import 'server-only'` IS THE POINT OF THE LINE BELOW, NOT DECORATION (LIVE-037) ──────────
+// The header above already said "Server-only." A comment enforces nothing: tip-button.tsx
+// imported three constants from here and shipped the service-role client to the browser anyway.
+// The directive turns the intent into a BUILD FAILURE that names the importer.
+import 'server-only'
 import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from './stripe'
@@ -17,10 +22,11 @@ import { getConnectStatus, payoutsLive } from './connect'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction, ENTITY_ID } from '@/lib/finance/record'
 
-/** Suggested tip amounts (cents) shown as quick-pick chips. */
-export const TIP_PRESETS_CENTS = [300, 500, 1000] as const
-export const TIP_MIN_CENTS = 100 // $1
-export const TIP_MAX_CENTS = 50000 // $500 — a sane ceiling for a single tip
+// The amounts live in ./tips-core (dependency-free) so client components can read them
+// without dragging this module's admin client + Stripe SDK into the browser (LIVE-037).
+// Re-exported here so every existing server caller is unchanged.
+export { TIP_PRESETS_CENTS, TIP_MIN_CENTS, TIP_MAX_CENTS } from './tips-core'
+import { TIP_MIN_CENTS, TIP_MAX_CENTS } from './tips-core'
 
 function db(): SupabaseClient {
   return createAdminClient()

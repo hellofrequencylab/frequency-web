@@ -1,7 +1,7 @@
 import { Ticket, Banknote, Check, Star, Clock, Zap, Gauge } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { StatCard } from '@/components/ui/stat-card'
-import { formatEventMoney, type EventCoreStats } from '@/lib/events/event-stats'
+import { formatEventMoney, type EventCoreStats } from '@/lib/events/event-stats-core'
 
 // The ONE core-stats row for an event (EVENTS-REWORK, item 13). The host Manage dashboard
 // and the in-rail Event settings editor both render THIS over loadEventCoreStats, so the

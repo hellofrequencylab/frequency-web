@@ -6,7 +6,7 @@ import { Check, Zap, Ban, RotateCcw, Loader2 } from 'lucide-react'
 import { Button, buttonClasses } from '@/components/ui/button'
 import { transitionPersona } from './actions'
 import { isError } from '@/lib/action-result'
-import { canStaffTransition, type PartnerPersona, type PersonaState } from '@/lib/personas'
+import { canStaffTransition, type PartnerPersona, type PersonaState } from '@/lib/personas-core'
 
 // The staff verify/activate/suspend/reinstate buttons for one persona row. Only the
 // transitions the state machine allows from the current state render (canStaffTransition).

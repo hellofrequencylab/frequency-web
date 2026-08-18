@@ -7,6 +7,11 @@
 // Counting those rows for the active season's season_number IS the member's rank
 // driver. Server-only (admin client).
 
+// ── `import 'server-only'` IS THE POINT OF THE LINE BELOW, NOT DECORATION (LIVE-037) ──────────
+// The header above already ends "Server-only (admin client)." A comment enforces nothing: this
+// module was re-exported from lib/season-ranks.ts, which the app shell reaches, so the
+// RLS-bypassing client sat in the browser graph of every route under app/(main).
+import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentSeason } from '@/lib/seasons'
 

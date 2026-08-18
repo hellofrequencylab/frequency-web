@@ -13,16 +13,20 @@
 // the generated DB types, so access goes through the typed client (the topic/channel/state
 // columns are plain strings in the DB and narrowed to the app unions on read).
 
+// ── `import 'server-only'` IS THE POINT OF THE LINE BELOW, NOT DECORATION (LIVE-037) ──────────
+// This module was reached from the space email composer through lib/spaces/email-topics, for one
+// constant. The directive makes that a BUILD FAILURE that names the importer.
+import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { NotificationTopic, NotificationChannel } from '@/lib/notification-preferences'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 
-export type ContactPreferenceState = 'subscribed' | 'unsubscribed'
-
-// The topics a contact can tune from a Space's preference center. Kept explicit (not
-// the whole NotificationTopic union) because a contact only ever hears a Space's
-// outbound email: broadcasts, event updates, and marketing.
-export const CONTACT_TOPICS: readonly NotificationTopic[] = ['dispatches', 'events', 'marketing'] as const
+// The topic vocabulary lives in ./contact-topics (dependency-free) so the composer and the
+// send-time normalizer can read it without dragging this module's admin client into the
+// browser (LIVE-037). Re-exported here so every existing server caller is unchanged.
+export { CONTACT_TOPICS } from './contact-topics'
+export type { ContactPreferenceState } from './contact-topics'
+import type { ContactPreferenceState } from './contact-topics'
 
 export interface ContactPreferenceKey {
   email: string

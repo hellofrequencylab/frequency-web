@@ -234,7 +234,7 @@ jobs:
           # Vercel does. See docs/DEPLOY-SAFETY.md and ADR-1003.
           guards=(
             authz canon menu gate-parity workflows labels a11y-names help tokens phantom bridge contrast
-            headers seo rls grants admin-client migrations adr docs-links templates
+            headers seo rls grants admin-client client-boundary migrations adr docs-links templates
             backlog one-list
           )
           # RUN IN PARALLEL, REPORT IN ORDER. The guards are independent node processes that only

@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { Heart, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/field'
 import { startTip } from './tip-actions'
-import { TIP_PRESETS_CENTS, TIP_MIN_CENTS, TIP_MAX_CENTS } from '@/lib/billing/tips'
+import { TIP_PRESETS_CENTS, TIP_MIN_CENTS, TIP_MAX_CENTS } from '@/lib/billing/tips-core'
 import { isError } from '@/lib/action-result'
 
 // "Tip" entry on a host/partner profile. Opens a small composer (preset chips +

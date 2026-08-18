@@ -6,7 +6,8 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { getStoreData } from '@/app/(main)/crew/store/actions'
-import { journeysFinishedThisSeason, rankForCompletion, type SeasonRank } from '@/lib/season-ranks'
+import { rankForCompletion, type SeasonRank } from '@/lib/season-ranks'
+import { journeysFinishedThisSeason } from '@/lib/quest/completion-read'
 import { getCurrentSeason } from '@/lib/seasons'
 import { surfaceAccess } from '@/lib/core/viewer-hats'
 

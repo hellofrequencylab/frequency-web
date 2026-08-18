@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { CONTACT_TOPICS } from '@/lib/comms/contact-preferences'
+import { CONTACT_TOPICS } from '@/lib/comms/contact-topics'
 import { EMAIL_TOPIC_OPTIONS, DEFAULT_EMAIL_TOPIC, normalizeEmailTopic } from './email-topics'
 
 describe('normalizeEmailTopic (ADR-799 C)', () => {

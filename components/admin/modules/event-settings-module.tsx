@@ -23,7 +23,7 @@ import {
   useEventPosterAsCover as promotePosterToCover,
 } from '@/app/(main)/events/admin-actions'
 import { EventCoreStatsCards } from '@/components/events/event-core-stats'
-import type { EventCoreStats } from '@/lib/events/event-stats'
+import type { EventCoreStats } from '@/lib/events/event-stats-core'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
 import { Banner } from '@/components/admin/status'
 import { EventLoomPicker } from '@/components/admin/modules/event-loom-picker'

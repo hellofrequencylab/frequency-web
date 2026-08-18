@@ -6,117 +6,27 @@
 // only (admin client). The `profile_personas` table isn't in the generated types yet, so
 // the queries use the untyped-client cast (repo convention, see broadcast/actions.ts).
 
+// ── `import 'server-only'` IS THE POINT OF THE LINE BELOW, NOT DECORATION (LIVE-037) ──────────
+// The header above already said "Server-only (admin client)." A comment enforces nothing:
+// persona-controls.tsx imported the state machine from here and shipped the service-role client
+// to the browser. The directive makes that a BUILD FAILURE that names the importer.
+import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { PartnerPersona } from '@/lib/core/access-matrix'
 
-export type { PartnerPersona }
-export type PersonaState = 'claimed' | 'verified' | 'active' | 'suspended'
-
-export const PARTNER_PERSONAS: readonly PartnerPersona[] = [
-  'collaborator', 'practitioner', 'business', 'organization',
-] as const
-
-// The money-moving partner programs (ROLES.md System 2): a Practitioner runs paywalled
-// Programs (Stripe Connect, verified) and an Organization carries tenant billing. These
-// are the focus of the admin verification queue (EM2-5): their `active` state is the one
-// gated on a real per-persona payout binding. The other two programs (Collaborator,
-// Business) verify the same way and ride a secondary section of the queue.
-export const MONEY_PERSONAS: readonly PartnerPersona[] = ['practitioner', 'organization'] as const
-
-/** Whether a persona's `active` state needs a per-persona Stripe Connect / billing binding. */
-export function isMoneyPersona(persona: PartnerPersona): boolean {
-  return (MONEY_PERSONAS as readonly string[]).includes(persona)
-}
-
-export type PersonaTool = { label: string; href: string }
-
-export const PERSONA_META: Record<
-  PartnerPersona,
-  { label: string; emoji: string; tagline: string; unlocks: string; tools: PersonaTool[] }
-> = {
-  collaborator: {
-    label: 'Collaborator', emoji: '📣',
-    tagline: 'Influencers, authors, teachers, speakers with an audience',
-    unlocks: 'A featured directory for your Practices & Journeys, plus the influencer program (affiliate kickbacks tied to your activity).',
-    tools: [
-      { label: 'Collaborators directory', href: '/partners/collaborators' },
-      { label: 'Create a Journey', href: '/journeys' },
-    ],
-  },
-  practitioner: {
-    label: 'Practitioner', emoji: '🧘',
-    tagline: 'Healers, breathwork facilitators, yogis running their own network',
-    unlocks: 'Host paywalled Programs + gamify your clients’ progress, with a private Channel & Circles under the Frequency brand.',
-    tools: [], // paywalled Programs + client gamification — building (P3.x)
-  },
-  business: {
-    label: 'Business', emoji: '🏪',
-    tagline: 'Local businesses',
-    unlocks: 'A business listing + loyalty rewards + CRM + web builder.',
-    tools: [
-      { label: 'Your listing', href: '/partners/listing' },
-      { label: 'Business CRM', href: '/admin/growth?tab=crm' },
-      { label: 'Growth Studio', href: '/admin/growth' },
-    ],
-  },
-  organization: {
-    label: 'Organization', emoji: '🏢',
-    tagline: 'Nonprofits & organizations',
-    unlocks: 'Your own sub-community on Hook + CRM + gamification + promotion.',
-    tools: [
-      { label: 'Your listing', href: '/partners/listing' },
-      { label: 'Business CRM', href: '/admin/growth?tab=crm' },
-      { label: 'Growth Studio', href: '/admin/growth' },
-    ],
-  },
-}
+// The vocabulary + state machine live in ./personas-core (dependency-free) so client components
+// can read them without dragging this module's admin client into the browser (LIVE-037).
+// Re-exported here so every existing server caller is unchanged.
+export type { PartnerPersona, PersonaState, PersonaTool } from './personas-core'
+export {
+  PARTNER_PERSONAS, MONEY_PERSONAS, isMoneyPersona, PERSONA_META,
+  LIVE_PERSONA_STATES, CONNECT_WIRED, PERSONA_STATE_META, canStaffTransition,
+} from './personas-core'
+import type { PersonaState } from './personas-core'
+import { PARTNER_PERSONAS, LIVE_PERSONA_STATES, isMoneyPersona, CONNECT_WIRED } from './personas-core'
 
 function isPersona(v: string): v is PartnerPersona {
   return (PARTNER_PERSONAS as readonly string[]).includes(v)
-}
-
-// ── State machine (P2.7) ─────────────────────────────────────────────────────
-// claimed → verified → active → suspended. A member self-serves the claim/release;
-// a staff operator runs the verify → activate ladder (and can suspend/reinstate).
-// "Lit" = the persona's matrix surfaces are on. Only VERIFIED + ACTIVE light up —
-// a bare claim is pending review, so partner tools wait on verification (the point
-// of P2.7). The per-persona Stripe Connect binding (activate's money gate) is stubbed.
-
-/** The states whose partner surfaces are live (light the access matrix). */
-export const LIVE_PERSONA_STATES: readonly PersonaState[] = ['verified', 'active'] as const
-
-/** Whether the per-persona Stripe Connect / money binding is wired (site-audit BUG-7). Until
- *  Connect lands this is false, so ACTIVATION is blocked everywhere: the verified→active money
- *  gate can't silently succeed without a payment binding. Flip to true when Connect ships.
- *  Note: `verified` already lights every partner surface (LIVE_PERSONA_STATES), so blocking
- *  `active` withholds nothing operational today — it only stops the unbacked money state. */
-export const CONNECT_WIRED = false
-
-export const PERSONA_STATE_META: Record<
-  PersonaState,
-  { label: string; tone: 'pending' | 'success' | 'muted'; desc: string }
-> = {
-  claimed:   { label: 'Pending review', tone: 'pending', desc: 'Claimed. Waiting on the team to verify.' },
-  verified:  { label: 'Verified',       tone: 'success', desc: 'Confirmed by the team; tools are on.' },
-  active:    { label: 'Active',          tone: 'success', desc: 'Fully live, verified and bound.' },
-  suspended: { label: 'Suspended',       tone: 'muted',   desc: 'Released or revoked.' },
-}
-
-// Staff-driven transitions (the admin verify queue). Member self-serve claim/release
-// are separate (claimPersona / releasePersona).
-const STAFF_TRANSITIONS: Record<PersonaState, readonly PersonaState[]> = {
-  claimed:   ['verified', 'suspended'],
-  verified:  ['active', 'suspended'],
-  active:    ['suspended'],
-  suspended: ['verified'], // reinstate without forcing a re-claim
-}
-
-/** Whether a staff operator may move a persona from `from` to `to`. Activation is gated on the
- *  Connect money binding (BUG-7): while it's unwired, no transition to `active` is allowed, so the
- *  state can never be reached without the payment binding. */
-export function canStaffTransition(from: PersonaState, to: PersonaState): boolean {
-  if (to === 'active' && !CONNECT_WIRED) return false
-  return STAFF_TRANSITIONS[from]?.includes(to) ?? false
 }
 
 /** Personas whose surfaces are LIVE (verified/active) — the matrix inputs. A bare

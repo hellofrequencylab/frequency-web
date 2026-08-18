@@ -26775,3 +26775,54 @@ before today was retired on a count that could not see helper-built lists. The t
 (`scanlines`, `vignette`, `edge-light`) were re-checked under the wider instrument and still read
 zero. ⚠️ The same blind spot shape applies to any other gate built on a `className=` scan; this one
 is now covered by its own self-test, and the others are not audited here.
+
+## ADR-1079: A hand-kept list of ten leak paths measured a subset and prescribed a remedy, so the client/server boundary is now probed by walking the import graph
+
+**Context.** `lib/supabase/admin.ts` opens Supabase with the service-role key and bypasses RLS. Backlog
+row LIVE-037 tracked the class of client components that statically reach it — always the same shape,
+a `'use client'` module importing a CONSTANT out of a module that also opens the admin client, with
+the whole graph following. The row named ten paths and probed them by asserting each named file
+carried `import 'server-only'`.
+
+**The finding.** That probe was wrong in both directions, and neither would have been visible from its
+green.
+
+- It **measured a subset and reported on the whole**. An eleventh path existed that the list never
+  named: `components/spaces/email/composer-shell.tsx` → `lib/spaces/email-topics.ts` →
+  `lib/comms/contact-preferences.ts` → the admin client, for one topic constant. Guarding the ten
+  would have closed the row with that path still live. This is the same failure the row's own notes
+  record from batch one (a `want` list of 5 of 10), one level up: the fix there was to widen the list,
+  which repaired the instance and left the mechanism intact.
+- It **prescribed a remedy instead of measuring a consequence**, and so demanded the wrong one.
+  `lib/season-ranks.ts` is pure rank vocabulary that about twenty client components import, including
+  `lib/community-roles.tsx`, which `components/layout/app-shell.tsx` pulls onto every route under
+  `app/(main)`. Its only impurity was a single convenience re-export of `journeysFinishedThisSeason`.
+  `import 'server-only'` there — what the probe required to go green — would have broken the build on
+  every one of those components. The actual fix was to DELETE the re-export and guard
+  `lib/quest/completion-read.ts` instead.
+
+**Decision.** Replace the list with `scripts/check-client-server-boundary.mjs`, wired into the ci.yml
+guard array as `check:client-boundary` and adopted as LIVE-037's probe. It walks the real import graph
+and fails if any `'use client'` module can statically reach the admin client. No baseline, no
+allowlist, no per-file list: it passes, or it names the path. It exits 79 when the admin client is not
+where it expects, so "no findings" can never mean "I could not look".
+
+**It counts static edges only, and that is a measurement decision.** A dynamic `await import()` is
+bundled as a separate async chunk and is this repo's deliberate, documented mitigation — the comments
+above the calls in `lib/layout/page-chrome.ts` and `lib/apps/overrides.ts` say so in as many words.
+Counting those edges reported 47 client entry points where 20 were real. A gate that cries wolf earns
+an allowlist, and an allowlist reads as coverage (ADR-970). Dynamic-only reach is printed as a note
+and never fails, and the header records the residual it leaves: dead weight in the client build
+output, never fetched, never eagerly parsed.
+
+**The gate was watched failing before it was trusted.** Repointing `tip-button.tsx` back at
+`lib/billing/tips` reproduced the `server-only` violation by name; additionally stripping the
+directive reproduced the full path through to the admin client. Restoring both returned it to green.
+
+**Consequences.** ✅ All eleven paths are cut: six pure leaves extracted to `*-core` modules and
+re-exported from their old homes so no server caller changed, `season-ranks` fixed by removal, and
+`contact-topics` split out. ✅ `check:canon`'s waiver for `ACCENT_TOKENS` had to follow the code to
+`lib/walkthroughs-core.ts`; the canon guard is what noticed it had not, which is a second instrument
+behaving correctly. ⚠️ The gate sees static imports only, so runtime reachability, unresolvable
+barrel chains, and any credential other than this one module remain outside its field of view — the
+header says so, because a gate that overstates its reach is the thing this ADR is about.

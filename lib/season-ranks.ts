@@ -15,7 +15,14 @@
 
 import { isPaid, type EntitlementTier } from '@/lib/core/entitlement'
 
-export { journeysFinishedThisSeason } from '@/lib/quest/completion-read'
+// NO RE-EXPORT OF journeysFinishedThisSeason HERE, AND THAT IS THE FIX (LIVE-037).
+// This module is pure rank VOCABULARY — labels, order, progress math, badge styles — and about
+// twenty client components import it, including lib/community-roles.tsx, which
+// components/layout/app-shell.tsx pulls onto every route under app/(main). One convenience
+// re-export of the season-completion READ dragged lib/quest/completion-read -> the service-role
+// admin client into all of it. The read lives in @/lib/quest/completion-read; server callers
+// import it from there. This file must stay dependency-free, so it takes NO `server-only`
+// directive — adding one here would break every client component listed above.
 
 export type RankKey =
   | 'stone' | 'clay' | 'gold' | 'olive' | 'jade'

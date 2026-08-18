@@ -15,7 +15,7 @@ import {
   TRIGGER_LABELS, CADENCE_LABELS, LAYOUT_LABELS, ACCENT_TOKENS,
   blankStep,
   type Walkthrough, type WalkthroughStep, type StepLayout,
-} from '@/lib/walkthroughs'
+} from '@/lib/walkthroughs-core'
 import { WalkthroughSlide, STEP_ICONS, ACCENT_CLASSES } from '@/components/walkthroughs/slide'
 import {
   ONBOARDING_CRITERIA,
