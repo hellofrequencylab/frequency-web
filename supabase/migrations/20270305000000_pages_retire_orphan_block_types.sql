@@ -145,9 +145,17 @@ begin
   if to_regclass('public.pages') is null then
     raise exception 'public.pages does not exist — wrong database, aborting';
   end if;
+  -- An EMPTY corpus means two different things, and conflating them broke the replay.
+  -- At APPLY time (production, 2026-08-18) empty would have meant "wrong database, or the corpus
+  -- vanished" — worth aborting over, which is what the proposal wrote. On REPLAY (db-tests boots a
+  -- fresh Supabase and runs every migration in order) empty is simply CORRECT: no seed data has
+  -- been inserted, the rewrite matches nothing, and that is a faithful no-op rather than a failure.
+  -- The abort therefore became a false red on a job whose whole purpose is proving a fresh replay
+  -- works. The wrong-database check above KEEPS its teeth; this one degrades to a notice, so a
+  -- human reading the log still sees that the rewrite had nothing to touch.
   select count(*) into n_pages from public.pages;
   if n_pages < 1 then
-    raise exception 'public.pages is empty — nothing to migrate, aborting rather than reporting success';
+    raise notice 'public.pages is empty — the block-type rewrite matches nothing here (expected on a fresh replay; at apply time this was 5 documents)';
   end if;
 end $$;
 
