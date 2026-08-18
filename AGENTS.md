@@ -77,6 +77,17 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
   and then it reads as coverage).
 - **To close a row, make its probe pass — never delete the probe.** That is precisely how the previous
   five lists drifted.
+- **🔴 RE-TEST A ROW'S PREMISE BEFORE YOU WORK IT, especially when the row says it cannot be tested.**
+  A probe measures whether the work is done; nothing measures whether the row is still *true*. Five
+  rows were re-measured on 2026-08-18 and five premises had expired ([ADR-1082](docs/DECISIONS.md)).
+  Two were fixed by a PR nobody had circled back to (LIVE-012 and LIVE-043 both said the proxy never
+  sets `next=`; #2132 had taught it to, five days earlier). Three said an agent could not look —
+  *"an agent cannot see it"*, *"requires reading the repo Actions secrets, which is owner-only"* —
+  and in every case the secret was unreadable but its **consequence** was printed in a log: a build
+  log shows whether `postbuild` ran, and a CI log shows `VERCEL_AUTOMATION_BYPASS_SECRET: ***` and
+  sixteen authenticated shell checks passing. **A blocker phrased as "cannot be checked" is a claim
+  with an expiry date, and it is the cheapest thing in the backlog to get wrong**: those three rows
+  sat on the owner for a week and each took one tool call.
 
 # Which plan is live — read this before picking up "what's next"
 
