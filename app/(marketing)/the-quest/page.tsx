@@ -430,7 +430,7 @@ function LegacyTheQuest() {
           watch the path light up. Finish a Journey and you earn a Trophy. Finish
           three and you reach Master. All it takes is a Circle and a standing time.
         </Body>
-        <p className="mt-7 inline-flex items-center gap-2 text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong">
+        <p className="mt-7 inline-flex items-center gap-2 eyebrow text-primary-strong">
           <Trophy className="w-4 h-4" aria-hidden /> Season one is open
         </p>
         <p className="mt-6 text-body text-muted leading-relaxed">

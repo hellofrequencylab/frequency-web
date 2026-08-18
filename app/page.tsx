@@ -517,7 +517,7 @@ function Splash({
         <div className="amber-glow absolute inset-0 pointer-events-none" />
         <div className="relative z-10 mx-auto max-w-5xl px-6 py-28 sm:py-40">
           <Reveal>
-            <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary mb-5">
+            <p className="eyebrow text-primary mb-5">
               Moonlight Beach · 2020
             </p>
             <h2 className="font-display uppercase text-on-ink text-display-hero leading-[0.9] text-balance">
@@ -623,7 +623,7 @@ function Splash({
         <div className="amber-glow absolute inset-0 pointer-events-none" />
         <div className="relative z-10 mx-auto max-w-3xl px-6 py-24 sm:py-28 text-center">
           <Reveal>
-            <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary mb-4">
+            <p className="eyebrow text-primary mb-4">
               The honest part
             </p>
             <h2 className="font-display uppercase text-on-ink text-display-h2 mb-6 text-balance">
@@ -757,7 +757,7 @@ async function LiveProof() {
         <div className="amber-glow absolute inset-0 pointer-events-none" />
         <div className="relative z-10 mx-auto max-w-3xl text-center">
           <Reveal>
-            <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary mb-4">
+            <p className="eyebrow text-primary mb-4">
               Not a someday idea
             </p>
             <h2 className="font-display uppercase text-on-ink text-display-h2 mb-6">
@@ -813,7 +813,7 @@ async function LiveProof() {
         <section className="bg-surface mk-beat">
           <div className="max-w-2xl mx-auto">
             <Reveal className="text-center">
-              <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-4">
+              <p className="eyebrow text-primary-strong mb-4">
                 In their own words
               </p>
               <h2 className={`font-display uppercase text-text text-display-h3 text-balance ${postsCurated ? 'mb-3' : 'mb-10'}`}>
