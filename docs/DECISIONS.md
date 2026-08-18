@@ -26776,6 +26776,54 @@ before today was retired on a count that could not see helper-built lists. The t
 zero. ⚠️ The same blind spot shape applies to any other gate built on a `className=` scan; this one
 is now covered by its own self-test, and the others are not audited here.
 
+## ADR-1078: The help indexer ran with no `node_modules` by design, and one `react` import killed it silently for five days
+
+**Context.** `.github/workflows/help-index.yml` re-embeds the help centre into `help_chunks` on every
+merge to `main` that touches `content/help/**`, keeping AI search fresh without `pg_cron`
+(`docs/SUPPORT-SYSTEM.md` §5). It deliberately runs with **no `pnpm install`**, and says so in a
+comment: "the pipeline reads local Markdown (fs only) and embeds via the Edge Function over HTTP."
+That reasoning was correct when written.
+
+**The finding.** `lib/help/content.ts` later gained `import { cache } from 'react'` to memoise the
+disk read per request — a genuine win for the app, which was parsing the whole help tree two or three
+times per render. From that commit onward the indexer died at module resolution with
+`ERR_MODULE_NOT_FOUND: Cannot find package 'react' imported from lib/help/content.ts`, **before
+reading a single article**. Measured, not inferred: the six most recent runs on `main` are all
+`failure` (2026-08-13 02:32 and 03:28, 08-14 01:26, 08-16 19:53, 08-18 03:01), and the last log names
+`react` explicitly. The secrets are configured — the log shows both as `***` — so it cleared the
+workflow's skip guard and then crashed.
+
+**Why nobody noticed for five days.** The help *pages* render straight from Markdown and were
+unaffected. Only AI search went stale, and **stale search is indistinguishable from search**: it
+returns results, they are merely the results from before. The failure surfaced as a red X on a
+workflow nobody watches, on merges whose PR checks were all green.
+
+**Decision.** Split the content layer at the dependency line. `lib/help/content-core.ts` holds the
+readers, the front-matter parser, the uncached loader, and the pure transforms, and may import
+**node builtins only** — `node:`-prefixed, so a bare `fs` that is a builtin today and a package
+tomorrow cannot creep in. `lib/help/content.ts` keeps `cache()` and composes the core; its public API
+is unchanged, so no app caller moves. `scripts/help-index.mts` imports the core directly.
+
+**Why not just add `pnpm install` to the workflow.** It would work, and it would make every help
+merge pay a full install for a script that genuinely needs zero dependencies — while leaving the
+next `react`/`next` import free to break it again the same way. The split makes the constraint
+structural instead of a comment, which is what the original comment was.
+
+**Consequences.** ✅ Proved by running the indexer in a directory containing **no `node_modules` at
+all**: it now resolves every import, parses the real help content, and reaches the embed HTTP call,
+failing only on the unreachable host it was pointed at. Before the split it died at import time.
+✅ `lib/help/content-core.test.ts` asserts the dependency rule, with a floor so a rewrite cannot green
+it over zero imports. ⚠️ **That floor fired on its first run**, and correctly: the extractor reported
+zero imports for a file that plainly has two, because this ADR's own banner writes the path
+`content/help/**` and the `/**` inside that prose opened a block comment that ran to the next `*/`,
+swallowing both. The extractor is now line-aware — strip `//` from a line *before* looking for `/*` —
+and covers that exact fixture. A gate reading "no forbidden imports" when it means "I could not find
+any imports" is the failure this file exists to prevent, and it very nearly shipped as one.
+🔴 **Owner action, not closed by this change:** the fix does not touch `content/help/**`, so merging
+it does not trigger a re-index. The index remains stale for every article added or edited since
+2026-08-13 until the workflow is run once by hand (Actions → help-index → Run workflow). Tracked as
+`LIVE-041`.
+
 ## ADR-1079: A hand-kept list of ten leak paths measured a subset and prescribed a remedy, so the client/server boundary is now probed by walking the import graph
 
 **Context.** `lib/supabase/admin.ts` opens Supabase with the service-role key and bypasses RLS. Backlog
