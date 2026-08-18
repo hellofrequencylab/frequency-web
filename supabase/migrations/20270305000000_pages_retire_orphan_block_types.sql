@@ -1,13 +1,10 @@
--- ⚠️ THIS FILE LIVES OUTSIDE supabase/migrations/ ON PURPOSE.
--- A file in supabase/migrations/ asserts "production has run this". Until the owner applies it
--- that assertion is false, and check:migrations rule 4 (ADR-1007) fails on it in CI, where the
--- ledger arm is ARMED with real credentials. Sitting here it makes no claim.
---
--- TO PROMOTE, in this order:
---   1. move this file to supabase/migrations/20270305000000_pages_retire_orphan_block_types.sql
---   2. apply it
---   3. repair the ledger to 20270305000000 per supabase/migrations/README.md
---   4. re-capture scripts/stored-block-types.json; check:stored-blocks then goes 1 -> 0
+-- APPLIED to production 2026-08-18 via MCP apply_migration; ledger repaired to this version the
+-- same day (name pages_retire_orphan_block_types). The in-file post-assert ran inside the apply
+-- transaction and raised nothing; re-measured after: zero retired types in either pages column, and
+-- the three drafts now carry only registry types (CallToAction, Gallery, Hero, Image, MediaText,
+-- Statement). scripts/stored-block-types.json re-captured in the same change. Authored as
+-- docs/proposals/LIVE-028-retire-orphan-block-types.sql (backlog LIVE-028, ADR-1055, ADR-977 D-9).
+-- The outer begin/commit from the proposal is removed: the apply path is already transactional.
 --
 -- RETIRE THE FIVE ORPHAN BLOCK TYPES IN pages.data (ADR-1055, backlog LIVE-028, ADR-977 D-9).
 --
@@ -137,7 +134,6 @@
 -- an operator adds later whose id happens to start with one of these five words, which is why it
 -- lives here as a runbook rather than as a second migration.
 
-begin;
 
 -- Assert the corpus is the one this migration was written against. A rewrite that silently
 -- matches nothing is indistinguishable from a rewrite that worked, which is the failure this
@@ -327,4 +323,3 @@ begin
   end if;
 end $$;
 
-commit;

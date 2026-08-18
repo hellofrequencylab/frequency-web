@@ -1,37 +1,8 @@
--- 🔴 A PROPOSAL, NOT A MIGRATION. It lives in docs/proposals/ ON PURPOSE.
---
--- A file in supabase/migrations/ is an ASSERTION THAT PRODUCTION HAS RUN IT. That is not a
--- convention, it is enforced: check:migrations rule 4 (ADR-1007) compares this repo against
--- `supabase_migrations.schema_migrations` and fails on a repo file with no ledger row, because such
--- a file replays on every fresh environment while the live database has never seen it. Until the
--- owner applies this, that assertion would be FALSE, so the file may not sit there.
---
--- WHY IT IS NOT APPLIED: this session may not write to the database, and the grant is a COMMERCIAL
--- promise — which Space pays $49 instead of $79 — so the schema goes in when the owner is ready to
--- name the Spaces it is for. The code shipped alongside it is live and correct WITHOUT the column:
--- `readSpaceBetaPriceGrant` reports `not_deployed` on Postgres 42703 rather than swallowing it, the
--- checkout's `spaceHasBetaPriceGrant` fail-safes to FALSE (list price, never under-charge), and the
--- operator panel renders the apply-this-first instruction instead of a toggle that lies.
---
--- ── TO PROMOTE IT, IN THIS ORDER. All three steps, or none. ────────────────────────────────────
---
---   1. MOVE this file to
---      supabase/migrations/20270304000100_space_beta_price_grant.sql
---      The version sorts after the applied ledger head, 20270303000100 (measured in production
---      2026-08-17), and deliberately LEAVES 20270304000000 to the other open proposal in this
---      directory (OWN-006), which already claims it. If either has landed since, take the next free
---      version instead of reusing one — check:migrations rule 1 fails a duplicate version, and a
---      duplicate is silently SKIPPED on a fresh replay rather than erroring.
---   2. APPLY it (mcp apply_migration, or `supabase db push` if the ledger is clean).
---   3. REPAIR THE LEDGER so the row carries version 20270304000100 rather than the wall-clock
---      version apply_migration mints, and delete the tool-minted twin. Full recipe, including the
---      two traps that have bitten before: supabase/migrations/README.md. This is the step everybody
---      forgets, and skipping it is what left thirteen orphan rows in the ledger by 2026-08-10.
---
---   THEN regenerate lib/database.types.ts so `spaces.beta_price_grant` is typed, and drop the
---   untyped cast in lib/billing/space-beta-grant.ts (ADR-246's standing debt, one call site).
---
--- Verified against production (azsqfeonabsbmemvddqd) 2026-08-17. Nothing below has been executed.
+-- APPLIED to production 2026-08-18 via MCP apply_migration; ledger repaired to this version the
+-- same day (name space_beta_price_grant). Post-verified against the catalog: three columns with the
+-- fail-safe default, browser SELECT false/false and service_role true, exactly one policy
+-- (spaces_read_active/r), zero rows granted. Authored as
+-- docs/proposals/OWN-023-space-beta-price-grant.sql (backlog OWN-023/OWN-024, ADR-1061).
 --
 -- ═══════════════════════════════════════════════════════════════════════════════════════════════
 -- OWN-023 — a PRIVATE, per-Space grant of the closed beta rate. ADR-1061.
