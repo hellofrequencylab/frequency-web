@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import { NO_STANDALONE_SESSION_MESSAGE } from "@/lib/auth/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useProfile } from "@/components/profile/useProfile";
 import { SpatialRoom } from "@/components/spatial/SpatialRoom";
@@ -33,10 +34,7 @@ export default function SpaceRoute() {
         ) : !userId ? (
           <Card as="section" className="space-y-1">
             <h2 className="font-display text-lg text-text">Could not start a session</h2>
-            <p className="text-sm text-mute">
-              Enable Anonymous sign-ins in the Supabase project Auth settings, then
-              reload.
-            </p>
+            <p className="text-sm text-mute">{NO_STANDALONE_SESSION_MESSAGE}</p>
           </Card>
         ) : (
           <SpaceBody userId={userId} profile={profile} venueId={params.venueId} />

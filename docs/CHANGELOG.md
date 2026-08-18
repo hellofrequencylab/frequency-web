@@ -96,6 +96,13 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   session, fades in when you start and out when you finish, and loops with no
   seam. Off by default, and remembered once you choose.
 
+### Changed
+
+- **One price per plan, and two months free on the year**: the Opening Beta pricing has closed.
+  Business is $29 a month and Collective is $79 a month, the same price whenever you start, and
+  paying for the year gives you two months free. Non Profit ($39), Independent, and the Vera AI
+  add-on are unchanged, and being a Member is still free.
+
 ### Fixed
 
 - **Repeating events land on the right dates**: a monthly event set on the 29th, 30th, or

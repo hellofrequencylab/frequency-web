@@ -2,17 +2,13 @@
 
 import { useEffect, useState, type ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { LayoutGrid, type LucideIcon } from 'lucide-react'
 import { meetsAccess } from '@/lib/nav-areas'
 import { isModuleRoute } from '@/lib/widgets/module-routes'
-import { LayoutEditor } from '@/components/admin/page-settings/layout-editor'
 import { spaceModuleById } from '@/lib/admin/modules/space-modules'
-import { EventDangerZone } from '@/components/admin/modules/event-danger-zone'
-import { CircleQuestModule } from '@/components/admin/modules/circle-quest-module'
-import { PageContentModule } from '@/components/admin/modules/page-content-module'
-import { MODULE_COMPONENTS } from '@/components/admin/modules/module-map'
+import { INLINE_MODULE_IDS } from '@/components/admin/modules/module-ids'
 import { SurfaceLinkRow } from '@/components/admin/modules/surface-link-row'
-import { SurfaceSummaryCard } from '@/components/admin/modules/surface-summary-card'
 import { SURFACE_SUMMARIES } from '@/components/admin/modules/surface-summaries'
 import { PERSONAL_MODULE_IDS, type AdminSlot } from '@/lib/admin/modules/registry'
 import { SPINE_META, SPACE_GROUP_META, groupIntoTiers, tierForApp, type RailTier } from '@/lib/admin/modules/spine'
@@ -27,10 +23,62 @@ import { isSpineApp } from '@/lib/apps/access'
 import { usePageAdmin } from '@/components/layout/page-admin-context'
 import { CONTENT_EDIT_ROUTES } from '@/lib/layout/editable-content'
 import { isStaff, atLeastRole } from '@/lib/core/roles'
-import { PageSettingsModule } from '@/components/admin/page-settings/page-settings-module'
 import { hrefForSurface, panelHrefForModuleId } from '@/lib/spaces/surface-hrefs'
 import { hrefForEntitySurface } from '@/lib/admin/entity-surface-hrefs'
 import { bankForScope, type BankLink } from '@/lib/admin/rail-bank'
+
+// ── 🔴 EVERY ADMIN BODY THIS FILE CAN MOUNT IS `next/dynamic`, INCLUDING THE REGISTRY ITSELF
+//    (ADR-1066 · ADR-1074 · LIVE-009) ───────────────────────────────────────────────────────────
+//
+// This file is reached from `app/(main)/layout.tsx` → `app-shell.tsx` → `AdminBar` → here, with no
+// code-split boundary on the path, so ANY static import below is eager first-load JS on EVERY route
+// in the shell — for every MEMBER, who renders none of it (`admin-bar.tsx` returns null unless the
+// viewer can open the rail).
+//
+// dc47b89 moved the 42 CATALOG modules behind `dynamic()` and took ~1.6 MB off that path. ADR-1066
+// did the same for the five bodies this file mounts BY HAND — the `allExtraItems` frozen debt
+// (MENU-CONTRACT.md) plus the operator "Page" group — which are not catalog modules but sit on the
+// same path at the same cost. LIVE-009 closed the last door: the REGISTRY. This file used to import
+// `MODULE_COMPONENTS` statically, which put `module-map.tsx` (14.3 KB, 42 `dynamic()` loader stubs,
+// and the chunk-manifest entries naming their 42 chunks) in the shell's eager graph — to answer one
+// synchronous question, "does this id have an inline body". `module-ids.ts` answers that with a
+// `Set<string>` and no imports; `AdminModuleBody` carries the registry behind a chunk.
+//
+// MEASURED on the real artifact — see `scripts/check-shell-weight.mjs`, which FAILS the build if any
+// of these bodies reappears in the shell's eager chunks.
+//
+// ⚠️ DO NOT "TIDY" THESE BACK INTO STATIC IMPORTS. Nothing about behaviour changes: each is mounted
+// exactly where it was, and `hasContent` derives from the section count below, never from whether a
+// component has resolved. This is HOW the rail loads, not WHAT is in it — the menu contract is
+// untouched, the `allExtraItems` row count is unchanged, and `pnpm check:menu` still passes.
+//
+// The assertion that fires if any of it comes back: `scripts/check-shell-weight.test.ts` →
+// "the shell mounts every admin body lazily", which allows exactly three synchronous
+// `@/components/admin/**` imports and lists each with its measured cost.
+const LayoutEditor = dynamic(() => import('@/components/admin/page-settings/layout-editor').then((m) => m.LayoutEditor))
+const EventDangerZone = dynamic(() => import('@/components/admin/modules/event-danger-zone').then((m) => m.EventDangerZone))
+const CircleQuestModule = dynamic(() => import('@/components/admin/modules/circle-quest-module').then((m) => m.CircleQuestModule))
+const PageContentModule = dynamic(() => import('@/components/admin/modules/page-content-module').then((m) => m.PageContentModule))
+const PageSettingsModule = dynamic(() =>
+  import('@/components/admin/page-settings/page-settings-module').then((m) => m.PageSettingsModule),
+)
+// The whole admin module REGISTRY, behind one boundary. `module-body.tsx` is the only thing on the
+// SHELL's path that imports `MODULE_COMPONENTS` (the `/manage` console reaches it too, from its own
+// route, which is not multiplied by every member page), so the 42 catalog module chunks are named —
+// and their loader stubs parsed — only once the rail actually renders a body. Which id it renders
+// still comes from the catalog via `appsForScope`; nothing about the menu moved.
+const AdminModuleBody = dynamic(() =>
+  import('@/components/admin/modules/module-body').then((m) => m.AdminModuleBody),
+)
+// The glanceable stat card a `link` surface draws instead of a plain row. Lazy for a reason the
+// import list does not show: it reads `lib/pricing/feature-meters`, which pulls the WHOLE pricing
+// catalog — plans, tiers, keys, beta gates — 8 modules and ~160 KB of source, onto every member
+// page, to render an allowance nudge only an operator ever sees. `SurfaceLinkRow` (2 KB) and
+// `SURFACE_SUMMARIES` stay static below: the rail consults the summary map SYNCHRONOUSLY to decide
+// card-vs-row, so that decision must not itself be behind a chunk.
+const SurfaceSummaryCard = dynamic(() =>
+  import('@/components/admin/modules/surface-summary-card').then((m) => m.SurfaceSummaryCard),
+)
 
 // The SETTINGS CONTENT — the registry-selected manager modules (Page settings, Circle Quest, page
 // content) plus the operator "Page" group (Layout / SEO / Status), resolved from the pathname.
@@ -439,8 +487,11 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
         <SurfaceLinkRow key={id} app={app} href={href} />
       )
     }
-    const C = MODULE_COMPONENTS[id]
-    return C ? <C key={id} /> : null
+    // An `inline` surface renders the body registered for its id. The membership test is
+    // synchronous (it decides whether this section gets a node at all, and so whether the section
+    // exists); the BODY is not, and arrives with the rail. Identical to the previous
+    // `MODULE_COMPONENTS[id] ?? null` branch — `module-map.test.ts` holds the two sets equal.
+    return INLINE_MODULE_IDS.has(id) ? <AdminModuleBody key={id} id={id} /> : null
   }
 
   const isCircle = manager && /^\/circles\/[^/]+/.test(pathname)

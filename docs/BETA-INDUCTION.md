@@ -27,7 +27,7 @@ It is the **mandatory opening sequence**: `app/(main)/layout.tsx` routes any sig
 to the non-blocking model at launch; no loop since `/onboarding` is outside the `(main)` layout).
 At launch: flip the flag, delete `app/onboarding/beta/` + `components/onboarding/renders/`.
 
-## Sequences: one template, audience-targeted copy ([ADR-094](DECISIONS.md) → splash overhaul ADR)
+## Sequences: one template, audience-targeted copy ([ADR-1051](DECISIONS.md) → splash overhaul ADR)
 
 The induction is **audience-parameterized**: same cinematic engine, swappable voice.
 A *sequence* bundles a **splash**, the induction's **voiced copy** (`VeraCopy`), and

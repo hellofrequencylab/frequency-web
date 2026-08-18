@@ -48,7 +48,7 @@ export const FEATURE_KEYS: FeatureKey[] = [
   // ── Content ─────────────────────────────────────────────────────────────────
   { key: 'feed', label: 'The feed', area: 'content', routes: ['/feed'], core: true },
   { key: 'posts', label: 'Posts, reactions & comments', area: 'content', routes: ['/feed'], core: true },
-  { key: 'broadcast', label: 'Broadcasts & dispatches', area: 'content', routes: ['/nearby'], core: true },
+  { key: 'broadcast', label: 'Dispatches', area: 'content', routes: ['/nearby'], core: true },
   { key: 'practices', label: 'Practices', area: 'content', routes: ['/practices'], core: true },
 
   // ── Comms ───────────────────────────────────────────────────────────────────

@@ -68,7 +68,11 @@ wrong, or your plans change, reach out and we will sort it.
 ## Founding Businesses
 
 Some of the first businesses on Frequency carry a **Founding Business** mark on their Space and in
-the directory. Founding rates are locked for as long as the subscription is kept up.
+the directory. It is recognition for showing up early, and it is kept for good.
+
+If you were given a founding rate, it is locked for as long as you keep the subscription up. That
+rate is not on offer any more: new Spaces pay the prices on the plans page, and those prices are
+the same whenever you start.
 
 The badge says who you are, not what you pay. Your rate stays between you and the crew.
 

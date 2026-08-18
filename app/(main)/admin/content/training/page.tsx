@@ -101,7 +101,7 @@ export default async function AdminContentTrainingPage() {
                   {def.steps.length} step{def.steps.length === 1 ? '' : 's'}
                 </span>
                 <span className="rounded-md bg-surface-elevated px-2 py-0.5 tabular-nums">
-                  {def.reward} gems on completion
+                  {def.reward} Gems on completion
                 </span>
               </div>
 

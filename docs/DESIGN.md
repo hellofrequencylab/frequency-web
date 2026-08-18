@@ -237,7 +237,7 @@ checks.** Today role logic is split across `CreateMenu` (hardcoded role arrays),
 - [~] Profile (`/people/[handle]`): borderless-rail + type cohesion done (PR #88); DetailTemplate header/tabs still pending
 - [x] Event detail (`/events/[slug]`) to DetailTemplate (PR #87)
 - [x] Channel detail (`/channels/[id]`) to DetailTemplate (PR #86)
-- [ ] Program detail (`/programs/[slug]`) to DetailTemplate (still hand-rolled)
+- ~~Program detail (`/programs/[slug]`) to DetailTemplate~~ ✅ **retired 2026-08-17 — the route does not exist and will not.** Programs moved onto Channels ([ADR-864](DECISIONS.md)), so a Program renders as its channel; the only program-named routes are `app/(main)/admin/programs` and `app/(main)/spaces/[slug]/settings/program`, both operator surfaces. There is no member `/programs/[slug]` to convert.
 - [ ] Build `<RoleActions>` overflow-menu; route `CreateMenu` through the resolver
 
 Best done on localhost, page by page with eyes on, since each detail page's tab set and

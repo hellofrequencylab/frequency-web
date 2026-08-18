@@ -9,9 +9,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 // plan cost $19 through one button and $29 through the other. The legacy path is now a thin adapter
 // over the loadout checkout, so there is exactly one price for a plan at any instant.
 
-const { created, beta, flags } = vi.hoisted(() => ({
+const { created, beta, flags, grant, lock } = vi.hoisted(() => ({
   created: [] as { line_items: { price: string; quantity: number }[]; metadata: Record<string, string> }[],
   beta: { active: true },
+  /** ADR-1061: does THIS Space carry the private per-Space beta price grant? */
+  grant: { granted: false },
+  /** The Space's grandfathered locked price id for the item, or null. */
+  lock: { priceId: null as string | null },
   flags: {
     plan_business_enabled: true,
     plan_collective_enabled: true,
@@ -60,11 +64,16 @@ vi.mock('@/lib/pricing/settings', () => ({
 // reads as "which catalog key did the checkout charge".
 vi.mock('./pricing-prices', () => ({ resolveStripePriceId: (key: string) => Promise.resolve(`price_${key}`) }))
 
-// No grandfathered lock in these cases (a locked price is its own, already-tested path).
+// The grandfathered lock, controllable per test (null in every pre-ADR-1061 case).
 vi.mock('./space-subscription-items', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./space-subscription-items')>()),
-  readLockedPriceId: () => Promise.resolve(null),
+  readLockedPriceId: () => Promise.resolve(lock.priceId),
 }))
+
+// THE PRIVATE BETA PRICE GRANT (ADR-1061). Mocked at the IO seam, so these tests exercise the REAL
+// wiring in resolveLoadoutPriceId rather than the pure decision (which lib/pricing/beta-grant.test.ts
+// covers on its own). Default FALSE, which is what every Space carries.
+vi.mock('./space-beta-grant', () => ({ spaceHasBetaPriceGrant: () => Promise.resolve(grant.granted) }))
 
 vi.mock('@/lib/pricing/beta', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/pricing/beta')>()),
@@ -80,6 +89,8 @@ const prices = () => created.at(-1)!.line_items.map((l) => l.price)
 beforeEach(() => {
   created.length = 0
   beta.active = true
+  grant.granted = false
+  lock.priceId = null
 })
 
 describe('the legacy plan checkout charges the SAME price as the loadout checkout', () => {
@@ -122,5 +133,63 @@ describe('the legacy plan checkout charges the SAME price as the loadout checkou
     expect(await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'month' })).toBeNull()
     expect(created).toEqual([])
     flags.plan_business_enabled = true
+  })
+})
+
+// ADR-1061 — THE PRIVATE BETA PRICE GRANT, at the wiring, not at the decision.
+//
+// lib/pricing/beta-grant.test.ts proves the pure three-armed rule and proves no public surface moves.
+// These tests prove the OTHER half: that the checkout actually asks, and that the answer reaches the
+// Stripe line item. The price map mock names each price id after its catalog key, so the assertion
+// reads as "which key did the checkout charge".
+describe('a granted Space checks out at the founding rate while everyone else pays list', () => {
+  beforeEach(() => {
+    beta.active = false // the window is SHUT, which is the only world the grant exists for
+  })
+
+  it('WITHOUT the grant: Business and Collective resolve the LIST key, monthly and yearly', async () => {
+    await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'month' })
+    expect(prices()).toEqual(['price_business_base_month_list'])
+    await createSpaceLoadoutCheckout('space-1', { plan: 'collective', interval: 'year' })
+    expect(prices()).toEqual(['price_collective_base_year_list'])
+  })
+
+  it('WITH the grant: the same calls resolve the FOUNDING key instead', async () => {
+    grant.granted = true
+    await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'month' })
+    expect(prices()).toEqual(['price_business_base_month'])
+    await createSpaceLoadoutCheckout('space-1', { plan: 'collective', interval: 'year' })
+    expect(prices()).toEqual(['price_collective_base_year'])
+  })
+
+  it('the grant reaches EVERY item in the loadout, not only the base', async () => {
+    grant.granted = true
+    await createSpaceLoadoutCheckout('space-1', { plan: 'collective', interval: 'month', addons: ['ai'] })
+    expect(prices()).toEqual(['price_collective_base_month', 'price_addon_ai_month'])
+  })
+
+  it('the legacy plan checkout goes through the same door, so there is still ONE price per plan', async () => {
+    grant.granted = true
+    await createSpacePlanCheckout('space-1', 'business', 'annual')
+    expect(prices()).toEqual(['price_business_base_year'])
+  })
+
+  it('A LOCK STILL WINS. A Space holding a locked price re-bills it, grant or no grant', async () => {
+    lock.priceId = 'price_locked_from_a_real_subscription'
+    for (const granted of [true, false]) {
+      grant.granted = granted
+      await createSpaceLoadoutCheckout('space-1', { plan: 'collective', interval: 'month' })
+      expect(prices(), `granted=${granted}`).toEqual(['price_locked_from_a_real_subscription'])
+    }
+  })
+
+  it('with the window OPEN the grant changes nothing, because everyone already gets founding', async () => {
+    beta.active = true
+    await createSpaceLoadoutCheckout('space-1', { plan: 'collective', interval: 'month' })
+    const ungranted = prices()
+    grant.granted = true
+    await createSpaceLoadoutCheckout('space-1', { plan: 'collective', interval: 'month' })
+    expect(ungranted).toEqual(['price_collective_base_month'])
+    expect(prices()).toEqual(ungranted)
   })
 })

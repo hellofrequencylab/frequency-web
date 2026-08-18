@@ -65,6 +65,15 @@ so a sixth lane or a repointed lane fails the build until it is registered:
 - The **entity consoles** (circle/hub/nexus/practice) resolve via `resolveEntityConsole`
   (`lib/admin/entity-console.ts`) → the same `appsForScope` the rail uses, rendered by the shared
   `EntityManageConsole` (`components/admin/modules/entity-manage-console.tsx`).
+- **HOW a body loads is a different axis from WHAT is in the menu** (ADR‑1066, ADR‑1074). The rail
+  resolves ids from the catalog and then mounts each inline body through `next/dynamic` — the 42
+  catalog modules in `components/admin/modules/module-map.tsx`, the registry itself via
+  `module-body.tsx`, and the five hand‑mounted `allExtraItems` bodies in `settings-panel.tsx`.
+  `settings-panel.tsx` consults `module-ids.ts` (a `Set<string>`, no imports) to decide whether an id
+  has a body at all, because that decision feeds the section count. None of that is a menu edit: no
+  row was declared, moved, or renamed, and `pnpm check:menu` is unaffected. **Do not "tidy" those
+  `dynamic()` calls into static imports** — `scripts/check-shell-weight.test.ts` fails by name if you
+  do, and it costs every member on every page.
 - **Route‑local hub sections are not catalogs.** The Space (`lib/admin/modules/space-hub.ts`), event
   (`app/(main)/events/[slug]/manage/hub.ts`, ADR‑828) and channel
   (`app/(main)/channels/[id]/manage/hub.ts`, ADR‑870) `?section=` registries are `{ key, label, blurb }`

@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { existsSync } from 'node:fs'
-// @ts-expect-error — .mjs guard module, no type declarations (same shape as the other guard tests)
 import { composesShell, ancestorComposes, rendersJsx, evaluate, pages, SHELLS, PIECES, loadBaseline, BASELINE_FILE, MIN_PAGES } from './check-templates.mjs'
 
 // The class this guards is the one whose number kept drifting in the plan docs, because it was the

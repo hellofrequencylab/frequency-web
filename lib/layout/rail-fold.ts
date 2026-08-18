@@ -175,15 +175,44 @@ export function readRailFoldCookie(value: string | null | undefined): RailFolds 
   }
 }
 
+/** The cookie mirror as the CLIENT sees it, or null when there is no readable cookie.
+ *
+ *  This exists so the two halves of the store cannot disagree — see `readStoredRailFolds`. */
+function readCookieRailFolds(): RailFolds | null {
+  if (typeof document === 'undefined') return null
+  try {
+    const prefix = `${RAIL_FOLD_COOKIE}=`
+    const hit = document.cookie
+      .split(';')
+      .map((part) => part.trim())
+      .find((part) => part.startsWith(prefix))
+    return hit ? readRailFoldCookie(hit.slice(prefix.length)) : null
+  } catch {
+    return null
+  }
+}
+
 /** The client's stored instruction, or Auto. Safe to call in any environment: no window, no
- *  localStorage (private mode, blocked storage) and a throwing getter all fall through to Auto. */
+ *  localStorage (private mode, blocked storage) and a throwing getter all fall through — first to
+ *  the cookie, then to Auto.
+ *
+ *  🔴 WHY THE COOKIE IS A FALLBACK HERE and not only on the server. `writeStoredRailFolds` is
+ *  explicitly built to survive blocked localStorage ("the cookie below may still land"), and the
+ *  cookie IS the value the server just painted the first frame from. If this reader ignored it,
+ *  that fail-safe would fire and then immediately be undone: the server renders the folded strip,
+ *  hydration renders it (the server snapshot is the cookie), and the very next client snapshot
+ *  reads blocked storage, answers Auto, and shoves the rail back open one frame after paint. The
+ *  member would watch their standing instruction be honoured and then revoked. localStorage stays
+ *  the source of truth whenever it has anything to say; the cookie only answers when it does not. */
 export function readStoredRailFolds(): RailFolds {
   if (typeof window === 'undefined') return { ...DEFAULT_RAIL_FOLDS }
   try {
-    return parseRailFolds(window.localStorage.getItem(RAIL_FOLD_STORAGE_KEY))
+    const raw = window.localStorage.getItem(RAIL_FOLD_STORAGE_KEY)
+    if (raw) return parseRailFolds(raw)
   } catch {
-    return { ...DEFAULT_RAIL_FOLDS }
+    /* storage blocked — fall through to the cookie, which is what the server already read */
   }
+  return readCookieRailFolds() ?? { ...DEFAULT_RAIL_FOLDS }
 }
 
 /** Persist both sides: localStorage for the client, the cookie mirror so the SERVER can paint

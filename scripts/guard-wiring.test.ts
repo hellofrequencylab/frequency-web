@@ -26,7 +26,18 @@ const WORKFLOW_DIR = path.join(ROOT, '.github', 'workflows')
  *  can fix, which is why this exits 0" — it could not fail — while FOUR docs claimed it warned in
  *  CI. It was deleted rather than wired (ADR-1011). Prefer that outcome to a long-lived entry
  *  here: a guard nobody runs is a claim nobody checks. */
-const UNWIRED: Record<string, string> = {}
+const UNWIRED: Record<string, string> = {
+  // LIVE-035. Both are ARTIFACT gates: they read `.next` from a real build, so the CI array is the
+  // wrong home (CI never builds — DEPLOY-SAFETY.md, ADR-1003) and `postbuild` is the right one. They
+  // are not there YET, deliberately, because neither has been run against a real COMPLETED production
+  // build: the 2026-08-17 attempt died collecting page data for /discover/cities/[citySlug], which
+  // needs credentials the agent container does not hold. DEPLOY-SAFETY.md opens with an outage caused
+  // by gates that passed while the artifact was broken; wiring an UNPROVEN gate into postbuild is that
+  // failure reversed, and a red postbuild kills deploys just as dead. One green build decides it, and
+  // the wiring lands in the SAME commit as that build. Removing these two entries is how this row closes.
+  'check:cache-budget': 'artifact gate, awaiting one green production build before postbuild (LIVE-035)',
+  'check:shell-weight': 'artifact gate, awaiting one green production build before postbuild (LIVE-035)',
+}
 
 /** ── THE FOURTH HOME: enforced by a vitest test (ADR-1011) ────────────────────────────────────
  *
@@ -53,6 +64,39 @@ const VITEST_ENFORCED: Record<string, string> = {
   'check:elements': 'scripts/check-elements.test.ts',
   'check:render-path': 'scripts/check-render-path.test.ts',
   'check:creates': 'scripts/check-creates.test.ts',
+  // Added 2026-08-17 (HYG-004). Reads docs/ARCHITECTURE.md + the real tree and asserts every
+  // path/route/cron the doc names exists — pure source reading, so vitest is its home by the
+  // rule above rather than a 23rd entry in the ci.yml array.
+  'check:arch-doc': 'scripts/check-arch-doc.test.ts',
+  // Added 2026-08-17 (LIVE-020). The function sibling of check:grants: it replays
+  // supabase/migrations/ and compares against scripts/function-grants.txt — source reading only,
+  // so vitest is its home by the rule above. Its sibling test does BOTH halves: broken fixtures
+  // asserting each arm FAILS (including that `revoke ... from public` does not satisfy an
+  // `internal` verdict, which is the whole point of the guard), plus real-tree assertions
+  // including that the guard exits 0 on the tree as committed.
+  'check:function-grants': 'scripts/check-function-grants.test.ts',
+  // Added 2026-08-17 (LIVE-028, ADR-1055). Its CLI half is pure node and cannot read the TSX
+  // block registry, so the ENFORCING arm — "every block type in stored page data resolves against
+  // the live config.components" — has to run under vitest, where the registry is importable. The
+  // sibling test drives the shared classifier against broken fixtures for every arm (including
+  // the real census with its quarantine stripped, which must still name all five orphans) as well
+  // as against the real tree, so neither half can go quietly vacuous.
+  'check:stored-blocks': 'scripts/check-stored-blocks.test.ts',
+  // Added 2026-08-17 (LIVE-023, ADR-1058). Reads test/e2e/a11y-baselines.json and asserts the
+  // ratchet's numbers are what they claim to be: a bare integer is a READING checked with
+  // equality, and anything weaker is a declared ceiling carrying a written reason and provenance.
+  // Pure file reading, so vitest is its home by the rule above. Its sibling test drives every arm
+  // with a fixture that must FAIL — including the hand-edit guard in both directions — as well as
+  // the real tree, so it cannot go quietly vacuous.
+  'check:a11y-baselines': 'scripts/check-a11y-baselines.test.ts',
+  // Added 2026-08-17 (LIVE-013). Same split as check:stored-blocks, for the same reason: the CLI
+  // half is pure node and can only PARSE the render registry (lib/store/cosmetics.ts is
+  // TypeScript), so the enforcing arm — "every purchasable cosmetic/title SKU on the live shelf
+  // resolves to something the product paints" — runs under vitest where the registry is
+  // importable. Its sibling test cross-checks the parser against the live module (the parser
+  // shipped a real false-positive on its first run, reading a type annotation as the record) and
+  // drives every arm against fixtures that must FAIL, plus the real shelf census.
+  'check:cosmetic-renders': 'scripts/check-cosmetic-renders.test.ts',
 }
 
 function packageScripts(): Record<string, string> {

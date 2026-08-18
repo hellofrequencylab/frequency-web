@@ -262,7 +262,7 @@ export async function addDemoCircle(input: {
     .from('events')
     .insert({
       host_id: hostId, scope_id: circleId, scope_type: 'circle',
-      title: `${input.name} — First Gathering`,
+      title: `${input.name}: First Gathering`,
       slug: `${slug}-first-gathering`,
       starts_at: starts.toISOString(), ends_at: ends.toISOString(),
       location: geo.label, is_cancelled: false, is_demo: true,

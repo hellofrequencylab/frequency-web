@@ -96,9 +96,9 @@ export const PERSONA_STATE_META: Record<
   PersonaState,
   { label: string; tone: 'pending' | 'success' | 'muted'; desc: string }
 > = {
-  claimed:   { label: 'Pending review', tone: 'pending', desc: 'Claimed — waiting on the team to verify.' },
+  claimed:   { label: 'Pending review', tone: 'pending', desc: 'Claimed. Waiting on the team to verify.' },
   verified:  { label: 'Verified',       tone: 'success', desc: 'Confirmed by the team; tools are on.' },
-  active:    { label: 'Active',          tone: 'success', desc: 'Fully live — verified and bound.' },
+  active:    { label: 'Active',          tone: 'success', desc: 'Fully live, verified and bound.' },
   suspended: { label: 'Suspended',       tone: 'muted',   desc: 'Released or revoked.' },
 }
 

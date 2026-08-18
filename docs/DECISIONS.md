@@ -170,9 +170,14 @@ shadcn/ui in the stack. The shipped code uses **none** — UI is hand-written Ta
 **Decision:** Keep components hand-written against the DAWN semantic-token layer; do not
 add a component-library dependency.
 **Consequences:** No component-library version surface; full control of markup/markup-tokens.
-(Trust the code over the docs here — `ARCHITECTURE.md`'s shadcn/ui mention is stale and
-should be corrected.) Styling tokens live in `app/globals.css`; see
+Styling tokens live in `app/globals.css`; see
 [ARCHITECTURE.md](ARCHITECTURE.md#styling--design-tokens-dawn).
+**Correction landed 2026-08-17 (HYG-004).** This entry used to end "`ARCHITECTURE.md`'s
+shadcn/ui mention is stale and should be corrected" — an open instruction left sitting in the
+ledger. It has been carried out: ARCHITECTURE.md now states the negative outright, and
+`package.json` still carries no shadcn or Radix dependency. The primitives are in
+`components/ui`; the Server-Component icon path is `components/ui/icon.tsx` (ADR-505,
+[ICONS.md](ICONS.md)), which arrived after this decision and does not change it.
 
 ## ADR-012: Season ranks renamed off martial-arts; Luminary auto-caps at Conduit
 
@@ -2127,7 +2132,7 @@ codes (next) and Google-Analytics tie-in build on this.
 ---
 ## ADR-090: Beautiful codes via an isomorphic styled SVG renderer (no new dep)
 
-**Status:** Accepted · 2026-06-05 · `lib/qr/style.ts`, `lib/qr/render-styled.ts`, `app/(main)/admin/qr/style-editor.tsx`. No migration (reuses `qr_codes.style` jsonb from ADR-089).
+**Status:** Accepted · 2026-06-05 · `lib/qr/style.ts`, `lib/qr/render-styled.ts`, `app/(main)/admin/qr/style-editor.tsx`. No migration (reuses `qr_codes.style` jsonb from ADR-1045).
 
 **Context:** Phase 2 of the QR platform. The owner wants visually rich codes — brand colors +
 gradients, center logo/avatar, module & eye shapes, a "scan me" frame. The `qrcode` dep only
@@ -2153,7 +2158,7 @@ rasterizer is added (logged as a follow-up). Phases 3–4 (per-member codes, cha
 the styler for free.
 
 ---
-## ADR-090: Page-template kit completed — five shells, one `PageHeading`, declarative rail chrome
+## ADR-1046: Page-template kit completed — five shells, one `PageHeading`, declarative rail chrome
 
 **Status:** Accepted · 2026-06-05 · `components/templates/` (`page-heading`, `focus-template`, `dashboard-template`, `index.ts` barrel + refactored `index`/`stream`), `lib/layout/page-chrome.ts` (+ `.test.ts`), `components/layout/app-shell.tsx`
 
@@ -2167,11 +2172,11 @@ the styler for free.
 **Consequences:** Adopting `FocusTemplate` simultaneously fixed the wrong-rail bug on `/events/new`, `/practices/*/edit`, `/upgrade`, `/crm`, `/outreach`, `/codes`, `/connections/*`, `/g/*`, `/n/*` (one config, nine pages). Interior pages now become *assembly, not authoring*; remaining work is mechanical adoption tracked in [REDESIGN-INAPP.md](REDESIGN-INAPP.md). No data-fetching or capability gating changed — this is presentational chrome + a rail map only.
 
 ---
-## ADR-089: Dynamic QR links as a first-class `qr_codes` entity (the "Both" model)
+## ADR-1045: Dynamic QR links as a first-class `qr_codes` entity (the "Both" model)
 
 **Status:** Accepted · 2026-06-05 · migration `20260605010000_qr_codes_dynamic_links` (applied to prod), `app/q/[slug]/`, `app/(main)/admin/qr/` (Dynamic links + Analytics tabs), `lib/qr/{codes,analytics}.ts`
 
-**Context:** Phase 1 of the QR platform (after ADR-088). The owner wants retargetable
+**Context:** Phase 1 of the QR platform (after ADR-1044). The owner wants retargetable
 "dynamic links" + scan analytics, alongside the in-app earning codes — and a code should be
 able to point *either* at an action *or* at any URL ("Both"). The node engine (`nodes`) is
 purpose-built for verified physical capture (secrets, coords, anti-cheat) and shouldn't be
@@ -2196,7 +2201,7 @@ regenerated. Phases 2–4 (beautiful editor on `style`, per-member referral/acti
 challenges/campaigns) build on this entity.
 
 ---
-## ADR-088: QR Studio authors codes on the existing node engine (no new schema)
+## ADR-1044: QR Studio authors codes on the existing node engine (no new schema)
 
 **Status:** Accepted · 2026-06-04 · `app/(main)/admin/qr/`, `lib/qr/`, `app/api/qr/`, `app/(main)/codes/`
 
@@ -2368,7 +2373,7 @@ go-build-it intent.
 vocabulary for newcomers to learn (Hub/Nexus); offset by clearer sense of scale. Circle-creation
 volume rises — the momentum-gated room provisioning (ADR-088) is the pressure valve.
 
-## ADR-090: Demo content v2 — a year-old, viral, local Encinitas community
+## ADR-1047: Demo content v2 — a year-old, viral, local Encinitas community
 
 **Decision.** Replace the first-generation demo seed (the old North County SD `c…`
 cast and the five out-of-area national metros `d…`) with one fully-local demo
@@ -2416,7 +2421,7 @@ adoptions) is deterministic + idempotent and cascades away with the cast.
 
 ---
 
-## ADR-091: Demo Seed Studio + the seed -> claim -> decay model
+## ADR-1048: Demo Seed Studio + the seed -> claim -> decay model
 
 **Decision.** Evolve demo content from a one-off hand-seeded cast into a
 repeatable **growth engine**. Three pillars: (1) a janitor-only **Seed Studio**
@@ -2459,12 +2464,12 @@ may need a background job (noted for P1b).
 
 ---
 
-## ADR-092: Retire the hand-built 250-cast; the Seed Studio is the demo seeding path
+## ADR-1049: Retire the hand-built 250-cast; the Seed Studio is the demo seeding path
 
 **Decision.** Abandon the one-off 250-person Encinitas demo cast — its seed
 migrations (`20260605000001`-`…000300`) and the `DEMO-CAST.md` casting bible are
 removed. All demo content is now generated on demand by the **Seed Studio**
-wizard (ADR-091) and cleaned by the purge button + nightly decay. The practices
+wizard (ADR-1048) and cleaned by the purge button + nightly decay. The practices
 rich-content schema (`20260605000000`) is kept; the demo practice rows are purged
 with the rest. The live database is swept of all `is_demo` content via the
 `/admin/demo` purge.
@@ -2472,7 +2477,7 @@ with the rest. The live database is swept of all `is_demo` content via the
 **Why.** A static hand-seeded community proved brittle to apply (SQL-editor /
 MCP-approval / economy-guard friction) and is not the product direction. The
 wizard makes any area seedable, previewable, and reversible — so we keep the
-engine, not the one-off cast. Supersedes the *seeding* portion of ADR-090
+engine, not the one-off cast. Supersedes the *seeding* portion of ADR-1047
 (its `is_demo` / `demo_mode` / purge infrastructure still stands).
 
 **Consequences.** Fresh databases no longer ship a prebuilt demo community;
@@ -2482,7 +2487,7 @@ seed UUIDs) so it survives the purge.
 
 ---
 
-## ADR-093: Seed Studio generates the full connection web — AI palette + templates, zero side effects
+## ADR-1050: Seed Studio generates the full connection web — AI palette + templates, zero side effects
 
 **Decision.** The Seed Studio engine (`lib/demo/engine.ts`) seeds the *whole* web
 of local-community connections, not just circles/people/posts: an event **cadence**
@@ -2518,11 +2523,11 @@ purge, and the nightly decay pass.
 journey writes go through the untyped admin handle (repo convention,
 `lib/journey-plans.ts`). Large "thriving" seeds still make hundreds of sequential
 inserts (the ID-capturing loops); the heavy engagement rows are batch-inserted, but
-a background job remains the path for very large areas (carried from ADR-091).
+a background job remains the path for very large areas (carried from ADR-1048).
 
 ---
 
-## ADR-094: Beta induction sequences — one template, audience-targeted copy, cohort tags
+## ADR-1051: Beta induction sequences — one template, audience-targeted copy, cohort tags
 
 **Decision.** The beta induction (ADR-068) becomes **audience-parameterized** rather
 than one-size-fits-all. A *sequence* (`lib/onboarding/beta-sequences.ts`) bundles a
@@ -2889,7 +2894,7 @@ obvious next iterations. Regenerate DB types to drop the untyped casts later.
 
 ## ADR-103: Seed Studio generates a naturally-grown neighborhood (hub/guide, walls, friendships, dispatches)
 
-**Status:** Accepted · `lib/demo/engine.ts`, `lib/demo/decay.ts`, `app/(main)/admin/demo/**`, `supabase/migrations/20260605090000_hubs_is_demo.sql`. Extends ADR-091/092/093.
+**Status:** Accepted · `lib/demo/engine.ts`, `lib/demo/decay.ts`, `app/(main)/admin/demo/**`, `supabase/migrations/20260605090000_hubs_is_demo.sql`. Extends ADR-1048/1049/1050.
 
 **Context.** The Seed Studio produced circles + in-circle conversation + events +
 practices + journeys, but the result read as isolated circles, not a *community*.
@@ -2961,7 +2966,7 @@ design reference, not a hardcode. No app-logic change — purely amounts + one f
 
 **Status:** Accepted · `supabase/migrations/20260605120000_qr_scan_medium.sql`,
 `app/(main)/admin/qr/nfc-writer.tsx`, `lib/qr/links.ts` (`withMedium`), `app/q/[slug]/route.ts`.
-Extends the QR platform (ADR-089→094) and the physical `nodes` engine.
+Extends the QR platform (ADR-1044/1045, ADR-090→094) and the physical `nodes` engine.
 
 **Context.** `nodes` already supported `type='nfc'`, and the verify/capture/award
 pipeline is type-agnostic — but there was no way to actually *program* a physical NFC
@@ -2998,7 +3003,7 @@ tap attribution (in `captures`) remain open follow-ups.
 **Status:** Accepted · `supabase/migrations/20260605130000_node_geo.sql`,
 `app/(main)/admin/qr/actions.ts`, `app/(main)/admin/qr/qr-studio.tsx` (NodeForm),
 `app/(main)/n/[nodeId]/{actions,claim-button}.tsx`. Surfaces the existing `nodes`
-proximity engine (ADR-088 capture pipeline).
+proximity engine (ADR-1044 capture pipeline).
 
 **Context.** `nodes` already had `location` (PostGIS geography) + `proximity_m`, and
 `verifyCapture` already enforced proximity via the `node_within_range` RPC — but
@@ -3284,7 +3289,7 @@ scanned. Time-windowing + CSV export are the obvious next iterations.
 
 **Status:** Accepted · `lib/qr/links.ts` (`nodeUrl` secret), `lib/engagement/verify.ts` (already checked),
 `app/(main)/admin/qr/actions.ts`, `app/(main)/n/[nodeId]/{page,claim-button,actions}.tsx`,
-`app/api/qr/route.ts`, `app/print/qr/page.tsx`. Completes ADR-088's `secret` field.
+`app/api/qr/route.ts`, `app/print/qr/page.tsx`. Completes ADR-1044's `secret` field.
 
 **Context.** `nodes.secret` and the `verifyCapture` signature check existed, but nothing
 **authored** a secret or **carried** it — so a `/n/<id>` URL guessed/forged from just a
@@ -3404,7 +3409,7 @@ a stop is a one-line data edit in `lib/onboarding/spotlight.ts`.
 
 **Status:** Accepted · `lib/core/capabilities.ts`, `app/(main)/circles/[slug]/page.tsx`,
 `app/(main)/admin/circles/{page.tsx,circles-client.tsx}`. Builds on the capability resolver
-(CAPABILITIES-AND-MOBILE.md) and the demo-claim flow (ADR-091). Parallels ADR-118's "admins
+(CAPABILITIES-AND-MOBILE.md) and the demo-claim flow (ADR-1048). Parallels ADR-118's "admins
 curate any practice."
 
 **Context.** Circle management (`circle.editSettings` and friends) was granted to the host, the
@@ -6130,7 +6135,7 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 
 ## ADR-211: Onboarding-splash overhaul — code templates retired, `beta-default` reserved slug, live-preview editor, Home SEO row
 
-**Status:** Accepted · `lib/onboarding/beta-sequences.ts` (BETA_SEQUENCES now `{}`, reserved `DEFAULT_SEQUENCE='beta-default'` base built from the VERA script), `lib/onboarding/resolve-sequence.ts` (`resolveDefaultSequence`, default-slug handling, versions list excludes the reserved slug), `app/onboarding/beta/page.tsx` + `actions.ts` (copy + cohort tag resolve through the DB layer), `app/onboarding/beta/induction.tsx` (data-driven beat headings with `*accent*` markup, `initialBeat` prop), `app/(main)/pages/splash/*` (the Beta splash live-preview editor), `app/(main)/pages/sequences/*` (recategorized "Splash pages" manager, DB versions only, role-promotion-overlays coming-soon card), `app/(main)/pages/home/*` + `app/page.tsx` + `lib/layout/editable-content.ts` (Home SEO row via ADR-180 page_content, route `/`), `lib/attribution/{server,backfill}.ts` (`beta-default` carries no channel signal) — builds on ADR-068/094 (induction + sequences), ADR-162 (DB override layer), ADR-180/206 (page content)
+**Status:** Accepted · `lib/onboarding/beta-sequences.ts` (BETA_SEQUENCES now `{}`, reserved `DEFAULT_SEQUENCE='beta-default'` base built from the VERA script), `lib/onboarding/resolve-sequence.ts` (`resolveDefaultSequence`, default-slug handling, versions list excludes the reserved slug), `app/onboarding/beta/page.tsx` + `actions.ts` (copy + cohort tag resolve through the DB layer), `app/onboarding/beta/induction.tsx` (data-driven beat headings with `*accent*` markup, `initialBeat` prop), `app/(main)/pages/splash/*` (the Beta splash live-preview editor), `app/(main)/pages/sequences/*` (recategorized "Splash pages" manager, DB versions only, role-promotion-overlays coming-soon card), `app/(main)/pages/home/*` + `app/page.tsx` + `lib/layout/editable-content.ts` (Home SEO row via ADR-180 page_content, route `/`), `lib/attribution/{server,backfill}.ts` (`beta-default` carries no channel signal) — builds on ADR-068/1051 (induction + sequences), ADR-162 (DB override layer), ADR-180/206 (page content)
 **Context:** The three hardcoded launch sequences (`early-adopter`/`personal`/`founding-partner`) were authored before the DB override layer existed; owning copy in code meant a deploy per word change, the admin list mixed immutable code rows with editable DB versions, and the DEFAULT flow (what every plain `/onboarding/beta` visit runs) had no first-class editor — only the split `/admin/vera` induction fields, which the flow partially ignored (beats 0–1 hardcoded their headings in JSX). Home `'/'` is deliberately excluded from Puck (a published draft would shadow the coded splash) but that also left its SEO strings unreachable.
 **Decision:** (1) Retire the three code templates: `BETA_SEQUENCES` ships empty (interfaces + helpers kept), and the reserved slug **`beta-default`** names the base VERA flow. `resolveSequence(null|''|'beta-default')` returns the coded script merged with the legacy `vera_config` induction layer and then the `beta-default` DB override — the editor's copy wins, older `/admin/vera` edits keep applying underneath. The default keeps `marketingTag='beta_early_adopter'` so the default cohort stays ONE registered segment across the rename; attribution treats `beta-default` as no channel signal (plain visits aren't "video"). `/beta/<slug>` 404s naturally while no code sequence exists. (2) The sequences admin is reframed as **Splash pages** (DB versions only) with an inert "Role promotion overlays — Coming soon" category card (no functionality). (3) **`/pages/splash`** is a janitor-gated live-preview editor for the default flow: per-beat inputs (all `VeraCopy` strings + the three oath labels) on the left, and on the right the REAL `<BetaInduction>` rendered in preview mode at half scale with the edited copy and an `initialBeat` switcher — the preview cannot drift from production markup. Beats 0–1 now render their headings from copy; headings support `*word*` accent markup (the splash-statement convention) so the default "You're a *Founder.*" keeps its highlight. Save = `sequence_overrides['beta-default']`; Reset deletes the row. (4) **Home row** on `/pages` (visually distinct, "Coded page") links to `/pages/home`, a janitor-gated title + meta-description editor through ADR-180 `page_content` route `'/'`; `app/page.tsx` `generateMetadata` reads `resolvePageContent('/')` with the coded strings as fallback. The body stays code; no Puck.
 **Consequences:** `tagBetaCohort` now resolves through the DB layer, so wizard-built versions stamp THEIR tag (previously they silently fell back to the default's). Legacy `?seq=early-adopter`-style links resolve as blank clones unless a DB row exists — acceptable: those slugs were never circulated beyond the team, and old `fq_beta_seq` cookies still map in attribution. The Home OG description previously carried a bespoke longer blurb; it now mirrors the meta description (one editable pair, consistent with `pageContentMetadata` everywhere else). `vitest.config.ts` excludes `**/node_modules/**` + `.claude/**` so parallel agent worktrees can't pollute the suite. The `/pages/sequences/[slug]/edit` splash-only editor route 404s with no code sequences (its upload action is still used by the wizard); teardown list updated in BETA-INDUCTION.md.
@@ -6192,7 +6197,7 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 
 ## ADR-219: Rewards Economy v2 — Amplitude (lifetime XP), flat 5:1 conversion + rank bonus, practice weight classes, per-practice streaks + Practice Shelf, S1 award set
 
-**Status:** Accepted · migration `20260614200000_rewards_economy_v2.sql`, `lib/amplitude.ts`, `lib/zaps.ts`, `lib/journey-rewards.ts`, `lib/practices.ts`, `lib/practice-streak.ts`, `lib/practice-shelf.ts`, `lib/practice-streaks-job.ts`, `lib/coop-pulse.ts`, `lib/awards/{secret,witnessed,cosmetics}.ts`, `lib/achievements.ts`, `lib/gems.ts`, `app/api/cron/{coop-pulse,practice-streaks}/route.ts`, store actions/pages, profile Practice Shelf + give-award UI, admin metrics panel. **Supersedes** the ADR-037/060 lifetime-rank *display* (the `lifetime_rank` column + ratchet stay — the ADR-168 retro rule `seasoned_agent` reads it), **retires** the Gem tiers (New→Legend), **deletes** `MEMBER_ZAP_RATE` (reverses the ADR-140 throttle; it was inert in Beta), and **resolves** the provisional `ZAP_TO_GEM_RATES` rank ladder flagged in NAMING.md.
+**Status:** ~~Accepted~~ **Superseded by [ADR-305](DECISIONS.md)** (Rewards Economy v3, 2026-06-18) — kept as the record of what v2 was and why. Most of what this ADR shipped no longer exists: the v3 teardown (`supabase/migrations/20260702000001_rewards_v3_teardown.sql`) dropped the Co-op Pulse / Carrier Wave / Synchrony surface, the Practice Shelf, peer "Witnessed" and secret awards and the side quests, and **deleted both of this ADR's cron endpoints** (`coop-pulse`, `practice-streaks`) along with `lib/coop-pulse.ts` and `lib/practice-streaks-job.ts`. v3 pays out inline from one classifier instead. Read [REWARDS-ECONOMY.md](REWARDS-ECONOMY.md) for the live model; the paragraph below describes the retired one. *Originally shipped as:* migration `20260614200000_rewards_economy_v2.sql`, `lib/amplitude.ts`, `lib/zaps.ts`, `lib/journey-rewards.ts`, `lib/practices.ts`, `lib/practice-streak.ts`, `lib/practice-shelf.ts`, `lib/practice-streaks-job.ts`, `lib/coop-pulse.ts`, `lib/awards/{secret,witnessed,cosmetics}.ts`, `lib/achievements.ts`, `lib/gems.ts`, `app/api/cron/{coop-pulse,practice-streaks}/route.ts`, store actions/pages, profile Practice Shelf + give-award UI, admin metrics panel. **Supersedes** the ADR-037/060 lifetime-rank *display* (the `lifetime_rank` column + ratchet stay — the ADR-168 retro rule `seasoned_agent` reads it), **retires** the Gem tiers (New→Legend), **deletes** `MEMBER_ZAP_RATE` (reverses the ADR-140 throttle; it was inert in Beta), and **resolves** the provisional `ZAP_TO_GEM_RATES` rank ladder flagged in NAMING.md.
 **Context:** The June 2026 gamification brief ("Rewards Economy v2 + Amplitude + Season 1 Awards") supersedes the provisional economy items in GAMIFICATION-AUDIT.md: a lifetime layer that never resets, a simpler conversion, per-practice progression, new bonus mechanics, a 15-challenge season template, and the S1 award set.
 **Decision (and the calls the brief left open):**
 - **Amplitude** = lifetime cumulative Zaps, hosting-class actions (`event_host`, `program_run`, `circle_start`, `circle_activate`) at 2×. Accrued ONLY in `after_zap_transaction()`; level = largest L where `50·L·(L+1) ≤ amplitude`, derived on read. Milestones 1k/5k/10k/25k/50k/100k; 1k+5k seeded as achievements for S1.
@@ -6470,7 +6475,7 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 ## ADR-240: Member design system — unify the member app onto the canvas+tile standard
 
 **Status:** Accepted · `docs/MEMBER-DESIGN-SYSTEM.md` (the spec), `app/(main)/**` (non-admin), the member kit. Conformance pass; phased per cluster.
-**Context:** The owner: take the refined admin canvas+tile look and apply it across the member-facing side for one uniform site, with the rule that **primary member pages feature streaks and gamified stats only** (no operator metrics). An audit of ~102 member + marketing surfaces found the system already ~85% adopted (the in-app overhaul, ADR-061/090): the five shared templates (Stream/Index/Detail/Dashboard/Focus), `EntityCard`/`PersonCard`/`StatCard`, and the gamification components (`StreakStrip`/`GamificationPanel`/`JourneyBoard`) are on-grammar. The clunkiness is the ~15% that drifted plus the absence of a codified member-specific stat law.
+**Context:** The owner: take the refined admin canvas+tile look and apply it across the member-facing side for one uniform site, with the rule that **primary member pages feature streaks and gamified stats only** (no operator metrics). An audit of ~102 member + marketing surfaces found the system already ~85% adopted (the in-app overhaul, ADR-061/1046): the five shared templates (Stream/Index/Detail/Dashboard/Focus), `EntityCard`/`PersonCard`/`StatCard`, and the gamification components (`StreakStrip`/`GamificationPanel`/`JourneyBoard`) are on-grammar. The clunkiness is the ~15% that drifted plus the absence of a codified member-specific stat law.
 **Decision:**
 - **`docs/MEMBER-DESIGN-SYSTEM.md`** is the binding member standard: one site / three rooms (marketing editorial · member canvas+tiles · admin canvas+tiles, sharing one token layer); 8 principles ("design for the body, not the dashboard"); the **gamified-stat law** (zaps/gems/streak/season rank are the ONLY member tiles; one `StandingTiles` component; rank from `lib/season-ranks.ts` only; everything else is content, not a stat); the five-template taxonomy + a Wizard pattern for onboarding; the component grammar (`EntityCard`/`RowCard`, `UnderlineTabs`, the standing kit, `RoleActions`, `EmptyState`); states + cross-link discipline; the marketing boundary; and a phased conformance rollout.
 - **No rebuild** — finish and enforce the existing kit. Do-not-touch: the five templates, the shared cards, the gamification components, and the ~70 conforming pages.
@@ -15566,7 +15571,7 @@ The durable rule: **a status row with no consumer is a rumour — but the surfac
 
 The durable rule: **the switch that opens the shop is not the switch that empties the shelves, and if one flag does both, neither is a decision anybody can make.**
 
-## ADR-875 — The pricing page is DERIVED: seven sellable tiers, one grid built from the entitlement key sets, and the beta rate lives in the pricing config (2026-07-28)
+## ADR-1052 — The pricing page is DERIVED: seven sellable tiers, one grid built from the entitlement key sets, and the beta rate lives in the pricing config (2026-07-28)
 
 **Status.** Accepted.
 
@@ -25088,3 +25093,1685 @@ pattern is present and cannot prove the work was done *well*. `LIVE-001` will go
 `row-card.tsx` contains `press`, not when RowCard feels right under a thumb. The probe is a floor
 against forgetting, not a substitute for review — and where a row's quality bar matters more than its
 existence, the honest choice is `manual` with real evidence rather than a probe that flatters it.
+
+## ADR-1053: ARCHITECTURE.md is the one doc that must be TRUE, so its claims are checked by a machine
+
+**Status.** Accepted (2026-08-17) · `scripts/check-arch-doc.mjs` + `scripts/check-arch-doc.test.ts`
+(`pnpm check:arch-doc`, declared in `VITEST_ENFORCED` in `scripts/guard-wiring.test.ts`, so it runs
+in the `test` job branch protection already requires) · closes backlog row `HYG-004`.
+
+**Context.** [ARCHITECTURE.md](ARCHITECTURE.md) was describing a tree that had moved out from under
+it. It documented two cron endpoints deleted a month earlier with the Rewards Economy v3 teardown
+(`coop-pulse`, `practice-streaks` — ADR-219, retired by ADR-305), a `lib/site.ts` fallback to a
+`vercel.app` host that no longer existed together with a whole paragraph of remediation advice for
+a problem already fixed, "19 Vercel Cron endpoints" when `vercel.json` scheduled 27, a route
+(`app/(main)/broadcast`) removed when broadcasting became a per-surface capability, four Supabase
+client paths missing their `lib/` prefix, a role ladder that had since split into two independent
+axes (ADR-208), a trigger column list naming two dropped columns, four of six notification
+categories, and a pointer to `BACKLOG.md` — a doc carrying a superseded banner — as "what's left".
+
+None of that was noticed by anything, because nothing builds from `docs/`. The first reader to find
+out is whoever follows a claim, and increasingly that reader is an AI session, which then reasons
+confidently from a description of a system that is not there. This is the same failure class as
+ADR-1011 (four docs claiming a deleted script warned in CI), the `pr-compare` comment corrected on
+2026-08-12, and the migration count that compared equal while one file was missing and one
+migration unapplied.
+
+**Decision.** Treat ARCHITECTURE.md differently from the rest of `docs/`: it is the LIVE
+description of the tree, so its concrete claims are a contract and get a gate.
+`scripts/check-arch-doc.mjs` reads the doc and the tree in pure Node — no `rg`, no `grep`, no
+subprocess — and fails when the doc names a repo path, a URL route or a cron job that does not
+exist, or when its stated cron count disagrees with `vercel.json`.
+
+Three things make it more than a spell-checker:
+
+- **Negative claims are assertions too.** The doc names some things precisely because they must
+  *not* exist ("do not rename `proxy.ts` to `middleware.ts`"; "the v2 crons are gone"). Those live
+  in an `ABSENT` map with a reason each, and the guard fails if one of them comes back. A warning
+  that quietly becomes false is the same bug in a mirror. Same contract as `UNWIRED` in
+  `scripts/guard-wiring.test.ts`.
+- **Route checking is LITERAL by default.** The first version resolved routes "the way the router
+  does", consuming `[dynamic]` segments — and cheerfully certified an invented `/ghost-route`,
+  because a catch-all under `app/` would serve it. True, and useless: a check that cannot fail
+  reads as coverage while providing none (ADR-970). A doc naming `/sign-in` means the literal page;
+  to claim a dynamic route, write the bracketed segment out.
+- **It cannot report health on a corpus of zero.** Four floors (doc bytes, crons parsed from
+  `vercel.json`, path claims extracted, cron claims extracted) separate "I looked and found
+  nothing" from "I could not look", and the exit code says which: `0` clean, `1` drift, **`79` not
+  established**. An unreadable doc returns an empty string rather than throwing, because a crash
+  exits 1 and would report "the doc is wrong" when the truth is "the doc could not be opened".
+
+**Scope is deliberately one file.** `scripts/check-docs-links.mjs` checks markdown links across all
+of `docs/` and explicitly does *not* check backticked code paths, because an ADR describing a file
+that later moved is history, not rot. That reasoning is right for the ledger and wrong for this
+one doc. Widening this guard to another doc means that doc has also signed up to be true — a real
+commitment, not a tidying step.
+
+**Consequences.** ARCHITECTURE.md now carries a dated "verified against the tree" banner and states
+its cron count as a checkable number. A PR that deletes a route, renames a lib module or changes
+the cron schedule fails `test` until the doc is corrected in the same pass, which is the rule
+AGENTS.md already states ("when the code and a plan doc disagree, the code wins, and the doc gets
+fixed in the same pass") converted from convention into a gate. The cost is real and accepted: the
+doc must keep naming things in backticks, and a deliberate deletion means editing `ABSENT` with a
+reason. Same shape as ADR-219's correction in this ledger — that entry's status was still
+"Accepted" nine weeks after ADR-305 superseded it, which no gate covers and a reader must.
+
+---
+
+## ADR-1054: Anonymous sign-ins stay OFF on the Frequency project, so the sub-app declares the capability instead of assuming it
+
+**Status.** Accepted (2026-08-17) · `supabase/config.toml`,
+`scripts/maintenance/accepted-advisories.json`, `supabase/anonymous-sign-ins-policy.test.ts`
+(auto-discovered by vitest, so it runs in the `test` context branch protection requires) ·
+mirrored by `resonance/docs/DECISIONS.md` ADR-019 and ISOLATION rule 8 · closes backlog row
+`HYG-005`.
+
+**Context.** Two live instructions asked for opposite settings on the **same Supabase project**,
+and neither knew about the other.
+
+| Side | What it required | Where it was written |
+|---|---|---|
+| Frequency | Anonymous sign-ins **disabled** | `supabase/config.toml` (`enable_anonymous_sign_ins = false`), the June advisor sweeps, owner row `OWN-008` |
+| `resonance/` | Anonymous sign-ins **enabled** | `resonance` ADR-015 ("Requires 'Anonymous sign-ins' enabled in the project's Auth settings"), its Section 3 GO gate, `resonance/lib/auth/client.ts` |
+
+They collide because `resonance` ADR-008 puts the sub-app **inside** the Frequency project: the
+org is on the free plan, capped at two projects, and both are in use (`Frequency Community`,
+`hook` — confirmed 2026-08-17). So there is one Auth configuration and two claims on it.
+
+The measurement settles which claim is live. The security advisors on `Frequency Community`
+returned **164 findings on 2026-08-17 and not one `auth_allow_anonymous_sign_ins`** — that lint
+fires only when the setting is on, so it is off. The June sweeps recorded it firing 136–147 times,
+so this is a real change, not a missing check. **The side that needs the setting is the side that
+is currently inert**, and it is the sub-app.
+
+**Decision.** Anonymous sign-ins stay **disabled** on the Frequency project. `resonance/` stops
+requiring them.
+
+Three things make the reasoning hold rather than just the outcome:
+
+1. **The code says so, and prose said the other thing.** Frequency's position is in
+   `supabase/config.toml` and in a machine-read allowlist; `resonance`'s was in an ADR sentence
+   and a doc comment. AGENTS.md: when the code and a plan doc disagree, the code wins and the doc
+   gets fixed in the same pass. That is this pass.
+2. **No ADR ever settled it, on either side.** Frequency's disable came from advisor triage
+   (`AUDIT-2026-06`, `PATCH-LIST`, `MASTER-TODO`) and an owner action, never a decision record —
+   which is precisely why a second plan could contradict it for months without tripping anything.
+   This ADR is the missing record, and it is the reason the conflict was invisible rather than a
+   two-ADR standoff.
+3. **Cost falls on the parked side.** Frequency is live and never calls `signInAnonymously`
+   anywhere; enabling the setting buys it nothing and widens the auth surface of the production
+   platform. `resonance` is `parked` (`DEF-RESON`, "nothing built yet"). Charging a live platform
+   an account-level auth widening for an unbuilt sub-app is the wrong direction, and the sub-app's
+   own isolation contract already refuses shared-project coupling for schemas and publications.
+   Auth toggles are the same class, now named as **ISOLATION rule 8**.
+
+**What changed in `resonance/`.** `signInAnonymously()` is no longer called blind.
+`standaloneAnonymousAuthEnabled()` (`resonance/lib/config.ts`) reads
+`NEXT_PUBLIC_RESONANCE_ANONYMOUS_AUTH`, defaults **off**, and `ensureSession()` returns null
+without a round trip when the capability was not granted. Three surfaces
+(`RoomShell`, `/dev/space`, `/dev/games`) used to render "Enable Anonymous sign-ins in the
+Supabase project's Auth settings, then reload" — an instruction to reconfigure the live platform's
+project, shown to whoever happened to open a dev route. They now share one string that says guest
+sessions are off for this deployment. The paths the plan actually depends on are untouched:
+**embedded mode** on a host-signed JWT (ADR-017), and **standalone after breakout** on a project
+`resonance` owns.
+
+**What this does NOT do, deliberately.** It does not ask the owner to flip anything. Standalone
+anonymous entry becomes a **post-breakout** capability rather than a pending owner request,
+because a request that sits in a queue is a conflict that has not been resolved, only postponed.
+If a future owner decides otherwise, the change is: enable "Anonymous sign-ins" on
+`Frequency Community`, flip `enable_anonymous_sign_ins` in `supabase/config.toml`, and set
+`NEXT_PUBLIC_RESONANCE_ANONYMOUS_AUTH=true`. All three are named by the guard, so it fails until
+they agree — which is the point.
+
+**Consequences.** The guard pins four properties at once: the declared project config, the absence
+of any `signInAnonymously` call in Frequency's own tree, the sub-app's call site being gated, and
+`auth_allow_anonymous_sign_ins` staying **out** of the maintenance sweep's accepted list so a
+re-enable surfaces as a NEW finding rather than silence. It also fails on the copy: a UI or doc
+string telling a reader to enable anonymous sign-ins in "the Supabase project's Auth settings" is
+how the conflict propagated in the first place, so it is the one phrasing the test names outright.
+
+## ADR-1056: Three DAWN effect classes retired, and the effect layer now has to name its orphans
+
+**Status.** Accepted (2026-08-17) · `app/globals.css` (the three rules are gone) +
+`lib/theme/effect-adoption.test.ts` (vitest auto-discovers it, so it runs in the `test` job branch
+protection already requires) · closes backlog row `LIVE-024`.
+
+**Context.** The 2026-08-04 DAWN port copied the effect kit into `app/globals.css` wholesale.
+Porting is cheap and adopting is not, so three of the ported classes — `.scanlines`, `.vignette`
+and `.edge-light` — sat in the sheet for a year at zero adopters. The header comment above them
+asserted the opposite in prose: that the rebuilt marketing pages "each call for them". They did not.
+A className-position scan of every `.ts`/`.tsx` file under `app/`, `components/` and `lib/` found no
+call site for any of the three; no markup or JSON file in the tree carries them in a `class`
+attribute; and stored block content cannot supply one, because `sanitizeInlineHtml`
+(`lib/entity-blocks/block-content.ts`) strips every attribute except a safe `<a href>`. Meanwhile
+both roles they claimed were already served by classes that ARE adopted: `.bg-slat` carries the
+ink-band texture `.scanlines` wanted (9 files) and `.light-strip` the amber seam `.edge-light`
+wanted (6). A duplicate of an adopted class is worse than a merely unused one: it splits the
+vocabulary, and the next author picks by coin toss.
+
+**Decision.** Delete all three rules. Adopting them was the alternative and it was rejected: giving
+a class a home means changing what a live marketing page looks like, which is a design decision
+with no design brief behind it, taken to make a stylesheet tidy.
+
+Deleting them is not the durable half. `design_handoff/dawn/tokens/effects.css` still ships all
+three, and `design_handoff/SYNC.md` routes effect classes into `app/globals.css` value-for-value,
+so the next "sync DAWN" round offers the same three back with no call site and nothing would
+notice. The retirement is therefore held by a guard rather than by a commit message:
+`lib/theme/effect-adoption.test.ts` fails if any of the three reappears in the sheet, fails if any
+acquires a call site while the sheet lacks the rule, and — the general form — fails if ANY class
+defined in the effect layer has zero adopters and is not on a recorded-orphan ratchet.
+
+**Consequences.** The measurement that decided this found six more orphans in the same layer:
+`amber-underline`, `animate-glow`, `animate-warmup`, `grain`, `halo` and `slat-fade`. LIVE-024
+named three, so the other six are RECORDED rather than deleted — a ratchet that may shrink and may
+never grow, the same contract as `scripts/adoption-baselines.json`. Deleting a class nobody asked
+about is how a visual regression arrives with no trail; listing it is what makes the next decision
+about it possible. Adopting one now fails the build until it is taken off the list, which is the
+gain being banked instead of quietly absorbed.
+
+One methodological note is worth keeping, because it nearly produced a gate that measured nothing:
+half these class names are ordinary English. A scan of every string literal in the tree reported 54
+adopters for `spot`, 2 for `halo` and 1 for `grain`, and every one was prose — a comment about a
+"calm neutral halo", a Spotlight card style whose enum value is `'glass'`, a copy string offering to
+save your spot. The guard therefore reads only string literals in a `className=` / `cn()` position,
+and proves the instrument on fixtures before trusting its silence. A count that flatters the sheet
+is the same failure as a probe that greps for its own title (ADR-970).
+
+## ADR-1055 — `ZigZag`'s successor is `MediaText`, not `Zigzag`, and the fail-safe finally gets a gate (2026-08-17)
+
+**Status.** Accepted · migration **staged** at `docs/proposals/LIVE-028-retire-orphan-block-types.sql`
+(**authored, NOT applied** — for the owner; promote to `supabase/migrations/`, then two steps per
+[ADR-963](DECISIONS.md)) ·
+guard `scripts/check-stored-blocks.mjs` + `scripts/check-stored-blocks.test.ts` ·
+corpus `scripts/stored-block-types.json` · closes backlog row `LIVE-028` ·
+executes [ADR-977](DECISIONS.md) D-9 · corrects [ADR-978](DECISIONS.md) on the target block.
+
+**Context.** [ADR-977](DECISIONS.md) D-9 found five block types in stored `pages.data` that resolve
+to nothing in the block registry, and ruled they get a hotfix PR ahead of the editor program.
+[ADR-978](DECISIONS.md) then shipped the *survival* half: the loader keeps any well-formed
+document, the public renderer skips a block it cannot resolve, and the editor shows a labelled
+placeholder. Nothing was destroyed. **Nothing was fixed, either** — the five still render as
+nothing, which on `about` is 6 of 8 authored sections.
+
+Re-measured against production 2026-08-17. **The row's numbers hold exactly**: five types, three
+draft pages, 17 orphan blocks.
+
+| Slug | Status | Orphan blocks |
+|---|---|---|
+| `about` | draft | `PageHero`×1 · `ImageBand`×1 · `ZigZag`×3 · `BetaCTA`×1 — 6 of 8 |
+| `how-it-works` | draft | `PageHero`×1 · `ZigZag`×3 · `BetaCTA`×1 — 5 of 7 |
+| `the-lab` | draft | `PageHero`×1 · `ImageBand`×1 · `ZigZag`×2 · `FeatureGallery`×1 · `BetaCTA`×1 — 6 of 8 |
+
+`home` and `the-community` are clean in both columns; `published_data` carries no orphan anywhere;
+all 18 Space `pageDocs` documents resolve. The blast radius is exactly the three drafts.
+
+⚠️ **[`EDITOR-BLOCK-INVENTORY`](EDITOR-BLOCK-INVENTORY.md) §D P0 struck `how-it-works` from the
+list, and that strike was right about the editor and wrong about the data.** The slug is not in
+`EDITABLE_PAGES`, so `/edit/how-it-works` redirects and no operator can open it — but its row still
+sits in `pages` with five orphan blocks in it, and a migration that skips it leaves a third of the
+defect behind for whoever un-retires that slug. Fixed in the same pass.
+
+**Decision 1 — migrate all five; delete none.** Every stored prop key is a legal field key on its
+target and every stored option value is a legal option there, so `target_defaults || stored_props`
+is lossless: not one authored byte is dropped, `props.id` survives, and there is no QUARANTINE
+entry to declare. Deletion was never the cheaper option here, only the faster one.
+
+| Orphan | Target | Evidence |
+|---|---|---|
+| `PageHero` | `Hero` (`variant: 'minimal'`) | Hero's fields ⊇ PageHero's four props; `minimal` is the text-only variant |
+| `ImageBand` | `Image` (`mode: 'single'`) | `media.tsx:114` — "standardizes the old ImageBand" |
+| `ZigZag` | **`MediaText`** | `media.tsx:60` — "standardizes the old ZigZag" |
+| `FeatureGallery` | `Gallery` | `media.tsx:215` — "standardizes the old FeatureGallery" |
+| `BetaCTA` | `CallToAction` (`tone: 'ink'`) | `sections.tsx:259` — "matches BetaCTA" |
+
+🔴 **Decision 2, and the finding that matters — both prior ADRs compared `ZigZag` against the
+wrong block.** ADR-977 called `ZigZag` ⇄ `Zigzag` "a pure casing divergence"; ADR-978 corrected
+that to "a retired block with a similar name" and refused the alias because it would drop
+`kicker`/`tone`/`imgAspect` and mis-map `titleAccent`/`side`. **The refusal was right and the
+comparison was still against the wrong candidate.** `Zigzag` is not `ZigZag`'s successor.
+`MediaText` is, its own header says so, and it is a name-for-name, option-for-option **superset**
+of all twelve props these blocks store — `side`, `imgAspect`, `kicker`, `titleAccent` and `tone`
+included, with every stored value (`left`/`right`, `portrait`/`landscape`, `canvas`/`surface`) a
+declared option on the target. The migration is exact, not lossy.
+
+**Two ADRs reached "this is a real data migration with decisions in it" and neither read
+`media.tsx`'s block headers**, where four of the five successors are named outright. The lesson is
+the repo's own rule arriving from an unusual direction: *when the code and a plan doc disagree, the
+code wins* — and here the code was not merely more current than the doc, it was **the primary
+source nobody consulted**, three sessions running.
+
+**Decision 3 — the fail-safe gets a gate.** AGENTS.md: *every fail-safe needs a gate that notices
+it fired.* ADR-978's fail-safe had none, which is why the same five types had to be found by hand
+twice. `check:stored-blocks` closes it: a frozen census of every block type in every stored Puck
+document (types only — no tenant copy), checked against the **live** registry under vitest, with a
+`quarantine` whose entries must each name a successor that resolves *and* a migration in the tree
+that performs that exact rewrite. A quarantine entry therefore cannot outlive its fix, and the list
+empties when the owner applies the migration and re-captures.
+
+**Consequences.** ✅ The three drafts become editable and publishable as authored, once applied.
+✅ The census hands `check:doc-safety` (E0) a real corpus for free, as D-9 predicted.
+⚠️ **The migration is UNAPPLIED on purpose**, so `check:migrations` rule 4 reports it as
+`unpairedRepo` ("authored but never applied") in any credentialled environment; CI has no
+credentials and skips, loudly. ⚠️ **The census is a snapshot.** It catches the direction that keeps
+biting — the registry retires a type the data still names, checked live on every run — and cannot
+see an orphan written *after* the capture date. That needs a credentialled job this repo does not
+have, and it is recorded rather than papered over, exactly as `check:migrations` records the same
+gap for the ledger. ⚠️ The `BetaCTA → CallToAction` rewrite freezes today's `BETA_CTA_LABEL` /
+`BETA_CTA_HREF` into three stored documents, because a stored document cannot reference a constant.
+
+**Addendum (2026-08-17, same day).** Two corrections landed after the first CI run, and both are
+worth keeping because each is a general rule this repo had already paid for once.
+
+**1. An unapplied migration may not sit in `supabase/migrations/`.** A file in that directory *is*
+an assertion that production has run it, and CI arms `check:migrations` rule 4
+([ADR-1007](DECISIONS.md)) with real credentials — so it fails on any repo file above the applied
+ledger head. The SQL is therefore staged at `docs/proposals/LIVE-028-retire-orphan-block-types.sql`
+with a promotion banner, where it makes no claim; promotion is step 1 of applying it. The
+quarantine points at the staged path and still **reads the SQL** to confirm the rewrite, so
+relocating the file is caught rather than excused.
+
+**2. A gate must not fail on a state only its owner can clear.** The first version exited 1 for any
+orphan, declared or not, while being wired into the required `test` context — which made every
+unrelated PR unmergeable until an owner applied a migration. That is exactly
+[ADR-970](DECISIONS.md)'s shape: a gate nobody can clear gets routed around, and then it reads as
+coverage. The two questions are now answered separately:
+
+| Input | Guard (`check:stored-blocks`, required job) | Probe (`--probe`, read by `check:backlog`) |
+|---|---|---|
+| Undeclared orphan in stored data | 🔴 **FAIL** | — |
+| Declared orphan, claims verified | ✅ **PASS, printed in full every run** | 1 · NOT DONE |
+| Quarantine entry rotted (successor gone, SQL absent, or SQL retargeted) | 🔴 **FAIL** | — |
+| Census unreadable or below its floors | ⚠️ 79 · cannot tell | ⚠️ 79 · cannot tell |
+
+The two answers differ on the same input **on purpose**: the guard asks "did something regress that
+a PR can fix", the probe asks "is LIVE-028 done". LIVE-028's row is `open`, so a probe saying NOT
+DONE is exactly consistent, and a probe that went green on the declared state would close a row
+whose work has not happened. The anti-rot arms are untouched — they are what stop a quarantine
+becoming a permanent hole, and none of them need an owner.
+
+## ADR-1057 — An `htmlFor` is not an association until it reaches a control, so `check:labels` now resolves every one (2026-08-17)
+
+**Status.** Accepted · guard `scripts/check-labels.mjs` rules 3–4 + `scripts/check-labels.test.ts`
+· extends [ADR-966](DECISIONS.md) · closes backlog row `LIVE-014`.
+
+**Context — the row was measuring a string, not a defect.** `LIVE-014` reads
+"~105 unassociated `<Label>` uses across ~40 files", and its probe counts files whose text
+contains `<Label`. Re-measured 2026-08-17 with a brace-aware JSX scan over all 1,992 `.tsx` files
+in the repo:
+
+| Population | Count |
+|---|---|
+| Files containing the string `<Label` | 44 |
+| `<Label` opening tags in `app/` + `components/` | 204 |
+| …SVG captions from `onboarding/renders/frame.tsx` (no control to name, by construction) | 43 |
+| …carrying an explicit `htmlFor` | 132 |
+| …wrapping their control (implicit association) or the primitive's own definition | 29 |
+| **`<Label>`/`<label>` that names nothing — the actual defect** | **0** |
+
+The 105 was never a defect count. [ADR-966](DECISIONS.md)'s sweep and `pnpm check:labels` had
+already taken the population to zero, and `check:labels` holds it there. The row is closed by
+measurement, not by a sweep.
+
+🔴 **What the re-measure DID find is that the gate holding the line accepts shape for truth.**
+Rule 2 passes any label carrying an `htmlFor` attribute — it never asks whether the attribute
+reaches anything. So `<Label htmlFor="event-scop">` beside `<Select id="event-scope">` renders
+precisely the label ADR-966 was built to catch: a screen reader announces "combo box, blank", and
+clicking the text focuses nothing. The file said so itself — *"All 125 were verified by hand on
+2026-08-10; a static cross-file id check is future work."* A hand-verified population is a
+population that was correct on one date.
+
+**Decision 1 — resolve every decidable `htmlFor` (rule 3).** A string-literal or template-literal
+`htmlFor` must match an `id` in the same file. Template literals compare by source text, which is
+what makes the `useId()` shape checkable: `htmlFor={\`${uid}-name\`}` against
+`id={\`${uid}-name\`}`.
+
+**Decision 2 — the target has to be able to hold a name (rule 4).** An id that sits only on a
+`<div>`/`<p>`/`<button>` is not labelable, so the association is void even with both halves
+present. Only plain lowercase elements are judged.
+
+**Decision 3 — unknowable is not a violation, and the two shapes are named.** A bare-identifier or
+computed `htmlFor` is a prop threaded in by a wrapper, and its target lives in the caller
+(`connections/new/creator.tsx`, `page-editor/mobile/field-form.tsx` both render
+`<label htmlFor={htmlFor}>`). A capitalised carrier may forward `id` to a real control
+(`PillarSelect` → `<Select id={id}>`). Both are skipped. 306 of the repo's `htmlFor`s are
+decidable and all 306 resolve, so the rules ship green with zero false positives.
+
+**Decision 4 — the recogniser stopped being defeatable by punctuation.** `<Label>` counted as the
+field primitive only when the file matched a hard-single-quoted import of the literal name, so
+`import { Label } from "@/components/ui/field"` and `import { Label as FieldLabel } from '…'` each
+made every `<Label>` in that file invisible to every rule. Verified against the pre-change script:
+a double-quoted bare `<Label>` beside its `<Input>` **exits 0** on the old gate and 1 on the new.
+Same lesson `check:admin-client` learned from `await import(…)` — a gate you step around by
+changing quote style is not a gate.
+
+**Decision 5 — a floor on what the new rules DECIDE, not just on what they find.** `MIN_RESOLVED`
+(250, against 306 measured) fails the build if the parser quietly reclassifies literals as
+unknowable, because then rules 3–4 would skip everything and print ✓ over an unchecked repo. That
+is the missing-instrument failure `MIN_LABELS` already guards one rule up, and the same one that
+inverted the grep probes on CI.
+
+**Decision 6 — this is NOT a new debt class in `scripts/adoption-baselines.json`, and the reason
+is the ratchet's own contract.** The ratchet freezes a nonzero count and holds it; here the floor
+is already **zero**, and a hard gate at zero is strictly stronger than any ratchet — the very next
+site fails CI. More decisively, the ratchet counts regex matches over file text with no notion of
+enclosure, and it cannot express "this `htmlFor` reaches an `<input>`" or "this caption sits
+inside a `<label>`". A proximity regex for the caption class would fire on the *correct* wrapped
+shape (`<label><span className={labelClasses}>…</span><Input /></label>`, 21 live sites), i.e. it
+would punish correct code — a gate that cannot fire honestly gets routed around
+([ADR-970](DECISIONS.md)). The parser gate is the right instrument; the ratchet is the right
+instrument for undifferentiated literal counts.
+
+**Consequences.** One real defect surfaced and was fixed in the same pass:
+`components/admin/modules/event-cohost-chooser.tsx` named its cohost search box with a bare
+`<span className={labelClasses}>`, which names nothing — now a `useId()`-scoped `Label htmlFor` /
+`Input id` pair.
+
+⚠️ **Left open, deliberately, and it is the bigger number.** A scan for the honest question —
+*this control has no accessible name* — reports 143 candidates across 67 files, but it cannot yet
+resolve the label-WRAPPING components (`Labeled`, `StudioField`, `Field`) that legitimately name
+controls by wrapping them, so an unknown share of the 143 are false positives. It is not gated
+here for exactly the reason Decision 6 gives. Resolving wrapper components repo-wide, then
+ratcheting the residue, is its own row.
+
+## ADR-1058: A baseline number is a READING, and a ceiling is an exception that has to say why
+
+**Status.** Accepted (2026-08-17) · `test/e2e/a11y-ratchet.ts` (the judgement) +
+`scripts/check-a11y-baselines.mjs` (the static gate, wired through `VITEST_ENFORCED` in
+`scripts/guard-wiring.test.ts`) + `test/e2e/a11y-baselines.json` · closes backlog row `LIVE-023`.
+
+**Context.** `test/e2e/a11y.spec.ts` compared every one of its 49 frozen counts with
+`total <= allowed`. Every number in the file was therefore a CEILING — "this surface may carry up
+to N" — whatever the prose around it said, and the file's own header called three of them
+ceilings as though the other 46 were something else. They were not. The cost of a ceiling is
+exact: every unit of headroom under one is a place an unrelated, never-examined serious violation
+can sit while CI prints a tick. `/feed` at 12 permitted twelve.
+
+The three named in `LIVE-023` were the extreme case rather than a different species. `/feed` (12),
+`/settings` (7) and `/spaces/<slug>/manage` (8), all `dawn-light, desktop`, were seeded on
+2026-08-11 from RAW pre-waiver totals, because the node cap in the spec was 5 at the time and the
+run log truncated before the post-waiver residual could be computed. Every node that *was* visible
+on all three was an accepted palette pair, so the real numbers are believed to be 0–3.
+
+The other half of the same hole is the direction the old comparison was open in. A fall was
+recorded as a test ANNOTATION inside a passing run, which is not a record anybody reads: the
+file's own header documents `/spaces` sitting at a stale 44 through a fix (ADR-929) that had
+already landed. And a raise was governed by "say why in the commit" — a convention, not a gate,
+and one nothing can read afterwards. `scripts/adoption-baselines.json` closed exactly this hole in
+March by requiring `frozen` + `history` on every number; the a11y file had the same hole and no
+such rule. Both failures were live again on 2026-08-17 in two other guards, which is what made
+this the row worth doing.
+
+**Decision.** A bare integer in `a11y-baselines.json` is a **READING**, asserted with EQUALITY. A
+regression fails, and so does an improvement — the win gets written back into the file rather than
+drifting into an annotation. Re-recording is one command (`pnpm a11y:baselines`), so failing on
+good news costs a re-run.
+
+Anything weaker is an **exception with paperwork**. A ceiling is an object carrying `ceiling`,
+`why` (what is missing before it can become a reading), `retiredBy` (the command that replaces it),
+`frozen` and `history`. `pnpm check:a11y-baselines` runs on the tree with no browser and enforces
+three rules borrowed wholesale from the adoption ratchet: `frozen.value` must equal `ceiling` (the
+hand-edit guard, and it fires in BOTH directions), each history step's `from` must be the previous
+step's `value`, and a declared `direction` must match its own arithmetic — so a raise cannot be
+filed as a re-freeze. `--force` on the merge script now requires `--reason "<why>"`, and the
+accepted number lands as a declared ceiling carrying that reason, printed on every subsequent run.
+
+**What was deliberately NOT done.** The three ceilings were not converted to readings. Doing so
+needs an axe run against a deployment with the beta member session (`OWN-002`), which no agent
+container can produce, and writing down the believed 0–3 instead would be a fabricated baseline —
+strictly worse than an honest ceiling, because it would fail CI for a reason nobody could
+reproduce. They stay, now declared, with the command that retires them written into each one. A
+capture replaces the whole object with the bare integer it measured.
+
+**Consequences.** The 46 measured contexts became readings in the same pass, so the next honest
+capture will fail on several of them in the IMPROVING direction — the file's own header predicts
+"Expect 0" for three shell contexts whose defects were fixed. That is the instrument working:
+`pnpm a11y:baselines` writes the new numbers and the diff shows what was bought. If a surface ever
+proves to vary run to run — the one case where a ceiling is genuinely the right instrument — the
+answer is to declare it one with the measured range as its `why`, not to reopen `<=` for
+everything. Non-vacuity is proven in both directions by `test/e2e/a11y-ratchet.test.ts` (a reading
+fails at N−1 and at N+1) and `scripts/check-a11y-baselines.test.ts` (a ceiling raised or lowered
+without its provenance fails), neither of which needs a browser.
+
+## ADR-1059: A cosmetic the store will charge for must be one the product can paint
+
+**Status.** Accepted (2026-08-17) · `lib/store/cosmetics.ts` (the render registry) +
+`lib/store/fulfillment.ts` (the classifier) + `components/profile/profile-cosmetics.tsx` (the
+render) + `scripts/check-cosmetic-renders.mjs` / `.test.ts` (the gate, wired through
+`VITEST_ENFORCED` in `scripts/guard-wiring.test.ts`) + `scripts/store-shelf.json` (the corpus) ·
+closes the code half of backlog row `LIVE-013`; the data half is
+`docs/proposals/LIVE-013-cosmetic-fulfillment.sql`.
+
+**Context.** The Vault Store sold fourteen profile cosmetics — five borders, five flairs, four
+titles. Redeeming one wrote `profiles.profile_border` / `profile_flair` / `custom_title`, and
+those three columns had exactly ONE reader in the product: a chip in the buyer's own Vault that
+printed the raw stored string ("Border: indigo"). "A glowing indigo border around your avatar"
+(250 Gems) changed nothing anyone else could see. Five further SKUs on the shelf carried
+`metadata = {}`, so `classifyRedemption` routed them to `pending` — the path whose contract is
+"the redemption row IS the fulfillment record an operator acts on" — and no operator surface ever
+listed those rows. `guest-pass` sat in that hole from 2026-06-27.
+
+Measured against production 2026-08-17 before any change: **4 redemptions all time, 3 paid, 950
+Gems, ONE real member**. Small, and real: the trap had sprung once, 51 days earlier, and the
+member is still owed.
+
+**Decision.** Deliverability is a property of the RENDER, not of the metadata.
+
+1. **One registry owns both halves.** `lib/store/cosmetics.ts` maps a stored column value to the
+   thing that paints it. Adding a border means adding a row there, which is also what makes it
+   render — so the vocabulary cannot drift from the renderer. The stored value stays DATA
+   (`ring-<colour>-500`, a class from a palette this design system does not ship); the class it
+   paints is a DAWN rank-spectrum token.
+2. **Refuse before charging, not after.** `classifyRedemption` gains a fourth outcome,
+   `undeliverable`, for a cosmetic/title SKU that resolves to nothing. It is REFUSED rather than
+   banked as `pending`, because `pending` is a promise a person keeps and no person can hand
+   someone a profile border. The shelf marks the same SKUs "Not ready yet" from the same registry,
+   so the card and the server action can never disagree.
+3. **A perk that a person honors gets a place a person can see it.** `/admin/store` now lists
+   every paid feature/membership redemption, oldest first. Read-only: recording that one was
+   honored needs a column `store_redemptions` does not have, and that ALTER is in the proposal for
+   the owner. A queue that shows the work shipped now beats a complete one that ships never.
+4. **A SKU bridge, declared and narrow.** `waveform-border` is on sale with no `type` in its
+   metadata but unambiguous copy, so the code bridges it and it delivers today. The other four
+   untyped SKUs (`s1-flair-set`, `animated-banner`, `callsign-plate`, `custom-title-slot`) are not
+   bridged: a "set" does not fit a single-value column, and a banner, a callsign plate and a
+   member-authored title each need a surface that does not exist. Inventing renders for those
+   would be guessing at product with Gems already spent.
+
+**Alternatives rejected.** *Deactivate all fourteen cosmetics and stop selling profile cosmetics.*
+Rejected: thirteen of them needed a ring, an icon or a word beside a name, and a member who has
+already paid should get the thing rather than a refund for a product decision. *Fail CI on the
+four undeliverable SKUs.* Rejected on [ADR-970](DECISIONS.md) grounds — their fix is production
+SQL no PR can run, so a hard fail would hold every unrelated change hostage and get routed around.
+They are DECLARED in the census quarantine and printed loudly on every run; the anti-rot arm fails
+if such an entry outlives its fix, and `--probe` still answers NOT DONE, which is what keeps the
+backlog row honest while it waits.
+
+**Consequences.** The gate measures the consequence, not the wording: for every purchasable SKU in
+a category that promises a visible profile change, does it resolve to something that paints?
+Undeclared gap → fail. Its parser half shipped a real false positive on its first run (it read a
+`Record<string, { … }>` TYPE ANNOTATION as the record's keys and declared all five flair SKUs
+broken), which is why the sibling test cross-checks the parser against the live module rather than
+trusting it. Non-vacuity is proven twice: fixtures that must fail on every arm, and a live
+mutation (deleting the `waveform-border` bridge) that took the CLI to exit 1 and failed the
+real-shelf assertion.
+
+## ADR-1060: The Opening Beta price is closed early, and the only discount left is the one that was always there
+
+**Status.** Accepted (2026-08-17) · owner decision, implemented as a one-constant move in
+`lib/pricing/beta.ts` (`BETA_PRICING_ENDS_AT`: `2026-09-01T07:00:00.000Z` → `2026-08-17T00:00:00.000Z`)
+· carried through `lib/pricing/beta.test.ts`, `pricing-grid.test.ts`, `pricing-model.test.ts`,
+`beta-notice.ts`/`.test.ts`, `lib/page-editor/templates/pricing.ts`, `lib/marketing/funnel-config.ts`,
+`lib/beta/launch-emails.ts` + `email-templates.ts`, `app/(marketing)/what-is-frequency/page.tsx`,
+`content/help/spaces/plans-and-pricing.md` · amends [ADR-811](DECISIONS.md) (which set the beta
+anchors) and [ADR-1052](DECISIONS.md) (which derived the public ladder from them).
+
+**Context.** The owner: *"scratch the beta pricing and just charge full price. They can get 2 months
+free for purchasing the year."* The beta window was an auto-revert built to need no manual step: one
+constant, read by the checkout (`resolveLoadoutPriceId` switches Stripe price keys on it) and by every
+pricing surface (`effectiveCatalogAmounts` / `effectiveTierPrice` collapse the founding anchor into the
+list price once it is past). Closing the window early is therefore not a repricing exercise. It is a
+date.
+
+**Decision.** Move the cutover to a past instant. Nothing else in the pricing model changes.
+
+1. **Scope, measured rather than assumed: exactly two plans move.** Business **$19 → $29/mo** and
+   Collective **$49 → $79/mo**, with the annuals following through `yearlyFromMonthly` at 10x
+   (**$190 → $290**, **$490 → $790**). Independent, Non Profit and the Vera AI add-on already carried
+   `listCents == foundingCents` in the catalog, so their prices do not move at all, and no surface
+   showed them a strike to lose.
+2. **The second half of the owner's sentence was already the house rule.** "Two months free on the
+   year" is `ANNUAL_MONTHS_FREE = 2`, the single source of the annual math the catalog itself derives
+   from. It is UNCHANGED by this decision; what changes is that it is now the only discount on the
+   page, so the copy leads with it where the beta line used to sit.
+3. **The strike and the beta caption must disappear, not be renumbered.** Post-cutover there is no beta
+   rate, so a crossed-out $29 beside a charged $29, or a "Beta rate. Yours for as long as you keep the
+   plan." caption beside a rate that is not a beta rate, would be a false claim on the page that sells
+   the plan. `pricing-grid.test.ts` now asserts the closed-window state directly and sweeps EVERY
+   offering and every rendered comparison cell for a surviving anchor or beta caption. The ADR-463
+   idiom keeps its coverage through an explicit `betaActive: true` arm rather than being deleted: the
+   window is one editable constant away from re-opening.
+4. **A test may not pin the constant it is meant to guard.** `beta.test.ts` pinned the literal
+   `'2026-09-01T07:00:00.000Z'` and probed the window with hand-typed August dates, so an owner moving
+   the date broke a test that was supposed to describe behaviour. Every instant is now derived from
+   `BETA_PRICING_ENDS_AT` itself, and the constant is asserted on its SHAPE (a canonical UTC ISO
+   instant that round-trips) plus one behavioural fact that outlives any move: the window is closed at
+   the live clock.
+
+**Grandfathering cost nothing, and the measurement that says so is narrower than it looks.** The
+window's promise was that a Space subscribing during it keeps its rate for life, honoured by re-billing
+the locked Stripe price id on its subscription item. Measured in production on 2026-08-17, before the
+change: **0 rows in `space_subscription_items`, 0 profiles carrying a `stripe_customer_id`, 0
+`stripe_webhook_events` ever received.** No Stripe subscriber existed to lose a rate.
+
+🔴 **That is true of Stripe and false of the business.** `@ishasetlumi` paid **$490 in cash** for the
+annual Collective beta rate ($49 x 10, two months free) and her Space `templeofaset` carries
+`plan='collective'` granted directly in the database. She has no subscription item, so she has no lock,
+so there is nothing for `resolveLoadoutPriceId` to re-bill: she must not be billed until her paid year
+runs out (roughly 2027-07), and it renews at $490, not the $790 list annual. Both obligations live only
+in backlog row `OWN-022` and in this paragraph. The general lesson is worth more than the instance: an
+obligation settled outside the system is invisible to every gate inside it, and "0 subscriptions, so
+nobody holds a beta rate" was one cash payment away from being acted on.
+
+**Consequences.** Member-facing copy that offered the beta price is now false and was rewritten, not
+merely renumbered: the seeded `/pricing` CMS document (tier cards, footnote, two FAQ answers), the five
+funnel doors' cost answer, `/what-is-frequency`, the help centre's plans page, and the beta grace notice
+(`beta-notice.ts`), which renders off the SEPARATE `beta_grace` window and so kept inviting members to
+"hold the beta rate" after the rate was gone. The P4 launch email existed only to sell the pricing
+deadline; it keeps its slot and its date and is now about what actually happens on September 1, which is
+the feature-gate grace window ending ([ADR-874](DECISIONS.md)). Two decisions are deliberately NOT
+touched here and are the owner's to make: `beta_grace` still ends **2026-09-01** (selling and gating are
+separate dates, ADR-874), and `FOUNDING_DEFAULT.business_monthly_cents` is still **$19**, so a Founding
+Business minted by the beta founder push is still stamped with a lifetime rate that no longer
+corresponds to any purchasable price.
+
+## ADR-1061: The beta rate stays open for the people who were promised it, as a private per-Space grant
+
+**Status.** Accepted (2026-08-17) · owner decision, the same day as [ADR-1060](DECISIONS.md) closed the
+window · pure decision in `lib/pricing/beta.ts` (`loadoutChargeArm` / `loadoutChargePriceKey`), IO in
+`lib/billing/space-beta-grant.ts`, consumed by `lib/billing/space-plan-checkout.ts`
+(`resolveLoadoutPriceId`) · operator surface on `/admin/spaces/[id]` ("Beta price grant") ·
+tests `lib/pricing/beta-grant.test.ts` · schema staged in
+`docs/proposals/OWN-023-space-beta-price-grant.sql`, **not applied** · amends
+[ADR-1060](DECISIONS.md) and the grandfathering rule in [ADR-460](DECISIONS.md).
+
+**Context.** The owner, hours after closing the beta window: *"I still have a couple people that I've
+offered the Beta pricing to, and I want to keep that open for them. But I don't want to advertise
+that Beta pricing as a package on the website. I just want regular pricing."* Two requirements that
+pull against each other, and the machinery already in the repo served neither.
+
+🔴 **The grandfathering machinery works perfectly and preserves the wrong number.**
+`resolveLoadoutPriceId` consults `readLockedPriceId(spaceId, itemKey)` first and re-bills a lock
+forever if one exists — but the lock is a **record, not a grant**.
+`lib/billing/space-subscriptions.ts` writes `locked_price_id` while reconciling a subscription,
+capturing whatever checkout actually charged. With the window shut, `chargeList` is true, a person
+promised $49 checks out at $79, and their lock faithfully records $79 for life. The lock cannot know
+its number is wrong; it can only carry the number it was given. Nothing else fit either:
+`spaces.is_comped` means FREE, not discounted, and no beta, override or grant column existed anywhere
+in `spaces` or the pricing tables (asked of the production catalog, not of the migrations).
+
+**Decision.** A **private, per-Space grant** — `spaces.beta_price_grant` — that only the checkout
+reads.
+
+1. **Not the window.** `BETA_PRICING_ENDS_AT` is ONE global constant, and the whole reason it is one
+   constant is that the checkout and every pricing surface read the same answer, so the page can never
+   quote a rate the checkout has stopped charging ([ADR-880](DECISIONS.md)). Re-opening it for two
+   people would put $49 back on `/pricing` for everyone, which is precisely the half of the sentence
+   the owner said no to. A per-Space fact is the only shape that satisfies both halves.
+2. **The charge decision becomes three arms, and it is PURE.** `loadoutChargeArm({ lockedPriceId,
+   betaActive, spaceHasBetaGrant })` returns `lock` when the Space holds a locked price id (a live
+   subscription's own price is not ours to re-decide), else `founding` when the window is open **OR**
+   this Space carries the grant, else `list`. No React, no Supabase, no clock of its own — the same
+   discipline as the rest of `lib/pricing/*`, which is what makes the money decision testable without
+   a database. `loadoutChargePriceKey` maps the two non-lock arms onto the catalog key namespace; the
+   `lock` arm is not representable there, because a lock is a concrete price id and not a key.
+3. **The grant needs no expiry, and the code says why.** It is **spent by the first successful
+   checkout**: the reconciler records the charged founding price as the item's lock, arm 1 wins from
+   then on, and the grant is never consulted again. Revoking it afterwards cannot raise anyone's rate;
+   leaving it set costs nothing. An expiry column would be a second promise to keep in sync with the
+   first.
+4. **Three columns, not one.** `beta_price_grant boolean not null default false` is the decision (a
+   boolean, not a rate: the founding price ids are already minted active by the catalog sync, so
+   inventing an amount here would be a second source of truth for money). `beta_price_granted_at` +
+   `beta_price_granted_by` are the audit stamps, cleared on revoke so they always describe the grant
+   currently in force. They are not decoration: the failure this feature closes (`OWN-022`) is an
+   obligation that lived only in the owner's memory, and a bare boolean records THAT a promise exists
+   while still losing who made it. The append-only history of every flip is `admin_audit_log`
+   (`space.beta_price_grant`).
+5. **NO public surface may see it.** `effectiveCatalogAmounts`, `effectiveTierPrice`, `spacePlanRows`,
+   `spaceOfferings`, `spaceFeatureGrid` and the funnel config are unchanged, and their beta input
+   remains a single boolean about the WINDOW — there is no per-Space parameter to thread a grant
+   through, so surfacing one would require changing those signatures. `beta-grant.test.ts` asserts the
+   consequence rather than the shape: it walks every number and every string a visitor can read off
+   the offering cards, the price rows and every comparison cell, and fails if 4900 / 49000 / 1900 /
+   19000 or a `$49` / `$490` / `$19` / `$190` label or the words "Beta rate" appear anywhere.
+6. **The migration is a PROPOSAL, in `docs/proposals/`.** A file in `supabase/migrations/` asserts
+   production has run it, and CI arms `check:migrations` rule 4 against the real ledger
+   ([ADR-1007](DECISIONS.md)). The code is live and correct without the column.
+
+**Consequences.** The shipped code has to behave sanely against a database that does not have the
+column yet, and "sanely" is not "silently". Selecting a column PostgREST does not know fails the
+**whole** request with `42703` — the exact bug that once cost this checkout the owner's saved Stripe
+customer id by selecting a non-existent `profiles.email` — so the grant is never read as part of
+another select. `readSpaceBetaPriceGrant` is its own request and returns `unavailable / not_deployed`
+on 42703, **distinct** from a clean read of `granted: false`. The checkout collapses both to "no
+grant" (fail-safe FALSE: an unreadable answer charges list, never under-charges) while the operator
+panel renders the apply-this-first instruction instead of a toggle that would look enabled and quietly
+do nothing — a fail-safe with a gate that notices it fired.
+
+The grant is **janitor-gated and lives on the platform admin surface**, never in
+`/spaces/[slug]/settings`: a Space owner who can reach it is a self-serve discount. The write path is
+the service-role admin client, which is also what stands between the column and the browser —
+`spaces` grants UPDATE at TABLE level to `anon` and `authenticated` (relacl `anon=awdDxtm`), so the new
+column inherits that privilege the moment it exists, and the only thing denying those writes is that
+`spaces` carries exactly one RLS policy and it is for SELECT. A column-level revoke would not help
+(Postgres will not revoke a column privilege held at table level), so the proposal states the condition
+to watch instead of pretending to close it: **an UPDATE policy added to `spaces` later must exclude
+this column.** Reads are already closed — `spaces` grants SELECT at COLUMN level (31 of 44 columns),
+and a newly added column is not covered by a column-level grant, so the flag is invisible to both
+browser roles with no statement needed.
+
+**The motivating instance is real, and the grant covers exactly half of it.** @ishasetlumi paid
+**$490 in cash** for the annual Collective beta rate; her Space `templeofaset`
+(`cb611bac-7956-4652-9993-440c430d494b`) carries `plan='collective'` granted straight into the
+database, with no subscription item and therefore no lock (backlog `OWN-022`). She is precisely the
+case this exists for, and setting `beta_price_grant` on her Space is what makes her eventual Stripe
+onboarding resolve `collective_base_year` ($490) instead of `collective_base_year_list` ($790), and
+then lock that price for life. 🔴 **It does not settle the other obligation.** She has already paid
+for a year, so she must not be charged again until roughly **2027-07**, and nothing in this decision
+delays a charge: `createSpaceLoadoutCheckout` sets `trial_period_days` from the 14-day pricing
+setting, not from a paid-through date. That half belongs to the manual agreement machinery
+([ADR-872](DECISIONS.md), `manual_agreements.paid_through`) plus a trial long enough to cover the
+remaining term, and it is deliberately NOT claimed here — writing "OWN-022 is handled" against a
+mechanism that fixes the rate and not the date would recreate the original failure in a nicer font.
+The grant makes a promise **recordable**; it does not go looking for promises nobody wrote down, and
+it does not invent the ones it cannot see.
+
+## ADR-1062: A founding rate is not part of standard pricing, so in Stripe it is not part of the standard product
+
+**Status.** Accepted (2026-08-17) · owner decision, implemented in `lib/billing/pricing-products.ts`
+(`syncPricingCatalogToStripe`, `catalogProductMetaKey`, `catalogProductLabel`,
+`catalogItemHasFoundingRate`) · tests `lib/billing/pricing-catalog-sync.test.ts` · amends
+[ADR-460](DECISIONS.md) (which put all four prices on one Product) · follows
+[ADR-1060](DECISIONS.md) (the window closed) and [ADR-1061](DECISIONS.md) (the private per-Space
+grant) · **no schema change, no migration, no price KEY change.**
+
+**Context.** The owner, reading the catalog we were about to sync: *"Holy fuck, standard pricing does
+not have a founding or beta rate."* And the shape they asked for: *"Regular pricing + a founding beta
+product."*
+
+`syncPricingCatalogToStripe` minted ONE Product per catalog item and hung FOUR Prices on it:
+`{ founding, list } x { month, year }`. So `Frequency Collective` carried $79 **and** $49, and
+`Frequency Business` carried $29 **and** $19. That was correct while the beta window was open, because
+the founding amount was the amount everyone was charged. [ADR-1060](DECISIONS.md) closed the window
+that morning: the list price is now what checkout charges, and the founding rate is reachable ONLY
+through a grandfathered lock or the private per-Space grant. A product carrying both reads, to anyone
+opening the Stripe dashboard, as if the beta rate were still part of the offering. It is not, and the
+dashboard is where an operator goes to answer "what do we sell".
+
+Nothing had shipped yet: the live account (`acct_1TdurHPhyalyRPP1`) held **zero products** when this
+was written, so this is the shape of the FIRST sync, not a migration of existing Stripe objects. No
+archive-and-replace path was written, because there is nothing to replace.
+
+**Decision — split the product, keep the key.**
+
+1. **Two product lines, one per item.** The **standard** Product carries only the LIST prices. A
+   **founding** Product carries the founding rates: `Frequency Collective (Founding rate)` with $49 /
+   $490, beside `Frequency Collective` with $79 / $790. The parenthetical matches the catalog's own
+   naming convention (`Frequency Vera AI (add-on)`), reads plainly in the dashboard, and carries no em
+   dash ([CONTENT-VOICE](CONTENT-VOICE.md)).
+2. **Only an item that HAS a founding rate gets one.** `catalogItemHasFoundingRate` asks the
+   operator-resolved amounts whether `foundingCents < listCents` on either interval. Independent, Non
+   Profit, Vera AI and the operator seat ship `founding == list`: they have no beta rate to separate,
+   and minting `Frequency Independent (Founding rate)` at exactly the standard price would INVENT the
+   thing the owner asked us to delete. Their founding-variant key still exists, still resolves, and
+   points at the standard product at the standard amount. Today that means seven Products for five
+   synced items.
+3. **The metadata scheme keeps one lookup field.** Products are found by
+   `metadata['frequency_pricing_key']`, unchanged: the standard product keeps the bare item key
+   (`collective_base`) so a re-sync finds the same object the old code would have, and the founding
+   product takes `collective_base_founding` — a value that cannot collide with a price key
+   (`<item>_<interval>` / `..._list`) or with another item. Two descriptive fields ride along,
+   `frequency_catalog_item` and `frequency_product_line`, so a human can pair the two products of one
+   item without parsing names. **Price metadata is untouched**, because
+   `space-subscription-items.ts` and `founding-payment.ts` read `frequency_pricing_key` back off a
+   charged price to identify the catalog item.
+4. **NOT ONE PRICE KEY MOVES, and that is the whole risk of this change.** `pricing_stripe_prices` is
+   keyed by KEY, not by product; `stripe_product_id` is a column on the row. `resolveStripePriceId`,
+   `resolveLoadoutPriceId`, the ADR-1061 grant and every lock resolve a KEY. A product split that
+   quietly renamed `collective_base_year` would silently break the one promise ADR-1061 exists to
+   keep. The new test freezes the entire written key set as a literal and re-derives it from
+   `catalogPriceKey`, so a rename fails loudly rather than at someone's renewal.
+5. **Every Price stays ACTIVE in Stripe.** The sync creates prices and never calls
+   `prices.update({ active: false })` — asserted directly, because a price archived in Stripe **cannot
+   be used in a new subscription**, which is precisely what the grant needs the founding price for. The
+   `archived` flag on a map row is an annotation on the row and has never been Stripe's `active`.
+6. **A failure to mint the founding product does not block the standard offering.** The list prices
+   still sync; the founding keys report an error. They deliberately do NOT fall back to the standard
+   product, which would put the beta rate back where the owner just removed it.
+
+**Idempotency is the property a sync is judged on, so it is proven rather than asserted.** The test
+runs the whole sync twice against an in-memory Stripe and asserts `products.create` and `prices.create`
+are called ZERO times on the second pass, with every product id, price id and map row identical. A
+name drifted on an existing product is corrected in place (`products.update`), never duplicated. The
+same fake catches the inverse mistake: reverting the product selection to "everything on the standard
+product" fails three assertions.
+
+**Consequences.** The admin price panel now shows two different `stripe_product_id` values for one
+item — the founding rows point at the founding product — which is the intended readout, not drift.
+The `archived` column keeps its current values (founding `false`, list `true`) even though ADR-1060
+inverted which one is sold: nothing reads it to decide a charge, so flipping it under this change would
+be an unrelated semantic edit with no gate watching it. It is documented in [PRICING.md](PRICING.md)
+as historical wording instead. The catalog sync had **no test at all** before this — the
+one-product-four-prices shape was recorded only in comments and docs — so nothing had to be loosened
+to make the split pass; the coverage is new.
+
+---
+
+## ADR-1063: A probe measures the CAUSE of its own cost; the wall-clock ceiling lives in the suite that was already paying for it
+
+**Status:** Accepted · enforced by LIVE-034's probe (`docs/BUILD-BACKLOG.json`) and the
+`GUARD_BUDGET_MS` assertion in `scripts/backlog-contract.test.ts`
+**Context:** `pnpm check:backlog` reached **23.9s**, growing roughly **+2s per row closed**, because
+ten closed rows each proved their consequence by spawning a full `vitest` run. That was the honest
+instrument — the probe contract ([ADR-1043](#adr-1043)) demands the consequence, not the title — but
+it was also duplicated work: `pnpm test` had just run those same files in CI. It had already turned
+CI red once, blowing the default 30s timeout on `backlog-contract.test.ts`'s ripgrep-parity arm,
+which runs the whole guard twice by design.
+
+The first attempt to hold the line made it worse. LIVE-034's original probe measured the guard's cost
+**by running the guard**, so the child ran the same probe, which spawned another child, without end —
+**55 live processes** were counted on 2026-08-17, in chains orphaned to PID 1 that outlive the run
+that started them. That, not the vitest spawns, is why the parity arm still timed out after its limit
+was raised to 240s. Fencing it against re-entry fixed the recursion but left the deeper problem: to
+report a 6.2s cost it paid 12.5s of wall clock, on every invocation, forever, including in CI.
+
+**Decision:** Split the two measurements by what each is cheap to see.
+1. **The probe measures the cause, statically:** no row's `verify.cmd` may spawn a test runner
+   (`vitest` / `jest` / `playwright test` / `pnpm|npm|yarn test`). Milliseconds, and it cannot
+   re-enter. LIVE-034's own id is excluded — a row cannot police itself — and a floor of 15 `cmd`
+   probes makes an unreadable or reshaped file exit `79` (indeterminate) rather than report a clean
+   sweep of nothing ([ADR-1043](#adr-1043)'s "cannot look" ≠ "looked and found nothing").
+2. **The suite measures the consequence, for free:** the parity arm already runs the guard twice for
+   an unrelated reason, so it now times one of those runs against a 20s budget.
+3. **Nine probes were converted, not deleted.** Each measures the same consequence in-process —
+   importing the guard and calling its audit, or parsing the artifact it is a claim about — and each
+   was proved to fail by breaking the thing it watches and restoring it. Result: **23.1s → 6.2s**.
+
+**Consequences:** When a row's consequence is genuinely "a test passes", the probe asserts the pin
+**exists and is load-bearing** (the file sits beside its subject, imports it rather than describing
+it, carries real assertions) and lets `pnpm test` prove it green once, in the place that already runs
+it. Do **not** answer a budget failure by raising `GUARD_BUDGET_MS` — that is the allowance-as-hiding-place
+failure [ADR-970](#adr-970) names, and the same move that let this guard reach 24s while staying green.
+A probe that gets slow *without* naming a test runner still fails, as the budget assertion.
+
+---
+
+## ADR-1064: Vercel's build cache is node_modules plus `.next/cache`, and the half that grows now gets trimmed instead of costing the half that matters
+
+**Status:** Accepted · enforced by `pnpm check:cache-budget` (`scripts/check-cache-budget.mjs`, in `postbuild`)
+
+**Context:** Builds were ending on a line nobody read: `Build cache size 1.53 GB exceeds limit of
+1.50 GB. Invalidating cache. Next build will start with an empty cache.` (deployment
+`HFda7FHVybGxMCM6BKBhwxzcGAzy`, 2026-08-17 17:28). Nothing failed. The board was green and the cost —
+a cold install of all 804 packages **and** a cold compile, on a build that had a usable cache a
+second earlier — was visible only in the tail of a passing log. [ADR-1003](#adr-1003)'s shape exactly:
+a real regression with no gate looking at it.
+
+[`DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md) §9 had measured the sawtooth on 2026-08-12 and concluded
+**leave it alone** — worth ~13s, and cold builds are what re-expose the `next/font` Google flake.
+That verdict rested on an assumption that turns out to be wrong: that the build cache *is* the
+Turbopack cache. It is not.
+
+**What the cache actually contains**, from `@vercel/next`'s `prepareCache` (the builder's own source,
+30 lines): `node_modules/**`, `<distDir>/cache/**`, `.yarn/cache/**`. Nothing else. So:
+
+| Term | Measured | Behaviour |
+|---|---|---|
+| `node_modules` | **948 MB** restored, **1073 MB** fresh (Vercel's own "Folder sizes on disk") | Flat. Identical on every warm build in the sample. |
+| `.next/cache` | ~92 MiB after a clean build → **618 MiB** at the invalidation | The entire variance. |
+
+The arithmetic is unit-independent and that is what makes it proof: node_modules is reported as
+**948 MB on every warm build**, so **100%** of the 1.14 GB → 1.53 GB movement is `.next/cache`.
+Baseline, clean: 1.14 GB. Warm reuses, in order: 1.19, 1.21, 1.23, 1.24, 1.25 … 1.53 → discarded.
+
+That inverts §9's conclusion. The install is ~65% of Vercel's 1.50 GB ceiling and it is the **half
+worth keeping**: a warm install finishes in **1s**, a cold one downloads 804 packages in **~15s**.
+The compiler cache is the half that grows, and it is worth **~13s**. Today the cheap half
+periodically evicts the valuable one, and the build then pays for both.
+
+**Decision:** Measure the cache where the artifact is — in `postbuild`, on Vercel's real build,
+after `next build` has written it and before Vercel packs it — and split the response in two:
+
+1. **Fail-safe:** if the sum would exceed the ceiling, drop `.next/cache` subdirectories
+   biggest-first until it fits. Vercel then stores a cache it will *accept*. The next build takes a
+   cold compile instead of a cold compile **and** a cold install **and** a silent discard. Deleting
+   biggest-first rather than by the name `turbopack` is deliberate: which member of `.next/cache` is
+   growing cannot be seen from outside a Vercel build, and a trim keyed on one name would quietly
+   free nothing the day the answer changes — the silent-exclude failure rule 6 already caught once.
+2. **The gate that notices it fired** ([AGENTS.md](../AGENTS.md)): `node_modules` carries its own
+   budget of **1.25 GiB** and **fails the build**. The trim can absorb the compiler cache growing;
+   nothing can absorb the install growing, because that term decides whether a cache is possible at
+   all. Above it the trim would fire on every build and the cache would be a cache in name only.
+
+**Consequences:** Every build now prints what Vercel is about to store and what it is made of —
+the composition nobody could see before, which is why this could only be diagnosed by subtracting
+two numbers in a log tail. §9's font-flake objection is answered rather than overruled: the
+Turbopack cache stays **on**, so most builds keep their module reuse; only a build that would have
+been discarded whole loses it, and that build keeps its install. The floor budget is a **ratchet in
+spirit** — it may fall, and raising it needs a reason in the commit, because the cheapest way to
+make any budget green is to edit the budget ([ADR-1002](#adr-1002)). The largest single line under it
+is `@supabase/cli-linux-x64` at **155 MB**, a devDependency binary no build step touches; it stays
+because `test:rls` and `.github/workflows/db-tests.yml` run `supabase db start` through it, so
+cutting it is a workflow change and not a config line. ⚠️ There is **no Vercel setting that raises
+the 1.50 GB ceiling** — the only cache control the platform exposes is turning the cache off for a
+deployment — so this is built under, never negotiated with.
+
+
+⚠️ **NOT in `postbuild` yet (LIVE-035).** It ships as `pnpm check:cache-budget`. It has never run
+against a real completed production build — the 2026-08-17 attempt died collecting page data for
+`/discover/cities/[citySlug]`, which needs credentials the agent container does not hold. It also
+**mutates**: it deletes `.next/cache` subdirectories, which is a different risk class from a gate that
+only measures, and deserves one supervised run before it trims a production build unattended.
+---
+
+## ADR-1065: "Member-facing" is an AST seam plus an audience, not a grep, which is what let the canon guard leave `content/`
+
+**Status:** Accepted · enforced by `scripts/check-canon.mjs` (scan 3) + `scripts/check-canon.test.ts`
+(vitest auto-discovers it, so it cannot be forgotten in CI's guards array)
+**Supersedes:** the scoping note in `check-canon.mjs` that said `.tsx`/`.ts` "needs human judgement"
+
+**Context:** The canon guard read `content/**/*.md` only, on the reasoning that copy in code is
+"mixed with code/comments/tokens". Meanwhile **every** canon break the 2026-07-27 meta scan found
+was in `app/` or `lib/`: Dispatches called "broadcasts" in visible strings, an admin console
+labelled "Broadcasts" in the rail and "Dispatches" in its sub-header, lowercase `zaps`/`gems` on
+stat pills, two surfaces selling "cohorts" — the one word [ADR-252](#adr-252) bans. The guard was
+green over the only place the drift lived (LIVE-018).
+
+The reason it had not been widened is real. `app/` + `lib/` + `components/` hold **25,000+ string
+literals**, and almost none of them are copy: identifiers, comments, log lines, database columns,
+enum values, ADR citations, Tailwind classes, route paths, test fixtures. Worse, three of the words
+the canon retires are **explicitly kept** by `NAMING.md` in exactly those positions — `broadcast`
+survives as the schema, the `featureKeys` entry, and the design token `text-broadcast-*`. A grep
+for the retired words over `lib/` fires overwhelmingly on copy the canon *requires*. That guard
+gets routed around, and then it reads as coverage ([ADR-970](#adr-970)).
+
+**Decision:** A string is **member-facing** when three machine-checkable things hold, and the guard
+never looks at anything else:
+
+1. **SEAM** — it occupies a copy POSITION in the TypeScript AST: a JSX text node, or a string /
+   template literal that is the value of a JSX attribute or object property whose name is in
+   `COPY_KEYS` (`label`, `title`, `description`, `placeholder`, `blurb`, …). Comments, identifiers,
+   imports, `className`, routes, columns, enum values and log arguments are invisible **by
+   construction** — there is no list of things to remember to skip, because the parser never hands
+   them over. `*.test.ts` / `*.spec.ts` are not walked at all, so a guard's own test may pin a
+   violation on purpose.
+2. **PROSE** — the value reads as human text, not a machine token. Whitespace means prose; a lone
+   token is prose only if it is one plain word. This is the whole difference between the label
+   `'Broadcast'` (judged) and `'text-broadcast-strong'`, `'--color-broadcast'`, `'bg-broadcast'`,
+   `'zaps_total'` (not judged) — all of which sit in `label:` / `name:` keys in this repo today.
+3. **AUDIENCE** — the rule's audience covers the file, and **the split is the canon's own**.
+   `CONTENT-VOICE` bans the em dash in "brand/**member-facing** copy"; `NAMING.md` says "cohort is
+   **internal/research framing only**". Those two rules are `member`. `NAMING.md` §Dispatch says
+   "every visible label, help article, notification topic, **and admin heading** says Dispatch", and
+   `AGENTS.md` says the canons govern "everything a member, visitor, **or operator** can read" — so
+   proper-noun casing, the retired product noun, and the ADR-811 money model are `everyone`.
+
+An operator analytics console reading "weekly retention cohorts" is **correct copy**; a rule that
+failed it would be a rule banning the canon. That, not convenience, is why the audience axis exists.
+
+**Consequences:** The seam scan judges **17,190 member-facing strings across 3,398 files in ~5s**,
+and found **36 real violations** on its first run — 12 lowercase Zaps/Gems, 10 retired `broadcast`
+nouns (including the Studio entity label and the help-center feature label), 6 "cohorts" in
+marketing and Space-mode copy, 7 em dashes in Journey templates, persona states, a demo event title
+and the RSVP reminder **email**, and the retired **pay-it-forward** tier still sitting in the
+page-editor pricing block's defaults. All 36 are fixed; the guard is at zero.
+
+Two lists keep it honest, both printed on every run and both capped:
+
+- **`SURFACES`** classifies the operator consoles that `admin/` and `manage/` path segments miss.
+  It is a **classification, never a waiver** — a file on it is still judged by every `everyone`
+  rule, which is precisely how the two `broadcast` nouns in `lib/nav/studio.ts` (an operator
+  catalog) were caught.
+- **`EXCEPTIONS`** is the waiver list: two entries, each citing the `NAMING.md` line that licenses
+  it (both are the design-token swatch labelling itself). Capped at four. It must shrink.
+
+Floors follow the house pattern (`MIN_TARGETS` here, `MIN_RESOLVED` in `check-labels.mjs`): the scan
+fails if it reads fewer than 2,000 files or extracts fewer than 12,000 strings, because "I read
+nothing and found nothing" is not a clean bill of health.
+
+**What is still unscanned, honestly:** the seam sees copy that reaches a human through a *named*
+key. It does **not** see a bare string returned from a helper and rendered later
+(`return 'Broadcast sent'`), a `throw new Error('…')` surfaced in a toast, copy stored in the
+database (Loom blocks, saved page-editor content, seeded Journeys), copy under `content/` that is
+not `.md`, or the runtime output of any AI path — `lib/ai/voice.ts` governs that by prompt, not by
+gate. Widening further means adding a key to `COPY_KEYS` or a rendering seam, never a word to the
+rules.
+
+---
+
+## ADR-1066: The client bundle gets the artifact gate the deploy already had, and a fingerprint is what makes `dynamic()` checkable
+
+**Status:** Accepted · enforced by `pnpm check:shell-weight` (`scripts/check-shell-weight.mjs`, in
+`postbuild`) + `scripts/check-shell-weight.test.ts` (vitest auto-discovers it, so it cannot be
+forgotten in CI's guards array)
+
+**Context:** [ADR-1003](#adr-1003) drew the line this repo now lives by — *every gate measured the
+SOURCE, none measured the ARTIFACT* — and closed it for the **server**: `check:build-budget` weighs
+what the deploy writes to disk, `check:og-trace` weighs how far up the tree a rasteriser attached.
+The **client** half stayed open, and it had already cost something.
+
+dc47b89 (2026-08-12) found `app/(main)/layout.tsx` → `app-shell.tsx` → `AdminBar` →
+`settings-panel.tsx` → `module-map.tsx` → 42 admin modules with no code-split boundary anywhere on
+the path. Every member page shipped the entire OPERATOR console; `admin-bar.tsx` then returned null
+unless the viewer could open the rail, so members downloaded and parsed all of it to render nothing.
+Measured against the first-party vitals sink ([ADR-922](#adr-922)) and the production build: median
+`app/(main)` route **2.78 MB** eager JS against **1.30 MB** outside the shell, FCP p75 **4,623 ms**
+against **3,274 ms**, TTFB p75 **155 ms** — the server was never the problem. That commit fixed it in
+one file and ended: *"⚠️ THERE IS NO GUARD FOR THIS … the repo has NOTHING measuring client
+first-load JS, which is how 1.8 MB accumulated unnoticed."* [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json)
+carried the remainder as LIVE-009.
+
+Two things had to be settled before a gate was possible.
+
+**A source rule cannot answer the question.** `dynamic()` and a static import are one keyword apart in
+review and 1.6 MB apart in the build; nothing readable from source computes bytes a phone parses. So
+this reads `.next`, like its two siblings — specifically
+`entryJSFiles['[project]/app/(main)/layout']` in the real client-reference manifests, which **is** the
+set of chunks fetched before the shell hydrates, on every one of ~300 routes beneath it. It is the
+client-side twin of the fan-out rule: a byte here is a byte times every route.
+
+**A byte ceiling alone is too blunt to name a regression, and a grep for `dynamic` is
+shape-not-truth.** The gate therefore also asserts by **fingerprint**: a literal that exists in
+exactly one lazily-mounted module must not appear in the shell's eager chunks. This is not a new
+trick — it is precisely how dc47b89 *proved* the bug was real, by finding `"This nexus is archived"`,
+a string that exists only in `nexus-danger-module.tsx`, inside a chunk every member downloads. A
+fingerprint in those bytes is not evidence a module is *near* the shell; it is the module's compiled
+body, on every route.
+
+**Decision:**
+
+1. **Measure the shell's eager first-load JS in `postbuild`**, on the real build, with two arms: a
+   **budget** (1,400 KB, against **957 KB measured 2026-08-17 across 20 chunks**) for the general
+   class, and **named fingerprints** for the specific regression, so the failure says which module
+   came back rather than that a number moved. ⚠️ **The budget is the loose arm and that is
+   deliberate.** A paired A/B on one tree — only `settings-panel.tsx` differing — measured 1,023 KB
+   raw / 299 KB gzip across 22 chunks before, 957 KB / 280 KB across 20 after. **66 KB is well
+   inside any ceiling worth setting**, so a byte budget alone would have watched this change happen
+   in either direction and said nothing. Arm A catches "the shell doubled"; only Arm B catches "one
+   module came back", and it named all six on the counterfactual build.
+2. **Make the needles fail both ways.** A fingerprint missing from its source file, missing from every
+   built chunk, or a positive control absent from the shell's chunks, **fails the guard**. "Absent
+   from the shell" is worthless if the string was never findable — that is the vacuous pass this repo
+   has named in four ADRs, and a fingerprint guard is the easiest possible place to make it.
+3. **Give it a PR-time half**, following `scripts/build-fanout.test.ts`: the artifact arm can only run
+   on Vercel, and on this repo `main` is protected and **merging deploys**, so its first opportunity to
+   fire is *after* the merge. The vitest half asserts the source property (no static import of an admin
+   module from the two mount sites) and keeps the fingerprints honest, on the PR that breaks them.
+4. **Finish the split the backlog row asked for.** The five editor bodies `settings-panel.tsx` mounts
+   by hand — the `allExtraItems` frozen debt ([MENU-CONTRACT.md](MENU-CONTRACT.md)) plus the operator
+   "Page" group — and `SurfaceSummaryCard` move behind `next/dynamic`.
+
+**Consequences:** 35 modules and ~413 KB of source leave the shell's static client graph (176 files /
+2,288 KB → 141 / 1,874 KB, measured by walking runtime import edges from `app-shell.tsx` with
+`'use server'` files treated as the reference stubs they compile to). The largest single line was not
+an admin module at all: `surface-summary-card.tsx` imports `lib/pricing/feature-meters`, which pulled
+the **whole pricing catalog** — plans, tiers, keys, beta gates, 8 modules and ~160 KB — onto every
+member page to render an allowance nudge only an operator sees. It has its own fingerprint row now.
+
+⚠️ **This is HOW the rail loads, not WHAT is in it.** No catalog row, no menu resolution, and no rail
+render machinery changed; `allExtraItems` keeps its 6 frozen rows and `pnpm check:menu` passes
+unchanged. **Three static admin imports remain, on purpose**, listed with their measured cost in
+`SYNCHRONOUS_ADMIN_IMPORTS`: `module-map` (14.3 KB — every value in it is already `dynamic()`, but the
+rail needs the KEY SET synchronously to decide which sections exist), `surface-summaries` (6.0 KB —
+the card-vs-row branch itself) and `surface-link-row` (1.9 KB). That list is a **ratchet**: it may
+shrink, an entry nothing imports any more fails the build, and it does not grow.
+
+The remaining known gap is honest and named: this gate weighs the **shell layout entry**, not each
+route's own eager JS. A page that ships 2 MB of its own is invisible to it. That is the next row, not
+a silent exception.
+
+**LIVE-009's own probe is superseded by this**, and the row should be re-pointed: `grep-absent` for
+`^import { MODULE_COMPONENTS }` in `settings-panel.tsx` is satisfied by a cosmetic edit worth **14.3
+KB** and left unsatisfied by the 413 KB that actually moved — a probe that measures its own title
+rather than the consequence, which [ADR-1043](#adr-1043) forbids. The consequence is measured here.
+
+
+⚠️ **NOT in `postbuild` yet (LIVE-035), and that is the honest state.** Its own unit tests pass, but on
+the only artifact available it exited 1 naming `lib/pricing/feature-meters.ts` — and that artifact was
+built BEFORE `settings-panel.tsx` moved five editor bodies behind `dynamic()`, while
+`surface-summaries.ts` mentions `feature-meters` only in a comment. The failure is unconfirmed in both
+directions. This document opens with an outage caused by gates that measured the source while the
+artifact was broken; wiring an unproven gate into `postbuild` is that same failure reversed, and a red
+`postbuild` kills deploys just as dead. One green production build decides it.
+---
+
+## ADR-1067: Exactly one beta offer exists, it is Collective's, and it is unlisted
+
+**Status:** Accepted · owner decision 2026-08-17 · enforced by `lib/billing/pricing-catalog-sync.test.ts`
+("COLLECTIVE IS THE ONLY ITEM IN THE WHOLE CATALOG WITH A FOUNDING PRODUCT") and
+`lib/pricing/feature-tiers.test.ts`
+**Context:** [ADR-1062](#adr-1062) split the catalog into standard and founding Products so a beta rate
+could be sold privately without appearing on the pricing page. It derived the founding Products from the
+catalog, which still carried the 2026-07-24 ladder: Business at **$19 under its $29 list**, Collective at
+**$49 under its $79 list**. The sync would therefore have minted **two** founding Products.
+
+The owner's instruction is one: *"I only want a Beta offer for collective. It's a secret offer that's not
+listed that I can grant people. Everything else has the normal pricing."*
+
+This was caught before the first sync, which matters because **Stripe Prices are immutable**. An
+unwanted $19 Price minted once cannot be edited — only archived — and this repo's sync deliberately never
+archives a Price, because the founding ids must stay usable in a NEW subscription for the per-Space grant
+([ADR-1061](#adr-1061)) to charge against.
+
+**Decision:** `business_base` ships `foundingCents == listCents`. That is the existing idiom for "no beta
+rate" — Independent, Non Profit and Vera AI already use it — so `catalogItemHasFoundingRate` returns
+false, no second Product is minted, and the `business_base_*` founding KEY still resolves, to the standard
+Product at the standard amount. The frozen 20-key set is unchanged; only which Product a key hangs on and
+at what amount.
+
+**Consequences:** The catalog mints **6 Products / 20 Prices**, one of which is
+`Frequency Collective (Founding rate)` at $49/mo · $490/yr. Every public surface quotes Business at a
+plain $29 with **no strike** — `list_cents` is dropped entirely rather than set equal to the charge, so a
+card cannot render "$29" crossed out over "$29". Fifteen assertions across eight files encoded the old
+$19, and each was updated to state the new invariant rather than deleted.
+
+**This does not touch anyone already locked at $19.** A lock is a RECORD on the subscription, read back by
+`space-subscriptions-reconcile.ts` and `founding-payment.ts`, never a lookup into the catalog — which is
+why those tests keep their `1900` fixtures.
+
+⚠️ **One live artifact still promises the retired rate.** `lib/beta/launch-emails.ts` seeds a "Founding
+Business offer" campaign into Email Studio, offering local businesses *"the lowest rate we will ever set,
+kept for good"* with a September 1 deadline. There is no longer a Business founding price behind it. It is
+a seeded draft, not a send, so nothing is mis-sold today — but it must be retired or repointed at
+Collective before it goes out. Tracked as OWN-025.
+
+⚠️ **And the catalog is not the only place a Business rate lives.** `FOUNDING_DEFAULT.business_monthly_cents` (`lib/pricing/founding.ts`) is still **1900**, and the beta founder push ([ADR-875](#adr-875)) stamps it as `locked_rate_cents` — a LIFETIME term — when the caller passes no amount (`lib/founding/status.ts:281`, `:353`). It cannot fire without an explicit grace `until` date in `pricing_settings`, which is production state this decision could not read, so it was flagged rather than changed: retiring the Founding Business *program* is a different question from declining to advertise a beta *price*, and it is the owner's. Tracked as OWN-026.
+
+## ADR-1068: A retired marketing body is deleted, not left as a fallback, and the template becomes the gated last rung
+
+**Status:** Accepted · enforced by `scripts/check-render-path.test.ts` (every `<slug> 0` row in
+`scripts/render-path-bodies.txt` — `about`, then `spaces`, as the order works through) +
+`lib/page-editor/templates/templates.test.ts` (now derived from `EDITABLE_PAGES` rather than
+hand-typed) + `lib/page-editor/templates/article.test.ts`
+
+**Context:** [ADR-967](#adr-967) built `check:render-path` to hold the line while the marketing
+routes carried two truths at once: a Puck document an operator edits, and a bespoke coded body only a
+developer can change. It counts, it does not retire. [UX-MATURITY-PLAN](UX-MATURITY-PLAN.md) Lift 5c
+is the retirement itself, one slug per PR, in the committed order
+`circles → about → spaces → the-lab → the-quest → the-community → pricing`.
+
+Reading the first one closely turned up something the scoreboard could not say. Every gated route
+resolves `published → template → legacy`, and the middle rung is a **static import** that is always
+well-formed. So on `about`, `spaces`, `the-lab`, `the-quest` and `the-community` the third rung was
+**already unreachable**: `data` could not be null, and the `data ? <BlockRender/> : <Legacy…/>`
+branch could not be taken. Those five route files total **2,126 lines**, most of it a coded page no
+visitor had been served since the templates landed. The ledger counted them as duality; they were
+closer to dead weight in the per-function output [`check:build-budget`](DEPLOY-SAFETY.md) weighs.
+
+That reframes the retirement. It is not a risky swap needing visual proof per slug — for those five
+it is a deletion of unreachable code, and the *pixels cannot move*, which is a stronger claim than a
+snapshot comparison can make. `pricing` is genuinely different and keeps its own sequencing: its
+fallback is the coded page and NOT `getTemplate('pricing')`, and it carries live take-rate bindings.
+`home` is unreachable too (`app/page.tsx:221` already says so in a comment), but its 939 lines carry
+the live-proof band and its own header/footer chrome, so it stays last in the order on size, not on
+doubt.
+
+**Decision.**
+
+1. **Delete the body; never demote it to a fallback.** `about` retires to metadata + server data +
+   `<BlockRender>` (75 lines, from 327). `git log -p` is the only remaining copy. A "kept just in
+   case" branch is exactly the second truth the lift exists to remove, and an unreachable one is
+   worse than a reachable one because nothing renders it and nothing gates it.
+
+2. **The template is now the LAST rung, so it gets a gate.** With the coded body gone, a template
+   that stopped resolving would serve a **blank page**, silently — the failure mode AGENTS.md names
+   ("every fail-safe needs a gate that notices it fired"). `templates.test.ts` used to assert
+   renderability over a **hand-typed** list of eight slugs; it now reads the slug list from
+   `EDITABLE_PAGES` through the same `gatedSlugs()` parser `check:render-path` uses, with the same
+   non-triviality floor. A slug joining the editor is now covered by construction, and a retired
+   slug's failure message says *why* there is nothing behind it.
+
+3. **The ledger row goes to `0` in the same PR, and `0` means template-only.** The exact-match
+   ratchet already refuses a silent fall; the row now also carries the note that the body was
+   **deleted rather than moved**, which is the one thing a component count provably cannot tell.
+
+4. **Lift 5d's eight seeker articles get ONE generator, not eight template files**
+   (`lib/page-editor/templates/article.ts`). The six marketing primaries are six different pages;
+   the eight articles are eight instances of one page, the article grammar in
+   [CONTENT-VOICE](CONTENT-VOICE.md) §10.9. Making that grammar the **shape of the spec** — `answer`
+   and `faq` are required fields — is what stops the answer-first opening from quietly going missing
+   on article six. Its schema story is the reason the lift was blocked and is now not: `FAQPage` from
+   the `Accordion` block, `HowTo` from `DawnHowToSteps`, `Article` from `<BlockDocJsonLd>` at the
+   route, `BreadcrumbList` from the route. All four survive the conversion, and each has its own
+   assertion built from the **real** schema builder rather than from the block's presence
+   (`howToStepsSchema` is fail-closed, so "the block is there" is not evidence).
+
+**Consequences.** `about` is the second slug on a single render path; its words are editable and no
+longer exist in code. The remaining Lift 5c order is unchanged, and the four other unreachable-legacy
+slugs (`spaces`, `the-lab`, `the-quest`, `the-community`) are now known to be deletions rather than
+swaps — file them as their own rows, still one per PR, because the *ledger* edit is what makes each
+one reviewable. ⚠️ `articleTemplate()` has **no live consumer** until the first article is enrolled;
+that is deliberate under the one-slug-per-PR rule, and `article.test.ts` runs it through the current
+block config so it breaks loudly on a block rename rather than on enrollment day. ⚠️ Both lifts still
+land **before** editor phase E3 ([ADR-974](#adr-974)), which replaces `EDITABLE_PAGES` with per-Space
+resolution: run them in the other order and each undoes the other.
+
+---
+
+## ADR-1069: The accessible-name gate measures the CONTROL, and the honest count was 17, not 143
+
+**Status:** Accepted · enforced by `pnpm check:a11y-names` (`scripts/check-a11y-names.mjs`, in the
+`guards=( )` array of `.github/workflows/ci.yml`) + `scripts/check-a11y-names.test.ts`
+
+**Context:** [ADR-966](#adr-966) and [ADR-1057](#adr-1057) built `check:labels`, which asks "is this
+`<label>` associated with a control". That gate has held at zero for a week, and its own header says
+why zero is not the answer anyone wanted: a control named by a bare `<span>` sibling has no `<label>`
+to find, so it is invisible there. The honest question is the other one, "does this CONTROL have an
+accessible name", and nothing asked it.
+
+LIVE-033 was filed to ask it, carrying a first measurement: **143 candidates across 67 files**. That
+number came from a brace-aware TEXT scan which could not resolve the label-WRAPPING components
+(`Field`, `StudioField`, `Labeled`) and could not read an element's CONTENTS. The row said so in its
+own detail, and said the share of false positives was unknown.
+
+It was 88%. Re-measured with a real JSX parse and all eight naming paths the accessible-name
+computation actually has — visible text, `aria-label`, `aria-labelledby`, `title`, an `<svg><title>`,
+a wrapping `<label>` (including wrapper COMPONENTS, resolved by import to a fixpoint), an `htmlFor`
+that reaches the control, and the `placeholder`/`alt`/`value` fallbacks — **3,605 controls were
+judged and 17 had no name, across 14 files**. 126 of the 143 were correct code, most of them the
+283 controls that `<Field label="…">` names by wrapping them. None of the four files the row named
+as examples (`circle-builder`, `practice-builder`, `block-edit-panel`, `search-overlay`) contained a
+single real one.
+
+This is the ADR-970 failure caught before it shipped rather than after. A gate at 143 would have
+fired on `<Field label="Board name"><Input /></Field>` on its first run, earned an allowlist that
+week, and then read as coverage.
+
+**Decision.**
+
+1. **`check:a11y-names` judges controls, not labels**, over `app/` + `components/`: the intrinsics
+   `<button> <a href> <input> <textarea> <select>`, the kit primitives that render one and name none
+   of it themselves (`Input`, `Textarea`, `Select`, `Checkbox`, `Switch`, `Button` — resolved BY
+   IMPORT, so a local component sharing a kit name is not judged), and anything carrying a literal
+   interactive `role=`. `IconButton`/`IconLink` are deliberately absent: their `label: string` prop
+   is required, so the type checker is already their gate.
+2. **All 17 were FIXED in the same change, so the gate ships at zero with no allowlist and no
+   ratchet file.** There is nothing here to waive and nothing to quietly grow. 13 were icon-only
+   buttons wrapping a bare lucide icon, 2 were `sr-only` file inputs, and 4 were slug fields whose
+   visible caption was a `<span>`, not a `<label>` — precisely the class `check:labels` documents
+   itself as unable to see.
+3. **`placeholder` counts as a name, and the run prints how many rely on it.** That is what
+   axe-core 4.13's own `label` rule accepts (`non-empty-placeholder` is in its `any:` list), and the
+   e2e axe pass already runs in this repo: a static gate that disagreed with it on **428** controls
+   would be the stricter-than-the-runtime kind that gets routed around. A placeholder is a weak name
+   — it vanishes the moment you type — so the number is published on every green run rather than
+   hidden inside it. Tightening it is a product decision, not a parser change.
+4. **Unknowable is not a violation**, the same call `check:labels` makes for a computed `htmlFor`. A
+   `{...spread}`, a `{label}` expression, or an unknown component child all pass; 686 controls pass
+   on that alone. The one component class resolved well enough to judge is a lucide-react icon,
+   which renders `<svg>` with no `<title>` — and that is the whole icon-only-button defect.
+5. **Three floors, because every step of this scan can stop finding things.** `MIN_FILES` 500,
+   `MIN_JUDGED` 2,500 (3,605 live) and `MIN_WRAPPERS` 4 (6 live, naming 283 controls). The third is
+   the one that matters: if wrapper discovery broke, every `<Field>`-wrapped control would read as a
+   violation, which is the 143 failure returning by the back door.
+
+**Consequences.** ✅ The half of the a11y contract nothing measured is now gated, at zero, in CI
+beside `check:labels`. ✅ `scripts/check-a11y-names.test.ts` drives every arm from fixtures in both
+directions, and the false-positive half is the longer one on purpose — it is what decides whether
+the gate survives. ⚠️ Green here is not "the app is accessible": this gate cannot judge whether a
+name is any GOOD ("Close" and "Click here" both pass — `docs/CONTENT-VOICE.md` owns that), and it
+cannot see a name assembled at runtime. The axe pass in `test/e2e` remains the gate on the rendered
+tree, where the name is finally real. ⚠️ 428 controls are named only by a placeholder; that is a
+real, published, un-fixed number, not a clean bill of health.
+
+## ADR-1070: An authorization verdict is earned PER PATH, or it is a human reading pinned to a digest
+
+**Status:** Accepted · enforced by `pnpm check:authz` (`scripts/check-authz-guards.mjs`, in the
+`guards=( )` array of `.github/workflows/ci.yml`) + `scripts/check-authz-guards.test.ts`
+
+**Context:** [ADR-246](#adr-246)/[ADR-275](#adr-275) built the authz-contract gate; LIVE-022 gave it
+a ROUTE scan after discovering that all 72 Route Handlers had been read and then dismissed on line
+one of a classifier that required `'use server'`. That scan asked one question — `ROUTE_GATE.test(src)`
+— and LIVE-031 was filed the same day to say so in the gate's own header: it sees that a gate is
+CALLED somewhere in a file, never that it runs on every path through every exported method.
+
+Measured against the real corpus, that gap was not hypothetical. Of the 52 routes green BY GATE, two
+earned it from a token that gates nothing: `app/api/check-handle` calls `auth.getUser()` inside
+`if (excludeUserId)` (a same-caller refinement on one branch of a public availability probe), and
+`app/auth/callback` calls it three branches deep inside a swallowed analytics block, while its real
+credential check is `exchangeCodeForSession`. A third, `app/q/[slug]`, reads through the service-role
+client before `getMyProfileId()` — which is not its gate either, but "who scanned". Delete the
+incidental line in any of the three and the route would have gone from green to failing without one
+byte of its authorization changing. A verdict that can be created and destroyed by an unrelated edit
+was never measuring authorization.
+
+**Decision.** A route earns `gated` only when EVERY exported HTTP method passes three structural
+rules, each of which follows the handler body (through a wrapper's local `handler`, as 27 cron routes
+use, and into file-local helpers, as `app/u/scan` uses):
+
+1. **R1 · per-export** — each exported method must reach a gate itself. GET gated and POST not is a
+   failure, which is the case LIVE-031 named first.
+2. **R2 · dominance** — the gate must not sit inside an `if`/`else`/`switch`/`catch` branch. A gate on
+   one branch does not run on the others.
+3. **R3 · precedence** — no RLS-BYPASSING query (a `createAdminClient()` followed by `.from(`/`.rpc(`)
+   above the gate.
+
+**R3 is deliberately NOT "any return before the gate", and that narrowing is the load-bearing part
+of this decision.** Ten of the 52 gated handlers return early — a 400 on a malformed body, the rate
+limiter's 429, an empty list for a blank query — and all ten are validation. The blanket rule would
+have been 100% false positives on its first run: the [ADR-970](#adr-970) shape, where a gate nobody
+can keep green earns an allowlist that week and then reads as coverage. What is dangerous is not
+returning early. It is ANSWERING FROM THE SERVICE-ROLE CLIENT before you know who is asking.
+
+Where a rule fires on a route that is genuinely fine, the fix is NOT to widen the rule. It is an
+entry in `scripts/authz-route-ledger.json`: a verdict, a sentence of reasoning, a `checked` date and
+the normalised-body digest. That is strictly stronger than the false green it replaces, because the
+digest forces a re-read on the next edit while an incidental gate token was pinned to nothing. The
+three routes above were re-read and ledgered on 2026-08-17 (`public`, `token-credential`,
+`self-scoped`); the counts moved from 52 gated / 20 asserted to 49 / 23, and the standing test that
+the ledger must never outgrow the gated set still holds with room.
+
+The same principle runs the other way for LIVE-030: the three routes that are `public` BY ASSERTION
+while touching the admin client (`/api/vitals`, the member vCard, `/llms.txt`) now each carry a
+`route.test.ts` beside them pinning what they must never return — a `profile_id` on a vitals row, a
+column the vCard's `.select(...)` never projected, a member row inside `/llms.txt`'s aggregate counts.
+Assertion where nothing else is possible; verification at the sharp end.
+
+**Consequences.** ✅ The three shapes LIVE-031 named now fail, proved by fixtures that assert the OLD
+predicate passed them first — without that assertion, "the new rule fails this" would prove nothing.
+✅ Six control fixtures (validation-then-gate, the cron wrapper, the shared gate helper, try/catch,
+destructured route params) prove the rules did not go the other way. ⚠️ This is still not a prover,
+and the gate's header lists what it cannot see: whether the gate's RESULT is honoured
+(`const denied = rejectUnauthorizedCron(req)` with no `if (denied) return denied` reads as gated), a
+gate inside a callback, and anything about the gate's own correctness. ⚠️ An export whose body is not
+in the file — a gate reached only through an IMPORTED wrapper — fails CLOSED. "I could not read it"
+is not "it is fine", the same call `loadLedger` makes on a missing ledger.
+
+## ADR-1071: The rail ladder's persistence had no gate, and the cookie is a CLIENT fallback, not only a server one
+
+**Status:** Accepted · enforced by `lib/layout/rail-fold-persistence.test.ts` (vitest, jsdom, in
+`pnpm test`) beside the existing `lib/layout/rail-fold.test.ts`
+
+**Context.** ADR-925's rail ladder (`lib/layout/rail-fold.ts`, LIVE-026) is a three-position standing
+instruction — Auto / Open / Strip — for each rail, persisted to `localStorage` with a cookie mirror so
+the SERVER can paint the fold on the first frame. All three parts are built and two of them are
+gated: `resolveRailFold` / `nextRailFold` fail five assertions if the ladder is flattened to a binary,
+and the desktop left-rail fold fails `rail-fold.test.ts:225` if `compact={leftStrip}` is dropped.
+
+**The persisted half was gated by nothing, and that was measurable.** `rail-fold.test.ts` runs in the
+default `node` environment, where there is no `window` and no `document` — so `writeStoredRailFolds`
+returns on its first line and `readStoredRailFolds` returns Auto, in every one of its cases. Measured
+2026-08-17: replacing the entire body of `writeStoredRailFolds` with `return` left **all 38 of that
+file's tests passing**. Deleting `railFold={railFold}` from the shell mount in `app/(main)/layout.tsx`
+— the whole no-flash path — left **288 tests across `lib/layout`, `components/layout`,
+`check:shell-weight` and the theme-root suites passing**, and `tsc` green, because this repo does not
+set `noUnusedLocals`. A member could have lost their standing instruction on every reload and the
+suite would have stayed green.
+
+**And the fail-safe undid itself.** `writeStoredRailFolds` is deliberately built to survive blocked
+localStorage (private mode, strict privacy settings): the `setItem` throw is swallowed and the cookie
+still lands. `readStoredRailFolds` then read localStorage and nothing else. So in exactly that case
+the server would paint the folded strip from the cookie, hydration would render it — and the first
+client snapshot would read blocked storage, answer Auto, and shove the rail back open one frame after
+paint. The member watches the instruction be honoured and then revoked. This is the swallowed-error
+shape AGENTS.md names: a fail-safe fired, and the next line of code cancelled it.
+
+**Decision.**
+
+1. **`readStoredRailFolds` falls back to the cookie when localStorage has nothing to say** — no
+   value, or a throwing accessor. localStorage stays the source of truth whenever it answers; the
+   cookie answers only when it does not, and it is the same value the server just painted from, so
+   the two snapshots `useSyncExternalStore` compares can no longer disagree.
+2. **The persistence is asserted in jsdom, in its own file.** The environment pragma is per file, and
+   moving `rail-fold.test.ts` wholesale to jsdom would silently change what `railFoldsSnapshot()`
+   reads in each of its existing cases. Every assertion is written as the consequence a member would
+   notice — choosing Strip and reloading still shows Strip; the FIRST frame of that reload is folded
+   too; a browser that refuses localStorage still keeps the instruction — never as the shape of a
+   function.
+3. **The server's half is drift-guarded from the same file.** `app/(main)/layout.tsx` must read the
+   cookie AND pass `railFold` to the shell. A prop that exists is shape; a prop that is *handed over*
+   is the consequence, and it was the half one line could silently take.
+
+**Consequences.** ✅ Gutting the write fails 6 of the 13 new assertions; removing the cookie fallback
+fails 1; deleting `railFold={railFold}` fails 1 — each proved by breaking and restoring. ✅ LIVE-026's
+`verify` can stop being `manual`: the storage key is `freq-rail-fold` for both stores, and a `cmd`
+probe can now execute the whole round trip under `node --experimental-strip-types` (the module has no
+runtime dependencies), which keeps it clear of LIVE-034's rule that no probe may spawn a test runner.
+⚠️ This does not gate the RENDERED fold — that a folded rail actually paints a 56px strip is a visual
+question, and the member-shell surfaces' committed PNGs are where it lives. ⚠️ The narrow-window yield
+is still CSS (`hidden md:flex` / `hidden lg:flex`) and still untested here, deliberately: measuring a
+viewport is only possible on the client, and folding on a value the server cannot know is how the
+flash gets shipped in the first place.
+
+---
+
+## ADR-1072: The eyebrow's DEFINITION was locked and its ADOPTION was unmeasured, so the role is guarded where the code names it and ratcheted everywhere else
+
+**Status:** Accepted · enforced by `lib/theme/eyebrow-role.test.ts` (two new assertions in `pnpm test`,
+blocking) and the `handrolled-eyebrow` class in `scripts/adoption-baselines.json`
+(`pnpm check:adoption`, advisory by ADR-928's own reasoning)
+
+**Context.** ADR-925 §Lift 8 and the 2026-08-05 DAWN-parity addendum both score the eyebrow at 🔴, and
+`app/globals.css` has locked the role since 2026-08-05: 0.75rem / 0.18em / bold / uppercase, behind an
+`@utility eyebrow` and a `--tracking-eyebrow` token, with `lib/theme/eyebrow-role.test.ts` asserting
+seven things about that declaration. All seven were green on 2026-08-17 while the product rendered the
+eyebrow ten different ways, because **every one of them reads the stylesheet and none of them reads a
+call site.** A definition nobody calls is not a role. This is the repo's own named failure mode one
+level up: the gate measured the SHAPE of the role rather than whether anything used it.
+
+**The population is not one thing, and that is why R7 was mis-sized.** LIVE-025 records the sweep as
+"largely mechanical" over ~698 sites. Measured 2026-08-17 with the ratchet harness: **615** sites carry
+`uppercase` beside a literal tracking value (`tracking-wide` 436 · `widest` 59 · `wider` 60 · 20
+arbitrary em values), against 87 call sites on the `eyebrow` utility and 69 on `tracking-eyebrow`. But
+the dominant class string is `text-2xs font-semibold uppercase tracking-wide text-muted` — 11px, and a
+large share of the population is **pill badges** (`rounded-pill px-2 py-0.5 …`) and dense table
+headers. Converting those to the role means 11px → 12px, semibold → bold, and 0.025em → 0.18em, a
+**7.2×** tracking change that widens the label inside a `px-2.5` pill it was sized to fit. A blanket
+codemod is not a consistency fix, it is an un-reviewed visual change to several hundred surfaces, and
+it needs a design ruling plus a full `pr-compare` recapture. There is also a second implementation
+nobody has reconciled: `components/page-editor/blocks/kit.tsx` exports an `<Eyebrow>` component with
+~26 adopters that renders `text-body-sm` (0.875rem) — DAWN's declared eyebrow size, and precisely the
+half of the DAWN split this repo resolved DOWN. Which register wins is the owner's call, not a sweep's.
+
+**Decision.** Split the problem at the line a machine can settle.
+
+1. **Where the code itself says "eyebrow", the eyebrow role.** A slot whose value the author named
+   `eyebrow` is the one population with no judgment in it. There were fifteen; **seven hand-rolled the
+   role** across five different letter-spacings, all in the shared kit: `EditorShell`, `Toast`,
+   `StudioWindow`, `SparkShell`, `EntityHeader`, `JourneyBuilder`, `HostCohostSection`. All seven now
+   compose the `eyebrow` utility, and `eyebrow-role.test.ts` fails, by name and by class list, on any
+   `eyebrow` slot that sets `uppercase` without resolving through the role tokens.
+2. **Two resolutions count, not one.** The composite `eyebrow` utility, or `tracking-eyebrow` beside
+   `uppercase`. The second is admitted deliberately: the marketing register sets the same role at
+   `--text-body-sm` over a photograph and reads the tracking token to do it, so demanding the
+   composite class there would be a size change wearing a consistency fix's clothes.
+3. **Everything else is a ratchet, seeded AFTER the sweep.** `handrolled-eyebrow` is frozen at **608**,
+   not the 615 found, so reverting any of the seven raises it and the class reports 🔴. `tracking-tight`
+   and `tracking-normal` are excluded from the pattern: on `font-display uppercase` those are display
+   headings, and a class that fires on the wrong subject is how a gate gets muted (ADR-970).
+
+**Consequences.** ✅ Reverting one converted slot was proved to fail both gates — `eyebrow-role.test.ts`
+names `components/ui/toast.tsx` and its class list, and `check:adoption` exits 1 with 608 → 609. ✅ The
+scan asserts it finds ≥10 slots, so a rename cannot turn the gate into a green over nothing (ADR-962).
+⚠️ **This moves pixels** on the seven surfaces: toast eyebrows go 10px → 12px, the studio and Spark
+chrome go 0.1em → 0.18em, and `EntityHeader` renders inside `/admin` space consoles, one of the twelve
+committed `pr-compare` baselines. ⚠️ The 608 are **not** claimed to be eyebrows; the class is named for
+the split, not for the role, and reaching 0 is not the goal. ⚠️ The `<Eyebrow>` component's 0.875rem
+and the utility's 0.75rem still disagree, and closing that is a design decision with a marketing
+recapture behind it — it is not a bug to fix in passing.
+
+---
+
+## ADR-1073: The four tokens where production is ahead of DAWN are a derived ledger, because the prose list had already gone stale in the direction that un-fixes things
+
+**Status:** Accepted · enforced by `lib/theme/dawn-divergence.test.ts` (`pnpm test`) against
+`design_handoff/PROD-AHEAD.md`
+
+**Context.** `design_handoff/SYNC.md` § "Going the other way" makes sync two-directional: when the repo
+changes something DAWN documents, it goes back on the next round, or the next inbound handoff —
+applied faithfully, as SYNC.md instructs — overwrites it. Four colour tokens have been waiting since
+2026-08-05 (LIVE-027), and three of them are AA fixes: `--color-focus-ring` (1.75:1 → 3.87:1, PR
+#2036), `--color-text-on-broadcast`, `--color-text-subtle`.
+
+**The fourth row is already false, and it is false in the dangerous direction.** The plan doc lists
+`--color-text-on-primary` as DAWN `#FFFFFF` / production `#1A1206`, "white on amber fails AA; ink
+passes". Production has been `#FFFFFF` since 2026-08-06 and the two files now agree. What happened was
+a SPLIT, not a revert: the moment on-primary became ink, every rank core inherited an ink glyph and
+gold — the lightest core in the spectrum by design — fell to **2.46:1**, so the glyph moved to its own
+`--color-text-on-rank`. Sending the old row would ask DAWN to make on-primary ink again, reintroducing
+from the sheet whose entire purpose is preventing regressions the exact failure the split fixed. It sat
+wrong for eleven days in the document that was supposed to carry it, which is the ordinary behaviour of
+a hand-maintained difference list, not an unlucky one.
+
+**Decision.** Do not write the list; derive it and compare. `lib/theme/dawn-divergence.test.ts` parses
+the `:root` and `.dark` palettes out of `app/globals.css` and `design_handoff/dawn/tokens/colors.css`
+and asserts the divergence set equals a ledger written out in full, hexes visible in the diff. It fails
+three ways, which are the three ways an outbound sheet lies: an **undeclared** divergence (it would go
+back as "no change"), a **stale** row where the two have since converged (the `--color-text-on-primary`
+defect), and a **value drift** on either side. A fourth assertion requires every declared token to be
+named in `design_handoff/PROD-AHEAD.md` with its live hex — the standing sheet the next outbound
+handoff copies — so "it goes back on the next round" is a fact the build checks rather than an
+intention someone holds.
+
+Selector matching is anchored to the start of a line. This is not a style point: `globals.css` opens
+with `@custom-variant dark (&:where(.dark, .dark *))`, and the first version of the parser matched
+that, brace-walked through half the stylesheet, and reported **49** dark-mode divergences, all fiction.
+
+**Consequences.** ✅ The real set is **8 value divergences** (6 light, 2 dark) plus **12 tokens DAWN has
+no row for**, including `--color-text-on-rank` and the three `on-media` aliases, all now on one sheet.
+✅ Both failure directions proved by breaking and restoring: dropping `--color-text-on-rank` from the
+sheet fails the naming assertion; giving DAWN production's focus ring fails the ledger as a stale row.
+✅ `docs/UX-MATURITY-PLAN.md` §4 finding 3 is corrected in the same pass, per AGENTS.md's rule that the
+code wins and the doc gets fixed with it. ⚠️ Scope is `tokens/colors.css` only — type, spacing, effects
+and the Midnight skin are not yet derived, so a divergence there is still prose-managed. ⚠️ LIVE-027
+does not close on this: the ledger is now un-losable, but the row closes when an outbound handoff
+actually carries it.
+
+## ADR-1074: The shell asks the admin registry a membership question, so it imports the ids and not the bodies — and two "server-only" comments become directives
+
+**Status:** Accepted · enforced by `scripts/check-shell-weight.test.ts` (source arm, `pnpm test`),
+`scripts/check-shell-weight.mjs` (artifact arm) and `components/admin/modules/module-map.test.ts`
+
+**Context.** dc47b89 put the 42 catalog admin modules behind `next/dynamic`, and ADR-1066 did the
+same for the five bodies `settings-panel.tsx` mounts by hand, then built the guard that measures the
+result. One door stayed open, and ADR-1066's own allowlist named it: `settings-panel.tsx` still
+imported `MODULE_COMPONENTS` — the whole registry — because `nodeForApp` needs one fact
+**synchronously**. An id with no inline body draws nothing, that decision feeds the section count,
+the section count feeds `hasContent`, and `hasContent` decides whether the rail renders at all. A
+body that arrives late is fine; a *membership test* that arrives late paints empty section headers on
+the way to finding out.
+
+The registry was never needed to answer it. `settings-panel.tsx` sits on the shell's static path
+(`app/(main)/layout.tsx` → `app-shell.tsx` → `AdminBar` → here) with no code-split boundary, so every
+member on every route under `app/(main)` was parsing `module-map.tsx` — 14.3 KB of registry, 42
+`next/dynamic` loader stubs, and the chunk-manifest entries naming their 42 chunks — to compute
+`id in map`.
+
+**The second half was worse, and it was invisible because it was written down.** LIVE-009 also asked
+for `import 'server-only'` on `lib/journey-plans.ts` and `lib/practices.ts`. Both files already
+*said* "Server-only" in their header comment. Neither was:
+
+| Client entry point | imports | which reaches |
+| --- | --- | --- |
+| `components/journey/v2/journey-settings.tsx` (`'use client'`) | `normalizeJourneyMeeting` from `lib/journey-plans` | `createAdminClient`, `@supabase/supabase-js`, `lib/practices`, `lib/zaps`, `lib/achievements`, `lib/automations`, `lib/queue/outbox`, a crypto-browserify polyfill graph |
+| `components/circles/builder/circle-builder.tsx` (`'use client'`) | `PILLAR_SLUGS` from `lib/pillars` → `getMemberPractices` from `lib/practices` | the same graph |
+
+A pure coercion function, and an array of four strings — each parked in a file whose other exports
+open the service-role client. This is exactly the failure `lib/analytics/sanitize.ts` documents in
+its header ("a bundler follows modules, not intentions"), the version that cost ~627 KB raw on 390 of
+481 routes, recurring in two more places. It is also why the directive could not simply be added: the
+build would have failed, correctly.
+
+**Decision.**
+
+1. **Split the membership test from the registry.** `components/admin/modules/module-ids.ts` is the
+   key set and nothing else: 38 strings in a `Set`, **zero imports**, 3.7 KB.
+   `components/admin/modules/module-body.tsx` is the one component on the shell's path that reads
+   `MODULE_COMPONENTS`, and `settings-panel.tsx` mounts it with `dynamic()`. `nodeForApp` becomes
+   `INLINE_MODULE_IDS.has(id) ? <AdminModuleBody id={id}/> : null` — the same branch on the same
+   condition, with the bodies on the other side of a chunk. (The `/manage` console keeps its direct
+   import: it is reached from its own route, not from a layout that wraps ~300 pages.)
+2. **Shrink the ratchet rather than lengthen it.** `SYNCHRONOUS_ADMIN_IMPORTS` still holds three
+   entries, but the largest now points at `module-ids` instead of `module-map`: an allowed
+   synchronous import that references no component at all.
+3. **Extract the pure halves, then make the comment a build failure.** `lib/journeys/meeting.ts` (the
+   touchpoint shape + `normalizeJourneyMeeting`) and `lib/pillars/slugs.ts` (`PillarSlug` +
+   `PILLAR_SLUGS`) are dependency-free; their old homes re-export them, so every server caller and
+   every `import type` is untouched. `lib/journey-plans.ts` and `lib/practices.ts` then take
+   `import 'server-only'`, which is what turns "we intend this to stay on the server" into something
+   the build checks.
+
+**This changes HOW the rail loads a body, never WHAT is in the menu** (ADR-553,
+[MENU-CONTRACT.md](MENU-CONTRACT.md)). No catalog row moved, no per-scope menu was declared, the
+`allExtraItems` frozen-debt count is unchanged at 6, and `pnpm check:menu` reports the same 21 frozen
+rows across 3 files.
+
+**Consequences.**
+
+✅ **Measured, paired A/B on one tree** (only `settings-panel.tsx` differs between the two builds),
+2026-08-18, over `entryJSFiles['[project]/app/(main)/layout']` — the shell's eager first-load JS:
+
+| | raw | gzip | chunks |
+| --- | --- | --- | --- |
+| static `MODULE_COMPONENTS` import | 955.8 KB | 279.4 KB | 20 |
+| after | **946.5 KB** | **277.4 KB** | 20 |
+
+✅ The static client graph reachable from `app-shell.tsx` loses `module-map.tsx` exactly: 408 → 407
+files, 5,046.3 KB → 5,032.3 KB of source.
+
+🔴 **The number in the LIVE-009 row — 406 KB raw / 121 KB gzip reaching crypto-browserify on every
+authed page — was already spent by dc47b89 and is not what this pass recovered.** The honest figure
+for the registry import alone is the 9.3 KB above. The row was written before the 42 modules moved
+and never re-measured; the crypto-browserify half of it is real, but it lives in the two `server-only`
+files, not in `module-map.tsx`.
+
+✅ **Both regression directions proved by breaking them.** Re-adding the static import fails
+`scripts/check-shell-weight.test.ts` twice, by name: on "`settings-panel.tsx` has no static import of
+a components/admin module" (reporting `@/components/admin/modules/module-map`) and on the anti-rot
+arm ("`@/components/admin/modules/module-ids` is in `SYNCHRONOUS_ADMIN_IMPORTS` but nothing imports it
+any more"). `components/admin/modules/module-map.test.ts` fails the other way: an id with no
+component (a module that silently vanishes from the rail) and a component with no id (an empty
+section box) are separate named assertions over a non-triviality floor.
+
+✅ The `server-only` directives are verified against a **real client compile**: `next build` reaches
+"Compiled successfully" in this container before dying on page-data collection for
+`/discover/cities/[citySlug]` (no service-role credentials). A client module still reaching either
+file would have failed that compile, not the step after it.
+
+⚠️ **The class is wider than the two files this closes.** `lib/supabase/admin.ts` is still statically
+reachable in the client layer from ten other `'use client'` entry points, via `lib/crm/relationships`,
+`lib/crm/contacts-roster`, `lib/crm/pipeline`, `lib/personas`, `lib/walkthroughs`, `lib/billing/tips`,
+`lib/spaces/membership`, `lib/marketplace`, `lib/season-ranks` → `lib/quest/completion-read`, and
+`lib/events/event-stats`. Every one is the same shape. They are backlog rows, not silence.
+
+⚠️ **What still needs a real build to confirm:** a route-level first-load number. Page-data collection
+cannot complete here, so Next never prints its per-route table. The shell-entry figures above are real
+— they come from the emitted client-reference manifests — but the "median `app/(main)` route" style
+measurement in ADR-1066 is not reproducible in this container.
+
+---
+
+## ADR-1075: The eyebrow had two implementations because it had two OWNERS — a class and an import — so the losing one stops declaring the role and starts composing it
+
+**Status:** Accepted · owner decision 2026-08-18 (backlog `OWN-027`) · enforced by three new
+assertions in `lib/theme/eyebrow-role.test.ts` (`pnpm test`, blocking)
+
+**Context.** ADR-1072 locked half of this and said so in its own consequences: "the `<Eyebrow>`
+component's 0.875rem and the utility's 0.75rem still disagree, and closing that is a design decision."
+`app/globals.css` had resolved DAWN's self-contradiction DOWN to 0.75rem on 2026-08-05;
+`components/page-editor/blocks/kit.tsx` exported an `<Eyebrow>` atom rendering `text-body-sm` —
+0.875rem, DAWN's DECLARED size, i.e. precisely the half the stylesheet had resolved AWAY from. Neither
+was drifting by accident. The class rendered what this repo chose; the import rendered what DAWN
+published; which one a page got depended on whether its author wrote a class or an import.
+
+**The measurement that made it a decision and not a bug.** ~25 block call sites imported the atom. The
+`app/globals.css` note from 2026-08-05 claimed the resolution moved no pixels, and inside the
+stylesheet that was true — nothing had reached 0.875rem THROUGH the utility. It was never true of the
+product, and `design_handoff/CHANGES.md` carried the "net rendered change was zero" sentence outbound
+to DAWN for thirteen days while ~25 marketing-page eyebrows rendered the value the sentence said had
+been resolved away. A resolution applied to a token and not to its consumers is a resolution in one
+file.
+
+**Decision. 0.75rem wins** (the owner's call, 2026-08-18; the reasoning is ADR-1072's and
+`globals.css`'s — 0.875rem is `--text-body-sm`, so an eyebrow at that size is exactly as large as the
+sentence it labels and stops reading as a label at all).
+
+1. **The atom stops declaring the role.** `font-eyebrow text-body-sm font-bold uppercase
+   tracking-eyebrow mb-4` → `eyebrow font-eyebrow mb-4`. Every constituent now comes from the one
+   utility. **The COMPONENT is kept and its REGISTER is retired**, and the distinction is the whole
+   point: `<Eyebrow>` is not a second register, it is the seam through which ~25 call sites reach
+   one. Deleting it would scatter `data-text-role="eyebrow"` (ADR-580's per-element control target)
+   and `font-eyebrow` (ADR-578's Space-theme hook) across 25 sites and hand each of them a size
+   again, which is the hand-rolling the utility exists to end.
+2. **The canvas copy moves with it.** `components/entity-blocks/space-canvas/space-canvas-block.tsx`
+   held `EYEBROW_CLS` / `EYEBROW_INK_CLS`, a verbatim copy of the atom's class string whose own
+   comment says it exists to "match kit.tsx's Eyebrow". Not scope creep: that file is the Space
+   WYSIWYG canvas, so leaving it at 0.875rem would have made the editor preview a size the published
+   page no longer renders — this change would have CREATED that defect, not inherited it.
+3. **Scope held deliberately.** The 608 `handrolled-eyebrow` ratchet sites are untouched (ADR-1072
+   §3), and so is the marketing register — ~29 sites pairing `text-body-sm` with `tracking-eyebrow`,
+   which ADR-1072 §2 admits on purpose. `check:adoption` output is **byte-identical** before and
+   after, verified by running it against a pristine `git archive HEAD` and diffing.
+
+**The assertion, and why it is a different one from ADR-1072's.** That scan grades a call site by the
+classes on its own element, so it structurally cannot see an atom: an `<Eyebrow>` adopter writes no
+classes at all, and all ~25 were invisible to it. The new block grades the **declaration**. It fails
+three ways: the atom carrying any size / tracking / weight / transform beside `eyebrow`; the
+`font-eyebrow` marker paired with `text-body-sm` anywhere in `app/` + `components/`; and a scan
+finding fewer than 8 `font-eyebrow` sites at all (ADR-962 — a rename must not green it over nothing).
+
+**Consequences.** ✅ All three proved by reintroduction and restore: putting `text-body-sm` back in
+the atom fails two assertions naming `components/page-editor/blocks/kit.tsx` and its class list;
+putting it back in `EYEBROW_CLS` fails the repo-wide one naming the canvas; renaming `font-eyebrow`
+fails the floor at `0 >= 8`. ✅ `design_handoff/CHANGES.md` §1b is corrected in the same pass per
+AGENTS.md's code-wins rule — both the stale "net rendered change was zero" and a `semibold` that
+ADR-1072 had already made `bold`. ⚠️ **This moves pixels: −14% type on every block-kit eyebrow**, and
+the page-editor blocks render the captured marketing surfaces. Rendering each repo-shipped template
+and counting `data-text-role="eyebrow"`: **home 4 · spaces 5 · the-community 5 · the-quest 3 ·
+pricing 8**, and **about 0 · the-lab 0 · circles 0**. Those five need a `pr-compare` recapture; the
+member surfaces (`/feed`, `/settings`, `/nearby`) and `/discover` reach the atom from no import path
+at all. ⚠️ The template counts are the REPO's answer, not production's: each marketing route prefers
+`getPublishedData(slug)` over its template, so a published doc that adds a Heading block puts
+`/about` or `/the-lab` in scope too. ⚠️ One second-order effect a shorter class list hides:
+`text-body-sm` also emitted a line-height and the composite `eyebrow` utility emits none, so leading
+is now inherited — the same trade the seven slots in ADR-1072 already took. Giving the utility
+`line-height: var(--text-eyebrow--line-height)` would make it fully self-sufficient, but it would
+move the ~87 sites already on it, so it is a separate change and not a passing tidy-up.
+
+## ADR-1076: `secrets.*` is withheld from Dependabot and `vars.*` is not, so an all-or-nothing credential pair must be gated in the workflow, not merely documented
+
+**Context.** `check:migrations` compares the repo's migration set against production's ledger. It is
+armed by two values and it deliberately treats a HALF-armed pair as a failure rather than a skip:
+both set means "compare", neither means "no database here, skip loudly", and one set means a guard
+someone armed has quietly stopped comparing anything. That tri-state is right, and ADR-1003's
+incident is why. `ci.yml` read the token from `secrets.SUPABASE_ACCESS_TOKEN` and the ref from
+`vars.SUPABASE_PROJECT_REF`, with a comment stating "on a fork PR these are empty".
+
+**The finding.** That comment was true of the secret and false of the var. GitHub withholds
+`secrets.*` from Dependabot runs (they read a separate Dependabot store) and from fork PRs; it does
+not withhold `vars.*`, which are repository configuration and always resolve. So on exactly those
+runs the pair arrived split **by the platform's design**, and the guard fired correctly on an input
+that no human had produced. Three Dependabot PRs (#2144 `actions/checkout`, #2145 `codeql-action`,
+#2146 the minor-and-patch group) were red for a day, each with a message accusing a maintainer of
+arming one half. The apparent cause — a stale branch — was a coincidence: all three were also
+behind `main`, which is what a reader notices first and is not what was failing them.
+
+**Decision.** Gate the var on the secret in the workflow:
+`SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' && vars.SUPABASE_PROJECT_REF || '' }}`.
+A credential-less run now resolves BOTH to empty, which is the "neither set" arm the guard already
+handles as a loud skip. The half-armed arm stays a failure and now means only what it says: a real
+half-arming, by a person, worth shouting about.
+
+**Why not relax the guard.** Because the guard was not wrong. Making `check:migrations` tolerate a
+half-armed pair would trade a false alarm on Dependabot for a silent green on the one comparison
+that ADR-1003 exists to keep honest. The defect was in what the workflow handed it.
+
+**Consequences.** ✅ Proved both directions in `scripts/check-migrations.test.ts`: it reads the real
+`ci.yml`, resolves each env expression the way Actions would on a run with no secrets, and asserts
+both come out empty and that the pair reaches `status: 'skipped'` without touching the network.
+Restoring the bare `vars.*` form fails it. ✅ The resolver understands only the two expression shapes
+`ci.yml` uses and **throws on anything else** rather than guessing, so a future rewrite fails here
+instead of silently re-splitting the pair. ⚠️ A repo-wide `vars.*`-paired-with-`secrets.*` lint was
+written and **withdrawn**: it flagged 12 more sites (`e2e*.yml`'s optional `PW_*` config,
+`maintenance.yml`'s two steps that already skip when either is empty) where a split pair is harmless,
+so it graded a SHAPE and would have shipped needing a frozen-debt list on its first run. The rule
+that matters is "a guard which FAILS half-armed must be handed all-or-nothing", and today exactly one
+step is in that class. ⚠️ Any future guard given the same tri-state needs the same workflow gating;
+this ADR is the reference, not a general lint.
+
+## ADR-1077: The effect-adoption gate could not see a class list built in a helper, so `cn()` became a counted position in fact and not only in its doc comment
+
+**Context.** `lib/theme/effect-adoption.test.ts` (ADR-1056, backlog LIVE-024) fails an effect class
+defined in `globals.css` that nothing calls. It measures adoption deliberately narrowly — only string
+literals sitting in a `className=` / `cn()` / `clsx()` position — because half these class names are
+ordinary English and a plain grep reported 54 "adopters" for `spot`, every one of them prose.
+
+**The finding.** The extractor's doc comment listed `cn(` as a counted position and its self-test
+covered `className={cn('scanlines', …)}`. But the bare form — `const chrome = cn(…)` one line above
+the JSX, which is ordinary React — was never detected: the generic open-bracket branch consumed the
+`(`, incremented depth and `continue`d before the marker test below it could ever run, so that
+branch was unreachable. Only a `cn()` already inside a `className={…}` was ever seen. Retiring the
+coded body on `/the-lab` (ADR-1068) moved `arc-top` and `dot-grid` from literal `className=`
+attributes into exactly that helper shape in `components/page-editor/blocks/dawn.tsx`, and the gate
+reported two orphans that are called on every render.
+
+**Decision.** Fix the extractor so a bare helper call opens a class context, and cover it with a
+self-test that also proves the context CLOSES with the call (a literal on the next line is not swept
+in). Keep `dawn.tsx` on `cn()` rather than inlining the classes back into the JSX to satisfy the
+instrument, and keep the gate's strictness otherwise unchanged.
+
+**Why this is a fix and not a waiver.** The distinction the gate exists to draw is "nothing calls
+this" versus "I could not see the call", and it was reporting the first while meaning the second — a
+false orphan, whose remedy under the gate's own message is to delete a rule that is in use. Widening
+a mis-scoped instrument to what it always claimed is not the same act as raising a baseline to admit
+a real regression.
+
+**Consequences.** ✅ All 14 assertions in the file pass, including the recorded-orphan ratchet: the
+wider instrument revealed no listed orphan as secretly adopted, so nothing had to be banked. ✅ The
+false orphans are gone without touching `globals.css` or the `RECORDED_ORPHANS` list. ⚠️ Every class
+this gate has ever scored was scored by the narrow reading, so a class retired for zero adopters
+before today was retired on a count that could not see helper-built lists. The three in ADR-1056
+(`scanlines`, `vignette`, `edge-light`) were re-checked under the wider instrument and still read
+zero. ⚠️ The same blind spot shape applies to any other gate built on a `className=` scan; this one
+is now covered by its own self-test, and the others are not audited here.

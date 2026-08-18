@@ -62,13 +62,17 @@ describe('page price == checkout price, on BOTH sides of the cutover', () => {
 })
 
 describe('the beta framing appears exactly while the beta rate does', () => {
-  it('DURING the window: the discounted plans show a struck anchor and the beta note', () => {
+  it('DURING the window: COLLECTIVE alone shows a struck anchor and the beta note (ADR-1067)', () => {
     const byId = Object.fromEntries(spaceOfferings(input(true)).map((o) => [o.id, o]))
-    expect(byId.business!.listAnchor).toBe('$29')
-    expect(byId.business!.monthly).toBe('$19/mo')
-    expect(byId.business!.betaNote).toContain('Beta rate')
     expect(byId.collective!.listAnchor).toBe('$79')
     expect(byId.collective!.monthly).toBe('$49/mo')
+    expect(byId.collective!.betaNote).toContain('Beta rate')
+    // Business used to sit beside it at $19 under $29. There is exactly ONE beta offer now, and even
+    // with the window forced open Business must quote its plain list price with NO strike and NO note
+    // — otherwise the page advertises a rate the owner does not sell.
+    expect(byId.business!.monthly).toBe('$29/mo')
+    expect(byId.business!.listAnchor).toBeNull()
+    expect(byId.business!.betaNote ?? null).toBeNull()
   })
 
   it('AFTER the cutover: the list IS the price, with NO strike and NO beta note', () => {

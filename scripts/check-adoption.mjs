@@ -109,16 +109,90 @@ function compile(pattern) {
 }
 
 /**
+ * A WRITTEN carve-out: a match whose own line, or the comment block attached above it, carries an
+ * annotation explaining why the literal is correct there.
+ *
+ * ---------------------------------------------------------------------------------------------
+ * WHY A RATCHET NEEDS THIS, and why an exclude glob is the wrong shape for it — 2026-08-17.
+ * ---------------------------------------------------------------------------------------------
+ * `white-black-literals` read 27, and had read 27 since 2026-08-06. All 27 carry a
+ * `KEEP <utility>: <reason>` comment — QR quiet zones a scanner needs true white for, video
+ * letterboxes, an email preview frame, a tick sitting on an operator's own hex. Not one was
+ * retirable. The class's floor was 27; the DAWN Phase 9 queue recorded it as 2; and BOTH numbers
+ * are the same defect, because a total cannot tell a justified carve-out from new debt.
+ *
+ * The consequence, which is what makes it a bug rather than an untidiness: carve-outs and debt
+ * were FUNGIBLE inside the total. Retire one annotated site, add one bare `bg-white`, and the
+ * ratchet reads 27 → 27, "✅ held", green — over the class its own description calls "the only bug
+ * class in the census".
+ *
+ * The obvious fix, adding `app/print/**` to `exclude`, is a WIDER ALLOWANCE that settles 2 of the
+ * 27 and blinds the gate to every future literal under that directory, justified or not. An
+ * annotation escape does the opposite: the floor becomes 0, so the next unjustified monochrome
+ * fails CI, and each exemption is one reviewable sentence in a diff naming the utility and the
+ * reason — the `// token-ok:` convention DAWN-CONVERSION §1 already blesses.
+ *
+ * The annotation is read from the ORIGINAL source, because `stripComments` has blanked it out of
+ * the matched text; the two line up because blanking is length-preserving.
+ *
+ * THE WINDOW IS STRUCTURAL, NOT A LINE COUNT: from the match's own line, walk UP and stop at
+ * whichever comes first — a blank line, another match of the same pattern, or the top of the
+ * comment block reached on the way. Every stop condition is a fact about the code, so there is no
+ * number to tune later, and two of the three are what keep it honest:
+ *
+ *   • ANOTHER MATCH ENDS THE WALK, so one annotation can never cover two literals. Add a second
+ *     bare `bg-white` under an existing `KEEP bg-white:` and the second one counts.
+ *   • A BLANK LINE ENDS THE WALK, so an annotation cannot reach down a file to a site nobody
+ *     wrote it about.
+ *
+ * A fixed `lines: 3` was written first and mis-read live carve-outs in both directions, which is
+ * why it is gone: `components/spaces/space-form.tsx` explains its `text-white` in a three-line JSX
+ * comment, putting the word KEEP four lines above the match, while `app/print/qr/page.tsx` writes
+ * its `KEEP bg-white:` above the `return (`, one line further out again. A window that has to be
+ * tuned to the length of someone's sentence is not a rule.
+ */
+function escapeChecker(entry) {
+  if (!entry.escape) return null
+  if ((entry.mode ?? 'matches') === 'files') {
+    throw new Error(
+      `${entry.key}: \`escape\` is a per-MATCH annotation and cannot be honoured in mode "files". ` +
+        'Silently ignoring it would make the entry read as annotation-aware while counting every file.',
+    )
+  }
+  const re = new RegExp(entry.escape.pattern)
+  const site = (entry.patterns ?? []).map((p) => new RegExp(p))
+  return (source, stripped, offset) => {
+    const src = source.split('\n')
+    const bare = stripped.split('\n')
+    const i = source.slice(0, offset).split('\n').length - 1 // 0-based line of the match
+    const window = [src[i] ?? '']
+    let inComment = false
+    for (let k = i - 1; k >= 0; k--) {
+      if (src[k].trim() === '') break
+      if (site.some((r) => r.test(bare[k]))) break
+      const isComment = src[k] !== bare[k]
+      if (inComment && !isComment) break
+      if (isComment) inComment = true
+      window.push(src[k])
+    }
+    return re.test(window.join('\n'))
+  }
+}
+
+/**
  * Count one entry against an in-memory corpus.
  * @param entry  a baselines.json entry
- * @param files  [{ path, text }] — POSIX repo-relative paths
+ * @param files  [{ path, text, source? }] — POSIX repo-relative paths. `text` is comment-blanked;
+ *               `source` is the original, read only to resolve an `escape` annotation.
  * @returns {{ count: number, files: string[] }} count plus the files that contributed
  */
 export function countEntry(entry, files) {
   const scoped = files.filter((f) => inScope(f.path, entry))
   const patterns = (entry.patterns ?? []).map(compile)
   const absent = (entry.absent ?? []).map(compile)
+  const escaped = escapeChecker(entry)
   const hit = []
+
   let count = 0
 
   for (const f of scoped) {
@@ -130,7 +204,16 @@ export function countEntry(entry, files) {
     }
     if (excluded) continue
     let n = 0
-    for (const re of patterns) { re.lastIndex = 0; n += (f.text.match(re) ?? []).length }
+    for (const re of patterns) {
+      re.lastIndex = 0
+      if (!escaped) { n += (f.text.match(re) ?? []).length; continue }
+      const source = f.source ?? f.text
+      let m
+      while ((m = re.exec(f.text)) !== null) {
+        if (!escaped(source, f.text, m.index)) n += 1
+        if (re.lastIndex === m.index) re.lastIndex += 1
+      }
+    }
     if (n > 0) { count += n; hit.push(f.path) }
   }
   return { count, files: hit.sort() }
@@ -151,7 +234,12 @@ export function countEntry(entry, files) {
  *  (literal-radius −41, white-black-literals −52) and raised one, none of it bought by a sweep.
  *  Folding it into the hash is what makes the gate REFUSE to compare across the change instead
  *  of silently booking those as wins. */
-const CORPUS_BASIS = 'strip-comments@1'
+/** `strip-comments@2` (2026-08-17): the blanker learned that a string literal is not code. A file
+ *  input's `accept="image/…"` glob puts a slash next to a star, which opened a block comment that
+ *  ran to the next close-comment token anywhere in the file — blanking 121,627 characters of REAL
+ *  markup across 101 files. A false FALL, the one direction a ratchet must never be wrong in.
+ *  See `stripComments` for the measurement. */
+const CORPUS_BASIS = 'strip-comments@2'
 
 export function basisFingerprint(entry) {
   const canonical = JSON.stringify({
@@ -159,6 +247,7 @@ export function basisFingerprint(entry) {
     mode: entry.mode ?? 'matches',
     patterns: entry.patterns ?? [],
     absent: entry.absent ?? [],
+    escape: entry.escape ?? null,
     include: entry.include ?? [],
     exclude: entry.exclude ?? [],
   })
@@ -346,11 +435,65 @@ function walk(dir, exts, out = []) {
  *  line — including any real class beside it — turning a false rise into a false FALL, which is
  *  the direction a ratchet must never be wrong in. A trailing comment after code on the same
  *  line still counts; that is the deliberate, safe side of the trade. */
+/** `strip-comments@2` (2026-08-17) — THE SAME MISTAKE THE `//` RULE ABOVE WAS WRITTEN TO AVOID,
+ *  one token over. The `//` case was guarded by hand; the open-comment case was not, and a regex
+ *  cannot tell a comment opener from two characters inside a string. A file input's
+ *  `accept="image/…"` glob — 37 of them in this repo — puts a slash next to a star, and so opened
+ *  a block comment that ran to the NEXT close-comment token anywhere in the file, usually the end
+ *  of some later JSDoc block. (This paragraph cannot spell either token, which is the
+ *  demonstration.) Measured over `{app,components,lib}`: 101 files and 121,627 characters of real
+ *  markup blanked, hiding 23 debt sites across six classes — literal-radius −11, raw-input −5,
+ *  raw-px-arbitrary −3, raw-textarea −2, raw-select −1, shadow-literals −1. literal-radius
+ *  therefore read 2,281 against a 2,287 floor and printed "✅ shrank" while its true count was
+ *  2,292: a RISE, reported as a win.
+ *
+ *  So the scan now tracks string and template literals and recognises a comment only OUTSIDE them.
+ *  Two properties are load-bearing, and both are asserted in check-adoption.test.ts:
+ *    1. Still LENGTH-PRESERVING — every offset, line number and span distance survives, which is
+ *       what lets an `escape` annotation map back onto its source line.
+ *    2. Strictly UN-blanking versus @1 — every character @2 blanks, @1 blanked too. The change can
+ *       therefore only reveal debt, never hide it, which is the safe direction for a ratchet.
+ *  An unterminated quote in JSX prose (`don't`) stops at the newline, so its worst case is
+ *  UNDER-blanking a comment: a false rise, which fails loudly, rather than a false fall. */
 export function stripComments(text) {
-  const blank = (m) => m.replace(/[^\n]/g, ' ')
-  return text
-    .replace(/\/\*[\s\S]*?\*\//g, blank)
-    .replace(/(^|\n)([ \t]*\/\/[^\n]*)/g, (_m, lead, body) => lead + blank(body))
+  const out = text.split('')
+  const blank = (from, to) => { for (let k = from; k < to; k++) if (out[k] !== '\n') out[k] = ' ' }
+  let i = 0
+  let atLineStart = true
+  while (i < text.length) {
+    const c = text[i]
+    if (c === '"' || c === "'" || c === '`') {
+      const quote = c
+      i += 1
+      while (i < text.length) {
+        if (text[i] === '\\') { i += 2; continue }
+        if (text[i] === quote) { i += 1; break }
+        if (quote !== '`' && text[i] === '\n') break
+        i += 1
+      }
+      atLineStart = false
+      continue
+    }
+    if (c === '/' && text[i + 1] === '*') {
+      const end = text.indexOf('*/', i + 2)
+      if (end === -1) { i += 2; atLineStart = false; continue }
+      blank(i, end + 2)
+      i = end + 2
+      atLineStart = false
+      continue
+    }
+    if (c === '/' && text[i + 1] === '/' && atLineStart) {
+      let end = text.indexOf('\n', i)
+      if (end === -1) end = text.length
+      blank(i, end)
+      i = end
+      continue
+    }
+    if (c === '\n') atLineStart = true
+    else if (c !== ' ' && c !== '\t') atLineStart = false
+    i += 1
+  }
+  return out.join('')
 }
 
 /** A ratchet compares today's count against a frozen one, so it reads an ABSENT corpus as a
@@ -382,7 +525,11 @@ export function loadCorpus(config) {
   const corpus = config.roots
     .flatMap((r) => walk(r, config.extensions))
     .sort()
-    .map((path) => ({ path, text: stripComments(readFileSync(path, 'utf8')) }))
+    .map((path) => {
+      const source = readFileSync(path, 'utf8')
+      // `source` keeps the comments an `escape` annotation lives in; `text` is what gets matched.
+      return { path, text: stripComments(source), source }
+    })
 
   if (corpus.length < MIN_CORPUS_FILES) {
     throw new Error(

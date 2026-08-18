@@ -12,7 +12,7 @@ type Practice = { id: string; title: string }
 
 // Banner + short wizard shown on a demo circle to a signed-in real member:
 // "make this real?" -> a few fun questions -> converts the circle in place and
-// makes them the host (docs/DEMO-SYSTEM.md, ADR-091 Phase 2).
+// makes them the host (docs/DEMO-SYSTEM.md, ADR-1048 Phase 2).
 export function ClaimCircle({
   circleId,
   name,

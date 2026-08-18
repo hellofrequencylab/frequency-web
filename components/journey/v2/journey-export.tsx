@@ -45,7 +45,7 @@ export function JourneyExport({ slug }: { slug: string }) {
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Export as JSON
       </button>
-      <p className="mt-1.5 text-2xs text-muted">Saves a portable copy you can import into another Space or a Hook cohort.</p>
+      <p className="mt-1.5 text-2xs text-muted">Saves a portable copy you can import into another Space or a Hook community.</p>
       {error && <p className="mt-1.5 text-meta text-danger">{error}</p>}
     </div>
   )

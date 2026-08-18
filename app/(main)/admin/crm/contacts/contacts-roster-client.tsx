@@ -16,20 +16,20 @@ import {
   relationshipLabel,
   type RelationshipKind,
   type RelationshipTone,
-} from '@/lib/crm/relationships'
+} from '@/lib/crm/relationship-kinds'
 import {
   applyContactQuery,
   type ContactQuery,
   type ContactRosterRow,
   type ContactSort,
-} from '@/lib/crm/contacts-roster'
+} from '@/lib/crm/contacts-roster-core'
 import type { Facet } from '@/lib/people/member-viewer'
 import { assignRelationship, removeRelationship } from '../relationship-actions'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 
-// THE CONTACTS ROSTER ISLAND: the thin interactive shell over the pure core (lib/crm/contacts-roster).
+// THE CONTACTS ROSTER ISLAND: the thin interactive shell over the pure core (lib/crm/contacts-roster-core).
 // It mirrors the member-viewer's HERO toolbar (live search + a prominent sort selector + facets) but
 // renders the WHOLE contacts list (members + subscribers + leads) as a browse Index, each row tagged
 // with the classifier's verdict (status / role / business / activity / Spaces / relationship kinds) and

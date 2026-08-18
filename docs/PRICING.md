@@ -1,5 +1,54 @@
 # Pricing & entitlements
 
+> ## ✅ CURRENT (the ladder): the Opening Beta price is CLOSED, and yearly is the only discount (ADR-1060, 2026-08-17).
+>
+> Owner-ruled: *"scratch the beta pricing and just charge full price. They can get 2 months free for
+> purchasing the year."* This overrides every beta rate quoted anywhere below this banner.
+>
+> 1. **The charged ladder is the LIST ladder.** Member $0 · Crew pay-what-you-want (floor $4.99) ·
+>    Free Space · **Business $29** · **Collective $79** · Non Profit $39 · Independent $249 ·
+>    Vera AI add-on +$20. **Exactly two figures moved** (Business $19 → $29, Collective $49 → $79,
+>    annuals following at 10x: $190 → $290 and $490 → $790). Independent, Non Profit and the add-on
+>    already had `listCents == foundingCents`, so they did not move.
+> 2. **No struck anchor renders anywhere, and no "Beta rate" caption.** `effectiveCatalogAmounts` /
+>    `effectiveTierPrice` collapse the founding anchor into the list price once the window is past, so
+>    the strike and its caption stop rendering on their own. A crossed-out $29 beside a charged $29
+>    would be a false claim, and `pricing-grid.test.ts` sweeps every offering and every comparison cell
+>    for one.
+> 3. **The mechanism is ONE constant**, `BETA_PRICING_ENDS_AT` in `lib/pricing/beta.ts`, now a past
+>    instant. The checkout key switch and every pricing surface read the same answer, so display and
+>    billing cannot diverge. Re-opening the window is a one-line edit; no test pins the date.
+> 4. **Two months free on the year is unchanged** (`ANNUAL_MONTHS_FREE = 2`, `yearlyFromMonthly`). It
+>    was already the house rule; it is now the only discount, so the copy leads with it.
+> 5. **Not changed by this, and not to be assumed:** the FEATURE-GATE grace window (`beta_grace`) still
+>    ends **2026-09-01** (selling and gating are separate decisions, ADR-874), and
+>    `FOUNDING_DEFAULT.business_monthly_cents` is still **$19** for the Founding Business grant — NOT changed by ADR-1067, which touched only the catalog. See OWN-026.
+> 6. **Grandfathering cost nothing in Stripe and is not nothing in fact.** 0 subscription items, 0
+>    Stripe customers, 0 webhook events on 2026-08-17 — and one member who paid **$490 in cash** for the
+>    annual Collective beta rate with no lock anywhere in the system (backlog `OWN-022`).
+> 7. **The beta rate is still reachable, privately, per Space** ([ADR-1061](DECISIONS.md)). The owner
+>    had already offered it to a couple of people: *"I want to keep that open for them. But I don't
+>    want to advertise that Beta pricing as a package on the website."* `spaces.beta_price_grant` is a
+>    per-Space flag that ONLY the checkout reads. The charge decision is the pure
+>    `loadoutChargeArm` (`lib/pricing/beta.ts`): **lock** (re-bill the Space's grandfathered
+>    `locked_price_id`) → **founding** (the window is open **or** this Space carries the grant) →
+>    **list**. No pricing surface, funnel door or `effectiveCatalogAmounts` call takes a Space, so the
+>    public grid cannot move; `lib/pricing/beta-grant.test.ts` sweeps every number and label a visitor
+>    reads for a leaked beta amount. **The grant carries no expiry** because the first successful
+>    checkout writes the lock, and the lock wins from then on. Operator control: `/admin/spaces/[id]`
+>    → "Beta price grant" (janitor-gated, audited). Schema: `docs/proposals/OWN-023-space-beta-price-grant.sql`,
+>    a proposal, not a migration — the code fail-safes to list pricing until it is applied.
+> 8. **In STRIPE, the founding rates hang on their own Product** ([ADR-1062](DECISIONS.md)). Owner:
+>    *"standard pricing does not have a founding or beta rate ... Regular pricing + a founding beta
+>    product."* `syncPricingCatalogToStripe` mints **Frequency Collective** ($79 / $790) and, separately,
+>    **Frequency Collective (Founding rate)** ($49 / $490) — and Collective ALONE (ADR-1067: the owner's
+>    instruction is one unlisted beta offer, granted by hand). A flat item (Business, Independent,
+>    Non Profit, Vera AI) has no founding rate to separate, so it gets no second product. **6 products,
+>    20 prices.** **No price KEY
+>    moved**: `collective_base_year` is still `collective_base_year`, so the grant and every lock resolve
+>    exactly what they resolved before, and both variants stay ACTIVE in Stripe so the grant can charge
+>    them.
+
 > ## ✅ CURRENT (money model): selling is FREE on every tier; the RATE is the ladder (ADR-914, 2026-07-30).
 >
 > Owner-ruled. This overrides every rate and every seller rule stated anywhere below this banner.
@@ -71,10 +120,13 @@
 > **Still inert.** Every gate short-circuits to grant while `featureGatesLive()` is false. Call-site
 > enforcement and the picker UI are follow-ups; this change is the MAP, which the surfaces derive from.
 
-> ## ✅ The public ladder is SEVEN sellable tiers, and `/pricing` DERIVES them (ADR-875, 2026-07-28).
-> **The ladder, all of it sellable:** Member $0 · **Crew $9** · **Free Space** · **Business $29 with a $19
-> beta rate** · **Collective $79 with a $49 beta rate** · **Non Profit $39** · **Independent $249**. The two
-> beta rates are grandfathered: a subscriber keeps the rate for as long as they keep the plan. Non Profit,
+> ## ✅ The public ladder is SEVEN sellable tiers, and `/pricing` DERIVES them (ADR-1052, 2026-07-28).
+> **The ladder, all of it sellable:** Member $0 · **Crew $9** · **Free Space** · **Business $29** ·
+> **Collective $79** · **Non Profit $39** · **Independent $249**. ⚠️ The public window is CLOSED
+> (ADR-1060) and Business no longer has a beta rate at all (ADR-1067): the ONLY beta rate in the catalog
+> is Collective's $49 / $490, which is unlisted and granted by hand.
+> While the window was open they were grandfathered: a subscriber keeps the rate for as long as they
+> keep the plan. Non Profit,
 > Independent, and the free tiers have ONE price and never render a struck anchor.
 >
 > **The anchor idiom (ADR-463) is now uniform across `pricing_settings`:** `monthly_cents` is what is
@@ -103,10 +155,12 @@
 > **The PUBLIC ladder (founder's ladder, ADR-878, updated 2026-07-30):** Member $0 · **Crew: pay what
 > you want**, floor $4.99/mo, $24.99 suggested, no list anchor (see "Crew is PWYW" below) ·
 > **Free Space** (the first level of
-> Space) · Business $29 ($19 Opening Beta) · Collective $79 ($49 Opening Beta) · Non Profit $39 flat ·
+> Space) · Business $29 (the $19 Opening Beta price is CLOSED, ADR-1060) · Collective $79 (same, the
+> $49 beta price is closed) · Non Profit $39 flat ·
 > the **Vera AI** add-on +$20 (catalog key `addon_ai`) · operator seats owner-priced. **Independent
 > (~$249) is NOT listed or sold** (`plan_independent_enabled` OFF; machinery dormant, grandfathered
-> spaces keep resolving). All founder-vocabulary surfaces read "Opening Beta price."
+> spaces keep resolving). ⚠️ "Opening Beta price" is RETIRED as a copy phrase (ADR-1060): no surface may
+> offer a beta rate, because the checkout no longer charges one.
 >
 > **Supporter is NOT on the ladder (ADR-878).** ADR-458 retired it as a tier (it became the
 > pay-what-you-want `profiles.is_supporter` badge); ADR-818 briefly sold it again at $12; ADR-878 removed
@@ -376,16 +430,35 @@ amount is the real price charged today (Pro $19). **Yearly = two months free = 1
 
 **Price-row keys.** The founding (charged) price is `<item>_<interval>` (e.g. `pro_base_month`,
 `addon_marketing_year`, `nonprofit_seat_month`, `organization_year`); the **list anchor** is the same
-key plus `_list` (`pro_base_month_list`), synced `archived=true` (read only for the anchor amount, never
-sold). Retired legacy keys (`practitioner_*`, `business_*`, `whitelabel_*`) are **kept
+key plus `_list` (`pro_base_month_list`), synced `archived=true`. ⚠️ Two clauses of that sentence are
+now historical: since [ADR-1060](DECISIONS.md) the **`_list` key is the one checkout charges**, and the
+`archived` flag is a row annotation nothing reads to decide a charge (`resolveStripePriceId` ignores it),
+so it no longer says "not sold". The key STRINGS are unchanged and are frozen by
+`lib/billing/pricing-catalog-sync.test.ts`. Retired legacy keys (`practitioner_*`, `business_*`, `whitelabel_*`) are **kept
 resolvable but archived, never deleted** (`RETIRED_CATALOG_KEYS`), so a grandfathered locked price id
 still resolves. (`supporter_*` was retired here too until the 2026-07 overhaul un-retired it, ADR-818.)
 
-**Catalog sync.** `lib/billing/pricing-products.ts` `syncPricingCatalogToStripe()` walks the catalog:
-one Product per item (looked up by the same `frequency_pricing_key` metadata, idempotent) with its four
-Prices (founding active, list archived-anchor), then archives the retired keys. Same gates as the P2
-sync: env-gated (`billingEnabled()`), admin-triggered (the `syncStripeCatalog` action), never a live
-call on import/boot/test, a clean no-op when Stripe is unconfigured.
+**Catalog sync.** `lib/billing/pricing-products.ts` `syncPricingCatalogToStripe()` walks the catalog and
+mints, per item, the **standard** Product carrying the LIST prices plus — only when the item really is
+discounted below list — a **separate founding Product** carrying the founding/beta rates (ADR-1062), then
+archives the retired keys. Same gates as the P2 sync: env-gated (`billingEnabled()`), admin-triggered
+(the `syncStripeCatalog` action), never a live call on import/boot/test, a clean no-op when Stripe is
+unconfigured.
+
+| | Standard Product | Founding Product |
+|---|---|---|
+| Name in the dashboard | `Frequency Collective` | `Frequency Collective (Founding rate)` |
+| Lookup metadata (`frequency_pricing_key`) | `collective_base` | `collective_base_founding` |
+| Prices on it | `collective_base_month_list` $79 · `collective_base_year_list` $790 | `collective_base_month` $49 · `collective_base_year` $490 |
+| Exists for | every synced item | only an item with `foundingCents < listCents` (today: Business, Collective) |
+
+Both Products also carry `frequency_catalog_item` (the item they belong to) and `frequency_product_line`
+(`standard` / `founding`), so a human can pair them without parsing names. **The price-row KEYS are
+untouched by the split** — a Product is where a Price hangs, and `pricing_stripe_prices` is keyed by the
+KEY, so `resolveStripePriceId` / the per-Space grant / a lock all resolve exactly what they did before
+(`lib/billing/pricing-catalog-sync.test.ts` freezes the whole key set). **No Price is ever archived in
+Stripe** by the sync: `archived` on a map row is an annotation on the row, never Stripe's `active`, and
+the founding price ids must stay usable in a NEW subscription for the ADR-1061 grant to charge them.
 
 **Multi-item subscription.** A Space buys Pro as **one subscription with multiple items**: the Pro base
 plus **one price item per active add-on**, with **quantity items** for Team + Nonprofit seats.

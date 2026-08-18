@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createDeal, updateDeal, moveDeal } from '@/app/(main)/admin/crm/actions'
-import type { CrmStage, CrmDeal } from '@/lib/crm/pipeline'
+import type { CrmStage, CrmDeal } from '@/lib/crm/pipeline-core'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/field'
 

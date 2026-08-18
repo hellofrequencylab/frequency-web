@@ -45,7 +45,7 @@ export function EntityHeader({
           {avatar && <div className="shrink-0">{avatar}</div>}
           <div className="min-w-0">
             {eyebrow && (
-              <p className="text-meta font-semibold uppercase tracking-wide text-primary-strong">{eyebrow}</p>
+              <p className="eyebrow text-primary-strong">{eyebrow}</p>
             )}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <h1 className="text-balance text-lead font-bold text-text sm:text-page-title">{title}</h1>

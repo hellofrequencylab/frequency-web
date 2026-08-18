@@ -18,6 +18,11 @@ import { FunctionGrid, type FunctionRow } from '@/components/admin/spaces/functi
 import { SpaceLifecyclePanel, type OwnerCandidate } from '@/components/admin/spaces/space-lifecycle-panel'
 import { ManualAgreementPanel } from '@/components/admin/spaces/manual-agreement-panel'
 import { activeAgreementForSpace } from '@/lib/billing/manual-agreements'
+import {
+  BetaPriceGrantPanel,
+  type BetaPriceGrantState,
+} from '@/components/admin/spaces/beta-price-grant-panel'
+import { readSpaceBetaPriceGrant } from '@/lib/billing/space-beta-grant'
 
 export const dynamic = 'force-dynamic'
 
@@ -110,9 +115,18 @@ export default async function SpaceBrandEditorPage({ params }: { params: Promise
   const members = hasOwnerBackEnd ? await listSpaceMembers(space.id) : []
   // The MANUAL BILLING agreement (ADR-872): the off-Stripe cash/check deal on file, if any.
   const manualAgreement = hasOwnerBackEnd ? await activeAgreementForSpace(space.id) : null
+  // The PRIVATE BETA PRICE GRANT (ADR-1061): does this Space check out at the closed beta rate? Its
+  // own request, never a column on another select — the column ships in a proposal migration the
+  // owner applies by hand, and an undeployed column would fail the whole request with 42703. The
+  // reader reports that case as `unavailable` so the panel can print the instruction instead of a
+  // toggle that cannot write.
+  const betaGrantRead = hasOwnerBackEnd
+    ? await readSpaceBetaPriceGrant(space.id)
+    : ({ kind: 'unavailable', reason: 'not_found', message: '' } as const)
   const nameIds = [
     ...members.map((m) => m.profileId),
     ...(space.ownerProfileId ? [space.ownerProfileId] : []),
+    ...(betaGrantRead.kind === 'ok' && betaGrantRead.grant.grantedBy ? [betaGrantRead.grant.grantedBy] : []),
   ]
   const names = hasOwnerBackEnd ? await resolveProfileNames(nameIds) : new Map()
   const ownerName = space.ownerProfileId ? names.get(space.ownerProfileId)?.name ?? null : null
@@ -129,6 +143,18 @@ export default async function SpaceBrandEditorPage({ params }: { params: Promise
         role: m.role,
       }
     })
+
+  const betaGrantState: BetaPriceGrantState =
+    betaGrantRead.kind === 'ok'
+      ? {
+          kind: 'ok',
+          granted: betaGrantRead.grant.granted,
+          grantedAt: betaGrantRead.grant.grantedAt,
+          grantedByName: betaGrantRead.grant.grantedBy
+            ? names.get(betaGrantRead.grant.grantedBy)?.name ?? null
+            : null,
+        }
+      : { kind: 'unavailable', message: betaGrantRead.message }
 
   // The "Features and access" grid rows: every function this Space type offers, seeded with its current
   // resolved on/off + min-role (override merged over the code default). Pure resolution off the Space's
@@ -188,6 +214,14 @@ export default async function SpaceBrandEditorPage({ params }: { params: Promise
                 : null
             }
           />
+        </AdminSection>
+      )}
+      {hasOwnerBackEnd && (
+        <AdminSection
+          title="Beta price grant"
+          description="Let this space check out at the older beta rate instead of the published price. Private: the pricing page keeps showing regular pricing to everyone, and nothing here is advertised. Once they subscribe, the price they paid is locked in and this switch no longer applies."
+        >
+          <BetaPriceGrantPanel spaceId={space.id} state={betaGrantState} />
         </AdminSection>
       )}
       {hasOwnerBackEnd && (

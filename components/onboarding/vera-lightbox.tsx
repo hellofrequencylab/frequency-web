@@ -243,7 +243,19 @@ export function VeraLightbox({
               </div>
             </div>
 
-            <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-6 py-5">
+            {/* Live region — same contract as the companion transcript in
+                components/vera/vera-chat.tsx: append-only `log`, `polite` because a turn arrives
+                whole, `additions` + non-atomic so only the new bubble is spoken. Composer stays
+                outside. */}
+            <div
+              ref={scrollRef}
+              role="log"
+              aria-live="polite"
+              aria-relevant="additions"
+              aria-atomic="false"
+              aria-label="Conversation with Vera"
+              className="flex-1 space-y-3 overflow-y-auto px-6 py-5"
+            >
               {messages.map((m, i) => (
                 <div key={i} className={m.from === 'you' ? 'flex justify-end' : 'flex justify-start'}>
                   <div

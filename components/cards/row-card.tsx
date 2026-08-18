@@ -97,10 +97,21 @@ export function RowCard({
 
   // The surface carries no padding of its own, so a `footer` divider can run edge to edge while
   // every content zone keeps the same px-5 inset.
-  const surface = `rounded-2xl border border-border bg-surface lift-1 transition-colors hover:border-primary-bg motion-reduce:transition-none ${
+  // `transform` joins the transition list so `.press` below eases instead of snapping; the
+  // motion-reduce guard was already here and still covers it.
+  const surface = `rounded-2xl border border-border bg-surface lift-1 transition-[color,background-color,border-color,box-shadow,transform] hover:border-primary-bg motion-reduce:transition-none ${
     dimmed ? 'opacity-[0.72]' : ''
   }`
   const pad = 'px-5 py-4'
+
+  // INTERACTION-STATES §2 (Card): a card owes hover, pressed and focus-visible WHEN IT NAVIGATES —
+  // and exactly one of RowCard's three shapes does. The whole-row anchor is a click target, so it
+  // takes `.press` (the ONE sanctioned pressed look) and `ring-focus` (the card focus ring; the
+  // global ring is a box-shadow and `lift-1` paints over it — see app/globals.css). The managed row
+  // and the destination-less row are plain containers whose title and controls are the controls, so
+  // they get neither: a surface that presses under the thumb and rings on tab is promising a click
+  // that lands nowhere, which is worse than the missing state it would be papering over.
+  const interactive = 'press ring-focus'
 
   if (managed) {
     // Mobile-first: the text content takes the full width and the controls drop to
@@ -130,7 +141,7 @@ export function RowCard({
   if (!href) return <div className={rowClass}>{linkRow}</div>
 
   return (
-    <Link href={href} className={rowClass}>
+    <Link href={href} className={`${rowClass} ${interactive}`}>
       {linkRow}
     </Link>
   )

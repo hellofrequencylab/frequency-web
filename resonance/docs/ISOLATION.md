@@ -23,6 +23,16 @@ that moving it to a dedicated project later is a mechanical lift, not a rewrite.
 | 5 | Realtime uses **Broadcast + Presence**, not Postgres Changes. | Not table-bound, so no shared publication coupling. |
 | 6 | App code imports **nothing** from Frequency, and Frequency imports nothing from here. | Code separation mirrors data separation. |
 | 7 | Integration happens only across the documented **seam** (JWT + postMessage + webhooks), never the database. | The seam is portable; a shared table is not. |
+| 8 | The app never **requires a change to the shared project's account-level settings** (Auth toggles, exposed schemas, replication publications). It DECLARES what it needs and degrades when the answer is no. | Rules 4 and 5 are two instances of this; rule 8 is the class. |
+
+**Rule 8 was written after it was broken.** ADR-015 shipped standalone identity that
+called `signInAnonymously()`, which requires **"Anonymous sign-ins" enabled on the
+project** — a setting that is off on the shared Frequency project and stays off
+(ADR-019, and ADR-1054 in Frequency's `docs/DECISIONS.md`). Nothing caught it, because
+the requirement lived in an ADR sentence and a code comment, and three UI surfaces
+ended up telling a reader to go flip it on the live platform's project. A shared-project
+setting is exactly as un-liftable as a cross-schema FK: it is a dependency that does not
+travel in `pg_dump`, and it charges the host for our feature.
 
 Root Frequency tooling is configured to ignore `resonance/` (root `tsconfig.json`
 `exclude` and `eslint.config.mjs` ignores), so the two builds never reach into
@@ -39,6 +49,10 @@ app earns its own infrastructure.
 3. **Move data** (if any): `pg_dump --schema=resonance --no-owner` from the shared
    project, restore into the new one.
 4. **Repoint** env vars (`RESONANCE_SUPABASE_*`) to the new project. No code change.
+   This is also where the capabilities rule 8 defers become available: on a project we
+   own, enable **"Anonymous sign-ins"** and set `NEXT_PUBLIC_RESONANCE_ANONYMOUS_AUTH=true`
+   to switch on standalone guest identity (ADR-019). Until then it stays off and the
+   app runs embedded, on the host's federated JWT.
 5. **Verify** the app against the new project.
 6. **Drop** from the shared project: `DROP SCHEMA resonance CASCADE;`. Frequency's
    `public`/`auth` data is untouched because nothing ever referenced it.
@@ -52,3 +66,6 @@ app earns its own infrastructure.
 - [ ] Does this read/write a Frequency `public` table directly? → **stop, use the seam.**
 - [ ] Does this import Frequency app code? → **stop, copy or abstract it.**
 - [ ] Does it require the shared project to expose `resonance` to anon? → **prefer server-side access.**
+- [ ] Does it require an **Auth toggle or any other project-level setting** on the shared
+      project? → **stop (rule 8): declare it as a capability that defaults off, and ship
+      the path that works without it.**

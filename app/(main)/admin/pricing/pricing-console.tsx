@@ -94,7 +94,7 @@ function CatalogSection({
   return (
     <AdminSection
       title="Catalog"
-      description="Every base (Business, Collective, Non Profit, Independent) plus the Vera AI add-on and the seats. Each price shows a list anchor and the Opening Beta price under it, monthly AND yearly, every field populated. The Opening Beta price is what is charged today; the list price is the anchor it sits under (where there is no beta discount, the two match). The yearly stays two months free as you change the monthly, unless you type a different yearly."
+      description="Every base (Business, Collective, Non Profit, Independent) plus the Vera AI add-on and the seats. Each price shows a list anchor and the Opening Beta price under it, monthly AND yearly, every field populated. The Opening Beta window is CLOSED (ADR-1060), so the LIST price is what is charged today and the beta figure under it is history until someone re-opens the window in lib/pricing/beta.ts. The yearly stays two months free as you change the monthly, unless you type a different yearly."
     >
       <FormSection
         title="Business base"
@@ -107,7 +107,7 @@ function CatalogSection({
 
       <FormSection
         title="Collective base"
-        description="Everything in Business plus automations, team roles, multiple pipelines, and hosting collaborators (ADR-811). The Opening Beta price is the anchor charged today; run the catalog sync after changing it."
+        description="Everything in Business plus automations, team roles, multiple pipelines, and hosting collaborators (ADR-811). The list price is what is charged today (the Opening Beta window closed, ADR-1060); run the catalog sync after changing it."
       >
         <div className="space-y-4">
           <CatalogItemRow item={byKey.collective_base} />

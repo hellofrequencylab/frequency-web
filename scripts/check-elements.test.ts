@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest'
-// @ts-expect-error — plain .mjs guard script, no types
 import { elementViolations, runCheck, scannedFiles, MIN_SCANNED_FILES } from './check-elements.mjs'
 
 // Locks the embeddable-elements contract guard (ADR-792, docs/EMBEDDABLE-ELEMENTS.md). elementViolations

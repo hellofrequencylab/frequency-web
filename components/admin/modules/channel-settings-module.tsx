@@ -210,6 +210,7 @@ export function ChannelSettingsModule() {
             <span className="shrink-0">/channels/</span>
             <Input
               variant="seamless"
+              aria-label="URL"
               value={urlSlug}
               onChange={(e) => setUrlSlug(e.target.value)}
               disabled={slugPending}

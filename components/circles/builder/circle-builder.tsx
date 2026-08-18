@@ -4,8 +4,11 @@ import { useCallback, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Check, Eye, Send, Loader2, Plus, X, CalendarPlus } from 'lucide-react'
-import type { PillarSlug } from '@/lib/pillars'
-import { PILLAR_SLUGS } from '@/lib/pillars'
+// The closed slug set, NOT from '@/lib/pillars' — that module reads practices through the
+// service-role client and is `server-only` by transitive construction; this is a client component.
+// lib/pillars/slugs.ts is the dependency-free half it re-exports (LIVE-009).
+import type { PillarSlug } from '@/lib/pillars/slugs'
+import { PILLAR_SLUGS } from '@/lib/pillars/slugs'
 import type { CircleDraft, CircleDraftPatch } from '@/lib/circles/draft'
 import type { CircleComposeSection, CircleComposeResult } from '@/lib/ai/circle-compose'
 import {
