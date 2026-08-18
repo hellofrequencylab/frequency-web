@@ -51,29 +51,29 @@ describe('the file that actually ships', () => {
   // ever shrink. It did its job on 2026-08-18: the eight OWN-014 entries below were added and this
   // assertion failed in CI until they were named here on purpose.
   //
-  // TWO GROUPS, and they are owed different things.
-  //   • The three LIVE-023 ceilings are blocked on an axe run against a real deployment (OWN-002).
-  //     Nothing has measured those surfaces honestly, so a number would be invented.
-  //   • The eight OWN-014 ceilings are the opposite case: they ARE measured, at 3/3/3/3/3/4/6/7,
-  //     and they are carried by an explicit owner decision on 2026-08-18 rather than fixed in that
-  //     change. The failing pair is white on the amber button, #FFFFFF on #F0AD4E = 1.95:1 against
-  //     a 4.5:1 requirement, revealed (not caused) when LIVE-008 fixed a selector that could never
-  //     match. Both remedies are one line and recorded on OWN-014; whichever is picked retires all
-  //     eight in the same pass.
-  it('declares exactly the LIVE-023 and OWN-014 ceilings, and nothing else', () => {
+  // ONLY THE LIVE-023 THREE ARE CEILINGS NOW, and the reason is the good one.
+  //
+  // The eight OWN-014 entries were declared as ceilings on 2026-08-18 and a capture run against a
+  // real deployment REPLACED THEM WITH READINGS the same night — exactly what this guard's own
+  // output promises ("they stay listed here until a run replaces them with readings"). That is a
+  // TIGHTENING, not a loss: a ceiling only catches a rise, while a reading is an assertion that the
+  // measured value IS that number, so it fails in BOTH directions. The amber debt is still carried,
+  // at the same 3/3/3/3/3/4/6/7, and it is now held more strictly than when it was waived.
+  //
+  // The failing pair is white on the amber button, #FFFFFF on #F0AD4E = 1.95:1 against a 4.5:1
+  // requirement, revealed (not caused) when LIVE-008 fixed a selector that could never match. Both
+  // remedies are one line and recorded on OWN-014; whichever is picked retires all eight, and the
+  // readings will fall, which this file will then notice as an improvement to write down.
+  //
+  // What remains a ceiling is the three LIVE-023 shell surfaces, and they are the genuine case for
+  // one: they are blocked on an axe run behind a member session (OWN-002). Nothing has measured
+  // them honestly, so any number here would be invented.
+  it('declares exactly the LIVE-023 shell ceilings, and nothing else', () => {
     const { ceilings, readings } = validate(shipped)
     expect(ceilings.map((c: { context: string }) => c.context).sort()).toEqual([
-      '/ [midnight-dark, contrast only, desktop]',
-      '/about [midnight-dark, contrast only, desktop]',
-      '/discover [midnight-dark, contrast only, desktop]',
       '/feed [dawn-light, desktop]',
-      '/pricing [midnight-dark, contrast only, desktop]',
       '/settings [dawn-light, desktop]',
-      '/spaces [midnight-dark, contrast only, desktop]',
       '/spaces/danieltyack/manage [dawn-light, desktop]',
-      '/the-community [midnight-dark, contrast only, desktop]',
-      '/the-lab [midnight-dark, contrast only, desktop]',
-      '/the-quest [midnight-dark, contrast only, desktop]',
     ])
     // 38, LOWERED FROM 40 ON 2026-08-18, AND THAT IS A LOSS RATHER THAN A TIDY-UP. This floor
     // exists so the assertion above cannot pass over nothing, and it fell only because eight
