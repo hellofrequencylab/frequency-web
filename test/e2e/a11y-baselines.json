@@ -164,17 +164,77 @@
     "/ [dawn-dark, contrast only, desktop]": 0,
     "/ [dawn-light, desktop]": 7,
     "/ [dawn-light, mobile]": 7,
-    "/ [midnight-dark, contrast only, desktop]": 0,
+    "/ [midnight-dark, contrast only, desktop]": {
+      "ceiling": 3,
+      "why": "Not a reading, and not a run-to-run wobble: a REAL, MEASURED contrast regression the owner has chosen to carry rather than fix today (2026-08-18). The failing pair is white text on the amber button, #FFFFFF on #F0AD4E = 1.95:1 against a 4.5:1 requirement. It is PRE-EXISTING and was invisible until LIVE-008 fixed a selector that could never match, so midnight-dark now paints its real palette instead of falling back to the generic .dark one. Two remedies are measured and recorded on backlog row OWN-014: darken the foreground on the amber (#1C2535 on #F0AD4E = 7.90:1, brand colour untouched) or give midnight-dark a genuine primary-strong (#7A4A0E with white = 7.46:1, the shape midnight-LIGHT already uses at #8C5410 = 6.19:1). Note the remedy OWN-014 originally proposed is a NO-OP here: midnight-dark sets --color-primary-strong to #F0AD4E, the same value as --color-primary, so swapping to it changes nothing. This is a ceiling and not a reading because the number is expected to go to 0, not to hold.",
+      "retiredBy": "Pick A or B on backlog row OWN-014, apply it, then PW_A11Y_UPDATE=1 pnpm test:e2e:a11y && pnpm a11y:baselines to convert these eight back into readings at 0.",
+      "frozen": {
+        "at": "2026-08-18",
+        "value": 3,
+        "from": 0,
+        "direction": "raised",
+        "reason": "Owner decision 2026-08-18: carry the amber-button contrast failure as a declared ceiling rather than fix it in this change or launder it into a reading. LIVE-008 made midnight-dark paint its real palette, and the failure it revealed is pre-existing. Measured in CI run 32077367930, which REFUSED to raise these automatically. Printed by check:a11y-baselines on every run until OWN-014 is decided."
+      },
+      "history": [
+        {
+          "at": "2026-08-18",
+          "value": 3,
+          "from": 0,
+          "direction": "raised",
+          "reason": "Owner decision 2026-08-18: carry the amber-button contrast failure as a declared ceiling rather than fix it in this change or launder it into a reading. LIVE-008 made midnight-dark paint its real palette, and the failure it revealed is pre-existing. Measured in CI run 32077367930, which REFUSED to raise these automatically. Printed by check:a11y-baselines on every run until OWN-014 is decided."
+        }
+      ]
+    },
     "/ [midnight-light, contrast only, desktop]": 7,
     "/about [dawn-dark, contrast only, desktop]": 0,
     "/about [dawn-light, desktop]": 3,
     "/about [dawn-light, mobile]": 1,
-    "/about [midnight-dark, contrast only, desktop]": 0,
+    "/about [midnight-dark, contrast only, desktop]": {
+      "ceiling": 3,
+      "why": "Not a reading, and not a run-to-run wobble: a REAL, MEASURED contrast regression the owner has chosen to carry rather than fix today (2026-08-18). The failing pair is white text on the amber button, #FFFFFF on #F0AD4E = 1.95:1 against a 4.5:1 requirement. It is PRE-EXISTING and was invisible until LIVE-008 fixed a selector that could never match, so midnight-dark now paints its real palette instead of falling back to the generic .dark one. Two remedies are measured and recorded on backlog row OWN-014: darken the foreground on the amber (#1C2535 on #F0AD4E = 7.90:1, brand colour untouched) or give midnight-dark a genuine primary-strong (#7A4A0E with white = 7.46:1, the shape midnight-LIGHT already uses at #8C5410 = 6.19:1). Note the remedy OWN-014 originally proposed is a NO-OP here: midnight-dark sets --color-primary-strong to #F0AD4E, the same value as --color-primary, so swapping to it changes nothing. This is a ceiling and not a reading because the number is expected to go to 0, not to hold.",
+      "retiredBy": "Pick A or B on backlog row OWN-014, apply it, then PW_A11Y_UPDATE=1 pnpm test:e2e:a11y && pnpm a11y:baselines to convert these eight back into readings at 0.",
+      "frozen": {
+        "at": "2026-08-18",
+        "value": 3,
+        "from": 0,
+        "direction": "raised",
+        "reason": "Owner decision 2026-08-18: carry the amber-button contrast failure as a declared ceiling rather than fix it in this change or launder it into a reading. LIVE-008 made midnight-dark paint its real palette, and the failure it revealed is pre-existing. Measured in CI run 32077367930, which REFUSED to raise these automatically. Printed by check:a11y-baselines on every run until OWN-014 is decided."
+      },
+      "history": [
+        {
+          "at": "2026-08-18",
+          "value": 3,
+          "from": 0,
+          "direction": "raised",
+          "reason": "Owner decision 2026-08-18: carry the amber-button contrast failure as a declared ceiling rather than fix it in this change or launder it into a reading. LIVE-008 made midnight-dark paint its real palette, and the failure it revealed is pre-existing. Measured in CI run 32077367930, which REFUSED to raise these automatically. Printed by check:a11y-baselines on every run until OWN-014 is decided."
+        }
+      ]
+    },
     "/about [midnight-light, contrast only, desktop]": 3,
     "/discover [dawn-dark, contrast only, desktop]": 0,
     "/discover [dawn-light, desktop]": 5,
     "/discover [dawn-light, mobile]": 4,
-    "/discover [midnight-dark, contrast only, desktop]": 0,
+    "/discover [midnight-dark, contrast only, desktop]": {
+      "ceiling": 3,
+      "why": "Not a reading, and not a run-to-run wobble: a REAL, MEASURED contrast regression the owner has chosen to carry rather than fix today (2026-08-18). The failing pair is white text on the amber button, #FFFFFF on #F0AD4E = 1.95:1 against a 4.5:1 requirement. It is PRE-EXISTING and was invisible until LIVE-008 fixed a selector that could never match, so midnight-dark now paints its real palette instead of falling back to the generic .dark one. Two remedies are measured and recorded on backlog row OWN-014: darken the foreground on the amber (#1C2535 on #F0AD4E = 7.90:1, brand colour untouched) or give midnight-dark a genuine primary-strong (#7A4A0E with white = 7.46:1, the shape midnight-LIGHT already uses at #8C5410 = 6.19:1). Note the remedy OWN-014 originally proposed is a NO-OP here: midnight-dark sets --color-primary-strong to #F0AD4E, the same value as --color-primary, so swapping to it changes nothing. This is a ceiling and not a reading because the number is expected to go to 0, not to hold.",
+      "retiredBy": "Pick A or B on backlog row OWN-014, apply it, then PW_A11Y_UPDATE=1 pnpm test:e2e:a11y && pnpm a11y:baselines to convert these eight back into readings at 0.",
+      "frozen": {
+        "at": "2026-08-18",
+        "value": 3,
+        "from": 0,
+        "direction": "raised",
+        "reason": "Owner decision 2026-08-18: carry the amber-button contrast failure as a declared ceiling rather than fix it in this change or launder it into a reading. LIVE-008 made midnight-dark paint its real palette, and the failure it revealed is pre-existing. Measured in CI run 32077367930, which REFUSED to raise these automatically. Printed by check:a11y-baselines on every run until OWN-014 is decided."
+      },
+      "history": [
+        {
+          "at": "2026-08-18",
+          "value": 3,
+          "from": 0,
+          "direction": "raised",
+          "reason": "Owner decision 2026-08-18: carry the amber-button contrast failure as a declared ceiling rather than fix it in this change or launder it into a reading. LIVE-008 made midnight-dark paint its real palette, and the failure it revealed is pre-existing. Measured in CI run 32077367930, which REFUSED to raise these automatically. Printed by check:a11y-baselines on every run until OWN-014 is decided."
+        }
+      ]
+    },
     "/discover [midnight-light, contrast only, desktop]": 5,
     "/feed [dawn-dark, contrast only, desktop]": 0,
     "/feed [dawn-light, desktop]": {
@@ -202,7 +262,27 @@
     "/pricing [dawn-dark, contrast only, desktop]": 0,
     "/pricing [dawn-light, desktop]": 0,
     "/pricing [dawn-light, mobile]": 0,
-    "/pricing [midnight-dark, contrast only, desktop]": 0,
+    "/pricing [midnight-dark, contrast only, desktop]": {
+      "ceiling": 3,
+      "why": "Not a reading, and not a run-to-run wobble: a REAL, MEASURED contrast regression the owner has chosen to carry rather than fix today (2026-08-18). The failing pair is white text on the amber button, #FFFFFF on #F0AD4E = 1.95:1 against a 4.5:1 requirement. It is PRE-EXISTING and was invisible until LIVE-008 fixed a selector that could never match, so midnight-dark now paints its real palette instead of falling back to the generic .dark one. Two remedies are measured and recorded on backlog row OWN-014: darken the foreground on the amber (#1C2535 on #F0AD4E = 7.90:1, brand colour untouched) or give midnight-dark a genuine primary-strong (#7A4A0E with white = 7.46:1, the shape midnight-LIGHT already uses at #8C5410 = 6.19:1). Note the remedy OWN-014 originally proposed is a NO-OP here: midnight-dark sets --color-primary-strong to #F0AD4E, the same value as --color-primary, so swapping to it changes nothing. This is a ceiling and not a reading because the number is expected to go to 0, not to hold.",
+      "retiredBy": "Pick A or B on backlog row OWN-014, apply it, then PW_A11Y_UPDATE=1 pnpm test:e2e:a11y && pnpm a11y:baselines to convert these eight back into readings at 0.",
+      "frozen": {
+        "at": "2026-08-18",
+        "value": 3,
+        "from": 0,
+        "direction": "raised",
+        "reason": "Owner decision 2026-08-18: carry the amber-button contrast failure as a declared ceiling rather than fix it in this change or launder it into a reading. LIVE-008 made midnight-dark paint its real palette, and the failure it revealed is pre-existing. Measured in CI run 32077367930, which REFUSED to raise these automatically. Printed by check:a11y-baselines on every run until OWN-014 is decided."
+      },
+      "history": [
+        {
+          "at": "2026-08-18",
+          "value": 3,
+          "from": 0,
+          "direction": "raised",
+          "reason": "Owner decision 2026-08-18: carry the amber-button contrast failure as a declared ceiling rather than fix it in this change or launder it into a reading. LIVE-008 made midnight-dark paint its real palette, and the failure it revealed is pre-existing. Measured in CI run 32077367930, which REFUSED to raise these automatically. Printed by check:a11y-baselines on every run until OWN-014 is decided."
+        }
+      ]
+    },
     "/pricing [midnight-light, contrast only, desktop]": 0,
     "/settings [dawn-dark, contrast only, desktop]": 0,
     "/settings [dawn-light, desktop]": {
@@ -230,7 +310,27 @@
     "/spaces [dawn-dark, contrast only, desktop]": 2,
     "/spaces [dawn-light, desktop]": 14,
     "/spaces [dawn-light, mobile]": 12,
-    "/spaces [midnight-dark, contrast only, desktop]": 2,
+    "/spaces [midnight-dark, contrast only, desktop]": {
+      "ceiling": 6,
+      "why": "Not a reading, and not a run-to-run wobble: a REAL, MEASURED contrast regression the owner has chosen to carry rather than fix today (2026-08-18). The failing pair is white text on the amber button, #FFFFFF on #F0AD4E = 1.95:1 against a 4.5:1 requirement. It is PRE-EXISTING and was invisible until LIVE-008 fixed a selector that could never match, so midnight-dark now paints its real palette instead of falling back to the generic .dark one. Two remedies are measured and recorded on backlog row OWN-014: darken the foreground on the amber (#1C2535 on #F0AD4E = 7.90:1, brand colour untouched) or give midnight-dark a genuine primary-strong (#7A4A0E with white = 7.46:1, the shape midnight-LIGHT already uses at #8C5410 = 6.19:1). Note the remedy OWN-014 originally proposed is a NO-OP here: midnight-dark sets --color-primary-strong to #F0AD4E, the same value as --color-primary, so swapping to it changes nothing. This is a ceiling and not a reading because the number is expected to go to 0, not to hold.",
+      "retiredBy": "Pick A or B on backlog row OWN-014, apply it, then PW_A11Y_UPDATE=1 pnpm test:e2e:a11y && pnpm a11y:baselines to convert these eight back into readings at 0.",
+      "frozen": {
+        "at": "2026-08-18",
+        "value": 6,
+        "from": 2,
+        "direction": "raised",
+        "reason": "Owner decision 2026-08-18: carry the amber-button contrast failure as a declared ceiling rather than fix it in this change or launder it into a reading. LIVE-008 made midnight-dark paint its real palette, and the failure it revealed is pre-existing. Measured in CI run 32077367930, which REFUSED to raise these automatically. Printed by check:a11y-baselines on every run until OWN-014 is decided."
+      },
+      "history": [
+        {
+          "at": "2026-08-18",
+          "value": 6,
+          "from": 2,
+          "direction": "raised",
+          "reason": "Owner decision 2026-08-18: carry the amber-button contrast failure as a declared ceiling rather than fix it in this change or launder it into a reading. LIVE-008 made midnight-dark paint its real palette, and the failure it revealed is pre-existing. Measured in CI run 32077367930, which REFUSED to raise these automatically. Printed by check:a11y-baselines on every run until OWN-014 is decided."
+        }
+      ]
+    },
     "/spaces [midnight-light, contrast only, desktop]": 14,
     "/spaces/danieltyack/manage [dawn-dark, contrast only, desktop]": 0,
     "/spaces/danieltyack/manage [dawn-light, desktop]": {
@@ -258,17 +358,77 @@
     "/the-community [dawn-dark, contrast only, desktop]": 3,
     "/the-community [dawn-light, desktop]": 11,
     "/the-community [dawn-light, mobile]": 11,
-    "/the-community [midnight-dark, contrast only, desktop]": 3,
+    "/the-community [midnight-dark, contrast only, desktop]": {
+      "ceiling": 7,
+      "why": "Not a reading, and not a run-to-run wobble: a REAL, MEASURED contrast regression the owner has chosen to carry rather than fix today (2026-08-18). The failing pair is white text on the amber button, #FFFFFF on #F0AD4E = 1.95:1 against a 4.5:1 requirement. It is PRE-EXISTING and was invisible until LIVE-008 fixed a selector that could never match, so midnight-dark now paints its real palette instead of falling back to the generic .dark one. Two remedies are measured and recorded on backlog row OWN-014: darken the foreground on the amber (#1C2535 on #F0AD4E = 7.90:1, brand colour untouched) or give midnight-dark a genuine primary-strong (#7A4A0E with white = 7.46:1, the shape midnight-LIGHT already uses at #8C5410 = 6.19:1). Note the remedy OWN-014 originally proposed is a NO-OP here: midnight-dark sets --color-primary-strong to #F0AD4E, the same value as --color-primary, so swapping to it changes nothing. This is a ceiling and not a reading because the number is expected to go to 0, not to hold.",
+      "retiredBy": "Pick A or B on backlog row OWN-014, apply it, then PW_A11Y_UPDATE=1 pnpm test:e2e:a11y && pnpm a11y:baselines to convert these eight back into readings at 0.",
+      "frozen": {
+        "at": "2026-08-18",
+        "value": 7,
+        "from": 3,
+        "direction": "raised",
+        "reason": "Owner decision 2026-08-18: carry the amber-button contrast failure as a declared ceiling rather than fix it in this change or launder it into a reading. LIVE-008 made midnight-dark paint its real palette, and the failure it revealed is pre-existing. Measured in CI run 32077367930, which REFUSED to raise these automatically. Printed by check:a11y-baselines on every run until OWN-014 is decided."
+      },
+      "history": [
+        {
+          "at": "2026-08-18",
+          "value": 7,
+          "from": 3,
+          "direction": "raised",
+          "reason": "Owner decision 2026-08-18: carry the amber-button contrast failure as a declared ceiling rather than fix it in this change or launder it into a reading. LIVE-008 made midnight-dark paint its real palette, and the failure it revealed is pre-existing. Measured in CI run 32077367930, which REFUSED to raise these automatically. Printed by check:a11y-baselines on every run until OWN-014 is decided."
+        }
+      ]
+    },
     "/the-community [midnight-light, contrast only, desktop]": 11,
     "/the-lab [dawn-dark, contrast only, desktop]": 0,
     "/the-lab [dawn-light, desktop]": 1,
     "/the-lab [dawn-light, mobile]": 1,
-    "/the-lab [midnight-dark, contrast only, desktop]": 0,
+    "/the-lab [midnight-dark, contrast only, desktop]": {
+      "ceiling": 3,
+      "why": "Not a reading, and not a run-to-run wobble: a REAL, MEASURED contrast regression the owner has chosen to carry rather than fix today (2026-08-18). The failing pair is white text on the amber button, #FFFFFF on #F0AD4E = 1.95:1 against a 4.5:1 requirement. It is PRE-EXISTING and was invisible until LIVE-008 fixed a selector that could never match, so midnight-dark now paints its real palette instead of falling back to the generic .dark one. Two remedies are measured and recorded on backlog row OWN-014: darken the foreground on the amber (#1C2535 on #F0AD4E = 7.90:1, brand colour untouched) or give midnight-dark a genuine primary-strong (#7A4A0E with white = 7.46:1, the shape midnight-LIGHT already uses at #8C5410 = 6.19:1). Note the remedy OWN-014 originally proposed is a NO-OP here: midnight-dark sets --color-primary-strong to #F0AD4E, the same value as --color-primary, so swapping to it changes nothing. This is a ceiling and not a reading because the number is expected to go to 0, not to hold.",
+      "retiredBy": "Pick A or B on backlog row OWN-014, apply it, then PW_A11Y_UPDATE=1 pnpm test:e2e:a11y && pnpm a11y:baselines to convert these eight back into readings at 0.",
+      "frozen": {
+        "at": "2026-08-18",
+        "value": 3,
+        "from": 0,
+        "direction": "raised",
+        "reason": "Owner decision 2026-08-18: carry the amber-button contrast failure as a declared ceiling rather than fix it in this change or launder it into a reading. LIVE-008 made midnight-dark paint its real palette, and the failure it revealed is pre-existing. Measured in CI run 32077367930, which REFUSED to raise these automatically. Printed by check:a11y-baselines on every run until OWN-014 is decided."
+      },
+      "history": [
+        {
+          "at": "2026-08-18",
+          "value": 3,
+          "from": 0,
+          "direction": "raised",
+          "reason": "Owner decision 2026-08-18: carry the amber-button contrast failure as a declared ceiling rather than fix it in this change or launder it into a reading. LIVE-008 made midnight-dark paint its real palette, and the failure it revealed is pre-existing. Measured in CI run 32077367930, which REFUSED to raise these automatically. Printed by check:a11y-baselines on every run until OWN-014 is decided."
+        }
+      ]
+    },
     "/the-lab [midnight-light, contrast only, desktop]": 1,
     "/the-quest [dawn-dark, contrast only, desktop]": 0,
     "/the-quest [dawn-light, desktop]": 10,
     "/the-quest [dawn-light, mobile]": 8,
-    "/the-quest [midnight-dark, contrast only, desktop]": 0,
+    "/the-quest [midnight-dark, contrast only, desktop]": {
+      "ceiling": 4,
+      "why": "Not a reading, and not a run-to-run wobble: a REAL, MEASURED contrast regression the owner has chosen to carry rather than fix today (2026-08-18). The failing pair is white text on the amber button, #FFFFFF on #F0AD4E = 1.95:1 against a 4.5:1 requirement. It is PRE-EXISTING and was invisible until LIVE-008 fixed a selector that could never match, so midnight-dark now paints its real palette instead of falling back to the generic .dark one. Two remedies are measured and recorded on backlog row OWN-014: darken the foreground on the amber (#1C2535 on #F0AD4E = 7.90:1, brand colour untouched) or give midnight-dark a genuine primary-strong (#7A4A0E with white = 7.46:1, the shape midnight-LIGHT already uses at #8C5410 = 6.19:1). Note the remedy OWN-014 originally proposed is a NO-OP here: midnight-dark sets --color-primary-strong to #F0AD4E, the same value as --color-primary, so swapping to it changes nothing. This is a ceiling and not a reading because the number is expected to go to 0, not to hold.",
+      "retiredBy": "Pick A or B on backlog row OWN-014, apply it, then PW_A11Y_UPDATE=1 pnpm test:e2e:a11y && pnpm a11y:baselines to convert these eight back into readings at 0.",
+      "frozen": {
+        "at": "2026-08-18",
+        "value": 4,
+        "from": 0,
+        "direction": "raised",
+        "reason": "Owner decision 2026-08-18: carry the amber-button contrast failure as a declared ceiling rather than fix it in this change or launder it into a reading. LIVE-008 made midnight-dark paint its real palette, and the failure it revealed is pre-existing. Measured in CI run 32077367930, which REFUSED to raise these automatically. Printed by check:a11y-baselines on every run until OWN-014 is decided."
+      },
+      "history": [
+        {
+          "at": "2026-08-18",
+          "value": 4,
+          "from": 0,
+          "direction": "raised",
+          "reason": "Owner decision 2026-08-18: carry the amber-button contrast failure as a declared ceiling rather than fix it in this change or launder it into a reading. LIVE-008 made midnight-dark paint its real palette, and the failure it revealed is pre-existing. Measured in CI run 32077367930, which REFUSED to raise these automatically. Printed by check:a11y-baselines on every run until OWN-014 is decided."
+        }
+      ]
+    },
     "/the-quest [midnight-light, contrast only, desktop]": 10
   }
 }

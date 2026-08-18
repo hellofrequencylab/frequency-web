@@ -258,8 +258,8 @@
     },
     {
       "id": "OWN-014",
-      "title": "Decide the amber-on-button contrast failure — and note the row's own proposed remedy does not work in midnight-dark",
-      "status": "open",
+      "title": "DECIDE the amber-button contrast fix: 8 midnight-dark contexts are carried as declared ceilings until then",
+      "status": "blocked",
       "lane": "owner",
       "size": "S",
       "source": {
@@ -271,7 +271,8 @@
         "kind": "manual",
         "evidence": "Measured in CI 2026-08-17 (run 32077367930, `pnpm a11y:baselines`): 8 midnight-dark desktop contexts regressed, contrast only, and the capture REFUSED to raise the baselines rather than laundering the rise. Ratios computed from the tokens in app/globals.css: #FFFFFF on #F0AD4E = 1.95:1; #FFFFFF on #8C5410 = 6.19:1; #1C2535 on #F0AD4E = 7.90:1. Not repo-probeable: which remedy to take is a brand decision, and a probe asserting either one would force a choice the owner has not made.",
         "checked": "2026-08-17"
-      }
+      },
+      "notes": "OWNER DECISION 2026-08-18: WAIVE FOR NOW. The eight midnight-dark desktop contrast contexts are declared CEILINGS in test/e2e/a11y-baselines.json (/, /about, /discover, /pricing, /the-lab at 3; /the-quest 4; /spaces 6; /the-community 7), each carrying the measurement, both remedies, and the exact command that converts it back to a reading at 0. check:a11y-baselines prints every one of them on EVERY run - 'every ceiling is headroom a real regression can sit in while this prints a tick' - so the debt is carried in the open rather than hidden. This unblocks pr-compare without laundering a WCAG failure into a recorded fact. 🔴 THE ROW IS BLOCKED, NOT DONE. A known 1.95:1 pair is live in production on the amber button in midnight-dark. Both fixes are measured and one line each: (A) #1C2535 on #F0AD4E = 7.90:1, brand colour untouched; (B) --color-primary-strong #7A4A0E with white = 7.46:1, the shape midnight-LIGHT already uses. Whichever is picked, the eight ceilings retire in the same pass."
     },
     {
       "id": "OWN-015",
@@ -1785,7 +1786,8 @@
         "kind": "manual",
         "evidence": "Measured 2026-08-17: profiles.handle='ishasetlumi' (cf78ac3f-4f5d-4158-aa10-6cac3e842206) has membership_tier=crew, is_founding_member=false, locked_price_id=null, stripe_customer_id=null. spaces.slug='templeofaset' has plan='collective', owner_profile_id=that profile, last_plan_event_at 2026-07-27. space_subscription_items is empty (0 rows) across the whole table, so no lock exists for any Space. Amount and cash tender reported by the owner.",
         "checked": "2026-08-17"
-      }
+      },
+      "notes": "OWNER ANSWER 2026-08-18: SHE RENEWS 1 AUGUST 2027. That settles the half nothing in the system records. Two obligations follow and both must be written down before she is onboarded to Stripe, because onboarding without the price lock is what silently charges her the $790 list annual: (1) she is PAID THROUGH 2027-07-31 and must not be billed at all before then; (2) the renewal on 2027-08-01 is $490, the annual Collective founding rate ($49 x 10, two months free), not $790. The founding price id stays usable in a NEW subscription precisely because the catalog sync never archives a Stripe price (ADR-1062), so the lock has something to point at. Note the date is NOT the ~2027-07 the data suggested from last_plan_event_at 2026-07-27, and not the September 1 mentioned earlier in the session - it is the owner's answer and it supersedes both."
     },
     {
       "id": "LIVE-033",
