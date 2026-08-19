@@ -281,8 +281,59 @@ if (!shellSource.includes(CONTROL.text)) {
   )
 }
 
-const allChunks = globSync('static/chunks/**/*.js', { cwd: NEXT_DIR }).map((f) => path.join(NEXT_DIR, f))
-const findableInBuild = (needle) => allChunks.some((p) => readFileSync(p, 'utf8').includes(needle))
+// ── THE BUILD-WIDE SCAN SET, AND THE CONTROL IT WAS MISSING ─────────────────────────────────
+// 🔴 THIS LINE USED TO READ `globSync('static/chunks/**/*.js')`, AND ON VERCEL IT MATCHED NOTHING.
+// Vercel's deployment adapter sets `supportsImmutableAssets` (see next/dist/server/config-shared.d.ts
+// and `finalizeConfig` in next/dist/server/config.js), which relocates client chunks from
+// `static/chunks/` to `static/immutable/chunks/`. A LOCAL `next build` does not set that flag, so
+// the old glob worked locally and returned an EMPTY ARRAY on every Vercel build.
+//
+// The consequence was not a wrong number, it was a silent one: `findableInBuild` was false for every
+// fingerprint, so the gate bailed on whichever row it checked first and blamed that row's LITERAL.
+// The literal was fine. Arm B — the arm with teeth — had no way to be true. Confirmed against the
+// live artifact of dpl_6FfMfAv7mHXQ3P2X3GmTxSCwDvEz: all 24 asset references in the served HTML are
+// under /_next/static/immutable/chunks/, none under /_next/static/chunks/ (LIVE-035, 2026-08-19).
+//
+// So the root is DERIVED, not hardcoded: `shellChunks` came from the real client-reference manifests
+// and every path in it was just `existsSync`-validated above, which makes their directory the one
+// place we know the build actually wrote client chunks to.
+const chunkRoots = new Set([...shellChunks].map((f) => path.posix.dirname(f)))
+const allChunks = [
+  ...new Set([...chunkRoots].flatMap((root) => globSync(`${root}/**/*.js`, { cwd: NEXT_DIR }))),
+].map((f) => path.join(NEXT_DIR, f))
+
+// ⚠️ DO NOT WIDEN THIS TO `.next/**`. The SSR copies under `.next/server/chunks/ssr/` carry the same
+// literals, so a scan that includes them would make every fingerprint findable forever — the same
+// vacuous pass this block exists to end, arrived at from the opposite direction.
+
+// THE CONTROL THIS GATE DID NOT HAVE. There was a positive control for the SHELL set (`CONTROL`
+// below/above) and none for the BUILD-WIDE set, and the build-wide set was the one built from a
+// hardcoded path. Every chunk the manifest names must be inside the set we are about to grep; if it
+// is not, the scan root moved and every "appears in NO built chunk" verdict is about the SCAN rather
+// than the literal. Fail naming the cause, which is exactly what the old code could not do.
+const scannedSet = new Set(allChunks)
+const unscanned = chunkPaths.filter((p) => !scannedSet.has(p))
+if (unscanned.length > 0) {
+  fail(
+    `the build-wide chunk scan (${allChunks.length} file(s) under ${[...chunkRoots].join(', ') || '<no root>'}) ` +
+      `does not contain ${unscanned.length} of the ${chunkPaths.length} chunk(s) the manifest names.\n` +
+      `   First missing: ${path.relative(NEXT_DIR, unscanned[0])}\n` +
+      '   The chunk directory moved. Vercel sets supportsImmutableAssets, which relocates client\n' +
+      '   chunks to static/immutable/chunks; a local build does not. Fix the scan before trusting\n' +
+      '   any fingerprint verdict below — they are all about the scan while this is true.',
+  )
+}
+
+// Say where it looked, on every run. The whole defect above was invisible because nothing printed
+// the root, so a vacuous scan and a clean one read identically.
+console.log(
+  `   scanning ${allChunks.length} built chunk(s) under ${[...chunkRoots].join(', ')}; ` +
+    `shell set = ${chunkPaths.length} chunk(s).`,
+)
+
+// One read of each chunk, not one per needle: this used to re-read every chunk once per fingerprint.
+const buildText = allChunks.map((p) => readFileSync(p, 'utf8')).join('\n')
+const findableInBuild = (needle) => buildText.includes(needle)
 
 for (const fp of FINGERPRINTS) {
   const src = path.join(ROOT, fp.source)
