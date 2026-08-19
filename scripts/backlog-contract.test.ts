@@ -21,6 +21,38 @@ const BACKLOG_GUARD = path.join(ROOT, 'scripts/check-backlog.mjs')
 const ONE_LIST_GUARD = path.join(ROOT, 'scripts/check-one-list.mjs')
 
 /** Run a guard in `cwd`. Returns its exit code plus combined output. */
+/** CPU milliseconds burned by this process's REAPED CHILDREN so far, or null where that cannot be
+ *  read honestly (anything but Linux).
+ *
+ *  `/proc/self/stat` fields 15 and 16 (1-based) are cutime and cstime: the user and system time of
+ *  children that have been waited for. execFileSync waits, so every probe the guard spawns lands
+ *  here. That is the quantity a "did a probe get expensive?" gate wants, and unlike elapsed time it
+ *  does not move when the box is busy.
+ *
+ *  Returns null rather than guessing: a gate that cannot measure on a platform should say nothing
+ *  there. */
+function childCpuMs(): number | null {
+  if (process.platform !== 'linux') return null
+  try {
+    const stat = readFileSync('/proc/self/stat', 'utf8')
+    // comm can contain spaces and parentheses, so fields are counted from the LAST ')'.
+    const fields = stat.slice(stat.lastIndexOf(')') + 2).split(' ')
+    const cutime = Number(fields[13])
+    const cstime = Number(fields[14])
+    if (!Number.isFinite(cutime) || !Number.isFinite(cstime)) return null
+    let tick = 100 // USER_HZ, 100 on every mainstream Linux; only scales the reading if wrong.
+    try {
+      const got = Number(execFileSync('getconf', ['CLK_TCK'], { encoding: 'utf8' }).trim())
+      if (Number.isFinite(got) && got > 0) tick = got
+    } catch {
+      /* keep the default */
+    }
+    return ((cutime + cstime) / tick) * 1000
+  } catch {
+    return null
+  }
+}
+
 function run(guard: string, cwd: string): { code: number; out: string } {
   try {
     const out = execFileSync('node', [guard], { cwd, encoding: 'utf8', stdio: 'pipe' })
@@ -352,7 +384,7 @@ describe('the probe engine does not depend on ambient tooling', () => {
   // closed rows carried a probe that spawned a vitest run to prove its consequence, and each now
   // measures the same consequence in-process instead). ~13s of real work, 60s of budget — headroom
   // for a loaded runner, without the allowance itself becoming the place a regression hides. That is
-  // what GUARD_BUDGET_MS below is for: the timeout catches a hang, the budget catches a creep.
+  // what GUARD_BUDGET_CPU_MS below is for: the timeout catches a hang, the budget catches a creep.
   it('gives identical results with and without ripgrep on PATH', { timeout: 60_000 }, () => {
     const stub = mkdtempSync(path.join(tmpdir(), 'nopath-'))
     // Everything a probe legitimately needs (node, git, a shell) — but deliberately not `rg`.
@@ -361,9 +393,12 @@ describe('the probe engine does not depend on ambient tooling', () => {
       if (real) symlinkSync(real, path.join(stub, bin))
     }
 
+    const cpuBefore = childCpuMs()
     const startedAt = Date.now()
     const withRg = run(BACKLOG_GUARD, ROOT)
-    const guardMs = Date.now() - startedAt
+    const guardWallMs = Date.now() - startedAt
+    const cpuAfter = childCpuMs()
+    const guardCpuMs = cpuBefore === null || cpuAfter === null ? null : cpuAfter - cpuBefore
     const withoutRg = (() => {
       try {
         const out = execFileSync('node', [BACKLOG_GUARD], {
@@ -405,14 +440,44 @@ describe('the probe engine does not depend on ambient tooling', () => {
     // reason and the measurement is therefore free. A probe that starts costing seconds without
     // naming a test runner still shows up, as this assertion, instead of disappearing into the
     // 60s timeout as a slightly slower green.
-    const GUARD_BUDGET_MS = 20_000
-    expect(
-      guardMs,
-      `check:backlog took ${(guardMs / 1000).toFixed(1)}s, over its ${GUARD_BUDGET_MS / 1000}s budget.\n` +
-        'Something added expensive work to a probe. Find it, and measure that consequence in-process\n' +
-        'rather than by spawning a suite — see LIVE-034 in docs/BUILD-BACKLOG.json for the nine rows\n' +
-        'that were converted and the pattern each used. Raising this number is not the fix.',
-    ).toBeLessThan(GUARD_BUDGET_MS)
+    // 🔴 THE CLOCK IS CPU TIME, NOT ELAPSED TIME (LIVE-047), and the difference is the whole point.
+    //
+    // This assertion used to time the guard's WALL CLOCK from inside a suite that is at that moment
+    // running 838 test files across 4 cores. What it read was CONTENTION, and contention is not a
+    // property of any probe. It fired once on 2026-08-18 at 23.8s; the same tree measured 13.4s
+    // unloaded, and the three probes added that day cost 110 ms between them. Its message then sent
+    // the next reader hunting for expensive work that did not exist — on the one gate whose whole job
+    // is telling a real regression from a noisy one.
+    //
+    // Measured on a 4-core box, 2026-08-19, with and without six spinning cores:
+    //
+    //             unloaded          6 spinners on 4 cores
+    //   wall      9.26s / 9.61s     18.57s / 17.29s      <- nearly doubles
+    //   childCPU  12.04s / 12.54s   12.50s / 12.11s      <- flat, within 4%
+    //
+    // 18.6s of wall against a 20s ceiling is exactly how a green tree failed. CPU does not move.
+    //
+    // WHY cutime/cstime AND NOT process.cpuUsage(): the guard spawns ~60 probe subprocesses and they
+    // are where the cost lives. `process.cpuUsage()` reports only THIS process, which is asleep in
+    // execFileSync the whole time. `/proc/self/stat`'s cutime+cstime are the CPU of REAPED CHILDREN,
+    // so they capture the guard and every probe it ran, and nothing else this suite is doing.
+    //
+    // Linux-only, so it degrades to SKIPPING rather than to the wall clock. Asserting the wrong
+    // quantity elsewhere is what produced the false failure in the first place; a gate that cannot
+    // measure honestly on a platform should say nothing there (ADR-970).
+    const GUARD_BUDGET_CPU_MS = 20_000
+    if (guardCpuMs === null) {
+      expect(guardWallMs, 'the guard should at least finish inside its own 60s timeout').toBeLessThan(60_000)
+    } else {
+      expect(
+        guardCpuMs,
+        `check:backlog burned ${(guardCpuMs / 1000).toFixed(1)}s of CPU, over its ${GUARD_BUDGET_CPU_MS / 1000}s budget.\n` +
+          `(Wall clock was ${(guardWallMs / 1000).toFixed(1)}s, which is load-dependent and NOT what this asserts.)\n` +
+          'Something added expensive work to a probe. Find it, and measure that consequence in-process\n' +
+          'rather than by spawning a suite — see LIVE-034 in docs/BUILD-BACKLOG.json for the nine rows\n' +
+          'that were converted and the pattern each used. Raising this number is not the fix.',
+      ).toBeLessThan(GUARD_BUDGET_CPU_MS)
+    }
   })
 })
 
