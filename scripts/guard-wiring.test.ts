@@ -50,7 +50,20 @@ const UNWIRED: Record<string, string> = {
   // The rule these two keep proving: DEPLOY-SAFETY.md opens with an outage caused by gates that
   // passed while the artifact was broken, and wiring an UNPROVEN gate into postbuild is that failure
   // reversed. One green build decides it, and the wiring lands in the SAME commit as that build.
-  'check:cache-budget': 'artifact gate, defects fixed 2026-08-19 (ADR-1086); awaiting one green build before postbuild (LIVE-035)',
+  //
+  // ── check:cache-budget LEFT THIS LIST on 2026-08-19 (LIVE-035, owner-approved) ───────────────
+  // It is now in `postbuild` as `--warn-only`, which breaks the deadlock rather than ignoring it.
+  // The deadlock was real: the only thing that settles PACKED_PER_RAW is a reading from a real
+  // production artifact, and the only way to take that reading was to run on a real build. In
+  // warn-only the script measures and prints, never trims, and cannot exit non-zero -- not on the
+  // node_modules floor and not on its own crash, which is proven by mutation in this repo rather
+  // than asserted. So it cannot repeat what it did on 2026-08-18 while it earns its number.
+  //
+  // ⚠️ WARN-ONLY IS A STAGE, NOT A DESTINATION. A gate that only warns is one everyone learns to
+  // scroll past (ADR-970; check:adoption sat red on main for two days proving it again the same
+  // week). LIVE-029 stays OPEN until this is promoted to blocking, because until then nothing
+  // prevents a cache overflow. Promote it in the SAME change as the green build whose "Uploading
+  // build cache [N GB]" line confirms the constant.
   'check:shell-weight': 'artifact gate, awaiting one green production build before postbuild (LIVE-035)',
 }
 
