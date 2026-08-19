@@ -4,23 +4,22 @@ import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-// WARN-ONLY MUST NEVER BE ABLE TO FAIL A PRODUCTION BUILD.
+// WARN-ONLY MUST NEVER BE ABLE TO FAIL A BUILD -- and postbuild must never quietly fall back to it.
 //
-// `postbuild` runs on Vercel and a non-zero exit there kills the deploy. check:cache-budget is in
-// postbuild as `--warn-only` under LIVE-035, and the ONLY reason that is safe is the guarantee this
-// file locks down: in warn-only the script measures, prints, and exits 0 no matter what it finds or
-// what goes wrong inside it.
+// check:cache-budget ran its warn-only stage in postbuild under LIVE-035 and was PROMOTED to
+// blocking on 2026-08-19 (owner: "implement best practice"), after a real build printed the paired
+// reading that settled PACKED_PER_RAW (raw measure beside `Uploading build cache [N GB]`) and the
+// trim was restricted to a named compiler-cache list (ADR-1086, LIVE-048).
 //
-// That guarantee is one `process.exit(1)` away from being false, and the failure would be invisible
-// in review -- a new arm added months from now for a good reason, in a file whose other arms are
-// supposed to exit 1. This is the gate that notices (AGENTS.md). It is proven by MUTATION rather
-// than by reading: each case rewrites the script into a temp copy that forces the condition, then
-// runs it for real.
+// The `--warn-only` MODE stays in the script for local runs and any future re-staging, so its
+// guarantee stays locked down here: in warn-only the script measures, prints, and exits 0 no matter
+// what it finds or what goes wrong inside it. That guarantee is one `process.exit(1)` away from
+// being false, and the failure would be invisible in review. It is proven by MUTATION rather than
+// by reading: each case rewrites the script into a temp copy that forces the condition, then runs
+// it for real.
 //
-// ⚠️ WHEN PROMOTING TO BLOCKING: the last test here is the one that will fail, on purpose. Changing
-// it is how the promotion becomes a deliberate, reviewable line in a diff rather than a quiet edit
-// to a string in package.json. Do it in the SAME change as the green build that confirms
-// PACKED_PER_RAW -- see this file's header and docs/DEPLOY-SAFETY.md §10.
+// The LAST test inverted when the promotion landed: postbuild must now run the gate BARE, so a
+// re-added `--warn-only` fails as a silent demotion, the same trap the shell-weight pins set.
 
 const SCRIPT = 'scripts/check-cache-budget.mjs'
 const SRC = readFileSync(SCRIPT, 'utf8')
@@ -107,16 +106,18 @@ describe('check:cache-budget warn-only cannot fail a build', () => {
 })
 
 describe('postbuild wiring', () => {
-  it('invokes check:cache-budget with --warn-only, never bare', () => {
+  it('invokes check:cache-budget bare, never --warn-only', () => {
     const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as { scripts: Record<string, string> }
     const postbuild = pkg.scripts.postbuild ?? ''
     expect(postbuild).toContain('check-cache-budget.mjs')
+    const invocation = /check-cache-budget\.mjs([^&|;]*)/.exec(postbuild)?.[1] ?? ''
     expect(
-      postbuild,
-      'check-cache-budget.mjs is in postbuild WITHOUT --warn-only. That makes it able to fail a ' +
-        'production deploy on a constant (PACKED_PER_RAW) that no real build has confirmed yet. ' +
-        'If you are deliberately promoting it to blocking, update this test in the same change as ' +
-        'the green build that settles the constant (LIVE-035, docs/DEPLOY-SAFETY.md §10).',
-    ).toContain('check-cache-budget.mjs --warn-only')
+      invocation,
+      'check-cache-budget.mjs runs in postbuild WITH --warn-only, which un-promotes the gate: an ' +
+        'overflow would be reported in a log nobody reads and the deploy would ship it (ADR-970). ' +
+        'It was promoted to blocking on 2026-08-19 (LIVE-029/LIVE-035, owner-approved) in the same ' +
+        'change as the green build that proved it. If you are deliberately demoting it, say so ' +
+        'here, in the backlog rows, and in scripts/guard-wiring.test.ts -- not just in package.json.',
+    ).not.toContain('--warn-only')
   })
 })
