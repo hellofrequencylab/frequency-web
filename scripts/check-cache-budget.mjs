@@ -114,6 +114,46 @@
 import { lstatSync, readdirSync, rmSync, existsSync } from 'node:fs'
 import path from 'node:path'
 
+// ── WARN-ONLY: the stage between "fixed" and "enforcing" ────────────────────────────────────
+// LIVE-035's problem was never whether this gate is correct on paper. It is that the ONE thing it
+// could not have — a reading from a real production artifact — is also the only thing that settles
+// PACKED_PER_RAW, and the only way to get it was to run on a real build. Wiring it as a blocking
+// gate to obtain that reading is the 2026-08-11 incident with the roles reversed, and this file has
+// already killed two builds proving it.
+//
+// So it runs in postbuild in this mode first. `--warn-only` is not a softer version of the gate,
+// it is a DIFFERENT job:
+//   • it MEASURES and PRINTS, which is the whole point — the raw figure printed next to the same
+//     build's "Uploading build cache [N GB]" line is what re-derives the constant;
+//   • it NEVER TRIMS, so the defect that hung two builds for 46 minutes cannot recur even if the
+//     named-cache logic is wrong in some way nobody has thought of;
+//   • it NEVER EXITS NON-ZERO, including on the node_modules floor and including on its own crash.
+//
+// That last clause is deliberate and it is the reason this is safe to wire today: there is no
+// input, no bug and no unreadable directory that lets this line fail a production deploy. What it
+// buys in exchange for enforcing nothing is a number, printed on a real artifact, in a log we read.
+//
+// ⚠️ IT IS NOT A PLACE TO LEAVE THINGS. A gate that only warns is a gate everyone learns to scroll
+// past (ADR-970, and check:adoption spent two days red on main proving it again on 2026-08-18).
+// Promote it to blocking in the SAME change as the green build whose numbers confirm the constant.
+// Until then LIVE-029 is still open and nothing prevents a cache overflow.
+//
+// A swallowed crash still gets a gate that notices it fired: the handler below prints a 🔴 line
+// naming this file, so a broken measurement reads as broken rather than as absent.
+const WARN_ONLY = process.argv.includes('--warn-only')
+
+if (WARN_ONLY) {
+  process.on('uncaughtException', (err) => {
+    console.log(
+      `\n🔴 check:cache-budget (warn-only) CRASHED and is being ignored so it cannot fail this ` +
+        `build: ${err && err.stack ? err.stack : err}\n` +
+        `   No measurement was taken, so this build contributes nothing to settling PACKED_PER_RAW. ` +
+        `Fix the script before promoting it to blocking (LIVE-035).\n`,
+    )
+    process.exit(0)
+  })
+}
+
 const ROOT = process.cwd()
 const GIB = 1024 ** 3
 const MIB = 1024 ** 2
@@ -288,7 +328,20 @@ const dropped = []
 // which the build needs, or a directory this file has never seen, which is a thing to read about
 // before deleting on a production build. node_modules is never touched here either. It is the half
 // worth keeping, and it is the gate's business rather than the trim's.
-if (OVERLAP.length > 0) {
+if (WARN_ONLY) {
+  // Measuring only. The trim is the half that killed builds, so it does not run at all here --
+  // not "runs and finds nothing", genuinely never reached.
+  if (packed(rawTotal) > TRIM_AT_PACKED_GB * GB) {
+    console.log(
+      `\n⚠️  check:cache-budget (warn-only) — this cache WOULD have been trimmed: ` +
+        `${gib(rawTotal)} GiB raw, about ${gb(packed(rawTotal))} GB packed, over the ` +
+        `${TRIM_AT_PACKED_GB.toFixed(2)} GB trim point.\n` +
+        `   Nothing was deleted. Read this build's "Uploading build cache [N GB]" line: if that ` +
+        `figure is under ${VERCEL_CEILING_GB.toFixed(2)} GB then PACKED_PER_RAW is too HIGH and ` +
+        `the trim point is firing early.\n`,
+    )
+  }
+} else if (OVERLAP.length > 0) {
   console.log(
     `\n⚠️  check:cache-budget did not trim anything. ${OVERLAP.join(', ')} appears in both the ` +
       `compiler-cache list and the never-trim list.\n` +
@@ -335,9 +388,10 @@ if (nodeModules > NODE_MODULES_BUDGET_GIB * GIB) {
       `   is node_modules + .next/cache and it is discarded WHOLE above ${VERCEL_CEILING_GB} GB, so an\n` +
       `   install this size leaves no room for the compiler cache and the trim above has to fire\n` +
       `   on every build. Cut a dependency, or raise this on purpose, in the commit message,\n` +
-      `   knowing the cache is what you are spending. See docs/DEPLOY-SAFETY.md §10.\n`,
+      `   knowing the cache is what you are spending. See docs/DEPLOY-SAFETY.md §10.\n` +
+      (WARN_ONLY ? `\n   (warn-only: reported, NOT failing this build. LIVE-035.)\n` : ''),
   )
-  process.exit(1)
+  if (!WARN_ONLY) process.exit(1)
 }
 
 // The composition line is not decoration. Nobody could see inside a Vercel build cache before this
@@ -352,6 +406,12 @@ const unknown = kept
 const composition =
   `about ${gb(packed(rawTotal))} GB packed (${gib(rawTotal)} GiB raw: node_modules ` +
   `${mib(nodeModules)} MiB + .next/cache ${mib(nextCache)} MiB)`
+if (WARN_ONLY) {
+  console.log(
+    `\nℹ️  check:cache-budget is running in WARN-ONLY mode: it measures and reports, it does not ` +
+      `trim and it cannot fail this build (LIVE-035).`,
+  )
+}
 console.log(
   packed(rawTotal) > VERCEL_CEILING_GB * GB
     ? `⚠️  check:cache-budget — Vercel is about to be handed ${composition}, OVER the ` +
