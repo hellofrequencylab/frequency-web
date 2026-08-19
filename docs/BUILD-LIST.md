@@ -979,7 +979,7 @@ re-do of the capture.
 
 - 📋 **"Finish setting up your account" email.** Transactional, not marketing — it resumes a
   session the person started, so it is not a consent surface. **No new infrastructure needed:**
-  Resend is already wired (`lib/beta/email.ts`, outbox queue in `lib/queue/outbox.ts`, delivery
+  Resend is already wired (`lib/email.ts`, outbox queue in `lib/queue/outbox.ts`, delivery
   webhooks at `/api/webhooks/resend`, `lib/suppression.ts`). This is a template plus a send, on
   rails that already carry mail.
 - 📋 **The sweep that decides who gets one.** A scheduled pass over `signup_leads` for rows that

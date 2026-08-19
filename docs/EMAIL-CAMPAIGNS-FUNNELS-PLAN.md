@@ -16,8 +16,8 @@ model, a funnel object with a drop-off rollup, a durable send queue with consent
 drag-reorder patterns. What's missing is **one console that unifies them, a guided front door, a visual
 flow, and context in the editor.** The plan is four moves:
 
-1. **One console, two objects.** Collapse the scattered surfaces (`/admin/marketing/*`, `/admin/beta`
-   Campaign tab, `/admin/growth/funnels`) into a single **Messaging** console with exactly two things a
+1. **One console, two objects.** Collapse the scattered surfaces (`/admin/marketing/*`,
+   `/admin/growth/funnels`) into a single **Messaging** console with exactly two things a
    user creates: a **Campaign** (one email, sent now or scheduled) and a **Funnel** (a triggered journey
    of emails over time). Everything else is a detail inside those two.
 2. **A guided front door.** "New" opens a short best-practice flow: pick a goal, answer 3–4 questions,
@@ -37,7 +37,7 @@ flow, and context in the editor.** The plan is four moves:
 | **Ordered drip sequences** (steps by `step_order` + `delay_hours`, enrollment tracking, cron) | `nurture_*` (root), `space_drip_*` (Space) | The Funnel's email steps. |
 | **Funnel object** (ordered stages, typed soft-links, per-persona templates, drop-off rollup RPC) | `funnels`/`funnel_stages`/`funnel_stage_links`, `lib/funnels/*` | The Funnel spine + flow view. |
 | **Exact analytics** (opens/clicks/deliverability by `campaign_id`, timeline) | `lib/email-studio/analytics.ts` | Per-step + per-funnel stats. |
-| **Send infra** (outbox queue, consent/suppression send-gate, approval gate, Resend webhook ledger) | `lib/queue/*`, `lib/beta/*` | Unchanged; every send routes through it. |
+| **Send infra** (outbox queue, consent/suppression send-gate, approval gate, Resend webhook ledger) | `lib/queue/*`, `lib/outbound/*` | Unchanged; every send routes through it. |
 | **Native drag-reorder** patterns (no new library) | `components/spaces/crm/stage-editor.tsx` (closest), gallery + menu boards | Step + stage reordering. |
 | **Empty workspace slots** already wired | `workspace.tsx` (`sendPanel`/`analyticsPanel`/`templateGallery`) | Drop the new panels in. |
 

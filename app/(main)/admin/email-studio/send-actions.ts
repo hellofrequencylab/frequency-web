@@ -1,18 +1,18 @@
 'use server'
 
 // Email Studio (2026) — Phase 4 SEND server actions. Thin, gated entrypoints over the
-// send pipeline (lib/email-studio/send.ts). Each self-gates through the beta guard
-// (lib/beta/guard.ts): scheduling / sending / pausing / cancelling are WRITES, so they
+// send pipeline (lib/email-studio/send.ts). Each self-gates through the outbound guard
+// (lib/outbound/guard.ts): scheduling / sending / pausing / cancelling are WRITES, so they
 // run the approver gate; the read-only audience preview runs the lighter writer gate.
-// The real send additionally re-checks the approval spine inside sendCampaignNow (a beta
-// campaign passes assertApproved before a single email is enqueued).
+// The real send additionally re-checks the approval spine inside sendCampaignNow (a
+// spine-tracked campaign passes assertApproved before a single email is enqueued).
 //
 // Each action returns an ActionResult the client discriminates with isError. Voice canon:
 // no em dashes in any operator-facing copy.
 
 import { revalidatePath } from 'next/cache'
 import { type ActionResult, fail, isError } from '@/lib/action-result'
-import { approverGate, writerGate } from '@/lib/beta/guard'
+import { approverGate, writerGate } from '@/lib/outbound/guard'
 import { logAdminAction } from '@/lib/admin/audit'
 import type { SegmentKey } from '@/lib/studio/campaigns'
 import {
@@ -54,9 +54,9 @@ export async function sendNowAction(campaignId: string): Promise<ActionResult<{ 
   const gate = await approverGate()
   if (!gate.ok) return fail(gate.error)
   const result = await sendCampaignNow(campaignId)
-  // Audit trail: a Studio campaign has no phase spine, so the approver role gate here is its sole
+  // Audit trail: a Studio campaign carries no phase, so the approver role gate here is its sole
   // authorization. Record every real send (who sent which campaign, and to how many) so a standalone
-  // Studio send is as traceable as a beta send. Best-effort, on success only, never blocks the send.
+  // Studio send is as traceable as a spine-armed one. Best-effort, on success only, never blocks the send.
   if (!isError(result)) {
     await logAdminAction({
       actorId: gate.profileId,

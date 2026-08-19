@@ -17,9 +17,7 @@ ai_usage
 automation_rules
 beta_audit_log
 beta_host_prompts
-beta_phases
 beta_referrals
-beta_tasks
 business_intake
 challenge_qr_codes
 circle_transfer_offers

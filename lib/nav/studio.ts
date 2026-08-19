@@ -281,15 +281,13 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   // composes in the draft-first popup over the same `campaigns` table. Their leaves are removed so they
   // no longer appear in any admin menu; the PAGES stay reachable (deep links + the roll-in plan uses
   // them) — see docs/DECISIONS.md ADR-623 for the plan to fold the usable functions into the CRM.
-  // Beta Command Center. The operator home for the Beta launch: the phase plan, the task
-  // board, and the APPROVAL QUEUE where nothing sends without an admin/janitor sign-off.
-  // A ?tab= workspace (today · stats · strategy · phases · timeline · email), like the Vera
-  // AI dashboard. A 'Beta waitlist' leaf sat beside this one and pointed at
-  // /admin/marketing/beta, the triage table for admitting people off the waitlist; both went
-  // away when the waitlist did.
-  { id: 'beta-command', href: '/admin/beta', label: 'Beta Command', desc: 'Run the Beta launch: the phase plan and the approval queue where nothing sends without your sign-off.', icon: 'Rocket', min: 'host', staffDomain: 'marketing',
-    world: 'growth', worldLabel: 'Beta Command', worldOrder: 13,
-    adminGroups: [{ domain: 'marketing', section: 'Audience' }], adminNav: { section: 'growth', heading: 'Marketing' } },
+  // RETIRED 2026-08-19: the Beta Command Center ('beta-command' -> /admin/beta), the operator
+  // home for the Beta launch (phase plan, task board, and the approval queue). The beta launch
+  // is over, so the console and the whole beta email arc went with it. What survives is the
+  // APPROVAL SPINE itself (lib/outbound/*), which has no console of its own: a campaign is
+  // reviewed and sent from the Resonance CRM Marketing tab, and nothing sends without an
+  // admin/janitor sign-off there. A 'Beta waitlist' leaf sat beside this one and pointed at
+  // /admin/marketing/beta; it went away with the waitlist.
   { id: 'marketing-analytics', href: '/admin/marketing/analytics', label: 'Marketing analytics', desc: 'Sends, opens, clicks, and bounces by type.', icon: 'PieChart', min: 'host', staffDomain: 'marketing',
     adminGroups: [{ domain: 'marketing', section: 'Analytics' }], adminNav: { section: 'growth', heading: 'Marketing' } },
   // Automations + Persona nurture were built, gated by the marketing layout, and then never given
@@ -581,7 +579,6 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
     primary: false, related: ['crm', 'vera-ai', 'acquisition'],
     links: [
       // Composing (Campaigns, Funnels, Automations, Nurture) retired to the Resonance CRM Marketing tab.
-      { leaf: 'beta-command' },
       { leaf: 'marketing-analytics' }, { leaf: 'marketing-deliverability' }, { leaf: 'marketing-control-panel' }, { leaf: 'marketing-market-read' },
       { leaf: 'marketing-agent' },
     ],
@@ -658,7 +655,7 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
     href: '/admin/growth', label: 'Growth', min: 'host', staffDomain: 'marketing',
     groups: [
       { heading: 'Acquisition', leaves: [{ leaf: 'referrals' }] },
-      { heading: 'Marketing', leaves: [{ leaf: 'marketing-analytics', label: 'Analytics' }, { leaf: 'beta-command', label: 'Beta Command' }] },
+      { heading: 'Marketing', leaves: [{ leaf: 'marketing-analytics', label: 'Analytics' }] },
     ],
   },
   {

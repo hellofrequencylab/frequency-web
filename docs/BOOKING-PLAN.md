@@ -23,10 +23,10 @@
 | --- | --- | --- |
 | P0 | Booking v1: weekly availability, slot generation, confirm-only bookings, double-book guard, owner calendar | ✅ Shipped |
 | P0.5 | Unconfigured-CTA operator setup prompts (the reported dead end) | ✅ Shipped (this branch) |
-| P1 | Service types + durations (reusable bookable offerings) | ✅ Shipped (migration `20261146000000_space_service_types.sql`, not yet applied) |
-| P2 | Availability schedules: weekly hours + overrides, buffers, min notice, booking window, invitee timezone | ✅ Shipped (migration `20261147000000_space_availability_schedules.sql`, not yet applied) |
-| P3 | Reschedule / cancel + reminders + booking questions | ✅ Shipped (migration `20261148000000_space_booking_lifecycle.sql`, not yet applied) |
-| P4 | Payments / deposits (Business-gated, commerce spine, dark) | ✅ Shipped DARK (seam wired, double-gated off; reuses the unapplied `20261102000000_bookable_services.sql`, no new migration) |
+| P1 | Service types + durations (reusable bookable offerings) | ✅ Shipped (migration `20261146000000_space_service_types.sql`, applied) |
+| P2 | Availability schedules: weekly hours + overrides, buffers, min notice, booking window, invitee timezone | ✅ Shipped (migration `20261147000000_space_availability_schedules.sql`, applied) |
+| P3 | Reschedule / cancel + reminders + booking questions | ✅ Shipped (migration `20261148000000_space_booking_lifecycle.sql`, applied) |
+| P4 | Payments / deposits (Business-gated, commerce spine, dark) | ✅ Shipped DARK (seam wired, double-gated off; reuses the applied `20261102000000_bookable_services.sql`, no new migration) |
 
 ## Calendly parity checklist (which phase delivers each pillar)
 
@@ -141,7 +141,7 @@ Member self-serve lifecycle plus confirmations, reminders, and intake questions.
 
 ### P4: Payments / deposits ⏳ (Business-gated, dark)
 Take a deposit or full payment at booking, on the existing commerce spine, without forking checkout. This is
-largely the **already-written** `bookable_services` seam (`20261102000000_bookable_services.sql`, unapplied).
+largely the **already-written** `bookable_services` seam (`20261102000000_bookable_services.sql`, applied).
 
 - **Hold-first flow (already coded, dormant)**: `holdSlotForBooking` inserts a `pending` booking stamped
   with the service `product_id`; the widened unique index `(space_id, starts_at) WHERE status in

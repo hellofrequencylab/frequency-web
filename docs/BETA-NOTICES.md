@@ -66,11 +66,14 @@ Legend — Driver: 🟢 `BETA_OPEN_ACCESS` (auto-swaps via `beta-notices.ts`) ·
 | `lib/marketing/comparisons.ts` (×6) · `app/(marketing)/what-is-frequency`, `/vs`, `/vs/[slug]`, `/spaces` · `app/discover/cities/*` · `app/llms.txt/route.ts:147` | "Free to join during the beta." / "Free during the beta." | Manual edit. Candidate to centralize (see §4). |
 | `app/onboarding/beta/*` | Induction flow | 🟡 induction flags; module retired at GA. |
 
-### Emails (`lib/beta/*`) — 🔴, seeded as editable drafts
-`launch-emails.ts` + `email-templates.ts`: Founding Member / Founding Business / "Founder pricing closes
-September 1" / waitlist. The graduation email **is** the launch email. At GA these are edited in Email
-Studio (they seed drafts), and the waitlist/founder ones retire. `email-copy.ts:42` Vera prompt says
-"beta launch email" — reword.
+### Emails — ✅ nothing left to edit
+The beta email arc is **deleted** (2026-08-19, with the Beta Command Center): `lib/beta/launch-emails.ts`,
+`lib/beta/email-templates.ts` and `lib/beta/email.ts` are gone, and with them the Founding Member /
+Founding Business / "Founder pricing closes September 1" / waitlist drafts and their seeder. There is no
+authored beta email left to reword at GA. Email Studio itself is untouched and still composes ordinary
+campaigns; what survives underneath it is the approval spine (`lib/outbound/*`), which is not beta-specific.
+The `email-copy.ts` Vera prompt this row used to flag ("beta launch email") no longer exists either: a
+repo-wide grep for the phrase returns nothing.
 
 ### Demo / help
 | File | Copy | Launch action |

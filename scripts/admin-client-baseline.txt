@@ -60,7 +60,6 @@
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
-app/(main)/admin/beta/layout.tsx
 app/(main)/admin/business-seeder/actions.ts
 app/(main)/admin/channels/load-channels.ts
 app/(main)/admin/circle-templates/actions.ts
@@ -434,9 +433,7 @@ lib/attribution/backfill.ts
 lib/attribution/rollup.ts
 lib/automations.ts
 lib/awards/cosmetics.ts
-lib/beta/db.ts
 lib/beta/referral-contest.ts
-lib/beta/stats.ts
 lib/billing/bundle-checkout.ts
 lib/billing/bundle-invites.ts
 lib/billing/bundle-seats.ts
@@ -668,6 +665,7 @@ lib/onboarding/sequence-overrides.ts
 lib/onboarding/status.ts
 lib/onboarding/training.ts
 lib/onboarding/welcome.ts
+lib/outbound/db.ts
 lib/page-content-actions.ts
 lib/page-content.ts
 lib/page-editor/data.ts

@@ -19,7 +19,7 @@ Legend: ✅ done · ⏳ in flight · ⚠️ needs attention · 🔴 blocker / ow
 | | |
 |---|---|
 | **Cadence** | Once per quarter. Target: sessions inside the two weeks before a DAWN round opens. |
-| **Participants** | 5 members, recruited from the beta list (`/admin/beta`, backed by `contacts` + `beta_admission_waves`). |
+| **Participants** | 5 members, recruited from the Member Roster (`/admin/members`). The old pool was the beta list at `/admin/beta`, backed by `contacts` + `beta_admission_waves`; the waitlist retired in February and the Beta Command Center on 2026-08-19, so the roster is the pool now. |
 | **Surface** | The Vercel preview of the current `design-sync/*` branch. Never production, never localhost. |
 | **Length** | 60 minutes: 5 consent + warm-up, 45 tasks, 10 debrief. |
 | **Tasks** | J1-J5, §5. Every participant runs all five; J5 only if they operate a Space, else swap in the J5 observer variant. |
@@ -36,7 +36,7 @@ The only genuinely human step in this lift. Nobody else can do it.
 
 | Step | How |
 |---|---|
-| 1. Pull the pool | `/admin/beta` — admitted members with real activity, mixed by tenure. Skip anyone who sat a round in the last two quarters. |
+| 1. Pull the pool | `/admin/members` — members with real activity, mixed by tenure. Skip anyone who sat a round in the last two quarters. |
 | 2. Check eligibility | The member's `analytics` consent scope must be granted (§3). |
 | 3. Invite | 8 invites to land 5 sessions. Name the time ask and the thank-you up front. |
 | 4. Mix | Aim for 3 members + 2 operators (someone who runs a Circle or a Space), so J5 is observed at least twice. |

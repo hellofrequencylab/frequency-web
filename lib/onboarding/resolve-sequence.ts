@@ -41,7 +41,6 @@ function apply(base: BetaSequence, o: SequenceOverride): BetaSequence {
     marketingTag: o.marketingTag ?? base.marketingTag,
     splash: { ...base.splash, ...(o.splash ?? {}) },
     vera: mergeVera(base.vera, o.vera),
-    oaths: o.oaths ?? base.oaths,
     heardAbout: o.heardAbout ?? base.heardAbout,
     // Niche-funnel config: a non-empty override REPLACES the base (a niche funnel's 4 features / 3 core
     // features are a whole set, not a field merge). Absent / empty keeps the base (General funnel) behaviour.
@@ -65,10 +64,8 @@ export async function resolveDefaultSequence(): Promise<BetaSequence> {
   const withConfig: BetaSequence = {
     ...base,
     vera: mergeVera(base.vera, {
-      oath: { ...base.vera.oath, heading: ind.oathHeading, body: ind.oathBody },
       intro: { ...base.vera.intro, heading: ind.introHeading, body: ind.introBody },
     }),
-    oaths: base.oaths.map((o, i) => ({ id: o.id, label: ind.oathLabels[i] || o.label })),
     heardAbout: ind.heardAbout.length ? ind.heardAbout : base.heardAbout,
   }
   const o = await getSequenceOverride(DEFAULT_SEQUENCE)

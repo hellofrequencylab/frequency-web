@@ -13,12 +13,12 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { downscaleImageFile } from '@/lib/images/downscale-image'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
-import { BETA_OATHS as DEFAULT_OATHS, VERA as DEFAULT_VERA, type OathId, type VeraCopy } from '@/lib/onboarding/beta-script'
+import { VERA as DEFAULT_VERA, type VeraCopy } from '@/lib/onboarding/beta-script'
 import { getPersona, listPersonas, isPersonaId, DEFAULT_PERSONA, type PersonaId } from '@/lib/onboarding/personas'
 import type { FunnelFeature, FunnelCoreFeature, FunnelDestination } from '@/lib/onboarding/beta-sequences'
 import { funnelIcon } from '@/lib/onboarding/funnel-icons'
 import { isSafeInAppPath } from '@/lib/onboarding/funnel-destination'
-import { acceptBetaOath, completeBetaInduction, stashPendingInduction } from './actions'
+import { completeBetaInduction, stashPendingInduction } from './actions'
 import { captureLead, updateLead } from './lead-actions'
 import { logPersonaSelection } from './persona-log'
 import { uploadProfileImageAction } from '@/app/(main)/settings/profile/actions'
@@ -55,7 +55,6 @@ type Props = {
   /** Operator copy overrides from /admin/vera (defaults to the beta-script copy). */
   copy?: {
     vera?: VeraCopy
-    oaths?: { id: OathId; label: string }[]
     heardAbout?: string[]
   }
   /** The audience sequence slug (early-adopter / personal / founding-partner).
@@ -66,16 +65,16 @@ type Props = {
    *  Welcome-beat picker; defaults to Visitor. Carried in a cookie so completion can
    *  stamp meta.persona + the persona tag, and branches the tour reel. */
   persona?: PersonaId
-  /** Open the flow at a specific beat (0–4). Used by the /pages/splash editor to
+  /** Open the flow at a specific beat (0–3). Used by the /pages/splash editor to
    *  preview the REAL component one beat at a time; the flow logic is untouched. */
   initialBeat?: number
   /** Set when the visitor scanned a member's QR code (the fq_ref referrer). Shows an
    *  "Invited by {name}" chip atop the flow so the welcome reads personal. */
   inviter?: { displayName: string; handle: string; avatarUrl: string | null } | null
-  /** NICHE funnel (ADR-funnels): the 4 "what are you into" cards shown on Beat 1 in place of
+  /** NICHE funnel (ADR-funnels): the 4 "what are you into" cards shown on Beat 0 in place of
    *  the persona fork. Absent / empty = keep the persona fork (the General funnel). */
   slide2Features?: FunnelFeature[]
-  /** NICHE funnel: the 3 pick-one core features (with art) shown on Beat 2 in place of the
+  /** NICHE funnel: the 3 pick-one core features (with art) shown on Beat 1 in place of the
    *  auto-playing tour reel. Absent / empty = keep the reel (the General funnel). */
   slide3Core?: FunnelCoreFeature[]
   /** NICHE funnel: where completion sends the member. A safe in-app `direct` url overrides the
@@ -88,10 +87,10 @@ const HANDLE_RE = /^[a-z0-9_]+$/
 // whether to bother calling; the action re-checks, because a client check is a courtesy not a gate.
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 const RENDERS = { feed: FeedRender, circles: CirclesRender, events: EventsRender, booking: BookingRender, checkin: CheckinRender, donate: DonateRender, tickets: TicketsRender, crm: CrmRender }
-const BEAT_COUNT = 5 // 0 oath · 1 intro · 2 reel · 3 identity+place · 4 enter
+const BEAT_COUNT = 4 // 0 intro · 1 reel · 2 identity+place · 3 enter
 // Accessible name for each beat — drives the progress bar's label and the polite
 // live announcement so assistive tech tracks "where am I" through the sequence.
-const BEAT_LABELS = ['The promise', 'Who you are', 'A quick tour', 'Your profile', 'Step in']
+const BEAT_LABELS = ['Who you are', 'A quick tour', 'Your profile', 'Step in']
 
 // No separator — "Daniel Tyack" → "danieltyack".
 function suggestHandle(name: string): string {
@@ -125,12 +124,11 @@ function accent(text: string): React.ReactNode {
 export default function BetaInduction({ userId = '', userEmail = '', initialHandle = '', preview = false, deferred = false, copy, sequence, persona: initialPersona, initialBeat = 0, inviter = null, slide2Features, slide3Core, destination }: Props) {
   // NICHE-funnel forks (ADR-funnels). A non-empty set flips one beat over to the niche
   // layout; both absent keeps the whole flow identical to the General funnel.
-  const hasNicheFeatures = (slide2Features?.length ?? 0) > 0 // Beat 1: cards vs persona fork
-  const hasCoreFeatures = (slide3Core?.length ?? 0) > 0 // Beat 2: pick-3 vs auto-reel
-  // Operator-tunable copy (defaults to the beta-script copy) — shadows the imports so
-  // every existing VERA./BETA_OATHS reference picks up the overrides.
+  const hasNicheFeatures = (slide2Features?.length ?? 0) > 0 // Beat 0: cards vs persona fork
+  const hasCoreFeatures = (slide3Core?.length ?? 0) > 0 // Beat 1: pick-3 vs auto-reel
+  // Operator-tunable copy (defaults to the beta-script copy) — shadows the import so
+  // every existing VERA. reference picks up the overrides.
   const VERA = copy?.vera ?? DEFAULT_VERA
-  const BETA_OATHS = copy?.oaths ?? DEFAULT_OATHS
 
   // Personas (who they said they are). MULTI-select — a Founder can be more than one
   // thing (a practitioner who also wants to build). Pre-seeded from the lead-flow URL.
@@ -212,11 +210,6 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     if (!preview) stageRef.current?.focus({ preventScroll: true })
   }, [beat, preview])
 
-  // Oath
-  const [oaths, setOaths] = useState<Record<OathId, boolean>>({ unfinished: false, report: false, build: false })
-  const [accepting, setAccepting] = useState(false)
-  const allOathsChecked = BETA_OATHS.every((o) => oaths[o.id])
-
   // Identity. First and last are what the member types; `displayName` is DERIVED from them and
   // stays the single value everything downstream reads (the profile card, the submit payload, the
   // handle suggestion). Keeping the derived value in its own state rather than computing it inline
@@ -247,14 +240,14 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
 
   // Reel
   const [reelIndex, setReelIndex] = useState(0)
-  // Niche Beat 2: which core feature is selected (defaults to the first); its art fills the mockup.
+  // Niche Beat 1: which core feature is selected (defaults to the first); its art fills the mockup.
   const [coreIndex, setCoreIndex] = useState(0)
 
   // Submit
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
 
-  // Email. Asked once, on Beat 1, and reused as the sign-in address on Beat 4 (so the deferred
+  // Email. Asked once, on Beat 0, and reused as the sign-in address on Beat 3 (so the deferred
   // flow does not ask twice). Given early it also opens the lead row — see advanceFromIntro.
   const [email, setEmail] = useState('')
   const [emailError, setEmailError] = useState('')
@@ -275,11 +268,10 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
       intent: '',
       interests: '',
       heardAbout: '',
-      oaths: BETA_OATHS.filter((o) => oaths[o.id]).map((o) => o.id),
     })
     // The address they are signing in with is the one worth following up on, and it may be the
-    // first we have seen (Beat 1's field is optional). capture, not update: it upserts on the
-    // email, so it opens the row for a visitor who skipped Beat 1 and refreshes it for one who
+    // first we have seen (Beat 0's field is optional). capture, not update: it upserts on the
+    // email, so it opens the row for a visitor who skipped Beat 0 and refreshes it for one who
     // did not.
     //
     // BOUNDED, and that is the whole point of the race below. This sits directly in front of
@@ -288,14 +280,14 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     // FAILS - a call that merely hangs would hold the member on "One sec…" for as long as it
     // takes, which turns lead bookkeeping into a login outage. Dropping the await entirely is
     // the other tempting fix and it is worse: the next line navigates away, so an un-awaited
-    // capture is cancelled mid-flight and the visitor who skipped Beat 1 is never recorded at
+    // capture is cancelled mid-flight and the visitor who skipped Beat 0 is never recorded at
     // all. Two seconds is long enough for the normal path and short enough that nobody reads it
     // as broken.
     try {
       await Promise.race([
         captureLead({
           email: email.trim(),
-          step: 5,
+          step: 4,
           source: 'beta_induction',
           firstName: firstName.trim(),
           lastName: lastName.trim(),
@@ -396,7 +388,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
   // Auto-advance the reel one slide at a time; settle on the last (no loop). Niche funnels
   // replace the reel with the pick-3 core cards, so there's nothing to auto-play there.
   useEffect(() => {
-    if (beat !== 2 || hasCoreFeatures || reelIndex >= reel.length - 1) return
+    if (beat !== 1 || hasCoreFeatures || reelIndex >= reel.length - 1) return
     if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
     const t = setTimeout(() => setReelIndex((i) => Math.min(i + 1, reel.length - 1)), 3800)
     return () => clearTimeout(t)
@@ -459,21 +451,6 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     }
   }
 
-  async function passOath() {
-    setAccepting(true)
-    const accepted = BETA_OATHS.filter((o) => oaths[o.id]).map((o) => o.id)
-    // No auth yet in preview/deferred — the oath rides along to the final write.
-    if (!preview && !deferred) {
-      try {
-        await acceptBetaOath(accepted)
-      } catch {
-        // Non-fatal: completion re-affirms the oath.
-      }
-    }
-    setAccepting(false)
-    setBeat(1)
-  }
-
   /** What the funnel knows about this visitor so far, for the lead row. Only keys with a value
    *  are sent: the RPC merges the payload, so an absent key leaves an earlier answer alone. */
   function leadPayload(): Record<string, string | string[]> {
@@ -486,7 +463,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
   }
 
   /**
-   * Beat 1 → Beat 2. The email is optional (nobody is stopped from touring), but when it is given
+   * Beat 0 → Beat 1. The email is optional (nobody is stopped from touring), but when it is given
    * this is where the lead row opens, so a visitor who leaves after the tour is still reachable
    * with a "finish setting up your account" note. Best-effort: a capture failure never blocks the
    * flow, and preview never writes.
@@ -501,22 +478,22 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     if (value && !preview) {
       setCapturing(true)
       try {
-        await captureLead({ email: value, step: 2, source: 'beta_induction', payload: leadPayload() })
+        await captureLead({ email: value, step: 1, source: 'beta_induction', payload: leadPayload() })
       } catch {
         /* capture is best-effort; it must never hold up the funnel */
       }
       setCapturing(false)
     }
-    setBeat(2)
+    setBeat(1)
   }
 
-  /** Beat 2 → Beat 3. Records how far they got, plus the core feature a niche funnel had them pick. */
+  /** Beat 1 → Beat 2. Records how far they got, plus the core feature a niche funnel had them pick. */
   function advanceFromTour() {
     if (!preview) {
       const core = hasCoreFeatures ? slide3Core![coreIndex]?.title : undefined
-      updateLead({ step: 3, payload: { ...leadPayload(), ...(core ? { core_feature: core } : {}) } }).catch(() => {})
+      updateLead({ step: 2, payload: { ...leadPayload(), ...(core ? { core_feature: core } : {}) } }).catch(() => {})
     }
-    setBeat(3)
+    setBeat(2)
   }
 
   async function advanceFromIdentity() {
@@ -528,7 +505,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
       // first/last go up as themselves now that the field asks for them separately. The action's
       // splitName fallback still covers the funnels that only ever have one string.
       updateLead({
-        step: 4,
+        step: 3,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         displayName: displayName.trim(),
@@ -536,7 +513,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
         payload: leadPayload(),
       }).catch(() => {})
     }
-    setBeat(4)
+    setBeat(3)
   }
 
   async function submit() {
@@ -548,7 +525,6 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     setSubmitError('')
     let finalAvatarUrl = avatarUrl
     if (avatarFile && !avatarUrl) finalAvatarUrl = await uploadAvatar()
-    const accepted = BETA_OATHS.filter((o) => oaths[o.id]).map((o) => o.id)
     try {
       await completeBetaInduction(
         {
@@ -562,7 +538,6 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
           intent: '',
           interests: '',
           heardAbout: '',
-          oaths: accepted,
         },
         // NICHE funnels admit to a niche section; the action re-validates it server-side and
         // falls closed to the default Vera welcome. Absent = the General funnel's default.
@@ -575,7 +550,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     }
   }
 
-  // Resolve a core feature's art (Beat 2, niche funnel). A `render` reuses the induction's product
+  // Resolve a core feature's art (Beat 1, niche funnel). A `render` reuses the induction's product
   // mockups (feed / circles / events / booking / checkin / donate / tickets / crm); an `image`
   // renders directly. FAIL-SAFE: an unknown render key stored in the DB (e.g. one from a newer build)
   // falls back to the events mockup rather than mounting an undefined component and crashing the flow.
@@ -648,7 +623,6 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                 setPreviewDone(false)
                 setBeat(0)
                 setReelIndex(0)
-                setOaths({ unfinished: false, report: false, build: false })
               }}
               className="mt-5 w-full rounded-pill border border-border px-6 py-3 text-body-sm font-semibold text-muted transition-colors hover:text-text"
             >
@@ -695,41 +669,8 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
           aria-label={`Step ${beat + 1} of ${BEAT_COUNT}: ${BEAT_LABELS[beat]}`}
           className="mt-10 w-full animate-[slideUp_0.5s_ease-out] text-center outline-none"
         >
-            {/* ── Beat 0: The Beta Promise ── */}
+            {/* ── Beat 0: Intro ── */}
             {beat === 0 && (
-              <div className="mx-auto max-w-5xl">
-                <p className={eyebrow}>{VERA.oath.eyebrow}</p>
-                <h1 className={`mx-auto mt-3 max-w-4xl text-balance text-display-hero ${heading}`}>
-                  {accent(VERA.oath.heading)}
-                </h1>
-                <p className="mx-auto mt-4 max-w-xl text-body-lg leading-relaxed text-muted">{VERA.oath.body}</p>
-
-                {/* Agreements + I'm in, in a 2×2 grid (two rows). */}
-                <div className="mx-auto mt-7 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
-                  {BETA_OATHS.map((o) => (
-                    <label
-                      key={o.id}
-                      className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-4 text-left transition-colors ${oaths[o.id] ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40'}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={oaths[o.id]}
-                        onChange={(e) => setOaths((prev) => ({ ...prev, [o.id]: e.target.checked }))}
-                        className="h-5 w-5 shrink-0 accent-primary"
-                      />
-                      <span className={`text-body font-medium ${oaths[o.id] ? 'text-text' : 'text-muted'}`}>{o.label}</span>
-                    </label>
-                  ))}
-                  <button disabled={!allOathsChecked || accepting} onClick={passOath} className={`${btnPrimary} h-full`}>
-                    {accepting ? 'One sec…' : VERA.oath.cta}
-                    {!accepting && <ArrowRight />}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ── Beat 1: Intro ── */}
-            {beat === 1 && (
               <div className="mx-auto max-w-4xl">
                 <p className={eyebrow}>{VERA.intro.eyebrow}</p>
                 <h1 className={`mx-auto mt-3 max-w-3xl text-balance text-display-hero ${heading}`}>
@@ -737,8 +678,8 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                 </h1>
                 <p className="mx-auto mt-4 max-w-2xl text-lead leading-relaxed text-muted">{VERA.intro.body}</p>
 
-                {/* Beat-1 fork. NICHE funnel: 4 informational "what are you into" cards tuned to
-                    the niche, in place of the persona picker (the reel is replaced on Beat 2 too,
+                {/* Beat-0 fork. NICHE funnel: 4 informational "what are you into" cards tuned to
+                    the niche, in place of the persona picker (the reel is replaced on Beat 1 too,
                     so the persona stays the default — persona tagging is untouched for the General
                     funnel). GENERAL funnel: the multi-select persona fork, exactly as before. */}
                 {hasNicheFeatures ? (
@@ -843,18 +784,17 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                   <p id="induction-email-note" role={emailError ? 'alert' : undefined} className={emailError ? 'text-body-sm text-danger' : 'text-meta text-subtle'}>
                     {emailError || 'Your email saves your spot so you can finish later. It does not put you on a mailing list.'}
                   </p>
-                  <button onClick={() => setBeat(0)} className={backLink}>Back</button>
                 </div>
               </div>
             )}
 
-            {/* ── Beat 2: The reel (desktop website mockup) ── */}
-            {beat === 2 && (
+            {/* ── Beat 1: The reel (desktop website mockup) ── */}
+            {beat === 1 && (
               <div className="mx-auto max-w-5xl">
                 <p className={eyebrow}>{VERA.tour.eyebrow}</p>
                 <h1 className={`mt-3 text-balance text-display-h2 ${heading}`}>{accent(VERA.tour.heading)}</h1>
 
-                {/* Beat-2 fork. NICHE funnel: pick one of 3 core features; the mockup shows the
+                {/* Beat-1 fork. NICHE funnel: pick one of 3 core features; the mockup shows the
                     SELECTED card's art. GENERAL funnel: the auto-playing tour reel, unchanged. */}
                 {hasCoreFeatures ? (
                   <div className="mt-6 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-12">
@@ -891,7 +831,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                       </div>
                       <div className="mt-7 flex flex-col items-center gap-3 md:items-start">
                         <button onClick={advanceFromTour} className={btnPrimary}>{VERA.tour.cta}<ArrowRight /></button>
-                        <button onClick={() => setBeat(1)} className={backLink}>Back</button>
+                        <button onClick={() => setBeat(0)} className={backLink}>Back</button>
                       </div>
                     </div>
                   </div>
@@ -929,7 +869,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                           {isLastSlide ? VERA.tour.cta : 'Next'}
                           <ArrowRight />
                         </button>
-                        <button onClick={() => setBeat(1)} className={backLink}>Back</button>
+                        <button onClick={() => setBeat(0)} className={backLink}>Back</button>
                       </div>
                     </div>
                   </div>
@@ -937,8 +877,8 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
               </div>
             )}
 
-            {/* ── Beat 3: Identity ── */}
-            {beat === 3 && (
+            {/* ── Beat 2: Identity ── */}
+            {beat === 2 && (
               <div className="mx-auto max-w-4xl">
                 <h1 className={`text-balance text-display-h1 ${heading}`}>{accent(VERA.identity.heading)}</h1>
 
@@ -1107,15 +1047,15 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                       <button disabled={!identityValid || uploading} onClick={advanceFromIdentity} className={btnPrimary}>
                         {uploading ? 'Uploading…' : 'Continue'}{!uploading && <ArrowRight />}
                       </button>
-                      <button onClick={() => setBeat(2)} className={backLink}>Back</button>
+                      <button onClick={() => setBeat(1)} className={backLink}>Back</button>
                     </div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* ── Beat 4: Enter (profile card left, copy right) ── */}
-            {beat === 4 && !deferred && (
+            {/* ── Beat 3: Enter (profile card left, copy right) ── */}
+            {beat === 3 && !deferred && (
               <div className="mx-auto max-w-4xl">
                 <p className={eyebrow}>{VERA.enter.eyebrow}</p>
                 <h1 className={`mt-3 text-balance text-display-h1 ${heading}`}>{accent(VERA.enter.heading)}</h1>
@@ -1139,15 +1079,15 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                       <button onClick={submit} disabled={submitting} className={btnPrimary}>
                         {submitting ? 'Stepping in…' : VERA.enter.cta}{!submitting && <ArrowRight />}
                       </button>
-                      <button onClick={() => setBeat(3)} className={backLink}>Back</button>
+                      <button onClick={() => setBeat(2)} className={backLink}>Back</button>
                     </div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* ── Beat 4 (deferred): the final step IS creating the account ── */}
-            {beat === 4 && deferred && (
+            {/* ── Beat 3 (deferred): the final step IS creating the account ── */}
+            {beat === 3 && deferred && (
               <div className="mx-auto max-w-4xl">
                 <p className={eyebrow}>{VERA.enter.eyebrow}</p>
                 <h1 className={`mt-3 text-balance text-display-h1 ${heading}`}>{accent(VERA.enter.heading)}</h1>
@@ -1206,7 +1146,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                       Continue with Google
                     </button>
 
-                    <button onClick={() => setBeat(3)} className={`${backLink} mt-4 block`}>Back</button>
+                    <button onClick={() => setBeat(2)} className={`${backLink} mt-4 block`}>Back</button>
                     <p className="mt-4 text-meta text-subtle">Free to join. No card. Leave anytime.</p>
                   </div>
                 </div>

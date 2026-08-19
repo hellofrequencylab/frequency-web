@@ -14,23 +14,8 @@ export const BETA_INDUCTION_ACTIVE = true
  *  the Crew surfaces + the ability to spend gems (see ADR-084). */
 export const BETA_MEMBERS_GET_CREW = true
 
-/** Bumped if the oath/flow materially changes, so we can tell cohorts apart. */
+/** Bumped if the flow materially changes, so we can tell cohorts apart. */
 export const BETA_INDUCTION_VERSION = 1
-
-export type OathId = 'unfinished' | 'report' | 'build'
-
-/** The gate. All three must be checked to enter. Single source of truth.
- *  Three plain commitments a new member makes about how they'll show up. The
- *  ids are wired/registered, so only the labels change.
- *
- *  These ship as WRITING PROMPTS, not finished copy. The default flow is the
- *  Splash Funnel template every custom funnel clones, so a fresh funnel opens with
- *  fill-in guidance the operator replaces in the editor. Plain, no em dashes. */
-export const BETA_OATHS: { id: OathId; label: string }[] = [
-  { id: 'unfinished', label: 'Write the first commitment you ask for' },
-  { id: 'report', label: 'Write the second commitment you ask for' },
-  { id: 'build', label: 'Write the third commitment you ask for' },
-]
 
 /** "How did you hear about us?" — captured on the intake into meta.beta.heard_about. */
 export const HEARD_ABOUT = [
@@ -76,17 +61,11 @@ export const REEL: ReelSlide[] = [
 
 /** All voiced copy, in one place.
  *
- *  Ships as WRITING PROMPTS, not finished copy (see BETA_OATHS above): this is the
- *  default Splash Funnel template every custom funnel clones, so each beat carries
- *  fill-in guidance the operator replaces in the /pages/splash + funnel editors.
+ *  Ships as WRITING PROMPTS, not finished copy: this is the default Splash Funnel
+ *  template every custom funnel clones, so each beat carries fill-in guidance the
+ *  operator replaces in the /pages/splash + funnel editors.
  *  Keep the beat structure; the copy stays plain prompts, no em dashes. */
 export const VERA = {
-  oath: {
-    eyebrow: 'Write the kicker above the promise',
-    heading: 'Write the promise new members make before entering',
-    body: 'Write the short paragraph that explains the promise',
-    cta: 'Write the button label that accepts the promise',
-  },
   intro: {
     eyebrow: 'Write the welcome kicker',
     // Headings support a light accent markup in the induction: a word wrapped in

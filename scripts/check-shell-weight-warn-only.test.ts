@@ -107,16 +107,28 @@ describe('check:shell-weight warn-only cannot fail a build', () => {
 })
 
 describe('postbuild wiring', () => {
-  it('invokes check:shell-weight with --warn-only, never bare', () => {
+  it('invokes check:shell-weight BLOCKING (promoted 2026-08-19), never warn-only', () => {
+    // The assertion this replaces demanded --warn-only, and its own message named the exit ramp:
+    // "if you are deliberately promoting it, update this test in the same change as the green
+    // build that confirms the reading." That is this change. The reading is no longer the one
+    // unconfirmed number the old message worried about: the gate printed green on TWO production
+    // artifacts (2026-08-19, 17:14Z and 18:13Z, both 1010 KB of the 1400 KB budget across 21
+    // chunks, all 8 admin module bodies lazy, positive control present), and the owner said
+    // "promote it." So the pin inverts: warn-only in postbuild is now a SILENT DEMOTION of an
+    // owner-promoted gate. The warn-only MODE itself stays tested above -- the flag still exists
+    // for manual runs, and its crash-isolation guarantees are what made the confirming readings
+    // safe to take in the first place. Its sibling check-cache-budget deliberately KEEPS the flag
+    // (its action is a trim, it has killed two builds); LIVE-035 carries that separate decision.
     const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as { scripts: Record<string, string> }
     const postbuild = pkg.scripts.postbuild ?? ''
     expect(postbuild).toContain('check-shell-weight.mjs')
+    const shellArgs = /check-shell-weight\.mjs([^&|;]*)/.exec(postbuild)?.[1] ?? ''
     expect(
-      postbuild,
-      'check-shell-weight.mjs is in postbuild WITHOUT --warn-only. This gate has one unconfirmed ' +
-        'reading in its life; blocking on it would fail a production deploy over a number nobody ' +
-        'has verified. If you are deliberately promoting it, update this test in the same change ' +
-        'as the green build that confirms the reading (LIVE-035, docs/DEPLOY-SAFETY.md §10).',
-    ).toContain('check-shell-weight.mjs --warn-only')
+      /--warn-only/.test(shellArgs),
+      'check-shell-weight.mjs runs in postbuild WITH --warn-only, but the owner promoted it on ' +
+        '2026-08-19 after two green production readings. Re-adding the flag silently demotes an ' +
+        'owner-promoted gate; if that demotion is deliberate, it needs its own decision and this ' +
+        'test updated with it (LIVE-035, docs/DEPLOY-SAFETY.md §10).',
+    ).toBe(false)
   })
 })

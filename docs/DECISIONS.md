@@ -27413,9 +27413,11 @@ blocks export of what is already there.
    row for their own `owner_profile_id`, at role `admin`**. Free and Business (allowance 1) are
    therefore spent by the owner alone, which matches what the ladder publishes for those rungs.
    Collective (allowance 3) yields owner + 2 teammates rather than owner + 3, and which of those the
-   ladder means is an owner call, not a code call. The count is left exactly as it is and LIVE-057
-   carries the decision; moving a paying Space's seat total on the strength of a stale comment is the
-   wrong direction to guess in.
+   ladder means is an owner call, not a code call. The count is left exactly as it is and OWN-033
+   carries the decision (this text originally said LIVE-057; that id was reassigned the same day, and
+   the pointer is corrected rather than left to mislead); moving a paying Space's seat total on the
+   strength of a stale comment is the wrong direction to guess in. SETTLED 2026-08-19: "Owner + 2,
+   total of 3" — today's behaviour is the intended one, no code change.
 3. **The member-facing copy that promised the window had to move in the same change.** Nine help
    pages said some version of *"every Space has full access until September 1"* or *"Crew is free
    during the beta"*. Those sentences became false at 17:47Z. They are rewritten to the rule that is
@@ -27448,3 +27450,117 @@ blocks export of what is already there.
 - The reversal is one statement, and it is worth writing down while it is cheap:
   `update public.pricing_settings set value = '{"until": "<date>"}'::jsonb where key = 'beta_grace';`
   or the same edit on `/admin/pricing`.
+
+## ADR-1088: The oath comes out of the front door, because a ceremony in front of a sign-up is friction with nothing behind it
+
+**Status:** Accepted 2026-08-19 · code-only, no migration
+
+**Owner decision, 2026-08-19:** *"I want to remove all the Oaths language as well. These are supposed
+to be focused funnels for building out any niche and getting a sign up."*
+
+**Context.** The induction (`/onboarding/beta`, [ADR-068](DECISIONS.md)) opened on a gate: three
+commitment checkboxes (`BETA_OATHS`), all three required, with a stamp written to
+`profiles.meta.beta.oath` by `acceptBetaOath` the moment they were ticked. It was designed for a
+founding cohort who had opted in to *build*, where "the friction is the filter". That is no longer
+what this flow is. It is the ONLY front door to the product (there is no `/sign-up` route), it is
+cloned per niche through the Splash Funnel builder, and the job of every clone is a sign-up. A gate
+in front of the first field filters the exact people the funnel exists to convert.
+
+**Decision. The beat is deleted, not hidden.** The sequence runs 4 beats instead of 5
+(welcome → tour → profile → step in), and every trace of the concept goes with it: the `BETA_OATHS`
+constant and the `OathId` type, `VERA.oath`, the `oaths` field on `BetaSequence` and on
+`SequenceOverride`, `acceptBetaOath`, the `oaths` leg of `InductionData` (so the deferred cookie and
+the completion write no longer carry it), the `oathHeading` / `oathBody` / `oathLabels` fields of
+`VeraInductionCopy` with their `/admin/vera` inputs, and the "Beta Promise" section of the
+`/pages/splash` funnel editor.
+
+**The arithmetic is the part that breaks silently, so it is centralised rather than sprinkled.**
+`BEAT_COUNT` is the ONE number the progress bar, the `Step N of M` group label, and the `initialBeat`
+clamp all read; the beat indices themselves were renumbered down by one across the render blocks,
+every `setBeat` back-link, and the reel's auto-advance guard (which keys on the tour beat's index and
+would otherwise have auto-played on the profile beat). The intro beat's "Back" link is removed
+outright, because the first beat has nowhere to go back to. `signup_leads.step_reached` is documented
+as 1-based on the funnel's own beats, so the four lead writes moved 2/3/4/5 → 1/2/3/4; nothing reads
+that column yet, so the renumbering keeps the column's own contract true.
+
+⚠️ **It does leave the column with two eras, and that is worth stating rather than discovering.**
+Rows written before 2026-08-19 counted a funnel whose first beat was the oath. Measured rather than
+estimated: `signup_leads` holds exactly **three** such rows (one at `step_reached` 3 from 2026-08-07,
+two at 5 from 2026-08-14). They are NOT backfilled, deliberately. The remap would be exact (subtract
+one), but those rows are a true record of a funnel that no longer exists, and rewriting them would
+assert three people walked a path they never saw. Anyone comparing the two eras subtracts one from a
+pre-2026-08-19 row. Same reasoning as keeping `meta.beta.oath`: history is kept as history.
+
+**Consequences.**
+
+- **No migration, and none is wanted.** The oath never had a column or a table: it rode
+  `profiles.meta.beta.oath`, a JSONB key nothing else reads. Existing values stay where they are as
+  durable history of what those members were actually asked, exactly like the `beta_*` cohort tags.
+  Saved `sequence_overrides.data.oaths` and `vera_config.induction.oath*` keys are inert for the same
+  reason: both merges iterate the CODE shape's keys, so an override key with no code counterpart is
+  ignored rather than resurrected.
+- The funnel is one beat shorter and opens on a question about the visitor instead of a demand from
+  us, which is what the niche funnels were always for.
+
+
+## ADR-1089: The Beta Command Center is deleted, and the approval spine that outlived it moves somewhere honest
+
+**Status:** Accepted · migration `20270315000000` applied to production 2026-08-19 · follows
+[ADR-1087](DECISIONS.md) (the grace window) and [ADR-1088](DECISIONS.md) (the oath)
+
+**Owner decision, 2026-08-19:** *"Remove the beta launch email sequences and anything else you find."*
+The scope beyond the emails was put back to the owner as explicit choices; this records what was chosen
+and, more usefully, what the choosing turned up.
+
+**What went.** `app/(main)/admin/beta/` and `components/admin/beta/` (the P0 to P4 console, Today,
+Stats, Strategy, Timeline, the approval queue), the seven themed launch emails, the campaign and
+nurture template copy, the beta send layer, and the Email Studio's beta Campaign tab. Two tables went
+with the code that read them: `beta_phases` (5 rows) and `beta_tasks` (21 rows).
+
+**What survived, and why the survivors are the interesting part.**
+
+- **The approval spine is not console code.** `writerGate` / `approverGate` guard the Email Studio, the
+  CRM composer, marketing messaging and the product picker; `assertApproved` gates every real campaign
+  send. Deleting `lib/beta/` wholesale would have taken all of that with it. The four files moved to
+  `lib/outbound/` with headers that describe what they are rather than which 2026 launch they were
+  written for.
+- **`beta_audit_log` keeps its name.** It holds 166 real approval-trail rows written under that name.
+  Renaming a table for tidier prose either orphans the history or buys a data migration. The name is
+  now the least true thing about it and still the right call.
+- **`beta_host_prompts` is not beta.** It shares a prefix and nothing else: a live feed-growth feature
+  behind its own platform flag. It was one grep away from being dropped as part of a "beta_* cleanup",
+  which is the whole argument for reading a table's callers before its name.
+- **`beta_referrals` and the contest stay.** The contest is wired into live paths (starting a Circle,
+  QR referral attribution), so removing it would change what happens to members, not just to operators.
+- **`campaigns.phase_id` keeps its values.** The `cascade` drops the foreign key, not the column. Seven
+  of twelve campaigns rows carry a non-null value and still route through `assertApproved` at send;
+  dropping the column would change send behaviour.
+
+**⚠️ The removal did NOT remove the offer, and that is the finding worth keeping.** Deleting the launch
+emails was supposed to end the Founding-badge invitation that [ADR-1087](DECISIONS.md) had quietly
+stopped granting. It did not: the identical sentences were alive verbatim in a THIRD file,
+`lib/email-studio/presets.ts`, in presets named `FOUNDING_MEMBER` and `FOUNDING_BUSINESS_INVITE`. The
+business one offered *"the lowest rate we will ever set, kept for good"*, a rate
+[ADR-1067](DECISIONS.md) had already abolished, so it could not have been charged at all.
+
+This is the same miss OWN-025 made when it closed: that row reported removing the sentence from two
+files, and the sentence lived in three. Its probe read the two deleted files, so it could never have
+caught the third and now returns indeterminate forever. Both rows are re-pointed at the file that
+actually carries the copy, and the copy is fixed rather than deleted, because the Founding badge still
+exists and is still grantable by hand. **The rule this earns: a removal is scoped by what the thing
+SAYS, not by the directory it lives in.** Grep the sentence, not the module.
+
+**Consequences.**
+
+- ✅ `check:backlog` was failing STRUCTURALLY at the moment the launch emails were deleted, because two
+  rows named the deleted file as their `source.file`. Validation exits before any probe runs, so for
+  that window all 137 rows were unverified while the guard still reported as coverage. That is the
+  swallowed-regression shape AGENTS.md names, produced by a routine deletion, and it is why a probe
+  that reads a file needs an existence guard that reports indeterminate rather than crashing.
+- ⏳ **LIVE-058**: ten of the spine's twelve transitions now have no caller. They are kept deliberately,
+  because deleting `approve()` would strand the seven `phase_id` rows behind a gate nothing can open.
+  The row carries the two honest ways to close it.
+- ✅ `lintVoice` moved to `lib/email-studio/voice-lint.ts` with its assertions intact rather than dying
+  with the module it happened to live in.
+- ✅ 274 live tables, RLS and grant mirrors updated in the same change, types regenerated (102 lines
+  removed, zero added, which is what a drop-only regen should look like).
