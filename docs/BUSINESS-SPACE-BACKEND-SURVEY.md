@@ -158,11 +158,14 @@ Space. Note: `lib/studio/*` is the **admin/global** engine; the space engine liv
 The panel host `settings/offerings/page.tsx` gates once, then stacks section bodies by `#hash`
 (`#availability`, `#memberships`, `#donations`, `#enroll`, `#tickets`, `#checkin`); each section
 re-checks its own function gate and each write re-checks `canEditProfile` + `spaceFunctionAccess`.
-**Take-rate model** (`lib/pricing/settings.ts`, ADR-913): **network-sourced sales only** — 8% for a Crew
-seller, 5% for a paying Business/Collective Space, 0% for Non Profit. **0% whenever the buyer is already
-the seller's own audience** (follows the Space, active Space member, in Space Contacts, on the seller's
-own contact list, or a past buyer), and **0% on tips, every tier**. A free seller has no rate because a
-free seller cannot sell (events + RSVPs only). Applied **only in Shop checkout** (and the dark
+**Take-rate model** (`lib/billing/pricing-keys.ts` `NETWORK_TAKE_RATE_DEFAULT`; ⚠️ corrected 2026-08-19
+per [ADR-914](DECISIONS.md), which reversed ADR-913's seller gate): **network-sourced sales only** — free
+Member 10%, Crew 8%, free Space 10%, Business 5%, Collective 3%, Non Profit 0%, Independent 0%. **0%
+whenever the buyer is already the seller's own audience** (follows the Space, active Space member, in
+Space Contacts, on the seller's own contact list, or a past buyer), and **0% on tips, every tier**.
+~~A free seller has no rate because a free seller cannot sell (events + RSVPs only).~~ Every tier sells;
+the Market surfaces alone still hard-wall a free seller, an OPEN contradiction recorded in
+[VALUE-LADDER.md](VALUE-LADDER.md) §"two hard walls". Applied **only in Shop checkout** (and the dark
 booking-deposit path).
 
 | Module | Capability | Route / key files | Tables | Money in v1 | Status |

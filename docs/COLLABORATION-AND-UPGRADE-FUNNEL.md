@@ -4,27 +4,26 @@
 > Non Profit** spaces on the **host** side; a member tastes the value for free and upgrades to *do* the
 > advanced thing. This doc is the single map of **who can collaborate on what** and **every upgrade
 > path**. Decision: [ADR-810](DECISIONS.md). Machinery: [SPACE-COLLABORATION-AND-SEATS.md](SPACE-COLLABORATION-AND-SEATS.md)
-> (ADR-799), [PRICING.md](PRICING.md), [ROLES.md](ROLES.md). **Everything ships behind `billing_live` OFF**,
-> so nothing below changes for a live account until an operator flips go-live.
+> (ADR-799), [PRICING.md](PRICING.md), [ROLES.md](ROLES.md). ~~**Everything ships behind `billing_live`
+> OFF**, so nothing below changes for a live account until an operator flips go-live.~~ (Struck
+> 2026-08-19: the flip has happened — see the ⚠️ note below.)
 >
-> 🔴 **TWO THINGS IN THIS DOC ARE OUT OF DATE, AND BOTH ARE ABOUT MONEY.** Read
+> 🔴 **TWO THINGS IN THIS DOC WERE OUT OF DATE, AND BOTH WERE ABOUT MONEY.** Read
 > [PRICING.md](PRICING.md)'s ADR-914 banner as the authority; this file is the map of collaboration,
-> not of rates.
+> not of rates. Both were **corrected in place 2026-08-19** (OWN-032), reversed claims struck through
+> where they stood:
 >
-> 1. **The sell-wall is gone.** §2's capability matrix shows `RSVPs only` for the free tiers.
+> 1. **The sell-wall is gone.** §4's capability matrix showed `RSVPs only` for the free tiers.
 >    [ADR-914](DECISIONS.md) reversed that: *"A free Member **can** sell. Tickets, donations, payouts,
 >    on day one, with no upgrade."* The rule now is **"never gate the transaction, gate the repeat"**,
->    so the free rows of that matrix understate what a free member may do.
-> 2. **The ladder has seven rungs, not four.** §3 quotes "Crew 8% · Business and Collective 5% · Non
+>    and the free rows of the matrix now say so.
+> 2. **The ladder has seven rungs, not four.** §3 quoted "Crew 8% · Business and Collective 5% · Non
 >    Profit 0%". It is free Member **10%** · Crew **8%** · free Space **10%** · Business **5%** ·
->    Collective **3%** · Non Profit **0%** · Independent **0%**. Collective is 3%, not 5%, and the two
->    free rungs are missing here entirely.
+>    Collective **3%** · Non Profit **0%** · Independent **0%** (verified against
+>    `NETWORK_TAKE_RATE_DEFAULT`, `lib/billing/pricing-keys.ts`). Collective is 3%, not 5%.
 >
-> The body is left unedited on purpose: the matrix is this doc's argument, and re-deriving it around a
-> reversed premise is a product decision rather than a documentation fix. Flagged for the owner.
->
-> ⚠️ **`billing_live` is ON in production** (measured 2026-08-19), so the sentence directly above is
-> also stale: the go-live flip has happened.
+> ⚠️ **`billing_live` is ON in production** (measured 2026-08-19): the go-live flip has happened, which
+> is why the sentence at the top of this banner and §5's "today" claims are struck.
 
 ## 1. The model in one screen
 
@@ -72,12 +71,14 @@ Each row is one funnel point: a member plays with the value, hits a single clear
 | 4 | Any paid Space | **+ Vera AI** (+$20/mo, $200/yr) | CRM crosses enough contacts to want live matching | the AI matching + next-best-action depth (the Resonance Engine machinery under the hood; the product is called Vera AI, ADR-590) |
 | 5 | Business | **more operator seats** (+per seat) | invites a 2nd operator to help run the back office | extra editor/moderator/admin seats (ADR-799 §A) |
 
-**Selling IS a wall; being paid attention is not** (ADR-913, revising ADR-552's "money exchange is never
-the wall"). The free tier can create events, take **RSVPs**, and receive **tips** (tips are 0% on every
-tier, forever). It cannot **sell**: tickets and payments need **Crew** on the personal side or a
-**Business / Non Profit** Space. Above that line, what you pay for is still **depth, scale, seats, and
-collaboration**, and the take-rate only ever touches a sale the **network** sourced (Crew 8% · Business
-and Collective 5% · Non Profit 0%). A buyer who is already the seller's own audience is **0%**:
+~~**Selling IS a wall; being paid attention is not** (ADR-913, revising ADR-552's "money exchange is never
+the wall").~~ **Selling is NOT a wall** (corrected 2026-08-19: [ADR-914](DECISIONS.md) reversed ADR-913's
+seller gate the day it was written — **never gate the transaction, gate the repeat**). The free tier can
+create events, take **RSVPs**, receive **tips** (tips are 0% on every tier, forever), and **sell**:
+tickets, donations, payouts, day one, no upgrade. What you pay for is a lower **rate** plus **depth,
+scale, seats, and collaboration**, and the take-rate only ever touches a sale the **network** sourced
+(free Member 10% · Crew 8% · free Space 10% · Business 5% · Collective 3% · Non Profit 0% · Independent
+0%). A buyer who is already the seller's own audience is **0%**:
 Frequency charges once for the introduction, and after that they're your people, free.
 
 ## 4. What a member can do at each stage (the taste)
@@ -90,14 +91,15 @@ Frequency charges once for the introduction, and after that they're your people,
 | Author Journeys / Practices / Circles | 🔴 | 🔴 (Crew+) | ✅ | ✅ | ✅ |
 | **Create a Space** | 🔴 | 🔴 (go Crew) | ✅ 1 space | — | ✅ unlimited |
 | **Receive tips** (0% platform fee, always) | 🔴 | ✅ | ✅ | ✅ | ✅ |
-| **Sell** (tickets, bookings, payments) | 🔴 | 🔴 RSVPs only | ✅ 8% network-sourced | 🔴 RSVPs only | ✅ 5% network-sourced, Non Profit 0% |
+| **Sell** (tickets, bookings, payments) | 🔴 | ✅ 10% network-sourced ~~(🔴 RSVPs only)~~ | ✅ 8% network-sourced | ✅ 10% network-sourced ~~(🔴 RSVPs only)~~ | ✅ 5% network-sourced (Collective: 3%), Non Profit 0% |
 | **Host collaborators / co-host events** | 🔴 | 🔴 | 🔴 | 🔴 preview | ✅ Non Profit; Business previews (Collective floor, ADR-835) |
 | Team seats, full CRM/email/automation, custom domain | 🔴 | 🔴 | 🔴 | 🔴 preview | ✅ |
 
 Legend: ✅ available · 🔴 gated (upgrade prompt) · earn-only = plays but cannot cash in. Every rate shown
 is **network-sourced only**: a sale to the seller's own audience (a follower, an active Space member, a
 Space Contact, someone on the seller's own contact list, or a past buyer) is **0%**, and tips are 0%
-everywhere (ADR-913).
+everywhere (ADR-913). ⚠️ The Sell row was corrected 2026-08-19 ([ADR-914](DECISIONS.md), OWN-032): the
+struck cells are the sell-wall it used to teach.
 
 ## 5. How it is enforced (and why OFF is safe)
 
@@ -110,10 +112,11 @@ everywhere (ADR-913).
 - **Event creation** — opened to any signed-in member (`event.create` capability in
   `lib/core/capabilities.ts`; `/events/new` page gate).
 - **OFF-safe (the invariant):** every gate runs through `billingLive()` / `featureAllowed`, which
-  **short-circuits to granted while `billing_live` is OFF**. So today collaboration stays free +
+  **short-circuits to granted while `billing_live` is OFF**. ~~So today collaboration stays free +
   universal, any member creates events, and space creation is uncapped — exactly current behavior. The
-  walls only bite once an operator turns billing on. Every reader is additionally fail-safe (a read
-  error degrades to granted, never a lockout).
+  walls only bite once an operator turns billing on.~~ (Corrected 2026-08-19: `billing_live` is **ON**
+  in production, so the short-circuit no longer applies and the gates above are live.) Every reader is
+  additionally fail-safe (a read error degrades to granted, never a lockout).
 
 ## References
 

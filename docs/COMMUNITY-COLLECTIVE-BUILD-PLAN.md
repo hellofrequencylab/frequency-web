@@ -207,10 +207,14 @@ The single hard build. Today `lib/billing/fees.ts` resolves a rate purely from `
    charge a fee we promised not to). The promise this encodes: *Frequency charges once for the
    introduction. After that they're your people, free.*
 2. **Source-aware fee math.** `spaceTakeRateCents(gross, plan, {source})`: `self → 0 bps`; `network → the
-   plan's network bps` (Crew ~800 / Business ~500 / Collective ~500 / Non Profit ~0). There is **no free
+   plan's network bps` ~~(Crew ~800 / Business ~500 / Collective ~500 / Non Profit ~0). There is **no free
    Member rung**: a free Member cannot sell at all (events + RSVPs only), and the old `member_free` ~1000
-   and Collective ~300 rungs are retired. A disconnected (Independent) space is `self` by definition (it
-   left the graph) and pays the flat price only. **Tips never reach this math: a tip is 0% on every tier.**
+   and Collective ~300 rungs are retired.~~ ⚠️ Corrected 2026-08-19 ([ADR-914](DECISIONS.md), which
+   reversed ADR-913's seller gate the day it was written): every tier sells, and the live rungs are free
+   Member 1000 / Crew 800 / free Space 1000 / Business 500 / Collective 300 / Non Profit 0
+   (`NETWORK_TAKE_RATE_DEFAULT`, `lib/billing/pricing-keys.ts`). A disconnected (Independent) space is
+   `self` by definition (it left the graph) and pays the flat price only. **Tips never reach this math: a
+   tip is 0% on every tier.**
 3. **Provable receipt.** Phase 5 reads the same attribution back to show "$ the network earned you", so the
    fee is auditable by the member, which is what makes the take-rate feel like a partner's commission
    instead of a tax.
