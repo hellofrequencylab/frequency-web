@@ -42,6 +42,11 @@ export const EDITABLE_PAGES = [
   { slug: 'the-quest', title: 'The Quest', path: '/the-quest' },
   { slug: 'pricing', title: 'Pricing', path: '/pricing' },
   { slug: 'circles', title: 'Circles', path: '/circles' },
+  // The SEEKER ARTICLES (UX-MATURITY-PLAN Lift 5d, ADR-1068). Informational routes, not
+  // product surfaces: each is one instance of the CONTENT-VOICE §10.9 article grammar,
+  // seeded by `articleTemplate` from a spec beside it rather than by a hand-built
+  // document. They enroll ONE PER PR, because each enrolment is also a route change.
+  { slug: 'how-to-start-a-circle', title: 'How to start a Circle', path: '/how-to-start-a-circle' },
 ] as const
 
 export type EditableSlug = (typeof EDITABLE_PAGES)[number]['slug']

@@ -32,6 +32,27 @@ import {
 //         Community the way its two siblings already do.
 //  • the "You don't grind points…" paragraph from the coded premise section.
 //
+// RECOVERED 2026-08-19, when the coded body was retired (Lift 5c, LIVE-006). Walking
+// the coded page section by section against this file turned up three details it drew
+// that nothing here did. They are restored IN PLACE, in blocks that already existed,
+// rather than as new blocks:
+//   1. the "Generosity over grinding" guardrail — the coded page's `What it rewards`
+//      section carried three Guards and this file carried only two of them (presence,
+//      rhythm) inside `tq-why-it-matters`. The third is now the middle sentence of
+//      that block's first paragraph, so the trio reads in the coded order.
+//   2. the "Find a Circle near you" → /discover link, from the coded `Where it starts`
+//      section, now the `tq-practices` MediaText CTA (a designed slot that was empty).
+//   3. the "see what membership opens on the pricing page" → /pricing link, from the
+//      same coded section, now closing FAQ answer 5 — the answer that is already about
+//      what membership pays for. Accordion answers run through `richParagraphs`, so the
+//      link renders, and `richPlainText` strips it back out for the FAQPage node, which
+//      keeps schema and visible copy identical by construction.
+// ⚠️ The BuildTimeline `footnote` on `tq-ranks` looks like the natural home for a link
+// and is NOT one: that block prints `{footnote}` raw (dawn.tsx), unlike PhotoCardRow's
+// footnote, which runs through `richParagraphs`. Markdown put there ships as literal
+// text. Same for `StoryBeats` bodies and `CallToAction` bodies. The rich-text sinks on
+// this page are MediaText `body`, Accordion answers, and the `Text` block.
+//
 // Canon rendered verbatim (docs/NAMING.md):
 //  • The Quest = the year-round game; a Quest = one 13-week season. Hierarchy:
 //    The Quest → a Quest (season) → Journey → Practice.
@@ -186,8 +207,8 @@ export const data: Data = {
         side: 'left',
         imgAspect: 'landscape',
         focal: 'center',
-        ctaLabel: '',
-        ctaHref: '',
+        ctaLabel: 'Find a Circle near you',
+        ctaHref: '/discover',
         tone: 'surface',
         width: 'default',
         align: 'left',
@@ -388,7 +409,7 @@ export const data: Data = {
         title: 'Most games waste your life. This one builds it.',
         titleAccent: 'builds it',
         kicker: '',
-        body: "Every mechanic in the Quest answers to one rule: does this pull you toward real people, or deeper into a screen? The biggest rewards live off the phone, because Zaps come from being in the room. Ranks reset each season so it stays an open invitation, never a train that left without you.\n\nWe're not building a better way to scroll. We're using the only thing screens are good at, the pull, and aiming it at the door, the Circle, and the practice you've been meaning to start.",
+        body: "Every mechanic in the Quest answers to one rule: does this pull you toward real people, or deeper into a screen? The biggest rewards live off the phone, because Zaps come from being in the room. You rise by bringing others in and holding the door, not by farming points, so the path rewards the people who make the room warmer. Ranks reset each season so it stays an open invitation, never a train that left without you.\n\nWe're not building a better way to scroll. We're using the only thing screens are good at, the pull, and aiming it at the door, the Circle, and the practice you've been meaning to start.",
         side: 'right',
         imgAspect: 'portrait',
         focal: 'center',
@@ -446,7 +467,7 @@ export const data: Data = {
           },
           {
             q: 'Do I have to pay to play The Quest?',
-            a: 'No. The community and The Quest are free to play, and everyone earns at full rate. Membership keeps open the rooms The Quest fills, and you never pay a cut of your own bookings. You are not buying points.',
+            a: 'No. The community and The Quest are free to play, and everyone earns at full rate. Membership keeps open the rooms The Quest fills, and you never pay a cut of your own bookings. You are not buying points. See what membership opens on the [pricing page](/pricing).',
           },
         ],
         emphasis: { scale: 'default', accent: 'none' },
