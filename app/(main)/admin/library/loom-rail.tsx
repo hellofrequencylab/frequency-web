@@ -161,7 +161,7 @@ export function LoomRail({
         label="Icons"
       />
       {/* Cross-lane link into the Onboarding flows lane (docs/LOOM-PLATFORM.md §3): the managed
-          kind='sequence' flows — create / edit / publish / version. Distinct from the beta splash
+          kind='sequence' flows — create / edit / publish / version. Distinct from the Funnel splash
           funnels under the Splash lane; this governs the step-by-step new-member flow. */}
       <Row
         href="/admin/library?lane=sequence"

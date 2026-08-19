@@ -31,7 +31,7 @@ each notice actually depends on.
 | `BETA_GRANTED_TIER` | `lib/core/beta.ts` | The tier granted during beta (`crew`). Leave; it stops applying once the flag is off. |
 | `billingLive()` | `lib/pricing/settings` (DB `platform_settings`) | Gates the `/upgrade` + `/settings/billing` beta banners and founder-reservation actions. Turn on when billing goes live. |
 | `betaEndsAt()` | `lib/platform-flags.ts` (DB) | The countdown clock (`beta-countdown-banner`). Auto-hides after the date. |
-| `BETA_INDUCTION_ACTIVE`, `BETA_MEMBERS_GET_CREW` | `lib/onboarding/beta-script.ts` | The beta induction flow. Flip; the module is retired at GA. |
+| `FUNNEL_INDUCTION_ACTIVE`, `BETA_MEMBERS_GET_CREW` | `lib/onboarding/funnel-script.ts` | The Funnels induction (ADR-1090). `BETA_MEMBERS_GET_CREW` flips at GA; the Funnels machinery itself stays. |
 | `ALERT_KEY` | `components/layout/site-alert-bar.tsx:17` | Bump after editing the alert copy so it re-shows. |
 
 ## 3. The inventory (edit at launch)
@@ -64,7 +64,7 @@ Legend — Driver: 🟢 `BETA_OPEN_ACCESS` (auto-swaps via `beta-notices.ts`) ·
 | `app/page.tsx:125,137,249,588` | Home hero + FAQ "free for the whole beta / no card / $10/mo" | Manual edit (4 strings). **High risk.** |
 | `app/(marketing)/beta/*` · `app/(marketing)/founders/*` · `components/marketing/beta-form.tsx` · `components/discover/inline-beta-capture.tsx` | Waitlist + founder-reservation funnels | Retire at GA. |
 | `lib/marketing/comparisons.ts` (×6) · `app/(marketing)/what-is-frequency`, `/vs`, `/vs/[slug]`, `/spaces` · `app/discover/cities/*` · `app/llms.txt/route.ts:147` | "Free to join during the beta." / "Free during the beta." | Manual edit. Candidate to centralize (see §4). |
-| `app/onboarding/beta/*` | Induction flow | 🟡 induction flags; module retired at GA. |
+| `app/join/*` | Funnels induction flow | 🟡 `BETA_MEMBERS_GET_CREW` flips at GA; the Funnels machinery stays (ADR-1090). |
 
 ### Emails — ✅ nothing left to edit
 The beta email arc is **deleted** (2026-08-19, with the Beta Command Center): `lib/beta/launch-emails.ts`,

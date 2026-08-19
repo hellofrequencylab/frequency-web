@@ -10,6 +10,7 @@ import {
 import { isProfileRef } from '@/lib/qr/public-url'
 import { hasPublicTwin } from '@/lib/nav/public-twin'
 import { referralsEnabled } from '@/lib/platform-flags'
+import { isFunnelSplashPath } from '@/lib/funnels/definitions'
 
 // The referral attribution cookie — the referrer's profile id, consumed once at
 // onboarding by applyReferralAttribution (lib/qr/referral.ts). Name + attributes MUST
@@ -132,7 +133,12 @@ export async function proxy(request: NextRequest) {
     }
     // High-level channel hint for the person-driven entry routes (the QR resolver
     // sets its own on /q). Feeds last-touch; first-touch still wins the tag.
-    const channelHint = pathname.startsWith('/join/')
+    // /join/<x> is two doors on one segment (ADR-1090): a Circle INVITE token is a
+    // referral, but a Funnel SPLASH slug (/join/breathwork) is not person-driven —
+    // its channel comes from utm/referrer like any campaign landing, exactly as it
+    // did at /beta/<slug>. isFunnelSplashPath tells them apart (code Funnel slugs
+    // are known synchronously; only they have splashes).
+    const channelHint = pathname.startsWith('/join/') && !isFunnelSplashPath(pathname)
       ? 'referral'
       : pathname.startsWith('/events/')
         ? 'event_guest'
@@ -148,12 +154,13 @@ export async function proxy(request: NextRequest) {
   // the event link should be able to add it to their calendar. Events are
   // already anon-readable via the public_landing_reads RLS policies.
   const isShareableFeed = pathname.endsWith('.ics')
-  // The beta induction is the public on-ramp: signed-out visitors get the
-  // sequence's cinematic welcome (sign-in embedded) at /onboarding/beta, and the
-  // no-auth preview demo at /onboarding/beta/preview (ADR-068). Both override the
-  // '/onboarding' protected prefix; the page itself auth-gates the real induction
-  // (an unauthed visitor sees the welcome, never the writes). Removed at launch.
-  const isBetaEntry = pathname.startsWith('/onboarding/beta')
+  // The Funnels front door (ADR-068, renamed ADR-1090) lives at /join, which is
+  // deliberately NOT in PROTECTED_PATHS: signed-out visitors run the whole
+  // cinematic induction (sign-in embedded) at /join, the no-auth preview at
+  // /join/preview, and the splash/invite pages at /join/<slug>. The pages
+  // themselves auth-gate every write. Old /onboarding/beta URLs 308 to /join in
+  // next.config.ts BEFORE this proxy runs, so the '/onboarding' protected prefix
+  // never sees them and needs no carve-out any more.
   // Public events (SEO/AIO + shareable): the events index and an event's detail page are
   // anon-readable — a signed-out visitor sees the event and is prompted to sign in for any
   // action. The CREATE flow (/events/new) and host MANAGE sub-routes stay protected.
@@ -172,7 +179,6 @@ export async function proxy(request: NextRequest) {
   const isTwinRedirectable = hasPublicTwin(pathname)
   const isProtected =
     !isShareableFeed &&
-    !isBetaEntry &&
     !isPublicEventView &&
     !isTwinRedirectable &&
     PROTECTED_PATHS.some((p) => pathname.startsWith(p))

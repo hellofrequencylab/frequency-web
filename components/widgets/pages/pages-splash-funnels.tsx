@@ -1,22 +1,22 @@
 import Link from 'next/link'
 import { ArrowRight, Sparkles } from 'lucide-react'
 import { getJanitor } from '@/lib/page-editor/guard'
-import { listAllSequences } from '@/lib/onboarding/resolve-sequence'
+import { listAllFunnels } from '@/lib/funnels/resolve'
 import { SectionHeader } from '@/components/ui/section-header'
 
-// Pages-workspace layout module for the SPLASH FUNNELS (the onboarding front door). Self-fetching,
+// Pages-workspace layout module for the FUNNELS (the sign-up front door). Self-fetching,
 // zero-prop RSC bound in lib/widgets/registry.tsx. Janitor-only: it returns null for a non-janitor
 // admin. One card into the library, a live custom-funnel count, and a shortcut to the template
 // every funnel is built from. Full lifecycle lives in the library at /pages/sequences.
 
 export async function PagesSplashFunnels() {
   if (!(await getJanitor())) return null
-  const customCount = (await listAllSequences()).filter((s) => s.source === 'custom').length
+  const customCount = (await listAllFunnels()).filter((s) => s.source === 'custom').length
 
   return (
     <section>
       <SectionHeader
-        title="Splash funnels"
+        title="Funnels"
         action={
           <Link
             href="/pages/sequences"
@@ -34,7 +34,7 @@ export async function PagesSplashFunnels() {
           <Sparkles className="h-5 w-5" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-body font-bold text-text">Splash Funnels</span>
+          <span className="block text-body font-bold text-text">Funnels</span>
           <span className="block text-body-sm leading-relaxed text-muted">
             The induction every new member walks through. Start from the template, tune a
             funnel for a specific audience, and watch the real flow update live.
@@ -53,7 +53,7 @@ export async function PagesSplashFunnels() {
       <p className="mt-2 max-w-3xl text-meta text-subtle">
         Editing the{' '}
         <Link href="/pages/splash" className="font-semibold text-primary-strong hover:underline">
-          Splash Funnel template
+          Default Funnel
         </Link>{' '}
         updates the default flow and every new funnel built from it.
       </p>

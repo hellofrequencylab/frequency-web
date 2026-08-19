@@ -7,7 +7,7 @@ import { recordEngagementEvent } from '@/lib/engagement/events'
 // Persist a tour interaction into profiles.meta.tour and emit an analytics event
 // (ADR-047 Phase 1). 'seen' marks a tip shown (won't re-show) + advances the pacing
 // clock; 'dismissed' also marks seen; 'cta' is analytics-only. Member-scoped via
-// the user client (RLS), mirroring app/onboarding/beta/actions.ts.
+// the user client (RLS), mirroring app/join/(induction)/actions.ts.
 type TourEventKind = 'seen' | 'dismissed' | 'cta'
 type Meta = Record<string, Json>
 

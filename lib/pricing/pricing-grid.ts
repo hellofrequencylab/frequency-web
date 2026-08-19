@@ -237,9 +237,9 @@ export function memberOfferings(input: PricingGridInput): Offering[] {
       takeRate: rateLine(memberBps),
       networkRateBps: memberBps,
       featured: false,
-      // /join is NOT a route. app/join/ contains only [token]/, the invite-redemption page,
-      // so this CTA 404'd for every visitor who clicked the free plan on /pricing. The free
-      // member's real front door is the beta induction, which is what BETA_CTA_HREF names.
+      // BETA_CTA_HREF is the one front door (now /join, the Funnels induction, ADR-1090).
+      // History: this CTA once hardcoded '/join' when that was NOT a route and 404'd for
+      // every visitor — the constant is the guard against a second drift.
       cta: { label: 'Join free', href: BETA_CTA_HREF },
     },
     {

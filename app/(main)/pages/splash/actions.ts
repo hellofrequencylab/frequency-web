@@ -3,15 +3,15 @@
 import { revalidatePath } from 'next/cache'
 import { getJanitor } from '@/lib/page-editor/guard'
 import { getCallerProfile } from '@/lib/auth'
-import { VERA, type VeraCopy } from '@/lib/onboarding/beta-script'
-import { DEFAULT_SEQUENCE } from '@/lib/onboarding/beta-sequences'
-import { saveSequenceOverride, deleteSequenceVersion } from '@/lib/onboarding/sequence-overrides'
-import { resolveDefaultSequence } from '@/lib/onboarding/resolve-sequence'
+import { VERA, type VeraCopy } from '@/lib/onboarding/funnel-script'
+import { DEFAULT_FUNNEL } from '@/lib/funnels/definitions'
+import { saveFunnelOverride, deleteFunnelVersion } from '@/lib/funnels/overrides'
+import { resolveDefaultFunnel } from '@/lib/funnels/resolve'
 
-// Server actions for the default beta flow's live-preview editor (/pages/splash).
+// Server actions for the default Funnel's live-preview editor (/pages/splash).
 // Janitor-gated like the rest of the pages surface. Saving writes the `beta-default`
-// row in sequence_overrides; the live /onboarding/beta flow resolves it on the next
-// request (resolve-sequence.ts). Reset deletes the row, falling back to the coded
+// row in sequence_overrides; the live /join flow resolves it on the next
+// request (lib/funnels/resolve.ts). Reset deletes the row, falling back to the coded
 // VERA script.
 
 const MAX_LINE = 300
@@ -38,17 +38,17 @@ function cleanVera(input: unknown): VeraCopy {
 }
 
 function revalidate() {
-  revalidatePath('/onboarding/beta')
+  revalidatePath('/join')
   revalidatePath('/pages/splash')
   revalidatePath('/pages')
 }
 
 /** Save the edited copy as the `beta-default` override. Publishes immediately. */
-export async function saveDefaultBetaCopy(payload: { vera: VeraCopy }): Promise<{ ok: boolean }> {
+export async function saveDefaultFunnelCopy(payload: { vera: VeraCopy }): Promise<{ ok: boolean }> {
   if (!(await getJanitor())) return { ok: false }
   const me = await getCallerProfile()
-  await saveSequenceOverride(
-    DEFAULT_SEQUENCE,
+  await saveFunnelOverride(
+    DEFAULT_FUNNEL,
     {
       audience: 'Every new member (default)',
       vera: cleanVera(payload?.vera),
@@ -61,10 +61,10 @@ export async function saveDefaultBetaCopy(payload: { vera: VeraCopy }): Promise<
 
 /** Clear the override: the flow returns to the coded VERA script. Returns the
  *  freshly-resolved copy so the editor can repaint without a reload. */
-export async function resetDefaultBetaCopy(): Promise<{ ok: true; vera: VeraCopy } | { ok: false }> {
+export async function resetDefaultFunnelCopy(): Promise<{ ok: true; vera: VeraCopy } | { ok: false }> {
   if (!(await getJanitor())) return { ok: false }
-  await deleteSequenceVersion(DEFAULT_SEQUENCE)
+  await deleteFunnelVersion(DEFAULT_FUNNEL)
   revalidate()
-  const seq = await resolveDefaultSequence()
+  const seq = await resolveDefaultFunnel()
   return { ok: true, vera: seq.vera }
 }

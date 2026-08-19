@@ -1,18 +1,19 @@
-// Beta induction page (ADR-068). TEMPORARY — deleted at launch.
-// Mirrors the legacy onboarding page's auth + completed guards.
+// The Funnels induction page (ADR-068 → ADR-1090) — the sign-up front door at
+// /join. Formerly app/onboarding/beta/page.tsx ("beta induction"); old URLs 308
+// here. Mirrors the legacy onboarding page's auth + completed guards.
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { resolveSequence } from '@/lib/onboarding/resolve-sequence'
+import { resolveFunnel } from '@/lib/funnels/resolve'
 import { isPersonaId, type PersonaId } from '@/lib/onboarding/personas'
 import { getReferrer } from '@/lib/qr/referral'
 import { hasEffectivelyOnboarded } from '@/lib/onboarding/onboarded'
-import { isSafeInAppPath } from '@/lib/onboarding/funnel-destination'
-import type { FunnelDestination } from '@/lib/onboarding/beta-sequences'
-import BetaInduction from './induction'
+import { isSafeInAppPath } from '@/lib/funnels/destination'
+import type { FunnelDestination } from '@/lib/funnels/definitions'
+import FunnelInduction from './induction'
 import FeatureFunnel from './feature-funnel'
 
-export default async function BetaInductionPage({
+export default async function FunnelInductionPage({
   searchParams,
 }: {
   searchParams: Promise<{ seq?: string; persona?: string; next?: string }>
@@ -21,11 +22,11 @@ export default async function BetaInductionPage({
   const { data: { user } } = await supabase.auth.getUser()
 
   // The sequence drives the copy. No ?seq (or ?seq=beta-default) = the base VERA
-  // flow, fully merged with the owner's edits: resolveSequence layers the coded
+  // flow, fully merged with the owner's edits: resolveFunnel layers the coded
   // copy, the legacy /admin/vera induction tweaks, and the `beta-default` override
   // saved by the /pages/splash editor. DB-built versions resolve the same way.
   const { seq: seqSlug, persona: personaSlug, next: nextParam } = await searchParams
-  const seq = await resolveSequence(seqSlug)
+  const seq = await resolveFunnel(seqSlug)
   // A `?next=` in-app path (e.g. an event-claim landing) overrides the sequence destination so
   // completion admits the new member (onboarding_completed) and lands them right back where they
   // came from. Validated as a safe same-origin path; anything else falls through to the sequence.
@@ -41,9 +42,9 @@ export default async function BetaInductionPage({
   const inviter = await getReferrer()
 
   // Signed-out visitors run the WHOLE cinematic induction with no login wall
-  // (ADR-082): "Join the Beta" opens the sequence immediately. Sign-in is
+  // (ADR-082): the join CTA opens the Funnel immediately. Sign-in is
   // collected at the final "step in" beat; the answers are stashed and written at
-  // /onboarding/beta/complete after auth.
+  // /join/complete after auth.
   // Niche-funnel config (ADR-funnels): the Slide-2 feature cards, the Slide-3 core
   // features, and the completion destination. Absent on the General funnel, so the
   // induction keeps its persona fork / reel / default landing exactly as today.
@@ -64,7 +65,7 @@ export default async function BetaInductionPage({
   }
 
   if (!user) {
-    return <BetaInduction deferred copy={copy} sequence={seq.slug} persona={persona} inviter={inviter} {...funnel} />
+    return <FunnelInduction deferred copy={copy} sequence={seq.slug} persona={persona} inviter={inviter} {...funnel} />
   }
 
   const { data: profile } = await supabase
@@ -100,7 +101,7 @@ export default async function BetaInductionPage({
     .order('name')
 
   return (
-    <BetaInduction
+    <FunnelInduction
       userId={user.id}
       userEmail={user.email ?? ''}
       initialHandle={profile?.handle ?? ''}

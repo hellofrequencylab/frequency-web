@@ -6,7 +6,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { ModelTier } from '@/lib/ai/models'
-import { VERA as COPY, HEARD_ABOUT } from '@/lib/onboarding/beta-script'
+import { VERA as COPY, HEARD_ABOUT } from '@/lib/onboarding/funnel-script'
 
 export interface VeraInductionCopy {
   introHeading: string

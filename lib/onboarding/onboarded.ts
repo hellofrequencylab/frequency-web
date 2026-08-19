@@ -1,10 +1,10 @@
 // Pure, dependency-free predicate: has this member EFFECTIVELY finished onboarding?
 //
 // The canonical marker is `profiles.meta.onboarding_completed`, set by the induction
-// write (app/onboarding/beta/actions.ts). But accounts that predate the induction gate
-// — seeded accounts, or members who used the app before BETA_INDUCTION_ACTIVE was
+// write (app/join/(induction)/actions.ts). But accounts that predate the induction gate
+// — seeded accounts, or members who used the app before FUNNEL_INDUCTION_ACTIVE was
 // blocking — never got that flag, yet are plainly established members. Gating solely on
-// the flag re-forces them through the beta-launch induction on EVERY sign-in (a bug).
+// the flag re-forces them through the Funnel induction on EVERY sign-in (a bug).
 //
 // So we also treat clear evidence of PRIOR APP USE as equivalent to the flag. Every
 // signal below is only reachable AFTER passing the onboarding gate (the in-app tour,
@@ -28,7 +28,7 @@ interface OnboardingMeta {
 }
 
 /**
- * True when the member should NOT be re-forced through beta-launch onboarding: either
+ * True when the member should NOT be re-forced through the Funnel induction: either
  * the explicit completion flag is set, or there is unambiguous evidence they have
  * already been through the app. Genuinely-new members (empty meta, no economy, no tour
  * history) return false, so real onboarding is never skipped.

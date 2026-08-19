@@ -1,21 +1,27 @@
-// Beta induction — Vera's scripted copy + config (ADR-068, docs/BETA-INDUCTION.md).
+// Funnel script — Vera's scripted copy + config for the Funnels induction
+// (ADR-068 → ADR-1090, docs/FUNNELS.md). Was lib/onboarding/beta-script.ts.
 //
-// TEMPORARY by design: this whole module is deleted at public launch. Everything
-// here is deterministic copy in Vera's HOT register (AI-VERA.md §2) — conviction,
-// not confetti. No AI calls. When live Vera ships (ADR-066 Phase D) this becomes
-// her fallback script. Client-safe (no server imports).
+// Everything here is deterministic copy in Vera's HOT register (AI-VERA.md §2) —
+// conviction, not confetti. No AI calls. When live Vera ships (ADR-066 Phase D)
+// this becomes her fallback script. Client-safe (no server imports).
 
-/** Master switch. While true, `/onboarding` redirects into `/onboarding/beta`. */
-export const BETA_INDUCTION_ACTIVE = true
+/** Master switch. While true, `/onboarding` redirects into `/join`, so the Funnels
+ *  induction is the mandatory opening sequence. Flipping it off falls back to the
+ *  steady-state onboarding model (ADR-047). */
+export const FUNNEL_INDUCTION_ACTIVE = true
 
-/** During the Beta, every member gets Crew (full gamification) for free — they
+/** BETA PROGRAM flag, not a Funnels one (the name keeps its beta_ because the
+ *  program it describes is still called the Beta): during the Beta, every member
+ *  gets Crew (full gamification) for free — they
  *  rack up points in the game and can downgrade to Member anytime (/upgrade).
  *  Flip OFF at Launch: new members default to Member, and unpaid members lose
  *  the Crew surfaces + the ability to spend gems (see ADR-084). */
 export const BETA_MEMBERS_GET_CREW = true
 
-/** Bumped if the flow materially changes, so we can tell cohorts apart. */
-export const BETA_INDUCTION_VERSION = 1
+/** Bumped if the flow materially changes, so we can tell cohorts apart. Written to
+ *  the STORED `meta.beta.version` key — the key keeps its name so every cohort
+ *  stamp ever written stays comparable. */
+export const FUNNEL_INDUCTION_VERSION = 1
 
 /** "How did you hear about us?" — captured on the intake into meta.beta.heard_about. */
 export const HEARD_ABOUT = [
@@ -61,7 +67,7 @@ export const REEL: ReelSlide[] = [
 
 /** All voiced copy, in one place.
  *
- *  Ships as WRITING PROMPTS, not finished copy: this is the default Splash Funnel
+ *  Ships as WRITING PROMPTS, not finished copy: this is the default Funnel
  *  template every custom funnel clones, so each beat carries fill-in guidance the
  *  operator replaces in the /pages/splash + funnel editors.
  *  Keep the beat structure; the copy stays plain prompts, no em dashes. */
@@ -99,7 +105,7 @@ export const VERA = {
 } as const
 
 /** Widened structural type of VERA — the same shape, but every leaf is a plain
- *  `string` so sequences (beta-sequences.ts) and operator overrides (/admin/vera)
+ *  `string` so Funnels (lib/funnels/definitions.ts) and operator overrides (/admin/vera)
  *  can supply their own copy. `typeof VERA` alone is all readonly string LITERALS,
  *  which would reject any different wording. */
 export type VeraCopy = {

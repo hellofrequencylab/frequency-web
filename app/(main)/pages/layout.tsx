@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { requireAdmin } from '@/lib/admin/guard'
 
-// The Pages admin (page workspace, Splash Funnels, the template/splash editors) is staff-gated
+// The Pages admin (page workspace, Funnels, the template/splash editors) is staff-gated
 // (admin+). Belt-and-braces: noindex so an editorial surface can never be crawled even if an auth
 // edge case ever exposed it. The workspace is module-driven (lib/widgets/modules.ts → '/pages'),
 // so its arrangement lives in the on-page Settings → Layout panel — the legacy bottom-right

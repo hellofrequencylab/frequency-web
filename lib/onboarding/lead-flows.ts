@@ -3,8 +3,8 @@
 // A lead flow is a named, shareable surface you drop behind ANY entry point — a QR
 // at an event, an Instagram bio link, a partner's website button, a city landing
 // page. Its one job: identify WHO the visitor is (a persona), record the lead, and
-// route them to the right marketing track (or straight into the beta induction
-// carrying their persona). It generalizes today's beta "sequences": a sequence
+// route them to the right marketing track (or straight into the Funnels induction
+// carrying their persona). It generalizes the Funnels model: a Funnel
 // skinned the induction by which link you clicked; a lead flow asks the visitor to
 // tell us instead, so the same flow serves everyone and the signal is real.
 //

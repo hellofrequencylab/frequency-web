@@ -12,7 +12,7 @@ import { finalizePendingInduction, uploadPendingAvatar } from '../actions'
 // profile). Runs exactly once.
 const PENDING_AVATAR_KEY = 'fq_pending_avatar'
 
-export function BetaCompleteFinalizer() {
+export function CompleteFinalizer() {
   const router = useRouter()
   const [mode, setMode] = useState<'working' | 'error'>('working')
   const [error, setError] = useState('')
@@ -53,7 +53,7 @@ export function BetaCompleteFinalizer() {
         // No stash (e.g. expired / direct nav) — send them back to start the run.
         setMode('error')
         setError(res.error ?? 'Something went wrong.')
-        setTimeout(() => router.replace('/onboarding/beta'), 1600)
+        setTimeout(() => router.replace('/join'), 1600)
       }
     })()
   }, [router])

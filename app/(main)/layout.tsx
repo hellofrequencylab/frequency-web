@@ -57,7 +57,7 @@ import { TourProvider } from '@/components/onboarding/tour-provider'
 import type { TourState } from '@/lib/onboarding/select'
 import { getOnboardingStatus, nextStepsEnabled } from '@/lib/onboarding/status'
 import { autoPopupsEnabled } from '@/lib/onboarding/flags'
-import { BETA_INDUCTION_ACTIVE } from '@/lib/onboarding/beta-script'
+import { FUNNEL_INDUCTION_ACTIVE } from '@/lib/onboarding/funnel-script'
 import { hasEffectivelyOnboarded } from '@/lib/onboarding/onboarded'
 import { ChoresOverlay } from '@/components/onboarding/chores-overlay'
 import { CaptureLauncher } from '@/components/feed/capture-launcher'
@@ -210,7 +210,7 @@ export default async function MainLayout({
   // (there is no profile to build the shell from). The space layout walls private/missing.
   // A PUBLIC view (a networked Space profile or a public events page) renders in the slim public
   // chrome for ANY viewer who can't get the member shell — signed-out, OR signed-in but pre-profile
-  // / mid-beta-induction. That last case is why /events was bouncing to /onboarding/beta: a session
+  // / mid-induction. That last case is why /events was bouncing to /join: a session
   // with onboarding incomplete hit the induction redirect even on a public page. The public surface
   // must never redirect to onboarding; it just shows the page with a Sign in / Join header.
   const currentPath = (await headers()).get('x-pathname')
@@ -280,17 +280,17 @@ export default async function MainLayout({
 
   // During beta, the induction is the mandatory opening sequence: anyone who
   // hasn't completed it is routed in. `/onboarding` (outside this layout, so no
-  // loop) forwards to /onboarding/beta. Flipping BETA_INDUCTION_ACTIVE off at
+  // loop) forwards to /join. Flipping FUNNEL_INDUCTION_ACTIVE off at
   // launch reverts to the non-blocking model (ADR-047). A public page is exempt so a
   // not-yet-onboarded session can still read it.
   //
   // Robust gate (not just meta.onboarding_completed): an EXISTING active member who
   // has clearly used the app — one seeded before the induction gate, or whose
-  // completion write predates the flag — must never be re-forced through beta-launch
-  // onboarding on every sign-in. hasEffectivelyOnboarded treats prior app use (a
+  // completion write predates the flag — must never be re-forced through the
+  // Funnel induction on every sign-in. hasEffectivelyOnboarded treats prior app use (a
   // completed induction, seen tour cues, earned Zaps/Gems) as onboarded, while a
   // genuinely-new member still gets the full induction.
-  if (BETA_INDUCTION_ACTIVE && !hasEffectivelyOnboarded({
+  if (FUNNEL_INDUCTION_ACTIVE && !hasEffectivelyOnboarded({
     meta: profile.meta,
     currentSeasonZaps: profile.current_season_zaps,
     lifetimeGems: profile.lifetime_gems,
@@ -858,7 +858,7 @@ async function VeraLauncherSlot() {
 async function CoachOverlaySlot({ profileId, realRole }: { profileId: string; realRole: CommunityRole }) {
   const nextSteps = await nextStepsEnabled()
   if (!nextSteps) return null
-  const chores = BETA_INDUCTION_ACTIVE ? await getProfileChores(profileId) : null
+  const chores = FUNNEL_INDUCTION_ACTIVE ? await getProfileChores(profileId) : null
   if (!chores) return null
 
   // Once chores are done, Vera keeps coaching (build item 1.3): surface the single next step.

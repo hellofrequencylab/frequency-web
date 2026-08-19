@@ -286,6 +286,20 @@ const nextConfig: NextConfig = {
       // the bare rule stays explicit to read like the retired routes above.
       { source: '/broadcast', destination: '/nearby', permanent: true },
       { source: '/broadcast/:path*', destination: '/nearby/:path*', permanent: true },
+      // Funnels rename (ADR-1090): the sign-up feature is Funnels and its routes moved to /join.
+      // Old links are IN THE WILD and cannot be rewritten — QR codes on posters, shared splash
+      // links, and CTAs in sent emails all point at /beta/<slug> and /onboarding/beta — so all
+      // three moves are permanent (308). Query strings ride through automatically, which is
+      // load-bearing here: /onboarding/beta?seq=<slug>&persona=… must land on /join with the
+      // same params or the audience funnel and persona pick are silently dropped.
+      //
+      // /beta itself (the "Join the Beta" marketing page) is NOT redirected — the beta program
+      // is still real and that page still serves it. Only the per-audience splash slugs moved,
+      // and the route they lived on (app/(marketing)/beta/[slug]) is deleted, so this rule
+      // shadows nothing (the funnel-redirects guard would catch it if it did).
+      { source: '/beta/:slug', destination: '/join/:slug', permanent: true },
+      { source: '/onboarding/beta', destination: '/join', permanent: true },
+      { source: '/onboarding/beta/:path*', destination: '/join/:path*', permanent: true },
     ]
   },
   images: {

@@ -3,7 +3,7 @@
 > Part of the project-orientation set for Claude Design. Sources:
 > `MARKETING-BRIEF.md`, `SEO-AEO-PLAN.md`, `funnels-brief.md`,
 > `docs/MARKETING-BUILD-PLAN.md`, `docs/PUBLIC-SITE-PLAN.md`,
-> `docs/ENTRY-POINTS.md`, `docs/BETA-INDUCTION.md`, `docs/OPERATOR-FUNNELS.md`.
+> `docs/ENTRY-POINTS.md`, `docs/FUNNELS.md`, `docs/OPERATOR-FUNNELS.md`.
 
 ---
 

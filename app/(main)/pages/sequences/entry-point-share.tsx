@@ -5,7 +5,7 @@ import { Link2, Check, Download, ExternalLink, QrCode, ChevronDown, ChevronUp } 
 
 type Mode = 'splash' | 'induction'
 
-// Per-sequence share kit: pick the INCOMING POINT (the polished splash page, or
+// Per-Funnel share kit: pick the INCOMING POINT (the polished splash page, or
 // straight into the induction), then copy the shareable link or download the QR
 // for whichever you picked. Both QR variants are pre-rendered server-side (same
 // path as the rest of the QR surfaces) and swapped here with zero round-trips; the
@@ -24,7 +24,7 @@ export function EntryPointShare({
 }: {
   slug: string
   audience: string
-  /** Omit for sequences without a public splash page (DB-built versions). */
+  /** Omit for Funnels without a public splash page (DB-built Funnels). */
   splashPath?: string
   inductionPath: string
   /** Pre-rendered inline QR SVGs (server-side, branded site style via renderStyledQrSvg). */
@@ -41,9 +41,10 @@ export function EntryPointShare({
   // expanded = the admin options (incoming-point toggle + QR variants + downloads).
   const [expanded, setExpanded] = useState(false)
 
-  // Remember the chosen incoming point per sequence (this browser only). Restore
+  // Remember the chosen incoming point per Funnel (this browser only). Restore
   // after mount, deferred a frame so SSR + first client render stay 'splash' (no
   // hydration mismatch) and we don't setState synchronously inside the effect.
+  // localStorage key keeps its stored fq_beta_ name (ADR-1090): operator browsers carry it.
   const storeKey = `fq_beta_entry_${slug}`
   useEffect(() => {
     if (!hasSplash) return // induction-only: nothing to restore
@@ -62,7 +63,7 @@ export function EntryPointShare({
   const shareUrl = `${siteOrigin}${path}`
   const qr = mode === 'splash' && hasSplash ? splashQr! : inductionQr
   const qrApi = `/api/qr?text=${encodeURIComponent(path)}`
-  const fileName = `beta-${slug}-${mode}`
+  const fileName = `funnel-${slug}-${mode}`
 
   async function copy() {
     try {

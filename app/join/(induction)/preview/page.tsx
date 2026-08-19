@@ -1,13 +1,13 @@
-// Public, no-auth visual preview of the beta induction (ADR-068).
-// TEMPORARY — torn down with the induction at launch. No auth, no server writes;
+// Public, no-auth visual preview of the Funnels induction (ADR-068 → ADR-1090).
+// No auth, no server writes;
 // renders the full flow with sample data so the team can click through it.
 // Exempted from the auth proxy in proxy.ts; noindexed below.
 
 import type { Metadata } from 'next'
-import BetaInduction from '../induction'
+import FunnelInduction from '../induction'
 
 export const metadata: Metadata = {
-  title: 'Beta induction (preview)',
+  title: 'Funnel induction (preview)',
   robots: { index: false, follow: false },
 }
 
@@ -18,9 +18,9 @@ const DUMMY_REGIONS = [
   { id: 'preview-atx', name: 'Austin' },
 ]
 
-export default function BetaInductionPreviewPage() {
+export default function FunnelInductionPreviewPage() {
   return (
-    <BetaInduction
+    <FunnelInduction
       preview
       userId="preview"
       userEmail="founder@example.com"

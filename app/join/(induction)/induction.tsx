@@ -1,7 +1,7 @@
 'use client'
 
-// Beta induction — the founding-cohort flow (ADR-068, docs/BETA-INDUCTION.md).
-// TEMPORARY: deleted at launch. Centered, warm-light cinematic sequence; logo on
+// The Funnels induction (ADR-068 → ADR-1090, docs/FUNNELS.md) — the cinematic
+// sign-up walk every Funnel renders. Centered, warm-light sequence; logo on
 // top, content centered with a generous buffer, progress pinned to the bottom.
 // Scripted Vera (hot register). The `preview` prop mocks the auth writes; the
 // city search + reel run for real in preview too.
@@ -13,12 +13,12 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { downscaleImageFile } from '@/lib/images/downscale-image'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
-import { VERA as DEFAULT_VERA, type VeraCopy } from '@/lib/onboarding/beta-script'
+import { VERA as DEFAULT_VERA, type VeraCopy } from '@/lib/onboarding/funnel-script'
 import { getPersona, listPersonas, isPersonaId, DEFAULT_PERSONA, type PersonaId } from '@/lib/onboarding/personas'
-import type { FunnelFeature, FunnelCoreFeature, FunnelDestination } from '@/lib/onboarding/beta-sequences'
-import { funnelIcon } from '@/lib/onboarding/funnel-icons'
-import { isSafeInAppPath } from '@/lib/onboarding/funnel-destination'
-import { completeBetaInduction, stashPendingInduction } from './actions'
+import type { FunnelFeature, FunnelCoreFeature, FunnelDestination } from '@/lib/funnels/definitions'
+import { funnelIcon } from '@/lib/funnels/icons'
+import { isSafeInAppPath } from '@/lib/funnels/destination'
+import { completeInduction, stashPendingInduction } from './actions'
 import { captureLead, updateLead } from './lead-actions'
 import { logPersonaSelection } from './persona-log'
 import { uploadProfileImageAction } from '@/app/(main)/settings/profile/actions'
@@ -50,9 +50,9 @@ type Props = {
   preview?: boolean
   /** Deferred mode: signed-out visitor runs the whole induction with no login wall;
    *  answers are stashed and sign-in is collected at the final "step in" beat, after
-   *  which /onboarding/beta/complete writes the profile. */
+   *  which /join/complete writes the profile. */
   deferred?: boolean
-  /** Operator copy overrides from /admin/vera (defaults to the beta-script copy). */
+  /** Operator copy overrides from /admin/vera (defaults to the funnel-script copy). */
   copy?: {
     vera?: VeraCopy
     heardAbout?: string[]
@@ -121,12 +121,12 @@ function accent(text: string): React.ReactNode {
   )
 }
 
-export default function BetaInduction({ userId = '', userEmail = '', initialHandle = '', preview = false, deferred = false, copy, sequence, persona: initialPersona, initialBeat = 0, inviter = null, slide2Features, slide3Core, destination }: Props) {
+export default function FunnelInduction({ userId = '', userEmail = '', initialHandle = '', preview = false, deferred = false, copy, sequence, persona: initialPersona, initialBeat = 0, inviter = null, slide2Features, slide3Core, destination }: Props) {
   // NICHE-funnel forks (ADR-funnels). A non-empty set flips one beat over to the niche
   // layout; both absent keeps the whole flow identical to the General funnel.
   const hasNicheFeatures = (slide2Features?.length ?? 0) > 0 // Beat 0: cards vs persona fork
   const hasCoreFeatures = (slide3Core?.length ?? 0) > 0 // Beat 1: pick-3 vs auto-reel
-  // Operator-tunable copy (defaults to the beta-script copy) — shadows the import so
+  // Operator-tunable copy (defaults to the funnel-script copy) — shadows the import so
   // every existing VERA. reference picks up the overrides.
   const VERA = copy?.vera ?? DEFAULT_VERA
 
@@ -156,6 +156,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
   // survives the deferred sign-in round-trip (a 30-day cookie). Preview never tags.
   useEffect(() => {
     if (preview || !sequence) return
+    // Cookie KEEPS its stored fq_beta_seq name (ADR-1090): live browsers carry it.
     document.cookie = `fq_beta_seq=${encodeURIComponent(sequence)}; path=/; max-age=2592000; samesite=lax`
   }, [preview, sequence])
 
@@ -315,14 +316,14 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     }
   }
 
-  // The deferred flow signs in, then /onboarding/beta/complete writes the profile and
+  // The deferred flow signs in, then /join/complete writes the profile and
   // redirects. A NICHE funnel carries its destination through the round-trip as a `?to=`
   // query on that `next` path; the finalizer re-validates it server-side before redirecting,
   // so an unsafe / absent url falls closed to the default. Waitlist / General = the bare path.
   const completeNext =
     destination?.mode === 'direct' && isSafeInAppPath(destination.url)
-      ? `/onboarding/beta/complete?to=${encodeURIComponent(destination.url)}`
-      : '/onboarding/beta/complete'
+      ? `/join/complete?to=${encodeURIComponent(destination.url)}`
+      : '/join/complete'
 
   async function deferredMagicLink() {
     if (!email.trim() || signingIn) return
@@ -526,7 +527,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     let finalAvatarUrl = avatarUrl
     if (avatarFile && !avatarUrl) finalAvatarUrl = await uploadAvatar()
     try {
-      await completeBetaInduction(
+      await completeInduction(
         {
           displayName: displayName.trim(),
           handle,

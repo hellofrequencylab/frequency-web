@@ -17,7 +17,7 @@
 // lib/pricing/feature-meters.ts (ADR-837) and the copy stays qualitative.
 
 import type { SpaceType } from '@/lib/spaces/types'
-import { spaceCreatePath, type FunnelDestination } from '@/lib/onboarding/beta-sequences'
+import { spaceCreatePath, type FunnelDestination } from '@/lib/funnels/definitions'
 import { priceStrings } from '@/lib/pricing/pricing-page'
 import { formatBps } from '@/lib/pricing/display'
 import { NETWORK_TAKE_RATE_DEFAULT } from '@/lib/billing/pricing-keys'
@@ -674,7 +674,7 @@ export function assuranceItems(config: FunnelConfig): readonly string[] {
 /** Where a finished operator from THIS niche funnel is admitted: Create-a-Space pre-seeded in the niche's
  *  Mode (OPERATOR-FUNNELS §5 Start-free bridge), NOT the general Beta list. Derived from the config's own
  *  `mode`, so it is one data edit per niche and can never drift from the niche's Space Mode. The onboarding
- *  side (NICHE_FUNNEL_DESTINATIONS in beta-sequences) points at the SAME spaceCreatePath. Re-validated at
+ *  side (NICHE_FUNNEL_DESTINATIONS in lib/funnels/definitions.ts) points at the SAME spaceCreatePath. Re-validated at
  *  redirect time by isSafeInAppPath / funnelLanding. PURE. */
 export function funnelStartDestination(config: FunnelConfig): FunnelDestination {
   return { mode: 'direct', url: spaceCreatePath(config.mode) }
