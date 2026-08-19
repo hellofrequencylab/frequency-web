@@ -42,6 +42,33 @@ the-lab         0   # ✅ RETIRED 2026-08-18 (Lift 5c, ADR-1068). LegacyTheLab +
                     #    it drew is in the template word for word. The only thing deleted with it was
                     #    THE_LAB_FAQ, which neither rung rendered. Template-only from here.
 the-community   5   # LegacyTheCommunity + Step + Layer + Hold + DayBeat (635 lines)
-the-quest       2   # LegacyTheQuest + Guard (498 lines)
+the-quest       0   # ✅ RETIRED 2026-08-19 (Lift 5c, ADR-1068). LegacyTheQuest + Guard deleted, not
+                    #    moved: `git log -p app/(marketing)/the-quest/page.tsx` is the only copy left.
+                    #    The body was already unreachable (getTemplate('the-quest') is a static
+                    #    18-block document, always well-formed), so the retirement moved no pixels.
+                    #    THE FAQPage SURVIVES and was checked, not assumed: the deleted faqSchema()
+                    #    rode the legacy branch and emitted nothing, while the template's Accordion
+                    #    (`tq-faq`) carries the same five Q&A byte-identical and AccordionBlock emits
+                    #    its own FAQPage from them — rendered through BlockRender it produces one
+                    #    FAQPage and five Question nodes. NOT the LIVE-040 shape. Three coded details
+                    #    the template did not draw (the "Generosity over grinding" guardrail, the
+                    #    /discover link, the /pricing link) were recovered into existing template
+                    #    blocks in the same change. Template-only from here.
 pricing         7   # PlanCard + RateLine + PlanPrice + PlanCta + IndependentStrip + ExtraCard + ComparisonBlock (860 lines)
 circles         0   # ✅ template only — the one slug already on a single render path (104 lines)
+
+# ── The seeker articles (Lift 5d, ADR-1068), enrolled one per PR ───────────────
+# These arrive template-only rather than shrinking into it: an article had NO editor rung
+# before enrolment, so there is no coded body to retire and nothing to score down. The 0 is
+# the same promise the retired primaries carry, made on day one. NOTE the count could never
+# have measured this conversion either way: a coded article declares no top-level components,
+# it is one default export full of inline JSX, so `git log -p` on the route is again the only
+# copy of what was there.
+how-to-start-a-circle  0   # ✅ ENROLLED + template-only 2026-08-19 (Lift 5d, ADR-1068). The 357-line
+                    #    coded article became lib/page-editor/templates/how-to-start-a-circle.ts, a
+                    #    spec run through articleTemplate(). Every block, in the coded order, and
+                    #    every word verbatim. ALL FOUR schema nodes survive, by four different
+                    #    owners: Article from <BlockDocJsonLd> (the route passes the page's own
+                    #    title/description/dates/three images, so it is unchanged), HowTo from the
+                    #    DawnHowToSteps block, FAQPage from the Accordion block, Breadcrumb still
+                    #    from the route. Template-only from here.

@@ -136,11 +136,17 @@ describe('a11y waivers · what must NOT match', () => {
     expect(waiverForNode('color-contrast', fillNode('#362f24', '#211a10'))).toBeNull()
   })
 
-  it('never waives a declared amber the harness has not measured', () => {
-    // Midnight dark's #F0AD4E: declared in globals.css and, since LIVE-008 fixed the selector,
-    // actually painted — but never yet MEASURED by a capture, so deliberately absent from the
-    // list. It is listed only when a run reports it, with that run's ratio.
-    expect(waiverForNode('color-contrast', fillNode('#ffffff', '#f0ad4e'))).toBeNull()
+  it('waives the fourth amber now that a run has measured it, at that run\u2019s ratio', () => {
+    // This assertion used to be the inverse: midnight dark's #F0AD4E was declared in globals.css
+    // and painted since LIVE-008, but never MEASURED, so it was deliberately absent — a waiver may
+    // list only ratios a run reported. The run happened: pr-compare on /how-to-start-a-circle
+    // (PR #2182, 2026-08-19) reported four white-on-#F0AD4E elements at 1.94, and the owner
+    // re-confirmed the palette decision the same day ("Extend the waiver", OWN-014). The guard
+    // inverts with the premise: the entry must exist, and it must carry the measured 1.94 — a
+    // different ratio would mean the paint drifted and the waiver is covering a colour nobody saw.
+    const waiver = waiverForNode('color-contrast', fillNode('#ffffff', '#f0ad4e'))
+    expect(waiver).not.toBeNull()
+    expect(waiver?.ratio).toBe(1.94)
   })
 
   it('does not let a fill entry swallow the shadowed measurement of the same button', () => {

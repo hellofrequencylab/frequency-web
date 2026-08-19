@@ -65,6 +65,7 @@ const ROUTES = {
   'the-quest': 'app/(marketing)/the-quest/page.tsx',
   pricing: 'app/(marketing)/pricing/page.tsx',
   circles: 'app/(main)/circles/page.tsx',
+  'how-to-start-a-circle': 'app/(marketing)/how-to-start-a-circle/page.tsx',
 }
 
 /** Blank both comment forms, length-preserving (same reason as check-grants.mjs / check-labels.mjs:

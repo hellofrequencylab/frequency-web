@@ -130,6 +130,23 @@ export const A11Y_WAIVERS: readonly ContrastWaiver[] = [
     decision: OWNER_PALETTE_DECISION,
     why: 'The same white label on the Midnight light brand amber ([data-skin="midnight"] --color-primary).',
   },
+  {
+    rule: 'color-contrast',
+    fg: '#ffffff',
+    bg: '#f0ad4e',
+    ratio: 1.94,
+    decision:
+      OWNER_PALETTE_DECISION +
+      ' Fourth amber re-confirmed by the owner 2026-08-19 ("Extend the waiver") when the first ' +
+      'midnight-dark capture measured it (OWN-014).',
+    why:
+      'The same white label on the Midnight dark brand amber (.dark[data-skin="midnight"] ' +
+      '--color-primary). The header above records why this entry waited: this value never painted ' +
+      'until LIVE-008 gave midnight dark its compound selector, so the entry could not exist until ' +
+      'a run measured it. That run was pr-compare on /how-to-start-a-circle (PR #2182, ' +
+      '2026-08-19): four white-on-#F0AD4E elements at axe-measured 1.94. Same owner palette ' +
+      'decision as the three ambers above, completing the set across all four render states.',
+  },
 
   // ── The same buttons, measured against their emboss shadow instead of their fill ──
   // `.text-emboss` puts `0 1px 1.5px var(--brand-emboss-dark)` under the label. Where the shadow

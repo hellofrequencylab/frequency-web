@@ -8,6 +8,7 @@ import { data as theCommunity } from './the-community'
 import { data as theQuest } from './the-quest'
 import { data as pricing } from './pricing'
 import { data as circles } from './circles'
+import { data as howToStartACircle } from './how-to-start-a-circle'
 import { generateDefaultProfilePage } from './profile-default'
 
 // Starter documents that re-create each editable page's content using the
@@ -36,6 +37,11 @@ const TEMPLATES: Record<string, Data> = {
   'the-quest': theQuest,
   pricing,
   circles,
+  // ── The seeker articles (Lift 5d, ADR-1068) ──────────────────────────────────
+  // Each is a SPEC run through `articleTemplate` (templates/article.ts), not a
+  // hand-built document, so the CONTENT-VOICE §10.9 article grammar cannot drift
+  // between them. Its route is template-only, so this entry is the LAST rung.
+  'how-to-start-a-circle': howToStartACircle,
   // The member/user-page starter (cross-surface Puck template system, ADR-500). Registered here so
   // getTemplate('profile') returns the designed member default; the `user` surface in surfaces.ts
   // references the same generator. Keyed with a neutral (blank) name; a live seed passes the member's.
