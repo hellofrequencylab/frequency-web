@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import {
   ArrowUpRight, QrCode, Share2, GraduationCap, ToggleRight, Contact, PieChart,
-  Rocket, Telescope, Bot, Link2,
+  Telescope, Bot, Link2,
   Send, type LucideIcon,
 } from 'lucide-react'
 import { AdminSection } from '@/components/templates'
@@ -84,7 +84,6 @@ export async function GrowthManage() {
   const marketing: ManageCard[] = [
     // Composing (campaigns, funnels, automations, nurture) now lives in the Resonance CRM Marketing tab.
     { label: 'Marketing', desc: 'Compose and send email to the whole community or a section, with campaigns and funnels in one place. In the Resonance CRM.', stat: `${c.campaigns + c.funnels}`, statLabel: 'in flight', href: '/admin/crm/marketing', Icon: Send },
-    { label: 'Beta Command', desc: 'The phase plan and the approval queue where nothing sends without your sign-off.', stat: '', statLabel: 'Manage', href: '/admin/beta', Icon: Rocket },
     { label: 'Marketing analytics', desc: 'Sends, opens, clicks, and bounces by type.', stat: '', statLabel: 'Manage', href: '/admin/marketing/analytics', Icon: PieChart },
     { label: 'Market read', desc: 'Demand, geography, and content performance.', stat: '', statLabel: 'Manage', href: '/admin/marketing/market-read', Icon: Telescope },
     { label: 'Marketing agent', desc: 'Ask the AI operator to draft, segment, and run the busywork.', stat: '', statLabel: 'Manage', href: '/admin/marketing/agent', Icon: Bot },

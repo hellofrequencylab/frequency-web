@@ -544,48 +544,6 @@ export type Database = {
           },
         ]
       }
-      beta_phases: {
-        Row: {
-          created_at: string
-          ends_on: string | null
-          goal: string
-          id: string
-          key: string
-          position: number
-          starts_on: string | null
-          status: string
-          summary: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          ends_on?: string | null
-          goal?: string
-          id?: string
-          key: string
-          position?: number
-          starts_on?: string | null
-          status?: string
-          summary?: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          ends_on?: string | null
-          goal?: string
-          id?: string
-          key?: string
-          position?: number
-          starts_on?: string | null
-          status?: string
-          summary?: string
-          title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       beta_referrals: {
         Row: {
           activated_at: string
@@ -624,59 +582,6 @@ export type Database = {
             columns: ["referrer_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      beta_tasks: {
-        Row: {
-          acceptance: string
-          created_at: string
-          detail: string
-          due_on: string | null
-          id: string
-          owner: string | null
-          phase_id: string
-          position: number
-          priority: string
-          status: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          acceptance?: string
-          created_at?: string
-          detail?: string
-          due_on?: string | null
-          id?: string
-          owner?: string | null
-          phase_id: string
-          position?: number
-          priority?: string
-          status?: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          acceptance?: string
-          created_at?: string
-          detail?: string
-          due_on?: string | null
-          id?: string
-          owner?: string | null
-          phase_id?: string
-          position?: number
-          priority?: string
-          status?: string
-          title?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "beta_tasks_phase_id_fkey"
-            columns: ["phase_id"]
-            isOneToOne: false
-            referencedRelation: "beta_phases"
             referencedColumns: ["id"]
           },
         ]
@@ -875,13 +780,6 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "campaigns_phase_id_fkey"
-            columns: ["phase_id"]
-            isOneToOne: false
-            referencedRelation: "beta_phases"
             referencedColumns: ["id"]
           },
           {

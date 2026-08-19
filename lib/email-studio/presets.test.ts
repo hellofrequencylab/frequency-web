@@ -3,7 +3,7 @@ import { EMAIL_PRESETS, emailPresetByName } from './presets'
 import { sanitizeEntityLayout } from '@/lib/entity-blocks/layout'
 import { renderEmailLayout } from './render'
 import { EMAIL_PALETTE_BLOCK_IDS } from '@/lib/entity-blocks/registry'
-import { lintVoice } from '@/lib/beta/email'
+import { lintVoice } from './voice-lint'
 
 // Phase 3 presets: every pre-written email preset must be a VALID email `EntityLayout` that survives
 // sanitize and renders to non-empty HTML with no thrown error, and its copy must pass the hard voice rule
