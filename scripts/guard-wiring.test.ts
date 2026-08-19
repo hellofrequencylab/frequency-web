@@ -47,6 +47,18 @@ const UNWIRED: Record<string, string> = {
   // lib/pricing/feature-meters.ts, on an artifact built plausibly BEFORE settings-panel.tsx moved
   // five editor bodies behind `dynamic()`, so it is unconfirmed in BOTH directions.
   //
+  // ── AND IT LEFT THIS LIST TOO, on 2026-08-19, by the same route its sibling took ────────────
+  // It is now in `postbuild` as `--warn-only`. That is what breaks the deadlock: a gate whose only
+  // reading is unconfirmed in both directions can only be settled by running on a real artifact,
+  // and running it BLOCKING to find out is the incident this list exists to prevent. In warn-only
+  // it measures, prints, and cannot exit non-zero on any arm, on a missing manifest, or on its own
+  // crash -- proven by mutation in scripts/check-shell-weight-warn-only.test.ts, which also caught
+  // a real hole while it was being written (the crash handler was installed too late to catch a
+  // top-level throw, and that ordering is now asserted).
+  //
+  // ⚠️ Promote it in the SAME change as the green build that confirms its reading. That test's last
+  // assertion fails if postbuild ever invokes it bare, so the promotion cannot happen quietly.
+  //
   // The rule these two keep proving: DEPLOY-SAFETY.md opens with an outage caused by gates that
   // passed while the artifact was broken, and wiring an UNPROVEN gate into postbuild is that failure
   // reversed. One green build decides it, and the wiring lands in the SAME commit as that build.
@@ -64,7 +76,6 @@ const UNWIRED: Record<string, string> = {
   // week). LIVE-029 stays OPEN until this is promoted to blocking, because until then nothing
   // prevents a cache overflow. Promote it in the SAME change as the green build whose "Uploading
   // build cache [N GB]" line confirms the constant.
-  'check:shell-weight': 'artifact gate, awaiting one green production build before postbuild (LIVE-035)',
 }
 
 /** ── THE FOURTH HOME: enforced by a vitest test (ADR-1011) ────────────────────────────────────

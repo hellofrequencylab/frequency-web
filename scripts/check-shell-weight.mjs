@@ -41,6 +41,45 @@ import path from 'node:path'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 
+// ── WARN-ONLY: the stage between "never run on a real artifact" and "enforcing" ──────────────
+// This gate has ONE reading in its whole life, and that reading is unconfirmed in BOTH directions:
+// it exited 1 naming lib/pricing/feature-meters.ts, on an artifact built plausibly BEFORE
+// settings-panel.tsx moved five editor bodies behind dynamic(). So nobody knows whether it is
+// reporting a real leak or a stale one, and the only way to find out is to run it on a real build.
+// Wiring it BLOCKING to find out is the 2026-08-11 incident with the roles reversed -- the exact
+// trap its sibling check:cache-budget fell into on 2026-08-18, killing two builds.
+//
+// So it takes the same third option the owner approved for that sibling. `--warn-only` measures and
+// prints, and CANNOT exit non-zero: not on the budget arm, not on the fingerprint arm, not on a
+// missing manifest, not on its own crash. There is no input that lets this line fail a production
+// deploy. What it buys is the reading, on a real artifact, in a log we read.
+//
+// ⚠️ A STAGE, NOT A DESTINATION. A gate that only warns is one everyone learns to scroll past
+// (ADR-970). Promote it in the SAME change as the green build whose numbers confirm it, and delete
+// this flag from postbuild when you do.
+const WARN_ONLY = process.argv.includes('--warn-only')
+
+if (WARN_ONLY) {
+  process.on('uncaughtException', (err) => {
+    console.log(
+      `\n🔴 check:shell-weight (warn-only) CRASHED and is being ignored so it cannot fail this ` +
+        `build: ${err && err.stack ? err.stack : err}\n` +
+        `   No measurement was taken, so this build tells us nothing about the shell. Fix the ` +
+        `script before promoting it to blocking (LIVE-035).\n`,
+    )
+    process.exit(0)
+  })
+}
+
+/** Exit with `code`, unless warn-only -- then say so plainly and leave with 0. */
+const bail = (code) => {
+  if (WARN_ONLY) {
+    console.log('\n   (warn-only: reported above, NOT failing this build. LIVE-035.)\n')
+    process.exit(0)
+  }
+  process.exit(code)
+}
+
 const ROOT = process.cwd()
 const NEXT_DIR = path.join(ROOT, '.next')
 
@@ -175,7 +214,7 @@ export function staticAdminImports(source) {
 // ─────────────────────────────────────────────────────────────────────────────
 const fail = (msg) => {
   console.error(`\n🔴 check:shell-weight — ${msg}\n`)
-  process.exit(1)
+  bail(1)
 }
 
 function main() {
@@ -288,7 +327,7 @@ if (leaked.length > 0) {
     '\n   Fix: mount it with `next/dynamic`, the way its neighbours are. Do NOT delete the\n' +
       '   fingerprint row — that is how the previous version of this problem stayed invisible.\n',
   )
-  process.exit(1)
+  bail(1)
 }
 
 // ── ARM A · the assertion ────────────────────────────────────────────────────────────────────
@@ -308,7 +347,7 @@ if (shellBytes > BUDGET_KB * 1024) {
   )
   for (const [f, size] of worst) console.error(`     ${kb(size).padStart(6)} KB  ${f}`)
   console.error('')
-  process.exit(1)
+  bail(1)
 }
 
 console.log(

@@ -130,20 +130,36 @@ describe("the artifact gate's needles are still needles", () => {
 })
 
 describe('the artifact gate is wired where it can run', () => {
-  it('is NOT in postbuild yet, and says so in one place rather than two (LIVE-035)', () => {
-    // It reads `.next`. CI never builds (DEPLOY-SAFETY.md, ADR-1003), so the CI array is the wrong
-    // home and postbuild is the right one — but it is not there yet, because this gate has never run
-    // against a real COMPLETED production build. A build-blocking gate that has never seen a real
-    // artifact is this repo's own 2026-08-11 outage with the roles reversed.
+  it('is in postbuild in WARN-ONLY mode, and nowhere else (LIVE-035)', () => {
+    // ── THIS TEST CHANGED ON 2026-08-19, AND THE OLD VERSION WAS RIGHT TO FAIL ────────────────
+    // It used to assert the gate was NOT in postbuild at all, because a build-blocking gate that has
+    // never seen a real artifact is this repo's own 2026-08-11 outage with the roles reversed. That
+    // reasoning is unchanged and still correct. What changed is that "blocking" and "in postbuild"
+    // stopped being the same thing.
     //
-    // This test does NOT simply assert the absence: a bare `not.toContain` would keep passing forever
-    // and quietly become the reason nobody wires it in. It asserts the absence is DECLARED, so the
-    // day someone adds it to postbuild, `guard-wiring.test.ts` fails on the stale UNWIRED entry and
-    // makes them delete it — one edit, two files that cannot disagree.
+    // The gate now runs in postbuild as `--warn-only`: it measures, prints, and cannot exit non-zero
+    // on any arm, on a missing manifest, or on its own crash. That is what breaks the deadlock this
+    // row sat in — its one lifetime reading is unconfirmed in BOTH directions, and the only thing
+    // that can confirm it is a real artifact, which it could only reach by being wired.
+    //
+    // So the assertion inverts rather than relaxes: it must be present, and it must carry the flag.
+    // Dropping `--warn-only` is the promotion, and the promotion is a decision with an owner, made
+    // in the same change as the green build that confirms the reading.
     const pkg = JSON.parse(read('package.json'))
-    const wired = String(pkg.scripts.postbuild ?? '').includes('scripts/check-shell-weight.mjs')
-    const declared = read('scripts/guard-wiring.test.ts').includes("'check:shell-weight':")
-    expect(wired).toBe(false)
-    expect(declared, 'unwired but undeclared: guard-wiring.test.ts must carry the reason').toBe(true)
+    const postbuild = String(pkg.scripts.postbuild ?? '')
+    expect(postbuild).toContain('scripts/check-shell-weight.mjs')
+    expect(
+      postbuild,
+      'check-shell-weight.mjs is in postbuild WITHOUT --warn-only, which lets an unconfirmed ' +
+        'reading fail a production deploy. See scripts/check-shell-weight-warn-only.test.ts.',
+    ).toContain('scripts/check-shell-weight.mjs --warn-only')
+    // Still exactly one home. It reads `.next`, and CI never builds (DEPLOY-SAFETY.md, ADR-1003),
+    // so a copy in the CI guards array would be a guard that silently measures nothing.
+    expect(read('.github/workflows/ci.yml')).not.toContain('check:shell-weight')
+    // And the UNWIRED declaration must be GONE, so the two files cannot disagree about its state.
+    expect(
+      read('scripts/guard-wiring.test.ts').includes("'check:shell-weight':"),
+      'wired now, but guard-wiring.test.ts still declares it UNWIRED — remove that entry',
+    ).toBe(false)
   })
 })
