@@ -1,51 +1,56 @@
 // ============================================================================
-// THE APPROVAL SPINE (Beta Command Center Wave 1). The single seam every
-// outbound object passes through before it can send.
+// THE APPROVAL SPINE. The single seam every outbound object passes through
+// before it can send.
 // ============================================================================
 //
 // GOVERNING RULE (owner directive, non-negotiable): NOTHING SENDS WITHOUT
 // EXPLICIT APPROVAL. Automation only ever prepares DRAFTS. The send path REFUSES
 // anything not `approved` (or `scheduled`).
 //
-// ── HOW WAVE-2 SEND CODE MUST USE THIS ──
-// Before ANY real send (sendCampaign, fire a beta sequence), call:
+// ── HOW A SEND PATH MUST USE THIS ──
+// Before ANY real send, call:
 //
-//     import { assertApproved } from '@/lib/beta/approvals'
+//     import { assertApproved } from '@/lib/outbound/approvals'
 //     await assertApproved({ type: 'campaign', id })        // throws unless sendable
-//     // ...only now enqueue / admit ...
+//     // ...only now enqueue ...
 //
 // `assertApproved` re-reads the row server-side and THROWS unless its
 // approval_status is `approved` or `scheduled`. It is the ONLY sanctioned way to
-// clear the gate; do not read approval_status and branch by hand. A test send is
-// exempt (it is not the real send) — record it with `recordTestSend` instead.
+// clear the gate; do not read approval_status and branch by hand. Today its one
+// caller is sendCampaignNow (lib/email-studio/send.ts). A test send is exempt (it
+// is not the real send, it goes to the operator's own address) — record it with
+// `recordTestSend` instead.
 //
-// ── APPROVAL IS PHASE-BY-PHASE ──
-// The operator reviews + edits a phase's drafted outbound, then ARMS it. Every
-// approvable object carries a nullable `phase_id`. Use:
-//   • listPhaseOutbound(phaseId) — the phase's campaigns (+ sequences, Wave 2)
-//     with their approval_status, for the phase review/arm UI.
-//   • armPhase(phaseId) — approve EVERY `ready` item in the phase at once (each
-//     still writing its own audit row). Convenience over per-item approve().
-//   • approve({ type, id }) — arm ONE item, for granular control.
-// The Today "Needs approval" queue groups the `ready` items BY PHASE
-// (listReadyForApproval → groupReadyByPhase).
-//
-// ── WHO MAY ARM ──
+// ── THE TWO GATES ──
 // Every transition here (markReady / approve / pause / cancel / armPhase) runs
-// the APPROVER gate: ADMIN or JANITOR web_role only (approverGate). recordTestSend
-// is content-writer gated (a test is not a send). Each transition writes a
-// beta_audit_log row and returns an ActionResult. Server-only.
-// Each transition writes a beta_audit_log row and returns an ActionResult.
+// the APPROVER gate: ADMIN or JANITOR web_role only (approverGate, lib/outbound/
+// guard.ts). recordTestSend is content-writer gated (a test is not a send). Each
+// transition writes ONE beta_audit_log row (see audit.ts for why the table keeps
+// that name) and returns an ActionResult.
+//
+// ── WHY `phase_id` IS STILL HERE ──
+// The Beta Command Center that grouped outbound into launch PHASES is gone, and
+// so is the `beta_phases` table. What survives is the nullable `campaigns.phase_id`
+// column and the rows that already carry one: those rows still route through
+// assertApproved at send time, so listPhaseOutbound / groupReadyByPhase / armPhase
+// remain the way an operator can still review and arm them. A new campaign is
+// filed with a null phase and simply never enters that bucket.
+//
 // Server-only, but NOT a 'use server' module (it exports consts/types/pure
-// helpers too). The thin server-action entrypoints that call these transitions
-// live in app/(main)/admin/beta/actions.ts.
+// helpers too). A caller that needs a server action wraps these in its own
+// 'use server' entrypoint.
 // ============================================================================
 
 import { revalidatePath } from 'next/cache'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
-import { betaDb } from './db'
+import { outboundDb } from './db'
 import { approverGate, writerGate } from './guard'
-import { logBetaAction } from './audit'
+import { logOutboundAction } from './audit'
+
+/** The live console that lists campaigns, revalidated after every transition. The Beta
+ *  Command Center used to be the surface these arms were pulled from; it is gone, and
+ *  /admin/crm/marketing is where an operator sees a campaign's status today. */
+const CAMPAIGN_CONSOLE = '/admin/crm/marketing'
 
 // ── The shared approval vocabulary (mirrors the migration's text+check). ──
 export const APPROVAL_STATUSES = [
@@ -69,7 +74,7 @@ export function isSendable(status: string | null | undefined): boolean {
 }
 
 // ── The approvable object types + their tables. Add a row here to put a new
-//    outbound object on the spine (Wave 2: beta sequences / funnels). ──
+//    outbound object on the spine (a sequence, a funnel). ──
 //
 // 'admission_wave' used to be the second member here, backed by beta_admission_waves:
 // the engine that admitted people off the beta waitlist in batches. The waitlist is
@@ -108,7 +113,7 @@ export interface OutboundItem {
 // ── The read seam ──────────────────────────────────────────────────────────
 
 async function readApprovalStatus(ref: ApprovableRef): Promise<string | null> {
-  const { data } = await betaDb()
+  const { data } = await outboundDb()
     .from(TABLE[ref.type])
     .select('approval_status')
     .eq('id', ref.id)
@@ -118,7 +123,7 @@ async function readApprovalStatus(ref: ApprovableRef): Promise<string | null> {
 
 /**
  * THE SEND GATE. Throws unless the target row is `approved` or `scheduled`. This
- * is the single sanctioned pre-send check every Wave-2 send path MUST call. Re-reads
+ * is the single sanctioned pre-send check every send path MUST call. Re-reads
  * server-side so a stale client can never smuggle a draft past it. Fail-closed:
  * a missing row or read error throws.
  */
@@ -153,19 +158,19 @@ const CAMPAIGN_COLS =
 /** Every outbound object in a given approval status. FAIL-SAFE to []. */
 export async function listOutboundByStatus(status: ApprovalStatus): Promise<OutboundItem[]> {
   try {
-    const { data } = await betaDb()
+    const { data } = await outboundDb()
       .from('campaigns')
       .select(CAMPAIGN_COLS)
       .eq('approval_status', status)
       .order('created_at', { ascending: false })
     return (data ?? []).map(mapCampaign)
   } catch (err) {
-    console.error('[beta] listOutboundByStatus failed:', err)
+    console.error('[outbound] listOutboundByStatus failed:', err)
     return []
   }
 }
 
-/** The Today "Needs approval" queue: everything currently `ready`. FAIL-SAFE to []. */
+/** The "Needs approval" queue: everything currently `ready`. FAIL-SAFE to []. */
 export async function listReadyForApproval(): Promise<OutboundItem[]> {
   return listOutboundByStatus('ready')
 }
@@ -173,14 +178,14 @@ export async function listReadyForApproval(): Promise<OutboundItem[]> {
 /** All outbound owned by ONE phase, any status (the phase review/arm view). FAIL-SAFE to []. */
 export async function listPhaseOutbound(phaseId: string): Promise<OutboundItem[]> {
   try {
-    const { data } = await betaDb()
+    const { data } = await outboundDb()
       .from('campaigns')
       .select(CAMPAIGN_COLS)
       .eq('phase_id', phaseId)
       .order('created_at', { ascending: false })
     return (data ?? []).map(mapCampaign)
   } catch (err) {
-    console.error('[beta] listPhaseOutbound failed:', err)
+    console.error('[outbound] listPhaseOutbound failed:', err)
     return []
   }
 }
@@ -204,26 +209,26 @@ export async function markReady(ref: ApprovableRef): Promise<ActionResult> {
   const gate = await approverGate()
   if (!gate.ok) return fail(gate.error)
   const from = await readApprovalStatus(ref)
-  const { error } = await betaDb()
+  const { error } = await outboundDb()
     .from(TABLE[ref.type])
     .update({ approval_status: 'ready', updated_at: new Date().toISOString() })
     .eq('id', ref.id)
   if (error) return fail('Could not mark this ready.')
-  await logBetaAction({
+  await logOutboundAction({
     actorProfileId: gate.profileId,
     action: 'mark_ready',
     targetType: AUDIT_TARGET[ref.type],
     targetId: ref.id,
     detail: { from, to: 'ready' },
   })
-  revalidatePath('/admin/beta')
+  revalidatePath(CAMPAIGN_CONSOLE)
   return ok()
 }
 
 /**
  * ARM one item: ready → approved (or → scheduled when `scheduledFor` is given).
  * Stamps approved_by / approved_at (and scheduled_for). This is the send-authorizing
- * act — after it, assertApproved() clears and Wave-2 code may send.
+ * act — after it, assertApproved() clears and the send path may send.
  */
 export async function approve(
   ref: ApprovableRef,
@@ -241,16 +246,16 @@ export async function approve(
     updated_at: now,
   }
   if (scheduled) patch.scheduled_for = opts.scheduledFor
-  const { error } = await betaDb().from(TABLE[ref.type]).update(patch).eq('id', ref.id)
+  const { error } = await outboundDb().from(TABLE[ref.type]).update(patch).eq('id', ref.id)
   if (error) return fail('Could not approve this.')
-  await logBetaAction({
+  await logOutboundAction({
     actorProfileId: gate.profileId,
     action: scheduled ? 'schedule' : 'approve',
     targetType: AUDIT_TARGET[ref.type],
     targetId: ref.id,
     detail: { from, to: scheduled ? 'scheduled' : 'approved', scheduledFor: opts.scheduledFor ?? null },
   })
-  revalidatePath('/admin/beta')
+  revalidatePath(CAMPAIGN_CONSOLE)
   return ok()
 }
 
@@ -259,19 +264,19 @@ export async function pause(ref: ApprovableRef): Promise<ActionResult> {
   const gate = await approverGate()
   if (!gate.ok) return fail(gate.error)
   const from = await readApprovalStatus(ref)
-  const { error } = await betaDb()
+  const { error } = await outboundDb()
     .from(TABLE[ref.type])
     .update({ approval_status: 'paused', updated_at: new Date().toISOString() })
     .eq('id', ref.id)
   if (error) return fail('Could not pause this.')
-  await logBetaAction({
+  await logOutboundAction({
     actorProfileId: gate.profileId,
     action: 'pause',
     targetType: AUDIT_TARGET[ref.type],
     targetId: ref.id,
     detail: { from, to: 'paused' },
   })
-  revalidatePath('/admin/beta')
+  revalidatePath(CAMPAIGN_CONSOLE)
   return ok()
 }
 
@@ -280,19 +285,19 @@ export async function cancel(ref: ApprovableRef): Promise<ActionResult> {
   const gate = await approverGate()
   if (!gate.ok) return fail(gate.error)
   const from = await readApprovalStatus(ref)
-  const { error } = await betaDb()
+  const { error } = await outboundDb()
     .from(TABLE[ref.type])
     .update({ approval_status: 'cancelled', updated_at: new Date().toISOString() })
     .eq('id', ref.id)
   if (error) return fail('Could not cancel this.')
-  await logBetaAction({
+  await logOutboundAction({
     actorProfileId: gate.profileId,
     action: 'cancel',
     targetType: AUDIT_TARGET[ref.type],
     targetId: ref.id,
     detail: { from, to: 'cancelled' },
   })
-  revalidatePath('/admin/beta')
+  revalidatePath(CAMPAIGN_CONSOLE)
   return ok()
 }
 
@@ -305,19 +310,19 @@ export async function recordTestSend(ref: ApprovableRef): Promise<ActionResult> 
   const gate = await writerGate()
   if (!gate.ok) return fail(gate.error)
   if (ref.type !== 'campaign') return fail('Only a campaign can record a test send.')
-  const { error } = await betaDb()
+  const { error } = await outboundDb()
     .from('campaigns')
     .update({ test_sent_at: new Date().toISOString() })
     .eq('id', ref.id)
   if (error) return fail('Could not record the test send.')
-  await logBetaAction({
+  await logOutboundAction({
     actorProfileId: gate.profileId,
     action: 'record_test_send',
     targetType: 'campaign',
     targetId: ref.id,
     detail: {},
   })
-  revalidatePath('/admin/beta')
+  revalidatePath(CAMPAIGN_CONSOLE)
   return ok()
 }
 
@@ -334,7 +339,7 @@ export async function armPhase(phaseId: string): Promise<ActionResult<{ approved
   const items = (await listPhaseOutbound(phaseId)).filter((i) => i.approvalStatus === 'ready')
   if (items.length === 0) return ok({ approved: 0 })
 
-  const db = betaDb()
+  const db = outboundDb()
   const now = new Date().toISOString()
   let approved = 0
   for (const item of items) {
@@ -344,7 +349,7 @@ export async function armPhase(phaseId: string): Promise<ActionResult<{ approved
       .eq('id', item.id)
     if (error) continue
     approved++
-    await logBetaAction({
+    await logOutboundAction({
       actorProfileId: gate.profileId,
       action: 'approve',
       targetType: AUDIT_TARGET[item.type],
@@ -353,13 +358,13 @@ export async function armPhase(phaseId: string): Promise<ActionResult<{ approved
     })
   }
 
-  await logBetaAction({
+  await logOutboundAction({
     actorProfileId: gate.profileId,
     action: 'arm_phase',
     targetType: 'phase',
     targetId: phaseId,
     detail: { approved, total: items.length },
   })
-  revalidatePath('/admin/beta')
+  revalidatePath(CAMPAIGN_CONSOLE)
   return ok({ approved })
 }

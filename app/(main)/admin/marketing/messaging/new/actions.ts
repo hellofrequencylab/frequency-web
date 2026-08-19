@@ -16,7 +16,7 @@
 
 import { getMessagingGoal } from '@/lib/messaging/goals'
 import { createFunnel } from '@/app/(main)/admin/growth/funnels/actions'
-import { writerGate } from '@/lib/beta/guard'
+import { writerGate } from '@/lib/outbound/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
   generateCampaignDraft,

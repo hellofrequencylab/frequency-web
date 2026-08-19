@@ -15,7 +15,7 @@
 // the server-only deps below (admin client / resolveSegment). Voice canon: no em dashes in any copy.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { approverGate, writerGate } from '@/lib/beta/guard'
+import { approverGate, writerGate } from '@/lib/outbound/guard'
 import { resolveSegment } from '@/lib/studio/campaigns'
 import { sendNowAction } from '@/app/(main)/admin/email-studio/send-actions'
 import { ok, fail, type ActionResult } from '@/lib/action-result'

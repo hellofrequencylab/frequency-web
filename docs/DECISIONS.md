@@ -27500,3 +27500,65 @@ pre-2026-08-19 row. Same reasoning as keeping `meta.beta.oath`: history is kept 
 - The funnel is one beat shorter and opens on a question about the visitor instead of a demand from
   us, which is what the niche funnels were always for.
 
+
+## ADR-1089: The Beta Command Center is deleted, and the approval spine that outlived it moves somewhere honest
+
+**Status:** Accepted · migration `20270315000000` applied to production 2026-08-19 · follows
+[ADR-1087](DECISIONS.md) (the grace window) and [ADR-1088](DECISIONS.md) (the oath)
+
+**Owner decision, 2026-08-19:** *"Remove the beta launch email sequences and anything else you find."*
+The scope beyond the emails was put back to the owner as explicit choices; this records what was chosen
+and, more usefully, what the choosing turned up.
+
+**What went.** `app/(main)/admin/beta/` and `components/admin/beta/` (the P0 to P4 console, Today,
+Stats, Strategy, Timeline, the approval queue), the seven themed launch emails, the campaign and
+nurture template copy, the beta send layer, and the Email Studio's beta Campaign tab. Two tables went
+with the code that read them: `beta_phases` (5 rows) and `beta_tasks` (21 rows).
+
+**What survived, and why the survivors are the interesting part.**
+
+- **The approval spine is not console code.** `writerGate` / `approverGate` guard the Email Studio, the
+  CRM composer, marketing messaging and the product picker; `assertApproved` gates every real campaign
+  send. Deleting `lib/beta/` wholesale would have taken all of that with it. The four files moved to
+  `lib/outbound/` with headers that describe what they are rather than which 2026 launch they were
+  written for.
+- **`beta_audit_log` keeps its name.** It holds 166 real approval-trail rows written under that name.
+  Renaming a table for tidier prose either orphans the history or buys a data migration. The name is
+  now the least true thing about it and still the right call.
+- **`beta_host_prompts` is not beta.** It shares a prefix and nothing else: a live feed-growth feature
+  behind its own platform flag. It was one grep away from being dropped as part of a "beta_* cleanup",
+  which is the whole argument for reading a table's callers before its name.
+- **`beta_referrals` and the contest stay.** The contest is wired into live paths (starting a Circle,
+  QR referral attribution), so removing it would change what happens to members, not just to operators.
+- **`campaigns.phase_id` keeps its values.** The `cascade` drops the foreign key, not the column. Seven
+  of twelve campaigns rows carry a non-null value and still route through `assertApproved` at send;
+  dropping the column would change send behaviour.
+
+**⚠️ The removal did NOT remove the offer, and that is the finding worth keeping.** Deleting the launch
+emails was supposed to end the Founding-badge invitation that [ADR-1087](DECISIONS.md) had quietly
+stopped granting. It did not: the identical sentences were alive verbatim in a THIRD file,
+`lib/email-studio/presets.ts`, in presets named `FOUNDING_MEMBER` and `FOUNDING_BUSINESS_INVITE`. The
+business one offered *"the lowest rate we will ever set, kept for good"*, a rate
+[ADR-1067](DECISIONS.md) had already abolished, so it could not have been charged at all.
+
+This is the same miss OWN-025 made when it closed: that row reported removing the sentence from two
+files, and the sentence lived in three. Its probe read the two deleted files, so it could never have
+caught the third and now returns indeterminate forever. Both rows are re-pointed at the file that
+actually carries the copy, and the copy is fixed rather than deleted, because the Founding badge still
+exists and is still grantable by hand. **The rule this earns: a removal is scoped by what the thing
+SAYS, not by the directory it lives in.** Grep the sentence, not the module.
+
+**Consequences.**
+
+- ✅ `check:backlog` was failing STRUCTURALLY at the moment the launch emails were deleted, because two
+  rows named the deleted file as their `source.file`. Validation exits before any probe runs, so for
+  that window all 137 rows were unverified while the guard still reported as coverage. That is the
+  swallowed-regression shape AGENTS.md names, produced by a routine deletion, and it is why a probe
+  that reads a file needs an existence guard that reports indeterminate rather than crashing.
+- ⏳ **LIVE-058**: ten of the spine's twelve transitions now have no caller. They are kept deliberately,
+  because deleting `approve()` would strand the seven `phase_id` rows behind a gate nothing can open.
+  The row carries the two honest ways to close it.
+- ✅ `lintVoice` moved to `lib/email-studio/voice-lint.ts` with its assertions intact rather than dying
+  with the module it happened to live in.
+- ✅ 274 live tables, RLS and grant mirrors updated in the same change, types regenerated (102 lines
+  removed, zero added, which is what a drop-only regen should look like).

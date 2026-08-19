@@ -26,7 +26,7 @@ const h = vi.hoisted(() => {
 
 vi.mock('@/lib/messaging/goals', () => ({ getMessagingGoal: vi.fn() }))
 vi.mock('@/app/(main)/admin/growth/funnels/actions', () => ({ createFunnel: vi.fn() }))
-vi.mock('@/lib/beta/guard', () => ({ writerGate: vi.fn() }))
+vi.mock('@/lib/outbound/guard', () => ({ writerGate: vi.fn() }))
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => h.admin }))
 vi.mock('@/lib/ai/messaging-generator', () => ({
   generateCampaignDraft: vi.fn(),
@@ -35,7 +35,7 @@ vi.mock('@/lib/ai/messaging-generator', () => ({
 vi.mock('@/lib/email-studio/shell', () => ({ compileEmailDoc: vi.fn(() => ({ html: '' })) }))
 
 import { getMessagingGoal } from '@/lib/messaging/goals'
-import { writerGate } from '@/lib/beta/guard'
+import { writerGate } from '@/lib/outbound/guard'
 import { startBuild } from './actions'
 
 const campaignGoal = { key: 'welcome', label: 'Welcome', object: 'campaign', blurb: 'Say hi', outline: undefined }

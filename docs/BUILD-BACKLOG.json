@@ -2343,6 +2343,22 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const P='lib/email-studio/presets.ts';if(!fs.existsSync(P))process.exit(79);const s=fs.readFileSync(P,'utf8');const bad=[];if(/before September 1/.test(s))bad.push('presets.ts still dates an offer to September 1');if(/lowest rate we will ever set/.test(s))bad.push('presets.ts still offers the lowest rate we will ever set, which ADR-1067 removed');if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
       }
+    },
+    {
+      "id": "LIVE-058",
+      "title": "The approval spine survived its console, and ten of its twelve transitions now have no caller",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/outbound/approvals.ts",
+        "ref": "ADR-1089"
+      },
+      "detail": "Removing the Beta Command Center (2026-08-19) deleted every UI that drove the approval spine, but not the spine: it moved to lib/outbound/ because assertApproved still gates every real campaign send from sendCampaignNow. What has no caller any more is the TRANSITIONS: markReady, approve, pause, cancel, recordTestSend, listReadyForApproval, listOutboundByStatus, listPhaseOutbound, groupReadyByPhase, armPhase.\n\nTHEY WERE KEPT ON PURPOSE AND THAT IS THE PROBLEM TO RESOLVE, not a mistake to revert. Seven campaigns rows carry a non-null phase_id (measured in production 2026-08-19, of 12 total). assertApproved refuses anything that is not approved or scheduled, so deleting approve() would mean those seven rows can NEVER clear the gate again: a trap, not a cleanup. campaigns.phase_id is now a dangling column, nothing writes it, and its foreign key went with beta_phases.\n\nTwo honest ways to close, and it is a judgement call: give the spine a small review surface on the CRM Marketing tab (the route the revalidatePaths now point at), or clear the residual phase_id values and delete the transitions. Either resolves it; leaving it is how a spine with no surface becomes load-bearing folklore.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),cp=require('child_process');const A='lib/outbound/approvals.ts';if(!fs.existsSync(A))process.exit(79);const s=fs.readFileSync(A,'utf8');if(!/export async function approve\\\\b/.test(s))process.exit(0);const r=cp.spawnSync('grep',['-rlE',\\\"from '@/lib/outbound/approvals'\\\",'app','components','lib'],{encoding:'utf8'});const users=(r.stdout||'').split('\\\\n').filter(Boolean).filter(f=>!/^lib\\\\/outbound\\\\//.test(f));if(users.length>1)process.exit(0);console.error('the approval transitions still have no surface: only '+(users.join(', ')||'nothing')+' imports the spine');process.exit(1)\""
+      }
     }
   ]
 }

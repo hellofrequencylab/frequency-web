@@ -7,7 +7,7 @@
 // `EntityLayout` (kind 'email'), edited by the SAME arranger the Space page builder uses, and compiled to
 // send-ready HTML by lib/email-studio (render + shell). Subject + preheader live alongside on the row.
 //
-// GATES (the two gates of the approval spine, lib/beta/guard.ts (moving to lib/outbound in the follow-up PR)):
+// GATES (the two gates of the approval spine, lib/outbound/guard.ts):
 //   • READS  — requireAdmin('admin', { staff: 'marketing', staffLevel: 'read' }); a read-only marketer or
 //     any staff web_role may browse + preview.
 //   • WRITES — writerGate() (a staff web_role OR the marketing capability at WRITE). Create / save / delete /
@@ -20,7 +20,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 import { getCachedUser } from '@/lib/auth'
 import { requireAdmin } from '@/lib/admin/guard'
-import { writerGate } from '@/lib/beta/guard'
+import { writerGate } from '@/lib/outbound/guard'
 import {
   parseEntityLayout,
   sanitizeEntityLayout,

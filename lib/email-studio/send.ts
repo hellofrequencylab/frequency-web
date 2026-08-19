@@ -6,7 +6,7 @@
 //   • resolveSendGate (lib/comms/send-gate)      — the ONE unified consent + suppression
 //                                                  + preference decision per recipient
 //   • enqueueEmail   (lib/email)                 — the durable outbox (never inline send)
-//   • the approval spine (lib/beta/approvals)    — a beta campaign (phase_id set) still
+//   • the approval spine (lib/outbound/approvals) — a campaign carrying a phase_id still
 //                                                  routes through assertApproved before send
 //
 // The ONLY thing new here vs. the marketing composer's sendCampaign loop is that the body
@@ -27,7 +27,7 @@ import { buildConversationReplyAddress } from '@/lib/comms/reply-address'
 import { openOrGetConversation, appendConversationMessage, newConversationMessageId } from '@/lib/comms/conversations'
 import { buildUnsubscribeUrl, buildSpaceUnsubscribeUrl, buildManageEmailsUrl } from '@/lib/unsubscribe-tokens'
 import { loadRootSpaceId } from '@/lib/spaces/store'
-import { assertApproved } from '@/lib/beta/approvals'
+import { assertApproved } from '@/lib/outbound/approvals'
 import { SITE_URL } from '@/lib/site'
 import { compileEmailDoc } from './shell'
 import { applyMergeTags } from './render'
@@ -414,8 +414,8 @@ export async function countAudience(segment: SegmentKey): Promise<ActionResult<A
  * Schedule a campaign: validate the doc compiles + has a subject + a non-empty audience,
  * then set status 'scheduled' and store the chosen segment + send time. Scheduling reuses
  * the existing `campaigns.scheduled_for` timestamp column (no migration). It deliberately
- * does NOT touch approval_status: a beta campaign's approval is governed by the spine and
- * is re-checked at the real send (assertApproved).
+ * does NOT touch approval_status: a spine-tracked campaign's approval is governed by the
+ * spine and is re-checked at the real send (assertApproved).
  */
 export async function scheduleCampaign(
   campaignId: string,
@@ -453,8 +453,8 @@ export async function scheduleCampaign(
 // ── sendCampaignNow: the real, gated, per-recipient send ─────────────────────────
 
 /**
- * THE SEND. Idempotent (refuses an already-sent campaign). For a beta campaign (phase_id
- * set) it calls assertApproved FIRST, so nothing sends without approval. It compiles the
+ * THE SEND. Idempotent (refuses an already-sent campaign). For a spine-tracked campaign
+ * (phase_id set) it calls assertApproved FIRST, so nothing sends without approval. It compiles the
  * body from block_json, resolves the segment, and for each recipient runs the ONE unified
  * send-gate (suppression + consent + preference) before enqueuing a per-recipient email on
  * the durable outbox, with merge tags + one-click unsubscribe headers applied. Marks the
@@ -471,7 +471,7 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
   const next = nextCampaignStatus(row.status, 'send')
   if (!next) return fail(`A ${row.status} campaign cannot be sent.`)
 
-  // THE GOVERNING RULE for beta campaigns: refuse unless the spine has approved this row.
+  // THE GOVERNING RULE for a spine-tracked campaign: refuse unless the spine has approved this row.
   if (row.phase_id) {
     try {
       await assertApproved({ type: 'campaign', id: campaignId })

@@ -30,14 +30,15 @@
 //      is a DIFFERENT, live path: reserved founders via beta onboarding and the Stripe
 //      webhook. It was never the referrer path and is untouched.)
 //
-// The beta_* tables lag the generated Database types (ADR-246), so writes reach
-// beta_referrals through the loose service-role handle (lib/beta/db.betaDb); the
-// reward_grants / zaps / memberships reads use the normal admin client. Server-only.
+// beta_referrals is now covered by the generated Database types, so every read and write
+// here runs on the ordinary service-role admin client. It used to reach the table through
+// the approval spine's loose handle (the old lib/beta/db.betaDb, now lib/outbound/db.ts),
+// which was only ever a workaround for types that lagged the schema (ADR-246) and has
+// nothing to do with this contest. Server-only.
 
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { awardZaps, awardZapsForAction } from '@/lib/zaps'
-import { betaDb } from './db'
 
 // The activation signals a referral must hit before it scores. Kept in lockstep with
 // lib/qr/referral.ACTIVATION_EVENTS (the existing referral-payout gate) so the contest
@@ -123,7 +124,7 @@ export async function recordReferralActivation(inviteeProfileId: string): Promis
 
     // Claim-then-pay: the UNIQUE (invitee) index makes this the exactly-once lock. A
     // duplicate invitee errors here, so no Zaps are paid twice.
-    const { error: claimErr } = await betaDb()
+    const { error: claimErr } = await admin
       .from('beta_referrals')
       .insert({
         referrer_profile_id: referrer,
@@ -289,7 +290,7 @@ async function circleStartsByFounder(
 /** Activated referrals per referrer, from beta_referrals. */
 async function activatedReferralsByReferrer(): Promise<Map<string, number>> {
   const by = new Map<string, number>()
-  const { data } = await betaDb().from('beta_referrals').select('referrer_profile_id')
+  const { data } = await createAdminClient().from('beta_referrals').select('referrer_profile_id')
   for (const r of (data ?? []) as { referrer_profile_id: string }[]) {
     by.set(r.referrer_profile_id, (by.get(r.referrer_profile_id) ?? 0) + 1)
   }
@@ -389,7 +390,7 @@ export async function getMemberContestProgress(profileId: string): Promise<Membe
     const admin = createAdminClient()
 
     const [{ data: activatedRows }, { count: attributedTotal }, { data: circleGrants }, board] = await Promise.all([
-      betaDb().from('beta_referrals').select('id').eq('referrer_profile_id', profileId),
+      admin.from('beta_referrals').select('id').eq('referrer_profile_id', profileId),
       admin
         .from('profiles')
         .select('id', { count: 'exact', head: true })
