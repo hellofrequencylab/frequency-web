@@ -2108,6 +2108,23 @@
       }
     },
     {
+      "id": "OWN-032",
+      "title": "ADR-914 reversed the sell-wall, and two docs still teach the wall it removed",
+      "status": "open",
+      "lane": "owner",
+      "size": "M",
+      "source": {
+        "file": "docs/PRICING.md",
+        "ref": "ADR-914 banner"
+      },
+      "detail": "ADR-914 (2026-07-30) reversed ADR-913 the SAME DAY: a free Member CAN sell, tickets and donations and payouts, day one, no upgrade, and the principle is \"never gate the transaction, gate the repeat\". The rate became a seven-rung ladder: free Member 10%, Crew 8%, free Space 10%, Business 5%, Collective 3%, Non Profit 0%, Independent 0%. Two docs never caught up, and one of them declares itself canonical. COMMUNITY-COLLECTIVE-STRATEGY.md (status line: \"canonical source of truth\", owner-locked, no supersede banner) states that \"the retired member_free 10%, Free Space 10%, and Collective 3% rungs are gone\" - those three rungs are exactly the live ones. COLLABORATION-AND-UPGRADE-FUNNEL.md section 2 is a capability matrix whose Sell row reads \"RSVPs only\" for the free tiers, and section 3 quotes \"Business and Collective 5%\" when Collective is 3%. BANNERS WERE ADDED 2026-08-19 so neither doc can mislead a reader silently, but the BODIES were deliberately left unedited: the matrix is the funnel doc's whole argument, and re-deriving it around a reversed premise is a product decision, not a documentation fix. THIS ROW IS THAT DECISION. It is also the same question the owner owes on \"membership fully accessible\" (ADR-1084): PRICING.md's Crew table still gates hosting past one Circle, publishing past one Journey or three Practices, charging for an event, and entry points, and four help articles tell members so. Deciding the sell-wall and deciding the Crew gates is one decision, not two.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "ADR-914 verified as the current banner in docs/PRICING.md (line 63 carries the seven-rung ladder). Both stale docs read 2026-08-19 and given correction banners in their first 25 lines; bodies unchanged and the reason stated in each banner. billing_live measured true in production platform_flags the same day, so both docs' \"ships behind billing_live OFF\" line is stale too.",
+        "checked": "2026-08-19"
+      }
+    },
+    {
       "id": "PROG-W6",
       "title": "White label W6: member sites + the theme marketplace",
       "status": "parked",

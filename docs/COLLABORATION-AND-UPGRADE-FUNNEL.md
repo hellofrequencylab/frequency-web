@@ -6,6 +6,25 @@
 > path**. Decision: [ADR-810](DECISIONS.md). Machinery: [SPACE-COLLABORATION-AND-SEATS.md](SPACE-COLLABORATION-AND-SEATS.md)
 > (ADR-799), [PRICING.md](PRICING.md), [ROLES.md](ROLES.md). **Everything ships behind `billing_live` OFF**,
 > so nothing below changes for a live account until an operator flips go-live.
+>
+> 🔴 **TWO THINGS IN THIS DOC ARE OUT OF DATE, AND BOTH ARE ABOUT MONEY.** Read
+> [PRICING.md](PRICING.md)'s ADR-914 banner as the authority; this file is the map of collaboration,
+> not of rates.
+>
+> 1. **The sell-wall is gone.** §2's capability matrix shows `RSVPs only` for the free tiers.
+>    [ADR-914](DECISIONS.md) reversed that: *"A free Member **can** sell. Tickets, donations, payouts,
+>    on day one, with no upgrade."* The rule now is **"never gate the transaction, gate the repeat"**,
+>    so the free rows of that matrix understate what a free member may do.
+> 2. **The ladder has seven rungs, not four.** §3 quotes "Crew 8% · Business and Collective 5% · Non
+>    Profit 0%". It is free Member **10%** · Crew **8%** · free Space **10%** · Business **5%** ·
+>    Collective **3%** · Non Profit **0%** · Independent **0%**. Collective is 3%, not 5%, and the two
+>    free rungs are missing here entirely.
+>
+> The body is left unedited on purpose: the matrix is this doc's argument, and re-deriving it around a
+> reversed premise is a product decision rather than a documentation fix. Flagged for the owner.
+>
+> ⚠️ **`billing_live` is ON in production** (measured 2026-08-19), so the sentence directly above is
+> also stale: the go-live flip has happened.
 
 ## 1. The model in one screen
 

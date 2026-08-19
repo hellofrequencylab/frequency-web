@@ -6,6 +6,24 @@
 > Supersedes the flat single-Business pricing of ADR-552 / ADR-590 (grandfathered, see §9). **Everything
 > ships behind `billing_live` OFF** until one deliberate go-live flip.
 >
+> 🔴 **THE PARAGRAPH BELOW WAS REVERSED THE SAME DAY IT WAS WRITTEN. Read
+> [PRICING.md](PRICING.md)'s ADR-914 banner, not this file, for what anyone is charged.**
+> [ADR-914](DECISIONS.md) (2026-07-30) states: *"A free Member **can** sell. Tickets, donations,
+> payouts, on day one, with no upgrade. The previous rule (ADR-913: 'the free tier does not sell') is
+> REVERSED."* And the rate is the full ladder on network-sourced sales: free Member **10%** · Crew
+> **8%** · free Space **10%** · Business **5%** · Collective **3%** · Non Profit **0%** · Independent
+> **0%**. So the three rungs the next paragraph calls retired and gone are the three rungs that are
+> live, and the sell-wall it describes does not exist. The principle that replaced it is **"never gate
+> the transaction, gate the repeat"**.
+>
+> The paragraph is kept, unedited, because §4 and §5 below are written on top of it and rewriting a
+> doc's thesis is not a documentation task. What is fixed here is the claim to authority: this file
+> says "canonical source of truth" in its own status line, and on the money model it is not.
+>
+> ⚠️ Also stale in the status line above: **`billing_live` is ON in production** (measured
+> 2026-08-19). The go-live flip has happened, so "everything ships behind `billing_live` OFF" no
+> longer describes anything.
+
 > **Money model amended 2026-07-30 ([ADR-913](DECISIONS.md)):** tips carry **no** platform fee on any tier,
 > the free Member tier **does not sell** (events + RSVPs only), and the network take-rate is **Crew 8% ·
 > Business and Collective 5% · Non Profit 0%**, with **0% whenever the buyer is already the seller's own
