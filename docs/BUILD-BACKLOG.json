@@ -362,7 +362,7 @@
     },
     {
       "id": "OWN-020",
-      "title": "Config and env: the remaining unset keys",
+      "title": "Config and env: the remaining unset keys (three of the six were already set)",
       "status": "open",
       "lane": "owner",
       "size": "S",
@@ -370,11 +370,11 @@
         "file": "docs/MASTER-TODO.md",
         "ref": "Owner actions"
       },
-      "detail": "VAPID push keys (push is dark without them), RESEND_WEBHOOK_SECRET (email metrics dark), verify frequencylocal.com in Resend plus SPF/DKIM/DMARC subdomain isolation (blocking for volume), secret-scanning push protection, dismiss 3 CodeQL false positives, Supabase → Pro for capacity and backups. CRON_SECRET and ANTHROPIC_API_KEY appear satisfied — ai_enabled is true and the crons are firing — but were not individually read.",
+      "detail": "🔴 RE-MEASURED 2026-08-19 AND THE ROW WAS WRONG ABOUT HALF ITS OWN CONTENTS. Three of the six items were already satisfied, and the row had been telling the owner to go and do them. The previous evidence line said the rest are \"Vercel/Resend dashboard state, not readable here\", which is the exact shape ADR-1082 names: a blocker phrased as \"cannot be checked\" is a claim with an expiry date. The SECRET is unreadable from an agent container. Its CONSEQUENCE is sitting in the database.\n\nALREADY DONE, do not spend anything on these:\n  • Supabase -> Pro. The organization (hkveprznovcteywuczcv) returns plan \"pro\". Capacity and     backups are on the paid tier already.\n  • RESEND_WEBHOOK_SECRET. Email metrics are NOT dark. public.email_events over the trailing 30     days holds opened=127, delivered=81 and clicked=3. Those three event types cannot be produced     by our own send path -- nothing server-side knows an email was opened -- so they can only have     arrived through the Resend webhook, which means the secret is set AND the signature check is     passing. Most recent delivered event 2026-08-19T13:04:20Z, i.e. the same day this was measured.\n  • VAPID, the PUBLIC half. public.push_subscriptions holds 23 rows, 8 of them created in the last     30 days, most recent 2026-08-10. A browser cannot complete pushManager.subscribe() without     NEXT_PUBLIC_VAPID_PUBLIC_KEY being served to it, so that key is live and members have been     granting permission for two months.\n\nSTILL GENUINELY OPEN:\n  • VAPID_PRIVATE_KEY, the SEND half. Subscriptions prove the public key, not the private one.     lib/push.ts:22 warns '[push] VAPID keys not set - push sending disabled.' and returns false     when either key is missing, so the cheap settling move is a runtime-log search for that exact     string rather than another dashboard trip. Note the queue is quiet (1 notification_queue row in     24h), so absence of the warning in a short retention window is not proof either way -- it needs     a window that contains an actual push attempt.\n  • Verify frequencylocal.com in Resend, plus SPF/DKIM/DMARC subdomain isolation. Blocking for     volume. The delivered events above prove sending works TODAY at current volume; they say     nothing about domain reputation at scale, which is what this item is for.\n  • Secret-scanning push protection.\n  • Dismiss the 3 CodeQL false positives.\n\nCRON_SECRET and ANTHROPIC_API_KEY remain satisfied by consequence: ai_usage holds 50 rows in the trailing 7 days, and the crons are firing.",
       "verify": {
         "kind": "manual",
-        "evidence": "ai_enabled=true measured 2026-08-17, implying ANTHROPIC_API_KEY is set. The rest are Vercel/Resend dashboard state, not readable here.",
-        "checked": "2026-08-17"
+        "evidence": "Measured against production 2026-08-19, by consequence rather than by reading any secret. get_organization(hkveprznovcteywuczcv) -> plan \"pro\". `select event_type, count(*), max(created_at) from email_events where created_at > now() - interval '30 days' group by 1` -> opened 127 / sent 81 / delivered 81 / received 3 / clicked 3, last delivered 2026-08-19T13:04:20Z; opened, delivered and clicked are webhook-only types. `select count(*), min(created_at), max(created_at), count(*) filter (where created_at > now() - interval '30 days') from push_subscriptions` -> 23 total, first 2026-06-09, last 2026-08-10, 8 in 30 days. `select count(*) from ai_usage where created_at > now() - interval '7 days'` -> 50. Closes when the four remaining items are done: VAPID_PRIVATE_KEY confirmed (runtime-log search for the lib/push.ts:22 warning during a window containing a real push attempt), Resend domain verification with SPF/DKIM/DMARC, secret-scanning push protection, and the 3 CodeQL dismissals.",
+        "checked": "2026-08-19"
       }
     },
     {
