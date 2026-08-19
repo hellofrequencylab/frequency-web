@@ -601,6 +601,32 @@ Rules:
   (`/admin/growth/funnels`, `/admin/walkthroughs`, `/admin/content/tips`, `/admin/crm/marketing`) is
   the state word in a position where every label is capitalised, and a member never sees it.
 
+## Funnels: the sign-up front door (owner ruling, August 2026, ADR-1090)
+
+- **Funnels** (capital F) = the sign-up feature: focused, audience-tuned funnels that turn a
+  visitor into a member. One of them is **a Funnel**. The owner's framing: "These are supposed
+  to be focused funnels for building out any niche and getting a sign up." There is NO second
+  member-facing proper noun: "Beta induction", "Beta sequences", "Splash Funnels" and "Splash
+  pages" are all retired as names for this feature. ("Induction" survives only as the internal
+  word for the walk itself, never member-facing.)
+- **URL shape:** a Funnel's public splash is **`/join/<slug>`**; the induction runs at **`/join`**
+  (`?seq=<slug>` carries the audience). `/join/<slug>` also still resolves Circle invite tokens
+  (one segment, two doors — `app/join/[slug]/page.tsx`). Old `/beta/<slug>` and
+  `/onboarding/beta` links 308 to the new homes. The operator manager at `/pages/sequences` is
+  titled **Funnels**; the default flow's editor at `/pages/splash` is the **Default Funnel**.
+- **`beta_*` stored keys are historical identifiers, not the feature name**: the `beta-default`
+  reserved slug, the `beta_*` cohort tags (new Funnels keep minting the prefix so one cohort
+  stays one segment), `profiles.meta.beta.*`, the `fq_beta_seq` cookie, and the
+  `sequence_overrides` table all keep their names as persisted data (the beta_audit_log
+  convention). "Beta" as a live word belongs to the Beta *program* only (`/beta`, "Free during
+  the beta", `BETA_MEMBERS_GET_CREW`).
+- **Collision guards:** the Growth OS **`funnels` table** and `/admin/growth/funnels` console
+  (ADR-455) are operator *measurement* funnels — stages and rollups, never a member surface;
+  the shared word is fine because one is a thing members walk and the other is how operators
+  watch walks happen. The **funnel doors** at `/for/<niche>` (OPERATOR-FUNNELS, ADR-591) are
+  indexable marketing pages, not Funnels. And the lowercase common noun ("top of funnel",
+  CONTENT-VOICE §7) stays free for prose.
+
 ## Retired: zero hits allowed outside this list and ADR-208
 
 Spark/Current/Deep (tiers) · Runner/Operative/Agent (ranks) ·

@@ -1,7 +1,7 @@
 The one Frequency action button — amber `primary` (the only filled chrome accent), `secondary` outline, or `ghost` text link; renders an `<a>` when given `href`.
 
 ```jsx
-<Button href="/onboarding/beta" variant="primary" size="md" iconRight={<ArrowRight size={18} />}>
+<Button href="/join" variant="primary" size="md" iconRight={<ArrowRight size={18} />}>
   Join the Beta
 </Button>
 

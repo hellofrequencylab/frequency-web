@@ -89,7 +89,7 @@ button reads it, so the whole funnel opens (or re-closes) with one constant.
                                                   account created on first use)
         │
         ▼  (main) layout routes a member with no meta.onboarding_completed
-/onboarding  ──▶  /onboarding/beta   (cinematic beta induction, ADR-068)
+/onboarding  ──▶  /join              (the Funnels induction, ADR-068 → ADR-1090)
         │
         ▼
 real, building member
@@ -98,7 +98,7 @@ real, building member
 ### 2.1 Removed: the waitlist
 
 There is no waitlist. The Beta is **open**: anyone can create an account from
-`/onboarding/beta`, which is where `BETA_CTA_HREF` points from every CTA on the site.
+`/join`, which is where `BETA_CTA_HREF` points from every CTA on the site (ADR-1090).
 
 Until 2026-08-04 a double-opt-in queue sat in front of it. Recording what it was, because
 the shape recurs in planning docs and in the `contacts` table:

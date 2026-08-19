@@ -26,8 +26,8 @@ import { BreathVisualizer } from '@/components/on-air/visualizer'
 import { LotusIcon } from '@/components/on-air/icons'
 import { patternBySlug, breathPositionAt, bellToneBySlug } from '@/lib/on-air'
 import { chime } from '@/lib/timer-audio'
-import type { FeatureFunnelConfig, FunnelDestination } from '@/lib/onboarding/beta-sequences'
-import { isSafeInAppPath } from '@/lib/onboarding/funnel-destination'
+import type { FeatureFunnelConfig, FunnelDestination } from '@/lib/funnels/definitions'
+import { isSafeInAppPath } from '@/lib/funnels/destination'
 import { WizardProgress } from '@/components/templates'
 import { trackClient } from '@/components/analytics/track-provider'
 import { downscaleImageFile } from '@/lib/images/downscale-image'
@@ -38,7 +38,7 @@ import { safeImageSrc } from '@/lib/safe-image-src'
 import { Input } from '@/components/ui/field'
 
 // Avatar is too big for a cookie, so the deferred flow parks it in localStorage and
-// /onboarding/beta/complete uploads it. Same key the finalizer reads.
+// /join/complete uploads it. Same key the finalizer reads.
 const PENDING_AVATAR_KEY = 'fq_pending_avatar'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -519,8 +519,8 @@ function JoinStep({
 
   const completeNext =
     destination?.mode === 'direct' && isSafeInAppPath(destination.url)
-      ? `/onboarding/beta/complete?to=${encodeURIComponent(destination.url)}`
-      : '/onboarding/beta/complete'
+      ? `/join/complete?to=${encodeURIComponent(destination.url)}`
+      : '/join/complete'
 
   async function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]

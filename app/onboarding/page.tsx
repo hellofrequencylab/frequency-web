@@ -1,14 +1,14 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { BETA_INDUCTION_ACTIVE } from '@/lib/onboarding/beta-script'
+import { FUNNEL_INDUCTION_ACTIVE } from '@/lib/onboarding/funnel-script'
 import { hasEffectivelyOnboarded } from '@/lib/onboarding/onboarded'
 import OnboardingForm from './form'
 
 export default async function OnboardingPage() {
-  // During beta, the founding-cohort induction is the live path (ADR-068).
-  // Flip BETA_INDUCTION_ACTIVE off (or delete this block + app/onboarding/beta/)
-  // at launch to fall back to the steady-state onboarding below.
-  if (BETA_INDUCTION_ACTIVE) redirect('/onboarding/beta')
+  // While the Funnels induction is live (ADR-068 → ADR-1090), it is the sign-up
+  // path: forward to the /join front door. Flip FUNNEL_INDUCTION_ACTIVE off to
+  // fall back to the steady-state onboarding below.
+  if (FUNNEL_INDUCTION_ACTIVE) redirect('/join')
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

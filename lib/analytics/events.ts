@@ -26,7 +26,7 @@ export const ANALYTICS_EVENTS: readonly AnalyticsEventDef[] = [
   // → signed-up per funnel. `entered` fires once on funnel load; `captured` when a feature funnel
   // collects an email mid-flow (the "get yours free" moment). Signup is attributed server-side via
   // the member's beta_<slug> tag, so no client signup event is needed.
-  { name: 'onboarding.funnel_entered', category: 'lifecycle', description: 'A visitor loaded a splash funnel (props.seq, props.style).', clientEmittable: true },
+  { name: 'onboarding.funnel_entered', category: 'lifecycle', description: 'A visitor loaded a Funnel splash (props.seq, props.style).', clientEmittable: true },
   { name: 'onboarding.funnel_captured', category: 'lifecycle', description: 'A feature funnel captured a lead email mid-flow (props.seq, props.style).', clientEmittable: true },
 
   // ── Server-authoritative lifecycle + engagement (recorded server-side only) ──

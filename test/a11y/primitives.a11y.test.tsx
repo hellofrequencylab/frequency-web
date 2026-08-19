@@ -30,7 +30,7 @@ const cases: Array<{ name: string; ui: React.ReactElement }> = [
   { name: 'DemoBadge', ui: <DemoBadge /> },
   { name: 'EntityCard', ui: <EntityCard href="/circles/ada" title="Sunday Runners" context="Portland · 24 members" description="A calm weekly jog." /> },
   { name: 'PersonCard', ui: <PersonCard handle="ada" displayName="Ada Lovelace" context="@ada" /> },
-  { name: 'Button (marketing)', ui: <Button href="/onboarding/beta">Join the beta</Button> },
+  { name: 'Button (marketing)', ui: <Button href="/join">Join the beta</Button> },
 ]
 
 describe('design-system primitives — a11y (axe)', () => {

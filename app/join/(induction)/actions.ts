@@ -1,7 +1,10 @@
 'use server'
 
-// Beta-induction server actions (ADR-068). TEMPORARY — deleted at launch.
-// Everything rides profiles.meta (no migration). Unlike the legacy
+// Funnels induction server actions (ADR-068 → ADR-1090). Formerly
+// app/onboarding/beta/actions.ts. Everything rides profiles.meta (no migration) —
+// and the STORED keys deliberately keep their beta_ names (`meta.beta.*`, the
+// `fq_beta_seq` cookie, the `beta_*` cohort tags): they are data already written
+// to members and browsers (repo convention: beta_audit_log). Unlike the legacy
 // completeOnboarding (which blind-overwrites meta on a fresh '{}'), these MERGE
 // so an earlier stamp and the completion stamp don't clobber each other.
 
@@ -16,13 +19,13 @@ import { rememberFacts } from '@/lib/ai/memory'
 import { postWelcomeForMember } from '@/lib/onboarding/welcome'
 import { ensureMemberCodes } from '@/lib/qr/member-codes'
 import { track } from '@/lib/analytics/track'
-import { BETA_INDUCTION_VERSION, BETA_MEMBERS_GET_CREW } from '@/lib/onboarding/beta-script'
-import { resolveSequence } from '@/lib/onboarding/resolve-sequence'
-import { sequenceGrant } from '@/lib/onboarding/beta-sequences'
+import { FUNNEL_INDUCTION_VERSION, BETA_MEMBERS_GET_CREW } from '@/lib/onboarding/funnel-script'
+import { resolveFunnel } from '@/lib/funnels/resolve'
+import { funnelGrant } from '@/lib/funnels/definitions'
 import { grantFoundingStatus } from '@/lib/founding/status'
 import { awardZaps } from '@/lib/zaps'
-import { funnelLanding, isSafeInAppPath } from '@/lib/onboarding/funnel-destination'
-import type { FunnelDestination } from '@/lib/onboarding/beta-sequences'
+import { funnelLanding, isSafeInAppPath } from '@/lib/funnels/destination'
+import type { FunnelDestination } from '@/lib/funnels/definitions'
 import { personaTag, isPersonaId, DEFAULT_PERSONA } from '@/lib/onboarding/personas'
 import { enrollInNurture } from '@/lib/nurture/enroll'
 import { getSequenceByPersona } from '@/lib/nurture/store'
@@ -34,8 +37,10 @@ import { persistAcquisition } from '@/lib/attribution/acquisition'
 import { markLeadConverted } from './lead-actions'
 import type { Json } from '@/lib/database.types'
 
-/** The audience sequence the member arrived through (cookie set by the induction). */
-async function readBetaSequenceSlug(): Promise<string | null> {
+/** The Funnel the member arrived through (cookie set by the induction). The cookie
+ *  KEEPS its `fq_beta_seq` name: 30-day cookies stamped before the rename are still
+ *  in browsers mid-flight, and renaming it would drop their cohort + grants. */
+async function readFunnelSlug(): Promise<string | null> {
   try {
     return (await cookies()).get('fq_beta_seq')?.value ?? null
   } catch {
@@ -49,7 +54,7 @@ async function readBetaSequenceSlug(): Promise<string | null> {
  *  (e.g. a shared/kiosk device), or retroactively to a returning member who re-runs the default induction.
  *  Best-effort: matches the fq_pending_induction consume-and-clear lifecycle. Path '/' matches how the
  *  induction set it client-side. */
-async function clearBetaSequenceCookie(): Promise<void> {
+async function clearFunnelCookie(): Promise<void> {
   try {
     ;(await cookies()).set('fq_beta_seq', '', { path: '/', maxAge: 0 })
   } catch {
@@ -60,10 +65,10 @@ async function clearBetaSequenceCookie(): Promise<void> {
 /** Stamp the cohort's marketing tag on the member (best-effort; never blocks).
  *  Resolves through the DB layer so versions built in the wizard stamp THEIR tag,
  *  not the default's. */
-async function tagBetaCohort(profileId: string, seqSlug: string | null): Promise<void> {
+async function tagFunnelCohort(profileId: string, seqSlug: string | null): Promise<void> {
   if (!seqSlug) return
   try {
-    await assignTag(profileId, (await resolveSequence(seqSlug)).marketingTag)
+    await assignTag(profileId, (await resolveFunnel(seqSlug)).marketingTag)
   } catch {
     /* tagging is best-effort */
   }
@@ -171,6 +176,7 @@ async function enrollPersonaOnboarding(profileId: string, email: string, primary
     if (!contactId) {
       const { data: inserted } = await admin
         .from('contacts')
+        // source keeps its stored value ('onboarding_beta') so contact rows stay one segment.
         .insert({ email, profile_id: profileId, consent_state: 'unknown', source: 'onboarding_beta', last_seen_at: new Date().toISOString() })
         .select('id')
         .maybeSingle()
@@ -201,7 +207,7 @@ async function grantBetaCrew(authUserId: string) {
 
 /**
  * Apply any one-time GRANTS a funnel confers on the accounts that finish it, keyed by the
- * ?seq slug the fq_beta_seq cookie carried through signup (SEQUENCE_GRANTS, not email — the
+ * ?seq slug the fq_beta_seq cookie carried through signup (FUNNEL_GRANTS, not email — the
  * email is unknown at authoring time). The `randy` donor funnel honors every finisher as a
  * Founding Member and comps them Crew.
  *
@@ -210,8 +216,8 @@ async function grantBetaCrew(authUserId: string) {
  * The Crew comp here is INDEPENDENT of BETA_MEMBERS_GET_CREW so the funnel's promise holds even
  * after that beta-wide flag flips off at launch.
  */
-async function applySequenceGrants(seqSlug: string | null, authUserId: string, profileId: string): Promise<void> {
-  const grant = sequenceGrant(seqSlug)
+async function applyFunnelGrants(seqSlug: string | null, authUserId: string, profileId: string): Promise<void> {
+  const grant = funnelGrant(seqSlug)
   if (!grant) return
   try {
     if (grant.crew) {
@@ -229,7 +235,7 @@ async function applySequenceGrants(seqSlug: string | null, authUserId: string, p
     }
     if (grant.zaps && grant.zaps > 0) {
       // A one-time welcome bonus (the Feature funnel's "join now, get N Zaps"). Idempotent per
-      // (profile, seq): applySequenceGrants runs on both the new-member and returning-member paths,
+      // (profile, seq): applyFunnelGrants runs on both the new-member and returning-member paths,
       // so guard on an existing funnel_bonus ledger row before awarding again.
       const admin = createAdminClient()
       const { data: existing } = await admin
@@ -244,7 +250,7 @@ async function applySequenceGrants(seqSlug: string | null, authUserId: string, p
       }
     }
   } catch (err) {
-    console.error('[beta] sequence grant failed:', err)
+    console.error('[funnels] grant failed:', err)
   }
 }
 
@@ -252,7 +258,7 @@ type Meta = Record<string, Json>
 
 // Where the deferred (signed-out) flow parks the answers across the auth
 // round-trip. The avatar (too big for a cookie) goes to localStorage on the
-// client under 'fq_pending_avatar' and is uploaded by /onboarding/beta/complete.
+// client under 'fq_pending_avatar' and is uploaded by /join/complete.
 const PENDING_INDUCTION_COOKIE = 'fq_pending_induction'
 
 export interface InductionData {
@@ -278,18 +284,18 @@ async function readMeta(supabase: Awaited<ReturnType<typeof createClient>>, auth
 }
 
 /**
- * The induction write, shared by the authed path (completeBetaInduction) and the
+ * The induction write, shared by the authed path (completeInduction) and the
  * deferred path (finalizePendingInduction). Persists identity + place + intent,
  * stamps onboarding complete, seeds Vera's memory, and fires the welcome email.
  * Requires an authenticated user; does NOT redirect (callers decide where to go).
  */
-async function writeBetaInduction(data: InductionData): Promise<void> {
+async function writeInduction(data: InductionData): Promise<void> {
   const { displayName, handle, bio, avatarUrl } = sanitizeProfileInput(data)
   const intent = data.intent.trim().slice(0, 500)
   const interests = data.interests.trim().slice(0, 200)
   const heardAbout = data.heardAbout.trim().slice(0, 120)
   const location = data.location.trim().slice(0, 160)
-  const seqSlug = await readBetaSequenceSlug()
+  const seqSlug = await readFunnelSlug()
   const personaSlug = await readPersonaSlug()
   const personaSlugs = await readPersonaSlugs()
   // Primary first, then any other personas they also picked (multi-select), de-duped.
@@ -323,7 +329,7 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
         personas: (allPersonas.length ? allPersonas : ((meta.personas as Json) ?? null)) as Json,
         beta: {
           ...beta,
-          version: BETA_INDUCTION_VERSION,
+          version: FUNNEL_INDUCTION_VERSION,
           intent: intent || null,
           interests: interests || null,
           heard_about: heardAbout || null,
@@ -372,13 +378,13 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
     // get here, so profile is "completed" by our funnel's definition.
     await track('onboarding.induction_completed', { hasAvatar: !!avatarUrl, hasIntent: !!intent }, prof.id)
     await track('profile.completed', { hasAvatar: !!avatarUrl }, prof.id)
-    await tagBetaCohort(prof.id, seqSlug)
-    // Apply any grants the arriving funnel confers (SEQUENCE_GRANTS, keyed on seqSlug): the
+    await tagFunnelCohort(prof.id, seqSlug)
+    // Apply any grants the arriving funnel confers (FUNNEL_GRANTS, keyed on seqSlug): the
     // `randy` donor funnel makes the finisher a Founding Member + comps Crew. Best-effort.
-    await applySequenceGrants(seqSlug, user.id, prof.id as string)
+    await applyFunnelGrants(seqSlug, user.id, prof.id as string)
     // Consume-and-clear the sequence cookie now that its tag + grants are applied, so it cannot leak a
     // durable grant onto a later signup on this browser.
-    await clearBetaSequenceCookie()
+    await clearFunnelCookie()
     // Tag every persona they selected (multi-select); each tag is registered + idempotent.
     for (const p of allPersonas) await tagPersona(prof.id as string, p)
     // Tag the event-host interests they ticked on the niche funnel (segmentation).
@@ -440,8 +446,8 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
  * Authed path: a signed-in, not-yet-completed member who lands on the induction.
  * Writes, then hands off to Vera's onboarding lightbox over the feed.
  */
-export async function completeBetaInduction(data: InductionData, destination?: FunnelDestination) {
-  await writeBetaInduction(data)
+export async function completeInduction(data: InductionData, destination?: FunnelDestination) {
+  await writeInduction(data)
   // Hand off to Vera (ADR-066 Phase D): drop them straight into the feed (the real
   // product) with her onboarding lightbox over it. She already has their
   // interests/intent in memory + meta.beta, so the lightbox continues the thread
@@ -510,12 +516,12 @@ function mergeCsv(existing: string, incoming: string): string {
 }
 
 /**
- * Returning member re-ran the beta intake: intelligently MERGE whatever new info
+ * Returning member re-ran the Funnel intake: intelligently MERGE whatever new info
  * they entered into their existing profile. New non-empty values win; a blank
  * field never wipes existing data; interests are unioned; handle is left untouched
  * (unique identity). Never deletes good info.
  */
-async function mergeBetaInduction(data: InductionData): Promise<void> {
+async function mergeInduction(data: InductionData): Promise<void> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthorized')
@@ -529,7 +535,7 @@ async function mergeBetaInduction(data: InductionData): Promise<void> {
 
   const meta = (profile.meta as Meta) ?? {}
   const beta = (meta.beta as Meta) ?? {}
-  const seqSlug = await readBetaSequenceSlug()
+  const seqSlug = await readFunnelSlug()
   const personaSlug = await readPersonaSlug()
   const personaSlugs = await readPersonaSlugs()
   const allPersonas = Array.from(new Set([...(personaSlug ? [personaSlug] : []), ...personaSlugs]))
@@ -552,7 +558,7 @@ async function mergeBetaInduction(data: InductionData): Promise<void> {
     personas: (allPersonas.length ? allPersonas : ((meta.personas as Json) ?? null)) as Json,
     beta: {
       ...beta,
-      version: BETA_INDUCTION_VERSION,
+      version: FUNNEL_INDUCTION_VERSION,
       intent: newIntent || (beta.intent ?? null),
       interests: mergedInterests || (beta.interests ?? null),
       heard_about: newHeardAbout || (beta.heard_about ?? null),
@@ -604,10 +610,10 @@ async function mergeBetaInduction(data: InductionData): Promise<void> {
   await grantBetaCrew(user.id)
   // Apply the arriving funnel's grants too, so a returning member who re-runs the `randy`
   // funnel is still honored as a Founding Member + comped Crew (idempotent, best-effort).
-  await applySequenceGrants(seqSlug, user.id, profile.id as string)
-  // Consume-and-clear the sequence cookie (see writeBetaInduction) so a stale slug can't retroactively
+  await applyFunnelGrants(seqSlug, user.id, profile.id as string)
+  // Consume-and-clear the sequence cookie (see writeInduction) so a stale slug can't retroactively
   // re-grant Founding Member + Crew to a returning member re-running the default induction.
-  await clearBetaSequenceCookie()
+  await clearFunnelCookie()
 }
 
 /**
@@ -634,7 +640,7 @@ export async function uploadPendingAvatar(dataUrl: string): Promise<string | nul
 }
 
 /**
- * Deferred path, step 2 (now authed, at /onboarding/beta/complete): read the
+ * Deferred path, step 2 (now authed, at /join/complete): read the
  * parked answers + uploaded avatar. A brand-new account is written in full; a
  * returning member's answers are MERGED into their existing profile (new info
  * harvested, blanks ignored). Then clear the cookie.
@@ -660,10 +666,10 @@ export async function finalizePendingInduction(
   let merged = false
   try {
     if (await callerAlreadyOnboarded()) {
-      await mergeBetaInduction(payload)
+      await mergeInduction(payload)
       merged = true
     } else {
-      await writeBetaInduction(payload)
+      await writeInduction(payload)
     }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Something went wrong.' }

@@ -297,7 +297,7 @@ export const SURFACES = new Map([
   ['lib/widgets/modules.ts', { kind: 'operator', why: 'the operator dashboard widget catalog that components/widgets/ renders' }],
   ['lib/traits/registry.ts', { kind: 'operator', why: 'the CRM trait catalog rendered in /admin/crm; NAMING.md licenses "cohort" precisely here, as research framing' }],
   ['lib/nav/studio.ts', { kind: 'operator', why: 'THE operator destination catalog (ADR-848; check-menu.mjs names it as such)' }],
-  ['lib/funnels/funnel-styles.ts', { kind: 'operator', why: 'the funnel-style catalog for the /pages/sequences operator console' }],
+  ['lib/funnels/styles.ts', { kind: 'operator', why: 'the funnel-style catalog for the /pages/sequences operator console' }],
   ['lib/studio/recommendations.ts', { kind: 'operator', why: 'the AI Intelligence Studio recommendation feed (ADR-167); Admin/Janitor only' }],
   ['lib/ai/autodoc.ts', { kind: 'operator', why: 'the help-drift PR comment: a staff checklist posted to a pull request, never member copy' }],
   ['lib/ai/vera/tools.ts', { kind: 'not-copy', why: "the tool-schema `description` fields are the model's prompt, not human copy (ADR-066); Vera's OUTPUT is governed by lib/ai/voice.ts" }],

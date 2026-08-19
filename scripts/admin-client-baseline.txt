@@ -302,11 +302,11 @@ app/events/calendar.ics/route.ts
 app/events/calendar/[token]/route.ts
 app/events/claim/[token]/opengraph-image.tsx
 app/events/claim/[token]/page.tsx
-app/join/[token]/page.tsx
+app/join/[slug]/page.tsx
 app/llms.txt/route.ts
 app/manage-emails/actions.ts
-app/onboarding/beta/actions.ts
-app/onboarding/beta/feature-actions.ts
+app/join/(induction)/actions.ts
+app/join/(induction)/feature-actions.ts
 app/onboarding/vera-actions.ts
 app/print/qr/page.tsx
 app/q/[slug]/route.ts
@@ -661,7 +661,7 @@ lib/onboarding/flags.ts
 lib/onboarding/founder-tasks.ts
 lib/onboarding/profile-chores.ts
 lib/onboarding/resolve-onboarding-sequence.ts
-lib/onboarding/sequence-overrides.ts
+lib/funnels/overrides.ts
 lib/onboarding/status.ts
 lib/onboarding/training.ts
 lib/onboarding/welcome.ts

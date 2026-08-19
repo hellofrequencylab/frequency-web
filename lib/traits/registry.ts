@@ -81,10 +81,11 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
     systemManaged: false,
   },
 
-  // ── Tags · marketing · beta cohorts ────────────────────────────────────────
-  // Which beta sequence a member arrived through (lib/onboarding/beta-sequences.ts).
-  // Stamped automatically at induction so the founding cohort stays segmentable by
-  // entry path forever — even after the beta flow itself is removed at launch.
+  // ── Tags · marketing · Funnel cohorts (stored beta_ keys) ──────────────────
+  // Which Funnel a member arrived through (lib/funnels/definitions.ts). Stamped
+  // automatically at induction so each cohort stays segmentable by entry path
+  // forever. The keys KEEP their beta_ prefix (ADR-1090): they are stored member
+  // data, and one cohort must stay one segment across the rename.
   {
     key: 'beta_early_adopter',
     label: 'Beta · Early adopter',
@@ -110,10 +111,11 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
     systemManaged: true,
   },
 
-  // ── Tags · marketing · beta niche funnels ──────────────────────────────────
-  // Which niche onboarding funnel a member arrived through (sequence_overrides,
-  // lib/onboarding/sequence-overrides.ts). Stamped automatically at induction so each
-  // audience stays segmentable by entry path forever, even after the beta flow retires.
+  // ── Tags · marketing · niche Funnels (stored beta_ keys) ───────────────────
+  // Which niche Funnel a member arrived through (sequence_overrides,
+  // lib/funnels/overrides.ts). Stamped automatically at induction so each
+  // audience stays segmentable by entry path forever. Same stored-prefix rule
+  // as the cohort tags above.
   {
     key: 'beta_coaches_healers',
     label: 'Beta · Coaches & Healers',

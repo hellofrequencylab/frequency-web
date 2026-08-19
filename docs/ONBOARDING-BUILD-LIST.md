@@ -8,7 +8,7 @@
 > beta cohort *in the door, excited, and creating a profile + content*, coached by Vera,
 > deeply integrated. Written after a full docs+code audit (2026-06-06). Companion specs:
 > [`ONBOARDING.md`](ONBOARDING.md), [`AI-VERA.md`](AI-VERA.md), [`BETA-ACTIVATION.md`](BETA-ACTIVATION.md),
-> [`BETA-INDUCTION.md`](BETA-INDUCTION.md). Sequencing in [`BACKLOG.md`](BACKLOG.md) §F/§P.
+> [`FUNNELS.md`](FUNNELS.md). Sequencing in [`BACKLOG.md`](BACKLOG.md) §F/§P.
 
 ## The headline
 
@@ -62,7 +62,7 @@ The fastest path to "people in there and testing." None of this is a feature bui
 | 0.3 | Click **Build index** once in prod | `/admin/ai` | `help_chunks` corpus is empty until ingested; "Ask Vera" help deflects to human otherwise. |
 | 0.4 | Run the 2 pending migrations | `supabase db push` | `lock_economy_columns` (critical) + `perf_indexes`. |
 | 0.5 | Set prod env: `CRON_SECRET`, `UNSUBSCRIBE_SECRET`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_APP_URL`, `EMAIL_FROM`, `RESEND_WEBHOOK_SECRET` | env | Cron, email, metadata, unsubscribe all reject/misfire without these. |
-| 0.6 | Confirm `BETA_INDUCTION_ACTIVE = true` + verify the funnel fires on `/admin/engagement` | `lib/onboarding/beta-script.ts`, `/admin/engagement` | Induction is the live path; confirm `onboarding.induction_completed → vera_opened → circle.joined → practice.adopted → profile.completed` all land so the test is *measurable*. |
+| 0.6 | Confirm `FUNNEL_INDUCTION_ACTIVE = true` + verify the funnel fires on `/admin/engagement` | `lib/onboarding/funnel-script.ts`, `/admin/engagement` | Induction is the live path; confirm `onboarding.induction_completed → vera_opened → circle.joined → practice.adopted → profile.completed` all land so the test is *measurable*. |
 
 **Acceptance:** a fresh signup completes induction → lands on `/feed?welcome=vera` → Vera's
 lightbox opens with live (not scripted) replies → the funnel shows the events.
@@ -173,7 +173,7 @@ in small reviewable PRs. Best-practice guardrails in the last section.
 
 | # | Item | Reuse / gap | Touch | Notes |
 |---|---|---|---|---|
-| 2.1 | **Welcome community post** ✅ shipped | `lib/onboarding/welcome.ts` `postWelcomeForMember`: the `is_system` account posts "Everyone, welcome @handle 👋" to the public feed on first induction completion (`app/onboarding/beta/actions.ts`, best-effort, once-only via pre-update meta). Turns sign-ups into *greeted* members + seeds the feed. *Tweaks:* scope (community vs nexus), member opt-out, notify the welcomed member. |
+| 2.1 | **Welcome community post** ✅ shipped | `lib/onboarding/welcome.ts` `postWelcomeForMember`: the `is_system` account posts "Everyone, welcome @handle 👋" to the public feed on first induction completion (`app/join/(induction)/actions.ts`, best-effort, once-only via pre-update meta). Turns sign-ups into *greeted* members + seeds the feed. *Tweaks:* scope (community vs nexus), member opt-out, notify the welcomed member. |
 | 2.2 | **Finish `draft_intro`** ⏳ | Tool is declared but `lib/ai/vera/execute.ts` returns ok with no effect | `lib/ai/vera/execute.ts`, intro-post path | Removes the awkward part of the cold-start; "scary part done." |
 | 2.3 | **Memory batch summarization cron** 📋 | `ai_member_context` captures facts; summary never regenerated (Vera Phase C tail) | new cron on Batch API, `lib/ai/memory.ts` | Keeps memory fresh + makes the footprint-decay metric real. |
 | 2.4 | **Warm demo content** 📋 | §S9 (sterile seed copy) + §S4 (demo box → action links with point values) | `lib/demo/*`, Seed Studio, the demo notice box | First scroll should feel like a real warm community, not a demo. Directly affects "excited." |
@@ -384,7 +384,7 @@ hub (`/marketing`) all exist, **scattered**.
 **Gap roadmap (UI builders the launchpad will host):**
 | # | Gap | Where it'd live |
 |---|---|---|
-| 9.1 | ✅ **shipped: Onboarding-sequence editor (splash).** `/pages/sequences/[slug]/edit` edits the splash copy; a `sequence_overrides` table (⚠️ apply `20260608020000`) merges over the code default at `/beta/[slug]` render: publish without a deploy. Voiced copy/oaths stay code-first (follow-up). | `lib/onboarding/sequence-overrides.ts`, `/beta/[slug]` |
+| 9.1 | ✅ **shipped: Onboarding-sequence editor (splash).** `/pages/sequences/[slug]/edit` edits the splash copy; a `sequence_overrides` table (⚠️ apply `20260608020000`) merges over the code default at `/beta/[slug]` render: publish without a deploy. Voiced copy/oaths stay code-first (follow-up). | `lib/funnels/overrides.ts`, `/join/[slug]` |
 | 9.2 | **Visual entry-point / flyer designer** (live preview; templates immutable today) | `/entry-points/[id]/edit`, over `lib/entry-points/flyer.ts` |
 | 9.3 | **Live QR style preview** (JSON editor exists, no live render) | `/admin/qr/[id]` style editor |
 | 9.4 | **Unified link generator** (referral/campaign/invite links are 3 places) | a `/growth/links` dashboard over `qr_codes` + `invite_links` |
@@ -486,7 +486,7 @@ keep scope rails. **Open:** "Around You" naming. **Sequence:** 10.1 → 10.2 →
 | Spotlight tour | ✅ | `components/onboarding/spotlight-tour.tsx` |
 | Vera chat UI (extract `<VeraChat>` from here) | ✅ | `components/onboarding/vera-lightbox.tsx` |
 | Vera operator config | ✅ | `/admin/vera`, `lib/ai/vera/config.ts` |
-| Beta funnel (splash → lead-flow → induction → complete) | ✅ | `app/(marketing)/`, `app/onboarding/beta/`, `lib/onboarding/{personas,lead-flows,beta-sequences}.ts` |
+| Funnels (splash → lead-flow → induction → complete, ADR-1090) | ✅ | `app/join/`, `lib/onboarding/{personas,lead-flows}.ts`, `lib/funnels/definitions.ts` |
 
 ## Best-practice guardrails (apply to every item above)
 

@@ -11,7 +11,7 @@ import type { SequenceStepContext } from '@/lib/onboarding/step-registry'
 
 // STAFF-ONLY preview of the onboarding SEQUENCE ENGINE (docs/LOOM-PLATFORM.md §3, ADR-502). It walks
 // any resolved SequenceDef through the real SequenceRunner in `preview` mode, so nothing is written
-// and the live acquisition funnel (/onboarding/beta) is untouched. Switch persona to see the engine
+// and the live acquisition funnel (/join) is untouched. Switch persona to see the engine
 // pick a DIFFERENT flow: a coach (practitioner) gets the guide flow, everyone else the default the
 // owner likes. This proves "different funnel -> different flow" before any production cutover.
 //

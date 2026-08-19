@@ -75,7 +75,7 @@ own `source` is stamped on the lead.
 | Member segmentation | `member_tags` | one `persona_*` tag (governed, queryable) |
 
 `meta.persona` is read broadly by the site/Vera; the tag is the queryable segment. Both are
-written by `app/onboarding/beta/actions.ts` (`writeBetaInduction` + the returning-member
+written by `app/join/(induction)/actions.ts` (`writeInduction` + the returning-member
 `mergeBetaInduction`), mirroring the beta-cohort tag + `fq_beta_seq` pattern.
 
 ---

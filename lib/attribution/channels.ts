@@ -1,11 +1,13 @@
 // Acquisition channels — the governed taxonomy of HOW a member/lead first reached
-// us (ADR-095). Client-safe and pure (no imports), so middleware, server actions,
-// and admin UI can all share one source of truth.
-//
+// us (ADR-095). Client-safe and pure (its one import is the pure Funnel registry),
+// so middleware, server actions, and admin UI can all share one source of truth.
+
 // Each channel maps 1:1 to a registry tag `source_<channel>` (lib/traits/registry.ts),
 // stamped on the member at signup so the founding cohort stays segmentable by origin
 // forever — the same pattern as the beta_* cohort tags. The richer first/last-touch
 // detail (utm, referrer, landing) rides profiles.meta.acquisition / contacts.meta.
+
+import { isFunnelSplashPath } from '@/lib/funnels/definitions'
 
 export const ACQUISITION_CHANNELS = [
   'donor',        // gave money / sponsorship / partnership (flow not built yet — plumbing only)
@@ -70,7 +72,11 @@ export function deriveChannel(touch: {
   const landing = (touch.landing ?? '').toLowerCase()
   // Entry route is the strongest signal — they literally arrived on it.
   if (landing.startsWith('/q/') || landing === '/q') return 'qr_scan'
-  if (landing.startsWith('/join/')) return 'referral'
+  // /join/<x> serves two doors (ADR-1090): a Circle invite TOKEN is a personal
+  // referral; a Funnel SPLASH slug (e.g. /join/breathwork, formerly /beta/<slug>)
+  // is a campaign landing whose channel comes from utm/referrer below, exactly as
+  // it did before the move. Only code Funnels have splashes, so the check is pure.
+  if (landing.startsWith('/join/') && !isFunnelSplashPath(landing)) return 'referral'
   if (landing.startsWith('/events/')) return 'event_guest'
   if (landing.startsWith('/give') || landing.startsWith('/donate')) return 'donor'
 

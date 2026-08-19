@@ -93,6 +93,8 @@ export const JOURNEYS: readonly Journey[] = [
         markers: ['web_vital'],
         pathLike: '/beta%',
         coverage: 'observed',
+        note:
+          'Counts the /beta invitation page. The per-audience Funnel splashes moved /beta/<slug> → /join/<slug> (ADR-1090), so since 2026-08-19 splash traffic no longer lands in this step; the per-Funnel entered/captured events (onboarding.funnel_entered) are the splash-side signal.',
       },
       {
         key: 'joined_the_waitlist',

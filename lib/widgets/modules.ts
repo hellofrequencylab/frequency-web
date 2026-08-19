@@ -124,7 +124,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   // ── Pages workspace blocks (/pages) — the operator's "find any page and edit it" surface ──
   { id: 'pages-in-app-member', label: 'In-app pages / Member', description: 'Every member-facing page, opened in place with edit mode on.' },
   { id: 'pages-in-app-focus', label: 'In-app pages / Focus surfaces', description: 'The focused in-app surfaces (boards, timers, scanner), opened in place with edit mode on.' },
-  { id: 'pages-splash-funnels', label: 'Splash funnels', description: 'A card into the Splash Funnels library: the onboarding front door and its audience funnels (janitor only).' },
+  { id: 'pages-splash-funnels', label: 'Funnels', description: 'A card into the Funnels library: the sign-up front door and its audience Funnels (janitor only).' },
   { id: 'pages-marketing', label: 'Marketing pages', description: 'The public, editor-backed marketing pages with their publish status (janitor only).' },
 
   // ── Marketing analytics blocks (/admin/marketing/analytics) — read-models off the event backbone ──

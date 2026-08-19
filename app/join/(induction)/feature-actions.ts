@@ -5,7 +5,7 @@
 // uses: it stashes a minimal pending profile (name + a server-generated unique handle) in the
 // fq_pending_induction cookie, stamps the fq_beta_seq cohort cookie for attribution, and returns.
 // The client then calls the normal signInWithGoogle / signInWithMagicLink actions with
-// next=/onboarding/beta/complete, and the existing finalizer writes the profile, tags the cohort,
+// next=/join/complete, and the existing finalizer writes the profile, tags the cohort,
 // applies grants, and lands them. Nothing about signup is forked — this only pre-fills the stash.
 //
 // authz-ok: intentionally PUBLIC + anonymous (a signed-out visitor starting signup, same as the
@@ -17,7 +17,8 @@ import { cookies } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { stashPendingInduction } from './actions'
 
-const BETA_SEQ_COOKIE = 'fq_beta_seq'
+// Stored cookie name kept through the Funnels rename (ADR-1090) — see actions.ts.
+const FUNNEL_SEQ_COOKIE = 'fq_beta_seq'
 
 // "Daniel Tyack" -> "danieltyack" (mirrors the induction's suggestHandle).
 function baseHandle(name: string): string {
@@ -61,9 +62,9 @@ export async function beginFeatureFunnelSignup(input: {
   const seq = (input.seq ?? '').trim().slice(0, 80)
 
   // Stamp the cohort cookie so the shared /complete path tags this member beta_<slug>, exactly like
-  // the cinematic induction. Consumed-and-cleared at completion (writeBetaInduction).
+  // the cinematic induction. Consumed-and-cleared at completion (writeInduction).
   if (seq) {
-    ;(await cookies()).set(BETA_SEQ_COOKIE, seq, {
+    ;(await cookies()).set(FUNNEL_SEQ_COOKIE, seq, {
       path: '/',
       maxAge: 60 * 30,
       sameSite: 'lax',
@@ -76,7 +77,7 @@ export async function beginFeatureFunnelSignup(input: {
   const handle = picked.length >= 3 ? await uniqueHandle(picked) : await uniqueHandle(name)
 
   // Park a minimal profile (name + the handle; everything else blank) in the pending-induction
-  // cookie. The finalizer writes it through the tested writeBetaInduction path after sign-in.
+  // cookie. The finalizer writes it through the tested writeInduction path after sign-in.
   await stashPendingInduction({
     displayName: name,
     handle,

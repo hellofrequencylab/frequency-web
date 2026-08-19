@@ -18,7 +18,7 @@ of ~9 identical audience-onboarding funnel cards, plus role-promotion tours and 
 how-it-works section. Today:
 
 - Every funnel is ONE shape: `sequence_overrides.data` = `SequenceOverride` /
-  `BetaSequence`, rendered by ONE component (`app/onboarding/beta/induction.tsx`).
+  `Funnel` (né `BetaSequence`), rendered by ONE component (`app/join/(induction)/induction.tsx`).
 - "niche vs general" is only INFERRED from whether `slide2Features` / `slide3Core`
   are filled. There is no funnel `kind` / `type` / `style` field.
 - There are no per-funnel conversion stats.
@@ -53,8 +53,8 @@ Each style row declares:
 
 | Style | Status | What it is | Lift |
 | --- | --- | --- | --- |
-| **Onboarding** | ✅ live | The existing 5-beat beta induction (`app/onboarding/beta/induction.tsx`). All existing funnels default to this `kind`. Zero breakage. | None (already shipped) |
-| **Feature** | ✅ live | Visitor plays a stripped-down single feature before signing up. First shipped: **Breathwork** (`app/onboarding/beta/feature-funnel.tsx`, ADR-619) — the real box-breath visualizer, a first-hold "get yours free" capture, and a Day 1 streak + Zaps reward beat. Meditation Timer / QR Studio / CRM previews slot in behind the same `feature` config. | Big (first one shipped) |
+| **Onboarding** | ✅ live | The existing induction (`app/join/(induction)/induction.tsx`). All existing funnels default to this `kind`. Zero breakage. | None (already shipped) |
+| **Feature** | ✅ live | Visitor plays a stripped-down single feature before signing up. First shipped: **Breathwork** (`app/join/(induction)/feature-funnel.tsx`, ADR-619) — the real box-breath visualizer, a first-hold "get yours free" capture, and a Day 1 streak + Zaps reward beat. Meditation Timer / QR Studio / CRM previews slot in behind the same `feature` config. | Big (first one shipped) |
 | **Demographic** | ⏳ planned | Niche teaser tuned to a persona. Spine: `lib/onboarding/personas.ts` (visitor / practitioner / partner / builder / investor); niche assets in `components/marketing/funnel/*`, `lib/marketing/funnel-config.ts`, `/for/<niche>` pages. Content = the DAWN "Teaser" infographics (see §7). | Medium |
 
 DAWN teaser set for the Demographic style: The First Win, Focus Ritual, Never Miss
@@ -67,9 +67,9 @@ These are external Claude artifacts, not yet in the repo (§7 open item).
 
 | Change | Where | Notes |
 | --- | --- | --- |
-| Add `kind` to `SequenceOverride` + `BetaSequence`, default `'onboarding'` | `lib/onboarding/sequence-overrides.ts`, `lib/onboarding/beta-sequences.ts` | Lives in the `data` jsonb — **no migration needed**. Optionally mirror as a real column later for fast filtering (§8 open item). |
+| Add `kind` to `FunnelOverride` + `Funnel`, default `'onboarding'` | `lib/funnels/overrides.ts`, `lib/funnels/definitions.ts` | Lives in the `data` jsonb — **no migration needed**. Optionally mirror as a real column later for fast filtering (§8 open item). |
 | New anonymous taxonomy event `onboarding.funnel_entered` | `lib/analytics/events.ts` | Fired on funnel load, keyed by `{ sequence slug, anon id }`. Anon id via a new `fq_anon` cookie. Makes entered / bounce computable. |
-| Pass `seqSlug` into the two existing completion `track()` calls | `app/onboarding/beta/actions.ts` | Ties completion to a specific funnel slug. |
+| Pass `seqSlug` into the two existing completion `track()` calls | `app/join/(induction)/actions.ts` | Ties completion to a specific funnel slug. |
 | Feature style (later): `featureKey` field + interactive feature-stage components | `lib/onboarding/*`, new components | Phase 3. |
 
 `kind` defaults to `'onboarding'` on read, so every existing funnel is a valid
@@ -132,9 +132,9 @@ from the repo's Index / Detail templates and the `StatCard` / `EntityCard` kit
 | Page | `app/(main)/pages/sequences/page.tsx` | 0 |
 | Page children | `app/(main)/pages/sequences/funnel-actions.tsx`, `app/(main)/pages/sequences/entry-point-share.tsx` | 0 |
 | **New** registry | `lib/funnels/funnel-styles.ts` | 0 |
-| Model | `lib/onboarding/sequence-overrides.ts`, `lib/onboarding/beta-sequences.ts` | 0 |
+| Model | `lib/funnels/overrides.ts`, `lib/funnels/definitions.ts` | 0 |
 | Editor | `app/(main)/pages/splash/editor.tsx` | 0 / 2 / 3 |
-| Analytics | `lib/analytics/events.ts`, `app/onboarding/beta/actions.ts`, `app/onboarding/beta/page.tsx` | 1 |
+| Analytics | `lib/analytics/events.ts`, `app/join/(induction)/actions.ts`, `app/join/(induction)/page.tsx` | 1 |
 | Stats | `lib/traits/segments.ts` / a new per-funnel stats query, `lib/analytics/dashboard.ts` (`computeFunnel()`) | 0 / 1 |
 | Demographic assets | `lib/onboarding/personas.ts`, `components/marketing/funnel/*`, `lib/marketing/funnel-config.ts`, `/for/<niche>` pages | 2 |
 | Feature components | new interactive feature-stage components | 3 |

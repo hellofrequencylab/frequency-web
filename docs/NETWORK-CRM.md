@@ -271,7 +271,7 @@ Member promotes an event → shares their attributed code  /q/<slug>  (owner + e
   `network_contacts` write + `crm-sync.ts` upsert-by-email + the consent ladder (ADR-099), the
   `event_guest` acquisition-channel hint already scaffolded in `lib/qr/acquisition.ts`, and the
   AI harvest for the "how we met" note (`connections-ai.ts`).
-- **New:** the **public RSVP capture form** (non-member, no auth, like `/onboarding/beta`'s
+- **New:** the **public RSVP capture form** (non-member, no auth, like `/join`'s
   deferred flow, exempted in `proxy.ts`, noindexed); a per-event **`event_guests`** list (a
   non-member can RSVP to one event without an account); the **triple-write** action carrying the
   owner attribution from the code.

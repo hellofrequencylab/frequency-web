@@ -1,5 +1,5 @@
 // Acquisition resolution + persistence (ADR-095). Server-only: reads the
-// attribution cookies (first-touch + channel hint + referral + beta sequence),
+// attribution cookies (first-touch + channel hint + referral + Funnel slug),
 // folds them into one canonical record, and stamps it on a member or lead.
 //
 // Model: FIRST-TOUCH PRIMARY. The canonical `channel` (and the governed
@@ -37,17 +37,17 @@ export interface AcquisitionRecord {
   signals: {
     /** The referrer's profile id (from the fq_ref cookie). */
     referrer_profile_id?: string
-    /** The beta sequence slug they arrived through (from fq_beta_seq). */
+    /** The Funnel slug they arrived through (from the stored fq_beta_seq cookie). */
     beta_sequence?: string
   }
   /** When this record was resolved + stamped. */
   stamped_at: string
 }
 
-/** Map a beta sequence slug to its acquisition channel (fallback when no fq_attr). */
+/** Map a Funnel slug to its acquisition channel (fallback when no fq_attr). */
 function channelFromSequence(seq: string | undefined): AcquisitionChannel | null {
   if (!seq) return null
-  // The base flow (`beta-default`, every plain /onboarding/beta visit) carries no
+  // The base flow (`beta-default`, every plain /join visit) carries no
   // channel signal of its own — fall through to the other signals / 'direct'.
   if (seq === 'beta-default') return null
   // Legacy slugs: early-adopter was the video on-ramp; the others were person-driven.

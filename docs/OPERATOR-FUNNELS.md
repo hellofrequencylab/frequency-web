@@ -50,8 +50,8 @@ AssuranceBar are shared constants. Config #1 (Coaches) is the reference build wi
 ## 5. The Start-free bridge (the crux)
 
 Today a logged-out visitor cannot create a free Space: `/spaces/new` is auth-gated, and the site CTA
-(`/onboarding/beta`) builds a member profile, not a Space. So the funnel's whole promise is net-new work:
-**minimal signup (deferred-auth pattern from `/onboarding/beta`) → create account → `createSpace` pre-seeded in
+(`/join`) builds a member profile, not a Space. So the funnel's whole promise is net-new work:
+**minimal signup (deferred-auth pattern from `/join`) → create account → `createSpace` pre-seeded in
 the niche's Mode (coaches -> business:packages, studios -> business:membership, hosts -> business:ticketed,
 communities -> business:cohort, nonprofits -> nonprofit:donations) → land in the Space editor**, with
 attribution carried through (`lib/attribution/*`, which already captures UTM + first-touch + referral at signup).

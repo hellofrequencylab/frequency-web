@@ -4,7 +4,7 @@
 // the completion server action, and the deferred finalizer so ONE rule guards every redirect.
 // Client-safe (pure string checks + a type import).
 
-import type { FunnelDestination } from './beta-sequences'
+import type { FunnelDestination } from './definitions'
 
 /**
  * A URL is a SAFE in-app path only when it's a same-origin absolute path we control:

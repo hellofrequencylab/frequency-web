@@ -1,7 +1,7 @@
 // Client-only image downscaler for avatars. A raw phone photo is multiple MB; as a
 // base64 data URL it routinely blows past localStorage's ~5MB quota, which is exactly
 // how the signed-out induction flow silently lost avatars (persistForAuth parks the
-// data URL in localStorage across the magic-link hop, see app/onboarding/beta). It is
+// data URL in localStorage across the magic-link hop, see app/join). It is
 // also wasteful to upload a 4000px image for a 44px avatar.
 //
 // This center-crops to a square and re-encodes as a small JPEG, so the result is tens

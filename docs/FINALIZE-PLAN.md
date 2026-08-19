@@ -491,7 +491,7 @@ the marketing allowlist, which is the separate brand design system rather than t
 surface. `components/feed/post-body.tsx:46` (`text-[0.85em]`, inline `<code>` sizing) carries a
 `// token-ok:` annotation with its reason: the mark sizes relative to whatever text surrounds it,
 which is the one thing a fixed type role cannot do. The two sites this row used to name are gone —
-`onboarding/beta/induction.tsx` and `page-editor/desktop/desktop-editor.tsx` now hold no `text-[…]`
+`join/(induction)/induction.tsx` (né onboarding/beta) and `page-editor/desktop/desktop-editor.tsx` now hold no `text-[…]`
 at all. `text-2xs`/`text-3xs` already exist for anything new.
 
 **Re-measured 2026-08-11 (was "8 hits in 4 files"; before that, "6 hits in 4 files" over an
@@ -505,7 +505,7 @@ header comment saying it deliberately does not use one, and a raw grep books it 
 - The px-only `TEXT_PX = /text-\[\d+px\]/` is now `TEXT_ARBITRARY`, which matches
   `px|rem|em|pt|ch|ex` and is consumed with `matchAll`, so two literals on one line count as two.
   `clamp()` is left out on purpose: fluid display sizing is a different class with its own rules.
-- `app/onboarding/beta/induction.tsx` is no longer a whole-file waiver. It is scoped to
+- `app/join/(induction)/induction.tsx` (né app/onboarding/beta) is no longer a whole-file waiver. It is scoped to
   `kinds: ['hex color']` (as is `app/sign-in/`), so the exemption granted for a 4-hex Google brand
   mark covers hex and nothing else. The allowlist supports both forms, and `isAllowed` documents
   why a reason that names one class must not waive the rest.

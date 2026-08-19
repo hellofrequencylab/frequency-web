@@ -4,14 +4,14 @@
 // ("who are you?") and then carry everywhere: it routes the lead-flow marketing
 // track (lib/onboarding/lead-flows.ts), branches the induction's value reel, and
 // is stamped on the member (meta.persona + a registered tag) so the site and Vera
-// can tailor the experience forever — long after the beta induction is removed.
+// can tailor the experience forever, whatever the sign-up flow becomes.
 //
 // Client-safe (no server imports). The marketing tag for each persona MUST be
 // registered in lib/traits/registry.ts (assignTag throws on unknown keys).
 
 import type { LucideIcon } from 'lucide-react'
 import { User, Wrench, Store, Handshake, Lightbulb } from 'lucide-react'
-import { REEL, type ReelSlide } from '@/lib/onboarding/beta-script'
+import { REEL, type ReelSlide } from '@/lib/onboarding/funnel-script'
 
 export type PersonaId = 'visitor' | 'practitioner' | 'partner' | 'builder' | 'investor'
 

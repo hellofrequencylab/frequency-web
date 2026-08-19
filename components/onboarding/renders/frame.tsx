@@ -1,4 +1,4 @@
-// Shared desktop "website screen" mockup frame for the beta-induction renders
+// Shared desktop "website screen" mockup frame for the Funnels induction renders
 // (ADR-068). TEMPORARY — deleted with the induction at launch. A landscape
 // browser window (chrome + sidebar nav + content area). DAWN tokens only.
 

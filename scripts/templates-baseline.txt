@@ -76,9 +76,9 @@ app/(main)/spaces/[slug]/settings/page.tsx
 app/(main)/spaces/[slug]/settings/services/new/page.tsx
 app/(main)/spaces/directory/page.tsx
 app/(main)/store/page.tsx
-app/onboarding/beta/complete/page.tsx
-app/onboarding/beta/page.tsx
-app/onboarding/beta/preview/page.tsx
+app/join/(induction)/complete/page.tsx
+app/join/(induction)/page.tsx
+app/join/(induction)/preview/page.tsx
 app/onboarding/page.tsx
 app/onboarding/sequence-preview/page.tsx
 app/page.tsx

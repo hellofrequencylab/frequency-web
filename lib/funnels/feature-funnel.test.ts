@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { FUNNEL_STYLES, funnelStyle } from '@/lib/funnels/funnel-styles'
-import { getSequence, BETA_SEQUENCES, sequenceGrant } from '@/lib/onboarding/beta-sequences'
+import { FUNNEL_STYLES, funnelStyle } from '@/lib/funnels/styles'
+import { getFunnel, FUNNELS, funnelGrant } from '@/lib/funnels/definitions'
 import { patternBySlug } from '@/lib/on-air'
 import { getTrait } from '@/lib/traits/registry'
 import { isTrackedEvent } from '@/lib/analytics/events'
@@ -9,7 +9,7 @@ import { isTrackedEvent } from '@/lib/analytics/events'
 // the renderer + signup pipeline depend on, so a refactor can't silently unwire it.
 describe('breathwork feature funnel — the wiring contract', () => {
   it('registers as a code sequence with the feature style + box demo', () => {
-    const seq = getSequence('breathwork')
+    const seq = getFunnel('breathwork')
     expect(seq.slug).toBe('breathwork')
     expect(seq.style).toBe('feature')
     expect(seq.feature?.feature).toBe('breathwork')
@@ -20,21 +20,21 @@ describe('breathwork feature funnel — the wiring contract', () => {
   })
 
   it('lands the finisher in the app (a real round starts a real streak)', () => {
-    const seq = getSequence('breathwork')
+    const seq = getFunnel('breathwork')
     expect(seq.destination).toEqual({ mode: 'direct', url: '/feed?welcome=vera' })
   })
 
   it('its marketing tag is registered, so signup attribution is not skipped', () => {
-    const seq = getSequence('breathwork')
+    const seq = getFunnel('breathwork')
     expect(seq.marketingTag).toBe('beta_breathwork')
     expect(getTrait('beta_breathwork')).toBeTruthy()
   })
 
   it('advertises 25 Zaps and confers them as a real join grant (the invitation payoff)', () => {
-    const seq = getSequence('breathwork')
+    const seq = getFunnel('breathwork')
     expect(seq.feature?.zapsReward).toBe(25)
     // The "join now, get 25 Zaps" promise is honored server-side at completion.
-    expect(sequenceGrant('breathwork')?.zaps).toBe(25)
+    expect(funnelGrant('breathwork')?.zaps).toBe(25)
   })
 
   it('the funnel analytics events it fires are in the taxonomy and client-emittable', () => {
@@ -42,12 +42,12 @@ describe('breathwork feature funnel — the wiring contract', () => {
     expect(isTrackedEvent('onboarding.funnel_captured')).toBe(true)
   })
 
-  it('exposes breathwork under BETA_SEQUENCES', () => {
-    expect(BETA_SEQUENCES.breathwork).toBeDefined()
+  it('exposes breathwork under FUNNELS', () => {
+    expect(FUNNELS.breathwork).toBeDefined()
   })
 })
 
-// The Feature STYLE is live now that its renderer ships (the Splash Funnels page reads this to move it
+// The Feature STYLE is live now that its renderer ships (the Funnels page reads this to move it
 // out of the "planned" placeholders into a real section).
 describe('funnel-styles registry — feature is live', () => {
   it('feature style is marked live', () => {

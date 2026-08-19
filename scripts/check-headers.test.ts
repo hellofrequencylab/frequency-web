@@ -80,7 +80,7 @@ describe('check-headers — reach: the gate follows delegation', () => {
     expect(isRouteModule('app/(main)/events/event-spark.tsx')).toBe(true)
     expect(isRouteModule('components/journey/v2/journey-spark.tsx')).toBe(false)
     expect(isRouteModule('app/(marketing)/pricing/page.tsx')).toBe(false)
-    expect(isRouteModule('app/onboarding/beta/induction.tsx')).toBe(false)
+    expect(isRouteModule('app/join/(induction)/induction.tsx')).toBe(false)
   })
 
   it('reaches an island a page delegates to, and records WHICH route reached it', () => {
