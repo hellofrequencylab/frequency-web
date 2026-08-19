@@ -187,6 +187,48 @@ export const data: Data = {
       },
     },
 
+    // ── The short answers ── RECOVERED verbatim from THE_LAB_FAQ, the five Q&A
+    // the coded body carried on its unreachable legacy branch (deleted with the
+    // retirement in c3228d76c; LIVE-040). The Accordion block emits the FAQPage
+    // node itself from these items, so the structured data exists only because
+    // the questions are on the page (CONTENT-VOICE §8b). ───────────────────────
+    {
+      type: 'Accordion',
+      props: {
+        id: 'tl-faq',
+        eyebrow: 'Questions',
+        title: 'The short answers.',
+        titleAccent: '',
+        items: [
+          {
+            q: 'What is The Lab?',
+            a: `The Lab is a third space the Frequency community is building: not home, not work, a real room to move, warm up in the sauna, cool down in the plunge, and switch off in person. The first one is planned for 2028 in ${FOUNDING_PLACE}. It is not open yet.`,
+          },
+          {
+            q: 'Can I visit The Lab yet?',
+            a: 'Not yet, and nothing at The Lab is bookable. The first Lab is planned to open in 2028. Until then the community meets in rooms we borrow: parks, living rooms, and rented studios. You can join a Circle near you today.',
+          },
+          {
+            q: 'What will be inside The Lab?',
+            a: 'Movement studios, a cedar thermal circuit, a cold plunge pool, a no-alcohol connection bar, and a flexible events floor. One building, tuned room by room.',
+          },
+          {
+            q: 'When will The Lab open?',
+            a: 'The plan on the page is dated: Circles meeting in borrowed rooms now, a site and permits through 2027, and the first Lab opening in 2028. There are no membership rates published because there is nothing to sell yet.',
+          },
+          {
+            q: 'Where will the first Lab be?',
+            a: `The first Lab is planned for ${FOUNDING_PLACE}, where the founding community is already meeting, and it is built to repeat in other cities once the community is there.`,
+          },
+        ],
+        emphasis: { scale: 'default', accent: 'none' },
+        tone: 'surface',
+        width: 'default',
+        align: 'left',
+        layout: L,
+      },
+    },
+
     // ── The triptych cross-link. ───────────────────────────────────────────────
     {
       type: 'PillarNav',

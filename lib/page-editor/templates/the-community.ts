@@ -299,6 +299,49 @@ export const data: Data = {
       },
     },
 
+    // ── The short answers ── RECOVERED verbatim from COMMUNITY_FAQ in
+    // app/(marketing)/the-community/page.tsx, where it sat on the unreachable
+    // legacy branch and so never rendered (LIVE-040). The Accordion block emits
+    // the FAQPage node itself from these items, so the structured data exists
+    // only because the questions are on the page (CONTENT-VOICE §8b).
+    // DELIBERATELY FOUR of the five: the cost answer ("Crew is {floor} a month")
+    // quotes the pay-what-you-want FLOOR as a fixed price, which the CREW_NOTE
+    // contract forbids (lib/pricing/pricing-page.ts: every surface must read as
+    // "from"). Stale copy is reported, not rewritten here; a corrected cost
+    // answer is a pricing-copy decision for the owner. ─────────────────────────
+    {
+      type: 'Accordion',
+      props: {
+        id: 'tc-faq',
+        eyebrow: 'Questions',
+        title: 'The short answers.',
+        titleAccent: '',
+        items: [
+          {
+            q: 'What is a Circle?',
+            a: 'A Circle is a few people near you doing life on purpose: a small standing group built around one Channel, with an always-on virtual space and a standing time to meet in person. It stays small enough that you are missed when you do not show up.',
+          },
+          {
+            q: 'What is a Channel?',
+            a: 'A Channel is what you practice, a topic inside a Pillar like breathwork, strength, or human relating. It connects you to people everywhere who care about the same thing, and it is the thread that leads you to a Circle near you.',
+          },
+          {
+            q: 'What are the four Pillars?',
+            a: 'The four Pillars are Mind, Body, Spirit, and Expression, the parts a whole life moves through. You pick the one calling you right now, and the Channels and Circles inside it are where you land.',
+          },
+          {
+            q: 'How does a Circle grow?',
+            a: 'Circles are built to divide. When one fills up it seeds a new Circle, led by someone ready to step up. A few neighbouring Circles become a neighborhood, neighborhoods become a whole local community, and none of it is appointed from above.',
+          },
+        ],
+        emphasis: { scale: 'default', accent: 'none' },
+        tone: 'surface',
+        width: 'default',
+        align: 'left',
+        layout: L,
+      },
+    },
+
     // ── Close ── the ink CTA. Primary action plus the quiet member path. ─────────
     {
       type: 'CallToAction',
