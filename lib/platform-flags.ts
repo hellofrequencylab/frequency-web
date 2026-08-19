@@ -160,13 +160,24 @@ export const betaHostPromptsFlag = cache(async (): Promise<boolean> => {
   }
 })
 
-// The metered beta clock (platform_settings.beta_ends_at) — the timestamp the in-product countdown
-// banner ("Summer of Frequency ends Sept 1") counts down to. Stored as ISO text in platform_settings
-// (platform_flags.value is boolean-only). DEFAULT UNSET → returns null → no banner. Returns null on a
-// missing/unparseable value or any read error (fail-safe: a hiccup hides the banner, never shows a
-// broken date). Cached per request via getPlatformSetting.
-export const betaEndsAt = cache(async (): Promise<Date | null> => {
-  const raw = (await getPlatformSetting('beta_ends_at', '')).trim()
+// THE ANNOUNCEMENT BANNER (platform_settings.announcement_message + announcement_ends_at).
+//
+// This replaced the metered beta clock. That clock was gated on a DATE alone, and the banner it drove
+// carried a hardcoded sentence about the Founding Business rate; when ADR-1060 closed the window the
+// sentence became false and kept rendering, because a date was still set. The message is the gate now,
+// and the operator writes it, so a stale date is inert and no sentence can outlive what it described.
+//
+// DEFAULT UNSET → empty string → no banner. Fail-safe on any read error: a hiccup hides the banner,
+// never shows a stale or broken one. Cached per request via getPlatformSetting.
+export const announcementMessage = cache(async (): Promise<string> => {
+  return (await getPlatformSetting('announcement_message', '')).trim()
+})
+
+// The OPTIONAL countdown the announcement banner shows beside its message. Decoration only: it never
+// decides whether the banner renders (announcementMessage does) and it grants no access to anything.
+// Null on a missing/unparseable value or any read error.
+export const announcementEndsAt = cache(async (): Promise<Date | null> => {
+  const raw = (await getPlatformSetting('announcement_ends_at', '')).trim()
   if (!raw) return null
   const ms = Date.parse(raw)
   return Number.isNaN(ms) ? null : new Date(ms)

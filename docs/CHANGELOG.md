@@ -67,7 +67,7 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   published at a time.
 - **Frequency is a Community Collective**: we exist to support and create community, together. Two
   things changed in how Spaces work. First, a clear plan ladder, so you pick what fits what you run:
-  **Business** ($29) for your practice, **Collective** ($79, and $49 in the founding beta) to add
+  **Business** ($29) for your practice, **Collective** ($79) to add
   automations, a team, and collaborators, **Non Profit** ($39) for verified 501(c)(3) organizations,
   and **Independent** for your own standalone brand. Second, the promise we care most about: **we
   never take a cut of the bookings and sales you bring in yourself.** We earn only on the business

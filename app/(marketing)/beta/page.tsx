@@ -9,7 +9,7 @@ import { breadcrumbSchema } from '@/lib/jsonld'
 export const metadata: Metadata = {
   title: 'Join the Beta',
   description:
-    'The Frequency community Beta is open. Start a Circle or join as a member. Free today, no card, and membership is pay what you want when it launches.',
+    'The Frequency community Beta is open. Start a Circle or join as a member. Free today, no card, and membership is contribute what you want when it launches.',
   alternates: { canonical: '/beta' },
   openGraph: {
     title: 'Join the Frequency Beta',
@@ -35,7 +35,7 @@ const WHAT_YOU_GET = [
   // to promise one, which is a promise about a number that does not exist. Say the true version: the
   // member picks the amount. (Nor is there a Space price to lock any more: the Opening Beta pricing
   // closed on 2026-08-17, ADR-1060.)
-  { Icon: ShieldCheck, label: 'You set what you pay', body: 'Free for the whole beta, no card. When paid membership launches it is pay what you want, and you can change your amount whenever.' },
+  { Icon: ShieldCheck, label: 'You set what you contribute', body: 'Free for the whole beta, no card. When paid membership launches it is contribute what you want, and you can change your amount whenever.' },
 ]
 
 export default function BetaPage() {
@@ -55,7 +55,7 @@ export default function BetaPage() {
           <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-body-sm text-on-ink/60">
             <span className="font-semibold text-on-ink/80">Free during the beta.</span>
             <span aria-hidden className="text-on-ink/30">·</span>
-            <span>No card · Pay what you want later · Leave anytime</span>
+            <span>No card · Contribute what you want later · Leave anytime</span>
           </p>
         }
       />

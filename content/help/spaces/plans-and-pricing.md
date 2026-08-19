@@ -76,7 +76,7 @@ lowers what Frequency takes on the sales the network brings you, and it gives yo
 those buyers into your own people, where the rate is 0% on every plan.
 
 On your personal account the same shape applies: a free Member sells at 10%, and **Crew** brings that
-to 8%. Crew is pay what you want, from $4.99 a month.
+to 8%. Crew is contribute what you want, from $4.99 a month.
 
 The idea is simple: we earn when the network earns you something, and never on the work you brought
 yourself.

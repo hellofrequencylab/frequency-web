@@ -30,4 +30,4 @@ Either way, everything you earn keeps building: your Gems, your season trophies,
 
 ## During the beta
 
-Everything you earned in the free beta stays yours. Crew is the paid personal tier, and the only one. It is pay what you want: pick any monthly amount from $4.99 up, and every amount buys exactly the same Crew. Pay the suggested amount or more and you wear the Supporter badge. It all lives on the [upgrade page](/upgrade).
+Everything you earned in the free beta stays yours. Crew is the paid personal tier, and the only one. It is contribute what you want: pick any monthly amount from $4.99 up, and every amount buys exactly the same Crew. Pay the suggested amount or more and you wear the Supporter badge. It all lives on the [upgrade page](/upgrade).

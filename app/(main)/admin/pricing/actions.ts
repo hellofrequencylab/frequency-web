@@ -114,7 +114,7 @@ export async function savePwywConfig(
     revalidatePath(PATH)
     return ok()
   } catch (e) {
-    return fail(e instanceof Error ? e.message : 'Could not save the pay-what-you-want config.')
+    return fail(e instanceof Error ? e.message : 'Could not save the contribute-what-you-want config.')
   }
 }
 
@@ -337,7 +337,7 @@ export async function setBetaFlag(key: string, value: boolean): Promise<ActionRe
  *
  *  Accepts a calendar date ('2026-09-01'; stored as-is, read as 00:00 UTC on that day, so the date is
  *  the first ENFORCED day) or an empty string, which stores `{ until: null }` = no grace window, i.e.
- *  the gates follow `billing_live` exactly. Janitor-gated; unlike saveBetaEndsAt this one DOES change
+ *  the gates follow `billing_live` exactly. Janitor-gated; unlike the announcement controls this one DOES change
  *  access, so it rejects an unparseable value rather than storing it. */
 export async function saveBetaGrace(value: string): Promise<ActionResult> {
   const ctx = await requireAdmin('janitor')
@@ -354,15 +354,34 @@ export async function saveBetaGrace(value: string): Promise<ActionResult> {
   }
 }
 
-/** Save the beta countdown date (`beta_ends_at`, platform_settings text). DISPLAY-ONLY: it drives the
- *  countdown banner and nothing else — it grants no access. Accepts an empty string (clears the banner)
- *  or a parseable date (stored as an ISO string). Janitor-gated. */
-export async function saveBetaEndsAt(value: string): Promise<ActionResult> {
+/** Save the ANNOUNCEMENT MESSAGE (`announcement_message`, platform_settings text). This is the whole
+ *  gate on the in-product banner: a non-empty message shows it, an empty one hides it. DISPLAY-ONLY,
+ *  it grants no access to anything.
+ *
+ *  It replaced a date-gated beta countdown whose sentence was hardcoded in the component. When the
+ *  Opening Beta window closed (ADR-1060) the sentence went on rendering, because the only condition
+ *  was that a date existed. Operator-written copy cannot outlive its subject that way. Janitor-gated. */
+export async function saveAnnouncementMessage(value: string): Promise<ActionResult> {
+  const ctx = await requireAdmin('janitor')
+  const raw = value.trim()
+  if (raw.length > 280) return fail('Keep the announcement under 280 characters.')
+  try {
+    await setPlatformSetting('announcement_message', raw, ctx.profileId)
+    revalidatePath(PATH)
+    return ok()
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not save the announcement.')
+  }
+}
+
+/** Save the OPTIONAL countdown date beside the announcement (`announcement_ends_at`). Decoration: it
+ *  never decides whether the banner renders and it grants no access. Blank clears it. Janitor-gated. */
+export async function saveAnnouncementEndsAt(value: string): Promise<ActionResult> {
   const ctx = await requireAdmin('janitor')
   const raw = value.trim()
   if (!raw) {
     try {
-      await setPlatformSetting('beta_ends_at', '', ctx.profileId)
+      await setPlatformSetting('announcement_ends_at', '', ctx.profileId)
       revalidatePath(PATH)
       return ok()
     } catch (e) {
@@ -372,7 +391,7 @@ export async function saveBetaEndsAt(value: string): Promise<ActionResult> {
   const ms = Date.parse(raw)
   if (Number.isNaN(ms)) return fail('Enter a valid date (for example 2026-09-01).')
   try {
-    await setPlatformSetting('beta_ends_at', new Date(ms).toISOString(), ctx.profileId)
+    await setPlatformSetting('announcement_ends_at', new Date(ms).toISOString(), ctx.profileId)
     revalidatePath(PATH)
     return ok()
   } catch (e) {

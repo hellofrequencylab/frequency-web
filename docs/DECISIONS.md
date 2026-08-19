@@ -27123,3 +27123,105 @@ decision instead of three clicks: `pr-compare` is already a required context (th
 guards array, and `check:adoption` is advisory *on purpose* under ADR-970 — so requiring it is a
 decision to overturn, not a task to do. ⚠️ The audit that produced these rows was careful and still
 carried five expired premises forward, which is the honest measure of how quiet this failure is.
+
+## ADR-1083: A banner gated on a clock outlives the thing it was announcing
+
+**Context.** The in-product notice strip was the beta countdown banner. It mounted in
+`app/(main)/layout.tsx` on every signed-in page, its sentence was hardcoded in the component, and its
+only condition was that `platform_settings.beta_ends_at` held a future date:
+
+> **We're in Beta.** The Founding Business rate ends October 31. Lock it in before then and it stays
+> your rate.
+
+That copy was correct when it was written. The owner set it deliberately, in two passes, on
+2026-08-06, and the component's header records the reasoning: it is the *rate* that ends, not the
+product, because a rate ending is a reason to act and free access ending is a reason to leave.
+
+**Eleven days later [ADR-1060](DECISIONS.md) closed the Opening Beta window and
+[ADR-1067](DECISIONS.md) removed Business's founding rate entirely**, leaving exactly one beta rate
+(Collective's $49/$490) which [ADR-1061](DECISIONS.md) made unlisted and granted by hand. Nobody
+cleared the date. On 2026-08-19 `beta_ends_at` still read `2026-10-31T23:59:59Z` in production, so
+the banner was live on every signed-in page, advertising a rate no checkout would honour and naming a
+"Founding Business rate" that the catalog no longer had. It also violated the instruction behind
+ADR-1061 in the plainest possible way: the one surviving beta rate is not to be advertised, and this
+was an advertisement.
+
+**Decision. The gate moves from the date to the message, and the operator writes the message.**
+`platform_settings.announcement_message` is the whole condition: non-empty renders the banner, empty
+renders nothing. `announcement_ends_at` survives as an optional countdown pill and decides nothing.
+A date that has passed drops the pill and keeps the words, because the operator's sentence is the
+announcement and the clock is not.
+
+**Why this shape and not a copy fix.** Rewriting the sentence would have been a one-line change that
+left the mechanism intact, and the mechanism is the defect. A component that knows its own sentence
+outlives whatever the sentence described, and nothing in the system can notice — the date was still
+valid, the render was still correct, every test still passed. There was no gate that could fire,
+because being wrong was not a property of the code. Moving the words out to operator-set config means
+the copy has an author who can retire it, and an empty message is a state the platform can actually
+be in.
+
+**Consequences.**
+
+- The beta banner is gone the moment this ships: no message is set, so nothing renders. The stale
+  `beta_ends_at` value is inert and was not migrated.
+- `components/layout/beta-countdown-banner.tsx` → `components/layout/announcement-banner.tsx`;
+  `betaEndsAt()` → `announcementMessage()` + `announcementEndsAt()`; `saveBetaEndsAt` →
+  `saveAnnouncementMessage` + `saveAnnouncementEndsAt`. The `/admin/pricing` control is now
+  "Announcement banner", a message field plus an optional date.
+- ADR-1030 is preserved exactly: the read still happens in the layout's existing parallel wave and
+  the component stays synchronous and presentational, so the banner is in the first flush and nothing
+  shifts. It matters more now, not less, because operator-written copy has an even less guessable
+  height than a fixed sentence.
+- `components/layout/announcement-banner.test.ts` pins the case that shipped: **a date set with no
+  message renders nothing.** That is the assertion the old design could not express.
+- ⚠️ The countdown control still lives under "Beta controls" on `/admin/pricing`. An announcement is
+  not a pricing setting and it is not a beta control; the section is the wrong home for it and should
+  move when there is a platform-settings console to move it to.
+
+## ADR-1084: Crew is "contribute what you want", because membership is not the business
+
+**Context.** Crew has been pay-what-you-want since [ADR-908](DECISIONS.md): a floor, a suggested
+amount, five preset anchors, and identical access at every amount. The mechanism is not in question
+here. The word is.
+
+**Owner ruling, 2026-08-19:** *"I want membership fully accessible, with people wanting to
+contribute. Businesses fund the core of the memberships."*
+
+That is a statement about where the money comes from, and the copy had been describing the opposite.
+Frequency's revenue is the Space ladder and the network rate ([ADR-914](DECISIONS.md)): Business $29,
+Collective $79, Non Profit $39, Independent $249, plus a rate charged only on a sale the network
+introduced. Member memberships are not the engine and were never meant to be the gate. "Pay what you
+want" frames a Crew amount as the purchase of access, which puts a price on the one thing that is
+supposed to be free.
+
+**Decision. The member-facing name is "contribute what you want".** Everywhere a member or an
+operator reads it: `/upgrade`, the home page and its JSON-LD twin, `/beta`, the page-editor pricing
+templates and block preset, both help-centre articles, and the `/admin/pricing` control. The naming
+canon carries the ruling, so it wins on names from here.
+
+**What does NOT change, and each for its own reason.**
+
+- **The mechanism.** Floor $4.99, suggested $24.99, five presets, and 🔴 **every amount buys identical
+  access.** Renaming the offer must not soften that; the moment a higher amount buys more, it is a
+  tier ladder and the framing is a lie. `PRICING.md` still governs.
+- **The identifiers.** `PWYW_CONFIG_DEFAULT`, `isValidPwywAmount`, and the `catalog.pwyw`
+  `pricing_settings` key keep their names, and the comments that explain them keep the identifier's
+  vocabulary rather than drifting from it. Renaming a persisted key buys grandfather churn and
+  nothing a member can see. That is [ADR-590](DECISIONS.md)'s standing precedent: the internal key
+  stays, only the label is user-facing.
+- **The research.** `PRICING-OPTIONS-STRATEGY.md` discusses pay-what-you-want as a pricing model,
+  citing external sources. Rewording those lines would misquote them. "PWYW" remains the technical
+  term; "contribute what you want" is the name of *this* offer.
+
+**⚠️ The collision, recorded because it will bite otherwise.** `supporter_contributions` already
+exists as a separate one-off payment that buys nothing. So "contribution" now means two things: a
+gift, and the way a membership is priced. The naming canon carries a guard, and no single sentence
+may lean on both senses. Flagged to the owner before the rename, who ruled anyway; this note is the
+follow-through, not a re-litigation.
+
+**⚠️ An open tension this ADR does NOT resolve.** "Fully accessible" and the Crew comparison table in
+`PRICING.md` do not entirely agree. That table gates hosting more than one Circle, publishing more
+than one Journey, charging for an event, and entry points behind Crew, while [ADR-914](DECISIONS.md)
+already reversed the largest of those ("a free Member **can** sell. Tickets, donations, payouts, on
+day one, with no upgrade"). Renaming the price does not reconcile the ladder, and pretending it did
+would be the same shape of error this rename is fixing. Raised with the owner as its own decision.

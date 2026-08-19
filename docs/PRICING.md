@@ -5,7 +5,7 @@
 > Owner-ruled: *"scratch the beta pricing and just charge full price. They can get 2 months free for
 > purchasing the year."* This overrides every beta rate quoted anywhere below this banner.
 >
-> 1. **The charged ladder is the LIST ladder.** Member $0 · Crew pay-what-you-want (floor $4.99) ·
+> 1. **The charged ladder is the LIST ladder.** Member $0 · Crew contribute-what-you-want (floor $4.99) ·
 >    Free Space · **Business $29** · **Collective $79** · Non Profit $39 · Independent $249 ·
 >    Vera AI add-on +$20. **Exactly two figures moved** (Business $19 → $29, Collective $49 → $79,
 >    annuals following at 10x: $190 → $290 and $490 → $790). Independent, Non Profit and the add-on
@@ -71,7 +71,7 @@
 > 5. **The three walls** are selling memberships (Business), campaigns and funnels (Business), and
 >    revenue splits (Collective). Everything else is a meter with a real free allowance.
 
-> ## ✅ Crew is PAY-WHAT-YOU-WANT and the Member/Crew line is "first one free" (ADR-908, 2026-07-29).
+> ## ✅ Crew is CONTRIBUTE-WHAT-YOU-WANT and the Member/Crew line is "first one free" (ADR-908, 2026-07-29; renamed from "pay what you want" by ADR-1084).
 >
 > **Crew is the leadership tier.** Before this, Crew gated three switches (`vault_cash_in`,
 > `gamification_full`, `vera_unlimited`) and two meters, none of which were about leading. It now
@@ -89,7 +89,7 @@
 > | Vault, rewards loop, Vera | earn only · earn only · 10/day | spend · full loop · unlimited |
 > | Network-sourced sale rate | **cannot sell** (RSVPs only, ADR-913) | **8%** |
 >
-> **Crew's price is chosen by the member.** Floor **$4.99**, suggested **$12** (pre-selected), five
+> **Crew's price is chosen by the member.** Floor **$4.99**, suggested **$24.99** (pre-selected), five
 > preset anchors plus an always-visible "another amount", annual at **10x the chosen monthly**.
 > 🔴 **Every amount buys IDENTICAL access** — the moment a higher amount buys more, it is a tier ladder
 > and the framing is a lie. Higher amounts buy the Supporter mark (at or above the suggested amount)

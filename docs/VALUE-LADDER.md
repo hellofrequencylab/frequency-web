@@ -24,7 +24,7 @@ without doing the work by hand.* Every paid rung buys back time and takes a slic
 result is a ladder people climb because their own success pushes them up it, not because we put a
 wall in front of the door.
 
-| | Free Member | Crew · pay what you want | Business Space · $29/mo | Collective · $79/mo | Non Profit · $39/mo |
+| | Free Member | Crew · contribute what you want | Business Space · $29/mo | Collective · $79/mo | Non Profit · $39/mo |
 |---|---|---|---|---|---|
 | **Take rate, network-sourced** | 10% | 8% | 5% | 3% | 0% |
 | **Take rate, your own audience** | **0%** | **0%** | **0%** | **0%** | **0%** |
@@ -153,7 +153,7 @@ Legend: ✅ full · ◐ metered/limited · ⛔ not on this tier
 **Crew in one sentence:** *the rate goes down, the caps come off, and you get the tools that turn a
 crowd into a list.*
 
-#### Crew is PAY WHAT YOU WANT (owner decision, 2026-07-30)
+#### Crew is CONTRIBUTE WHAT YOU WANT (owner decision, 2026-07-30; renamed from "pay what you want" by ADR-1084)
 
 Crew has no price. The operator sets a **floor** ($4.99/mo), a **suggested** amount ($24.99/mo), and a
 row of presets; the member picks any monthly amount from the floor up, and **every amount buys
@@ -162,7 +162,7 @@ amount earns the **Supporter badge** (`profiles.is_supporter`) — recognition o
 
 | Concern | Where it lives |
 |---|---|
-| The one operator control | `pricing_settings.catalog.pwyw` → `/admin/pricing` → "Member pricing (pay what you want)" |
+| The one operator control | `pricing_settings.catalog.pwyw` → `/admin/pricing` → "Member pricing (contribute what you want)" |
 | The floor policy seam | `isValidPwywAmount()` (`lib/pricing/catalog-config.ts`), enforced server-side in `startMembershipCheckout` |
 | The badge line | `earnsSupporterMark()`, same module |
 | The charge | `createMembershipCheckout({ amountCents })` mints an inline recurring price at exactly that amount, under `STRIPE_PRODUCT_CREW` |
