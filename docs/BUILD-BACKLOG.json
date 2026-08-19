@@ -118,7 +118,8 @@
         "kind": "cmd",
         "cmd": "node -e \"const v=require('./vercel.json'); if ((v.crons||[]).length<=20) process.exit(0); process.exit(1)\"",
         "note": "Passes when the cron count drops to what the free tier covers. If the account is upgraded instead, close this row manually and record the plan in evidence."
-      }
+      },
+      "notes": "OWNER 2026-08-19: \"Leave this on the backlog for now.\""
     },
     {
       "id": "OWN-006",
@@ -243,18 +244,18 @@
     {
       "id": "OWN-013",
       "title": "Submit sitemap.xml to Google Search Console and Bing",
-      "status": "open",
+      "status": "done",
       "lane": "owner",
       "size": "XS",
       "source": {
         "file": "docs/FINALIZE-PLAN.md",
         "ref": "§7c"
       },
-      "detail": "app/sitemap.ts is live and advertised in robots.txt. Nothing has been submitted, so crawl coverage of the programmatic hubs depends on discovery alone.",
+      "detail": "app/sitemap.ts is live and advertised in robots.txt. Nothing has been submitted, so crawl coverage of the programmatic hubs depends on discovery alone.\n\n── CLOSED 2026-08-19: owner confirmed \"Sitemaps are submitted to google and bing.\"",
       "verify": {
         "kind": "manual",
-        "evidence": "External to the repo (Search Console / Bing Webmaster).",
-        "checked": "2026-08-12"
+        "evidence": "Owner confirmation 2026-08-19. Index coverage of the programmatic hubs is the consequence to spot-check in Search Console in ~2 weeks.",
+        "checked": "2026-08-19"
       }
     },
     {
@@ -277,52 +278,52 @@
     {
       "id": "OWN-015",
       "title": "Approve or reject Circles C3 (remove Space Communities, replace with Circles)",
-      "status": "open",
+      "status": "done",
       "lane": "owner",
       "size": "M",
       "source": {
         "file": "docs/CIRCLES-C3-PLAN.md",
         "ref": "Status"
       },
-      "detail": "Proposed, nothing built, zero live data behind the feature. Two risks the decision must absorb: the SpaceCommunity BLOCK is misnamed and actually renders Circles, and 18 of 20 live Spaces have it in a saved layout, so a careless rename silently drops it (unknown block types are skipped). And nothing replaces reaching everyone who FOLLOWS a Space — a Circle does not cover that, and the plan says ship that gap as its own decision rather than pretend otherwise.",
+      "detail": "Proposed, nothing built, zero live data behind the feature. Two risks the decision must absorb: the SpaceCommunity BLOCK is misnamed and actually renders Circles, and 18 of 20 live Spaces have it in a saved layout, so a careless rename silently drops it (unknown block types are skipped). And nothing replaces reaching everyone who FOLLOWS a Space — a Circle does not cover that, and the plan says ship that gap as its own decision rather than pretend otherwise.\n\n── DECIDED 2026-08-19: owner verbatim \"Remove Communities, replace with circles.\" Approval recorded; the build is LIVE-059.",
       "verify": {
         "kind": "manual",
-        "evidence": "Re-measured 2026-08-19 against production, read-only. `select count(*) filter (where preferences::text like '%SpaceCommunity%') from public.spaces` -> 18 of 20, so the rename-risk premise is exact. `...like '%SpaceUpdates%'` -> 0 of 20 and `select count(*) from public.space_updates` -> 0 rows, so the zero-live-data premise is exact too. docs/CIRCLES-C3-PLAN.md:7 still reads \"proposed, awaiting owner approval. Nothing here is built.\" Closes on an approve or reject.",
+        "evidence": "Owner decision 2026-08-19.",
         "checked": "2026-08-19"
       }
     },
     {
       "id": "OWN-016",
       "title": "Schedule or keep parked: App Platform A1-A5 and White Label E10",
-      "status": "open",
+      "status": "done",
       "lane": "owner",
       "size": "—",
       "source": {
         "file": "docs/BUILD-LIST.md",
         "ref": "App Platform + white-label, resume condition"
       },
-      "detail": "The TECHNICAL resume condition is met and has been for a while: tenancy walls up, 26 tables policied, pgTAP four-seat cross-tenant matrix passing in db-tests CI. Only the scheduling call remains. Do not re-list 'run the pgTAP suite' as work — it runs and it is green.",
+      "detail": "The TECHNICAL resume condition is met and has been for a while: tenancy walls up, 26 tables policied, pgTAP four-seat cross-tenant matrix passing in db-tests CI. Only the scheduling call remains. Do not re-list 'run the pgTAP suite' as work — it runs and it is green.\n\n── DECIDED 2026-08-19: owner said \"Schedule.\" PROG-A1, PROG-A3, PROG-A4 and PROG-E10 move parked → open. A2 was absorbed by E0 (per OWN-031's own text) and A5 closed with ADR-1087.",
       "verify": {
         "kind": "manual",
-        "evidence": "Re-measured 2026-08-19. The db-tests workflow run 32265296768 completed at 2026-08-19T14:39Z with conclusion success, the most recent of 213 runs, so the pgTAP cross-tenant matrix is green today and the technical resume condition is still met. Only the scheduling call remains. Do not re-list the pgTAP suite as work.",
+        "evidence": "Owner decision 2026-08-19.",
         "checked": "2026-08-19"
       }
     },
     {
       "id": "OWN-017",
       "title": "Resume or keep parked: the quarterly moderated research round",
-      "status": "open",
+      "status": "done",
       "lane": "owner",
       "size": "—",
       "source": {
         "file": "docs/FINALIZE-PLAN.md",
         "ref": "§7c parked"
       },
-      "detail": "Five members, one hour each, quarterly, on the Vercel preview of a design-sync branch. About two hours per quarter. Lift 1 sits at literal zero — docs/research/findings/ holds only its README and no round has ever run. Scored 40/100 and named the single largest distance from world-class. It is the ONLY item on any list that no amount of engineering can close.\n\n── RE-MEASURED 2026-08-19 in a premise sweep (ADR-1082), and it HOLDS. docs/research/findings/ contains only README.md, so Lift 1 is still at literal zero.",
+      "detail": "Five members, one hour each, quarterly, on the Vercel preview of a design-sync branch. About two hours per quarter. Lift 1 sits at literal zero — docs/research/findings/ holds only its README and no round has ever run. Scored 40/100 and named the single largest distance from world-class. It is the ONLY item on any list that no amount of engineering can close.\n\n── RE-MEASURED 2026-08-19 in a premise sweep (ADR-1082), and it HOLDS. docs/research/findings/ contains only README.md, so Lift 1 is still at literal zero.\n\n── DECIDED 2026-08-19: owner said \"Schedule\" (resume). The next round is LIVE-060.",
       "verify": {
-        "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const f=fs.readdirSync('docs/research/findings').filter(n=>n!=='README.md');process.exit(f.length>0?0:1)\"",
-        "note": "Passes the moment a real findings file lands."
+        "kind": "manual",
+        "evidence": "Owner decision 2026-08-19.",
+        "checked": "2026-08-19"
       }
     },
     {
@@ -355,8 +356,8 @@
       "detail": "The only marketing route without a DAWN reference frame, and it blocks 5b's template regeneration for that page. Everything else in the conversion order can proceed without it.",
       "verify": {
         "kind": "manual",
-        "evidence": "Flagged in the reverse-sync; no reference frame received.",
-        "checked": "2026-08-12"
+        "evidence": "ROUND PREPARED 2026-08-19: the ask is written as design_handoff/HANDOFF-TO-DAWN-2026-08-19.md section 11 — page anatomy (PhotoHero, four Pillars, ZigZag beats, product tour, FAQ, /join CTA), the naming/voice guardrails, the mobile-reference-frame requirement per SYNC.md standing rule 2, and the LCP constraint (every measured marketing sibling fails LCP, so the frame assumes one above-fold image). Gap re-verified: ui_kits/marketing/ holds frames for every other slug in the 5b order (about, lab, quest, circles, index, pricing) and none for the-community. STILL OPEN because the send and the answer are owner-side: the owner delivers the round to DAWN and DAWN returns the frame. Closes when the reference frame lands in design_handoff/dawn/ui_kits/marketing/.",
+        "checked": "2026-08-19"
       }
     },
     {
@@ -369,10 +370,10 @@
         "file": "docs/MASTER-TODO.md",
         "ref": "Owner actions"
       },
-      "detail": "🔴 RE-MEASURED 2026-08-19 AND THE ROW WAS WRONG ABOUT HALF ITS OWN CONTENTS. Three of the six items were already satisfied, and the row had been telling the owner to go and do them. The previous evidence line said the rest are \"Vercel/Resend dashboard state, not readable here\", which is the exact shape ADR-1082 names: a blocker phrased as \"cannot be checked\" is a claim with an expiry date. The SECRET is unreadable from an agent container. Its CONSEQUENCE is sitting in the database.\n\nALREADY DONE, do not spend anything on these:\n  • Supabase -> Pro. The organization (hkveprznovcteywuczcv) returns plan \"pro\". Capacity and     backups are on the paid tier already.\n  • RESEND_WEBHOOK_SECRET. Email metrics are NOT dark. public.email_events over the trailing 30     days holds opened=127, delivered=81 and clicked=3. Those three event types cannot be produced     by our own send path -- nothing server-side knows an email was opened -- so they can only have     arrived through the Resend webhook, which means the secret is set AND the signature check is     passing. Most recent delivered event 2026-08-19T13:04:20Z, i.e. the same day this was measured.\n  • VAPID, the PUBLIC half. public.push_subscriptions holds 23 rows, 8 of them created in the last     30 days, most recent 2026-08-10. A browser cannot complete pushManager.subscribe() without     NEXT_PUBLIC_VAPID_PUBLIC_KEY being served to it, so that key is live and members have been     granting permission for two months.\n\nSTILL GENUINELY OPEN:\n  • VAPID_PRIVATE_KEY, the SEND half. Subscriptions prove the public key, not the private one.     lib/push.ts:22 warns '[push] VAPID keys not set - push sending disabled.' and returns false     when either key is missing, so the cheap settling move is a runtime-log search for that exact     string rather than another dashboard trip. Note the queue is quiet (1 notification_queue row in     24h), so absence of the warning in a short retention window is not proof either way -- it needs     a window that contains an actual push attempt.\n  • Verify frequencylocal.com in Resend, plus SPF/DKIM/DMARC subdomain isolation. Blocking for     volume. The delivered events above prove sending works TODAY at current volume; they say     nothing about domain reputation at scale, which is what this item is for.\n  • Secret-scanning push protection.\n  • Dismiss the 3 CodeQL false positives.\n\nCRON_SECRET and ANTHROPIC_API_KEY remain satisfied by consequence: ai_usage holds 50 rows in the trailing 7 days, and the crons are firing.",
+      "detail": "🔴 RE-MEASURED 2026-08-19 AND THE ROW WAS WRONG ABOUT HALF ITS OWN CONTENTS. Three of the six items were already satisfied, and the row had been telling the owner to go and do them. The previous evidence line said the rest are \"Vercel/Resend dashboard state, not readable here\", which is the exact shape ADR-1082 names: a blocker phrased as \"cannot be checked\" is a claim with an expiry date. The SECRET is unreadable from an agent container. Its CONSEQUENCE is sitting in the database.\n\nALREADY DONE, do not spend anything on these:\n  • Supabase -> Pro. The organization (hkveprznovcteywuczcv) returns plan \"pro\". Capacity and     backups are on the paid tier already.\n  • RESEND_WEBHOOK_SECRET. Email metrics are NOT dark. public.email_events over the trailing 30     days holds opened=127, delivered=81 and clicked=3. Those three event types cannot be produced     by our own send path -- nothing server-side knows an email was opened -- so they can only have     arrived through the Resend webhook, which means the secret is set AND the signature check is     passing. Most recent delivered event 2026-08-19T13:04:20Z, i.e. the same day this was measured.\n  • VAPID, the PUBLIC half. public.push_subscriptions holds 23 rows, 8 of them created in the last     30 days, most recent 2026-08-10. A browser cannot complete pushManager.subscribe() without     NEXT_PUBLIC_VAPID_PUBLIC_KEY being served to it, so that key is live and members have been     granting permission for two months.\n\nSTILL GENUINELY OPEN:\n  • VAPID_PRIVATE_KEY, the SEND half. Subscriptions prove the public key, not the private one.     lib/push.ts:22 warns '[push] VAPID keys not set - push sending disabled.' and returns false     when either key is missing, so the cheap settling move is a runtime-log search for that exact     string rather than another dashboard trip. Note the queue is quiet (1 notification_queue row in     24h), so absence of the warning in a short retention window is not proof either way -- it needs     a window that contains an actual push attempt.\n  • Verify frequencylocal.com in Resend, plus SPF/DKIM/DMARC subdomain isolation. Blocking for     volume. The delivered events above prove sending works TODAY at current volume; they say     nothing about domain reputation at scale, which is what this item is for.\n  • Secret-scanning push protection.\n  • Dismiss the 3 CodeQL false positives.\n\nCRON_SECRET and ANTHROPIC_API_KEY remain satisfied by consequence: ai_usage holds 50 rows in the trailing 7 days, and the crons are firing.\n\n── RE-EVIDENCED 2026-08-19 from the owner's Advanced Security screenshot: CodeQL advanced setup ACTIVE (scan 36 min prior), Copilot Autofix ON, check-run thresholds set (High+/errors-only). Still DISABLED, each one Enable click on that page: Secret Protection (the push-protection ask), Private vulnerability reporting, Dependency graph, Dependabot alerts + security updates. \"Security and quality\" badge shows 44 open findings to triage once alerts API access or an owner paste arrives.",
       "verify": {
         "kind": "manual",
-        "evidence": "Measured against production 2026-08-19, by consequence rather than by reading any secret. get_organization(hkveprznovcteywuczcv) -> plan \"pro\". `select event_type, count(*), max(created_at) from email_events where created_at > now() - interval '30 days' group by 1` -> opened 127 / sent 81 / delivered 81 / received 3 / clicked 3, last delivered 2026-08-19T13:04:20Z; opened, delivered and clicked are webhook-only types. `select count(*), min(created_at), max(created_at), count(*) filter (where created_at > now() - interval '30 days') from push_subscriptions` -> 23 total, first 2026-06-09, last 2026-08-10, 8 in 30 days. `select count(*) from ai_usage where created_at > now() - interval '7 days'` -> 50. Closes when the four remaining items are done: VAPID_PRIVATE_KEY confirmed (runtime-log search for the lib/push.ts:22 warning during a window containing a real push attempt), Resend domain verification with SPF/DKIM/DMARC, secret-scanning push protection, and the 3 CodeQL dismissals.",
+        "evidence": "Owner screenshot 2026-08-19; remaining items are owner clicks on Settings → Advanced Security.",
         "checked": "2026-08-19"
       }
     },
@@ -847,7 +848,7 @@
       "detail": "CORRECTED 2026-08-19: this row listed FOUR tokens and one of them must not be sent. --color-focus-ring, --color-text-on-broadcast and --color-text-subtle are genuinely correct in production and wrong in DAWN's artifact, and SYNC.md requires they go back on the next round or the next handoff silently reintroduces the AA failures they fixed. --color-text-on-primary is NOT one of them and has not been since 2026-08-06. Production is #FFFFFF and DAWN is #FFFFFF; verified in both files 2026-08-19, and lib/theme/dawn-divergence.test.ts derives the divergence set from both stylesheets on every pnpm test and agrees. What happened was a SPLIT, not a revert: while on-primary was ink every rank core inherited an ink glyph and gold, the lightest core by design, fell to 2.46:1. The glyph moved to its own token (--color-text-on-rank) and the button label went back to white. SENDING THE OLD ROW WOULD ASK DAWN TO MAKE ON-PRIMARY INK, reintroducing, from the very sheet meant to prevent regressions, the exact failure the split fixed. design_handoff/PROD-AHEAD.md section 4 is the authority and says so under the heading \"Do not send\"; that sheet is machine-checked and this row was not, which is why the row drifted and the sheet did not. PROD-AHEAD section 5 also lists twelve additions DAWN has no row for, including --color-text-on-rank itself, which the outbound handoff should carry as new rows rather than corrections.",
       "verify": {
         "kind": "manual",
-        "evidence": "Closes when the next outbound DAWN handoff carries the THREE real prod-ahead tokens. design_handoff/PROD-AHEAD.md is the sheet the handoff copies and is derived by lib/theme/dawn-divergence.test.ts on every pnpm test (5 tests, passing 2026-08-19), so the token set is machine-checked even though the act of sending is not. --color-text-on-primary confirmed identical (#FFFFFF) in app/globals.css and design_handoff/dawn/tokens/colors.css on 2026-08-19.",
+        "evidence": "ROUND PREPARED 2026-08-19: design_handoff/HANDOFF-TO-DAWN-2026-08-19.md carries the THREE real prod-ahead tokens (--color-focus-ring, --color-text-on-broadcast, --color-text-subtle) in its section 2, the DO-NOT-SEND note for --color-text-on-primary in section 3 (including the one live instance of the stale value left in DAWN's own bundle: skins.css midnight dark still holds on-primary #1A1206), and the twelve additions including --color-text-on-rank in section 4. Token set machine-checked: lib/theme/dawn-divergence.test.ts 5 tests green 2026-08-19 and PROD-AHEAD.md agrees. STILL OPEN because the SEND is owner-only: DAWN is an external Claude Design project and the handoff travels by the owner giving it that doc (design_handoff/README.md's copy-the-bundle loop runs owner-mediated in both directions). Closes when DAWN has the round, i.e. when a CHANGES.md reply references the 2026-08-19 handoff or the owner confirms delivery.",
         "checked": "2026-08-19"
       }
     },
@@ -1041,7 +1042,7 @@
     {
       "id": "PROG-E10",
       "title": "Editor E10: Sites — absorbs White Label W1-W5",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
@@ -1053,12 +1054,13 @@
         "kind": "manual",
         "evidence": "Program phase; owner-gated (OWN-016).",
         "checked": "2026-08-17"
-      }
+      },
+      "notes": "Unparked 2026-08-19 by owner decision (OWN-016: \"Schedule\")."
     },
     {
       "id": "PROG-A1",
       "title": "App Platform A1: feature modules with enforced boundaries",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "M",
       "source": {
@@ -1070,12 +1072,13 @@
         "kind": "manual",
         "evidence": "Owner-gated (OWN-016).",
         "checked": "2026-08-17"
-      }
+      },
+      "notes": "Unparked 2026-08-19 by owner decision (OWN-016: \"Schedule\")."
     },
     {
       "id": "PROG-A3",
       "title": "App Platform A3: enablement inside RLS",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "M",
       "source": {
@@ -1087,12 +1090,13 @@
         "kind": "manual",
         "evidence": "Owner-gated.",
         "checked": "2026-08-17"
-      }
+      },
+      "notes": "Unparked 2026-08-19 by owner decision (OWN-016: \"Schedule\")."
     },
     {
       "id": "PROG-A4",
       "title": "App Platform A4: flagship packaged apps",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
@@ -1104,7 +1108,8 @@
         "kind": "manual",
         "evidence": "Owner-gated.",
         "checked": "2026-08-17"
-      }
+      },
+      "notes": "Unparked 2026-08-19 by owner decision (OWN-016: \"Schedule\")."
     },
     {
       "id": "PROG-A5",
@@ -1704,17 +1709,17 @@
     {
       "id": "OWN-021",
       "title": "Create the stable Crew product and set STRIPE_PRODUCT_CREW, or every subscriber mints their own",
-      "status": "open",
+      "status": "done",
       "lane": "owner",
       "size": "XS",
       "source": {
         "file": "docs/PRICING.md",
         "ref": "Crew PWYW, ADR at DECISIONS.md:16249"
       },
-      "detail": "PREMISE HALF-EXPIRED 2026-08-19, and the expired half is the one the row led with. The row said 'the live account has ZERO products, so the variable cannot be pointing at a valid one'. IT NOW HAS EIGHT. The owner created the Crew product by hand on 2026-08-19 exactly as this row asks: prod_V6E1twgOqi3er7, 'Frequency Crew', active, livemode, described as 'Contribute what you want membership. Prices are set per member at checkout.' So the blocking half is done and measured.\n\nWHAT IS ACTUALLY LEFT is the environment variable, and it is smaller than the row reads. createMembershipCheckout parents each ad-hoc pay-what-you-want price to process.env.STRIPE_PRODUCT_CREW so they roll up under ONE product instead of littering the dashboard with a product per subscriber, and falls back to inline product_data when unset. The owner reported setting it to prod_V6E1twgOqi3er7 on 2026-08-19. That is TESTIMONY, not a measurement: Vercel environment variables are not readable from here, and the consequence that would prove it — a Crew subscription whose price parents to prod_V6E1twgOqi3er7 rather than to a freshly minted product — cannot be observed because there are no Crew subscribers yet. Recorded as reported rather than as verified, per the rule that a row states how it will be proven.\n\nONE THING TO KNOW ABOUT THE PRODUCT AS CREATED, and it is not a defect: it carries a default_price (price_1U61ZaPhyalyRPP1deD5C6sz). The plan called for a product with no prices, because Crew's amount is chosen per checkout. The checkout path never reads default_price — it mints its own inline recurring price and parents it to the product — so the attached price is inert rather than wrong. Leave it; archiving a price is irreversible and this one costs nothing.",
+      "detail": "PREMISE HALF-EXPIRED 2026-08-19, and the expired half is the one the row led with. The row said 'the live account has ZERO products, so the variable cannot be pointing at a valid one'. IT NOW HAS EIGHT. The owner created the Crew product by hand on 2026-08-19 exactly as this row asks: prod_V6E1twgOqi3er7, 'Frequency Crew', active, livemode, described as 'Contribute what you want membership. Prices are set per member at checkout.' So the blocking half is done and measured.\n\nWHAT IS ACTUALLY LEFT is the environment variable, and it is smaller than the row reads. createMembershipCheckout parents each ad-hoc pay-what-you-want price to process.env.STRIPE_PRODUCT_CREW so they roll up under ONE product instead of littering the dashboard with a product per subscriber, and falls back to inline product_data when unset. The owner reported setting it to prod_V6E1twgOqi3er7 on 2026-08-19. That is TESTIMONY, not a measurement: Vercel environment variables are not readable from here, and the consequence that would prove it — a Crew subscription whose price parents to prod_V6E1twgOqi3er7 rather than to a freshly minted product — cannot be observed because there are no Crew subscribers yet. Recorded as reported rather than as verified, per the rule that a row states how it will be proven.\n\nONE THING TO KNOW ABOUT THE PRODUCT AS CREATED, and it is not a defect: it carries a default_price (price_1U61ZaPhyalyRPP1deD5C6sz). The plan called for a product with no prices, because Crew's amount is chosen per checkout. The checkout path never reads default_price — it mints its own inline recurring price and parents it to the product — so the attached price is inert rather than wrong. Leave it; archiving a price is irreversible and this one costs nothing.\n\n── CLOSED 2026-08-19: owner confirmed \"Complete\" (stable Crew product created, STRIPE_PRODUCT_CREW set). Consequence to watch: the next Crew subscription reuses the stable product instead of minting one.",
       "verify": {
         "kind": "manual",
-        "evidence": "Re-measured 2026-08-19. Stripe livemode `GET /v1/subscriptions?status=all` on acct_1TdurHPhyalyRPP1 returns zero subscriptions, so there is still nothing whose price parents to a product. STRIPE_PRODUCT_CREW therefore remains owner-reported rather than measured, exactly as this row states. The row waits on traffic, not on work.",
+        "evidence": "Owner confirmation 2026-08-19.",
         "checked": "2026-08-19"
       }
     },
@@ -2092,18 +2097,17 @@
     {
       "id": "OWN-031",
       "title": "app_instances: keep it dark until E0, or retire it until E0 re-creates it",
-      "status": "open",
+      "status": "done",
       "lane": "owner",
       "size": "XS",
       "source": {
         "file": "supabase/migrations/20260924000100_app_instances.sql",
         "ref": "TASK-INVENTORY-2026-08-17 §6a / ADR-975"
       },
-      "detail": "The table shipped ahead of its code: 0 rows, tenancy policies applied, and exactly one non-generated reference in the tree (components/admin/library/apps-lane.tsx). E0 absorbs A2 and builds its writers, so the decision is cheap and binary: leave the empty policied table in place as E0's landing pad (costs nothing, risks a second library_usages — a table someone assumes is live because it exists), or drop it and let E0 re-create it from its migration. Either answer closes this row; what must not continue is the unowned middle.\n\n── RE-MEASURED 2026-08-19 in a premise sweep (ADR-1082). THERE IS NO READER AT ALL, NOT \"EXACTLY ONE\". The row credits one non-generated reference, components/admin/library/apps-lane.tsx. That reference is a JSX COMMENT, not a read: \"{/* TODO(LP3/LP5): wire library_usages ... The where-referenced backbone lands with app_instances. */}\". A tree-wide `grep \"from('app_instances')\"` returns nothing, and the table holds 0 rows.\n\nSo the \"drop it and let E0 re-create it\" option is cheaper than this row prices it: deleting the table breaks no code path, because no code path touches it. The decision is unchanged and still the owner's; only the cost of one side of it moved.",
+      "detail": "The table shipped ahead of its code: 0 rows, tenancy policies applied, and exactly one non-generated reference in the tree (components/admin/library/apps-lane.tsx). E0 absorbs A2 and builds its writers, so the decision is cheap and binary: leave the empty policied table in place as E0's landing pad (costs nothing, risks a second library_usages — a table someone assumes is live because it exists), or drop it and let E0 re-create it from its migration. Either answer closes this row; what must not continue is the unowned middle.\n\n── RE-MEASURED 2026-08-19 in a premise sweep (ADR-1082). THERE IS NO READER AT ALL, NOT \"EXACTLY ONE\". The row credits one non-generated reference, components/admin/library/apps-lane.tsx. That reference is a JSX COMMENT, not a read: \"{/* TODO(LP3/LP5): wire library_usages ... The where-referenced backbone lands with app_instances. */}\". A tree-wide `grep \"from('app_instances')\"` returns nothing, and the table holds 0 rows.\n\nSo the \"drop it and let E0 re-create it\" option is cheaper than this row prices it: deleting the table breaks no code path, because no code path touches it. The decision is unchanged and still the owner's; only the cost of one side of it moved.\n\n── DECIDED 2026-08-19: owner said \"Do best practice,\" which the row's own text defines: a policied empty table nothing reads is a second library_usages waiting to be trusted, so it is DROPPED and E0 re-creates it with its writers. Migration 20270316000000 in this change; 0 rows, 0 inbound FKs at drop time, verified live.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Re-measured 2026-08-19. `select count(*) from public.app_instances` -> 0. `grep -rn \"from('app_instances')\" --include=*.ts --include=*.tsx` over the tree -> no matches. The single reference in components/admin/library/apps-lane.tsx:260-261 is a JSX comment. Closes when the owner keeps it as E0's landing pad or drops it; either answer closes the row.",
-        "checked": "2026-08-19"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');if(!fs.existsSync('supabase/migrations/20270316000000_drop_app_instances_until_e0.sql')){console.error('the app_instances drop migration is missing');process.exit(1)}if(/^app_instances /m.test(fs.readFileSync('scripts/table-grants.txt','utf8'))){console.error('app_instances still in the grants mirror after the drop');process.exit(1)}process.exit(0)\""
       }
     },
     {
@@ -2356,6 +2360,41 @@
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs'),cp=require('child_process');const A='lib/outbound/approvals.ts';if(!fs.existsSync(A))process.exit(79);const s=fs.readFileSync(A,'utf8');if(!/export async function approve\\\\b/.test(s))process.exit(0);const r=cp.spawnSync('grep',['-rlE',\\\"from '@/lib/outbound/approvals'\\\",'app','components','lib'],{encoding:'utf8'});const users=(r.stdout||'').split('\\\\n').filter(Boolean).filter(f=>!/^lib\\\\/outbound\\\\//.test(f));if(users.length>1)process.exit(0);console.error('the approval transitions still have no surface: only '+(users.join(', ')||'nothing')+' imports the spine');process.exit(1)\""
+      },
+      "notes": "OWNER 2026-08-19: build the small approve surface on CRM Marketing (option 1). Build in progress."
+    },
+    {
+      "id": "LIVE-059",
+      "title": "Circles C3: remove Space Communities, replace with Circles",
+      "status": "open",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "docs/BUILD-LIST.md",
+        "ref": "C3 (approved by owner 2026-08-19, OWN-015)"
+      },
+      "detail": "Owner-approved 2026-08-19. Plan the migration path before touching anything: what Space Communities data exists, what a Circle equivalent is for each piece, and the member-facing copy. One design pass, then implementation in PR-sized slices.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Not started. Closes when Space Communities is gone and Circles serve its members.",
+        "checked": "2026-08-19"
+      }
+    },
+    {
+      "id": "LIVE-060",
+      "title": "Run the next quarterly moderated research round",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/research/PROTOCOL.md",
+        "ref": "resumed by owner 2026-08-19 (OWN-017)"
+      },
+      "detail": "Owner resumed the program 2026-08-19. Follow docs/research/PROTOCOL.md: recruit, moderate, synthesize; findings become backlog rows, never a new planning doc.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Not started.",
+        "checked": "2026-08-19"
       }
     }
   ]
