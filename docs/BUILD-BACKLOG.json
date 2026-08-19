@@ -226,18 +226,18 @@
     {
       "id": "OWN-012",
       "title": "Flip practices public so the crawlable practice surfaces stop rendering empty",
-      "status": "open",
+      "status": "done",
       "lane": "owner",
       "size": "XS",
       "source": {
         "file": "docs/OPEN-THREADS.md",
         "ref": "C5"
       },
-      "detail": "/discover/practices, the four per-Pillar landing pages and the slug detail pages are all built, in the sitemap and crawlable — and render empty, because no practice has is_public set. One toggle on /admin/content. Highest SEO return per second of effort on the whole list.",
+      "detail": "DONE, and it was done before anyone noticed — the row sat open on the OWNER lane for weeks after the toggle it asks for had already been flipped. RE-MEASURED against production 2026-08-19: practices holds 20 rows, all 20 with is_public true. /discover/practices renders 20 cards, the four per-Pillar landing pages and the slug detail pages are no longer empty, and the sitemap advertises them. The original text stands as written: '/discover/practices, the four per-Pillar landing pages and the slug detail pages are all built, in the sitemap and crawlable — and render empty, because no practice has is_public set. One toggle on /admin/content. Highest SEO return per second of effort on the whole list.' That toggle happened; the record did not follow it.\n\nTHE ROW SAID SO ITSELF and was believed anyway. Its evidence read 'Not re-measured in this pass; last recorded state was 0 public practices in prod', checked 2026-06-25 — a stated non-measurement carried as a status for eight weeks. It was actually re-measured on 2026-08-18 while working LIVE-052, and the finding was written into LIVE-052's detail instead of back into this row, so the owner lane kept showing an action they had already taken. Fixed on 2026-08-19 with a fresh read rather than by copying the earlier one.\n\nTHE SEO GOAL BEHIND THIS ROW WAS STILL NOT REACHED when the toggle landed, for an unrelated reason, and that is LIVE-052 (done): practices_ranked strips slug, so all 20 crawlable URLs were uuids while each page's canonical claimed the slug. Two of the 20 practices still carry no slug at all and legitimately resolve by uuid — the fallback is deliberate, since a practice without a slug must stay reachable.",
       "verify": {
         "kind": "manual",
-        "evidence": "Not re-measured in this pass; last recorded state was 0 public practices in prod.",
-        "checked": "2026-06-25"
+        "evidence": "Read-only query against the production project 2026-08-19: select count(*), count(*) filter (where is_public), count(*) filter (where is_public and slug is not null and slug <> '') from practices -> total 20, public 20, public_with_slug 18. Re-open if a later read shows public < total.",
+        "checked": "2026-08-19"
       }
     },
     {
@@ -2029,17 +2029,17 @@
     {
       "id": "LIVE-042",
       "title": "The midnight skin's dark overrides never match on the <html> path",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "app/globals.css",
-        "ref": "TASK-INVENTORY-2026-08-17 §3c / UX-MATURITY Lift 3a"
+        "ref": "656dac3 (2026-08-17); LIVE-008 guard lib/theme/skin-dom-selectors.test.ts"
       },
-      "detail": "app/globals.css writes `.dark [data-skin=\"midnight\"]` three times, a DESCENDANT combinator. app/layout.tsx stamps data-skin on documentElement, which also carries .dark, and an element cannot be its own descendant, so on the <html> path the override never fires; it only works where app-shell re-stamps the skin on a descendant root. The comment at app/layout.tsx:142-143 asserts the opposite of the behavior. One selector, but fixing it moves every midnight-dark visual baseline, so it is its own pass WITH a recapture in the same PR, never a drive-by.",
+      "detail": "PREMISE EXPIRED, and the row's own probe was the dangerous part. RE-MEASURED 2026-08-19: app/globals.css:772-773 already authors the dark override as a SELECTOR LIST — the compound .dark[data-skin=\"midnight\"] for the <html> path AND the descendant .dark [data-skin=\"midnight\"] for the shell-root path. git blame dates the compound line to 656dac3, 2026-08-17, two days before this row was still being carried as open. The row claimed three descendant-form selectors; there is exactly ONE rule block, and the other two matches are COMMENTS (globals.css:611 and :634), which is how the count of three was arrived at. The row also said app/layout.tsx:142-143 asserts the opposite of the behaviour; it now reads 'the skin CSS selectors match both <html> and the shell div', which is correct. No pixels move and no baseline recapture is needed, because the work shipped two days ago.\n\nTHE PROBE WAS WRONG IN THE DIRECTION THAT BREAKS THE PRODUCT, which is why this is worth more than a status flip. It required ZERO occurrences of .dark [data-skin= and failed while any remained. But the descendant form is REQUIRED: data-skin lands on two different elements (the pre-paint script writes the freq-skin preview onto documentElement, the authed shell re-stamps it on the shell root), so deleting the descendant selector to satisfy the probe would have silently killed midnight-dark on the authed shell — the same class of failure as LIVE-008, in the mirror. A row whose probe can only be closed by breaking the code is worse than an unprobed row: it reads as an instruction. Anyone working the list top-down would have done it.\n\nTHE CONSEQUENCE IS ALREADY MACHINE-PROVEN, and by something better than a grep. lib/theme/skin-dom-selectors.test.ts (written for LIVE-008) parses the real selector list out of the real sheet and feeds it to a real selector engine in jsdom, against BOTH DOM shapes, for EVERY registered skin, plus a light-mode leak check. It runs in pnpm test. skins.test.ts alone would not have caught this: it greps globals.css for the words '.dark [data-skin=\"<id>\"]', which is shape, not truth, and its own neighbour's header says so.\n\nTHE NEW PROBE measures both halves statically: for every non-default id in lib/theme/skins.ts it strips comments, splits the skin's dark selector list, and requires the compound AND the descendant form to each be present. Verified to fail both ways before being committed — delete the compound and it reports the <html> preview path, delete the descendant and it reports the authed shell root. It does not spawn a test runner (LIVE-034).",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const p='app/globals.css';if(!fs.existsSync(p))process.exit(79);const s=fs.readFileSync(p,'utf8');const n=(s.match(/\\.dark \\[data-skin=/g)||[]).length;if(n>0){console.error(n+' descendant-form .dark [data-skin=…] selector(s) remain');process.exit(1)}process.exit(0)\""
+        "cmd": "node -e \"const fs=require('fs');const S='lib/theme/skins.ts',C='app/globals.css';if(!fs.existsSync(S)||!fs.existsSync(C))process.exit(79);const ids=[...fs.readFileSync(S,'utf8').matchAll(/id:\\\\s*'([a-z0-9-]+)'/g)].map(m=>m[1]).filter(i=>i!=='default');if(!ids.length)process.exit(79);const css=fs.readFileSync(C,'utf8').replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'');const pre=[...css.matchAll(/(?:^|[};])\\\\s*([^{}@;]+?)\\\\s*\\\\{/g)].map(m=>m[1].replace(/\\\\s+/g,' ').trim());const bad=[];for(const id of ids){const sels=pre.filter(p=>p.includes('[data-skin=\\\"'+id+'\\\"]')&&p.includes('.dark')).flatMap(p=>p.split(',')).map(s=>s.trim()).filter(Boolean);if(!sels.some(s=>s==='.dark[data-skin=\\\"'+id+'\\\"]'))bad.push(id+': no compound .dark[data-skin] — the dark block no-ops on the <html> preview path');if(!sels.some(s=>s==='.dark [data-skin=\\\"'+id+'\\\"]'))bad.push(id+': no descendant .dark [data-skin] — the dark block no-ops on the authed shell root');}if(bad.length){console.error(bad.join('\\\\n'));process.exit(1)}process.exit(0)\""
       }
     },
     {
