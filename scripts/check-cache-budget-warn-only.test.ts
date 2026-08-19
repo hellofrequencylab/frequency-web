@@ -85,6 +85,21 @@ describe('check:cache-budget warn-only cannot fail a build', () => {
     expect(rm, 'the delete moved out of the trim chain').toBeGreaterThan(overlapArm)
   })
 
+  it('installs the crash handler before ANY top-level work can throw', () => {
+    // Ordering IS the guarantee. Its sibling scripts/check-shell-weight.mjs shipped this handler
+    // two thirds of the way down the file, and anything throwing during module evaluation before
+    // that point escaped it and exited 1 -- which in postbuild is a dead deploy. That was caught by
+    // mutation, not by reading, so both files now assert the ordering.
+    const handler = SRC.indexOf("process.on('uncaughtException'")
+    const firstWork = SRC.indexOf('const ROOT = process.cwd()')
+    expect(handler, 'no uncaughtException handler').toBeGreaterThan(-1)
+    expect(
+      handler,
+      'the warn-only crash handler is installed AFTER top-level work begins, so a throw before it ' +
+        'escapes and can fail a production build. Move it directly below the imports.',
+    ).toBeLessThan(firstWork)
+  })
+
   it('runs a real measurement on this repo and exits 0', () => {
     // The control. If this fails, the cases above pass for the wrong reason.
     execFileSync(process.execPath, [SCRIPT, '--warn-only'], { cwd: process.cwd() })
