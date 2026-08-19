@@ -36,10 +36,12 @@ const UNWIRED: Record<string, string> = {
   //        What the build was about to hand back measured 2.40 GiB, over the 1.38 GiB trim point.
   //        drops the cheap half instead: .next/cache/turbopack (1520 MiB).
   //
-  // The gate compares RAW bytes on disk against Vercel's PACKED ceiling, and the two are ~2:1 apart,
-  // not the ~3% its header assumes. Production was uploading 1.26–1.29 GB and restoring it every
-  // build; the trim would have deleted a 1.5 GiB compiler cache on every build to prevent an
-  // overflow that was not happening. See ADR-1081 and LIVE-048.
+  // The gate compared RAW bytes on disk against Vercel's PACKED ceiling, ~2:1 apart rather than the
+  // ~3% its header assumed, and its trim dropped directories biggest-first, which is how it reached
+  // the incremental fetch cache and hung the next two builds for 46 minutes each. BOTH are fixed
+  // (ADR-1086, LIVE-048): the trim iterates a named compiler-cache list, and the threshold converts
+  // through PACKED_PER_RAW. It stays here anyway, because a fixed gate is still a gate that has
+  // never run on a real artifact, and that is the whole reason this list exists.
   //
   // `check:shell-weight` has never printed at all. Its one reading exited 1 naming
   // lib/pricing/feature-meters.ts, on an artifact built plausibly BEFORE settings-panel.tsx moved
@@ -48,7 +50,7 @@ const UNWIRED: Record<string, string> = {
   // The rule these two keep proving: DEPLOY-SAFETY.md opens with an outage caused by gates that
   // passed while the artifact was broken, and wiring an UNPROVEN gate into postbuild is that failure
   // reversed. One green build decides it, and the wiring lands in the SAME commit as that build.
-  'check:cache-budget': 'artifact gate, threshold disproved by a real build 2026-08-18 (LIVE-048)',
+  'check:cache-budget': 'artifact gate, defects fixed 2026-08-19 (ADR-1086); awaiting one green build before postbuild (LIVE-035)',
   'check:shell-weight': 'artifact gate, awaiting one green production build before postbuild (LIVE-035)',
 }
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import Link from 'next/link'
 import { Hash, MessageSquare, Loader2, ArrowRight, Search, Sparkles, ChevronLeft, Info } from 'lucide-react'
 import { relativeTime } from '@/lib/utils'
@@ -35,8 +36,13 @@ export async function prefetchDockSummary(): Promise<void> {
   try {
     _summary = await fetchMessagesSummary()
     _summaryAt = Date.now()
-  } catch {
-    /* best-effort warm */
+  } catch (err) {
+    // BEST-EFFORT WARM, BUT NEVER SILENT. Swallowing here is right — a failed warm must not
+    // break the shell, and the dock refetches on open. Swallowing it WITHOUT REPORTING is what
+    // cost six weeks: LIVE-053 threw on every authed route for 9 users while this catch dropped
+    // the evidence, so the member saw an empty dock and the server logs went unread. A fail-safe
+    // needs a gate that notices it fired (AGENTS.md).
+    Sentry.captureException(err, { tags: { surface: 'messages-dock', phase: 'prefetch' } })
   }
 }
 async function loadSummaryCached(force = false): Promise<MessagesSummary> {

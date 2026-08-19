@@ -28,16 +28,18 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
 
   ⚠️ **Two gates are still NOT wired, and one of them was wired and taken back out on 2026-08-18**
   (LIVE-035, LIVE-048, [ADR-1081](docs/DECISIONS.md)):
-  - `check:cache-budget` ([ADR-1064](docs/DECISIONS.md)) has **two** defects and **killed two builds**
-    proving it. It compares **raw bytes on disk** against Vercel's **packed** 1.50 GB ceiling — about
-    **2:1** apart, not the ~3% its header assumed — so it trimmed a **1,520 MiB** cache to prevent an
-    overflow that was not happening. The next two builds on that branch each compiled in ~2.4 min and
-    then hung in *Collecting page data*, hitting **`BUILD_EXCEEDED_MAXIMUM_TIME` at 46 minutes**. A
-    control settled it: the same `vercel.json` change alone, on a branch with a healthy cache,
-    **finished in 59 seconds**. `.next/cache` is not only the compiler cache — it holds the
-    **incremental fetch cache**, and prerendering hundreds of Supabase-reading routes without it never
-    finishes. Its floor arm was right (node_modules 933 MiB, 27% clear). **Do not re-wire until the
-    trim drops the compiler cache BY NAME and the threshold is in Vercel's units** (LIVE-048).
+  - `check:cache-budget` ([ADR-1064](docs/DECISIONS.md)) had **two** defects and **killed two builds**
+    proving it: it compared **raw bytes on disk** against Vercel's **packed** 1.50 GB ceiling (about
+    **2:1** apart, not the ~3% its header assumed), and its trim dropped `.next/cache` directories
+    **biggest-first**, which took the **incremental fetch cache** with it. The next two builds each
+    compiled in ~2.4 min and then hung in *Collecting page data*, hitting
+    **`BUILD_EXCEEDED_MAXIMUM_TIME` at 46 minutes**, against a control on a healthy cache that
+    **finished in 59 seconds**. **Both are fixed** ([ADR-1086](docs/DECISIONS.md), LIVE-048): the trim
+    iterates a named compiler-cache list and can reach nothing else, and the threshold converts
+    through `PACKED_PER_RAW = 0.50`, a constant derived from real builds and marked provisional until
+    one build prints both halves. Its floor arm was always right (node_modules 933 MiB, 27% clear).
+    **It is still NOT wired** — that is LIVE-035, and it lands with the preview build that prints it
+    green, which is also the build that settles the constant.
   - `check:shell-weight` ([ADR-1066](docs/DECISIONS.md)) is the CLIENT half — the app shell's eager
     first-load JS (**957 KB across 20 chunks, 2026-08-17**, ceiling 1,400 KB) plus named fingerprints
     for admin module bodies that must stay behind `next/dynamic` — and it has an unconfirmed failure
