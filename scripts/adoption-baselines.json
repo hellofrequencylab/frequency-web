@@ -518,13 +518,13 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 514,
+      "baseline": 513,
       "frozen": {
-        "at": "2026-08-17",
-        "value": 514,
-        "direction": "rebased",
+        "at": "2026-08-19",
+        "value": 513,
+        "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob ending slash-star no longer opens a block comment running to the next JSDoc close. Over app+components+lib that had blanked 121627 characters of real markup in 101 files. No site in this class sat inside a region the old blanker was eating: 514 before and 514 after, measured on the committed tree and again in the worktree. Only the fingerprint moves.",
+        "reason": "Banking a real shrink, not a raise: 514 to 513. One raw button background left the tree when #2167 moved the record-payment confirm dialog onto the kit button.",
         "from": 514
       },
       "history": [
@@ -625,6 +625,13 @@
           "to": 514,
           "direction": "rebased",
           "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob ending slash-star no longer opens a block comment running to the next JSDoc close. Over app+components+lib that had blanked 121627 characters of real markup in 101 files. No site in this class sat inside a region the old blanker was eating: 514 before and 514 after, measured on the committed tree and again in the worktree. Only the fingerprint moves."
+        },
+        {
+          "at": "2026-08-19",
+          "from": 514,
+          "to": 513,
+          "direction": "lowered",
+          "reason": "Banking a real shrink, not a raise: 514 to 513. One raw button background left the tree when #2167 moved the record-payment confirm dialog onto the kit button."
         }
       ]
     },
@@ -1440,14 +1447,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 608,
+      "baseline": 609,
       "frozen": {
-        "at": "2026-08-17",
-        "value": 608,
-        "direction": "seed",
+        "at": "2026-08-19",
+        "value": 609,
+        "direction": "raised",
         "basis": "b2a90e60b032",
-        "reason": "New class for LIVE-025 (R7, docs/UX-MATURITY-PLAN.md Addendum 2026-08-05 §3 package 5), seeded at 608 AFTER the kit sweep in the same change, not before it: measured 615 on the tree as found, 608 once the seven slots the code itself names `eyebrow` were moved onto the role utility (EditorShell, Toast, StudioWindow, SparkShell, EntityHeader, JourneyBuilder, HostCohostSection — five different letter-spacings for one named role). Seeding at the post-sweep number is what makes reverting any of the seven fail this gate. The window is bounded by quotes, backticks, angle brackets and newlines so a match can never leave the class list it started in; the longest match measured across all 608 is 35 characters.",
-        "from": 0
+        "reason": "One admin field label added by #2167 in components/admin/spaces/manual-agreement-panel.tsx. It is text-2xs, and the exact shape 'text-2xs font-semibold uppercase tracking-wide text-muted' is an established convention across 110 files. Moving this one site onto the 0.75rem/0.18em eyebrow role would resize a dense form label and leave it inconsistent with its 109 siblings, which is the per-site judgment this class's own description calls for. Banked so the rise is dated and visible; it comes down with the convention-wide sweep, not a one-line rename.",
+        "from": 608
       },
       "history": [
         {
@@ -1456,6 +1463,13 @@
           "to": 608,
           "direction": "seed",
           "reason": "Seeded at the measured post-sweep count. The role has been LOCKED in app/globals.css since 2026-08-05 and lib/theme/eyebrow-role.test.ts has guarded its DEFINITION ever since — one size, one tracking, one weight, bridged into @theme — and every one of those assertions was green while the product rendered the eyebrow ten ways, because nothing measured ADOPTION. This class is that measurement."
+        },
+        {
+          "at": "2026-08-19",
+          "from": 608,
+          "to": 609,
+          "direction": "raised",
+          "reason": "One admin field label added by #2167 in components/admin/spaces/manual-agreement-panel.tsx. It is text-2xs, and the exact shape 'text-2xs font-semibold uppercase tracking-wide text-muted' is an established convention across 110 files. Moving this one site onto the 0.75rem/0.18em eyebrow role would resize a dense form label and leave it inconsistent with its 109 siblings, which is the per-site judgment this class's own description calls for. Banked so the rise is dated and visible; it comes down with the convention-wide sweep, not a one-line rename."
         }
       ]
     }

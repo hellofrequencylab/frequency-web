@@ -193,11 +193,28 @@ Everything below follows from that, and §9's wrong verdict followed from not ha
   **whole**, so a compiler cache worth 13s periodically costs an install worth 15s — plus 804
   package downloads' worth of network flake, on a repo that has already lost a deploy to a
   third-party fetch (§9).
-- **The trim runs, and the floor fails.** `scripts/check-cache-budget.mjs` drops `.next/cache`
-  subdirectories biggest-first when the sum would exceed the ceiling, so Vercel stores a cache it
-  accepts. Separately, `node_modules` over **1.25 GiB** fails the build: a trim can absorb the
-  compiler cache growing, nothing can absorb the install growing. Fail-safe plus the gate that
-  notices it fired (rule 6), in one file.
+- **The trim runs, and the floor fails.** `scripts/check-cache-budget.mjs` drops the **compiler
+  caches, by name** (`turbopack`, `rspack`, `webpack`, `swc`) when the estimate would exceed the
+  ceiling, so Vercel stores a cache it accepts. Separately, `node_modules` over **1.25 GiB** fails
+  the build: a trim can absorb the compiler cache growing, nothing can absorb the install growing.
+  Fail-safe plus the gate that notices it fired (rule 6), in one file.
+- **🔴 The trim may never touch `.next/cache/fetch-cache`, and this is why.** It used to drop
+  subdirectories **biggest-first**, so that growth in a directory nobody had thought of would still
+  be caught. `.next/cache` also holds the **incremental fetch cache**, and page-data collection
+  prerenders hundreds of Supabase-reading routes: warm those reads are local, cold every one goes to
+  the network three workers deep. The one trim that ever ran emptied the cache and **the next two
+  builds both died** — ~2.4 min to compile, then hung in *Collecting page data*,
+  `BUILD_EXCEEDED_MAXIMUM_TIME` at 46 minutes — while a control branch with a healthy cache finished
+  in **59 seconds** ([ADR-1081](DECISIONS.md)). The trim now iterates a named list and can reach
+  nothing else; an unrecognised directory is **printed and kept**, because naming growth is a thing a
+  build can do and deleting it is not ([ADR-1086](DECISIONS.md)).
+- **The threshold is in Vercel's units, and it says so.** Vercel weighs the **packed** archive; this
+  script can only see raw bytes, and the two ran **~2:1 apart** while a comment claimed ~3%. The
+  conversion is one named constant, `PACKED_PER_RAW = 0.50`, derived from real builds (raw 2.58 GB
+  measured here against packed uploads of 1.26–1.33 GB, 2026-08-18) and carried in the file with its
+  measurements. It is **provisional**: the raw and packed readings come from different builds, so
+  every run prints the raw figure and the ratio next to the `Uploading build cache [N GB]` line to
+  compare it with. Do not tune it to make a run green.
 - **⚠️ There is no setting that raises the 1.50 GB ceiling.** No `vercel.json` key, no project
   option, no plan toggle — the only cache control Vercel exposes is turning it off for a deployment.
   Build under it.

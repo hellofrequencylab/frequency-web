@@ -149,7 +149,7 @@ export function ManualAgreementPanel({
             "extends by one year" is the sentence that got clicked through. `nextPaidThrough` is
             computed by the SAME pure helper the server writes with. */}
         <Dialog open={confirming} onClose={() => setConfirming(false)} ariaLabel="Confirm this payment" className="max-w-md">
-          <div className="rounded-2xl border border-border bg-surface p-5 space-y-4">
+          <div className="rounded-card border border-border bg-surface p-5 space-y-4">
             <h3 className="text-body font-semibold text-text">Record a payment?</h3>
             <p className="text-body-sm text-muted">
               This moves paid-through from{' '}
@@ -187,7 +187,7 @@ export function ManualAgreementPanel({
             year back as a day forward, and a guessed "sensible range" would block the fix this
             exists for. */}
         <Dialog open={correcting} onClose={() => setCorrecting(false)} ariaLabel="Correct the paid-through date" className="max-w-md">
-          <div className="rounded-2xl border border-border bg-surface p-5 space-y-4">
+          <div className="rounded-card border border-border bg-surface p-5 space-y-4">
             <h3 className="text-body font-semibold text-text">Correct the paid-through date</h3>
             <p className="text-body-sm text-muted">
               Sets the date directly, for when a payment was recorded by mistake or the wrong date was

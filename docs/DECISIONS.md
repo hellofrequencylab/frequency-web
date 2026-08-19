@@ -27267,3 +27267,75 @@ seat.
   Both were invisible for the same reason: **the code was asked whether it did what it was told, and
   it had.** The check that catches this class compares two facts that live apart, which is what the
   guard above does and what `check:og-trace` does for the build.
+
+---
+
+## ADR-1086: The cache trim drops the compiler cache by name, and its threshold is carried in Vercel's units
+
+**Context.** [ADR-1081](DECISIONS.md) wired `check:cache-budget` into `postbuild`, read the preview
+build, and took it back out. Two independent defects, both measured rather than argued:
+
+1. **Wrong units.** `measure()` sums raw bytes on disk; Vercel's 1.50 GB ceiling applies to the
+   **packed** archive. Raw 2.40 GiB against packed uploads of 1.26–1.29 GB is about **2:1**, not the
+   ~3% the file's own comment asserted. So the gate trimmed a 1,520 MiB cache to prevent an overflow
+   that was not happening.
+2. **A size-sorted trim.** It dropped `.next/cache` subdirectories biggest-first, deliberately, so
+   that growth in a directory nobody had thought of would still be caught. `.next/cache` also holds
+   the **incremental fetch cache**, and the two builds after the one trim it ever ran each compiled
+   in ~2.4 minutes and then hung in *Collecting page data*, hitting `BUILD_EXCEEDED_MAXIMUM_TIME` at
+   46 minutes. A control on a branch with a healthy cache finished in **59 seconds**.
+
+**Decision 1 — the trim names what it may delete, and can reach nothing else.** `COMPILER_CACHE_DIRS`
+is `turbopack, rspack, webpack, swc`, read out of `next/dist/build/webpack-config.js` rather than
+guessed, and the trim iterates **that list**. A directory it does not name cannot be removed however
+large it grows. `NEVER_TRIM_DIRS` (`fetch-cache`, `images`) is the second belt: if the two lists ever
+overlap, the trim refuses to run at all and prints why. Anything under `.next/cache` the file does
+not recognise is now **reported and kept** — which is the honest version of the generality the
+biggest-first loop was reaching for. Naming the growth is a thing a build can print; deleting it is
+not a thing a build should decide.
+
+**Decision 2 — the threshold is stated in the units Vercel applies, through a named constant.**
+Packing the cache to weigh it costs more than the problem, so the raw figure is converted:
+
+```
+PACKED_PER_RAW = 0.50        TRIM_AT_PACKED_GB = 1.50 GB ceiling − 0.10 GB reserve
+```
+
+Derived from real builds, all 2026-08-18, and carried in the file with its date:
+
+| Reading | Source | Value |
+|---|---|---|
+| raw | this script, preview build `GyKdz12oPgfc5roSqmv6F8Nq3nyK` | 2.40 GiB = **2.58 GB** |
+| packed | `Uploading build cache`, three production builds | **1.26 / 1.28 / 1.29 GB** |
+| packed | `Uploading build cache`, `claude/build-pin` | **1.33 GB** |
+
+1.26–1.33 over 2.58 is **0.49–0.52**, rounded to 0.50.
+
+**⚠️ It is provisional, and the weakness is named rather than averaged away.** The raw reading and the
+packed readings come from **different builds** of equivalent trees, because the one build that had a
+raw reading had its cache trimmed before it was packed. It is also a whole-archive ratio, not a
+per-term one: `node_modules` and the Turbopack cache certainly do not compress alike, and no reading
+available today can separate them. So every run prints the raw figure and the ratio it applied, next
+to an instruction to compare both with the `Uploading build cache [N GB]` line the same build prints.
+**That pair, from one build, is what settles the constant** — and it is the first thing the wiring
+build under LIVE-035 is for.
+
+Sanity check the number against the event that produced it: 2.40 GiB raw becomes 1.29 GB packed
+against a 1.40 GB trim point, so the gate would **not** have fired on 2026-08-18. That is what the
+production upload lines say actually happened.
+
+**Consequences.**
+
+- ✅ A firing trim can no longer take the fetch cache with it, by construction rather than by
+  ordering. The 46-minute failure has no path back through this file.
+- ✅ The closing line now states which side of the ceiling the estimate lands on **in both
+  directions**. The first draft printed a green "under the ceiling" over a number that was over it,
+  which is rule 6's swallowed regression written by the gate that exists to prevent it.
+- 🔒 **Still not wired.** LIVE-035 owns that, and the rule it keeps is the one this file already
+  broke once: a build-blocking gate that has never seen a real artifact is
+  [ADR-1002](DECISIONS.md)'s incident with the roles reversed. It goes into `postbuild` in the same
+  change as the preview build that prints it green.
+- ⚠️ **What could not be checked here.** No container build can produce a packed figure, so the
+  constant rests on readings taken from different builds. The file says that in the comment instead
+  of presenting 0.50 as measured, which is the difference between a number with an expiry date and a
+  number pretending it has none.
