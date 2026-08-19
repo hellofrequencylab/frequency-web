@@ -6,15 +6,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { ModelTier } from '@/lib/ai/models'
-import { VERA as COPY, BETA_OATHS, HEARD_ABOUT } from '@/lib/onboarding/beta-script'
+import { VERA as COPY, HEARD_ABOUT } from '@/lib/onboarding/beta-script'
 
 export interface VeraInductionCopy {
-  oathHeading: string
-  oathBody: string
   introHeading: string
   introBody: string
-  /** Labels for the three founder oaths (order matches BETA_OATHS). */
-  oathLabels: string[]
   /** "How did you hear about us?" options. */
   heardAbout: string[]
 }
@@ -41,11 +37,8 @@ export const DEFAULT_VERA_CONFIG: VeraConfig = {
   greeting:
     "Hey, I'm really glad you're here. I'm Vera; I look after this place and the people in it. What's alive for you today? Wherever you're starting from is the right place to start.",
   induction: {
-    oathHeading: COPY.oath.heading,
-    oathBody: COPY.oath.body,
     introHeading: COPY.intro.heading,
     introBody: COPY.intro.body,
-    oathLabels: BETA_OATHS.map((o) => o.label),
     heardAbout: [...HEARD_ABOUT],
   },
 }

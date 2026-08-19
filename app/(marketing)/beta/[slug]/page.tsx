@@ -86,7 +86,7 @@ export default async function BetaSequenceSplash({ params }: { params: Promise<{
           other marketing page, so this flow-specific CTA closes at the site's cadence. */}
       <Section tone="surface" role="band" className="text-center">
         <p className="mx-auto max-w-xl text-body-lg leading-relaxed text-muted">
-          Two minutes to step in. You’ll take the founder’s oath, claim your handle, and meet your people.
+          Two minutes to step in. Tell us who you are, claim your handle, and meet your people.
         </p>
         <div className="mt-7">
           <Button href={start} size="md">

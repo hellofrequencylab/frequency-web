@@ -58,7 +58,6 @@ export default async function EditFunnelPage({ params }: { params: Promise<{ slu
         slug={slug}
         initialAudience={seq.audience}
         initialVera={seq.vera}
-        initialOaths={seq.oaths}
         heardAbout={seq.heardAbout}
         initialHasOverride={!!override}
         initialSlide2Features={seq.slide2Features}

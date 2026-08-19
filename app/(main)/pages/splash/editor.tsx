@@ -6,7 +6,6 @@ import { Check, Eye, RotateCcw } from 'lucide-react'
 import type { VeraCopy } from '@/lib/onboarding/beta-script'
 import {
   DEFAULT_SEQUENCE,
-  type BetaSequence,
   type FunnelFeature,
   type FunnelCoreFeature,
   type FunnelDestination,
@@ -20,7 +19,7 @@ import { saveDefaultBetaCopy, resetDefaultBetaCopy } from './actions'
 import { saveSequenceVersion, renameSequenceSlug } from '@/app/(main)/pages/sequences/builder-actions'
 
 // Live-preview copy editor for a Splash Funnel. Left: one section per beat with an
-// input for every voiced string (plus the three oath checkbox labels). Right: the
+// input for every voiced string. Right: the
 // REAL <BetaInduction> component rendered in preview mode at half scale, fed the
 // edited copy, so the preview can't drift from what members see. Focusing a section
 // (or using the tabs) switches the previewed beat.
@@ -32,7 +31,6 @@ import { saveSequenceVersion, renameSequenceSlug } from '@/app/(main)/pages/sequ
 //     that slug's override via saveSequenceVersion, and exposes an editable title
 //     (the funnel's `audience`). Publish state + splash/tag are carried forward.
 
-type Oaths = BetaSequence['oaths']
 type BeatKey = keyof VeraCopy
 
 const LABEL = 'mb-1 block text-meta font-semibold text-subtle'
@@ -54,8 +52,8 @@ function seedSlide3(init?: FunnelCoreFeature[]): FunnelCoreFeature[] {
   return Array.from({ length: 3 }, (_, i) => init?.[i] ?? { title: '', blurb: '', art: { kind: 'render', render: 'feed' } })
 }
 
-// The five beats in the order members walk them. `beatIndex` is the induction's
-// internal step (0 oath · 1 intro · 2 tour · 3 identity+place · 4 enter). The old
+// The four beats in the order members walk them. `beatIndex` is the induction's
+// internal step (0 intro · 1 tour · 2 identity+place · 3 enter). The old
 // standalone "place" beat is merged into identity; its copy keys stay in VERA for
 // any saved override but are no longer surfaced here.
 const BEATS: {
@@ -66,22 +64,10 @@ const BEATS: {
   fields: { key: string; label: string; area?: boolean }[]
 }[] = [
   {
-    id: 'oath',
-    beatIndex: 0,
-    title: 'Beta Promise',
-    sub: 'The promise they make before they come in.',
-    fields: [
-      { key: 'eyebrow', label: 'Eyebrow' },
-      { key: 'heading', label: 'Heading' },
-      { key: 'body', label: 'Body', area: true },
-      { key: 'cta', label: 'Button label' },
-    ],
-  },
-  {
     id: 'intro',
-    beatIndex: 1,
+    beatIndex: 0,
     title: 'Welcome',
-    sub: 'Who they are now that they said yes.',
+    sub: 'The first thing they read, and who they say they are.',
     fields: [
       { key: 'eyebrow', label: 'Eyebrow' },
       { key: 'heading', label: 'Heading' },
@@ -91,7 +77,7 @@ const BEATS: {
   },
   {
     id: 'tour',
-    beatIndex: 2,
+    beatIndex: 1,
     title: 'The tour',
     sub: 'The three-room reel.',
     fields: [
@@ -103,7 +89,7 @@ const BEATS: {
   },
   {
     id: 'identity',
-    beatIndex: 3,
+    beatIndex: 2,
     title: 'Profile',
     sub: 'Name, handle, city, and face.',
     fields: [
@@ -113,7 +99,7 @@ const BEATS: {
   },
   {
     id: 'enter',
-    beatIndex: 4,
+    beatIndex: 3,
     title: 'Step in',
     sub: 'The last beat before the feed.',
     fields: [
@@ -129,7 +115,6 @@ export function SplashCopyEditor({
   slug = DEFAULT_SEQUENCE,
   initialAudience = '',
   initialVera,
-  initialOaths,
   heardAbout,
   initialHasOverride,
   initialSlide2Features,
@@ -141,7 +126,6 @@ export function SplashCopyEditor({
   /** The custom funnel's title (audience). Editable for custom funnels only. */
   initialAudience?: string
   initialVera: VeraCopy
-  initialOaths: Oaths
   /** "How did you hear?" options, passed through so the place beat previews true. */
   heardAbout: string[]
   initialHasOverride: boolean
@@ -158,7 +142,6 @@ export function SplashCopyEditor({
   const [renaming, startRename] = useTransition()
   const [renameError, setRenameError] = useState<string | null>(null)
   const [vera, setVera] = useState<VeraCopy>(initialVera)
-  const [oaths, setOaths] = useState<Oaths>(initialOaths)
   // Niche-funnel config. Fixed-length rows so the editor always shows all slots; an
   // all-empty section is dropped from the saved override (buildSlide2/3 / destination).
   const [slide2, setSlide2] = useState<FunnelFeature[]>(() => seedSlide2(initialSlide2Features))
@@ -171,7 +154,6 @@ export function SplashCopyEditor({
     JSON.stringify({
       audience: initialAudience,
       vera: initialVera,
-      oaths: initialOaths,
       slide2: seedSlide2(initialSlide2Features),
       slide3: seedSlide3(initialSlide3Core),
       destMode: initialDestination?.mode === 'direct' ? 'direct' : 'waitlist',
@@ -185,7 +167,7 @@ export function SplashCopyEditor({
   const [pending, start] = useTransition()
 
   const dirty =
-    JSON.stringify({ audience, vera, oaths, slide2, slide3, destMode, destUrl }) !== snapshot
+    JSON.stringify({ audience, vera, slide2, slide3, destMode, destUrl }) !== snapshot
 
   // Warn before a full navigation / tab close with unsaved edits.
   useEffect(() => {
@@ -197,11 +179,6 @@ export function SplashCopyEditor({
 
   function setField(beat: BeatKey, field: string, value: string) {
     setVera((prev) => ({ ...prev, [beat]: { ...prev[beat], [field]: value } }))
-    setSaved(false)
-  }
-
-  function setOathLabel(i: number, value: string) {
-    setOaths((prev) => prev.map((o, idx) => (idx === i ? { ...o, label: value } : o)))
     setSaved(false)
   }
 
@@ -272,13 +249,13 @@ export function SplashCopyEditor({
       // → write that slug's override; saveSequenceVersion carries the funnel's publish
       // state, splash, and tag forward, so a copy edit never disturbs the lifecycle.
       if (isDefault) {
-        const r = await saveDefaultBetaCopy({ vera, oaths })
+        const r = await saveDefaultBetaCopy({ vera })
         if (!r.ok) { setError('Could not save. Are you still signed in?'); return }
       } else {
         // Niche config only rides along for custom funnels. Send a field only when it has
         // real content, so an untouched funnel stays on the General funnel behaviour; the
         // completion destination always carries its explicit choice (waitlist vs direct).
-        const override: SequenceOverride = { audience: audience.trim() || 'New funnel', vera, oaths }
+        const override: SequenceOverride = { audience: audience.trim() || 'New funnel', vera }
         const s2 = buildSlide2()
         if (s2) override.slide2Features = s2
         const s3 = buildSlide3()
@@ -287,7 +264,7 @@ export function SplashCopyEditor({
         const r = await saveSequenceVersion(slug, override)
         if (!r.ok) { setError('Could not save. Are you still signed in?'); return }
       }
-      setSnapshot(JSON.stringify({ audience, vera, oaths, slide2, slide3, destMode, destUrl }))
+      setSnapshot(JSON.stringify({ audience, vera, slide2, slide3, destMode, destUrl }))
       setHasOverride(true)
       setSaved(true)
       router.refresh()
@@ -302,8 +279,7 @@ export function SplashCopyEditor({
       const r = await resetDefaultBetaCopy()
       if (!r.ok) { setError('Could not reset. Are you still signed in?'); return }
       setVera(r.vera)
-      setOaths(r.oaths)
-      setSnapshot(JSON.stringify({ audience, vera: r.vera, oaths: r.oaths, slide2, slide3, destMode, destUrl }))
+      setSnapshot(JSON.stringify({ audience, vera: r.vera, slide2, slide3, destMode, destUrl }))
       setHasOverride(false)
       setSaved(false)
       router.refresh()
@@ -417,22 +393,6 @@ export function SplashCopyEditor({
                 )}
               </div>
             ))}
-            {b.id === 'oath' && (
-              <div className="space-y-3 border-t border-border pt-3">
-                {oaths.map((o, i) => (
-                  <div key={o.id}>
-                    <label className={LABEL} htmlFor={`splash-oath-label-${i}`}>
-                      Checkbox {i + 1}
-                    </label>
-                    <Input
-                      id={`splash-oath-label-${i}`}
-                      value={o.label}
-                      onChange={(e) => setOathLabel(i, e.target.value)}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
           </section>
         ))}
 
@@ -665,7 +625,7 @@ export function SplashCopyEditor({
                 key={previewBeat}
                 preview
                 initialBeat={previewBeat}
-                copy={{ vera, oaths, heardAbout }}
+                copy={{ vera, heardAbout }}
                 // Feed the SAME niche config the operator is editing into the preview, so the Welcome
                 // beat shows THIS sequence's Slide-2 feature cards (not the general persona fork) and
                 // the tour beat shows its Slide-3 core features + art. Without these the preview always

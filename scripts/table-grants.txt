@@ -37,9 +37,7 @@ area_permissions                     authenticated
 automation_rules                     internal
 beta_audit_log                       internal
 beta_host_prompts                    internal
-beta_phases                          internal
 beta_referrals                       internal
-beta_tasks                           internal
 blocked_users                        authenticated
 business_intake                      internal
 campaigns                            authenticated

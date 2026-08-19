@@ -4,8 +4,8 @@
 //
 // The induction already parks its answers in `fq_pending_induction` — a ONE-HOUR httpOnly cookie
 // (actions.ts, stashPendingInduction) that is the whole of our memory of a signed-out visitor. When
-// it expires, someone who answered four beats and stopped is simply gone. These three actions add a
-// server-side row beside that cookie: the email is taken at beat 2, later beats update the same row,
+// it expires, someone who answered three beats and stopped is simply gone. These three actions add a
+// server-side row beside that cookie: the email is taken at beat 1, later beats update the same row,
 // and sign-in stamps it converted.
 //
 // TRANSACTIONAL, NOT MARKETING. What this enables is one "finish setting up your account" note, the

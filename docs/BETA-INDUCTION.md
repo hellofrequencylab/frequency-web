@@ -6,8 +6,8 @@ progressive tour ([ONBOARDING.md](ONBOARDING.md)/ADR-047) becomes the permanent 
 
 ## What it is, in one line
 
-A short, **stoked, one-time gate** that turns a beta signup into a *founder*: they take an oath,
-tell us who/where/why they are, get a fast cinematic tour of the core, and land in the app already
+A short, **stoked, one-time sign-up funnel** that turns a visitor into a member: they tell us
+who/where/why they are, get a fast cinematic tour of the core, and land in the app already
 activated, guided start-to-finish by **scripted Vera**.
 
 ## Why it breaks the non-blocking rule (on purpose)
@@ -15,8 +15,8 @@ activated, guided start-to-finish by **scripted Vera**.
 | | Beta induction (this doc) | Launch onboarding (ADR-047) |
 |---|---|---|
 | Who | Founding cohort who raised their hand to **build** | Every public newcomer |
-| Shape | Short guided sequence + **one gate** (the Oath) | Progressive, non-blocking coachmarks |
-| Why a gate is OK | The friction *is* the filter (they opted in to build, not browse) | Public users must explore freely |
+| Shape | Short guided sequence, one focus per beat | Progressive, non-blocking coachmarks |
+| Why it blocks at all | It is the sign-up: the account does not exist until the last beat | Public users must explore freely |
 | Vera | **Hot** register, scripted | Cool register, eventually live |
 | Lifespan | ⏳ Throwaway, deleted at launch | ✅ Permanent |
 
@@ -53,7 +53,7 @@ unregistered keys so the founding cohort stays segmentable by entry path **forev
 even after this flow is deleted at launch.
 
 **Authoring.** The default flow's copy is edited in the janitor-only **Beta splash**
-editor at `/pages/splash` (left: every beat's strings + the three oath labels; right:
+editor at `/pages/splash` (left: every beat's strings; right:
 the REAL `<BetaInduction>` rendered live in preview mode). Audience versions are
 built beat-by-beat at `/pages/sequences` (the "Splash pages" manager). Beat headings
 support a light accent markup: a word wrapped in `*asterisks*` renders in the brand
@@ -68,41 +68,32 @@ pill action per beat (no marketing-style button rows), and minimal centered inpu
 the **feed's light theme**; text flips light-on-dark → dark-on-light in step, masked by the per-beat
 fade-in. A blurred `primary`/`signal` radial glow rides behind it.
 
-The spine is **the reel** (beat 2): a crossfading slideshow of the **vector feature renders**
+The spine is **the reel** (beat 1): a crossfading slideshow of the **vector feature renders**
 (Feed → Circles → Events) only, no photography. It's data-driven (`REEL` in
 `lib/onboarding/beta-script.ts`); the `ReelSlide` type still supports `kind:'image'`, so a real
 product **screenshot** can be slotted in later by adding an entry, no component changes.
 
-## The flow: 6 beats, < 90 seconds
+## The flow: 4 beats, < 90 seconds
+
+`BEAT_COUNT` in `induction.tsx` is the ONE number the progress bar, the `Step N of M`
+live-region label, and the `initialBeat` clamp all read, so the sequence length is a
+single edit. Beats are 0-indexed in code and 1-indexed on screen.
 
 | # | Beat | Vera register | Captures | Blocking? |
 |---|---|---|---|---|
-| 0 | **The Oath**: 3 commitment checkboxes | Hot | `meta.beta.oath` | ✅ the one gate |
-| 1 | **Intro**: "you're a founder, not a user" | Hot | (none) | skippable |
-| 2 | **The reel**: crossfading vector renders (auto-advancing) | Hot | (none) | skippable |
-| 3 | **Who you are**: name · handle · photo | Cool | `display_name`, `handle`, `avatar_url` | name+handle req'd |
-| 4 | **Where + why**: region · intent · how'd you hear | Cool→warm | `nexus_region_id`, `meta.beta.intent`, `meta.beta.heard_about` | skippable* |
-| 5 | **Enter**: review + "Enter Frequency" | Hot | writes all + `meta.onboarding_completed` | (none) |
+| 0 | **Welcome**: who they are (persona fork, or a niche funnel's 4 cards) + an optional email | Hot | `meta.persona(s)`, a `signup_leads` row | skippable |
+| 1 | **The reel**: crossfading vector renders (auto-advancing), or a niche funnel's 3 core features | Hot | the core-feature pick (lead payload) | skippable |
+| 2 | **Your profile**: name · handle · photo · city | Cool | `display_name`, `handle`, `avatar_url`, `meta.beta.location` | name+handle req'd |
+| 3 | **Step in**: sign in (deferred) or "Enter Frequency" (authed) | Hot | writes all + `meta.onboarding_completed` | ✅ the account is created here |
 
-\* Name + handle are required to enter (a profile can't function without them); photo, region, and
-intent are optional but asked for plainly. The reel auto-advances (paused under
-`prefers-reduced-motion`) with clickable dots. Everything persists only on the final **Enter**.
+Name + handle are required to enter (a profile can't function without them); photo, city,
+email, and persona are optional but asked for plainly. The reel auto-advances (paused under
+`prefers-reduced-motion`) with clickable dots. Everything persists only on the final **Step in**.
 
-### The Oath (beat 0)
-
-Three checkboxes, all required to unlock the button. Copy lives in `BETA_OATHS`
-(`lib/onboarding/beta-script.ts`) so it's the single source of truth:
-
-| Intent | Checkbox copy |
-|---|---|
-| This is unfinished | **"I agree to break things on this website"** |
-| Report, don't bail | **"I agree to submit bug reports and screenshots"** |
-| Here to build | **"I agree to be a Frequency Web Founder"** |
-
-Framing (Vera, hot): *"This isn't a product yet. It's a promise"*, that the people near you are
-worth finding. Button: **"I'm in."**
-
-Accepting stamps `profiles.meta.beta.oath = { accepted_at, version, oaths: [...ids] }`.
+**There is no oath.** The three commitment checkboxes that used to open the flow (the "Beta
+Promise" gate, `BETA_OATHS` / `meta.beta.oath`) are removed: this is a sign-up funnel for any
+niche, and a ceremony in front of the sign-up is friction with no conversion behind it. Nothing
+reads the stamp; historical `meta.beta.oath` values are left where they are.
 
 ## Data: the finished profile rides `profiles.meta`; the unfinished one rides `signup_leads`
 
@@ -114,7 +105,6 @@ meta = {
   onboarding_completed: true,        // set on Enter; returning users skip the induction
   beta: {
     version: 1,
-    oath:   { accepted_at: "…", version: 1, oaths: ["unfinished","report","build"] },
     intent: "free-text: what they're hoping for",   // ← the CRM gold
     heard_about: "Instagram",                        // attribution for the funnel
     completed_at: "…"
@@ -131,16 +121,18 @@ meta = {
 ### The unfinished induction: `signup_leads` ([ADR-959](DECISIONS.md))
 
 The deferred flow runs signed out, so until the very last beat the ONLY record of a visitor was
-`fq_pending_induction`, a **one-hour** httpOnly cookie. Someone who answered four beats and was
-interrupted left no trace and could not be followed up. Beat 1 now asks for an email beside its
-continue button (optional; nobody is stopped from touring), and that opens a `signup_leads` row:
+`fq_pending_induction`, a **one-hour** httpOnly cookie. Someone who answered three beats and was
+interrupted left no trace and could not be followed up. Beat 0 now asks for an email beside its
+continue button (optional; nobody is stopped from touring), and that opens a `signup_leads` row.
+`step_reached` is 1-based on the funnel's own beats, so it moved down by one when the oath beat
+was removed:
 
 | Beat | Action | Effect |
 |---|---|---|
-| 1 · Who you are | `captureLead` (step 2) | Upserts on `lower(email)`, parks the row id in the 30-day httpOnly `fq_lead` cookie |
-| 2 · The tour | `updateLead` (step 3) | Records progress + the niche funnel's core-feature pick |
-| 3 · Your profile | `updateLead` (step 4) | Folds in name, handle, city |
-| 4 · Step in (deferred) | `captureLead` (step 5) | The sign-in address, which may be the first one given |
+| 0 · Welcome | `captureLead` (step 1) | Upserts on `lower(email)`, parks the row id in the 30-day httpOnly `fq_lead` cookie |
+| 1 · The tour | `updateLead` (step 2) | Records progress + the niche funnel's core-feature pick |
+| 2 · Your profile | `updateLead` (step 3) | Folds in name, handle, city |
+| 3 · Step in (deferred) | `captureLead` (step 4) | The sign-in address, which may be the first one given |
 | Completion | `markLeadConverted` | Stamps `converted_profile_id` + `converted_at`, then consumes `fq_lead` |
 
 Actions live in `app/onboarding/beta/lead-actions.ts`; all five calls are best-effort and never
@@ -174,7 +166,7 @@ still supports it), no component changes.
 
 ## Accessibility & UX rules (the "do everything" checklist)
 
-✅ One gate, everything else skippable · ✅ < 90s, visible progress · ✅ once-per-user + resumable
+✅ Nothing blocks but the sign-up itself · ✅ < 90s, visible progress · ✅ once-per-user + resumable
 (idempotent `meta` flag; returning users redirect to `/feed`) · ✅ keyboard + focus management on
 each beat · ✅ `prefers-reduced-motion` honored by every render · ✅ mobile-first (the desktop brand
 rail collapses) · ✅ ends on a real next step: **hands off to the Vera concierge** (`/onboarding/vera`,
@@ -183,7 +175,7 @@ banner catching anyone who skips · ✅ Vera's voice, hot but earned.
 
 ## Success metrics
 
-Induction completion rate + drop-off per beat, oath-accept rate, % who set a photo, % who answer the
+Induction completion rate + drop-off per beat, % who set a photo, % who answer the
 intent question (CRM fill rate), and time-to-complete. Wire to `engagement_events` alongside the
 ADR-047 funnel when the analytics surface lands.
 
@@ -193,9 +185,9 @@ ADR-047 funnel when the analytics surface lands.
 |---|---|
 | `app/onboarding/beta/page.tsx` | Server page: auth guard, fetch profile + regions |
 | `app/onboarding/beta/preview/page.tsx` | **Public, no-auth visual preview** (`/onboarding/beta/preview`): sample data, no writes; exempted in `proxy.ts`, noindexed; torn down at launch |
-| `app/onboarding/beta/induction.tsx` | Client flow: Oath gate + 6 beats (`preview` prop mocks the auth-dependent calls) |
-| `app/onboarding/beta/actions.ts` | `acceptBetaOath`, `completeBetaInduction`; reads `?seq` cookie → records `meta.beta.sequence` + stamps the cohort tag |
-| `lib/onboarding/beta-script.ts` | Vera's scripted copy, `BETA_OATHS`, `BETA_INDUCTION_ACTIVE` flag, the `VeraCopy` type |
+| `app/onboarding/beta/induction.tsx` | Client flow: 4 beats (`preview` prop mocks the auth-dependent calls) |
+| `app/onboarding/beta/actions.ts` | `completeBetaInduction`, `stashPendingInduction`; reads `?seq` cookie → records `meta.beta.sequence` + stamps the cohort tag |
+| `lib/onboarding/beta-script.ts` | Vera's scripted copy, `BETA_INDUCTION_ACTIVE` flag, the `VeraCopy` type |
 | `lib/onboarding/beta-sequences.ts` | The `BetaSequence` shape + the reserved `beta-default` base (code sequences record now empty) |
 | `lib/onboarding/resolve-sequence.ts` | Merges code base + vera_config + `sequence_overrides` (server-only) |
 | `app/(marketing)/beta/[slug]/page.tsx` | Public per-audience splash for CODE sequences (404s while none ship) |
