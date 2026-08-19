@@ -837,7 +837,7 @@
     },
     {
       "id": "LIVE-027",
-      "title": "Send the four prod-ahead tokens back to DAWN",
+      "title": "Send the three prod-ahead tokens back to DAWN (NOT the fourth)",
       "status": "open",
       "lane": "live",
       "size": "XS",
@@ -845,11 +845,11 @@
         "file": "docs/UX-MATURITY-PLAN.md",
         "ref": "Addendum §4 finding 3"
       },
-      "detail": "--color-focus-ring, --color-text-on-primary, --color-text-on-broadcast and --color-text-subtle are all CORRECT in production and wrong in DAWN's artifact. SYNC.md requires these go back on the next round or the next handoff silently reintroduces the AA failures they fixed.",
+      "detail": "CORRECTED 2026-08-19: this row listed FOUR tokens and one of them must not be sent. --color-focus-ring, --color-text-on-broadcast and --color-text-subtle are genuinely correct in production and wrong in DAWN's artifact, and SYNC.md requires they go back on the next round or the next handoff silently reintroduces the AA failures they fixed. --color-text-on-primary is NOT one of them and has not been since 2026-08-06. Production is #FFFFFF and DAWN is #FFFFFF; verified in both files 2026-08-19, and lib/theme/dawn-divergence.test.ts derives the divergence set from both stylesheets on every pnpm test and agrees. What happened was a SPLIT, not a revert: while on-primary was ink every rank core inherited an ink glyph and gold, the lightest core by design, fell to 2.46:1. The glyph moved to its own token (--color-text-on-rank) and the button label went back to white. SENDING THE OLD ROW WOULD ASK DAWN TO MAKE ON-PRIMARY INK, reintroducing, from the very sheet meant to prevent regressions, the exact failure the split fixed. design_handoff/PROD-AHEAD.md section 4 is the authority and says so under the heading \"Do not send\"; that sheet is machine-checked and this row was not, which is why the row drifted and the sheet did not. PROD-AHEAD section 5 also lists twelve additions DAWN has no row for, including --color-text-on-rank itself, which the outbound handoff should carry as new rows rather than corrections.",
       "verify": {
         "kind": "manual",
-        "evidence": "Closes when the next outbound DAWN handoff carries them.",
-        "checked": "2026-08-17"
+        "evidence": "Closes when the next outbound DAWN handoff carries the THREE real prod-ahead tokens. design_handoff/PROD-AHEAD.md is the sheet the handoff copies and is derived by lib/theme/dawn-divergence.test.ts on every pnpm test (5 tests, passing 2026-08-19), so the token set is machine-checked even though the act of sending is not. --color-text-on-primary confirmed identical (#FFFFFF) in app/globals.css and design_handoff/dawn/tokens/colors.css on 2026-08-19.",
+        "checked": "2026-08-19"
       }
     },
     {

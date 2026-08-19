@@ -394,14 +394,25 @@ count — see ADR-1072. Worth fixing in DAWN alongside the two above.) Guarded b
 the token ever point at different values again, and now also fails if any component re-declares
 the role instead of composing it.
 
-**2. Four tokens where production is ahead** (contrast fixes DAWN has not picked up):
+**2. THREE tokens where production is ahead** (contrast fixes DAWN has not picked up). Updated
+2026-08-19: this list said four, and the fourth is false in the dangerous direction. The standing
+sheet is [`PROD-AHEAD.md`](PROD-AHEAD.md), which is derived from both stylesheets by
+`lib/theme/dawn-divergence.test.ts` on every `pnpm test`; prefer it over this dated entry.
 
 | Token | DAWN | Production | Why |
 |---|---|---|---|
 | `--color-focus-ring` | `#E2912F` | `#B86A15` | 1.75:1 → 3.87:1 |
-| `--color-text-on-primary` | `#FFFFFF` | `#1A1206` | white on amber fails AA |
+| ~~`--color-text-on-primary`~~ | `#FFFFFF` | `#FFFFFF` | 🔴 **DO NOT SEND.** The two agree, and have since 2026-08-06. See below. |
 | `--color-text-on-broadcast` | `#FFFFFF` | `#1A1206` | same, on the broadcast cyan |
 | `--color-text-subtle` | `#8F8675` | `#6E6558` | the contrast sweep darkened it |
+
+🔴 **Why the struck row must not be sent.** It was never reverted, it was SPLIT. The moment
+`--color-text-on-primary` became ink, every rank core inherited an ink glyph and gold — the lightest
+core in the spectrum by design — fell to **2.46:1**. The glyph moved to its own
+`--color-text-on-rank` and the button label went back to white. Applying the old row would ask DAWN
+to make on-primary ink again, reintroducing from the very sheet meant to prevent regressions the
+exact failure the split fixed. `--color-text-on-rank` is one of the ADDITIONS in
+[`PROD-AHEAD.md`](PROD-AHEAD.md) §5, and is what should travel instead.
 
 **3. The Vault row's glyph.** `ui_kits/app/nav-rail.jsx` still names `gem` for `vault`. Production
 moved the Vault to the literal vault-door glyph in the 2026-08-03 round and kept Gem as the
