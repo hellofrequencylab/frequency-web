@@ -2252,6 +2252,23 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/practices.ts','utf8');if(!/async function slugsForPractices\\(/.test(s)){console.error('slugsForPractices is gone');process.exit(1)}const calls=(s.match(/slugsForPractices\\(/g)||[]).length;const attaches=(s.match(/slug: slugById\\.get\\(/g)||[]).length;if(calls<4||attaches<3){console.error('a practices_ranked reader stopped attaching the slug: '+(calls-1)+'/3 calls, '+attaches+'/3 attaches');process.exit(1)}process.exit(0)\""
       }
+    },
+    {
+      "id": "LIVE-053",
+      "title": "/feed has thrown a Supabase this-loss TypeError in production for six weeks and nothing recorded it",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/supabase/admin.ts",
+        "ref": "createAdminClient"
+      },
+      "detail": "FOUND 2026-08-19 by a runtime-health read after the five merges of that night, not by a gate. Vercel groups exactly one production runtime error for the project: TypeError: Cannot read properties of undefined (reading 'rest'), route /feed, first seen 2026-07-09T21:45:33Z and last seen 2026-08-19T04:36:35Z, 1 occurrence and 1 user in the trailing 6h. It is PRE-EXISTING: the last occurrence is 68 minutes BEFORE the first merge of that run (05:44), so none of #2166-#2170 introduced it. The single frame is minified: at async gw (.next/server/chunks/ssr/app_(main)_view-as-actions_ts_073-c-k._.js:74:6517).\n\nDIAGNOSIS, and it is not the obvious one. The first reading was the practice-streak rest window (StoredStreak.rest, the 'life happens' pause), because /feed reads it and the word matches. That is WRONG on the code: readStored() coalesces with (meta?.practiceStreak ?? {}) and getPracticeStreak() always returns a constructed object, so neither ps.rest nor stored.rest can throw. 'rest' is a SUPABASE-INTERNAL property. In @supabase/supabase-js dist/index.mjs the SupabaseClient constructor sets this.rest (line 664) and exactly three methods read it: from() -> this.rest.from (690), schema() -> this.rest.schema (700), rpc() -> this.rest.rpc (730). So the error is one of those three called with a lost `this` — a client method used as a bare value rather than invoked on its client.\n\nWHAT THE TREE DOES NOT EXPLAIN. There is no such site in source. Swept app/, lib/ and components/ for a destructured or unbound client method: no `const { from } = client`, no `.from` / `.rpc` / `.schema` appearing as a value rather than a call, and the one deliberate rebinding is correct (lib/analytics/insights-read.ts:52 returns db.rpc.bind(db)). No runtime Proxy wraps a client outside tests. All four factories (admin/server/public/client) return the client directly. So closing this needs something the repo cannot supply on its own: a source-mapped frame, or a repro.\n\nWHY IT IS WORTH A ROW RATHER THAN A SPECULATIVE PATCH. It is rare (1 user), pre-existing, on a route this run did not touch, and every candidate fix would be a guard added blind — the shape-not-truth move this repo names in four ADRs. It is recorded instead so it stops being invisible: a real production error ran unrecorded for six weeks, which is exactly the 'every fail-safe needs a gate that notices it fired' rule with no gate at all.\n\nNEXT STEP for whoever picks it up: Vercel retains no log LINES this far back (a runtime-logs query over the 04:20-04:50 window on 2026-08-19 returned nothing, only the aggregated error group survives), so wait for the next occurrence and read it fresh, or map app_(main)_view-as-actions_ts_073-c-k._.js:74:6517 against the deployed build's source map to name `gw`. Do not raise a guard until the call site is named.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Vercel get_runtime_errors over the project, 6h window ending 2026-08-19T10:00Z: exactly one group, TypeError: Cannot read properties of undefined (reading 'rest'), count 1, users 1, routes /feed, first 2026-07-09T21:45:33Z, last 2026-08-19T04:36:35Z. Supabase attribution read directly from node_modules/@supabase/supabase-js/dist/index.mjs lines 664/690/700/730. Source sweep for an unbound client method across app/ lib/ components/ returned zero sites. Closes when a runtime-errors read over a 7d window shows zero occurrences of this group AND the call site is named in this row — a quiet week alone does not close it, since the natural rate is roughly one hit per six weeks.",
+        "checked": "2026-08-19"
+      }
     }
   ]
 }
