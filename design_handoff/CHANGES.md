@@ -267,12 +267,18 @@ with a text shadow, plus a top scrim — a bright sky was eating the chrome rega
 of colour. Nav contrast on the About hero: 2.88:1 → **12.4:1**. `variant` still
 overrides, for a page that knows better.
 
-**Pricing is on ADR-590 canon, restructured.** Row one, cream: Member · **Crew (best
-choice)** · Space, all free, side by side, Crew wider and the only card that floats.
-Row two, ink: Business $19 (list $29) · **Collective $49 (list $79, best choice)** ·
-Non Profit $39 flat. Struck list prices carry a "Beta price" label. **Repo-side check:**
-any surface still showing the retired flat 3% platform fee, or a Business/Collective
-price other than these, is stale.
+**Pricing restructured.** Row one, cream: Member · **Crew (best choice)** · Space, all
+free, side by side, Crew wider and the only card that floats. Row two, ink: Business ·
+**Collective (best choice)** · Non Profit flat.
+
+> ⚠️ **Updated 2026-08-19.** As built on 2026-08-03 this row carried struck "Beta price"
+> anchors (Business $19 over $29, Collective $49 over $79). The Opening Beta window
+> CLOSED on 2026-08-17 ([ADR-1060](../docs/DECISIONS.md)), so those anchors are gone:
+> `ui_kits/marketing/pricing.html` now shows **Business $29 · Collective $79 · Non
+> Profit $39 flat**, one price each, with a yearly caption ("Or $290 a year, two months
+> free") where the strike used to be. **Repo-side check:** any surface still showing a
+> struck anchor, a "Beta price" / "Opening Beta" / founding-rate caption, the retired
+> flat 3% platform fee, or a Business/Collective price other than $29/$79 is stale.
 
 **The Lab is a vision page for 2028**, not a venue page. No rates anywhere, nothing
 bookable, concept photography explicitly labelled "Reference, not our room", and the

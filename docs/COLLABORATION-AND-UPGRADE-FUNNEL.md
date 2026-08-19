@@ -13,7 +13,7 @@ Three independent axes decide what someone can do (unchanged, [PRICING.md](PRICI
 
 | Axis | Values | Bought / earned |
 |---|---|---|
-| **Personal tier** (`profiles.membership_tier`) | Visitor · Member (free) · **Crew** ($9) | self-serve billing |
+| **Personal tier** (`profiles.membership_tier`) | Visitor · Member (free) · **Crew** (contribute what you want, floor $4.99/mo) | self-serve billing |
 | **Community role** (`profiles.community_role`) | Member · Host · Guide · Mentor | **earned, never paid** (ADR-207) |
 | **Space plan** (`spaces.plan`) | Free · **Business** ($29) · **Collective** ($79) · **Non Profit** ($39) | self-serve billing |
 
@@ -47,10 +47,10 @@ Each row is one funnel point: a member plays with the value, hits a single clear
 
 | # | From | To | Trigger (the moment) | What it unlocks |
 |---|---|---|---|---|
-| 1 | Member (free) | **Crew** ($9) | wants the full game / to stand up their **first Space** | Vault cash-in, full gamification, unlimited Vera, **create 1 Space** |
+| 1 | Member (free) | **Crew** (contribute what you want) | wants the full game / to stand up their **first Space** | Vault cash-in, full gamification, unlimited Vera, **create 1 Space** |
 | 2 | Free Space | **Business** ($29) | wants to **host collaborators**, run a real team, or run **more than one Space** | collaborators, event co-hosting, seats, full CRM/email/automation, custom domain, unlimited Spaces |
 | 3 | Free Space | **Non Profit** ($39) | a verified 501(c)(3) wants the full depth at the mission price | everything in Business + donation framing, flat price |
-| 4 | Any paid Space | **+ Resonance Engine** (+$20) | CRM crosses enough contacts to want live matching | the AI matching + next-best-action depth |
+| 4 | Any paid Space | **+ Vera AI** (+$20/mo, $200/yr) | CRM crosses enough contacts to want live matching | the AI matching + next-best-action depth (the Resonance Engine machinery under the hood; the product is called Vera AI, ADR-590) |
 | 5 | Business | **more operator seats** (+per seat) | invites a 2nd operator to help run the back office | extra editor/moderator/admin seats (ADR-799 §A) |
 
 **Selling IS a wall; being paid attention is not** (ADR-913, revising ADR-552's "money exchange is never
@@ -63,7 +63,7 @@ Frequency charges once for the introduction, and after that they're your people,
 
 ## 4. What a member can do at each stage (the taste)
 
-| Capability | Visitor | Member (free) | Crew ($9) | Free Space | Business / Non Profit |
+| Capability | Visitor | Member (free) | Crew (contribute what you want) | Free Space | Business / Non Profit |
 |---|---|---|---|---|---|
 | Browse, RSVP, participate | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Create an event** | 🔴 | ✅ (ADR-810) | ✅ | ✅ | ✅ |

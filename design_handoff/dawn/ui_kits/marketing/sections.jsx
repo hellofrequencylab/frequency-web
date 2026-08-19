@@ -159,7 +159,7 @@ function FaqList({ items = DEFAULT_FAQ, tone = 'canvas' }) {
 window.FaqList = FaqList;
 
 const DEFAULT_FAQ = [
-    { q: 'Is it really free?', a: 'Free during the beta, no card today, and you can leave anytime. Founding pricing is locked for the life of the subscription.' },
+    { q: 'Is it really free?', a: 'Yes. The Member tier is free forever, there is no card to start, and you can leave anytime. Crew is the paid personal tier, and you choose what you contribute.' },
     { q: 'Where is Frequency?', a: 'The first Lab is taking root in North County San Diego. A Circle can start anywhere on Earth, and plenty already have.' },
     { q: 'What is a Circle?', a: 'A small standing local group around one interest that meets weekly. It is the atomic unit of the whole thing.' },
     { q: 'Is this a meditation app?', a: 'Yes, partly. We made it a game so you would actually do it, and the game only pays out for things you do with other people in real life.' },

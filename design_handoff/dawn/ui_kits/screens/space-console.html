@@ -132,9 +132,9 @@ function Page() {
             <p style={{ margin: '0 0 10px', fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--color-text-muted)' }}>
               Nothing is locked. Every tool is here on the free plan, capped, and it is always 0% on your own people.
             </p>
-            <GateNotice kind="preview" title="Billing turns on September 1"
-              action={<Button size="sm" disabled>Go Business</Button>}>
-              This is the real screen. The button does not charge anyone yet.
+            <GateNotice kind="gated" title="The free allowances start counting September 1"
+              action={<Button size="sm">Go Business</Button>}>
+              Nothing is taken away before then. Business is $29 a month, or $290 for the year, and it takes your rate on network sales from 10% to 5%.
             </GateNotice>
           </Card>
         </div>
@@ -225,9 +225,9 @@ function Page() {
                 { kind: 'members', value: '61%', caption: 'Return' },
               ]} />
               <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--color-border)' }}>
-                <ProgressTrack label="Fee buydown" hint="3% vs 5%" value={68} total={100} accent="signal" />
+                <ProgressTrack label="Fee buydown" hint="5% vs 10%" value={68} total={100} accent="signal" />
                 <p style={{ margin: '10px 0 0', fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)', lineHeight: 1.55 }}>
-                  At this volume the flat rate is the cheaper of the two. Break even sits near $2,500 a month in sales.
+                  At this volume Business is the cheaper of the two. Break even sits near $600 a month in sales the network brought you.
                 </p>
               </div>
             </div>

@@ -210,13 +210,13 @@ function Page() {
       ) : sec === 'plan' ? (
         <>
           <F.Beat first icon="credit-card" title="Plan and billing">
-            <GateNotice kind="preview" title="Everyone has Crew, free, until September 1"
-              action={<Button size="sm" disabled>Start a subscription</Button>}>
-              Membership is free through the beta, and this is the real screen. Founding pricing is 9 dollars a month, locked for the life of the subscription, and there is no card on file today.
+            <GateNotice kind="gated" title="Everything is open until September 1"
+              action={<Button size="sm">Choose your amount</Button>}>
+              The free allowances start counting at graduation, and nothing is taken away before then. Crew is contribute what you want: the floor is $4.99 a month, $24.99 is suggested, and every amount buys exactly the same access.
             </GateNotice>
             <div style={{ marginTop: 16 }}>
-              <Row title="Crew" hint="Unlocks spending your Vault balance and the public rank endorsement. Everyone plays; only payers cash in." control={<Badge tone="signal">Free in beta</Badge>} />
-              <Row title="Pay what you want" hint="A supporter badge on your Crew membership, at whatever number you pick." control={<Switch />} />
+              <Row title="Crew" hint="Unlocks spending your Vault balance and the public rank endorsement. Everyone plays; only payers cash in." control={<Badge tone="signal">Comped until Sept 1</Badge>} />
+              <Row title="Contribute what you want" hint="A Supporter mark on your Crew membership, at whatever amount you pick." control={<Switch />} />
             </div>
             <div style={{ marginTop: 18 }}>
               <SectionHeader title="What you have earned" />
