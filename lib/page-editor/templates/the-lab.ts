@@ -10,7 +10,8 @@ import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
 // labelled "Reference, not our room", the cream plan band with the Now → 2027 →
 // 2028 build timeline where rate cards would sit, the statement interstitial,
 // the "in the meantime" trio pointing at the community that already exists, the
-// triptych nav, and the dark close. Same structure, same copy.
+// triptych nav, and the dark close. Same structure, same copy, plus the FAQ
+// the coded body declared but never rendered (LIVE-040, see `tl-faq` below).
 //
 // HONESTY CONTRACT (CONTENT-VOICE §7, design_handoff/CHANGES.md): nothing on
 // this page is bookable and no rates appear anywhere. The hero note says so in
@@ -183,6 +184,53 @@ export const data: Data = {
         shape: 'arc',
         texture: 'none',
         tone: 'surface',
+        layout: L,
+      },
+    },
+
+    // ── The short answers ── RECOVERED from the retired coded body (LIVE-040).
+    // The five questions are verbatim from `THE_LAB_FAQ`, which lived in
+    // app/(marketing)/the-lab/page.tsx until commit c3228d76c. Its `faqSchema()`
+    // call sat on the LEGACY branch of `data ? <BlockRender/> : <Legacy/>`, and
+    // that branch could never be taken, so /the-lab emitted no FAQPage from the
+    // day the template landed. This block is the honest fix: `AccordionBlock`
+    // builds its FAQPage from the very items it draws, so the structured data
+    // cannot out-claim the page (CONTENT-VOICE §8b) and cannot drift from the
+    // copy. Do NOT replace it with a hand-written JSON-LD node.
+    // ──────────────────────────────────────────────────────────────────────────
+    {
+      type: 'Accordion',
+      props: {
+        id: 'tl-faq',
+        eyebrow: 'Questions',
+        title: 'The short answers.',
+        titleAccent: '',
+        items: [
+          {
+            q: 'What is The Lab?',
+            a: `The Lab is a third space the Frequency community is building: not home, not work, a real room to move, warm up in the sauna, cool down in the plunge, and switch off in person. The first one is planned for 2028 in ${FOUNDING_PLACE}. It is not open yet.`,
+          },
+          {
+            q: 'Can I visit The Lab yet?',
+            a: 'Not yet, and nothing at The Lab is bookable. The first Lab is planned to open in 2028. Until then the community meets in rooms we borrow: parks, living rooms, and rented studios. You can join a Circle near you today.',
+          },
+          {
+            q: 'What will be inside The Lab?',
+            a: 'Movement studios, a cedar thermal circuit, a cold plunge pool, a no-alcohol connection bar, and a flexible events floor. One building, tuned room by room.',
+          },
+          {
+            q: 'When will The Lab open?',
+            a: 'The plan on the page is dated: Circles meeting in borrowed rooms now, a site and permits through 2027, and the first Lab opening in 2028. There are no membership rates published because there is nothing to sell yet.',
+          },
+          {
+            q: 'Where will the first Lab be?',
+            a: `The first Lab is planned for ${FOUNDING_PLACE}, where the founding community is already meeting, and it is built to repeat in other cities once the community is there.`,
+          },
+        ],
+        emphasis: { scale: 'default', accent: 'none' },
+        tone: 'surface',
+        width: 'default',
+        align: 'left',
         layout: L,
       },
     },
