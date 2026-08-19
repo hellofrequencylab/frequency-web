@@ -12,6 +12,11 @@
 > balanced Community vs Labs**. Every page: indexed, on a funnel + onboarding path, Puck-editable,
 > on the voice + naming canon.
 
+> **Rename note (2026-08-19, [ADR-1090](DECISIONS.md)):** the sign-up feature is now **Funnels**
+> and its routes moved — `/onboarding/beta` → `/join`, `/beta/<slug>` → `/join/<slug>` (permanent
+> 308s cover the old links). The audit lines below predate the move and keep their original URLs
+> as a record of what was measured; read them through that mapping. Spec: [`FUNNELS.md`](FUNNELS.md).
+
 ## Where we are (audit, 2026-07-02)
 
 - ✅ **SEO indexing is strong** — nearly every forward-facing page is in `app/sitemap.ts` with

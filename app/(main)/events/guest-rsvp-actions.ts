@@ -38,7 +38,7 @@ export type GuestRsvpResult = { ok: true } | { ok: false; error: string }
  * The untyped RPC surface (ADR-246). `capture_guest_rsvp` is live but not in the generated
  * lib/database.types.ts, and `rpc()` is typed from that same generated file, so the cast stays until
  * the types are refreshed AND every caller is retyped in one pass. Identical to the handle
- * app/onboarding/beta/lead-actions.ts uses for capture_signup_lead, which is this function's sibling.
+ * app/join/(induction)/lead-actions.ts uses for capture_signup_lead, which is this function's sibling.
  */
 type UntypedRpc = {
   rpc: (

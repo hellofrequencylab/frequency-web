@@ -13,13 +13,13 @@ import {
 } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { FUNNEL_STYLES } from '@/lib/funnels/funnel-styles'
+import { FUNNEL_STYLES } from '@/lib/funnels/styles'
 import { DashboardTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/field'
-import { listAllSequences, resolveSequence } from '@/lib/onboarding/resolve-sequence'
-import { createSequenceVersion, createFromTemplateAction } from './builder-actions'
+import { listAllFunnels, resolveFunnel } from '@/lib/funnels/resolve'
+import { createFunnelAction, createFromTemplateAction } from './builder-actions'
 import { getTrait } from '@/lib/traits/registry'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { styleWithInlinedLogo } from '@/lib/qr/raster'
@@ -32,12 +32,12 @@ import { TRIGGER_CHIP } from '@/lib/walkthroughs'
 import { allRolePromotionWalkthroughs } from '@/lib/walkthroughs/role-promotion'
 import { RolePromotionPreview } from './role-promotion-preview'
 
-// Splash Funnels (ADR-068 → ADR-162, Phase 4): the one library for the whole onboarding
-// front door. The FIRST entry is Funnel 1 — the current LIVE onboarding (slug beta-default),
-// what /onboarding/beta runs with no ?seq, edited at /pages/splash. It is never cloned or
+// Funnels (ADR-068 → ADR-162 → ADR-1090): the one library for the whole sign-up
+// front door. The FIRST entry is Funnel 1 — the current LIVE default (stored slug beta-default),
+// what /join runs with no ?seq, edited at /pages/splash. It is never cloned or
 // touched when you build a new funnel. Every NEW funnel is seeded from a separate prompts
 // TEMPLATE (templateSeed() — the live flow's structure with fill-in copy), runs the full
-// induction in its own voice at /onboarding/beta?seq=<slug>, stamps a marketing tag so the
+// induction in its own voice at /join?seq=<slug>, stamps a marketing tag so the
 // cohort stays segmentable, and carries its own lifecycle (draft → published, duplicate,
 // delete). Role promotion tours are a separate, always-on category, listed below.
 
@@ -48,7 +48,7 @@ const VIEW_LINK = 'inline-flex items-center gap-1 text-meta text-muted hover:tex
 const EDIT_BTN =
   'inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover'
 
-// PERF-9: each custom funnel below costs a resolveSequence read + a server-side QR
+// PERF-9: each custom funnel below costs a resolveFunnel read + a server-side QR
 // render, so cap how many we fan out per page load. Operators have a handful, not
 // hundreds; this bounds the work even if the list grows unexpectedly.
 const MAX_FUNNELS = 100
@@ -77,7 +77,7 @@ export default async function SplashFunnelsPage() {
   // Both sources: custom (DB versions built in the wizard) AND code (e.g. the breathwork feature
   // funnel, ADR-619). Code funnels are managed in the repo, so their row shows a "code" chip instead
   // of the DB lifecycle controls.
-  const funnels = (await listAllSequences())
+  const funnels = (await listAllFunnels())
     .filter((s) => s.source === 'custom' || s.source === 'code')
     .slice(0, MAX_FUNNELS)
 
@@ -91,8 +91,8 @@ export default async function SplashFunnelsPage() {
   // pre-render its induction QR server-side in the branded site style.
   const cards = await Promise.all(
     funnels.map(async (f) => {
-      const seq = await resolveSequence(f.slug, { preview: true })
-      const inductionPath = `/onboarding/beta?seq=${f.slug}`
+      const seq = await resolveFunnel(f.slug, { preview: true })
+      const inductionPath = `/join?seq=${f.slug}`
       const inductionQr = renderStyledQrSvg(toAbsoluteSiteUrl(inductionPath), brandedStyle, 160)
       return {
         slug: f.slug,
@@ -116,8 +116,8 @@ export default async function SplashFunnelsPage() {
   return (
     <DashboardTemplate
       eyebrow="Pages"
-      title="Splash Funnels"
-      description="Every onboarding front door in one place. Start from the template, tune a funnel for a specific audience, share its link, and everyone who joins through it walks the full induction in that voice."
+      title="Funnels"
+      description="Every sign-up front door in one place. Start from the template, tune a Funnel for a specific audience, share its link at /join, and everyone who joins through it walks the full induction in that voice."
       width="wide"
       actions={
         <div className="flex items-center gap-2">
@@ -161,7 +161,7 @@ export default async function SplashFunnelsPage() {
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <a
-              href="/onboarding/beta"
+              href="/join"
               target="_blank"
               rel="noreferrer"
               className={VIEW_LINK}
@@ -176,7 +176,7 @@ export default async function SplashFunnelsPage() {
       </section>
 
       {/* ── Funnel styles — the registry of styles this page manages (ADR-617). Adding a
-              style is a row in lib/funnels/funnel-styles.ts; this overview and the sections
+              style is a row in lib/funnels/styles.ts; this overview and the sections
               below read it. Onboarding is live; Feature + Demographic are planned. ── */}
       <section>
         <SectionHeader title="Funnel styles" />
@@ -364,7 +364,7 @@ export default async function SplashFunnelsPage() {
                       {source === 'code' ? (
                         <span
                           className="inline-flex items-center gap-1.5 rounded-pill border border-border px-2.5 py-1 text-meta font-medium text-subtle"
-                          title="This funnel is defined in the repo (a code sequence), so it is managed in code, not here."
+                          title="This Funnel is defined in the repo, so it is managed in code, not here."
                         >
                           <Lock className="h-3 w-3" /> Managed in code
                         </span>
@@ -409,7 +409,7 @@ export default async function SplashFunnelsPage() {
           and its marketing tag are labelled from the start.
         </p>
         <div className="max-w-3xl rounded-card border border-border bg-surface p-5 lift-1">
-          <form action={createSequenceVersion} className="flex flex-wrap items-end gap-2">
+          <form action={createFunnelAction} className="flex flex-wrap items-end gap-2">
             <label className="min-w-0 flex-1">
               <span className="mb-1 block text-meta font-semibold text-subtle">Audience name</span>
               <Input
@@ -438,7 +438,7 @@ export default async function SplashFunnelsPage() {
             <span className="font-semibold text-text">1. Make a funnel, then share its link.</span>{' '}
             Each funnel gets a link and a QR (PNG or SVG) into its induction (
             <code className="rounded bg-surface-elevated px-1 py-0.5 font-mono text-meta">
-              /onboarding/beta?seq=&lt;slug&gt;
+              /join?seq=&lt;slug&gt;
             </code>
             ) for a video description, a DM, a partner email, or printed signage.
           </li>

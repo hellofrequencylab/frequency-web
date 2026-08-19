@@ -59,8 +59,8 @@
 
 | Feature | Surface | What it is | Spec |
 |---|---|---|---|
-| **Beta induction** | `/onboarding/beta?seq=` | The cinematic voiced induction (splash → welcome → tour → profile → step in) | BETA-INDUCTION |
-| **Audience sequences** | `/beta/[slug]` | Audience-targeted versions of the induction + cohort marketing tags | BETA-ACTIVATION |
+| **Funnels induction** | `/join?seq=` | The cinematic voiced sign-up induction (welcome → tour → profile → step in) | FUNNELS |
+| **Funnels (audience)** | `/join/[slug]` | Audience-targeted Funnels: splash + induction voice + cohort marketing tags | FUNNELS |
 | **Vera's chores / coach** | overlay + Next-Steps pill | Activation full-stop, then the single next move; gems-nudged. Coach popup redesigned (`chores-overlay`, only "Don't show till tomorrow") | BETA-ACTIVATION |
 | **Onboarding edge tabs** | left/right margins | `edge-pill` tabs tucked into the margins, icon-only at rest | — |
 | **Founder's First Week** | `/founder` | Six moves → Founder badge. All config (reward · Vera copy · page copy · the six tasks) centralized in `lib/onboarding/founder-config.ts` (ADR-184) | ONBOARDING-BUILD-LIST |
@@ -83,7 +83,7 @@
 |---|---|---|---|
 | **Growth Studio** | `/admin/growth` | The acquisition/onboarding launchpad (absorbed Marketing, IA §10.2) | LEAD-FLOWS |
 | **Landing pages** | `/pages` · `/edit/[slug]` | Block (Puck) page editor + publish | PAGE-EDITOR-SPEC · PAGE-FRAMEWORK |
-| **Onboarding sequences** | `/pages/sequences` · `…/[slug]/build` | Beat-by-beat induction **version builder** + splash editor + share/QR (ADR-162) | — |
+| **Funnels manager** | `/pages/sequences` · `…/[slug]/edit` | Beat-by-beat Funnel builder + splash editor + share/QR (ADR-162, ADR-1090) | FUNNELS |
 | **Entry points** | `/entry-points` | Crew QR campaigns that bring people in (flyers deferred) | ENTRY-POINTS |
 | **QR Studio** | `/admin/qr` | Design/route/track managed QR codes (dynamic, A/B, styles) | — |
 | **Links & codes** | `/codes` | Personal/referral short links | — |

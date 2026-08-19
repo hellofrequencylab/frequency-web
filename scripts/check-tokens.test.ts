@@ -53,7 +53,7 @@ describe('counting occurrences, not lines', () => {
 describe('a file-level waiver must not waive classes nobody exempted', () => {
   // induction.tsx was allowlisted for a 4-hex Google brand mark, and the exemption silently
   // covered its arbitrary type as well. Scoped entries are the fix.
-  const INDUCTION = 'app/onboarding/beta/induction.tsx'
+  const INDUCTION = 'app/join/(induction)/induction.tsx'
 
   it('still exempts the hex palette it was granted for', () => {
     expect(kinds('const g = "#4285F4"', INDUCTION)).toEqual([])

@@ -3,7 +3,7 @@
 // Persona selection log (ADR-125 funnel instrumentation). Owner directive: "in the general splash
 // funnel, it needs to log what they selected, and cue them up for future onboarding sequences." Today a
 // persona pick lives ONLY in client cookies (fq_persona / fq_personas) and reaches the DB solely at full
-// completion (writeBetaInduction), so abandoners and cross-device losses are never captured. This records
+// completion (writeInduction), so abandoners and cross-device losses are never captured. This records
 // the pick at SELECTION time.
 //
 // The visitor is usually ANONYMOUS here (no profile / email yet), so this logs an anonymous-safe

@@ -8,7 +8,7 @@ import {
   deleteSequenceVersionAction,
 } from './builder-actions'
 
-// Per-row lifecycle controls for one custom Splash funnel, split out so Delete can
+// Per-row lifecycle controls for one custom Funnel, split out so Delete can
 // confirm first and every action shows a pending state. The reads + the Edit/Preview
 // links stay in the server component; only these mutations need client interactivity.
 

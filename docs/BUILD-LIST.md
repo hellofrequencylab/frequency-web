@@ -1047,7 +1047,7 @@ re-do of the capture.
 - **Comms infra:** notification router/registry + migrate email/push onto the outbox queue · deliverability hardening (SPF/DKIM/DMARC subdomain) · verify `frequencylocal.com` in Resend + OAuth redirect URLs · submit sitemap/robots.
 - **Scale (Phase 4, when measured):** paginate People/Circles · `force-dynamic`→ISR on CMS pages · profile zap-sum via SQL · `<img>`→`next/image` · Supavisor/read-replicas/denormalized feed read-model/partitioning/Broadcast realtime.
 - **Design system:** unify pill/button radius (shared `Button`/`Badge` primitive) site-wide.
-- 📋 **Convert `app/onboarding/beta/induction.tsx` to the kit — wholesale, not one beat.** The
+- 📋 **Convert `app/join/(induction)/induction.tsx` to the kit — wholesale, not one beat.** The
   `raw-input` ratchet was **raised 184 → 186 on 2026-08-07** ([ADR-959](DECISIONS.md)) for three new
   controls: the Beat 1 email capture and the First/Last pair that replaced one Display name field.
   It stays flagged ⚠️ on every `check:adoption` run until a sweep brings it down, which is the point.
@@ -1168,7 +1168,7 @@ from role), the role-based proxies are wrong and must move to the tier.
 - **Help:** `/help`, `/help/[category]`, `/help/[category]/[slug]`, `/help/changelog` → Index/Stream/Detail
 - **Discover:** `/discover`(+`/circles`,`/events`,`/topics` & their `[id]`/`[slug]`) → Index/Detail
 - **Focus/system:** `/sign-in`(+confirm) · `/privacy` · `/unsubscribe` · `/code-unavailable` · `/n/[nodeId]` · `/g/[slug]` → Focus
-- **Sanctioned exceptions (do NOT migrate):** `(marketing)/*` · `/edit/[slug]`, `/journeys/[slug]`, `/practices/[id]/edit`, `/pages/sequences/[slug]/{build,edit}` (editors) · `/messages/[id]`, `/messages/r/[roomId]` (real-time) · `/join/[token]`, `/onboarding/*` (flows) · redirects/print.
+- **Sanctioned exceptions (do NOT migrate):** `(marketing)/*` · `/edit/[slug]`, `/journeys/[slug]`, `/practices/[id]/edit`, `/pages/sequences/[slug]/{build,edit}` (editors) · `/messages/[id]`, `/messages/r/[roomId]` (real-time) · `/join/*`, `/onboarding/*` (flows) · redirects/print.
 - ✅ **`/admin/*` (20 pages) now on the template system** — `AdminPage` promoted to a first-class **`AdminTemplate`** in `@/components/templates` that composes the shared `PageHeading` (was a parallel hand-rolled header). All 20 admin pages adopt it via a back-compat alias — zero per-page changes. The sixth template; the admin-nav sibling of Dashboard.
 
 *(Specialist surfaces — message threads, editors, QR/CRM tools, scan landings — stay custom by

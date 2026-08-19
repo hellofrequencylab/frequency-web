@@ -26,7 +26,7 @@ export interface OnboardingViewer {
 
 // A Loom asset counts as LIVE once it reaches the operator-published rungs of the brand-build
 // ladder (draft → in_review → approved → final). Draft / in_review rows never serve live, so an
-// unfinished managed sequence falls through to the default, exactly like a draft splash funnel.
+// unfinished managed sequence falls through to the default, exactly like a draft Funnel.
 const LIVE_STATUSES = new Set(['approved', 'final'])
 
 /** Every named target axis must include the viewer's value; an absent axis is a wildcard. */

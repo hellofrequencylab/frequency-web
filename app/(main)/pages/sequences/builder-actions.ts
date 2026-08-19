@@ -5,35 +5,40 @@ import { revalidatePath } from 'next/cache'
 import { getJanitor } from '@/lib/page-editor/guard'
 import { getCallerProfile } from '@/lib/auth'
 import {
-  saveSequenceOverride,
-  getSequenceOverride,
-  deleteSequenceVersion,
-  setSequenceStatus,
-  duplicateSequence,
-  listSequenceVersions,
-  type SequenceOverride,
-  type SequenceStatus,
-} from '@/lib/onboarding/sequence-overrides'
-import { listSequences, templateSeed, DEFAULT_SEQUENCE } from '@/lib/onboarding/beta-sequences'
+  saveFunnelOverride,
+  getFunnelOverride,
+  deleteFunnelVersion,
+  setFunnelPublishStatus,
+  duplicateFunnel,
+  listFunnelVersions,
+  type FunnelOverride,
+  type FunnelPublishStatus,
+} from '@/lib/funnels/overrides'
+import { listCodeFunnels, templateSeed, DEFAULT_FUNNEL } from '@/lib/funnels/definitions'
 
-// Splash Funnel lifecycle actions (ADR-162 → splash-editor refactor). Janitor-gated,
-// like the rest of the sequences surface. Saves a funnel's copy override (every voiced
-// beat + title), creates brand-new funnels, duplicates, publishes, and deletes them.
-// Editing happens in the shared splash-style copy editor at /pages/sequences/<slug>/edit.
+// Funnel lifecycle actions (ADR-162 → splash-editor refactor → ADR-1090). Janitor-
+// gated, like the rest of the /pages surface. Saves a Funnel's copy override (every
+// voiced beat + title), creates brand-new Funnels, duplicates, publishes, and deletes
+// them. Editing happens in the shared copy editor at /pages/sequences/<slug>/edit.
+
+// Static siblings of /join/<slug> (ADR-1090): a Funnel slug equal to one of these
+// would be shadowed by the induction's own routes, so the builder refuses them.
+const RESERVED_JOIN_SEGMENTS = ['complete', 'preview']
 
 function slugify(s: string): string {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48)
 }
 
-/** A slug guaranteed not to collide with a code sequence, the reserved default, OR an
- *  existing DB funnel. Reads the live version list so a duplicate/new funnel can never
- *  overwrite another via the slug primary key. */
+/** A slug guaranteed not to collide with a code Funnel, the reserved default, a static
+ *  /join sibling route, OR an existing DB Funnel. Reads the live list so a duplicate/new
+ *  Funnel can never overwrite another via the slug primary key. */
 async function uniqueSlug(base: string): Promise<string> {
   const seed = slugify(base) || 'funnel'
   const taken = new Set<string>([
-    ...listSequences().map((s) => s.slug),
-    DEFAULT_SEQUENCE,
-    ...(await listSequenceVersions()).map((v) => v.slug),
+    ...listCodeFunnels().map((s) => s.slug),
+    DEFAULT_FUNNEL,
+    ...RESERVED_JOIN_SEGMENTS,
+    ...(await listFunnelVersions()).map((v) => v.slug),
   ])
   let slug = seed
   let i = 2
@@ -41,20 +46,20 @@ async function uniqueSlug(base: string): Promise<string> {
   return slug
 }
 
-export async function saveSequenceVersion(slug: string, override: SequenceOverride): Promise<{ ok: boolean }> {
+export async function saveFunnelVersion(slug: string, override: FunnelOverride): Promise<{ ok: boolean }> {
   if (!(await getJanitor())) return { ok: false }
   const me = await getCallerProfile()
   // The copy editor edits content, not lifecycle — merge over the funnel's current
   // override so a save never silently publishes a draft (or unpublishes a live funnel)
   // and never drops fields the editor doesn't touch (splash, marketing tag).
-  const current = await getSequenceOverride(slug)
-  const merged: SequenceOverride = {
+  const current = await getFunnelOverride(slug)
+  const merged: FunnelOverride = {
     ...current,
     ...override,
     status: override.status ?? current?.status,
   }
-  await saveSequenceOverride(slug, merged, me?.id ?? null)
-  revalidatePath('/onboarding/beta')
+  await saveFunnelOverride(slug, merged, me?.id ?? null)
+  revalidatePath('/join')
   revalidatePath('/pages/sequences')
   revalidatePath(`/pages/sequences/${slug}/edit`)
   return { ok: true }
@@ -65,38 +70,39 @@ export async function saveSequenceVersion(slug: string, override: SequenceOverri
  *  marketing tag on the row is KEPT as-is so members already tagged by this funnel stay consistent.
  *  Rejects a collision / a reserved-or-code slug. NOTE: existing links to the OLD ?seq= slug stop
  *  resolving (they fall back to the default flow) — the caller warns the operator before renaming. */
-export async function renameSequenceSlug(
+export async function renameFunnelSlug(
   oldSlug: string,
   desiredSlug: string,
 ): Promise<{ ok: boolean; slug?: string; error?: string }> {
   if (!(await getJanitor())) return { ok: false, error: 'Not allowed.' }
-  // The default flow + code sequences own fixed slugs and cannot be renamed here.
-  if (oldSlug === DEFAULT_SEQUENCE || listSequences().some((s) => s.slug === oldSlug)) {
+  // The default flow + code Funnels own fixed slugs and cannot be renamed here.
+  if (oldSlug === DEFAULT_FUNNEL || listCodeFunnels().some((s) => s.slug === oldSlug)) {
     return { ok: false, error: 'This funnel’s permalink is fixed and cannot be changed.' }
   }
   const next = slugify(desiredSlug)
   if (!next) return { ok: false, error: 'Enter a permalink using letters, numbers, and dashes.' }
   if (next === oldSlug) return { ok: true, slug: oldSlug }
   const taken = new Set<string>([
-    ...listSequences().map((s) => s.slug),
-    DEFAULT_SEQUENCE,
-    ...(await listSequenceVersions()).map((v) => v.slug),
+    ...listCodeFunnels().map((s) => s.slug),
+    DEFAULT_FUNNEL,
+    ...RESERVED_JOIN_SEGMENTS,
+    ...(await listFunnelVersions()).map((v) => v.slug),
   ])
   if (taken.has(next)) return { ok: false, error: 'That permalink is already in use. Pick another.' }
-  const current = await getSequenceOverride(oldSlug)
+  const current = await getFunnelOverride(oldSlug)
   if (!current) return { ok: false, error: 'This funnel could not be found.' }
   const me = await getCallerProfile()
   // Re-key the row: save under the new slug (keeping status + tag + all copy), then delete the old.
-  await saveSequenceOverride(next, current, me?.id ?? null)
-  await deleteSequenceVersion(oldSlug)
+  await saveFunnelOverride(next, current, me?.id ?? null)
+  await deleteFunnelVersion(oldSlug)
   revalidatePath('/pages/sequences')
-  revalidatePath('/onboarding/beta')
+  revalidatePath('/join')
   revalidatePath(`/pages/sequences/${oldSlug}/edit`)
   revalidatePath(`/pages/sequences/${next}/edit`)
   return { ok: true, slug: next }
 }
 
-export async function createSequenceVersion(formData: FormData): Promise<void> {
+export async function createFunnelAction(formData: FormData): Promise<void> {
   if (!(await getJanitor())) return
   const audience = String(formData.get('audience') ?? '').trim() || 'New funnel'
   const slug = await uniqueSlug(audience)
@@ -104,7 +110,7 @@ export async function createSequenceVersion(formData: FormData): Promise<void> {
   // New funnels start from the PROMPTS TEMPLATE (structure of the live flow, fill-in copy)
   // as a DRAFT: nothing goes live until an operator publishes it. Seeded from `templateSeed()`,
   // never from the live `beta-default` override, so creating a funnel can't touch funnel #1.
-  await saveSequenceOverride(
+  await saveFunnelOverride(
     slug,
     { ...templateSeed(), audience, marketingTag: `beta_${slug.replace(/-/g, '_')}`, status: 'draft' },
     me?.id ?? null,
@@ -120,7 +126,7 @@ export async function createFromTemplateAction(): Promise<void> {
   if (!(await getJanitor())) return
   const slug = await uniqueSlug('funnel')
   const me = await getCallerProfile()
-  await saveSequenceOverride(
+  await saveFunnelOverride(
     slug,
     { ...templateSeed(), audience: 'New funnel', marketingTag: `beta_${slug.replace(/-/g, '_')}`, status: 'draft' },
     me?.id ?? null,
@@ -131,34 +137,34 @@ export async function createFromTemplateAction(): Promise<void> {
 /** Duplicate an existing custom funnel into a new draft, then open it in the copy editor. */
 export async function duplicateSequenceAction(slug: string): Promise<void> {
   if (!(await getJanitor())) return
-  if (slug === DEFAULT_SEQUENCE || listSequences().some((s) => s.slug === slug)) return
-  const existing = (await listSequenceVersions()).find((v) => v.slug === slug)
+  if (slug === DEFAULT_FUNNEL || listCodeFunnels().some((s) => s.slug === slug)) return
+  const existing = (await listFunnelVersions()).find((v) => v.slug === slug)
   if (!existing) return
   const label = `${existing.audience ?? slug} copy`
   const newSlug = await uniqueSlug(label)
   const me = await getCallerProfile()
-  await duplicateSequence(slug, newSlug, label, me?.id ?? null)
+  await duplicateFunnel(slug, newSlug, label, me?.id ?? null)
   redirect(`/pages/sequences/${newSlug}/edit`)
 }
 
 /** Publish or unpublish a custom funnel. A draft falls back to the default flow for
- *  visitors (see resolveSequence); publishing makes its own ?seq link go live. */
-export async function setSequenceStatusAction(slug: string, status: SequenceStatus): Promise<void> {
+ *  visitors (see resolveFunnel); publishing makes its own ?seq link go live. */
+export async function setSequenceStatusAction(slug: string, status: FunnelPublishStatus): Promise<void> {
   if (!(await getJanitor())) return
   // The default flow + code sequences are always live and aren't toggled here.
-  if (slug === DEFAULT_SEQUENCE || listSequences().some((s) => s.slug === slug)) return
+  if (slug === DEFAULT_FUNNEL || listCodeFunnels().some((s) => s.slug === slug)) return
   const me = await getCallerProfile()
-  await setSequenceStatus(slug, status, me?.id ?? null)
+  await setFunnelPublishStatus(slug, status, me?.id ?? null)
   revalidatePath('/pages/sequences')
-  revalidatePath('/onboarding/beta')
+  revalidatePath('/join')
 }
 
 export async function deleteSequenceVersionAction(slug: string): Promise<void> {
   if (!(await getJanitor())) return
   // Only DB-created versions are deletable; code sequences are immutable here, and
   // the default flow's override is reset from /pages/splash, not deleted here.
-  if (slug === DEFAULT_SEQUENCE || listSequences().some((s) => s.slug === slug)) return
-  await deleteSequenceVersion(slug)
+  if (slug === DEFAULT_FUNNEL || listCodeFunnels().some((s) => s.slug === slug)) return
+  await deleteFunnelVersion(slug)
   revalidatePath('/pages/sequences')
   redirect('/pages/sequences')
 }

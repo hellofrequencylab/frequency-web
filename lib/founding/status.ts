@@ -9,7 +9,7 @@
 //   • grantFoundingStatus() flips reserved -> active and applies the LOCKED rate. It NEVER
 //     charges: it does not set charged_at and does not call Stripe. The money flip lives
 //     behind billingLive() / payoutsLive() and is owned by the billing path, not this module.
-//     Its LIVE callers are beta onboarding (app/onboarding/beta/actions.ts) and the Stripe
+//     Its LIVE callers are beta onboarding (app/join/(induction)/actions.ts) and the Stripe
 //     webhook reconciler (lib/billing/beta-founding.ts).
 //
 // The founding_members table is not in the generated lib/database.types.ts yet (regen after

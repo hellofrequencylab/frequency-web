@@ -3,32 +3,32 @@
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Eye, RotateCcw } from 'lucide-react'
-import type { VeraCopy } from '@/lib/onboarding/beta-script'
+import type { VeraCopy } from '@/lib/onboarding/funnel-script'
 import {
-  DEFAULT_SEQUENCE,
+  DEFAULT_FUNNEL,
   type FunnelFeature,
   type FunnelCoreFeature,
   type FunnelDestination,
-} from '@/lib/onboarding/beta-sequences'
-import { FUNNEL_ICON_NAMES } from '@/lib/onboarding/funnel-icons'
+} from '@/lib/funnels/definitions'
+import { FUNNEL_ICON_NAMES } from '@/lib/funnels/icons'
 import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
-import type { SequenceOverride } from '@/lib/onboarding/sequence-overrides'
-import BetaInduction from '@/app/onboarding/beta/induction'
-import { saveDefaultBetaCopy, resetDefaultBetaCopy } from './actions'
-import { saveSequenceVersion, renameSequenceSlug } from '@/app/(main)/pages/sequences/builder-actions'
+import type { FunnelOverride } from '@/lib/funnels/overrides'
+import FunnelInduction from '@/app/join/(induction)/induction'
+import { saveDefaultFunnelCopy, resetDefaultFunnelCopy } from './actions'
+import { saveFunnelVersion, renameFunnelSlug } from '@/app/(main)/pages/sequences/builder-actions'
 
-// Live-preview copy editor for a Splash Funnel. Left: one section per beat with an
+// Live-preview copy editor for a Funnel. Left: one section per beat with an
 // input for every voiced string. Right: the
-// REAL <BetaInduction> component rendered in preview mode at half scale, fed the
+// REAL <FunnelInduction> component rendered in preview mode at half scale, fed the
 // edited copy, so the preview can't drift from what members see. Focusing a section
 // (or using the tabs) switches the previewed beat.
 //
 // Reused for TWO surfaces (ADR-162 → splash-editor refactor):
 //   • The DEFAULT template (slug `beta-default`, /pages/splash) — saves the
-//     `beta-default` override via saveDefaultBetaCopy, with a reset-to-script button.
+//     `beta-default` override via saveDefaultFunnelCopy, with a reset-to-script button.
 //   • Any CUSTOM funnel (slug = its own value, /pages/sequences/<slug>/edit) — saves
-//     that slug's override via saveSequenceVersion, and exposes an editable title
+//     that slug's override via saveFunnelVersion, and exposes an editable title
 //     (the funnel's `audience`). Publish state + splash/tag are carried forward.
 
 type BeatKey = keyof VeraCopy
@@ -112,7 +112,7 @@ const BEATS: {
 ]
 
 export function SplashCopyEditor({
-  slug = DEFAULT_SEQUENCE,
+  slug = DEFAULT_FUNNEL,
   initialAudience = '',
   initialVera,
   heardAbout,
@@ -134,7 +134,7 @@ export function SplashCopyEditor({
   initialSlide3Core?: FunnelCoreFeature[]
   initialDestination?: FunnelDestination
 }) {
-  const isDefault = slug === DEFAULT_SEQUENCE
+  const isDefault = slug === DEFAULT_FUNNEL
   const router = useRouter()
   const [audience, setAudience] = useState(initialAudience)
   // Permalink (the funnel's slug). Editable for custom funnels; renaming re-keys the override row.
@@ -246,22 +246,22 @@ export function SplashCopyEditor({
     setError(null)
     start(async () => {
       // Default template → its dedicated action (unchanged behaviour). Custom funnel
-      // → write that slug's override; saveSequenceVersion carries the funnel's publish
+      // → write that slug's override; saveFunnelVersion carries the funnel's publish
       // state, splash, and tag forward, so a copy edit never disturbs the lifecycle.
       if (isDefault) {
-        const r = await saveDefaultBetaCopy({ vera })
+        const r = await saveDefaultFunnelCopy({ vera })
         if (!r.ok) { setError('Could not save. Are you still signed in?'); return }
       } else {
         // Niche config only rides along for custom funnels. Send a field only when it has
         // real content, so an untouched funnel stays on the General funnel behaviour; the
         // completion destination always carries its explicit choice (waitlist vs direct).
-        const override: SequenceOverride = { audience: audience.trim() || 'New funnel', vera }
+        const override: FunnelOverride = { audience: audience.trim() || 'New funnel', vera }
         const s2 = buildSlide2()
         if (s2) override.slide2Features = s2
         const s3 = buildSlide3()
         if (s3) override.slide3Core = s3
         override.destination = buildDestination()
-        const r = await saveSequenceVersion(slug, override)
+        const r = await saveFunnelVersion(slug, override)
         if (!r.ok) { setError('Could not save. Are you still signed in?'); return }
       }
       setSnapshot(JSON.stringify({ audience, vera, slide2, slide3, destMode, destUrl }))
@@ -276,7 +276,7 @@ export function SplashCopyEditor({
     if (!confirm('Reset to the built-in script? Your saved edits are removed.')) return
     setError(null)
     start(async () => {
-      const r = await resetDefaultBetaCopy()
+      const r = await resetDefaultFunnelCopy()
       if (!r.ok) { setError('Could not reset. Are you still signed in?'); return }
       setVera(r.vera)
       setSnapshot(JSON.stringify({ audience, vera: r.vera, slide2, slide3, destMode, destUrl }))
@@ -314,7 +314,7 @@ export function SplashCopyEditor({
           <section className="space-y-2 rounded-card border border-border bg-surface p-5 lift-1">
             <label className={LABEL} htmlFor="splash-permalink">
               Permalink
-              <span className="ml-1.5 font-normal text-subtle/70">· the /onboarding/beta?seq= slug and the link you share</span>
+              <span className="ml-1.5 font-normal text-subtle/70">· the /join?seq= slug and the link you share</span>
             </label>
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2">
@@ -334,7 +334,7 @@ export function SplashCopyEditor({
                 onClick={() => {
                   setRenameError(null)
                   startRename(async () => {
-                    const res = await renameSequenceSlug(slug, permalink)
+                    const res = await renameFunnelSlug(slug, permalink)
                     if (!res.ok || !res.slug) {
                       setRenameError(res.error ?? 'Could not change the permalink.')
                       return
@@ -621,7 +621,7 @@ export function SplashCopyEditor({
         <div className="overflow-hidden rounded-card border border-border lift-1">
           <div aria-hidden className="pointer-events-none h-[50vh] w-full select-none overflow-hidden">
             <div className="h-[200%] w-[200%] origin-top-left scale-50">
-              <BetaInduction
+              <FunnelInduction
                 key={previewBeat}
                 preview
                 initialBeat={previewBeat}
@@ -640,8 +640,8 @@ export function SplashCopyEditor({
         <p className="mt-2 text-2xs text-muted">
           Previewing <span className="font-semibold text-muted">{active.title}</span>. This is the real flow, rendered with your edits.{' '}
           {isDefault
-            ? 'Saving publishes straight to /onboarding/beta.'
-            : `Saving updates this funnel at /onboarding/beta?seq=${slug}. Publish it from the funnels list to take it live.`}
+            ? 'Saving publishes straight to /join.'
+            : `Saving updates this funnel at /join?seq=${slug}. Publish it from the funnels list to take it live.`}
         </p>
       </div>
     </div>

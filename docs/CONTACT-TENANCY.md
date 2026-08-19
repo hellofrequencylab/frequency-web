@@ -144,7 +144,7 @@ existing root row on the new unique index). **All need the lookup scoped to ROOT
 | `app/(marketing)/founders/actions.ts:68` | **ROOT** |
 | `app/(marketing)/founders/business/actions.ts:58` | **ROOT** |
 | `app/(marketing)/start/actions.ts:56` | **ROOT** |
-| `app/onboarding/beta/actions.ts:160` `enrollPersonaOnboarding` | **ROOT.** Note: `byProfile` (L157) usually resolves first (the trigger already made the root row); the email fallback is the throwing path. |
+| `app/join/(induction)/actions.ts` `enrollPersonaOnboarding` | **ROOT.** Note: `byProfile` (L157) usually resolves first (the trigger already made the root row); the email fallback is the throwing path. |
 
 ### 3.7 Beta invite gate — removed
 

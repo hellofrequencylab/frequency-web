@@ -1,21 +1,28 @@
-// Beta sequences — audience-targeted variants of the induction (ADR-068 vibe).
-// Each "sequence" is a splash + the induction's voiced copy, tuned to WHO is
-// arriving, plus a marketing tag stamped on the member so cohorts are segmentable
-// forever. The induction template already accepts a `copy` override; a sequence
-// just feeds it. TEMPORARY (deleted at launch) like the rest of beta-script.
+// Funnels — the sign-up funnels that are the product's front door (ADR-068 →
+// ADR-1090, docs/FUNNELS.md). A Funnel is a splash + the induction's voiced copy,
+// tuned to WHO is arriving, plus a marketing tag stamped on the member so cohorts
+// are segmentable forever. The induction template accepts a `copy` override; a
+// Funnel just feeds it. Owner directive (ADR-1090): "These are supposed to be
+// focused funnels for building out any niche and getting a sign up."
 //
-// The three hardcoded templates (early-adopter / personal / founding-partner) are
-// retired: sequences are now authored in the DB (sequence_overrides) through the
-// /pages/sequences builder, so BETA_SEQUENCES ships empty. What remains in code is
-// the BASE flow — Vera's scripted copy from beta-script — published under the
-// reserved slug `beta-default`. /onboarding/beta with no ?seq runs it, and the
-// owner edits its copy at /pages/splash (saved as the `beta-default` override).
+// This module was lib/onboarding/beta-sequences.ts ("beta sequences") until the
+// 2026-08-19 rename. Stored identifiers deliberately KEEP their beta_ names —
+// the `beta-default` reserved slug, the `beta_*` marketing tags, `meta.beta.*`,
+// the `fq_beta_seq` cookie — because they are data already written to members
+// and browsers (same convention as beta_audit_log). Code identity is Funnels.
+//
+// The three hardcoded launch templates (early-adopter / personal / founding-partner)
+// are retired: Funnels are now authored in the DB (the `sequence_overrides` table —
+// stored name kept) through the /pages/sequences builder. What remains in code is
+// the BASE flow — Vera's scripted copy from funnel-script — published under the
+// reserved slug `beta-default`. /join with no ?seq runs it, and the owner edits
+// its copy at /pages/splash (saved as the `beta-default` override).
 //
 // Client-safe (no server imports). The DB layer + merging live in
-// lib/onboarding/sequence-overrides.ts and lib/onboarding/resolve-sequence.ts.
+// lib/funnels/overrides.ts and lib/funnels/resolve.ts.
 
-import { VERA, HEARD_ABOUT, type VeraCopy } from '@/lib/onboarding/beta-script'
-import type { FunnelStyleId } from '@/lib/funnels/funnel-styles'
+import { VERA, HEARD_ABOUT, type VeraCopy } from '@/lib/onboarding/funnel-script'
+import type { FunnelStyleId } from '@/lib/funnels/styles'
 
 /** A FEATURE funnel's playable-demo config (ADR-619). A feature funnel lets a visitor use ONE
  *  stripped feature before signing up; the renderer is keyed by `feature`. Today only `breathwork`
@@ -30,7 +37,7 @@ export interface FeatureFunnelConfig {
   zapsReward?: number
 }
 
-export interface SequenceSplash {
+export interface FunnelSplash {
   /** Small kicker above the headline. */
   eyebrow: string
   headline: string
@@ -46,7 +53,7 @@ export interface SequenceSplash {
 
 /** One "what are you into" feature card (Slide 2 of a NICHE funnel). A niche funnel replaces the
  *  generic persona fork with 4 of these, tuned to the niche. Icon is a NAME resolved to a lucide
- *  icon in the induction (lib/onboarding/funnel-icons), so this stays client-safe + serialisable. */
+ *  icon in the induction (lib/funnels/icons), so this stays client-safe + serialisable. */
 export interface FunnelFeature {
   title: string
   blurb: string
@@ -71,7 +78,12 @@ export type FunnelDestination =
   | { mode: 'waitlist' }
   | { mode: 'direct'; url: string }
 
-export interface BetaSequence {
+// Collision guard (docs/NAMING.md §Funnels): this `Funnel` is the member-facing
+// sign-up feature. The Growth OS analytics rollup in lib/funnels/store.ts exports
+// an unrelated `Funnel` (a `funnels` DB row with measurement stages) for the
+// /admin/growth/funnels console — server-only, operator-facing, never rendered to
+// a visitor. No module imports both.
+export interface Funnel {
   slug: string
   /** Which funnel STYLE renders this sequence (ADR-617). Absent = `'onboarding'` (the induction),
    *  so every legacy funnel reads back as an Onboarding funnel with no backfill. `'feature'` routes
@@ -84,7 +96,7 @@ export interface BetaSequence {
   /** Tag stamped on members who arrive via this sequence — segment them forever. */
   marketingTag: string
   /** The public splash page copy. */
-  splash: SequenceSplash
+  splash: FunnelSplash
   /** The induction's voiced copy (Vera's HOT register). */
   vera: VeraCopy
   heardAbout: string[]
@@ -99,17 +111,23 @@ export interface BetaSequence {
   destination?: FunnelDestination
 }
 
-/** Reserved slug for the base VERA flow — what /onboarding/beta runs with no ?seq.
+/** Reserved slug for the base VERA flow — what /join runs with no ?seq.
  *  Not a "version" (it never appears in the versions list); its DB override is the
- *  owner's edits from the /pages/splash editor. */
-export const DEFAULT_SEQUENCE = 'beta-default'
+ *  owner's edits from the /pages/splash editor.
+ *
+ *  The VALUE stays `beta-default` on purpose: it is a STORED key — the slug of the
+ *  live `sequence_overrides` row, recorded in every member's `meta.beta.sequence`
+ *  and carried by `fq_beta_seq` cookies already in browsers. Renaming it would
+ *  orphan the owner's saved default-flow copy and strand mid-flight visitors, so
+ *  new saves keep writing the old key (repo convention: beta_audit_log). */
+export const DEFAULT_FUNNEL = 'beta-default'
 
 // ── Funnel routing (ADR-funnels): where finishing a funnel lands the new member ──────────────────────
 // Owner directive: "The general beta splash funnel should be the only one that goes to the Beta list.
 // All other funnels should take them to the section the funnel is targeted at." So the GENERAL splash
 // keeps the waitlist/Beta-list landing; each NICHE funnel admits the finished member straight into its
 // targeted section. This is the ONE code source for those targets — one row per niche, a pure data edit,
-// re-validated at redirect time by isSafeInAppPath / funnelLanding (lib/onboarding/funnel-destination).
+// re-validated at redirect time by isSafeInAppPath / funnelLanding (lib/funnels/destination).
 
 /** The GENERAL beta splash landing: the Beta list (waitlist == the default post-induction feed path). */
 export const GENERAL_FUNNEL_DESTINATION: FunnelDestination = { mode: 'waitlist' }
@@ -144,10 +162,10 @@ export function nicheFunnelDestination(slug: string | null | undefined): FunnelD
 // A funnel can honor the people it brings in. The grant is keyed by the ?seq slug (carried to
 // signup by the fq_beta_seq cookie, exactly like the cohort tag), so honoring a funnel is a ONE-ROW
 // data edit here, never new branching logic. Applied server-side at induction completion
-// (app/onboarding/beta/actions.ts applySequenceGrants). Client-safe (pure data).
+// (app/join/actions.ts applyFunnelGrants). Client-safe (pure data).
 
 /** The one-time grant a sequence confers on every account that finishes it. */
-export interface SequenceGrant {
+export interface FunnelGrant {
   /** Comp the paid Crew tier (profiles.membership_tier = 'crew'). */
   crew?: boolean
   /** Award durable Founding Member status (a founding_members row + is_founding_member), which
@@ -162,23 +180,23 @@ export interface SequenceGrant {
  *  comes through it is honored as a Founding Member and comped Crew, keyed on the SEQUENCE (not email).
  *  `breathwork` is the Feature funnel: finishing it (creating the account that keeps the streak) pays
  *  the advertised 25-Zap welcome bonus. */
-export const SEQUENCE_GRANTS: Record<string, SequenceGrant> = {
+export const FUNNEL_GRANTS: Record<string, FunnelGrant> = {
   randy: { crew: true, founding: true },
   breathwork: { zaps: 25 },
 }
 
 /** The grant for a sequence slug, or undefined when the sequence confers nothing. PURE. */
-export function sequenceGrant(slug: string | null | undefined): SequenceGrant | undefined {
-  return (slug && SEQUENCE_GRANTS[slug]) || undefined
+export function funnelGrant(slug: string | null | undefined): FunnelGrant | undefined {
+  return (slug && FUNNEL_GRANTS[slug]) || undefined
 }
 
 // The base flow: Vera's scripted copy verbatim. The splash block seeds brand-new
 // versions cloned in the builder (the default flow itself has no public splash
-// page — visitors enter at /onboarding/beta). The marketing tag stays
+// page — visitors enter at /join). The marketing tag stays
 // `beta_early_adopter` so the default cohort remains ONE segment across the
 // rename (it's the registered trait every default-flow member already carries).
-const BASE_SEQUENCE: BetaSequence = {
-  slug: DEFAULT_SEQUENCE,
+const BASE_FUNNEL: Funnel = {
+  slug: DEFAULT_FUNNEL,
   audience: 'Every new member (default)',
   marketingTag: 'beta_early_adopter',
   splash: {
@@ -201,9 +219,9 @@ const BASE_SEQUENCE: BetaSequence = {
 // fill-in prompts; the base flow's SPLASH, though, is the real live copy, so a funnel
 // cloned from it would inherit finished copy. This gives the public splash the same
 // fill-in guidance, so a fresh funnel reads as a prompts TEMPLATE end to end. Kept SEPARATE
-// from BASE_SEQUENCE so seeding a new funnel never reads or mutates the live default flow
+// from BASE_FUNNEL so seeding a new funnel never reads or mutates the live default flow
 // (funnel #1). Plain, no em dashes.
-const TEMPLATE_SPLASH_PROMPTS: SequenceSplash = {
+const TEMPLATE_SPLASH_PROMPTS: FunnelSplash = {
   eyebrow: 'Write the kicker above the headline',
   headline: 'Write the headline this audience sees first',
   body: 'Write the short paragraph that says what Frequency is for them',
@@ -219,7 +237,7 @@ const TEMPLATE_SPLASH_PROMPTS: SequenceSplash = {
  *  code prompt copy, NOT from the `beta-default` DB override, so creating a funnel can never
  *  touch or depend on the current live flow (funnel #1). Returns a fresh object each call. */
 export function templateSeed(): {
-  splash: SequenceSplash
+  splash: FunnelSplash
   vera: VeraCopy
   heardAbout: string[]
 } {
@@ -238,7 +256,7 @@ export function templateSeed(): {
 // the first hold, and shows the true first-log reward (Day 1 streak + Zaps). `vera`/`heardAbout`
 // are unused by the feature renderer but required by the type, so they borrow the base flow. Lands the
 // new member in the app to take their first real round. Voice canon: plain, no em dashes.
-const BREATHWORK_FEATURE_FUNNEL: BetaSequence = {
+const BREATHWORK_FEATURE_FUNNEL: Funnel = {
   slug: 'breathwork',
   style: 'feature',
   feature: { feature: 'breathwork', pattern: 'box', zapsReward: 25 },
@@ -259,16 +277,25 @@ const BREATHWORK_FEATURE_FUNNEL: BetaSequence = {
   destination: { mode: 'direct', url: '/feed?welcome=vera' },
 }
 
-export const BETA_SEQUENCES: Record<string, BetaSequence> = {
+export const FUNNELS: Record<string, Funnel> = {
   breathwork: BREATHWORK_FEATURE_FUNNEL,
 }
 
-/** Resolve a CODE sequence by slug, falling back to the base VERA flow. DB overrides
- *  are merged elsewhere (resolve-sequence.ts) — this stays client-safe. */
-export function getSequence(slug: string | null | undefined): BetaSequence {
-  return (slug && BETA_SEQUENCES[slug]) || BASE_SEQUENCE
+/** Resolve a CODE Funnel by slug, falling back to the base VERA flow. DB overrides
+ *  are merged elsewhere (lib/funnels/resolve.ts) — this stays client-safe. */
+export function getFunnel(slug: string | null | undefined): Funnel {
+  return (slug && FUNNELS[slug]) || BASE_FUNNEL
 }
 
-export function listSequences(): BetaSequence[] {
-  return Object.values(BETA_SEQUENCES)
+export function listCodeFunnels(): Funnel[] {
+  return Object.values(FUNNELS)
+}
+
+/** True when `pathname` is a code Funnel's public splash (`/join/<slug>`). The /join/<x>
+ *  segment serves two doors — Funnel splashes and Circle invite tokens — and attribution
+ *  must not read a splash landing as a person-driven referral (proxy.ts, channels.ts).
+ *  Only CODE Funnels have splashes, so this is knowable synchronously and edge-safe. */
+export function isFunnelSplashPath(pathname: string): boolean {
+  const m = /^\/join\/([^/?#]+)/.exec(pathname)
+  return !!m && m[1] in FUNNELS
 }

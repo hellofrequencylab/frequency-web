@@ -559,7 +559,7 @@
 
   /* THE OTHER 28. The lock re-asserted 29 of the 57 roles :root defines, which meant a
      force-lit page on a DARK-MODE DEVICE kept the dark value for everything it forgot.
-     app/onboarding/beta/feature-funnel.tsx is wrapped in this class, so its scarcity
+     app/join/(induction)/feature-funnel.tsx is wrapped in this class, so its scarcity
      counter ("N taken", :464) rendered dark-mode --color-warning #F2B14E on the locked
      cream #FAF8F4 — 1.77:1, which is not "low contrast", it is invisible. The
      broadcast-bg chip (:591) went the other way: a near-black pill on a cream page.

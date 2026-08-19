@@ -10,7 +10,7 @@ import { breadcrumbSchema } from '@/lib/jsonld'
 // own promise and carries the reader's choice forward as a real signal the induction
 // consumes: `?persona=` pre-selects the picker, branches the tour reel, and is stamped
 // on the member; `?seq=` picks the playable-practice funnel. (Earlier all three cards
-// pointed at a param-less /onboarding/beta, so the door you picked was thrown away.)
+// pointed at a param-less /join, so the door you picked was thrown away.)
 // The assignable lead flows still live under /start/[flow].
 export const revalidate = 3600
 
@@ -55,21 +55,21 @@ const ROLES: Role[] = [
     label: 'Build',
     blurb: 'Be the reason your people have somewhere to go. Host one Circle and we hand you the format.',
     cta: 'Start one Circle',
-    href: '/onboarding/beta?persona=builder&flow=welcome',
+    href: '/join?persona=builder&flow=welcome',
   },
   {
     illustration: 'practice',
     label: 'Practice',
     blurb: 'Start where you are, today. Take one breathing round now, on your own, before you sign up.',
     cta: 'Do one practice today',
-    href: '/onboarding/beta?seq=breathwork',
+    href: '/join?seq=breathwork',
   },
   {
     illustration: 'spread',
     label: 'Spread',
     blurb: 'Take a small role in building community around you. Bring one person, host once, or share the idea.',
     cta: 'Bring one person',
-    href: '/onboarding/beta?persona=visitor&flow=welcome',
+    href: '/join?persona=visitor&flow=welcome',
   },
 ]
 

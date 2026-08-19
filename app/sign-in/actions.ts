@@ -7,7 +7,7 @@ import { rateLimitOk } from '@/lib/rate-limit'
 import type { SignInErrorCode } from './errors'
 
 // Shared passwordless sign-in actions, used by /sign-in and by the beta induction's
-// cinematic welcome (app/onboarding/beta/welcome.tsx).
+// cinematic welcome (app/join/(induction)/induction.tsx sign-in beat).
 //
 // A post-login destination is only honoured if it's a same-origin absolute path. We
 // stash it in a short-lived cookie rather than on the callback URL, so the auth

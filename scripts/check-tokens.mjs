@@ -71,7 +71,7 @@ const ALLOWLIST = [
   // Scoped to 'hex color': the reason is a brand palette, so it must not also waive the type scale.
   // It used to, and induction.tsx's `text-[10px]` rode along on an exemption granted for four hexes.
   { match: (p) => p.startsWith('app/sign-in/'), kinds: ['hex color'] },
-  { match: (p) => p === 'app/onboarding/beta/induction.tsx', kinds: ['hex color'] },
+  { match: (p) => p === 'app/join/(induction)/induction.tsx', kinds: ['hex color'] },
   // print stylesheet: a print document renders literal CSS, not the app's CSS-var cascade.
   (p) => p.startsWith('app/print/'),
   // map markers: *-map.tsx / *map*.tsx
@@ -134,7 +134,7 @@ const ALLOWLIST = [
  * An ALLOWLIST entry is either a bare predicate (exempt from EVERY check) or
  * `{ match, kinds }` (exempt from those kinds only). The distinction exists because a whole-file
  * waiver granted for one reason silently waives every other class in the file, and nobody decides
- * that — `app/onboarding/beta/induction.tsx` was allowlisted for a 4-hex Google brand mark and the
+ * that — `app/join/(induction)/induction.tsx` was allowlisted for a 4-hex Google brand mark and the
  * exemption quietly covered its arbitrary type as well. Prefer `kinds` for any entry whose reason
  * names a specific class of literal.
  */

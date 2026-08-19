@@ -4,9 +4,9 @@ import {
   NICHE_FUNNEL_DESTINATIONS,
   nicheFunnelDestination,
   spaceCreatePath,
-  DEFAULT_SEQUENCE,
-} from './beta-sequences'
-import { isSafeInAppPath, funnelLanding } from './funnel-destination'
+  DEFAULT_FUNNEL,
+} from './definitions'
+import { isSafeInAppPath, funnelLanding } from './destination'
 import {
   COACHES_FUNNEL,
   funnelSlugs,
@@ -46,7 +46,7 @@ describe('the general funnel keeps the Beta-list landing', () => {
   })
 
   it('the default sequence slug has no niche destination override', () => {
-    expect(nicheFunnelDestination(DEFAULT_SEQUENCE)).toBeUndefined()
+    expect(nicheFunnelDestination(DEFAULT_FUNNEL)).toBeUndefined()
   })
 })
 

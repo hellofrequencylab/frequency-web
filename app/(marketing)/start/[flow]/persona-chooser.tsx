@@ -43,7 +43,7 @@ export function PersonaChooser({
 
   const chosen = selected ? getPersona(selected) : null
   const inductionHref = (id: PersonaId) =>
-    `/onboarding/beta?persona=${encodeURIComponent(id)}&flow=${encodeURIComponent(flow)}`
+    `/join?persona=${encodeURIComponent(id)}&flow=${encodeURIComponent(flow)}`
 
   async function go() {
     if (!selected || busy) return

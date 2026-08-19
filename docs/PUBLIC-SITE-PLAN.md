@@ -139,7 +139,7 @@ Grouped by funnel stage. Audit is vs what exists today under `app/(marketing)/`,
 | `/join/[token]` | ✅ keep | Referral | Inviter-personalized Circle invite; strongest referral lever |
 | `/beta` + `/beta/confirm` | ✅ keep (until GA) | Convinced visitor | Founding cohort signup, double opt-in |
 | `/pricing` | ✅ keep, 🛠 add "what membership funds" detail | Seeker, Leader | 3 transparent tiers; access not extraction |
-| `/onboarding` + `/onboarding/beta` | 🛠 trim to handle + region, branch by persona | New signups | Persona-branched first action, terminal = "Circles near you" |
+| `/onboarding` + `/join` (né /onboarding/beta, ADR-1090) | 🛠 trim to handle + region, branch by persona | New signups | Persona-branched first action, terminal = "Circles near you" |
 
 ---
 

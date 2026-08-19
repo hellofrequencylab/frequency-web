@@ -1499,7 +1499,7 @@ articles) needs **no AI** and is the highest-leverage first step.
 
 **Status:** Accepted · 2026-06-03 · a scoped **exception** to the non-blocking onboarding model
 ([ADR-047](DECISIONS.md)/[ONBOARDING.md](ONBOARDING.md)); scripted in Vera's voice
-([AI-VERA.md](AI-VERA.md)) ahead of the live AI kernel. Spec: [BETA-INDUCTION.md](BETA-INDUCTION.md).
+([AI-VERA.md](AI-VERA.md)) ahead of the live AI kernel. Spec: [FUNNELS.md](FUNNELS.md) (né BETA-INDUCTION.md).
 
 **Context:** The beta cohort is not the general public — these are people who raised their hand to
 *build and test* Frequency. We want them to (a) feel the weight of that ("I'm here to build this,
@@ -6138,7 +6138,7 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 **Status:** Accepted · `lib/onboarding/beta-sequences.ts` (BETA_SEQUENCES now `{}`, reserved `DEFAULT_SEQUENCE='beta-default'` base built from the VERA script), `lib/onboarding/resolve-sequence.ts` (`resolveDefaultSequence`, default-slug handling, versions list excludes the reserved slug), `app/onboarding/beta/page.tsx` + `actions.ts` (copy + cohort tag resolve through the DB layer), `app/onboarding/beta/induction.tsx` (data-driven beat headings with `*accent*` markup, `initialBeat` prop), `app/(main)/pages/splash/*` (the Beta splash live-preview editor), `app/(main)/pages/sequences/*` (recategorized "Splash pages" manager, DB versions only, role-promotion-overlays coming-soon card), `app/(main)/pages/home/*` + `app/page.tsx` + `lib/layout/editable-content.ts` (Home SEO row via ADR-180 page_content, route `/`), `lib/attribution/{server,backfill}.ts` (`beta-default` carries no channel signal) — builds on ADR-068/1051 (induction + sequences), ADR-162 (DB override layer), ADR-180/206 (page content)
 **Context:** The three hardcoded launch sequences (`early-adopter`/`personal`/`founding-partner`) were authored before the DB override layer existed; owning copy in code meant a deploy per word change, the admin list mixed immutable code rows with editable DB versions, and the DEFAULT flow (what every plain `/onboarding/beta` visit runs) had no first-class editor — only the split `/admin/vera` induction fields, which the flow partially ignored (beats 0–1 hardcoded their headings in JSX). Home `'/'` is deliberately excluded from Puck (a published draft would shadow the coded splash) but that also left its SEO strings unreachable.
 **Decision:** (1) Retire the three code templates: `BETA_SEQUENCES` ships empty (interfaces + helpers kept), and the reserved slug **`beta-default`** names the base VERA flow. `resolveSequence(null|''|'beta-default')` returns the coded script merged with the legacy `vera_config` induction layer and then the `beta-default` DB override — the editor's copy wins, older `/admin/vera` edits keep applying underneath. The default keeps `marketingTag='beta_early_adopter'` so the default cohort stays ONE registered segment across the rename; attribution treats `beta-default` as no channel signal (plain visits aren't "video"). `/beta/<slug>` 404s naturally while no code sequence exists. (2) The sequences admin is reframed as **Splash pages** (DB versions only) with an inert "Role promotion overlays — Coming soon" category card (no functionality). (3) **`/pages/splash`** is a janitor-gated live-preview editor for the default flow: per-beat inputs (all `VeraCopy` strings + the three oath labels) on the left, and on the right the REAL `<BetaInduction>` rendered in preview mode at half scale with the edited copy and an `initialBeat` switcher — the preview cannot drift from production markup. Beats 0–1 now render their headings from copy; headings support `*word*` accent markup (the splash-statement convention) so the default "You're a *Founder.*" keeps its highlight. Save = `sequence_overrides['beta-default']`; Reset deletes the row. (4) **Home row** on `/pages` (visually distinct, "Coded page") links to `/pages/home`, a janitor-gated title + meta-description editor through ADR-180 `page_content` route `'/'`; `app/page.tsx` `generateMetadata` reads `resolvePageContent('/')` with the coded strings as fallback. The body stays code; no Puck.
-**Consequences:** `tagBetaCohort` now resolves through the DB layer, so wizard-built versions stamp THEIR tag (previously they silently fell back to the default's). Legacy `?seq=early-adopter`-style links resolve as blank clones unless a DB row exists — acceptable: those slugs were never circulated beyond the team, and old `fq_beta_seq` cookies still map in attribution. The Home OG description previously carried a bespoke longer blurb; it now mirrors the meta description (one editable pair, consistent with `pageContentMetadata` everywhere else). `vitest.config.ts` excludes `**/node_modules/**` + `.claude/**` so parallel agent worktrees can't pollute the suite. The `/pages/sequences/[slug]/edit` splash-only editor route 404s with no code sequences (its upload action is still used by the wizard); teardown list updated in BETA-INDUCTION.md.
+**Consequences:** `tagBetaCohort` now resolves through the DB layer, so wizard-built versions stamp THEIR tag (previously they silently fell back to the default's). Legacy `?seq=early-adopter`-style links resolve as blank clones unless a DB row exists — acceptable: those slugs were never circulated beyond the team, and old `fq_beta_seq` cookies still map in attribution. The Home OG description previously carried a bespoke longer blurb; it now mirrors the meta description (one editable pair, consistent with `pageContentMetadata` everywhere else). `vitest.config.ts` excludes `**/node_modules/**` + `.claude/**` so parallel agent worktrees can't pollute the suite. The `/pages/sequences/[slug]/edit` splash-only editor route 404s with no code sequences (its upload action is still used by the wizard); teardown list updated in BETA-INDUCTION.md (now FUNNELS.md).
 
 ## ADR-212: Member QR codes — full unique (owner, purpose) index + provision at onboarding completion
 
@@ -27564,3 +27564,90 @@ SAYS, not by the directory it lives in.** Grep the sentence, not the module.
   with the module it happened to live in.
 - ✅ 274 live tables, RLS and grant mirrors updated in the same change, types regenerated (102 lines
   removed, zero added, which is what a drop-only regen should look like).
+
+## ADR-1090: The sign-up feature is named Funnels, and it lives at /join
+
+**Status:** Accepted 2026-08-19 · code + URL rename, no migration, no data renamed
+
+**Owner decision, 2026-08-19:** the feature is **Funnels**; one of them is **a Funnel**; no second
+member-facing proper noun. *"These are supposed to be focused funnels for building out any niche and
+getting a sign up."* The public splash URLs move `/beta/<slug>` → **`/join/<slug>`**. This completes
+what [ADR-1088](DECISIONS.md) started: the flow stopped being a founding-cohort ceremony there; here
+it stops being NAMED one.
+
+**Context.** The sign-up flow shipped as the "beta induction" (ADR-068), TEMPORARY by its own
+headers, and grew into the only front door the product has — cloned per niche, DB-authored, styled
+(ADR-617), granting (ADR-619) — while its names still said throwaway: `BETA_SEQUENCES`,
+`BetaSequence`, `beta-script.ts`, `/onboarding/beta`, a doc called BETA-INDUCTION.md, and a SECOND
+vocabulary ("sequences") layered on top, colliding with the Loom walkthrough sequences. Meanwhile
+`lib/funnels/` already existed. One feature, three names; the canon allows one.
+
+**Decision — the rename map.**
+
+- **Routes:** the induction moves `app/onboarding/beta/` → `app/join/(induction)/` (`/join`, with
+  `/join/complete` + `/join/preview`); the splash route `app/(marketing)/beta/[slug]` folds into
+  `app/join/[slug]/page.tsx`, which now dispatches BOTH doors on the one segment — a code Funnel's
+  splash first, else the Circle invite-token page that already owned `app/join/[token]`. Funnel
+  slugs are short operator words and invite tokens are long random strings, so the value spaces
+  cannot collide; `complete`/`preview` are builder-reserved so a Funnel can never be shadowed by
+  the static siblings. The splash renders chrome-free now (the focused-funnel argument of
+  OPERATOR-FUNNELS §2), where `/beta/<slug>` had the marketing mega-nav.
+- **Redirects (permanent, 308):** `/beta/:slug` → `/join/:slug`, `/onboarding/beta` → `/join`,
+  `/onboarding/beta/:path*` → `/join/:path*` (next.config.ts). Permanent because the old links are
+  in the wild — QR codes on posters, shared splash links, sent emails — and query strings ride
+  through, which carries `?seq=`/`?persona=`/`?next=`. `/beta` itself does NOT redirect: the Beta
+  *program* marketing page still serves it, its CTAs now pointing at `/join` (`BETA_CTA_HREF`).
+  The next.config redirects run BEFORE middleware, so proxy.ts dropped its `/onboarding/beta`
+  carve-out; `/join` was never in PROTECTED_PATHS.
+- **Modules:** `lib/onboarding/beta-script.ts` → `lib/onboarding/funnel-script.ts`;
+  `lib/onboarding/beta-sequences.ts` → `lib/funnels/definitions.ts`; `resolve-sequence.ts` →
+  `lib/funnels/resolve.ts`; `sequence-overrides.ts` → `lib/funnels/overrides.ts`;
+  `funnel-destination.ts`/`funnel-icons.ts`/`funnel-routing.test.ts` join them as
+  `destination.ts`/`icons.ts`/`routing.test.ts`; `funnel-styles.ts` → `styles.ts`. One directory,
+  one vocabulary.
+- **Identifiers:** `BETA_SEQUENCES` → `FUNNELS` · `BetaSequence` → `Funnel` · `SequenceSplash` →
+  `FunnelSplash` · `DEFAULT_SEQUENCE` → `DEFAULT_FUNNEL` · `getSequence`/`listSequences`/
+  `resolveSequence`/`listAllSequences` → `getFunnel`/`listCodeFunnels`/`resolveFunnel`/
+  `listAllFunnels` · `SequenceOverride`/`SequenceStatus` → `FunnelOverride`/`FunnelPublishStatus`
+  (the `FunnelStatus` name was taken — see collisions) · `SEQUENCE_GRANTS`/`sequenceGrant` →
+  `FUNNEL_GRANTS`/`funnelGrant` · `BETA_INDUCTION_ACTIVE`/`_VERSION` →
+  `FUNNEL_INDUCTION_ACTIVE`/`_VERSION` · `BetaInduction` → `FunnelInduction` ·
+  `completeBetaInduction`/`writeBetaInduction`/`mergeBetaInduction` → `completeInduction`/
+  `writeInduction`/`mergeInduction`. The Loom walkthrough "sequences"
+  (`lib/onboarding/sequence-schema.ts`, `/admin/library`) and the nurture sequences are DIFFERENT
+  features and were deliberately not touched — the rename un-collides them.
+- **Operator copy:** `/pages/sequences` is titled **Funnels** (nav label too); `/pages/splash` is
+  the **Default Funnel**; "Splash Funnels"/"Splash pages" retire as names. Routes themselves did
+  not move (bookmarks, one-line nav rows).
+- **Docs:** BETA-INDUCTION.md → **FUNNELS.md**, rewritten to the new names/paths; NAMING.md gains
+  a §Funnels entry with the collision guards; FEATURE-INDEX and the live planning docs re-pointed.
+
+**What deliberately KEEPS its beta_ name (data, not identity).** The `beta-default` reserved slug
+(the live `sequence_overrides` row + every `meta.beta.sequence` stamp — new saves keep writing it);
+the `beta_*` marketing tags, including the `beta_<slug>` prefix NEW Funnels mint, so one cohort is
+one segment across the rename; `profiles.meta.beta.*`; the `fq_beta_seq` cookie and
+`fq_beta_entry_*` localStorage keys (live browsers carry them mid-flight); `signup_leads.source =
+'beta_induction'` and `contacts.source = 'onboarding_beta'`; the `sequence_overrides` table itself.
+Same convention as beta_audit_log: stored keys are renamed never, commented always. `BETA_MEMBERS_GET_CREW`
+and the `BETA_CTA_*` constants also keep their names because they describe the Beta *program*, which
+is still real.
+
+**Attribution kept honest across the merge.** `/join/` landings were classified `referral` (invite
+links). A Funnel splash landing is a campaign, not a person — so `deriveChannel` and the proxy's
+channel hint now skip `referral` when the segment is a code Funnel slug (`isFunnelSplashPath`),
+preserving exactly the channel behaviour `/beta/<slug>` had. robots.ts widens `/join/` → `/join`
+(the induction was disallowed under `/onboarding` before; intent identical, everything on the
+segment stays noindex).
+
+**Consequences.**
+
+- The TEMPORARY-by-design framing of ADR-068 is superseded for the machinery: Funnels are the
+  sign-up platform, and there is still no other sign-up route — so backlog row **OWN-030**
+  ("tear down the beta induction, never remove the front door alone") closes: its probe's two
+  halves (old dir gone, `app/join` exists) now both hold, and they hold because the front door
+  genuinely lives at `app/join`, not because anything was deleted alone.
+- A Funnel slug that shadows an invite token is theoretically possible and practically not:
+  tokens are long and random, Funnel lookup wins first, and the builder controls slugs.
+- `lib/funnels/` now holds two `Funnel` types across modules — this feature's
+  (`definitions.ts`) and the Growth OS measurement rollup (`store.ts`, ADR-455). No module
+  imports both; both carry collision-guard comments and NAMING.md §Funnels documents it.

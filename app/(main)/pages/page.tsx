@@ -22,7 +22,7 @@ export default async function PagesDirectory() {
       title="Pages"
       eyebrow="Platform"
       icon={Files}
-      description="Find any page and open it ready to edit. In-app pages open in place with edit mode on; the public marketing pages and the Splash Funnels open in their own editors and go live when you publish."
+      description="Find any page and open it ready to edit. In-app pages open in place with edit mode on; the public marketing pages and the Funnels open in their own editors and go live when you publish."
       width="wide"
     >
       <PageModules route="/pages" />

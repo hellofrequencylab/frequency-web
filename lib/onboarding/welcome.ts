@@ -48,7 +48,7 @@ export async function grantJoinZaps(memberId: string): Promise<void> {
 // Best-effort; never blocks onboarding. No-op if there's no system account.
 //
 // IDEMPOTENT (ADR-231 fix): a single member reaches completion through several paths
-// (classic onboarding, beta induction, the deferred /complete hop, and re-runs of any
+// (classic onboarding, the Funnels induction, the deferred /complete hop, and re-runs of any
 // of them). Each of those now calls this, and a `reward_grants` claim (UNIQUE rule_key +
 // profile_id) guarantees the feed line + notification fire AT MOST ONCE per member — so
 // every path is safe to call and no member is announced twice. The claim is taken only
