@@ -40,9 +40,11 @@ season end Zaps roll into Gems 5:1 and counters zero. Streaks, Spark, and Welcom
 Back sit on top. Cooperative and local only, so **there is no global leaderboard**,
 and there is **no streak shame, ever**.
 
-**Right now:** free open beta ("Summer of Frequency"), everyone gets Crew free,
-recurring billing is off and every billing CTA is a disabled preview. Graduation
-is **September 1, 2026**.
+**Right now:** billing is live (since 2026-07-25), so every plan CTA charges the
+published price. The open beta ("Summer of Frequency") is about ACCESS, not price:
+free members are comped the full gamification loop and the paid meters do not bite
+until graduation on **September 1, 2026**. It carries no price offer of any kind,
+and the Opening Beta rate closed on 2026-08-17.
 
 ### The vocabulary designs must use
 
@@ -473,11 +475,12 @@ Tone is tagged too — `.mk-cream` / `.mk-ink` — and two sections of the SAME 
 
 `ui_kits/marketing/` — `index.html` (splash) · `operators.html` (For hosts) · `circles.html` · `about.html` (Why we exist) · `quest.html` · `lab.html` · `pricing.html` · `stories.html` (the six teasers in place). All share `header.jsx`, `footer.jsx`, `sections.jsx`, `hero.jsx`, `beta.jsx`, `icon.jsx` (`MkIco` — React-owned lucide, never `createIcons()` on React nodes) and `reveal.js`.
 
-Pricing follows the CURRENT canon in `docs/PRICING.md` — the BRIEF-03 summary is stale, so read the file's top banners, newest first:
+Pricing follows the CURRENT canon in `docs/PRICING.md` (and the same ladder is summarised in BRIEF-03 §1). Read the file's top banners, newest first:
 
 - **ADR-914 (2026-07-30), overrides every earlier rate and seller rule.** A free Member CAN sell — tickets, donations, payouts, day one. *Never gate the transaction; gate the repeat.* The rate is the ladder, on **network-sourced sales only**: Member 10% · free Space 10% · Crew 8% · Business 5% · Collective 3% · Non Profit 0%. **0% on your own audience on every tier, forever** (a follow, an active membership, a CRM contact, a personal contact, or a prior settled purchase each prove it). **Tips carry no fee, ever.** The three walls are selling memberships (Business), campaigns and funnels (Business), and revenue splits (Collective); everything else is a meter with a real free allowance.
-- **ADR-908 (2026-07-29).** Crew is **pay-what-you-want**: floor $4.99/mo, $12 suggested and pre-selected, annual = 10× the chosen monthly. Every amount buys identical access; above the suggested amount earns the Supporter mark, never capability. Member/Crew split is *first one free* — 1 Circle, 1 Journey, 3 Practices, 2 events.
-- **ADR-1052/878.** The listed ladder: Member $0 · Crew PWYW · Free Space · Business **$19 Opening Beta** (list $29) · Collective **$49 Opening Beta** (list $79) · Non Profit **$39 flat, no anchor** · Vera AI add-on +$20. Beta rates are grandfathered while the plan is kept. **Independent (~$249) is built but not listed or sold.** Supporter is not a tier.
+- **ADR-908 (2026-07-29), renamed by ADR-1084 (2026-08-19).** Crew is **contribute what you want** (never "pay what you want" in member-facing copy): floor $4.99/mo, $24.99 suggested and pre-selected, annual = 10× the chosen monthly. Every amount buys identical access; at or above the suggested amount earns the Supporter mark, never capability. Member/Crew split is *first one free* — 1 Circle, 1 Journey, 3 Practices, 2 events.
+- **ADR-1060/1067 (2026-08-17), the ladder as charged today.** Member $0 · Crew contribute what you want · Free Space $0 · Business **$29/mo, $290/yr** · Collective **$79/mo, $790/yr** · Non Profit **$39/mo flat, $390/yr** · Independent **$249/mo, $2,490/yr** · Vera AI add-on **+$20/mo, $200/yr**. A year is always 10× the monthly rate (two months free), and that is the only discount.
+- 🔴 **No beta pricing renders anywhere.** The Opening Beta window is CLOSED. Every tier shows ONE price: no struck-through anchor, no "Beta rate" or "Opening Beta" or "founding rate" caption, no countdown to a price rise. A crossed-out $29 beside a charged $29 would be a false claim, and `pricing-grid.test.ts` sweeps every offering for one. Supporter is a mark, not a tier. Retired plan names that must never appear as sellable: Supporter, Practitioner, Organization, White-label, Pro. The add-on is **Vera AI** (ADR-590), never "AI Engine" or "Resonance Engine" (that name still describes the matching SYSTEM under the hood, never the product a member buys).
 - **Billing went live 2026-07-25.** CTAs are real. **September 1 2026** is when the free allowances start counting (`beta_grace` ends) — not when prices change.
 
 Money is still dark in voice: no page closes on a dollar, and business stories land on Captured, Booked, Return.

@@ -11,6 +11,17 @@
 > `ModeProfile` dropped its unused `blueprint` field. Read the "blueprint" references below as
 > `lib/spaces/profile-config.ts`.
 
+> ⚠️ **The plan NAMES used below are HISTORICAL, and the prices with them.** This plan was written on
+> the Pro / Nonprofit / Organization shape ([ADR-458](DECISIONS.md)); that ladder is gone. The live one
+> is Member $0 · Crew contribute what you want (floor $4.99/mo) · Free Space $0 · **Business $29** ·
+> **Collective $79** · **Non Profit $39** · **Independent $249** · **Vera AI add-on +$20**, annual at
+> ten times the monthly rate, and **no beta, founding or struck-through rate anywhere**
+> ([PRICING.md](PRICING.md), [ADR-811](DECISIONS.md), [ADR-1060](DECISIONS.md),
+> [ADR-1067](DECISIONS.md)). Read "Pro" below as **Business** and "Organization" as **Collective /
+> Independent**. The per-add-on menu (Marketing / Team / Branding / AI Engine) folded into tier depth
+> ([ADR-472](DECISIONS.md)); the one surviving add-on is **Vera AI**. The MODE idea itself is framing,
+> not entitlement, so it is unaffected.
+
 > **The answer, first.** Now that practitioner / coach / business / studio all bill on the one **Pro**
 > plan, the old `spaces.type` stops being a price tier and becomes an **operating Mode**: a preset layer
 > that decides which Pro modules lead, the default settings, the CRM pipeline, the lexicon, the
@@ -145,16 +156,20 @@ The rework brings every provisionable Mode onto the one console.
 ## 4. Marketing pages + the pricing table
 
 ### 4a. Per-Mode package focus across marketing
-- Rewrite the persona/landing pages so each Mode leads with ITS package focus and ITS recommended
-  loadout price, tying into the GE11 SEO surfaces and the Phase F persona pages:
-  - **Frequency for Coaches** ($19 Pro + AI Engine + Marketing = ~$59): packages, scheduling, client CRM.
-  - **for Service Businesses** ($19 + Marketing = ~$39): bookings, quotes, repeat clients.
-  - **for Product Businesses** ($19 + Marketing + Branding = ~$69): catalog, storefront, your domain.
-  - **for Studios** ($19 + Marketing = ~$39): classes, memberships, check-in.
-  - **for Nonprofits** (Nonprofit plan, per-seat): programs, donations, supporters.
-  - **for Event Spaces** ($19 Pro): tickets, check-in, dispatch.
-- Each page: honest, plain voice (CONTENT-VOICE), the list-anchor + founding price, the monthly/yearly
-  note, and the mission-framing line. `Product`/`Offer` + `FAQPage` JSON-LD; `llms.txt` entry.
+- Rewrite the persona/landing pages so each Mode leads with ITS package focus and the plan that
+  carries it, tying into the GE11 SEO surfaces and the Phase F persona pages. The old per-Mode
+  add-on menu (Marketing / Team / Branding) is RETIRED: its depth folds into tier depth
+  ([ADR-472](DECISIONS.md)), so a Mode recommends a PLAN, not a bundle of add-ons.
+  - **Frequency for Coaches** (Business, plus the Vera AI add-on): packages, scheduling, client CRM.
+  - **for Service Businesses** (Business): bookings, quotes, repeat clients.
+  - **for Product Businesses** (Business): catalog, storefront, your own domain.
+  - **for Studios** (Business): classes, memberships, check-in.
+  - **for Nonprofits** (Non Profit, $39/mo flat): programs, donations, supporters.
+  - **for Event Spaces** (Business): tickets, check-in, dispatch.
+- Each page: honest, plain voice (CONTENT-VOICE), the ONE published price for that plan, the
+  monthly/yearly note (a year is two months free), and the mission-framing line. **No struck
+  anchor and no founding or beta caption** ([ADR-1060](DECISIONS.md)). `Product`/`Offer` +
+  `FAQPage` JSON-LD; `llms.txt` entry.
 
 ### 4b. The pricing page table (owner ask: "create a pricing table on the pricing page")
 A static (ISR) table on the commercial pricing page. Shape:
@@ -171,17 +186,22 @@ A static (ISR) table on the commercial pricing page. Shape:
 | 🎨 Branding add-on | +$30/mo | de-brand | included |
 | Take-rate (network-sourced sales only) | 5% | 0% | custom |
 
-> ⚠️ **Prices and plan names in this table are historical** (the Pro / Nonprofit / Organization shape).
-> The live ladder and the live rates are in [PRICING.md](PRICING.md): Business $29, Collective $79 (the
-> $19 / $49 Opening Beta rates are closed, [ADR-1060](DECISIONS.md)), Non Profit $39, and a take-rate that applies to
-> **network-sourced sales only** (Crew 8% · Business and Collective 5% · Non Profit 0%), with **0% on a
-> sale to the seller's own audience and 0% on every tip** (ADR-913). The retired 10% and 3% rungs must not
-> be quoted from here.
+> ⚠️ **Prices and plan names in this table are historical** (the Pro / Nonprofit / Organization shape,
+> with a per-add-on menu that ADR-472 retired). Nothing in it may be built or quoted.
+> The live ladder is in [PRICING.md](PRICING.md): Member $0 · Crew contribute what you want (floor
+> $4.99/mo, $24.99 suggested) · Free Space $0 · **Business $29/mo, $290/yr** · **Collective $79/mo,
+> $790/yr** · **Non Profit $39/mo flat, $390/yr** · **Independent $249/mo, $2,490/yr** · **Vera AI
+> add-on +$20/mo, $200/yr**. A year is always ten times the monthly rate, and it is the only discount:
+> the Opening Beta rates are CLOSED and no surface renders a struck anchor or a founding caption
+> ([ADR-1060](DECISIONS.md), [ADR-1067](DECISIONS.md)). The rate applies to **network-sourced sales
+> only** (free Member 10% · Crew 8% · free Space 10% · Business 5% · Collective 3% · Non Profit 0% ·
+> Independent 0%), with **0% on a sale to the seller's own audience and 0% on every tip**
+> ([ADR-914](DECISIONS.md), which reversed ADR-913).
 
-Below the table, a **"by who you are"** strip mapping each Mode to its recommended loadout + monthly
-total (Coach $59 · Service business $39 · Product business $69 · Studio $39 · Nonprofit per-seat ·
-Event $19), each linking to its persona landing page. The monthly/yearly toggle, the founding-price
-anchor, and the grandfather note (ADR-458 §1a) render on the same page. Fully static, JSON-LD per row.
+Below the table, a **"by who you are"** strip mapping each Mode to the plan that carries it (Coach,
+Service business, Product business, Studio and Event Space on Business; Nonprofit on Non Profit),
+each linking to its persona landing page. The monthly/yearly toggle renders on the same page, with
+the two-months-free line and no price anchor of any kind. Fully static, JSON-LD per row.
 
 ## 5. Phasing (folds into the pricing overhaul)
 

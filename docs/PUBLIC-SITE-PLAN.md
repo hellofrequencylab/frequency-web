@@ -187,9 +187,9 @@ phone (83% of traffic).**
 
 | Section | Its job | What goes in it |
 |---|---|---|
-| Tier table | 2 to 3 tiers, access not charity | Member (free forever), Crew ($10/mo, free during beta, founder-locked), Pay-It-Forward. Scannable table, check icons, semantic tokens (no hardcoded hex). |
+| Tier table | 2 to 3 tiers, access not charity | Member (free forever) and Crew (**contribute what you want**: floor $4.99/mo, $24.99 suggested, every amount buys identical access). A pay-it-forward "covered seat" tier was designed and REJECTED ([ADR-811](DECISIONS.md)), so no card may claim to cover another member's seat. Scannable table, check icons, semantic tokens (no hardcoded hex). No struck-through anchor and no beta or founding caption ([ADR-1060](DECISIONS.md)). |
 | What it funds | Anti-extraction proof | Concrete operating detail: heating the thermal circuit, insurance, the room's lights. Where money goes, not abstractions. |
-| Risk reversal | Defuse | "No card today. Founder pricing locked for life. Leave anytime." |
+| Risk reversal | Defuse | "No card to join. One price, the same whenever you start. Two months free on the year. Leave anytime." |
 | FAQ | "Is leadership for sale?" | "Earned, not bought." No fake scarcity, no countdowns. |
 
 ### Feature / benefit page (`/the-quest`, `/spaces`)

@@ -1,4 +1,4 @@
-<!-- @dsCard group="Screens · Marketing" viewport="1280x820" name="Marketing — Pricing" subtitle="Current canon: ADR-914 (the rate is the ladder, 0% on your own audience, tips free), ADR-908 (Crew is pay-what-you-want, first one free), ADR-1052/878 (six listed tiers, Opening Beta rates). Closes on Captured/Booked/Return, never a dollar." -->
+<!-- @dsCard group="Screens · Marketing" viewport="1280x820" name="Marketing — Pricing" subtitle="Current canon: ADR-914 (the rate is the ladder, 0% on your own audience, tips free), ADR-908/1084 (Crew is contribute what you want, first one free), ADR-1060/1067 (one published price per tier, no beta rate and no struck anchor). Closes on Captured/Booked/Return, never a dollar." -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -33,14 +33,15 @@
 const NSP = window.DAWNFrequencyDesignSystem_c868e3;
 const I = ({ n, s = 18 }) => <window.MkIco n={n} style={{ width: s, height: s }} />;
 
-// Every price below is a list anchor with a lower founding price, grandfathered
-// for the life of the subscription. And every billing button is a PREVIEW: billing
-// does not turn on until graduation, so a live-looking Subscribe would be a lie.
+// Every price below is THE price: one number per tier, the same whenever you start.
+// The Opening Beta window closed 2026-08-17 (ADR-1060), so nothing here renders a
+// struck-through anchor, a "Beta price" caption, or a countdown to a rise. The only
+// discount is the year, which is ten months for twelve.
 const FREE = [
   { name: 'Member', price: '$0', unit: 'forever', body: 'The whole product, and the first of everything: host a Circle, publish a Journey, run two events, sell a ticket. Nothing here is a trial.',
     lines: ['Host 1 Circle — and you are made a Host', 'Publish 1 Journey, 3 Practices', '2 active events, and you may charge', 'Sell tickets and take donations day one', 'Sparks accrue; spending them is Crew'],
     rate: '10%', cta: 'Start free', live: true },
-  { name: 'Crew', price: 'You choose', unit: 'from $4.99/mo · $12 suggested', body: 'The leadership tier. A Member does each thing once; Crew does it repeatedly, publicly, and for money — and picks what to pay for the privilege.',
+  { name: 'Crew', price: 'You choose', unit: 'from $4.99/mo · $24.99 suggested', body: 'The leadership tier. A Member does each thing once. Crew does it repeatedly, publicly, and for money, and contributes what they want for it.',
     lines: ['Unlimited Circles, Journeys, Practices', 'Journeys listed in the public library', 'Recurring event series and entry points', 'Spend the Vault, full rewards loop, unlimited Vera', 'Annual is ten months for twelve'],
     rate: '8%', cta: 'Choose your amount', live: true, feature: true },
   { name: 'Space', price: '$0', unit: 'free, forever', body: 'A real, claimable, public Space. It sells from day one — we never gate the transaction, only the repeat.',
@@ -49,11 +50,11 @@ const FREE = [
 ];
 
 const BUSINESS = [
-  { name: 'Business', price: '$19', list: '$29', unit: '/mo', body: 'The working operator plan. Two of the three walls open here: selling memberships, and campaigns and funnels.',
+  { name: 'Business', price: '$29', year: '$290', unit: '/mo', body: 'The working operator plan. Two of the three walls open here: selling memberships, and campaigns and funnels.',
     lines: ['Sell memberships and subscriptions', 'Campaigns, funnels, email automation', 'Full CRM and analytics', '3 hosted collaborators', 'Branded site on your own domain'], rate: '5%', cta: 'Start free', live: true },
-  { name: 'Collective', price: '$49', list: '$79', unit: '/mo', body: 'For the operator who runs money through other people. The third wall opens: automatic revenue splits.',
+  { name: 'Collective', price: '$79', year: '$790', unit: '/mo', body: 'For the operator who runs money through other people. The third wall opens: automatic revenue splits.',
     lines: ['Everything in Business', 'Automatic revenue splits', 'Unlimited collaborators', 'SMS on a registered number', 'The lowest rate on the network'], rate: '3%', cta: 'Start free', live: true, feature: true },
-  { name: 'Non Profit', price: '$39', unit: '/mo flat', body: 'Everything a Collective gets, at a flat price, and nothing taken off what you raise. Verified 501(c)(3) only.',
+  { name: 'Non Profit', price: '$39', year: '$390', unit: '/mo flat', body: 'Everything a Collective gets, at a flat price, and nothing taken off what you raise. Verified 501(c)(3) only.',
     lines: ['Everything in Collective', 'Donations built in', 'Flat — seats are not the axis', 'Verified 501(c)(3)'], rate: '0%', cta: 'Apply', live: true },
 ];
 
@@ -62,9 +63,9 @@ const BUSINESS = [
 const RATES = [
   ['Member', '10%', 'free'],
   ['Space', '10%', 'free'],
-  ['Crew', '8%', 'pwyw'],
-  ['Business', '5%', '$19'],
-  ['Collective', '3%', '$49'],
+  ['Crew', '8%', 'you choose'],
+  ['Business', '5%', '$29'],
+  ['Collective', '3%', '$79'],
   ['Non Profit', '0%', '$39'],
 ];
 const WALLS = [
@@ -90,13 +91,6 @@ function Plan({ p, tone = 'light' }) {
           background: 'var(--color-primary)', color: 'var(--color-text-on-primary)', fontSize: 'var(--text-3xs)' }}>Best choice</span>
       ) : null}
       <h3 style={{ margin: 0, fontSize: p.feature ? '1.3rem' : '1.1rem', letterSpacing: 'var(--tracking-tight)' }}>{p.name}</h3>
-      {p.list ? (
-        <span style={{ display: 'flex', alignItems: 'baseline', gap: 7, margin: '0.6rem 0 -0.2rem', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-2xs)',
-          color: ink ? 'var(--color-on-ink-subtle)' : 'var(--color-text-subtle)' }}>
-          <span style={{ textDecoration: 'line-through' }}>{p.list}{p.unit}</span>
-          <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--color-primary-strong)' }}>Beta price</span>
-        </span>
-      ) : null}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, margin: '0.7rem 0 0', flexWrap: 'wrap' }}>
         <span className="font-display" style={{ fontSize: p.price.length > 6 ? '2rem' : (p.feature ? '3.4rem' : '2.9rem'), lineHeight: 0.9, letterSpacing: '-0.03em' }}>{p.price}</span>
         <span style={{ fontSize: 'var(--text-meta)', color: ink ? 'var(--color-on-ink-muted)' : 'var(--color-text-muted)' }}>{p.unit}</span>
@@ -125,9 +119,9 @@ function Plan({ p, tone = 'light' }) {
             disabled={!p.live} style={{ width: '100%' }} iconRight={p.live ? <I n="arrow-right" s={16} /> : null}>
             {p.cta}
           </Button>
-          {p.list ? (
+          {p.year ? (
             <p style={{ margin: '0.55rem 0 0', textAlign: 'center', fontSize: 'var(--text-2xs)', color: ink ? 'var(--color-on-ink-subtle)' : 'var(--color-text-subtle)' }}>
-              Opening Beta rate — yours for as long as you keep the plan
+              Or {p.year} a year, two months free
             </p>
           ) : null}
         </div>
@@ -157,9 +151,9 @@ function Page() {
           </p>
           <div className="glass lift-1" style={{ display: 'inline-flex', alignItems: 'center', gap: 12, margin: '2rem 0 0', padding: '0.7rem 1.1rem', borderRadius: 'var(--radius-pill)' }}>
             <span className="halo" style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'var(--color-primary)' }} />
-            <span style={{ fontSize: '0.92rem', fontWeight: 700 }}>Opening Beta</span>
+            <span style={{ fontSize: '0.92rem', fontWeight: 700 }}>One price</span>
             <span style={{ width: 1, height: 16, background: 'var(--color-border-strong)' }} />
-            <span style={{ fontSize: '0.92rem', color: 'var(--color-text-muted)' }}>Beta rates are grandfathered. Allowances start counting September 1, 2026 — nothing is taken away before then.</span>
+            <span style={{ fontSize: '0.92rem', color: 'var(--color-text-muted)' }}>The same price whenever you start, and the year is two months free. Allowances start counting September 1, 2026, and nothing is taken away before then.</span>
           </div>
         </div>
       </section>
@@ -278,11 +272,11 @@ function Page() {
       <window.FaqList items={[
         { q: 'Can I really sell on the free tier?', a: 'Yes. Tickets, bookings, donations and payouts, from the first day, with no upgrade. The rate on a sale we sourced is 10%, and on your own audience it is nothing. We would rather take 10% of a sale that happened than 0% of one you took to Venmo.' },
         { q: 'What counts as my own audience?', a: 'A follower, an active member, a contact in your CRM, a personal contact, or anyone who has already bought from you. Any one of those is enough, and it is checked on every sale. We charge for the introduction, never the relationship.' },
-        { q: 'How does pay-what-you-want work on Crew?', a: 'You choose the amount. The floor is $4.99 a month, $12 is suggested and pre-selected, and there is always an "another amount" field. Every amount buys exactly the same access — the moment a higher amount bought more it would be a tier ladder with a friendly name. Above the suggested amount you get the Supporter mark, which is thanks, not capability.' },
+        { q: 'How does contribute what you want work on Crew?', a: 'You choose the amount. The floor is $4.99 a month, $24.99 is suggested and pre-selected, and there is always an "another amount" field. Every amount buys exactly the same access. The moment a higher amount bought more it would be a tier ladder with a friendly name. At or above the suggested amount you get the Supporter mark, which is thanks, not capability.' },
         { q: 'What does Crew actually change?', a: 'It removes the "once". A Member hosts one Circle, publishes one Journey and three Practices, runs two events. Crew does all of it without limit, gets listed in the public library, runs recurring series, spends the Vault, and drops to 8% on network sales. It buys no standing you did not earn by turning up.' },
-        { q: 'Will the beta rate go up on me?', a: 'Not while you keep the plan. Business at $19 and Collective at $49 are Opening Beta rates against $29 and $79, and they are grandfathered for as long as the subscription runs. Non Profit has one price and no anchor.' },
+        { q: 'Will the price go up on me?', a: 'Business is $29 a month and Collective is $79, and that is the price whenever you start. There is no introductory rate, no countdown, and no crossed-out number anywhere on this page. Paying for the year is two months free, and that is the only discount we run.' },
         { q: 'Do you charge per seat?', a: 'Seats are not the axis. Business includes three hosted collaborators and Collective is unlimited; Non Profit is flat by promise. If we ever price a seat it will be published here like everything else.' },
-        { q: 'What happens on September 1, 2026?', a: 'The free allowances start counting. Nothing is removed before then, and nothing about your rate changes on that date — it is when the meters begin, not when the price does.' },
+        { q: 'What happens on September 1, 2026?', a: 'The free allowances start counting. Nothing is removed before then, and nothing about your rate changes on that date. It is when the meters begin, not when the price does.' },
       ]} />
       <window.BetaCTA />
     </>

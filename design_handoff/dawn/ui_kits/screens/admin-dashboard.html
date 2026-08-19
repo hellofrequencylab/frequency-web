@@ -48,7 +48,7 @@ function Page() {
   const [tab, setTab] = React.useState('now');
   return (
     <window.Screen active="admin-home" wide
-      dock={<window.PageDock page="Operator dashboard" stats={[{ value: '212', label: 'Turned up', sub: 'last 7 days' }, { value: '18', label: 'Circles met' }, { value: '4', label: 'Events live' }, { value: '$0', label: 'Fees taken', sub: 'beta' }]}
+      dock={<window.PageDock page="Operator dashboard" stats={[{ value: '212', label: 'Turned up', sub: 'last 7 days' }, { value: '18', label: 'Circles met' }, { value: '4', label: 'Events live' }, { value: '$0', label: 'Fees taken', sub: 'your own audience' }]}
       settings={[{ label: 'Show seeded demo data', hint: 'Dimmed, so nobody mistakes it for real', on: true }, { label: 'Weekly digest email', on: true }, { label: 'Feature the space in Around You', on: false }]} />}
       rail={
       <window.Rail>

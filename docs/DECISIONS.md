@@ -27225,3 +27225,45 @@ than one Journey, charging for an event, and entry points behind Crew, while [AD
 already reversed the largest of those ("a free Member **can** sell. Tickets, donations, payouts, on
 day one, with no upgrade"). Renaming the price does not reconcile the ladder, and pretending it did
 would be the same shape of error this rename is fixing. Raised with the owner as its own decision.
+
+## ADR-1085: A switch that says "activate" and an amount that says "placeholder" are two facts, and nothing compared them
+
+**Context.** The operator seat (ADR-799) is a per-seat add-on whose code amount is a deliberate
+stand-in: `CATALOG.operator_seat` carries `placeholder: true` and `$9/seat`, with a comment saying
+the sync skips it "so a routine sync of the other items can never mint a live seat price the owner
+did not approve". [ADR-803](DECISIONS.md) added `catalog_operator_seat_active` so the owner could
+activate the seat once the real amount was set.
+
+**What happened, 2026-08-19.** The first live catalog sync minted **eight** products instead of six.
+The extra one was Operator seat, with four prices at $9 and $90, in the **live** account, with
+`billing_live` also true. The skip had not failed: `catalog_operator_seat_active` was `true` in
+production, so `isCatalogItemInertPlaceholder` correctly stopped skipping, and the sync correctly
+minted what it was told to. Every line of code did what it said.
+
+**The gap is that activation and amount were never compared.** The switch asks "is the seat on?" The
+catalog asks "has the owner set a price?" Turning the switch on while the answer to the second
+question was still *no* shipped the stand-in as a real, chargeable price. The invariant held in
+letter and broke in substance: nothing minted a price the owner had not turned on, and the owner had
+turned on a price they had never set.
+
+**Decision. `setOperatorSeatActive(true)` now refuses while no operator amount exists** for
+`catalog.operator_seat` in `pricing_settings`, and says what to do instead. Turning the switch OFF is
+always allowed, because that direction is the safe one and refusing it would strand an already-live
+seat.
+
+**Consequences.**
+
+- Production repaired: the flag is off, the four `operator_seat` rows are deleted from
+  `pricing_stripe_prices` so `resolveLoadoutPriceId` returns null, and the Stripe product plus all
+  four prices are archived. The live account is back to **7 active products** — the six the catalog
+  mints plus the hand-made Crew product. No subscription ever referenced them (0 customers, 0
+  subscription items), so nothing was charged.
+- **Stripe Prices are IMMUTABLE.** A wrong amount cannot be corrected, only archived, so the repair
+  leaves permanent archived objects in the account. That asymmetry is the whole reason the guard
+  belongs *before* the write rather than in a report afterwards.
+- ⚠️ This is the second time in two days that a fail-safe was found holding while the thing it
+  protected went wrong anyway. [ADR-1083](DECISIONS.md) was a banner whose date was valid and whose
+  sentence was false; this is a skip that fired correctly on a flag that should never have been set.
+  Both were invisible for the same reason: **the code was asked whether it did what it was told, and
+  it had.** The check that catches this class compares two facts that live apart, which is what the
+  guard above does and what `check:og-trace` does for the build.

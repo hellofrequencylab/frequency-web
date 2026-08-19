@@ -52,19 +52,22 @@ always 0%** on every tier (hard promises, ADR-913).
 |---|---|---|---|
 | **Member** | $0 | Belong, be found, run a basic page, **create events and take RSVPs**. Does not sell: no tickets, no payments | n/a (cannot sell) |
 | **Crew** | contribute-what-you-want (ADR-908, renamed ADR-1084) | The individual creator: the full game + author circles, journeys, programs, **and the right to charge** | **8%** |
-| **Business** | **$29/mo flat, all-in** | Run your whole practice. One honest price, no add-on menu | **5%** |
-| **Collective** ⭐ | **$79/mo (beta $49)** | The collaboration engine: host collaborators, shared venue + events, shared pricing, revenue splits | **5%** (sells on depth, not on a cheaper fee) |
-| **Non Profit** | **$39/mo flat, verified** | Full Collective toolkit, verified 501(c)(3), 3 seats included | **0%** |
-| **Independent** | **~$249/mo** | White-label, `network_connected=false`. Standard SaaS. The anchor | n/a (left the network) |
+| **Business** | **$29/mo flat, $290/yr, all-in** | Run your whole practice. One honest price, no add-on menu | **5%** |
+| **Collective** ⭐ | **$79/mo, $790/yr** | The collaboration engine: host collaborators, shared venue + events, shared pricing, revenue splits | **5%** (sells on depth, not on a cheaper fee) |
+| **Non Profit** | **$39/mo flat, $390/yr, verified** | Full Collective toolkit, verified 501(c)(3), 3 seats included | **0%** |
+| **Independent** | **$249/mo, $2,490/yr** | White-label, `network_connected=false`. Standard SaaS. The anchor | n/a (left the network) |
 
 **"Own audience" is a relationship, never a cookie.** The fee is 0% whenever the buyer follows the Space,
 is an active Space member, is in its Space Contacts, is in the seller's own contact list, or has bought
 from them before. **Frequency charges once for the introduction. After that they're your people, free.**
 
-- **Add-ons (flat, never a %):** operator seat **+$12/mo** · Resonance Engine (AI) **+$20/mo** · Founding
-  Steward patronage (opt-in, price-locked, capped) that backs the physical build.
-- **Beta:** Collective ships at a **$49 founding price** under a $79 list anchor, locked for the life of the
-  subscription.
+- **Add-ons (flat, never a %):** the **Vera AI** add-on **+$20/mo, $200/yr** (ADR-590 renamed it from
+  "Resonance Engine", which now names only the matching SYSTEM under the hood, never the product) ·
+  operator seats, owner-priced and not yet sold · Founding Steward patronage (opt-in, capped) that backs
+  the physical build.
+- **One price per tier, and the year is the only discount.** Annual is always ten times the monthly rate
+  (two months free). The Opening Beta window CLOSED on 2026-08-17 ([ADR-1060](DECISIONS.md)): no tier
+  carries a beta, founding or struck-through rate, and no surface may advertise one.
 - **The buy-down:** paying lowers the network take-rate (Crew 8% → Business 5% → Non Profit 0%), so a
   subscription reads as savings and power, never rent. Launch the rate low (5 to 8%) and earn the right to
   raise it as network-sourced revenue grows (the Etsy / Airbnb playbook).
@@ -114,7 +117,7 @@ House is 30 years old, worth $2.7B, and still unprofitable). Instead:
 
 ## 8. Positioning psychology
 
-- **No cliffs:** $9 to $29 to $79 are 3.2x and 2.7x steps; each upgrade is an easy yes.
+- **No cliffs:** free, then a Crew amount the member chooses, then $29 to $79 (a 2.7x step); each upgrade is an easy yes.
 - **A high $249 anchor** makes Collective the obvious serious-operator choice, and it is loss-framed (leaving
   costs more because you forfeit network reach).
 - **$29 is the "most popular" volume tier;** a genuinely complete free tier is the reciprocity hook.

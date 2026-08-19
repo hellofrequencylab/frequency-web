@@ -132,8 +132,8 @@ Each new page is three small additions plus content authoring:
 | **IllustratedFeature** | Feature sections with the vector art (the user's explicit ask) | illustration name, eyebrow, title, body, side, CTA |
 | **Manifesto** | The philosophy statement blocks (large, plain, one idea each) | text, accent, tone |
 
-The existing **Tiers** block already covers pricing cards (featured ribbon, badge, struck
-price, features, CTA), **Accordion** covers FAQ, **FeatureGrid/MediaText** cover features,
+The existing **Tiers** block already covers pricing cards (featured ribbon, badge, price,
+features, CTA), **Accordion** covers FAQ, **FeatureGrid/MediaText** cover features,
 **StatRow/LiveStats** cover proof. Reuse them; do not duplicate.
 
 ---
@@ -168,34 +168,41 @@ Authored with the existing **Tiers** block (one card per option) plus a "what me
 funds" section and an FAQ. **Member is the featured (highlighted) card.** Three sections:
 Membership (people), For Spaces (practitioners/businesses), and Add-ons. Everything is
 listed and detailed; anything not yet purchasable shows its real price and a **Coming Soon**
-badge (billing is gated by the `billing_live` master flag, OFF by default, so nothing
-charges yet). Drop the beta/founder/seed framing entirely. Prices below are the GA defaults
-from `lib/pricing/settings.ts` (`PRICING_DEFAULTS`).
+badge. Drop the beta/founder/seed framing entirely: the Opening Beta window CLOSED on
+2026-08-17 ([ADR-1060](DECISIONS.md)), so **no card renders a struck-through anchor, a
+"Beta rate" or founding caption, or a countdown to a price rise.** The ladder below is the
+live one; the authority is the top banners of [PRICING.md](PRICING.md) plus the `CATALOG`
+in `lib/billing/pricing-keys.ts`, which is what the checkout bills from. **Annual is always
+ten times the monthly rate (two months free), and that is the only discount.**
 
-**Section 1 — Membership (people).** Member is featured.
+**Section 1, Membership (people).** Member is featured.
 
 | Tier | Price | Interval | Unlocks | Status |
 |---|---|---|---|---|
 | **Member** ⭐ featured | Free | forever | Browse Circles/Events, attend gatherings, earn Zaps, Vera (10/day) | **Live** |
-| **Crew** | $9/mo or $90/yr | monthly + annual (2 mo free) | Full community, full gamification (Gems + Vault cash-in), Vera unlimited, leaderboard | **Coming Soon** |
-| **Supporter** | $24/mo or $240/yr | monthly + annual | Everything in Crew + fund a member who cannot pay (hold the door) | **Coming Soon** |
+| **Crew** | **Contribute what you want**: floor $4.99/mo, $24.99 suggested | monthly + annual (annual is 10x the chosen monthly) | Full community, full gamification (Gems + Vault cash-in), Vera unlimited, leaderboard | **Live** |
 
-**Section 2 — For Spaces (practitioners, businesses, orgs).** All Coming Soon.
+Supporter is **not** a tier ([ADR-878](DECISIONS.md)). It is a mark on Crew, earned at or
+above the suggested contribution, and it buys no capability, so it gets no card.
 
-| Plan | Price | Take-rate | Unlocks | Status |
+**Section 2, For Spaces.**
+
+| Plan | Price | Rate on network-sourced sales | Unlocks | Status |
 |---|---|---|---|---|
-| **Free** | Free | n/a | Basic Space listing | **Live** |
-| **Practitioner** | $19/mo or $190/yr | 8% | Space CRM, basic automation | **Coming Soon** |
-| **Business** | $49/mo or $490/yr | 5% | + Email/marketing, team roles, multi-pipeline, Resonance (read) | **Coming Soon** |
-| **Nonprofit** | $29/mo or $290/yr | 5% | Business feature set for verified 501(c)(3) | **Coming Soon** |
+| **Free Space** | Free | 10% | A claimable public Space that sells from day one | **Live** |
+| **Business** | $29/mo or $290/yr | 5% | Full CRM, email automation, reporting, memberships, campaigns and funnels, branded site on your own domain | **Live** |
+| **Collective** | $79/mo or $790/yr | 3% | Everything in Business plus automations, team roles, multiple pipelines, hosted collaborators, automatic revenue splits | **Live** |
+| **Non Profit** | $39/mo flat or $390/yr | 0% | The full Collective toolkit for a verified 501(c)(3), donations built in, never per seat | **Live** |
+| **Independent** | $249/mo or $2,490/yr | n/a (off the network) | Standalone white label: your own brand and domain, no network discovery | not self-serve today (`plan_independent_enabled` defaults off) |
 | **Partner** | Comped + revenue share | varies | Full Business set; operator-assigned (not sold) | invite-only |
-| **Organization** | $199/mo | 3% | + Reporting, full Resonance AI, premium support (talk to us) | **Coming Soon** |
-| **White-label** | $299/mo + $1,500 setup | 3% | Organization + full branding removal (lead form) | **Coming Soon** |
 
-**Section 3 — Add-ons (Space owner tools).** All Coming Soon, display-only today.
+A sale to the seller's **own audience is 0% on every tier, forever**, and a tip is always 0%.
+
+**Section 3, Add-ons (Space owner tools).**
 
 | Add-on | Price | What it is | Status |
 |---|---|---|---|
+| **Vera AI** | +$20/mo or $200/yr | The AI add-on, optional on any paid plan: turns community signals into live matches and next-best actions | **Live** |
 | **Space Memberships** | Owner-set (e.g. $25 to $100/mo) | Paid member tiers a Space owner defines | **Coming Soon** |
 | **Bookings** | Owner-set per slot | Paid 1:1 sessions on a Space's calendar | **Coming Soon** |
 | **Donations** | Suggested amounts | Support a Space's fund | **Coming Soon** |
@@ -203,9 +210,9 @@ from `lib/pricing/settings.ts` (`PRICING_DEFAULTS`).
 Voice: access not extraction; a "what it funds" section names concrete operating costs (the
 room's lights, insurance, the thermal circuit); risk reversal ("no card today, leave
 anytime"); roles are "earned, not bought" (Host/Guide/Mentor are never purchasable); no fake
-scarcity, no countdowns. FAQ covers free-forever, what Coming Soon means, refunds, and that
-leadership is earned. Crew/Supporter cards show their price with the Coming Soon badge and a
-disabled CTA (the `Tiers` block already supports badges + struck price + CTA style).
+scarcity, no countdowns, and no crossed-out anchors. FAQ covers free-forever, what Coming
+Soon means, refunds, and that leadership is earned. A Coming Soon card shows its real price
+with the badge and a disabled CTA (the `Tiers` block already supports badges and CTA style).
 
 ---
 

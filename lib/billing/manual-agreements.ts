@@ -246,6 +246,57 @@ export async function recordManualPayment(agreementId: string): Promise<Agreemen
   return { ok: true, agreement: mapRow(updated as AgreementRow) }
 }
 
+/** CORRECT the paid-through date on an active agreement to an explicit date (staff).
+ *
+ *  🔴 THIS IS THE UNDO THAT DID NOT EXIST (LIVE-050). `recordManualPayment` above is extend-only and
+ *  fires on one click, and on 2026-08-18 it moved a paying member from 2027-07-27 to 2028-07-27,
+ *  claiming a second $490 year nobody had paid. Putting that back took a database write by hand,
+ *  because the paid-through input lives only on the CREATE form and an active agreement renders a
+ *  read-only summary. The single control the screen offered was the one that could not be reversed.
+ *
+ *  Clears all three reminder stamps, exactly as recording a payment does, and for a sharper reason:
+ *  the reminder ladder is derived from `paid_through`, so moving the date BACKWARD makes a rung due
+ *  again, and a stamp left set would silence the very reminder the correction just earned. Clearing
+ *  is therefore the fail-safe direction — at worst a member hears from us once more than needed,
+ *  which is the harmless side of this trade.
+ *
+ *  Refuses a missing or non-active agreement, and a date that is not a real YYYY-MM-DD. It does NOT
+ *  bound how far the date may move: a correction is as likely to be a year back as a day forward,
+ *  and a guess at the legitimate range would block the repair this exists for. */
+export async function correctPaidThrough(
+  agreementId: string,
+  paidThrough: string,
+): Promise<AgreementResult> {
+  if (!agreementId) return { ok: false, error: 'We could not find that agreement.' }
+  if (!parseDateUTC(paidThrough)) return { ok: false, error: 'Dates must be real YYYY-MM-DD dates.' }
+
+  const { data } = await db()
+    .from('space_billing_agreements')
+    .select(SELECT_COLS)
+    .eq('id', agreementId)
+    .maybeSingle()
+  if (!data) return { ok: false, error: 'We could not find that agreement.' }
+  const current = mapRow(data as AgreementRow)
+  if (current.status !== 'active') {
+    return { ok: false, error: 'Only an active agreement can be corrected.' }
+  }
+
+  const { data: updated, error } = await db()
+    .from('space_billing_agreements')
+    .update({
+      paid_through: paidThrough,
+      reminder_30_sent_at: null,
+      reminder_7_sent_at: null,
+      overdue_notice_sent_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', agreementId)
+    .select(SELECT_COLS)
+    .maybeSingle()
+  if (error || !updated) return { ok: false, error: 'Could not correct the date.' }
+  return { ok: true, agreement: mapRow(updated as AgreementRow) }
+}
+
 /** Every ACTIVE agreement owed a reminder touch at `now`, batched into the ladder's three
  *  buckets. ONE bounded read (active rows whose paid_through is inside the widest window,
  *  paid_through <= now+30d), then the pure classifier. Fail-safe to empty buckets: a read error
