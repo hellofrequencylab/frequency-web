@@ -257,8 +257,10 @@ function AppDrawer({ app, onClose }: { app: AppCard; onClose: () => void }) {
             <p className="flex items-center gap-1.5 text-body-sm text-subtle">
               <History className="h-4 w-4" aria-hidden /> Usage tracking coming soon.
             </p>
-            {/* TODO(LP3/LP5): wire library_usages (context/ref_id/block_id → deep links) so this lists
-                every surface the App is placed on. The where-referenced backbone lands with app_instances. */}
+            {/* TODO(E0): wire the where-referenced list when EDITOR E0 lands the instances layer.
+                The app_instances table that shipped ahead of its writers was dropped 2026-08-19
+                (OWN-031, migration 20270316000000); E0 re-creates it from ADR-499's spec WITH its
+                writers, and this lane gets its deep links then. */}
           </Field>
         </div>
       </div>

@@ -31,7 +31,6 @@ agent_actions                        internal
 ai_help_queries                      internal
 ai_member_context                    authenticated
 ai_usage                             internal
-app_instances                        authenticated
 app_overrides                        authenticated
 area_permissions                     authenticated
 automation_rules                     internal

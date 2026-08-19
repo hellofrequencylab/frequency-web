@@ -86,9 +86,10 @@ Studio's element grid.
 brief needs no new number set: the 3-row funnel pricing beat reads its dollar figures from the catalog, so
 the strike and the price show consistently on the funnel, `/pricing`, and the doors, and numbers never drift.
 
-Break-even math is truthful, and it runs off the **network** rate, not a free-seller rate: a free tier
-cannot sell at all (ADR-913), so the honest comparison is **Crew 8% vs Business 5%**, a 3-point saving on
-network-sourced sales only. Business at **$29**, the price charged today, crosses at about **$967/mo**
+Break-even math is truthful, and it runs off the **network** rate: ~~a free tier cannot sell at all
+(ADR-913)~~ (corrected 2026-08-19, [ADR-914](DECISIONS.md): every tier sells, and the free rungs price at
+**10%**), so the honest comparison for an operator weighing the paid step is **Crew 8% vs Business 5%**,
+a 3-point saving on network-sourced sales only — and a free seller's saving from Business is 5 points. Business at **$29**, the price charged today, crosses at about **$967/mo**
 (~"$1,000") in network-sourced sales. (At the retired $19 beta rate it was about $633/mo; that figure is
 history, not an offer.) Own-audience sales and tips are
 0% on both sides of that comparison, so they never enter the math.

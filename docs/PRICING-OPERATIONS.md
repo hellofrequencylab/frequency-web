@@ -44,8 +44,11 @@ host or Space through **Stripe Connect**. Three rules come first (ADR-913):
 1. **Tips carry no platform fee. Zero, on every tier.** A tip is a gift between two people; we are not
    in it.
 2. **A sale to the seller's own audience costs them nothing.** Always 0%.
-3. **A free Member cannot sell.** They can create events and take RSVPs, but selling tickets or taking
-   payments needs **Crew** (the paid personal tier) or a **Business / Non Profit** Space.
+3. ~~**A free Member cannot sell.**~~ **Anyone can sell, on any tier** (corrected 2026-08-19,
+   [ADR-914](DECISIONS.md), which reversed ADR-913's seller gate the day it was written). A free Member
+   sells tickets, takes donations, and receives payouts on day one, no upgrade; the only setup step is
+   completing Stripe onboarding at first sale. Paying does not buy the right to sell — it buys the
+   **rate** down. Never gate the transaction, gate the repeat.
 
 Every order that is not a tip is classified as `self` (the seller's own audience) or `network` (the
 network sourced it: referral, discovery, the marketplace). **Own-audience is a relationship, not a
@@ -55,16 +58,23 @@ the fee 0%. Network orders pay the ladder for the seller's tier:
 
 | Seller | Network-sourced take-rate | Own audience |
 |---|---|---|
-| Member (free) | cannot sell (RSVPs only) | cannot sell |
+| Member (free) | 10% ~~(cannot sell, RSVPs only)~~ | 0% |
 | Crew | 8% | 0% |
+| Free Space | 10% | 0% |
 | Business | 5% | 0% |
-| Collective | 5% | 0% |
+| Collective | 3% ~~(5%)~~ | 0% |
 | Non Profit | 0% | 0% |
 | Independent | 0% (off the network, so no network sales) | 0% |
 | Tips, any tier | **0%** | **0%** |
 
-Upgrading buys the fee down: Crew 8% to Business 5% to Non Profit 0%. The rates are set in the pricing
-console (`/admin/pricing`, Take-rate); the seeded defaults live in `lib/pricing/settings.ts`.
+⚠️ Corrected 2026-08-19 ([ADR-914](DECISIONS.md)): the struck cells are the retired sell-wall, the free
+rungs were missing, and Collective is 3%. Rates verified against `NETWORK_TAKE_RATE_DEFAULT`
+(`lib/billing/pricing-keys.ts`).
+
+Upgrading buys the fee down: free Member 10% to Crew 8%, free Space 10% to Business 5% to Collective 3%
+to Non Profit 0%. The rates are set in the pricing console (`/admin/pricing`, Take-rate); the seeded
+defaults live in `NETWORK_TAKE_RATE_DEFAULT` (`lib/billing/pricing-keys.ts`, mirrored by
+`lib/pricing/defaults.ts`).
 
 The one line to give a member who asks: **Frequency charges once for the introduction. After that
 they're your people, free.**
@@ -167,10 +177,12 @@ locked display value, and the money flip is still the master switch.
   While it is off, the seat is a placeholder the catalog sync skips (no Stripe price is minted). Turning
   it on drops the placeholder so the next **Sync the catalog to Stripe** mints the live seat price from
   the amount you set. Activation is audited in `platform_flag_events`.
-- **Member take-rate** (`Plans and prices` > `Take-rate`, the **Member %** field). The rate on a **Crew**
-  member's network-sourced Market sale (default 8%); their own audience is 0% regardless, and a
-  Business Space buys the network rate down to 5%. A free Member has no rate because a free Member
-  cannot sell.
+- **Member take-rates** (`Plans and prices` > `Take-rate`, the **Free member %** and **Member %**
+  fields). The rate on a member's network-sourced sale: **Free member %** is what a free Member pays
+  (default 10%) and **Member %** is the Crew rate (default 8%); their own audience is 0% regardless.
+  ~~A free Member has no rate because a free Member cannot sell.~~ (Corrected 2026-08-19,
+  [ADR-914](DECISIONS.md): a free Member sells on day one, and the free rung is editable in the console
+  — `member_free_bps`, `app/(main)/admin/pricing/pricing-console.tsx`.)
 - **Beta controls** (`Beta controls` section). The **host prompts** (`beta_host_prompts`) switch,
   audited, plus the **countdown date** (`beta_ends_at`). The countdown date is **display only**: it
   drives the "Summer of Frequency" banner and grants no access on its own. An **invite gate**

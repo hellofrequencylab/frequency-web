@@ -1,0 +1,22 @@
+-- DROP public.app_instances — the table that shipped ahead of its code (OWN-031, owner decision
+-- 2026-08-19: "do best practice").
+--
+-- WHY. The table landed 2026-09-24-stamped (LP3, ADR-499 proposed) with tenancy policies applied
+-- and zero writers: 0 rows ever, and exactly one non-generated reference in the tree, a TODO
+-- comment in components/admin/library/apps-lane.tsx (updated in this same change). EDITOR E0
+-- absorbs App Platform A2 and builds the writers, so the schema slot has an owner and a date.
+-- The row's own text names the risk of keeping it: "a second library_usages — a table someone
+-- assumes is live because it exists." That is precisely the drift the one-list exists to kill,
+-- so best practice per this repo's own hygiene is: drop it, and let E0 re-create it WITH its
+-- writers, from ADR-499's spec, which stays in docs/LOOM-PLATFORM.md §8 untouched.
+--
+-- SAFE TO DROP, measured live 2026-08-19: 0 rows, 0 inbound foreign keys (nothing references
+-- it); its own 3 outbound FKs (spaces / library_assets / profiles) drop with the table. RLS
+-- policies and indexes drop with the table. No view, function, or generated type consumer
+-- outside lib/database.types.ts, regenerated in this change.
+--
+-- ALSO REMOVED IN THIS CHANGE, same reasoning as 20270315000000's keep-list discipline:
+--   • scripts/table-grants.txt — the app_instances row (that file mirrors the LIVE database).
+--   • lib/database.types.ts — regenerated after the drop.
+
+drop table if exists public.app_instances;

@@ -11,7 +11,9 @@
 > one, or quotes a hex neither project holds. Do not hand-edit a value here: change the CSS, run the
 > test, and it will tell you what this file should say.
 
-Last derived **2026-08-17** against `app/globals.css` and DAWN's `tokens/colors.css`.
+Last derived **2026-08-19** against `app/globals.css` and DAWN's `tokens/colors.css` (5 tests
+green). The outbound round that copies this sheet is
+[`HANDOFF-TO-DAWN-2026-08-19.md`](HANDOFF-TO-DAWN-2026-08-19.md).
 
 ---
 

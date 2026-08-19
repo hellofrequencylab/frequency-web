@@ -3,8 +3,9 @@
 > **Status:** ✅ Approved direction (2026-07-23), owner-locked. This is the **canonical source of
 > truth** for the repositioning, the pricing model, and the site-wide rebuild. Decision record:
 > [ADR-811](DECISIONS.md). Full implementation plan: [COMMUNITY-COLLECTIVE-BUILD-PLAN.md](COMMUNITY-COLLECTIVE-BUILD-PLAN.md).
-> Supersedes the flat single-Business pricing of ADR-552 / ADR-590 (grandfathered, see §9). **Everything
-> ships behind `billing_live` OFF** until one deliberate go-live flip.
+> Supersedes the flat single-Business pricing of ADR-552 / ADR-590 (grandfathered, see §9). ~~**Everything
+> ships behind `billing_live` OFF** until one deliberate go-live flip.~~ (Struck 2026-08-19: the flip has
+> happened — see the ⚠️ note below.)
 >
 > 🔴 **THE PARAGRAPH BELOW WAS REVERSED THE SAME DAY IT WAS WRITTEN. Read
 > [PRICING.md](PRICING.md)'s ADR-914 banner, not this file, for what anyone is charged.**
@@ -12,23 +13,30 @@
 > payouts, on day one, with no upgrade. The previous rule (ADR-913: 'the free tier does not sell') is
 > REVERSED."* And the rate is the full ladder on network-sourced sales: free Member **10%** · Crew
 > **8%** · free Space **10%** · Business **5%** · Collective **3%** · Non Profit **0%** · Independent
-> **0%**. So the three rungs the next paragraph calls retired and gone are the three rungs that are
-> live, and the sell-wall it describes does not exist. The principle that replaced it is **"never gate
+> **0%**. So the three rungs the next paragraph called retired and gone are the three rungs that are
+> live, and the sell-wall it described does not exist. The principle that replaced it is **"never gate
 > the transaction, gate the repeat"**.
 >
-> The paragraph is kept, unedited, because §4 and §5 below are written on top of it and rewriting a
-> doc's thesis is not a documentation task. What is fixed here is the claim to authority: this file
-> says "canonical source of truth" in its own status line, and on the money model it is not.
+> **Corrected in place 2026-08-19 (OWN-032, per [ADR-914](DECISIONS.md)):** the paragraph below and §4
+> were false and are now fixed where they stood, reversed claims struck through, so every sentence in
+> this file reads true. What was fixed first was the claim to authority: this file says "canonical
+> source of truth" in its own status line, and on the money model it is not —
+> [PRICING.md](PRICING.md)'s ADR-914 banner and [VALUE-LADDER.md](VALUE-LADDER.md) are.
 >
-> ⚠️ Also stale in the status line above: **`billing_live` is ON in production** (measured
+> ⚠️ Also corrected in the status line above: **`billing_live` is ON in production** (measured
 > 2026-08-19). The go-live flip has happened, so "everything ships behind `billing_live` OFF" no
-> longer describes anything.
+> longer describes anything and is struck.
 
 > **Money model amended 2026-07-30 ([ADR-913](DECISIONS.md)):** tips carry **no** platform fee on any tier,
-> the free Member tier **does not sell** (events + RSVPs only), and the network take-rate is **Crew 8% ·
-> Business and Collective 5% · Non Profit 0%**, with **0% whenever the buyer is already the seller's own
-> audience**. §4 and §5 below carry the amended rates; the retired `member_free` 10%, Free Space 10%, and
-> Collective 3% rungs are gone.
+> ~~the free Member tier **does not sell** (events + RSVPs only), and the network take-rate is **Crew 8% ·
+> Business and Collective 5% · Non Profit 0%**~~, with **0% whenever the buyer is already the seller's own
+> audience**. ⚠️ **Corrected 2026-08-19 ([ADR-914](DECISIONS.md), which reversed ADR-913's seller gate the
+> day it was written):** a free Member **can** sell — tickets, donations, payouts, day one, no upgrade —
+> and the rate is a seven-rung ladder on network-sourced sales: free Member **10%** · Crew **8%** · free
+> Space **10%** · Business **5%** · Collective **3%** · Non Profit **0%** · Independent **0%** (verified
+> against `NETWORK_TAKE_RATE_DEFAULT`, `lib/billing/pricing-keys.ts`). The sentence that stood here —
+> ~~"the retired `member_free` 10%, Free Space 10%, and Collective 3% rungs are gone"~~ — had it exactly
+> backwards: those are the live rungs. §4 and §5 below carry the corrected rates.
 
 ## 1. The one-sentence version
 
@@ -68,10 +76,10 @@ always 0%** on every tier (hard promises, ADR-913).
 
 | Tier | Price | Who / the job | Network take-rate |
 |---|---|---|---|
-| **Member** | $0 | Belong, be found, run a basic page, **create events and take RSVPs**. Does not sell: no tickets, no payments | n/a (cannot sell) |
-| **Crew** | contribute-what-you-want (ADR-908, renamed ADR-1084) | The individual creator: the full game + author circles, journeys, programs, **and the right to charge** | **8%** |
+| **Member** | $0 | Belong, be found, run a basic page, **create events, take RSVPs, and sell** — tickets, donations, payouts, day one ~~(Does not sell: no tickets, no payments)~~ (corrected 2026-08-19, [ADR-914](DECISIONS.md)) | ~~n/a (cannot sell)~~ **10%** |
+| **Crew** | contribute-what-you-want (ADR-908, renamed ADR-1084) | The individual creator: the full game + author circles, journeys, programs, **and the lower rate** ~~(the right to charge)~~ — charging is universal, [ADR-914](DECISIONS.md) | **8%** |
 | **Business** | **$29/mo flat, $290/yr, all-in** | Run your whole practice. One honest price, no add-on menu | **5%** |
-| **Collective** ⭐ | **$79/mo, $790/yr** | The collaboration engine: host collaborators, shared venue + events, shared pricing, revenue splits | **5%** (sells on depth, not on a cheaper fee) |
+| **Collective** ⭐ | **$79/mo, $790/yr** | The collaboration engine: host collaborators, shared venue + events, shared pricing, revenue splits | ~~**5%**~~ **3%** (corrected 2026-08-19, [ADR-914](DECISIONS.md)) |
 | **Non Profit** | **$39/mo flat, $390/yr, verified** | Full Collective toolkit, verified 501(c)(3), 3 seats included | **0%** |
 | **Independent** | **$249/mo, $2,490/yr** | White-label, `network_connected=false`. Standard SaaS. The anchor | n/a (left the network) |
 
@@ -86,9 +94,10 @@ from them before. **Frequency charges once for the introduction. After that they
 - **One price per tier, and the year is the only discount.** Annual is always ten times the monthly rate
   (two months free). The Opening Beta window CLOSED on 2026-08-17 ([ADR-1060](DECISIONS.md)): no tier
   carries a beta, founding or struck-through rate, and no surface may advertise one.
-- **The buy-down:** paying lowers the network take-rate (Crew 8% → Business 5% → Non Profit 0%), so a
-  subscription reads as savings and power, never rent. Launch the rate low (5 to 8%) and earn the right to
-  raise it as network-sourced revenue grows (the Etsy / Airbnb playbook).
+- **The buy-down:** paying lowers the network take-rate (~~Crew 8% → Business 5% → Non Profit 0%~~ free
+  Member 10% → Crew 8%, and free Space 10% → Business 5% → Collective 3% → Non Profit 0%; corrected
+  2026-08-19, [ADR-914](DECISIONS.md)), so a subscription reads as savings and power, never rent. Launch
+  the rate low and earn the right to raise it as network-sourced revenue grows (the Etsy / Airbnb playbook).
 
 ## 5. The money principle (why it is aligned, not extractive)
 
