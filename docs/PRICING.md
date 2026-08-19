@@ -89,7 +89,7 @@
 > | Vault, rewards loop, Vera | earn only · earn only · 10/day | spend · full loop · unlimited |
 > | Network-sourced sale rate | **cannot sell** (RSVPs only, ADR-913) | **8%** |
 >
-> **Crew's price is chosen by the member.** Floor **$4.99**, suggested **$12** (pre-selected), five
+> **Crew's price is chosen by the member.** Floor **$4.99**, suggested **$24.99** (pre-selected), five
 > preset anchors plus an always-visible "another amount", annual at **10x the chosen monthly**.
 > 🔴 **Every amount buys IDENTICAL access** — the moment a higher amount buys more, it is a tier ladder
 > and the framing is a lie. Higher amounts buy the Supporter mark (at or above the suggested amount)

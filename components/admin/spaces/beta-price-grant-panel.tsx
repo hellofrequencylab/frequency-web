@@ -5,11 +5,20 @@ import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { isError } from '@/lib/action-result'
+import { catalogItems } from '@/lib/billing/pricing-keys'
+import { formatCents } from '@/lib/pricing/display'
 import { setBetaPriceGrantAction } from '@/app/(main)/admin/spaces/[id]/beta-grant-actions'
 
 // THE BETA PRICE GRANT panel on /admin/spaces/[id] (ADR-1061). One switch: does this Space check out
-// at the closed beta rate (Business $19, Collective $49) instead of list (Business $29, Collective
-// $79)? The public pricing page is untouched either way, which is the entire point of the feature.
+// at the closed beta rate instead of list? The public pricing page is untouched either way, which is
+// the entire point of the feature.
+//
+// 🔴 THE AMOUNTS ARE DERIVED, NEVER WRITTEN DOWN HERE. This panel spent a while telling the operator
+// the grant bought "Business $19 a month" after ADR-1067 had removed Business's founding rate
+// (business_base is 2900/2900, founding == list), so a granted Space paid $29 for Business and the
+// panel said otherwise. It described a commercial promise that the checkout would not honour. The
+// list below is computed from the same CATALOG the checkout bills from, so an item that gains or
+// loses a beta rate changes this copy by itself.
 //
 // THREE STATES, and the third is the one that matters. `unavailable` means the column is not in the
 // database yet, and it renders the instruction rather than a toggle: a control that cannot write must
@@ -29,6 +38,18 @@ function stampLabel(iso: string): string {
     day: 'numeric',
     year: 'numeric',
   })
+}
+
+/** The catalog items that actually carry a beta rate today: founding strictly under list. ADR-1067
+ *  left exactly one (Collective), and a flat item says "no beta rate" by having the two equal. PURE
+ *  read of the code CATALOG, which is what the checkout resolves. */
+const BETA_RATE_ITEMS = catalogItems().filter((i) => i.month.foundingCents < i.month.listCents)
+
+/** "Collective $49 a month" — the plan names carry the magic, so the label drops its product prefix. */
+function itemPhrase(cents: (m: { listCents: number; foundingCents: number }) => number): string {
+  return BETA_RATE_ITEMS.map(
+    (i) => `${i.label.replace(/^Frequency /, '')} ${formatCents(cents(i.month))} a month`,
+  ).join(', ')
 }
 
 export function BetaPriceGrantPanel({
@@ -67,8 +88,8 @@ export function BetaPriceGrantPanel({
         </span>
         <p className="text-body-sm text-muted">
           {granted
-            ? 'This space checks out at the beta rate: Business $19 a month, Collective $49 a month, or ten times that for the year.'
-            : 'This space checks out at the published price: Business $29 a month, Collective $79 a month.'}
+            ? `This space checks out at the beta rate: ${itemPhrase((m) => m.foundingCents)}, or ten times that for the year. Every other plan bills at the published price, because no other plan has a beta rate.`
+            : `This space checks out at the published price: ${itemPhrase((m) => m.listCents)}, or ten times that for the year.`}
         </p>
       </div>
 

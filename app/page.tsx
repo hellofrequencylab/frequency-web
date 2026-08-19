@@ -673,8 +673,8 @@ function Splash({
             want, {CREW_NOTE.fromLabel}/mo, turns on The Quest, buys that rate down, and is free for
             the whole beta. You keep 100% of your own bookings on every plan, and we earn only a small,
             shrinking network-only take-rate on the business the network sends you. There&apos;s no
-            card today, and a Space that subscribes at the Opening Beta rate keeps it for as long as it
-            keeps the plan.{' '}
+            card today, and every plan is one price, the same whenever you start, with two months free
+            if you pay for the year.{' '}
             <Link href="/pricing" className="font-semibold text-primary-strong hover:underline">
               See the full breakdown
             </Link>
