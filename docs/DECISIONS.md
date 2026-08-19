@@ -27339,3 +27339,112 @@ production upload lines say actually happened.
   constant rests on readings taken from different builds. The file says that in the comment instead
   of presenting 0.50 as measured, which is the difference between a number with an expiry date and a
   number pretending it has none.
+
+## ADR-1087: The beta grace window is removed, and the only thing that survives it is a per-Space price grant
+
+**Status:** Accepted · applied to production 2026-08-19 17:47Z · migration
+`20270314000000_beta_grace_removed.sql`
+
+**Owner decision, 2026-08-19:** *"beta grace for private invites to the $490 year. everything else
+removed. implement best practice. merge it."*
+
+**Context — two things were called "the beta" and only one of them is kept.**
+
+- **The private $490 year** is `spaces.beta_price_grant` ([ADR-1061](DECISIONS.md), migration
+  `20270304000100`): a per-Space fact that ONLY the checkout reads (`loadoutChargeArm`, `lib/pricing/beta.ts`),
+  granted by hand at `/admin/spaces/[id]`, spent by the first successful checkout, no expiry by design.
+  It is untouched by this decision. A future private invite is still one operator click, plus a plan
+  grant if the invitee needs one.
+- **The grace window** is `pricing_settings.beta_grace` ([ADR-874](DECISIONS.md)): ONE platform-wide
+  boolean fuse. `featureGatesLive()` = `billingLive()` && the window has ended, and `billing_live`
+  has been true in production since 2026-07-25, so this row was the only thing holding every paid
+  gate, meter, seat wall and upsell tease soft. It read `{"until": "2026-09-01"}`.
+
+**Decision. The row is written to `{"until": null}` and nothing else changes.**
+
+`{"until": null}` is the EXPLICIT no-window value `asBetaGrace` honours; the row is written rather
+than deleted because an ABSENT or malformed value fails safe to the code default window, which would
+put grace back. `featureGatesLive()` returned true from the moment the write landed.
+
+**Why not a per-Space grace, which is what "grace for private invites" could have meant.**
+`featureGatesLive()` is one boolean read at ~25 call sites across BOTH entitlement axes. A per-Space
+variant would have to be threaded through every gating seam and would re-conflate the charging switch
+with the gating switch, which is the exact conflation [ADR-874](DECISIONS.md) exists to prevent. It is
+also unnecessary: the one grant holder in production, `templeofaset`, already carries
+`plan = 'collective'` and an active $490/yr cash agreement (OWN-022), so she is above every gate this
+flip arms. A named invitee is served by a plan grant, not by a platform-wide soft mode.
+
+**What the flip actually costs, measured in production the same day rather than reasoned about.**
+
+| Reading | Value |
+| --- | --- |
+| Non-root Spaces | 19, of which 15 free and 4 `collective` |
+| Contacts held by any non-root Space | **0** (free allowance 200) |
+| QR codes held by any non-root Space | **0** (free allowance 3, and that cap already bit) |
+| Root Space `frequency` | 573 contacts, 42 codes, and **exempt from metering entirely** (`spaces.type = 'root'`, `lib/pricing/space-allowance.ts` rule 2) |
+| Spaces over a meter on flip day | **none** |
+
+**The readout was verified from its three inputs, not from the console.** `/admin/pricing` renders
+`gatesLive = billingEnabled() && billing_live && !betaGraceActive(grace)`, and a session with no
+`VERCEL_AUTOMATION_BYPASS_SECRET` cannot open that page, so each conjunct was proved separately:
+`billing_live` is `true` in `platform_flags`; the row is `{"until": null}`; and `billingEnabled()` is
+a live Stripe client, evidenced by 20 `pricing_stripe_prices` rows all carrying a `stripe_price_id`,
+last synced from the production app at 2026-08-19 05:51Z. `lib/pricing/gates-live.test.ts` already
+pinned this exact input combination ("an EXPLICIT null grace behaves exactly as before the split"),
+so the code path was proven before the row moved.
+
+So no Space loses anything today. That is a fact about this week's data, not a property of the
+change, and it is recorded here because the same flip on a fuller platform is a different event. The
+grandfather rule in `allowanceVerdict` is the part that is structural: the effective cap is never
+below what a Space already holds, so a full meter stops the NEXT write and never hides, deletes, or
+blocks export of what is already there.
+
+**⚠️ Three consequences that are not obviously part of "remove the grace window".**
+
+1. **The beta founder push ends with it.** `grantBetaFounding` reads the same window and returns
+   `no_window` once it is null, so a subscription taken between now and September 1 no longer earns a
+   Founding badge automatically. That was thirteen days of runway. It is consistent with "everything
+   else removed" and it is stated here because nothing else in the system will say it. The
+   owner-composed launch emails in `lib/beta/launch-emails.ts` still invite people to "take the year
+   before September 1" for the badge; they are drafts in the email studio and nothing sends them on a
+   schedule, but sending one now would promise what the webhook no longer grants. LIVE-058.
+2. **The seat wall arms, and its own header was wrong about who consumes a seat.** `usedSeats` says
+   the owner holds no member row. Re-measured: **all 19 non-root Spaces hold an ACTIVE `space_members`
+   row for their own `owner_profile_id`, at role `admin`**. Free and Business (allowance 1) are
+   therefore spent by the owner alone, which matches what the ladder publishes for those rungs.
+   Collective (allowance 3) yields owner + 2 teammates rather than owner + 3, and which of those the
+   ladder means is an owner call, not a code call. The count is left exactly as it is and LIVE-057
+   carries the decision; moving a paying Space's seat total on the strength of a stale comment is the
+   wrong direction to guess in.
+3. **The member-facing copy that promised the window had to move in the same change.** Nine help
+   pages said some version of *"every Space has full access until September 1"* or *"Crew is free
+   during the beta"*. Those sentences became false at 17:47Z. They are rewritten to the rule that is
+   actually true now: Free is a real plan, allowances apply to what you add from here, and nothing
+   already made is taken away. **A gate flip that leaves published promises behind is not shipped**,
+   and this is the second time the class has bitten ([ADR-1083](DECISIONS.md), OWN-025): copy that
+   knows its own date outlives whatever the date described.
+
+**What did NOT need to change, verified rather than assumed.**
+
+- ✅ The beta notice and the upsell teases swap automatically. They are mutually exclusive by
+  construction (`tease-gate.ts`): `notice` renders only while grace is open, `live` only once it is
+  shut, so the teases wake and the notice falls silent on the same instant with no copy edit.
+- ✅ No date is hardcoded in `beta-notice.ts`; a source-shape test already forbids it.
+- ✅ `BETA_GRACE_DEFAULT` stays `{ until: '2026-09-01' }` on purpose. It is now only the fallback for
+  an absent or malformed row, and following the live value to null would reverse the module's
+  fail-safe direction: a DB hiccup would then enforce every gate on a failed read. A stale-looking
+  default is the safe kind of stale.
+- ✅ The site alert bar still says Frequency is in Beta until September 1. That remains true: this
+  decision moves when the paid ladder bites, not when the beta ends, and the beta induction is still
+  the only front door (OWN-030).
+
+**Consequences.**
+
+- `lib/pricing/beta-grace-fuse.test.ts` gains a guard that measures the removal by consequence: it
+  parses the jsonb literal out of the last migration to touch the row and runs it through the real
+  `asBetaGrace` + `betaGraceActive`, so a future write that looks plausible but is not honoured
+  (`{}`, a bare string, a missing `until`) fails there instead of silently restoring grace.
+- PROG-A5 ("the freemium meters go live") is closed by this. It was parked on exactly this switch.
+- The reversal is one statement, and it is worth writing down while it is cheap:
+  `update public.pricing_settings set value = '{"until": "<date>"}'::jsonb where key = 'beta_grace';`
+  or the same edit on `/admin/pricing`.

@@ -1110,18 +1110,18 @@
     {
       "id": "PROG-A5",
       "title": "App Platform A5: the freemium meters go live",
-      "status": "parked",
+      "status": "done",
       "lane": "program",
       "size": "M",
       "source": {
         "file": "docs/BUILD-LIST.md",
         "ref": "A5"
       },
-      "detail": "200 contacts, 300 sends/mo, 3 QR codes, 1 journey, 1 seat — currently decorative — enforced at the module boundary with upgrade prompts, behind the existing gatesLive switch.",
+      "detail": "CLOSED 2026-08-19 by ADR-1087. This row was parked on ONE switch and the owner threw it: pricing_settings.beta_grace is now {\"until\": null} (migration 20270314000000, applied 17:47:05Z), so featureGatesLive() is true and every meter, gate, seat wall and upsell tease enforces. The quantities the row names were already real and already wired (PLACEHOLDER_ALLOWANCES = false; the free rungs are 200 contacts, 300 sends/mo, 3 QR codes, 1 published Journey, 1 operator seat), and the enforcement seams were built to short-circuit on gatesLive rather than to be added later. What was decorative was the SWITCH, not the machinery.\n\nMEASURED THE SAME DAY, so 'live' is not taken on trust: every non-root Space holds 0 contacts and 0 QR codes, the root Space is exempt from metering by type, and no Space crosses a meter on flip day. The grandfather rule in allowanceVerdict means a cap only ever stops the NEXT write.",
       "verify": {
         "kind": "manual",
-        "evidence": "Owner-gated.",
-        "checked": "2026-08-17"
+        "evidence": "Read from production 2026-08-19 17:47Z: pricing_settings.beta_grace = {\"until\": null}, updated_at 2026-08-19 17:47:05.437485+00; platform_flags.billing_live = true. featureGatesLive() = billingLive() && !betaGraceActive(...), so the gates are live. The repo half is probed by lib/pricing/beta-grace-fuse.test.ts, which parses the jsonb literal out of migration 20270314000000 and runs it through the real asBetaGrace + betaGraceActive.",
+        "checked": "2026-08-19"
       }
     },
     {
@@ -2084,7 +2084,7 @@
         "file": "app/onboarding/beta/induction.tsx",
         "ref": "A-PLUS-ROADMAP §9 / TASK-INVENTORY-2026-08-17 §8"
       },
-      "detail": "app/onboarding/beta/** and lib/onboarding/beta-* are marked TEMPORARY, deleted at launch in their own headers. A deliberate teardown someone must own at launch, timed by the owner: it removes the current front door, so it lands together with whatever replaces it (the standard sign-up path), never alone. Until then the row is open on purpose; the probe goes green only when the subsystem is actually gone.\n\n── RE-MEASURED 2026-08-19 in a premise sweep (ADR-1082), and it HOLDS. app/onboarding/beta/ is present and \"TEMPORARY: deleted at launch\" is still in the headers of 8 files. Corroborating this row's \"it ships with its replacement, never alone\": there is no /sign-up route at all -- `find app -ipath \"*sign*\" -name page.tsx` returns only app/sign-in/page.tsx and its confirm. Removing the beta induction today would remove the front door with nothing behind it.",
+      "detail": "app/onboarding/beta/** and lib/onboarding/beta-* are marked TEMPORARY, deleted at launch in their own headers. A deliberate teardown someone must own at launch, timed by the owner: it removes the current front door, so it lands together with whatever replaces it (the standard sign-up path), never alone. Until then the row is open on purpose; the probe goes green only when the subsystem is actually gone.\n\n── RE-MEASURED 2026-08-19 in a premise sweep (ADR-1082), and it HOLDS. app/onboarding/beta/ is present and \"TEMPORARY: deleted at launch\" is still in the headers of 8 files. Corroborating this row's \"it ships with its replacement, never alone\": there is no /sign-up route at all -- `find app -ipath \"*sign*\" -name page.tsx` returns only app/sign-in/page.tsx and its confirm. Removing the beta induction today would remove the front door with nothing behind it.\n\n── 2026-08-19, ADR-1087: the beta GRACE window was removed (pricing_settings.beta_grace cleared), and this row is untouched by that. The two are different things wearing the same word: the grace window decided when the paid ladder bites, this row is the beta INDUCTION, which is still the only front door. Still no /sign-up route. Still owner-timed, still ships with its replacement.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');if(!fs.existsSync('app/onboarding'))process.exit(79);if(fs.existsSync('app/onboarding/beta')){console.error('app/onboarding/beta still exists (expected until launch; this row is owner-timed)');process.exit(1)}process.exit(0)\""
@@ -2309,6 +2309,39 @@
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const P='components/messages/dock-chat.tsx';if(!fs.existsSync(P))process.exit(79);const S=fs.readFileSync(P,'utf8');const i=S.indexOf('export async function prefetchDockSummary(');if(i<0)process.exit(79);const rest=S.slice(i);const e=rest.indexOf('\\nexport ',1);const body=e<0?rest.slice(0,800):rest.slice(0,e);const bad=[];if(/catch\\\\s*(\\\\([^)]*\\\\))?\\\\s*\\\\{\\\\s*(\\\\/\\\\*[^*]*\\\\*\\\\/|\\\\/\\\\/[^\\\\n]*)?\\\\s*\\\\}/.test(body))bad.push('prefetchDockSummary still swallows its failure in a catch with no body, which is how LIVE-053 ran six weeks unseen');if(body.indexOf('captureException')<0)bad.push('prefetchDockSummary does not report its failure anywhere, so a warm that stops working is still invisible');if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
+      }
+    },
+    {
+      "id": "OWN-033",
+      "title": "Does a Collective Space get 3 operator seats, or the owner plus 3?",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "lib/spaces/seats.ts",
+        "ref": "usedSeats / SEAT_CONSUMING_ROLES"
+      },
+      "detail": "One sentence from the owner closes this. The seat wall began enforcing on 2026-08-19 (ADR-1087) and its own header was wrong about who spends a seat: it said 'the owner holds no member row', and ALL 19 non-root Spaces hold an ACTIVE space_members row for their own owner_profile_id at role 'admin'. So the owner is counted.\n\nFor Free and Business (allowance 1) that is right either way: the rung is meant to be the owner alone, and teammates start at Collective. For COLLECTIVE (allowance 3) it decides whether the Space gets owner + 2 teammates (today) or owner + 3 (if usedSeats excluded the owner, as the comment claimed). Three Spaces are on Collective and each holds owner + 1, so none is at the wall yet and there is no hurry, only a decision.\n\nThe code was deliberately NOT changed when this was found: either answer is defensible, and moving a paying Space's seat total on the strength of a stale comment is guessing in the expensive direction. The fix, once decided, is one filter in usedSeats or one number in PLACEHOLDER_METER_LIMITS.space_team, plus the comment.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Production 2026-08-19: select over spaces + space_members shows owner_rows_counted = 1 for all 19 non-root Spaces (role admin, status active). space_team allowances are free 1 / business 1 / collective 3 (lib/pricing/feature-meters.ts). seat_quantity is 0 everywhere.",
+        "checked": "2026-08-19"
+      }
+    },
+    {
+      "id": "LIVE-057",
+      "title": "The launch emails still offer a Founding badge that the webhook stopped granting",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/beta/launch-emails.ts",
+        "ref": "BETA_LAUNCH_EMAILS"
+      },
+      "detail": "Clearing the grace window (ADR-1087) also ended the beta founder push, because grantBetaFounding reads the SAME row: with beta_grace at {\"until\": null}, betaGraceEndsAtMs is null and every grant returns 'no_window'. No subscription earns a Founding badge automatically any more.\n\nTwo launch emails still invite people to 'take the year before September 1' and promise the founding badge for it (the Founding Member and Founding Business drafts). Nothing sends them on a schedule, so this is not live copy today: they are drafts an operator composes from in the email studio. Sending one now would promise what the webhook no longer grants, which is exactly the defect OWN-025 closed for the founding RATE, recurring for the founding BADGE.\n\nEither fix closes it, and the choice is the owner's: rewrite the drafts to drop the badge offer, or decide the founder push should run to September 1 after all and give it its own date instead of borrowing the grace window's.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const mail=fs.readFileSync('lib/beta/launch-emails.ts','utf8');const promises=/[Ff]ounding (?:badge|Member|Business)[\\\\s\\\\S]{0,400}?before September 1|before September 1[\\\\s\\\\S]{0,400}?[Ff]ounding (?:badge|Member|Business)/.test(mail);if(!promises)process.exit(0);const grant=fs.readFileSync('lib/billing/beta-founding.ts','utf8');if(!/getBetaGrace/.test(grant))process.exit(0);console.error('launch-emails.ts still offers the Founding badge for subscribing before September 1, and beta-founding.ts still reads the cleared beta_grace window, so nothing grants it');process.exit(1)\""
       }
     }
   ]

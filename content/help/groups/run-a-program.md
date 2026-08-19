@@ -3,7 +3,7 @@ title: Run a Program
 description: For Space owners: turn your model into a Program so members anywhere can start Chapters of it. What you need, how it works, and what you can change later.
 category: groups
 order: 5
-updated: 2026-07-28
+updated: 2026-08-19
 audience: host
 featureKeys: [channels, circles]
 status: published
@@ -52,10 +52,9 @@ Three things happen at once:
 - Your flagship circle becomes **Chapter one**, listed on the Channel like every
   Chapter that follows.
 
-From then on, any Crew member can open your Channel and start a Chapter (Crew is
-free during the beta, so the button offers a one-tap upgrade to anyone who isn't
-yet). They get a private draft built from your blueprint, they shape it, and they
-publish it when it's ready.
+From then on, any Crew member can open your Channel and start a Chapter (the button
+offers a one-tap upgrade to anyone who is not Crew yet). They get a private draft
+built from your blueprint, they shape it, and they publish it when it's ready.
 
 ## What can I change later?
 

@@ -3,7 +3,7 @@ title: Programs and Chapters
 description: A Program is a community model anyone can run locally. A Chapter is the local Circle running it. How to find one near you, and how to start one.
 category: groups
 order: 4
-updated: 2026-07-28
+updated: 2026-08-19
 audience: member
 featureKeys: [channels, circles]
 status: published
@@ -66,10 +66,11 @@ Open the Program's Channel and tap **Start a Chapter**. Here is what happens nex
 There's no approval step and no waiting. The draft is yours from the first tap, and
 nothing is public until you publish it.
 
-Starting a Chapter is a Crew thing, same as starting a Circle, and Crew is free
-during the beta: if you're not Crew yet, the button offers a one-tap upgrade. If
-you're new to hosting, read [how to start a Circle](/help/leading/how-to-start-a-circle)
-first. Everything in it applies to a Chapter, because a Chapter is a Circle.
+Starting a Chapter is a Crew thing, the same as starting a Circle beyond the one
+your free membership includes: if you're not Crew yet, the button offers a one-tap
+upgrade. If you're new to hosting, read
+[how to start a Circle](/help/leading/how-to-start-a-circle) first. Everything in it
+applies to a Chapter, because a Chapter is a Circle.
 
 ## What does the blueprint decide?
 
