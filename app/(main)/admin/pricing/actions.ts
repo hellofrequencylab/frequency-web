@@ -7,6 +7,7 @@ import {
   setPricingSetting,
   getFoundingConfig,
   getPricingValues,
+  loadPricingSettings,
   type PricingDefaults,
 } from '@/lib/pricing/settings'
 import { sanitizeFoundingConfig, type FoundingConfig } from '@/lib/pricing/founding'
@@ -294,6 +295,29 @@ export async function saveFoundingConfig(config: Partial<FoundingConfig>): Promi
  *  platform_flag_events via setPlatformFlag. Nothing charges on its own (billingLive() still gates money). */
 export async function setOperatorSeatActive(value: boolean): Promise<ActionResult> {
   const ctx = await requireAdmin('janitor')
+  // 🔴 THIS SWITCH PUT A LIVE, CHARGEABLE PRICE INTO PRODUCTION AT AN AMOUNT NOBODY SET (2026-08-19).
+  //
+  // Turning it ON is exactly what stops `isCatalogItemInertPlaceholder` skipping the seat, so the
+  // next catalog sync mints real Stripe objects for it. The code amount is a documented STAND-IN
+  // ($9/seat, `placeholder: true` in the CATALOG), so activating before an operator amount exists
+  // ships the stand-in as a real price. It did: the seat reached the live account with four prices
+  // at $9/$90, and because Stripe Prices are IMMUTABLE the only repair was to archive them.
+  //
+  // The invariant the placeholder skip is supposed to hold (ADR-362/799/803) is "a routine sync never
+  // mints a seat price the owner has not explicitly turned on". The flip made that true in letter and
+  // false in substance: the owner turned on the SWITCH without ever setting the AMOUNT, and nothing
+  // asked. So the guard belongs here, where the two facts can be compared.
+  //
+  // Turning it OFF is always allowed. That direction is the safe one, and refusing it would strand
+  // an already-activated seat.
+  if (value) {
+    const settings = await loadPricingSettings()
+    if (settings[catalogConfigKey('operator_seat')] == null) {
+      return fail(
+        'Set the operator seat amount first, under Catalog above. The built-in amount is a placeholder, so activating now would sync it to Stripe as a real price.',
+      )
+    }
+  }
   try {
     await setPlatformFlag('catalog_operator_seat_active', value, { changedBy: ctx.profileId, source: 'admin' })
     revalidatePath(PATH)

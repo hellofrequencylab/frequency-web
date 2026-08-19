@@ -2203,6 +2203,22 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const F='components/admin/spaces/manual-agreement-panel.tsx';if(!fs.existsSync(F))process.exit(79);const s=fs.readFileSync(F,'utf8');if(s.indexOf('recordPaymentAction')<0)process.exit(79);const guarded=/window\\\\.confirm|ConfirmSubmitButton|<Dialog|confirm=/.test(s);const editable=/editAgreementAction|updateAgreementAction|correctPaidThrough/.test(s);const missing=[!guarded&&'no confirm step before Record payment',!editable&&'no way to correct an active agreement'].filter(Boolean);if(missing.length){console.error(missing.join('; '));process.exit(1)}process.exit(0)\""
       }
+    },
+    {
+      "id": "LIVE-051",
+      "title": "The operator-seat switch could activate a price the owner had never set, and did",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1085"
+      },
+      "detail": "HAPPENED. The first live catalog sync minted EIGHT products instead of six; the extra was Operator seat, four prices at $9/$90, in the live account, with billing_live also true. The placeholder skip had not failed: catalog_operator_seat_active was true in production, so isCatalogItemInertPlaceholder correctly stopped skipping and the sync correctly minted what it was told. The gap is that ACTIVATION and AMOUNT were never compared. CATALOG.operator_seat carries placeholder:true and a documented stand-in amount; ADR-803 added the switch for use AFTER the owner sets a real amount, and nothing enforced the order. Turning the switch on while no operator amount existed shipped the stand-in as a real, chargeable price. Stripe Prices are IMMUTABLE, so it could only be archived, never corrected, which is exactly why the guard has to sit before the write. FIXED: setOperatorSeatActive(true) now refuses while pricing_settings has no catalog.operator_seat override, and says what to do instead; turning it OFF stays always allowed because that direction is safe. PRODUCTION REPAIRED the same day: flag off, the four operator_seat rows deleted from pricing_stripe_prices, and the Stripe product plus all four prices archived. Nothing was ever charged (0 customers, 0 subscription items).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const F='app/(main)/admin/pricing/actions.ts';const s=fs.readFileSync(F,'utf8');const i=s.indexOf('export async function setOperatorSeatActive');if(i<0)process.exit(79);const body=s.slice(i,i+2600);if(!/loadPricingSettings\\(\\)/.test(body)||!/catalogConfigKey\\('operator_seat'\\)/.test(body)){console.error('setOperatorSeatActive does not compare the activation flag against the operator-set amount');process.exit(1)}process.exit(0)\""
+      }
     }
   ]
 }
