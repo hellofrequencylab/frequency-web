@@ -184,15 +184,36 @@ const VERCEL_CEILING_GB = 1.5
 //
 //     1.26–1.33 GB packed over 2.58 GB raw  =>  0.49–0.52.  Rounded: 0.50.
 //
-// ⚠️ PROVISIONAL, AND THE WEAKNESS IS NAMED RATHER THAN AVERAGED AWAY. The raw reading and the
-// packed readings come from DIFFERENT builds of equivalent trees on the same day, not from one
-// build measured both ways, because the one build that had a raw reading had its cache trimmed
-// before it was packed. So this is a whole-archive ratio, not a per-term one: node_modules and the
-// Turbopack cache certainly do not compress alike, and no reading available here can separate them.
-// It stands until a build prints both halves. Re-derive it from the pair, do not tune it to make a
-// run green, and if it moves materially say so in an ADR the way ADR-1086 says this one.
-const PACKED_PER_RAW = 0.5
-const PACKED_PER_RAW_MEASURED = '2026-08-18'
+// ✅ SETTLED 2026-08-19 BY A SINGLE BUILD THAT PRINTED BOTH HALVES. That is what the warn-only
+// stage above was for, and it worked on its first run: preview build 3jeNVZxuUy7thPjXpazjMC6yHwVo
+// (PR #2178) measured and uploaded in the same build, so the pair is no longer inferred across
+// two trees.
+//
+//     RAW,    this script, warn-only    2.34 GiB = 2.513 GB  (node_modules 933 MiB + turbopack 1459 MiB)
+//     PACKED, "Uploading build cache"   1.32 GB
+//
+//     1.32 / 2.513  =>  0.5254.
+//
+// 🔴 THE OLD 0.50 WAS WRONG IN THE UNSAFE DIRECTION, by 5.1%. It UNDER-estimated the packed size,
+// so the gate believed it had more headroom than it did and would have trimmed LATER than intended
+// — the opposite of the 2026-08-18 defect, which trimmed early, and the more dangerous one: a cache
+// that reaches Vercel over the ceiling is discarded WHOLE, node_modules included.
+//
+// Rounded UP to 0.53 rather than to the measured 0.5254, on purpose. Over-estimating the packed
+// size makes the gate fire early, which costs a cold compile; under-estimating loses the entire
+// cache. Those errors are not symmetric, so the rounding is not either.
+//
+// STILL A WHOLE-ARCHIVE RATIO, and that limit has not changed: node_modules and the Turbopack cache
+// do not compress alike, and nothing available here separates them. A tree whose MIX shifts a long
+// way from 933 MiB node_modules + ~1.4 GiB turbopack can still drift. Every run prints the raw
+// figure it measured, so re-derive from the pair on any build where the mix looks different. Do not
+// tune it to make a run green.
+//
+// ⚠️ HEADROOM IS TIGHTER THAN THE OLDER READINGS SUGGESTED: 1.32 GB against the 1.50 GB ceiling is
+// 12% clear, where the 2026-08-18 production reads of 1.26 GB looked like 16%. That is the number
+// LIVE-029 is about.
+const PACKED_PER_RAW = 0.53
+const PACKED_PER_RAW_MEASURED = '2026-08-19'
 
 // Trim below the ceiling, not at it. The reserve covers the estimate's own error and the little
 // that `next start`-shaped caches may add after this runs. It is deliberately not large: with the
@@ -423,8 +444,9 @@ console.log(`   .next/cache holds: ${parts}`)
 // The calibration line exists so the next real build can settle the constant instead of inheriting
 // it. Pair the raw figure above with the "Uploading build cache [N GB]" line the same build prints.
 console.log(
-  `   Packed figure is an estimate: raw x ${PACKED_PER_RAW} (provisional, measured ${PACKED_PER_RAW_MEASURED}). ` +
-    `Compare it with this build's "Uploading build cache" line and re-derive it.`,
+  `   Packed figure is an estimate: raw x ${PACKED_PER_RAW} (measured ${PACKED_PER_RAW_MEASURED} from one ` +
+    `build that printed both halves). Compare it with this build's "Uploading build cache" line; if the ` +
+    `two have drifted apart, the cache MIX has changed and the ratio wants re-deriving.`,
 )
 if (unknown.length > 0) {
   console.log(
