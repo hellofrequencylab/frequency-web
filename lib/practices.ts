@@ -241,14 +241,17 @@ export async function listPublicPractices(sort: PracticeSort = 'trending'): Prom
   const base = rows ?? []
   if (base.length === 0) return []
 
-  const [subById, tagsByPractice] = await Promise.all([
+  const [subById, tagsByPractice, slugById] = await Promise.all([
     subcategoryMap(),
     tagsForPractices(base.map((p) => p.id)),
+    slugsForPractices(base.map((p) => p.id)),
   ])
   return base.map((p) => {
     const sc = p.subcategory_id ? subById.get(p.subcategory_id) : null
     return {
       ...normalizePractice(p),
+      // The view has no slug, so re-attach it: this is what the sitemap and every card link on.
+      slug: slugById.get(p.id) ?? null,
       subcategory: sc ? { slug: sc.slug, name: sc.name } : null,
       tags: tagsByPractice.get(p.id) ?? [],
     }
@@ -274,10 +277,17 @@ export async function getPublicPractice(slugOrId: string): Promise<PublicPractic
     .maybeSingle()
   const p = data as Practice | null
   if (!p) return null
-  const [subById, tagsByPractice] = await Promise.all([subcategoryMap(), tagsForPractices([p.id])])
+  const [subById, tagsByPractice, slugById] = await Promise.all([
+    subcategoryMap(),
+    tagsForPractices([p.id]),
+    slugsForPractices([p.id]),
+  ])
   const sc = p.subcategory_id ? subById.get(p.subcategory_id) : null
   return {
     ...normalizePractice(p),
+    // This function RESOLVES a slug to an id on the way in and then read a view that has none, so
+    // it returned `slug: undefined` even when the caller arrived by slug. Re-attach it.
+    slug: slugById.get(p.id) ?? null,
     subcategory: sc ? { slug: sc.slug, name: sc.name } : null,
     tags: tagsByPractice.get(p.id) ?? [],
   }
@@ -367,14 +377,17 @@ export async function searchLibraryPractices(opts: LibrarySearchOpts = {}): Prom
   const pageCount = Math.max(1, Math.ceil(total / pageSize))
   if (base.length === 0) return { ...empty, total, pageCount }
 
-  const [subById, tagsByPractice] = await Promise.all([
+  const [subById, tagsByPractice, slugById] = await Promise.all([
     subcategoryMap(),
     tagsForPractices(base.map((p) => p.id)),
+    slugsForPractices(base.map((p) => p.id)),
   ])
   const rows = base.map((p) => {
     const sc = p.subcategory_id ? subById.get(p.subcategory_id) : null
     return {
       ...normalizePractice(p),
+      // Same re-attach as listPublicPractices: the library's cards link on this.
+      slug: slugById.get(p.id) ?? null,
       subcategory: sc ? { slug: sc.slug, name: sc.name } : null,
       tags: tagsByPractice.get(p.id) ?? [],
     }
@@ -962,6 +975,29 @@ async function subcategoryMap(): Promise<Map<string, Subcategory>> {
 }
 
 /** Tags for a set of practices, grouped by practice id. */
+/** The public SLUG for each of these practices, keyed by id.
+ *
+ *  🔴 WHY THIS EXISTS. The `practices_ranked` VIEW does not expose `slug` — RANKED_COLS strips it,
+ *  and selecting it empties the view — so every reader of that view came back with `slug: undefined`
+ *  and the `p.slug ?? p.id` fallbacks downstream silently resolved to the uuid. That reached
+ *  production: `app/sitemap.ts` advertised twenty `/discover/practices/<uuid>` URLs while each of
+ *  those pages declared its canonical as the `/discover/practices/<slug>` URL. Google was handed
+ *  twenty addresses and told, on arrival at every one, that it was not the real address. Every
+ *  internal link from the index carried the same uuid.
+ *
+ *  The fallback is not the bug and stays: a practice with no slug yet must still be reachable. The
+ *  bug was that the slug was never fetched, so the fallback was the ONLY path. One extra keyed read,
+ *  mirroring tagsForPractices, and both surfaces get the canonical key. */
+async function slugsForPractices(ids: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>()
+  if (ids.length === 0) return out
+  const { data } = await db().from('practices').select('id, slug').in('id', ids)
+  for (const r of (data as { id: string; slug: string | null }[] | null) ?? []) {
+    if (r.slug) out.set(r.id, r.slug)
+  }
+  return out
+}
+
 async function tagsForPractices(ids: string[]): Promise<Map<string, PracticeTag[]>> {
   const out = new Map<string, PracticeTag[]>()
   if (ids.length === 0) return out

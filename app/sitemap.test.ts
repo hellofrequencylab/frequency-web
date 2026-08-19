@@ -95,7 +95,15 @@ vi.mock('@/lib/events/series-seo', () => ({ listSitemapEventEntries: async () =>
 vi.mock('@/lib/events/series-config', () => ({ getSeriesDisplayConfig: async () => ({ indexedOccurrences: 2 }) }))
 vi.mock('@/lib/journey-plans', () => ({ listPublicJourneys: async () => [] }))
 vi.mock('@/lib/partners/read', () => ({ listActivePartners: async () => [] }))
-vi.mock('@/lib/practices', () => ({ listPublicPractices: async () => [] }))
+// Two practices, one WITH a slug and one without, because the sitemap's job here is to prefer the
+// slug and fall back to the uuid — and for a while it could only ever do the second (see the
+// canonical-key test below).
+vi.mock('@/lib/practices', () => ({
+  listPublicPractices: async () => [
+    { id: '1516f5c4-2047-4dae-b6a2-1b0daada1ea9', slug: 'box-breathing' },
+    { id: '2e8b062e-62e5-4bcb-80e9-d6432bb42ae2', slug: null },
+  ],
+}))
 vi.mock('@/lib/commerce/products', () => ({ listShopProducts: async () => [], listMarketListings: async () => [] }))
 vi.mock('@/lib/listings/housing', () => ({ listHousingListings: async () => [] }))
 vi.mock('@/lib/marketplace', () => ({ listListings: async () => [] }))
@@ -192,6 +200,24 @@ describe('app/sitemap podcast section', () => {
 })
 
 describe('app/sitemap emitted URL set', () => {
+  // 🔴 THE CANONICAL KEY. `listPublicPractices` reads the practices_ranked VIEW, which does not
+  // expose `slug`, so every row came back with `slug: undefined` and `p.slug ?? p.id` resolved to
+  // the uuid every time. The sitemap then advertised twenty `/discover/practices/<uuid>` URLs while
+  // each of those pages declared its canonical as the SLUG url — twenty addresses submitted to
+  // Google, every one of which disowned itself on arrival. This asserts the URL, not the plumbing,
+  // so it fails whether the slug goes missing in the view, the reader, or here.
+  it('advertises a practice by its SLUG, and falls back to the uuid only when there is none', async () => {
+    const urls = (await sitemap()).map((e) => e.url)
+    expect(urls).toContain('https://frequencylocal.com/discover/practices/box-breathing')
+    expect(urls).not.toContain(
+      'https://frequencylocal.com/discover/practices/1516f5c4-2047-4dae-b6a2-1b0daada1ea9',
+    )
+    // The fallback is deliberate and stays: a practice with no slug must still be reachable.
+    expect(urls).toContain(
+      'https://frequencylocal.com/discover/practices/2e8b062e-62e5-4bcb-80e9-d6432bb42ae2',
+    )
+  })
+
   it('emits no duplicate URLs', async () => {
     const urls = (await sitemap()).map((e) => e.url)
     const dupes = urls.filter((u, i) => urls.indexOf(u) !== i)

@@ -2219,6 +2219,22 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const F='app/(main)/admin/pricing/actions.ts';const s=fs.readFileSync(F,'utf8');const i=s.indexOf('export async function setOperatorSeatActive');if(i<0)process.exit(79);const body=s.slice(i,i+2600);if(!/loadPricingSettings\\(\\)/.test(body)||!/catalogConfigKey\\('operator_seat'\\)/.test(body)){console.error('setOperatorSeatActive does not compare the activation flag against the operator-set amount');process.exit(1)}process.exit(0)\""
       }
+    },
+    {
+      "id": "LIVE-052",
+      "title": "Every public practice URL was a uuid, and each of those pages disowned itself",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/practices.ts",
+        "ref": "slugsForPractices"
+      },
+      "detail": "FOUND while re-measuring OWN-012, which turned out to be already done: all 20 practices are public and /discover/practices renders 20 cards. The SEO goal behind that row was still not achieved, for a different reason. listPublicPractices, librarySearch and getRankedPractice all read the practices_ranked VIEW, which does not expose slug (RANKED_COLS strips it, and selecting it empties the view outright). So every row came back with slug: undefined and the p.slug ?? p.id fallbacks downstream silently resolved to the uuid. Measured on production 2026-08-19: the live sitemap advertised twenty /discover/practices/<uuid> URLs, every card on the index linked the same way, and each of those pages declared its canonical as the /discover/practices/<slug> URL via getPublicPractice, which reads the TABLE. Google was handed twenty addresses and told on arrival at every one that it was not the real address. 18 of the 20 practices have slugs sitting unused in the table. FIXED with slugsForPractices(ids), one keyed read mirroring tagsForPractices, wired into all three readers. The uuid fallback is deliberate and STAYS: a practice with no slug must still be reachable. The bug was never the fallback, it was that the slug was never fetched so the fallback was the only path.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/practices.ts','utf8');if(!/async function slugsForPractices\\(/.test(s)){console.error('slugsForPractices is gone');process.exit(1)}const calls=(s.match(/slugsForPractices\\(/g)||[]).length;const attaches=(s.match(/slug: slugById\\.get\\(/g)||[]).length;if(calls<4||attaches<3){console.error('a practices_ranked reader stopped attaching the slug: '+(calls-1)+'/3 calls, '+attaches+'/3 attaches');process.exit(1)}process.exit(0)\""
+      }
     }
   ]
 }
