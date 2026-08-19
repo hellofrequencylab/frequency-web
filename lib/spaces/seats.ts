@@ -142,10 +142,10 @@ export async function getSpaceSeatQuantity(spaceId: string): Promise<number> {
  *  is spent by the owner alone. That matches what the ladder publishes for those rungs (a Space runs
  *  on the owner's seat; teammates start at Collective), so nothing is mis-enforced there.
  *
- *  ⚠️ COLLECTIVE IS THE OPEN QUESTION, and it is an owner call, not a code call: its allowance of 3
- *  yields owner + 2 teammates counted this way, and owner + 3 if the owner were excluded as the old
- *  comment claimed. Nothing here guesses. LIVE-057 carries the decision; changing the count before it
- *  is made would move a paying Space's seat total on the strength of a comment. */
+ *  ✅ COLLECTIVE IS SETTLED, by the owner, 2026-08-19 (OWN-033): "Owner + 2, total of 3." The
+ *  allowance of 3 means three operator humans INCLUDING the owner, which is exactly what counting the
+ *  owner's own admin row produces. So this count is correct as written and the number in
+ *  PLACEHOLDER_METER_LIMITS.space_team is the whole truth: nothing here needs an owner carve-out. */
 export async function usedSeats(spaceId: string): Promise<number> {
   try {
     const db = createAdminClient() as unknown as {
