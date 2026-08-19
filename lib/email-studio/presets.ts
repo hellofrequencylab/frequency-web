@@ -4,7 +4,7 @@
 // image placeholder where it fits. Loading a preset seeds a fresh EmailDoc / campaign draft the operator
 // edits before anything is armed.
 //
-// The copy mirrors the real Frequency beta use cases (see lib/beta/email-templates.ts for the topic set) but
+// The copy mirrors the real Frequency use cases (welcome, event invite, digest, re-engagement) but
 // is authored as BLOCK trees, not flat strings. Every word is written to the NAMING + CONTENT-VOICE canons:
 // the "camp counselor you actually respect" voice, plain sentences, proper nouns (Circle, Practice, Channel,
 // Founding Member, Founding Business) carry the magic, at most one exclamation point, and NO em dashes. The
@@ -243,7 +243,7 @@ const FOUNDING_MEMBER_WELCOME: EmailPreset = {
           {
             icon: '🎖️',
             title: 'A founding badge',
-            text: 'Take the year before September 1 and a small mark goes on your profile that says you were here at the start.',
+            text: 'A small mark goes on your profile that says you were here at the start.',
           },
           {
             icon: '📣',
@@ -292,7 +292,7 @@ const FOUNDING_BUSINESS_INVITE: EmailPreset = {
       content: {
         eyebrow: 'What you get',
         title: 'A real home for your business',
-        body: 'A Founding Business gets its own Space to post events and offers and the lowest rate we will ever set, kept for good. Take the year before September 1 and the Space also wears the Founding Business badge.',
+        body: 'A Founding Business gets its own Space to post events and offers, and the Space wears the Founding Business badge.',
       },
     },
     {

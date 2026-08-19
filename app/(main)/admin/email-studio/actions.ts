@@ -7,7 +7,7 @@
 // `EntityLayout` (kind 'email'), edited by the SAME arranger the Space page builder uses, and compiled to
 // send-ready HTML by lib/email-studio (render + shell). Subject + preheader live alongside on the row.
 //
-// GATES (mirrors the Beta Command Center spine):
+// GATES (the two gates of the approval spine, lib/beta/guard.ts (moving to lib/outbound in the follow-up PR)):
 //   • READS  — requireAdmin('admin', { staff: 'marketing', staffLevel: 'read' }); a read-only marketer or
 //     any staff web_role may browse + preview.
 //   • WRITES — writerGate() (a staff web_role OR the marketing capability at WRITE). Create / save / delete /
@@ -35,9 +35,12 @@ import { buildUnsubscribeUrl, buildManageEmailsUrl } from '@/lib/unsubscribe-tok
 import { SITE_URL } from '@/lib/site'
 import { MERGE_TAG_VARIABLES, MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-studio/types'
 import { sendRawEmail } from '@/lib/email'
-import { BETA_LAUNCH_EMAILS } from '@/lib/beta/launch-emails'
 import { BUILTIN_SEGMENTS, TRAIT_SEGMENT_PREFIX } from '@/lib/studio/campaigns'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+
+/** The console that LISTS campaigns, revalidated after every act that changes the list (create /
+ *  delete / test / discard). Was /admin/beta, the Beta Command Center's Campaign tab, which is gone. */
+const CAMPAIGN_CONSOLE = '/admin/crm/marketing'
 
 /** One campaign card for the left rail. `updatedAt` sources `created_at` (the campaigns table carries no
  *  updated_at column); it drives the "created" timestamp shown on each card. */
@@ -49,9 +52,11 @@ export interface EmailCampaignCard {
 }
 
 /**
- * One step's place + timing inside a multi-email sequence (the beta broadcast series today; a drip or
- * funnel journey via the seam in `loadEmailCampaign`). `position` is 1-based, `total` the sequence length,
- * and `timing` a plain-language cadence/trigger line for the step.
+ * One step's place + timing inside a multi-email sequence (a drip or funnel journey, via the seam in
+ * `loadEmailCampaign`). `position` is 1-based, `total` the sequence length, and `timing` a plain-language
+ * cadence/trigger line for the step. Nothing populates this today: the beta broadcast series was the only
+ * sequence that ever did, and it retired with the Beta Command Center. The type and the context bar's
+ * rendering of it are kept as the landing point for the drip / funnel link described below.
  */
 export interface EmailSequenceStep {
   position: number
@@ -74,7 +79,7 @@ export interface EmailEditorContext {
   campaignName: string
   /** The lifecycle status (`campaigns.status`): draft / scheduled / sending / sent / paused / cancelled. */
   status: string
-  /** The approval status (`campaigns.approval_status`), surfaced for beta-gated sends. */
+  /** The approval status (`campaigns.approval_status`), surfaced for spine-gated sends. */
   approvalStatus: string
   /** A plain-language audience label resolved from the stored segment. */
   audience: string
@@ -247,7 +252,7 @@ export async function createEmailDraft(
       .eq('id', reusable.id)
       .eq('status', 'draft')
       .eq('created_by', gate.profileId)
-    revalidatePath('/admin/beta')
+    revalidatePath(CAMPAIGN_CONSOLE)
     return ok({ id: reusable.id })
   }
 
@@ -267,7 +272,7 @@ export async function createEmailDraft(
     .single()
   if (error || !data) return fail('Could not create a new email. Try again.')
 
-  revalidatePath('/admin/beta')
+  revalidatePath(CAMPAIGN_CONSOLE)
   return ok({ id: data.id })
 }
 
@@ -292,18 +297,6 @@ export async function loadEmailCampaign(id: string): Promise<LoadedEmailCampaign
   const subject = data.subject ?? ''
   const status = data.status ?? 'draft'
 
-  // STEP CONTEXT. Populated today when the email belongs to the beta broadcast sequence (a non-null
-  // phase_id), computed from the SAME send-order the Campaign tab lists. A generic Studio draft (null
-  // phase_id) is a standalone broadcast, so it carries no step.
-  //
-  // SEAM — drip / funnel steps: a multi-email drip (`nurture_*` root, `space_drip_*` Space) or a funnel
-  // (`funnel_stages`) also has a `step_order` + `delay_hours` cadence, but a `campaigns` row is not yet
-  // linked to a drip/funnel step by a foreign key (the P2 plan calls out the `campaigns`<->`funnel_stages`
-  // link as the wiring to add). When that link lands, resolve the step here and return an EmailSequenceStep
-  // with `timing` built from `delay_hours` (e.g. "sends 2 days after the previous email"); the info bar
-  // already renders any EmailSequenceStep, so no UI change is needed then.
-  const step = data.phase_id ? await betaSequenceStep(db, id, scheduleLabel(data.scheduled_for, status)) : null
-
   // The friendly From name lives on its own additive column, read fail-safe (null pre-migration → default).
   const fromName = (await loadCampaignFromName(id)) ?? ''
   // Reply mode rides its own additive column, read fail-safe (→ 'broadcast' pre-migration).
@@ -316,14 +309,25 @@ export async function loadEmailCampaign(id: string): Promise<LoadedEmailCampaign
     fromName,
     replyMode,
     layout: layoutFromBlockJson(data.block_json),
+    // STEP CONTEXT is `null` and `kind` is always 'broadcast' today, so every email in the Studio reads
+    // as a standalone send. The one sequence that ever populated it was the beta launch series, ordered
+    // off `campaigns.phase_id`, and it went away with the Beta Command Center.
+    //
+    // SEAM — drip / funnel steps: a multi-email drip (`nurture_*` root, `space_drip_*` Space) or a funnel
+    // (`funnel_stages`) also has a `step_order` + `delay_hours` cadence, but a `campaigns` row is not yet
+    // linked to a drip/funnel step by a foreign key (the P2 plan calls out the `campaigns`<->`funnel_stages`
+    // link as the wiring to add). When that link lands, resolve an EmailSequenceStep here with `timing`
+    // built from `delay_hours` (e.g. "sends 2 days after the previous email") and flip `kind` to
+    // 'sequence' + `campaignName` to the sequence name. The info bar already renders any
+    // EmailSequenceStep, so no UI change is needed then.
     context: {
-      kind: step ? 'sequence' : 'broadcast',
-      campaignName: step ? step.sequenceName : subject.trim() || 'Untitled campaign',
+      kind: 'broadcast',
+      campaignName: subject.trim() || 'Untitled campaign',
       status,
       approvalStatus: data.approval_status ?? 'draft',
       audience: audienceLabel(data.segment),
       schedule: scheduleLabel(data.scheduled_for, status),
-      step,
+      step: null,
     },
   }
 }
@@ -493,7 +497,7 @@ export async function sendTestEmail(id: string): Promise<ActionResult<{ to: stri
   }
   await db.from('campaigns').update({ test_sent_at: new Date().toISOString() }).eq('id', id)
 
-  revalidatePath('/admin/beta')
+  revalidatePath(CAMPAIGN_CONSOLE)
   return ok({ to })
 }
 
@@ -515,7 +519,7 @@ export async function deleteEmailDraft(id: string): Promise<ActionResult> {
     .eq('created_by', gate.profileId)
   if (error) return fail('Could not delete this draft. Try again.')
 
-  revalidatePath('/admin/beta')
+  revalidatePath(CAMPAIGN_CONSOLE)
   return ok()
 }
 
@@ -544,179 +548,6 @@ export async function discardDraftIfEmpty(id: string): Promise<ActionResult> {
   if (!isPristineDraft(row)) return ok()
 
   await db.from('campaigns').delete().eq('id', id).eq('status', 'draft').eq('created_by', gate.profileId)
-  revalidatePath('/admin/beta')
+  revalidatePath(CAMPAIGN_CONSOLE)
   return ok()
-}
-
-// ── Beta broadcast sequence (the Campaign tab) ─────────────────────────────────────────────────────────────
-//
-// The Campaign tab is JUST the beta broadcast sequence: the six launch emails in send order, plus any email
-// the operator adds. The seeded launch emails live in `campaigns` (one row per BETA_LAUNCH_EMAILS entry, keyed
-// (phase_id, subject) by seedBetaLaunchEmails). A beta campaign is any campaigns row with a non-null phase_id;
-// a generic Studio draft has phase_id null and never shows here. The P0 waitlist double opt-in confirm is a
-// transactional automation, not a broadcast, so it is excluded from this list.
-
-/** One row of the beta broadcast sequence for the Campaign tab's left rail. */
-export interface BetaSequenceEmail {
-  id: string
-  /** 1-based position in the send order (the numbered sequence). */
-  seq: number
-  subject: string
-  /** The operator-set TARGET send date (campaigns.scheduled_for), ISO, or null when unset. */
-  scheduledFor: string | null
-  status: string
-  approvalStatus: string
-}
-
-/** Subject → launch-order index for the six BROADCAST launch emails (P0 confirm excluded). Drives the 1..N
- *  numbering: a known launch email sorts to its authored position; an operator-added email sorts after. */
-const BETA_BROADCAST_ORDER: Map<string, number> = new Map(
-  BETA_LAUNCH_EMAILS.filter((e) => e.phaseKey !== 'P0').map((e, i) => [e.subject, i]),
-)
-
-/** The name shown for the beta broadcast sequence in the editor's info bar. */
-const BETA_SEQUENCE_NAME = 'Beta launch sequence'
-
-/** Send-order comparator for beta broadcast rows: a known launch email sorts to its authored position, an
- *  operator-added email sorts after by creation time. Shared by the sequence list and the step lookup. */
-function compareBetaBroadcast(
-  a: { subject: string; created_at: string },
-  b: { subject: string; created_at: string },
-): number {
-  const UNKNOWN = Number.MAX_SAFE_INTEGER
-  const ia = BETA_BROADCAST_ORDER.get(a.subject) ?? UNKNOWN
-  const ib = BETA_BROADCAST_ORDER.get(b.subject) ?? UNKNOWN
-  if (ia !== ib) return ia - ib
-  return a.created_at.localeCompare(b.created_at)
-}
-
-/**
- * Resolve one beta campaign's step within the broadcast sequence: its 1-based position and the sequence
- * length, ordered exactly like `listBetaSequenceEmails` (launch emails first in authored order, then any
- * operator-added beta email by creation time, P0 transactional confirm excluded). Returns null when the
- * campaign is not in the sequence. `timing` is the step's plain-language cadence (its target-date line).
- */
-async function betaSequenceStep(
-  db: ReturnType<typeof createAdminClient>,
-  campaignId: string,
-  timing: string,
-): Promise<EmailSequenceStep | null> {
-  const { data: phases } = await db.from('beta_phases').select('id, key')
-  const p0PhaseIds = new Set((phases ?? []).filter((p) => p.key === 'P0').map((p) => p.id))
-
-  const { data } = await db
-    .from('campaigns')
-    .select('id, subject, phase_id, created_at')
-    .not('phase_id', 'is', null)
-    .order('created_at', { ascending: true })
-    .limit(200)
-  if (!data) return null
-
-  const rows = data
-    .filter((r) => r.phase_id && !p0PhaseIds.has(r.phase_id))
-    .map((r) => ({ id: r.id, subject: r.subject ?? '', created_at: r.created_at }))
-    .sort(compareBetaBroadcast)
-
-  const index = rows.findIndex((r) => r.id === campaignId)
-  if (index < 0) return null
-  return {
-    position: index + 1,
-    total: rows.length,
-    sequenceName: BETA_SEQUENCE_NAME,
-    timing: timing === 'Not scheduled' ? null : timing,
-  }
-}
-
-/**
- * List the beta broadcast sequence in send order (read-gated). Every campaigns row with a non-null phase_id,
- * minus the P0 transactional confirm, ordered: the six launch emails first (their authored order), then any
- * operator-added beta email by creation time. Numbered 1..N.
- */
-export async function listBetaSequenceEmails(): Promise<BetaSequenceEmail[]> {
-  await requireAdmin('admin', { staff: 'marketing', staffLevel: 'read' })
-  const db = createAdminClient()
-
-  // Which phase ids are P0 (the transactional confirm to exclude).
-  const { data: phases } = await db.from('beta_phases').select('id, key')
-  const p0PhaseIds = new Set((phases ?? []).filter((p) => p.key === 'P0').map((p) => p.id))
-
-  const { data, error } = await db
-    .from('campaigns')
-    .select('id, subject, scheduled_for, status, approval_status, phase_id, created_at')
-    .not('phase_id', 'is', null)
-    .order('created_at', { ascending: true })
-    .limit(200)
-  if (error || !data) return []
-
-  const rows = data.filter((r) => r.phase_id && !p0PhaseIds.has(r.phase_id))
-  rows.sort((a, b) => compareBetaBroadcast({ subject: a.subject ?? '', created_at: a.created_at }, { subject: b.subject ?? '', created_at: b.created_at }))
-
-  return rows.map((r, i) => ({
-    id: r.id,
-    seq: i + 1,
-    subject: r.subject ?? '',
-    scheduledFor: r.scheduled_for,
-    status: r.status ?? 'draft',
-    approvalStatus: r.approval_status ?? 'draft',
-  }))
-}
-
-/**
- * Set ONLY a campaign's target send date (campaigns.scheduled_for). Writer-gated. This is the operator's own
- * per-email target for the sequence, NOT an arm/schedule of a real send (that stays in scheduleCampaignAction,
- * which needs a segment + audience and is approver-gated). Pass null to clear the date back to "unset".
- */
-export async function setCampaignSendDateAction(
-  campaignId: string,
-  dateIso: string | null,
-): Promise<ActionResult<{ scheduledFor: string | null }>> {
-  const gate = await writerGate()
-  if (!gate.ok) return fail(gate.error)
-
-  let value: string | null = null
-  if (dateIso) {
-    const d = new Date(dateIso)
-    if (Number.isNaN(d.getTime())) return fail('That is not a valid date.')
-    value = d.toISOString()
-  }
-
-  const db = createAdminClient()
-  const { error } = await db.from('campaigns').update({ scheduled_for: value }).eq('id', campaignId)
-  if (error) return fail('Could not save the target date. Try again.')
-
-  revalidatePath('/admin/beta')
-  return ok({ scheduledFor: value })
-}
-
-/**
- * Create a new email in the beta broadcast sequence (writer-gated). Same basic-starter draft as
- * createEmailDraft, but stamped with a beta phase so it JOINS the sequence (a null phase_id would file it as a
- * generic Studio campaign, invisible to this tab). It is stamped with the first launch phase (P1) and sorts
- * after the seeded six by creation time. Returns the new id (the workspace selects it).
- */
-export async function createBetaEmailDraft(): Promise<ActionResult<{ id: string }>> {
-  const gate = await writerGate()
-  if (!gate.ok) return fail(gate.error)
-
-  const db = createAdminClient()
-  const { data: phase } = await db.from('beta_phases').select('id').eq('key', 'P1').maybeSingle()
-
-  const layout = starterEmailLayout()
-  const { data, error } = await db
-    .from('campaigns')
-    .insert({
-      block_json: layout as unknown as never,
-      body: '',
-      subject: '',
-      preheader: '',
-      status: 'draft',
-      phase_id: phase?.id ?? null,
-      created_by: gate.profileId,
-    })
-    .select('id')
-    .single()
-  if (error || !data) return fail('Could not create a new email. Try again.')
-
-  revalidatePath('/admin/beta')
-  return ok({ id: data.id })
 }

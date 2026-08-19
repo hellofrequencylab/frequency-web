@@ -7,8 +7,6 @@ import {
   type ContestLeaderboardRow,
 } from './referral-contest'
 import { ZAP_AMOUNTS } from '@/lib/zaps'
-import { BETA_CAMPAIGN_TEMPLATES } from './email-templates'
-import { BETA_LAUNCH_EMAILS, flattenLaunchEmailText } from './launch-emails'
 
 const row = (
   handle: string,
@@ -72,10 +70,13 @@ describe('contest constants', () => {
 // are Zaps, on the live ledger, and they are the ONLY rewards the copy may claim." These
 // assertions are that sentence, enforced.
 //
-// The email rows matter more than the page. /referral is inert behind
-// platform_flags.beta_referral_contest (FALSE in production, so the route 404s), but both
-// catalog rows are seeded into Email Studio as DRAFTS an operator can approve and send
-// tomorrow WITHOUT touching code. A type check cannot see a promise in a string.
+// The page is now the whole surface. Two beta email catalog rows used to state the same
+// rewards and were the sharper risk (seeded into Email Studio as DRAFTS an operator could
+// approve and send WITHOUT touching code); the beta email arc was deleted on 2026-08-19, so
+// there is no longer a copy of the offer anywhere but here. /referral is itself inert behind
+// platform_flags.beta_referral_contest (FALSE in production, so the route 404s), which is why
+// the guard reads the SOURCE rather than the rendering: a type check cannot see a promise in
+// a string, and a flag flip would publish it.
 const PAGE_SRC = readFileSync('app/(main)/referral/page.tsx', 'utf8')
 
 /** Comments blanked. This file and the page BOTH explain why the perk came down, and a
@@ -103,37 +104,12 @@ describe('the founding-perk promise is gone from every surface that states rewar
     expect(code).not.toMatch(/\b(25|150) Zaps\b/)
   })
 
-  it('neither beta email catalog row offers founding perks', () => {
-    const plain = BETA_CAMPAIGN_TEMPLATES.find((t) => t.key === 'referral_contest')
-    expect(plain, 'the referral_contest campaign template').toBeTruthy()
-    expect(PERK_CLAIM.test(plain!.subject), 'campaign subject').toBe(false)
-    expect(PERK_CLAIM.test(plain!.body), 'campaign body').toBe(false)
-
-    const built = BETA_LAUNCH_EMAILS.find((e) => e.key === 'referral_contest')
-    expect(built, 'the referral_contest launch email').toBeTruthy()
-    expect(PERK_CLAIM.test(built!.subject), 'launch email subject').toBe(false)
-    expect(PERK_CLAIM.test(built!.preheader), 'launch email preheader').toBe(false)
-    expect(PERK_CLAIM.test(flattenLaunchEmailText(built!)), 'launch email body').toBe(false)
-  })
-
-  it('both email rows state the live Zap payouts instead, and the numbers match the code', () => {
-    const perInvite = `${ZAP_AMOUNTS.referral_activated} Zaps`
-    const perCircle = `${CIRCLE_STARTER_ZAPS} Zaps`
-    const plain = BETA_CAMPAIGN_TEMPLATES.find((t) => t.key === 'referral_contest')!
-    const built = BETA_LAUNCH_EMAILS.find((e) => e.key === 'referral_contest')!
-    for (const [label, text] of [
-      ['campaign body', plain.body],
-      ['launch email body', flattenLaunchEmailText(built)],
-    ] as const) {
-      expect(text, `${label} should state the per-invite payout`).toContain(perInvite)
-      expect(text, `${label} should state the Circle-starter payout`).toContain(perCircle)
-    }
-  })
-
-  it('no reward this module cannot pay is named anywhere in lib/beta', () => {
-    for (const file of ['lib/beta/referral-contest.ts', 'lib/beta/email-templates.ts', 'lib/beta/launch-emails.ts']) {
-      const code = stripComments(readFileSync(file, 'utf8'))
-      expect(PERK_CLAIM.test(code), `${file} still names the founding perk`).toBe(false)
-    }
+  // Was a three-file sweep. The other two (lib/beta/email-templates.ts,
+  // lib/beta/launch-emails.ts) were the beta email catalog and are deleted, so the surviving
+  // module is the whole corpus: this is the ONE place a reward can be named in code now.
+  it('no reward this module cannot pay is named anywhere in it', () => {
+    const file = 'lib/beta/referral-contest.ts'
+    const code = stripComments(readFileSync(file, 'utf8'))
+    expect(PERK_CLAIM.test(code), `${file} still names the founding perk`).toBe(false)
   })
 })
