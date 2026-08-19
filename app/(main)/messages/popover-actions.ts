@@ -105,7 +105,7 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
     // saves a full round trip; the RPC is already scoped to the caller's own memberships via
     // auth.uid(), so widening the id list cannot widen what it can see. Only the five that
     // survive the `.limit(5)` below are ever read out of the map.
-    const rpcAll = supabase.rpc as unknown as (
+    const rpcAll = supabase.rpc.bind(supabase) as unknown as (
       fn: string,
       args: Record<string, unknown>,
     ) => Promise<{ data: unknown; error: unknown }>

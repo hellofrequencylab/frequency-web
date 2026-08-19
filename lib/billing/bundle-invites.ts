@@ -454,7 +454,7 @@ export async function sendBundleSeatInvite(
     })
     if (!decision.allowed) return { ok: false, reason: decision.reason }
 
-    const rpc = admin.rpc as unknown as InviteRpc
+    const rpc = admin.rpc.bind(admin) as unknown as InviteRpc
     const { data, error } = await rpc('create_bundle_invite_atomic', {
       _owner: viewerProfileId,
       _invitee: target.id,
@@ -531,7 +531,8 @@ export async function respondToBundleSeatInvite(
     // The granted tier and seat count fall back to the live operator config only for a bundle sold
     // before the terms were recorded; the SQL prefers what is stamped on the owner's row.
     const config = await getHouseholdBundle()
-    const rpc = createAdminClient().rpc as unknown as InviteRpc
+    const admin = createAdminClient()
+    const rpc = admin.rpc.bind(admin) as unknown as InviteRpc
     const { data, error } = await rpc('accept_bundle_invite_atomic', {
       _invite: inviteId,
       _member: viewerProfileId,

@@ -164,6 +164,7 @@ node_capture_counts                  internal
 node_within_range                    internal
 nodes_geo                            internal
 practice_admin_facets                internal
+practices_fill_slug                  internal
 practices_touch_updated_at           public
 prevent_economy_self_edit            internal
 prevent_role_self_escalation         internal
