@@ -1768,6 +1768,10 @@ export async function forkPractice(profileId: string, practiceId: string): Promi
     // Lineage columns aren't in the generated types yet (ADR-246) — cast the payload.
     .insert({
       title: src.title,
+      // Mint a slug here too. `createPractice` has always done this; the fork path never did,
+      // which is how public practices with a NULL slug reached the sitemap (20260819141841).
+      // The DB trigger is the net; this is the clean short slug, same as any other practice.
+      slug: await uniquePracticeSlug(src.title),
       description: src.description,
       summary: src.summary,
       body: src.body,
