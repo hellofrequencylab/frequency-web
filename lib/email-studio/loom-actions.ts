@@ -1,7 +1,7 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { writerGate } from '@/lib/beta/guard'
+import { writerGate } from '@/lib/outbound/guard'
 import { getCallerProfile } from '@/lib/auth'
 import { getRootSpaceId, searchSpaceLibraryImages, insertSpaceLibraryImage } from '@/lib/library/store'
 

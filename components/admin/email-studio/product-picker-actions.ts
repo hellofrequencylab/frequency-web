@@ -9,7 +9,7 @@
 
 import type { ActionResult } from '@/lib/action-result'
 import { ok, fail } from '@/lib/action-result'
-import { writerGate } from '@/lib/beta/guard'
+import { writerGate } from '@/lib/outbound/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listMyMakerProducts, listSpaceCatalog } from '@/lib/commerce/products'
 import { formatPriceCents } from '@/lib/commerce/types'

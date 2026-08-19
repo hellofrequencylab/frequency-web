@@ -12,6 +12,10 @@ import {
 // governing rule ("nothing sends without approval") is a truth table here, so a
 // regression that widens what may send fails the build. DB-backed transitions
 // (approve/pause/etc.) are gated + audited in approvals.ts; this locks the policy.
+//
+// isSendable is what assertApproved branches on, and assertApproved is the one
+// check standing between a drafted campaign and a real send, so these four cases
+// are the whole rule stated as data.
 
 describe('isSendable — the send gate', () => {
   it('clears ONLY approved and scheduled', () => {

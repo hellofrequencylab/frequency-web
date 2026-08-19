@@ -14,7 +14,7 @@
 //
 // The founding_members table is not in the generated lib/database.types.ts yet (regen after
 // apply, ADR-246), so it is reached through ONE loose service-role handle, the repo idiom
-// (see lib/beta/db.ts, lib/importer/materialize.ts).
+// (see lib/outbound/db.ts, lib/importer/materialize.ts).
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getFoundingConfig } from '@/lib/pricing/settings'

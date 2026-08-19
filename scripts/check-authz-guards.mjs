@@ -113,7 +113,7 @@ const GUARD = new RegExp(
     'surfaceAccess',
     'verify\\w*Token',
     'auth\\.getUser',
-    '(writer|approver)Gate', // lib/beta/guard.ts — the Beta capability gates (enforced via `if (!gate.ok) return`)
+    '(writer|approver)Gate', // lib/outbound/guard.ts — the two outbound capability gates (enforced via `if (!gate.ok) return`)
   ].join('|'),
 )
 

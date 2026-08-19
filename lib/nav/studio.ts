@@ -284,7 +284,7 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   // RETIRED 2026-08-19: the Beta Command Center ('beta-command' -> /admin/beta), the operator
   // home for the Beta launch (phase plan, task board, and the approval queue). The beta launch
   // is over, so the console and the whole beta email arc went with it. What survives is the
-  // APPROVAL SPINE itself (lib/beta/{guard,approvals}.ts, moving to lib/outbound next PR), which has no console of its own: a campaign is
+  // APPROVAL SPINE itself (lib/outbound/*), which has no console of its own: a campaign is
   // reviewed and sent from the Resonance CRM Marketing tab, and nothing sends without an
   // admin/janitor sign-off there. A 'Beta waitlist' leaf sat beside this one and pointed at
   // /admin/marketing/beta; it went away with the waitlist.
