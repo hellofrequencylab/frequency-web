@@ -193,7 +193,8 @@ export async function reconcileBundleSubscription(
   const roster = bundleRoster(ownerId, bundleSeatIdsFromMetadata(sub.metadata), seats)
   const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id ?? null
 
-  const rpc = createAdminClient().rpc as unknown as BundleSeatingRpc
+  const admin = createAdminClient()
+  const rpc = admin.rpc.bind(admin) as unknown as BundleSeatingRpc
   const { data, error } = await rpc('apply_bundle_seating_atomic', {
     _owner: ownerId,
     _event_at: new Date(eventCreated * 1000).toISOString(),

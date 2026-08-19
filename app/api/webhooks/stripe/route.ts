@@ -86,7 +86,7 @@ export async function POST(req: Request) {
   // profile, so out-of-order Stripe delivery can't re-grant a canceled tier. It is not yet
   // in the generated Database types, so it is called through a localized method cast (repo
   // convention for not-yet-typed RPCs — see lib/gems.ts award_gems_atomic; ADR-246).
-  const applyMembershipEvent = admin.rpc as unknown as (
+  const applyMembershipEvent = admin.rpc.bind(admin) as unknown as (
     name: 'apply_membership_event_atomic',
     args: {
       _profile: string

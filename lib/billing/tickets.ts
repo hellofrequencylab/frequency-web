@@ -420,7 +420,8 @@ export async function createTicketCheckout(opts: {
   // (paid + in-flight pending within 30 min) under a per-tier advisory lock and inserts the
   // pending row only if it fits. On sold-out or error, expire the session so it can't be paid
   // into a void, and refuse the URL. The pre-check above still gives a fast sold-out UX.
-  const reserveRpc = db().rpc as unknown as (
+  const reserveDb = db()
+  const reserveRpc = reserveDb.rpc.bind(reserveDb) as unknown as (
     name: 'reserve_ticket_atomic',
     args: {
       _tier_id: string | null; _event_id: string; _buyer: string; _qty: number

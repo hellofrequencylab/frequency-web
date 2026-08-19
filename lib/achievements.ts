@@ -73,7 +73,7 @@ async function advanceChallengeProgress(
   challengeId: string,
   target: number,
 ): Promise<{ current: number; completed: boolean; just_completed: boolean } | null> {
-  const rpc = admin.rpc as unknown as (
+  const rpc = admin.rpc.bind(admin) as unknown as (
     name: 'advance_challenge_progress',
     args: { _profile: string; _challenge: string; _target: number },
   ) => Promise<{ data: { current: number; completed: boolean; just_completed: boolean } | null; error: { message: string } | null }>
@@ -154,7 +154,7 @@ export async function recordStreakActivity(
   // dedups to one tick per home-zone week, and extends-or-resets by the grace window in a single
   // statement — closing the old read-compute-write race (lost increments, double streak_update
   // events, insert-race errors). Not in the generated types yet, so call it untyped (repo convention).
-  const rpc = admin.rpc as unknown as (
+  const rpc = admin.rpc.bind(admin) as unknown as (
     name: 'record_streak_tick',
     args: { _profile: string; _streak_type: string; _window_days: number },
   ) => Promise<{ data: { current: number; longest: number; ticked: boolean } | null; error: { message: string } | null }>
