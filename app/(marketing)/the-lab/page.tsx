@@ -53,10 +53,10 @@ const EMPTY: Data = { content: [], root: {} }
 // rule above the no-rates footnote (`BuildTimelineBlock` draws it whenever `footnote` is set).
 // The ONE thing that did not survive was never rendered by either rung: a five-entry `THE_LAB_FAQ`
 // whose `faqSchema()` sat on the legacy branch, so it has emitted no FAQPage since the template
-// landed — and the block document contains no Accordion, so there is no visible copy it could
-// honestly describe (CONTENT-VOICE §8b: schema must not out-claim the page). Reinstating it means
-// adding an Accordion to lib/page-editor/templates/the-lab.ts, which is a content decision that
-// moves pixels, not part of this deletion. `git log -p` on this file is the only remaining copy.
+// landed (CONTENT-VOICE §8b: schema must not out-claim the page). REINSTATED (LIVE-040): the five
+// Q&A were recovered verbatim from git history into an Accordion block (tl-faq) in
+// lib/page-editor/templates/the-lab.ts, which emits the FAQPage node as a consequence of rendering
+// the visible questions.
 //
 // THE CHAIN, and what watches each rung:
 //   published doc  → an operator's published page wins.

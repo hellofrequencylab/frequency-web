@@ -39,7 +39,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
-import { articleSchema, breadcrumbSchema, faqSchema } from '@/lib/jsonld'
+import { articleSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { CREW_NOTE } from '@/lib/pricing/pricing-page'
 import { formatCents } from '@/lib/pricing/display'
 import { PLACEHOLDER_MEMBER_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
@@ -81,6 +81,11 @@ const UPDATED = '2026-08-05'
 // Answer-first FAQ for AIO. Every answer matches the definitions the page ships
 // (Circle, Channel, the four Pillars, how growth works) so structured data and
 // visible copy never contradict.
+// ⚠️ This array now feeds ONLY the unreachable legacy body's visible FAQ section
+// below. The live page's Q&A (and the FAQPage node they emit) moved to the
+// Accordion in lib/page-editor/templates/the-community.ts (LIVE-040), minus the
+// cost answer, whose fixed-price Crew framing is stale against the
+// pay-what-you-want contract in lib/pricing/pricing-page.ts.
 const COMMUNITY_FAQ = [
   {
     q: 'What is a Circle?',
@@ -143,27 +148,26 @@ export default async function TheCommunityPage() {
       {/* Derived on both rungs; editorial scoped to its own rung (see /pricing:280-313). */}
       <JsonLd data={breadcrumbSchema([{ name: 'The Community', path: '/the-community' }])} />
       {data ? (
-        // BlockDocJsonLd carries the Article. The FAQPage is deliberately NOT emitted here:
-        // this template contains no Accordion, so the Q&A copy the schema described is not
-        // on the page at all. Asserting answers a visitor cannot read is the exact thing
-        // /pricing:309-313 refuses to do.
+        // BlockDocJsonLd carries the Article. The FAQPage is NOT emitted here: the template's
+        // Accordion block (tc-faq, lib/page-editor/templates/the-community.ts) emits it itself,
+        // as a consequence of rendering the visible questions (LIVE-040, CONTENT-VOICE §8b).
         // The dates are passed on BOTH rungs: this one renders in practice, so leaving them off
         // here is what actually shipped the dateless Article.
         <BlockDocJsonLd data={data} path="/the-community" published={PUBLISHED} updated={UPDATED} />
       ) : (
+        // Unreachable in practice: getTemplate('the-community') is a static well-formed literal,
+        // so `data` is never null. The faqSchema(COMMUNITY_FAQ) call that used to sit here was
+        // deleted as dead code (LIVE-040); the whole rung goes with LIVE-006's retirement.
         <JsonLd
-          data={[
-            articleSchema({
-              title: 'The Community',
-              description:
-                'How Frequency organizes community: four Pillars to find your practice, Channels to find your people, and Circles, small standing local groups that meet in person and grow on their own.',
-              path: '/the-community',
-              published: PUBLISHED,
-              updated: UPDATED,
-              image: '/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg',
-            }),
-            faqSchema(COMMUNITY_FAQ.map(({ q, a }) => ({ q, a }))),
-          ]}
+          data={articleSchema({
+            title: 'The Community',
+            description:
+              'How Frequency organizes community: four Pillars to find your practice, Channels to find your people, and Circles, small standing local groups that meet in person and grow on their own.',
+            path: '/the-community',
+            published: PUBLISHED,
+            updated: UPDATED,
+            image: '/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg',
+          })}
         />
       )}
       {data ? <BlockRender config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyTheCommunity />}
