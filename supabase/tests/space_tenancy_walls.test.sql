@@ -5,17 +5,20 @@
 --   * Space A's operator sees and writes ONLY Space A rows; every Space B read is empty and every
 --     Space B write is denied by RLS.
 --   * A plain member holds NO operator read (contacts are operator-only) and NO operator write,
---     but DOES see their own member-state row (space_follows self arm) and the published App
---     instance on a public surface.
---   * anon sees no CRM rows anywhere, sees a published instance on the public Space, and never
---     sees inside the Private Space.
+--     but DOES see their own member-state row (space_follows self arm).
+--   * anon sees no CRM rows anywhere and never sees inside the Private Space.
 -- The whole run is one transaction, rolled back at the end: nothing persists.
+--
+-- The app_instances arms (published-vs-draft visibility per seat) were removed with the table
+-- itself (20270316000000, ADR-1088 §app_instances): the App-instance runtime never shipped and
+-- E0 rebuilds the registry on a different shape. When E0 lands its table, these seats get their
+-- published-surface arms back in the same change.
 --
 -- The behavioral half of the ADR-275 harness (see README.md); the definition half of the same
 -- boundary is can_write_space_content.test.sql.
 
 begin;
-select plan(19);
+select plan(13);
 
 -- ── Fixture (seeded as postgres, which RLS does not bind) ────────────────────────────────────────
 
@@ -68,11 +71,6 @@ insert into public.crm_tasks (space_id, title) values
 insert into public.space_membership_tiers (id, space_id, name) values
   ('00000000-0000-4000-d000-000000000001', '00000000-0000-4000-c000-00000000000b', 'Walls Tier B');
 
-insert into public.app_instances (space_id, manifest_key, surface_type, status) values
-  ('00000000-0000-4000-c000-00000000000a', 'walls-test-app', 'page', 'published'),
-  ('00000000-0000-4000-c000-00000000000a', 'walls-test-app', 'page', 'draft'),
-  ('00000000-0000-4000-c000-00000000000b', 'walls-test-app', 'page', 'published');
-
 insert into public.space_follows (space_id, follower_profile_id) values
   ('00000000-0000-4000-c000-00000000000b', '00000000-0000-4000-b000-000000000002'),
   ('00000000-0000-4000-c000-00000000000b', '00000000-0000-4000-b000-000000000001');
@@ -82,8 +80,7 @@ insert into public.space_follows (space_id, follower_profile_id) values
 -- are what this file tests, not the grant baseline, so grant the fixture tables inside this
 -- rolled-back transaction to let the client roles reach the tables at all.
 grant select, insert, update, delete on
-  public.contacts, public.crm_tasks, public.space_membership_tiers,
-  public.app_instances, public.space_follows
+  public.contacts, public.crm_tasks, public.space_membership_tiers, public.space_follows
 to anon, authenticated;
 
 -- ── Seat 1: Space A's operator (owner) ───────────────────────────────────────────────────────────
@@ -119,15 +116,6 @@ select results_eq(
   $$ select count(*)::int from crm_tasks $$, $$ values (1) $$,
   'operator A sees their own Space''s CRM task');
 
-select results_eq(
-  $$ select count(*)::int from app_instances
-     where space_id = '00000000-0000-4000-c000-00000000000a' $$, $$ values (2) $$,
-  'operator A sees both their published and draft App instances');
-
-select is_empty(
-  $$ select id from app_instances where space_id = '00000000-0000-4000-c000-00000000000b' $$,
-  'operator A sees no App instances inside the Private Space B');
-
 -- ── Seat 2: a plain (viewer) member of Space A ───────────────────────────────────────────────────
 select set_config('request.jwt.claims',
   json_build_object('sub', '00000000-0000-4000-a000-000000000002', 'role', 'authenticated')::text, true);
@@ -141,11 +129,6 @@ select throws_ok(
      values ('00000000-0000-4000-c000-00000000000a', 'Member task') $$,
   '42501', null,
   'a plain member cannot write CRM rows in their own Space');
-
-select results_eq(
-  $$ select count(*)::int from app_instances
-     where space_id = '00000000-0000-4000-c000-00000000000a' $$, $$ values (1) $$,
-  'a plain member sees the published App instance only, never the draft');
 
 select results_eq(
   $$ select count(*)::int from space_follows
@@ -165,14 +148,6 @@ select is_empty(
   $$ select id from contacts $$,
   'anon sees no CRM rows anywhere');
 
-select results_eq(
-  $$ select count(*)::int from app_instances $$, $$ values (1) $$,
-  'anon sees exactly the published instance on the public Space');
-
-select is_empty(
-  $$ select id from app_instances where space_id = '00000000-0000-4000-c000-00000000000b' $$,
-  'anon never sees inside the Private Space');
-
 -- ── Seat 4: Space B's operator (cross-check from the far side of the wall) ───────────────────────
 set local role authenticated;
 select set_config('request.jwt.claims',
@@ -185,11 +160,6 @@ select results_eq(
 select is_empty(
   $$ select id from contacts where space_id = '00000000-0000-4000-c000-00000000000a' $$,
   'operator B sees zero Space A contacts');
-
-select results_eq(
-  $$ select count(*)::int from app_instances
-     where space_id = '00000000-0000-4000-c000-00000000000b' $$, $$ values (1) $$,
-  'operator B sees their own Private-Space instance (can_view arm)');
 
 select * from finish();
 rollback;
