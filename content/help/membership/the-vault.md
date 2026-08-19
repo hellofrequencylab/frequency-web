@@ -3,7 +3,7 @@ title: Membership & the Vault
 description: What's free, what membership includes, and how the Vault works.
 category: membership
 order: 1
-updated: 2026-08-13
+updated: 2026-08-19
 audience: member
 featureKeys: [vault]
 status: published
@@ -28,6 +28,6 @@ A membership can also cover several people at once. One payment, four seats, eac
 
 Either way, everything you earn keeps building: your Gems, your season trophies, and your **Amplitude** (the lifetime total behind your rank that never resets). What Gems actually buy (cosmetics, titles, collectible badges, membership credits) is covered in [Spending Gems in the Vault Store](/help/membership/the-gem-store).
 
-## During the beta
+## What Crew costs
 
-Everything you earned in the free beta stays yours. Crew is the paid personal tier, and the only one. It is contribute what you want: pick any monthly amount from $4.99 up, and every amount buys exactly the same Crew. Pay the suggested amount or more and you wear the Supporter badge. It all lives on the [upgrade page](/upgrade).
+Everything you have earned stays yours. Crew is the paid personal tier, and the only one. It is contribute what you want: pick any monthly amount from $4.99 up, and every amount buys exactly the same Crew. Pay the suggested amount or more and you wear the Supporter badge. It all lives on the [upgrade page](/upgrade).

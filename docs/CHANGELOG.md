@@ -98,6 +98,10 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **Each plan now does what it says**: the beta held every tool open to every Space whatever plan it
+  was on. That has ended. Your Space keeps everything already in it, and you can always read and
+  export it; the free allowances apply to what you add from here. When one is full, the next thing
+  you add is what waits, and moving up a plan raises the limit. Nothing is hidden or deleted.
 - **One price per plan, and two months free on the year**: the Opening Beta pricing has closed.
   Business is $29 a month and Collective is $79 a month, the same price whenever you start, and
   paying for the year gives you two months free. Non Profit ($39), Independent, and the Vera AI

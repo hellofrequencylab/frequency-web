@@ -3,7 +3,7 @@ title: Plans and pricing
 description: What each Space plan costs, what it includes, and how to pick the one that fits.
 category: spaces
 order: 2
-updated: 2026-08-17
+updated: 2026-08-19
 audience: member
 featureKeys: [billing]
 status: published
@@ -93,10 +93,12 @@ yourself.
 
 You can change plans whenever you like. See [Billing](/help/spaces/billing) for how that works.
 
-## During the beta
+## What Free gives you
 
-**Every Space has full access until September 1**, whatever plan it is on. Take your time, try the
-tools, and find out what you actually need before you pay for it.
+Free is a real plan, not a countdown. Every plan does what this page says it does, from today.
 
-You can subscribe now if you want to, at the same price you would pay later. On September 1 the plans
-start doing what they say: the tools each one includes stay with that plan.
+Your Space keeps everything already in it. The free allowances apply to what you add from here, so
+nothing you have made is hidden, moved, or deleted, and you can always read and export it. When an
+allowance is full, the next thing you add is what waits, and moving up a plan raises the limit.
+
+You can subscribe whenever you like, at the same price you would pay later.
