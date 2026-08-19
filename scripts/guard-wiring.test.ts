@@ -56,8 +56,11 @@ const UNWIRED: Record<string, string> = {
   // a real hole while it was being written (the crash handler was installed too late to catch a
   // top-level throw, and that ordering is now asserted).
   //
-  // ⚠️ Promote it in the SAME change as the green build that confirms its reading. That test's last
-  // assertion fails if postbuild ever invokes it bare, so the promotion cannot happen quietly.
+  // ✅ AND PROMOTED, 2026-08-19, exactly that way. The gate printed green on two production
+  // artifacts (17:14Z and 18:13Z: 1010 KB of the 1400 KB budget across 21 chunks, all 8 admin
+  // module bodies lazy, positive control present), the owner said "promote it", and the promotion
+  // change carried the preview build whose postbuild printed it BLOCKING-green. The two warn-only
+  // pins inverted in that same change, so a re-added flag now fails as a silent demotion.
   //
   // The rule these two keep proving: DEPLOY-SAFETY.md opens with an outage caused by gates that
   // passed while the artifact was broken, and wiring an UNPROVEN gate into postbuild is that failure

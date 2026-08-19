@@ -130,7 +130,7 @@ describe("the artifact gate's needles are still needles", () => {
 })
 
 describe('the artifact gate is wired where it can run', () => {
-  it('is in postbuild in WARN-ONLY mode, and nowhere else (LIVE-035)', () => {
+  it('is in postbuild BLOCKING (promoted 2026-08-19), and nowhere else (LIVE-035)', () => {
     // ── THIS TEST CHANGED ON 2026-08-19, AND THE OLD VERSION WAS RIGHT TO FAIL ────────────────
     // It used to assert the gate was NOT in postbuild at all, because a build-blocking gate that has
     // never seen a real artifact is this repo's own 2026-08-11 outage with the roles reversed. That
@@ -142,17 +142,23 @@ describe('the artifact gate is wired where it can run', () => {
     // row sat in — its one lifetime reading is unconfirmed in BOTH directions, and the only thing
     // that can confirm it is a real artifact, which it could only reach by being wired.
     //
-    // So the assertion inverts rather than relaxes: it must be present, and it must carry the flag.
-    // Dropping `--warn-only` is the promotion, and the promotion is a decision with an owner, made
-    // in the same change as the green build that confirms the reading.
+    // PROMOTED 2026-08-19, owner verbatim: "promote it." The condition the paragraph above set was
+    // met the honest way: the gate printed green on TWO PRODUCTION artifacts (17:14Z and 18:13Z,
+    // both 1010 KB of the 1400 KB budget across 21 chunks, all 8 admin module bodies lazy, positive
+    // control present). So the assertion inverts again: it must be present, and it must NOT carry
+    // the flag — re-adding `--warn-only` would silently demote an owner-promoted gate, which is the
+    // fail-safe-that-fired-and-nobody-noticed shape rule 6 exists for. Its sibling
+    // check-cache-budget deliberately KEEPS the flag: its action is a trim and it has killed two
+    // builds; that promotion is a separate decision (LIVE-035 carries it).
     const pkg = JSON.parse(read('package.json'))
     const postbuild = String(pkg.scripts.postbuild ?? '')
     expect(postbuild).toContain('scripts/check-shell-weight.mjs')
+    const shellArgs = /check-shell-weight\.mjs([^&|;]*)/.exec(postbuild)?.[1] ?? ''
     expect(
-      postbuild,
-      'check-shell-weight.mjs is in postbuild WITHOUT --warn-only, which lets an unconfirmed ' +
-        'reading fail a production deploy. See scripts/check-shell-weight-warn-only.test.ts.',
-    ).toContain('scripts/check-shell-weight.mjs --warn-only')
+      /--warn-only/.test(shellArgs),
+      'check-shell-weight.mjs runs in postbuild with --warn-only, but the owner promoted it on ' +
+        '2026-08-19 after two green production readings. Warn-only now means a silent demotion.',
+    ).toBe(false)
     // Still exactly one home. It reads `.next`, and CI never builds (DEPLOY-SAFETY.md, ADR-1003),
     // so a copy in the CI guards array would be a guard that silently measures nothing.
     expect(read('.github/workflows/ci.yml')).not.toContain('check:shell-weight')

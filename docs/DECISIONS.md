@@ -27413,9 +27413,11 @@ blocks export of what is already there.
    row for their own `owner_profile_id`, at role `admin`**. Free and Business (allowance 1) are
    therefore spent by the owner alone, which matches what the ladder publishes for those rungs.
    Collective (allowance 3) yields owner + 2 teammates rather than owner + 3, and which of those the
-   ladder means is an owner call, not a code call. The count is left exactly as it is and LIVE-057
-   carries the decision; moving a paying Space's seat total on the strength of a stale comment is the
-   wrong direction to guess in.
+   ladder means is an owner call, not a code call. The count is left exactly as it is and OWN-033
+   carries the decision (this text originally said LIVE-057; that id was reassigned the same day, and
+   the pointer is corrected rather than left to mislead); moving a paying Space's seat total on the
+   strength of a stale comment is the wrong direction to guess in. SETTLED 2026-08-19: "Owner + 2,
+   total of 3" — today's behaviour is the intended one, no code change.
 3. **The member-facing copy that promised the window had to move in the same change.** Nine help
    pages said some version of *"every Space has full access until September 1"* or *"Crew is free
    during the beta"*. Those sentences became false at 17:47Z. They are rewritten to the rule that is
