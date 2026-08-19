@@ -3,7 +3,7 @@
 // Beta-induction server actions (ADR-068). TEMPORARY — deleted at launch.
 // Everything rides profiles.meta (no migration). Unlike the legacy
 // completeOnboarding (which blind-overwrites meta on a fresh '{}'), these MERGE
-// so the oath stamp and the completion stamp don't clobber each other.
+// so an earlier stamp and the completion stamp don't clobber each other.
 
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
@@ -16,7 +16,7 @@ import { rememberFacts } from '@/lib/ai/memory'
 import { postWelcomeForMember } from '@/lib/onboarding/welcome'
 import { ensureMemberCodes } from '@/lib/qr/member-codes'
 import { track } from '@/lib/analytics/track'
-import { BETA_INDUCTION_VERSION, BETA_MEMBERS_GET_CREW, type OathId } from '@/lib/onboarding/beta-script'
+import { BETA_INDUCTION_VERSION, BETA_MEMBERS_GET_CREW } from '@/lib/onboarding/beta-script'
 import { resolveSequence } from '@/lib/onboarding/resolve-sequence'
 import { sequenceGrant } from '@/lib/onboarding/beta-sequences'
 import { grantFoundingStatus } from '@/lib/founding/status'
@@ -266,7 +266,6 @@ export interface InductionData {
   intent: string
   interests: string
   heardAbout: string
-  oaths: OathId[]
 }
 
 async function readMeta(supabase: Awaited<ReturnType<typeof createClient>>, authUserId: string): Promise<Meta> {
@@ -276,33 +275,6 @@ async function readMeta(supabase: Awaited<ReturnType<typeof createClient>>, auth
     .eq('auth_user_id', authUserId)
     .single()
   return (data?.meta as Meta) ?? {}
-}
-
-/**
- * Stamp the oath as soon as the gate is passed, so we have consent on record
- * even if the founder drops off mid-induction. Best-effort, non-fatal.
- */
-export async function acceptBetaOath(oaths: OathId[]) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-
-  const meta = await readMeta(supabase, user.id)
-  const beta = (meta.beta as Meta) ?? {}
-
-  await supabase
-    .from('profiles')
-    .update({
-      meta: {
-        ...meta,
-        beta: {
-          ...beta,
-          version: BETA_INDUCTION_VERSION,
-          oath: { accepted_at: new Date().toISOString(), version: BETA_INDUCTION_VERSION, oaths },
-        },
-      },
-    })
-    .eq('auth_user_id', user.id)
 }
 
 /**
@@ -352,12 +324,6 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
         beta: {
           ...beta,
           version: BETA_INDUCTION_VERSION,
-          // Re-affirm the oath here too, in case acceptBetaOath didn't land.
-          oath: (beta.oath as Meta) ?? {
-            accepted_at: new Date().toISOString(),
-            version: BETA_INDUCTION_VERSION,
-            oaths: data.oaths,
-          },
           intent: intent || null,
           interests: interests || null,
           heard_about: heardAbout || null,
@@ -505,7 +471,6 @@ export async function stashPendingInduction(data: Omit<InductionData, 'avatarUrl
     intent: (data.intent ?? '').slice(0, 500),
     interests: (data.interests ?? '').slice(0, 200),
     heardAbout: (data.heardAbout ?? '').slice(0, 120),
-    oaths: Array.isArray(data.oaths) ? data.oaths.slice(0, 8) : [],
   }
   ;(await cookies()).set(PENDING_INDUCTION_COOKIE, JSON.stringify(payload), {
     httpOnly: true,

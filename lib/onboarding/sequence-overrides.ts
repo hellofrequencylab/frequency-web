@@ -39,7 +39,6 @@ export interface SequenceOverride {
   status?: SequenceStatus
   splash?: Partial<SequenceSplash>
   vera?: Partial<BetaSequence['vera']>
-  oaths?: BetaSequence['oaths']
   heardAbout?: BetaSequence['heardAbout']
   /** Niche-funnel config (ADR-funnels): Slide 2 features, Slide 3 core features + art, and the
    *  completion destination (waitlist vs a direct in-app link). Absent = the General funnel behaviour. */

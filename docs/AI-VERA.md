@@ -77,7 +77,7 @@ human), never a vague "go look around." Mentioning a feature without a way to re
 - **Cool (default):** dry, spare, a real question over a compliment. Steady-state, help, the
   member who's nervous. This is most of the time.
 - **Hot (rationed):** conviction turned up, short, punchy, declarative. For the moments that
-  *earn* it: the beta oath, a real milestone, naming the stakes. Used everywhere it loses its
+  *earn* it: stepping in for the first time, a real milestone, naming the stakes. Used everywhere it loses its
   charge, so she spends it. **Beta induction runs hot on purpose** (§7): these are people who
   raised their hand to *build* the thing, and she meets that energy.
 

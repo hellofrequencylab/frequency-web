@@ -49,7 +49,6 @@ export default async function SplashFunnelTemplatePage() {
     >
       <SplashCopyEditor
         initialVera={seq.vera}
-        initialOaths={seq.oaths}
         heardAbout={seq.heardAbout}
         initialHasOverride={hasOverride}
       />

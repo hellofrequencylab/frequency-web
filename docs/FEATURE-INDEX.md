@@ -59,7 +59,7 @@
 
 | Feature | Surface | What it is | Spec |
 |---|---|---|---|
-| **Beta induction** | `/onboarding/beta?seq=` | The cinematic voiced induction (splash → oath → intro → identity → place → tour → enter) | BETA-INDUCTION |
+| **Beta induction** | `/onboarding/beta?seq=` | The cinematic voiced induction (splash → welcome → tour → profile → step in) | BETA-INDUCTION |
 | **Audience sequences** | `/beta/[slug]` | Audience-targeted versions of the induction + cohort marketing tags | BETA-ACTIVATION |
 | **Vera's chores / coach** | overlay + Next-Steps pill | Activation full-stop, then the single next move; gems-nudged. Coach popup redesigned (`chores-overlay`, only "Don't show till tomorrow") | BETA-ACTIVATION |
 | **Onboarding edge tabs** | left/right margins | `edge-pill` tabs tucked into the margins, icon-only at rest | — |

@@ -14,7 +14,7 @@
 // Client-safe (no server imports). The DB layer + merging live in
 // lib/onboarding/sequence-overrides.ts and lib/onboarding/resolve-sequence.ts.
 
-import { VERA, BETA_OATHS, HEARD_ABOUT, type OathId, type VeraCopy } from '@/lib/onboarding/beta-script'
+import { VERA, HEARD_ABOUT, type VeraCopy } from '@/lib/onboarding/beta-script'
 import type { FunnelStyleId } from '@/lib/funnels/funnel-styles'
 
 /** A FEATURE funnel's playable-demo config (ADR-619). A feature funnel lets a visitor use ONE
@@ -87,7 +87,6 @@ export interface BetaSequence {
   splash: SequenceSplash
   /** The induction's voiced copy (Vera's HOT register). */
   vera: VeraCopy
-  oaths: { id: OathId; label: string }[]
   heardAbout: string[]
   /** NICHE funnels: the 4 "what are you into" feature cards shown on Slide 2 in place of the generic
    *  persona fork. Absent / empty = keep the persona fork (the General funnel's behaviour). */
@@ -192,16 +191,15 @@ const BASE_SEQUENCE: BetaSequence = {
     statement: 'Close the laptop. Show up in *person*.',
   },
   vera: VERA,
-  oaths: BETA_OATHS,
   heardAbout: [...HEARD_ABOUT],
   // The GENERAL beta splash is the ONE funnel that keeps the Beta-list landing (waitlist == the
   // default post-induction feed/Beta path). Every NICHE funnel overrides this with a direct section.
   destination: GENERAL_FUNNEL_DESTINATION,
 }
 
-// The SPLASH prompts for a brand-new funnel. VERA (induction beats) + BETA_OATHS already
-// ship as fill-in prompts; the base flow's SPLASH, though, is the real live copy, so a
-// funnel cloned from it would inherit finished copy. This gives the public splash the same
+// The SPLASH prompts for a brand-new funnel. VERA (the induction beats) already ships as
+// fill-in prompts; the base flow's SPLASH, though, is the real live copy, so a funnel
+// cloned from it would inherit finished copy. This gives the public splash the same
 // fill-in guidance, so a fresh funnel reads as a prompts TEMPLATE end to end. Kept SEPARATE
 // from BASE_SEQUENCE so seeding a new funnel never reads or mutates the live default flow
 // (funnel #1). Plain, no em dashes.
@@ -216,20 +214,18 @@ const TEMPLATE_SPLASH_PROMPTS: SequenceSplash = {
 }
 
 /** The prompts TEMPLATE a brand-new funnel is seeded from: the SAME structure as the live
- *  default flow (every beat, every oath, the splash) but with fill-in prompts for every
+ *  default flow (every beat, the splash) but with fill-in prompts for every
  *  content field, so the operator opens the editor to guidance they replace. Built from the
  *  code prompt copy, NOT from the `beta-default` DB override, so creating a funnel can never
  *  touch or depend on the current live flow (funnel #1). Returns a fresh object each call. */
 export function templateSeed(): {
   splash: SequenceSplash
   vera: VeraCopy
-  oaths: { id: OathId; label: string }[]
   heardAbout: string[]
 } {
   return {
     splash: { ...TEMPLATE_SPLASH_PROMPTS },
     vera: VERA,
-    oaths: BETA_OATHS.map((o) => ({ ...o })),
     heardAbout: [...HEARD_ABOUT],
   }
 }
@@ -239,7 +235,7 @@ export function templateSeed(): {
  *  The record stays so a code sequence can be reintroduced without touching callers. */
 // The breathwork FEATURE funnel (ADR-619) — the first playable front door. Defined in code (not a
 // DB row) because its renderer is code: the box-breath visualizer plays on card 2, captures a lead at
-// the first hold, and shows the true first-log reward (Day 1 streak + Zaps). `vera`/`oaths`/`heardAbout`
+// the first hold, and shows the true first-log reward (Day 1 streak + Zaps). `vera`/`heardAbout`
 // are unused by the feature renderer but required by the type, so they borrow the base flow. Lands the
 // new member in the app to take their first real round. Voice canon: plain, no em dashes.
 const BREATHWORK_FEATURE_FUNNEL: BetaSequence = {
@@ -258,7 +254,6 @@ const BREATHWORK_FEATURE_FUNNEL: BetaSequence = {
     statement: 'Take one *breath* with us.',
   },
   vera: VERA,
-  oaths: BETA_OATHS,
   heardAbout: [...HEARD_ABOUT],
   // Finish in the app, ready to breathe for real (a real round = a real streak + Zaps).
   destination: { mode: 'direct', url: '/feed?welcome=vera' },

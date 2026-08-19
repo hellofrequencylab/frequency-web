@@ -39,11 +39,8 @@ export async function saveVera(formData: FormData): Promise<void> {
       maxReplyChars,
       greeting: str('greeting'),
       induction: {
-        oathHeading: str('oathHeading'),
-        oathBody: str('oathBody'),
         introHeading: str('introHeading'),
         introBody: str('introBody'),
-        oathLabels: [str('oath0'), str('oath1'), str('oath2')],
         heardAbout: lines('heardAbout'),
       },
     },

@@ -34,7 +34,7 @@ export default async function BetaInductionPage({
   // Who they said they are in the lead flow (ADR-125) — pre-selects the Welcome-beat
   // picker, branches the tour reel, and is stamped on the member at completion.
   const persona: PersonaId | undefined = isPersonaId(personaSlug) ? personaSlug : undefined
-  const copy = { vera: seq.vera, oaths: seq.oaths, heardAbout: seq.heardAbout }
+  const copy = { vera: seq.vera, heardAbout: seq.heardAbout }
 
   // If they scanned a member's QR code, the /q resolver dropped an fq_ref cookie.
   // Surface "Invited by {name}" through the induction so the welcome feels personal.

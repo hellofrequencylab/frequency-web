@@ -19,8 +19,6 @@ import type { VeraConfig, FeaturedRow } from './load-vera'
 const LABEL = 'font-semibold uppercase tracking-wide text-subtle'
 
 export function VeraConfigForm({ cfg, featured }: { cfg: VeraConfig; featured: FeaturedRow[] }) {
-  const oaths = [0, 1, 2].map((i) => cfg.induction.oathLabels[i] ?? '')
-
   return (
     <div>
       <form action={saveVera}>
@@ -60,34 +58,16 @@ export function VeraConfigForm({ cfg, featured }: { cfg: VeraConfig; featured: F
         {/* Induction / funnel copy */}
         <FormSection
           title="Founder induction copy"
-          description="The Beta Promise and welcome copy new founders read during induction, plus the 'how did you hear about us' options."
+          description="The welcome copy new members read during induction, plus the 'how did you hear about us' options."
         >
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Beta Promise heading" labelClassName={LABEL}>
-                <Input name="oathHeading" defaultValue={cfg.induction.oathHeading} />
-              </Field>
               <Field label="Welcome heading" labelClassName={LABEL}>
                 <Input name="introHeading" defaultValue={cfg.induction.introHeading} />
-              </Field>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Beta Promise body" labelClassName={LABEL}>
-                <Textarea name="oathBody" rows={3} defaultValue={cfg.induction.oathBody} />
               </Field>
               <Field label="Welcome body" labelClassName={LABEL}>
                 <Textarea name="introBody" rows={3} defaultValue={cfg.induction.introBody} />
               </Field>
-            </div>
-            <div>
-              {/* Not a `Field`: implicit association binds a label to ONE control, and this is a
-                  group of three. The group gets a heading, each input its own aria-label. */}
-              <span className={`block text-meta font-medium text-muted ${LABEL}`}>The three promises</span>
-              <div className="mt-1 space-y-2">
-                {oaths.map((v, i) => (
-                  <Input key={i} name={`oath${i}`} defaultValue={v} aria-label={`Promise ${i + 1}`} />
-                ))}
-              </div>
             </div>
             <Field label={<>&ldquo;How did you hear about us?&rdquo; options (one per line)</>} labelClassName={LABEL}>
               <Textarea name="heardAbout" rows={5} defaultValue={cfg.induction.heardAbout.join('\n')} />

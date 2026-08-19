@@ -27448,3 +27448,55 @@ blocks export of what is already there.
 - The reversal is one statement, and it is worth writing down while it is cheap:
   `update public.pricing_settings set value = '{"until": "<date>"}'::jsonb where key = 'beta_grace';`
   or the same edit on `/admin/pricing`.
+
+## ADR-1088: The oath comes out of the front door, because a ceremony in front of a sign-up is friction with nothing behind it
+
+**Status:** Accepted 2026-08-19 · code-only, no migration
+
+**Owner decision, 2026-08-19:** *"I want to remove all the Oaths language as well. These are supposed
+to be focused funnels for building out any niche and getting a sign up."*
+
+**Context.** The induction (`/onboarding/beta`, [ADR-068](DECISIONS.md)) opened on a gate: three
+commitment checkboxes (`BETA_OATHS`), all three required, with a stamp written to
+`profiles.meta.beta.oath` by `acceptBetaOath` the moment they were ticked. It was designed for a
+founding cohort who had opted in to *build*, where "the friction is the filter". That is no longer
+what this flow is. It is the ONLY front door to the product (there is no `/sign-up` route), it is
+cloned per niche through the Splash Funnel builder, and the job of every clone is a sign-up. A gate
+in front of the first field filters the exact people the funnel exists to convert.
+
+**Decision. The beat is deleted, not hidden.** The sequence runs 4 beats instead of 5
+(welcome → tour → profile → step in), and every trace of the concept goes with it: the `BETA_OATHS`
+constant and the `OathId` type, `VERA.oath`, the `oaths` field on `BetaSequence` and on
+`SequenceOverride`, `acceptBetaOath`, the `oaths` leg of `InductionData` (so the deferred cookie and
+the completion write no longer carry it), the `oathHeading` / `oathBody` / `oathLabels` fields of
+`VeraInductionCopy` with their `/admin/vera` inputs, and the "Beta Promise" section of the
+`/pages/splash` funnel editor.
+
+**The arithmetic is the part that breaks silently, so it is centralised rather than sprinkled.**
+`BEAT_COUNT` is the ONE number the progress bar, the `Step N of M` group label, and the `initialBeat`
+clamp all read; the beat indices themselves were renumbered down by one across the render blocks,
+every `setBeat` back-link, and the reel's auto-advance guard (which keys on the tour beat's index and
+would otherwise have auto-played on the profile beat). The intro beat's "Back" link is removed
+outright, because the first beat has nowhere to go back to. `signup_leads.step_reached` is documented
+as 1-based on the funnel's own beats, so the four lead writes moved 2/3/4/5 → 1/2/3/4; nothing reads
+that column yet, so the renumbering keeps the column's own contract true.
+
+⚠️ **It does leave the column with two eras, and that is worth stating rather than discovering.**
+Rows written before 2026-08-19 counted a funnel whose first beat was the oath. Measured rather than
+estimated: `signup_leads` holds exactly **three** such rows (one at `step_reached` 3 from 2026-08-07,
+two at 5 from 2026-08-14). They are NOT backfilled, deliberately. The remap would be exact (subtract
+one), but those rows are a true record of a funnel that no longer exists, and rewriting them would
+assert three people walked a path they never saw. Anyone comparing the two eras subtracts one from a
+pre-2026-08-19 row. Same reasoning as keeping `meta.beta.oath`: history is kept as history.
+
+**Consequences.**
+
+- **No migration, and none is wanted.** The oath never had a column or a table: it rode
+  `profiles.meta.beta.oath`, a JSONB key nothing else reads. Existing values stay where they are as
+  durable history of what those members were actually asked, exactly like the `beta_*` cohort tags.
+  Saved `sequence_overrides.data.oaths` and `vera_config.induction.oath*` keys are inert for the same
+  reason: both merges iterate the CODE shape's keys, so an override key with no code counterpart is
+  ignored rather than resurrected.
+- The funnel is one beat shorter and opens on a question about the visitor instead of a demand from
+  us, which is what the niche funnels were always for.
+

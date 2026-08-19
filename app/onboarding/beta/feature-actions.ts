@@ -87,7 +87,6 @@ export async function beginFeatureFunnelSignup(input: {
     intent: '',
     interests: '',
     heardAbout: '',
-    oaths: [],
   })
 
   return { ok: true }

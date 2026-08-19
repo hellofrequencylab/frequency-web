@@ -9,7 +9,7 @@
 // That one line would work, and it would silently rewrite the member's site-wide preference from
 // inside a funnel they are only passing through. Someone who runs the beta flow in dark mode would
 // find the whole product in light mode afterwards and have no idea what changed it. The preference
-// is theirs; this surface is only borrowing the presentation for five beats.
+// is theirs; this surface is only borrowing the presentation for four beats.
 //
 // So the override lives entirely in the DOM: drop the `.dark` class for the duration, and on
 // unmount re-resolve the member's real preference from the storage key that was never touched.

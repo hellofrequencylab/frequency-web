@@ -59,7 +59,7 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
   {
     key: 'founder',
     label: 'Founder',
-    description: 'A founding member who took the beta oath / helped build the thing. Runs "hot" in Vera\'s voice (AI-VERA §7).',
+    description: 'A founding member who came in early and helped build the thing. Runs "hot" in Vera\'s voice (AI-VERA §7).',
     kind: 'tag', category: 'involvement', type: 'boolean',
     pii: 'none', freshness: 'static', retentionDays: null, owner: 'community',
     systemManaged: false,
