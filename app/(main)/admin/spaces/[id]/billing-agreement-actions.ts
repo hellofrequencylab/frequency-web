@@ -6,6 +6,7 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 import {
   createManualAgreement,
   recordManualPayment,
+  correctPaidThrough,
   activeAgreementForSpace,
 } from '@/lib/billing/manual-agreements'
 
@@ -62,6 +63,26 @@ export async function recordPaymentAction(spaceId: string): Promise<ActionResult
   const agreement = await activeAgreementForSpace(spaceId)
   if (!agreement) return fail('That space has no active agreement.')
   const result = await recordManualPayment(agreement.id)
+  if (!result.ok) return fail(result.error)
+  revalidatePath(`${ADMIN_PATH}/${spaceId}`)
+  return ok()
+}
+
+/** CORRECT the paid-through date on the Space's ACTIVE agreement (staff), to an explicit date.
+ *
+ *  The reverse gear for `recordPaymentAction` (LIVE-050). That action is extend-only, so before this
+ *  existed a renewal recorded by mistake could only be undone by someone with database access. Like
+ *  its sibling it looks the agreement up FRESH by space, so a stale form can never correct a
+ *  different Space's deal. */
+export async function correctPaidThroughAction(
+  spaceId: string,
+  paidThrough: string,
+): Promise<ActionResult> {
+  await requireAdmin('janitor')
+  if (!spaceId) return fail('We could not find that space.')
+  const agreement = await activeAgreementForSpace(spaceId)
+  if (!agreement) return fail('That space has no active agreement.')
+  const result = await correctPaidThrough(agreement.id, paidThrough)
   if (!result.ok) return fail(result.error)
   revalidatePath(`${ADMIN_PATH}/${spaceId}`)
   return ok()

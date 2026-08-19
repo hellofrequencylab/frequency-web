@@ -117,6 +117,7 @@ function makeBuilder() {
 import {
   createManualAgreement,
   recordManualPayment,
+  correctPaidThrough,
   activeAgreementForSpace,
   agreementsDue,
   stampAgreementTouch,
@@ -281,6 +282,61 @@ describe('recordManualPayment', () => {
     expect(missing.ok).toBe(false)
     const row = seedRow({ status: 'settled' })
     const settled = await recordManualPayment(row.id as string)
+    expect(settled.ok).toBe(false)
+    expect(store.updates).toHaveLength(0)
+  })
+})
+
+// ── 3b. correctPaidThrough: the undo that did not exist (LIVE-050) ─────────────────────────
+// recordManualPayment is EXTEND-ONLY, and on 2026-08-18 one unguarded click moved a paying member
+// a year forward, claiming $490 nobody had paid. Putting it back took a hand-written database
+// update, because nothing in the product could set the date. These lock the reverse gear.
+describe('correctPaidThrough', () => {
+  it('sets the date to exactly what it was given, including BACKWARD', async () => {
+    const row = seedRow({ paid_through: '2028-07-27' })
+    const result = await correctPaidThrough(row.id as string, '2027-07-27')
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.agreement.paidThrough).toBe('2027-07-27')
+    expect(store.updates[0]?.patch?.paid_through).toBe('2027-07-27')
+  })
+
+  it('clears all three reminder stamps, so a date moved back can raise its reminders again', async () => {
+    const row = seedRow({
+      paid_through: '2028-07-27',
+      reminder_30_sent_at: '2028-06-27T04:10:00Z',
+      reminder_7_sent_at: '2028-07-20T04:10:00Z',
+      overdue_notice_sent_at: '2028-07-28T04:10:00Z',
+    })
+    const result = await correctPaidThrough(row.id as string, '2027-07-27')
+    expect(result.ok).toBe(true)
+    const patch = store.updates[0]?.patch
+    expect(patch?.reminder_30_sent_at).toBeNull()
+    expect(patch?.reminder_7_sent_at).toBeNull()
+    expect(patch?.overdue_notice_sent_at).toBeNull()
+  })
+
+  it('undoes a mistaken renewal exactly: record then correct returns the original date', async () => {
+    const row = seedRow({ paid_through: '2027-07-27' })
+    const paid = await recordManualPayment(row.id as string)
+    expect(paid.ok && paid.agreement.paidThrough).toBe('2028-07-27')
+    const fixed = await correctPaidThrough(row.id as string, '2027-07-27')
+    expect(fixed.ok && fixed.agreement.paidThrough).toBe('2027-07-27')
+  })
+
+  it('refuses a bad date with no write', async () => {
+    const row = seedRow({ paid_through: '2027-07-27' })
+    for (const bad of ['', 'tomorrow', '2027-02-30', '27-07-2027']) {
+      const result = await correctPaidThrough(row.id as string, bad)
+      expect(result.ok).toBe(false)
+    }
+    expect(store.updates).toHaveLength(0)
+  })
+
+  it('refuses a missing or non-active agreement with no write', async () => {
+    const missing = await correctPaidThrough('nope', '2027-07-27')
+    expect(missing.ok).toBe(false)
+    const row = seedRow({ status: 'settled' })
+    const settled = await correctPaidThrough(row.id as string, '2027-07-27')
     expect(settled.ok).toBe(false)
     expect(store.updates).toHaveLength(0)
   })

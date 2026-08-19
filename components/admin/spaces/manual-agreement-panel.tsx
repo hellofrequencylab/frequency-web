@@ -9,15 +9,35 @@ import { isError } from '@/lib/action-result'
 import {
   createAgreementAction,
   recordPaymentAction,
+  correctPaidThroughAction,
 } from '@/app/(main)/admin/spaces/[id]/billing-agreement-actions'
+import { Dialog } from '@/components/ui/dialog'
+import { addInterval, type AgreementInterval } from '@/lib/billing/manual-agreement-dates'
 
 import { Input, Textarea } from '@/components/ui/field'
 // The MANUAL BILLING panel on /admin/spaces/[id] (ADR-872): the crew's no-SQL path for off-Stripe
 // deals. No active agreement -> the record form (plan, cadence, locked amount, method, dates).
-// Active agreement -> the receipt summary + one "Record payment" button that extends paid_through
-// by an interval and re-arms the reminder ladder. Every write is a janitor-gated server action
-// that re-checks authorization; this component only collects intent and surfaces the result.
-// Token-only styling; no em dashes (CONTENT-VOICE).
+// Active agreement -> the receipt summary, a GUARDED "Record payment" button, and a correction path.
+// Every write is a janitor-gated server action that re-checks authorization; this component only
+// collects intent and surfaces the result. Token-only styling; no em dashes (CONTENT-VOICE).
+//
+// 🔴 BOTH GUARDS BELOW EXIST BECAUSE THIS SCREEN COST A YEAR (LIVE-050). On 2026-08-18 the owner
+// pressed "Record payment" while asking whether they should, and it extended a paying member from
+// 2027-07-27 to 2028-07-27, claiming a second $490 year nobody had paid. Two separate things were
+// missing, and the smaller one is the one that would have stopped it:
+//
+//   1. NO CONFIRM. One click, on a field that is money, with no statement of what would change.
+//      The dialog now names BOTH dates, and it computes the new one with `addInterval` — the same
+//      pure function the server writes with — so the sentence a human reads and the value the
+//      database takes cannot drift apart.
+//   2. NO CORRECTION PATH. Once active, the panel was a read-only summary plus that one button; the
+//      paid-through input existed only on the create form, unreachable forever after. The single
+//      control on the screen was the one that could not be reversed, and the operator's only exit
+//      was a person with database access.
+//
+// This is a once-a-year action per Space, so nobody builds a habit around it, and the failure is
+// silent: no error, no email, just a wrong date that surfaces when a renewal reminder never arrives.
+// A toast would NOT have been a fix. It tells you what happened without letting you undo it.
 
 /** The serializable slice of a ManualAgreement the panel renders. */
 export interface AgreementSummary {
@@ -64,6 +84,17 @@ export function ManualAgreementPanel({
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
+  // Both dialogs' open state, and the date the correction dialog is editing. Declared here rather
+  // than inside the `if (agreement)` branch because hooks cannot sit behind a condition.
+  const [confirming, setConfirming] = useState(false)
+  const [correcting, setCorrecting] = useState(false)
+  const [correctTo, setCorrectTo] = useState('')
+
+  // What "Record payment" will actually write, by the server's own rule. Null only if the stored
+  // date is unparseable, which also disables the confirm rather than showing a guess.
+  const nextPaidThrough = agreement
+    ? addInterval(agreement.paidThrough, agreement.interval as AgreementInterval)
+    : null
 
   if (agreement) {
     const amount = agreement.amountCents / 100
@@ -92,27 +123,104 @@ export function ManualAgreementPanel({
             <dd className="font-medium text-text">{methodLabel}</dd>
           </div>
         </dl>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="button" disabled={pending} onClick={() => { setError(null); setConfirming(true) }}>
+            Record payment
+          </Button>
           <Button
             type="button"
+            variant="secondary"
             disabled={pending}
             onClick={() => {
               setError(null)
-              start(async () => {
-                const result = await recordPaymentAction(spaceId)
-                if (isError(result)) setError(result.error)
-                else router.refresh()
-              })
+              setCorrectTo(agreement.paidThrough)
+              setCorrecting(true)
             }}
           >
-            {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
-            Record payment
+            Correct date
           </Button>
           <p className="text-meta text-muted">
-            Extends paid-through by one {agreement.interval} and resets the reminders.
+            Recording a payment extends paid-through by one {agreement.interval} and resets the reminders.
           </p>
         </div>
         {error && <p className="text-body-sm text-danger">{error}</p>}
+
+        {/* THE CONFIRM. It states the before and the after as dates, not as "one interval", because
+            "extends by one year" is the sentence that got clicked through. `nextPaidThrough` is
+            computed by the SAME pure helper the server writes with. */}
+        <Dialog open={confirming} onClose={() => setConfirming(false)} ariaLabel="Confirm this payment" className="max-w-md">
+          <div className="rounded-2xl border border-border bg-surface p-5 space-y-4">
+            <h3 className="text-body font-semibold text-text">Record a payment?</h3>
+            <p className="text-body-sm text-muted">
+              This moves paid-through from{' '}
+              <span className="font-semibold text-text">{dateLabel(agreement.paidThrough)}</span> to{' '}
+              <span className="font-semibold text-text">
+                {nextPaidThrough ? dateLabel(nextPaidThrough) : 'a date we could not work out'}
+              </span>
+              , and clears the three reminder stamps. Only do this once the money has arrived.
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <Button type="button" variant="ghost" disabled={pending} onClick={() => setConfirming(false)}>
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                disabled={pending || !nextPaidThrough}
+                onClick={() => {
+                  setError(null)
+                  start(async () => {
+                    const result = await recordPaymentAction(spaceId)
+                    setConfirming(false)
+                    if (isError(result)) setError(result.error)
+                    else router.refresh()
+                  })
+                }}
+              >
+                {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
+                Yes, record it
+              </Button>
+            </div>
+          </div>
+        </Dialog>
+
+        {/* THE CORRECTION PATH. Deliberately unbounded: a repair is as likely to move the date a
+            year back as a day forward, and a guessed "sensible range" would block the fix this
+            exists for. */}
+        <Dialog open={correcting} onClose={() => setCorrecting(false)} ariaLabel="Correct the paid-through date" className="max-w-md">
+          <div className="rounded-2xl border border-border bg-surface p-5 space-y-4">
+            <h3 className="text-body font-semibold text-text">Correct the paid-through date</h3>
+            <p className="text-body-sm text-muted">
+              Sets the date directly, for when a payment was recorded by mistake or the wrong date was
+              entered. It currently reads {dateLabel(agreement.paidThrough)}. The reminder stamps clear,
+              so a date moved backward can raise its reminders again.
+            </p>
+            <label className="flex flex-col gap-1 text-2xs font-semibold uppercase tracking-wide text-muted">
+              Paid through
+              <Input type="date" value={correctTo} onChange={(e) => setCorrectTo(e.target.value)} />
+            </label>
+            <div className="flex items-center justify-end gap-3">
+              <Button type="button" variant="ghost" disabled={pending} onClick={() => setCorrecting(false)}>
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                disabled={pending || !correctTo || correctTo === agreement.paidThrough}
+                onClick={() => {
+                  setError(null)
+                  start(async () => {
+                    const result = await correctPaidThroughAction(spaceId, correctTo)
+                    setCorrecting(false)
+                    if (isError(result)) setError(result.error)
+                    else router.refresh()
+                  })
+                }}
+              >
+                {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
+                Save the date
+              </Button>
+            </div>
+          </div>
+        </Dialog>
       </div>
     )
   }
