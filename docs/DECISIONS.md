@@ -27651,3 +27651,10 @@ segment stays noindex).
 - `lib/funnels/` now holds two `Funnel` types across modules — this feature's
   (`definitions.ts`) and the Growth OS measurement rollup (`store.ts`, ADR-455). No module
   imports both; both carry collision-guard comments and NAMING.md §Funnels documents it.
+
+- **Shipped as one `[sweep]` PR, 98 files, deliberately over the 40-file gate.** WORKFLOW.md rule 3
+  reserves the tag for single-purpose mechanical changes and names *a rename* as its archetype; this
+  is that case, and it closes exactly one row (OWN-030). Splitting a rename would have created the
+  two-vocabulary intermediate trees the gate exists to keep out of review — the same judgment that
+  went the OTHER way on the 80-file teardown the same day, which was split 3-ways because its files
+  took genuinely different edits. The tag is a claim about edit uniformity, not a bypass.
