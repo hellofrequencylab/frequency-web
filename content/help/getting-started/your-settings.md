@@ -3,7 +3,7 @@ title: Your settings
 description: Where to update your profile, preferences, and account.
 category: getting-started
 order: 12
-updated: 2026-08-16
+updated: 2026-08-19
 audience: member
 featureKeys: [settings, notifications]
 status: published
@@ -24,7 +24,7 @@ Settings is one page. Each area below is a section you can scroll to, in this or
 - **Notifications**: choose what you're told about and how (in-app, email, push, and text where enabled), pick how often, and mute a single Circle or Space. See [Notifications](/help/getting-started/notifications) and "Choosing what reaches you" below.
 - **Connections and location**: control how you're found by people nearby (see below).
 - **Account and privacy**: sign-in, account-level controls, and your privacy choices.
-- **Plan and billing**: for membership. During the beta this is a placeholder; everything is free (see [Membership & the Vault](/help/membership/the-vault)).
+- **Plan and billing**: your membership, what it costs, and where your payment details live (see [Membership & the Vault](/help/membership/the-vault)).
 
 ## Connections & Location
 

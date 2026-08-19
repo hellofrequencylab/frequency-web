@@ -3,7 +3,7 @@ title: Billing
 description: Where your plan, payments, and invoices live, and how a cash agreement works.
 category: spaces
 order: 3
-updated: 2026-07-27
+updated: 2026-08-19
 audience: member
 featureKeys: [billing]
 status: published
@@ -78,9 +78,9 @@ The badge says who you are, not what you pay. Your rate stays between you and th
 
 ## Common questions
 
-**Does anything charge me during the beta?** Only if you choose to subscribe. Nothing charges a Space
-that has not signed up. Every Space has full access to the tools until September 1 whatever plan it
-is on, so you can try things before you decide.
+**Does anything charge me?** Only if you choose to subscribe. Nothing charges a Space that has not
+signed up. Free is a real plan with real allowances, so you can run a Space on it for as long as you
+like and pay when you want more room.
 
 **What happens if I cancel?** You keep your plan until the end of the term you paid for, then the
 Space drops to Free. Nothing is deleted: your contacts, events, and pages stay where they are, and

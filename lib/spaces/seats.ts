@@ -132,9 +132,20 @@ export async function getSpaceSeatQuantity(spaceId: string): Promise<number> {
 }
 
 /** Count the USED operator seats of a Space in ONE query: the ACTIVE members whose role consumes a
- *  seat (admin / moderator / editor). The owner holds no member row (covered by the base allowance),
- *  so they are never in this count. Viewers, suspended, and invited rows are excluded server-side.
- *  FAIL-SAFE to 0. No N+1 — a single filtered count. */
+ *  seat (admin / moderator / editor). Viewers, suspended, and invited rows are excluded server-side.
+ *  FAIL-SAFE to 0. No N+1 — a single filtered count.
+ *
+ *  🔴 THE OWNER IS IN THIS COUNT, and the header above used to say they were not. Re-measured in
+ *  production on 2026-08-19, the day the gates went live (ADR-1087): ALL 19 non-root Spaces hold an
+ *  ACTIVE `space_members` row for their own `owner_profile_id`, at role 'admin'. So the owner
+ *  consumes the base seat rather than sitting outside it, and the free / Business rung (allowance 1)
+ *  is spent by the owner alone. That matches what the ladder publishes for those rungs (a Space runs
+ *  on the owner's seat; teammates start at Collective), so nothing is mis-enforced there.
+ *
+ *  ⚠️ COLLECTIVE IS THE OPEN QUESTION, and it is an owner call, not a code call: its allowance of 3
+ *  yields owner + 2 teammates counted this way, and owner + 3 if the owner were excluded as the old
+ *  comment claimed. Nothing here guesses. LIVE-057 carries the decision; changing the count before it
+ *  is made would move a paying Space's seat total on the strength of a comment. */
 export async function usedSeats(spaceId: string): Promise<number> {
   try {
     const db = createAdminClient() as unknown as {

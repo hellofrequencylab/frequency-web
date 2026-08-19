@@ -3,7 +3,7 @@ title: How to start a Circle
 description: Pick one thing, set a standing time, recruit a co-host, and run a simple first night. You do not build a community. You host one Circle, and we hand you the format.
 category: leading
 order: 1
-updated: 2026-08-13
+updated: 2026-08-19
 audience: host
 role: host
 featureKeys: [circles, events]
@@ -41,9 +41,9 @@ That is the kit. Everything below is how to use it.
 
 You are now a **Host**. The role is earned by doing this, never bought.
 
-Starting a Circle is a **Crew** thing, and Crew is **free during the beta**: if you
-are not Crew yet, choosing "Start a Circle" offers a one-tap upgrade, no card, and
-you keep everything you have. Any member can still **join** a Circle.
+Your free membership includes hosting one Circle. To host more, join **Crew**:
+choosing "Start a Circle" offers a one-tap upgrade when you are at your first one,
+and you keep everything you have. Any member can **join** as many as they like.
 
 ## Set a standing time and do not move it
 

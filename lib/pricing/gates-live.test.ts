@@ -54,7 +54,7 @@ describe('asBetaGrace (narrowing the beta_grace setting)', () => {
     expect(asBetaGrace({ until: ' 2027-01-15 ' })).toEqual({ until: '2027-01-15' })
   })
 
-  it('the code default is a real window on the beta cutover day (no migration seeds this row)', () => {
+  it('the code default is a real window, and stays one now that the live row is explicitly null', () => {
     expect(BETA_GRACE_DEFAULT.until).toBe('2026-09-01')
   })
 })

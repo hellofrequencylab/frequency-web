@@ -3,7 +3,7 @@ title: Spending Gems in the Vault Store
 description: What Gems buy, how redeeming works, and the "how you earned" ledger.
 category: membership
 order: 2
-updated: 2026-07-02
+updated: 2026-08-19
 audience: member
 featureKeys: [vault, gems]
 status: published
@@ -42,8 +42,8 @@ on that below). What's free vs. member is covered in
 - Can't afford something yet? The button tells you exactly how many Gems you're
   short. No surprises.
 
-Anyone can **browse** the whole store; **spending** is the membership benefit.
-During the beta everything is open to everyone.
+Anyone can **browse** the whole store; **spending** is the membership benefit, and
+that membership is Crew.
 
 ## Gifting Gems to another member
 

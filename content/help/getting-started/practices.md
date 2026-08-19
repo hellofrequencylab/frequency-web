@@ -3,7 +3,7 @@ title: Practices, choose, do, log
 description: Adopt a practice or follow your Circle's, then log it each day to earn Zaps and build your streak.
 category: getting-started
 order: 3
-updated: 2026-08-03
+updated: 2026-08-19
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -77,9 +77,8 @@ You can shape practices, not just pick them:
   change anything, and create; every part of the timer still tunes in the editor. Already
   wrote your practice somewhere else? Paste it and Vera shapes it into the same fields.
   Want to start from scratch instead? Pick "Skip, I'll build it myself" to go straight to the editor.
-  Creating a practice is a **Crew** thing, and Crew is **free during the beta**: if you
-  are not Crew yet, "Create a practice" offers a one-tap upgrade, no card. Any member
-  can still **adopt** a practice and log it.
+  Creating a practice is a **Crew** thing: if you are not Crew yet, "Create a practice"
+  offers a one-tap upgrade. Any member can **adopt** a practice and log it.
 - **Edit yours.** Any practice you created shows an **Edit** button. Change its name,
   summary, full "how to" guide, cadence, Pillar, category, and icon by hand, or use
   **Edit with Vera** to make a change in plain language ("make it a morning sit," "cut it
