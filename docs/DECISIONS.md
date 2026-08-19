@@ -27123,3 +27123,57 @@ decision instead of three clicks: `pr-compare` is already a required context (th
 guards array, and `check:adoption` is advisory *on purpose* under ADR-970 — so requiring it is a
 decision to overturn, not a task to do. ⚠️ The audit that produced these rows was careful and still
 carried five expired premises forward, which is the honest measure of how quiet this failure is.
+
+## ADR-1083: A banner gated on a clock outlives the thing it was announcing
+
+**Context.** The in-product notice strip was the beta countdown banner. It mounted in
+`app/(main)/layout.tsx` on every signed-in page, its sentence was hardcoded in the component, and its
+only condition was that `platform_settings.beta_ends_at` held a future date:
+
+> **We're in Beta.** The Founding Business rate ends October 31. Lock it in before then and it stays
+> your rate.
+
+That copy was correct when it was written. The owner set it deliberately, in two passes, on
+2026-08-06, and the component's header records the reasoning: it is the *rate* that ends, not the
+product, because a rate ending is a reason to act and free access ending is a reason to leave.
+
+**Eleven days later [ADR-1060](DECISIONS.md) closed the Opening Beta window and
+[ADR-1067](DECISIONS.md) removed Business's founding rate entirely**, leaving exactly one beta rate
+(Collective's $49/$490) which [ADR-1061](DECISIONS.md) made unlisted and granted by hand. Nobody
+cleared the date. On 2026-08-19 `beta_ends_at` still read `2026-10-31T23:59:59Z` in production, so
+the banner was live on every signed-in page, advertising a rate no checkout would honour and naming a
+"Founding Business rate" that the catalog no longer had. It also violated the instruction behind
+ADR-1061 in the plainest possible way: the one surviving beta rate is not to be advertised, and this
+was an advertisement.
+
+**Decision. The gate moves from the date to the message, and the operator writes the message.**
+`platform_settings.announcement_message` is the whole condition: non-empty renders the banner, empty
+renders nothing. `announcement_ends_at` survives as an optional countdown pill and decides nothing.
+A date that has passed drops the pill and keeps the words, because the operator's sentence is the
+announcement and the clock is not.
+
+**Why this shape and not a copy fix.** Rewriting the sentence would have been a one-line change that
+left the mechanism intact, and the mechanism is the defect. A component that knows its own sentence
+outlives whatever the sentence described, and nothing in the system can notice — the date was still
+valid, the render was still correct, every test still passed. There was no gate that could fire,
+because being wrong was not a property of the code. Moving the words out to operator-set config means
+the copy has an author who can retire it, and an empty message is a state the platform can actually
+be in.
+
+**Consequences.**
+
+- The beta banner is gone the moment this ships: no message is set, so nothing renders. The stale
+  `beta_ends_at` value is inert and was not migrated.
+- `components/layout/beta-countdown-banner.tsx` → `components/layout/announcement-banner.tsx`;
+  `betaEndsAt()` → `announcementMessage()` + `announcementEndsAt()`; `saveBetaEndsAt` →
+  `saveAnnouncementMessage` + `saveAnnouncementEndsAt`. The `/admin/pricing` control is now
+  "Announcement banner", a message field plus an optional date.
+- ADR-1030 is preserved exactly: the read still happens in the layout's existing parallel wave and
+  the component stays synchronous and presentational, so the banner is in the first flush and nothing
+  shifts. It matters more now, not less, because operator-written copy has an even less guessable
+  height than a fixed sentence.
+- `components/layout/announcement-banner.test.ts` pins the case that shipped: **a date set with no
+  message renders nothing.** That is the assertion the old design could not express.
+- ⚠️ The countdown control still lives under "Beta controls" on `/admin/pricing`. An announcement is
+  not a pricing setting and it is not a beta control; the section is the wrong home for it and should
+  move when there is a platform-settings console to move it to.

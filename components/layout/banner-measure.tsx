@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 /**
  * Holds a shell-level banner to the same MEASURE as the page body underneath it.
  *
- * Why this exists. `BetaCountdownBanner` renders in `app/(main)/layout.tsx` as a sibling ABOVE
+ * Why this exists. `AnnouncementBanner` renders in `app/(main)/layout.tsx` as a sibling ABOVE
  * `{children}`, so it spans the full content column. On most routes that is exactly right: the
  * right rail is a sibling of the content column in the shell, so "full content width" already
  * stops before it.

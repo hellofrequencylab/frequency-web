@@ -30,7 +30,8 @@ import {
   saveFoundingConfig,
   setOperatorSeatActive,
   setBetaFlag,
-  saveBetaEndsAt,
+  saveAnnouncementEndsAt,
+  saveAnnouncementMessage,
   saveBetaGrace,
 } from './actions'
 import type { FoundingConfig } from '@/lib/pricing/founding'
@@ -70,7 +71,7 @@ export function PricingConsole({ data }: { data: PricingConsoleData }) {
       <CatalogSection catalog={data.catalog} operatorSeatActive={data.flags.catalog_operator_seat_active} />
       <PlansSection values={data.values} />
       <FoundingConfigSection founding={data.founding} />
-      <BetaControlsSection beta={data.beta} gating={data.gating} />
+      <BetaControlsSection beta={data.beta} gating={data.gating} announcement={data.announcement} />
       <FeatureGatesSection gates={data.gates} />
       <StripeStatusSection stripe={data.stripe} />
     </>
@@ -530,14 +531,16 @@ function FoundingBusinessRow({ founding }: { founding: FoundingConfig }) {
 function BetaControlsSection({
   beta,
   gating,
+  announcement,
 }: {
   beta: PricingConsoleData['beta']
   gating: PricingConsoleData['gating']
+  announcement: PricingConsoleData['announcement']
 }) {
   return (
     <AdminSection
       title="Beta controls"
-      description="The beta switches. Host prompts change behavior; the countdown date is display only and grants no access. All off or unset by default."
+      description="The beta switches and the announcement banner. Host prompts and the announcement are display only and grant no access; paid gates start does change access. All off or unset by default."
     >
       <FormSection
         title="Host prompts"
@@ -547,10 +550,13 @@ function BetaControlsSection({
       </FormSection>
 
       <FormSection
-        title="Countdown date"
-        description="The date the in-product countdown banner (Summer of Frequency) counts down to. Display only: it changes no access on its own. Leave it blank to hide the banner."
+        title="Announcement banner"
+        description="A notice strip on every signed-in page. What you write here IS the banner: leave it blank and nothing renders. The date is optional and only adds a countdown pill beside your words. Neither changes what anyone can access."
       >
-        <BetaEndsAtRow initial={beta.endsAt} />
+        <AnnouncementMessageRow initial={announcement.message} />
+        <div className="mt-3">
+          <AnnouncementEndsAtRow initial={announcement.endsAt} />
+        </div>
       </FormSection>
 
       <FormSection
@@ -657,7 +663,65 @@ function daysUntil(iso: string): number | null {
   return days > 0 ? days : 0
 }
 
-function BetaEndsAtRow({ initial }: { initial: string }) {
+function AnnouncementMessageRow({ initial }: { initial: string }) {
+  const [value, setValue] = useState(initial)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, start] = useTransition()
+
+  function save() {
+    setError(null)
+    setSaved(false)
+    start(async () => {
+      const res = await saveAnnouncementMessage(value)
+      if (isError(res)) setError(res.error)
+      else {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
+    })
+  }
+
+  return (
+    <div className="space-y-2">
+      <label className="flex flex-col gap-1 text-2xs font-semibold uppercase tracking-wide text-muted">
+        Message
+        <Input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="Leave blank to hide the banner"
+          maxLength={280}
+          className="px-2 py-1"
+        />
+      </label>
+      <div className="flex items-center gap-2">
+        <SaveCue pending={pending} saved={saved} />
+        <Button size="sm" variant="secondary" onClick={save} disabled={pending}>
+          Save
+        </Button>
+        {value.trim() && (
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={pending}
+            onClick={() => {
+              setValue('')
+              start(async () => {
+                const res = await saveAnnouncementMessage('')
+                if (isError(res)) setError(res.error)
+              })
+            }}
+          >
+            Clear
+          </Button>
+        )}
+      </div>
+      {error && <p className="text-meta text-danger">{error}</p>}
+    </div>
+  )
+}
+
+function AnnouncementEndsAtRow({ initial }: { initial: string }) {
   // Prefill the date input with the calendar day (YYYY-MM-DD) of the stored ISO value.
   const initialDay = (() => {
     const ms = Date.parse(initial)
@@ -674,7 +738,7 @@ function BetaEndsAtRow({ initial }: { initial: string }) {
     setError(null)
     setSaved(false)
     start(async () => {
-      const res = await saveBetaEndsAt(value.trim() ? `${value.trim()}T00:00:00.000Z` : '')
+      const res = await saveAnnouncementEndsAt(value.trim() ? `${value.trim()}T00:00:00.000Z` : '')
       if (isError(res)) setError(res.error)
       else {
         setSaved(true)
@@ -707,7 +771,7 @@ function BetaEndsAtRow({ initial }: { initial: string }) {
               onClick={() => {
                 setValue('')
                 start(async () => {
-                  const res = await saveBetaEndsAt('')
+                  const res = await saveAnnouncementEndsAt('')
                   if (isError(res)) setError(res.error)
                   else {
                     setSaved(true)
@@ -1363,7 +1427,7 @@ function PriceMapTable({ prices, foundingLabel }: { prices: PricingConsoleData['
 }
 
 /** The BETA GRACE date editor (ADR-874): the day the paid feature gates start blocking. Mirrors
- *  BetaEndsAtRow's shape (date input, Save, Clear), but this one is NOT display-only, so its helper copy
+ *  AnnouncementEndsAtRow's shape (date input, Save, Clear), but this one is NOT display-only, so its helper copy
  *  says plainly what changes. Blank = no grace window = the gates follow the master billing switch. */
 function BetaGraceRow({ initial }: { initial: string | null }) {
   const initialDay = (() => {

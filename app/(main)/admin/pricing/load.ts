@@ -45,10 +45,16 @@ export interface PricingConsoleData {
   flags: Record<PricingFlagKey, boolean>
   /** The founding config (member one-time + cap, business monthly + take + city cap · ADR-599/803). */
   founding: FoundingConfig
-  /** The three beta controls (invite gate, host prompts, countdown date · ADR-803). */
+  /** The beta controls (invite gate, host prompts · ADR-803). The countdown date left this group when
+   *  the beta banner became the announcement banner: an announcement is not a beta control. */
   beta: {
     hostPrompts: boolean
-    /** The raw `beta_ends_at` value (ISO string or empty). Display-only; grants no access. */
+  }
+  /** The in-product announcement banner. The MESSAGE is the gate: non-empty shows the banner, empty
+   *  hides it. `endsAt` is an optional countdown beside it. Both display-only; neither grants access. */
+  announcement: {
+    message: string
+    /** The raw `announcement_ends_at` value (ISO string or empty). */
     endsAt: string
   }
   /** THE TWO SWITCHES, read apart (ADR-874). Selling and gating are different decisions on different
@@ -83,7 +89,7 @@ export interface PricingConsoleData {
 }
 
 export async function getPricingConsoleData(): Promise<PricingConsoleData> {
-  const [values, catalog, flags, founding, overrides, priceMap, betaEndsAtRaw, betaPrompts, grace] =
+  const [values, catalog, flags, founding, overrides, priceMap, announcementEndsAtRaw, announcementMessageRaw, betaPrompts, grace] =
     await Promise.all([
       getPricingValues(),
       loadCatalogConfig(),
@@ -91,7 +97,8 @@ export async function getPricingConsoleData(): Promise<PricingConsoleData> {
       getFoundingConfig(),
       loadFeatureGateOverrides(),
       loadStripePriceMap(),
-      getPlatformSetting('beta_ends_at', ''),
+      getPlatformSetting('announcement_ends_at', ''),
+      getPlatformSetting('announcement_message', ''),
       betaHostPromptsFlag(),
       getBetaGrace(),
     ])
@@ -147,7 +154,8 @@ export async function getPricingConsoleData(): Promise<PricingConsoleData> {
     catalog,
     flags,
     founding,
-    beta: { hostPrompts: betaPrompts, endsAt: betaEndsAtRaw },
+    beta: { hostPrompts: betaPrompts },
+    announcement: { message: announcementMessageRaw, endsAt: announcementEndsAtRaw },
     // Derived from the SAME pure helper featureGatesLive() uses, so the readout can never claim a state
     // the runtime is not in (ADR-874). billingLive here is `configured && masterLive`, byte-identical to
     // billingLive()'s own definition.
