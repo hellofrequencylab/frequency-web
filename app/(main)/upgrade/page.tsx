@@ -151,7 +151,7 @@ export default async function UpgradePage({
               free right now, and when it is sold the member sets the amount. */}
           <p className="text-body-sm text-primary-strong/70 dark:text-primary-strong/70 leading-relaxed">
             Frequency is in free beta. All features are unlocked for everyone. When paid memberships
-            launch, Crew is pay what you want, so you set the amount.
+            launch, Crew is contribute what you want, so you set the amount.
           </p>
         </div>
       )}

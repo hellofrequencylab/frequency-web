@@ -477,10 +477,26 @@ cleanly by audience and this section pins which is which.
   and the email footer, so they cannot drift apart. **Do not confuse it with the tier-ladder heading
   "The Community Collective"** immediately below, which is a different name and keeps its article.
 - **The tier ladder (named tiers are now canonical, superseding the ADR-552 "no tier names" clause):**
-  **Member** (free) · **Crew** (personal, pay what you want from $4.99) · **Business** ($29) ·
+  **Member** (free) · **Crew** (personal, contribute what you want from $4.99) · **Business** ($29) ·
   **Collective** ($79) ·
   **Non Profit** ($39) · **Independent** (white-label, ~$249). "Business" and "Non Profit" remain the two
   space *designators* (the public chip); **Collective** and **Independent** are the higher space tiers.
+- **Crew's price is "contribute what you want", never "pay what you want"** (owner ruling 2026-08-19,
+  [ADR-1084](DECISIONS.md)). The owner's frame: *"I want membership fully accessible, with people
+  wanting to contribute. Businesses fund the core of the memberships."* Membership is not the revenue
+  engine and is not meant to read like a purchase. The free tier is genuinely complete, the Space
+  plans and the network rate carry the business, and a Crew amount funds the build. "Pay" describes a
+  transaction for access; "contribute" describes what is actually happening. 🔴 This changes the WORD
+  and nothing else: every Crew amount still buys **identical** access (PRICING.md), and no amount may
+  ever be described as covering another member's seat, because none does.
+- ⚠️ **"Contribute" is overloaded, so keep the two legible.** `supporter_contributions` is a separate
+  one-off payment that buys nothing. A *contribution* in that sense is a gift; *contribute what you
+  want* is how a Crew membership is priced. Never let one sentence carry both.
+- **"Pay-what-you-want" / PWYW survives as the TECHNICAL term**, and only there: the pricing-model
+  literature (`PRICING-OPTIONS-STRATEGY.md` cites it from external sources and must not be reworded),
+  and the persisted identifiers — `PWYW_CONFIG_DEFAULT`, `isValidPwywAmount`, the `catalog.pwyw`
+  settings key. Renaming an identifier buys grandfather churn and nothing a member can see, which is
+  ADR-590's standing precedent. The label is what changes; the key never does.
 - **"Collective" (capitalized) means two things ON PURPOSE, and they nest:** the **brand** (Frequency, the
   Community Collective) and the **$79 tier** (your own collective *within* the Collective, a collective of
   collectives). Copy keeps them legible ("Frequency, the community collective" = the brand; "the Collective

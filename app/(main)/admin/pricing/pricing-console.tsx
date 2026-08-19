@@ -172,8 +172,8 @@ function CatalogSection({
           line at which a member earns the Supporter mark. Mislabelling them hid the most consequential
           pricing control in the console inside a section that read as optional. */}
       <FormSection
-        title="Member pricing (pay what you want)"
-        description="Crew is pay what you want. The minimum is the lowest a member can choose and the floor every price display quotes as 'from'. The suggested amount is pre-selected on the picker, and a member paying it or more earns the Supporter badge."
+        title="Member pricing (contribute what you want)"
+        description="Crew is contribute what you want. The minimum is the lowest a member can choose and the floor every price display quotes as 'from'. The suggested amount is pre-selected on the picker, and a member paying it or more earns the Supporter badge."
       >
         <PwywConfigRow minCents={catalog.pwyw.minCents} suggestedCents={catalog.pwyw.suggestedCents} />
       </FormSection>
@@ -964,7 +964,7 @@ function PlansSection({ values }: { values: PricingDefaults }) {
           to and sends the operator to the single control. */}
       <FormSection
         title="Member plans"
-        description="Member is free. Crew is pay what you want, so it has no fixed price: the member picks any monthly amount at or above your floor and every amount buys the same Crew. Set the floor, the suggested amount, and the presets in Member pricing above."
+        description="Member is free. Crew is contribute what you want, so it has no fixed price: the member picks any monthly amount at or above your floor and every amount buys the same Crew. Set the floor, the suggested amount, and the presets in Member pricing above."
       >
         <p className="text-body-sm text-muted">
           Crew currently reads <span className="font-semibold text-text">from {formatCents(values.tier.crew.monthly_cents)} a month</span>

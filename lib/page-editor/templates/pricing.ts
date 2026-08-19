@@ -134,7 +134,7 @@ export const data: Data = {
             ctaLabel: 'Upgrade', ctaHref: '/upgrade', ctaStyle: 'secondary',
           },
         ],
-        footnote: `Crew is pay what you want: from ${CREW_NOTE.foundingLabel} a month, ${CREW_NOTE.suggestedLabel} suggested.`,
+        footnote: `Crew is contribute what you want: from ${CREW_NOTE.foundingLabel} a month, ${CREW_NOTE.suggestedLabel} suggested.`,
         tone: 'surface', width: 'wide', align: 'left', layout: L,
       },
     },
@@ -372,7 +372,7 @@ export const data: Data = {
         id: 'pr-faq', eyebrow: 'Straight answers', title: 'Questions, answered plainly.', titleAccent: '',
         items: [
           { q: 'Is being a Member really free?', a: 'Yes. The Member tier is free, forever. You can browse Circles and Events, attend gatherings in person, earn Zaps, and message Vera up to 10 times a day, all without paying.' },
-          { q: 'Is there a discount for paying yearly?', a: `Yes. Pay yearly on any plan and you get two months free: Business is ${BUSINESS_YEAR} a year instead of ${P.businessList} a month, and Collective is ${COLLECTIVE_YEAR} a year instead of ${P.collectiveList} a month. Crew is pay what you want: anything from ${CREW_NOTE.foundingLabel} a month, ${CREW_NOTE.suggestedLabel} suggested, and every amount buys the same access.` },
+          { q: 'Is there a discount for paying yearly?', a: `Yes. Pay yearly on any plan and you get two months free: Business is ${BUSINESS_YEAR} a year instead of ${P.businessList} a month, and Collective is ${COLLECTIVE_YEAR} a year instead of ${P.collectiveList} a month. Crew is contribute what you want: anything from ${CREW_NOTE.foundingLabel} a month, ${CREW_NOTE.suggestedLabel} suggested, and every amount buys the same access.` },
           { q: 'What is the difference between Member and Crew?', a: `Member is the free tier, forever, and the community itself is never behind it. Both tiers can sell: a free Member can run a ticketed event and get paid. Crew takes the rate on network-sourced sales from ${RATE.memberFree} down to ${RATE.member}, lifts the caps, and adds the full game, with Gems, Vault cash-in, your own Quest to author, unlimited Vera, and the leaderboard, for whatever you choose to pay, from ${CREW_NOTE.foundingLabel} a month. Those two are the whole member ladder.` },
           { q: 'What do the Space plans cost?', a: `Business is ${P.businessList} a month or ${BUSINESS_YEAR} a year, and Collective is ${P.collectiveList} a month or ${COLLECTIVE_YEAR} a year. Non Profit is ${P.nonprofit} a month, flat, for a verified 501(c)(3). Every plan is the same price whenever you start, and yearly is two months free.` },
           { q: 'How does the take-rate work?', a: `You keep 100% of the business you bring yourself, always, on every tier. Someone who already follows you, is on your list, or has bought from you before is yours, and Frequency takes nothing on them. There is a rate only on someone the network introduces, and every step up buys it down: a free Member or a free Space is ${RATE.memberFree}, Crew is ${RATE.member}, Business is ${RATE.business}, Collective is ${RATE.collective}, and Non Profit is ${RATE.nonprofit}.` },

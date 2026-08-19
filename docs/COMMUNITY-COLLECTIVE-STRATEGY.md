@@ -51,7 +51,7 @@ always 0%** on every tier (hard promises, ADR-913).
 | Tier | Price | Who / the job | Network take-rate |
 |---|---|---|---|
 | **Member** | $0 | Belong, be found, run a basic page, **create events and take RSVPs**. Does not sell: no tickets, no payments | n/a (cannot sell) |
-| **Crew** | pay-what-you-want (ADR-908) | The individual creator: the full game + author circles, journeys, programs, **and the right to charge** | **8%** |
+| **Crew** | contribute-what-you-want (ADR-908, renamed ADR-1084) | The individual creator: the full game + author circles, journeys, programs, **and the right to charge** | **8%** |
 | **Business** | **$29/mo flat, all-in** | Run your whole practice. One honest price, no add-on menu | **5%** |
 | **Collective** ⭐ | **$79/mo (beta $49)** | The collaboration engine: host collaborators, shared venue + events, shared pricing, revenue splits | **5%** (sells on depth, not on a cheaper fee) |
 | **Non Profit** | **$39/mo flat, verified** | Full Collective toolkit, verified 501(c)(3), 3 seats included | **0%** |

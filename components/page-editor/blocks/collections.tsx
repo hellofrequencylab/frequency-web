@@ -1030,7 +1030,7 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
         },
         {
           name: 'Crew', price: 'Free', strikePrice: '', cadence: 'during beta',
-          priceNote: 'Pay what you want, from $4.99/mo, when paid memberships launch',
+          priceNote: 'Contribute what you want, from $4.99/mo, when paid memberships launch',
           tagline: 'Full access. The whole room is yours.', highlight: 'featured', badge: 'founder',
           features: [{ text: 'Full community feed access' }, { text: 'Join and participate in circles' }, { text: 'Create and RSVP to events' }],
           ctaLabel: 'Join the Beta', ctaHref: '/beta', ctaStyle: 'primary',

@@ -114,7 +114,7 @@ export async function savePwywConfig(
     revalidatePath(PATH)
     return ok()
   } catch (e) {
-    return fail(e instanceof Error ? e.message : 'Could not save the pay-what-you-want config.')
+    return fail(e instanceof Error ? e.message : 'Could not save the contribute-what-you-want config.')
   }
 }
 
