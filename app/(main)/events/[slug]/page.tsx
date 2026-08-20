@@ -5,6 +5,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ClaimButton } from '@/app/events/claim/[token]/claim-button'
 import { ClaimRequestCta } from './claim-request-cta'
+import { HostRequestCta } from './host-request-cta'
+import { listSpacesThatCanAskToHost } from '../host-transfer-actions'
 import { CalendarDays, MapPin, Check, Ticket, Clock, Zap, Video, Globe, LayoutDashboard, Settings } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadSeriesDates } from '@/lib/events/series-dates'
@@ -1688,6 +1690,14 @@ export default async function EventDetailPage({
     is_sold_out: capacityInfo.isFull || allTiersSoldOut,
   })
 
+  // The SPACE side of the ADR-911 host handshake: the Spaces this viewer could ask to host from.
+  // Resolved only for a signed-in viewer who does NOT manage the event — a manager has the rail's
+  // "Hand hosting to another Space" control (event-host-offer-field), and offering both would put
+  // the two sides of one handshake in one pair of hands. The loader mirrors `requestEventHost`'s
+  // own gate (runs the Space, active Business / Non Profit, not already the host, no money block,
+  // nothing pending), so the CTA below never offers an ask the action would refuse.
+  const hostAskSpaces = myProfileId && !canManage ? await listSpacesThatCanAskToHost(event.id) : []
+
   return (
     <EventDetailTemplate
       structuredData={
@@ -2030,6 +2040,11 @@ export default async function EventDetailPage({
           // token to the address already on the row. Hidden from anyone who can already manage the
           // event (the seeder and staff use "Send to host" in QR & Share instead).
           <ClaimRequestCta eventId={event.id} organizerName={extra?.organizer_name ?? null} />
+        ) : hostAskSpaces.length > 0 ? (
+          // The Space-side "ask to host" (ADR-911): shown only to a signed-in non-manager whose own
+          // Space passes requestEventHost's gate (see hostAskSpaces above). The claim branches win
+          // when the listing is unclaimed — claiming settles who runs it before hosting can move.
+          <HostRequestCta eventId={event.id} spaces={hostAskSpaces} />
         ) : null
       }
       // Photo gallery (item 5) — the FIRST gallery image is the header/cover, already rendered

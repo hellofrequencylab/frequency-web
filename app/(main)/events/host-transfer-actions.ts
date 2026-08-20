@@ -196,6 +196,69 @@ export async function loadPendingHostTransfer(eventId: string): Promise<HostTran
   }
 }
 
+/** One Space the signed-in caller could ask to host an event from, resolved for display. */
+export interface HostAskSpace {
+  id: string
+  name: string
+}
+
+/**
+ * The Spaces from which THIS caller could ask to host `eventId` — the Space-side door into the
+ * ADR-911 handshake, powering the event page's "ask to host" CTA. Mirrors `requestEventHost`'s own
+ * gate so the CTA can never offer an ask the action would refuse: the caller must RUN the Space
+ * (`listSpaceEventCreatorIds` read in reverse — owner, or an ACTIVE editor/moderator/admin member),
+ * the Space must be active and pass `hostSpaceGateError`, it must not already host the event, the
+ * money guard must not block a move, and no offer may already be pending (one per event). Returns
+ * only the caller's OWN Spaces, so it reveals nothing a passer-by could not learn by pressing the
+ * button. Fail-safe: any read error returns an empty list (the CTA just does not show).
+ */
+export async function listSpacesThatCanAskToHost(eventId: string): Promise<HostAskSpace[]> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return []
+  const admin = untyped()
+  try {
+    const state = await loadEventMoneyState(admin, eventId)
+    if (!state) return []
+    if (hostTransferBlockReason(state)) return []
+
+    // One pending offer per event (the partial unique index): the ask would be refused, so no CTA.
+    // The action's refusal string tells the same viewer the same fact, so hiding here reveals no more.
+    const { data: pending } = await admin
+      .from('event_host_transfers')
+      .select('id')
+      .eq('event_id', eventId)
+      .eq('status', 'pending')
+      .limit(1)
+    if ((((pending as unknown[] | null) ?? []).length) > 0) return []
+
+    const [{ data: owned }, { data: seats }] = await Promise.all([
+      admin.from('spaces').select('id').eq('owner_profile_id', profileId),
+      admin
+        .from('space_members')
+        .select('space_id')
+        .eq('profile_id', profileId)
+        .in('role', ['editor', 'moderator', 'admin'])
+        .eq('status', 'active'),
+    ])
+    const runIds = [
+      ...new Set([
+        ...((owned ?? []) as Array<{ id: string }>).map((s) => s.id),
+        ...((seats ?? []) as Array<{ space_id: string }>).map((s) => s.space_id),
+      ]),
+    ].filter((id) => id !== state.hostSpaceId)
+    if (runIds.length === 0) return []
+
+    const { data: rows } = await admin.from('spaces').select('id, name, brand_name, status, type').in('id', runIds)
+    return ((rows ?? []) as Array<{ id: string; name: string | null; brand_name: string | null; status: string | null; type: string | null }>)
+      .filter((s) => s.status === 'active' && !hostSpaceGateError({ type: s.type }))
+      .map((s) => ({ id: s.id, name: s.brand_name || s.name || 'Space' }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .slice(0, 12)
+  } catch {
+    return []
+  }
+}
+
 /**
  * OFFER hosting to a Space (the event side raises it). Caller must manage the event.
  *

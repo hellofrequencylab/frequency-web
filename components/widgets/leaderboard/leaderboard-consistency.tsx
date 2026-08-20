@@ -4,8 +4,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getPracticeStreak } from '@/lib/practice-streak'
 import { STREAK_CONFIG, isStreakActive, type StreakType } from '@/lib/gamification'
 import { streakProgress } from '@/lib/streak'
+import { circleMatesToNudge, type CircleMateStreak } from '@/lib/circles/social-fuel'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StreakHero } from '@/components/quest/streak-hero'
+import { NudgeMateButton } from './nudge-mate-button'
 
 const STREAK_ICONS: Record<StreakType, React.ElementType> = {
   attendance: CalendarCheck,
@@ -29,6 +31,76 @@ type StreakRow = {
   last_activity_at: string | null
 }
 
+/** One Circle mate flagged for the one-tap nudge row, resolved for display. */
+type MateAtRisk = { profileId: string; name: string; current: number }
+
+/** How many Circle mates the at-risk scan reads before the selector picks its (capped) few. Each
+ *  mate costs a real `getPracticeStreak` read (their own local day, their own reserve), so the scan
+ *  is bounded — a Circle is a small room, and the nudge row only ever shows the top three anyway. */
+const MATE_SCAN_CAP = 12
+
+/**
+ * The Circle mates worth a one-tap nudge (Resonance Engine Phase 5 · ADR-386): mates in the
+ * viewer's active Circles whose own daily streak is alive, unlogged today, and worth saving.
+ * Selection is the pure `circleMatesToNudge` (longest run first, capped, never the whole room).
+ * FAIL-SAFE: any read error returns an empty list — a missing nudge row must never take the
+ * Consistency module down with it.
+ */
+async function loadMatesAtRisk(
+  admin: ReturnType<typeof createAdminClient>,
+  profileId: string,
+): Promise<MateAtRisk[]> {
+  try {
+    const { data: mine } = await admin
+      .from('memberships')
+      .select('circle_id')
+      .eq('profile_id', profileId)
+      .eq('status', 'active')
+    const circleIds = [
+      ...new Set(((mine ?? []) as { circle_id: string | null }[]).map((m) => m.circle_id).filter(Boolean) as string[]),
+    ]
+    if (circleIds.length === 0) return []
+
+    const { data: mates } = await admin
+      .from('memberships')
+      .select('profile_id')
+      .in('circle_id', circleIds)
+      .eq('status', 'active')
+      .neq('profile_id', profileId)
+      .limit(60)
+    const mateIds = [...new Set(((mates ?? []) as { profile_id: string }[]).map((m) => m.profile_id))].slice(
+      0,
+      MATE_SCAN_CAP,
+    )
+    if (mateIds.length === 0) return []
+
+    // Each mate's streak through the real reader, so "at risk" honors THEIR local day, reserve,
+    // and rest window — a mate on a planned rest is calm, not a nudge target.
+    const states: CircleMateStreak[] = await Promise.all(
+      mateIds.map(async (id) => {
+        const s = await getPracticeStreak(id)
+        return { profileId: id, current: s.current, atRisk: s.atRisk }
+      }),
+    )
+    const flagged = circleMatesToNudge(states, profileId)
+    if (flagged.length === 0) return []
+
+    const { data: profs } = await admin
+      .from('profiles')
+      .select('id, display_name, handle')
+      .in('id', flagged.map((f) => f.profileId))
+    const nameById = new Map(
+      ((profs ?? []) as { id: string; display_name: string | null; handle: string | null }[]).map((p) => [
+        p.id,
+        p.display_name || p.handle || 'A Circle mate',
+      ]),
+    )
+    return flagged.map((f) => ({ profileId: f.profileId, name: nameById.get(f.profileId) ?? 'A Circle mate', current: f.current }))
+  } catch {
+    return []
+  }
+}
+
 // Leaderboard layout module (ADR-270/294): "Consistency" — the daily practice streak (bounded
 // forgiveness) + the weekly show-up rhythms, framed as how the steady person wins. A self-fetching
 // RSC keyed only on the viewer (no scope/track facet, so it is a clean standalone block, unlike the
@@ -40,9 +112,10 @@ export async function LeaderboardConsistency() {
   if (!profileId) return null
 
   const admin = createAdminClient()
-  const [{ data: streakRows }, practice] = await Promise.all([
+  const [{ data: streakRows }, practice, matesAtRisk] = await Promise.all([
     admin.from('streaks').select('streak_type, current_count, longest_count, last_activity_at').eq('profile_id', profileId),
     getPracticeStreak(profileId),
+    loadMatesAtRisk(admin, profileId),
   ])
 
   const streaks = ((streakRows ?? []) as StreakRow[]).map((s) => ({
@@ -99,6 +172,33 @@ export async function LeaderboardConsistency() {
           </div>
         </div>
       </div>
+
+      {/* Mates at risk (ADR-386 Phase 5): the one-tap "nudge a Circle mate about to break theirs"
+          row. Social streaks beat solo ones, and a nudge re-lights both people. Compact by design:
+          the selector caps it at three, longest run first, and it renders nothing when nobody in
+          the viewer's Circles is on the line today. */}
+      {matesAtRisk.length > 0 && (
+        <div className="mt-6 rounded-2xl bg-surface-elevated/60 p-5">
+          <p className="text-body-sm font-semibold text-text">Mates on the line</p>
+          <p className="mt-1 text-body-sm text-muted">
+            These Circle mates have a streak to keep and no practice logged yet today. One tap
+            sends a nudge.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {matesAtRisk.map((m) => (
+              <li key={m.profileId} className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-body-sm font-semibold text-text">{m.name}</p>
+                  <p className="text-meta text-subtle tabular-nums">
+                    {m.current} {m.current === 1 ? 'day' : 'days'} going
+                  </p>
+                </div>
+                <NudgeMateButton mateProfileId={m.profileId} mateName={m.name} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Weekly rhythms */}
       <div className="mt-8">
