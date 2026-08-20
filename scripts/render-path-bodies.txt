@@ -113,3 +113,16 @@ calm-down-fast  0   # ✅ ENROLLED + template-only 2026-08-20 (Lift 5d, ADR-1068
                     #    passes its own title/description/dates/three images, unchanged), FAQPage
                     #    from the Accordion (6 Q&A), Breadcrumb still from the route. Template-only
                     #    from here.
+how-to-be-more-social  0  # ✅ ENROLLED + template-only 2026-08-20 (Lift 5d, ADR-1068). The 501-line
+                    #    coded article became lib/page-editor/templates/how-to-be-more-social.ts,
+                    #    a spec run through articleTemplate(). Every block, in the coded order, and
+                    #    every word verbatim; the two absorbed pillars (feel-less-awkward-in-groups,
+                    #    social-life-without-drinking) are ordinary sections; the "Keep going"
+                    #    cross-link line below the buttons rides the new `note` seam so it stays
+                    #    below them, as coded. ALL FOUR schema nodes survive: Article from
+                    #    <BlockDocJsonLd> (route passes its own title/description/dates/five
+                    #    images, unchanged), HowTo from the DawnHowToSteps block (loses its
+                    #    explicit hero photo to the OG fallback, same delta as every prior
+                    #    enrolment; the coded steps carried no per-step url), FAQPage from the
+                    #    Accordion (13 Q&A), Breadcrumb still from the route. Template-only
+                    #    from here.
