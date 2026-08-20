@@ -63,6 +63,7 @@ See a cool event poster around town, or one on Eventbrite or in a group chat? Ca
 - Check the draft, fix anything the poster made hard to read, and publish. Add a real start date first, or it won't show in the library (the scan sometimes misreads the year). If it's **your** event, you become the host. If you **found** it, it posts to local events with your name on it: "Posted by you" with a little Zap.
 - Add the **organizer's email** in the draft, and when you publish as "I found this," we email them a link to claim it automatically. No email on hand? You also get a ready-to-send message and link to share yourself.
 - The event page is clearly marked as community-posted, naming you and the organizer, with a **"Is this your event? Claim it"** button. When the organizer claims it, the event becomes theirs to run, your credit stays, and you earn a **claim bonus**.
+- Run a Space? If your Space could host an event someone else runs, the event page shows an **ask to host** option. The current host decides; nothing changes hands until they accept.
 - Keep it honest: events that real people RSVP to and organizers actually claim build your posting reputation. Flooding the library with events nobody engages with earns nothing.
 
 ## Tickets & paying
