@@ -76,6 +76,23 @@ describe('the index contract it already had is unchanged', () => {
   })
 })
 
+describe('the recorder is a checkable fact (LIVE-053)', () => {
+  it('publishes monitoring.sentry as a boolean, never the DSN', async () => {
+    // Sentry's wiring is a DSN-gated safe no-op (lib/observability/sentry.ts), and a fail-safe
+    // needs a gate that notices it is off — /feed threw for six weeks while the recorder was
+    // silently disarmed. Losing this key would throw nothing and fail nothing, same as `build`.
+    const json = (await GET().json()) as { monitoring?: { sentry?: unknown } }
+    expect(json.monitoring).toBeDefined()
+    expect(typeof json.monitoring?.sentry).toBe('boolean')
+  })
+
+  it('booleanizes through the sentry module rather than reading env here', () => {
+    // The env-pin test above is what keeps this route safe to hand to anyone; the DSN read
+    // must stay in lib/observability/sentry.ts so the allowlist never grows a secret-bearing var.
+    expect(SRC).toContain("import { sentryEnabled } from '@/lib/observability/sentry'")
+  })
+})
+
 describe('the "no secret" promise in the file header', () => {
   it('reads no environment variable beyond the four build-metadata ones', () => {
     // The header calls this endpoint safe by construction, and that claim is why it can be

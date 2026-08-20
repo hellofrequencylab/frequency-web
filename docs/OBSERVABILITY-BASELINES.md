@@ -15,6 +15,14 @@
 > Notion. Sentry (H0-4) and cron heartbeats (H0-5) are already merged and feed the
 > live signals this doc holds targets for.
 >
+> **The recorder is a checkable fact (LIVE-053).** Sentry's wiring is a DSN-gated safe
+> no-op, so production must run with `NEXT_PUBLIC_SENTRY_DSN` set **and** a Sentry
+> new-issue alert enabled — without them, nothing records a new error group (that is how
+> `/feed` threw for six weeks unseen). The gate that notices the fail-safe is off:
+> `curl /api/status | jq .monitoring` — `{"sentry": false}` on production means the
+> recorder is disarmed. The field is frozen at build, so setting the DSN shows only
+> after the next deploy.
+>
 > **Companion:** [`ANALYTICS.md`](ANALYTICS.md) (product metrics, WAM),
 > [`AI-CONTROLS.md`](AI-CONTROLS.md) (Anthropic spend caps). This doc owns the
 > infrastructure-side baselines: latency, cost, and the SLO contract.
