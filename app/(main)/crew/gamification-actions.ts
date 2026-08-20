@@ -162,61 +162,6 @@ export async function completeExpression(
 }
 
 // ---------------------------------------------------------------------------
-// Fetch profile gamification summary (for sidebar/profile page)
-// ---------------------------------------------------------------------------
-
-export async function getGamificationSummary(profileId?: string) {
-  const resolvedId = profileId ?? await getMyProfileId()
-  if (!resolvedId) return null
-
-  const admin = createAdminClient()
-
-  const [
-    { data: profile },
-    { data: recentAchievements },
-    { data: streaks },
-  ] = await Promise.all([
-    admin.from('profiles')
-      .select('achievement_count, lifetime_zaps, current_streak, longest_streak, current_season_zaps, current_season_rank')
-      .eq('id', resolvedId)
-      .maybeSingle(),
-    admin.from('user_achievements')
-      .select('achievement_id, unlocked_at, achievement:achievements(name, icon, tier)')
-      .eq('profile_id', resolvedId)
-      .order('unlocked_at', { ascending: false })
-      .limit(5),
-    admin.from('streaks')
-      .select('streak_type, current_count, longest_count')
-      .eq('profile_id', resolvedId),
-  ])
-
-  const p = profile as ProfileRow | null
-  return {
-    achievementCount: p?.achievement_count    ?? 0,
-    lifetimeZaps:     p?.lifetime_zaps        ?? 0,
-    currentStreak:    p?.current_streak       ?? 0,
-    longestStreak:    p?.longest_streak       ?? 0,
-    seasonZaps:       p?.current_season_zaps  ?? 0,
-    seasonRank:       p?.current_season_rank  ?? 'ghost',
-    recentAchievements: (recentAchievements ?? []).map(ra => {
-      const a = ra.achievement as unknown as Pick<AchievementRow, 'name' | 'icon' | 'tier'> | null
-      return {
-        achievementId: ra.achievement_id,
-        unlockedAt: ra.unlocked_at,
-        name: a?.name ?? '',
-        icon: a?.icon ?? 'award',
-        tier: (a?.tier ?? 'bronze') as AchievementTier,
-      }
-    }),
-    streaks: (streaks ?? []).map(s => ({
-      type: s.streak_type as StreakType,
-      current: s.current_count,
-      longest: s.longest_count,
-    })),
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Check for recently unlocked achievements (for toast display)
 // ---------------------------------------------------------------------------
 

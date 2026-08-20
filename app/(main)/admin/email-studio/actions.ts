@@ -421,24 +421,6 @@ export async function saveEmailCampaign(
 }
 
 /**
- * Compile a layout + subject + preheader to send-ready HTML for the preview iframe, with example merge
- * values filled in (so tokens read naturally). Read-gated. Pure compile — writes nothing. The client
- * preview compiles live in-browser; this is the server fallback / on-demand render.
- */
-export async function renderEmailPreview(
-  layout: EntityLayout,
-  subject: string,
-  preheader: string,
-): Promise<{ html: string }> {
-  await requireAdmin('admin', { staff: 'marketing', staffLevel: 'read' })
-  // Sanitize the wire layout (kind 'email') before compiling, so the preview shows exactly what would send.
-  const clean = sanitizeEntityLayout(layout, 'email') ?? starterEmailLayout()
-  const { html } = compileEmailDoc({ layout: clean, subject, preheader })
-  const filled = applyMergeTags(html, exampleMergeVars(), { fallbacks: MERGE_TAG_DEFAULT_FALLBACKS })
-  return { html: filled }
-}
-
-/**
  * TEST send: deliver ONE copy of the campaign to the signed-in operator's own address. Writer-gated. Compiles
  * via compileEmailDoc, applies merge tags with EXAMPLE values, and sends a single email through sendRawEmail.
  * Never sends to a list, never clears the approval gate; records test_sent_at so the lifecycle UI can show
