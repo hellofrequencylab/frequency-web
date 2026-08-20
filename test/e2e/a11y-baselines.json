@@ -222,6 +222,11 @@
     "/how-to-build-community [dawn-light, desktop]": 0,
     "/how-to-build-community [dawn-light, mobile]": 0,
     "/how-to-build-community [midnight-dark, contrast only, desktop]": 0,
-    "/how-to-build-community [midnight-light, contrast only, desktop]": 0
+    "/how-to-build-community [midnight-light, contrast only, desktop]": 0,
+    "/loneliness [dawn-dark, contrast only, desktop]": 0,
+    "/loneliness [dawn-light, desktop]": 0,
+    "/loneliness [dawn-light, mobile]": 0,
+    "/loneliness [midnight-dark, contrast only, desktop]": 0,
+    "/loneliness [midnight-light, contrast only, desktop]": 0
   }
 }
