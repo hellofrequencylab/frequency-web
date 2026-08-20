@@ -26,10 +26,10 @@ import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 // So an enrolled article keeps all four; the route keeps the last two.
 //
 // ⚠️ STATUS. LIVE CONSUMERS: `how-to-start-a-circle` (enrolled 2026-08-19),
-// `how-to-build-community` (enrolled 2026-08-20), `loneliness` (enrolled
-// 2026-08-20) and `friendship-as-an-adult` (enrolled 2026-08-20), each a spec
-// beside this file run
-// through the recipe below. The other four articles are still coded pages;
+// `how-to-build-community`, `loneliness`, `friendship-as-an-adult`,
+// `calm-down-fast` and `how-to-be-more-social` (all enrolled 2026-08-20), each
+// a spec beside this file run
+// through the recipe below. The other two articles are still coded pages;
 // `check:render-path` gates one slug per PR and enrolling an article is a route
 // change per article, so they enroll one at a time.
 // `article.test.ts` remains the guard that keeps this generator honest independently
@@ -88,6 +88,16 @@ import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 //                                        block closing the beat's band, so neither
 //                                        label nor link is dropped. Unused, nothing
 //                                        renders and existing documents are unchanged.
+//
+// The SIXTH enrolment (how-to-be-more-social, 2026-08-20) widened one more, same rule:
+//   · sections gained `note`           — a prose line closing the section AFTER its
+//                                        button row (the coded page's "Keep going"
+//                                        cross-link paragraph, three internal links
+//                                        the pillar cluster needs). Folding it into
+//                                        `body` would move it above the buttons, the
+//                                        same silent reorder `closingBeat` exists to
+//                                        prevent. Unused, nothing renders and existing
+//                                        documents are unchanged.
 //
 // The FOURTH enrolment (friendship-as-an-adult, 2026-08-20) widened two more, same rule:
 //   · sections gained `steps`          — plain ordered steps WITHOUT a HowTo node
@@ -159,6 +169,10 @@ export type ArticleSection = {
   body?: string
   /** Optional buttons, inside this section's band. */
   links?: ArticleLink[]
+  /** A prose line closing the section AFTER its button row — the coded pages'
+   *  "Keep going" cross-link paragraph. `[label](/path)` links work. Folding it
+   *  into `body` would move it above the buttons; this keeps the coded order. */
+  note?: string
   /** Plain ordered steps that are NOT a guide: rendered as numbered cards
    *  (`BuildTimeline`) with NO HowTo node. For the coded `Steps` lists an article
    *  shows without asserting a HowTo — running them through `howTo` instead would
@@ -410,6 +424,22 @@ export function articleTemplate(spec: ArticleSpec): Data {
           })),
           align: 'left',
           tone,
+          layout: { ...L, spaceTop: 'none' },
+        },
+      })
+    }
+    if (section.note) {
+      // The section's closing prose line, AFTER the buttons, exactly where the coded
+      // "Keep going" paragraph sat. Body size, not Lead: it is a footnote, not an answer.
+      content.push({
+        type: 'Text',
+        props: {
+          id: id(`note${i + 1}`),
+          body: section.note,
+          size: 'base',
+          tone,
+          width: 'default',
+          align: 'left',
           layout: { ...L, spaceTop: 'none' },
         },
       })
