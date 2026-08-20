@@ -122,7 +122,7 @@ export const config: Config = {
     },
     spaceContent: {
       title: 'Space content',
-      components: ['SpaceUpdates', 'SpaceReviews', 'SpaceFAQ'],
+      components: ['SpaceReviews', 'SpaceFAQ'],
     },
     circles: {
       title: 'Circles index',

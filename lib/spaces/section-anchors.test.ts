@@ -15,7 +15,6 @@ const ALL_PRESENT: SectionPresence = {
   events: true,
   reviews: true,
   faqs: true,
-  updates: true,
   practices: true,
   circles: true,
 }

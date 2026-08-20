@@ -42,7 +42,7 @@ describe('partitionSpaceBlocks (requiresFunction locking)', () => {
 // so the switch gate alone never hid them — this closes that gap.
 describe('partitionSpaceBlocks (item 6 existing-data gate)', () => {
   const everyFunction = new Set<SpaceFunctionKey>(['availability', 'members', 'memberships', 'tickets', 'donations', 'enroll'])
-  const functionBacked = new Set(['offerings', 'booking', 'events', 'team', 'journeys', 'circles', 'reviews', 'faq', 'updates'])
+  const functionBacked = new Set(['offerings', 'booking', 'events', 'team', 'journeys', 'circles', 'reviews', 'faq'])
 
   it('locks a function-backed block that has NO data (offerings with no offerings)', () => {
     const { lockedIds, arrangeable } = partitionSpaceBlocks(everyFunction, {

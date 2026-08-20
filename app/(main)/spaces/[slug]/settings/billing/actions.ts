@@ -3,23 +3,25 @@
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { createSpacePlanCheckout, createSpaceLoadoutCheckout, createSpaceBillingPortal } from '@/lib/billing/space-plan-checkout'
+import { createSpaceLoadoutCheckout, createSpaceBillingPortal } from '@/lib/billing/space-plan-checkout'
 import { updateOperatorSeats } from '@/lib/billing/operator-seats'
-import { asSpacePlanKey, type BillingInterval, type BillingPeriod } from '@/lib/billing/pricing-keys'
+import { type BillingInterval } from '@/lib/billing/pricing-keys'
 import { asAddonKey } from '@/lib/pricing/plans'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // SPACE PLAN BILLING ACTIONS (Pricing P3, ADR-363; collapsed ADR-552). The client-callable seams for
 // the space owner billing surface:
-//   startSpacePlanCheckout / startSpaceLoadoutCheckout — begin a Stripe Checkout to buy/upgrade a space
-//     plan (GATED on billingLive() + the per-plan switch inside the checkout; returns a clean error while
-//     billing is OFF, so the CTA never fires a broken checkout).
+//   startSpaceLoadoutCheckout — begin a Stripe Checkout to buy/upgrade a space plan (GATED on
+//     billingLive() + the per-plan switch inside the checkout; returns a clean error while billing is
+//     OFF, so the CTA never fires a broken checkout).
 //
-// Both re-resolve the space + gate on the billing function's floor (ADMIN, matching functions.ts
-// defaultMinRole 'admin' and the billing page render's spaceFunctionAccess gate). These actions mutate
-// the OWNER's live Stripe subscription (checkout, portal, seats), so an EDITOR (the canManage/
-// canEditProfile level) must NOT reach them. No em dashes. The retired white-label lead capture was
-// removed with the multi-tier UI (ADR-552).
+// Every action re-resolves the space + gates on the billing function's floor (ADMIN, matching
+// functions.ts defaultMinRole 'admin' and the billing page render's spaceFunctionAccess gate). These
+// actions mutate the OWNER's live Stripe subscription (checkout, portal, seats), so an EDITOR (the
+// canManage/canEditProfile level) must NOT reach them. No em dashes. The retired white-label lead
+// capture was removed with the multi-tier UI (ADR-552). startSpacePlanCheckout (the single-item plan
+// checkout action) was DELETED by OWNER RULING (LIVE-062 batch 6, 2026-08-20): the ADR-811 loadout
+// checkout superseded it and no UI called it; git history keeps the implementation.
 
 /** Authorize the caller as an ADMIN (or owner) of `slug`'s space — the billing floor. Returns
  *  { spaceId, brandName } or null. Billing is not an editor-level action (it changes the owner's bill). */
@@ -30,25 +32,6 @@ async function authorizeOwner(slug: string): Promise<{ spaceId: string; brandNam
   const caps = await getSpaceCapabilities(space, caller?.id ?? null)
   if (!caps.isAdmin) return null
   return { spaceId: space.id, brandName: space.brandName ?? space.name }
-}
-
-/** Begin a Stripe Checkout for a space plan. GATED: createSpacePlanCheckout returns null unless
- *  billing is live AND the per-plan switch is on, so this returns a clean error (not a broken URL)
- *  while billing is OFF. Only the sold plans (business/nonprofit) resolve; retired names fail cleanly. */
-export async function startSpacePlanCheckout(
-  slug: string,
-  plan: string,
-  period: BillingPeriod = 'monthly',
-): Promise<ActionResult<{ url: string }>> {
-  const auth = await authorizeOwner(slug)
-  if (!auth) return fail('You do not have access to manage this space.')
-  const planKey = asSpacePlanKey(plan)
-  if (!planKey) {
-    return fail('That plan is not available to buy here.')
-  }
-  const url = await createSpacePlanCheckout(auth.spaceId, planKey, period)
-  if (!url) return fail('Plan checkout is not available yet.')
-  return ok({ url })
 }
 
 /** Open the Stripe billing portal for a Space owner to MANAGE the Space's subscription (payment method,

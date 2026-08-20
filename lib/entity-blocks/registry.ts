@@ -56,7 +56,8 @@ const DATA_BLOCKS: readonly EntityBlockDef[] = [
   { id: 'team', label: 'Team', description: 'The people who run this space.', category: 'data', kinds: ['space'], requiresFunction: 'members', order: 80 },
   { id: 'reviews', label: 'Reviews', description: 'What members say.', category: 'data', kinds: ['space'], order: 90 },
   { id: 'faq', label: 'FAQ', description: 'Common questions, answered.', category: 'data', kinds: ['space'], order: 100 },
-  { id: 'updates', label: 'Updates', description: 'Recent posts.', category: 'data', kinds: ['space'], order: 110 },
+  // 'updates' (order 110) retired by OWNER RULING (LIVE-062 batch 6, 2026-08-20) with the SpaceUpdates
+  // block; a saved grid naming it drops fail-safe (resolveRows skips unknown ids).
   { id: 'contact', label: 'Contact and hours', description: 'How and when to reach this space.', category: 'data', kinds: ['space'], order: 120 },
   { id: 'business', label: 'Business presence', description: 'Find this space online.', category: 'data', kinds: ['space'], order: 130 },
   { id: 'topfriends', label: 'Top friends', description: 'The people this member is closest to.', category: 'data', kinds: ['member'], order: 140 },

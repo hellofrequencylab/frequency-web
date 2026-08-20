@@ -335,27 +335,11 @@ export async function setSpaceAccent(slug: string, token: string): Promise<Actio
   return ok()
 }
 
-/**
- * Publish or unpublish the Space's EXTERNAL website (ADR-508 U4-B). Written as a boolean to
- * preferences.websitePublished; the public /sites/<slug> route is FAIL-CLOSED on it (network-visible
- * AND published, else 404 + noindex). NON-DESTRUCTIVE: only the websitePublished node is written, every
- * other preferences key preserved. Owner/admin/editor-gated (staff preview fails closed). Revalidates
- * the public site + the in-app profile so the state flips immediately. Returns ActionResult.
- */
-export async function setWebsitePublished(slug: string, published: boolean): Promise<ActionResult> {
-  const auth = await authorizeEditor(slug)
-  if (!auth) return fail('You do not have access to edit this page.')
-
-  const next = { ...auth.preferences, websitePublished: published === true }
-  if (!(await writePreferences(auth.spaceId, next))) {
-    return fail('Could not update your website. Try again.')
-  }
-
-  revalidatePath(`/sites/${slug}`)
-  revalidatePath(`/spaces/${slug}`)
-  revalidatePath(`/spaces/${slug}/manage/layout`)
-  return ok()
-}
+// setWebsitePublished (the external-website publish switch, ADR-508 U4-B) was DELETED by OWNER
+// RULING (LIVE-062 batch 6, 2026-08-20): no UI ever mounted it. The publish switch returns with
+// PROG-E10 (Sites); git history keeps the implementation. The READ half stays live and fail-closed:
+// lib/spaces/website.ts readWebsitePublished gates the public /sites/<slug> route, so with no writer
+// the site simply stays unpublished.
 
 // ── THE NAV MANAGER actions (multi-page model). Create / rename / reorder / delete the operator-defined
 // profile pages. Each calls a PURE mutator from profile-pages.ts and writes the WHOLE preferences blob

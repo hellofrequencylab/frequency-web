@@ -35,7 +35,7 @@ vi.mock('@/lib/spaces/store', () => ({
   }),
 }))
 
-// The content-data readers (events/team/reviews/faq/updates/practices/circles).
+// The content-data readers (events/team/reviews/faq/practices/circles).
 let events: Array<{ id: string; slug: string; title: string; startsAt: string }> = []
 let team: Array<{ profileId: string; name: string; handle: string | null; avatarUrl: string | null; role: string }> = []
 let reviews: { average: number | null; count: number; latest: Array<{ id: string; rating: number; body: string; createdAt: string; author: { displayName: string; avatarUrl: string | null } | null }> } = {
@@ -44,7 +44,6 @@ let reviews: { average: number | null; count: number; latest: Array<{ id: string
   latest: [],
 }
 let faqs: Array<{ id: string; question: string; answer: string }> = []
-let updates: Array<{ id: string; title: string; body: string; imageUrl: string | null; publishedAt: string | null; postId: string | null }> = []
 let practices: { practices: Array<{ kind: 'practice'; id: string; slug: string; title: string; summary: string | null; emoji: string | null; adoptCount: number }>; journeys: Array<{ kind: 'journey'; id: string; slug: string; title: string; summary: string | null; emoji: string | null; adoptCount: number }> } = {
   practices: [],
   journeys: [],
@@ -59,7 +58,6 @@ vi.mock('@/lib/spaces/content-data', () => ({
   getSpaceTeam: vi.fn(async () => team),
   getSpaceReviews: vi.fn(async () => reviews),
   getSpaceFaqs: vi.fn(async () => faqs),
-  getSpaceUpdates: vi.fn(async () => updates),
   getSpacePractices: vi.fn(async () => practices),
   getSpaceCommunity: vi.fn(async () => community),
 }))
@@ -110,7 +108,6 @@ beforeEach(() => {
   team = []
   reviews = { average: null, count: 0, latest: [] }
   faqs = []
-  updates = []
   practices = { practices: [], journeys: [] }
   community = []
   membershipTiers = []

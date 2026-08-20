@@ -1,9 +1,7 @@
-import Link from 'next/link'
 import Image from 'next/image'
 import { Star } from 'lucide-react'
 import type { ComponentConfig } from '@/lib/page-editor/types'
 
-import { SiteImage } from '@/components/marketing/site-image'
 import { FaqList } from '@/components/marketing/marketing-ui'
 import { richParagraphs, richPlainText } from '@/lib/page-editor/richtext'
 import { JsonLd } from '@/components/json-ld'
@@ -24,20 +22,22 @@ import { layoutField, layoutDefault } from '@/lib/page-editor/layout'
 // boundary: a Space content block imports NOTHING server-only.
 import type {
   SpaceContentData,
-  SpaceUpdateItem,
   SpaceReviewsData,
   SpaceFaqItem,
 } from '@/lib/spaces/content-data'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SPACE CONTENT BLOCKS (Puck content blocks, Phase 2, ADR-476/472). Four blocks a
+// SPACE CONTENT BLOCKS (Puck content blocks, Phase 2, ADR-476/472). Three blocks a
 // Space operator composes onto their public landing, dual-purpose (editable in
 // <Puck>, rendered by <Render>):
 //   Cover        - an uploadable full-width banner (media/layout).
-//   SpaceUpdates - the brand's blog-style posts feed (DYNAMIC, reads real rows).
 //   SpaceReviews - member reviews: average + latest few (DYNAMIC).
 //   SpaceFAQ     - operator Q and A rendered as an accordion (DYNAMIC).
-// The three dynamic blocks read the live rows off `puck.metadata.space`
+// A fourth block, SpaceUpdates (the brand's blog-style posts feed), was retired by
+// OWNER RULING (LIVE-062 batch 6, 2026-08-20): its composer died with the C3.4
+// wall, 0 rows and 0 published pages carried it. The space_updates table stays
+// per C3.5's recorded retention; git history keeps the block.
+// The dynamic blocks read the live rows off `puck.metadata.space`
 // (SpaceContentData), injected server-side by the Space landing render path -- the
 // SAME metadata-injection pattern LiveStats + the Circles index blocks use. With
 // nothing to show, each renders a labelled placeholder ON THE EDITOR CANVAS ONLY
@@ -159,67 +159,7 @@ export function CoverBlock({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. SpaceUpdates -- the brand's blog-style posts feed (latest N + view all).
-// ─────────────────────────────────────────────────────────────────────────────
-
-export function SpaceUpdatesBlock({
-  eyebrow,
-  heading,
-  updates,
-  limit,
-  viewAllHref,
-  ink,
-}: {
-  eyebrow?: string
-  heading?: string
-  updates: SpaceUpdateItem[]
-  limit: number
-  viewAllHref?: string
-  ink?: boolean
-}) {
-  if (updates.length === 0) return null
-  const shown = updates.slice(0, Math.max(1, limit))
-  return (
-    <div>
-      <SectionTitle eyebrow={eyebrow} heading={heading} ink={ink} />
-      <div className="space-y-6">
-        {shown.map((u) => (
-          <article
-            key={u.id}
-            className={`overflow-hidden rounded-card border ${ink ? 'border-on-ink/10 bg-on-ink/5' : 'border-border bg-surface'} shadow-sm`}
-          >
-            {u.imageUrl && (
-              <SiteImage src={u.imageUrl} alt={u.title || ''} aspect="16/9" sizes="(min-width: 640px) 40rem, 100vw" />
-            )}
-            <div className="p-6">
-              {u.title && (
-                <h3 className={`text-lead font-bold mb-2 ${ink ? 'text-on-ink' : 'text-text'}`}>{u.title}</h3>
-              )}
-              {u.body && (
-                <div className={`text-body leading-relaxed space-y-3 ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
-                  {richParagraphs(u.body)}
-                </div>
-              )}
-            </div>
-          </article>
-        ))}
-      </div>
-      {viewAllHref && updates.length > shown.length && (
-        <div className="mt-6">
-          <Link
-            href={viewAllHref}
-            className={`inline-flex items-center gap-1.5 text-body-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}
-          >
-            View all updates
-          </Link>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 3. SpaceReviews -- member reviews: average + latest few.
+// 2. SpaceReviews -- member reviews: average + latest few.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function Stars({ rating, ink }: { rating: number; ink?: boolean }) {
@@ -287,7 +227,7 @@ export function SpaceReviewsBlock({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4. SpaceFAQ -- operator Q and A as an accordion (reuses the FaqList look).
+// 3. SpaceFAQ -- operator Q and A as an accordion (reuses the FaqList look).
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function SpaceFaqBlock({
@@ -366,48 +306,6 @@ export const spacesComponents: Record<string, ComponentConfig> = {
         vis={visClass(layout as LayoutValue)}
       />
     ),
-  },
-
-  SpaceUpdates: {
-    label: 'Space updates (live)',
-    fields: {
-      eyebrow: { type: 'textarea', label: 'Eyebrow (optional)' },
-      heading: { type: 'textarea', label: 'Heading (optional)' },
-      limit: {
-        type: 'select',
-        label: 'How many to show',
-        options: [
-          { label: '2', value: '2' },
-          { label: '3', value: '3' },
-          { label: '5', value: '5' },
-        ],
-      },
-      viewAllHref: { type: 'text', label: 'View-all link (optional)' },
-    },
-    defaultProps: {
-      eyebrow: 'Latest',
-      heading: 'From the team',
-      limit: '3',
-      viewAllHref: '',
-    },
-    render: ({ eyebrow, heading, limit, viewAllHref, puck }) => {
-      const d = spaceFrom(puck)
-      if (!d || d.updates.length === 0) {
-        if (!puck?.isEditing) return <></>
-        return <EditorStub label="Space updates" hint="Your published updates show on the live page" />
-      }
-      return (
-        <AnchorSection anchor="updates">
-          <SpaceUpdatesBlock
-            eyebrow={(eyebrow as string) || undefined}
-            heading={(heading as string) || undefined}
-            updates={d.updates}
-            limit={Number(limit) || 3}
-            viewAllHref={(viewAllHref as string) || undefined}
-          />
-        </AnchorSection>
-      )
-    },
   },
 
   SpaceReviews: {

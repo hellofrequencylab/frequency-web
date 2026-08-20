@@ -8,7 +8,6 @@ function data(partial: Partial<SpaceContentData>): SpaceContentData {
   return {
     spaceId: 's1',
     aboutShort: '',
-    updates: [],
     reviews: { rating: null, count: 0, items: [] } as unknown as SpaceContentData['reviews'],
     faqs: [],
     ...partial,
