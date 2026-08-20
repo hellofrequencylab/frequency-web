@@ -427,6 +427,48 @@ describe('resolveCapabilities · event', () => {
   it('an unrelated member cannot edit', () => {
     expect(can(resolveCapabilities({ profileId: 'x', role: 'member' }, base), 'event.editSettings')).toBe(false)
   })
+
+  // ── The draft poster, and the publish boundary that bounds them ───────────────────────────────
+  //
+  // A draft has NO host: createEventDraft writes host_id null because ownership is the question
+  // the publish step asks. Before this arm existed, the member who composed a draft matched no
+  // rule here, so the event page's draft guard 404'd her out of her own row and /drafts was the
+  // only door. Reported from production 2026-08-20.
+  //
+  // The caller (getEventCapabilities) nulls draftPosterId the moment status is 'published', so
+  // these two tests are the contract from both sides. The SECOND one is the one that matters:
+  // a published 'posted' event is deliberately NOT the poster's — it is waiting to be claimed by
+  // the organizer it describes — so a poster who kept edit rights past publish could rewrite an
+  // event somebody else now owns.
+  const hostless: Scope = { kind: 'event', eventId: 'e2', hostId: null }
+
+  it('the poster of an UNPUBLISHED draft can edit it (a draft has no host to match)', () => {
+    expect(
+      can(resolveCapabilities({ profileId: 'poster1', role: 'member' }, { ...hostless, draftPosterId: 'poster1' }), 'event.editSettings'),
+    ).toBe(true)
+  })
+
+  it('🔴 the grant does NOT survive publish — the caller passes null, and null grants nothing', () => {
+    // What getEventCapabilities passes once status is 'published': draftPosterId null.
+    expect(
+      can(resolveCapabilities({ profileId: 'poster1', role: 'member' }, { ...hostless, draftPosterId: null }), 'event.editSettings'),
+    ).toBe(false)
+    // And omitting the field entirely is the same as null — no accidental grant from an
+    // un-updated caller.
+    expect(can(resolveCapabilities({ profileId: 'poster1', role: 'member' }, hostless), 'event.editSettings')).toBe(false)
+  })
+
+  it('one member’s draft is not another member’s to edit', () => {
+    expect(
+      can(resolveCapabilities({ profileId: 'someoneElse', role: 'member' }, { ...hostless, draftPosterId: 'poster1' }), 'event.editSettings'),
+    ).toBe(false)
+  })
+
+  it('a signed-out viewer never matches the poster arm, whatever the column holds', () => {
+    expect(
+      can(resolveCapabilities({ profileId: null, role: 'member' }, { ...hostless, draftPosterId: null }), 'event.editSettings'),
+    ).toBe(false)
+  })
 })
 
 describe('resolveCapabilities · practice', () => {

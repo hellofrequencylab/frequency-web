@@ -496,13 +496,33 @@ export async function stampEventSpaceId(spaceId?: string | null): Promise<string
  */
 export async function listEventsForSpace(
   spaceId?: string | null,
-  opts: { limit?: number; upcomingOnly?: boolean } = {},
+  opts: { limit?: number; upcomingOnly?: boolean; includeUnpublished?: boolean } = {},
 ): Promise<SpaceEvent[]> {
   const sid = spaceId ?? (await loadRootSpaceId())
   if (!sid) return []
   const limit = opts.limit ?? 50
   try {
     let q = createAdminClient().from('events').select(COLS).eq('space_id', sid)
+    // 🔴 THE PUBLICATION GATE, AND WHY IT IS THE DEFAULT RATHER THAN AN OPTION EACH CALLER ADDS.
+    //
+    // This reads through the SERVICE-ROLE client, so RLS is bypassed and this query is the only
+    // gate there is. It had none. `SpaceEvent.status` has carried the comment "public readers
+    // filter on it" since it was added — and not one of them did: the public Space profile blocks
+    // (components/widgets/entity/entity-offerings.tsx, entity-cta.tsx), the SpaceEvents block
+    // (lib/spaces/content-data.ts) and the public hero stat (lib/spaces/profile-stats.ts) all
+    // rendered whatever came back, so an unpublished DRAFT or a `private` event on a Space showed
+    // up on that Space's PUBLIC page. A contract written in a comment that nothing enforces is not
+    // a contract; nine callers each remembering to filter is the same bet, nine times.
+    //
+    // So the safe read is what you get by asking for nothing, and seeing unpublished rows is the
+    // thing you opt into. Exactly one caller does — the operator's own Space console calendar,
+    // which badges drafts on purpose (app/(main)/spaces/[slug]/settings/calendar/page.tsx).
+    if (!opts.includeUnpublished) {
+      q = q
+        .eq('status', 'published')
+        .in('visibility', ['public', 'unlisted'])
+        .is('removed_at', null)
+    }
     if (opts.upcomingOnly) q = q.gte('starts_at', new Date().toISOString())
     const { data, error } = await q.order('starts_at', { ascending: true }).limit(limit)
     if (error) return []

@@ -51,7 +51,10 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
   // The MANAGEMENT set: every event under this space (drafts, past, cancelled included), plus the
   // co-hosted events other hosts share onto this calendar (view-only here; their editor lives with
   // their own host). Engagement resolves per-event; the tz lib stays server-side (pre-formatted).
-  const ownedRows = featureLocked ? [] : await listEventsForSpace(space.id, { limit: 200 })
+  // includeUnpublished: this is the OPERATOR's console calendar and it badges drafts on purpose.
+  // It is the one caller that opts out of listEventsForSpace's publication gate (lib/events/store.ts);
+  // every public reader takes the gated default.
+  const ownedRows = featureLocked ? [] : await listEventsForSpace(space.id, { limit: 200, includeUnpublished: true })
   const ownedIds = new Set(ownedRows.map((r) => r.id))
   const sharedRows = featureLocked
     ? []

@@ -48,7 +48,10 @@
             "HYG-009",
             "LIVE-069",
             "LIVE-071",
-            "LIVE-073"
+            "LIVE-073",
+            "LIVE-078",
+            "LIVE-080",
+            "LIVE-075"
           ]
         },
         {
@@ -109,7 +112,8 @@
             "PROG-DAWN3",
             "LIVE-068",
             "LIVE-070",
-            "HYG-010"
+            "HYG-010",
+            "LIVE-079"
           ]
         },
         {
@@ -158,7 +162,8 @@
         "OWN-019",
         "OWN-020",
         "OWN-032",
-        "OWN-040"
+        "OWN-040",
+        "LIVE-074"
       ],
       "rationale": "Foundation before surface: hardening and module boundaries (A1/A3) pay compounding dividends across every later wave. Loom D1-D3 precede the Editor because E2 projects the editor’s asset model onto the Loom. Content retirements (W1) must precede E3, which replaces EDITABLE_PAGES in the opposite direction. Re-theme and the DAWN mechanical sweeps follow the editor so swept surfaces are not rebuilt. Flagship apps (A4) and the domain backlog ride after boundaries + editor exist. Commerce verticals close, with Resonance’s launch GO still the owner’s. White label (E10/W6/P7), mobile, and texting park by name."
     }
@@ -2944,10 +2949,152 @@
       },
       "detail": "A host published a gathering 64 days out and it never appeared on /events. The cause was a hardcoded 60-day ceiling in app/(main)/events/index-data.ts (`const future = now + 60 days`), applied to all three of the loader's reads. Nothing anywhere explained the omission — not the listing, not the event page, not the host's own library — which is the worst failure this surface has. Owner ruling 2026-08-20: \"Remove that cap for now. Make it a setting in the admin.\" SHIPPED: platform_settings.events_listing_horizon_days (0 = no cap, and 0 is the default, the missing-row reading, and the fail-safe on any read error), read through eventsListingHorizonDays() in lib/platform-flags.ts, set from /admin/events > Listing horizon. The loader omits its upper bound entirely when uncapped rather than substituting a far-future sentinel, because a sentinel is a hardcoded 60 wearing a bigger number. The row budget (SERIES_WIDE_READ, ADR-897) still bounds every read; removing the date ceiling did not remove the row ceiling, and the rows a full budget drops are the furthest out because each query orders by starts_at ascending.",
       "verify": {
-        "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const p='app/(main)/events/index-data.ts';if(!fs.existsSync(p))process.exit(79);const t=fs.readFileSync(p,'utf8');const hard=/60\\\\s*\\\\*\\\\s*24\\\\s*\\\\*\\\\s*60\\\\s*\\\\*\\\\s*60\\\\s*\\\\*\\\\s*1000/.test(t);const wired=t.includes('eventsListingHorizonDays')&&t.includes('listUntil');process.exit(!hard&&wired?0:1)\""
+        "kind": "grep-absent",
+        "pattern": "60\\s*\\*\\s*24\\s*\\*\\s*60\\s*\\*\\s*60\\s*\\*\\s*1000",
+        "paths": [
+          "app/(main)/events/index-data.ts"
+        ]
       },
-      "notes": "The probe measures the consequence in the loader, not the words in the title: the hardcoded 60-day arithmetic must be absent AND the setting must be what computes the bound. Re-introducing either a literal ceiling or a sentinel date fails it."
+      "notes": "In-process (grep-absent), not a spawned cmd: the guard has a 20s child-CPU budget and its failure message says to measure in-process rather than spawn. Measures the CONSEQUENCE — the hardcoded 60-day arithmetic is absent from the loader. Re-introducing a literal ceiling fails it. The wired half (eventsListingHorizonDays feeding a nullable bound) is pinned by lib/platform-flags.test.ts, which is where a behavioural assertion belongs."
+    },
+    {
+      "id": "LIVE-076",
+      "title": "The creator of an event draft can open it",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/core/load-capabilities.ts",
+        "ref": "getEventCapabilities’ select list"
+      },
+      "detail": "Owner report 2026-08-20: a member composed an event with the Vera composer and it was \"nowhere to be found\". The composer (app/(main)/events/event-spark.tsx:386) routes through saveDraft -> createEventDraft, which writes status='draft' and host_id=null on purpose (ownership is the question the publish step asks: 'mine' sets host_id, 'posted' mints a claim token). getEventCapabilities selected only host_id/scope_type/scope_id/space_id, so posted_by_profile_id granted nothing; with host_id null the composer matched no arm of the event rule, canManage was false, and the draft guard at app/(main)/events/[slug]/page.tsx:443 called notFound() ON THE CREATOR'S OWN ROW. /drafts was the only door, and it wears no badge by explicit design (lib/nav/my-frequency.ts:32-38). FIXED: the poster of an UNPUBLISHED draft leads it. The publish boundary is enforced by the caller, which passes draftPosterId null the moment status is 'published' — never widen it past publish, because a published 'posted' event is deliberately NOT the poster's, it is waiting to be claimed by the organizer it describes. This grants nothing new: lib/events/event-drafts.ts already scopes getMyDraft and listMyUnfinishedEventDrafts on posted_by_profile_id + status='draft'. It stops the capability layer disagreeing with the draft layer.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "draftPosterId",
+        "paths": [
+          "lib/core/capabilities.ts",
+          "lib/core/load-capabilities.ts"
+        ]
+      },
+      "notes": "In-process (grep-present), not a spawned cmd: scripts/backlog-contract.test.ts caps check:backlog at 20s of CHILD CPU and says to measure in-process rather than spawn. The probe pins that the seam EXISTS on both sides (the resolver arm and the caller that feeds it). The half that actually matters — that the grant does NOT survive publish — is a behavioural assertion, so it lives in lib/core/capabilities.test.ts where it can be executed rather than pattern-matched, and it is mutation-checked there."
+    },
+    {
+      "id": "LIVE-077",
+      "title": "Public Space surfaces stop rendering drafts and private events",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/events/store.ts",
+        "ref": "listEventsForSpace"
+      },
+      "detail": "Found in the events-visibility sweep, 2026-08-20. listEventsForSpace reads through the SERVICE-ROLE client, so RLS is bypassed and its own query is the only gate there is — and it had none: space_id, plus an optional start date. SpaceEvent.status has carried the comment \"public readers filter on it\" since the field was added and NOT ONE public reader did, so an unpublished draft or a `private` event on a Space rendered on that Space's PUBLIC profile: components/widgets/entity/entity-offerings.tsx:23 (Upcoming sessions), entity-cta.tsx:138, lib/spaces/content-data.ts:570 (the SpaceEvents block) and lib/spaces/profile-stats.ts:53 (the public hero stat, whose very next line applies publishedOnly to practices \"so drafts must not be counted\" — events were missed). FIXED by making the SAFE read the default: status='published' AND visibility in (public,unlisted) AND removed_at is null unless the caller passes includeUnpublished. Exactly one caller opts out, the operator's own Space console calendar, which badges drafts on purpose. A contract written in a comment that nothing enforces is not a contract, and nine callers each remembering to filter is the same bet nine times.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "includeUnpublished",
+        "paths": [
+          "lib/events/store.ts"
+        ]
+      },
+      "notes": "In-process (grep-present) for the same child-CPU reason. Pins that the opt-out parameter exists, which can only be true if the gate it guards exists. The rest of the contract — the three predicates land on the query, the opt-out is opt-IN, and no public reader uses it — is executed in lib/events/store.test.ts and lib/events/space-events-gate.test.ts, which assert behaviour instead of text."
+    },
+    {
+      "id": "LIVE-078",
+      "title": "The profile Events tile reads zero for every host on the platform",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/people/associations.ts",
+        "ref": "the .is(space_id, null) predicate"
+      },
+      "detail": "Found and MEASURED in the sweep, 2026-08-20. lib/people/associations.ts:199 filters the profile's Events tile with .is('space_id', null), on the premise that a null space means \"a platform event, not a Space's\". That premise expired when 20260712030000_content_space_id_default_root.sql added a BEFORE INSERT trigger stamping every event's space_id to the root Space. Live count the same day: of 58 live events, 2 have space_id null and 32 are root-stamped — so the tile's own predicate excludes 56 of 58 rows before any other filter runs, and every host's public profile reads \"Events 0\". The module's header comment (:41-49) still states the dead assumption. FIX: drop the null predicate and exclude the ROOT space instead (lib/events/belonging.ts hostingSpaceId is the one function that already knows how), which is the same correction LIVE-075 makes everywhere else. The tile also filters host_id only, so it misses posted events — 38 of 58 live rows have host_id null; decide whether the tile counts what a person HOSTS or what they PUT UP, and say so in the code.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "\\.is\\(\\s*'space_id',\\s*null\\s*\\)",
+        "paths": [
+          "lib/people/associations.ts"
+        ]
+      },
+      "notes": "In-process (grep-absent) to stay inside the guard’s child-CPU budget. The predicate IS the defect: while it is in the file the tile excludes 56 of 58 live rows. It closes by deleting the predicate, not by mentioning the fix in a comment."
+    },
+    {
+      "id": "LIVE-079",
+      "title": "Nine event reads use a raw-UTC now, so tonight’s gathering vanishes at 5pm Pacific",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/time/zone.ts",
+        "ref": "HOME_TZ / dayInZone, the floor the correct surfaces use"
+      },
+      "detail": "Found in the sweep, 2026-08-20. starts_at stores wall-clock as UTC PARTS, so a lower bound of new Date().toISOString() is wrong twice: an event disappears the minute it starts rather than at the end of its day, and once UTC rolls past midnight (~5pm Pacific) TONIGHT's rows read as yesterday. The correct floor — seriesUpcomingFloor(dayInZone(now, HOME_TZ)) — is already used by /events, /discover, search, the circle blocks, the rail and the tickets projection. NINE surfaces still use the raw one: app/(main)/circles/[slug]/manage/events-section.tsx:75 (an operator's own management list), components/widgets/entity/entity-offerings.tsx:23, components/spaces/dashboard/space-dashboard.tsx:246, app/(main)/nearby/page.tsx:178, lib/nearby/map-pins.ts:205, components/feed/feed-list.tsx:293, lib/quest/next-gathering.ts:58, lib/spotlight/data.ts:123, components/connections/group-map-section.tsx:62. Mechanical sweep; the floor helper already exists.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Nine call sites counted with file:line in the events-visibility sweep, 2026-08-20; each passes new Date().toISOString() (or nowIso) as a starts_at lower bound.",
+        "checked": "2026-08-20"
+      },
+      "notes": "A counting probe that can only shrink lands with the first sweep PR."
+    },
+    {
+      "id": "LIVE-080",
+      "title": "The RSVP reminder cron has no status gate, so a draft can email its RSVPs",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/api/cron/event-reminders/route.ts",
+        "ref": "the candidate select"
+      },
+      "detail": "Found in the sweep, 2026-08-20. app/api/cron/event-reminders/route.ts:125-131 selects reminder candidates with a starts_at band and .eq('is_cancelled', false) and NOTHING ELSE — no status, no removed_at. An unpublished draft that somehow carries RSVPs will send reminder emails for an event that exists on no public surface. Compare lib/events/follower-reminders.ts:264-278, the sibling cron, which does gate on status='published' AND visibility='public'. One predicate closes it.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "\\.eq\\(\\s*'status',\\s*'published'\\s*\\)",
+        "paths": [
+          "app/api/cron/event-reminders/route.ts"
+        ]
+      },
+      "notes": "In-process (grep-present) to stay inside the guard’s child-CPU budget. One predicate closes this row, and its presence in the candidate select IS the consequence."
+    },
+    {
+      "id": "LIVE-074",
+      "title": "The Stripe platform profile declares direct charges; this codebase does destination charges",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1093"
+      },
+      "detail": "Owner action, one dashboard edit, no deploy. The Connect platform profile completed 2026-08-20 answers \"Your accounts will collect payments directly from buyers using DIRECT charges\", with losses_collector=stripe, fees_collector=account and dashboard=full — the STANDARD-account responsibility set. The codebase is the opposite on every axis: accounts are created as EXPRESS (lib/billing/connect.ts, accounts.create type:'express'), which fixes fees on the platform, losses on the platform and the Express dashboard on the account; and every charge is a DESTINATION charge (transfer_data.destination + application_fee_amount in lib/billing/tips.ts:95-96, lib/billing/tickets.ts:395-396, lib/billing/space-membership-checkout.ts:112, lib/commerce/checkout.ts:195-197), settling on the PLATFORM's balance. There is no Stripe-Account header anywhere in lib/ or app/. The second acknowledgement the owner signed the same day (\"You'll be liable for seller losses. Stripe will hold reserves on your account.\") describes the code correctly; the profile answers do not. Nothing mis-settles today, because a per-charge API call decides how a charge settles, not a profile default — but Stripe has been told this platform runs a model it does not run, which mis-calibrates its risk view and makes any future support conversation start from a false premise. FIX THE PROFILE, NOT THE CODE (ADR-1093): destination charges are right for this product, and rewriting four channels to satisfy a dashboard answer would be the tail wagging the dog. Change the business-model answer to the destination/separate-charges option and let the responsibility rows follow.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Repo half verified 2026-08-20 against the tree: express account create, four destination-charge call sites, zero Stripe-Account headers. Stripe half is dashboard state an agent cannot read; the consequence is not repo-visible either way, so this closes on the owner saying the profile answer was changed.",
+        "checked": "2026-08-20"
+      },
+      "notes": "Deliberately manual (ADR-970): the profile lives in someone else’s dashboard and has no repo-visible consequence, so a mechanical probe here could only re-measure the code side, which is not what this row is about."
+    },
+    {
+      "id": "LIVE-075",
+      "title": "The root-Space attribution guard exists on one surface; ten other readers treat root as a real host",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/events/belonging.ts",
+        "ref": "hostingSpaceId’s root guard, and its one caller"
+      },
+      "detail": "Owner report 2026-08-20: \"it said it was under Frequency. It should have been under Lumi's personal account as she created it.\" hostingSpaceId() (lib/events/belonging.ts:57-65) is the function that gets this right — it returns null when the resolved space IS the root, because a BEFORE INSERT trigger (supabase/migrations/20260712030000_content_space_id_default_root.sql) stamps EVERY event's space_id to root, so treating it as a real host labels personal events with the platform's brand AND points the membership-tier and payout lookups at the platform tenant. It has exactly ONE caller: app/(main)/events/[slug]/page.tsx:396. TEN other readers re-derive the pair by hand as `host_space_id ?? space_id` with NO root guard, counted 2026-08-20 and including the money and access paths: lib/billing/tickets.ts:224, lib/events/ticket-tiers.ts:142, lib/events/ticket-space-access.ts:31, lib/events/space-event-access.ts:120, lib/events/crm-access.ts:275, lib/events/event-share.ts:315, lib/spaces/broadcast-audience.ts:122, app/(main)/events/[slug]/manage/broadcast-actions.ts:88 and broadcast-section.tsx:30 (both route member email through the space), app/(main)/events/actions.ts:965. Four of those ten decide who may READ an event's data or WHO GETS PAID, so on a root-stamped event they resolve to the platform tenant. Live count the same day: 32 of 58 events are root-stamped. THE WORK: make hostingSpaceId the only way any surface resolves an event's host, and delete the hand-rolled pairs.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "host_space_id\\s*\\?\\?[^\\n]{0,40}space_id",
+        "paths": [
+          "app",
+          "lib",
+          "components"
+        ]
+      },
+      "notes": "In-process (grep-absent) rather than a spawned cmd: patternMatches walks DIRECTORIES via filesUnder, so a whole-tree probe costs zero child processes — which is what scripts/backlog-contract.test.ts’s 20s child-CPU budget is asking for. Measures the CONSEQUENCE (no hand-rolled fallback survives anywhere), not the words in the title. Baseline at filing: 10 files."
     }
   ]
 }
