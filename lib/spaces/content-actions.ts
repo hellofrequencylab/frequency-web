@@ -18,7 +18,8 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 // The Space Communities wall actions (member posts, reactions, comments, pin/remove moderation) were
 // removed in C3.4 (ADR-1091, LIVE-059): a Space's community is its Circles (ADR-1013 §3). The brand
 // Updates actions below stay — they back the SpaceUpdates page-editor block, a separate feature. The
-// is_space_update_post RLS arms the wall relied on are narrowed in C3.5, their own migration.
+// is_space_update_post RLS arms the wall relied on were narrowed out in C3.5
+// (20270317000000_narrow_space_update_rls_arms.sql): these writes ride the admin client either way.
 //
 // The space_* tables are not in the generated DB types yet (ADR-246), so the admin client is reached
 // untyped per-write (the same seam the edit-page actions use for spaces.preferences).
