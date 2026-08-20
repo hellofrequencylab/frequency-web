@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createEvent, updateEvent } from '@/app/(main)/events/actions'
+import { uploadNewEventImage } from '@/app/(main)/events/admin-actions'
 import { isError } from '@/lib/action-result'
 import { Input, Textarea, Label, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
@@ -24,6 +25,19 @@ const EventLocationPicker = dynamic(() => import('@/components/events/event-loca
     <div className="aspect-video w-full animate-pulse rounded-card border border-border bg-surface-elevated" />
   ),
 })
+
+// The create form's photos upload through the SERVER (uploadNewEventImage, admin client), not the
+// browser Storage client. The direct browser write into event-media needs a live session token to
+// reach Storage, and when it does not the request arrives as `anon` and the bucket's INSERT policy
+// denies it — "new row violates row-level security policy", the failure a member hit twice on
+// 2026-08-20 while trying to add a cover photo (LIVE-072). The action gates on the same resolved
+// profile `createEvent` requires and returns a storage PATH, which is what these columns store.
+function uploadNewEventPhoto(folder: 'event-covers' | 'event-gallery', file: File) {
+  const fd = new FormData()
+  fd.append('file', file)
+  fd.append('folder', folder)
+  return uploadNewEventImage(fd)
+}
 
 // Today in the VIEWER's local timezone, as the `YYYY-MM-DD` a date/datetime-local
 // input seeds with. Built from local parts (never `toISOString().slice`, which is
@@ -472,6 +486,7 @@ export function EventForm({
           onChange={setCoverImagePath}
           mode="path"
           folder="event-covers"
+          uploadFn={(file) => uploadNewEventPhoto('event-covers', file)}
           hint="The poster, shown at the top of the event and first in the gallery."
           disabled={isPending}
         />
@@ -495,6 +510,10 @@ export function EventForm({
               value={galleryImagePaths}
               onChange={setGalleryImagePaths}
               folder="event-gallery"
+              upload={(fd) => {
+                fd.append('folder', 'event-gallery')
+                return uploadNewEventImage(fd)
+              }}
               hint="Optional. Extra photos shown in a gallery below the poster."
               disabled={isPending}
             />

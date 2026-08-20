@@ -74,8 +74,9 @@ export function MultiImageUpload({
    * Optional SERVER upload action. When supplied, each file is uploaded through it (a server
    * action using the admin client) instead of the browser Storage client, and the returned PATH
    * is used. This is how the event gallery avoids the event-media INSERT RLS (writes gated to
-   * `split_part(name,'/',1) = auth.uid()`), matching the cover upload. Absent = browser upload
-   * under the signer's own uid prefix (the pre-creation new-event form, which owns its uid path).
+   * `split_part(name,'/',1) = auth.uid()`), matching the cover upload. Absent = browser upload under
+   * the signer's own uid prefix, which only works while the browser still holds a live Storage
+   * session — every event surface now passes an action instead (LIVE-072).
    */
   upload?: (formData: FormData) => Promise<{ path: string } | { error: string }>
   /** Opt in to drag-and-drop + keyboard reordering of the tiles (persisted via onChange). */

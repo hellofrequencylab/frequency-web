@@ -591,6 +591,75 @@ export async function uploadEventGalleryImage(
   return { path }
 }
 
+// The folders a not-yet-created event's photos may land in. An allowlist, because the folder arrives
+// from the browser: without it a caller could steer the write anywhere under their own prefix.
+const NEW_EVENT_FOLDERS = new Set(['event-covers', 'event-gallery'])
+
+/**
+ * Upload ONE photo for an event that DOES NOT EXIST YET — the create form's cover and gallery
+ * controls, which run before there is an event id to hang the media on.
+ *
+ * WHY THIS EXISTS (LIVE-072). The create form's cover control had no server action, so it fell
+ * through to the DIRECT BROWSER upload in components/ui/image-upload.tsx. On 2026-08-20 a member
+ * on Safari/macOS got `POST 400 /storage/v1/object/event-media/<uid>/event-covers/…` and postgres
+ * logged `new row violates row-level security policy for table "objects"` — twice, 50 minutes
+ * apart. The path DID carry her uid, so the INSERT policy's `split_part(name,'/',1) = auth.uid()`
+ * was satisfied; the request simply reached Storage WITHOUT a session and was denied as `anon`.
+ * That is the same trap uploadEventMedia (social-actions) and uploadEventGalleryImage above each
+ * hit and each fixed by routing the write server-side. The admin client cannot lose a session.
+ *
+ * THE GATE. There is no event id yet, so `getEventCapabilities` has nothing to ask about. The
+ * authorization mirrors what the create flow itself requires: `createEvent` (events/actions.ts)
+ * gates on `const myProfileId = await getMyProfileId()` → 'Sign in to create an event.', and
+ * /events/new notFound()s a visitor with no session or no profile. Event creation is open to any
+ * signed-in member (ADR-810) — the per-target stewardship checks in createEvent gate PLACEMENT
+ * (which circle/space the event lands in), not whether a member may pick a photo, and none of them
+ * can be evaluated before the event exists. So: a resolved profile, exactly like the create action.
+ * The write lands under the CALLER's own profile prefix with a random id, so an upload can never
+ * reach another member's or another event's media, and the returned path is the only handle to it.
+ */
+export async function uploadNewEventImage(
+  formData: FormData,
+): Promise<{ path: string } | { error: string }> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return { error: 'Sign in to add a photo.' }
+
+  const file = formData.get('file')
+  if (!(file instanceof File) || file.size === 0) return { error: 'No file selected.' }
+  // The SAME limits the gallery action uses, so the bucket can never reject what this accepted.
+  if (file.size > 10 * 1024 * 1024) return { error: 'Image must be under 10MB.' }
+  if (!GALLERY_MIME.includes(file.type)) {
+    return { error: 'Use a JPEG, PNG, GIF, WebP, HEIC, or AVIF image.' }
+  }
+
+  const folderRaw = formData.get('folder')
+  const folder = typeof folderRaw === 'string' && NEW_EVENT_FOLDERS.has(folderRaw) ? folderRaw : 'event-covers'
+
+  const admin = createAdminClient()
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+  const path = `${profileId}/${folder}/${crypto.randomUUID()}.${ext}`
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  const { error: upErr } = await admin.storage
+    .from('event-media')
+    .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: false })
+  if (upErr) return { error: upErr.message }
+
+  // Like the gallery upload: the photo also lands in the uploader's Loom so it is reusable later.
+  // Best-effort — a Loom miss never fails the upload.
+  const { data: pub } = admin.storage.from('event-media').getPublicUrl(path)
+  await copyEventMediaToProfileLoom({
+    profileId,
+    storagePath: path,
+    url: pub.publicUrl,
+    title: file.name.replace(/\.[^.]+$/, '') || null,
+    mime: file.type || null,
+    bytes: file.size,
+  })
+
+  // The create form stores a PATH (events.cover_image_path / gallery_image_paths), not a URL.
+  return { path }
+}
+
 /** Replace the event's uploaded gallery images (events.gallery_image_paths). Used by the
  *  Photos manager to add or delete photos. Validates + caps the array; same gate. Any image
  *  DROPPED from the array (a removed photo) has its bytes deleted from event-media too, so
