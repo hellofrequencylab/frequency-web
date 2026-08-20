@@ -68,6 +68,7 @@ const ROUTES = {
   'how-to-start-a-circle': 'app/(marketing)/how-to-start-a-circle/page.tsx',
   'how-to-build-community': 'app/(marketing)/how-to-build-community/page.tsx',
   loneliness: 'app/(marketing)/loneliness/page.tsx',
+  'friendship-as-an-adult': 'app/(marketing)/friendship-as-an-adult/page.tsx',
 }
 
 /** Blank both comment forms, length-preserving (same reason as check-grants.mjs / check-labels.mjs:

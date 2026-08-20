@@ -92,3 +92,15 @@ loneliness      0   # ✅ ENROLLED + template-only 2026-08-20 (Lift 5d, ADR-1068
                     #    photo to the OG fallback and its per-step self-url, same deltas as both
                     #    prior enrolments), FAQPage from the Accordion (12 Q&A), Breadcrumb still
                     #    from the route. Template-only from here.
+friendship-as-an-adult  0  # ✅ ENROLLED + template-only 2026-08-20 (Lift 5d, ADR-1068). The 532-line
+                    #    coded article became lib/page-editor/templates/friendship-as-an-adult.ts,
+                    #    a spec run through articleTemplate(). Every block, in the coded order, and
+                    #    every word verbatim; the two schema-free Steps lists ride the new `steps`
+                    #    seam (BuildTimeline, no node), and the closing brand Statement rides the
+                    #    new `closingBeat` seam, so the page still asserts exactly ONE HowTo, as
+                    #    coded. ALL FOUR schema nodes survive: Article from <BlockDocJsonLd> (route
+                    #    passes its own title/description/dates/five images, unchanged), HowTo from
+                    #    the DawnHowToSteps block (loses its explicit photos to the OG fallback and
+                    #    its per-step self-url, same deltas as every prior enrolment), FAQPage from
+                    #    the Accordion (11 Q&A), Breadcrumb still from the route. Template-only
+                    #    from here.

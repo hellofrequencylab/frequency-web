@@ -26,9 +26,10 @@ import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 // So an enrolled article keeps all four; the route keeps the last two.
 //
 // ⚠️ STATUS. LIVE CONSUMERS: `how-to-start-a-circle` (enrolled 2026-08-19),
-// `how-to-build-community` (enrolled 2026-08-20) and `loneliness` (enrolled
-// 2026-08-20), each a spec beside this file run
-// through the recipe below. The other five articles are still coded pages;
+// `how-to-build-community` (enrolled 2026-08-20), `loneliness` (enrolled
+// 2026-08-20) and `friendship-as-an-adult` (enrolled 2026-08-20), each a spec
+// beside this file run
+// through the recipe below. The other four articles are still coded pages;
 // `check:render-path` gates one slug per PR and enrolling an article is a route
 // change per article, so they enroll one at a time.
 // `article.test.ts` remains the guard that keeps this generator honest independently
@@ -87,6 +88,20 @@ import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 //                                        block closing the beat's band, so neither
 //                                        label nor link is dropped. Unused, nothing
 //                                        renders and existing documents are unchanged.
+//
+// The FOURTH enrolment (friendship-as-an-adult, 2026-08-20) widened two more, same rule:
+//   · sections gained `steps`          — plain ordered steps WITHOUT a HowTo node
+//                                        (`BuildTimeline`, which emits no schema). The
+//                                        coded hub shows THREE step lists but asserts
+//                                        only ONE HowTo; routing the other two through
+//                                        DawnHowToSteps would invent schema claims and
+//                                        the visible name/intro copy the block requires.
+//                                        `howTo` remains the form for steps that ARE a
+//                                        guide; `steps` is for steps that are only copy.
+//   · the spec gained `closingBeat`    — one beat between the FAQ and the close, where
+//                                        the coded page's final Statement (the brand
+//                                        line) sits. Without it that sentence would be
+//                                        dropped or moved above the FAQ.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const L = { spaceTop: 'default', spaceBottom: 'default', visibility: 'all' } as const
@@ -144,6 +159,12 @@ export type ArticleSection = {
   body?: string
   /** Optional buttons, inside this section's band. */
   links?: ArticleLink[]
+  /** Plain ordered steps that are NOT a guide: rendered as numbered cards
+   *  (`BuildTimeline`) with NO HowTo node. For the coded `Steps` lists an article
+   *  shows without asserting a HowTo — running them through `howTo` instead would
+   *  add schema claims the coded page never made, and would demand a visible
+   *  name/intro the coded page never wrote. */
+  steps?: { name: string; text: string }[]
   /** This section's OWN ordered guide, when the article carries more than one track
    *  (a pillar article can). Rendered after the section's copy, before its beats.
    *  Each DawnHowToSteps block emits its own HowTo node, so several tracks ship
@@ -202,6 +223,9 @@ export type ArticleSpec = {
   /** Required: an article without an FAQ ships no FAQPage node, and these pages are
    *  the highest-intent answer-engine surface on the site (CONTENT-VOICE §8). */
   faq: { q: string; a: string }[]
+  /** Optional beat between the FAQ and the close, for an article whose coded page
+   *  ends on a statement (the brand line) after the questions. */
+  closingBeat?: ArticleBeat
   close: { heading: string; body: string; ctaLabel?: string; ctaHref?: string }
 }
 
@@ -217,8 +241,8 @@ export function articleTemplate(spec: ArticleSpec): Data {
   let band = 0
   const nextTone = () => (band++ % 2 === 0 ? 'surface' : 'canvas')
 
-  const pushBeat = (beat: ArticleBeat, key: string) => {
-    const tone = nextTone()
+  const pushBeat = (beat: ArticleBeat, key: string, toneOverride?: 'surface' | 'canvas') => {
+    const tone = toneOverride ?? nextTone()
     if (beat.kind === 'statement') {
       content.push({
         type: 'Statement',
@@ -390,6 +414,35 @@ export function articleTemplate(spec: ArticleSpec): Data {
         },
       })
     }
+    if (section.steps && section.steps.length > 0) {
+      // Plain ordered steps, exactly where the coded `Steps` sat: after the section's
+      // copy, before its guide and beats. `BuildTimeline` renders the same big-numeral
+      // 01/02/03 cards and emits NO schema, which is the point: these lists are copy,
+      // not a HowTo claim. Steps that ARE a guide belong in `howTo` instead.
+      content.push({
+        type: 'BuildTimeline',
+        props: {
+          id: id(`steps${i + 1}`),
+          eyebrow: '',
+          title: '',
+          titleAccent: '',
+          kicker: '',
+          intro: '',
+          items: section.steps.map((s) => ({
+            label: '',
+            title: s.name,
+            tag: '',
+            body: s.text,
+            highlight: 'normal',
+          })),
+          footnote: '',
+          texture: 'none',
+          flow: 'beat',
+          tone: nextTone(),
+          layout: L,
+        },
+      })
+    }
     if (spec.howTo && i + 1 === howToAfter) pushHowTo(spec.howTo, 'howto')
     if (section.howTo) pushHowTo(section.howTo, `howto-${i + 1}`)
     const beats = section.beats ?? (section.beat ? [section.beat] : [])
@@ -417,6 +470,13 @@ export function articleTemplate(spec: ArticleSpec): Data {
       layout: L,
     },
   })
+
+  // A beat after the questions, when the coded page closed on one (the brand line).
+  // The tone is PINNED to canvas rather than drawn from the counter: the Accordion's
+  // band is fixed at surface outside the alternation, so a counter-drawn surface here
+  // would merge the beat into the FAQ's band instead of giving it its own moment
+  // (canvas also always contrasts with the ink CallToAction below).
+  if (spec.closingBeat) pushBeat(spec.closingBeat, 'beat-close', 'canvas')
 
   content.push({
     type: 'CallToAction',

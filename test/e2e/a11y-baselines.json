@@ -227,6 +227,11 @@
     "/loneliness [dawn-light, desktop]": 0,
     "/loneliness [dawn-light, mobile]": 0,
     "/loneliness [midnight-dark, contrast only, desktop]": 0,
-    "/loneliness [midnight-light, contrast only, desktop]": 0
+    "/loneliness [midnight-light, contrast only, desktop]": 0,
+    "/friendship-as-an-adult [dawn-dark, contrast only, desktop]": 0,
+    "/friendship-as-an-adult [dawn-light, desktop]": 0,
+    "/friendship-as-an-adult [dawn-light, mobile]": 0,
+    "/friendship-as-an-adult [midnight-dark, contrast only, desktop]": 0,
+    "/friendship-as-an-adult [midnight-light, contrast only, desktop]": 0
   }
 }
