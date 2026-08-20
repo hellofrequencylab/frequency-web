@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/guard'
 import { saveSeriesDisplayConfig, type SeriesDisplayConfig } from '@/lib/events/series-config'
-import { setPlatformFlag } from '@/lib/platform-flags'
+import { setEventsListingHorizonDays, setPlatformFlag } from '@/lib/platform-flags'
 
 // The write half of the repeating-events knobs (ADR-897 §7.4). Models
 // app/(main)/admin/onboarding-controls/actions.ts:16-21.
@@ -45,4 +45,27 @@ export async function setChatDmRoutesRetired(retired: boolean): Promise<void> {
   // The gate is read per request on the DM route, so only that subtree needs purging.
   revalidatePath('/messages', 'layout')
   revalidatePath('/admin/events')
+}
+
+// ── Listing horizon (owner ruling 2026-08-20) ───────────────────────────────────────────────────
+//
+// How far ahead /events looks. It was a hardcoded 60 days, and a gathering published 64 days out
+// simply never appeared, with no explanation on any surface. The owner ruled: remove the cap, make
+// it a setting. 0 means no cap and is the default.
+//
+// Same janitor re-gate as the numbers above: /admin/events admits community host and community
+// staff, but this number is platform-wide. The chrome decides what renders; the action is the law.
+//
+// The revalidate is SCOPED, unlike the series knobs' full-layout purge: this setting is read in
+// exactly one loader (app/(main)/events/index-data.ts), so purging /events is enough and a
+// site-wide purge would be a cost with no payer.
+
+/** Save the listing horizon in days. Returns the STORED value, so an operator who types -5 or 3.7
+ *  sees what actually landed rather than believing their number took. */
+export async function saveEventsListingHorizon(days: number): Promise<number> {
+  const { profileId } = await requireAdmin('janitor')
+  const stored = await setEventsListingHorizonDays(days, profileId)
+  revalidatePath('/events')
+  revalidatePath('/admin/events')
+  return stored
 }

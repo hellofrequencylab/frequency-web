@@ -4,12 +4,13 @@ import { isJanitor } from '@/lib/core/roles'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { EventCompose } from '@/app/(main)/events/event-compose'
 import { getSeriesDisplayConfig } from '@/lib/events/series-config'
-import { chatDmRoutesRetiredFlag } from '@/lib/platform-flags'
+import { chatDmRoutesRetiredFlag, eventsListingHorizonDays } from '@/lib/platform-flags'
 import { getEventsAdminData } from './load-events'
 import { EventsAdminList } from './events-admin-list'
 import { PostedEventsSection } from './posted-events-section'
 import { PosterQualitySection } from './poster-quality-section'
 import { SeriesDisplaySection } from './series-display-section'
+import { ListingHorizonSection } from './listing-horizon-section'
 import { ChatRoutesToggle } from './chat-routes-toggle'
 
 // /admin/events (Operations > Community): circle events on top, then the Posted
@@ -27,6 +28,10 @@ import { ChatRoutesToggle } from './chat-routes-toggle'
 // inside it, not a menu change. Three integers do not earn an operator a new place to find
 // (docs/MENU-CONTRACT.md — the catalog is edited to ADD a destination, and none is added here).
 // Its numbers are platform-wide, so it renders behind `canManage` and its action re-gates janitor.
+//
+// "Listing horizon" lands here for the same reason and on the same terms: one integer for how far
+// ahead /events looks (owner ruling 2026-08-20, replacing a hardcoded 60 days that silently hid a
+// gathering published 64 days out). Same `canManage` chrome, same janitor re-gate in the action.
 
 function SectionFallback() {
   return <div className="h-32 animate-pulse rounded-2xl bg-surface-elevated/60" aria-hidden />
@@ -42,6 +47,9 @@ export default async function AdminEventsPage() {
   // ADR-896: the chat consolidation switch lives beside the other platform-wide display knobs, so
   // an operator has one place to reach both rather than a flag only SQL can flip.
   const chatRetired = canManage ? await chatDmRoutesRetiredFlag() : false
+  // How far ahead /events looks (owner ruling 2026-08-20). 0 = no cap, and 0 is the default; read
+  // only for the operator who can change it, same as the series numbers above.
+  const listingHorizonDays = canManage ? await eventsListingHorizonDays() : 0
 
   return (
     <AdminTemplate
@@ -79,6 +87,15 @@ export default async function AdminEventsPage() {
           description="How many dates a repeating event shows in listings, and how many it offers on its own page. Set cards in listings to 60 to show every date again."
         >
           <SeriesDisplaySection config={seriesDisplay} />
+        </AdminSection>
+      )}
+
+      {canManage && (
+        <AdminSection
+          title="Listing horizon"
+          description="How far ahead the events page looks. Set it to 0 to show every upcoming event, however far out it is."
+        >
+          <ListingHorizonSection days={listingHorizonDays} />
         </AdminSection>
       )}
 
