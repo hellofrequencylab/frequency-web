@@ -8,13 +8,17 @@ import { readFileSync } from 'node:fs'
 // SILENT — both writes are best-effort and idempotent-looking, so nothing would fail at runtime;
 // the mark would just race itself again.
 
-const actions = readFileSync('app/(main)/walkthrough-actions.ts', 'utf8')
+const actionsRaw = readFileSync('app/(main)/walkthrough-actions.ts', 'utf8')
+// Comments stripped before the absence assertions: the header legitimately NAMES the render-time
+// writer while explaining it, and a guard that trips on the documentation for the thing it guards
+// is a guard that gets deleted (the /api/status env-pin test sets this precedent).
+const actions = actionsRaw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
 const feed = readFileSync('components/walkthroughs/feed-walkthrough.tsx', 'utf8')
 const promo = readFileSync('components/walkthroughs/feed-role-promotion.tsx', 'utf8')
 
 describe('the client actions file no longer carries a seen writer', () => {
   it('is non-trivial (guards a vacuous pass)', () => {
-    expect(actions.length).toBeGreaterThan(500)
+    expect(actionsRaw.length).toBeGreaterThan(500)
   })
 
   it('exports no seenWalkthroughAction and never imports markWalkthroughSeen', () => {
