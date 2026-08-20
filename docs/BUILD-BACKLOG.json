@@ -2464,6 +2464,57 @@
         "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/airwaves/shows.ts','utf8');const u=fs.readFileSync('lib/airwaves/asset-usage.ts','utf8');const hasMap=s.includes('export async function getAssetMetaMap');const feedBatched=s.includes('getAssetMetaMap(episodes.map');const feedNoLoop=!/episodes\\\\.map\\\\(async/.test(s);const usageBatched=u.includes(\\\".in('recording_id', recordingIds)\\\");const usageNoLoop=!/rows\\\\.map\\\\(async/.test(u);process.exit(hasMap && feedBatched && feedNoLoop && usageBatched && usageNoLoop ? 0 : 1)\"",
         "note": "Passes when the batch helper exists and is used, and neither the per-episode nor per-recording async .map loop remains."
       }
+    },
+    {
+      "id": "OWN-035",
+      "title": "SpaceUpdates: build a composer, or retire the dead read-path + block + table",
+      "status": "open",
+      "lane": "owner",
+      "size": "M",
+      "source": {
+        "file": "lib/spaces/content-actions.ts",
+        "ref": "meta-scan 2026-08-20 finder A (high)"
+      },
+      "detail": "The SpaceUpdates page-editor block READS space_updates, but its only composer was deleted with the C3.4 community wall, so create/update/deleteSpaceUpdate have no caller and an operator cannot author an Update. Measured 2026-08-20: 0 space_updates rows, 0 posts with post_type='space_update', 0 published pages carry a SpaceUpdates block -- entirely dead in production, nothing stranded. NOT a clean auto-delete: the C3.5 migration (20270317000000) deliberately KEPT the space_updates table as backing a 'separately decided brand-blog block', so removing it reverses a recorded decision. Owner's call: (a) build a small Updates composer (rail module or manage surface) wired to the three kept actions, or (b) retire the read-path + block + drop the empty table in one migration. Asked 2026-08-20, no answer yet.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "execute_sql 2026-08-20 on azsqfeonabsbmemvddqd: space_updates_rows=0, space_update_posts=0, published_pages_with_spaceupdates_block=0. Composer deletion: C3.4 commit 19e09a885 removed components/spaces/community/space-community-feed.tsx (sole caller). Table retention: migration 20270317000000 header.",
+        "checked": "2026-08-20"
+      }
+    },
+    {
+      "id": "OWN-036",
+      "title": "EditorShell orphan: delete, or adopt it in the Space/profile editors its header promises",
+      "status": "open",
+      "lane": "owner",
+      "size": "S",
+      "source": {
+        "file": "components/ui/editor-shell.tsx",
+        "ref": "meta-scan 2026-08-20 finder A (med)"
+      },
+      "detail": "components/ui/editor-shell.tsx ('the ONE master container for any on-page editor') has zero importers; its stated consumer, the beta email editor, was deleted in the ADR-1088/1089 beta teardown, and its header comment is now stale ('the beta email editor today'). Not a zero-cost delete: LIVE-025's eyebrow-utility ratchet names EditorShell as one of seven shared-kit adopters, and scripts/ui-state-test-ledger.txt carries an editor-shell entry, so a delete must also update those or a canon/ledger gate trips. Owner's call: delete it (and the ledger/ratchet references), or adopt it as the frame for the Space/profile editors it was built for and correct the header. Low blast radius either way.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "grep 2026-08-20: zero importers of EditorShell/editor-shell across ts/tsx/mdx/json/mjs (only its own def, a comment in lib/theme/eyebrow-role.test.ts:114, and historical detail in LIVE-025). Consumer removed: ADR-1088/1089 beta teardown.",
+        "checked": "2026-08-20"
+      }
+    },
+    {
+      "id": "OWN-037",
+      "title": "ADR-907 claim tokens: migrate the four column-based minters, or formally drop the plan",
+      "status": "open",
+      "lane": "owner",
+      "size": "M",
+      "source": {
+        "file": "lib/claims/tokens.ts",
+        "ref": "meta-scan 2026-08-20 finder A (med)"
+      },
+      "detail": "ADR-907's hashed claim_tokens system ('use this for EVERY new claim flow') has zero production callers a year on. Every live claim flow still mints PLAINTEXT tokens onto anon-readable entity columns: lib/spaces/claim.ts (mintSpaceClaimToken), lib/listing-seeder/claim.ts, lib/events/event-drafts.ts; readers at app/events/claim/[token], app/listings/claim, app/spaces/claim compare on those columns. ADR-907 recorded the owner declining to migrate the four existing columns 'now', but that deferral was tracked only in the superseded BACKLOG.md, so nothing probes it. Owner's call: migrate the four flows onto claim_tokens, or formally retire ADR-907 and delete lib/claims/tokens.ts. Not a security emergency (tokens are random and single-use) but the plaintext-on-anon-readable-column shape is the reason ADR-907 exists.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "grep 2026-08-20: only lib/claims/tokens.test.ts imports lib/claims/tokens.ts; from('claim_tokens') appears only at tokens.ts:58. Live minters mintSpaceClaimToken/listing/event-draft token columns still in use.",
+        "checked": "2026-08-20"
+      }
     }
   ]
 }
