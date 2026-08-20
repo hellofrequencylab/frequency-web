@@ -414,7 +414,7 @@ Also closed in the same pass, both flagged above as the highest user impact:
   cover the code catalogs, not the DB-materialized rows.
 
 **Docs and repo hygiene**
-- ~~Seven ADR numbers (088 to 094) are each used twice, 090 three times; 75 cross-references are ambiguous.~~ **Re-verified fixed 2026-08-20:** each of 088–094 now appears exactly once as a heading in `DECISIONS.md`. (⚠️ Two NEW duplicate headings exist — `## ADR-544` and `## ADR-546` each appear twice; a fresh instance of the class, not this item.)
+- ~~Seven ADR numbers (088 to 094) are each used twice, 090 three times; 75 cross-references are ambiguous.~~ **Re-verified fixed 2026-08-20:** each of 088–094 now appears exactly once as a heading in `DECISIONS.md`. (A suspected recurrence — ADR-544/546 seeming doubled — dissolved on a closer read the same day: the second headings are `ADR-544b`/`ADR-546b`, the deliberate sub-decision suffix, not duplicate numbers.)
 - ~~ADR-219 is still marked "Accepted" after ADR-305 retired it.~~ **Re-verified fixed 2026-08-20:** `DECISIONS.md:6200` reads "**Status:** ~~Accepted~~ **Superseded by ADR-305**".
 - ~~`ARCHITECTURE.md` documents two cron endpoints deleted by ADR-305, and still warns about a removed `vercel.app` canonical fallback.~~ **Re-verified fixed 2026-08-20:** `ARCHITECTURE.md:199` now says "⚠️ The Rewards Economy v2 crons are gone" and no `vercel.app` warning remains in the doc.
 - ~~**`tsconfig` excludes `scripts/`**, so the CI guard test files vitest runs are never typechecked.~~ **Re-verified fixed 2026-08-20:** `tsconfig.json` includes `**/*.ts` + `**/*.mts` and excludes only `node_modules`/`supabase/functions`/`resonance`, so `scripts/` typechecks.
