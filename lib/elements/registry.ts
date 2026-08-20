@@ -89,8 +89,10 @@ export const ELEMENTS: readonly ElementDef[] = [
     // canonical, un-forked component imported directly by each of its 7 surfaces. (It read
     // "client-mountable via <AppElement>" until 2026-08-12; there is no such mounter and no component
     // map — see the note at the head of scripts/check-elements.mjs.)
-    // The features declare the design controls + who may use each (role-gated); consuming them per-viewer
-    // is the resolveQrStudio() follow-up (mirrors resolveHeaderElement). See docs/EMBEDDABLE-ELEMENTS.md.
+    // The features declare the design controls + who may use each (role-gated); resolveQrStudio()
+    // (mirrors resolveHeaderElement) folds them per-viewer and StyleEditor consumes the result via its
+    // `config` prop (LIVE-066): /admin/qr and /codes resolve at the server mount, the page share popup
+    // fetches through getQrStudioConfig. See docs/EMBEDDABLE-ELEMENTS.md.
     key: 'qr-studio',
     label: 'QR Studio',
     description: 'The one QR design editor every code surface opens: colors, shapes, a center logo (via the Loom picker), a scan-me frame, live scannability, and PNG/SVG output.',

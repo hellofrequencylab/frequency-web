@@ -23,6 +23,7 @@ import {
   sendNowAction,
   pauseAction,
   cancelAction,
+  voicePreflightAction,
 } from '@/app/(main)/admin/email-studio/send-actions'
 
 import { Input } from '@/components/ui/field'
@@ -73,6 +74,10 @@ export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGM
   const [count, setCount] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
+  // Voice preflight findings (voice-lint, LIVE-066): WARN-level, so they inform the operator and never
+  // block. The one hard rule (an em or en dash) surfaces through `error` instead, because the send
+  // itself refuses on it.
+  const [voiceWarnings, setVoiceWarnings] = useState<string[]>([])
   const [pending, start] = useTransition()
 
   const isTerminal = current === 'sent' || current === 'cancelled'
@@ -101,52 +106,87 @@ export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGM
     )
   }
 
+  /** The voice preflight: refresh the WARN banner and report whether the hard rule fired. */
+  async function voicePreflight(): Promise<{ blocked: boolean; warnings: string[] }> {
+    const lint = await voicePreflightAction(campaignId)
+    if (isError(lint)) {
+      setError(lint.error)
+      return { blocked: true, warnings: [] }
+    }
+    setVoiceWarnings(lint.data.warnings)
+    if (lint.data.hasEmDash) {
+      setError('This email contains an em or en dash. We keep those out of everything we send, so swap each one for a period, comma, or parentheses, then try again.')
+      return { blocked: true, warnings: lint.data.warnings }
+    }
+    return { blocked: false, warnings: lint.data.warnings }
+  }
+
   function schedule() {
     if (!scheduleAt) {
       setError('Pick a date and time to schedule the send.')
       return
     }
-    run(
-      () => scheduleCampaignAction(campaignId, { segment: selected, scheduledAt: new Date(scheduleAt).toISOString() }),
-      (d) => {
-        const data = d as { scheduledFor: string; count: number }
-        setCurrent('scheduled')
-        setCount(data.count)
-        setNote(`Scheduled for ${new Date(data.scheduledFor).toLocaleString()} to ${data.count.toLocaleString()} recipients.`)
-      },
-    )
+    setError(null)
+    setNote(null)
+    start(async () => {
+      // Voice floor first (voice-lint): the hard rule blocks here (the server refuses it anyway);
+      // the soft findings land in the warning banner and scheduling proceeds.
+      const voice = await voicePreflight()
+      if (voice.blocked) return
+      const r = await scheduleCampaignAction(campaignId, {
+        segment: selected,
+        scheduledAt: new Date(scheduleAt).toISOString(),
+      })
+      if (isError(r)) {
+        setError(r.error)
+        return
+      }
+      setCurrent('scheduled')
+      setCount(r.data.count)
+      setNote(`Scheduled for ${new Date(r.data.scheduledFor).toLocaleString()} to ${r.data.count.toLocaleString()} recipients.`)
+    })
   }
 
   function sendNow() {
-    // Payments-style safety: resolve the live audience, then confirm before the real send.
-    run(
-      () => audiencePreviewAction(campaignId, selected),
-      (d) => {
-        const size = (d as { count: number }).count
-        setCount(size)
-        if (size === 0) {
-          setError('This audience is empty. Pick a segment with recipients before sending.')
-          return
-        }
-        // Two-step confirm: the count first, then an explicit final go. A mass send cannot be undone,
-        // so it takes two deliberate confirms.
-        const okToSend = window.confirm(
-          `Send this campaign now to ${size.toLocaleString()} recipients? This cannot be undone.`,
-        )
-        if (!okToSend) return
-        const reallySend = window.confirm(
-          `Really send to ${size.toLocaleString()} recipients right now? There is no undo once it goes out.`,
-        )
-        if (!reallySend) return
-        run(
-          () => sendNowAction(campaignId),
-          (r) => {
-            setCurrent('sent')
-            setNote(`Sent to ${(r as { recipientCount: number }).recipientCount.toLocaleString()} recipients.`)
-          },
-        )
-      },
-    )
+    // Payments-style safety: voice preflight, then the live audience, then confirm before the real send.
+    setError(null)
+    setNote(null)
+    start(async () => {
+      const voice = await voicePreflight()
+      if (voice.blocked) return
+      const aud = await audiencePreviewAction(campaignId, selected)
+      if (isError(aud)) {
+        setError(aud.error)
+        return
+      }
+      const size = aud.data.count
+      setCount(size)
+      if (size === 0) {
+        setError('This audience is empty. Pick a segment with recipients before sending.')
+        return
+      }
+      // Two-step confirm: the count first, then an explicit final go. A mass send cannot be undone,
+      // so it takes two deliberate confirms. Voice findings ride the first confirm so the operator
+      // decides with them in view (a warning informs; it never blocks).
+      const voiceNote = voice.warnings.length
+        ? `\n\nVoice check:\n${voice.warnings.map((w) => `- ${w}`).join('\n')}\n\nYou can still send.`
+        : ''
+      const okToSend = window.confirm(
+        `Send this campaign now to ${size.toLocaleString()} recipients? This cannot be undone.${voiceNote}`,
+      )
+      if (!okToSend) return
+      const reallySend = window.confirm(
+        `Really send to ${size.toLocaleString()} recipients right now? There is no undo once it goes out.`,
+      )
+      if (!reallySend) return
+      const r = await sendNowAction(campaignId)
+      if (isError(r)) {
+        setError(r.error)
+        return
+      }
+      setCurrent('sent')
+      setNote(`Sent to ${r.data.recipientCount.toLocaleString()} recipients.`)
+    })
   }
 
   return (
@@ -243,6 +283,16 @@ export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGM
       {error && (
         <Banner tone="critical" title="That did not go through">
           {error}
+        </Banner>
+      )}
+      {voiceWarnings.length > 0 && (
+        <Banner tone="warning" title="Voice check">
+          <ul className="space-y-1">
+            {voiceWarnings.map((w, i) => (
+              <li key={i}>{w}</li>
+            ))}
+          </ul>
+          <p className="mt-1">These are suggestions from the house style guide. You can still send.</p>
         </Banner>
       )}
       {note && <Banner tone="info" title={note} />}

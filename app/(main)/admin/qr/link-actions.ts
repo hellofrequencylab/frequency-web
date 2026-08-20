@@ -7,6 +7,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/guard'
+import { getCallerProfile } from '@/lib/auth'
+import { resolveQrStudio, type QrStudioConfig } from '@/lib/elements/qr-studio'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import {
@@ -302,4 +304,17 @@ export async function deletePageQr(id: string): Promise<ActionResult> {
   if (error) return fail('Could not delete the code.')
   revalidatePath('/admin/qr')
   return ok()
+}
+
+/**
+ * The caller's resolved qr-studio ELEMENT config (LIVE-066) for the page QR designer popup
+ * (PageQrManager), which mounts deep inside client trees and cannot take it as a server prop the way
+ * /admin/qr and /codes do. Same consumption as the Loom picker's loomScopes(): the popup fetches its
+ * element config through a server action on mount. Role-gated per feature; FAIL-SAFE to the full config.
+ */
+export async function getQrStudioConfig(): Promise<QrStudioConfig> {
+  const caller = await getCallerProfile()
+  return resolveQrStudio({
+    viewer: { communityRole: caller?.community_role ?? null, webRole: caller?.webRole ?? null },
+  })
 }

@@ -33,6 +33,7 @@ import { compileEmailDoc } from './shell'
 import { applyMergeTags } from './render'
 import { resolveProductRefs, productVarsFromLayout } from './product-block'
 import { MERGE_TAG_DEFAULT_FALLBACKS, type EmailDoc } from './types'
+import { lintVoice } from './voice-lint'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
 // ── Sender FROM name (per-campaign display name, envelope address unchanged) ─────
@@ -222,6 +223,39 @@ export function emailHtmlByteLength(html: string): number {
 export function emailSizeWarning(bytes: number): string {
   const kb = Math.round(bytes / 1024)
   return `This email is ${kb} KB. Gmail clips messages over about 102 KB, so the footer and unsubscribe link may be hidden. Trim the content before you send.`
+}
+
+// ── Voice lint (docs/CONTENT-VOICE.md §10.8 in code, lib/email-studio/voice-lint) ──
+// The machine-checkable floor under every campaign an operator sends (LIVE-066). The module's own
+// contract sets the severities and the send path honors them exactly: the EM / EN DASH is "the HARD
+// rule (`hasEmDash`) ... the one a caller may refuse on" and copy carrying one "is not shippable as
+// written", so scheduleCampaign and sendCampaignNow REFUSE on it; the banned-phrase and exclamation
+// findings are "Warnings: a human decides", so they surface to the operator (the send panel's voice
+// preflight) and never block a send.
+
+/** A campaign doc's AUTHORED copy as one lintable string: subject + preheader + the per-block content
+ *  map — the same assembly the preset suite holds every shipped template to (presets.test.ts). Pure. */
+export function campaignAuthoredCopy(doc: EmailDoc): string {
+  return [doc.subject, doc.preheader, JSON.stringify(doc.layout.content ?? {})].join('\n')
+}
+
+/** The operator-facing refusal for the lint's one hard rule. Plain voice, actionable. */
+export const VOICE_EM_DASH_ERROR =
+  'This email contains an em or en dash. We keep those out of everything we send, so swap each one for a period, comma, or parentheses, then try again.'
+
+/** Lint a stored campaign's authored copy. Returns the hard-rule flag plus the soft findings as
+ *  operator-facing lines (the em dash line is excluded: it is the refusal, not a warning). */
+export async function lintCampaignVoice(
+  campaignId: string,
+): Promise<ActionResult<{ hasEmDash: boolean; warnings: string[] }>> {
+  const row = await loadCampaign(campaignId)
+  if (!row) return fail('That campaign no longer exists.')
+  const doc: EmailDoc = { ...docFromRow(row), subject: row.subject }
+  const lint = lintVoice(campaignAuthoredCopy(doc))
+  return ok({
+    hasEmDash: lint.hasEmDash,
+    warnings: lint.violations.filter((v) => v.rule !== 'em-dash').map((v) => v.detail),
+  })
 }
 
 // ── The pure lifecycle state machine ────────────────────────────────────────────
@@ -436,6 +470,9 @@ export async function scheduleCampaign(
   const compiled = compileEmailDoc(doc)
   if (!compiled.html) return fail('This email has no content to send.')
 
+  // Voice floor (voice-lint): scheduling ARMS a send, so the one hard rule is enforced here too.
+  if (lintVoice(campaignAuthoredCopy(doc)).hasEmDash) return fail(VOICE_EM_DASH_ERROR)
+
   const audience = await countAudience(input.segment)
   if ('error' in audience) return audience
   if (audience.data.count === 0) return fail('This audience is empty. Pick a segment with recipients.')
@@ -483,6 +520,11 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
   const rawDoc: EmailDoc = { ...docFromRow(row), subject: row.subject }
   const subjectTemplate = rawDoc.subject.trim()
   if (!subjectTemplate) return fail('The campaign has no subject to send.')
+
+  // Voice floor (voice-lint, LIVE-066): the module's ONE hard rule. Copy with an em or en dash "is not
+  // shippable as written", so the real send refuses BEFORE the row is claimed; the soft findings
+  // (banned phrases, exclamations) are warnings the panel surfaces and never block.
+  if (lintVoice(campaignAuthoredCopy(rawDoc)).hasEmDash) return fail(VOICE_EM_DASH_ERROR)
 
   // Resolve the data-bound Product card ONCE (before the recipient loop) so every recipient's email ships the
   // current catalog data, and expose its `{{product.*}}` tokens as merge fallbacks (Phase 4).

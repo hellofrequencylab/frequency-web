@@ -12,6 +12,13 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Nudge a streak mate**: the leaderboard's consistency view now shows Circle mates whose streak
+  is on the line today, with a one-tap nudge.
+- **Ask to host an event**: a Space that could host an event someone else runs can now ask from
+  the event page. The current host decides; nothing changes hands until they accept.
+- **Re-seed a section's copy**: editing a Space page block now offers a one-tap rewrite of that
+  section's text from your business info.
+
 - **Erase your saved drafts**: a new control under **Settings, Account & privacy** clears your
   unfinished drafts in one go. Published things are untouched.
 - **Staff can leave a Space preview**: the preview banner now has an **Exit preview** button, so

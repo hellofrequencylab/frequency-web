@@ -8,10 +8,12 @@ import { Campaigns, type CampaignCard, type CampaignCodeOption } from './campaig
 import { Analytics, type AnalyticsData } from './analytics'
 import { MemberProfileCodes, type MemberProfileCode } from './member-profile-codes'
 import { MarketingCodesAdmin, type MarketingCodeAdmin } from './marketing-codes-admin'
+import type { QrStudioConfig } from '@/lib/elements/qr-studio-config'
 
 // The QR Studio dashboard: the GENERATOR sits at the top (type selector + all
 // options), and every kind of code is categorized below it. Single scroll, no tabs.
 export function QrStudioDashboard({
+  qrConfig,
   nodeProps,
   linkProps,
   campaignProps,
@@ -19,6 +21,9 @@ export function QrStudioDashboard({
   marketingCodes,
   analytics,
 }: {
+  /** The operator's resolved qr-studio element config (resolveQrStudio at the server mount), threaded
+   *  into every StyleEditor surface below. Optional = the fail-safe full config. */
+  qrConfig?: QrStudioConfig
   nodeProps: { initialNodes: StudioNode[]; partners: PartnerOption[] }
   linkProps: {
     initialLinks: StudioLink[]
@@ -40,6 +45,7 @@ export function QrStudioDashboard({
         nodes={linkProps.nodes}
         circles={linkProps.circles}
         events={linkProps.events}
+        qrConfig={qrConfig}
       />
 
       {/* ── Categories ──────────────────────────────────────────────────────── */}
@@ -50,20 +56,21 @@ export function QrStudioDashboard({
           circles={linkProps.circles}
           events={linkProps.events}
           partners={linkProps.partners}
+          qrConfig={qrConfig}
           hideCreate
         />
       </Category>
 
       <Category Icon={MapPin} title="Check-in codes" count={nodeProps.initialNodes.length}>
-        <QrStudio initialNodes={nodeProps.initialNodes} partners={nodeProps.partners} hideCreate />
+        <QrStudio initialNodes={nodeProps.initialNodes} partners={nodeProps.partners} qrConfig={qrConfig} hideCreate />
       </Category>
 
       <Category Icon={UserCircle} title="Member profile codes" count={memberCodes.length}>
-        <MemberProfileCodes codes={memberCodes} />
+        <MemberProfileCodes codes={memberCodes} qrConfig={qrConfig} />
       </Category>
 
       <Category Icon={Megaphone} title="Marketing codes" count={marketingCodes.length}>
-        <MarketingCodesAdmin codes={marketingCodes} />
+        <MarketingCodesAdmin codes={marketingCodes} qrConfig={qrConfig} />
       </Category>
 
       <Category Icon={Trophy} title="Campaigns" count={campaignProps.campaigns.length}>

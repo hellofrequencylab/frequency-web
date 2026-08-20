@@ -7,7 +7,7 @@
 // role helpers), so it is client-safe and unit-testable.
 
 import { atLeastRole, isStaff, type CommunityRole, type WebRole } from '@/lib/core/roles'
-import { atLeastSpaceRole, type SpaceRole } from '@/lib/spaces/membership'
+import { atLeastSpaceRole, type SpaceRole } from '@/lib/spaces/membership-core'
 import { ELEMENT_ROLES, type ElementDef, type ElementRole } from './registry'
 
 /** The stored shape of one element_settings.config row (partial + sparse). */

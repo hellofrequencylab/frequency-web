@@ -16,6 +16,7 @@ import {
 } from '@/lib/qr/style'
 import { scannabilityWarnings } from '@/lib/qr/scannability'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
+import { DEFAULT_QR_STUDIO_CONFIG, type QrStudioConfig } from '@/lib/elements/qr-studio-config'
 
 // The "make them beautiful" editor: live-previewed controls over a QrStyle.
 // Renders the exact same SVG the server/Studio/download produce, so what the
@@ -25,12 +26,19 @@ import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 //   • inline (default) — a compact bordered card used inside an item's edit form.
 //   • rail            — a hero preview on top + presets + stacked controls, used
 //                       as the left rail of the Studio generator (editor up top).
+//
+// ELEMENT CONFIG (LIVE-066): the qr-studio element's per-viewer config (resolveQrStudio, mirroring the
+// header element's resolveHeaderElement precedent) decides which control groups render. The server
+// mount resolves it and passes it down; a control the viewer's config turns off is NOT rendered — the
+// same way a header consumer simply omits the links cluster when its config says links off. Omitting
+// the prop keeps the resolver's fail-safe: the full config.
 export function StyleEditor({
   value,
   onChange,
   previewUrl,
   variant = 'inline',
   compact = false,
+  config = DEFAULT_QR_STUDIO_CONFIG,
   presetsFooter,
   renderCompact,
 }: {
@@ -44,6 +52,9 @@ export function StyleEditor({
   /** Trim to the essentials (drops eye-color + gradient controls, shows the four
    *  core presets) — used in the page Settings panel where space is tight. */
   compact?: boolean
+  /** The viewer's resolved qr-studio element config (resolveQrStudio): which design control groups this
+   *  viewer may use. Defaults to the full config (the resolver's fail-safe). */
+  config?: QrStudioConfig
   /** Slot rendered directly under the preset buttons (e.g. an "Archived codes" link). */
   presetsFooter?: ReactNode
   /** Compact-only: the caller lays out the design pieces itself. The editor hands back
@@ -60,9 +71,9 @@ export function StyleEditor({
     onChange({ ...value, [key]: v })
   }
 
-  // Compact mode shows the four core looks; the full set (incl. Forest / Gold) is
-  // kept in the data for member-code defaults and the Studio.
-  const visiblePresets = compact
+  // Compact mode and the element config's 'core' preset choice both show the four core looks; the
+  // full set (incl. Forest / Gold) is kept in the data for member-code defaults and the Studio.
+  const visiblePresets = compact || config.presets === 'core'
     ? STYLE_PRESETS.filter((p) => !['forest', 'gold'].includes(p.key))
     : STYLE_PRESETS
   const presets = (
@@ -98,16 +109,28 @@ export function StyleEditor({
     </div>
   )
 
+  // Which control groups THIS viewer gets (the element config): a group the config turns off is not
+  // rendered at all, mirroring how the header element's consumers omit the links cluster when their
+  // resolved config says links off.
+  const showEyeColor = !compact && config.eyeColor
+  const showGradient = !compact && config.gradient
+  const showColorsGroup = config.colors || showEyeColor || showGradient
+
   const controls = (
     <div className="space-y-4 text-meta">
       {/* ── Colors ─────────────────────────────────────────────────────────── */}
+      {showColorsGroup && (
       <Group label="Colors">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <Swatch label="Modules" value={value.fg} onChange={(c) => set('fg', c)} />
-          <Swatch label="Background" value={value.bg} onChange={(c) => set('bg', c)} />
+          {config.colors && (
+            <>
+              <Swatch label="Modules" value={value.fg} onChange={(c) => set('fg', c)} />
+              <Swatch label="Background" value={value.bg} onChange={(c) => set('bg', c)} />
+            </>
+          )}
           {/* A <div>, not a <label>: two controls (the toggle and the colour well) cannot share
               one label, and the well used to sit inside the checkbox's label naming neither. */}
-          {!compact && (
+          {showEyeColor && (
             <div className="flex items-center gap-1.5">
               <Checkbox
                 label={<span className="text-subtle">Eye color</span>}
@@ -127,7 +150,7 @@ export function StyleEditor({
           )}
         </div>
 
-        {!compact && (
+        {showGradient && (
           <div>
             <Checkbox
               label={<span className="text-subtle">Gradient fill</span>}
@@ -164,8 +187,10 @@ export function StyleEditor({
           </div>
         )}
       </Group>
+      )}
 
       {/* ── Shape ──────────────────────────────────────────────────────────── */}
+      {config.shapes && (
       <Group label="Shape">
         <div className="flex flex-wrap gap-x-4 gap-y-2">
           <StyleSelect
@@ -201,8 +226,10 @@ export function StyleEditor({
           />
         </div>
       </Group>
+      )}
 
       {/* ── Logo ───────────────────────────────────────────────────────────── */}
+      {config.logo && (
       <Group label="Logo">
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -253,8 +280,10 @@ export function StyleEditor({
           </div>
         )}
       </Group>
+      )}
 
       {/* ── Frame ──────────────────────────────────────────────────────────── */}
+      {config.frame && (
       <Group label="Frame">
         <label className="block">
           <span className="mb-1 block text-subtle">Card label (optional, adds a “scan me” frame)</span>
@@ -266,6 +295,7 @@ export function StyleEditor({
           />
         </label>
       </Group>
+      )}
 
       <button
         type="button"

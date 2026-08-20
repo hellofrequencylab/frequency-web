@@ -10,6 +10,7 @@ import { StyleEditor } from './style-editor'
 import { NfcWriter } from './nfc-writer'
 import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
 import { shortLinkUrl } from '@/lib/qr/links'
+import type { QrStudioConfig } from '@/lib/elements/qr-studio-config'
 import type { PartnerOption } from './qr-studio'
 import { Input } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
@@ -82,6 +83,7 @@ export function DynamicLinks({
   circles,
   events,
   partners,
+  qrConfig,
   hideCreate = false,
 }: {
   initialLinks: StudioLink[]
@@ -89,6 +91,8 @@ export function DynamicLinks({
   circles: PickOption[]
   events: PickOption[]
   partners: PartnerOption[]
+  /** The viewer's resolved qr-studio element config, threaded into every StyleEditor here. */
+  qrConfig?: QrStudioConfig
   /** When the create form lives elsewhere (the dashboard generator), show list only. */
   hideCreate?: boolean
 }) {
@@ -121,6 +125,7 @@ export function DynamicLinks({
                 circles={circles}
                 events={events}
                 partners={partners}
+                qrConfig={qrConfig}
                 onDone={() => setCreating(false)}
                 onCancel={() => setCreating(false)}
               />
@@ -150,6 +155,7 @@ export function DynamicLinks({
                 circles={circles}
                 events={events}
                 partners={partners}
+                qrConfig={qrConfig}
                 partnerName={link.partner_id ? partnerName.get(link.partner_id) ?? null : null}
               />
             ))}
@@ -239,6 +245,7 @@ function LinkCard({
   circles,
   events,
   partners,
+  qrConfig,
   partnerName,
 }: {
   link: StudioLink
@@ -246,6 +253,7 @@ function LinkCard({
   circles: PickOption[]
   events: PickOption[]
   partners: PartnerOption[]
+  qrConfig?: QrStudioConfig
   partnerName: string | null
 }) {
   const [editing, setEditing] = useState(false)
@@ -392,6 +400,7 @@ function LinkCard({
             circles={circles}
             events={events}
             partners={partners}
+            qrConfig={qrConfig}
             onDone={() => setEditing(false)}
             onCancel={() => setEditing(false)}
           />
@@ -407,6 +416,7 @@ export function LinkForm({
   circles,
   events,
   partners,
+  qrConfig,
   onDone,
   onCancel,
   externalStyle,
@@ -417,6 +427,8 @@ export function LinkForm({
   circles: PickOption[]
   events: PickOption[]
   partners: PartnerOption[]
+  /** The viewer's resolved qr-studio element config, passed through to the StyleEditor. */
+  qrConfig?: QrStudioConfig
   onDone: () => void
   onCancel: () => void
   /** When the design editor lives outside the form (Studio rail), the parent owns
@@ -655,6 +667,7 @@ export function LinkForm({
           value={form.style}
           onChange={(style) => set('style', style)}
           previewUrl={link?.url ?? shortLinkUrl('preview')}
+          config={qrConfig}
         />
       )}
 

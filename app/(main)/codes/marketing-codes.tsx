@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Megaphone, Plus, Pencil, Trash2, Download, Copy, Check } from 'lucide-react'
 import { StyleEditor } from '@/app/(main)/admin/qr/style-editor'
+import type { QrStudioConfig } from '@/lib/elements/qr-studio-config'
 import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { trackClient } from '@/components/analytics/track-provider'
@@ -33,10 +34,13 @@ export function MarketingCodes({
   cards,
   targets,
   limit,
+  qrConfig,
 }: {
   cards: MarketingCard[]
   targets: MarketingTarget[]
   limit: number
+  /** The member's resolved qr-studio element config (resolveQrStudio at the /codes mount). */
+  qrConfig?: QrStudioConfig
 }) {
   const [creating, setCreating] = useState(false)
   const atLimit = cards.length >= limit
@@ -73,6 +77,7 @@ export function MarketingCodes({
         {creating && (
           <MarketingForm
             targets={targets}
+            qrConfig={qrConfig}
             onDone={() => setCreating(false)}
             onCancel={() => setCreating(false)}
           />
@@ -83,14 +88,14 @@ export function MarketingCodes({
         )}
 
         {cards.map((card) => (
-          <MarketingRow key={card.id} card={card} targets={targets} />
+          <MarketingRow key={card.id} card={card} targets={targets} qrConfig={qrConfig} />
         ))}
       </div>
     </section>
   )
 }
 
-function MarketingRow({ card, targets }: { card: MarketingCard; targets: MarketingTarget[] }) {
+function MarketingRow({ card, targets, qrConfig }: { card: MarketingCard; targets: MarketingTarget[]; qrConfig?: QrStudioConfig }) {
   const [editing, setEditing] = useState(false)
   const [copied, setCopied] = useState(false)
   const [pending, start] = useTransition()
@@ -169,6 +174,7 @@ function MarketingRow({ card, targets }: { card: MarketingCard; targets: Marketi
           <MarketingForm
             card={card}
             targets={targets}
+            qrConfig={qrConfig}
             onDone={() => setEditing(false)}
             onCancel={() => setEditing(false)}
           />
@@ -181,11 +187,13 @@ function MarketingRow({ card, targets }: { card: MarketingCard; targets: Marketi
 function MarketingForm({
   card,
   targets,
+  qrConfig,
   onDone,
   onCancel,
 }: {
   card?: MarketingCard
   targets: MarketingTarget[]
+  qrConfig?: QrStudioConfig
   onDone: () => void
   onCancel: () => void
 }) {
@@ -250,6 +258,7 @@ function MarketingForm({
         value={form.style}
         onChange={(style) => setForm((f) => ({ ...f, style }))}
         previewUrl={card?.url ?? shortLinkUrl('preview')}
+        config={qrConfig}
       />
 
       {error && <p className="text-meta text-danger">{error}</p>}

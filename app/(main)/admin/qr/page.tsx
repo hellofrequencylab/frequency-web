@@ -9,6 +9,7 @@ import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { parseStyle, withMemberAvatar } from '@/lib/qr/style'
 import { parseVcard } from '@/lib/vcard'
 import { scanSummaryFromRpc, type QrStatsRpcPayload } from '@/lib/qr/analytics'
+import { resolveQrStudio } from '@/lib/elements/qr-studio'
 import { QrStudioDashboard } from './qr-studio-dashboard'
 import type { StudioNode } from './qr-studio'
 import type { StudioLink, NodeOption, PickOption } from './dynamic-links'
@@ -31,8 +32,15 @@ export default async function QrStudioPage() {
   // staff floor in some OTHER domain and happened to be a host — a structure-domain staffer with
   // QR Studio. 'admin' reads the STAFF axis. A real qr-domain operator still passes on the
   // `staff` branch; only the cross-domain host loses access, which is the point.
-  await requireAdmin('admin', { staff: 'qr' })
+  const caller = await requireAdmin('admin', { staff: 'qr' })
   const db = createAdminClient()
+
+  // The qr-studio ELEMENT config (LIVE-066, mirrors the header pages' resolveHeaderElement call):
+  // which design control groups THIS operator may use in every StyleEditor below. Resolved once at
+  // the mount and threaded down as props; fail-safe to the full config.
+  const qrConfig = await resolveQrStudio({
+    viewer: { communityRole: caller.role, webRole: caller.webRole },
+  })
 
   // Three whole-table reads used to live here and none of them needed to (ADR-969):
   //   · `captures` was read in full to count rows per node. It grows with every verified check-in
@@ -320,6 +328,7 @@ export default async function QrStudioPage() {
       }
     >
       <QrStudioDashboard
+        qrConfig={qrConfig}
         nodeProps={{ initialNodes, partners: partners ?? [] }}
         linkProps={{ initialLinks, nodes: nodeOptions, circles: circleOptions, events: eventOptions, partners: partners ?? [] }}
         campaignProps={{ campaigns, codes: campaignCodes }}

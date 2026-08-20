@@ -11,9 +11,11 @@
 //   • EXCLAMATION POINTS — more than one in a piece of copy. Warning.
 //
 // It moved here from the Beta Command Center's email layer, which is gone. It was
-// never beta-specific: its live callers are the preset suite (presets.test.ts), which
-// holds every shipped email preset to the hard rule, so no operator can start from a
-// template we would refuse. Pure and unit-tested, no imports, safe anywhere.
+// never beta-specific. LIVE CALLERS (LIVE-066): the campaign send path (lib/email-studio/send.ts)
+// runs it on every real send and schedule — the em dash refuses the send (the hard rule), the rest
+// surface as warnings through the send panel's voice preflight — and the preset suite
+// (presets.test.ts) holds every shipped email preset to the hard rule, so no operator can start
+// from a template we would refuse. Pure and unit-tested, no imports, safe anywhere.
 
 export interface VoiceViolation {
   /** A short machine key for the rule. */
