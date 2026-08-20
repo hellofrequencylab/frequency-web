@@ -93,14 +93,28 @@
 //   caches (COMPILER_CACHE_DIRS) and can reach nothing else; a directory it does not recognise is
 //   REPORTED and kept, which is the honest version of the generality the old loop was reaching for.
 //
-// 🔒 STILL NOT WIRED, AND NOT BECAUSE THIS FILE IS UNFINISHED. LIVE-035 owns the wiring, and the
-// rule it is keeping is AGENTS.md's: a build-blocking gate that has never seen a real artifact is
-// the 2026-08-11 incident with the roles reversed. This file DID pass its own checks, ran clean
-// locally, and was still wrong by a factor of two. So it goes into `postbuild` in the SAME change as
-// the preview build that prints it green, and the first thing that build's output is for is
-// RE-DERIVING PACKED_PER_RAW: every run prints the raw figure it measured, and the log prints
-// `Uploading build cache [N GB]` a minute later. Those two numbers, from ONE build, are the paired
-// reading this constant currently does not have.
+//   ✅ THAT FIX IS NOW PROVED BY BEHAVIOUR, not only by a static probe. `COMPILER_CACHE_DIRS` had
+//   been checked by grep-shaped assertions that a plausible-looking rewrite could satisfy while
+//   deleting the fetch cache again. scripts/check-cache-budget-trim.test.ts runs THIS script, for
+//   real, against fixture `.next/cache` trees on disk, and its sharpest case is a mutant: put the
+//   old size-sorted loop back and the fetch cache is deleted, which is the assertion firing on the
+//   exact defect of 2026-08-18 rather than on a string.
+//
+//   DEFECT 3, FOUND BY THOSE FIXTURES, 2026-08-19. Only TOP-LEVEL DIRECTORIES of `.next/cache` were
+//   given names in the report, while `measure()` counted everything. A cache holding one loose
+//   2900 MiB file printed `.next/cache 3100 MiB` above `holds: fetch-cache 200 MiB` with no warning
+//   of any kind — 2900 MiB of growth with no address, on the build that was over the ceiling, under
+//   a line telling a human to "read what .next/cache holds below and decide". Fixed by `looseParts`
+//   below: loose entries are listed, reported as UNRECOGNISED, and still not deletable, because the
+//   trim resolves names only against the directory list.
+//
+// ✅ WIRED BLOCKING IN POSTBUILD, 2026-08-19 (LIVE-029 + LIVE-035, owner: "implement best
+// practice"). The route AGENTS.md demands was walked in order: the warn-only stage ran on a real
+// build and printed the raw figure beside that same build's `Uploading build cache [N GB]` line —
+// the paired reading that settled PACKED_PER_RAW below — and the promotion landed in the SAME
+// change as the preview build whose postbuild printed this gate blocking-green. The warn-only pin
+// in scripts/check-cache-budget-warn-only.test.ts inverted with it, so a re-added `--warn-only`
+// now fails as a silent demotion.
 //
 // ⚠️ RUNNING THIS IN A LONG-LIVED DEV CONTAINER OVER-REPORTS, and by a lot. `pnpm` leaves
 // unreferenced store entries in `node_modules/.pnpm` when a dependency version changes, and
@@ -327,14 +341,46 @@ let nextCache = measure('.next/cache')
 const yarnCache = measure('.yarn/cache')
 
 // Name the parts of .next/cache, so a future growth has an address rather than a total.
+//
+// TWO lists, and the split is a safety property rather than tidiness. `cacheParts` is DIRECTORIES
+// ONLY and it is the only set the trim's lookup below can ever resolve a name against, so nothing
+// that is not a directory is even ADDRESSABLE by a delete. `looseParts` is everything else at the
+// top level — plain files, and symlinks, which `entry.isDirectory()` reports false for. It exists
+// for one reason: those bytes are inside `measure('.next/cache')` and they need a NAME.
+//
+// 🔴 WHY looseParts EXISTS, measured on a fixture rather than imagined. Before it, the two halves
+// of the same report disagreed and nothing said so. A `.next/cache` holding one 2900 MiB file
+// beside a 200 MiB fetch-cache printed:
+//
+//     ⚠️  … Vercel is about to be handed … (3.03 GiB raw: node_modules 0 MiB + .next/cache 3100 MiB)
+//        🔴 STILL OVER after the trim … read what .next/cache holds below and decide on purpose.
+//     .next/cache holds: fetch-cache 200 MiB
+//
+// 2900 MiB of growth with no name on it, and the line telling a human to go read the composition
+// pointed at a list that omitted the entire cause. That is the swallowed-regression shape
+// DEPLOY-SAFETY rule 6 names, occurring inside the gate written to stop it, and it would have been
+// at its worst exactly when it mattered: on the build that was over the ceiling. Loose entries are
+// now listed, reported as UNRECOGNISED, and — because the trim can only resolve names against
+// `cacheParts` — still impossible to delete.
 const cacheParts = []
+const looseParts = []
 const cacheDir = path.join(ROOT, '.next', 'cache')
 if (existsSync(cacheDir)) {
   for (const entry of readdirSync(cacheDir, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue
-    cacheParts.push([entry.name, measure(path.join('.next', 'cache', entry.name))])
+    if (entry.isDirectory()) {
+      cacheParts.push([entry.name, measure(path.join('.next', 'cache', entry.name))])
+      continue
+    }
+    let size = 0
+    try {
+      size = lstatSync(path.join(cacheDir, entry.name)).size
+    } catch {
+      /* raced with a delete; contributes nothing, same as measure() */
+    }
+    looseParts.push([entry.name, size])
   }
   cacheParts.sort((a, b) => b[1] - a[1])
+  looseParts.sort((a, b) => b[1] - a[1])
 }
 
 let rawTotal = nodeModules + nextCache + yarnCache
@@ -418,10 +464,21 @@ if (nodeModules > NODE_MODULES_BUDGET_GIB * GIB) {
 // The composition line is not decoration. Nobody could see inside a Vercel build cache before this
 // ran, which is why LIVE-029 could only be diagnosed by subtracting two numbers in a log tail.
 const kept = cacheParts.filter(([n]) => !dropped.some(([d]) => d === n))
-const parts = kept.length > 0 ? kept.map(([n, b]) => `${n} ${mib(b)} MiB`).join(', ') : 'empty'
-const unknown = kept
-  .map(([n]) => n)
-  .filter((n) => !COMPILER_CACHE_DIRS.includes(n) && !NEVER_TRIM_DIRS.includes(n))
+// Everything still on disk, directories AND loose top-level entries, so what this line lists sums
+// to the `.next/cache N MiB` figure printed right beside it. A composition that does not reconcile
+// with its own total is a place growth can hide.
+const remaining = [...kept, ...looseParts].sort((a, b) => b[1] - a[1])
+const parts = remaining.length > 0 ? remaining.map(([n, b]) => `${n} ${mib(b)} MiB`).join(', ') : 'empty'
+// Anything this file does not have a name for. Unrecognised DIRECTORIES are kept because the trim
+// only walks COMPILER_CACHE_DIRS; loose entries are kept because the trim cannot address them at
+// all. Either way the answer is the same and it is said out loud, by name and with a size, so a new
+// term under .next/cache reads as new rather than as arithmetic that does not add up.
+const unknown = [
+  ...kept
+    .filter(([n]) => !COMPILER_CACHE_DIRS.includes(n) && !NEVER_TRIM_DIRS.includes(n))
+    .map(([n, b]) => `${n} (${mib(b)} MiB)`),
+  ...looseParts.map(([n, b]) => `${n} (${mib(b)} MiB, not a directory)`),
+]
 // Say which side of the ceiling this lands on, both ways. A "✅ … under the ceiling" line printed
 // over a number that is above the ceiling is the swallowed regression this file exists to stop.
 const composition =
@@ -450,7 +507,10 @@ console.log(
 )
 if (unknown.length > 0) {
   console.log(
-    `   ⚠️  Not recognised, kept rather than trimmed: ${unknown.join(', ')}. ` +
-      `The trim only removes named compiler caches. If one of these is growing, name it in this file on purpose.`,
+    `   ⚠️  Not recognised, kept rather than trimmed: ${unknown.join(', ')}.\n` +
+      `      The trim only removes the named compiler caches (${COMPILER_CACHE_DIRS.join(', ')}), so nothing ` +
+      `above can be deleted by this gate however large it grows.\n` +
+      `      If one of these is the term that is growing, read what writes it and name it in this file on ` +
+      `purpose — in COMPILER_CACHE_DIRS if losing it only costs CPU, in NEVER_TRIM_DIRS otherwise.`,
   )
 }

@@ -76,9 +76,17 @@ const UNWIRED: Record<string, string> = {
   //
   // ⚠️ WARN-ONLY IS A STAGE, NOT A DESTINATION. A gate that only warns is one everyone learns to
   // scroll past (ADR-970; check:adoption sat red on main for two days proving it again the same
-  // week). LIVE-029 stays OPEN until this is promoted to blocking, because until then nothing
-  // prevents a cache overflow. Promote it in the SAME change as the green build whose "Uploading
-  // build cache [N GB]" line confirms the constant.
+  // week). LIVE-029 stayed OPEN through the warn-only stage, because until promotion nothing
+  // prevented a cache overflow.
+  //
+  // ✅ AND PROMOTED, 2026-08-19, by the same route as its sibling. The warn-only run printed the
+  // paired reading (raw measure beside the same build's "Uploading build cache" line) that settled
+  // PACKED_PER_RAW at 0.53 (measured 0.5254, rounded toward firing early), the trim was proven by
+  // mutation to reach ONLY the named compiler caches (scripts/check-cache-budget-trim.test.ts,
+  // including a reconstruction of the 2026-08-18 size-sorted mutant that a discriminating fixture
+  // catches), the owner said "implement best practice", and the promotion change carried the
+  // preview build whose postbuild printed it BLOCKING-green. The warn-only pin inverted in that
+  // same change, so a re-added flag now fails as a silent demotion.
 }
 
 /** ── THE FOURTH HOME: enforced by a vitest test (ADR-1011) ────────────────────────────────────
