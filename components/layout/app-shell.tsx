@@ -932,9 +932,9 @@ function NavLinkList({
         //
         // The nesting was derived and defensible; it was also a SECOND source of order competing
         // with the one the operator controls. The menu is now the only source: what the Manager
-        // shows is what the rail draws. `lib/nav/admin-nesting.ts` survives because
-        // `lib/nav/admin-rail.ts` still uses its href helpers for the operator App rail, which is
-        // a different surface with its own contract.
+        // shows is what the rail draws. `lib/nav/admin-nesting.ts` and `lib/nav/admin-rail.ts`
+        // survive as drift-guard/test-only records of the ADR-850 reconciliation (admin-rail.test.ts
+        // + space-rail-coverage.test.ts consume them); nothing at runtime reads them.
         const visibleItems = gatedItems
         if (visibleItems.length === 0) return null
         return (

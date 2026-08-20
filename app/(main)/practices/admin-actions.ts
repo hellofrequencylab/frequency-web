@@ -7,10 +7,6 @@ import { getPracticeCapabilities } from '@/lib/core/load-capabilities'
 import { slugify } from '@/lib/utils'
 import { isLoomPublicImageUrl } from '@/lib/loom/urls'
 
-// Safe raster image types for cover uploads. SVG is excluded deliberately (it can carry script);
-// the public site-media bucket has no MIME constraint, so an arbitrary content-type (text/html,
-// image/svg+xml) would serve EXECUTABLE from the CDN URL stored in header_image (stored XSS).
-const IMAGE_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']
 // The practice detail route is id-based (/practices/[id]); the settings drawer also matches the
 // bespoke /practices/new. Guard so a non-uuid id never hits the uuid PK (Postgres 22P02).
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -18,9 +14,9 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // In-place "Practice settings" admin module (EMBEDDED-ADMIN.md / ADR-133), mirroring
 // the Event + Circle settings modules. The DB reads/writes run on the SESSION client
 // (RLS-enforced; T0 convergence), and re-check practice.editSettings in app code as
-// defense-in-depth. Only the cover-image storage upload still uses the admin client.
-// The cover is stored as a public URL in
-// practices.header_image (like circles.image_url, via the 'site-media' bucket), NOT a
+// defense-in-depth. The cover write (setPracticeCoverUrl) and the insights read use
+// the admin client. The cover is stored as a public URL in
+// practices.header_image (like circles.image_url), NOT a
 // storage path — so reads need no getPublicUrl resolution, unlike events.
 
 /** Load the editable fields of a practice, but only for a viewer who may edit it.
@@ -91,48 +87,9 @@ export async function updatePracticeSettings(id: string, slug: string | null, fd
   revalidatePath('/practices')
 }
 
-// Cover image: upload to the public `site-media` bucket and persist the public URL in
-// practices.header_image, or clear it. Both re-check practice.editSettings
-// (capabilities are law). Mirrors uploadCircleCover EXACTLY — the URL-storing pattern
-// (the column holds the full public URL, not a storage path).
-export async function uploadPracticeCover(
-  id: string,
-  slug: string | null,
-  formData: FormData,
-): Promise<{ url: string } | { error: string }> {
-  const caps = await getPracticeCapabilities(id)
-  if (!caps.has('practice.editSettings')) return { error: 'Unauthorized' }
-
-  const file = formData.get('file')
-  if (!(file instanceof File) || file.size === 0) return { error: 'No file selected.' }
-  if (file.size > 8 * 1024 * 1024) return { error: 'Image must be under 8MB.' }
-  if (!IMAGE_MIME.includes(file.type)) return { error: 'Use a JPEG, PNG, WebP, GIF, or AVIF image.' }
-
-  const admin = createAdminClient()
-  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')
-  const path = `practices/${id}/cover-${Date.now()}.${ext}`
-  const bytes = new Uint8Array(await file.arrayBuffer())
-
-  const { error: upErr } = await admin.storage
-    .from('site-media')
-    .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: false })
-  if (upErr) return { error: upErr.message }
-
-  const { data } = admin.storage.from('site-media').getPublicUrl(path)
-  const { error: dbErr } = await admin
-    .from('practices')
-    .update({ header_image: data.publicUrl })
-    .eq('id', id)
-  if (dbErr) return { error: dbErr.message }
-
-  revalidatePath(`/practices/${id}`)
-  if (slug) revalidatePath(`/practices/${slug}`)
-  revalidatePath('/practices')
-  return { url: data.publicUrl }
-}
-
-/** Persist a Loom-picked cover URL (the URL-only sibling of uploadPracticeCover). Same
- *  practice.editSettings gate; the URL must be a Supabase public object URL. */
+/** Persist a Loom-picked cover URL in practices.header_image (the cover is picked or
+ *  uploaded through the Loom picker, which owns the file handling). Re-checks
+ *  practice.editSettings; the URL must be a Supabase public object URL. */
 export async function setPracticeCoverUrl(
   id: string,
   slug: string | null,

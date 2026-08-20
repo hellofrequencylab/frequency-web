@@ -25,6 +25,7 @@
 // the one kind of staleness a committed image can hide. `pnpm check:og-trace` fails the build if
 // a rasteriser ever reaches a function that does not render an image.
 // ─────────────────────────────────────────────────────────────────────────────
+import { notFound } from "next/navigation";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
@@ -36,6 +37,9 @@ const size = { width: 1200, height: 630 };
 
 
 export async function GET() {
+  // Dev-only, like its /dev siblings (editor-controls, business-seeder-review): 404 in production.
+  if (process.env.NODE_ENV === 'production') notFound();
+
   const wordmark = SITE_NAME.toUpperCase();
   const tagline = SITE_TAGLINE.toUpperCase();
 

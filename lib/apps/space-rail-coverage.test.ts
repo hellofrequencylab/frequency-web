@@ -110,9 +110,10 @@ describe('the operator nav lane cannot displace a surface-specific rail', () => 
 
   it('leaves a non-admin href untouched when the operator nesting pass runs over it', () => {
     // The LEFT RAIL no longer runs this pass (2026-08-06): it re-sorted rows, so the rail could
-    // not agree with the order an operator set in the Menu Manager. The function survives for
-    // lib/nav/admin-rail.ts, which still derives the operator App rail's parentage from it — so
-    // the identity-on-member-rows property still matters there, and stays pinned here.
+    // not agree with the order an operator set in the Menu Manager. Nothing at runtime reads
+    // admin-nesting any more — it survives as the drift-guard record of the ADR-848/850 derivation
+    // (consumed here and by admin-rail.test.ts / admin-nesting.test.ts), so the
+    // identity-on-member-rows property stays pinned as documentation of the retired pass.
     const rows = [{ href: '/feed' }, { href: '/circles' }, { href: '/events' }, { href: '/market' }]
     expect(nestAdminRows(rows)).toEqual(rows.map((r) => ({ ...r, depth: 0 })))
   })

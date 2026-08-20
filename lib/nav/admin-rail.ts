@@ -12,6 +12,10 @@
 // PAGE refused. Both are resolved (ADR-851); see KNOWN_GATE_DIVERGENCES. This module is the join:
 // one entry per rail row, naming its legacy key, its world parent, and ONE gate.
 //
+// TEST-ONLY: nothing at runtime reads this module. It is the drift-guard record of the ADR-850
+// reconciliation — admin-rail.test.ts consumes it to fail the build when the two catalogs diverge.
+// The live rail renders the DB-backed menu (lib/menus) in the operator's own order.
+//
 // THE GATE IS TAKEN FROM `NAV_AREAS`, VERBATIM. `NAV_AREAS` is what the rail enforces, so sourcing
 // from it means this join can never itself change access: a gate change has to be made in the
 // catalog, deliberately, where the drift guard will see it.

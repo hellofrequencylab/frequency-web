@@ -18,7 +18,12 @@
 //     Leadership  = no world; stays a top-level row of its own.
 //
 // Thirteen rows become six boxes, and not one parent is a judgement call: each is the world its own
-// leaf already declared. If a leaf is re-homed in studio.ts, the rail follows on the next render.
+// leaf already declared.
+//
+// TEST-ONLY: nothing at runtime reads this module — the shell's rail render retired the nesting pass
+// (it re-sorted rows against the Menu Manager's order; see app-shell.tsx). It survives as a
+// drift-guard/test-only record of the ADR-848/850 derivation, consumed by lib/nav/admin-rail.ts
+// (itself test-only), admin-nesting.test.ts, and space-rail-coverage.test.ts.
 //
 // KEYED BY HREF, not by nav key, on purpose. The live rail is DB-backed (lib/menus): its rows are
 // `menu_items` whose `id` is a database uuid and which may include destinations that were never

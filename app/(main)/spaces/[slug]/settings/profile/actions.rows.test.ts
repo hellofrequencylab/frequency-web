@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
-// saveSpaceProfileLayout + saveSpaceGridLayout (ADR-516 Phase D) accept the freeform ROWS from the in-rail
-// Space builder and SANITIZE them to unified SPACE block ids before persist (never trust the wire): a
+// saveSpaceGridLayout (ADR-516 Phase D) — the slug-keyed entry the shared store's debounced flush calls —
+// accepts the freeform ROWS from the in-rail Space builder and SANITIZES them (via the internal
+// saveSpaceProfileLayout helper) to unified SPACE block ids before persist (never trust the wire): a
 // member-only id is dropped, a duplicate becomes null, a bad column count drops its row, and the node lands
-// at spaces.preferences.profileLayout preserving every other preferences key. OWNER-gated: a non-manager is
-// refused. saveSpaceGridLayout is the slug-keyed entry the shared store's debounced flush calls.
+// at spaces.preferences.profileLayoutDraft preserving every other preferences key. OWNER-gated: a
+// non-manager is refused.
 
 const { getCallerProfile, getSpaceById, getVisibleSpaceBySlug, resolveSpaceManageAccess, update } =
   vi.hoisted(() => ({
@@ -30,11 +31,11 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 
-import { saveSpaceProfileLayout, saveSpaceGridLayout } from './actions'
+import { saveSpaceGridLayout } from './actions'
 
-// The action is typed to EntityLayout; the tests deliberately feed WIRE-shaped (untrusted) values a
+// The action is typed to BuilderLayout; the tests deliberately feed WIRE-shaped (untrusted) values a
 // client could POST — an out-of-range column count, a member-only id — to prove the server sanitizes them.
-type LayoutArg = Parameters<typeof saveSpaceProfileLayout>[1]
+type LayoutArg = Parameters<typeof saveSpaceGridLayout>[1]
 
 const space = { id: 'space-1', slug: 'calm', preferences: { accent: 'sky' } }
 
@@ -46,9 +47,9 @@ beforeEach(() => {
   resolveSpaceManageAccess.mockResolvedValue({ canManage: true, staffViewing: false })
 })
 
-describe('saveSpaceProfileLayout - rows sanitize', () => {
-  it('persists sanitized space rows at preferences.profileLayout, preserving other keys', async () => {
-    const res = await saveSpaceProfileLayout('space-1', {
+describe('saveSpaceGridLayout - rows sanitize', () => {
+  it('persists sanitized space rows at preferences.profileLayoutDraft, preserving other keys', async () => {
+    const res = await saveSpaceGridLayout('calm', {
       rows: [
         { id: 'x', columns: 2, slots: ['offerings', 'offerings'] }, // dup -> 2nd null; id regenerated
         { id: 'r1', columns: 9, slots: ['events'] }, // bad columns -> row dropped
@@ -56,14 +57,14 @@ describe('saveSpaceProfileLayout - rows sanitize', () => {
       ],
       hidden: ['events'],
     } as unknown as LayoutArg)
-    expect('error' in res && res.error).toBeFalsy()
+    expect(res.error).toBeFalsy()
     expect(update).toHaveBeenCalledTimes(1)
     const patch = update.mock.calls[0][0] as {
-      preferences: { accent: string; profileLayout: { rows: unknown[]; hidden?: string[] } }
+      preferences: { accent: string; profileLayoutDraft: { rows: unknown[]; hidden?: string[] } }
     }
     // Other preferences keys are preserved.
     expect(patch.preferences.accent).toBe('sky')
-    const grid = patch.preferences.profileLayout
+    const grid = patch.preferences.profileLayoutDraft
     expect(grid.rows).toEqual([
       { id: expect.stringMatching(/^r[0-9a-z]+$/i), columns: 2, cells: [['offerings'], []] },
       { id: expect.stringMatching(/^r[0-9a-z]+$/i), columns: 1, cells: [[]] },
@@ -73,10 +74,10 @@ describe('saveSpaceProfileLayout - rows sanitize', () => {
 
   it('refuses a non-manager (fail-closed, no write)', async () => {
     resolveSpaceManageAccess.mockResolvedValue({ canManage: false, staffViewing: true })
-    const res = await saveSpaceProfileLayout('space-1', {
+    const res = await saveSpaceGridLayout('calm', {
       rows: [{ id: 'r0', columns: 1, cells: [['about']] }],
-    })
-    expect('error' in res && res.error).toBeTruthy()
+    } as unknown as LayoutArg)
+    expect(res.error).toBeTruthy()
     expect(update).not.toHaveBeenCalled()
   })
 })

@@ -15,9 +15,7 @@ import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import {
   draftSpaceBio,
-  draftOfferingBlurb,
   suggestTagline,
-  type OfferingContext,
   type SpaceContext,
 } from '@/lib/ai/space-copilot'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
@@ -53,22 +51,6 @@ export async function draftSpaceBioAction(spaceId: string): Promise<ActionResult
   const auth = await authorizeEdit(spaceId)
   if ('error' in auth) return fail(auth.error)
   const text = await draftSpaceBio(auth.ctx)
-  return ok(text)
-}
-
-/** Draft a short blurb for one offering. Accepts either an offering id (resolved by the
- *  caller-side entity module later) or free text the owner typed; here we pass through the
- *  text. Owner/admin/editor only. */
-export async function draftOfferingBlurbAction(
-  spaceId: string,
-  offering: string,
-): Promise<ActionResult<string>> {
-  const auth = await authorizeEdit(spaceId)
-  if ('error' in auth) return fail(auth.error)
-  // The offering-id lookup against the entity module is owned by a later step; for Phase 1 the
-  // action grounds the blurb in the free text the editor passes (a title and/or details).
-  const o: OfferingContext = { text: offering }
-  const text = await draftOfferingBlurb(auth.ctx, o)
   return ok(text)
 }
 

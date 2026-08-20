@@ -29,11 +29,11 @@ import {
 import { Input } from '@/components/ui/field'
 
 // THE PAGE quick-edit panel (the compact Manage surface, NO Puck runtime). A compact panel in Manage
-// for FAST tweaks: it manages the operator-defined PAGES (create / rename / reorder / delete + pick the
-// page you are editing), then for the SELECTED page offers cover size, theme/accent, and block order +
-// show/hide. The grid block-picker ("Edit your profile") is the primary and only profile editor here;
-// the Puck full page builder is reserved for marketing and external site pages, not member Space
-// profiles. Every write calls a server action that RE-GATES the owner/admin/editor role; this client is
+// that manages the operator-defined PAGES only: create / rename / reorder / delete + pick the page you
+// are editing (the four page-nav actions in manage/layout/actions.ts). Block arrangement and styling
+// live with the grid block-picker ("Edit your profile"), the primary and only profile editor; the Puck
+// full page builder is reserved for marketing and external site pages, not member Space profiles.
+// Every write calls a server action that RE-GATES the owner/admin/editor role; this client is
 // fast inline feedback only. DAWN semantic tokens only (no hex), sentence-case copy, no em dashes
 // (CONTENT-VOICE §10).
 

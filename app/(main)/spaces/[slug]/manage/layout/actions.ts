@@ -1,17 +1,12 @@
 'use server'
 
-import type { Data } from '@/lib/page-editor/types'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities, spaceCanUseFullWebsite } from '@/lib/spaces/entitlements'
 import { isValidAccent } from '@/lib/spaces/accent'
-import { isWellFormedSpaceDoc } from '@/lib/page-editor/templates/space'
-import { moveBlock, setBlockHidden } from '@/lib/page-editor/templates/space-blocks'
 import {
-  resolveSpacePageDoc,
-  withPageDoc,
   hasPage,
   addPage,
   renamePage,
@@ -22,14 +17,8 @@ import {
   HOME_SLUG,
   MAX_PROFILE_PAGES,
 } from '@/lib/spaces/profile-pages'
-import { withProfileData, type ProfileDataPatch, type SpaceOffering } from '@/lib/spaces/profile-data'
+import { withProfileData, type ProfileDataPatch } from '@/lib/spaces/profile-data'
 import { normalizeSpaceLocation } from '@/lib/spaces/location'
-import {
-  withLayoutPreset,
-  withSpaceLayoutDefault,
-  isLayoutPreset,
-  type LayoutPreset,
-} from '@/lib/spaces/layout-presets'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import {
   nextCoverScrimPreferences,
@@ -52,14 +41,15 @@ import {
 } from '@/lib/spaces/hero-config'
 
 // SPACE PAGE / LAYOUT actions (the operator-composed multi-page profile). An owner / admin / editor
-// manages their Space's public pages (cover size, brand accent, block order + show/hide, and the
-// nav's pages) from /spaces/<slug>/manage/layout. EVERY action RE-RESOLVES the space from the slug and
+// manages their Space's public pages (cover size, brand accent, and the nav's pages) from
+// /spaces/<slug>/manage/layout; block arrangement lives with the grid builder (saveSpaceGridLayout in
+// ../../settings/profile/actions.ts). EVERY action RE-RESOLVES the space from the slug and
 // RE-GATES caps.canEditProfile server-side, so a non-editor can never rewrite another space's pages
 // (the route gate is UX; this is the authority). Staff preview (a janitor who is not an editor) is
 // read-only: it has no canEditProfile, so every write below fails closed.
 //
-// NON-DESTRUCTIVE: each write touches only the one preferences node it owns (coverSize / a page's
-// pageDoc / the pages nav), preserving every other key. No em dashes (owner copy, CONTENT-VOICE).
+// NON-DESTRUCTIVE: each write touches only the one preferences node it owns (coverSize / the pages
+// nav / a single branding node), preserving every other key. No em dashes (owner copy, CONTENT-VOICE).
 
 /** Authorize the caller as an EDITOR (owner / admin / editor) of `slug`'s space; returns the resolved
  *  space id + its current preferences blob, or null on any miss. Mirrors edit-page/actions.ts's shape
@@ -67,9 +57,6 @@ import {
 async function authorizeEditor(slug: string): Promise<{
   spaceId: string
   preferences: Record<string, unknown>
-  /** The Space's display name, so a block edit can resolve the CURRENT page doc (stored-or-default)
-   *  server-side before it reorders / toggles a block. */
-  presetInput: { name: string }
   /** Whether the Space may add/manage EXTRA profile pages (the paid multi-page upsell, space_full_website).
    *  DEFAULT-DENY today, so only the one home page is allowed until billing grants the entitlement. */
   canUseFullWebsite: boolean
@@ -85,7 +72,6 @@ async function authorizeEditor(slug: string): Promise<{
   return {
     spaceId: space.id,
     preferences: asRecord(space.preferences),
-    presetInput: { name: space.brandName?.trim() || space.name },
     canUseFullWebsite: spaceCanUseFullWebsite(space),
   }
 }
@@ -102,58 +88,6 @@ async function writePreferences(
   }
   const { error } = await db.from('spaces').update({ preferences }).eq('id', spaceId)
   return !error
-}
-
-/**
- * Set a PAGE's layout TEMPLATE (single / main-side / two-col / three-col / header-side) - the DISPLAY
- * arrangement, kept separate from the neutral block content. Written to preferences.pageLayouts[pageSlug];
- * the public renderer arranges the same content for the template (applyLayoutPreset), so the operator
- * picks a layout without ever opening Puck. This "This page" scope overrides the space-level All-pages
- * default. Owner/admin/editor-gated (staff preview fails closed). Returns ActionResult.
- */
-export async function setSpaceLayoutPreset(
-  slug: string,
-  pageSlug: string,
-  preset: LayoutPreset,
-): Promise<ActionResult> {
-  if (!isLayoutPreset(preset)) return fail('Pick a layout.')
-
-  const auth = await authorizeEditor(slug)
-  if (!auth) return fail('You do not have access to edit this page.')
-
-  const next = withLayoutPreset(auth.preferences, pageSlug, preset)
-  if (!(await writePreferences(auth.spaceId, next))) {
-    return fail('Could not update the layout. Try again.')
-  }
-
-  revalidatePath(`/spaces/${slug}`, 'layout')
-  revalidatePath(`/spaces/${slug}/manage/layout`)
-  return ok()
-}
-
-/**
- * Set the SPACE-LEVEL default layout TEMPLATE (the "All pages" scope). Written to the reserved
- * preferences.pageLayouts['*'] key (guarded from prototype pollution in layout-presets.ts); it applies
- * to every page that has no per-page template of its own. Owner/admin/editor-gated (staff preview fails
- * closed). Returns ActionResult.
- */
-export async function setSpaceLayoutDefault(
-  slug: string,
-  preset: LayoutPreset,
-): Promise<ActionResult> {
-  if (!isLayoutPreset(preset)) return fail('Pick a layout.')
-
-  const auth = await authorizeEditor(slug)
-  if (!auth) return fail('You do not have access to edit this page.')
-
-  const next = withSpaceLayoutDefault(auth.preferences, preset)
-  if (!(await writePreferences(auth.spaceId, next))) {
-    return fail('Could not update the layout. Try again.')
-  }
-
-  revalidatePath(`/spaces/${slug}`, 'layout')
-  revalidatePath(`/spaces/${slug}/manage/layout`)
-  return ok()
 }
 
 /**
@@ -176,31 +110,6 @@ export async function setSpaceBusinessInfo(slug: string, patch: ProfileDataPatch
   // The profile data shows across every public profile route (Home + custom pages + the Spotlight),
   // so revalidate the whole space layout, not just the landing.
   revalidatePath(`/spaces/${slug}`, 'layout')
-  revalidatePath(`/spaces/${slug}/manage/layout`)
-  return ok()
-}
-
-/**
- * Save the Space's SERVICES catalog (the storefront store items) as a whole list. Written to
- * preferences.profileData.offerings through the SAME single-source normalizer as the business info
- * (withProfileData re-parses every row fail-safe, coercing prices + dropping unknown enums), so a
- * listed service shows on the public storefront and a private one stays direct-link only. This is a
- * FOCUSED patch: it touches only the offerings node, preserving every other profileData + preferences
- * key. Owner/admin/editor-gated (staff preview fails closed). Returns ActionResult.
- */
-export async function setSpaceServices(slug: string, services: SpaceOffering[]): Promise<ActionResult> {
-  const auth = await authorizeEditor(slug)
-  if (!auth) return fail('You do not have access to edit this page.')
-
-  const list = Array.isArray(services) ? services : []
-  const next = withProfileData(auth.preferences, { offerings: list } as ProfileDataPatch)
-  if (!(await writePreferences(auth.spaceId, next))) {
-    return fail('Could not save your services. Try again.')
-  }
-
-  // Services show on the public storefront (every profile route) + the manage surfaces.
-  revalidatePath(`/spaces/${slug}`, 'layout')
-  revalidatePath(`/spaces/${slug}/settings/shop`)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
@@ -266,39 +175,6 @@ export async function uploadSpaceImage(
   const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
   const folder = kind === 'cover' ? 'covers' : 'logos'
   const path = `spaces/${auth.spaceId}/${folder}/${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}.${ext}`
-  const bytes = new Uint8Array(await file.arrayBuffer())
-
-  const { error } = await admin.storage
-    .from('event-media')
-    .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: true })
-  if (error) return { error: error.message }
-
-  const { data } = admin.storage.from('event-media').getPublicUrl(path)
-  return { url: data.publicUrl }
-}
-
-/**
- * Upload an image for a PROFILE BLOCK (a Callout image, or an Image gallery photo; ADR-542) and return its
- * public URL. Reuses the SAME server-side, service-role upload path as the cover/logo (uploadSpaceImage):
- * the public `event-media` bucket under a space-scoped path (spaces/<id>/blocks/...), so it never depends on
- * a live browser Storage session and invents no new bucket. The caller (the in-rail block editor) writes the
- * returned URL into the block's authored content bag. Owner/admin/editor-gated (staff preview fails closed).
- */
-export async function uploadSpaceBlockImage(
-  slug: string,
-  formData: FormData,
-): Promise<{ url: string } | { error: string }> {
-  const auth = await authorizeEditor(slug)
-  if (!auth) return { error: 'You do not have access to edit this page.' }
-
-  const file = formData.get('file')
-  if (!(file instanceof File) || file.size === 0) return { error: 'Choose an image file.' }
-  if (!file.type.startsWith('image/')) return { error: 'Choose an image file.' }
-  if (file.size > 10 * 1024 * 1024) return { error: 'Image must be under 10MB.' }
-
-  const admin = createAdminClient()
-  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
-  const path = `spaces/${auth.spaceId}/blocks/${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}.${ext}`
   const bytes = new Uint8Array(await file.arrayBuffer())
 
   const { error } = await admin.storage
@@ -398,58 +274,10 @@ export async function setSpaceHeaderCta(
 }
 
 /**
- * Save the editable TOP-PAGE HERO (the profile cover hero). ONE write for the whole hero: the look + copy
- * overrides (height / button orientation / eyebrow / heading / tagline) go to preferences.hero, and the hero
- * CTA (item 5, relocated from the header-CTA form) goes to the EXISTING preferences.headerCta node through the
- * unchanged header-cta model — so the hero editor and any legacy header-CTA data are the same source, never a
- * fork. Both values are re-validated + sanitized server-side (never trust the wire): the hero bag drops any
- * out-of-enum / oversized field, and the CTA runs the SAME header-cta validation as setSpaceHeaderCta. Passing
- * an empty config + a null CTA clears both nodes (back to the defaults). NON-DESTRUCTIVE: only the `hero` and
- * `headerCta` nodes are touched, every other preferences key preserved. Owner/admin/editor-gated (staff
- * preview fails closed). Returns ActionResult.
- */
-export async function setSpaceHero(
-  slug: string,
-  config: HeroConfig,
-  cta: HeaderCtaPreference | null,
-): Promise<ActionResult> {
-  // Re-validate the CTA server-side (the action is the authority, not the client). Mirrors setSpaceHeaderCta.
-  let cleanCta: HeaderCtaPreference | null = null
-  if (cta && cta.kind === 'function') {
-    if (!isHeaderCtaFunction(cta.function)) return fail('Pick a button action.')
-    const label = typeof cta.label === 'string' ? cta.label.trim() : ''
-    cleanCta = { kind: 'function', function: cta.function, ...(label ? { label } : {}) }
-  } else if (cta && cta.kind === 'custom') {
-    const url = typeof cta.url === 'string' ? cta.url.trim() : ''
-    const label = typeof cta.label === 'string' ? cta.label.trim() : ''
-    if (!label) return fail('Give your button a label.')
-    if (!isValidCtaUrl(url)) return fail('Enter a link that starts with https:// or /.')
-    cleanCta = { kind: 'custom', url, label }
-  } else if (cta !== null) {
-    return fail('Pick a button action.')
-  }
-
-  const auth = await authorizeEditor(slug)
-  if (!auth) return fail('You do not have access to edit this page.')
-
-  // Sanitize the hero bag to its sparse, safe shape (drop anything not in the field schema / enum allowlist).
-  const cleanHero = sanitizeHeroConfig(config)
-  const withHero = nextHeroPreferences(auth.preferences, cleanHero)
-  const next = nextHeaderCtaPreferences(withHero, cleanCta)
-  if (!(await writePreferences(auth.spaceId, next))) {
-    return fail('Could not save your hero. Try again.')
-  }
-
-  revalidatePath(`/spaces/${slug}`, 'layout')
-  revalidatePath(`/spaces/${slug}/manage/layout`)
-  return ok()
-}
-
-/**
- * Set JUST the hero LOOK (height + button orientation), merged into the existing hero node. Unlike
- * setSpaceHero, this NEVER touches the header CTA — the CTA is owned by the separate "Header button"
- * control (setSpaceHeaderCta), so the two can be edited independently in the Identity & Branding section
- * without clobbering each other. Owner/editor-gated; sanitized to the sparse hero shape.
+ * Set JUST the hero LOOK (height + button orientation), merged into the existing hero node. This NEVER
+ * touches the header CTA — the CTA is owned by the separate "Header button" control (setSpaceHeaderCta),
+ * so the two can be edited independently in the Identity & Branding section without clobbering each
+ * other. Owner/editor-gated; sanitized to the sparse hero shape.
  */
 export async function setSpaceHeroLook(
   slug: string,
@@ -527,87 +355,6 @@ export async function setWebsitePublished(slug: string, published: boolean): Pro
   revalidatePath(`/spaces/${slug}`)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
-}
-
-/** The public path a page renders at: Home at the profile index, a custom page under its slug. */
-function pagePath(slug: string, pageSlug: string): string {
-  return pageSlug === HOME_SLUG ? `/spaces/${slug}` : `/spaces/${slug}/${pageSlug}`
-}
-
-/** Resolve a specific PAGE's CURRENT doc (the stored + valid doc for that page, else the universal
- *  default), so a block edit operates on exactly what the panel shows for the selected page. Then
- *  persist a NEW content array to THAT page's doc under `pageDocs` + revalidate. Shared by the reorder +
- *  show/hide actions below. */
-async function writeBlockContent(
-  slug: string,
-  pageSlug: string,
-  auth: { spaceId: string; preferences: Record<string, unknown>; presetInput: { name: string } },
-  nextContent: unknown[],
-): Promise<ActionResult> {
-  const current = resolveSpacePageDoc(auth.preferences, auth.presetInput.name, pageSlug)
-  const nextDoc: Data = {
-    root: (current.root ?? {}) as Data['root'],
-    content: nextContent as Data['content'],
-  }
-  // Re-validate the SHAPE before storing. Deliberately not "every block a known type":
-  // a doc that legitimately carries a retired block could then never be re-saved, which
-  // turns an editable page into a read-only one (ADR-978). The render path is already
-  // fail-closed on an unresolvable block, so the type check bought nothing here.
-  if (!isWellFormedSpaceDoc(nextDoc)) return fail('That change could not be saved. Try again.')
-
-  const preferences = withPageDoc(auth.preferences, pageSlug, nextDoc)
-  if (!(await writePreferences(auth.spaceId, preferences))) {
-    return fail('Could not save your changes. Try again.')
-  }
-
-  revalidatePath(pagePath(slug, pageSlug))
-  revalidatePath(`/spaces/${slug}/edit-page`)
-  revalidatePath(`/spaces/${slug}/manage/layout`)
-  return ok()
-}
-
-/**
- * Reorder a TOP-LEVEL block of a Space PAGE by one step (`dir` -1 up / +1 down), by `index` in the
- * CURRENT resolved doc for `pageSlug` (default Home). Non-destructive: it resolves the stored-or-default
- * doc, moves the one block, and writes the new content to `pageDocs[pageSlug]` (so a default page the
- * operator reorders becomes a stored doc). The page must exist. Owner/admin/editor-gated. Returns
- * ActionResult.
- */
-export async function reorderSpaceBlock(
-  slug: string,
-  index: number,
-  dir: -1 | 1,
-  pageSlug: string = HOME_SLUG,
-): Promise<ActionResult> {
-  if (dir !== -1 && dir !== 1) return fail('That change could not be saved. Try again.')
-  const auth = await authorizeEditor(slug)
-  if (!auth) return fail('You do not have access to edit this page.')
-  if (!hasPage(auth.preferences, pageSlug)) return fail('That page no longer exists.')
-
-  const current = resolveSpacePageDoc(auth.preferences, auth.presetInput.name, pageSlug)
-  const nextContent = moveBlock(current.content ?? [], index, dir)
-  return writeBlockContent(slug, pageSlug, auth, nextContent)
-}
-
-/**
- * Show or hide a TOP-LEVEL block of a Space PAGE (`hidden` true = hide from the public page), by `index`
- * in the CURRENT resolved doc for `pageSlug` (default Home). Non-destructive: a hidden block stays in the
- * stored doc with a `hidden` flag (the public render path + full editor strip it), so it can be restored.
- * The page must exist. Owner/admin/editor-gated. Returns ActionResult.
- */
-export async function setSpaceBlockHidden(
-  slug: string,
-  index: number,
-  hidden: boolean,
-  pageSlug: string = HOME_SLUG,
-): Promise<ActionResult> {
-  const auth = await authorizeEditor(slug)
-  if (!auth) return fail('You do not have access to edit this page.')
-  if (!hasPage(auth.preferences, pageSlug)) return fail('That page no longer exists.')
-
-  const current = resolveSpacePageDoc(auth.preferences, auth.presetInput.name, pageSlug)
-  const nextContent = setBlockHidden(current.content ?? [], index, hidden)
-  return writeBlockContent(slug, pageSlug, auth, nextContent)
 }
 
 // ── THE NAV MANAGER actions (multi-page model). Create / rename / reorder / delete the operator-defined

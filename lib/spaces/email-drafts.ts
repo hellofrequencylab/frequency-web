@@ -32,7 +32,6 @@ import { isJanitor } from '@/lib/core/roles'
 import { type ActionResult, ok, fail, isError } from '@/lib/action-result'
 import {
   resolveAudience,
-  audienceCount,
   listAudienceTags,
   type AudienceFilter,
 } from '@/lib/spaces/audiences'
@@ -408,22 +407,9 @@ export async function deleteSpaceEmailDraft(spaceId: string, id: string): Promis
 // per-recipient RFC 8058 one-click unsubscribe, and the outreach_sends ledger all live there, so there is ONE
 // send path, never a fork. The only difference from lib/spaces/campaigns.ts sendSpaceCampaign is the body: a
 // block draft compiles its block_json to branded HTML (compileEmailDoc, Space palette) instead of rendering a
-// plain-text body. The audience count + the send resolve through the SAME resolveAudience, so the number the
-// owner confirms is the number who get the email.
-
-/** The live recipient count for an audience filter, gated on canEditProfile OR a janitor preview so a
- *  non-editor never probes a Space's contact count. FAIL-SAFE to 0. Mirrors countSpaceAudience. */
-export async function countSpaceEmailAudience(
-  spaceId: string,
-  filter: AudienceFilter = {},
-): Promise<number> {
-  const caller = await getCallerProfile()
-  const space = await getSpaceById(spaceId)
-  if (!space) return 0
-  const caps = await getSpaceCapabilities(space, caller?.id ?? null)
-  if (!caps.canEditProfile && !isJanitor(caller?.webRole)) return 0
-  return audienceCount(spaceId, filter)
-}
+// plain-text body. The audience count (countSpaceAudience, behind the shared AudiencePicker) + the send
+// resolve over the SAME audience seam (@/lib/spaces/audiences), so the number the owner confirms is the
+// number who get the email.
 
 /** The distinct tags this Space's audience can be filtered by (the send rail's tag options). Gated on
  *  canEditProfile OR a janitor preview. FAIL-SAFE to []. */

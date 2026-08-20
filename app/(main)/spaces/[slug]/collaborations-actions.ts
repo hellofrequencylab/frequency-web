@@ -60,8 +60,12 @@ async function revalidateSpaces(...spaceIds: string[]): Promise<void> {
  * paid Business/Non Profit plan (ADR-810 — the guest pays for its own space, so hosting is free per guest
  * but needs a Business plan). If the caller ALSO approves the partner (one operator owns both), it
  * auto-accepts. A duplicate active row (unique index) is a no-op success. Fail-closed.
+ *
+ * INTERNAL (not exported): the only wired entry is requestCollaborationBySlug below, so this stays a
+ * same-file helper rather than a public server-action endpoint (an unused export would still be
+ * directly POSTable).
  */
-export async function requestCollaboration(
+async function requestCollaboration(
   initiatingSpaceId: string,
   partnerSpaceId: string,
   hostSide: 'initiator' | 'partner',
