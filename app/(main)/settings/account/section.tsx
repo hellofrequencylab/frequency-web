@@ -5,11 +5,13 @@ import { getInitials } from '@/lib/utils'
 import { unblockFromSettings } from './actions'
 import { DeleteAccount } from './delete-account'
 import { DownloadData } from './download-data'
+import { EraseDrafts } from './erase-drafts'
 
 // The Account and privacy SECTION of the unified Settings page (DAWN 2 screen pass).
 // This is the server half that used to be app/(main)/settings/account/page.tsx,
 // unchanged in behavior: the blocked list (with unblock), the data export, and the
-// delete-account flow. The old /settings/account route now redirects here.
+// danger zone (erase saved drafts + the delete-account flow). The old
+// /settings/account route now redirects here.
 
 export async function AccountSection() {
   const myProfileId = await getMyProfileId()
@@ -59,7 +61,10 @@ export async function AccountSection() {
 
       <div>
         <p className="text-meta font-medium text-muted uppercase tracking-wide mb-2">Danger zone</p>
-        <DeleteAccount />
+        <div className="space-y-3">
+          <EraseDrafts />
+          <DeleteAccount />
+        </div>
       </div>
     </div>
   )
