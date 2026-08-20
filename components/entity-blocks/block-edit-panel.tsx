@@ -3,7 +3,8 @@
 import { useState, type DragEvent, type ReactNode } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, GripVertical, ImagePlus, Plus, X } from 'lucide-react'
+import { ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, GripVertical, ImagePlus, Loader2, Plus, Sparkles, X } from 'lucide-react'
+import { reseedSpaceBlockCopy } from '@/app/(main)/spaces/[slug]/settings/profile/actions'
 import { Input, Textarea } from '@/components/ui/field'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
 import {
@@ -111,6 +112,7 @@ export function BlockEditPanel({
   editHref,
   pickerData,
   loomScope,
+  reseedSlug,
   onContent,
   onStyle,
   onToggleHide,
@@ -134,6 +136,10 @@ export function BlockEditPanel({
   /** The Loom library every image field on this surface opens into: a Space id or slug when a Space is
    *  being edited, 'mine' on a member page. Omit where there is no such context (the full picker). */
   loomScope?: string
+  /** The Space slug when this panel edits a SPACE page: enables the per-block "Re-seed copy" button
+   *  (task #17), which rewrites the block's text from the Space's master profile via
+   *  `reseedSpaceBlockCopy`. Omit on a member page or any surface with no seeded profile behind it. */
+  reseedSlug?: string
   onContent: (next: Record<string, unknown>) => void
   onStyle: (next: BlockStyle) => void
   onToggleHide: () => void
@@ -184,6 +190,14 @@ export function BlockEditPanel({
         />
       ))}
 
+      {/* Per-block copy re-seed (task #17): rewrite this block's text from the Space's master
+          profile, on demand. Only where a Space slug is in play and the block actually carries text
+          fields — the action has nothing to rewrite otherwise. The result merges through onContent,
+          the panel's ONE write path, so it repaints and debounce-saves like any typed edit. */}
+      {reseedSlug && allFields.some((f) => f.type === 'text' || f.type === 'textarea') && (
+        <ReseedCopyButton slug={reseedSlug} blockId={id} content={content} onContent={onContent} />
+      )}
+
       {/* About + Story: the text above is the space's shared story. Editing it here updates it everywhere.
           Suppressed in edit mode — the story text is edited on the page there, not in this rail. */}
       {sharesStory && !contentOnCanvas && (
@@ -229,6 +243,58 @@ export function BlockEditPanel({
           )}
       <StyleControls id={id} style={style} onChange={onStyle} />
       <MarginGroup style={style} onChange={onStyle} />
+    </div>
+  )
+}
+
+/** The per-block "Re-seed copy" button (task #17): calls `reseedSpaceBlockCopy` for this block and
+ *  merges the rewritten text fields over the current content THROUGH onContent — the same debounced
+ *  save path a typed edit takes, never a second write path. Disabled while the rewrite runs; the
+ *  action's refusal (no seeded profile, AI off, nothing to rewrite) is surfaced plainly in place. */
+function ReseedCopyButton({
+  slug,
+  blockId,
+  content,
+  onContent,
+}: {
+  slug: string
+  blockId: string
+  content: Record<string, unknown>
+  onContent: (next: Record<string, unknown>) => void
+}) {
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function onReseed() {
+    if (pending) return
+    setPending(true)
+    setError(null)
+    const res = await reseedSpaceBlockCopy(slug, blockId, content)
+    setPending(false)
+    if (res.error) {
+      setError(res.error)
+      return
+    }
+    if (res.content) onContent({ ...content, ...res.content })
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => void onReseed()}
+        disabled={pending}
+        className="inline-flex items-center gap-1 text-2xs font-semibold text-primary-strong hover:underline disabled:opacity-50"
+      >
+        {pending ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+        ) : (
+          <Sparkles className="h-3.5 w-3.5" aria-hidden />
+        )}
+        {pending ? 'Rewriting' : 'Re-seed copy'}
+      </button>
+      <p className="mt-0.5 text-2xs text-muted">Rewrites this section&rsquo;s text from your business info.</p>
+      {error && <p className="mt-0.5 text-2xs text-danger">{error}</p>}
     </div>
   )
 }

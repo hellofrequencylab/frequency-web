@@ -600,6 +600,9 @@ export function EntityPageBuilder({
         // Every image field in this panel opens the ONE Loom picker, locked to the library being edited: the
         // Space (by slug — the Loom re-resolves + re-gates it server-side) or the member's own uploads.
         loomScope={kind === 'space' ? pageId : 'mine'}
+        // A SPACE page can re-seed a block's copy from its master profile (task #17); the action
+        // re-resolves + re-gates the slug server-side. A member page has no seeded profile behind it.
+        reseedSlug={kind === 'space' ? pageId : undefined}
         // A Space's page is the live editing canvas, so its rail is SETTINGS-ONLY: the block's text + single
         // photos are edited on the page, not here (the isCoreField split). The member rail keeps text inline.
         contentOnCanvas={kind === 'space'}
