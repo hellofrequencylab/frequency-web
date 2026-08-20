@@ -54,6 +54,36 @@ stale doc line the only SEO/canon gap.
 | low | `app/dev/og-root-card/route.tsx` ships **ungated** to production, unlike its two `/dev` siblings which `notFound()` in prod — keeps a `sharp`/`next-og` rasterizer deployed (counted by `check:og-trace`). | Add the same production gate. |
 | low | Internal links in `loneliness` + `how-to-be-more-social` point at 308 redirect stubs (`/what-is-a-third-space`, `/social-life-without-drinking`) instead of their canonical pillars. | Retarget the links; one-hop 308s so minor. |
 
+### Follow-up triage + record corrections (2026-08-20, later same day)
+
+Worked the tail of the open finds. Three items are now tracked as probed-manual backlog rows so the
+deferrals stop living in prose (the one-list rule): **OWN-035** (SpaceUpdates: build a composer or
+retire the path+block+table), **OWN-036** (EditorShell: delete or adopt), **OWN-037** (ADR-907 claim
+tokens: migrate the four minters or retire the plan). Two finds were re-verified and corrected:
+
+- **The 32 dead server actions — verified, and the premise was wrong.** A dedicated pass searched
+  every export across the whole repo (imports, re-exports, `.bind()`, `<form action>`,
+  `useActionState`, strings). Result: **none are safe to delete.** Two were false-positives —
+  `getSpaceRailBundle` and `listLoomImages` have live test references. **Every one of the 32
+  self-guards** (`requireAdmin`/`requireStaffCap`/`authorizeEditor`/`getMyProfileId`/…) and fails
+  closed, so the scan's "unauthenticated POST endpoint" framing was wrong — they are wasted code,
+  not open doors. Seven are DEAD-PENDING-UI (real backend of an intended feature: `requestEventHost`,
+  `startBundleCheckout`, `startSpacePlanCheckout` [billing gated OFF], `nudgeStreakMate`,
+  `createDealForProfile`, `draftOfferingBlurbAction`, `countSpaceEmailAudience`) — deleting discards
+  real work. The `manage/layout/*` set is NOT superseded: `SpacePageBuilder`
+  (`components/entity-blocks/profile-page-builder.tsx`, via `SpacePageModule`) still renders, so the
+  pre-Puck editor is not gone. Conservative outcome: **keep all 32**; revisit per-feature when each
+  UI half is built or formally cut.
+- **"Internal links point at 308 stubs" was a false positive.** `/what-is-a-third-space` and
+  `/social-life-without-drinking` appear in `loneliness` / `how-to-be-more-social` only as
+  SEO-absorption **comments**, and in `lib/analytics/vitals-budgets.ts` as budget entries (correct —
+  those stub routes still exist). There are no live `href`s to retarget.
+
+Not worth a change: the **og-root-card** prod gate — the `next/og` rasteriser is bundled via static
+import regardless of a runtime gate, so gating does not reduce the `check:og-trace` count, and the
+route renders benign build-time constants. The **admin-rail / app-shell:936** comment correction is
+left for a pass that can verify the actual rail wiring rather than trust one finder's read.
+
 ### Verified clean (finder A + B, worth not re-auditing)
 
 - **Import graph** (all components/ + lib/, static + dynamic + barrel + registry + DB-driven refs): only the files above lack importers. Puck block registry, admin/studio/nav registries, `templates/index.ts` all fully resolve; every registry `href:` hits a real route.
