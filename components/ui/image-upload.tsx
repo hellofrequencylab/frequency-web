@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import { looksLikeImage } from '@/lib/library/upload-kinds'
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
+import { valueFromServerUpload, type ServerUploadResult } from '@/lib/library/upload-result'
 
 // One reusable header/cover photo control for every Studio popup editor (Journey, Practice,
 // Circle, Event). Uploads the chosen file to a public Supabase Storage bucket under the signer's
@@ -59,10 +60,12 @@ export function ImageUpload({
   bucket?: string
   mode?: 'url' | 'path'
   disabled?: boolean
-  /** Optional SERVER-side upload (a gated server action) that returns the public URL. When provided, the
-   *  file is uploaded through it instead of the browser Storage client, so the upload never depends on a
-   *  live browser session token reaching Storage. Always yields a URL, so it pairs with mode 'url'. */
-  uploadFn?: (file: File) => Promise<{ url: string } | { error: string }>
+  /** Optional SERVER-side upload (a gated server action). When provided, the file is uploaded through it
+   *  instead of the browser Storage client, so the upload never depends on a live browser session token
+   *  reaching Storage. It returns whatever THIS control's mode stores — `{ url }` for mode 'url',
+   *  `{ path }` for mode 'path' (either shape, or both) — and the mode-aware branch below picks the
+   *  right one, so a path-mode control can be server-routed too (LIVE-072). */
+  uploadFn?: (file: File) => Promise<ServerUploadResult>
   /** Open the universal Loom picker (browse your Loom + upload multi / drag-drop) instead of a bare file
    *  input. On by default for URL-mode controls (owner directive: every image upload opens the Loom).
    *  Path-mode controls (which store a storage path, not a URL) keep the direct file input. */
@@ -125,9 +128,10 @@ export function ImageUpload({
       }
       const file = prepared.file
 
-      // Server-upload path (injected): a gated server action that returns the public URL. Bypasses the
-      // browser Storage client entirely, so it cannot fail on a stale/absent browser session token (the
-      // Space customize rail uses this).
+      // Server-upload path (injected): a gated server action that returns the public URL (mode 'url') or
+      // the storage path (mode 'path'). Bypasses the browser Storage client entirely, so it cannot fail
+      // on a stale/absent browser session token (the Space customize rail and the create-event cover
+      // both use this).
       if (uploadFn) {
         if (file.size > SERVER_MAX_BYTES) {
           setError('That image is too large to upload (over 4 MB and could not be resized here). Save it as a smaller JPEG and try again.')
@@ -142,12 +146,16 @@ export function ImageUpload({
           setError('That upload did not go through. Try again in a moment.')
           return
         }
-        if ('error' in res) {
-          setError(`Upload failed: ${res.error}`)
+        // MODE-AWARE, never URL-assuming: mode 'url' stores a cache-busted public URL, mode 'path'
+        // stores the storage path verbatim. The one shared decision lives in lib/library/upload-result
+        // so it is unit-tested (this branch used to write `${res.url}?t=…` unconditionally, which in
+        // path mode would have stored the literal string "undefined?t=…").
+        const next = valueFromServerUpload(mode, res, Date.now())
+        if ('error' in next) {
+          setError(`Upload failed: ${next.error}`)
           return
         }
-        // Cache-bust so a replace shows immediately.
-        onChange(`${res.url}?t=${Date.now()}`)
+        onChange(next.value)
         return
       }
 
