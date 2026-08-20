@@ -9,6 +9,7 @@ import { downloadStyledQrPng } from '@/lib/qr/client-download'
 import { updateMyCodeStyle } from './actions'
 import type { QrStyle } from '@/lib/qr/style'
 import type { MemberCodePurpose } from '@/lib/qr/member-codes'
+import type { QrStudioConfig } from '@/lib/elements/qr-studio-config'
 
 export interface MemberCodeCard {
   id: string
@@ -37,11 +38,14 @@ export function MemberCodes({
   cards,
   referralCount,
   walletEnabled = false,
+  qrConfig,
 }: {
   cards: MemberCodeCard[]
   referralCount: number
   /** Whether Google Wallet passes are configured (env-gated). */
   walletEnabled?: boolean
+  /** The member's resolved qr-studio element config (resolveQrStudio at the /codes mount). */
+  qrConfig?: QrStudioConfig
 }) {
   return (
     <div className="grid grid-cols-1 gap-4">
@@ -51,6 +55,7 @@ export function MemberCodes({
           card={card}
           extra={`${referralCount} joined via your code`}
           walletEnabled={walletEnabled}
+          qrConfig={qrConfig}
         />
       ))}
     </div>
@@ -61,10 +66,12 @@ function CodeCard({
   card,
   extra,
   walletEnabled,
+  qrConfig,
 }: {
   card: MemberCodeCard
   extra: string | null
   walletEnabled: boolean
+  qrConfig?: QrStudioConfig
 }) {
   const [editing, setEditing] = useState(false)
   const [style, setStyle] = useState<QrStyle>(card.style)
@@ -166,7 +173,7 @@ function CodeCard({
 
       {editing && (
         <div className="mt-3">
-          <StyleEditor value={style} onChange={setStyle} previewUrl={card.url} />
+          <StyleEditor value={style} onChange={setStyle} previewUrl={card.url} config={qrConfig} />
           <div className="mt-2 flex items-center gap-2">
             <button
               onClick={save}

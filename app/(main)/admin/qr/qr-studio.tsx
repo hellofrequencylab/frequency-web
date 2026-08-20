@@ -8,6 +8,7 @@ import { Field, Badge, toLocalInput, fromLocalInput } from './form-bits'
 import { StyleEditor } from './style-editor'
 import { NfcWriter } from './nfc-writer'
 import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
+import type { QrStudioConfig } from '@/lib/elements/qr-studio-config'
 import { Input } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
@@ -70,10 +71,13 @@ const BLANK: NodeInput = {
 export function QrStudio({
   initialNodes,
   partners,
+  qrConfig,
   hideCreate = false,
 }: {
   initialNodes: StudioNode[]
   partners: PartnerOption[]
+  /** The viewer's resolved qr-studio element config, threaded into every StyleEditor here. */
+  qrConfig?: QrStudioConfig
   /** When the create form lives elsewhere (the dashboard generator), show list only. */
   hideCreate?: boolean
 }) {
@@ -105,6 +109,7 @@ export function QrStudio({
             <div className="p-4">
               <NodeForm
                 partners={partners}
+                qrConfig={qrConfig}
                 onDone={() => setCreating(false)}
                 onCancel={() => setCreating(false)}
               />
@@ -125,6 +130,7 @@ export function QrStudio({
             key={node.id}
             node={node}
             partners={partners}
+            qrConfig={qrConfig}
             partnerName={node.partner_id ? partnerName.get(node.partner_id) ?? null : null}
           />
         ))}
@@ -136,10 +142,12 @@ export function QrStudio({
 function NodeCard({
   node,
   partners,
+  qrConfig,
   partnerName,
 }: {
   node: StudioNode
   partners: PartnerOption[]
+  qrConfig?: QrStudioConfig
   partnerName: string | null
 }) {
   const [editing, setEditing] = useState(false)
@@ -301,6 +309,7 @@ function NodeCard({
           <NodeForm
             node={node}
             partners={partners}
+            qrConfig={qrConfig}
             onDone={() => setEditing(false)}
             onCancel={() => setEditing(false)}
           />
@@ -313,6 +322,7 @@ function NodeCard({
 export function NodeForm({
   node,
   partners,
+  qrConfig,
   onDone,
   onCancel,
   externalStyle,
@@ -320,6 +330,8 @@ export function NodeForm({
 }: {
   node?: StudioNode
   partners: PartnerOption[]
+  /** The viewer's resolved qr-studio element config, passed through to the StyleEditor. */
+  qrConfig?: QrStudioConfig
   onDone: () => void
   onCancel: () => void
   /** When the design editor lives outside the form (Studio rail), the parent owns
@@ -540,6 +552,7 @@ export function NodeForm({
           value={form.style}
           onChange={(style) => setForm((f) => ({ ...f, style }))}
           previewUrl={node?.url ?? 'https://frequencylocal.com/n/preview'}
+          config={qrConfig}
         />
       )}
 

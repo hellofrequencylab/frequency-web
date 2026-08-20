@@ -21,6 +21,7 @@ import {
   pauseCampaign,
   cancelCampaign,
   countAudience,
+  lintCampaignVoice,
   type CampaignStatus,
   type AudienceResult,
 } from '@/lib/email-studio/send'
@@ -35,6 +36,17 @@ export async function audiencePreviewAction(
   const gate = await writerGate()
   if (!gate.ok) return fail(gate.error)
   return countAudience(segment)
+}
+
+/** The voice preflight (voice-lint, LIVE-066): lint the campaign's authored copy before the operator
+ *  commits to a send or schedule. Read-only, so writer-gated like the audience preview. The hard
+ *  em-dash flag is what the send itself will refuse on; the warnings are advisory only. */
+export async function voicePreflightAction(
+  campaignId: string,
+): Promise<ActionResult<{ hasEmDash: boolean; warnings: string[] }>> {
+  const gate = await writerGate()
+  if (!gate.ok) return fail(gate.error)
+  return lintCampaignVoice(campaignId)
 }
 
 /** Schedule a campaign for a future send. Approver-gated (scheduling arms a send). */

@@ -7,6 +7,7 @@ import { StyleEditor } from './style-editor'
 import { NfcWriter } from './nfc-writer'
 import { updateMarketingCodeAdmin, setMarketingActive, deleteMarketingCodeAdmin } from './marketing-actions'
 import type { QrStyle } from '@/lib/qr/style'
+import type { QrStudioConfig } from '@/lib/elements/qr-studio-config'
 import { Input } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
 
@@ -26,7 +27,7 @@ export interface MarketingCodeAdmin {
   style: QrStyle
 }
 
-export function MarketingCodesAdmin({ codes }: { codes: MarketingCodeAdmin[] }) {
+export function MarketingCodesAdmin({ codes, qrConfig }: { codes: MarketingCodeAdmin[]; qrConfig?: QrStudioConfig }) {
   if (codes.length === 0) {
     return (
       <p className="py-4 text-body-sm text-muted">
@@ -38,13 +39,13 @@ export function MarketingCodesAdmin({ codes }: { codes: MarketingCodeAdmin[] }) 
   return (
     <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
       {codes.map((c) => (
-        <MarketingCard key={c.id} code={c} />
+        <MarketingCard key={c.id} code={c} qrConfig={qrConfig} />
       ))}
     </div>
   )
 }
 
-function MarketingCard({ code }: { code: MarketingCodeAdmin }) {
+function MarketingCard({ code, qrConfig }: { code: MarketingCodeAdmin; qrConfig?: QrStudioConfig }) {
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(code.title)
   const [style, setStyle] = useState<QrStyle>(code.style)
@@ -141,7 +142,7 @@ function MarketingCard({ code }: { code: MarketingCodeAdmin }) {
               onChange={(e) => setTitle(e.target.value)}
             />
           </label>
-          <StyleEditor value={style} onChange={setStyle} previewUrl={code.url} />
+          <StyleEditor value={style} onChange={setStyle} previewUrl={code.url} config={qrConfig} />
           <div className="flex items-center gap-2">
             <Button onClick={save} size="sm" disabled={pending}>
               <Palette className="h-3.5 w-3.5" /> {pending ? 'Saving…' : 'Save changes'}

@@ -8,6 +8,7 @@ import { NfcWriter } from './nfc-writer'
 import { VcardEditor } from '@/app/(main)/codes/vcard-editor'
 import { updateMemberCodeStyle, updateMemberVcard } from './member-actions'
 import type { QrStyle } from '@/lib/qr/style'
+import type { QrStudioConfig } from '@/lib/elements/qr-studio-config'
 import type { VcardConfig } from '@/lib/vcard'
 import { Button } from '@/components/ui/button'
 
@@ -26,20 +27,20 @@ export interface MemberProfileCode {
   vcard: VcardConfig
 }
 
-export function MemberProfileCodes({ codes }: { codes: MemberProfileCode[] }) {
+export function MemberProfileCodes({ codes, qrConfig }: { codes: MemberProfileCode[]; qrConfig?: QrStudioConfig }) {
   if (codes.length === 0) {
     return <p className="text-body-sm text-muted py-4">No member profile codes yet. They’re minted on a member’s first visit to their codes page.</p>
   }
   return (
     <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
       {codes.map((c) => (
-        <MemberCard key={c.id} code={c} />
+        <MemberCard key={c.id} code={c} qrConfig={qrConfig} />
       ))}
     </div>
   )
 }
 
-function MemberCard({ code }: { code: MemberProfileCode }) {
+function MemberCard({ code, qrConfig }: { code: MemberProfileCode; qrConfig?: QrStudioConfig }) {
   const [editing, setEditing] = useState(false)
   const [style, setStyle] = useState<QrStyle>(code.style)
   const [pending, start] = useTransition()
@@ -93,7 +94,7 @@ function MemberCard({ code }: { code: MemberProfileCode }) {
 
       {editing && (
         <div className="mt-3 space-y-3 border-t border-border pt-3">
-          <StyleEditor value={style} onChange={setStyle} previewUrl={code.url} />
+          <StyleEditor value={style} onChange={setStyle} previewUrl={code.url} config={qrConfig} />
           <div className="flex items-center gap-2">
             <Button size="sm" onClick={saveStyle} disabled={pending} className="disabled:opacity-60">
               <Palette className="h-3.5 w-3.5" /> {pending ? 'Saving…' : 'Save design'}

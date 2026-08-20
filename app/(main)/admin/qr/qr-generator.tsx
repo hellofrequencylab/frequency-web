@@ -10,6 +10,7 @@ import { DEFAULT_STYLE, STYLE_PRESETS, type QrStyle } from '@/lib/qr/style'
 import { scannabilityWarnings } from '@/lib/qr/scannability'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { shortLinkUrl } from '@/lib/qr/links'
+import type { QrStudioConfig } from '@/lib/elements/qr-studio-config'
 
 // The QR generator at the TOP of the Studio. It's a compact, three-column
 // rectangle that reads left→right:
@@ -24,11 +25,14 @@ export function QrGenerator({
   nodes,
   circles,
   events,
+  qrConfig,
 }: {
   partners: PartnerOption[]
   nodes: NodeOption[]
   circles: PickOption[]
   events: PickOption[]
+  /** The viewer's resolved qr-studio element config, threaded into the StyleEditor. */
+  qrConfig?: QrStudioConfig
 }) {
   const [kind, setKind] = useState<'link' | 'node'>('link')
   const [style, setStyle] = useState<QrStyle>(DEFAULT_STYLE)
@@ -67,7 +71,12 @@ export function QrGenerator({
           <div className="space-y-2">
             <p className="text-2xs font-semibold uppercase tracking-wider text-muted">Presets</p>
             <div className="flex flex-wrap gap-1.5">
-              {STYLE_PRESETS.map((p) => (
+              {/* Honor the element config's preset choice ('core' trims to the four core looks),
+                  matching the filter StyleEditor applies to its own preset row. */}
+              {(qrConfig?.presets === 'core'
+                ? STYLE_PRESETS.filter((p) => !['forest', 'gold'].includes(p.key))
+                : STYLE_PRESETS
+              ).map((p) => (
                 <button
                   key={p.key}
                   type="button"
@@ -111,7 +120,7 @@ export function QrGenerator({
             style state), so here we render just the grouped Colors/Shape/Logo/Frame
             controls under their own "Design" header. */}
         <div className="bg-surface p-5">
-          <StyleEditor value={style} onChange={setStyle} previewUrl={previewUrl} variant="controls" />
+          <StyleEditor value={style} onChange={setStyle} previewUrl={previewUrl} variant="controls" config={qrConfig} />
         </div>
 
         {/* ── Column 3 — destination / config form ────────────────────────── */}

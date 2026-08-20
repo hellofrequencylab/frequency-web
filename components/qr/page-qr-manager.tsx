@@ -7,9 +7,11 @@ import { StyleEditor } from '@/app/(main)/admin/qr/style-editor'
 import {
   createPageQr,
   getPageQrScanStats,
+  getQrStudioConfig,
   type PageQrScanStats,
 } from '@/app/(main)/admin/qr/link-actions'
 import { DEFAULT_STYLE, withCenterLogo, type QrStyle } from '@/lib/qr/style'
+import type { QrStudioConfig } from '@/lib/elements/qr-studio-config'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { isError } from '@/lib/action-result'
 import { relativeTime } from '@/lib/utils'
@@ -38,6 +40,11 @@ export function PageQrManager({
   const [saved, setSaved] = useState(false)
   const [pending, start] = useTransition()
   const [stats, setStats] = useState<PageQrScanStats | null>(null)
+  // The viewer's qr-studio ELEMENT config (LIVE-066), fetched the same way the stats are (this popup
+  // mounts deep inside client trees, so it cannot take the config as a server prop the way /admin/qr
+  // and /codes do — mirrors the Loom picker's loomScopes() consumption). Until it arrives, undefined
+  // keeps the StyleEditor on its fail-safe full config.
+  const [qrConfig, setQrConfig] = useState<QrStudioConfig | undefined>(undefined)
 
   // QR Studio, scoped to this page's folder (its archive of generated + retired codes).
   const archiveHref = `/admin/qr?folder=${encodeURIComponent(pathname)}`
@@ -49,6 +56,9 @@ export function PageQrManager({
   }, [pathname])
 
   useEffect(loadStats, [loadStats])
+  useEffect(() => {
+    getQrStudioConfig().then(setQrConfig).catch(() => {})
+  }, [])
 
   function save() {
     const t = title.trim() || `QR for ${pathname}`
@@ -93,6 +103,7 @@ export function PageQrManager({
           value={style}
           onChange={setStyle}
           previewUrl={url}
+          config={qrConfig}
           compact
           presetsFooter={
             <Link
