@@ -1,13 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// The Loom-backed image field's server actions are gated on PER-SPACE edit permission (owner / admin /
-// editor of THIS space), NOT platform staff, and scope every write to the space's own library. This
+// The Loom-backed image field's upload action is gated on PER-SPACE edit permission (owner / admin /
+// editor of THIS space), NOT platform staff, and scopes every write to the space's own library. This
 // test locks:
-//   - an UNAUTHORIZED caller (no canEditProfile) gets [] from the picker and an error from upload
-//     (fail-closed), and never touches storage / the catalog.
+//   - an UNAUTHORIZED caller (no canEditProfile) gets an error from upload (fail-closed), and never
+//     touches storage / the catalog.
 //   - an unknown / blank slug is rejected before any space work.
-//   - an AUTHORIZED editor's upload files into the SPACE (via insertSpaceLibraryImage) and the picker
-//     searches the SPACE's images (via searchSpaceLibraryImages).
+//   - an AUTHORIZED editor's upload files into the SPACE (via insertSpaceLibraryImage).
 
 const SPACE_A = 'aaaaaaaa-0000-4000-a000-00000000000a'
 
@@ -17,9 +16,6 @@ let space: { id: string } | null = { id: SPACE_A }
 const uploadMock = vi.fn<(...args: unknown[]) => Promise<{ error: null }>>(async () => ({ error: null }))
 const getPublicUrlMock = vi.fn(() => ({ data: { publicUrl: 'https://cdn/library-media/x.png' } }))
 const removeMock = vi.fn<(...args: unknown[]) => Promise<{ error: null }>>(async () => ({ error: null }))
-const searchMock = vi.fn<(...args: unknown[]) => Promise<Array<{ id: string; title: string; url: string; alt: string | null }>>>(async () => [
-  { id: 'img1', title: 'A', url: 'https://cdn/x.png', alt: null },
-])
 const insertMock = vi.fn<(...args: unknown[]) => Promise<string | null>>(async () => 'new-asset-id')
 
 vi.mock('@/lib/supabase/admin', () => ({
@@ -31,11 +27,10 @@ vi.mock('@/lib/auth', () => ({ getCallerProfile: async () => ({ id: 'caller-1' }
 vi.mock('@/lib/spaces/store', () => ({ getVisibleSpaceBySlug: async () => space }))
 vi.mock('@/lib/spaces/entitlements', () => ({ getSpaceCapabilities: async () => caps }))
 vi.mock('@/lib/library/store', () => ({
-  searchSpaceLibraryImages: (...args: unknown[]) => searchMock(...(args as [])),
   insertSpaceLibraryImage: (...args: unknown[]) => insertMock(...(args as [])),
 }))
 
-import { listLoomImages, uploadToLoom } from './loom-field-actions'
+import { uploadToLoom } from './loom-field-actions'
 
 function imageFormData(): FormData {
   const fd = new FormData()
@@ -47,18 +42,11 @@ beforeEach(() => {
   caps = { canEditProfile: false }
   space = { id: SPACE_A }
   uploadMock.mockClear()
-  searchMock.mockClear()
   insertMock.mockClear()
   removeMock.mockClear()
 })
 
-describe('gate: only a per-space editor may pick or upload', () => {
-  it('a caller without canEditProfile gets no picker results and never queries the store', async () => {
-    caps = { canEditProfile: false }
-    expect(await listLoomImages('willow-studio')).toEqual([])
-    expect(searchMock).not.toHaveBeenCalled()
-  })
-
+describe('gate: only a per-space editor may upload', () => {
   it('a caller without canEditProfile cannot upload (fail-closed, no storage write)', async () => {
     caps = { canEditProfile: false }
     const res = await uploadToLoom('willow-studio', imageFormData())
@@ -69,7 +57,6 @@ describe('gate: only a per-space editor may pick or upload', () => {
 
   it('a blank slug is rejected before any space work', async () => {
     caps = { canEditProfile: true }
-    expect(await listLoomImages('   ')).toEqual([])
     const res = await uploadToLoom('', imageFormData())
     expect('error' in res).toBe(true)
   })
@@ -77,19 +64,11 @@ describe('gate: only a per-space editor may pick or upload', () => {
   it('an unknown slug (space not found) is rejected', async () => {
     caps = { canEditProfile: true }
     space = null
-    expect(await listLoomImages('ghost')).toEqual([])
     expect('error' in (await uploadToLoom('ghost', imageFormData()))).toBe(true)
   })
 })
 
-describe('an authorized editor: picker searches the space, upload files into the space', () => {
-  it('picker returns the space-scoped search results', async () => {
-    caps = { canEditProfile: true }
-    const rows = await listLoomImages('willow-studio', 'logo')
-    expect(rows.map((r) => r.id)).toEqual(['img1'])
-    expect(searchMock).toHaveBeenCalledWith(SPACE_A, 'logo')
-  })
-
+describe('an authorized editor: upload files into the space', () => {
   it('upload files into the SPACE library and returns the served URL', async () => {
     caps = { canEditProfile: true }
     const res = await uploadToLoom('willow-studio', imageFormData())

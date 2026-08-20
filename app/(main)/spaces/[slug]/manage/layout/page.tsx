@@ -18,8 +18,8 @@ import { SpaceCanvasEditorSection } from '@/components/entity-blocks/space-canva
 
 // SPACE PAGE SETTINGS (multi-page model). The "Page" quick-edit surface in the unified console: a
 // compact panel that manages the operator-defined PAGES (create / rename / reorder / delete + pick the
-// page you are editing), then for the SELECTED page offers cover size, theme/accent, block order +
-// show/hide, and a "Full page editor" button that NAVIGATES to the standalone /edit-page route (the
+// page you are editing; block arrangement lives with the grid builder), plus a "Full page editor"
+// button that NAVIGATES to the standalone /edit-page route (the
 // server-rendered, full-page Puck editor, so this page ships no editor code). The page being edited comes from `?page=<slug>`
 // (default Home). A Server Component, gated server-side exactly like the console + mode pages: it
 // resolves the Space, gates on resolveSpaceManageAccess, and notFound()s otherwise so a non-manager
@@ -28,7 +28,7 @@ import { SpaceCanvasEditorSection } from '@/components/entity-blocks/space-canva
 
 export const metadata: Metadata = {
   title: 'Page',
-  description: 'Manage your profile pages, cover, accent, and block order, or open the full editor.',
+  description: 'Manage your profile pages, cover, and accent, or open the full editor.',
   robots: { index: false, follow: false },
 }
 

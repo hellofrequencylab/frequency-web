@@ -98,15 +98,16 @@ async function readProfileExtras(spaceId: string): Promise<ExtraRow> {
 // Each rail getter below resolves the SAME heavy chain (caller → visible space → manage access → caps →
 // extras) and then assembles its per-module bundle. The standardized rail mounts ~5 of these modules,
 // each a SEPARATE server action, so React's per-request cache never dedupes the chain across them — the
-// slow rail. getSpaceRailBundle runs the resolve ONCE and calls the SAME pure `buildXData` helpers below,
-// so the bundle and the individual getters can never drift. Each getter stays for isolation (a module
-// mounted outside the rail, or a bundle miss, self-fetches exactly as before).
+// slow rail. The bundled getters (getSpaceRailCore + getSpaceRailExtras below) run the resolve ONCE and
+// call the SAME pure `buildXData` helpers, so the bundles and the individual getters can never drift.
+// Each getter stays for isolation (a module mounted outside the rail, or a bundle miss, self-fetches
+// exactly as before).
 
 type ResolvedSpaceRow = NonNullable<Awaited<ReturnType<typeof getVisibleSpaceBySlug>>>
 type SpaceCaps = Awaited<ReturnType<typeof getSpaceCapabilities>>
 
 /** Assemble the Basics bundle from the already-resolved space/caps/extras. Pure + synchronous, shared by
- *  getSpaceBasicsData and getSpaceRailBundle so the two never drift. */
+ *  getSpaceBasicsData and getSpaceRailCore so the two never drift. */
 function buildBasicsData(
   space: ResolvedSpaceRow,
   caps: SpaceCaps,
@@ -187,7 +188,7 @@ interface SpaceBrandingData {
 }
 
 /** Assemble the Identity & Branding bundle from the already-resolved space/caps/extras. Pure, shared by
- *  getSpaceBrandingData and getSpaceRailBundle. */
+ *  getSpaceBrandingData and getSpaceRailCore. */
 function buildBrandingData(
   space: ResolvedSpaceRow,
   caps: SpaceCaps,
@@ -250,7 +251,7 @@ interface SpaceSettingsData {
 }
 
 /** Assemble the Settings bundle from the already-resolved space/caps/extras. Pure, shared by
- *  getSpaceSettingsData and getSpaceRailBundle. */
+ *  getSpaceSettingsData and getSpaceRailCore. */
 function buildSettingsData(
   space: ResolvedSpaceRow,
   caps: SpaceCaps,
@@ -317,7 +318,7 @@ interface SpacePageData {
  *  (fail-safe). `pageSlug` picks which page's blocks the panel edits (default Home), mirroring the
  *  page's `?page=` param. Re-gates exactly like manage/layout/page.tsx. */
 /** Assemble the Page bundle from the already-resolved space + access flags, or null when the type has no
- *  console (fail-safe). Pure, shared by getSpacePageData and getSpaceRailBundle. `pageSlug` picks which
+ *  console (fail-safe). Pure, shared by getSpacePageData and getSpaceRailCore. `pageSlug` picks which
  *  page's blocks the panel edits (default Home). */
 function buildPageData(
   space: ResolvedSpaceRow,
@@ -409,7 +410,7 @@ interface SpaceLayoutRailData {
 }
 
 /** Assemble the builder seed from the already-resolved space, or null when the viewer cannot manage this
- *  Space (fail-safe → the builder renders nothing). Shared by getSpaceLayoutRailData and getSpaceRailBundle.
+ *  Space (fail-safe → the builder renders nothing). Shared by getSpaceLayoutRailData and getSpaceRailExtras.
  *  A staff previewer cannot edit the page, so `canManage` gates it (not staffViewing). ASYNC (ADR-573): it
  *  now reads the Space's function-backed data twice, both bound to space.id and both fail-safe:
  *   • item 6 — existingFunctionBackedBlocks(space.id) → the finer palette gate (a function-backed block is
@@ -488,15 +489,16 @@ export async function getSpaceLayoutRailData(slug: string): Promise<SpaceLayoutR
   return buildLayoutData(space, canManage)
 }
 
-// ── The one bundled rail resolve (ADR-550) ───────────────────────────────────────────────────────────
+// ── The bundled rail resolve (ADR-550) ───────────────────────────────────────────────────────────────
 // The standardized Space rail mounts the Basics / Branding / Settings / Page modules + the page builder,
 // each of which self-fetches through its OWN 'use server' action above — so the heavy resolve chain
 // (caller → visible space → manage access → caps → extras) runs ~5 times per rail open, with no cross-
-// request dedupe. This getter runs that chain ONCE and assembles every per-module bundle from the SAME
-// pure builders the individual getters use, so there is zero behavior drift. It SELF-GATES identically
-// (returns null for a non-manager / non-staff viewer, the fail-safe), and each write action still
-// re-gates on its own. The client SpaceRailDataProvider calls this once and distributes the slices;
-// a module that misses the provider falls back to its own getter, so nothing breaks standalone.
+// request dedupe. The two bundled getters below (getSpaceRailCore + getSpaceRailExtras) each run that
+// chain ONCE and assemble every per-module slice from the SAME pure builders the individual getters use,
+// so there is zero behavior drift. Each SELF-GATES identically (returns null for a non-manager /
+// non-staff viewer, the fail-safe), and each write action still re-gates on its own. The client
+// SpaceRailDataProvider fetches both and distributes the slices; a module that misses the provider
+// falls back to its own getter, so nothing breaks standalone.
 
 /** One rail summary count (plus, for a metered surface, the Space's plan `tier`), keyed by surface id. */
 export type SpaceSummaryValue = { count: number; tier?: string }
@@ -549,78 +551,20 @@ async function buildSummariesData(
   }
 }
 
-export interface SpaceRailBundle {
-  /** Present whenever the viewer can manage (the `profile` function only toggles readOnly). */
-  basics: SpaceBasicsData
-  branding: SpaceBrandingData
-  settings: SpaceSettingsData
-  /** Null when the Space type has no console (mirrors getSpacePageData). */
-  page: SpacePageData | null
-  /** Null when the viewer is a staff previewer who cannot edit (mirrors getSpaceLayoutRailData). */
-  layout: SpaceLayoutRailData | null
-  /** Every rail summary card's count, keyed by surface id. A card reads its slice from here instead of
-   *  self-fetching (the slow fan-out fix); a null slice means the viewer cannot use that surface. */
-  summaries: Record<string, SpaceSummaryValue | null>
-}
-
-/** Every Space rail module's bundle from ONE resolve, or null when the viewer cannot manage this Space
- *  (fail-safe → every module renders nothing). Re-gates EXACTLY like the individual getters. */
-export async function getSpaceRailBundle(
-  slug: string,
-  pageSlug?: string,
-): Promise<SpaceRailBundle | null> {
-  const caller = await getCallerProfile()
-  const viewerProfileId = caller?.id ?? null
-
-  const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
-  if (!space) return null
-
-  const { canManage, staffViewing } = await resolveSpaceManageAccess(
-    space,
-    viewerProfileId,
-    caller?.webRole,
-  )
-  if (!canManage && !staffViewing) return null
-
-  // caps + extras are INDEPENDENT (each needs only space / viewerProfileId), so resolve them in parallel
-  // rather than serially — one round-trip instead of two on the rail's hot open path (ADR-550). caps reads
-  // the viewer's membership, which resolveSpaceManageAccess already read, so React.cache serves it free.
-  const [caps, extras, layout] = await Promise.all([
-    getSpaceCapabilities(space, viewerProfileId),
-    readProfileExtras(space.id),
-    // The layout slice now reads the Space's function-backed data (item 5 picker data + item 6 existing gate),
-    // so it is async; resolve it alongside caps + extras on the rail's hot open path (ADR-573).
-    buildLayoutData(space, canManage),
-  ])
-
-  // The rail summary counts fold into THIS one request too (perf: every card used to self-fetch, re-running
-  // the whole resolve chain). buildSummariesData needs `caps.role` for its per-surface gate, so it runs after
-  // caps resolves; its ~6 count queries fan out in parallel inside it, and each is fail-safe.
-  const summaries = await buildSummariesData(space, caps, staffViewing)
-
-  return {
-    basics: buildBasicsData(space, caps, staffViewing, extras),
-    branding: buildBrandingData(space, caps, staffViewing, extras),
-    settings: buildSettingsData(space, caps, staffViewing, extras),
-    page: buildPageData(space, staffViewing, canManage, pageSlug),
-    layout,
-    summaries,
-  }
-}
-
 // ── The rail's TWO PHASES: fast core + slow extras (ADR-550 follow-up) ────────────────────────────────
-// getSpaceRailBundle resolves EVERYTHING before it returns — including the layout picker reads (2 queries)
-// and every summary count (6 queries). The provider awaits the whole thing, so the three EDITOR sections
-// (Identity & Branding / Info & Connect / Your Page) — which need only the pure basics/branding/settings/
-// page slices off the shared resolve — were blocked on 8 queries they never read: the slow editor rail.
-// Splitting the resolve in two lets the provider fetch both IN PARALLEL and unblock the editor sections on
-// the fast half:
+// A single one-shot bundle getter used to resolve EVERYTHING before it returned — including the layout
+// picker reads (2 queries) and every summary count (6 queries). The provider awaited the whole thing, so
+// the three EDITOR sections (Identity & Branding / Info & Connect / Your Page) — which need only the pure
+// basics/branding/settings/page slices off the shared resolve — were blocked on 8 queries they never read:
+// the slow editor rail. Splitting the resolve in two lets the provider fetch both IN PARALLEL and unblock
+// the editor sections on the fast half:
 //   • CORE  — resolve chain + caps + extras, then the pure builders + the pure hero seed. No extra query,
 //             so it returns as fast as any other admin rail's module. The editor sections gate on this.
 //   • EXTRAS — the SLOW half: the layout picker/gate reads (the page builder seed) + the summary counts.
-// Each SELF-GATES identically to getSpaceRailBundle (null for a non-manager). The duplicated resolve chain
-// (caller → space → access) is the same the individual getters ran and runs concurrently across the two, so
-// it adds no wall-clock; getSpaceRailBundle stays for the one-shot standalone path + the drift test.
+// Each SELF-GATES identically to the individual getters (null for a non-manager). The duplicated resolve
+// chain (caller → space → access) is the same the individual getters ran and runs concurrently across the
+// two, so it adds no wall-clock. The superseded one-shot getSpaceRailBundle was removed (LIVE-062) once
+// the core/extras split became the only wired path.
 
 export interface SpaceRailCore {
   basics: SpaceBasicsData
@@ -634,7 +578,8 @@ export interface SpaceRailCore {
 }
 
 /** The FAST half of the Space rail: every editor section's slice from ONE resolve, with no summary/picker
- *  query. Null when the viewer cannot manage this Space (fail-safe). Re-gates exactly like getSpaceRailBundle. */
+ *  query. Null when the viewer cannot manage this Space (fail-safe). Re-gates exactly like the individual
+ *  getters. */
 export async function getSpaceRailCore(
   slug: string,
   pageSlug?: string,
@@ -669,7 +614,8 @@ export async function getSpaceRailCore(
 export interface SpaceRailExtras {
   /** Null when the viewer is a staff previewer who cannot edit (mirrors getSpaceLayoutRailData). */
   layout: SpaceLayoutRailData | null
-  /** Every rail summary card's count, keyed by surface id (mirrors getSpaceRailBundle.summaries). */
+  /** Every rail summary card's count, keyed by surface id. A card reads its slice from here instead of
+   *  self-fetching (the slow fan-out fix); a null slice means the viewer cannot use that surface. */
   summaries: Record<string, SpaceSummaryValue | null>
 }
 

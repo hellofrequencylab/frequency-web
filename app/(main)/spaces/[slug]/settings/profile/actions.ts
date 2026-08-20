@@ -67,8 +67,12 @@ async function updateSpacePreferences(spaceId: string, preferences: Record<strin
  * The chosen node fully replaces preferences.profileLayout, preserving every OTHER preferences key. An
  * empty layout clears the node (back to the fresh default). Returns ActionResult; on success revalidates
  * the profile + preview.
+ *
+ * INTERNAL (not exported): the wired entry is the slug-keyed saveSpaceGridLayout below, so this stays a
+ * same-file helper rather than a public server-action endpoint (an unused export would still be
+ * directly POSTable).
  */
-export async function saveSpaceProfileLayout(
+async function saveSpaceProfileLayout(
   spaceId: string,
   layout: EntityLayout,
   // WHICH node to write (ADR draft/publish split). Defaults to the PUBLISHED node `profileLayout`

@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { searchSpaceLibraryImages, insertSpaceLibraryImage } from '@/lib/library/store'
+import { insertSpaceLibraryImage } from '@/lib/library/store'
 import { classifyLoomUpload, fallbackExtFor, fallbackMimeFor } from '@/lib/library/upload-kinds'
 
 // Server actions behind the Loom-backed image field (lib/page-editor/loom-image-field.tsx). A
@@ -20,13 +20,10 @@ import { classifyLoomUpload, fallbackExtFor, fallbackMimeFor } from '@/lib/libra
 // server treats it as untrusted and re-checks permission against the resolved space.
 //
 // SCOPE: uploads file into the SPACE'S OWN Loom (library_assets with space_id = <this space>,
-// visibility = 'space') -- NEVER the shared root/public library. The picker searches the space's own
-// images UNIONED with the shared/public library for reuse, but writes are always space-scoped.
-// Images resolve through the Loom asset `url` (the library-media public URL), so a picked asset and an
-// uploaded asset resolve identically.
-
-/** One pickable Loom image: the served URL plus the label the picker grid shows. */
-export type LoomImagePick = { id: string; title: string; url: string; alt: string | null }
+// visibility = 'space') -- NEVER the shared root/public library. Browsing/reuse goes through the
+// shared Loom picker (listLoomScopeImages in lib/loom/picker-actions.ts); this module owns only the
+// upload. Images resolve through the Loom asset `url` (the library-media public URL), so a picked
+// asset and an uploaded asset resolve identically.
 
 /** Resolve + AUTHORIZE the caller as an editor (owner / admin / editor) of `slug`'s space. Returns the
  *  space id, or null on any miss (unknown slug, not visible, no edit permission). Untrusted slug: the
@@ -46,15 +43,6 @@ async function authorizeSpaceEditor(slug: string | null | undefined): Promise<st
   } catch {
     return null
   }
-}
-
-/** The images a space operator may pick: the space's OWN Loom images unioned with the shared/public
- *  library, optionally filtered by a text query. Gated on per-space edit permission; FAIL-SAFE to []
- *  (an unauthorized caller, an unknown slug, an empty catalog, or any error). */
-export async function listLoomImages(slug: string, query?: string): Promise<LoomImagePick[]> {
-  const spaceId = await authorizeSpaceEditor(slug)
-  if (!spaceId) return []
-  return searchSpaceLibraryImages(spaceId, query)
 }
 
 /** Upload a file and FILE IT INTO the SPACE'S OWN Loom (library_assets, space_id = this space,

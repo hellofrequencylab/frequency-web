@@ -85,8 +85,10 @@ export async function uploadRecordingAction(
 }
 
 /** Edit a Recording's metadata (title / description / visibility / published state). Gated inside
- *  updateRecording on the actor id. */
-export async function updateRecordingAction(
+ *  updateRecording on the actor id. INTERNAL (not exported): the wired entries are the focused
+ *  same-file wrappers (visibility / show / sort / episode edits), so this is a helper, not a public
+ *  server-action endpoint. */
+async function updateRecordingAction(
   slug: string,
   recordingId: string,
   fields: UpdateRecordingInput,
