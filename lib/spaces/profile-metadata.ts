@@ -7,7 +7,7 @@ import { SITE_NAME } from '@/lib/site'
 
 // ── SPACE PROFILE METADATA (one builder, every public tab) ──────────────────────────────────────
 //
-// A Space profile is a ROOT plus sub-tabs (Community, Calendar, Reviews, Shop, Collaborators, Book,
+// A Space profile is a ROOT plus sub-tabs (Calendar, Reviews, Shop, Collaborators, Book,
 // and the operator's custom pages), each its own route segment. Metadata in the App Router is
 // INHERITED: a segment that declares none keeps its parent's, field for field. So while the root
 // layout was the only declarer, every sub-tab emitted the root's `<link rel="canonical">` and the

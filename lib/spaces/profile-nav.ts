@@ -51,10 +51,10 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
 
   const pages = readProfilePages(space.preferences)
   const homeDoc = resolveSpacePageDoc(space.preferences, brandName, HOME_SLUG)
-  // Community and Reviews are their OWN dedicated tabs / pages now (added below), so an in-page section
-  // anchor for either is a DUPLICATE nav link (the "two Reviews" bug: a stray #reviews anchor beside the
-  // real /reviews tab, scrolling to nothing). Drop those anchors here so the dedicated tab is the only one.
-  const DEDICATED_TAB_ANCHORS = new Set(['community', 'reviews'])
+  // Reviews is its OWN dedicated tab / page (added below), so an in-page section anchor for it is a
+  // DUPLICATE nav link (the "two Reviews" bug: a stray #reviews anchor beside the real /reviews tab,
+  // scrolling to nothing). Drop that anchor here so the dedicated tab is the only one.
+  const DEDICATED_TAB_ANCHORS = new Set(['reviews'])
   const sections = deriveSectionNav(homeDoc, presence).filter((s) => !DEDICATED_TAB_ANCHORS.has(s.anchor))
   // The public Shop tab (ADR-596): shown only when the owner has published their storefront, with the
   // owner's chosen (renameable) label. The catalog is gated status='active' and the route double-gates on
@@ -72,9 +72,6 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
   const tabs: SpaceProfileTab[] = [
     { href: base, label: pages[0]?.label ?? 'Home' },
     ...sections.map((s) => ({ href: `${base}#${s.anchor}`, label: s.label })),
-    // The Community feed (Facebook/Yelp-style): the business posts, members react + comment. Public to
-    // everyone; the page itself gates who can interact. Always present so a business can start posting.
-    { href: `${base}/community`, label: 'Community' },
     // The Calendar tab (Events EC2): a month grid of the Space's events + a subscribe-to-calendar feed.
     // Shown only when the Space has upcoming PUBLIC events (the exact set the grid renders), so the tab
     // never opens onto an empty calendar.

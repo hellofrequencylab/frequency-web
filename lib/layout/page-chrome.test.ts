@@ -127,7 +127,7 @@ describe('railFor — the single source of truth for page chrome', () => {
     expect(railFor('/spaces/demo-practitioner')).toBe('global')
     expect(railFor('/spaces/demo-practitioner/offerings')).toBe('global')
     expect(railFor('/spaces/demo-practitioner/practices')).toBe('global')
-    expect(railFor('/spaces/demo-practitioner/community')).toBe('global')
+    expect(railFor('/spaces/demo-practitioner/reviews')).toBe('global')
     expect(railFor('/spaces/demo-practitioner/book')).toBe('global')
     // The provisioning wizard + the owner settings surfaces ALSO keep the global rail now (owner
     // directive, 2026-06-20: the right rail shows on every page). They still compose a centered
