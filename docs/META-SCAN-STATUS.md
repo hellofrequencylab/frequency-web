@@ -54,6 +54,19 @@ stale doc line the only SEO/canon gap.
 | low | `app/dev/og-root-card/route.tsx` ships **ungated** to production, unlike its two `/dev` siblings which `notFound()` in prod — keeps a `sharp`/`next-og` rasterizer deployed (counted by `check:og-trace`). | Add the same production gate. |
 | low | Internal links in `loneliness` + `how-to-be-more-social` point at 308 redirect stubs (`/what-is-a-third-space`, `/social-life-without-drinking`) instead of their canonical pillars. | Retarget the links; one-hop 308s so minor. |
 
+> **2026-08-20, full-tree re-verify + backlog enrollment.** Every find above was re-verified against
+> `db4d0b1` the same day (the dead-action list re-derived at **38**, widened from ~32 by counting
+> test-only references) and each is now a **probed row in the one list**: the SpaceUpdates ruling is
+> OWN-035, the ADR-458 ladder retirement OWN-036, the claim-token ruling OWN-037, the dead actions
+> LIVE-062, EditorShell LIVE-063, the `/dev/og-root-card` gate LIVE-064, the stub links LIVE-065,
+> the QR-Studio/voice-lint deferrals LIVE-066, and the admin-rail comment HYG-008. The development
+> order lives in `BUILD-BACKLOG.json` → `meta.slate` (owner directive 2026-08-20: production
+> correctness → attack surface → orphan hygiene → content pipeline; **White Label E10 and the App
+> Platform held to the end**). The pre-census residue tables below (2026-07-27 / 2026-08-04 /
+> 2026-08-12 passes) were spot-checked the same day — three of three checked items were already
+> fixed (placement scope pair, reactivation seat wall, FAQ editor), so their full re-verify is
+> HYG-009 rather than blind rows.
+
 ### Verified clean (finder A + B, worth not re-auditing)
 
 - **Import graph** (all components/ + lib/, static + dynamic + barrel + registry + DB-driven refs): only the files above lack importers. Puck block registry, admin/studio/nav registries, `templates/index.ts` all fully resolve; every registry `href:` hits a real route.

@@ -19,31 +19,27 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
 - **The artifact is gated in `postbuild`, not CI** — CI never builds, Vercel does. **`postbuild` is
   proven to run**: a real production log ([ADR-1081](docs/DECISIONS.md)) shows `Running "pnpm run
   build"`, then `prebuild`, then `postbuild` printing its gates. `vercel.json` now pins
-  `buildCommand: pnpm build` so a dashboard edit cannot silently take the lifecycle away. Two gates
-  run there and fail the build:
+  `buildCommand: pnpm build` so a dashboard edit cannot silently take the lifecycle away. **Four
+  gates run there and fail the build** (all wired and proven on real artifacts as of #2194,
+  2026-08-19 — LIVE-035/LIVE-048/LIVE-029 closed):
   - `check:build-budget` — total per-function output under 8 GB; **measured 6.04 GB across 499
     functions, 2026-08-18**, up from 5.81 GB (2026-08-13) and 5.59 GB before that. It has risen every
     time it has been read; the trend, not the headroom, is the thing to watch.
   - `check:og-trace` — sharp reaching 67 functions of a 100 budget.
-
-  ⚠️ **Two gates are still NOT wired, and one of them was wired and taken back out on 2026-08-18**
-  (LIVE-035, LIVE-048, [ADR-1081](docs/DECISIONS.md)):
-  - `check:cache-budget` ([ADR-1064](docs/DECISIONS.md)) had **two** defects and **killed two builds**
-    proving it: it compared **raw bytes on disk** against Vercel's **packed** 1.50 GB ceiling (about
-    **2:1** apart, not the ~3% its header assumed), and its trim dropped `.next/cache` directories
-    **biggest-first**, which took the **incremental fetch cache** with it. The next two builds each
-    compiled in ~2.4 min and then hung in *Collecting page data*, hitting
-    **`BUILD_EXCEEDED_MAXIMUM_TIME` at 46 minutes**, against a control on a healthy cache that
-    **finished in 59 seconds**. **Both are fixed** ([ADR-1086](docs/DECISIONS.md), LIVE-048): the trim
-    iterates a named compiler-cache list and can reach nothing else, and the threshold converts
-    through `PACKED_PER_RAW = 0.50`, a constant derived from real builds and marked provisional until
-    one build prints both halves. Its floor arm was always right (node_modules 933 MiB, 27% clear).
-    **It is still NOT wired** — that is LIVE-035, and it lands with the preview build that prints it
-    green, which is also the build that settles the constant.
-  - `check:shell-weight` ([ADR-1066](docs/DECISIONS.md)) is the CLIENT half — the app shell's eager
-    first-load JS (**957 KB across 20 chunks, 2026-08-17**, ceiling 1,400 KB) plus named fingerprints
-    for admin module bodies that must stay behind `next/dynamic` — and it has an unconfirmed failure
-    on the last artifact available.
+  - `check:cache-budget` ([ADR-1064](docs/DECISIONS.md), [ADR-1086](docs/DECISIONS.md)) — the build
+    cache under Vercel's packed 1.50 GB ceiling, trimming only a named compiler-cache list when over.
+    It earned its wiring the hard way: the first version **killed two builds** (raw-vs-packed
+    threshold ~2:1 off, and a biggest-first trim that deleted the **incremental fetch cache**,
+    hanging *Collecting page data* until `BUILD_EXCEEDED_MAXIMUM_TIME` at 46 minutes, against a
+    59-second control). Both defects are fixed and **proven by mutation tests** that reconstruct the
+    exact bad trim (#2194); `PACKED_PER_RAW` was **settled at 0.53 by a paired real reading**
+    (measured 0.5254 beside the same build's upload line, rounded toward firing early). A re-added
+    `--warn-only` fails CI as a silent demotion.
+  - `check:shell-weight` ([ADR-1066](docs/DECISIONS.md)) — the CLIENT half: the app shell's eager
+    first-load JS (**1010 KB across 21 chunks on two production artifacts, 2026-08-18**, ceiling
+    1,400 KB) plus named fingerprints for admin module bodies that must stay behind `next/dynamic`
+    (all 8 lazy, positive control present). Promoted from `--warn-only` in #2188 after two green
+    production readings; the source-shape test pins the promoted state.
 
   **The rule that keeps being right:** a build-blocking gate that has never seen a real artifact is
   the 2026-08-11 incident with the roles reversed. `check:cache-budget` passed its own unit tests,
