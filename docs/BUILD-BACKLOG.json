@@ -34,27 +34,110 @@
       "ROADMAP.md"
     ],
     "slate": {
-      "ruled": "2026-08-20 — owner: full scan of the handoff items, everything organized here and slated for development, best-practice order; 'hold white label and app at the end'.",
-      "note": "The development order for the open queue. Owner-lane rows are decisions, not sequenced dev — any of them can be ruled at any time and their execution slots into the order below. This object is a SEQUENCE, not a status: status lives only in each row’s probe.",
-      "order": [
-        "LIVE-053",
-        "LIVE-061",
-        "LIVE-064",
-        "LIVE-062",
-        "HYG-008",
-        "LIVE-066",
-        "LIVE-007",
-        "LIVE-006",
-        "HYG-009",
-        "LIVE-027",
-        "LIVE-060",
-        "DEF-A2P",
-        "PROG-E10",
-        "PROG-A1",
-        "PROG-A3",
-        "PROG-A4"
+      "ruled": "Owner ruling 2026-08-20 evening: \"Take all tasks out of deferred or parked programs and add them to the priority list. I want all those things built out. The things that we are deferring are white labeling, mobile application, texting.\" Supersedes the same-day \"hold white label and app at the end\" slate: the App Platform now builds; only the three named holds park.",
+      "note": "The development order for the whole open queue, waves in sequence, ids in order within a wave. Owner-lane rows are decisions, not sequenced dev. Status lives only in each row’s probe; this object is the sequence.",
+      "waves": [
+        {
+          "name": "W0 · active now",
+          "ids": [
+            "LIVE-062",
+            "LIVE-066",
+            "LIVE-053",
+            "LIVE-061",
+            "HYG-009"
+          ]
+        },
+        {
+          "name": "W1 · content pipeline (5c/5d must land before Editor E3)",
+          "ids": [
+            "LIVE-007",
+            "LIVE-006"
+          ]
+        },
+        {
+          "name": "W2 · foundation first",
+          "ids": [
+            "DEF-HARDEN",
+            "PROG-A1",
+            "PROG-A3",
+            "PROG-DAWN2"
+          ]
+        },
+        {
+          "name": "W3 · Loom foundation (the media layer the editor projects from)",
+          "ids": [
+            "PROG-D1",
+            "PROG-D2",
+            "PROG-D3"
+          ]
+        },
+        {
+          "name": "W4 · the Editor, E0-E9 in order (decision gate first: EDITOR-ARCHITECTURE’s two open sequencing questions)",
+          "ids": [
+            "PROG-E0",
+            "PROG-E1",
+            "PROG-E2",
+            "PROG-E3",
+            "PROG-E4",
+            "PROG-E5",
+            "PROG-E6",
+            "PROG-E7",
+            "PROG-E8",
+            "PROG-E9"
+          ]
+        },
+        {
+          "name": "W5 · Loom at scale",
+          "ids": [
+            "PROG-D4",
+            "PROG-D5",
+            "PROG-D6",
+            "PROG-D7"
+          ]
+        },
+        {
+          "name": "W6 · re-theme + the mechanical sweeps",
+          "ids": [
+            "PROG-P4",
+            "PROG-P5",
+            "PROG-P6",
+            "PROG-P9",
+            "PROG-DAWN3"
+          ]
+        },
+        {
+          "name": "W7 · feature depth",
+          "ids": [
+            "PROG-PRAC4",
+            "PROG-SPOT",
+            "PROG-A4",
+            "DEF-DOMAIN"
+          ]
+        },
+        {
+          "name": "W8 · commerce + verticals (Resonance launch stays GO-gated)",
+          "ids": [
+            "DEF-ETSY",
+            "DEF-MONEY",
+            "DEF-HOUS",
+            "DEF-RESON"
+          ]
+        },
+        {
+          "name": "owner-timed",
+          "ids": [
+            "LIVE-027",
+            "LIVE-060"
+          ]
+        }
       ],
-      "rationale": "Production correctness first (LIVE-053/061 are live TypeErrors plus the observability gap that hid one for six weeks), then attack-surface reduction (LIVE-064 ungated prod endpoint, LIVE-062 orphaned POST endpoints), then orphan/wiring hygiene (HYG-008, LIVE-066; EditorShell rides OWN-036), then the content pipeline in its committed order (LIVE-007 one draft-PR per slug, LIVE-006), then the record sweep (HYG-009) and externally-paced items (LIVE-027 DAWN send, LIVE-060 research round, DEF-A2P registration). PROG-E10 (Sites/White Label, absorbing W1-W5) and the App Platform program (PROG-A1 -> A3 -> A4) are HELD TO THE END by owner direction 2026-08-20.",
+      "deferredByName": [
+        "PROG-E10",
+        "PROG-W6",
+        "PROG-P7",
+        "DEF-MOBILE",
+        "DEF-A2P"
+      ],
       "decisions": [
         "OWN-035",
         "OWN-036",
@@ -67,7 +150,8 @@
         "OWN-019",
         "OWN-020",
         "OWN-032"
-      ]
+      ],
+      "rationale": "Foundation before surface: hardening and module boundaries (A1/A3) pay compounding dividends across every later wave. Loom D1-D3 precede the Editor because E2 projects the editor’s asset model onto the Loom. Content retirements (W1) must precede E3, which replaces EDITABLE_PAGES in the opposite direction. Re-theme and the DAWN mechanical sweeps follow the editor so swept surfaces are not rebuilt. Flagship apps (A4) and the domain backlog ride after boundaries + editor exist. Commerce verticals close, with Resonance’s launch GO still the owner’s. White label (E10/W6/P7), mobile, and texting park by name."
     }
   },
   "entries": [
@@ -926,14 +1010,14 @@
     {
       "id": "PROG-E0",
       "title": "Editor E0: foundations + the CRDT",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "XL",
       "source": {
         "file": "docs/EDITOR-ARCHITECTURE.md",
         "ref": "E0"
       },
-      "detail": "Node-id keying, unknown-block byte-for-byte preservation, immutable page_versions with publish as a pointer swap, app_instances writers (absorbs A2), undo + base_revision, the render_path runtime flag per surface, surface-vocabulary reconciliation, plus Yjs over Supabase Realtime. Gated on FINALIZE 1.2/1.3. E0-E3 carry roughly half the program's risk and produce almost nothing visible — say so at the start, not when someone asks why nothing has shipped.",
+      "detail": "Node-id keying, unknown-block byte-for-byte preservation, immutable page_versions with publish as a pointer swap, app_instances writers (absorbs A2), undo + base_revision, the render_path runtime flag per surface, surface-vocabulary reconciliation, plus Yjs over Supabase Realtime. Gated on FINALIZE 1.2/1.3. E0-E3 carry roughly half the program's risk and produce almost nothing visible — say so at the start, not when someone asks why nothing has shipped.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase; scheduling decision pending.",
@@ -943,14 +1027,14 @@
     {
       "id": "PROG-E1",
       "title": "Editor E1: the block contract",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/EDITOR-ARCHITECTURE.md",
         "ref": "E1"
       },
-      "detail": "One registry, defineBlock, Zod content, up/down migrations, reads live|authored, the binding layer, plus check:blocks + check:surface-binding + check:email-blocks.",
+      "detail": "One registry, defineBlock, Zod content, up/down migrations, reads live|authored, the binding layer, plus check:blocks + check:surface-binding + check:email-blocks.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -960,14 +1044,14 @@
     {
       "id": "PROG-E2",
       "title": "Editor E2: Loom projection + usage index, THEN consolidate",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "XL",
       "source": {
         "file": "docs/EDITOR-ARCHITECTURE.md",
         "ref": "E2"
       },
-      "detail": "Re-scope before a target is locked. The real count is 304 block types across FIVE systems mapping to ~49 held as a range — a 6:1 cut, not 2:1. Four audits found nine first-draft figures wrong, always undercounting fragmentation; treat the next unmeasured number here as a floor. 'Which tenants use this block' must be answerable BEFORE the first retirement.",
+      "detail": "Re-scope before a target is locked. The real count is 304 block types across FIVE systems mapping to ~49 held as a range — a 6:1 cut, not 2:1. Four audits found nine first-draft figures wrong, always undercounting fragmentation; treat the next unmeasured number here as a floor. 'Which tenants use this block' must be answerable BEFORE the first retirement.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -977,14 +1061,14 @@
     {
       "id": "PROG-E3",
       "title": "Editor E3: axis work + capture the four missing baselines",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/EDITOR-ARCHITECTURE.md",
         "ref": "E3"
       },
-      "detail": "Widen kinds[] to member, density as a declared property, Site's four things. E3 HAS NO INSTRUMENT: the 72 visual baselines cover none of its four target surfaces and no phase owned capturing them, so 'zero visual diff' is decorative until someone does. That capture belongs in this phase. Must land AFTER LIVE-006/007.",
+      "detail": "Widen kinds[] to member, density as a declared property, Site's four things. E3 HAS NO INSTRUMENT: the 72 visual baselines cover none of its four target surfaces and no phase owned capturing them, so 'zero visual diff' is decorative until someone does. That capture belongs in this phase. Must land AFTER LIVE-006/007.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -994,14 +1078,14 @@
     {
       "id": "PROG-E4",
       "title": "Editor E4: the canvas — the first demonstrable phase",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/EDITOR-ARCHITECTURE.md",
         "ref": "E4"
       },
-      "detail": "Same-origin iframe + one React tree via createPortal, bubbleEvent + coordinate translation, inline Tiptap on y-prosemirror, live cursors, device switcher at real viewports.",
+      "detail": "Same-origin iframe + one React tree via createPortal, bubbleEvent + coordinate translation, inline Tiptap on y-prosemirror, live cursors, device switcher at real viewports.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1011,14 +1095,14 @@
     {
       "id": "PROG-E5",
       "title": "Editor E5: inspector + responsive, touch-native",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/EDITOR-ARCHITECTURE.md",
         "ref": "E5"
       },
-      "detail": "Fields derived from schemas, sparse breakpoint overrides with provenance, container queries, and the bottom-sheet inspector with no hover dependency.",
+      "detail": "Fields derived from schemas, sparse breakpoint overrides with provenance, container queries, and the bottom-sheet inspector with no hover dependency.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1028,14 +1112,14 @@
     {
       "id": "PROG-E6",
       "title": "Editor E6: direct manipulation + the touch gesture model",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "XL",
       "source": {
         "file": "docs/EDITOR-ARCHITECTURE.md",
         "ref": "E6"
       },
-      "detail": "Drag/drop, layer tree, keyboard model, spacing handles, presets-first inserter, long-press drag. The keyboard path must be complete AND the full authoring path must finish on a phone.",
+      "detail": "Drag/drop, layer tree, keyboard model, spacing handles, presets-first inserter, long-press drag. The keyboard path must be complete AND the full authoring path must finish on a phone.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1045,14 +1129,14 @@
     {
       "id": "PROG-E7",
       "title": "Editor E7: functional blocks + member Stripe Connect",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "XL",
       "source": {
         "file": "docs/EDITOR-ARCHITECTURE.md",
         "ref": "E7"
       },
-      "detail": "Five transactional widgets made placeable, the form block, and member Connect: onboarding, capability checks, platform fee, payouts, tax. O-1's scope needs rewriting against lib/billing/connect.ts before anyone estimates this.",
+      "detail": "Five transactional widgets made placeable, the form block, and member Connect: onboarding, capability checks, platform fee, payouts, tax. O-1's scope needs rewriting against lib/billing/connect.ts before anyone estimates this.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1062,14 +1146,14 @@
     {
       "id": "PROG-E8",
       "title": "Editor E8: Vera, creation-time only",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/EDITOR-ARCHITECTURE.md",
         "ref": "E8"
       },
-      "detail": "Streaming, per-Space retrieval, composer generalized past 15 blocks and one surface, structural + validator layers (no CSS validator — D-1 deleted it), bounded critic, ghosted diff review.",
+      "detail": "Streaming, per-Space retrieval, composer generalized past 15 blocks and one surface, structural + validator layers (no CSS validator — D-1 deleted it), bounded critic, ghosted diff review.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1079,14 +1163,14 @@
     {
       "id": "PROG-E9",
       "title": "Editor E9: Loom authoring",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "M",
       "source": {
         "file": "docs/EDITOR-ARCHITECTURE.md",
         "ref": "E9"
       },
-      "detail": "Layer-2 config editing, per-surface settings console, the declarative composer, check:loom-integrity. An operator composes a function without a deploy and cannot write JavaScript.",
+      "detail": "Layer-2 config editing, per-surface settings console, the declarative composer, check:loom-integrity. An operator composes a function without a deploy and cannot write JavaScript.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1096,14 +1180,14 @@
     {
       "id": "PROG-E10",
       "title": "Editor E10: Sites — absorbs White Label W1-W5",
-      "status": "open",
+      "status": "parked",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/EDITOR-ARCHITECTURE.md",
         "ref": "E10"
       },
-      "detail": "Domains, host routing, per-tenant theming and SEO. Subdomain on any paid plan, custom domain as the upgrade. W1-W5 are re-pointed here, not deleted — read them as the scope inventory, never schedule them independently. W4 is additionally blocked on Stripe Connect.",
+      "detail": "Domains, host routing, per-tenant theming and SEO. Subdomain on any paid plan, custom domain as the upgrade. W1-W5 are re-pointed here, not deleted — read them as the scope inventory, never schedule them independently. W4 is additionally blocked on Stripe Connect.\n\n── PARKED 2026-08-20 (owner ruling): white labeling is deferred by name; Sites absorbs W1-W5 and stays parked with W6.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase; owner-gated (OWN-016).",
@@ -1185,14 +1269,14 @@
     {
       "id": "PROG-D1",
       "title": "Loom D1: finish Studio ingest + search",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "M",
       "source": {
         "file": "docs/BUILD-LIST.md",
         "ref": "Loom D1"
       },
-      "detail": "Shipped, but the ingest extras are still pending: checksum dedupe, EXIF strip, dims/colors/blurhash, the rendition set, and FTS-ranked/trigram search.",
+      "detail": "Shipped, but the ingest extras are still pending: checksum dedupe, EXIF strip, dims/colors/blurhash, the rendition set, and FTS-ranked/trigram search.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1202,14 +1286,14 @@
     {
       "id": "PROG-D2",
       "title": "Loom D2: the AssetField seam + backfill",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/BUILD-LIST.md",
         "ref": "Loom D2"
       },
-      "detail": "One Upload / Pick from library / Paste URL control replacing ImageField everywhere; blocks store an asset REFERENCE plus a URL cache; render resolves reference → CDN url; backfill existing site-media URLs into the catalog and rewrite references.",
+      "detail": "One Upload / Pick from library / Paste URL control replacing ImageField everywhere; blocks store an asset REFERENCE plus a URL cache; render resolves reference → CDN url; backfill existing site-media URLs into the catalog and rewrite references.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1219,14 +1303,14 @@
     {
       "id": "PROG-D3",
       "title": "Loom D3: editor + non-destructive versions",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/BUILD-LIST.md",
         "ref": "Loom D3"
       },
-      "detail": "Filerobot image editor; an edit saves a new library_versions row; rollback via is_current; on-the-fly rendition resolver.",
+      "detail": "Filerobot image editor; an edit saves a new library_versions row; rollback via is_current; on-the-fly rendition resolver.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1236,14 +1320,14 @@
     {
       "id": "PROG-D4",
       "title": "Loom D4: organization at scale + the usage index, BUILT FROM ZERO",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/BUILD-LIST.md",
         "ref": "Loom D4"
       },
-      "detail": "Collections, saved views, tag governance, and the usage index. RE-SCOPED: the old plan said 'wire library_usages', which assumed the table exists. It does not — created 20260920000000:101 and DROPPED five days later at 20260925000000:17, with ADR-979 deleting every reader after finding the read discarded its error and silently returned []. The replacement is block_usage per ADR-975: an app_instances trigger plus a periodic JSONB scan, treated as disposable. Size grows accordingly.",
+      "detail": "Collections, saved views, tag governance, and the usage index. RE-SCOPED: the old plan said 'wire library_usages', which assumed the table exists. It does not — created 20260920000000:101 and DROPPED five days later at 20260925000000:17, with ADR-979 deleting every reader after finding the read discarded its error and silently returned []. The replacement is block_usage per ADR-975: an app_instances trigger plus a periodic JSONB scan, treated as disposable. Size grows accordingly.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1253,14 +1337,14 @@
     {
       "id": "PROG-D5",
       "title": "Loom D5: per-space Looms",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/BUILD-LIST.md",
         "ref": "Loom D5"
       },
-      "detail": "Space-scoped libraries, upload-to-library, fork-on-edit, quotas, a per-space console, client-facing RLS, capability keys and entitlements.",
+      "detail": "Space-scoped libraries, upload-to-library, fork-on-edit, quotas, a per-space console, client-facing RLS, capability keys and entitlements.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1270,14 +1354,14 @@
     {
       "id": "PROG-D6",
       "title": "Loom D6: the privacy system",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/BUILD-LIST.md",
         "ref": "Loom D6"
       },
-      "detail": "library-private bucket, signed URLs, storage RLS, download gating + audit, EXIF strip enforced, optional watermark/proofing. The hooks (is_protected, download_policy, expires_at) are already in the schema.",
+      "detail": "library-private bucket, signed URLs, storage RLS, download gating + audit, EXIF strip enforced, optional watermark/proofing. The hooks (is_protected, download_policy, expires_at) are already in the schema.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1287,14 +1371,14 @@
     {
       "id": "PROG-D7",
       "title": "Loom D7: semantic + AI",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/BUILD-LIST.md",
         "ref": "Loom D7"
       },
-      "detail": "Populate embedding, hybrid FTS+vector RRF ranking, AI auto-tag and colour extraction, background removal / upscale. Later the Weave generative composer.",
+      "detail": "Populate embedding, hybrid FTS+vector RRF ranking, AI auto-tag and colour extraction, background removal / upscale. Later the Weave generative composer.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1304,14 +1388,14 @@
     {
       "id": "PROG-P4",
       "title": "Re-theme P4: universal browse hero",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "M",
       "source": {
         "file": "docs/BUILD-LIST.md",
         "ref": "Re-theme P4"
       },
-      "detail": "The 24 plain IndexTemplate pages adopt heroOverlay so the hero is everywhere.",
+      "detail": "The 24 plain IndexTemplate pages adopt heroOverlay so the hero is everywhere.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1321,14 +1405,14 @@
     {
       "id": "PROG-P5",
       "title": "Re-theme P5: entity headers onto PageHero",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/BUILD-LIST.md",
         "ref": "Re-theme P5"
       },
-      "detail": "Fold the 43 DetailTemplate band pages onto the one PageHero grammar, so entity and index become one component.",
+      "detail": "Fold the 43 DetailTemplate band pages onto the one PageHero grammar, so entity and index become one component.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1338,14 +1422,14 @@
     {
       "id": "PROG-P6",
       "title": "Re-theme P6: the copy cascade",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/BUILD-LIST.md",
         "ref": "Re-theme P6"
       },
-      "detail": "Generalize page_content into a site → section → page inherit-cascade, widen editable fields to body copy and images, and extend check:canon to .tsx. Overlaps LIVE-018.",
+      "detail": "Generalize page_content into a site → section → page inherit-cascade, widen editable fields to body copy and images, and extend check:canon to .tsx. Overlaps LIVE-018.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1362,7 +1446,7 @@
         "file": "docs/BUILD-LIST.md",
         "ref": "Re-theme P7"
       },
-      "detail": "Widen the child-theme override surface (surfaces + type), operator theme controls, and a theme-contract compile check.",
+      "detail": "Widen the child-theme override surface (surfaces + type), operator theme controls, and a theme-contract compile check.\n\n── PARKED 2026-08-20 (owner ruling): its substance is per-Space/white-label theming DEPTH, so it parks with the white-label group; say the word and it moves back into the re-theme wave.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1372,14 +1456,14 @@
     {
       "id": "PROG-P9",
       "title": "Re-theme P9: marketing ↔ in-app reconciliation (optional)",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "M",
       "source": {
         "file": "docs/BUILD-LIST.md",
         "ref": "Re-theme P9"
       },
-      "detail": "Align the marketing brand system with the app tokens where they diverge.",
+      "detail": "Align the marketing brand system with the app tokens where they diverge.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1389,14 +1473,14 @@
     {
       "id": "PROG-DAWN2",
       "title": "DAWN Phase 2: primitives shipped and adopted; StreakMeter + GateNotice widening remains",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "S",
       "source": {
         "file": "docs/DAWN-CONVERSION.md",
         "ref": "Phase 2"
       },
-      "detail": "PREMISE EXPIRED 2026-08-19: the row said 11 primitives were missing and half the sweep volume was blocked. All 8 named primitives are shipped AND adopted (importer counts 2026-08-19: Select 145, Checkbox 42, RankBadge 13, Badge 7, CounterRow 7, Avatar 7, Stat 6; Toast composes into achievement-toast/zap-toast with the lane mounted in app/(main)/layout.tsx). Glyph was struck per ADR-505 - components/ui/icon.tsx already is it. The zero-importer trap the row warned about was also closed (RankBadge 0 -> 13). Remaining: widen StreakMeter (no second day-run surface) and GateNotice (single-p body cannot hold three-paragraph notices) - both exist with tests in components/ui/. Phase 3 is NOT blocked on this row any more.",
+      "detail": "PREMISE EXPIRED 2026-08-19: the row said 11 primitives were missing and half the sweep volume was blocked. All 8 named primitives are shipped AND adopted (importer counts 2026-08-19: Select 145, Checkbox 42, RankBadge 13, Badge 7, CounterRow 7, Avatar 7, Stat 6; Toast composes into achievement-toast/zap-toast with the lane mounted in app/(main)/layout.tsx). Glyph was struck per ADR-505 - components/ui/icon.tsx already is it. The zero-importer trap the row warned about was also closed (RankBadge 0 -> 13). Remaining: widen StreakMeter (no second day-run surface) and GateNotice (single-p body cannot hold three-paragraph notices) - both exist with tests in components/ui/. Phase 3 is NOT blocked on this row any more.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase. All 8 primitives resolved to files with importers, 2026-08-19; DAWN-CONVERSION.md section 1 concurs (re-derived 2026-08-11).",
@@ -1406,14 +1490,14 @@
     {
       "id": "PROG-DAWN3",
       "title": "DAWN Phase 3: the mechanical sweeps (~2,070 sites, ~90% raw <button>)",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "XL",
       "source": {
         "file": "docs/DAWN-CONVERSION.md",
         "ref": "Phase 3"
       },
-      "detail": "PREMISE EXPIRED 2026-08-19: the ~3,124 figure was the 2026-08-05 census and the PROG-DAWN2 gate is open (all primitives shipped and adopted). Live on the ratchet basis ({app,components,lib}/**/*.tsx): 1,868 raw <button>, 185 <input>, 15 <select>, 4 <textarea> = 2,072. Select is effectively done (Select has 145 importers; frozen raw-select = 4) and input/textarea are down ~95% (frozen raw-input = 87, raw-textarea = 3); what remains is essentially the button sweep (frozen raw-button-bg = 513 of the 1,868, i.e. opening tags carrying a background). Bare greps drift with in-flight agents - quote the frozen baselines in scripts/adoption-baselines.json, which only move with a recorded --update.",
+      "detail": "PREMISE EXPIRED 2026-08-19: the ~3,124 figure was the 2026-08-05 census and the PROG-DAWN2 gate is open (all primitives shipped and adopted). Live on the ratchet basis ({app,components,lib}/**/*.tsx): 1,868 raw <button>, 185 <input>, 15 <select>, 4 <textarea> = 2,072. Select is effectively done (Select has 145 importers; frozen raw-select = 4) and input/textarea are down ~95% (frozen raw-input = 87, raw-textarea = 3); what remains is essentially the button sweep (frozen raw-button-bg = 513 of the 1,868, i.e. opening tags carrying a background). Bare greps drift with in-flight agents - quote the frozen baselines in scripts/adoption-baselines.json, which only move with a recorded --update.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase; tracked live by the adoption ratchet (node scripts/check-adoption.mjs). Counts re-derived 2026-08-19.",
@@ -1440,14 +1524,14 @@
     {
       "id": "PROG-PRAC4",
       "title": "Practice library Phase 4: valuation authority, Vera curation, health dashboard",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/BUILD-LIST.md",
         "ref": "Practice library Phase 4"
       },
-      "detail": "computePracticeReward() wired as the valuation authority plus the per-Pillar Zap attribution ledger (the primary/secondary split's payoff — the columns shipped in Phase 1); Vera auto-suggest/auto-tag/auto-summary/voice-check; and the library health dashboard with coverage gaps by Pillar. Also carries four Phase-1 leftovers including server-backed saved views and a DataTable selection slot.",
+      "detail": "computePracticeReward() wired as the valuation authority plus the per-Pillar Zap attribution ledger (the primary/secondary split's payoff — the columns shipped in Phase 1); Vera auto-suggest/auto-tag/auto-summary/voice-check; and the library health dashboard with coverage gaps by Pillar. Also carries four Phase-1 leftovers including server-backed saved views and a DataTable selection slot.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1457,14 +1541,14 @@
     {
       "id": "PROG-SPOT",
       "title": "Spotlight: Guestbook and stickers/decals",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/BUILD-LIST.md",
         "ref": "Spotlight socials"
       },
-      "detail": "Guestbook needs a spotlight_guestbook table (RLS: owner reads all, anyone-signed-in writes), moderation, rate-limiting and the read-side render. Stickers are an absolute-positioned decorative layer with validated coordinates and an allowlisted set. Plus three deferred embed providers and the earned-cosmetics lane.",
+      "detail": "Guestbook needs a spotlight_guestbook table (RLS: owner reads all, anyone-signed-in writes), moderation, rate-limiting and the read-side render. Stickers are an absolute-positioned decorative layer with validated coordinates and an allowlisted set. Plus three deferred embed providers and the earned-cosmetics lane.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1474,14 +1558,14 @@
     {
       "id": "DEF-ETSY",
       "title": "Marketplace Etsy-Grade P3-P7",
-      "status": "parked",
+      "status": "open",
       "lane": "deferred",
       "size": "XL",
       "source": {
         "file": "docs/MASTER-TODO.md",
         "ref": "Marketplace future phases"
       },
-      "detail": "Shipping and delivery; faceted discovery and ranking; cart + multi-seller checkout (one intent, N destination charges, each take rate preserved); orders, fulfillment and order-scoped messaging; promotions, payout reporting and tax posture. Deferred by owner 2026-07-11.",
+      "detail": "Shipping and delivery; faceted discovery and ranking; cart + multi-seller checkout (one intent, N destination charges, each take rate preserved); orders, fulfillment and order-scoped messaging; promotions, payout reporting and tax posture. Deferred by owner 2026-07-11.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Owner-deferred.",
@@ -1508,14 +1592,14 @@
     {
       "id": "DEF-HOUS",
       "title": "Housing: natal-chart matching + Resonance match alerts",
-      "status": "parked",
+      "status": "open",
       "lane": "deferred",
       "size": "M",
       "source": {
         "file": "docs/MASTER-TODO.md",
         "ref": "Housing"
       },
-      "detail": "Natal-chart compatibility beyond the shipped sun-sign quiet-5%, as an opt-in both-sides factor — NEEDS AN EPHEMERIS/COMPUTE DECISION BEFORE BUILD. Alerts are the notification layer on matching RPCs that already exist.",
+      "detail": "Natal-chart compatibility beyond the shipped sun-sign quiet-5%, as an opt-in both-sides factor — NEEDS AN EPHEMERIS/COMPUTE DECISION BEFORE BUILD. Alerts are the notification layer on matching RPCs that already exist.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Owner-deferred.",
@@ -1525,14 +1609,14 @@
     {
       "id": "DEF-MONEY",
       "title": "Money verticals D1-D5 + the money foundation",
-      "status": "parked",
+      "status": "open",
       "lane": "deferred",
       "size": "XL",
       "source": {
         "file": "docs/DEVELOPMENT-MAP.md",
         "ref": "D1-D5"
       },
-      "detail": "The Collective (first commerce), freemium Vault cash-in, affiliate commission ledger, Donations & Grants (the Foundation rail), Lab Spaces. Plus the entity partition and entity-tagged financial_transactions, the inter-entity Lab bridge, physical merch fulfillment and the Frequency Shop. Gated on PMF and a legal entity, not on engineering.",
+      "detail": "The Collective (first commerce), freemium Vault cash-in, affiliate commission ledger, Donations & Grants (the Foundation rail), Lab Spaces. Plus the entity partition and entity-tagged financial_transactions, the inter-entity Lab bridge, physical merch fulfillment and the Frequency Shop. Gated on PMF and a legal entity, not on engineering.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Gated on legal + PMF.",
@@ -1542,14 +1626,14 @@
     {
       "id": "DEF-RESON",
       "title": "resonance/: 18 rungs, substantially built, GO-gated",
-      "status": "parked",
+      "status": "open",
       "lane": "deferred",
       "size": "XL",
       "source": {
         "file": "resonance/docs/BUILD-PLAN.md",
         "ref": "Sections 0-19"
       },
-      "detail": "PREMISE EXPIRED 2026-08-19: the row said 'nothing built', quoting a stale preamble sentence in the plan. The tree holds 180 files (142 TS/TSX), 16 migrations (0001_resonance_init..0016_atomic_economy) and 23 API routes under resonance/app/api. The plan's own boxes read 83 checked vs 20 open; Sections 0, 6 and 19 are done, 1-18 in progress. Build order still never reorders (sync engine -> DJ loop -> gamification -> embed -> world) and each rung still ends in a manual GO gate; voice via WebRTC and fiat cash-out remain follow-ups. UNVERIFIED: whether migrations past 0002 are applied to the shared 'resonance' schema (the public migration ledger does not carry them). NOTE the HYG-005 conflict (auth rung needs anonymous sign-ins, OWN-008 disabled them) was not re-tested this pass.",
+      "detail": "PREMISE EXPIRED 2026-08-19: the row said 'nothing built', quoting a stale preamble sentence in the plan. The tree holds 180 files (142 TS/TSX), 16 migrations (0001_resonance_init..0016_atomic_economy) and 23 API routes under resonance/app/api. The plan's own boxes read 83 checked vs 20 open; Sections 0, 6 and 19 are done, 1-18 in progress. Build order still never reorders (sync engine -> DJ loop -> gamification -> embed -> world) and each rung still ends in a manual GO gate; voice via WebRTC and fiat cash-out remain follow-ups. UNVERIFIED: whether migrations past 0002 are applied to the shared 'resonance' schema (the public migration ledger does not carry them). NOTE the HYG-005 conflict (auth rung needs anonymous sign-ins, OWN-008 disabled them) was not re-tested this pass.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "resonance/ tree: 16 migrations, 23 route.ts, 83/103 plan boxes checked (2026-08-19).",
@@ -1559,14 +1643,14 @@
     {
       "id": "DEF-A2P",
       "title": "A2P 10DLC brand + campaign registration",
-      "status": "open",
+      "status": "parked",
       "lane": "deferred",
       "size": "M",
       "source": {
         "file": "docs/A2P-REGISTRATION.md",
         "ref": "TL;DR"
       },
-      "detail": "14 filing steps, not started, and CARRIER REVIEW RUNS 10-15 DAYS — so the clock should start well before the SMS features need it. Blocks the SMS card-scan nudge and 1:1 SMS. Needs a Standard EIN-backed brand with the IRS record matched exactly, a Mixed use-case campaign, sample messages, STOP/HELP on the Messaging Service, and both SIDs recorded to env.\n\n── RE-MEASURED 2026-08-19 in a premise sweep (ADR-1082). THE 🔴 ENGINEERING BLOCKER ON THE FILING PACKET IS DONE, so the 10-15 day carrier clock can start today. docs/A2P-REGISTRATION.md §6 still carries as its worst-first row: \"Terms of service URL is live. ONLY /privacy EXISTS TODAY (app/privacy/page.tsx). A terms page must ship before the campaign is filed (carrier requirement as of 2026-06-30).\" It shipped. app/terms/page.tsx is 181 lines, landed in dc47b89 (#2124), and production serves https://frequencylocal.com/terms with 200, x-matched-path /terms, robots index,follow and a self-canonical.\n\nIts §7 \"SMS and messaging consent\" already carries every clause the campaign form asks for: opt-in only, \"Message and data rates may apply\", \"message frequency varies\", \"Reply STOP ... Reply HELP\", \"Opting in to texts is never a condition of using Frequency or of any purchase\", and a link to /privacy. The §1 TL;DR table's step 2 (Eng, 🔴 blocker) is therefore satisfied; steps 1 and 3-6 are operator-only.\n\n⚠️ One thing to know rather than a blocker: the page opens \"Draft pending legal review.\" Nothing here says whether a carrier cares, but the owner should see that line before filing. The engineering half of this row is now zero.",
+      "detail": "14 filing steps, not started, and CARRIER REVIEW RUNS 10-15 DAYS — so the clock should start well before the SMS features need it. Blocks the SMS card-scan nudge and 1:1 SMS. Needs a Standard EIN-backed brand with the IRS record matched exactly, a Mixed use-case campaign, sample messages, STOP/HELP on the Messaging Service, and both SIDs recorded to env.\n\n── RE-MEASURED 2026-08-19 in a premise sweep (ADR-1082). THE 🔴 ENGINEERING BLOCKER ON THE FILING PACKET IS DONE, so the 10-15 day carrier clock can start today. docs/A2P-REGISTRATION.md §6 still carries as its worst-first row: \"Terms of service URL is live. ONLY /privacy EXISTS TODAY (app/privacy/page.tsx). A terms page must ship before the campaign is filed (carrier requirement as of 2026-06-30).\" It shipped. app/terms/page.tsx is 181 lines, landed in dc47b89 (#2124), and production serves https://frequencylocal.com/terms with 200, x-matched-path /terms, robots index,follow and a self-canonical.\n\nIts §7 \"SMS and messaging consent\" already carries every clause the campaign form asks for: opt-in only, \"Message and data rates may apply\", \"message frequency varies\", \"Reply STOP ... Reply HELP\", \"Opting in to texts is never a condition of using Frequency or of any purchase\", and a link to /privacy. The §1 TL;DR table's step 2 (Eng, 🔴 blocker) is therefore satisfied; steps 1 and 3-6 are operator-only.\n\n⚠️ One thing to know rather than a blocker: the page opens \"Draft pending legal review.\" Nothing here says whether a carrier cares, but the owner should see that line before filing. The engineering half of this row is now zero.\n\n── PARKED 2026-08-20 (owner ruling): texting is deferred by name; the filing packet stays ready in docs/A2P-REGISTRATION.md, and the 10-15 day carrier clock starts whenever texting un-defers.",
       "verify": {
         "kind": "manual",
         "evidence": "Re-measured 2026-08-19. app/terms/page.tsx present (181 lines, dc47b89); production fetch of https://frequencylocal.com/terms returns 200 with x-matched-path /terms and robots index,follow; §7 contains the opt-in, rates, frequency, STOP/HELP, not-a-condition and privacy-link clauses that docs/A2P-REGISTRATION.md §4a requires. Code side of SMS was already complete (SMS_PROVISIONING_ENABLED / SMS_A2P_BRAND_ID / SMS_A2P_CAMPAIGN_ID gates in lib/comms/sms.ts, STOP line in lib/events/dispatch.ts). Closes when the brand and campaign SIDs are in env, which is 14 filing steps plus a 10-15 day carrier review and is entirely owner work.",
@@ -1583,7 +1667,7 @@
         "file": "docs/BUILD-PHASES.md",
         "ref": "Mobile"
       },
-      "detail": "An Expo/RN app on the shared RPC contract and capability model, native camera/QR + NFC + geofencing + push, a Postgres sync-engine pilot on one surface, and a decision on the stack and contract transport.",
+      "detail": "An Expo/RN app on the shared RPC contract and capability model, native camera/QR + NFC + geofencing + push, a Postgres sync-engine pilot on one surface, and a decision on the stack and contract transport.\n\n── PARKED 2026-08-20 (owner ruling): mobile application is deferred by name.",
       "verify": {
         "kind": "manual",
         "evidence": "Owner-deferred.",
@@ -1593,14 +1677,14 @@
     {
       "id": "DEF-HARDEN",
       "title": "Foundation hardening H1-H5",
-      "status": "parked",
+      "status": "open",
       "lane": "deferred",
       "size": "XL",
       "source": {
         "file": "docs/FOUNDATION-HARDENING-PLAN.md",
         "ref": "H1-H5"
       },
-      "detail": "TWO PREMISES EXPIRED 2026-08-19. H2's 'erasure and export does not exist at all' is false: app/(main)/settings/account/ ships delete-account (deleteAccountAction -> lib/account deleteMyAccount, hard-delete cascade) and download-data (downloadMyData -> MemberExportPayload). H4's 'no retry/backoff or DLQ' is false for the outbox: lib/queue/outbox.ts has exponential backoff, a terminal dead-letter state after max_attempts, count/list/requeue, and an operator recovery surface at admin/marketing/deliverability; the Stripe webhook (app/api/webhooks/stripe/route.ts + stripe_webhook_events) is idempotent with claim-release so Stripe's retry re-processes instead of stranding. STILL OPEN: DLQ/cron-lag alerting is a countable signal, not verified as wired to anything that pages; backup and DR unverified (PITR tier, rehearsed restore, defined RPO/RTO); no incident runbooks; no load/soak harness, so every H3 scale claim remains unprovable. H3 is metric-gated and correctly not now.",
+      "detail": "TWO PREMISES EXPIRED 2026-08-19. H2's 'erasure and export does not exist at all' is false: app/(main)/settings/account/ ships delete-account (deleteAccountAction -> lib/account deleteMyAccount, hard-delete cascade) and download-data (downloadMyData -> MemberExportPayload). H4's 'no retry/backoff or DLQ' is false for the outbox: lib/queue/outbox.ts has exponential backoff, a terminal dead-letter state after max_attempts, count/list/requeue, and an operator recovery surface at admin/marketing/deliverability; the Stripe webhook (app/api/webhooks/stripe/route.ts + stripe_webhook_events) is idempotent with claim-release so Stripe's retry re-processes instead of stranding. STILL OPEN: DLQ/cron-lag alerting is a countable signal, not verified as wired to anything that pages; backup and DR unverified (PITR tier, rehearsed restore, defined RPO/RTO); no incident runbooks; no load/soak harness, so every H3 scale claim remains unprovable. H3 is metric-gated and correctly not now.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Erasure/export and outbox-DLQ paths confirmed in tree 2026-08-19; alerting, DR rehearsal, runbooks and load harness not found.",
@@ -1610,14 +1694,14 @@
     {
       "id": "DEF-DOMAIN",
       "title": "The domain feature backlog (~120 items across 15 areas)",
-      "status": "parked",
+      "status": "open",
       "lane": "deferred",
       "size": "XL",
       "source": {
         "file": "docs/BACKLOG.md",
         "ref": "§A-§V"
       },
-      "detail": "Items no current plan absorbed, kept as a body rather than 120 rows because none is individually scheduled: CRM follow-ups, the Network rework, circles/discovery, two-way inbox and @mentions, Quest/gamification depth, operator Growth Studio, Vera/AI (including the governance kernel and Proactive Vera), signup-lead recovery, the 12-item theme system, roles/personas long tails, IA, moderation and trust, and the 11 owner UI calls from the 2026-06-05 screenshot review. Promote an item to its own row when it is scheduled — that is the intended flow, not a workaround.",
+      "detail": "Items no current plan absorbed, kept as a body rather than 120 rows because none is individually scheduled: CRM follow-ups, the Network rework, circles/discovery, two-way inbox and @mentions, Quest/gamification depth, operator Growth Studio, Vera/AI (including the governance kernel and Proactive Vera), signup-lead recovery, the 12-item theme system, roles/personas long tails, IA, moderation and trust, and the 11 owner UI calls from the 2026-06-05 screenshot review. Promote an item to its own row when it is scheduled — that is the intended flow, not a workaround.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
         "evidence": "Full text preserved in docs/TASK-INVENTORY-2026-08-17.md §8 and the source docs.",
@@ -2191,7 +2275,7 @@
         "file": "docs/WHITE-LABEL-SITES.md",
         "ref": "BUILD-LIST §White-label / ADR-974"
       },
-      "detail": "W1-W5 were re-pointed into editor phase E10; W6 explicitly was NOT — member sites on the same rails plus a theme/template marketplace on DTCG portable themes + site_templates. It stays deferred behind E10 and behind the same owner scheduling call as OWN-016, but it is scope E10 does not carry, so it needs its own row or it silently vanishes when E10 closes.",
+      "detail": "W1-W5 were re-pointed into editor phase E10; W6 explicitly was NOT — member sites on the same rails plus a theme/template marketplace on DTCG portable themes + site_templates. It stays deferred behind E10 and behind the same owner scheduling call as OWN-016, but it is scope E10 does not carry, so it needs its own row or it silently vanishes when E10 closes.\n\n── PARKED 2026-08-20 (owner ruling): white labeling is deferred by name.",
       "verify": {
         "kind": "manual",
         "evidence": "BUILD-LIST W6 row reads 'stays deferred and is not part of the editor program' (re-read 2026-08-18).",
