@@ -58,14 +58,14 @@ describe('notificationHref', () => {
     ).toBe('/people')
   })
 
-  it('sends a Space Community post to that Space Community tab (reference_id is the slug)', () => {
+  it('sends a slug-referenced Space notice to the Space root, never the retiring Community tab (ADR-1091 C3.2)', () => {
     expect(notificationHref(notif({ type: 'space_update', reference_type: 'space', reference_id: 'the-roastery' })))
-      .toBe('/spaces/the-roastery/community')
+      .toBe('/spaces/the-roastery')
   })
 
   it('does NOT build a slug route from a Space id: the billing notice lands on Spaces you run', () => {
     // app/api/cron/billing-renewals writes the Space UUID, not the slug. Interpolating it into
-    // /spaces/<slug>/community is a guaranteed 404 for the Space's owner and admins.
+    // /spaces/<slug> is a guaranteed 404 for the Space's owner and admins.
     expect(notificationHref(notif({ type: 'billing_renewal', reference_type: 'space', reference_id: UUID })))
       .toBe('/spaces/operating')
   })
@@ -122,6 +122,18 @@ describe('notificationHref', () => {
     expect(notificationHref(notif({ reference_type: 'something_new', reference_id: 'x' })))
       .toBe(NOTIFICATION_FALLBACK_HREF)
     expect(notificationHref(notif({ reference_type: null, reference_id: null }))).toBe(NOTIFICATION_FALLBACK_HREF)
+  })
+
+  it('never emits the retired Space Community path from any case (ADR-1091 C3.2: C3.4 deletes the route)', () => {
+    const types = [
+      'post', 'profile', 'space', 'dispatch', 'support_ticket', 'practice',
+      'conversation', 'contact', 'circle', 'membership', 'event', 'journey', 'bundle_invite', null,
+    ]
+    for (const reference_type of types) {
+      for (const reference_id of [null, UUID, 'a-slug']) {
+        expect(notificationHref(notif({ reference_type, reference_id }))).not.toContain('/community')
+      }
+    }
   })
 
   it('never returns an empty or relative path', () => {
