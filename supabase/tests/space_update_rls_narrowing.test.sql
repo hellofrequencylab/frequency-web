@@ -102,9 +102,9 @@ insert into public.posts (id, author_id, body, scope_id, visibility, post_type, 
 -- reaction, seeded so the delete-own arm can be exercised by a seat the SELECT policy now excludes.
 insert into public.post_reactions (id, post_id, profile_id, reaction_type) values
   ('00000000-0000-4000-f200-000000000011', '00000000-0000-4000-f200-000000000001',
-   '00000000-0000-4000-b200-000000000001', 'heart'),
+   '00000000-0000-4000-b200-000000000001', '❤️'),
   ('00000000-0000-4000-f200-000000000012', '00000000-0000-4000-f200-000000000001',
-   '00000000-0000-4000-b200-000000000002', 'heart');
+   '00000000-0000-4000-b200-000000000002', '❤️');
 
 -- Fresh-stack grants (see header). Policy subqueries and the invoker-security engagement triggers
 -- read profiles / circles and update posts as the querying role.
@@ -205,7 +205,7 @@ select lives_ok(
 
 select lives_ok(
   $$ insert into post_reactions (post_id, profile_id, reaction_type)
-     values ('00000000-0000-4000-f200-000000000003', '00000000-0000-4000-b200-000000000003', 'heart') $$,
+     values ('00000000-0000-4000-f200-000000000003', '00000000-0000-4000-b200-000000000003', '❤️') $$,
   'reacting on a readable feed post is unaffected');
 
 select results_eq(
