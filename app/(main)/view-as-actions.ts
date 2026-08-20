@@ -107,10 +107,17 @@ export async function previewAsSpace(spaceId: string): Promise<SpacePreviewResul
 }
 
 /** Clear any Space preview (back to the staffer's own view). Mirrors selecting your real role on
- *  the ladder. Idempotent: deleting the cookie when none is set is a no-op. */
+ *  the ladder. Idempotent: deleting the cookie when none is set is a no-op.
+ *
+ *  The gate accepts EITHER axis that can set the cookie: the community ladder (canViewAs) or the
+ *  staff axis previewAsSpace gates on (isJanitor). Exit deletes only the caller's own cookie, so it
+ *  must never be stricter than entry — the old ladder-only gate would have stranded a janitor whose
+ *  community role sat below host in a preview the button could not clear. */
 export async function exitSpacePreview(): Promise<void> {
+  const caller = await getCallerProfile()
   const realRole = await getRealCallerRole()
-  if (!realRole || !canViewAs(realRole)) return
+  const mayExit = (realRole !== null && canViewAs(realRole)) || (caller !== null && isJanitor(caller.webRole))
+  if (!mayExit) return
   const jar = await cookies()
   jar.delete(VIEW_AS_COOKIE)
   revalidatePath('/', 'layout')
