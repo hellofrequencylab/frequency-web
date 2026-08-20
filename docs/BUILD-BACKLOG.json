@@ -46,7 +46,6 @@
         "LIVE-066",
         "LIVE-007",
         "LIVE-006",
-        "LIVE-065",
         "HYG-009",
         "LIVE-027",
         "LIVE-060",
@@ -56,7 +55,7 @@
         "PROG-A3",
         "PROG-A4"
       ],
-      "rationale": "Production correctness first (LIVE-053/061 are live TypeErrors plus the observability gap that hid one for six weeks), then attack-surface reduction (LIVE-064 ungated prod endpoint, LIVE-062 orphaned POST endpoints), then orphan/wiring hygiene (LIVE-063, HYG-008, LIVE-066), then the content pipeline in its committed order (LIVE-007 one draft-PR per slug, LIVE-006, LIVE-065 riding the same flows), then the record sweep (HYG-009) and externally-paced items (LIVE-027 DAWN send, LIVE-060 research round, DEF-A2P registration). PROG-E10 (Sites/White Label, absorbing W1-W5) and the App Platform program (PROG-A1 -> A3 -> A4) are HELD TO THE END by owner direction 2026-08-20.",
+      "rationale": "Production correctness first (LIVE-053/061 are live TypeErrors plus the observability gap that hid one for six weeks), then attack-surface reduction (LIVE-064 ungated prod endpoint, LIVE-062 orphaned POST endpoints), then orphan/wiring hygiene (LIVE-063, HYG-008, LIVE-066), then the content pipeline in its committed order (LIVE-007 one draft-PR per slug, LIVE-006), then the record sweep (HYG-009) and externally-paced items (LIVE-027 DAWN send, LIVE-060 research round, DEF-A2P registration). PROG-E10 (Sites/White Label, absorbing W1-W5) and the App Platform program (PROG-A1 -> A3 -> A4) are HELD TO THE END by owner direction 2026-08-20.",
       "decisions": [
         "OWN-035",
         "OWN-036",
@@ -2624,21 +2623,21 @@
     {
       "id": "LIVE-065",
       "title": "Two seeker articles link the 308 stubs instead of their canonical pillars",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "2026-08-20 pass · finder A (low)"
       },
-      "detail": "lib/page-editor/templates/loneliness.ts links /what-is-a-third-space and app/(marketing)/how-to-be-more-social/page.tsx links /social-life-without-drinking — both one-hop 308 redirect stubs, so minor, but internal links should hit the canonical pillar directly. NOTE the flows: loneliness is an ENROLLED page-editor spec, so its copy edit is a visible content change and rides the WORKFLOW.md rule-4 DRAFT-PR path (capture + review comment); how-to-be-more-social’s retarget should simply ride its own LIVE-007 enrollment (fix the link in the spec as it enrolls, one visible delta listed in that PR).",
+      "detail": "lib/page-editor/templates/loneliness.ts links /what-is-a-third-space and app/(marketing)/how-to-be-more-social/page.tsx links /social-life-without-drinking — both one-hop 308 redirect stubs, so minor, but internal links should hit the canonical pillar directly. NOTE the flows: loneliness is an ENROLLED page-editor spec, so its copy edit is a visible content change and rides the WORKFLOW.md rule-4 DRAFT-PR path (capture + review comment); how-to-be-more-social’s retarget should simply ride its own LIVE-007 enrollment (fix the link in the spec as it enrolls, one visible delta listed in that PR).\n\n── PREMISE CORRECTED 2026-08-20, same day the row was filed (the ADR-1082 pattern applied to our own scan). Re-read in context, EVERY occurrence of the two stub slugs in both articles is a COMMENT documenting the absorption, not a rendered link: loneliness.ts lines 9 and 107 are header/section comments (“/what-is-a-third-space, which 301 into it”), and how-to-be-more-social/page.tsx lines 4 and 366 are the same shape (“ABSORBED PILLAR 2”). The absorbed pillars carry their content inline; no member-facing href targets either stub. The original find was a substring match — shape, not truth — and so was this row’s first probe. The probe now matches LINK shapes only (markdown ](/slug) and href=”/slug”) across the whole templates dir plus both routes, so a future enrollment that links a stub for real reopens it honestly.",
       "verify": {
         "kind": "grep-absent",
-        "pattern": "what-is-a-third-space|social-life-without-drinking",
+        "pattern": "\\]\\(/(what-is-a-third-space|social-life-without-drinking)\\)|href=\"/(what-is-a-third-space|social-life-without-drinking)\"",
         "paths": [
-          "lib/page-editor/templates/loneliness.ts",
+          "lib/page-editor/templates",
           "app/(marketing)/how-to-be-more-social/page.tsx",
-          "lib/page-editor/templates/how-to-be-more-social.ts"
+          "app/(marketing)/loneliness/page.tsx"
         ]
       }
     },
