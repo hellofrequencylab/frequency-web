@@ -6,6 +6,9 @@
 // Layout (owner directive 2026-07): a top-level workspace, so NO back-link and NO on-page Settings bar.
 // The pipeline quick-stats live in a compact card in the header's right slot (~1/3). Body order: Email
 // performance (small inline stats) → Everything you send → Best practices + open-rate playbook.
+// LIVE-058 (2026-08-19) adds the approval queue between Email performance and Everything you send: the
+// review-and-arm surface for the approval spine (lib/outbound/approvals.ts), which is why the spine's
+// revalidatePaths point at this route. The named three keep their relative order.
 
 import { Send } from 'lucide-react'
 import { AdminTemplate, AdminSection } from '@/components/templates'
@@ -17,6 +20,7 @@ import { MarketingWorkspace } from '@/components/admin/crm/marketing-workspace'
 import { MarketingQuickStats } from '@/components/admin/crm/marketing-quick-stats'
 import { EmailPerformance } from '@/components/admin/crm/email-performance'
 import { EmailBestPractices } from '@/components/admin/crm/email-best-practices'
+import { ApprovalQueue } from '@/components/admin/crm/approval-queue'
 
 export const dynamic = 'force-dynamic'
 
@@ -56,6 +60,13 @@ export default async function CrmMarketingPage({
         description="How everything you send is landing: delivered, opened, clicked, bounced, and flagged. Clicks are the signal to trust (Apple Mail privacy inflates opens)."
       >
         <EmailPerformance overview={emailOverview} />
+      </AdminSection>
+
+      <AdminSection
+        title="Waiting on approval"
+        description="Nothing sends without approval. Emails marked ready stop here for the call: approve to arm, pause to hold, cancel to kill. Every decision lands in the audit trail."
+      >
+        <ApprovalQueue />
       </AdminSection>
 
       <AdminSection

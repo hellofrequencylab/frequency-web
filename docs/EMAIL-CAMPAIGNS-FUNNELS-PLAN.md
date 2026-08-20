@@ -75,6 +75,18 @@ it). Two tabs, one shared Email library:
 Status is always visible and color-legended (the DAWN ✅/⏳/⚠️/🔴 legend), so a user sees what's live at
 a glance.
 
+**The approval queue (LIVE-058, ADR-1089).** The console's CRM Marketing tab (`/admin/crm/marketing`)
+carries the review-and-arm surface for the approval spine (`lib/outbound/approvals.ts`) — the same
+route every spine transition's `revalidatePath` points at. The "Waiting on approval" section
+(`components/admin/crm/approval-queue.tsx`) lists every campaign that is `ready` (up for review),
+every campaign that is `paused` (a hold is an open decision), and any `draft` still carrying a
+`phase_id` from the retired Beta Command Center. Per-row actions — approve / pause / cancel, plus
+"Send to review" (markReady) on the phase-filed drafts — are thin server actions
+(`app/(main)/admin/crm/marketing/actions.ts`) that delegate to the spine's transitions, which
+self-gate on `approverGate` (admin/janitor only) and write the audit trail. Approve is the
+send-authorizing act: `assertApproved` refuses everything else at send time, so nothing sends
+without a decision made here. An empty queue is the panel's normal state.
+
 ### 2 · Drag-and-drop ordering (ask #2)
 
 Replace the email editor's up/down chevrons and the funnel builder's template-fixed order with **native
