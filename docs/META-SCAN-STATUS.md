@@ -54,18 +54,56 @@ stale doc line the only SEO/canon gap.
 | low | `app/dev/og-root-card/route.tsx` ships **ungated** to production, unlike its two `/dev` siblings which `notFound()` in prod — keeps a `sharp`/`next-og` rasterizer deployed (counted by `check:og-trace`). | Add the same production gate. |
 | low | ~~Internal links in `loneliness` + `how-to-be-more-social` point at 308 redirect stubs (`/what-is-a-third-space`, `/social-life-without-drinking`) instead of their canonical pillars.~~ **False find, corrected 2026-08-20 same day:** every occurrence is a comment documenting the pillar absorption, not a rendered link (the substring match was shape, not truth). LIVE-065 closed with a link-shape probe that reopens it honestly if an enrollment ever links a stub for real. | — |
 
-> **2026-08-20, full-tree re-verify + backlog enrollment.** Every find above was re-verified against
-> `db4d0b1` the same day (the dead-action list re-derived at **38**, widened from ~32 by counting
-> test-only references) and each is now a **probed row in the one list**: the SpaceUpdates ruling is
-> OWN-035, the ADR-458 ladder retirement OWN-036, the claim-token ruling OWN-037, the dead actions
-> LIVE-062, EditorShell LIVE-063, the `/dev/og-root-card` gate LIVE-064, the stub links LIVE-065,
-> the QR-Studio/voice-lint deferrals LIVE-066, and the admin-rail comment HYG-008. The development
-> order lives in `BUILD-BACKLOG.json` → `meta.slate` (owner directive 2026-08-20: production
-> correctness → attack surface → orphan hygiene → content pipeline; **White Label E10 and the App
-> Platform held to the end**). The pre-census residue tables below (2026-07-27 / 2026-08-04 /
-> 2026-08-12 passes) were spot-checked the same day — three of three checked items were already
-> fixed (placement scope pair, reactivation seat wall, FAQ editor), so their full re-verify is
-> HYG-009 rather than blind rows.
+> **2026-08-20, full-tree re-verify + backlog enrollment (merged record — two sessions filed this
+> pass's tail in parallel; #2214 reconciles them).** Every find above was re-verified against
+> `db4d0b1` the same day, and each now has exactly ONE **probed row in the one list**: the
+> SpaceUpdates ruling is OWN-035, EditorShell OWN-036, the claim-token ruling OWN-037 (all three
+> carry the follow-up section's evidence below with probes upgraded from manual to mechanical), the
+> db-tests required check OWN-038, the ADR-458 ladder retirement OWN-039, the dead actions LIVE-062
+> (re-derived at **38** — 36 zero-reference plus the follow-up's two test-only names — and
+> **severity reframed by that section's counter-verification: every one self-guards, so the cost is
+> dead code and rotting half-features, not open doors**; its manage/layout SpacePageBuilder read is
+> flagged inside the row for adjudication before anything is touched), the `/dev/og-root-card` gate
+> LIVE-064 (scope corrected: surface hygiene only — gating cannot shrink `check:og-trace`), the
+> QR-Studio/voice-lint deferrals LIVE-066, and the admin-rail comment HYG-008 (the wiring
+> verification the follow-up deferred is done: zero production import-clauses of
+> `@/lib/nav/admin-rail`). The stub-links find is struck above; both passes found it false
+> independently and LIVE-065 closed with a link-shape probe. The development order lives in
+> `BUILD-BACKLOG.json` → `meta.slate` (owner directive 2026-08-20: production correctness → dead-code
+> triage → orphan hygiene → content pipeline; **White Label E10 and the App Platform held to the
+> end**). The pre-census residue tables below (2026-07-27 / 2026-08-04 / 2026-08-12 passes) were
+> spot-checked the same day — three of three checked items were already fixed (placement scope pair,
+> reactivation seat wall, FAQ editor), so their full re-verify is HYG-009 rather than blind rows.
+
+### Follow-up triage + record corrections (2026-08-20, later same day)
+
+Worked the tail of the open finds. Three items are now tracked as probed-manual backlog rows so the
+deferrals stop living in prose (the one-list rule): **OWN-035** (SpaceUpdates: build a composer or
+retire the path+block+table), **OWN-036** (EditorShell: delete or adopt), **OWN-037** (ADR-907 claim
+tokens: migrate the four minters or retire the plan). Two finds were re-verified and corrected:
+
+- **The 32 dead server actions — verified, and the premise was wrong.** A dedicated pass searched
+  every export across the whole repo (imports, re-exports, `.bind()`, `<form action>`,
+  `useActionState`, strings). Result: **none are safe to delete.** Two were false-positives —
+  `getSpaceRailBundle` and `listLoomImages` have live test references. **Every one of the 32
+  self-guards** (`requireAdmin`/`requireStaffCap`/`authorizeEditor`/`getMyProfileId`/…) and fails
+  closed, so the scan's "unauthenticated POST endpoint" framing was wrong — they are wasted code,
+  not open doors. Seven are DEAD-PENDING-UI (real backend of an intended feature: `requestEventHost`,
+  `startBundleCheckout`, `startSpacePlanCheckout` [billing gated OFF], `nudgeStreakMate`,
+  `createDealForProfile`, `draftOfferingBlurbAction`, `countSpaceEmailAudience`) — deleting discards
+  real work. The `manage/layout/*` set is NOT superseded: `SpacePageBuilder`
+  (`components/entity-blocks/profile-page-builder.tsx`, via `SpacePageModule`) still renders, so the
+  pre-Puck editor is not gone. Conservative outcome: **keep all 32**; revisit per-feature when each
+  UI half is built or formally cut.
+- **"Internal links point at 308 stubs" was a false positive.** `/what-is-a-third-space` and
+  `/social-life-without-drinking` appear in `loneliness` / `how-to-be-more-social` only as
+  SEO-absorption **comments**, and in `lib/analytics/vitals-budgets.ts` as budget entries (correct —
+  those stub routes still exist). There are no live `href`s to retarget.
+
+Not worth a change: the **og-root-card** prod gate — the `next/og` rasteriser is bundled via static
+import regardless of a runtime gate, so gating does not reduce the `check:og-trace` count, and the
+route renders benign build-time constants. The **admin-rail / app-shell:936** comment correction is
+left for a pass that can verify the actual rail wiring rather than trust one finder's read.
 
 ### Verified clean (finder A + B, worth not re-auditing)
 

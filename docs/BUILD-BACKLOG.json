@@ -41,7 +41,6 @@
         "LIVE-061",
         "LIVE-064",
         "LIVE-062",
-        "LIVE-063",
         "HYG-008",
         "LIVE-066",
         "LIVE-007",
@@ -55,12 +54,13 @@
         "PROG-A3",
         "PROG-A4"
       ],
-      "rationale": "Production correctness first (LIVE-053/061 are live TypeErrors plus the observability gap that hid one for six weeks), then attack-surface reduction (LIVE-064 ungated prod endpoint, LIVE-062 orphaned POST endpoints), then orphan/wiring hygiene (LIVE-063, HYG-008, LIVE-066), then the content pipeline in its committed order (LIVE-007 one draft-PR per slug, LIVE-006), then the record sweep (HYG-009) and externally-paced items (LIVE-027 DAWN send, LIVE-060 research round, DEF-A2P registration). PROG-E10 (Sites/White Label, absorbing W1-W5) and the App Platform program (PROG-A1 -> A3 -> A4) are HELD TO THE END by owner direction 2026-08-20.",
+      "rationale": "Production correctness first (LIVE-053/061 are live TypeErrors plus the observability gap that hid one for six weeks), then attack-surface reduction (LIVE-064 ungated prod endpoint, LIVE-062 orphaned POST endpoints), then orphan/wiring hygiene (HYG-008, LIVE-066; EditorShell rides OWN-036), then the content pipeline in its committed order (LIVE-007 one draft-PR per slug, LIVE-006), then the record sweep (HYG-009) and externally-paced items (LIVE-027 DAWN send, LIVE-060 research round, DEF-A2P registration). PROG-E10 (Sites/White Label, absorbing W1-W5) and the App Platform program (PROG-A1 -> A3 -> A4) are HELD TO THE END by owner direction 2026-08-20.",
       "decisions": [
         "OWN-035",
         "OWN-036",
         "OWN-037",
         "OWN-038",
+        "OWN-039",
         "OWN-005",
         "OWN-011",
         "OWN-018",
@@ -2503,56 +2503,54 @@
     },
     {
       "id": "OWN-035",
-      "title": "SpaceUpdates: the block reads a table nothing can write — rule composer or retirement",
-      "status": "open",
-      "lane": "owner",
-      "size": "S",
-      "source": {
-        "file": "docs/META-SCAN-STATUS.md",
-        "ref": "2026-08-20 pass · finder A (high)"
-      },
-      "detail": "The C3.4 community-wall teardown deleted the only UI that authored space_updates, but the page-editor block still ships: SpaceUpdatesBlock (components/page-editor/blocks/spaces.tsx) is registered in lib/page-editor/config.tsx and rendered by components/widgets/space-profile/updates.tsx, reading real rows — and createSpaceUpdate / updateSpaceUpdate / deleteSpaceUpdate (lib/spaces/content-actions.ts) have zero callers. Re-verified 2026-08-20 at db4d0b1. 0 rows live, so nothing is stranded today; but an operator cannot author an Update, and the three actions are live unauthenticated-reachable POST endpoints kept for nothing. OWNER CALL, either way is fine: (a) build a small Updates composer wired to the three kept actions, or (b) retire the block AND the actions together. The deletion arm executes under LIVE-062 once ruled.",
-      "verify": {
-        "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const CA='lib/spaces/content-actions.ts';const has=fs.existsSync(CA)&&/export\\s+async\\s+function\\s+createSpaceUpdate\\b/.test(fs.readFileSync(CA,'utf8'));if(!has){const still=['lib/page-editor/config.tsx','components/page-editor/blocks/spaces.tsx'].some(f=>fs.existsSync(f)&&f.length>0&&fs.readFileSync(f,'utf8').includes('SpaceUpdates'));process.exit(still?1:0)}const fs=require('fs'),pa=require('path');const skip=new Set(['node_modules','.next']);function*w(d){for(const n of fs.readdirSync(d)){if(skip.has(n))continue;const f=pa.join(d,n);const s=fs.statSync(f);if(s.isDirectory())yield*w(f);else if(/\\.(ts|tsx)$/.test(f))yield f}}const files=[];for(const r of ['app','lib','components'])for(const f of w(r))files.push([f,fs.readFileSync(f,'utf8')]);const isTest=(f)=>/\\.test\\.tsx?$/.test(f);const used=files.some(([f,t])=>f!==CA&&!isTest(f)&&t.includes('createSpaceUpdate'));process.exit(used?0:1)\""
-      },
-      "notes": "The probe closes on either ruling: composer built (createSpaceUpdate gains a non-test caller) or full retirement (the export gone AND the SpaceUpdates block gone from the registry and render). A half-retirement — block deleted, actions kept — stays open, which is the point."
-    },
-    {
-      "id": "OWN-036",
-      "title": "ADR-458: retire the supporter rung from the entitlement ladder",
-      "status": "open",
-      "lane": "owner",
-      "size": "S",
-      "source": {
-        "file": "docs/META-SCAN-STATUS.md",
-        "ref": "2026-08-20 pass · deliberately deferred"
-      },
-      "detail": "The TODO(ADR-458) drop condition is met and re-confirmed: 0 of 55 profiles carry membership_tier='supporter' (measured live 2026-08-18, map re-verified in the tree 2026-08-20 at lib/core/entitlement.ts:41). The read-time supporter->crew map never fires and is access-preserving if it did, so it is harmless — but fully retiring the label is a typed change to the EntitlementTier union that ripples through ENTITLEMENT_TIERS, ENTITLEMENT_LABEL and the isPaid matrix. The entitlement ladder is a revenue surface the owner owns: do it deliberately as its own change, never folded into a sweep.",
-      "verify": {
-        "kind": "grep-absent",
-        "pattern": "supporter",
-        "paths": [
-          "lib/core/entitlement.ts"
-        ]
-      }
-    },
-    {
-      "id": "OWN-037",
-      "title": "ADR-907 claim tokens: a year on, zero callers, and live flows still mint plaintext",
+      "title": "SpaceUpdates: build a composer, or retire the dead read-path + block + table",
       "status": "open",
       "lane": "owner",
       "size": "M",
       "source": {
-        "file": "docs/META-SCAN-STATUS.md",
-        "ref": "2026-08-20 pass · finder A (med)"
+        "file": "lib/spaces/content-actions.ts",
+        "ref": "meta-scan 2026-08-20 finder A (high)"
       },
-      "detail": "lib/claims/tokens.ts — ADR-907’s hashed claim-token system — has zero production callers (re-verified 2026-08-20: only its own test and the admin-client baseline reference it), while every live claim flow still mints plaintext tokens onto anon-readable columns. Until this row, the deferral lived only in a superseded doc, which is the cheapest kind of claim to lose. OWNER CALL: migrate the four column-based minters onto the hashed system (the security-forward arm), or delete tokens.ts and accept plaintext-on-column as the design. Either ruling turns into ordinary probed dev work.",
+      "detail": "The SpaceUpdates page-editor block READS space_updates, but its only composer was deleted with the C3.4 community wall, so create/update/deleteSpaceUpdate have no caller and an operator cannot author an Update. Measured 2026-08-20: 0 space_updates rows, 0 posts with post_type='space_update', 0 published pages carry a SpaceUpdates block -- entirely dead in production, nothing stranded. NOT a clean auto-delete: the C3.5 migration (20270317000000) deliberately KEPT the space_updates table as backing a 'separately decided brand-blog block', so removing it reverses a recorded decision. Owner's call: (a) build a small Updates composer (rail module or manage surface) wired to the three kept actions, or (b) retire the read-path + block + drop the empty table in one migration. Asked 2026-08-20, no answer yet.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const CA='lib/spaces/content-actions.ts';const has=fs.existsSync(CA)&&/export\\s+async\\s+function\\s+createSpaceUpdate\\b/.test(fs.readFileSync(CA,'utf8'));if(!has){const still=['lib/page-editor/config.tsx','components/page-editor/blocks/spaces.tsx'].some(f=>fs.existsSync(f)&&f.length>0&&fs.readFileSync(f,'utf8').includes('SpaceUpdates'));process.exit(still?1:0)}const fs=require('fs'),pa=require('path');const skip=new Set(['node_modules','.next']);function*w(d){for(const n of fs.readdirSync(d)){if(skip.has(n))continue;const f=pa.join(d,n);const s=fs.statSync(f);if(s.isDirectory())yield*w(f);else if(/\\.(ts|tsx)$/.test(f))yield f}}const files=[];for(const r of ['app','lib','components'])for(const f of w(r))files.push([f,fs.readFileSync(f,'utf8')]);const isTest=(f)=>/\\.test\\.tsx?$/.test(f);const used=files.some(([f,t])=>f!==CA&&!isTest(f)&&t.includes('createSpaceUpdate'));process.exit(used?0:1)\""
+      },
+      "notes": "Probe upgraded from manual to mechanical 2026-08-20 (merge of #2213 + #2214, which filed this row independently): it closes on either ruling — composer built (createSpaceUpdate gains a non-test caller) or full retirement (the export gone AND the SpaceUpdates block gone from the registry and render). A half-retirement stays open. The table-drop half of the retire arm is migration work the probe cannot see; the detail records it (C3.5 kept the table deliberately). Deletion arm executes under LIVE-062."
+    },
+    {
+      "id": "OWN-036",
+      "title": "EditorShell orphan: delete, or adopt it in the Space/profile editors its header promises",
+      "status": "open",
+      "lane": "owner",
+      "size": "S",
+      "source": {
+        "file": "components/ui/editor-shell.tsx",
+        "ref": "meta-scan 2026-08-20 finder A (med)"
+      },
+      "detail": "components/ui/editor-shell.tsx ('the ONE master container for any on-page editor') has zero importers; its stated consumer, the beta email editor, was deleted in the ADR-1088/1089 beta teardown, and its header comment is now stale ('the beta email editor today'). Not a zero-cost delete: LIVE-025's eyebrow-utility ratchet names EditorShell as one of seven shared-kit adopters, and scripts/ui-state-test-ledger.txt carries an editor-shell entry, so a delete must also update those or a canon/ledger gate trips. Owner's call: delete it (and the ledger/ratchet references), or adopt it as the frame for the Space/profile editors it was built for and correct the header. Low blast radius either way.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');if(!fs.existsSync('components/ui/editor-shell.tsx'))process.exit(0);const fs=require('fs'),pa=require('path');const skip=new Set(['node_modules','.next']);function*w(d){for(const n of fs.readdirSync(d)){if(skip.has(n))continue;const f=pa.join(d,n);const s=fs.statSync(f);if(s.isDirectory())yield*w(f);else if(/\\.(ts|tsx)$/.test(f))yield f}}const files=[];for(const r of ['app','lib','components'])for(const f of w(r))files.push([f,fs.readFileSync(f,'utf8')]);const isTest=(f)=>/\\.test\\.tsx?$/.test(f);const used=files.some(([f,t])=>!isTest(f)&&f!=='components/ui/editor-shell.tsx'&&t.includes('ui/editor-shell'));process.exit(used?0:1)\""
+      },
+      "notes": "Probe upgraded from manual to mechanical 2026-08-20 (this row and #2214’s LIVE-063 were the same item filed twice in parallel; LIVE-063 is withdrawn in its favor): closes when components/ui/editor-shell.tsx is deleted or gains a non-test importer. The delete arm must also update the LIVE-025 eyebrow-ratchet reference and scripts/ui-state-test-ledger.txt, or those gates trip — the evidence names them."
+    },
+    {
+      "id": "OWN-037",
+      "title": "ADR-907 claim tokens: migrate the four column-based minters, or formally drop the plan",
+      "status": "open",
+      "lane": "owner",
+      "size": "M",
+      "source": {
+        "file": "lib/claims/tokens.ts",
+        "ref": "meta-scan 2026-08-20 finder A (med)"
+      },
+      "detail": "ADR-907's hashed claim_tokens system ('use this for EVERY new claim flow') has zero production callers a year on. Every live claim flow still mints PLAINTEXT tokens onto anon-readable entity columns: lib/spaces/claim.ts (mintSpaceClaimToken), lib/listing-seeder/claim.ts, lib/events/event-drafts.ts; readers at app/events/claim/[token], app/listings/claim, app/spaces/claim compare on those columns. ADR-907 recorded the owner declining to migrate the four existing columns 'now', but that deferral was tracked only in the superseded BACKLOG.md, so nothing probes it. Owner's call: migrate the four flows onto claim_tokens, or formally retire ADR-907 and delete lib/claims/tokens.ts. Not a security emergency (tokens are random and single-use) but the plaintext-on-anon-readable-column shape is the reason ADR-907 exists.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');if(!fs.existsSync('lib/claims/tokens.ts'))process.exit(0);const fs=require('fs'),pa=require('path');const skip=new Set(['node_modules','.next']);function*w(d){for(const n of fs.readdirSync(d)){if(skip.has(n))continue;const f=pa.join(d,n);const s=fs.statSync(f);if(s.isDirectory())yield*w(f);else if(/\\.(ts|tsx)$/.test(f))yield f}}const files=[];for(const r of ['app','lib','components'])for(const f of w(r))files.push([f,fs.readFileSync(f,'utf8')]);const isTest=(f)=>/\\.test\\.tsx?$/.test(f);const used=files.some(([f,t])=>!isTest(f)&&f!=='lib/claims/tokens.ts'&&!f.startsWith('lib/claims')&&!f.includes('admin-client-baseline')&&t.includes('claims/tokens'));process.exit(used?0:1)\""
       },
-      "notes": "Closes when tokens.ts is deleted (retired) or gains a non-test importer outside lib/claims (adopted). Both directions are the consequence, not the title."
+      "notes": "Probe upgraded from manual to mechanical 2026-08-20 (merge of the two parallel filings): closes when lib/claims/tokens.ts is deleted (plan formally dropped) or gains a non-test importer outside lib/claims (minters migrated). Both directions are the consequence, not the title."
     },
     {
       "id": "OWN-038",
@@ -2572,8 +2570,27 @@
       }
     },
     {
+      "id": "OWN-039",
+      "title": "ADR-458: retire the supporter rung from the entitlement ladder",
+      "status": "open",
+      "lane": "owner",
+      "size": "S",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "2026-08-20 pass · deliberately deferred"
+      },
+      "detail": "The TODO(ADR-458) drop condition is met and re-confirmed: 0 of 55 profiles carry membership_tier='supporter' (measured live 2026-08-18, map re-verified in the tree 2026-08-20 at lib/core/entitlement.ts:41). The read-time supporter->crew map never fires and is access-preserving if it did, so it is harmless — but fully retiring the label is a typed change to the EntitlementTier union that ripples through ENTITLEMENT_TIERS, ENTITLEMENT_LABEL and the isPaid matrix. The entitlement ladder is a revenue surface the owner owns: do it deliberately as its own change, never folded into a sweep.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "supporter",
+        "paths": [
+          "lib/core/entitlement.ts"
+        ]
+      }
+    },
+    {
       "id": "LIVE-062",
-      "title": "38 exported server actions have no caller, and each is a live POST endpoint",
+      "title": "38 exported server actions have no production caller — triage each to wire, delete, or a recorded keep",
       "status": "open",
       "lane": "live",
       "size": "M",
@@ -2581,28 +2598,12 @@
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "2026-08-20 pass · finder A (med)"
       },
-      "detail": "Re-derived 2026-08-20 at db4d0b1 (widened from the scan's ~32 by counting test-only references as orphans): 38 exported functions in 'use server' files with zero non-test references outside their own file. A server action is a POST endpoint reachable outside the UI, so every one is attack surface kept for nothing. Triage per name, delete-first: the manage/layout/* set (8, incl. setWebsitePublished — the external micro-site's only publish switch, UI says Coming soon) looks superseded by the Puck editor; the missing-half set (requestEventHost, startBundleCheckout, nudgeStreakMate, countSpaceEmailAudience, eraseSparkDraftsAction) is a deleted-or-never-built UI half — wire or delete, never keep unwired; the SpaceUpdates trio lands per OWN-035's ruling. A deliberate keep must gain a caller or be removed from this row's probe list IN THE SAME PR with the rationale in the row — a deferral that lives only in a comment is the shape this repo keeps paying for (four ADRs).",
+      "detail": "Re-derived 2026-08-20 at db4d0b1: 38 exported functions in 'use server' files with zero non-test references outside their own file (36 with zero references anywhere; getSpaceRailBundle and listLoomImages carry live test references only). SEVERITY REFRAMED the same day by #2213's independent verification, which this row absorbs: EVERY one self-guards (requireAdmin / requireStaffCap / authorizeEditor / getMyProfileId / …) and fails closed, so these are NOT open doors — the cost is dead code, stale-comment drift, and seven half-built features silently rotting. #2213's per-name reads to carry into the triage: seven are DEAD-PENDING-UI (requestEventHost, startBundleCheckout, startSpacePlanCheckout [billing-gated], nudgeStreakMate, createDealForProfile, draftOfferingBlurbAction, countSpaceEmailAudience) — real backends of intended features, deleting discards real work; and it reads the manage/layout/* set as NOT superseded because SpacePageBuilder (components/entity-blocks/profile-page-builder.tsx via SpacePageModule) still renders — yet none of those 8 action names have any textual caller, so ADJUDICATE that first: establish what SpacePageBuilder actually invokes before touching the set. The SpaceUpdates trio lands per OWN-035's ruling. OUTCOME CONTRACT: every name ends wired (gains a caller), deleted, or a RECORDED keep — removed from this row's probe list in the same PR with the rationale written into this row. #2213's 'conservative outcome: keep all 32' was a holding position in prose; this row exists so the per-name fates stop living there.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs'),pa=require('path');const skip=new Set(['node_modules','.next']);function*w(d){for(const n of fs.readdirSync(d)){if(skip.has(n))continue;const f=pa.join(d,n);const s=fs.statSync(f);if(s.isDirectory())yield*w(f);else if(/\\.(ts|tsx)$/.test(f))yield f}}const files=[];for(const r of ['app','lib','components'])for(const f of w(r))files.push([f,fs.readFileSync(f,'utf8')]);const isTest=(f)=>/\\.test\\.tsx?$/.test(f);const B=String.fromCharCode(92);const M={\\\"app/(main)/admin/ai/actions.ts\\\":[\\\"refreshVeraAutonomy\\\"],\\\"app/(main)/admin/crm/actions.ts\\\":[\\\"createDealForProfile\\\"],\\\"app/(main)/admin/email-studio/actions.ts\\\":[\\\"renderEmailPreview\\\"],\\\"app/(main)/admin/library/recraft-actions.ts\\\":[\\\"deleteBrandStyle\\\"],\\\"app/(main)/admin/library/sequence-actions.ts\\\":[\\\"archiveSequence\\\"],\\\"app/(main)/admin/listing-seeder/actions.ts\\\":[\\\"deleteListingIntake\\\"],\\\"app/(main)/admin/marketing/contacts/actions.ts\\\":[\\\"addContactNote\\\",\\\"updateContactFields\\\"],\\\"app/(main)/admin/qr/link-actions.ts\\\":[\\\"listPageQrCodes\\\"],\\\"app/(main)/crew/gamification-actions.ts\\\":[\\\"getGamificationSummary\\\"],\\\"app/(main)/crew/leaderboard/streak-actions.ts\\\":[\\\"nudgeStreakMate\\\"],\\\"app/(main)/events/host-transfer-actions.ts\\\":[\\\"requestEventHost\\\"],\\\"app/(main)/practices/admin-actions.ts\\\":[\\\"uploadPracticeCover\\\"],\\\"app/(main)/settings/billing/actions.ts\\\":[\\\"startBundleCheckout\\\"],\\\"app/(main)/spaces/[slug]/collaborations-actions.ts\\\":[\\\"requestCollaboration\\\"],\\\"app/(main)/spaces/[slug]/manage/layout/actions.ts\\\":[\\\"reorderSpaceBlock\\\",\\\"setSpaceBlockHidden\\\",\\\"setSpaceHero\\\",\\\"setSpaceLayoutDefault\\\",\\\"setSpaceLayoutPreset\\\",\\\"setSpaceServices\\\",\\\"setWebsitePublished\\\",\\\"uploadSpaceBlockImage\\\"],\\\"app/(main)/spaces/[slug]/manage/rail-getters.ts\\\":[\\\"getSpaceRailBundle\\\"],\\\"app/(main)/spaces/[slug]/settings/airwaves/actions.ts\\\":[\\\"updateRecordingAction\\\"],\\\"app/(main)/spaces/[slug]/settings/billing/actions.ts\\\":[\\\"startSpacePlanCheckout\\\"],\\\"app/(main)/spaces/[slug]/settings/profile/actions.ts\\\":[\\\"reseedSpaceBlockCopy\\\",\\\"saveSpaceProfileLayout\\\"],\\\"app/(main)/spaces/copilot-actions.ts\\\":[\\\"draftOfferingBlurbAction\\\"],\\\"app/(main)/view-as-actions.ts\\\":[\\\"exitSpacePreview\\\"],\\\"app/(main)/walkthrough-actions.ts\\\":[\\\"seenWalkthroughAction\\\"],\\\"lib/page-content-actions.ts\\\":[\\\"uploadPageHero\\\"],\\\"lib/page-editor/loom-field-actions.ts\\\":[\\\"listLoomImages\\\"],\\\"lib/spaces/content-actions.ts\\\":[\\\"createSpaceUpdate\\\",\\\"deleteSpaceUpdate\\\",\\\"updateSpaceUpdate\\\"],\\\"lib/spaces/email-drafts.ts\\\":[\\\"countSpaceEmailAudience\\\"],\\\"lib/studio/draft-actions.ts\\\":[\\\"eraseSparkDraftsAction\\\"]};const bad=[];for(const [file,names] of Object.entries(M)){const self=files.find(t=>t[0]===file);for(const name of names){const declared=self&&new RegExp('export'+B+'s+(async'+B+'s+function|const)'+B+'s+'+name+B+'b').test(self[1]);if(!declared)continue;const used=files.some(([f,t])=>f!==file&&!isTest(f)&&new RegExp(B+'b'+name+B+'b').test(t));if(!used)bad.push(file+'::'+name);}}if(bad.length){console.error('still orphaned ('+bad.length+'): '+bad.join(', '));process.exit(1)}process.exit(0)\""
       },
       "notes": "The probe embeds the full file->name map and fails while any named action is still exported with no non-test caller. Each name closes by deletion or by wiring; the probe accepts either."
-    },
-    {
-      "id": "LIVE-063",
-      "title": "EditorShell, \"the ONE master container for any on-page editor\", has zero importers",
-      "status": "open",
-      "lane": "live",
-      "size": "XS",
-      "source": {
-        "file": "docs/META-SCAN-STATUS.md",
-        "ref": "2026-08-20 pass · finder A (med)"
-      },
-      "detail": "components/ui/editor-shell.tsx is orphaned: its stated consumer, the beta email editor, was deleted in the ADR-1088/1089 beta teardown, and its header comment still promises adoption by the Space/profile editors. Re-verified 2026-08-20 — the only reference anywhere is scripts/ui-state-test-ledger.txt. Delete it, or adopt it in the editors its header names and fix the header.",
-      "verify": {
-        "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');if(!fs.existsSync('components/ui/editor-shell.tsx'))process.exit(0);const fs=require('fs'),pa=require('path');const skip=new Set(['node_modules','.next']);function*w(d){for(const n of fs.readdirSync(d)){if(skip.has(n))continue;const f=pa.join(d,n);const s=fs.statSync(f);if(s.isDirectory())yield*w(f);else if(/\\.(ts|tsx)$/.test(f))yield f}}const files=[];for(const r of ['app','lib','components'])for(const f of w(r))files.push([f,fs.readFileSync(f,'utf8')]);const isTest=(f)=>/\\.test\\.tsx?$/.test(f);const used=files.some(([f,t])=>!isTest(f)&&f!=='components/ui/editor-shell.tsx'&&t.includes('ui/editor-shell'));process.exit(used?0:1)\""
-      }
     },
     {
       "id": "LIVE-064",
@@ -2614,7 +2615,7 @@
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "2026-08-20 pass · finder A (low)"
       },
-      "detail": "app/dev/og-root-card/route.tsx has no production guard, unlike its two /dev siblings (business-seeder-review, editor-controls) which notFound() in prod — so it keeps a sharp/next-og rasterizer deployed and counted by check:og-trace. Add the same gate the siblings carry.",
+      "detail": "app/dev/og-root-card/route.tsx has no production guard, unlike its two /dev siblings (business-seeder-review, editor-controls) which notFound() in prod. CORRECTED SCOPE (absorbing #2213's counter-read): gating does NOT shrink check:og-trace — next/og is statically imported, so the rasteriser ships regardless, and the route renders benign build-time constants. The remaining case is surface hygiene and consistency: /dev routes should not serve in production, the sibling gate is two lines, and an ungated dev endpoint is one more thing every future audit re-litigates (this one has now been litigated twice). XS; land it inside a LIVE-062 batch rather than as its own PR.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const F='app/dev/og-root-card/route.tsx';if(!fs.existsSync(F))process.exit(0);const t=fs.readFileSync(F,'utf8');process.exit(/notFound/.test(t)&&/NODE_ENV|VERCEL_ENV/.test(t)?0:1)\""
@@ -2667,7 +2668,7 @@
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "2026-08-20 pass · finder A (med)"
       },
-      "detail": "lib/nav/admin-rail.ts and lib/nav/admin-nesting.ts (the ADR-850 rail reconciliation) are imported only by tests in production code — zero `from '@/lib/nav/admin-rail'` imports anywhere (re-verified 2026-08-20) — yet components/layout/app-shell.tsx:935-937 claims admin-nesting survives because admin-rail 'still uses its href helpers for the operator App rail'. False justifications are how orphans outlive their audits. Fix the comments in all three files (or wire the rail to the join, if that is ever wanted). Low-risk.",
+      "detail": "lib/nav/admin-rail.ts and lib/nav/admin-nesting.ts (the ADR-850 rail reconciliation) are imported only by tests in production code — zero `from '@/lib/nav/admin-rail'` imports anywhere (re-verified 2026-08-20) — yet components/layout/app-shell.tsx:935-937 claims admin-nesting survives because admin-rail 'still uses its href helpers for the operator App rail'. False justifications are how orphans outlive their audits. Fix the comments in all three files (or wire the rail to the join, if that is ever wanted). Low-risk. #2213 left this for a pass that could verify the wiring rather than trust one finder; that verification is now done — the import-level grep (from-clause match on @/lib/nav/admin-rail) found zero production importers, which is the evidence this row rests on.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const fs=require('fs'),pa=require('path');const skip=new Set(['node_modules','.next']);function*w(d){for(const n of fs.readdirSync(d)){if(skip.has(n))continue;const f=pa.join(d,n);const s=fs.statSync(f);if(s.isDirectory())yield*w(f);else if(/\\.(ts|tsx)$/.test(f))yield f}}const files=[];for(const r of ['app','lib','components'])for(const f of w(r))files.push([f,fs.readFileSync(f,'utf8')]);const isTest=(f)=>/\\.test\\.tsx?$/.test(f);const wired=files.some(([f,t])=>!isTest(f)&&t.includes('@/lib/nav/admin-rail'));if(wired)process.exit(0);const shell=fs.existsSync('components/layout/app-shell.tsx')?fs.readFileSync('components/layout/app-shell.tsx','utf8'):'';process.exit(shell.includes('admin-rail')?1:0)\""
