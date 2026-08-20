@@ -63,32 +63,40 @@ export async function getLoomAssetUsage(loomAssetId: string): Promise<AssetUsage
     const rows = (recs as Array<Record<string, unknown>> | null) ?? []
     if (rows.length === 0) return empty
 
-    const recordings = await Promise.all(
-      rows.map(async (r) => {
-        const recordingId = String(r.id)
-        const { data: atts } = await db()
-          .from('recording_attachments')
-          .select('host_kind')
-          .eq('recording_id', recordingId)
-          .limit(500)
-        const attRows = (atts as Array<{ host_kind: string }> | null) ?? []
-        const labels = new Set<string>()
-        for (const a of attRows) {
-          const kind = asRecordingHostKind(a.host_kind)
-          if (kind) labels.add(HOST_LABEL[kind])
-        }
-        const isEpisode = !!(r.show_id as string | null)
-        const placeCount = attRows.length + (isEpisode ? 1 : 0)
-        return {
-          recordingId,
-          title: String(r.title ?? 'Recording'),
-          mediaKind: (r.media_kind === 'video' ? 'video' : 'audio') as 'audio' | 'video',
-          isEpisode,
-          hosts: [...labels],
-          placeCount,
-        }
-      }),
-    )
+    // One batched read for every recording's attachments, not one query per recording (N+1: up to
+    // 200 concurrent queries on the janitor usage route). Group by recording_id in memory.
+    const recordingIds = rows.map((r) => String(r.id))
+    const { data: allAtts } = await db()
+      .from('recording_attachments')
+      .select('recording_id, host_kind')
+      .in('recording_id', recordingIds)
+      .limit(500 * recordingIds.length)
+    const attsByRecording = new Map<string, Array<{ host_kind: string }>>()
+    for (const a of (allAtts as Array<{ recording_id: string; host_kind: string }> | null) ?? []) {
+      const bucket = attsByRecording.get(a.recording_id)
+      if (bucket) bucket.push(a)
+      else attsByRecording.set(a.recording_id, [a])
+    }
+
+    const recordings = rows.map((r) => {
+      const recordingId = String(r.id)
+      const attRows = attsByRecording.get(recordingId) ?? []
+      const labels = new Set<string>()
+      for (const a of attRows) {
+        const kind = asRecordingHostKind(a.host_kind)
+        if (kind) labels.add(HOST_LABEL[kind])
+      }
+      const isEpisode = !!(r.show_id as string | null)
+      const placeCount = attRows.length + (isEpisode ? 1 : 0)
+      return {
+        recordingId,
+        title: String(r.title ?? 'Recording'),
+        mediaKind: (r.media_kind === 'video' ? 'video' : 'audio') as 'audio' | 'video',
+        isEpisode,
+        hosts: [...labels],
+        placeCount,
+      }
+    })
     const totalPlaces = recordings.reduce((sum, r) => sum + r.placeCount, 0)
     return { loomAssetId: id, recordings, totalPlaces }
   } catch {

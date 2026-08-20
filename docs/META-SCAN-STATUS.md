@@ -10,17 +10,31 @@
 ## 2026-08-20 pass (post-C3 full-repo scan — orphans, wiring, security)
 
 Run against a mature, heavily-gated tree, one sequential finder at a time (this 4-core box hangs on
-parallel heavy agents). Sweep 0 (advisors + FK coverage) landed as **#2208**. Finders A (orphans /
-unplugged / half-wired) and B (security) are complete; C (correctness / perf) and D (SEO / canon /
-a11y / docs) still to run. The pattern this pass keeps confirming: **the gates that exist are right,
-and the finds live exactly where a gate structurally cannot look** — a conditional auth guard, a
-retired feature's write half, a deferral that only ever lived in a comment.
+parallel heavy agents). Sweep 0 (advisors + FK coverage) landed as **#2208**. **All four finders are
+complete** — A (orphans / unplugged / half-wired), B (security), C (correctness / perf), D (SEO /
+canon / a11y / docs). The pattern this pass keeps confirming: **the gates that exist are right, and
+the finds live exactly where a gate structurally cannot look** — a conditional auth guard, a retired
+feature's write half, a deferral that only ever lived in a comment. C and D came back nearly clean:
+no data-corruption or full-table-write bugs, no money-float bugs, no async-iterator bugs; SEO
+metadata / sitemap / robots / JSON-LD / headings / a11y-names / error boundaries all sound, with one
+stale doc line the only SEO/canon gap.
+
+### Deliberately deferred (verified, owner's call — NOT auto-fixed)
+
+- **ADR-458 supporter→crew map** (`lib/core/entitlement.ts:41`): the TODO's drop condition is met
+  (0 of 55 profiles carry `supporter`, migration applied), but fully retiring the label is a typed
+  change to the `EntitlementTier` union that ripples through `ENTITLEMENT_TIERS`, `ENTITLEMENT_LABEL`
+  and the `isPaid` matrix — the entitlement ladder, which is a revenue-decision surface the owner
+  owns. The current map is harmless (never fires at 0 profiles) and access-preserving if it did, so
+  it stays until the ladder retirement is done deliberately, not folded into a perf sweep.
 
 ### Shipped this pass
 
 | Area | What was wrong | How it's proven |
 |---|---|---|
-| 🟠 **Security (authz)** | `createCircle`'s ungated bottom-up branch (`topical_channel_id` present, no `authorizeAction`) took `host_id` from client form input, then wrote `circles.host_id`, a `memberships` row, and a `posts.author_id` announcement from it. A server action is a POST endpoint reachable outside the UI ([Next data-security guide](../node_modules/next/dist/docs/01-app/02-guides/data-security.md) L281), so a member could forge a circle, self-join, and a "Started a new circle" post authored **as an arbitrary victim**. `check:authz` read it as self-guarded because it *does* call `authorizeAction` — just conditionally: the "right guard, wrong scope / client-supplied id" shape. Fixed: on the bottom-up path `host_id` is forced to `caller.id`; only the gated admin path may assign a host. (`topical_channel_id` is FK-checked by `circles_topical_channel_id_fkey`.) | `SEC-001` probe |
+| 🟠 **Security (authz)** | `createCircle`'s ungated bottom-up branch (`topical_channel_id` present, no `authorizeAction`) took `host_id` from client form input, then wrote `circles.host_id`, a `memberships` row, and a `posts.author_id` announcement from it. A server action is a POST endpoint reachable outside the UI ([Next data-security guide](../node_modules/next/dist/docs/01-app/02-guides/data-security.md) L281), so a member could forge a circle, self-join, and a "Started a new circle" post authored **as an arbitrary victim**. `check:authz` read it as self-guarded because it *does* call `authorizeAction` — just conditionally: the "right guard, wrong scope / client-supplied id" shape. Fixed: on the bottom-up path `host_id` is forced to `caller.id`; only the gated admin path may assign a host. (`topical_channel_id` is FK-checked by `circles_topical_channel_id_fkey`.) | `SEC-001` probe (#2211) |
+| 🟠 **Perf (N+1)** | `assembleShowFeed` resolved each episode enclosure with one `library_assets` query **per episode** on the public RSS feed + Show page (grows with catalog, crawler-hit); `getLoomAssetUsage` fired one `recording_attachments` query per recording (up to 200 concurrent) on the janitor usage route. Both now issue ONE batched `.in(...)` read — `getAssetMetaMap` for enclosures (drop-on-miss + mime/bytes defaults preserved), a single grouped `.in('recording_id', …)` for usage. | `PERF-001` probe + `lib/airwaves/asset-batch.test.ts` (one query for many items) |
+| 🟢 **Docs drift** | `SEO-AEO-PLAN.md` named the `SITE_URL` fallback as the old `frequency-web-three.vercel.app` host in two places; `lib/site.ts:8` falls back to `https://frequencylocal.com`. Code wins — both lines corrected. | — |
 
 ### Confirmed against production (two of finder A's "uncertain" items, one DB call each — the ADR-1082 rule)
 

@@ -236,22 +236,49 @@ export interface AssetMeta {
   bytes: number
 }
 
+/** Normalise one library_assets row to enclosure facts, or null when it carries no usable url. */
+function toAssetMeta(row: { url?: unknown; mime?: unknown; bytes?: unknown } | null): AssetMeta | null {
+  if (!row || typeof row.url !== 'string' || !row.url) return null
+  return {
+    url: row.url,
+    mime: typeof row.mime === 'string' && row.mime ? row.mime : 'audio/mpeg',
+    bytes: typeof row.bytes === 'number' && Number.isFinite(row.bytes) ? row.bytes : 0,
+  }
+}
+
 /** Resolve one library_assets row to its enclosure facts, or null on a miss. */
 export async function getAssetMeta(assetId: string | null | undefined): Promise<AssetMeta | null> {
   const id = (assetId ?? '').trim()
   if (!id) return null
   try {
     const { data } = await db().from('library_assets').select('url, mime, bytes').eq('id', id).maybeSingle()
-    const row = data as { url?: unknown; mime?: unknown; bytes?: unknown } | null
-    if (!row || typeof row.url !== 'string' || !row.url) return null
-    return {
-      url: row.url,
-      mime: typeof row.mime === 'string' && row.mime ? row.mime : 'audio/mpeg',
-      bytes: typeof row.bytes === 'number' && Number.isFinite(row.bytes) ? row.bytes : 0,
-    }
+    return toAssetMeta(data as { url?: unknown; mime?: unknown; bytes?: unknown } | null)
   } catch {
     return null
   }
+}
+
+/** Resolve MANY library_assets rows in ONE query, keyed by asset id. Only ids that resolve to a
+ *  usable enclosure appear in the Map (a missing or url-less asset is simply absent, matching
+ *  getAssetMeta returning null). FAIL-SAFE: a read error yields an empty Map, never throws. */
+export async function getAssetMetaMap(
+  assetIds: Array<string | null | undefined>,
+): Promise<Map<string, AssetMeta>> {
+  const ids = [...new Set((assetIds ?? []).map((id) => (id ?? '').trim()).filter(Boolean))]
+  const out = new Map<string, AssetMeta>()
+  if (ids.length === 0) return out
+  try {
+    const { data } = await db().from('library_assets').select('id, url, mime, bytes').in('id', ids)
+    const rows = (data as Array<{ id?: unknown; url?: unknown; mime?: unknown; bytes?: unknown }> | null) ?? []
+    for (const row of rows) {
+      const rowId = typeof row.id === 'string' ? row.id : ''
+      const meta = toAssetMeta(row)
+      if (rowId && meta) out.set(rowId, meta)
+    }
+  } catch {
+    return new Map()
+  }
+  return out
 }
 
 /** An Episode paired with its Loom enclosure facts, for the feed + the public page. */
@@ -285,17 +312,18 @@ export async function assembleShowFeed(spaceId: string, showSlug: string): Promi
     listEpisodesForShow(show.id, { publicOnly: true }),
   ])
 
-  const withEnclosures = await Promise.all(
-    episodes.map(async (recording) => {
-      const enclosure = await getAssetMeta(recording.loomAssetId)
-      return enclosure ? { recording, enclosure } : null
-    }),
-  )
+  // One batched read for every episode enclosure, not one query per episode (N+1 on the public RSS
+  // feed + Show page). An episode whose Loom file cannot be resolved is still dropped, so the feed
+  // never emits a dead enclosure.
+  const enclosures = await getAssetMetaMap(episodes.map((e) => e.loomAssetId))
 
   return {
     show,
     coverUrl: coverMeta?.url ?? null,
-    episodes: withEnclosures.filter((e): e is FeedEpisode => e !== null),
+    episodes: episodes.flatMap((recording) => {
+      const enclosure = recording.loomAssetId ? enclosures.get(recording.loomAssetId) : undefined
+      return enclosure ? [{ recording, enclosure }] : []
+    }),
   }
 }
 
