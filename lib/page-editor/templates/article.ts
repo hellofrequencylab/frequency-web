@@ -25,10 +25,11 @@ import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 //   · Breadcrumb — page-level, the route's existing <JsonLd data={breadcrumbSchema}>.
 // So an enrolled article keeps all four; the route keeps the last two.
 //
-// ⚠️ STATUS. FIRST LIVE CONSUMER 2026-08-19: `how-to-start-a-circle` (templates/
-// how-to-start-a-circle.ts), enrolled by the recipe below. The other seven articles
-// are still coded pages; `check:render-path` gates one slug per PR and enrolling an
-// article is a route change per article, so they enroll one at a time.
+// ⚠️ STATUS. LIVE CONSUMERS: `how-to-start-a-circle` (enrolled 2026-08-19) and
+// `how-to-build-community` (enrolled 2026-08-20), each a spec beside this file run
+// through the recipe below. The other six articles are still coded pages;
+// `check:render-path` gates one slug per PR and enrolling an article is a route
+// change per article, so they enroll one at a time.
 // `article.test.ts` remains the guard that keeps this generator honest independently
 // of any one article — it renders a spec through the CURRENT block config, so a block
 // rename breaks this file loudly rather than on the day someone enrolls the next one.
@@ -61,6 +62,22 @@ import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 //   · `openingBeat`  → the same, right after the answer
 //   · `howToAfter`   → where the ordered steps sit, when they are not last
 // An article that needs none of them writes none of them, and reads exactly as before.
+//
+// The SECOND enrolment (how-to-build-community, 2026-08-20) widened four of those seams,
+// for the same reason and under the same rule — optional, copy-carrying, already-shipped
+// blocks, and an article using none of them renders byte-identically to before:
+//   · media beats gained `kicker`      — the coded ZigZags carry kicker lines; the
+//                                        MediaText block always had the prop.
+//   · `image` became optional          — that article's coded hero is a plain PageHero;
+//                                        no photo means the Hero's `minimal` variant,
+//                                        not a photo the page never had.
+//   · sections gained their own `howTo`— the pillar article carries THREE ordered
+//                                        tracks, one per section; each DawnHowToSteps
+//                                        block emits its own HowTo node, so three
+//                                        tracks ship three nodes, exactly as coded.
+//   · sections gained `beats`          — a section that closes with a photo beat AND a
+//                                        pull quote needs two; `beat` remains the
+//                                        one-beat shorthand (`beats` wins if both).
 // ─────────────────────────────────────────────────────────────────────────────
 
 const L = { spaceTop: 'default', spaceBottom: 'default', visibility: 'all' } as const
@@ -85,6 +102,8 @@ export type ArticleBeat =
       eyebrow?: string
       title: string
       titleAccent?: string
+      /** The italic kicker line under the title, when the coded ZigZag carried one. */
+      kicker?: string
       /** Paragraphs, separated by a blank line. `[label](/path)` links work. */
       body: string
       /** Which side the photo sits on, so consecutive beats alternate. */
@@ -112,8 +131,16 @@ export type ArticleSection = {
   body?: string
   /** Optional buttons, inside this section's band. */
   links?: ArticleLink[]
+  /** This section's OWN ordered guide, when the article carries more than one track
+   *  (a pillar article can). Rendered after the section's copy, before its beats.
+   *  Each DawnHowToSteps block emits its own HowTo node, so several tracks ship
+   *  several nodes — dropping the extras would be the silent-loss shape again. */
+  howTo?: ArticleHowTo
   /** Optional beat that CLOSES this section's band group. */
   beat?: ArticleBeat
+  /** Several closing beats (e.g. a photo beat then a pull quote), in order. The
+   *  plural form of `beat`: write one or the other, and `beats` wins if both. */
+  beats?: ArticleBeat[]
 }
 
 /** The ordered how-to, when the article has one. Feeds BOTH the visible steps and
@@ -137,10 +164,13 @@ export type ArticleSpec = {
   title: string
   /** The standfirst under the title. */
   subtitle: string
-  image: string
+  /** The hero photo. Optional because an article whose coded hero was a plain
+   *  PageHero has no photo to recover: leaving this out renders the Hero's
+   *  `minimal` variant instead of inventing an image the page never shipped. */
+  image?: string
   /** The hero photo's alt text. Recorded here with the copy it belongs to; the `Hero`
    *  block has no alt field today, so it is not yet rendered. */
-  alt: string
+  alt?: string
   /** The opening CTA, into the product. */
   heroCtaLabel?: string
   heroCtaHref?: string
@@ -192,7 +222,7 @@ export function articleTemplate(spec: ArticleSpec): Data {
         eyebrow: beat.eyebrow ?? '',
         title: beat.title,
         titleAccent: beat.titleAccent ?? '',
-        kicker: '',
+        kicker: beat.kicker ?? '',
         body: beat.body,
         side: beat.side ?? 'left',
         imgAspect: 'landscape',
@@ -211,12 +241,14 @@ export function articleTemplate(spec: ArticleSpec): Data {
     type: 'Hero',
     props: {
       id: id('hero'),
-      variant: 'image',
+      // No photo in the spec means the coded hero had none: render the plain
+      // (minimal) variant rather than the image variant's fallback photo.
+      variant: spec.image ? 'image' : 'minimal',
       eyebrow: spec.eyebrow,
       title: spec.title,
       titleAccent: '',
       subtitle: spec.subtitle,
-      image: spec.image,
+      image: spec.image ?? '',
       focal: 'center',
       minHeight: 'auto',
       facts: [],
@@ -248,22 +280,22 @@ export function articleTemplate(spec: ArticleSpec): Data {
 
   if (spec.openingBeat) pushBeat(spec.openingBeat, 'beat-0')
 
-  // The ordered how-to. This block owns the HowTo node, so the steps and the
-  // structured data are the same array.
-  const pushHowTo = () => {
-    if (!spec.howTo) return
+  // An ordered how-to. This block owns the HowTo node, so the steps and the
+  // structured data are the same array — one call per track, article-level or
+  // section-level, and each block emits its own node.
+  const pushHowTo = (howTo: ArticleHowTo, key: string) => {
     content.push({
       type: 'DawnHowToSteps',
       props: {
-        id: id('howto'),
+        id: id(key),
         eyebrow: 'How to',
-        name: spec.howTo.name,
+        name: howTo.name,
         nameAccent: '',
         kicker: '',
-        intro: spec.howTo.intro,
-        totalTimeLabel: spec.howTo.totalTimeLabel ?? '',
-        totalTime: spec.howTo.totalTime ?? '',
-        steps: spec.howTo.steps.map((s) => ({
+        intro: howTo.intro,
+        totalTimeLabel: howTo.totalTimeLabel ?? '',
+        totalTime: howTo.totalTime ?? '',
+        steps: howTo.steps.map((s) => ({
           name: s.name,
           text: s.text,
           image: s.image ?? '',
@@ -327,12 +359,16 @@ export function articleTemplate(spec: ArticleSpec): Data {
         },
       })
     }
-    if (i + 1 === howToAfter) pushHowTo()
-    if (section.beat) pushBeat(section.beat, `beat-${i + 1}`)
+    if (spec.howTo && i + 1 === howToAfter) pushHowTo(spec.howTo, 'howto')
+    if (section.howTo) pushHowTo(section.howTo, `howto-${i + 1}`)
+    const beats = section.beats ?? (section.beat ? [section.beat] : [])
+    // The first beat keeps the `beat-<n>` key the first enrolment shipped, so its
+    // block ids (and any operator draft keyed on them) do not move.
+    beats.forEach((b, j) => pushBeat(b, j === 0 ? `beat-${i + 1}` : `beat-${i + 1}-${j + 1}`))
   })
 
   // A how-to placed past the last section (or on an article with no sections) still ships.
-  if (howToAfter > spec.sections.length) pushHowTo()
+  if (spec.howTo && howToAfter > spec.sections.length) pushHowTo(spec.howTo, 'howto')
 
   // The FAQ. This block owns the FAQPage node.
   content.push({
