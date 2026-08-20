@@ -50,6 +50,7 @@ export const EDITABLE_PAGES = [
   { slug: 'how-to-build-community', title: 'How to build community', path: '/how-to-build-community' },
   { slug: 'loneliness', title: 'Loneliness', path: '/loneliness' },
   { slug: 'friendship-as-an-adult', title: 'Adult friendship', path: '/friendship-as-an-adult' },
+  { slug: 'calm-down-fast', title: 'Calm down fast', path: '/calm-down-fast' },
 ] as const
 
 export type EditableSlug = (typeof EDITABLE_PAGES)[number]['slug']

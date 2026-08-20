@@ -232,6 +232,11 @@
     "/friendship-as-an-adult [dawn-light, desktop]": 0,
     "/friendship-as-an-adult [dawn-light, mobile]": 0,
     "/friendship-as-an-adult [midnight-dark, contrast only, desktop]": 0,
-    "/friendship-as-an-adult [midnight-light, contrast only, desktop]": 0
+    "/friendship-as-an-adult [midnight-light, contrast only, desktop]": 0,
+    "/calm-down-fast [dawn-dark, contrast only, desktop]": 0,
+    "/calm-down-fast [dawn-light, desktop]": 0,
+    "/calm-down-fast [dawn-light, mobile]": 0,
+    "/calm-down-fast [midnight-dark, contrast only, desktop]": 0,
+    "/calm-down-fast [midnight-light, contrast only, desktop]": 0
   }
 }
