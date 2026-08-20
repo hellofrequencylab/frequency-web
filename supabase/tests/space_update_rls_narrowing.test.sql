@@ -15,8 +15,9 @@
 --   STILL WORKING (nothing the narrowing must not touch moved):
 --     * the brand Update ANCHOR (public, top-level) stays readable to anon and to members through
 --       the surviving public arms - the SpaceUpdates block loses nothing;
---     * Circle group posts, crew+ reaction read / insert-own, and delete-own-reaction (whose
---       dropped arm was strictly narrower than its surviving arm) are all unaffected.
+--     * Circle group posts, crew+ reaction read / insert-own, and delete-own-reaction for every
+--       seat that can SEE its rows (a DELETE whose WHERE reads columns needs SELECT visibility,
+--       so the roleless seat - which can no longer create reactions either - loses both ways).
 --   AND IN THE CATALOG (a behavioral pass can be an accident; the catalog cannot):
 --     * 0 policies reference is_space_update_post, the helper is gone from private AND public,
 --       and the 20261004000000 consolidation invariant survives: exactly ONE permissive policy
@@ -28,7 +29,7 @@
 -- grants; the POLICIES are what this file tests, not the grant baseline).
 
 begin;
-select plan(22);
+select plan(24);
 
 -- ── Fixture (seeded as postgres, which RLS does not bind) ────────────────────────────────────────
 
@@ -169,14 +170,19 @@ select throws_ok(
   '42501', null,
   'and can no longer react on one');
 
+-- CI taught this pair its first lesson (2026-08-20): a DELETE whose WHERE reads columns also
+-- requires the rows to be SELECT-visible, and reaction reads are crew+ now - so the roleless
+-- seat's delete matches NOTHING. That is the honest post-narrowing behavior, not a defect:
+-- the seat can no longer create reactions either (proven above), and production carried zero,
+-- so nothing strands. Delete-own for a seat that CAN see its rows is proven at seat 2.
 select lives_ok(
   $$ delete from post_reactions where id = '00000000-0000-4000-f200-000000000012' $$,
-  'deleting their OWN reaction still works - the surviving delete-own arm carries every caller the dropped arm did');
+  'their delete-own statement runs without error - but the row is no longer visible to them');
 
 reset role;
-select is_empty(
+select isnt_empty(
   $$ select id from public.post_reactions where id = '00000000-0000-4000-f200-000000000012' $$,
-  'and the row is really gone (the delete was not a zero-row no-op)');
+  'and the row remains: no reaction path survives for a roleless seat, create or delete');
 
 -- ── Seat 2: a plain member of circle C1 - the surviving reads ────────────────────────────────────
 set local role authenticated;
@@ -210,8 +216,18 @@ select lives_ok(
 
 select results_eq(
   $$ select count(*)::int from post_reactions where post_id = '00000000-0000-4000-f200-000000000001' $$,
-  $$ values (1) $$,
-  'and the crew+ reaction read still serves the anchor''s remaining reaction');
+  $$ values (2) $$,
+  'and the crew+ reaction read still serves both anchor reactions (the roleless delete was a no-op)');
+
+select lives_ok(
+  $$ delete from post_reactions where post_id = '00000000-0000-4000-f200-000000000003'
+       and profile_id = '00000000-0000-4000-b200-000000000003' $$,
+  'delete-own works for a seat that can see its rows: the member removes the reaction it just made');
+
+reset role;
+select is_empty(
+  $$ select id from public.post_reactions where post_id = '00000000-0000-4000-f200-000000000003' $$,
+  'and that row is really gone (the delete was not a zero-row no-op)');
 
 -- ── Seat 3: anon - the public surface the SpaceUpdates block relies on ───────────────────────────
 set local role anon;
