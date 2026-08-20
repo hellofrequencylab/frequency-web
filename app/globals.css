@@ -2508,12 +2508,42 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-/* Embossed label text — the same warm two-tone catch-light/shadow as the brand
-   mark, for button text so it reads raised/engraved into a filled button. */
+/* Letterpress label text — the owner's ask, verbatim (2026-08-19, OWN-014): "chisel/embossed
+   white with a little dark edge. Giving the effect that it's sunken into the button." The same
+   warm brand-emboss pair as the wordmark, arranged as an ENGRAVE rather than the old raise
+   (the previous version was one catch-light above + one blurred shade below, i.e. pressed UP):
+
+     · a crisp 1px ring of --brand-emboss-dark on all four sides — the chiseled dark edge
+       that seats each glyph into the fill;
+     · the two upper diagonals doubled, so the top edge is the deepest — light comes from
+       above, and a sunken face is darkest along its top wall (the brandmark's :active state
+       uses the same inversion);
+     · a soft 1.5px-blur shade into the cavity top, continuing that occlusion downward;
+     · a 1.5px catch-light of --brand-emboss-light BELOW, the lit lower lip: a 0.5px dark
+       crevice under each glyph, then the bright lip where the fill catches the light.
+
+   MEASURED, NOT ASSUMED (2026-08-19, axe-core 4.13.0 in headless chromium). Unlike `chisel`
+   (a box-shadow finish that moves no ratio — see check-contrast.mjs), this ring IS credited
+   by axe's color-contrast: zero-blur text-shadows group per colour into a text STROKE when
+   they cover all four edges (each offset must exceed 0.5px), and the label is then measured
+   against ring-over-fill instead of the bare amber. White on the four brand ambers moved
+   from VIOLATION (1.87–2.86:1) to PASS (15.2–19.8:1) in every skin × mode at both button
+   type sizes. A blurred shadow alone can never do this: axe discounts its alpha by
+   0.185/(blur/em + 0.4) and it covers at most one edge, which is why the old two-shadow
+   emboss was measured, failed, and waived (test/e2e/a11y-waivers.ts).
+   ⚠️ KEEP THE RING INTACT. A same-colour zero-blur group covering only 2 or 3 edges makes
+   axe bail to "incomplete" (complexTextShadows) — worse than a clean fail. All four 1px
+   sides, or none. */
 .text-emboss {
   text-shadow:
-    0 -0.5px 0 var(--brand-emboss-light),
-    0 1px 1.5px var(--brand-emboss-dark);
+    0 1.5px 0 var(--brand-emboss-light),
+    0 -1px 0 var(--brand-emboss-dark),
+    1px -1px 0 var(--brand-emboss-dark),
+    -1px -1px 0 var(--brand-emboss-dark),
+    1px 0 0 var(--brand-emboss-dark),
+    -1px 0 0 var(--brand-emboss-dark),
+    0 1px 0 var(--brand-emboss-dark),
+    0 -1px 1.5px var(--brand-emboss-dark);
 }
 
 /* ── Display face (public marketing headlines) ─────────────────────────────────
