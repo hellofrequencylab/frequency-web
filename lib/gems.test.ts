@@ -13,16 +13,35 @@ let rpcResult: { data: { awarded?: boolean; capped?: boolean } | null; error: { 
 }
 const rpcCalls: Array<{ name: string; args: Record<string, unknown> }> = []
 
-vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: () => ({
-    from: () => ({
-      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: configRow, error: null }) }) }),
-    }),
-    rpc: async (name: string, args: Record<string, unknown>) => {
-      rpcCalls.push({ name, args })
-      return rpcResult
+// The mock client is deliberately `this`-SENSITIVE, mirroring the real SupabaseClient: from()
+// and rpc() both begin by reading `this.rest` (LIVE-053 / LIVE-061, production digest
+// 3920664382). A method detached from its client — `const rpc = admin.rpc as unknown as Fn` —
+// runs with `this === undefined` and throws `Cannot read properties of undefined (reading
+// 'rest')`, which is exactly what awardGems did on every daily check-in until the alias was
+// bound. An arrow-function mock would hide that regression; this shape makes every test below
+// bite on it, alongside the textual gate (scripts/check-detached-client-methods.test.ts).
+function makeAdminClient() {
+  return {
+    rest: {
+      from: (_table: string) => ({
+        select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: configRow, error: null }) }) }),
+      }),
+      rpc: async (name: string, args: Record<string, unknown>) => {
+        rpcCalls.push({ name, args })
+        return rpcResult
+      },
     },
-  }),
+    from(table: string) {
+      return this.rest.from(table)
+    },
+    rpc(name: string, args: Record<string, unknown>) {
+      return this.rest.rpc(name, args)
+    },
+  }
+}
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => makeAdminClient(),
 }))
 
 import { awardGems } from './gems'
@@ -81,5 +100,21 @@ describe('awardGems', () => {
     rpcResult = { data: null, error: { message: 'boom' } }
     const r = await awardGems('p1', 'reaction')
     expect(r).toEqual({ awarded: false, amount: 0, capped: false })
+  })
+
+  // Regression: production digest 3920664382 (LIVE-061, first 2026-07-09 → last 2026-08-19).
+  // dailyCheckIn (app/(main)/checkin-actions.ts) awaited awardGems(profileId, 'daily_login') on
+  // the first authenticated visit of the member's day, and awardGems reached the RPC through a
+  // DETACHED alias (`const rpc = admin.rpc as unknown as (…)`), so SupabaseClient.rpc ran with
+  // `this === undefined` and its first read — `this.rest` — threw
+  // `TypeError: Cannot read properties of undefined (reading 'rest')`: a 500 on POST /feed.
+  // The `this`-sensitive mock above reproduces that mechanism exactly, so this test REJECTS with
+  // that same TypeError against the unbound alias and passes only while the alias stays bound.
+  it('pays the daily check-in through a bound rpc (digest 3920664382: a detached alias throws reading `rest`)', async () => {
+    const r = await awardGems('p1', 'daily_login')
+    expect(r).toEqual({ awarded: true, amount: 3, capped: false })
+    expect(rpcCalls).toHaveLength(1)
+    expect(rpcCalls[0].name).toBe('award_gems_atomic')
+    expect(rpcCalls[0].args._action).toBe('daily_login')
   })
 })
