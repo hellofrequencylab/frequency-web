@@ -44,7 +44,9 @@
             "LIVE-066",
             "LIVE-053",
             "LIVE-061",
-            "HYG-009"
+            "HYG-009",
+            "LIVE-069",
+            "LIVE-071"
           ]
         },
         {
@@ -102,7 +104,10 @@
             "PROG-P5",
             "PROG-P6",
             "PROG-P9",
-            "PROG-DAWN3"
+            "PROG-DAWN3",
+            "LIVE-068",
+            "LIVE-070",
+            "HYG-010"
           ]
         },
         {
@@ -111,7 +116,8 @@
             "PROG-PRAC4",
             "PROG-SPOT",
             "PROG-A4",
-            "DEF-DOMAIN"
+            "DEF-DOMAIN",
+            "LIVE-067"
           ]
         },
         {
@@ -149,7 +155,8 @@
         "OWN-018",
         "OWN-019",
         "OWN-020",
-        "OWN-032"
+        "OWN-032",
+        "OWN-040"
       ],
       "rationale": "Foundation before surface: hardening and module boundaries (A1/A3) pay compounding dividends across every later wave. Loom D1-D3 precede the Editor because E2 projects the editor’s asset model onto the Loom. Content retirements (W1) must precede E3, which replaces EDITABLE_PAGES in the opposite direction. Re-theme and the DAWN mechanical sweeps follow the editor so swept surfaces are not rebuilt. Flagship apps (A4) and the domain backlog ride after boundaries + editor exist. Commerce verticals close, with Resonance’s launch GO still the owner’s. White label (E10/W6/P7), mobile, and texting park by name."
     }
@@ -2768,17 +2775,141 @@
     {
       "id": "HYG-009",
       "title": "The pre-census META-SCAN-STATUS residue: re-verify or retire every open table",
-      "status": "open",
+      "status": "done",
       "lane": "hygiene",
       "size": "M",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "2026-07-27 + 2026-08-04 + 2026-08-12 passes"
       },
-      "detail": "The open-item tables from the passes BEFORE the 2026-08-17 census were never folded into the one list, and they are stale in unknown proportion: three items spot-checked 2026-08-20 were ALL already fixed (the placement console writes the bare scope pair alongside scope_circle_id; reactivateMember re-checks the seat wall; the Space FAQ editor is wired from settings/basics). Sweep every remaining open row in those sections with the ADR-1082 discipline: premise dead -> strike it in the doc with the evidence; premise alive -> it becomes a probed row in this list. Candidates known alive going in: the 2026-08-12 pass’s sharp-inheritance ceiling note, the Drafts naming question, the function-grants gate gap, and EDITOR-ARCHITECTURE’s two sequencing questions.",
+      "detail": "The open-item tables from the passes BEFORE the 2026-08-17 census were never folded into the one list, and they are stale in unknown proportion: three items spot-checked 2026-08-20 were ALL already fixed (the placement console writes the bare scope pair alongside scope_circle_id; reactivateMember re-checks the seat wall; the Space FAQ editor is wired from settings/basics). Sweep every remaining open row in those sections with the ADR-1082 discipline: premise dead -> strike it in the doc with the evidence; premise alive -> it becomes a probed row in this list. Candidates known alive going in: the 2026-08-12 pass’s sharp-inheritance ceiling note, the Drafts naming question, the function-grants gate gap, and EDITOR-ARCHITECTURE’s two sequencing questions.\n\n── CLOSED 2026-08-20: every pre-census open table now carries a per-item verdict in the doc; the alive premises live in probed rows, not prose.",
       "verify": {
         "kind": "manual",
-        "evidence": "Spot-check only so far (2026-08-20): placement-actions.ts:116 writes scope_id/scope_type alongside scope_circle_id; lib/spaces/roster.ts:172-182 gates reactivation on checkSeatForOperatorInvite; space-faq-editor.tsx is imported by settings/basics/page.tsx. Full sweep not yet run.",
+        "evidence": "Sweep complete 2026-08-20: 40 items struck with file:line evidence in META-SCAN-STATUS.md, 17 carried into rows LIVE-067..071 + HYG-010/011 (plus LIVE-066 already tracked), 10 owner items gathered into OWN-040, one new find (duplicate ADR headings) filed as HYG-011. Zero unclassified.",
+        "checked": "2026-08-20"
+      }
+    },
+    {
+      "id": "LIVE-067",
+      "title": "The 12 unreachable layout modules get a mount or a retirement",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "HYG-009 sweep, 2026-08-20"
+      },
+      "detail": "Re-verified still true 2026-08-20 (HYG-009): four community module ids are registered only under ROUTE_MODULE_IDS['*'] (lib/widgets/module-routes.ts:57, the Epic 1.7 note) and the fallback never resolves because every registered route has its own entry; eight entity-* rows sit under '/spaces/*' with no page mounting <PageModules> — the profile renders lib/entity-blocks instead (lib/widgets/modules.ts:658,693). Two registries imply reachability nothing delivers. Decide once: retire the '*' set and the eight entity rows, or mount the profile Layout editor (Epic 1.7). Deciding is the work; leaving both registries lying is the defect.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "lib/widgets/module-routes.ts:57 still declares the * fallback; lib/widgets/modules.ts:658,693 still register the 12; no app file mounts <PageModules> for them (HYG-009 grep).",
+        "checked": "2026-08-20"
+      },
+      "notes": "Probe upgrades to mechanical when worked (either the registrations gone or a real mount exists)."
+    },
+    {
+      "id": "LIVE-068",
+      "title": "The block palette is scoped per surface",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "HYG-009 sweep, 2026-08-20"
+      },
+      "detail": "Re-verified still true 2026-08-20 (HYG-009): one shared config feeds derivePickerGroups on every editor surface (lib/page-editor/config.tsx:30; components/page-editor/mobile/data-ops.ts:55), so a marketing page's palette offers the entire 17-block Profile category and Space content blocks that cannot bind there. Fix: a per-surface category allowlist (page kind -> category keys) passed into derivePickerGroups on both the desktop and mobile paths.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "derivePickerGroups called with the full shared config and no surface filter on both paths (HYG-009 read).",
+        "checked": "2026-08-20"
+      },
+      "notes": "Probe upgrades to mechanical when worked (the allowlist parameter existing and being passed at both call sites)."
+    },
+    {
+      "id": "LIVE-069",
+      "title": "The market-listing opt-out reaches the Tickets rail",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "HYG-009 sweep, 2026-08-20"
+      },
+      "detail": "Re-verified still true 2026-08-20 (HYG-009): the host's 'List this event publicly' opt-out is honored on the index (lib/commerce/index-data.ts:487) but listTicketedEventProjections (lib/commerce/ticket-projection.ts:129,208) selects rows without applying listableOnly, so an opted-out ticketed event still surfaces on the Market Tickets rail. Apply listableOnly to the projection rows before shaping cards.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "listableOnly",
+        "paths": [
+          "lib/commerce/ticket-projection.ts"
+        ]
+      }
+    },
+    {
+      "id": "LIVE-070",
+      "title": "Every Label reaches its control",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "HYG-009 sweep, 2026-08-20"
+      },
+      "detail": "Re-verified still true 2026-08-20 (HYG-009), roughly ~65 of the original ~105 bare <Label> uses remain (repo-wide: 201 <Label occurrences, ~136 adjacent htmlFor); components/on-air/movement-session.tsx carries 3 bare / 0 htmlFor. Mechanical sweep, worst files first: wrap in Field, or thread htmlFor/id for real controls and role=\"group\" + aria-labelledby for button groups — the Create Event pass (2026-07-27) is the template.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "HYG-009 count 2026-08-20: 201 <Label vs ~136 htmlFor across the tree.",
+        "checked": "2026-08-20"
+      },
+      "notes": "A ratchet-style counting probe lands with the first sweep PR so the number can only shrink."
+    },
+    {
+      "id": "LIVE-071",
+      "title": "Vera onboarding gets an entrance or an exit",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "HYG-009 sweep, 2026-08-20"
+      },
+      "detail": "Re-verified still true 2026-08-20 (HYG-009): app/onboarding/vera/page.tsx has zero inbound links and its funnel step still reads zero (lib/analytics/journeys.ts:144, \"No rows yet\"). Link it from post-signup, or retire it in favor of the feed VeraLightbox. Either arm closes it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),pa=require('path');const skip=new Set(['node_modules','.next']);function*w(d){for(const n of fs.readdirSync(d)){if(skip.has(n))continue;const f=pa.join(d,n);const s=fs.statSync(f);if(s.isDirectory())yield*w(f);else if(/\\\\.(ts|tsx)$/.test(f))yield f}}const files=[];for(const r of ['app','lib','components'])for(const f of w(r))files.push([f,fs.readFileSync(f,'utf8')]);const isTest=(f)=>/\\\\.test\\\\.tsx?$/.test(f);if(!fs.existsSync('app/onboarding/vera/page.tsx'))process.exit(0);const linked=files.some(([f,t])=>!isTest(f)&&!f.startsWith(pa.join('app','onboarding','vera'))&&new RegExp('/onboarding/vera(?![a-zA-Z-])').test(t)&&!f.includes('analytics/journeys'));process.exit(linked?0:1)\""
+      },
+      "notes": "Probe tightened at filing: the first needle matched import paths like app/onboarding/vera-actions, which are the surfaces themselves, not entrances; and the analytics funnel definition names the path without linking it. The probe now requires the route string in link position outside the vera directory and the funnel file."
+    },
+    {
+      "id": "HYG-010",
+      "title": "The small-residue sweep: UI consistency nits, menu polish, and the info-grade leftovers",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "M",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "HYG-009 sweep, 2026-08-20"
+      },
+      "detail": "The HYG-009 carry-forwards too small for their own rows, gathered so none lives only in prose. UI consistency (one sweep PR): feed-list.tsx:495 local EmptyState -> kit variant; five retired-shell loading.tsx files; theme-editor.tsx:158 hand-rolled h1; operator/admin em dashes; 113 raw <img> on non-LCP surfaces. Menus (ADR-860 tail): drift badges in the Menu manager (derive from synced_default_keys, lib/menus/actions.ts:459); the marketing mobile menu renders trigger children as collapsible groups (marketing-mobile-menu.tsx:14-18,105); AdminSubNav heading separators is an owner taste call (admin-sub-nav.tsx:52-60). Info-grade: pages.space_id NOT NULL contract step (migration 20270209000000:93, needs the untenanted-rows ruling); the as-unknown-as cast burn-down (654, opportunistic); check:authz per-export extension to use-server files (check-authz-guards.mjs:8-16); axe incomplete-class note in the a11y docs; the embed-events cron cadence (vercel.json:90, owner taste); the admin row-action error-feedback class audit; a weekly DB-side admin_header drift check in the maintenance workflow.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Each item re-verified individually in the HYG-009 sweep, 2026-08-20, with file:line pins recorded in META-SCAN-STATUS.md.",
+        "checked": "2026-08-20"
+      }
+    },
+    {
+      "id": "OWN-040",
+      "title": "The owner-config residue from the pre-census passes, gathered in one place",
+      "status": "open",
+      "lane": "owner",
+      "size": "S",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "HYG-009 sweep, 2026-08-20"
+      },
+      "detail": "Ten owner-side items the HYG-009 sweep re-verified as still open, none repo-closable: ANTHROPIC_API_KEY repo secret; flip the visual + adoption CI jobs to required (contrast already blocks, ci.yml:262); recruit five test users (feeds LIVE-060); the rail-bank migration (changes per-scope quick links); the event Layout staff gate; accentize() amber (~26 elements, design-visible); dismiss the three CodeQL false positives; Supabase dashboard leaked-password protection ON + anonymous sign-ins OFF; submit the sitemap to Search Console and Bing; CRON_HEARTBEAT_BASE_URL so the cron fleet can page (pairs with OWN-005). Tick items off in this detail as they land; the row closes when the list is empty.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Each item re-verified open in the HYG-009 sweep, 2026-08-20; none has a repo-visible consequence yet.",
         "checked": "2026-08-20"
       }
     }

@@ -160,11 +160,11 @@ ADR-1002/1003/1004/1006/1007/1008.
 
 | Item | Sev |
 |---|---|
-| **The Vercel Build Command is still unverified**, and `vercel.json` still has no `buildCommand`. If it was ever overridden to skip pnpm lifecycle scripts, **both artifact gates have never run.** Owner-only — no agent can close it | 🔴 |
-| Per-entity OG cards inherit `sharp` into 67 incidental functions against a budget of 70. **Adding four ordinary pages under `spaces/[slug]` fails a disk gate whose message talks about share cards.** Raise the ceiling with a reason, or move the cards to route handlers and re-prove the private-Space privacy contract | ⚠️ |
-| "Drafts" names three member surfaces and `NAMING.md` defines none of them. `/drafts` carries two row kinds by design (ADR-1001); `/events/drafts` is a separate surface whose back-link also reads "My drafts" | ⚠️ |
-| No repo-side gate for function grants at all: `check-grants.mjs` covers tables only, and nothing anywhere references `has_function_privilege`. 29 anon-executable SECURITY DEFINER functions rest on a human reading an advisor | ⚠️ |
-| `EDITOR-ARCHITECTURE`'s two 🔴 sequencing questions are unsettled, and its own audit says starting E0 or E3 blocks immediately. Decisions, not tasks — cheap on paper, expensive after E1 ships | ⚠️ |
+| ~~**The Vercel Build Command is still unverified**, and `vercel.json` still has no `buildCommand`. If it was ever overridden to skip pnpm lifecycle scripts, **both artifact gates have never run.** Owner-only — no agent can close it~~ **Re-verified fixed 2026-08-20:** `vercel.json:2` pins `"buildCommand": "pnpm build"`, and a real production log proved `postbuild` runs its gates ([ADR-1081](DECISIONS.md)) | 🔴 |
+| ~~Per-entity OG cards inherit `sharp` into 67 incidental functions against a budget of 70. **Adding four ordinary pages under `spaces/[slug]` fails a disk gate whose message talks about share cards.** Raise the ceiling with a reason, or move the cards to route handlers and re-prove the private-Space privacy contract~~ **Re-verified fixed 2026-08-20:** the ceiling was raised 70 → 100 with a written reason (`scripts/check-og-trace.mjs:46` "── 70 -> 100, 2026-08-12 (A-6). WHY.") | ⚠️ |
+| ~~"Drafts" names three member surfaces and `NAMING.md` defines none of them. `/drafts` carries two row kinds by design (ADR-1001); `/events/drafts` is a separate surface whose back-link also reads "My drafts"~~ **Re-verified fixed 2026-08-20:** `NAMING.md:576` "Drafts: one surface, every unfinished thing (owner ruling, August 2026)"; `/events/drafts` now 308-redirects into `/drafts` | ⚠️ |
+| ~~No repo-side gate for function grants at all: `check-grants.mjs` covers tables only, and nothing anywhere references `has_function_privilege`. 29 anon-executable SECURITY DEFINER functions rest on a human reading an advisor~~ **Re-verified fixed 2026-08-20:** `scripts/check-function-grants.mjs` (verdict ledger `scripts/function-grants.txt`, `package.json:43` `check:function-grants`) + `supabase/tests/browser_reachable_secdef_rpcs.test.sql` both reference `has_function_privilege` | ⚠️ |
+| ~~`EDITOR-ARCHITECTURE`'s two 🔴 sequencing questions are unsettled, and its own audit says starting E0 or E3 blocks immediately. Decisions, not tasks — cheap on paper, expensive after E1 ships~~ **Re-verified fixed 2026-08-20:** both questions marked **SETTLED** by [ADR-1005](DECISIONS.md) (`EDITOR-ARCHITECTURE.md:776-777`), and §10.3 now states "None of O-1…O-5 blocks E0" | ⚠️ |
 
 ---
 
@@ -203,21 +203,27 @@ project.
 
 | Item | Sev |
 |---|---|
-| **Space FAQ dead-ended with 62 live rows across 14 spaces** -- `createSpaceFaq`/`update`/`delete` have zero callers, no editing UI exists, `faq` is absent from `CORE_PROFILE_BLOCK_IDS`. Operators can neither edit nor delete importer-created data. | 🔴 |
-| **12 layout modules can never render** -- 4 community blocks under `'*'` (never reached), 8 `entity-*` under `'/spaces/*'` (no page mounts it). | 🔴 |
-| `check:authz` **cannot see `app/api/**` at all** -- 54 routes, 15 bypassing RLS. All 15 hand-audited clean today; nothing catches a bad one tomorrow. | ⚠️ |
-| `check:authz` is file-level, not function-level; `check:admin-client` counts imports, not soundness (738 files bypass RLS). | ⚠️ |
-| `check:contrast` cannot model alpha -- no pair puts a status tone on `canvas`/`marketing-canvas`; `success` measures 4.05-4.40 there, unmeasured. | ⚠️ |
-| **axe returns incomplete, not violation**, for `background-image`, pseudo-elements >25%, and `opacity: 0`. Every ink band's contrast debt and everything below the fold inside a `Reveal` is unmeasured. **219 is a floor, not a census.** | ⚠️ |
-| Puck picker unscoped (a marketing page can take all 19 Space profile blocks); `lockedAppsForScope` can never return a row; `/onboarding/vera` unreachable with a permanently-zero funnel step; 4 `MODULE_ROUTES` are redirect-only stubs. | ⚠️ |
-| `pages.space_id` still NULLABLE (NOT NULL contract step owed); migration ledger version drift; stale `as unknown as` casts on now-typed tables. | ℹ️ |
+| ~~**Space FAQ dead-ended with 62 live rows across 14 spaces** -- `createSpaceFaq`/`update`/`delete` have zero callers, no editing UI exists, `faq` is absent from `CORE_PROFILE_BLOCK_IDS`. Operators can neither edit nor delete importer-created data.~~ **Re-verified fixed 2026-08-20:** `components/spaces/space-faq-editor.tsx` calls all three actions, mounted from `app/(main)/spaces/[slug]/settings/basics/page.tsx:187`; `'faq'` is in the profile-block union (`lib/spaces/profile-blocks.ts:27`) | 🔴 |
+| **12 layout modules can never render** -- 4 community blocks under `'*'` (never reached), 8 `entity-*` under `'/spaces/*'` (no page mounts it). **Re-verified still true 2026-08-20:** the 4 community ids live only in `ROUTE_MODULE_IDS['*']` (`lib/widgets/modules.ts:658`) and every registered route has its own exact/section entry, so the fallback is never resolved; `'/spaces/*'` now maps `SPACE_MODULE_IDS` (`modules.ts:693`) but no profile page mounts `<PageModules>` — the profile renders `lib/entity-blocks/*` instead (the owner Layout editor on profiles is "Epic 1.7", `lib/widgets/module-routes.ts:57`) | 🔴 |
+| ~~`check:authz` **cannot see `app/api/**` at all** -- 54 routes, 15 bypassing RLS. All 15 hand-audited clean today; nothing catches a bad one tomorrow.~~ **Re-verified fixed 2026-08-20:** the ROUTE scan (LIVE-022) covers every `route.ts|tsx` with a per-route digest ledger (`scripts/check-authz-guards.mjs:20-44`, `scripts/authz-route-ledger.json`), and `MIN_API_ROUTE_FILES` keeps `app/api` from going invisible again | ⚠️ |
+| `check:authz` is file-level, not function-level; `check:admin-client` counts imports, not soundness (738 files bypass RLS). **Re-verified 2026-08-20, mostly closed:** the route scan is now per-export with dominance + precedence rules (LIVE-031, `check-authz-guards.mjs:46-75`) and `check:admin-client` is a per-file ratchet that only shrinks (ADR-923, 824 baseline files). Still true only for the ACTION/LIB scans, which remain file-level token checks | ⚠️ |
+| ~~`check:contrast` cannot model alpha -- no pair puts a status tone on `canvas`/`marketing-canvas`; `success` measures 4.05-4.40 there, unmeasured.~~ **Re-verified fixed 2026-08-20:** the gate gained `bgAlpha`/`bgOver` compositing (`scripts/check-contrast.mjs:135`), status-tone-on-surface pairs (`:192-196`), and per-state waiver floors freezing the measured success/warning ratios (3.87/3.32) as regressions-only | ⚠️ |
+| **axe returns incomplete, not violation**, for `background-image`, pseudo-elements >25%, and `opacity: 0`. Every ink band's contrast debt and everything below the fold inside a `Reveal` is unmeasured. **219 is a floor, not a census.** **Re-verified still true 2026-08-20:** an axe engine limitation, not a wiring gap — unchanged; the a11y ratchet now runs signed-in (FINALIZE-PLAN §1, 2026-08-10) so the floor moved but the incomplete class remains unmeasured | ⚠️ |
+| Puck picker unscoped (a marketing page can take all 19 Space profile blocks); ~~`lockedAppsForScope` can never return a row~~; ~~`/onboarding/vera` unreachable with a permanently-zero funnel step~~ *(still true — see note)*; ~~4 `MODULE_ROUTES` are redirect-only stubs~~. **Re-verified 2026-08-20, split verdict:** picker STILL unscoped — one shared `config` (`lib/page-editor/config.tsx:30`) feeds `derivePickerGroups` for every surface, so a marketing page's palette still offers the whole 17-block Profile category; `lockedAppsForScope` now has a production caller (`components/layout/settings-panel.tsx:630`); `/onboarding/vera` STILL has zero inbound links (only its own page and `lib/analytics/journeys.ts:144` "No rows yet"); the 4 redirect-stub MODULE_ROUTES rows are gone (`lib/widgets/module-routes.ts:20-27,38-41`, guarded by `modules.test.ts`) | ⚠️ |
+| `pages.space_id` still NULLABLE (NOT NULL contract step owed); ~~migration ledger version drift~~; stale `as unknown as` casts on now-typed tables. **Re-verified 2026-08-20, split verdict:** `space_id` STILL nullable — `20270209000000_pages_space_slug_unique.sql:93` says so in the column comment; ledger drift CLOSED 2026-08-12 (609 ⇄ 608 + the ADR-1007 live-head rule in `check:migrations`, FINALIZE-PLAN §1); 654 `as unknown as` casts remain in `app`/`lib`/`components` (unquantified how many are stale) | ℹ️ |
 
 ### Owner-gated
 
-`ANTHROPIC_API_KEY` secret · **seed the beta account + `PW_STORAGE_STATE` (44 of 84 a11y tests
+`ANTHROPIC_API_KEY` secret · ~~**seed the beta account + `PW_STORAGE_STATE` (44 of 84 a11y tests
 and the whole member-shell visual suite do not run -- the signed-in product is unmeasured, not
-clean)** · flip visual/adoption/contrast to required · recruit 5 test users · `app_instances`
-migrate-or-retire · rail-bank migration (changes which quick links each scope shows) · event
+clean)**~~ **Re-verified fixed 2026-08-20:** the session was seeded — the a11y ratchet's first full
+signed-in run landed 2026-08-10 and member-shell visual coverage reads 3/3 surfaces, 12/12 checks
+(FINALIZE-PLAN §1) · flip visual/adoption/contrast to required (**partially done 2026-08-20:**
+`contrast` is in CI's blocking guard array, `ci.yml:262`; adoption is still advisory, visual still a
+manual workflow) · recruit 5 test users · ~~`app_instances`
+migrate-or-retire~~ **Re-verified resolved 2026-08-20:** retired —
+`20270316000000_drop_app_instances_until_e0.sql` dropped the table until E0 recreates it under the
+editor program · rail-bank migration (changes which quick links each scope shows) · event
 Layout staff gate · `accentize()` amber (~26 elements, design-visible) · dismiss 3 CodeQL
 false positives.
 
@@ -309,50 +315,53 @@ Also closed in the same pass, both flagged above as the highest user impact:
 - ~~Beta **admission-wave** engine has no caller while the Command Center advertises and renders the UI (`lib/beta/admission.ts:88`).~~ ✅ closed 2026-08-12 — `lib/beta/admission.ts` is **deleted** with the rest of the beta program (ADR-1006).
 - ~~**Email Studio** Phase-3 template gallery is a dead subtree; its nav target `/admin/email-studio` does not exist (`components/admin/email-studio/template-gallery.tsx:42`).~~ ✅ closed 2026-08-12 — `template-gallery.tsx` is **deleted**.
 - ~~**Household/Circle bundle checkout** has no caller AND no webhook seating branch, so enabling the flag would take payment and seat nobody (`lib/billing/bundle-checkout.ts:21`).~~ ✅ closed 2026-08-12 — **mounted with both halves**, deliberately not deleted: the caller is `app/(main)/settings/billing/actions.ts:60` and the seating branch is `lib/billing/bundle-seats.ts` (`reconcileBundleSubscription`), routed from `app/api/webhooks/stripe/route.ts:186` on `metadata.kind = 'household_bundle'`. Half-mounting this was the specific risk; both halves landed together.
-- `/admin/elements` renders QR Studio toggles and role gates nothing consumes; saving them silently does nothing (`lib/elements/qr-studio.ts:83`).
+- `/admin/elements` renders QR Studio toggles and role gates nothing consumes; saving them silently does nothing (`lib/elements/qr-studio.ts:83`). **Re-verified still true 2026-08-20:** same shape confirmed by the 2026-08-20 finder pass; now tracked as the probed backlog row **LIVE-066**.
 - ~~The declared **CRM policy layer** and membrane contact-card primitive are unreferenced (`lib/crm/capabilities.ts:83`).~~ ✅ closed 2026-08-12 — both `lib/crm/capabilities.ts` and `lib/crm/scope.ts` are **deleted**. The pages already read correctly; the modules only named the assembly.
 - ~~The embeddable-elements `<AppElement>` mounter is orphaned; every mount forks its own (`components/elements/app-element.tsx:25`).~~ ✅ closed 2026-08-12 — there was **never a mounter to orphan**: `<AppElement>` existed only in comments. The dead component map `components/elements/registry.tsx` is deleted (`components/elements/` now holds `previews.tsx` alone), the surviving references are past-tense, and `docs/EMBEDDABLE-ELEMENTS.md` describes the pure catalog `lib/elements/registry.ts` that every consumer actually imports. The "one canonical component" invariant held regardless — `LoomPicker` one definition / 8 surfaces, `StyleEditor` one / 7, zero forks.
 - ~~`lib/marketing/personas.ts` is a second, unwired copy of the persona registry `/for/[niche]` actually uses.~~ ✅ deleted (ADR-915). `lib/marketing/funnel-config.ts` is the one registry.
-- `app_instances` (0 rows, no reader or writer) is the Loom where-referenced backbone, shipped ahead of its code.
+- ~~`app_instances` (0 rows, no reader or writer) is the Loom where-referenced backbone, shipped ahead of its code.~~ **Re-verified resolved 2026-08-20:** superseded — the table was **dropped** by `20270316000000_drop_app_instances_until_e0.sql` (E0 of `EDITOR-ARCHITECTURE.md` recreates it with real writers); `components/admin/library/apps-lane.tsx:261` records the drop.
 
 **Correctness**
-- **Circle-placed events via the placement console are invisible to the circle-membership gate.**
+- ~~**Circle-placed events via the placement console are invisible to the circle-membership gate.**
   `app/(main)/events/placement-actions.ts:116` writes `scope_circle_id` alone; the
   `sync_event_scope_arc` trigger (20260829000000) only derives when `scope_id` is null or
   changed, so `scope_id`/`scope_type` stay pointed at the old region — and every reader plus the
   `circle_only` RLS disjunct keys on `scope_id`. Fix: that write must also set
   `scope_id`/`scope_type` (or the trigger must sync the reverse direction). Found while building
-  ADR-857; not fixed there because it changes that flow's semantics on its own.
-- Reactivating a suspended operator **bypasses the licensed-seat wall**, single and bulk (`lib/spaces/roster.ts:179`).
-- CRM import dedupe index truncates at 1,000 rows, so re-importing into a large list creates duplicates (`lib/crm/import/commit.ts:230`).
-- Circle handoff has no way to see or cancel a pending offer, so an unanswered offer blocks the Circle permanently (`app/(main)/spaces/[slug]/circles/actions.ts:161`).
-- The Vault card shows `lifetime_gems` as "gems to spend", so it never decreases after a redemption or gift (`components/sidebar/right-sidebar.tsx:147`).
-- The 7-day streak strip keys days in server UTC while logs are keyed to the member's local day (`components/sidebar/right-sidebar.tsx:118`).
-- The per-topic notification Frequency selector is inert on every realtime email path (`lib/notification-preferences.ts:181`).
-- The host's "List this event publicly" opt-out is honored on one of four public browse surfaces (`lib/commerce/ticket-projection.ts:99`).
-- Admin footer "Report a problem" links to a POST-only handler, so a click returns 405 (`components/admin/admin-footer.tsx:113`).
-- A root-type Space's "Manage" affordance dead-ends in a 404 (`lib/spaces/types.ts:47`).
-- `library_usages` was dropped five days after it was created; the admin Library splash lane still queries it (`lib/library/splash-registry.ts:190`).
-- Four incompatible cents-to-price formatters; the one used by the seller price editor and product emails drops precision (`lib/commerce/types.ts:375`).
+  ADR-857; not fixed there because it changes that flow's semantics on its own.~~
+  **Re-verified fixed 2026-08-20:** `placement-actions.ts:116-119` — a circle placement now writes
+  the bare `scope_id`/`scope_type` pair alongside the typed `scope_circle_id`, with the bug
+  documented in the helper's own header.
+- ~~Reactivating a suspended operator **bypasses the licensed-seat wall**, single and bulk (`lib/spaces/roster.ts:179`).~~ **Re-verified fixed 2026-08-20:** `roster.ts:182-186` — `seatDenialForReactivation` gates `reactivateMember`, and role promotion is seat-checked too (`roster.ts:115-127`).
+- ~~CRM import dedupe index truncates at 1,000 rows, so re-importing into a large list creates duplicates (`lib/crm/import/commit.ts:230`).~~ **Re-verified fixed 2026-08-20:** `commit.ts:230-235` — the dedupe index read is now PAGED past PostgREST's `max_rows`, with the old truncation narrated in the comment.
+- ~~Circle handoff has no way to see or cancel a pending offer, so an unanswered offer blocks the Circle permanently (`app/(main)/spaces/[slug]/circles/actions.ts:161`).~~ **Re-verified fixed 2026-08-20:** `cancelCircleOffer` exists (`lib/circles/handoff`) and `cancelSpaceCircleOfferAction` exposes it (`actions.ts:203-210`, "Take back a pending handoff before it is answered").
+- ~~The Vault card shows `lifetime_gems` as "gems to spend", so it never decreases after a redemption or gift (`components/sidebar/right-sidebar.tsx:147`).~~ **Re-verified fixed 2026-08-20:** the dock now reads `getSpendableBalance` (`right-sidebar.tsx:115-121`, comment records exactly this bug).
+- ~~The 7-day streak strip keys days in server UTC while logs are keyed to the member's local day (`components/sidebar/right-sidebar.tsx:118`).~~ **Re-verified fixed 2026-08-20:** the window is now anchored on `resolveMemberDay` (`right-sidebar.tsx:113-127`), matching the `logged_for` key.
+- ~~The per-topic notification Frequency selector is inert on every realtime email path (`lib/notification-preferences.ts:181`).~~ **Re-verified fixed 2026-08-20:** the send-gate honors it — `frequencyDeferred` suppresses realtime sends when a digest cadence is chosen (`lib/comms/send-gate.ts:102,190-201`).
+- The host's "List this event publicly" opt-out is honored on one of four public browse surfaces (`lib/commerce/ticket-projection.ts:99`). **Re-verified still true 2026-08-20 (narrowed):** ADR-844's `listableOnly` filter now covers the `/events` home (`app/(main)/events/index-data.ts:487`), but `listTicketedEventProjections` (the Market Tickets rail) still selects `theme` without applying it (`ticket-projection.ts:129,208` — only `coverFocus` is read).
+- ~~Admin footer "Report a problem" links to a POST-only handler, so a click returns 405 (`components/admin/admin-footer.tsx:113`).~~ **Re-verified fixed 2026-08-20:** the link now targets `/help` (`admin-footer.tsx:116`), with the 405 bug documented above it.
+- ~~A root-type Space's "Manage" affordance dead-ends in a 404 (`lib/spaces/types.ts:47`).~~ **Re-verified fixed 2026-08-20:** `spaceManageHref` (`types.ts:47`, ADR-441) routes `root` to `/spaces/<slug>/settings`, which exists (`app/(main)/spaces/[slug]/settings/page.tsx`).
+- ~~`library_usages` was dropped five days after it was created; the admin Library splash lane still queries it (`lib/library/splash-registry.ts:190`).~~ **Re-verified fixed 2026-08-20:** the "Used in" reader was removed (ADR-979, `splash-registry.ts:161-170`); nothing queries the dropped table.
+- ~~Four incompatible cents-to-price formatters; the one used by the seller price editor and product emails drops precision (`lib/commerce/types.ts:375`).~~ **Re-verified fixed 2026-08-20:** `formatPriceCents` (`types.ts:395`) is the consolidated Intl-backed formatter; its docstring records the audit and corrects it (no cents were ever lost — the real bugs were the missing thousands separator and hardcoded `$`).
 
 **SEO/AIO**
-- `/spaces/<slug>/podcasts` is advertised in the sitemap but canonicals to `/spaces/<slug>` (`app/(main)/spaces/[slug]/podcasts/page.tsx:23`).
-- Spotlight pages render a double-branded title, "Name · Frequency · Frequency" (`app/spotlight/[handle]/page.tsx:27`).
-- Four indexable public hubs have **zero inbound internal links**, so they are crawlable only from `sitemap.xml`.
-- Nine `/discover` pages remain dynamic for their own reasons (filterable indexes read `searchParams`). Worth a pass now that the layout no longer forces it.
+- ~~`/spaces/<slug>/podcasts` is advertised in the sitemap but canonicals to `/spaces/<slug>` (`app/(main)/spaces/[slug]/podcasts/page.tsx:23`).~~ **Re-verified fixed 2026-08-20:** the tab self-canonicals through the same helper as the profile sub-tabs (`podcasts/page.tsx:24-32`, comment records the "Alternate page with proper canonical tag" bug).
+- ~~Spotlight pages render a double-branded title, "Name · Frequency · Frequency" (`app/spotlight/[handle]/page.tsx:27`).~~ **Re-verified fixed 2026-08-20:** the suffix is dropped in favor of the root `title.template` (`page.tsx:27-29`, comment records exactly this).
+- ~~Four indexable public hubs have **zero inbound internal links**, so they are crawlable only from `sitemap.xml`.~~ **Re-verified fixed 2026-08-20:** re-measured since — of 240 static routes, 8 have no inbound link and **all 8** are documented redirects or dev tools (FINALIZE-PLAN §1 "Route reachability").
+- ~~Nine `/discover` pages remain dynamic for their own reasons (filterable indexes read `searchParams`). Worth a pass now that the layout no longer forces it.~~ **Re-verified fixed 2026-08-20:** every `app/discover/**/page.tsx` (14 files) declares `export const revalidate = 3600` and none reads `searchParams`.
 
 **Performance**
-- `app/sitemap.ts:379` fires one `podcast_shows` query per networked Space, up to 200 round trips in a single request.
-- QR Studio reads the entire `qr_scans` and `captures` tables into memory on every load, and reads `qr_codes` twice (`app/(main)/admin/qr/page.tsx:42`).
-- The events embedding cron runs every 30 minutes. Now that the For You lane is mounted this work finally has a consumer, but the cadence deserves a look.
+- ~~`app/sitemap.ts:379` fires one `podcast_shows` query per networked Space, up to 200 round trips in a single request.~~ **Re-verified fixed 2026-08-20:** ONE grouped, paged read via `listPublicShowsBySpace` (`sitemap.ts:383-394`, FINALIZE-PLAN §9.9), URL set pinned in `app/sitemap.test.ts`.
+- ~~QR Studio reads the entire `qr_scans` and `captures` tables into memory on every load, and reads `qr_codes` twice (`app/(main)/admin/qr/page.tsx:42`).~~ **Re-verified fixed 2026-08-20:** `node_capture_counts()` + `qr_stats_summary` aggregate in the DB and `qr_codes` is one selection (`qr/page.tsx:38-45`, comment records all three).
+- The events embedding cron runs every 30 minutes. Now that the For You lane is mounted this work finally has a consumer, but the cadence deserves a look. **Re-verified still true 2026-08-20:** `/api/cron/embed-events` is still `*/30 * * * *` (`vercel.json:90`).
 
 **Naming and voice (member-facing, outside `check:canon`'s scope)**
-- The "Around You" dashboard calls Dispatches "broadcasts" in three visible strings (`app/(main)/broadcast/page.tsx:204`).
-- The Dispatches console is "Broadcasts" in the app rail and "Dispatches" in the admin sub-header (`lib/nav/studio.ts:195`).
-- Global search labels eight member destinations with the retired name "Marketplace" (`lib/search/destinations.ts:40`).
-- `/for/community-builders` and Journey copy both sell "cohorts", the one word the canon bans.
-- Public profile and Spotlight stat pills render lowercase "zaps" and "gems earned".
-- **Worth doing:** widen `pnpm check:canon` past `content/` to member-facing strings in `app/` and `lib/`. Every canon break this scan found was outside its current scope.
+- ~~The "Around You" dashboard calls Dispatches "broadcasts" in three visible strings (`app/(main)/broadcast/page.tsx:204`).~~ **Re-verified fixed 2026-08-20:** the page moved to `/nearby` (ADR-1020) and every visible string reads "Dispatches" / "Latest Dispatch" (`app/(main)/nearby/page.tsx:320-350`); "broadcast" survives only in identifiers and comments.
+- ~~The Dispatches console is "Broadcasts" in the app rail and "Dispatches" in the admin sub-header (`lib/nav/studio.ts:195`).~~ **Re-verified fixed 2026-08-20:** the studio row is `label: 'Dispatches'`, `worldLabel: 'Dispatches'` (`lib/nav/studio.ts:195-196`).
+- ~~Global search labels eight member destinations with the retired name "Marketplace" (`lib/search/destinations.ts:40`).~~ **Re-verified superseded 2026-08-20:** ADR-868 REVIVED "Marketplace" as the member-facing commerce umbrella (NAMING.md §Marketplace & Commerce, "umbrella ONLY"), so the group label over the market/housing/shop destinations is now canon-compliant.
+- ~~`/for/community-builders` and Journey copy both sell "cohorts", the one word the canon bans.~~ **Re-verified fixed 2026-08-20:** member copy says "Runs" (`components/journey/v2/journey-guide.tsx:430,434`); "cohort" survives only as internal identifiers, and `check:canon` now carries the rule ("cohort is internal/research framing only; member word is Run", `scripts/check-canon.mjs:14`).
+- ~~Public profile and Spotlight stat pills render lowercase "zaps" and "gems earned".~~ **Re-verified fixed 2026-08-20:** labels read `Zaps` / `Gems earned` (`components/spotlight/blocks/render.tsx:56,60`) and `Zaps` / `Gems` (`app/(main)/people/[handle]/page.tsx:748-749`).
+- ~~**Worth doing:** widen `pnpm check:canon` past `content/` to member-facing strings in `app/` and `lib/`. Every canon break this scan found was outside its current scope.~~ **Re-verified fixed 2026-08-20:** done — the CODE SEAM scan (ADR-1065) covers member-visible strings in `app/` + `lib/` + `components/` (`scripts/check-canon.mjs:5-27`), and `canon` is in CI's blocking guard array (`ci.yml:262`).
 
 **Accessibility**
 - **~105 `<Label>` uses across ~40 files are still unassociated.** Create Event (the worst, 17) is
@@ -361,36 +370,59 @@ Also closed in the same pass, both flagged above as the highest user impact:
   `movement-session.tsx` (9), `events/drafts/[id]/editor.tsx` (9), the six onboarding `*-render.tsx`
   files. Mechanical: wrap in `Field`, or thread `htmlFor`/`id` where the control is a real one and
   `role="group"` + `aria-labelledby` where it is a button group.
-- The header wordmark's keyboard focus indicator is explicitly deleted (`app/globals.css:1028`).
-- Four member-facing toggle switches have no accessible name.
-- Vera's chat transcript is not a live region, so replies are never announced.
+  **Re-verified still true 2026-08-20, roughly halved:** ~201 `<Label` uses, ~136 with an adjacent
+  `htmlFor` — ~65 still bare (e.g. `components/on-air/movement-session.tsx`, 3 bare, 0 `htmlFor`);
+  the circle builder (`components/circles/builder/`) is clean.
+- ~~The header wordmark's keyboard focus indicator is explicitly deleted (`app/globals.css:1028`).~~ **Re-verified fixed 2026-08-20:** the `.brandmark-link` opt-out is removed — the wordmark takes the global `--color-focus-ring` (`app/globals.css:2002-2017`), guarded by `components/layout/brandmark-focus.test.ts`.
+- ~~Four member-facing toggle switches have no accessible name.~~ **Re-verified fixed 2026-08-20:** the `Switch` primitive is `role="switch"` with `aria-label`/`aria-labelledby` props (`components/ui/switch.tsx`), and a sweep of `<Switch` call sites found none without a name (`sequences-panel.tsx:156`, `mutes-form.tsx:114`, etc. all carry `aria-label`).
+- ~~Vera's chat transcript is not a live region, so replies are never announced.~~ **Re-verified fixed 2026-08-20:** the transcript is `role="log"` + `aria-live="polite"` (`components/vera/vera-chat.tsx:133-134`), asserted by `test/a11y/vera-transcript.a11y.test.tsx`.
 
 **Menus (ADR-860 backlog: audited 2026-07-27, first tranche shipped)**
 - The sync engine still inserts-only: build the non-destructive "re-check for new pages" action,
   key identity on a stable `default_key` instead of href, and surface per-item drift badges
   (synced / edited / retired / missing) in the Menu manager.
+  **Re-verified 2026-08-20, 2 of 3 done:** `syncMenuFromDefaults` is the non-destructive re-check
+  (injects only genuinely-new defaults, preserves edits, never deletes, never resurrects —
+  `lib/menus/actions.ts:454-470`), identity rides `synced_default_keys`
+  (`20260801140000_menu_synced_default_keys.sql`). Still true: no per-item drift badges in the Menu
+  manager (`components/admin/menu/` has none).
 - The marketing MOBILE menu renders registry triggers only: submenu items are unreachable on
   phones and operator menu edits never appear there (`marketing-mobile-menu.tsx:96-105`).
+  **Re-verified still true 2026-08-20:** `components/layout/marketing-mobile-menu.tsx:14-18,105`
+  still renders `headerTriggers()` flat ("Rendered flat here"), registry-only.
 - `AdminSubNav` flattens away group headings and drops depth-3 groups, so Menu-manager
   sub-organization of admin_header has no visible effect (`admin-sub-nav.tsx:56-61`).
-- The two account-menu renderers gate the same items differently (`user-menu.tsx:73` vs
-  `app-shell.tsx:427`); unify on one gate.
-- `/admin/library` and `/admin/spaces` have no `admin_header` section (empty sub-nav band).
-- `/marketplace/housing` is the last member-facing `/marketplace/*` URL: needs `/market/housing`
-  + redirect per ADR-596, then the nav/footer/menu rows re-pointed.
+  **Re-verified 2026-08-20, narrowed:** child-group ITEMS are no longer dropped
+  (`admin-sub-nav.tsx:57-60` folds `section.children` in), but headings are still flattened to one
+  row by declared design ("No dropdown: everything is a link"), so Menu-manager grouping still has
+  no visible effect.
+- ~~The two account-menu renderers gate the same items differently (`user-menu.tsx:73` vs
+  `app-shell.tsx:427`); unify on one gate.~~ **Re-verified fixed 2026-08-20:** both resolve through
+  the shared `canSeeMenuItem` two-axis gate from `components/layout/menu-role`
+  (`user-menu.tsx:84-86`, `app-shell.tsx:214,235,341`).
+- ~~`/admin/library` and `/admin/spaces` have no `admin_header` section (empty sub-nav band).~~
+  **Re-verified fixed 2026-08-20:** `/admin/library` is its own gated Loom Studio section, asserted
+  by `lib/menus/gates.test.ts:177-196` (ADR-979); `/admin/spaces` carries
+  `adminNav: { section: 'operations', heading: 'Platform' }` (`lib/nav/studio.ts:375-377`).
+- ~~`/marketplace/housing` is the last member-facing `/marketplace/*` URL: needs `/market/housing`
+  + redirect per ADR-596, then the nav/footer/menu rows re-pointed.~~ **Re-verified fixed
+  2026-08-20:** housing lives at `/housing` and `/marketplace/housing(/*)` 308-redirects there
+  (`next.config.ts:267-268`).
 - Add a CI drift guard asserting materialized `admin_header` rows still match
   `defaultMenu('admin_header')` (the read-side hazard MENU-CONTRACT should document).
+  **Re-verified still true 2026-08-20:** no such guard exists — the MENU-CONTRACT drift guards
+  cover the code catalogs, not the DB-materialized rows.
 
 **Docs and repo hygiene**
-- Seven ADR numbers (088 to 094) are each used twice, 090 three times; 75 cross-references are ambiguous.
-- ADR-219 is still marked "Accepted" after ADR-305 retired it.
-- `ARCHITECTURE.md` documents two cron endpoints deleted by ADR-305, and still warns about a removed `vercel.app` canonical fallback.
-- **`tsconfig` excludes `scripts/`**, so the CI guard test files vitest runs are never typechecked.
+- ~~Seven ADR numbers (088 to 094) are each used twice, 090 three times; 75 cross-references are ambiguous.~~ **Re-verified fixed 2026-08-20:** each of 088–094 now appears exactly once as a heading in `DECISIONS.md`. (A suspected recurrence — ADR-544/546 seeming doubled — dissolved on a closer read the same day: the second headings are `ADR-544b`/`ADR-546b`, the deliberate sub-decision suffix, not duplicate numbers.)
+- ~~ADR-219 is still marked "Accepted" after ADR-305 retired it.~~ **Re-verified fixed 2026-08-20:** `DECISIONS.md:6200` reads "**Status:** ~~Accepted~~ **Superseded by ADR-305**".
+- ~~`ARCHITECTURE.md` documents two cron endpoints deleted by ADR-305, and still warns about a removed `vercel.app` canonical fallback.~~ **Re-verified fixed 2026-08-20:** `ARCHITECTURE.md:199` now says "⚠️ The Rewards Economy v2 crons are gone" and no `vercel.app` warning remains in the doc.
+- ~~**`tsconfig` excludes `scripts/`**, so the CI guard test files vitest runs are never typechecked.~~ **Re-verified fixed 2026-08-20:** `tsconfig.json` includes `**/*.ts` + `**/*.mts` and excludes only `node_modules`/`supabase/functions`/`resonance`, so `scripts/` typechecks.
 
 **UI consistency**
-- Five "Spark" wizards hand-roll the WizardShell lockup, a header violation `check:headers` structurally cannot see.
-- Two hand-rolled `EmptyState` components shadow the kit's variant taxonomy on the two main post feeds.
-- Six route skeletons use the retired `px-4 py-8 max-w-2xl mx-auto` shell, double-padding inside the shell.
+- ~~Five "Spark" wizards hand-roll the WizardShell lockup, a header violation `check:headers` structurally cannot see.~~ **Re-verified superseded 2026-08-20:** the Studio contract (ADR-986, `docs/STUDIO.md`) replaced per-entity wizards — circle/journey/commerce/practice Sparks all render through the one `components/studio/spark/spark-shell.tsx`, enforced by `check:studio` + `lib/studio/registry.test.ts` in CI.
+- Two hand-rolled `EmptyState` components shadow the kit's variant taxonomy on the two main post feeds. **Re-verified 2026-08-20, one left:** `profile-posts.tsx` now imports the kit `EmptyState`; `components/feed/feed-list.tsx:495` still defines a local `function EmptyState`.
+- Six route skeletons use the retired `px-4 py-8 max-w-2xl mx-auto` shell, double-padding inside the shell. **Re-verified still true 2026-08-20, one fewer:** 5 `loading.tsx` files still carry it (`circles`, `channels`, `search`, `events`, `messages`).
 
 ### 🧑 Needs your call — ALL FOUR CLOSED (database best-practice pass, 2026-07-27, ADR-856)
 
@@ -661,12 +693,23 @@ the unit suite.
   chains → waves; `GameStatsDock` needs its own `<Suspense>`; `<img>`→`next/image` on LCP
   surfaces (practices library, space profile, spotlight, market); help search index re-parsed
   per request + shipped in every RSC payload.
-- **a11y**: missing `error.tsx`/`not-found.tsx` for some route groups; icon-only buttons
-  missing `aria-label`; dialog focus-trap soundness; client mutations without error feedback
-  (some admin row-actions). ✅ notifications toggle now reverts + shows an error on save failure.
-- **`@measured/puck` migration execution** — per `PUCK-MIGRATION-PLAN.md` (pin exact → in-house
+  **Re-verified 2026-08-20, all but one part landed:** marketing layout bans `cookies()`/`getUser()`
+  (`app/(marketing)/layout.tsx:12`, Phase D) and every `/discover` page is ISR (`revalidate = 3600`);
+  events/messages waves shipped (D2/D3 above); the sidebar/GameStats dock streams behind its own
+  `<Suspense>` (`app/(main)/layout.tsx:523-530`); the help index is `cache()`-memoized per request
+  (`lib/help/content.ts:28-35`). Still open: raw `<img>` — 113 sites remain.
+- **a11y**: ~~missing `error.tsx`/`not-found.tsx` for some route groups~~ (9 top-level route groups
+  carry both; the 2026-08-20 finder D pass read error boundaries as sound); ~~icon-only buttons
+  missing `aria-label`~~ (now gated: `check:a11y-names` in CI's blocking array, `ci.yml:262`);
+  ~~dialog focus-trap soundness~~ (`useDialogFocusTrap` shared + `test/a11y/*` suites); client
+  mutations without error feedback (some admin row-actions) — **still open as a class**, no per-row
+  audit exists. ✅ notifications toggle now reverts + shows an error on save failure.
+  **Re-verified 2026-08-20:** 3 of 4 sub-items closed as noted inline.
+- ~~**`@measured/puck` migration execution** — per `PUCK-MIGRATION-PLAN.md` (pin exact → in-house
   renderer → in-house editor → drop dep). Also: publishing a Puck page drops FAQ/Article
-  JSON-LD (emit schema from the block render path).
+  JSON-LD (emit schema from the block render path).~~ **Re-verified fixed 2026-08-20:** the dep is
+  long dropped (Phase E ✅ above), and the JSON-LD half shipped too — FAQ schema is emitted by the
+  FAQ blocks themselves and Article schema by `<BlockDocJsonLd>` (`lib/page-editor/block-seo.tsx:1-17`).
 - ✅ ~~**SECURITY DEFINER executable lockdown**~~ — DONE (applied, verified). Phase 1: 15 trigger
   functions revoked. Phase 2: the 2 genuinely-internal standalone helpers
   (`recompute_community_level`, `get_my_group_ids`) revoked. The other 68 flagged standalone
@@ -697,8 +740,11 @@ the unit suite.
     FK covering indexes added in the advisor sweep — expected with no production traffic; do NOT drop
     pre-launch, revisit once query patterns are real). `spatial_ref_sys` ERROR = PostGIS reference
     table (documented no-action); `extension_in_public` (vector/postgis, 3) = low-risk hardening, left.
-- **Help-doc naming audit**: sweep `content/help/**` for retired member terms
-  (e.g. `the-quest/movement.md`, `on-air.md`, `zaps-and-gems.md`).
+- ~~**Help-doc naming audit**: sweep `content/help/**` for retired member terms
+  (e.g. `the-quest/movement.md`, `on-air.md`, `zaps-and-gems.md`).~~ **Re-verified fixed
+  2026-08-20:** `check:canon` scans `content/**/*.md` with every rule (`scripts/check-canon.mjs:5`)
+  and runs blocking in CI; spot-check: `content/help/sharing/broadcasts.md` is titled "Dispatches"
+  with the retired noun surviving only as its internal `featureKeys`/filename.
 - ✅ ~~**Dependencies**: minor/patch bumps + 2 moderate transitive vulns~~ — DONE (Phase B). The
   tree was already current: only `next` 16.2.9→16.2.10 (+ `eslint-config-next` in lockstep) were
   behind; resend/stripe/supabase-js/lucide-react/tailwindcss/@sentry/@anthropic-ai/sdk/supabase CLI
@@ -713,12 +759,21 @@ the unit suite.
   `setReportStatus` (`lib/commerce/reports.ts`) now throw on error so the action surfaces it.
 - Page-framework nits: hardcoded hex + `text-[11px]` in a handful of admin/marketplace
   components; hand-rolled headers in Theme Studio / walkthrough editors.
+  **Re-verified 2026-08-20, narrowed:** `text-[10/11px]` is at zero and the surviving hex sits in
+  color-INPUT editors (data, not styling); still true only for the hand-rolled header —
+  `components/admin/theme-studio/theme-editor.tsx:158` still renders its own `<h1>`.
 - Bulk em dashes in **operator/admin** copy and `lib/demo/engine.ts` demo content (voice ban
-  is primarily member-facing; operator copy is lower priority).
-- Docs: `docs/PAGE-EDITOR-SPEC.md` still cites a retired `/studio/pages/[slug]/edit` route.
-- Dead single-symbol exports flagged but not removed (kit API judgement calls):
+  is primarily member-facing; operator copy is lower priority). **Re-verified still true
+  2026-08-20:** the class persists in operator copy (e.g. `lib/demo/engine.ts`, 5 hits) — a
+  deliberate deprioritization, unchanged.
+- ~~Docs: `docs/PAGE-EDITOR-SPEC.md` still cites a retired `/studio/pages/[slug]/edit` route.~~
+  **Re-verified fixed 2026-08-20:** the doc now opens with a banner naming the route retired and
+  how to read the historical references (`PAGE-EDITOR-SPEC.md:11-14`).
+- ~~Dead single-symbol exports flagged but not removed (kit API judgement calls):
   `MapPreview`, `DeltaBadge`, `StudioSectionLabel`, `canSeeMenuCategory` — deliberately kept as
-  intended-surface API. (The rest of the dead-code surface was swept — see Final verification scan.)
+  intended-surface API. (The rest of the dead-code surface was swept — see Final verification scan.)~~
+  **Re-verified resolved 2026-08-20:** all four symbols no longer exist anywhere in the tree
+  (repo-wide grep, zero hits) — removed by later sweeps.
 
 ## Final verification scan (2026-07-02)
 
@@ -754,8 +809,13 @@ bugs surfaced. Two things shipped from it; the rest is owner config + lower-prio
   verification creds). Note: `lib/site.ts` now falls back to the production apex
   `https://frequencylocal.com`, so canonical/OG/sitemap/JSON-LD are correct even without
   `NEXT_PUBLIC_SITE_URL` set (the old `SEO-AEO-PLAN.md` warning about the vercel.app fallback is stale).
-- ⏳ **Still-dormant, wire before billing goes live**: `confirmSupporterContribution`
+- ~~⏳ **Still-dormant, wire before billing goes live**: `confirmSupporterContribution`
   (`app/(main)/upgrade/actions.ts`) has no caller and no test — the PWYW supporter-contribution
-  confirm half. Intentional pre-launch (behind `billing_live`), flagged so it isn't forgotten.
+  confirm half. Intentional pre-launch (behind `billing_live`), flagged so it isn't forgotten.~~
+  **Re-verified fixed 2026-08-20:** wired — the `/upgrade` success redirect calls it
+  (`app/(main)/upgrade/page.tsx:60`), as the 2026-07-25 pass recorded.
 - ⏳ **Lower-priority polish** (unchanged): operator/admin em dashes, 26 raw `<img>` → `next/image` on
   the few LCP-ish surfaces, extend JSON-LD to circle/journey detail, axe/a11y CI gate, E2E coverage.
+  **Re-verified 2026-08-20, partial:** the axe/a11y gate now exists (baseline ratchet +
+  `check:a11y-names` blocking in CI) and E2E runs via the e2e workflows; em dashes and raw `<img>`
+  (113 sites tree-wide) remain.
