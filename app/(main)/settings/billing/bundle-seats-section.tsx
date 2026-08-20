@@ -3,7 +3,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PersonCard } from '@/components/cards/person-card'
 import { getMyProfileId } from '@/lib/auth'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { bundleSellable, getHouseholdBundle } from '@/lib/pricing/settings'
 import { formatCents } from '@/lib/pricing/display'
 import { loadBundleSeatBoard, listBundleSeatInvitesForMember } from '@/lib/billing/bundle-invites'
@@ -41,7 +41,9 @@ export async function BundleSeatsSection() {
   // Nothing to own and nothing to answer: offer the bundle itself (unless this member already sits
   // in someone else's — selling a second membership to a person who has one is not an offer).
   if (!board.ownsBundle && waiting.length === 0) {
-    const { data: seat } = await createAdminClient()
+    // The SESSION client, not the service role: this reads the caller's OWN profile row, which
+    // RLS already admits, so the bypass would buy nothing and widen the tenancy surface for it.
+    const { data: seat } = await (await createClient())
       .from('profiles')
       .select('household_bundle_id')
       .eq('id', me)

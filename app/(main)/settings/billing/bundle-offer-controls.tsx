@@ -13,6 +13,7 @@ import { useState, useTransition } from 'react'
 import { ArrowRight, Loader2 } from 'lucide-react'
 import { startBundleCheckout } from './actions'
 import { isError } from '@/lib/action-result'
+import { Button } from '@/components/ui/button'
 
 /** Start the bundle checkout, monthly by default, with a quiet yearly alternative when the operator
  *  sells one. Both go through the same action; the period is the only difference. */
@@ -32,23 +33,15 @@ export function BuyBundleButtons({ hasAnnual }: { hasAnnual: boolean }) {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          onClick={() => go('monthly')}
-          disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
-        >
+        <Button onClick={() => go('monthly')} disabled={pending}>
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
           Get the bundle
           {!pending && <ArrowRight className="h-4 w-4" />}
-        </button>
+        </Button>
         {hasAnnual && (
-          <button
-            onClick={() => go('annual')}
-            disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-control border border-border px-4 py-2.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
-          >
+          <Button variant="secondary" onClick={() => go('annual')} disabled={pending}>
             Pay for a year
-          </button>
+          </Button>
         )}
       </div>
       {error && <p className="text-body-sm text-danger">{error}</p>}
