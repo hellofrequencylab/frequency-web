@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 import type { Database } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
@@ -85,31 +84,6 @@ export async function createDeal(input: {
   if (error) return fail(error.message)
   revalidatePath('/admin/growth')
   return ok({ id: (data as { id: string }).id })
-}
-
-// Start a deal from a contact/member — links the profile, then opens the detail.
-export async function createDealForProfile(profileId: string, name: string): Promise<void> {
-  const me = await requireCrm()
-  const stageId = await firstStageId()
-  const { data, error } = await db()
-    .from('crm_deals')
-    .insert({
-      title: `${name || 'New'} opportunity`,
-      contact_name: name || null,
-      profile_id: profileId,
-      stage_id: stageId,
-      status: 'open',
-      owner_id: me,
-      created_by: me,
-    })
-    .select('id')
-    .maybeSingle()
-  // Surface a failed insert instead of silently redirecting as if the deal was created.
-  if (error) throw new Error(error.message)
-  revalidatePath('/admin/growth')
-  const id = (data as { id: string } | null)?.id
-  if (id) redirect(`/admin/crm/pipeline/${id}`)
-  redirect('/admin/growth?tab=crm')
 }
 
 export async function moveDeal(dealId: string, stageId: string): Promise<ActionResult> {

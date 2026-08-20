@@ -88,8 +88,8 @@ export async function savePageContent(route: string, fd: FormData): Promise<Acti
   }
   const cta_label = ((fd.get('cta_label') as string) ?? '').trim().slice(0, MAX_CTA_LABEL) || null
   // NOTE: hero_image is intentionally omitted. The hero is managed on its own by
-  // uploadPageHero/removePageHero (the InlineCover) and there is no hero_image field in
-  // this form — including it here would read null and WIPE a just-uploaded hero. Omitting
+  // setPageHeroUrl/removePageHero (the InlineCover) and there is no hero_image field in
+  // this form — including it here would read null and WIPE a just-set hero. Omitting
   // it from the upsert preserves the existing value on conflict (PostgREST only SETs the
   // columns present in the payload).
   const db = createAdminClient()
@@ -104,49 +104,9 @@ export async function savePageContent(route: string, fd: FormData): Promise<Acti
   return ok()
 }
 
-// Hero image: upload to the public `site-media` bucket and persist hero_image for
-// the route, or clear it. Both admin-gate (MIN_ROLE) and validate the route against
-// the editable registry. Mirrors uploadCircleCover in circles/admin-actions.ts but
-// keyed on the page route rather than a circle id.
-export async function uploadPageHero(
-  route: string,
-  fd: FormData,
-): Promise<{ url: string } | { error: string }> {
-  const me = await getCallerProfile()
-  if (!me || !atLeastRole(me.community_role, MIN_ROLE)) return { error: 'Not allowed.' }
-  if (!isEditableRoute(route)) return { error: 'That page isn’t editable.' }
-
-  const file = fd.get('file')
-  if (!(file instanceof File) || file.size === 0) return { error: 'No file selected.' }
-  if (file.size > 8 * 1024 * 1024) return { error: 'Image must be under 8MB.' }
-
-  const db = createAdminClient()
-  const slug = route.replace(/^\/+|\/+$/g, '').replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'home'
-  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')
-  const path = `page-hero/${slug}/${Date.now()}.${ext}`
-  const bytes = new Uint8Array(await file.arrayBuffer())
-
-  const { error: upErr } = await db.storage
-    .from('site-media')
-    .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: false })
-  if (upErr) return { error: upErr.message }
-
-  const { data: pub } = db.storage.from('site-media').getPublicUrl(path)
-  const { error: dbErr } = await db.from('page_content').upsert({
-    route,
-    hero_image: pub.publicUrl,
-    updated_by: me.id,
-    updated_at: new Date().toISOString(),
-  })
-  if (dbErr) return { error: dbErr.message }
-
-  revalidatePath(route)
-  return { url: pub.publicUrl }
-}
-
-/** Persist a Loom-picked hero URL for a route (the URL-only sibling of uploadPageHero: the file is
- *  already stored in the Loom, so this just validates + writes the column). Same admin gate + route
- *  guard; the URL must be a Supabase public object URL so a caller can't inject an arbitrary src. */
+/** Persist a Loom-picked hero URL for a route (the file is already stored in the Loom, so this just
+ *  validates + writes the column). Same admin gate + route guard as savePageContent; the URL must be
+ *  a Supabase public object URL so a caller can't inject an arbitrary src. */
 export async function setPageHeroUrl(route: string, url: string): Promise<{ error: string } | void> {
   const me = await getCallerProfile()
   if (!me || !atLeastRole(me.community_role, MIN_ROLE)) return { error: 'Not allowed.' }

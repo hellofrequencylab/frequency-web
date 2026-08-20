@@ -159,17 +159,3 @@ export async function setSequenceStatus(id: string, status: string): Promise<Act
   revalidatePath('/admin/library?lane=sequence')
   return ok()
 }
-
-/** Soft-remove a flow: hide it without destroying its config or version history. */
-export async function archiveSequence(id: string): Promise<ActionResult<void>> {
-  await requireAdmin('janitor')
-  if (!id) return fail('Missing flow id.')
-  const { error } = await dbh()
-    .from('library_assets')
-    .update({ status: 'archived', updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .eq('kind', 'sequence')
-  if (error) return fail(error.message)
-  revalidatePath('/admin/library?lane=sequence')
-  return ok()
-}

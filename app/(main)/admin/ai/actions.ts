@@ -14,7 +14,6 @@ import {
   armBreaker,
   saveAutonomyTuning,
 } from '@/lib/ai/vera/autonomy-config'
-import { getAutonomyControlsData, type AutonomyControlsData } from './load-autonomy'
 
 // The AI master switch — gates every AI surface (Vera, winback, help search, the
 // Profile Creator harvest). Janitor or `platform`-domain staff (PB.1h — same gate
@@ -75,12 +74,6 @@ export async function rearmVeraBreaker(): Promise<void> {
   const { profileId } = await requireAdmin('janitor', { staff: 'platform' })
   await armBreaker(profileId)
   revalidatePath('/admin/vera-ai')
-}
-
-/** Re-fetch the autonomy panel state after a change (the embedded controls refresh in place). */
-export async function refreshVeraAutonomy(): Promise<AutonomyControlsData> {
-  await requireAdmin('janitor', { staff: 'platform' })
-  return getAutonomyControlsData()
 }
 
 // (Re)build the help_chunks embedding index that "Ask Vera" retrieves from. Run

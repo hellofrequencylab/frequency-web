@@ -106,8 +106,8 @@ const nextConfig: NextConfig = {
   // If the typecheck ever stops gating CI, this MUST come back.
   typescript: { ignoreBuildErrors: true },
   // Server Action request bodies default to 1MB, which silently rejects image uploads
-  // before they reach the action — our hero/cover uploaders accept up to 8MB
-  // (uploadPageHero, uploadCircleCover). Raise the limit so the framework lets those
+  // before they reach the action — our cover uploaders accept up to 8MB
+  // (e.g. uploadCircleCover). Raise the limit so the framework lets those
   // through and the action's own size check is the real gate.
   experimental: {
     serverActions: { bodySizeLimit: '10mb' },

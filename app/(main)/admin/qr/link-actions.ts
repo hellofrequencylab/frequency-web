@@ -192,14 +192,6 @@ export interface PageQrInput {
   style: QrStyle
 }
 
-export interface PageQrCode {
-  id: string
-  slug: string
-  title: string
-  style: QrStyle
-  scan_count: number
-}
-
 /** Create a styled QR filed under a page's folder. Gated host+ OR staff 'qr'. */
 export async function createPageQr(
   input: PageQrInput,
@@ -240,32 +232,6 @@ export async function createPageQr(
     return fail('Could not create the code.')
   }
   return fail('Could not generate a unique link. Try again.')
-}
-
-/** This page's saved codes (its folder), newest first. Gated host+ OR staff 'qr'. */
-export async function listPageQrCodes(pagePath: string): Promise<ActionResult<PageQrCode[]>> {
-  await requireAdmin('host', { staff: 'qr' })
-  const path = pagePath.trim()
-  if (!path.startsWith('/')) return ok<PageQrCode[]>([])
-
-  const db = createAdminClient()
-  const { data, error } = await db
-    .from('qr_codes')
-    .select('id, slug, title, style, scan_count')
-    .eq('page_path', path)
-    .order('created_at', { ascending: false })
-  if (error) return fail('Could not load this page’s codes.')
-
-  const rows = (data ?? []) as Array<Record<string, unknown>>
-  return ok<PageQrCode[]>(
-    rows.map((r) => ({
-      id: r.id as string,
-      slug: r.slug as string,
-      title: (r.title as string) ?? '',
-      style: parseStyle(r.style),
-      scan_count: (r.scan_count as number) ?? 0,
-    })),
-  )
 }
 
 // What the Settings panel shows for this page's scan activity (PX.3): the Studio's
