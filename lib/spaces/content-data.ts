@@ -692,7 +692,7 @@ export async function getSpaceSectionPresence(spaceId: string, slug: string | nu
     faqs: c.faqs.length > 0,
     updates: c.updates.length > 0,
     practices: c.practices.practices.length + c.practices.journeys.length > 0,
-    community: c.community.length > 0,
+    circles: c.community.length > 0,
   }
 }
 

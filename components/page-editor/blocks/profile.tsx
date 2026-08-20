@@ -2035,14 +2035,16 @@ export const profileComponents: Record<string, ComponentConfig> = {
     },
   },
 
+  // The stored TYPE KEY stays `SpaceCommunity` — 18 live layouts name it and check:stored-blocks
+  // is the gate that notices a retired key (ADR-1091 C3.1). Label, anchor, and eyebrow only.
   SpaceCommunity: {
-    label: 'Circles (live)',
+    label: 'Circles',
     fields: {
       eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
       heading: { type: 'text', label: 'Heading (optional)' },
     },
     defaultProps: {
-      eyebrow: 'Community',
+      eyebrow: 'Join in',
       heading: 'Circles',
     },
     render: ({ eyebrow, heading, puck }) => {
@@ -2059,7 +2061,7 @@ export const profileComponents: Record<string, ComponentConfig> = {
         )
       }
       return (
-        <AnchorSection anchor="community">
+        <AnchorSection anchor="circles">
           <SpaceCommunityBlock
             eyebrow={(eyebrow as string) || undefined}
             heading={(heading as string) || undefined}

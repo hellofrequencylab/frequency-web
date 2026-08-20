@@ -34,7 +34,7 @@ export interface SectionPresence {
   faqs: boolean
   updates: boolean
   practices: boolean
-  community: boolean
+  circles: boolean
 }
 
 /** Every flag false: the fail-safe presence for callers that cannot (or need not) read live data. */
@@ -45,7 +45,7 @@ export const NO_PRESENCE: SectionPresence = {
   faqs: false,
   updates: false,
   practices: false,
-  community: false,
+  circles: false,
 }
 
 /** The DOM anchor + short menu label per anchor-able block type. Blocks not listed here (layout
@@ -56,7 +56,9 @@ export const SECTION_ANCHORS: Record<string, SectionNavItem> = {
   SpaceBooking: { anchor: 'book', label: 'Book' },
   SpaceEvents: { anchor: 'events', label: 'Events' },
   SpacePractices: { anchor: 'practices', label: 'Practices' },
-  SpaceCommunity: { anchor: 'community', label: 'Community' },
+  // The stored TYPE KEY stays `SpaceCommunity` (18 live layouts name it; check:stored-blocks is the
+  // gate) — only the anchor + label say Circles (ADR-1091 C3.1, ADR-1013 §3).
+  SpaceCommunity: { anchor: 'circles', label: 'Circles' },
   SpaceReviews: { anchor: 'reviews', label: 'Reviews' },
   SpaceUpdates: { anchor: 'updates', label: 'Updates' },
   SpaceTeam: { anchor: 'team', label: 'Team' },
@@ -122,7 +124,7 @@ export function sectionRendersContent(block: AnyBlock, presence: SectionPresence
     case 'SpacePractices':
       return presence.practices
     case 'SpaceCommunity':
-      return presence.community
+      return presence.circles
     default:
       return false
   }

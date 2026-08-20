@@ -218,7 +218,7 @@ describe('getSpaceSectionPresence', () => {
       { id: 'c1', slug: 'c', name: 'Circle', about: null, member_count: 2, status: 'active' },
     ])
     const p = await getSpaceSectionPresence('space-11', null)
-    expect(p.community).toBe(true)
+    expect(p.circles).toBe(true)
     expect(p.practices).toBe(false)
     expect(p.reviews).toBe(false)
     expect(p.faqs).toBe(false)
