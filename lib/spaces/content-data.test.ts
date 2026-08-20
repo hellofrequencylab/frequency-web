@@ -39,7 +39,6 @@ vi.mock('@/lib/journey-plans', () => ({ listJourneyPlansForSpace: (...a: unknown
 vi.mock('@/lib/circles/store', () => ({ listCirclesForSpace: (...a: unknown[]) => listCirclesForSpace(...a) }))
 
 import {
-  getSpaceUpdates,
   getSpaceReviews,
   getSpaceFaqs,
   getSpaceContentData,
@@ -55,31 +54,8 @@ beforeEach(() => {
   listCirclesForSpace.mockReset().mockResolvedValue([])
 })
 
-describe('getSpaceUpdates', () => {
-  it('maps published rows to the block shape', async () => {
-    currentAdmin = makeAdmin({
-      data: [
-        { id: 'u1', title: 'Hello', body: 'Body', image_url: 'https://x/y.jpg', published_at: '2026-01-01', post_id: 'p1' },
-        { id: 'u2', title: '', body: 'Just body', image_url: null, published_at: null, post_id: null },
-      ],
-    })
-    const out = await getSpaceUpdates('space-1')
-    expect(out).toHaveLength(2)
-    expect(out[0]).toEqual({ id: 'u1', title: 'Hello', body: 'Body', imageUrl: 'https://x/y.jpg', publishedAt: '2026-01-01', postId: 'p1' })
-    expect(out[1].imageUrl).toBeNull()
-    expect(out[1].postId).toBeNull()
-  })
-
-  it('fails safe to [] when the query throws', async () => {
-    currentAdmin = makeAdmin({ data: null }, { throws: true })
-    expect(await getSpaceUpdates('space-1')).toEqual([])
-  })
-
-  it('fails safe to [] when there are no rows', async () => {
-    currentAdmin = makeAdmin({ data: null })
-    expect(await getSpaceUpdates('space-1')).toEqual([])
-  })
-})
+// getSpaceUpdates was retired by OWNER RULING (LIVE-062 batch 6, 2026-08-20) with the SpaceUpdates
+// block; the retirement is pinned in lib/spaces/space-updates-retirement.test.ts.
 
 describe('getSpaceReviews', () => {
   it('derives the average (one decimal) and count from visible rows', async () => {
@@ -193,7 +169,6 @@ describe('getSpaceContentData', () => {
     currentAdmin = makeAdmin({ data: [] })
     const out = await getSpaceContentData('space-9')
     expect(out.spaceId).toBe('space-9')
-    expect(out.updates).toEqual([])
     expect(out.reviews).toEqual({
       average: null,
       count: 0,
@@ -221,7 +196,6 @@ describe('getSpaceSectionPresence', () => {
     expect(p.practices).toBe(false)
     expect(p.reviews).toBe(false)
     expect(p.faqs).toBe(false)
-    expect(p.updates).toBe(false)
     // No published availability + no slug: the booking anchor never shows.
     expect(p.booking).toBe(false)
   })

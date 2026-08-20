@@ -25,7 +25,6 @@ import { CirclesBlock } from './circles'
 import { TeamBlock } from './team'
 import { ReviewsBlock } from './reviews'
 import { FaqBlock } from './faq'
-import { UpdatesBlock } from './updates'
 import { ContactBlock } from './contact'
 import { BusinessBlock } from './business'
 import { JourneysBlock } from './journeys'
@@ -75,7 +74,8 @@ export const SPACE_PROFILE_BLOCKS: Record<ProfileBlockId, BlockComponent> = {
   team: TeamBlock,
   reviews: ReviewsBlock,
   faq: FaqBlock,
-  updates: UpdatesBlock,
+  // `updates` was retired by OWNER RULING (LIVE-062 batch 6, 2026-08-20) with the SpaceUpdates block;
+  // a saved layout that still names it drops fail-safe (toProfileBlockId → null → renders nothing).
   contact: ContactBlock,
   business: BusinessBlock,
 }

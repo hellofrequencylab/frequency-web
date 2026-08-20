@@ -13,7 +13,7 @@ import type { Data } from '@/lib/page-editor/types'
 // HONEST MENU: an anchor is included only when its section will actually render,
 // so a link never scrolls to an empty spot. Authored sections (About, Contact,
 // Offerings, Team, Quick links) are knowable from the doc's own props; live
-// sections (Events, Reviews, FAQ, Booking, Practices, Circles, Updates) come
+// sections (Events, Reviews, FAQ, Booking, Practices, Circles) come
 // from the caller-supplied presence flags (one request-cached read, shared with
 // the page body's render — lib/spaces/content-data.ts).
 //
@@ -32,7 +32,6 @@ export interface SectionPresence {
   events: boolean
   reviews: boolean
   faqs: boolean
-  updates: boolean
   practices: boolean
   circles: boolean
 }
@@ -43,7 +42,6 @@ export const NO_PRESENCE: SectionPresence = {
   events: false,
   reviews: false,
   faqs: false,
-  updates: false,
   practices: false,
   circles: false,
 }
@@ -60,7 +58,8 @@ export const SECTION_ANCHORS: Record<string, SectionNavItem> = {
   // gate) — only the anchor + label say Circles (ADR-1091 C3.1, ADR-1013 §3).
   SpaceCommunity: { anchor: 'circles', label: 'Circles' },
   SpaceReviews: { anchor: 'reviews', label: 'Reviews' },
-  SpaceUpdates: { anchor: 'updates', label: 'Updates' },
+  // SpaceUpdates was retired by OWNER RULING (LIVE-062 batch 6, 2026-08-20): a stored doc that still
+  // names it (0 in production) simply gets no anchor (the lookup below misses, fail-safe).
   SpaceTeam: { anchor: 'team', label: 'Team' },
   SpaceContact: { anchor: 'contact', label: 'Contact' },
 }
@@ -119,8 +118,6 @@ export function sectionRendersContent(block: AnyBlock, presence: SectionPresence
       return presence.reviews
     case 'SpaceFAQ':
       return presence.faqs
-    case 'SpaceUpdates':
-      return presence.updates
     case 'SpacePractices':
       return presence.practices
     case 'SpaceCommunity':

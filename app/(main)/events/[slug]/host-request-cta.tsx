@@ -15,7 +15,8 @@
 import { useState, useTransition } from 'react'
 import { Check, Crown, Loader2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
-import { fieldClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 import { requestEventHost, type HostAskSpace } from '@/app/(main)/events/host-transfer-actions'
 
 export function HostRequestCta({ eventId, spaces }: { eventId: string; spaces: HostAskSpace[] }) {
@@ -54,13 +55,9 @@ export function HostRequestCta({ eventId, spaces }: { eventId: string; spaces: H
             You can ask to host it. Hosting means registrations and ticket payments run through your
             Space, and the current host has to agree first.
           </p>
-          <button
-            type="button"
-            onClick={() => setConfirming(true)}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-          >
+          <Button type="button" onClick={() => setConfirming(true)} className="mt-3">
             Ask to host
-          </button>
+          </Button>
         </>
       ) : (
         <div className="mt-2">
@@ -73,38 +70,23 @@ export function HostRequestCta({ eventId, spaces }: { eventId: string; spaces: H
           {spaces.length > 1 && (
             <label className="mt-3 block max-w-xs">
               <span className="text-meta font-medium text-muted">Ask as</span>
-              <select
+              <Select
                 value={spaceId}
                 onChange={(e) => setSpaceId(e.target.value)}
                 disabled={pending}
-                className={`${fieldClasses} mt-1 block w-full text-body-sm`}
-              >
-                {spaces.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+                wrapperClassName="mt-1"
+                options={spaces.map((s) => ({ value: s.id, label: s.name }))}
+              />
             </label>
           )}
           <div className="mt-3 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={onAsk}
-              disabled={pending}
-              className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
-            >
+            <Button type="button" onClick={onAsk} disabled={pending}>
               {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
               {pending ? 'Sending' : 'Send the ask'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirming(false)}
-              disabled={pending}
-              className="rounded-control border border-border px-4 py-2.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
-            >
+            </Button>
+            <Button variant="secondary" type="button" onClick={() => setConfirming(false)} disabled={pending}>
               Cancel
-            </button>
+            </Button>
             {error && <span className="text-body-sm text-danger">{error}</span>}
           </div>
         </div>

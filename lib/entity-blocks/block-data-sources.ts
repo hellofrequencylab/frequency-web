@@ -43,7 +43,6 @@ import {
   getSpaceTeam,
   getSpaceReviews,
   getSpaceFaqs,
-  getSpaceUpdates,
   getSpacePractices,
   getSpaceCommunity,
 } from '@/lib/spaces/content-data'
@@ -81,7 +80,7 @@ export interface BlockDataSource {
   block: string
   /**
    * The SpaceFunctionKey whose on/off switch gates this block, or null for a block backed by data that
-   * has no toggleable function (events/reviews/faq/updates/practices/circles/offerings — always
+   * has no toggleable function (events/reviews/faq/practices/circles/offerings — always
    * available; their "exists" is purely "are there rows"). Drives `spaceEnabledFunctions` membership.
    */
   functionKey: SpaceFunctionKey | null
@@ -242,11 +241,6 @@ async function listFaqs(spaceId: string): Promise<BlockDataItem[]> {
   return faqs.map((f) => ({ id: f.id, label: f.question }))
 }
 
-async function listUpdates(spaceId: string): Promise<BlockDataItem[]> {
-  const updates = await getSpaceUpdates(spaceId)
-  return updates.map((u) => ({ id: u.id, label: u.title }))
-}
-
 async function listPractices(spaceId: string): Promise<BlockDataItem[]> {
   const data = await getSpacePractices(spaceId)
   return [...data.practices, ...data.journeys].map((p) => ({
@@ -343,8 +337,8 @@ const SOURCES: readonly BlockDataSource[] = [
   // FAQ → the operator FAQ rows. No function toggle; hides when none.
   source({ block: 'faq', functionKey: null, moduleId: 'space.basics', list: listFaqs, createLabel: 'Add a question' }),
 
-  // Updates → the published brand updates. No function toggle; hides when none.
-  source({ block: 'updates', functionKey: null, moduleId: 'space.layout', list: listUpdates, createLabel: 'Post an update' }),
+  // The 'updates' source (published brand updates) was retired by OWNER RULING (LIVE-062 batch 6,
+  // 2026-08-20) with the SpaceUpdates block and its writers; the space_updates table stays (C3.5).
 
   // The commerce services that are NOT their own entity block today but expose their items for a picker
   // (item 5) so a future block / a settings picker can reuse them. Each gates on its function switch AND

@@ -2,15 +2,17 @@ import { describe, it, expect } from 'vitest'
 import { spacesComponents } from './spaces'
 import { config } from '@/lib/page-editor/config'
 
-// Space CONTENT block field schemas (Puck content blocks, Phase 2). Pure, no IO. Locks: the four new
-// blocks (Cover + the three dynamic blocks) are well-formed ComponentConfigs (fields + defaultProps +
+// Space CONTENT block field schemas (Puck content blocks, Phase 2). Pure, no IO. Locks: the three
+// blocks (Cover + the two dynamic blocks) are well-formed ComponentConfigs (fields + defaultProps +
 // render), every default prop has a matching field, they are registered in the shared config, and
 // they are grouped into the left-bar categories. Importing spacesComponents ALSO proves the module is
 // client-safe (it must load without dragging in a server-only import, or this import throws).
+// SpaceUpdates was retired by OWNER RULING (LIVE-062 batch 6, 2026-08-20); its absence is pinned in
+// lib/spaces/space-updates-retirement.test.ts.
 
-const KEYS = ['Cover', 'SpaceUpdates', 'SpaceReviews', 'SpaceFAQ'] as const
+const KEYS = ['Cover', 'SpaceReviews', 'SpaceFAQ'] as const
 
-describe('the four new Space content blocks are well-formed ComponentConfigs', () => {
+describe('the three Space content blocks are well-formed ComponentConfigs', () => {
   for (const key of KEYS) {
     it(`${key} has fields, defaultProps, and a render`, () => {
       const block = spacesComponents[key]
@@ -42,7 +44,7 @@ describe('the new blocks are registered + categorised in the shared config', () 
   it('Cover is in the Media category; the dynamic Space blocks are in Space content', () => {
     const cats = config.categories ?? {}
     expect(cats.media?.components).toContain('Cover')
-    for (const key of ['SpaceUpdates', 'SpaceReviews', 'SpaceFAQ'] as const) {
+    for (const key of ['SpaceReviews', 'SpaceFAQ'] as const) {
       expect(cats.spaceContent?.components).toContain(key)
     }
   })

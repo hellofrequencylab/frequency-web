@@ -1,7 +1,7 @@
 // Server-side readers for the Space CONTENT blocks (Puck content blocks, Phase 2, ADR-476/472).
-// One place assembles everything the dynamic Space landing blocks need -- the brand Updates feed,
-// the member Reviews (average + latest), and the operator FAQ -- from the space_updates /
-// space_reviews / space_faqs tables (migration 20260918000200). The reader is injected into the
+// One place assembles everything the dynamic Space landing blocks need -- the member Reviews
+// (average + latest) and the operator FAQ -- from the space_reviews / space_faqs tables
+// (migration 20260918000200). The reader is injected into the
 // Puck blocks via `metadata.space` (the same metadata-injection pattern LiveStats + the Circles
 // index blocks use), so the PUBLISHED landing shows real rows while the EDITOR canvas (no metadata)
 // shows a labelled placeholder the operator can drag-rearrange.
@@ -144,16 +144,6 @@ export type SpaceCircleItem = {
   memberCount: number
 }
 
-export type SpaceUpdateItem = {
-  id: string
-  title: string
-  body: string
-  imageUrl: string | null
-  publishedAt: string | null
-  /** The interaction anchor post id, when the Update is wired to the reactions/comments system. */
-  postId: string | null
-}
-
 /** A Space-admin reply published under a member review (Reviews redesign). Null on a review with no
  *  reply. `author` is the operator who wrote it (name + avatar for the response card). */
 export type SpaceReviewResponse = {
@@ -211,7 +201,6 @@ export type SpaceContentData = {
    *  longer narrative (the `story` block) reads `profile.about` off the preferences blob instead. Empty
    *  string when unset, so the about block renders nothing (fail-safe). */
   aboutShort: string
-  updates: SpaceUpdateItem[]
   reviews: SpaceReviewsData
   faqs: SpaceFaqItem[]
   /** The shared cover + logo + name identity (Phase 4). Present on the Space landing + a brand/space
@@ -253,7 +242,6 @@ export type SpaceContentData = {
 
 // Bounded caps so a query can never scan an unbounded table. The blocks show the latest N with a
 // "view all"; these ceilings are generous relative to what a landing shows.
-const UPDATES_CAP = 24
 const REVIEWS_CAP = 24
 // A generous ceiling on the rating-only aggregate read (count/average/distribution over ALL visible
 // reviews, independent of the REVIEWS_CAP display page). Ratings are tiny ints; above this the summary
@@ -303,28 +291,10 @@ export async function getSpaceAbout(spaceId: string): Promise<string> {
   }
 }
 
-/** The latest PUBLISHED brand Updates for a Space, newest first. Fail-safe to []. */
-export async function getSpaceUpdates(spaceId: string): Promise<SpaceUpdateItem[]> {
-  try {
-    const { data } = await untyped()
-      .from('space_updates')
-      .select('id, title, body, image_url, published_at, post_id')
-      .eq('space_id', spaceId)
-      .eq('status', 'published')
-      .order('published_at', { ascending: false })
-      .limit(UPDATES_CAP)
-    return (data ?? []).map((r) => ({
-      id: str(r.id),
-      title: str(r.title),
-      body: str(r.body),
-      imageUrl: strOrNull(r.image_url),
-      publishedAt: strOrNull(r.published_at),
-      postId: strOrNull(r.post_id),
-    }))
-  } catch {
-    return []
-  }
-}
+// getSpaceUpdates (the brand Updates reader over space_updates) was retired by OWNER RULING
+// (LIVE-062 batch 6, 2026-08-20): the SpaceUpdates block, its widget, and the write actions all
+// went with it, so the read half had no consumer left. The space_updates TABLE stays, per C3.5's
+// recorded retention (20270317000000_narrow_space_update_rls_arms.sql); git history keeps the reader.
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function anyDb(): { from: (t: string) => any } {
@@ -488,10 +458,9 @@ export interface SpaceContentInput {
  *  (which injects the same rows into the blocks) both read through here, so the two never disagree
  *  AND the queries run once per request. React.cache: per-request, primitive-keyed. */
 const getSpaceLiveContent = cache(async (spaceId: string, slug: string | null) => {
-  const [aboutShort, updates, reviews, faqs, highlights, stats, events, booking, practices, community, team] =
+  const [aboutShort, reviews, faqs, highlights, stats, events, booking, practices, community, team] =
     await Promise.all([
       getSpaceAbout(spaceId),
-      getSpaceUpdates(spaceId),
       getSpaceReviews(spaceId),
       getSpaceFaqs(spaceId),
       getSpaceHighlights(spaceId),
@@ -502,7 +471,7 @@ const getSpaceLiveContent = cache(async (spaceId: string, slug: string | null) =
       getSpaceCommunity(spaceId),
       getSpaceTeam(spaceId),
     ])
-  return { aboutShort, updates, reviews, faqs, highlights, stats, events, booking, practices, community, team }
+  return { aboutShort, reviews, faqs, highlights, stats, events, booking, practices, community, team }
 })
 
 /** Which live sections currently have real rows, for the pre-populated anchor menu (the chrome shows
@@ -514,7 +483,6 @@ export async function getSpaceSectionPresence(spaceId: string, slug: string | nu
     events: c.events.length > 0,
     reviews: c.reviews.count > 0,
     faqs: c.faqs.length > 0,
-    updates: c.updates.length > 0,
     practices: c.practices.practices.length + c.practices.journeys.length > 0,
     circles: c.community.length > 0,
   }
@@ -528,7 +496,7 @@ export async function getSpaceContentData(
   input?: SpaceContentInput,
 ): Promise<SpaceContentData> {
   const slug = input?.slug?.trim() || null
-  const { aboutShort, updates, reviews, faqs, highlights, stats, events, booking, practices, community, team } =
+  const { aboutShort, reviews, faqs, highlights, stats, events, booking, practices, community, team } =
     await getSpaceLiveContent(spaceId, slug)
   const identity: SpaceIdentity | undefined = input
     ? {
@@ -543,7 +511,6 @@ export async function getSpaceContentData(
   return {
     spaceId,
     aboutShort,
-    updates,
     reviews,
     faqs,
     identity,

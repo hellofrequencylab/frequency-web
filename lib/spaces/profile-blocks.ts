@@ -25,7 +25,6 @@ export type ProfileBlockId =
   | 'team'
   | 'reviews'
   | 'faq'
-  | 'updates'
   | 'contact'
   | 'business'
 
@@ -55,7 +54,8 @@ export const PROFILE_BLOCKS: readonly ProfileBlockDef[] = [
   { id: 'circles', label: 'Circles', description: 'The community circles inside this space.', requiresFunction: null, types: ['*'], order: 70 },
   { id: 'team', label: 'Team', description: 'The people who run this space.', requiresFunction: 'members', types: ['*'], order: 80 },
   { id: 'reviews', label: 'Reviews', description: 'What members say.', requiresFunction: null, types: ['*'], order: 90 },
-  { id: 'updates', label: 'Updates', description: 'Recent posts from this space.', requiresFunction: null, types: ['*'], order: 110 },
+  // 'updates' (order 110) was retired by OWNER RULING (LIVE-062 batch 6, 2026-08-20) with the
+  // SpaceUpdates block; a saved layout naming it drops fail-safe in the merge (cleanBlockIds).
   { id: 'contact', label: 'Contact and hours', description: 'How and when to reach this space.', requiresFunction: null, types: ['*'], order: 120 },
   { id: 'business', label: 'Business presence', description: 'Find this space online.', requiresFunction: null, types: ['*'], order: 130 },
 ] as const
