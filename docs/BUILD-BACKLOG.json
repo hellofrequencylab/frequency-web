@@ -40,6 +40,7 @@
         {
           "name": "W0 · active now",
           "ids": [
+            "LIVE-072",
             "LIVE-062",
             "LIVE-066",
             "LIVE-053",
@@ -2912,6 +2913,23 @@
         "evidence": "Each item re-verified open in the HYG-009 sweep, 2026-08-20; none has a repo-visible consequence yet.",
         "checked": "2026-08-20"
       }
+    },
+    {
+      "id": "LIVE-072",
+      "title": "The Create Event cover uploader still writes to storage from the browser, and it is failing live",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "components/ui/image-upload.tsx",
+        "ref": "the direct-browser branch (no uploadFn)"
+      },
+      "detail": "REPORTED BY THE OWNER 2026-08-20 and confirmed in the logs the same hour: a member could not add an event photo (it 'kept freezing') and got an RLS failure editing details. Both are one defect. app/(main)/events/new/event-form.tsx:469 renders <ImageUpload folder='event-covers'> with NO uploadFn, so the cover goes straight from the browser to the event-media bucket, whose INSERT policy is granted to {authenticated} and requires split_part(name,'/',1) = auth.uid(). EVIDENCE, not inference: edge log 2026-08-20T20:51:25Z shows POST 400 /storage/v1/object/event-media/86a4ca9f-f2e7-4ad9-b1ca-7032487187fc/event-covers/1787259085047.png from Safari (macOS), and the postgres log at 20:51:27Z shows 'new row violates row-level security policy for table objects'; a second identical pair at 20:01:27Z. The path DOES carry the caller's uid, so the denial means the request reached Storage WITHOUT the session (anon) - the exact failure two other call sites already diagnosed and fixed by routing server-side (lib/spaces/... and app/(main)/events/[slug]/social-actions.ts:205 both carry the comment). The reporter's account is healthy: profile linked, confirmed, signed in 19:16Z, community_role host, and the RLS predicates all resolve true when simulated. Both failures came from Safari while every successful upload in the same window is Chrome. FIX: give the create-event cover the same server-side uploadFn the gallery beside it already uses (uploadEventGalleryImage), i.e. a gated action that writes with the admin client and returns the stored PATH - note ImageUpload's uploadFn branch currently calls onChange with res.url, so mode='path' needs the action to return a path (or the branch to respect mode) before this can be wired; that seam is part of the fix, not a detour. The same audit should sweep every other ImageUpload mount lacking uploadFn.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const F='app/(main)/events/new/event-form.tsx';if(!fs.existsSync(F))process.exit(79);const t=fs.readFileSync(F,'utf8').replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const i=t.indexOf('<ImageUpload');if(i<0)process.exit(0);const seg=t.slice(i,t.indexOf('/>',i)+2);process.exit(seg.includes('uploadFn')?0:1)\""
+      },
+      "notes": "Probe measures the consequence at the reported site: the create-event cover uploader must carry an uploadFn (the server-routed branch) rather than falling through to the direct-browser write. Exits 79 if the file moves, so a rename reads as cannot-look rather than fixed."
     }
   ]
 }
