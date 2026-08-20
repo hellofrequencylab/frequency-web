@@ -222,7 +222,8 @@ export async function createCircle(fd: FormData) {
   // Admin-managed circles need community host+ OR a staff role with community ops
   // (ADR-127). Bottom-up circles created from a topical channel (the "I want to
   // start a local crew practicing X" path) stay open to any signed-in member.
-  if (!topical_channel_id) {
+  const isBottomUp = !!topical_channel_id
+  if (!isBottomUp) {
     await authorizeAction(caller, 'host', 'community')
   }
 
@@ -232,7 +233,12 @@ export async function createCircle(fd: FormData) {
   const cap     = parseInt(fd.get('member_cap') as string) || 12
   const hub_id  = (fd.get('hub_id') as string) || null
   const status  = ((fd.get('status') as string) || 'forming') as Database['public']['Enums']['group_status']
-  const host_id = (fd.get('host_id') as string) || caller.id
+  // A server action is a POST endpoint reachable outside the UI, so a client-supplied
+  // host_id on the UNGATED bottom-up path would let anyone forge a circle, membership
+  // and "Started a new circle" announcement authored as an arbitrary victim. On that
+  // path the host is always the caller; only the gated admin path (host+/community ops)
+  // may assign a different host. (topical_channel_id is FK-checked by the DB.)
+  const host_id = isBottomUp ? caller.id : ((fd.get('host_id') as string) || caller.id)
   let slug      = slugify(name)
 
   const admin = createAdminClient()
