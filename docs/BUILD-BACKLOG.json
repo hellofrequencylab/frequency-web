@@ -2608,14 +2608,14 @@
     {
       "id": "LIVE-064",
       "title": "/dev/og-root-card ships ungated to production",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "2026-08-20 pass · finder A (low)"
       },
-      "detail": "app/dev/og-root-card/route.tsx has no production guard, unlike its two /dev siblings (business-seeder-review, editor-controls) which notFound() in prod. CORRECTED SCOPE (absorbing #2213's counter-read): gating does NOT shrink check:og-trace — next/og is statically imported, so the rasteriser ships regardless, and the route renders benign build-time constants. The remaining case is surface hygiene and consistency: /dev routes should not serve in production, the sibling gate is two lines, and an ungated dev endpoint is one more thing every future audit re-litigates (this one has now been litigated twice). XS; land it inside a LIVE-062 batch rather than as its own PR.",
+      "detail": "app/dev/og-root-card/route.tsx has no production guard, unlike its two /dev siblings (business-seeder-review, editor-controls) which notFound() in prod. CORRECTED SCOPE (absorbing #2213's counter-read): gating does NOT shrink check:og-trace — next/og is statically imported, so the rasteriser ships regardless, and the route renders benign build-time constants. The remaining case is surface hygiene and consistency: /dev routes should not serve in production, the sibling gate is two lines, and an ungated dev endpoint is one more thing every future audit re-litigates (this one has now been litigated twice). XS; land it inside a LIVE-062 batch rather than as its own PR. CLOSED 2026-08-20: the GET now notFound()s in production under the same NODE_ENV check the siblings use (notFound() is valid in Route Handlers per this Next version, 04-functions/not-found.md); the authz ledger entry was re-read and re-recorded with the narrowed surface.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const F='app/dev/og-root-card/route.tsx';if(!fs.existsSync(F))process.exit(0);const t=fs.readFileSync(F,'utf8');process.exit(/notFound/.test(t)&&/NODE_ENV|VERCEL_ENV/.test(t)?0:1)\""
@@ -2661,18 +2661,24 @@
     {
       "id": "HYG-008",
       "title": "app-shell justifies admin-nesting by a runtime rail use that does not exist",
-      "status": "open",
+      "status": "done",
       "lane": "hygiene",
       "size": "XS",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "2026-08-20 pass · finder A (med)"
       },
-      "detail": "lib/nav/admin-rail.ts and lib/nav/admin-nesting.ts (the ADR-850 rail reconciliation) are imported only by tests in production code — zero `from '@/lib/nav/admin-rail'` imports anywhere (re-verified 2026-08-20) — yet components/layout/app-shell.tsx:935-937 claims admin-nesting survives because admin-rail 'still uses its href helpers for the operator App rail'. False justifications are how orphans outlive their audits. Fix the comments in all three files (or wire the rail to the join, if that is ever wanted). Low-risk. #2213 left this for a pass that could verify the wiring rather than trust one finder; that verification is now done — the import-level grep (from-clause match on @/lib/nav/admin-rail) found zero production importers, which is the evidence this row rests on.",
+      "detail": "lib/nav/admin-rail.ts and lib/nav/admin-nesting.ts (the ADR-850 rail reconciliation) are imported only by tests in production code — zero `from '@/lib/nav/admin-rail'` imports anywhere (re-verified 2026-08-20) — yet components/layout/app-shell.tsx:935-937 claims admin-nesting survives because admin-rail 'still uses its href helpers for the operator App rail'. False justifications are how orphans outlive their audits. Fix the comments in all three files (or wire the rail to the join, if that is ever wanted). Low-risk. #2213 left this for a pass that could verify the wiring rather than trust one finder; that verification is now done — the import-level grep (from-clause match on @/lib/nav/admin-rail) found zero production importers, which is the evidence this row rests on. CLOSED 2026-08-20: the false sentence is gone from app-shell.tsx, both nav module headers now carry explicit TEST-ONLY paragraphs, and the identical false claim in space-rail-coverage.test.ts:114 was corrected in the same pass.",
       "verify": {
-        "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const fs=require('fs'),pa=require('path');const skip=new Set(['node_modules','.next']);function*w(d){for(const n of fs.readdirSync(d)){if(skip.has(n))continue;const f=pa.join(d,n);const s=fs.statSync(f);if(s.isDirectory())yield*w(f);else if(/\\.(ts|tsx)$/.test(f))yield f}}const files=[];for(const r of ['app','lib','components'])for(const f of w(r))files.push([f,fs.readFileSync(f,'utf8')]);const isTest=(f)=>/\\.test\\.tsx?$/.test(f);const wired=files.some(([f,t])=>!isTest(f)&&t.includes('@/lib/nav/admin-rail'));if(wired)process.exit(0);const shell=fs.existsSync('components/layout/app-shell.tsx')?fs.readFileSync('components/layout/app-shell.tsx','utf8'):'';process.exit(shell.includes('admin-rail')?1:0)\""
-      }
+        "kind": "grep-absent",
+        "pattern": "still uses its href helpers",
+        "paths": [
+          "components/layout/app-shell.tsx",
+          "lib/nav/admin-rail.ts",
+          "lib/nav/admin-nesting.ts"
+        ]
+      },
+      "notes": "Probe reshaped at close (2026-08-20): the original demanded app-shell not MENTION admin-rail at all, but the truthful replacement comment legitimately names the modules and their consuming tests - a mention is not the defect. The consequence is the named false claim (the href-helpers sentence) staying gone; the wired-importer arm became moot with the comment corrected, and any future runtime adoption closes nothing here since the row was about the lie, not the wiring."
     },
     {
       "id": "HYG-009",

@@ -132,9 +132,9 @@
     },
     "app/dev/og-root-card/route.tsx": {
       "verdict": "public",
-      "reason": "Dev-only generator for the committed root share card (ADR-1002). Renders a pure function of build-time constants (SITE_NAME, SITE_TAGLINE, hero.jpg, logo) — no DB, no session, no caller input. Output is identical bytes on every request.",
-      "checked": "2026-08-17",
-      "digest": "0678782509573d1f"
+      "reason": "Dev-only generator for the committed root share card (ADR-1002). Renders a pure function of build-time constants (SITE_NAME, SITE_TAGLINE, hero.jpg, logo) - no DB, no session, no caller input; identical bytes on every request. Since LIVE-064 it also notFound()s in production, matching its two /dev siblings, so the public surface exists only outside prod.",
+      "checked": "2026-08-20",
+      "digest": "29364c2a39b768b4"
     },
     "app/events/[slug]/event.ics/route.ts": {
       "verdict": "model-gated",
