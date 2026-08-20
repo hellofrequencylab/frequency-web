@@ -52,7 +52,28 @@ stale doc line the only SEO/canon gap.
 | med | `lib/nav/admin-rail.ts` + `admin-nesting.ts` (ADR-850 rail reconciliation) are drift-guard-test-only in prod; `app-shell.tsx:936`'s comment justifying `admin-nesting`'s existence by a runtime rail use is false. | Doc fix in both files + app-shell, or wire the rail to the join. Low-risk. |
 | low | `setWebsitePublished` / `lib/spaces/website.ts` — the external micro-site's only publish switch has no caller (UI shows "Coming soon"); annotated "item 5" deferral with no probed backlog row. Same shape: `lib/elements/qr-studio.ts`, `lib/email-studio/voice-lint.ts` (test-only enforcement). | Add probed backlog rows so each deferral is tracked, or wire the one `onClick`. |
 | low | `app/dev/og-root-card/route.tsx` ships **ungated** to production, unlike its two `/dev` siblings which `notFound()` in prod — keeps a `sharp`/`next-og` rasterizer deployed (counted by `check:og-trace`). | Add the same production gate. |
-| low | Internal links in `loneliness` + `how-to-be-more-social` point at 308 redirect stubs (`/what-is-a-third-space`, `/social-life-without-drinking`) instead of their canonical pillars. | Retarget the links; one-hop 308s so minor. |
+| low | ~~Internal links in `loneliness` + `how-to-be-more-social` point at 308 redirect stubs (`/what-is-a-third-space`, `/social-life-without-drinking`) instead of their canonical pillars.~~ **False find, corrected 2026-08-20 same day:** every occurrence is a comment documenting the pillar absorption, not a rendered link (the substring match was shape, not truth). LIVE-065 closed with a link-shape probe that reopens it honestly if an enrollment ever links a stub for real. | — |
+
+> **2026-08-20, full-tree re-verify + backlog enrollment (merged record — two sessions filed this
+> pass's tail in parallel; #2214 reconciles them).** Every find above was re-verified against
+> `db4d0b1` the same day, and each now has exactly ONE **probed row in the one list**: the
+> SpaceUpdates ruling is OWN-035, EditorShell OWN-036, the claim-token ruling OWN-037 (all three
+> carry the follow-up section's evidence below with probes upgraded from manual to mechanical), the
+> db-tests required check OWN-038, the ADR-458 ladder retirement OWN-039, the dead actions LIVE-062
+> (re-derived at **38** — 36 zero-reference plus the follow-up's two test-only names — and
+> **severity reframed by that section's counter-verification: every one self-guards, so the cost is
+> dead code and rotting half-features, not open doors**; its manage/layout SpacePageBuilder read is
+> flagged inside the row for adjudication before anything is touched), the `/dev/og-root-card` gate
+> LIVE-064 (scope corrected: surface hygiene only — gating cannot shrink `check:og-trace`), the
+> QR-Studio/voice-lint deferrals LIVE-066, and the admin-rail comment HYG-008 (the wiring
+> verification the follow-up deferred is done: zero production import-clauses of
+> `@/lib/nav/admin-rail`). The stub-links find is struck above; both passes found it false
+> independently and LIVE-065 closed with a link-shape probe. The development order lives in
+> `BUILD-BACKLOG.json` → `meta.slate` (owner directive 2026-08-20: production correctness → dead-code
+> triage → orphan hygiene → content pipeline; **White Label E10 and the App Platform held to the
+> end**). The pre-census residue tables below (2026-07-27 / 2026-08-04 / 2026-08-12 passes) were
+> spot-checked the same day — three of three checked items were already fixed (placement scope pair,
+> reactivation seat wall, FAQ editor), so their full re-verify is HYG-009 rather than blind rows.
 
 ### Follow-up triage + record corrections (2026-08-20, later same day)
 
