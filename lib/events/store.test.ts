@@ -5,6 +5,10 @@ import { readFileSync, readdirSync } from 'node:fs'
 //   1. STAMP — a new event defaults its space_id to the ROOT space (the canary).
 //   2. ISOLATION — listEventsForSpace filters by space_id, so an event in space A can never
 //      resolve for space B; `upcomingOnly` adds a starts_at lower bound.
+//   3. PUBLICATION (2026-08-20) — that read goes through the SERVICE-ROLE client, so its own query
+//      is the only gate there is, and it had none: a draft or a `private` event on a Space
+//      rendered on that Space's PUBLIC profile. The gate is now the DEFAULT and `includeUnpublished`
+//      is the opt-out, so these tests assert the predicates land on the query itself.
 
 const ROOT_ID = 'f0000000-0000-4000-a000-00000000root'
 const SPACE_A = 'aaaaaaaa-0000-4000-a000-00000000000a'
@@ -12,6 +16,8 @@ const SPACE_B = 'bbbbbbbb-0000-4000-a000-00000000000b'
 
 const store: { rows: Record<string, Array<Record<string, unknown>>> } = { rows: {} }
 const eqCalls: Array<[string, unknown]> = []
+const inCalls: Array<[string, unknown]> = []
+const isCalls: Array<[string, unknown]> = []
 let gteCalled = false
 
 function builder() {
@@ -23,6 +29,14 @@ function builder() {
     eq(col: string, val: unknown) {
       eqCalls.push([col, val])
       if (col === 'space_id') filters.space_id = val as string
+      return api
+    },
+    in(col: string, val: unknown) {
+      inCalls.push([col, val])
+      return api
+    },
+    is(col: string, val: unknown) {
+      isCalls.push([col, val])
       return api
     },
     gte() {
@@ -62,6 +76,8 @@ import {
 beforeEach(() => {
   store.rows = {}
   eqCalls.length = 0
+  inCalls.length = 0
+  isCalls.length = 0
   gteCalled = false
 })
 
@@ -94,6 +110,25 @@ describe('listEventsForSpace (by-space read)', () => {
     store.rows[SPACE_A] = [{ id: 'a1', space_id: SPACE_A, title: 'A only' }]
     await listEventsForSpace(SPACE_A, { upcomingOnly: true })
     expect(gteCalled).toBe(true)
+  })
+
+  // ── PUBLICATION: the gate is what you get by asking for nothing ────────────────────────────────
+  it('🔴 the default read gates on publication, so a draft cannot reach a public Space page', async () => {
+    store.rows[SPACE_A] = [{ id: 'a1', space_id: SPACE_A, title: 'A only' }]
+    await listEventsForSpace(SPACE_A)
+    expect(eqCalls).toContainEqual(['status', 'published'])
+    expect(inCalls).toContainEqual(['visibility', ['public', 'unlisted']])
+    expect(isCalls).toContainEqual(['removed_at', null])
+  })
+
+  it('includeUnpublished is the OPT-OUT, and only it lifts the gate (the operator console)', async () => {
+    store.rows[SPACE_A] = [{ id: 'a1', space_id: SPACE_A, title: 'A only' }]
+    await listEventsForSpace(SPACE_A, { includeUnpublished: true })
+    expect(eqCalls).not.toContainEqual(['status', 'published'])
+    expect(inCalls).toEqual([])
+    expect(isCalls).toEqual([])
+    // Still scoped to the one space — lifting the publication gate must never lift ISOLATION.
+    expect(eqCalls).toContainEqual(['space_id', SPACE_A])
   })
 })
 

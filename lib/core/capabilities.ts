@@ -109,6 +109,10 @@ export type Scope =
       /** True if the viewer manages the event's parent scope (e.g. its circle) —
        *  computed by the caller (avoids over-granting). */
       viewerManagesScope?: boolean
+      /** `events.posted_by_profile_id`, but ONLY while the row is still an unpublished
+       *  draft — the caller nulls it the moment status is 'published'. See the `event`
+       *  case below for why the publish boundary is the whole point. */
+      draftPosterId?: string | null
     }
   | {
       kind: 'practice'
@@ -345,8 +349,32 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
     case 'event': {
       // The event's host, platform staff, or whoever manages its parent scope
       // (e.g. the circle the event belongs to — caller-computed) may edit it.
+      //
+      // PLUS the poster of a row that is STILL A DRAFT. A draft has no host yet: every
+      // draft-producing path (the Vera composer and the poster scanner both route through
+      // createEventDraft) writes `host_id: null` on purpose, because ownership is the
+      // question the publish step asks — 'mine' sets host_id, 'posted' mints a claim token
+      // for the real organizer instead. So between "I made this" and "I published it" the
+      // creator matched no arm of the rule above and the draft guard on the event page
+      // 404'd her out of her own row (app/(main)/events/[slug]/page.tsx). Reported from
+      // production 2026-08-20: a member composed an event, left before answering the
+      // ownership question, and could not reach it again from anywhere but /drafts.
+      //
+      // 🔴 THE PUBLISH BOUNDARY IS LOAD-BEARING, and the caller enforces it by passing null
+      // once status is 'published'. Never widen this to a published row: on the 'posted'
+      // branch the event is deliberately NOT the poster's — it is waiting to be claimed by
+      // the organizer it describes, and a poster who kept edit rights after publish could
+      // rewrite an event somebody else now owns. This grant only restores what
+      // lib/events/event-drafts.ts already gives the same person (getMyDraft and
+      // listMyUnfinishedEventDrafts both scope on posted_by_profile_id + status='draft');
+      // it does not invent authority, it stops the capability layer from disagreeing with
+      // the draft layer.
+      const postedThisDraft = !!profileId && scope.draftPosterId === profileId
       const leadsEvent =
-        (!!profileId && scope.hostId === profileId) || isStaff || scope.viewerManagesScope === true
+        (!!profileId && scope.hostId === profileId) ||
+        postedThisDraft ||
+        isStaff ||
+        scope.viewerManagesScope === true
       if (leadsEvent) caps.add('event.editSettings')
       break
     }

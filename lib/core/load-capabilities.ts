@@ -268,9 +268,15 @@ export async function getEventCapabilities(eventId: string): Promise<Set<Capabil
   // space_id is the "lives under this Space" placement column (a space event is
   // scope_type='public' + space_id); it is newer than the generated types, so the
   // row is read untyped and the column pulled off the widened shape.
+  //
+  // `posted_by_profile_id` + `status` ride along for ONE reason: a draft has no host_id
+  // (createEventDraft writes null — ownership is the question publish asks), so without
+  // them the person who composed the draft matches no arm of the event rule and the draft
+  // guard on the event page 404s her out of her own row. See the `event` case in
+  // lib/core/capabilities.ts for why this must never survive publish.
   const { data: evRow } = await admin
     .from('events')
-    .select('host_id, scope_type, scope_id, space_id')
+    .select('host_id, scope_type, scope_id, space_id, posted_by_profile_id, status')
     .eq('id', eventId)
     .maybeSingle()
   const ev = evRow as {
@@ -278,6 +284,8 @@ export async function getEventCapabilities(eventId: string): Promise<Set<Capabil
     scope_type: string | null
     scope_id: string | null
     space_id: string | null
+    posted_by_profile_id: string | null
+    status: string | null
   } | null
 
   // "If you run the scope, you run its events." A circle event delegates to its circle;
@@ -306,6 +314,12 @@ export async function getEventCapabilities(eventId: string): Promise<Set<Capabil
     eventId,
     hostId: ev?.host_id ?? null,
     viewerManagesScope,
+    // THE PUBLISH BOUNDARY, enforced here rather than in the resolver so there is exactly
+    // one place to read it. A missing status is treated as 'published' — the same
+    // fail-safe direction the event page's own draft guard uses — so an unreadable row
+    // grants nothing rather than granting the poster edit rights on a live event.
+    draftPosterId:
+      (ev?.status ?? 'published') === 'published' ? null : (ev?.posted_by_profile_id ?? null),
   })
 }
 

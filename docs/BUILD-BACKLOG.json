@@ -48,7 +48,9 @@
             "HYG-009",
             "LIVE-069",
             "LIVE-071",
-            "LIVE-073"
+            "LIVE-073",
+            "LIVE-078",
+            "LIVE-080"
           ]
         },
         {
@@ -109,7 +111,8 @@
             "PROG-DAWN3",
             "LIVE-068",
             "LIVE-070",
-            "HYG-010"
+            "HYG-010",
+            "LIVE-079"
           ]
         },
         {
@@ -2948,6 +2951,91 @@
         "cmd": "node -e \"const fs=require('fs');const p='app/(main)/events/index-data.ts';if(!fs.existsSync(p))process.exit(79);const t=fs.readFileSync(p,'utf8');const hard=/60\\\\s*\\\\*\\\\s*24\\\\s*\\\\*\\\\s*60\\\\s*\\\\*\\\\s*60\\\\s*\\\\*\\\\s*1000/.test(t);const wired=t.includes('eventsListingHorizonDays')&&t.includes('listUntil');process.exit(!hard&&wired?0:1)\""
       },
       "notes": "The probe measures the consequence in the loader, not the words in the title: the hardcoded 60-day arithmetic must be absent AND the setting must be what computes the bound. Re-introducing either a literal ceiling or a sentinel date fails it."
+    },
+    {
+      "id": "LIVE-076",
+      "title": "The creator of an event draft can open it",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/core/load-capabilities.ts",
+        "ref": "getEventCapabilities’ select list"
+      },
+      "detail": "Owner report 2026-08-20: a member composed an event with the Vera composer and it was \"nowhere to be found\". The composer (app/(main)/events/event-spark.tsx:386) routes through saveDraft -> createEventDraft, which writes status='draft' and host_id=null on purpose (ownership is the question the publish step asks: 'mine' sets host_id, 'posted' mints a claim token). getEventCapabilities selected only host_id/scope_type/scope_id/space_id, so posted_by_profile_id granted nothing; with host_id null the composer matched no arm of the event rule, canManage was false, and the draft guard at app/(main)/events/[slug]/page.tsx:443 called notFound() ON THE CREATOR'S OWN ROW. /drafts was the only door, and it wears no badge by explicit design (lib/nav/my-frequency.ts:32-38). FIXED: the poster of an UNPUBLISHED draft leads it. The publish boundary is enforced by the caller, which passes draftPosterId null the moment status is 'published' — never widen it past publish, because a published 'posted' event is deliberately NOT the poster's, it is waiting to be claimed by the organizer it describes. This grants nothing new: lib/events/event-drafts.ts already scopes getMyDraft and listMyUnfinishedEventDrafts on posted_by_profile_id + status='draft'. It stops the capability layer disagreeing with the draft layer.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const l='lib/core/load-capabilities.ts',c='lib/core/capabilities.ts';if(!fs.existsSync(l)||!fs.existsSync(c))process.exit(79);const L=fs.readFileSync(l,'utf8'),C=fs.readFileSync(c,'utf8');const reads=L.includes('posted_by_profile_id')&&L.includes('draftPosterId');const bounded=/=== *'published' *\\\\? *null/.test(L);const arm=C.includes('draftPosterId')&&C.includes('postedThisDraft');process.exit(reads&&bounded&&arm?0:1)\""
+      },
+      "notes": "The probe measures all three halves of the consequence, not the title: the column is selected, the caller nulls it past publish, and the resolver has the arm. Dropping the publish boundary fails it — which is the half that would hand a poster edit rights on a claimed event."
+    },
+    {
+      "id": "LIVE-077",
+      "title": "Public Space surfaces stop rendering drafts and private events",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/events/store.ts",
+        "ref": "listEventsForSpace"
+      },
+      "detail": "Found in the events-visibility sweep, 2026-08-20. listEventsForSpace reads through the SERVICE-ROLE client, so RLS is bypassed and its own query is the only gate there is — and it had none: space_id, plus an optional start date. SpaceEvent.status has carried the comment \"public readers filter on it\" since the field was added and NOT ONE public reader did, so an unpublished draft or a `private` event on a Space rendered on that Space's PUBLIC profile: components/widgets/entity/entity-offerings.tsx:23 (Upcoming sessions), entity-cta.tsx:138, lib/spaces/content-data.ts:570 (the SpaceEvents block) and lib/spaces/profile-stats.ts:53 (the public hero stat, whose very next line applies publishedOnly to practices \"so drafts must not be counted\" — events were missed). FIXED by making the SAFE read the default: status='published' AND visibility in (public,unlisted) AND removed_at is null unless the caller passes includeUnpublished. Exactly one caller opts out, the operator's own Space console calendar, which badges drafts on purpose. A contract written in a comment that nothing enforces is not a contract, and nine callers each remembering to filter is the same bet nine times.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const p='lib/events/store.ts';if(!fs.existsSync(p))process.exit(79);const t=fs.readFileSync(p,'utf8').replace(/\\\\/\\\\*[^]*?\\\\*\\\\//g,'');const gated=t.includes('includeUnpublished')&&t.includes(\\\"eq('status', 'published')\\\")&&t.includes(\\\"is('removed_at', null)\\\");const readers=['components/widgets/entity/entity-offerings.tsx','components/widgets/entity/entity-cta.tsx','lib/spaces/content-data.ts','lib/spaces/profile-stats.ts'];let leaked=0;for(const f of readers){if(!fs.existsSync(f)){process.exit(79)}const s=fs.readFileSync(f,'utf8');if(!s.includes('listEventsForSpace('))process.exit(79);if(s.includes('includeUnpublished'))leaked++}process.exit(gated&&leaked===0?0:1)\""
+      },
+      "notes": "Probes the consequence from both ends: the gate exists in the query AND no public reader opts out of it. The positive control (each reader still calls listEventsForSpace) means a rename cannot turn this into an assertion about nothing."
+    },
+    {
+      "id": "LIVE-078",
+      "title": "The profile Events tile reads zero for every host on the platform",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/people/associations.ts",
+        "ref": "the .is(space_id, null) predicate"
+      },
+      "detail": "Found and MEASURED in the sweep, 2026-08-20. lib/people/associations.ts:199 filters the profile's Events tile with .is('space_id', null), on the premise that a null space means \"a platform event, not a Space's\". That premise expired when 20260712030000_content_space_id_default_root.sql added a BEFORE INSERT trigger stamping every event's space_id to the root Space. Live count the same day: of 58 live events, 2 have space_id null and 32 are root-stamped — so the tile's own predicate excludes 56 of 58 rows before any other filter runs, and every host's public profile reads \"Events 0\". The module's header comment (:41-49) still states the dead assumption. FIX: drop the null predicate and exclude the ROOT space instead (lib/events/belonging.ts hostingSpaceId is the one function that already knows how), which is the same correction LIVE-075 makes everywhere else. The tile also filters host_id only, so it misses posted events — 38 of 58 live rows have host_id null; decide whether the tile counts what a person HOSTS or what they PUT UP, and say so in the code.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const p='lib/people/associations.ts';if(!fs.existsSync(p))process.exit(79);const t=fs.readFileSync(p,'utf8').replace(/\\\\/\\\\*[^]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/[.]is\\\\( *'space_id', *null *\\\\)/.test(t)?1:0)\""
+      },
+      "notes": "Comments stripped first: the file DESCRIBES the dead premise in prose, so an un-stripped match would keep failing after the code was fixed."
+    },
+    {
+      "id": "LIVE-079",
+      "title": "Nine event reads use a raw-UTC now, so tonight’s gathering vanishes at 5pm Pacific",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/time/zone.ts",
+        "ref": "HOME_TZ / dayInZone, the floor the correct surfaces use"
+      },
+      "detail": "Found in the sweep, 2026-08-20. starts_at stores wall-clock as UTC PARTS, so a lower bound of new Date().toISOString() is wrong twice: an event disappears the minute it starts rather than at the end of its day, and once UTC rolls past midnight (~5pm Pacific) TONIGHT's rows read as yesterday. The correct floor — seriesUpcomingFloor(dayInZone(now, HOME_TZ)) — is already used by /events, /discover, search, the circle blocks, the rail and the tickets projection. NINE surfaces still use the raw one: app/(main)/circles/[slug]/manage/events-section.tsx:75 (an operator's own management list), components/widgets/entity/entity-offerings.tsx:23, components/spaces/dashboard/space-dashboard.tsx:246, app/(main)/nearby/page.tsx:178, lib/nearby/map-pins.ts:205, components/feed/feed-list.tsx:293, lib/quest/next-gathering.ts:58, lib/spotlight/data.ts:123, components/connections/group-map-section.tsx:62. Mechanical sweep; the floor helper already exists.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Nine call sites counted with file:line in the events-visibility sweep, 2026-08-20; each passes new Date().toISOString() (or nowIso) as a starts_at lower bound.",
+        "checked": "2026-08-20"
+      },
+      "notes": "A counting probe that can only shrink lands with the first sweep PR."
+    },
+    {
+      "id": "LIVE-080",
+      "title": "The RSVP reminder cron has no status gate, so a draft can email its RSVPs",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/api/cron/event-reminders/route.ts",
+        "ref": "the candidate select"
+      },
+      "detail": "Found in the sweep, 2026-08-20. app/api/cron/event-reminders/route.ts:125-131 selects reminder candidates with a starts_at band and .eq('is_cancelled', false) and NOTHING ELSE — no status, no removed_at. An unpublished draft that somehow carries RSVPs will send reminder emails for an event that exists on no public surface. Compare lib/events/follower-reminders.ts:264-278, the sibling cron, which does gate on status='published' AND visibility='public'. One predicate closes it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const p='app/api/cron/event-reminders/route.ts';if(!fs.existsSync(p))process.exit(79);const t=fs.readFileSync(p,'utf8').replace(/\\\\/\\\\*[^]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/[.]eq\\\\( *'status', *'published' *\\\\)/.test(t)?0:1)\""
+      }
     }
   ]
 }
