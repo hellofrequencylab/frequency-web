@@ -82,3 +82,13 @@ how-to-build-community  0  # ✅ ENROLLED + template-only 2026-08-20 (Lift 5d, A
                     #    blocks (one per track; two lose their explicit photo to the OG fallback,
                     #    same delta as the first enrolment), FAQPage from the Accordion (13 Q&A),
                     #    Breadcrumb still from the route. Template-only from here.
+loneliness      0   # ✅ ENROLLED + template-only 2026-08-20 (Lift 5d, ADR-1068). The 500-line
+                    #    coded article became lib/page-editor/templates/loneliness.ts, a spec run
+                    #    through articleTemplate(). Every block, in the coded order, and every word
+                    #    verbatim; the closing ZigZag's two buttons survive as the media beat's new
+                    #    `links` row (a Buttons block). ALL FOUR schema nodes survive: Article from
+                    #    <BlockDocJsonLd> (route passes its own title/description/dates/three
+                    #    images, unchanged), HowTo from the DawnHowToSteps block (loses its explicit
+                    #    photo to the OG fallback and its per-step self-url, same deltas as both
+                    #    prior enrolments), FAQPage from the Accordion (12 Q&A), Breadcrumb still
+                    #    from the route. Template-only from here.
