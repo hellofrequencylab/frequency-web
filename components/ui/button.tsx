@@ -18,7 +18,10 @@ type ButtonVariant =
 type ButtonSize = 'sm' | 'md'
 
 const VARIANT: Record<ButtonVariant, string> = {
-  primary: 'bg-primary text-on-primary chisel hover:bg-primary-hover',
+  // `text-emboss` is the letterpress: the white label carries a 1px dark ring + lit lower lip
+  // (app/globals.css), the owner's "sunken into the button" treatment for white-on-amber
+  // (OWN-014). It rides the variant, never a call site, so every primary label gets it.
+  primary: 'bg-primary text-on-primary chisel text-emboss hover:bg-primary-hover',
   // The MUTED amber: present, but not shouting until it matters. The token pair the system
   // already carries for exactly this (`bg-primary-bg` + `text-primary-strong`, ~250 sites), on
   // the primitive so a control can go quiet at rest without hand-rolling a fill string. Hover

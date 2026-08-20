@@ -160,61 +160,11 @@ export const A11Y_WAIVERS: readonly ContrastWaiver[] = [
   //
   // The shadow hex is the blur-weighted composite axe computed, so these ratios are reproducible
   // from the two hexes only to ~0.02 (axe rounds the composite to a hex AFTER measuring).
-  {
-    rule: 'color-contrast',
-    fg: '#ffffff',
-    shadow: '#bf7a28',
-    ratio: 3.47,
-    decision: OWNER_PALETTE_DECISION,
-    why: 'Embossed white label over the DAWN light amber fill (2.52:1 waived above).',
-  },
-  {
-    rule: 'color-contrast',
-    fg: '#ffffff',
-    shadow: '#b5853a',
-    ratio: 3.29,
-    decision: OWNER_PALETTE_DECISION,
-    why: 'Embossed white label over the dark-mode amber fill (1.87:1 waived above).',
-  },
-  {
-    rule: 'color-contrast',
-    fg: '#ffffff',
-    shadow: '#b87024',
-    ratio: 3.89,
-    decision: OWNER_PALETTE_DECISION,
-    why: 'Embossed white label over the Midnight light amber fill (2.86:1 waived above).',
-  },
-  {
-    rule: 'color-contrast',
-    fg: '#ffffff',
-    shadow: '#b8863b',
-    ratio: 3.21,
-    decision: OWNER_PALETTE_DECISION,
-    why:
-      'Embossed white label over a second dark-mode amber composite. Two shadow values appear in ' +
-      'the dark states because the emboss is a translucent black over fills of different depth.',
-  },
   // The two composites the SMALLER button paints (`py-2.5`, 14.875px bold). The four above were
   // frozen off the large CTA; a shorter label at a smaller size shifts the blur weighting, so the
   // composite axe rounds to lands a channel or two away from the large button's. Same element
   // family, same finish, same decision — a different measurement, listed rather than folded in,
   // for the reason the `#b8863b` entry states directly above.
-  {
-    rule: 'color-contrast',
-    fg: '#ffffff',
-    shadow: '#c07b28',
-    ratio: 3.43,
-    decision: OWNER_PALETTE_DECISION,
-    why: 'Embossed white label on the small button over the DAWN light amber fill (2.52:1 waived above).',
-  },
-  {
-    rule: 'color-contrast',
-    fg: '#ffffff',
-    shadow: '#b97124',
-    ratio: 3.84,
-    decision: OWNER_PALETTE_DECISION,
-    why: 'Embossed white label on the small button over the Midnight light amber fill (2.86:1 waived above).',
-  },
 
   // ── The tinted status chips ────────────────────────────────────────────────
   {

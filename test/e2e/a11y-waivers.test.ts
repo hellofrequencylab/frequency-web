@@ -106,8 +106,16 @@ describe('a11y waivers · what matches', () => {
     }
   })
 
-  it('waives the embossed label against its shadow colour', () => {
-    expect(waiverForNode('color-contrast', shadowNode('#ffffff', '#bf7a28'))?.shadow).toBe('#bf7a28')
+  it('carries NO shadow-keyed entries: the letterpress made axe stop reporting fgOnShadowColor on buttons', () => {
+    // This assertion used to be the inverse: six entries waived the old two-shadow emboss's
+    // blur-weighted composites (3.21-3.89:1), because axe discounted the blurred shadow and
+    // measured the label against a composite that failed. The letterpress ring (OWN-014,
+    // 2026-08-19) is a zero-blur four-edge group axe credits as a text STROKE, measured PASS
+    // (15.2-19.8:1) on all four ambers — so those composites are no longer reported, and a waiver
+    // may list only ratios a run reports. The capture that proved it is the same change that
+    // retired the entries. A new shadow entry here means a run REPORTED one again: re-measure
+    // before waiving, and say which run.
+    expect(A11Y_WAIVERS.filter((w) => w.shadow)).toEqual([])
   })
 
   it('waives the success chip', () => {
