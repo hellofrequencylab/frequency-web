@@ -74,8 +74,11 @@ create policy "post_reactions: insert own (crew+)"
   );
 
 -- DELETE: delete own only. The dropped arm (profile_id = get_my_profile_id() AND
--- is_space_update_post(post_id)) was strictly narrower than this surviving arm, so delete-own
--- behavior is IDENTICAL for every caller.
+-- is_space_update_post(post_id)) is textually narrower than this surviving arm, with ONE
+-- effective exception CI found: a DELETE whose WHERE reads columns also needs the rows
+-- SELECT-visible, and reaction reads are crew+ now - so a ROLELESS seat can no longer delete
+-- its own space-update reaction. That seat can no longer create reactions either, and
+-- production carried zero, so nothing strands (proven in the pgTAP suite).
 drop policy if exists "post_reactions: delete own (feed or space update)" on public.post_reactions;
 drop policy if exists "post_reactions: delete own" on public.post_reactions;
 create policy "post_reactions: delete own"
