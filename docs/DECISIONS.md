@@ -5768,7 +5768,17 @@ only** — RLS needs no new policy (the existing self-read exposes them to the o
 
 **Env-gating.** Like the rest of billing (ADR P2.2), every function no-ops when `stripe` is unconfigured, so
 the card shows a "not turned on yet" state until keys land. Development proceeds entirely in Stripe **test
-mode**; going live only requires the platform's identity verification + live keys, no code change.
+mode**; going live requires no code change.
+
+> ⚠️ **AMENDED 2026-08-20 ([ADR-1093](DECISIONS.md)).** This paragraph used to end *"going live only requires
+> the platform's identity verification + live keys"*, and that list was short by one item. Going live **also**
+> requires a completed Connect **platform profile** on stripe.com (business model, fees/losses collector,
+> dashboard access, plus two acknowledgements). An incomplete profile does not fail at key-configuration time
+> and does not make any function no-op: it throws *"You must complete your platform profile…"* out of the
+> first `accountLinks.create`, i.e. the moment a real member presses **Set up payouts**. On 2026-08-20 that
+> throw escaped the server action and replaced the entire `/settings` page with the error boundary. Both the
+> guard (`viaStripe` in `app/(main)/settings/billing/actions.ts`) and the profile now exist. **A prerequisite
+> that lives in someone else's dashboard is still a prerequisite** — name it here or it reads as a code bug.
 
 ## ADR-176 — Tips: the first payout channel (destination charge on the Connect foundation)
 
@@ -27833,3 +27843,100 @@ ladder.
 a row's premise before working it. This one was wrong at the *database* layer while three
 documents agreed with each other — the tree is not the cluster, and only the cluster knows which
 predicate an arm calls today.
+
+## ADR-1093: The Connect platform profile is complete, and it declares a platform this codebase is not (2026-08-20)
+
+**Status:** accepted (the configuration) · **open** (the one mismatch, tracked as LIVE-074) ·
+**Owner action:** both Stripe acknowledgements completed 2026-08-20; the platform profile filled ·
+**Touches:** documentation only · **Amends:** [ADR-175](DECISIONS.md) (its go-live line was
+incomplete) · **Reads:** `lib/billing/connect.ts`, `lib/billing/tips.ts`,
+`lib/billing/tickets.ts`, `lib/billing/space-membership-checkout.ts`, `lib/commerce/checkout.ts`
+
+### Why this exists
+
+Payouts stopped being theoretical on 2026-08-20. The owner clicked **Set up payouts**, Stripe threw
+*"You must complete your platform profile…"*, the throw escaped the server action and replaced the
+whole `/settings` page with the error boundary (fixed in the same PR as this ADR). Completing the
+profile meant answering four questions and signing two acknowledgements — and the answers Stripe
+recorded do not describe the platform this repo implements. That gap was invisible until someone
+read both sides on the same day, so it is written down here rather than left to be re-discovered.
+
+### What Stripe now has on file
+
+| Platform profile field | Value as agreed 2026-08-20 |
+| :-- | :-- |
+| Business model | *"Your accounts will collect payments directly from buyers using **direct charges**"* |
+| `defaults.responsibilities.losses_collector` | `stripe` (the connected account absorbs losses) |
+| `defaults.responsibilities.fees_collector` | `account` (the connected account pays Stripe's fees) |
+| `defaults.dashboard` | `full` (connected accounts get the full Stripe Dashboard) |
+| Onboarding | Stripe-hosted |
+| Acknowledgements | both completed, August 20 2026 |
+
+The second acknowledgement, in its expanded form, reads **"You'll be liable for seller losses.
+Stripe will hold reserves on your account."** That sentence and the `losses_collector: stripe` row
+above are opposite claims about the same liability, agreed in the same sitting.
+
+### What the code actually does
+
+Verified against the tree at this ADR's commit:
+
+| Fact | Where |
+| :-- | :-- |
+| Connected accounts are created as **Express** | `lib/billing/connect.ts` → `accounts.create({ type: 'express', … })` |
+| Every charge is a **destination charge** | `transfer_data.destination` + `application_fee_amount` in `lib/billing/tips.ts:95-96`, `lib/billing/tickets.ts:395-396`, `lib/billing/space-membership-checkout.ts:112`, `lib/commerce/checkout.ts:195-197` |
+| No charge is ever a direct charge | there is **no** `Stripe-Account` header and no per-account client anywhere in `lib/` or `app/` |
+| Hosts reach Stripe through an **Express login link** | `createDashboardLink` → `accounts.createLoginLink` — the Express dashboard, not the full one |
+| The platform fee is the platform's revenue | `STRIPE_PLATFORM_FEE_PCT`, default 10%, centralised in `lib/billing/fees.ts` (ADR-176) |
+
+### The reading, and which side is authoritative
+
+**The acknowledgement is true and the profile answers are not.** Passing `type: 'express'` fixes a
+connected account's responsibilities at creation, and the Express set is the *opposite* of the
+profile defaults on all three axes: the platform pays Stripe's fees, the platform carries payment
+losses, and the account gets the Express dashboard rather than the full one. The profile's answers
+are the **Standard**-account responsibility set. Layered on top, a destination charge settles on the
+**platform's** balance, so refunds and disputes debit the platform first regardless of what any
+default says. `on_behalf_of` — which moves the settlement merchant to the seller — appears exactly
+once, in `lib/commerce/checkout.ts:197`, and nowhere in tips, tickets, or memberships.
+
+So the live money already behaves the way the acknowledgement describes. Nothing is mis-settling
+today, and no member-facing behaviour is wrong: a per-charge API call decides how a charge settles,
+not a profile default. What is wrong is the **declaration** — Stripe has been told this platform
+operates a model it does not operate, which mis-calibrates Stripe's risk view and makes any future
+support conversation start from a false premise.
+
+### The decision
+
+1. **The code stays.** Destination charges are the right model for this product: the platform owns
+   checkout, the fee, the refund path and the branding, and an individual host running a circle
+   should not be the merchant of record for their own chargebacks. Rewriting four channels to direct
+   charges to satisfy a dashboard answer would be the tail wagging the dog.
+2. **The profile gets corrected, not the code** — a dashboard edit, no deploy. Tracked as **LIVE-074**.
+3. **This ADR is the record of what was agreed**, including the contradiction, so the next reader
+   does not have to reconstruct it from a screenshot.
+
+### The correction to ADR-175
+
+ADR-175 closes with *"going live only requires the platform's identity verification + live keys, no
+code change."* That was incomplete, and the incompleteness is what crashed `/settings`: going live
+**also** requires a completed Connect **platform profile**, and an incomplete one throws on the first
+`accountLinks.create`, not at key-configuration time. The failure is therefore late, member-facing,
+and easy to mistake for a bug in the app. Read the amended line in ADR-175 itself.
+
+### Live state at the time of writing
+
+`platform_flags.host_payouts_enabled` is **true**, so `payoutsLive()` passes. Exactly one profile
+carries a `stripe_account_id` (the owner's, `acct_1U4…`, `community_role = janitor`) with
+`charges_enabled`, `payouts_enabled` and `details_submitted` all **false** — the account was created
+by `getOrCreateConnectedAccount` and then the onboarding link threw before it could be handed over.
+Re-running **Set up payouts** against the now-complete profile is what finishes it; no data repair is
+needed, because `getOrCreateConnectedAccount` returns the existing account rather than making a
+second one.
+
+### The durable rule
+
+**A gate that lives in someone else's dashboard is still a gate.** Every env-gated path in
+`lib/billing` degrades cleanly when a key is missing, and none of that helped, because the missing
+thing was not a key — it was a form on stripe.com whose absence surfaces as a throw from a normal
+API call. When a dependency has configuration outside the repo, the ADR that describes going live
+has to name that configuration, or the first person to hit it reads it as a defect in the code.

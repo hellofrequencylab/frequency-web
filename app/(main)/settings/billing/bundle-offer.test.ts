@@ -42,10 +42,33 @@ describe('the offer card is mounted and calls the deliberate action', () => {
     expect(controls).toContain('window.location.href = r.data.url')
   })
 
-  it('the action still mounts createBundleCheckout (positive control for the chain)', () => {
+  // The literal used to be `await createBundleCheckout(`. The await moved onto the viaStripe
+  // wrapper when every Stripe reach in this file was made non-throwing (2026-08-20: an incomplete
+  // Connect platform profile threw out of a payout action and the error boundary replaced the WHOLE
+  // settings page). The chain is what this control is for, not the keyword, so it now pins the call
+  // AND the guard the call must sit inside — strictly more than it asserted before.
+  it('the action still mounts createBundleCheckout, inside the non-throwing guard', () => {
     expect(actions).toContain("import { createBundleCheckout } from '@/lib/billing/bundle-checkout'")
     expect(actions).toContain('export async function startBundleCheckout')
-    expect(actions).toContain('await createBundleCheckout(')
+    expect(actions).toContain('createBundleCheckout({')
+    expect(actions).toContain("viaStripe('startBundleCheckout'")
+  })
+
+  // 🔴 THE WHOLE POINT OF THE GUARD: one failing Stripe call must not take the page down with it.
+  // Every action in this file reaches Stripe, and a StripeInvalidRequestError from a half-finished
+  // dashboard is an ordinary outcome. If a future edit adds a fifth action or unwraps one of these
+  // four, this fails rather than waiting for a member to find it.
+  it('every Stripe reach in the file goes through viaStripe', () => {
+    for (const label of [
+      'openBillingPortal',
+      'startBundleCheckout',
+      'startPayoutOnboarding',
+      'openPayoutDashboard',
+    ]) {
+      expect(actions).toContain(`viaStripe('${label}'`)
+    }
+    // viaStripe returns a value/error union rather than throwing: no bare `throw` may reappear.
+    expect(actions).toContain('return { value: await run() }')
   })
 })
 
