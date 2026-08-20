@@ -12,10 +12,10 @@
 //   • an opaque UUID for a slug-addressed entity (an event id, a circle id, a Journey
 //     plan id) — NOT routable, because the matching page keys on the slug and this is a
 //     client component with no way to resolve one. Those land on the index that lists it.
-// `reference_type: 'space'` is written with BOTH: the Space Community fan-out stores the
-// slug (lib/spaces/content-actions), the billing renewal cron stores the id
-// (app/api/cron/billing-renewals). Routing a UUID through `/spaces/<id>/community` is a
-// guaranteed 404, so the shape is checked rather than assumed.
+// `reference_type: 'space'` is written with BOTH: the Space fan-out stores the slug
+// (lib/spaces/content-actions), the billing renewal cron stores the id
+// (app/api/cron/billing-renewals). Routing a UUID through `/spaces/<id>` is a
+// guaranteed 404 (the page keys on the slug), so the shape is checked rather than assumed.
 
 import type { NotificationItem } from '@/lib/notifications-map'
 
@@ -55,11 +55,13 @@ export function notificationHref(n: NotificationItem): string {
     case 'profile':
       return actorHandle ? `/people/${actorHandle}` : '/people'
 
-    // Slug → the Space Community tab the fan-out is about. Id → the billing renewal notice,
-    // whose audience is the Space's owner and admins, so the Spaces-you-run hub.
+    // Slug → the Space root. The retiring Community tab is never emitted (ADR-1091 C3.2):
+    // a Space's community is its Circles, which live on the Space's own page, and C3.3's
+    // 308 covers any old link. Id → the billing renewal notice, whose audience is the
+    // Space's owner and admins, so the Spaces-you-run hub.
     case 'space':
       if (!id) return '/spaces/directory'
-      return UUID_RE.test(id) ? '/spaces/operating' : `/spaces/${id}/community`
+      return UUID_RE.test(id) ? '/spaces/operating' : `/spaces/${id}`
 
     // A Household bundle seat offer (ADR-370). The invite id is a UUID and there is no page
     // keyed on it: the seat is answered in the Plan and billing section of Settings, which is
