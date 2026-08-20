@@ -27658,3 +27658,97 @@ segment stays noindex).
   two-vocabulary intermediate trees the gate exists to keep out of review — the same judgment that
   went the OTHER way on the 80-file teardown the same day, which was split 3-ways because its files
   took genuinely different edits. The tag is a claim about edit uniformity, not a bypass.
+
+## ADR-1091: Circles C3 ships as five slices, and the design pass proves there is nothing to migrate (2026-08-20)
+
+**Status:** Accepted · design pass for [LIVE-059](BUILD-BACKLOG.json), no code in this change
+**Owner ruling:** OWN-015, 2026-08-19, verbatim *"Remove Communities, replace with circles."*
+**Authority chain:** [ADR-1013](DECISIONS.md) §3 (the removal ruling) · [ADR-1014](DECISIONS.md)
+(Circle roles) · [ADR-1015](DECISIONS.md) (privacy, two axes) · `docs/CIRCLES-C3-PLAN.md` (the
+survey this entry ratifies and amends).
+
+**Context.** ADR-1013 ruled that a Space's community is its Circles and that Space Communities is
+removed; the owner approved the removal on 2026-08-19. `docs/CIRCLES-C3-PLAN.md` (2026-08-12) had
+already surveyed the feature read-only. This design pass re-measured every premise in that plan
+against production (`azsqfeonabsbmemvddqd`, 2026-08-20) before sequencing the work, per the
+ADR-1082 rule that a row's premise expires. **Every count held**: 0 `space_updates`, 0
+`posts(post_type='space_update')` (0 top-level, 0 replies), 0 reactions, 0 notifications, 0
+uploaded images, 0 of 20 Spaces carrying `preferences.communityMemberPosts`; 20 active Spaces,
+7 `space_follows`, 26 `space_members` (all `admin`), 2 `space_memberships`, 4 tiers (0 linked to a
+Circle); 7 Circles with a `space_id` (2 active, 2 forming, 3 draft, all `access='open'`) across 2
+Spaces; 18 of 20 Spaces hold `SpaceCommunity` in a saved layout and 0 hold `SpaceUpdates`. The
+feature was never used once: **there is no data migration because there is no data**, and that fact
+is measured, not assumed.
+
+One premise CHANGED since 2026-08-12, in our favor: the §7.1 risk (renaming the `SpaceCommunity`
+block key silently drops a section from 18 live pages) now has a gate that notices —
+`pnpm check:stored-blocks` (`scripts/check-stored-blocks.mjs` + `scripts/stored-block-types.json`)
+fails on any stored key the registry retired. The rule stands regardless: **the stored type key
+`SpaceCommunity` is never renamed.** Label, anchor, and eyebrow only.
+
+**Decision — what each piece becomes.**
+
+| Space Communities piece | Circle equivalent | Data to move | Member-facing copy |
+| :-- | :-- | :-- | :-- |
+| The always-on Community tab | The `circles` section anchor on Home, present only when the Space runs a live Circle (the presence flag already gates it) | none | nav label **Circles** |
+| The wall (brand Updates ∪ follower posts) | Circle posts, `visibility='group'` | **0 rows** | surface removed |
+| Reactions + comments | Circle post reactions + replies | **0 rows** | surface removed |
+| Follower-posting toggle (`communityMemberPosts`) | The Circle **access** axis (ADR-1015) | 0 Spaces ever set it | control removed |
+| Pin / remove moderation | Circle Admin + Steward rungs (ADR-1014) | 0 rows | surface removed |
+| Post once, reach every follower | **Dropped.** The owner's removal ruling absorbs it: 0 posts ever, and `SpaceUpdates` (brand blog), the Message center (`space.messages`), and Dispatch cover "tell my people something." Rebuilding it recreates the third container ADR-1013 retired. | none | none |
+| The rail (About, contact, events, practices, circles, booking) | Every input already exists as a Home block; nothing is rebuilt | none | none |
+| Brand Updates backend (`space_updates`, create/update/delete actions) | **Stays untouched** — it backs the separately-decided `SpaceUpdates` block | keep the table | none |
+| Notification destination `/spaces/<slug>/community` | The Space root `/spaces/<slug>` | 0 legacy rows | none |
+| The URL | 308 → `/spaces/<slug>` | n/a | none |
+
+**Decision — the slices.** Each is one PR, independently shippable, with the probe that proves its
+consequence (never its title):
+
+1. **C3.1 — Circles takes the name.** Section anchor `SpaceCommunity: { anchor: 'circles', label:
+   'Circles' }` (`lib/spaces/section-anchors.ts`); relabel the block registry entry `'Circles
+   (live)'` → `'Circles'` (`components/page-editor/blocks/profile.tsx`); template eyebrow
+   `'Community'` → `'Join in'` (`lib/page-editor/templates/space-default.ts`); one ledgered data
+   fix rewriting the seeded eyebrow `'Community'` → `'Join in'` on the `SpaceCommunity` block props
+   of the 18 stored layouts (props only, never the type key); fold ADR-1013's booked amendments
+   into `NAMING.md` plus the new canon line: **"Community" is never the name of a Space-level
+   surface — a Space's community is its Circles.** Probes: `rg "anchor: 'community'"
+   lib/spaces/section-anchors.ts` is empty; `pnpm check:stored-blocks` green (the key survived);
+   `select count(*)` of stored `SpaceCommunity` props with eyebrow `'Community'` = 0.
+2. **C3.2 — repoint the notification destination.** `lib/notifications/href.ts` emits
+   `/spaces/<slug>` for the `space` case. Probe: `rg '/community' lib/notifications/href.ts` is
+   empty and `lib/notifications/href.test.ts` asserts the root destination.
+3. **C3.3 — the 308.** `next.config.ts` redirects `/spaces/:slug/community` → `/spaces/:slug`,
+   `permanent: true`. **Ships before C3.4, never with it**, so the URL is never dead. Probe: the
+   redirect row exists in `next.config.ts`; post-deploy, `curl -sI` on a live Space's old URL
+   prints 308 (recorded as row evidence).
+4. **C3.4 — the delete.** The route dir `app/(main)/spaces/[slug]/(profile)/community/`,
+   `components/spaces/community/`, the 7 wall actions (`createMemberPost`, `uploadCommunityImage`,
+   `pinCommunityPost`, `setCommunityMemberPosts`, `removeCommunityPost`, `reactToSpaceUpdate`,
+   `commentOnSpaceUpdate`), the readers `getSpaceCommunityFeed` + `getSpaceMemberPosts`, the tab
+   row + the `'community'` `DEDICATED_TAB_ANCHORS` entry (`lib/spaces/profile-nav.ts`), and the
+   `revalidatePath`. `createSpaceUpdate`/`updateSpaceUpdate`/`deleteSpaceUpdate`, `getSpaceUpdates`
+   and `getSpaceCommunity` (which reads Circles) all stay. Probes: both directories absent;
+   `rg 'getSpaceCommunityFeed|createMemberPost' app lib components` is empty; `tsc` and the suite
+   exit 0.
+5. **C3.5 — narrow the RLS.** Its own migration + ledger insert dropping the
+   `is_space_update_post` arms from the 5 policies on `posts` / `post_reactions` and the helper,
+   with pgTAP proving a signed-in non-member reads no `space_update`-shaped post and Circle posts
+   are unaffected. This removes the widest read grant in the feature (every signed-in profile,
+   platform-wide) so no future "Space wall" can inherit it by accident. Probe: pgTAP passes;
+   live `pg_policies` shows 0 references to `is_space_update_post` (row evidence).
+
+**Deliberately NOT in the slices:** the `access='space_members'` semantics (staff ladder vs paying
+members, CIRCLES-C3-PLAN §4.2). Fixing the label (A), widening `private.is_space_member` (B), or
+adding a `space_paid_members` mode (C) is a live-authorization product call the removal approval
+did not decide. It is **OWN-034**, it gates nothing in C3.1–C3.5 (all 7 Space Circles are
+`access='open'` today), and option B, if chosen, ships as its own change with its own pgTAP proof.
+
+**Consequences.** No admin-menu row exists (`SPACE_MODULES` has no `space.community`; the menu
+contract is untouched), no help article documents the tab, no Studio manifest exists, and the
+route tree shrinks by one route. The member-facing copy this ADR fixes carries the voice canon:
+plain sentences, no em dashes, and "Circles" is the proper noun that does the work.
+
+**The durable rule.** A removal is designed by measuring what exists, not by imagining what might.
+Here the single load-bearing fact — zero rows, ever — was established by query twice, eight days
+apart, and it converted a migration problem into a deletion sequenced around one URL and one
+stored jsonb key.

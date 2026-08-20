@@ -293,6 +293,23 @@
       }
     },
     {
+      "id": "OWN-034",
+      "title": "Rule the access='space_members' semantics: relabel (A), widen the predicate (B), or add a mode (C)",
+      "status": "open",
+      "lane": "owner",
+      "size": "S",
+      "source": {
+        "file": "docs/CIRCLES-C3-PLAN.md",
+        "ref": "§4.2 / §9 question 4"
+      },
+      "detail": "The shipped mode reads the space_members STAFF ladder (26 rows, every one role='admin'), but the member-facing copy says 'Anyone with an active membership in your Space can join themselves' (lib/circles/visibility.ts), which an operator reads as their paying members (space_memberships, 2 rows). The copy is wrong today independently of C3. Options: A relabel to 'Space team only' (zero risk, leaves paying members with no mode); B widen private.is_space_member to include active space_memberships (matches the copy and the owner's words in ADR-1015 §5, but widens a live authorization predicate — needs its own pgTAP proof); C add a sixth space_paid_members mode. CIRCLES-C3-PLAN §4.2 recommends B, shipped as its own change. Gates nothing in C3.1–C3.5: all 7 Space Circles are access='open' today, so the live impact of any option is nil until a circle closes its door.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Split out of OWN-015 by the C3 design pass (ADR-1091): the removal approval did not decide this. Awaiting an owner ruling.",
+        "checked": "2026-08-20"
+      }
+    },
+    {
       "id": "OWN-016",
       "title": "Schedule or keep parked: App Platform A1-A5 and White Label E10",
       "status": "done",
@@ -2372,11 +2389,11 @@
         "file": "docs/BUILD-LIST.md",
         "ref": "C3 (approved by owner 2026-08-19, OWN-015)"
       },
-      "detail": "Owner-approved 2026-08-19. Plan the migration path before touching anything: what Space Communities data exists, what a Circle equivalent is for each piece, and the member-facing copy. One design pass, then implementation in PR-sized slices.",
+      "detail": "Owner-approved 2026-08-19. Plan the migration path before touching anything: what Space Communities data exists, what a Circle equivalent is for each piece, and the member-facing copy. One design pass, then implementation in PR-sized slices.\n\n── DESIGN PASS DONE 2026-08-20 (ADR-1091). Every premise re-measured against production and held: 0 rows in every table behind the feature, 18/20 Spaces store the SpaceCommunity block, 2 active Circles across 2 Spaces, all access='open'. Nothing to migrate; the work is a sequenced deletion. Slices (each one PR, probes in ADR-1091): C3.1 Circles takes the name (anchor community→circles, block relabel, type key NEVER renamed — check:stored-blocks is the gate — eyebrow rewrite on the 18 seeded layouts, NAMING.md amendments) · C3.2 repoint the notification href to the Space root · C3.3 the 308 /spaces/:slug/community → /spaces/:slug, ships BEFORE C3.4, never with it · C3.4 delete the route, 2 components, 7 wall actions, 2 readers, tab row, DEDICATED_TAB_ANCHORS entry (createSpaceUpdate/update/delete + getSpaceUpdates + getSpaceCommunity stay) · C3.5 own migration + pgTAP narrowing the is_space_update_post RLS arms. The access='space_members' semantics ruling is OWN-034 and gates nothing here.",
       "verify": {
         "kind": "manual",
-        "evidence": "Not started. Closes when Space Communities is gone and Circles serve its members.",
-        "checked": "2026-08-19"
+        "evidence": "Design pass done 2026-08-20 (ADR-1091); implementation not started. Closes when Space Communities is gone and Circles serve its members: the route dir and components/spaces/community are deleted, the 308 is live, and check:stored-blocks stays green with the SpaceCommunity key registered.",
+        "checked": "2026-08-20"
       }
     },
     {
