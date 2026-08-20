@@ -217,6 +217,11 @@
     "/how-to-start-a-circle [dawn-light, desktop]": 0,
     "/how-to-start-a-circle [dawn-light, mobile]": 0,
     "/how-to-start-a-circle [midnight-dark, contrast only, desktop]": 0,
-    "/how-to-start-a-circle [midnight-light, contrast only, desktop]": 0
+    "/how-to-start-a-circle [midnight-light, contrast only, desktop]": 0,
+    "/how-to-build-community [dawn-dark, contrast only, desktop]": 0,
+    "/how-to-build-community [dawn-light, desktop]": 0,
+    "/how-to-build-community [dawn-light, mobile]": 0,
+    "/how-to-build-community [midnight-dark, contrast only, desktop]": 0,
+    "/how-to-build-community [midnight-light, contrast only, desktop]": 0
   }
 }

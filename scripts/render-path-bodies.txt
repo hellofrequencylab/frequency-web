@@ -72,3 +72,13 @@ how-to-start-a-circle  0   # ✅ ENROLLED + template-only 2026-08-19 (Lift 5d, A
                     #    title/description/dates/three images, so it is unchanged), HowTo from the
                     #    DawnHowToSteps block, FAQPage from the Accordion block, Breadcrumb still
                     #    from the route. Template-only from here.
+how-to-build-community  0  # ✅ ENROLLED + template-only 2026-08-20 (Lift 5d, ADR-1068). The 569-line
+                    #    coded article became lib/page-editor/templates/how-to-build-community.ts, a
+                    #    spec run through articleTemplate(). Every block, in the coded order, and
+                    #    every word verbatim; the hero stays photo-less (Hero `minimal` variant)
+                    #    because the coded PageHero carried no photo. ALL SIX schema nodes survive:
+                    #    Article from <BlockDocJsonLd> (route passes its own title/description/
+                    #    dates/three images, unchanged), THREE HowTo nodes from three DawnHowToSteps
+                    #    blocks (one per track; two lose their explicit photo to the OG fallback,
+                    #    same delta as the first enrolment), FAQPage from the Accordion (13 Q&A),
+                    #    Breadcrumb still from the route. Template-only from here.
