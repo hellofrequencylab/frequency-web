@@ -236,6 +236,13 @@
   ("In Person" / "Online") as a property of one Circle, never as the line between Circles and
   something else. The retired formula, still widely remembered, was "Circles are the local,
   real-world unit; Channels are the global, topical unit" — say **container vs topic axis** instead.
+- **"Community" is never the name of a Space-level surface — a Space's community is its Circles**
+  ([ADR-1091](DECISIONS.md), OWN-015; [ADR-1013](DECISIONS.md) §3). No Space tab, block label,
+  section anchor, or eyebrow is called "Community": the surface that lists a Space's groups says
+  **Circles**. (Same collision ADR-868 already fixed once in the sidebar; "Community" stays
+  reserved for the canon uses in this doc — the community structure tree, `community_role`,
+  Community Resonance, and the brand's Community Collective.) The stored block TYPE KEY
+  `SpaceCommunity` is an internal identifier and is deliberately not renamed.
 - **Outpost** = the brick-and-mortar home base of a Nexus; one per Nexus; the seed
   toward a Lab. Circles meet in homes/public spaces, never Outposts.
 - **Frequency Lab** = standalone for-profit venue; when a Lab exists in a Nexus, the

@@ -17,7 +17,7 @@ const ALL_PRESENT: SectionPresence = {
   faqs: true,
   updates: true,
   practices: true,
-  community: true,
+  circles: true,
 }
 
 describe('listSectionBlocks', () => {

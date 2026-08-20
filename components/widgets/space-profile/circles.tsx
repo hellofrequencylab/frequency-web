@@ -24,7 +24,7 @@ export function CirclesBlock({
   if (circles.length === 0) return null
   return (
     <ModuleSection anchor="circles">
-      <SpaceCommunityBlock eyebrow={header?.eyebrow ?? 'Community'} heading={header?.heading ?? 'Circles'} circles={circles} />
+      <SpaceCommunityBlock eyebrow={header?.eyebrow ?? 'Join in'} heading={header?.heading ?? 'Circles'} circles={circles} />
     </ModuleSection>
   )
 }

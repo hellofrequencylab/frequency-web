@@ -113,7 +113,7 @@ function practices(): Block {
 function community(): Block {
   return {
     type: 'SpaceCommunity',
-    props: { id: `${P}-community`, eyebrow: 'Community', heading: 'Circles' },
+    props: { id: `${P}-community`, eyebrow: 'Join in', heading: 'Circles' },
   }
 }
 
