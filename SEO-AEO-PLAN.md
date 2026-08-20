@@ -83,7 +83,7 @@ are the only indexable URLs.
 
 **SEO foundation** (re-create — these were rolled back from the first pass):
 - `lib/site.ts` — `SITE_URL` (env `NEXT_PUBLIC_SITE_URL`, fallback
-  `https://frequency-web-three.vercel.app`), name, tagline, description.
+  `https://frequencylocal.com`), name, tagline, description.
 - Root `app/layout.tsx` metadata — `metadataBase`, `openGraph`, `twitter`, title template.
 - `app/opengraph-image.tsx` + `app/twitter-image.tsx` — generated 1200×630 branded
   card: `public/images/hero.jpg` background + dark gradient + "FREQUENCY" wordmark
@@ -115,7 +115,7 @@ Submit sitemap to search engines.
 **Update (2026-06-01):** the brand is moving to the custom domain `frequencylocal.com`
 (registered at GoDaddy, apex → Vercel), replacing the old `go.findafreq.com` host. Once
 DNS is pointed, the remaining gap is config: set `NEXT_PUBLIC_SITE_URL=https://frequencylocal.com`
-in the Vercel project — otherwise `lib/site.ts` falls back to `frequency-web-three.vercel.app`
-and metadata, sitemap, robots, and JSON-LD advertise the vercel.app host. With it set, all SEO
-surfaces follow automatically. This is the highest-leverage remaining SEO move
-(was framed as "verify a custom domain" in P3.31).
+in the Vercel project. `lib/site.ts` already falls back to `https://frequencylocal.com`, so metadata,
+sitemap, robots, and JSON-LD advertise the apex even if the env var is missing; set it explicitly so
+the canonical host is pinned rather than relying on the fallback. This was the highest-leverage
+remaining SEO move (framed as "verify a custom domain" in P3.31).

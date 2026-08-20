@@ -2447,6 +2447,23 @@
         "cmd": "node -e \"const fs=require('fs');const f='app/(main)/admin/actions.ts';if(!fs.existsSync(f))process.exit(79);const s=fs.readFileSync(f,'utf8');const code=s.split(String.fromCharCode(10)).filter(x=>{const t=x.trim();return t.indexOf('//')!==0&&t.indexOf('*')!==0}).join(String.fromCharCode(10));const forced=code.includes('isBottomUp ? caller.id');const rawVuln=/const host_id\\\\s*=\\\\s*\\\\(fd.get\\\\('host_id'\\\\) as string\\\\) \\\\|\\\\| caller.id/.test(code);process.exit(forced && !rawVuln ? 0 : 1)\"",
         "note": "Passes when the forced-host assignment is present on the bottom-up branch and the raw unconditional client-supplied host_id line is gone."
       }
+    },
+    {
+      "id": "PERF-001",
+      "title": "Airwaves feed + Loom-usage reads batch their per-item facts (no N+1)",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/airwaves/shows.ts",
+        "ref": "meta-scan finder C 2026-08-20"
+      },
+      "detail": "assembleShowFeed resolved each episode enclosure with one library_assets query PER episode (episodes.map(async) inside Promise.all) on the PUBLIC RSS feed + Show page - N+1 that grows with catalog size on a crawler-hit endpoint. getLoomAssetUsage fired one recording_attachments query per recording (up to 200 concurrent) on the janitor usage route. Both now issue ONE batched .in(...) read: getAssetMetaMap(assetIds) for enclosures (drop-on-miss and mime/bytes defaults preserved), and a single .in('recording_id', recordingIds) grouped in memory for usage (labels/placeCount preserved). Proven in lib/airwaves/asset-batch.test.ts (ONE query for many items, output unchanged).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/airwaves/shows.ts','utf8');const u=fs.readFileSync('lib/airwaves/asset-usage.ts','utf8');const hasMap=s.includes('export async function getAssetMetaMap');const feedBatched=s.includes('getAssetMetaMap(episodes.map');const feedNoLoop=!/episodes\\\\.map\\\\(async/.test(s);const usageBatched=u.includes(\\\".in('recording_id', recordingIds)\\\");const usageNoLoop=!/rows\\\\.map\\\\(async/.test(u);process.exit(hasMap && feedBatched && feedNoLoop && usageBatched && usageNoLoop ? 0 : 1)\"",
+        "note": "Passes when the batch helper exists and is used, and neither the per-episode nor per-recording async .map loop remains."
+      }
     }
   ]
 }
