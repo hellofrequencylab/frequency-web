@@ -7,6 +7,51 @@
 > The durable record of the full-repo meta scan: what shipped, and what is still open with the
 > exact fix. Update it as items close. Newest pass first; earlier passes are kept below.
 
+## 2026-08-20 pass (post-C3 full-repo scan — orphans, wiring, security)
+
+Run against a mature, heavily-gated tree, one sequential finder at a time (this 4-core box hangs on
+parallel heavy agents). Sweep 0 (advisors + FK coverage) landed as **#2208**. Finders A (orphans /
+unplugged / half-wired) and B (security) are complete; C (correctness / perf) and D (SEO / canon /
+a11y / docs) still to run. The pattern this pass keeps confirming: **the gates that exist are right,
+and the finds live exactly where a gate structurally cannot look** — a conditional auth guard, a
+retired feature's write half, a deferral that only ever lived in a comment.
+
+### Shipped this pass
+
+| Area | What was wrong | How it's proven |
+|---|---|---|
+| 🟠 **Security (authz)** | `createCircle`'s ungated bottom-up branch (`topical_channel_id` present, no `authorizeAction`) took `host_id` from client form input, then wrote `circles.host_id`, a `memberships` row, and a `posts.author_id` announcement from it. A server action is a POST endpoint reachable outside the UI ([Next data-security guide](../node_modules/next/dist/docs/01-app/02-guides/data-security.md) L281), so a member could forge a circle, self-join, and a "Started a new circle" post authored **as an arbitrary victim**. `check:authz` read it as self-guarded because it *does* call `authorizeAction` — just conditionally: the "right guard, wrong scope / client-supplied id" shape. Fixed: on the bottom-up path `host_id` is forced to `caller.id`; only the gated admin path may assign a host. (`topical_channel_id` is FK-checked by `circles_topical_channel_id_fkey`.) | `SEC-001` probe |
+
+### Confirmed against production (two of finder A's "uncertain" items, one DB call each — the ADR-1082 rule)
+
+- **ADR-458 supporter→crew mapping** (`lib/core/entitlement.ts:34`): drop condition met — **0 of 55** profiles carry `membership_tier = 'supporter'`. The read-time map is now removable; queued as a safe fix behind the verify pass.
+- **No retired block types in production `pages`**: every block type in the live `pages` rows resolves in the Puck config; `space_updates` itself holds **0 rows**.
+
+### Open finds (verified, not yet fixed — the master to-do for this pass)
+
+| Sev | Find | Fix |
+|---|---|---|
+| **high** | `lib/spaces/content-actions.ts` — the `SpaceUpdates` page-editor block **reads** `space_updates`, but its only composer was deleted with the C3.4 community wall. `create/update/deleteSpaceUpdate` have no caller; an operator cannot author an Update. (0 rows live, so nothing is stranded *today*.) | Decide the block's fate deliberately: build a small Updates composer wired to the three kept actions, or retire the block **and** the actions together. Backlog row either way. |
+| med | `lib/claims/tokens.ts` (ADR-907's hashed claim-token system) has zero production callers a year on; every live claim flow still mints plaintext tokens onto anon-readable columns. The deferral lives only in a superseded doc. | Add a probed backlog row so the deferral stops living in prose; migrate the four column-based minters when the owner rules. |
+| med | `components/ui/editor-shell.tsx` (`EditorShell`, "the ONE master container for any on-page editor") — zero importers; its stated consumer, the beta email editor, was deleted in the ADR-1088/1089 beta teardown. Header comment is stale. | Delete, or adopt it in the Space/profile editors its header promises and fix the header. |
+| med | 32 exported server actions with no call site (each still a live POST endpoint). Several read like a deleted/never-built UI half (`requestEventHost`, `startBundleCheckout`, `nudgeStreakMate`, `countSpaceEmailAudience`, `eraseSparkDraftsAction`); the `manage/layout/*` block-editor set looks superseded by the Puck editor. | Triage per-name: delete the superseded set (they are unauthenticated entry points), decide the "missing half" ones. |
+| med | `lib/nav/admin-rail.ts` + `admin-nesting.ts` (ADR-850 rail reconciliation) are drift-guard-test-only in prod; `app-shell.tsx:936`'s comment justifying `admin-nesting`'s existence by a runtime rail use is false. | Doc fix in both files + app-shell, or wire the rail to the join. Low-risk. |
+| low | `setWebsitePublished` / `lib/spaces/website.ts` — the external micro-site's only publish switch has no caller (UI shows "Coming soon"); annotated "item 5" deferral with no probed backlog row. Same shape: `lib/elements/qr-studio.ts`, `lib/email-studio/voice-lint.ts` (test-only enforcement). | Add probed backlog rows so each deferral is tracked, or wire the one `onClick`. |
+| low | `app/dev/og-root-card/route.tsx` ships **ungated** to production, unlike its two `/dev` siblings which `notFound()` in prod — keeps a `sharp`/`next-og` rasterizer deployed (counted by `check:og-trace`). | Add the same production gate. |
+| low | Internal links in `loneliness` + `how-to-be-more-social` point at 308 redirect stubs (`/what-is-a-third-space`, `/social-life-without-drinking`) instead of their canonical pillars. | Retarget the links; one-hop 308s so minor. |
+
+### Verified clean (finder A + B, worth not re-auditing)
+
+- **Import graph** (all components/ + lib/, static + dynamic + barrel + registry + DB-driven refs): only the files above lack importers. Puck block registry, admin/studio/nav registries, `templates/index.ts` all fully resolve; every registry `href:` hits a real route.
+- **Routes** (~380 pages/handlers spot-checked against nav): redirect stubs all intentional and documented; QR-entry surfaces reachable via the `/q` resolver; dev pages 2-of-3 prod-gated (the third is the low find above).
+- **Webhooks**: stripe/resend/twilio/inbound-email all verify signatures; all 27 cron routes use cron auth.
+- **DB ⇄ code**: all 274 typed tables reached (direct, `table()` helper, or RPC); only PostGIS `spatial_ref_sys` untouched (expected).
+- **XSS surfaces**: all ~8 admin QR `dangerouslySetInnerHTML` sites inject only server-built, `parseStyle`/`escapeXml`/`isSafeLogoSrc`-validated SVG; Loom SVG re-runs `sanitizeSvg` (fail-closed allowlist) on render and save; rich-text through `sanitizeInlineHtml` + `safeUrl`; theme `<style>` token-allowlisted with a `FORBIDDEN` regex; `json-ld` escapes `</script>`.
+- **Injection**: ~40 PostgREST `.or()`/`.ilike` interpolations sampled — user terms sanitized (`sanitizeOrTerm`/`escapeLike`), the rest use server-derived ids/numeric cursors.
+- **Billing integrity**: PWYW floors, ticket `min_cents`, tip clamps, take-rate all enforced server-side from DB, never client.
+- **Route-handler authz**: token routes use `timingSafeEqual` HMAC + 32-byte random tokens; IDOR-sensitive routes gate ownership; public routes return only public/own-scoped data.
+- **Secrets**: no hardcoded live keys; `NEXT_PUBLIC_*` all genuinely public; server-only modules carry `import 'server-only'`; `signingSecret()` refuses the service-role fallback in production.
+
 ## 2026-08-12 pass (the ENOSPC outage, the Studio re-land, and the 47-finding baseline sweep)
 
 **The pattern worth naming this time.** Every gate in the repo measured the **source tree**; not one

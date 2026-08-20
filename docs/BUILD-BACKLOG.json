@@ -2430,6 +2430,23 @@
         "evidence": "Vercel runtime errors read 2026-08-20T00:06Z: digest 3920664382, count 1, routes /feed, stack c -> gw (view-as-actions) -> practice-streak. Close by fixing the undefined forwarding and observing the digest silent for 30 days, or by showing the impersonated-profile path cannot reach the unguarded readers.",
         "checked": "2026-08-20"
       }
+    },
+    {
+      "id": "SEC-001",
+      "title": "createCircle bottom-up path cannot forge a circle/announcement as another profile",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/admin/actions.ts",
+        "ref": "meta-scan finder B 2026-08-20"
+      },
+      "detail": "Server actions are POST endpoints reachable outside the UI (Next data-security guide, node_modules/next/dist/docs/01-app/02-guides/data-security.md L281). createCircle's ungated bottom-up branch (topical_channel_id present, no authorizeAction) took host_id straight from client form input, then wrote circles.host_id, a memberships row, and a 'Started a new circle' posts.author_id from it - a member could forge a circle, self-join and an announcement authored as an arbitrary victim profile. check:authz read the action as self-guarded because it DOES call authorizeAction (just conditionally) - the 'right guard, wrong scope / client-supplied id' shape the gate cannot see. Fixed: on the bottom-up path host_id is forced to caller.id; only the gated admin path (host+/community ops) may assign a different host. topical_channel_id is FK-checked by the DB (circles_topical_channel_id_fkey).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const f='app/(main)/admin/actions.ts';if(!fs.existsSync(f))process.exit(79);const s=fs.readFileSync(f,'utf8');const code=s.split(String.fromCharCode(10)).filter(x=>{const t=x.trim();return t.indexOf('//')!==0&&t.indexOf('*')!==0}).join(String.fromCharCode(10));const forced=code.includes('isBottomUp ? caller.id');const rawVuln=/const host_id\\\\s*=\\\\s*\\\\(fd.get\\\\('host_id'\\\\) as string\\\\) \\\\|\\\\| caller.id/.test(code);process.exit(forced && !rawVuln ? 0 : 1)\"",
+        "note": "Passes when the forced-host assignment is present on the bottom-up branch and the raw unconditional client-supplied host_id line is gone."
+      }
     }
   ]
 }
