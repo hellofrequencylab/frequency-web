@@ -25,9 +25,10 @@ import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 //   · Breadcrumb — page-level, the route's existing <JsonLd data={breadcrumbSchema}>.
 // So an enrolled article keeps all four; the route keeps the last two.
 //
-// ⚠️ STATUS. LIVE CONSUMERS: `how-to-start-a-circle` (enrolled 2026-08-19) and
-// `how-to-build-community` (enrolled 2026-08-20), each a spec beside this file run
-// through the recipe below. The other six articles are still coded pages;
+// ⚠️ STATUS. LIVE CONSUMERS: `how-to-start-a-circle` (enrolled 2026-08-19),
+// `how-to-build-community` (enrolled 2026-08-20) and `loneliness` (enrolled
+// 2026-08-20), each a spec beside this file run
+// through the recipe below. The other five articles are still coded pages;
 // `check:render-path` gates one slug per PR and enrolling an article is a route
 // change per article, so they enroll one at a time.
 // `article.test.ts` remains the guard that keeps this generator honest independently
@@ -78,6 +79,14 @@ import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 //   · sections gained `beats`          — a section that closes with a photo beat AND a
 //                                        pull quote needs two; `beat` remains the
 //                                        one-beat shorthand (`beats` wins if both).
+//
+// The THIRD enrolment (loneliness, 2026-08-20) widened one more seam, same rule:
+//   · media beats gained `links`       — the coded closing ZigZag carried TWO buttons
+//                                        inside its text column (a Button row, not the
+//                                        single `cta` slot); they become a `Buttons`
+//                                        block closing the beat's band, so neither
+//                                        label nor link is dropped. Unused, nothing
+//                                        renders and existing documents are unchanged.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const L = { spaceTop: 'default', spaceBottom: 'default', visibility: 'all' } as const
@@ -110,6 +119,10 @@ export type ArticleBeat =
       side?: 'left' | 'right'
       ctaLabel?: string
       ctaHref?: string
+      /** A button ROW closing the beat's band, when the coded ZigZag carried more
+       *  buttons than the single `cta` slot holds. Rendered as a `Buttons` block in
+       *  the SAME tone directly under the MediaText, so no label or link is dropped. */
+      links?: ArticleLink[]
     }
 
 /** An in-section button row. Internal links inside the pillar cluster, kept as
@@ -235,6 +248,24 @@ export function articleTemplate(spec: ArticleSpec): Data {
         layout: L,
       },
     })
+    if (beat.links && beat.links.length > 0) {
+      // The beat's button row, in the SAME tone (not nextTone()): the coded buttons sat
+      // INSIDE the ZigZag's band, so the row closes that band rather than opening one.
+      content.push({
+        type: 'Buttons',
+        props: {
+          id: id(`${key}-links`),
+          items: beat.links.map((l) => ({
+            label: l.label,
+            href: l.href,
+            variant: l.variant ?? 'secondary',
+          })),
+          align: 'left',
+          tone,
+          layout: { ...L, spaceTop: 'none' },
+        },
+      })
+    }
   }
 
   content.push({

@@ -48,6 +48,7 @@ export const EDITABLE_PAGES = [
   // document. They enroll ONE PER PR, because each enrolment is also a route change.
   { slug: 'how-to-start-a-circle', title: 'How to start a Circle', path: '/how-to-start-a-circle' },
   { slug: 'how-to-build-community', title: 'How to build community', path: '/how-to-build-community' },
+  { slug: 'loneliness', title: 'Loneliness', path: '/loneliness' },
 ] as const
 
 export type EditableSlug = (typeof EDITABLE_PAGES)[number]['slug']
