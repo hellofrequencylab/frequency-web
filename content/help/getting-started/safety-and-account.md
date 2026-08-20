@@ -26,6 +26,14 @@ Open the member's profile and choose **Block**. When you block someone:
 You can review and undo this anytime under **Settings, Account & privacy**, where
 your blocked members are listed with an **Unblock** button.
 
+## Erase your saved drafts
+
+Anything you start in a create flow saves as a draft so you can come back to it.
+If you want those gone, go to **Settings, Account & privacy** and find **Erase
+your saved drafts**. Type ERASE to confirm. This removes your unfinished drafts
+only. Anything you already published stays exactly where it is. It cannot be
+undone.
+
 ## Delete your account
 
 Go to **Settings, Account & privacy** and find **Delete your account**. Type DELETE

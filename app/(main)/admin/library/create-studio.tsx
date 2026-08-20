@@ -2,11 +2,11 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles, Wand2, RotateCcw, Palette, Zap, Loader2 } from 'lucide-react'
+import { Sparkles, Wand2, RotateCcw, Palette, Zap, Loader2, Trash2 } from 'lucide-react'
 import { sanitizeSvg } from '@/lib/library/svg-sanitize'
 import { Select } from '@/components/ui/select'
 import { generateLoomCard, saveLoomCard, type LoomCardMode } from './vera-actions'
-import { generateWithRecraft, listBrandStyles } from './recraft-actions'
+import { generateWithRecraft, listBrandStyles, deleteBrandStyle } from './recraft-actions'
 import type { BrandStyle } from '@/lib/library/styles'
 import { Input, Textarea } from '@/components/ui/field'
 
@@ -93,6 +93,9 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
   const [count, setCount] = useState(1)
   const [styleId, setStyleId] = useState('')
   const [styles, setStyles] = useState<BrandStyle[]>([])
+  // Two-step confirm for forgetting the picked style — the same idiom as the drawer's
+  // Delete / Confirm delete in loom-grid.
+  const [confirmForget, setConfirmForget] = useState(false)
 
   // Vera preview state (only the Vera engine previews before saving).
   const [svg, setSvg] = useState<string | null>(null)
@@ -130,12 +133,34 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
     setSvg(null)
     setErr(null)
     setMsg(null)
+    setConfirmForget(false)
   }
 
   function reset() {
     setSvg(null)
     setErr(null)
     setMsg(null)
+    setConfirmForget(false)
+  }
+
+  /** Forget the picked trained style. deleteBrandStyle only removes our pointer (Recraft keeps
+   *  the trained style, and art already generated stays in the library), so the only local
+   *  cleanup is dropping it from the picker. */
+  function forgetStyle() {
+    const id = styleId
+    if (!id) return
+    setErr(null)
+    setMsg(null)
+    start(async () => {
+      const res = await deleteBrandStyle(id)
+      if ('error' in res) setErr(res.error)
+      else {
+        setStyles((prev) => prev.filter((s) => s.id !== id))
+        setStyleId('')
+        setMsg('Forgot the style.')
+      }
+      setConfirmForget(false)
+    })
   }
 
   function create() {
@@ -301,7 +326,10 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
                   <Palette className="h-4 w-4" aria-hidden /> Style
                   <Select
                     value={styleId}
-                    onChange={(e) => setStyleId(e.target.value)}
+                    onChange={(e) => {
+                      setStyleId(e.target.value)
+                      setConfirmForget(false)
+                    }}
                     wrapperClassName="inline-block w-max max-w-full"
                     emptyLabel="Base"
                   >
@@ -312,6 +340,20 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
                     ))}
                   </Select>
                 </label>
+              )}
+              {/* Forget the picked trained style. Without this, styles only ever accumulate —
+                  createBrandStyle + listBrandStyles were wired with no way back. Two-step
+                  confirm mirrors the asset drawer's Delete / Confirm delete (loom-grid). */}
+              {styleId && (
+                <button
+                  type="button"
+                  onClick={() => (confirmForget ? forgetStyle() : setConfirmForget(true))}
+                  disabled={busy}
+                  title="Forget this trained style. Art it already made stays in the library."
+                  className="inline-flex items-center gap-1.5 rounded-2xl border border-danger px-3 py-1.5 text-body-sm text-danger hover:bg-danger/10 disabled:opacity-70"
+                >
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden /> {confirmForget ? 'Confirm forget' : 'Forget'}
+                </button>
               )}
             </>
           )}

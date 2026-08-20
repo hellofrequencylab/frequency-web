@@ -12,6 +12,11 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Erase your saved drafts**: a new control under **Settings, Account & privacy** clears your
+  unfinished drafts in one go. Published things are untouched.
+- **Staff can leave a Space preview**: the preview banner now has an **Exit preview** button, so
+  stepping out no longer means waiting for the session to lapse.
+
 - **The map around you shows one pin per gathering, not one per date**: a Circle that meets
   weekly used to take a dozen dots on the same street corner and bury everything else nearby.
   Now it takes one, marked **1+**. Open it and the other dates are there.

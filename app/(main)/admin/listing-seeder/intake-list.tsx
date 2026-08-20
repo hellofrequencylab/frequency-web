@@ -1,6 +1,7 @@
 // The seed list (Wave 1). Lists the operator's listing seeds by status with the review
 // entry point. Composes EntityCard + EmptyState (PAGE-FRAMEWORK) — each card links to the
-// seed's review board. Presentational + server-friendly (no hooks).
+// seed's review board. Presentational + server-friendly (no hooks); the per-card delete
+// is its own client island (DeleteIntakeButton) in EntityCard's action slot.
 
 import { ClipboardPaste, Home, Tag } from 'lucide-react'
 import { EntityCard } from '@/components/cards/entity-card'
@@ -8,6 +9,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { StatusChip } from '@/components/admin/status'
 import type { ListingIntakeStatus, ListingSeedKind } from '@/lib/listing-seeder/types'
 import type { ListingIntakeListItem } from './actions'
+import { DeleteIntakeButton } from './delete-intake-button'
 
 /** The one status vocabulary for a seed: glyph (PRESENTATION legend) + pill tone + label. */
 export const LISTING_STATUS_META: Record<
@@ -66,6 +68,12 @@ export function IntakeList({ intakes }: { intakes: ListingIntakeListItem[] }) {
             title={it.title}
             badge={<StatusChip tone="neutral" size="sm">{kind.label}</StatusChip>}
             description={it.status === 'failed' && it.error ? it.error : undefined}
+            // GATED to non-published seeds on purpose: deleteListingIntake deletes any row and
+            // best-effort removes the staged photos under listing-intake/<id>/ — and publish
+            // reuses those exact URLs on the live listing (lib/listing-seeder/publish.ts), so
+            // deleting an 'applied' seed would strand the published listing's images. Only the
+            // states the action's own semantics make safe to drop get the affordance.
+            action={it.status !== 'applied' ? <DeleteIntakeButton intakeId={it.id} /> : undefined}
             meta={
               <>
                 <StatusChip tone={meta.tone} size="sm">
