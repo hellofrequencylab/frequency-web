@@ -6,7 +6,7 @@ import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { getSpaceReviews, getMySpaceReview } from '@/lib/spaces/content-data'
 import { spaceFunctionDef, spaceFunctionEnabled } from '@/lib/spaces/functions'
 import { setActiveSpace } from '@/lib/spaces/active-space'
-import { SpaceReviews } from '@/components/spaces/community/space-reviews'
+import { SpaceReviews } from '@/components/spaces/space-reviews'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 
 // THE REVIEWS TAB (owner decision: reviews on their own tab). Public read (everyone sees the rating +
