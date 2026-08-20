@@ -4,13 +4,19 @@
 > This document is the spec and the rationale. It does **not** record what is done, because prose
 > cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
 
-**Status:** ⏳ proposed, awaiting owner approval. Nothing here is built.
-**Authority:** [ADR-1013](DECISIONS.md) §3 (the removal ruling) · [ADR-1015](DECISIONS.md) (Circle
-privacy, two axes) · [ADR-1014](DECISIONS.md) (Circle roles) · [ADR-584/585/586/587](DECISIONS.md)
-(what Space Communities is, and why each half exists).
+**Status:** ✅ **approved by the owner 2026-08-19** (OWN-015, verbatim *"Remove Communities,
+replace with circles."*). The build is [LIVE-059](BUILD-BACKLOG.json); the ratified slice sequence
+and the design decisions are [ADR-1091](DECISIONS.md), which amends §6 and §9 below in place.
+**Authority:** [ADR-1091](DECISIONS.md) (the design ruling) · [ADR-1013](DECISIONS.md) §3 (the
+removal ruling) · [ADR-1015](DECISIONS.md) (Circle privacy, two axes) · [ADR-1014](DECISIONS.md)
+(Circle roles) · [ADR-584/585/586/587](DECISIONS.md) (what Space Communities is, and why each half
+exists).
 **Scope:** the Space-level Community feed only. White Label / per-tenant sites are out of scope and
 appear nowhere below.
 **Date:** 2026-08-12 · verified against production `azsqfeonabsbmemvddqd` by read-only query.
+**Re-verified 2026-08-20** (design pass, ADR-1091): every §2.1 count and the §7.1 layout count
+held exactly; the Circle substrate refined to 2 active + 2 forming + 3 draft, all `access='open'`,
+across 2 Spaces.
 
 ---
 
@@ -22,8 +28,8 @@ appear nowhere below.
 | 2 | How much live data? | **Zero.** 0 `space_updates`, 0 `space_update` posts, 0 comments, 0 reactions, 0 notifications, 0 uploaded images. Every table behind it is empty. | 🔴 nothing to migrate |
 | 3 | How many surfaces? | 1 route · 1 always-on profile tab · 1 page-editor block · 1 section anchor · 1 notification destination · 9 actions · 0 admin-menu rows · 0 help articles. | ✅ small blast radius |
 | 4 | Does a Circle replace it? | **Partly.** Roster, room, roles and privacy: yes, shipped. **Reaching everyone who follows the Space: no. Nothing replaces that**, and `access = 'space_members'` does not, for the reason in §4.2. | ⚠️ one real gap |
-| 5 | What happens to live Communities? | There are none. **Recommend hard delete of the feature; leave `space_updates` alive** as the brand-Updates backend it also serves. | ✅ recommended |
-| 6 | Did the owner rule "archive communities"? | **No such ADR exists.** The archive-only ruling is ADR-879 and it governs **Channels**, not Communities, and ADR-882 later gave Channels a real delete anyway. §5.1 quotes both rather than re-deciding. | ⚠️ needs an owner word |
+| 5 | What happens to live Communities? | There are none. **Recommend hard delete of the feature; leave `space_updates` alive** as the brand-Updates backend it also serves. | ✅ approved (ADR-1091) |
+| 6 | Did the owner rule "archive communities"? | **No such ADR exists.** The archive-only ruling is ADR-879 and it governs **Channels**, not Communities, and ADR-882 later gave Channels a real delete anyway. §5.1 quotes both rather than re-deciding. | ✅ ruled: hard delete (OWN-015 + ADR-1091) |
 | 7 | Biggest risk? | The `SpaceCommunity` **block** is misnamed: it renders **Circles**, and 18 of 20 live Spaces have it in a saved layout. An unknown block type is silently skipped (ADR-978), so renaming the key without a jsonb rewrite **silently deletes the Circles section from 18 live pages**. | 🔴 gated on §7.1 |
 | 8 | Broken bookmarks? | `/spaces/<slug>/community` for all 20 Spaces, plus the notification destination that hardcodes it. Both need a 308 to the Space root. | ⚠️ handled in §6 |
 
@@ -350,7 +356,7 @@ predecessor.
 | # | Ships | Depends on | Reversible? | Breaks a URL? |
 | :-- | :-- | :-- | :-- | :-- |
 | **C3.0** | ⚠️ **Fix the `space_members` copy or widen the predicate** (§4.2, option A or B). Standalone; own ADR; own pgTAP if B. | — | ✅ yes | no |
-| **C3.1** | ✅ **Add the public Circles tab** to `buildSpaceProfileNav`, gated on the `circles` `SpaceFunctionKey` + at least one Circle the viewer `canSee`. Rename the section anchor `community` → `circles`, the presence flag with it, and **relabel the `SpaceCommunity` block to `Circles`** — 🔴 **type key unchanged**, see §7.1. | — | ✅ yes | no |
+| **C3.1** | ✅ **Circles takes the name.** ⚠️ *Amended 2026-08-20 (ADR-1091): the "public Circles tab" is the `#circles` SECTION ANCHOR, not a new route — `/spaces/<slug>/circles` is already the owner-only manager (`space.circles` deep-links to it), so a `(profile)/circles` page would collide on the same URL.* Rename the section anchor `community` → `circles` with label `Circles`, the presence flag with it (it already gates on ≥1 live Circle), **relabel the `SpaceCommunity` block to `Circles`** — 🔴 **type key unchanged**, see §7.1 — swap the template eyebrow `'Community'` → `'Join in'` plus a ledgered props-only rewrite of the 18 seeded layouts, and fold the ADR-1013 amendments into `NAMING.md`. | — | ✅ yes | no |
 | **C3.2** | ⚠️ **Repoint the notification destination.** `lib/notifications/href.ts:62` stops emitting `/spaces/<id>/community` and emits `/spaces/<id>` instead. | — | ✅ yes | no |
 | **C3.3** | ⚠️ **Add the 308.** `/spaces/<slug>/community` → `/spaces/<slug>` in `next.config.ts`. **Ships before C3.4, never with it**, so no window exists where the URL 404s. | C3.1 | ✅ yes | ✅ **fixes** one |
 | **C3.4** | 🔴 **Delete the feature.** Route, `components/spaces/community/space-community-{feed,rail}.tsx`, the 7 actions, `getSpaceCommunityFeed` + `getSpaceMemberPosts`, the tab row, `revalidatePath`, `DEDICATED_TAB_ANCHORS`'s `'community'` entry, and the 8 test files in §3.4. | C3.2, C3.3 | ⚠️ `git revert` only | the 308 covers it |
@@ -385,6 +391,12 @@ fail-safe and it is exactly what makes this dangerous: rename the key to `SpaceC
 lose their Circles section **with no error, no log, and no gate that notices**. This is the precise
 failure mode `AGENTS.md` names — *"Every fail-safe needs a gate that notices it fired. A swallowed
 error is an invisible regression."*
+
+⚠️ *Update 2026-08-20: the gate now exists.* `pnpm check:stored-blocks`
+(`scripts/check-stored-blocks.mjs` + `scripts/stored-block-types.json`, which records
+`SpaceCommunity` in 18 stored layouts) fails CI on any stored type key the registry retired. The
+mitigation below still stands — the key is never renamed — and the gate is what notices if anyone
+tries anyway.
 
 **Mitigation, in order of preference:**
 1. ✅ **Do not rename the key.** Change `label` (`'Circles (live)'` → `'Circles'`), the anchor
@@ -466,14 +478,20 @@ that same mistake in a different place.
 
 ## 9 · What the owner is being asked to approve
 
-| # | Decision | This plan's recommendation |
-| :-- | :-- | :-- |
-| 1 | Hard-delete the Community feed code, given 0 live rows? | ✅ **yes** (§5.2). The reversible alternative is one word and costs one release. |
-| 2 | Keep `space_updates` alive for the brand Updates block? | ✅ **yes** (§2.2). |
-| 3 | Is losing "post once, reach every follower" acceptable? | ✅ **yes, drop it** (§4.4). Dispatch and the Message center cover the need; rebuilding it recreates the third container ADR-1013 retired. |
-| 4 | Fix `access='space_members'` — relabel (A), widen (B), or add a mode (C)? | **B**, shipped separately with its own proof (§4.2). |
-| 5 | Rename the `SpaceCommunity` **block type key**? | 🔴 **no** — label and anchor only (§7.1). |
-| 6 | Narrow the `is_space_update_post` RLS arms? | ✅ **yes, in C3.5**, its own migration, after the delete (§5.2, §7.2). |
+── DECIDED 2026-08-19/20. The owner approved the removal (OWN-015: *"Remove Communities, replace
+with circles."*) and [ADR-1091](DECISIONS.md) ratified this plan's recommendations on questions
+1, 2, 3, 5 and 6 exactly as written below. **Question 4 remains the one open owner call** — it is
+now [OWN-034](BUILD-BACKLOG.json), it gates nothing in C3.1–C3.5 (all 7 Space Circles are
+`access='open'` today), and option B, if chosen, ships as its own change with its own pgTAP proof.
+
+| # | Decision | This plan's recommendation | Ruling |
+| :-- | :-- | :-- | :-- |
+| 1 | Hard-delete the Community feed code, given 0 live rows? | ✅ **yes** (§5.2). The reversible alternative is one word and costs one release. | ✅ approved (ADR-1091) |
+| 2 | Keep `space_updates` alive for the brand Updates block? | ✅ **yes** (§2.2). | ✅ approved (ADR-1091) |
+| 3 | Is losing "post once, reach every follower" acceptable? | ✅ **yes, drop it** (§4.4). Dispatch and the Message center cover the need; rebuilding it recreates the third container ADR-1013 retired. | ✅ approved (ADR-1091) |
+| 4 | Fix `access='space_members'` — relabel (A), widen (B), or add a mode (C)? | **B**, shipped separately with its own proof (§4.2). | ⏳ **open — OWN-034** |
+| 5 | Rename the `SpaceCommunity` **block type key**? | 🔴 **no** — label and anchor only (§7.1). | ✅ approved (ADR-1091) |
+| 6 | Narrow the `is_space_update_post` RLS arms? | ✅ **yes, in C3.5**, its own migration, after the delete (§5.2, §7.2). | ✅ approved (ADR-1091) |
 
 ---
 
