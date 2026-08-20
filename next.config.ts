@@ -300,6 +300,22 @@ const nextConfig: NextConfig = {
       { source: '/beta/:slug', destination: '/join/:slug', permanent: true },
       { source: '/onboarding/beta', destination: '/join', permanent: true },
       { source: '/onboarding/beta/:path*', destination: '/join/:path*', permanent: true },
+      // Circles C3.3 (ADR-1091, LIVE-059): Space Communities is removed and a Space's community
+      // is its Circles, which live on the Space's own page. The old Community tab URL carries to
+      // the Space root. Permanent (308): the URL resolves for all 20 live Spaces, carries its own
+      // canonical, and old notification emails already sent cannot be rewritten, so bookmarks and
+      // indexed links should transfer their signals for good. Query strings ride through
+      // automatically, same as the Funnels rules above.
+      //
+      // ⚠️ This rule DELIBERATELY shadows a route that still exists. C3.3 ships BEFORE C3.4
+      // deletes app/(main)/spaces/[slug]/(profile)/community/page.tsx, never with it, so there is
+      // no window where the URL 404s. That works because redirects are checked before the
+      // filesystem router (node_modules/next/dist/docs/.../next-config-js/redirects.md: "Redirects
+      // are checked before the filesystem which includes pages and /public files" — the same
+      // mechanism lib/marketing/funnel-redirects.test.ts guards against when it is unintended).
+      // Once C3.4 lands, this rule shadows nothing. No :path* pair: the community segment has no
+      // nested routes, and proxy.ts carries no carve-out for it.
+      { source: '/spaces/:slug/community', destination: '/spaces/:slug', permanent: true },
     ]
   },
   images: {
