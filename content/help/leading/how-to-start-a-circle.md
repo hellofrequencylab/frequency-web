@@ -162,8 +162,9 @@ all three, but anyone you send the link to can still open it.
   the room.
 - **Members only** means you add people yourself. Nobody else sees inside.
 - **By invite only** means a link or a QR code is the only way in.
-- Circles a Space owns get two more: **Space members only**, and **Included with a
-  membership** if that Space sells one.
+- Circles a Space owns get three more: **Space team only** for the people who help
+  run the Space, **Space members only** for anyone with an active membership in it,
+  and **Included with a membership** if that Space sells one.
 
 The useful pairing most Hosts miss: leave the Circle **listed** and set who can
 join to **Members only**. Strangers find it by name, read what it is about, and ask

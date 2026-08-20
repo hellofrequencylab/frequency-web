@@ -27752,3 +27752,84 @@ plain sentences, no em dashes, and "Circles" is the proper noun that does the wo
 Here the single load-bearing fact — zero rows, ever — was established by query twice, eight days
 apart, and it converted a migration problem into a deletion sequenced around one URL and one
 stored jsonb key.
+
+---
+
+## ADR-1092: Two Space audiences, two Circle modes — `space_members` keeps the staff ladder, `space_paid_members` admits the paying members (2026-08-20)
+
+**Status:** accepted · **Owner ruling:** OWN-034, verbatim **"C: add a paid mode"** ·
+**Touches:** `supabase/migrations/20270319000000_circle_space_paid_members.sql` (written, **not
+applied** by the authoring agent — apply via `execute_sql` + an explicit ledger insert for version
+`20270319000000`, per `supabase/migrations/README.md`), `lib/circles/visibility.ts`,
+`lib/circles/space-entry.ts` (replaces `space-audience.ts`), `lib/circles/store.ts`,
+`app/(main)/circles/actions.ts`, `content/help/leading/how-to-start-a-circle.md` ·
+**Proof:** `supabase/tests/circle_space_paid_members.test.sql` (15 pgTAP assertions, replaces
+`circle_space_audience.test.sql`) · `lib/circles/visibility.test.ts` ·
+`app/(main)/circles/join-privacy.test.ts` · **Amends:** [ADR-1015](DECISIONS.md) §5 ·
+**Supersedes:** the predicate half of [ADR-1021](DECISIONS.md) (its CRM wall stands, restated below)
+
+### The question, and the premise that had expired before the ruling landed
+
+OWN-034 asked the owner to rule on `circles.access = 'space_members'`: the mode's copy promised
+*"anyone with an active membership in your Space"*, while `space_members` the table is the STAFF
+ladder (viewer < editor < moderator < admin; 26 live rows, every one `admin`). Options: relabel
+(A), widen the predicate (B), or add a mode (C). The owner ruled **C**.
+
+⚠️ **The row's premise was stale when it was worked — the ADR-1082 pattern, again.** The row (and
+`CIRCLES-C3-PLAN.md` §4.2, and ADR-1091's restatement) said the mode reads the staff ladder *at
+both layers*. It did on 2026-08-12 — but ADR-1021, applied to production that same day, had since
+pointed the `space_members` arm of `private.can_enter_circle` at `private.is_space_audience`
+(staff **or** an active paid membership). Verified live 2026-08-20: the union was in force, so
+option B's substance had already shipped under a row that still called it open. The ruling C
+therefore does two things: it **adds** `space_paid_members`, and it **narrows** `space_members`
+back to the staff ladder the owner chose to keep.
+
+### The decision
+
+| Mode | Table it reads | Who that is | Label (member-facing) |
+| :-- | :-- | :-- | :-- |
+| `space_members` | `space_members` via `private.is_space_member` | the Space's TEAM: owner + active seats, any rung | **Space team only** |
+| `space_paid_members` (new) | `space_memberships` via `private.is_space_paid_member` (new) | ACTIVE paid memberships (`status='active'`; `payment_status` deliberately not consulted — the 2 live memberships are `active`/`pending`, and billing flips `status` when it means out) | **Space members only** |
+
+- The `circles_access_check` CHECK widens to six values; the axis stays TEXT + CHECK, not an enum.
+- `trg_circles_access_shape` refuses the new mode on a personal Circle (root has no memberships),
+  with **no plan floor**: a free Space may run free tiers, so it has members to admit — the
+  Business-plan floor belongs to *selling* (`tier`), exactly as before.
+- `private.is_space_audience` is **dropped**. No arm asks the staff-OR-paid union any more, and an
+  idle union predicate over an authorization boundary is what a future policy reaches for by
+  accident. Its halves live on as the two per-mode predicates. The app twin
+  `lib/circles/space-audience.ts` is replaced by `lib/circles/space-entry.ts`, one function per
+  mode, so a call site cannot ask the union question either.
+- Stewards (owner / editor+) still enter **every** Circle through `can_write_space_content`
+  (ADR-1015 §5), which is why the paid arm never needs to know about seats — asserted in pgTAP:
+  an `admin` seat enters the paid room, a `viewer` seat does not.
+- The copy stops lying in both directions: `space_members` reads *"People on your Space team can
+  join themselves. Members cannot."*; `space_paid_members` inherits the sentence the old mode
+  wrongly promised, now true: *"Anyone with an active membership in your Space can join
+  themselves."* The help article names all three Space modes honestly. No Studio manifest change:
+  the access control lives in the Circle settings form and the admin console module, both of
+  which render `CIRCLE_ACCESS_MODES` + label/hint records, so the new mode is a data row.
+
+### 🔴 What this narrows, measured
+
+An active paying member could enter a `space_members` Circle under ADR-1021 and cannot after this
+applies. Live impact is **nil**: 7 Circles in production, all `access='open'`, 0 closed
+(re-measured 2026-08-20) — nobody loses a room they can reach today, and the paying audience gains
+the mode that names them. The CRM wall stands unchanged and is re-asserted in the new pgTAP file
+in **both directions**: `is_space_member` never learns `space_memberships` (sixteen policies gate
+the CRM, notes, orders and disputes on it), and `is_space_paid_member` never reads the staff
+ladder.
+
+### Rejected alongside
+
+- **B (widen), i.e. keep ADR-1021's union** — the owner ruled against one mode wearing both
+  audiences; "who runs the Space" and "who pays the Space" answer different doors.
+- **Keying the paid predicate on `payment_status`** — would shut out every live member the day it
+  ships (`status='active', payment_status='pending'`), and `status` is the lifecycle the app writes.
+- **A plan floor on the new mode** — a free Space's free-tier members are still members; gating
+  entry on the operator's plan would evict a room's audience when a subscription lapses.
+
+**The durable rule** (third time it has earned its keep, after ADR-1082 and ADR-1091): re-measure
+a row's premise before working it. This one was wrong at the *database* layer while three
+documents agreed with each other — the tree is not the cluster, and only the cluster knows which
+predicate an arm calls today.

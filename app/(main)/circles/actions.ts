@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
 import { asCircleAccess, canJoinCircle } from '@/lib/circles/visibility'
-import { isSpaceAudience } from '@/lib/circles/space-audience'
+import { isSpacePaidMember, isSpaceTeamSeat } from '@/lib/circles/space-entry'
 import { processGamificationEvent } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
 import { sendInviteEmail } from '@/lib/email'
@@ -100,7 +100,7 @@ export async function joinCircle(
   const access = asCircleAccess(row.access)
   if (access !== 'open') {
     const spaceId = row.space_id ?? null
-    const [alreadyIn, staff, spaceSeat] = await Promise.all([
+    const [alreadyIn, staff, teamSeat, paidMembership] = await Promise.all([
       admin
         .from('memberships')
         .select('id')
@@ -109,11 +109,15 @@ export async function joinCircle(
         .eq('status', 'active')
         .maybeSingle(),
       isPlatformStaff(),
-      // Only 'space_members' can be opened by a Space seat, so the lookup is skipped otherwise —
-      // Space membership is not a general key to a Space's Circles.
+      // Each Space mode gets ITS OWN lookup, and each is skipped unless this circle is on that
+      // mode — a seat opens only 'space_members', a paid membership opens only
+      // 'space_paid_members', and neither is a general key to a Space's Circles (OWN-034 ruling C).
       access === 'space_members' && spaceId
-        ? isSpaceAudience(admin, spaceId, myProfileId).then((data) => ({ data }))
-        : Promise.resolve({ data: null }),
+        ? isSpaceTeamSeat(admin, spaceId, myProfileId)
+        : Promise.resolve(false),
+      access === 'space_paid_members' && spaceId
+        ? isSpacePaidMember(admin, spaceId, myProfileId)
+        : Promise.resolve(false),
     ])
 
     const verdict = canJoinCircle({
@@ -122,7 +126,8 @@ export async function joinCircle(
       hostId: (row.host_id ?? null) as string | null,
       viewerProfileId: myProfileId,
       isMember: !!alreadyIn.data,
-      isSpaceMember: !!spaceSeat.data,
+      isSpaceMember: teamSeat,
+      isSpacePaidMember: paidMembership,
       // A steward is resolved through the staff arm only here: the operator surfaces that manage a
       // Circle do not route through joinCircle, so paying for a second Space lookup on the join
       // path would buy nothing. FAIL-CLOSED is the right direction for a join.
