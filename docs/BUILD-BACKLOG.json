@@ -47,7 +47,8 @@
             "LIVE-061",
             "HYG-009",
             "LIVE-069",
-            "LIVE-071"
+            "LIVE-071",
+            "LIVE-073"
           ]
         },
         {
@@ -2930,6 +2931,23 @@
         "cmd": "node -e \"const fs=require('fs');const F='app/(main)/events/new/event-form.tsx';if(!fs.existsSync(F))process.exit(79);const t=fs.readFileSync(F,'utf8').replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const i=t.indexOf('<ImageUpload');if(i<0)process.exit(0);const seg=t.slice(i,t.indexOf('/>',i)+2);process.exit(seg.includes('uploadFn')?0:1)\""
       },
       "notes": "Probe measures the consequence at the reported site: the create-event cover uploader must carry an uploadFn (the server-routed branch) rather than falling through to the direct-browser write. Exits 79 if the file moves, so a rename reads as cannot-look rather than fixed."
+    },
+    {
+      "id": "LIVE-073",
+      "title": "The events listing horizon is an operator setting, and it ships uncapped",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/events/index-data.ts",
+        "ref": "the hardcoded 60-day ceiling (owner report: Lumi’s event was nowhere to be found, 2026-08-20)"
+      },
+      "detail": "A host published a gathering 64 days out and it never appeared on /events. The cause was a hardcoded 60-day ceiling in app/(main)/events/index-data.ts (`const future = now + 60 days`), applied to all three of the loader's reads. Nothing anywhere explained the omission — not the listing, not the event page, not the host's own library — which is the worst failure this surface has. Owner ruling 2026-08-20: \"Remove that cap for now. Make it a setting in the admin.\" SHIPPED: platform_settings.events_listing_horizon_days (0 = no cap, and 0 is the default, the missing-row reading, and the fail-safe on any read error), read through eventsListingHorizonDays() in lib/platform-flags.ts, set from /admin/events > Listing horizon. The loader omits its upper bound entirely when uncapped rather than substituting a far-future sentinel, because a sentinel is a hardcoded 60 wearing a bigger number. The row budget (SERIES_WIDE_READ, ADR-897) still bounds every read; removing the date ceiling did not remove the row ceiling, and the rows a full budget drops are the furthest out because each query orders by starts_at ascending.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const p='app/(main)/events/index-data.ts';if(!fs.existsSync(p))process.exit(79);const t=fs.readFileSync(p,'utf8');const hard=/60\\\\s*\\\\*\\\\s*24\\\\s*\\\\*\\\\s*60\\\\s*\\\\*\\\\s*60\\\\s*\\\\*\\\\s*1000/.test(t);const wired=t.includes('eventsListingHorizonDays')&&t.includes('listUntil');process.exit(!hard&&wired?0:1)\""
+      },
+      "notes": "The probe measures the consequence in the loader, not the words in the title: the hardcoded 60-day arithmetic must be absent AND the setting must be what computes the bound. Re-introducing either a literal ceiling or a sentinel date fails it."
     }
   ]
 }

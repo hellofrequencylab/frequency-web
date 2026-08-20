@@ -12,7 +12,7 @@ import { posterSignedUrlMap } from '@/lib/events/poster-media'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import { listableOnly } from '@/lib/events/market-listing'
 import { pointFromGeog } from '@/lib/events/geo'
-import { demoModeEnabled } from '@/lib/platform-flags'
+import { demoModeEnabled, eventsListingHorizonDays } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import { resolvePageContent } from '@/lib/page-content'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
@@ -351,7 +351,27 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     await resolvePageContent('/events', CONTENT_FALLBACK)
 
   const nowDate = new Date()
-  const future = new Date(nowDate.getTime() + 60 * 24 * 60 * 60 * 1000).toISOString()
+  // THE LISTING HORIZON — operator-set, and UNCAPPED by default (owner ruling 2026-08-20).
+  //
+  // This was a hardcoded 60 days. A host published a gathering 64 days out, it never appeared here,
+  // and nothing anywhere explained why. `eventsListingHorizonDays()` is the setting that replaced
+  // it (/admin/events > Listing horizon): 0 means NO CAP, and 0 is the default, the missing-row
+  // reading, and the fail-safe on a settings read error. A positive number caps at that many days.
+  //
+  // NULL means "omit the upper bound entirely" on all three reads below. Deliberately not a
+  // far-future sentinel date: an unbounded query is the honest expression of no cap, and a sentinel
+  // is only a hardcoded 60 wearing a bigger number.
+  //
+  // ⚠️ REMOVING THE DATE CEILING DOES NOT REMOVE THE ROW BUDGET. Every read below still carries
+  // .limit(SERIES_WIDE_READ) and the ADR-897 series fold that budget exists for. If the far-future
+  // set ever grows past that budget, the rows dropped are the FURTHEST out (each query is ordered
+  // by starts_at ascending), which is the right tail to lose — raise SERIES_WIDE_READ deliberately
+  // rather than reaching for a date ceiling again.
+  const horizonDays = await eventsListingHorizonDays()
+  const listUntil =
+    horizonDays > 0
+      ? new Date(nowDate.getTime() + horizonDays * 24 * 60 * 60 * 1000).toISOString()
+      : null
   // An event stays "upcoming" through the end of its start day. starts_at stores the
   // wall-clock as UTC PARTS, so the floor must be the start of TODAY in the community's
   // HOME zone expressed the same way — otherwise, once UTC rolls past midnight (~5pm PT),
@@ -399,12 +419,15 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
           .eq('status', 'published')
           .eq('is_cancelled', false)
           .gte('starts_at', listableFrom)
-          .lte('starts_at', future)
-          .order('starts_at', { ascending: true })
+        // The ceiling is applied only when there IS one; uncapped omits the bound (see listUntil).
+        if (listUntil) circleQuery = circleQuery.lte('starts_at', listUntil)
         if (hideDemo) circleQuery = circleQuery.eq('is_demo', false)
         // Over-fetch for the series fold (ADR-897): a post-query fold spends the LIMIT on rows it
         // then discards, so a single daily series could otherwise consume this whole budget.
-        return circleQuery.limit(SERIES_WIDE_READ).then(({ data }) => (data ?? []) as unknown as EventRow[])
+        return circleQuery
+          .order('starts_at', { ascending: true })
+          .limit(SERIES_WIDE_READ)
+          .then(({ data }) => (data ?? []) as unknown as EventRow[])
       })()
     : Promise.resolve([])
 
@@ -421,12 +444,15 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     .eq('status', 'published')
     .eq('is_cancelled', false)
     .gte('starts_at', listableFrom)
-    .lte('starts_at', future)
-    .order('starts_at', { ascending: true })
+  // The ceiling is applied only when there IS one; uncapped omits the bound (see listUntil).
+  if (listUntil) publicQuery = publicQuery.lte('starts_at', listUntil)
   if (hideDemo) publicQuery = publicQuery.eq('is_demo', false)
   // A GLOBAL cap on the community's whole upcoming public set, not a display count: rows past it are
   // dropped by the DATABASE before the fold can run, so it is raised rather than multiplied (ADR-897).
-  const rawPublicP = publicQuery.limit(SERIES_WIDE_READ).then(({ data }) => (data ?? []) as unknown as EventRow[])
+  const rawPublicP = publicQuery
+    .order('starts_at', { ascending: true })
+    .limit(SERIES_WIDE_READ)
+    .then(({ data }) => (data ?? []) as unknown as EventRow[])
 
   const distanceByIdP: Promise<Map<string, number | null>> = myGeocell
     ? nearbyEvents(supabase, { lat: myGeocell.lat, lng: myGeocell.lng, radiusM: 50_000, limit: SERIES_WIDE_READ })
@@ -448,10 +474,13 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
           // into the community events index — those live on the space, not here (ADR-254).
           .in('scope_type', ['circle', 'public'])
           .gte('starts_at', listableFrom)
-          .lte('starts_at', future)
-          .order('starts_at', { ascending: true })
+        // The ceiling is applied only when there IS one; uncapped omits the bound (see listUntil).
+        if (listUntil) hostedQuery = hostedQuery.lte('starts_at', listUntil)
         if (hideDemo) hostedQuery = hostedQuery.eq('is_demo', false)
-        return hostedQuery.limit(SERIES_WIDE_READ).then(({ data }) => (data ?? []) as unknown as EventRow[])
+        return hostedQuery
+          .order('starts_at', { ascending: true })
+          .limit(SERIES_WIDE_READ)
+          .then(({ data }) => (data ?? []) as unknown as EventRow[])
       })()
     : Promise.resolve([])
 

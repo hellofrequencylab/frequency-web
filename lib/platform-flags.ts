@@ -183,6 +183,96 @@ export const announcementEndsAt = cache(async (): Promise<Date | null> => {
   return Number.isNaN(ms) ? null : new Date(ms)
 })
 
+// ── The events listing HORIZON (platform_settings.events_listing_horizon_days) ───────────────────
+//
+// How far ahead the community events listing (app/(main)/events/index-data.ts) will look. It gates
+// the `.lte('starts_at', ...)` ceiling on all three of that loader's reads: circle events, public
+// events, and the viewer's own hosted events.
+//
+// WHY IT EXISTS: the ceiling used to be a hardcoded 60 days. A host published a gathering 64 days
+// out, it never appeared on the listing, and nothing anywhere said why — not the listing, not the
+// event page, not the host's own library. An invisible event with no explanation is the worst
+// failure this surface has. The owner ruled on 2026-08-20: "Remove that cap for now. Make it a
+// setting in the admin."
+//
+// 🔴 ZERO MEANS NO CAP, and zero is the shipped default. A positive number caps the listing at that
+// many days ahead; 0 (and a missing row, and any value that does not read as a non-negative whole
+// number) means the loader OMITS its upper bound entirely and every upcoming event lists. There is
+// deliberately no far-future sentinel date: an unbounded query is the honest expression of "no cap",
+// and a sentinel is just a hardcoded 60 wearing a bigger number.
+//
+// FAIL-SAFE DIRECTION IS *NO CAP*, on purpose and against the usual instinct. Most flags in this
+// file fail closed, because the risk they carry is a surface doing something (spending, sending,
+// exposing). The risk HERE is the opposite: the bug was invisibility. A transient settings read
+// failure must not be able to re-hide a host's event, so a throw, a missing row, and garbage all
+// degrade to showing everything upcoming. The row budget still bounds the query (SERIES_WIDE_READ),
+// so "no cap" is not "no limit".
+//
+// WHY platform_settings AND NOT platform_flags: `platform_flags.value` is `boolean NOT NULL`
+// (supabase/migrations/20260603000001_demo_0_infrastructure.sql:73-77, re-verified against the live
+// database 2026-08-20) — it is not a JSONB store and cannot hold a number, and widening it would
+// break the SQL that reads it in a boolean context (`coalesce((select value from platform_flags
+// where key = 'demo_mode'), true)` inside feed_for_viewer). `platform_settings` is the repo's
+// key -> text store and is already where operator-tunable NUMBERS live (`events_series_display`,
+// ADR-897). Same table, same reader, same writer; nothing new to learn.
+//
+// NO AUDIT LEDGER: platform_flag_events.value is boolean, so this number is unlogged, the same gap
+// the series knobs carry. Do not build a parallel ledger for one integer.
+
+/** The one platform_settings key. */
+export const EVENTS_LISTING_HORIZON_KEY = 'events_listing_horizon_days'
+
+/** The stored value that means "no ceiling at all" — and the shipped default. */
+export const NO_LISTING_HORIZON = 0
+
+/**
+ * Coerce a stored setting into a non-negative whole number of days. NEVER throws.
+ *
+ * Anything that is not a non-negative finite number — an empty/absent row, text, a negative, a
+ * fraction below 1, Infinity, NaN — returns 0, which the loader reads as NO CAP. Showing more is
+ * the safe direction here (see the header): a garbage value must not be able to hide events.
+ */
+export function coerceListingHorizonDays(raw: unknown): number {
+  // Only a number or a numeric string can be a horizon; everything else is no cap. Typed this way
+  // rather than as a bare Number(raw) because Number() THROWS on a symbol, and a coercion whose
+  // whole job is to be the fail-safe must not be the thing that throws.
+  if (typeof raw !== 'number' && typeof raw !== 'string') return NO_LISTING_HORIZON
+  const n = typeof raw === 'number' ? raw : Number(raw.trim())
+  // Covers NaN, both infinities, negatives, a fraction under one whole day, and the empty row
+  // (Number('') is 0). All of them mean no cap.
+  if (!Number.isFinite(n) || n <= 0) return NO_LISTING_HORIZON
+  return Math.floor(n)
+}
+
+/**
+ * How many days ahead the events listing looks. 0 = no cap (the default). Cached per request, so
+ * the loader's three reads share one round trip.
+ *
+ * FAIL-SAFE: a missing row, a malformed value, or any read error returns 0 — no cap, everything
+ * upcoming lists.
+ */
+export const eventsListingHorizonDays = cache(async (): Promise<number> => {
+  try {
+    return coerceListingHorizonDays(await getPlatformSetting(EVENTS_LISTING_HORIZON_KEY, ''))
+  } catch {
+    return NO_LISTING_HORIZON
+  }
+})
+
+/**
+ * Persist the horizon. Returns the STORED value, not what was asked for, so an operator who types
+ * "-5" or "3.7" sees what actually landed instead of believing their number took.
+ * Operator-gated callers only (the server action re-verifies janitor).
+ */
+export async function setEventsListingHorizonDays(
+  days: number,
+  changedBy?: string | null,
+): Promise<number> {
+  const next = coerceListingHorizonDays(days)
+  await setPlatformSetting(EVENTS_LISTING_HORIZON_KEY, String(next), changedBy ?? null)
+  return next
+}
+
 // Vera AUTONOMY master switch (platform_flags.vera_autonomy_enabled) — the graduation gate that
 // lets Vera SEND email autonomously (past propose-only, ADR-028). This is ALSO the global kill
 // switch: OFF stops every autonomous send at once. Defaults to FALSE on a missing row OR any read

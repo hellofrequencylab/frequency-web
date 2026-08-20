@@ -1,0 +1,52 @@
+-- ============================================================================
+-- EVENTS LISTING HORIZON — the hardcoded 60-day ceiling on /events becomes an
+-- operator setting, and ships UNCAPPED (owner ruling 2026-08-20).
+-- ============================================================================
+--
+-- ── WHAT WENT WRONG ────────────────────────────────────────────────────────
+-- app/(main)/events/index-data.ts capped all three of its reads (circle events,
+-- public events, the viewer's own hosted events) at `now + 60 days`. A host
+-- published a gathering 64 days out and it never appeared on the community
+-- events listing. Nothing explained the absence: not the listing, not the event
+-- page, not the host's own library. The owner ruled: "Remove that cap for now.
+-- Make it a setting in the admin."
+--
+-- ── THE SEMANTICS: ZERO MEANS NO CAP ───────────────────────────────────────
+-- The value is a whole number of days. 0 means the listing omits its upper
+-- bound entirely and shows every upcoming event; a positive number caps at that
+-- many days ahead. 0 is what this migration seeds, what a MISSING row reads as,
+-- and what a garbage or negative value degrades to. The fail-safe direction is
+-- deliberately the permissive one: the bug was invisibility, so a settings read
+-- failure must show more, never less. The read is
+-- `eventsListingHorizonDays()` in lib/platform-flags.ts; the operator control
+-- is /admin/events > Listing horizon.
+--
+-- ── WHY platform_settings AND NOT platform_flags ───────────────────────────
+-- `platform_flags.value` is `boolean not null`
+-- (20260603000001_demo_0_infrastructure.sql:73-77, re-verified against the live
+-- database on 2026-08-20). It is not a JSONB store and cannot hold a number,
+-- and widening it would break the SQL that reads it in a boolean context
+-- (`coalesce((select value from platform_flags where key = 'demo_mode'), true)`
+-- inside feed_for_viewer). `platform_settings` is the key -> text store this
+-- repo already uses for operator-tunable NUMBERS (`events_series_display`,
+-- ADR-897), with a request-cached reader and an upserting writer already in
+-- lib/platform-flags.ts.
+--
+-- ── WHY A SEED ROW IS SAFE HERE ────────────────────────────────────────────
+-- lib/events/series-config.ts argues against seeding, because a seeded row
+-- becomes a SECOND source of truth for a default that code may later change.
+-- That risk does not apply: the code default and the seeded value are both 0,
+-- and 0 is not a tuning number an implementer might revisit, it is the owner's
+-- ruling ("no cap") expressed as data. The row is there so an operator reading
+-- the table can SEE the setting exists. `on conflict do nothing` so a re-run can
+-- never clobber a horizon an operator has since set.
+--
+-- Additive, idempotent, SAFE to re-run. No DDL: platform_settings has existed
+-- since 20260616170000_platform_settings.sql (service-role only, RLS enabled,
+-- no client policies). Applied to production SEPARATELY (do NOT apply from a
+-- worktree). No em or en dashes in copy.
+-- ============================================================================
+
+insert into public.platform_settings (key, value)
+values ('events_listing_horizon_days', '0')
+on conflict (key) do nothing;
