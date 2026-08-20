@@ -47,23 +47,40 @@
  * `invite` and `tier` both resolve through a real `memberships` row once someone is actually in:
  * redeeming an invite and buying a tier each WRITE that row, so entry is a durable fact and never
  * a live re-check against Stripe. What the mode governs is the DOOR.
+ *
+ * ⚠️ THE TWO SPACE MODES ARE TWO AUDIENCES (OWN-034 ruling C, ADR-1092). `space_members` admits
+ * the Space's STAFF ladder (`space_members` seats: viewer < editor < moderator < admin — the
+ * people who run the Space), and `space_paid_members` admits the Space's ACTIVE paying members
+ * (`space_memberships`). The tables have near-identical names and are NOT the same people; the
+ * old copy promised the payers while the mode admitted the staff, and the ruling's answer was
+ * one mode per audience, never one mode wearing both labels.
  */
-export type CircleAccess = 'open' | 'circle_members' | 'space_members' | 'invite' | 'tier'
+export type CircleAccess =
+  | 'open'
+  | 'circle_members'
+  | 'space_members'
+  | 'space_paid_members'
+  | 'invite'
+  | 'tier'
 
 export const CIRCLE_ACCESS_MODES: readonly CircleAccess[] = [
   'open',
   'circle_members',
   'space_members',
+  'space_paid_members',
   'invite',
   'tier',
 ]
 
 /** Member-facing labels. Voice per docs/CONTENT-VOICE.md: plain sentences, no em dashes, no
- *  narrating how the reader feels. */
+ *  narrating how the reader feels. NOTE the pair that must never swap back: `space_members` is the
+ *  TEAM (the mode key names the staff table), and `space_paid_members` is the Space's members in
+ *  the operator's own language — the people who bought a membership. */
 export const CIRCLE_ACCESS_LABEL: Record<CircleAccess, string> = {
   open: 'Anyone can join',
   circle_members: 'Members only',
-  space_members: 'Space members only',
+  space_members: 'Space team only',
+  space_paid_members: 'Space members only',
   invite: 'By invite only',
   tier: 'Included with a membership',
 }
@@ -73,7 +90,8 @@ export const CIRCLE_ACCESS_LABEL: Record<CircleAccess, string> = {
 export const CIRCLE_ACCESS_HINT: Record<CircleAccess, string> = {
   open: 'Anyone who finds this circle can join it straight away.',
   circle_members: 'People get in only when you add them. Nobody else sees inside.',
-  space_members: 'Anyone with an active membership in your Space can join themselves.',
+  space_members: 'People on your Space team can join themselves. Members cannot.',
+  space_paid_members: 'Anyone with an active membership in your Space can join themselves.',
   invite: 'An invite link or a QR code is the only way in.',
   tier: 'Joining comes with a paid membership tier you set up in your Space.',
 }
@@ -82,12 +100,17 @@ export const CIRCLE_ACCESS_HINT: Record<CircleAccess, string> = {
  *  sentence the save action refuses with. Written once because a note and a refusal that disagree
  *  teach an operator two different rules for the same wall. */
 export const CIRCLE_ACCESS_LIMIT_NOTE =
-  'Space member access and paid membership tiers are available to circles a Space owns, on the Business plan.'
+  'Space team access, Space member access, and paid membership tiers are for circles a Space owns. Selling a tier comes with the Business plan.'
 
 /** Which modes need a real (non-root) owning Space. A personal Circle lives on the root sentinel,
- *  which has no roster to admit from and sells nothing, so both are nonsense there. The database
- *  refuses them outright (`trg_circles_access_shape`); this is the same list for the UI. */
-export const SPACE_ONLY_ACCESS_MODES: readonly CircleAccess[] = ['space_members', 'tier']
+ *  which has no team, no memberships to admit from, and sells nothing, so all three are nonsense
+ *  there. The database refuses them outright (`trg_circles_access_shape`); this is the same list
+ *  for the UI. */
+export const SPACE_ONLY_ACCESS_MODES: readonly CircleAccess[] = [
+  'space_members',
+  'space_paid_members',
+  'tier',
+]
 
 /** The plans that may SELL access to a Circle. A mirror of `private.space_can_sell`
  *  (20270227000000), and the drift between the two is asserted in visibility.test.ts against the
@@ -114,8 +137,8 @@ export function spaceCanSell(space: { type?: string | null; plan?: string | null
 /** Which access modes this Circle may actually be set to, given the Space that owns it.
  *
  *  The UI must not offer a mode the trigger will refuse. Both refusals are real and both are
- *  raised by `trg_circles_access_shape`: `circle_access_needs_space` for the two Space modes on a
- *  personal Circle, and `circle_access_plan_floor` for `tier` below the Business plan. This is the
+ *  raised by `trg_circles_access_shape`: `circle_access_needs_space` for the three Space modes on
+ *  a personal Circle, and `circle_access_plan_floor` for `tier` below the Business plan. This is the
  *  same rule stated once so the form and the database cannot disagree.
  *
  *  ⚠️ This narrows what is OFFERED. It is not the enforcement, and it must never become the only
@@ -157,6 +180,7 @@ export function asCircleAccess(raw: unknown): CircleAccess {
     raw === 'open' ||
     raw === 'circle_members' ||
     raw === 'space_members' ||
+    raw === 'space_paid_members' ||
     raw === 'invite' ||
     raw === 'tier'
   ) {
@@ -185,9 +209,14 @@ export interface CircleViewerFacts {
   viewerProfileId: string | null
   /** Does the viewer hold an ACTIVE membership in this Circle? */
   isMember: boolean
-  /** Is the viewer an active member of the Space that OWNS this Circle? Only opens a Circle whose
-   *  access is `space_members` — Space membership is not a general key to a Space's Circles. */
+  /** Does the viewer hold a seat on the owning Space's TEAM (owner, or an active `space_members`
+   *  row of any rung)? Only opens a Circle whose access is `space_members` — a seat is not a
+   *  general key to a Space's Circles. STAFF, not the paying audience (OWN-034 ruling C). */
   isSpaceMember: boolean
+  /** Does the viewer hold an ACTIVE paid membership (`space_memberships`) in the owning Space?
+   *  Only opens a Circle whose access is `space_paid_members`, and never merges with the seat
+   *  fact above — the two audiences staying separate IS the OWN-034 ruling. */
+  isSpacePaidMember: boolean
   /** Does the viewer steward the owning Space (owner / editor+)? For a personal Circle this is the
    *  ROOT space, so only platform staff can be true here — which is exactly why
    *  `private.can_view_space_content` cannot carry personal-circle privacy on its own. */
@@ -206,6 +235,7 @@ export function canEnterCircle(f: CircleViewerFacts): boolean {
   if (f.isMember) return true
   if (f.hostId !== null && f.viewerProfileId !== null && f.hostId === f.viewerProfileId) return true
   if (f.access === 'space_members' && f.isSpaceMember) return true
+  if (f.access === 'space_paid_members' && f.isSpacePaidMember) return true
   if (f.isSpaceSteward) return true
   if (f.isPlatformStaff) return true
   return false
@@ -229,25 +259,32 @@ export function canSeeCircle(f: CircleViewerFacts): boolean {
 /**
  * May this viewer JOIN on their own? Each closed mode has its own door, and the default is deny:
  *
- *   open            self-serve, exactly as today
- *   space_members   a member of the owning Space walks in; nobody else does
- *   invite          only a caller HOLDING an invite (an invite link or a Host-minted QR)
- *   circle_members  no public door at all; the Host adds you
- *   tier            buying the linked tier writes the membership row, so the join never comes
- *                   through here at all — hence a plain refusal with a reason the UI can act on
+ *   open                self-serve, exactly as today
+ *   space_members       someone on the owning Space's team walks in; nobody else does
+ *   space_paid_members  an active paid member of the owning Space walks in; nobody else does
+ *   invite              only a caller HOLDING an invite (an invite link or a Host-minted QR)
+ *   circle_members      no public door at all; the Host adds you
+ *   tier                buying the linked tier writes the membership row, so the join never comes
+ *                       through here at all — hence a plain refusal with a reason the UI can act on
  *
  * `invited` is passed explicitly by the caller that HOLDS the invite, so an un-invited path cannot
  * acquire the right by accident: the default is `false`.
  */
 export function canJoinCircle(
   f: CircleViewerFacts & { invited?: boolean },
-): { ok: true } | { ok: false; reason: 'signed-out' | 'invite-only' | 'space-members-only' | 'paid' | 'closed' } {
+):
+  | { ok: true }
+  | {
+      ok: false
+      reason: 'signed-out' | 'invite-only' | 'space-members-only' | 'membership-only' | 'paid' | 'closed'
+    } {
   if (f.viewerProfileId === null) return { ok: false, reason: 'signed-out' }
   if (f.access === 'open') return { ok: true }
   // Already inside, or authoritative over it: joining is a no-op, not a refusal.
   if (canEnterCircle(f)) return { ok: true }
   if (f.invited === true) return { ok: true }
   if (f.access === 'space_members') return { ok: false, reason: 'space-members-only' }
+  if (f.access === 'space_paid_members') return { ok: false, reason: 'membership-only' }
   if (f.access === 'tier') return { ok: false, reason: 'paid' }
   if (f.access === 'invite') return { ok: false, reason: 'invite-only' }
   return { ok: false, reason: 'closed' }

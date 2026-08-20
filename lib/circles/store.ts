@@ -137,20 +137,24 @@ async function resolveCircleViewer(
       isPlatformStaff(),
     ])
 
-    // Two DIFFERENT questions about the owning Space, and conflating them was the bug the owner's
-    // ruling exposed:
-    //   isSpaceMember   — an active seat of any role. Opens the Circle ONLY when access is
-    //                     'space_members' ("a private circle that space members can only access if
-    //                     they are a member"). Space membership is not a general key.
-    //   isSpaceSteward  — owner or editor+. Mirrors `private.can_write_space_content`: someone who
-    //                     can move or delete the Circle can read it.
+    // Three DIFFERENT questions about the owning Space, and conflating any two was the bug the
+    // owner's rulings exposed (ADR-1015; OWN-034 ruling C, ADR-1092):
+    //   isSpaceMember      — a seat on the TEAM (owner, or an active `space_members` row of any
+    //                        rung). Opens the Circle ONLY when access is 'space_members'. A seat
+    //                        is not a general key.
+    //   isSpacePaidMember  — an ACTIVE paid membership (`space_memberships`). Opens the Circle
+    //                        ONLY when access is 'space_paid_members'. Looked up only on that
+    //                        mode, so every other closed circle costs what it did before.
+    //   isSpaceSteward     — owner or editor+. Mirrors `private.can_write_space_content`: someone
+    //                        who can move or delete the Circle can read it.
     // For a PERSONAL Circle the owning Space is ROOT, whose owner_profile_id is unset and whose
-    // roster is empty, so both are false and only the staff arm can open it. That asymmetry is the
-    // whole reason the DB policy could not be built on the space predicate.
+    // rosters are empty, so all three are false and only the staff arm can open it. That
+    // asymmetry is the whole reason the DB policy could not be built on the space predicate.
     let isSpaceMember = false
+    let isSpacePaidMember = false
     let isSpaceSteward = false
     if (spaceId && viewerProfileId) {
-      const [owned, seat] = await Promise.all([
+      const [owned, seat, paid] = await Promise.all([
         admin.from('spaces').select('id').eq('id', spaceId).eq('owner_profile_id', viewerProfileId).maybeSingle(),
         admin
           .from('space_members')
@@ -159,9 +163,19 @@ async function resolveCircleViewer(
           .eq('profile_id', viewerProfileId)
           .eq('status', 'active')
           .maybeSingle(),
+        access === 'space_paid_members'
+          ? admin
+              .from('space_memberships')
+              .select('id')
+              .eq('space_id', spaceId)
+              .eq('member_profile_id', viewerProfileId)
+              .eq('status', 'active')
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
       ])
       const role = (seat.data as { role?: string } | null)?.role ?? null
       isSpaceMember = !!owned.data || role !== null
+      isSpacePaidMember = !!paid.data
       isSpaceSteward = !!owned.data || role === 'editor' || role === 'moderator' || role === 'admin'
     }
 
@@ -172,6 +186,7 @@ async function resolveCircleViewer(
       viewerProfileId,
       isMember: !!membership.data,
       isSpaceMember,
+      isSpacePaidMember,
       isSpaceSteward,
       isPlatformStaff: staff,
     }

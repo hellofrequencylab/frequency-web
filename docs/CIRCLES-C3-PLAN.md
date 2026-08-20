@@ -228,6 +228,20 @@ which despite its name reads **Circles**) both stay.
 
 ### 4.2 🔴 `access = 'space_members'` is not the audience you think it is
 
+> **RULED 2026-08-20 (OWN-034, [ADR-1092](DECISIONS.md)): option C.** `space_members` keeps the
+> staff ladder and is labelled **"Space team only"**; a new `space_paid_members` mode admits
+> active `space_memberships` holders and takes the **"Space members only"** label with the
+> sentence this section quotes. Migration `20270319000000_circle_space_paid_members.sql`, proof
+> `supabase/tests/circle_space_paid_members.test.sql`.
+>
+> ⚠️ **Premise correction (the ADR-1082 pattern):** the paragraph below was true on 2026-08-12
+> and stale by the time the ruling landed. [ADR-1021](DECISIONS.md), applied the same day this
+> plan was written, had already pointed the DB arm at `private.is_space_audience` (staff OR
+> active paid membership) — option B's substance was live in production while this section, the
+> OWN-034 row, and ADR-1091's restatement all still described a staff-only predicate. Ruling C
+> therefore also *narrowed* the live arm back to staff (measured impact nil: 0 closed circles).
+> The text below is kept as the record of the original finding.
+
 The shipped mode reads the **`space_members`** table, at both layers:
 
 - app: `app/(main)/circles/actions.ts:113-121` queries `space_members` for `status='active'`
@@ -489,7 +503,7 @@ now [OWN-034](BUILD-BACKLOG.json), it gates nothing in C3.1–C3.5 (all 7 Space 
 | 1 | Hard-delete the Community feed code, given 0 live rows? | ✅ **yes** (§5.2). The reversible alternative is one word and costs one release. | ✅ approved (ADR-1091) |
 | 2 | Keep `space_updates` alive for the brand Updates block? | ✅ **yes** (§2.2). | ✅ approved (ADR-1091) |
 | 3 | Is losing "post once, reach every follower" acceptable? | ✅ **yes, drop it** (§4.4). Dispatch and the Message center cover the need; rebuilding it recreates the third container ADR-1013 retired. | ✅ approved (ADR-1091) |
-| 4 | Fix `access='space_members'` — relabel (A), widen (B), or add a mode (C)? | **B**, shipped separately with its own proof (§4.2). | ⏳ **open — OWN-034** |
+| 4 | Fix `access='space_members'` — relabel (A), widen (B), or add a mode (C)? | **B**, shipped separately with its own proof (§4.2). | ✅ **ruled C** (OWN-034, 2026-08-20, [ADR-1092](DECISIONS.md)): `space_members` keeps the staff ladder with honest copy ("Space team only"), and a sixth mode `space_paid_members` admits active paid members. See the §4.2 premise correction. |
 | 5 | Rename the `SpaceCommunity` **block type key**? | 🔴 **no** — label and anchor only (§7.1). | ✅ approved (ADR-1091) |
 | 6 | Narrow the `is_space_update_post` RLS arms? | ✅ **yes, in C3.5**, its own migration, after the delete (§5.2, §7.2). | ✅ approved (ADR-1091) |
 

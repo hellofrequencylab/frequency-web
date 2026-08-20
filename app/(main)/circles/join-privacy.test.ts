@@ -20,7 +20,8 @@ import { isError, type ActionResult } from '@/lib/action-result'
 // mirroring invite-by-email.test.ts):
 //   1. Every closed mode refuses a stranger, with copy IDENTICAL to the missing-circle copy — so
 //      the refusal never confirms the circle exists or hints at its shape.
-//   2. Each mode's own door opens: an invite (the QR route), a Space seat for `space_members`.
+//   2. Each mode's own door opens: an invite (the QR route), a TEAM seat for `space_members`, an
+//      active paid membership for `space_paid_members` — and never each other's (OWN-034 ruling C).
 //   3. Existing members, the Host and platform staff are never locked out.
 //   4. `open` circles stay self-serve, listed or not — the gate narrows nothing it should not.
 //   5. Capacity still runs, and still runs AFTER the access gate.
@@ -30,6 +31,7 @@ let staff = false
 let circleRow: Record<string, unknown> | null = {}
 let existingMembership: { id: string } | null = null
 let spaceSeat: { role: string } | null = null
+let paidMembership: { id: string } | null = null
 const membershipInserts: Record<string, unknown>[] = []
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
@@ -52,13 +54,15 @@ vi.mock('@/lib/ai/circle-spark', () => ({
 }))
 vi.mock('@/lib/beta/referral-contest', () => ({ recordCircleStarterMilestone: vi.fn(async () => {}) }))
 
-// Table-aware mock: the access gate reads `circles`, then `memberships` and (only for
-// space_members) `space_members`, so each has to answer for itself.
+// Table-aware mock: the access gate reads `circles`, then `memberships`, and one Space table per
+// Space mode — `space_members` (the TEAM) only for access='space_members', `space_memberships`
+// (the PAYING audience) only for access='space_paid_members' — so each has to answer for itself.
 vi.mock('@/lib/supabase/admin', () => {
   const rowFor = (table: string) => {
     if (table === 'circles') return circleRow
     if (table === 'memberships') return existingMembership
     if (table === 'space_members') return spaceSeat
+    if (table === 'space_memberships') return paidMembership
     return null
   }
   const chain = (table: string) => {
@@ -92,13 +96,14 @@ const CLOSED = {
   host_id: 'host-1',
 }
 
-const CLOSED_MODES = ['circle_members', 'invite', 'tier', 'space_members'] as const
+const CLOSED_MODES = ['circle_members', 'invite', 'tier', 'space_members', 'space_paid_members'] as const
 
 beforeEach(() => {
   currentProfileId = 'stranger-1'
   staff = false
   existingMembership = null
   spaceSeat = null
+  paidMembership = null
   circleRow = { ...CLOSED }
   membershipInserts.length = 0
 })
@@ -154,11 +159,34 @@ describe('each mode`s own door opens', () => {
     expect(membershipInserts).toHaveLength(1)
   })
 
-  it("a Space seat opens a space_members circle — the owner's own example", async () => {
+  it('a TEAM seat opens a space_members circle — the staff semantics OWN-034 ruling C keeps', async () => {
     circleRow = { ...CLOSED, access: 'space_members' }
     spaceSeat = { role: 'viewer' }
     await joinCircle('circle-1', 'closed-circle')
     expect(membershipInserts).toHaveLength(1)
+  })
+
+  it('an ACTIVE paid membership opens a space_paid_members circle — the mode ruling C adds', async () => {
+    circleRow = { ...CLOSED, access: 'space_paid_members' }
+    paidMembership = { id: 'sm-1' }
+    await joinCircle('circle-1', 'closed-circle')
+    expect(membershipInserts).toHaveLength(1)
+  })
+
+  it('🔴 the OWN-034 boundary: a paid membership does NOT open a space_members circle', async () => {
+    circleRow = { ...CLOSED, access: 'space_members' }
+    paidMembership = { id: 'sm-1' }
+    const res = await joinCircle('circle-1', 'closed-circle')
+    expect(isError(res as ActionResult)).toBe(true)
+    expect(membershipInserts).toHaveLength(0)
+  })
+
+  it('and its mirror: a team seat does NOT open a space_paid_members circle', async () => {
+    circleRow = { ...CLOSED, access: 'space_paid_members' }
+    spaceSeat = { role: 'viewer' }
+    const res = await joinCircle('circle-1', 'closed-circle')
+    expect(isError(res as ActionResult)).toBe(true)
+    expect(membershipInserts).toHaveLength(0)
   })
 
   it('that same Space seat does NOT open a circle_members circle in the same Space', async () => {

@@ -48,6 +48,7 @@ const LISTED_CLOSED: CircleViewerFacts = {
   viewerProfileId: 'stranger-1',
   isMember: false,
   isSpaceMember: false,
+  isSpacePaidMember: false,
   isSpaceSteward: false,
   isPlatformStaff: false,
 }
@@ -101,12 +102,23 @@ describe('canEnterCircle — the content question', () => {
     expect(canEnterCircle({ ...UNLISTED_CLOSED, isPlatformStaff: true })).toBe(true)
   })
 
-  it("the owner's own example: space_members lets a Space member in, and ONLY in that mode", () => {
-    const spaceMember = { ...LISTED_CLOSED, isSpaceMember: true }
-    expect(canEnterCircle({ ...spaceMember, access: 'space_members' })).toBe(true)
-    // Space membership is NOT a general key to a Space's Circles.
+  it('space_members lets a TEAM seat in, and ONLY in that mode (OWN-034 ruling C: staff semantics)', () => {
+    const teamSeat = { ...LISTED_CLOSED, isSpaceMember: true }
+    expect(canEnterCircle({ ...teamSeat, access: 'space_members' })).toBe(true)
+    // A seat is NOT a general key to a Space's Circles — and NOT a membership either.
+    for (const access of ['circle_members', 'space_paid_members', 'invite', 'tier'] as const) {
+      expect(canEnterCircle({ ...teamSeat, access })).toBe(false)
+    }
+  })
+
+  it('space_paid_members lets a PAYING member in, and ONLY in that mode (OWN-034 ruling C: the added mode)', () => {
+    const payer = { ...LISTED_CLOSED, isSpacePaidMember: true }
+    expect(canEnterCircle({ ...payer, access: 'space_paid_members' })).toBe(true)
+    // 🔴 THE RULING'S BOUNDARY: a paid membership does not open the team's room...
+    expect(canEnterCircle({ ...payer, access: 'space_members' })).toBe(false)
+    // ...and is not a general key to anything else the Space runs.
     for (const access of ['circle_members', 'invite', 'tier'] as const) {
-      expect(canEnterCircle({ ...spaceMember, access })).toBe(false)
+      expect(canEnterCircle({ ...payer, access })).toBe(false)
     }
   })
 
@@ -122,9 +134,9 @@ describe('canEnterCircle — the content question', () => {
     expect(asCircleAccess(null)).toBe('open')
   })
 
-  it('space_members and tier are the modes that need a real owning Space', () => {
-    expect([...SPACE_ONLY_ACCESS_MODES]).toEqual(['space_members', 'tier'])
-    expect(CIRCLE_ACCESS_MODES).toHaveLength(5)
+  it('the two Space audiences and tier are the modes that need a real owning Space', () => {
+    expect([...SPACE_ONLY_ACCESS_MODES]).toEqual(['space_members', 'space_paid_members', 'tier'])
+    expect(CIRCLE_ACCESS_MODES).toHaveLength(6)
   })
 })
 
@@ -144,6 +156,10 @@ describe('canJoinCircle — each closed mode has its own door, and the default i
       ok: false,
       reason: 'space-members-only',
     })
+    expect(canJoinCircle({ ...LISTED_CLOSED, access: 'space_paid_members' })).toEqual({
+      ok: false,
+      reason: 'membership-only',
+    })
     expect(canJoinCircle({ ...LISTED_CLOSED, access: 'circle_members' })).toEqual({ ok: false, reason: 'closed' })
   })
 
@@ -152,8 +168,20 @@ describe('canJoinCircle — each closed mode has its own door, and the default i
     expect(canJoinCircle({ ...LISTED_CLOSED, access: 'invite' })).toEqual({ ok: false, reason: 'invite-only' })
   })
 
-  it('a Space member walks into a space_members circle; already-inside is a no-op, not a refusal', () => {
+  it('each Space audience walks into ITS mode; already-inside is a no-op, not a refusal', () => {
     expect(canJoinCircle({ ...LISTED_CLOSED, access: 'space_members', isSpaceMember: true })).toEqual({ ok: true })
+    expect(
+      canJoinCircle({ ...LISTED_CLOSED, access: 'space_paid_members', isSpacePaidMember: true }),
+    ).toEqual({ ok: true })
+    // And never into the OTHER one — the OWN-034 boundary, at the join door.
+    expect(canJoinCircle({ ...LISTED_CLOSED, access: 'space_members', isSpacePaidMember: true })).toEqual({
+      ok: false,
+      reason: 'space-members-only',
+    })
+    expect(canJoinCircle({ ...LISTED_CLOSED, access: 'space_paid_members', isSpaceMember: true })).toEqual({
+      ok: false,
+      reason: 'membership-only',
+    })
     expect(canJoinCircle({ ...LISTED_CLOSED, isMember: true })).toEqual({ ok: true })
     expect(canJoinCircle({ ...LISTED_CLOSED, viewerProfileId: 'host-1' })).toEqual({ ok: true })
   })
@@ -299,6 +327,59 @@ describe('the migration shape', () => {
   })
 })
 
+// ── OWN-034 RULING C (ADR-1092): two Space audiences, two modes ────────────────────────────────
+//
+// The owner ruled that `space_members` KEEPS the staff ladder and the paying audience gets its
+// own mode. ADR-1021 had (correctly, for its day) pointed the `space_members` DB arm at a
+// staff-OR-paid union; the ruling retires the union. These assert the migration that carries the
+// ruling, because the SQL half runs only in pgTAP (supabase/tests/circle_space_paid_members.
+// test.sql), which needs a database this suite does not have.
+describe('the space_paid_members migration shape (OWN-034 ruling C)', () => {
+  const sql = read('supabase/migrations/20270319000000_circle_space_paid_members.sql')
+
+  it('the access axis carries the sixth value, and the TS list matches it', () => {
+    expect(sql).toMatch(
+      /check \(access in \('open', 'circle_members', 'space_members', 'space_paid_members', 'invite', 'tier'\)\)/,
+    )
+    // One list per layer, same members: a value added to the CHECK must reach the UI and back.
+    for (const mode of CIRCLE_ACCESS_MODES) {
+      expect(sql).toContain(`'${mode}'`)
+    }
+  })
+
+  it('space_members is back on the STAFF predicate, and the paid mode has its own', () => {
+    const start = sql.indexOf('create or replace function private.can_enter_circle')
+    expect(start).toBeGreaterThan(-1)
+    const body = sql.slice(start, sql.indexOf('$$;', start))
+    expect(body).toContain("= 'space_members' and private.is_space_member(p_space_id)")
+    expect(body).toContain("= 'space_paid_members' and private.is_space_paid_member(p_space_id)")
+    // The union predicate is not just unused, it is GONE — nothing can reach for it by accident.
+    expect(body).not.toContain('is_space_audience')
+    expect(sql).toContain('drop function if exists private.is_space_audience(uuid)')
+  })
+
+  it('the paid predicate reads ONLY the memberships table — a seat is not a membership', () => {
+    const start = sql.indexOf('create or replace function private.is_space_paid_member')
+    expect(start).toBeGreaterThan(-1)
+    const body = sql.slice(start, sql.indexOf('$$;', start))
+    expect(body).toContain('public.space_memberships')
+    // Regex, not includes: 'space_memberships' CONTAINS 'space_members'.
+    expect(body).not.toMatch(/space_members\b/)
+    expect(body).toContain("sm.status = 'active'")
+  })
+
+  it('the shape trigger refuses the new mode on a personal Circle, with no plan floor', () => {
+    const start = sql.indexOf('create or replace function public.enforce_circle_access_shape')
+    expect(start).toBeGreaterThan(-1)
+    const body = sql.slice(start, sql.indexOf('$$;', start))
+    expect(body).toContain("in ('space_members', 'space_paid_members', 'tier')")
+    // The plan floor stays tier-only: a free Space may run free tiers, so its members are
+    // admittable — the floor belongs to SELLING.
+    expect(body).toContain("new.access = 'tier' and not private.space_can_sell")
+    expect(body).not.toContain("new.access = 'space_paid_members' and not private.space_can_sell")
+  })
+})
+
 // ── WHAT THE FORM MAY OFFER ────────────────────────────────────────────────────────────────────
 //
 // C1 shipped the enforcement and no control, so every Circle sat on the backfilled `open` and the
@@ -322,12 +403,15 @@ describe('availableAccessModes — the form offers only what the trigger will ac
     expect(availableAccessModes(null)).toEqual(['open', 'circle_members', 'invite'])
   })
 
-  it('a FREE Space gets space_members but NOT tier — it has a roster to admit from, and nothing to sell with', () => {
+  it('a FREE Space gets both Space audiences but NOT tier — it has rosters to admit from, and nothing to sell with', () => {
     expect(availableAccessModes(FREE_BIZ)).toContain('space_members')
+    // A free Space may run free membership tiers, so its members are admittable without the
+    // selling plan — the plan floor belongs to SELLING, not to having members.
+    expect(availableAccessModes(FREE_BIZ)).toContain('space_paid_members')
     expect(availableAccessModes(FREE_BIZ)).not.toContain('tier')
   })
 
-  it('a Space on a selling plan gets all five', () => {
+  it('a Space on a selling plan gets all six', () => {
     expect(availableAccessModes(PAID_BIZ)).toEqual([...CIRCLE_ACCESS_MODES])
   })
 

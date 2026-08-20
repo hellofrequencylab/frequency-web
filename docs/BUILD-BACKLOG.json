@@ -295,19 +295,20 @@
     {
       "id": "OWN-034",
       "title": "Rule the access='space_members' semantics: relabel (A), widen the predicate (B), or add a mode (C)",
-      "status": "open",
+      "status": "done",
       "lane": "owner",
       "size": "S",
       "source": {
         "file": "docs/CIRCLES-C3-PLAN.md",
-        "ref": "§4.2 / §9 question 4"
+        "ref": "§4.2 / §9 question 4 · ADR-1092"
       },
-      "detail": "The shipped mode reads the space_members STAFF ladder (26 rows, every one role='admin'), but the member-facing copy says 'Anyone with an active membership in your Space can join themselves' (lib/circles/visibility.ts), which an operator reads as their paying members (space_memberships, 2 rows). The copy is wrong today independently of C3. Options: A relabel to 'Space team only' (zero risk, leaves paying members with no mode); B widen private.is_space_member to include active space_memberships (matches the copy and the owner's words in ADR-1015 §5, but widens a live authorization predicate — needs its own pgTAP proof); C add a sixth space_paid_members mode. CIRCLES-C3-PLAN §4.2 recommends B, shipped as its own change. Gates nothing in C3.1–C3.5: all 7 Space Circles are access='open' today, so the live impact of any option is nil until a circle closes its door.",
+      "detail": "OWNER RULING 2026-08-20, verbatim: \"C: add a paid mode\". access='space_members' KEEPS staff semantics and its copy stops promising paying members (label 'Space team only'); a new sixth mode space_paid_members admits ACTIVE space_memberships holders (label 'Space members only', the sentence the old mode wrongly promised). Implemented per ADR-1092: supabase/migrations/20270319000000_circle_space_paid_members.sql (six-value CHECK, private.is_space_paid_member, can_enter_circle arm flip, is_space_audience dropped, trigger learns the mode), lib/circles/visibility.ts + space-entry.ts + store.ts + app/(main)/circles/actions.ts, help article, pgTAP supabase/tests/circle_space_paid_members.test.sql.\n\n── PREMISE CORRECTION (the ADR-1082 pattern, found while working the row): this row and CIRCLES-C3-PLAN §4.2 said the mode reads the staff ladder at BOTH layers. The DB layer had NOT been staff-only since ADR-1021 applied (2026-08-12): live can_enter_circle asked private.is_space_audience = staff OR active paid membership, i.e. option B's substance was already in production. Ruling C therefore also NARROWS space_members back to staff. Measured live impact of the narrowing: nil — 7 circles, all access='open', 0 closed (2026-08-20).",
       "verify": {
-        "kind": "manual",
-        "evidence": "Split out of OWN-015 by the C3 design pass (ADR-1091): the removal approval did not decide this. Awaiting an owner ruling.",
-        "checked": "2026-08-20"
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('supabase/migrations/20270319000000_circle_space_paid_members.sql','utf8');const v=fs.readFileSync('lib/circles/visibility.ts','utf8');const okM=m.includes(\\\"= 'space_members' and private.is_space_member(p_space_id)\\\")&&m.includes(\\\"= 'space_paid_members' and private.is_space_paid_member(p_space_id)\\\")&&m.includes('drop function if exists private.is_space_audience(uuid)');const okV=v.includes(\\\"'space_paid_members',\\\")&&v.includes(\\\"space_members: 'Space team only'\\\")&&v.includes(\\\"space_paid_members: 'Space members only'\\\")&&v.includes(\\\"space_paid_members: 'Anyone with an active membership\\\");process.exit(okM&&okV?0:1)\"",
+        "note": "Measures the consequence in the tree: the access axis carries the sixth value with its own predicate, the space_members arm is back on the staff predicate, the union predicate is dropped, and the copy names each audience honestly. The DB half (apply of 20270319000000 + its ledger insert) lands with the main session under apply-and-land-together; the pgTAP file proves it in CI (supabase test db)."
+      },
+      "notes": "Ruling recorded in ADR-1092 with the full table. NOT applied by the authoring agent: apply 20270319000000 via execute_sql + ledger insert per supabase/migrations/README.md."
     },
     {
       "id": "OWN-016",
