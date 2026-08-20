@@ -51,7 +51,8 @@
             "LIVE-073",
             "LIVE-078",
             "LIVE-080",
-            "LIVE-075"
+            "LIVE-075",
+            "HYG-012"
           ]
         },
         {
@@ -3095,6 +3096,24 @@
         ]
       },
       "notes": "In-process (grep-absent) rather than a spawned cmd: patternMatches walks DIRECTORIES via filesUnder, so a whole-tree probe costs zero child processes — which is what scripts/backlog-contract.test.ts’s 20s child-CPU budget is asking for. Measures the CONSEQUENCE (no hand-rolled fallback survives anywhere), not the words in the title. Baseline at filing: 10 files."
+    },
+    {
+      "id": "HYG-012",
+      "title": "Eleven backlog probes each re-read the whole tree, and the 20s CPU budget is now ~99% spent",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "M",
+      "source": {
+        "file": "scripts/check-backlog.mjs",
+        "ref": "runProbe’s per-probe spawn, and patternMatches/filesUnder"
+      },
+      "detail": "Found 2026-08-20 when scripts/backlog-contract.test.ts failed a PR at 20.2s against its 20s child-CPU budget. THE BUDGET WAS NOT THE PROBLEM — five new rows tipped a guard that was already at ~19.6s. ELEVEN `cmd` probes each spawn their own node process and each walks the SAME tree, re-reading ~4,200 files / ~29MB from scratch: LIVE-012, LIVE-020, LIVE-038, LIVE-054, LIVE-058, LIVE-062, LIVE-066, LIVE-071, OWN-035, OWN-036, OWN-037. Measured locally: ~113ms per full walk plus ~25ms of node startup each, so roughly 1.5-2s locally and ~3s on a CI runner — about 15% of the whole budget spent reading the same bytes eleven times. THE FIX IS IN THE HARNESS, NOT THE ROWS: check-backlog.mjs already has filesUnder + patternMatches for the in-process `grep-present`/`grep-absent` kinds. Read the corpus ONCE per run, memoise it, and give the walking probes a way to ask against it — either by extending the in-process kinds to express what the walkers need (an exclusion list: skip *.test.*, skip the probe's own file) or by handing `cmd` probes a pre-built index. ⚠️ DO NOT convert the eleven to `grep-present` as-is: that was tried on LIVE-071 the same day and the probe FLIPPED ITS VERDICT, because the in-process kinds cannot express the path exclusions the walkers rely on. A probe that silently inverts is precisely the ripgrep failure documented at the top of that file — eight confident wrong answers from one missing binary. The exclusions must land in the harness BEFORE any row moves. ⚠️ AND DO NOT RAISE GUARD_BUDGET_CPU_MS: the test says so in its own failure message, and it is right — the number is the smoke alarm, not the fire.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Counted 2026-08-20 against the tree: 11 of 72 cmd probes walk app/lib/components in their own process. Deliberately unprobed — a mechanical probe here would either re-walk the tree itself (adding to the very cost it measures) or pin an implementation shape rather than the consequence. The consequence already has an executable guard: scripts/backlog-contract.test.ts fails when the budget is exceeded, and it is what surfaced this.",
+        "checked": "2026-08-20"
+      },
+      "notes": "Zero-cost row on purpose (manual, no probe): the finding is that probes are expensive, so filing it must not make the problem worse. The headroom left after the 2026-08-20 conversions is roughly 0.1-0.3s — the next few rows anyone adds will trip this again, which is the point of writing it down now rather than after."
     }
   ]
 }
