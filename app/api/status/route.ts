@@ -21,6 +21,7 @@
 
 import { NextResponse } from 'next/server'
 import { SLOS, CRON_FRESHNESS } from '@/lib/observability/slos'
+import { sentryEnabled } from '@/lib/observability/sentry'
 
 export const dynamic = 'force-static'
 export const revalidate = 3600
@@ -87,6 +88,13 @@ export function GET() {
     {
       // Which commit is live. Frozen at build time; see buildIdentity() for why it belongs here.
       build: buildIdentity(),
+      // Whether the error recorder is armed in THIS deployment (LIVE-053). Sentry's wiring is a
+      // DSN-gated no-op, which makes it a fail-safe nothing notices is off — /feed threw for six
+      // weeks with nothing recording it. This boolean is the gate that notices: `curl /api/status`
+      // answers "is the recorder on?" in one line. Booleanized in lib/observability/sentry.ts —
+      // never the DSN itself, and no env read in this file, so the pin test below stays honest.
+      // Frozen at build like everything else here: setting the DSN needs a redeploy to show.
+      monitoring: { sentry: sentryEnabled },
       // A timestamp so a consumer can tell roughly when it read the index; the
       // contract itself only changes on deploy (the response is statically cached).
       generatedAt: new Date().toISOString(),

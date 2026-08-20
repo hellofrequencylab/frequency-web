@@ -96,9 +96,9 @@
     },
     "app/api/status/route.ts": {
       "verdict": "public",
-      "reason": "Read-only status index (H0-8). Serves the static SLO contract plus VERCEL_GIT_*/VERCEL_ENV build identity. Its own route.test.ts fails the suite on ANY other process.env read, which is what keeps the 'no secret' promise true.",
-      "checked": "2026-08-17",
-      "digest": "7e6daa1f5d89d024"
+      "reason": "Read-only status index (H0-8). Serves the static SLO contract, VERCEL_GIT_*/VERCEL_ENV build identity, and monitoring.sentry - a boolean derived in lib/observability/sentry.ts, never the DSN (LIVE-053). Its own route.test.ts fails the suite on ANY other process.env read in the file, which is what keeps the no-secret promise true.",
+      "checked": "2026-08-20",
+      "digest": "2e00cfb4a6ee065f"
     },
     "app/api/status/slos/route.ts": {
       "verdict": "public",
