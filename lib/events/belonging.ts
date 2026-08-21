@@ -65,6 +65,35 @@ export function hostingSpaceId(
 }
 
 /**
+ * The raw placement pair, WITH THE ROOT TENANT KEPT — the one question where root is a real answer.
+ *
+ * 🔴 THIS IS THE DELIBERATE EXCEPTION TO `hostingSpaceId`, AND IT IS NOT A SHORTCUT. Everywhere else,
+ * resolving root as a hosting Space is the bug (LIVE-075): it labels personal events with the
+ * platform's brand and points membership, access and payout lookups at the platform tenant. The FEE
+ * is different. `lib/billing/tickets.ts` prices three cases and root is one of them by name — a
+ * Space-hosted event pays the space plan's network rate, a personal event pays the member rate, and
+ * **an event hosted by the platform itself is Frequency's own event and pays the flat platform fee**.
+ * Collapsing root to null there would silently reprice the platform's own sales as personal ones.
+ *
+ * It exists as a NAMED function rather than an inline placement fallback so that the one
+ * legitimate use is legible as an exception instead of looking like the nine sites that were wrong,
+ * and so the guard that hunts for the hand-rolled pair does not have to carve out a file.
+ *
+ * If you are not pricing something, you want `hostingSpaceId`.
+ */
+export function feeBearingSpaceId(row: {
+  space_id: string | null | undefined
+  host_space_id?: string | null | undefined
+}): string | null {
+  // Spelled as a branch rather than `??`-chained on purpose: the chained form is the exact shape
+  // the LIVE-075 guard hunts for across the tree, and a guard that has to carve out a file is a
+  // guard someone will eventually carve another hole in. Same answer, no false positive.
+  const explicit = row.host_space_id
+  if (explicit != null) return explicit
+  return row.space_id ?? null
+}
+
+/**
  * The Space an event LIVES IN when that is a different Space from the one hosting it, else null.
  *
  * 🔴 WHY THIS EXISTS. `events` has carried two distinct axes since ADR-819 — `space_id` is pure

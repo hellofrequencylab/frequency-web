@@ -36,7 +36,6 @@ import { shouldSend } from '@/lib/notification-preferences'
 import { sendSms } from '@/lib/comms/sms'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import { captureEventLead } from '@/lib/crm/lead-capture'
-import { loadRootSpaceId } from '@/lib/spaces/store'
 import { rewardConnectorAttendanceForCheckin } from '@/lib/rewards/connector'
 import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { draftEventSpark } from '@/lib/ai/events-ai'
@@ -52,6 +51,7 @@ import {
 } from '@/lib/studio/kernel/redraw'
 import { saveSteer } from '@/lib/studio/steer-store'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { resolveHostingSpaceIdFromRow } from '@/lib/events/host-space'
 
 // Gallery images ride as a JSON array of storage paths (the form has no native array
 // shape). Parse defensively: a missing/garbage value, a non-array, or any non-string
@@ -962,10 +962,10 @@ async function captureRsvpLead(
       space_id: string | null
       host_space_id: string | null
     } | null
-    const spaceId = evRow?.host_space_id ?? evRow?.space_id ?? null
+    // This site ALREADY had the root guard, spelled by hand on the next two lines. It now asks the
+    // one resolver instead: same answer, one rule, and nothing left for the next reader to copy.
+    const spaceId = await resolveHostingSpaceIdFromRow(evRow)
     if (!evRow || !spaceId) return
-    const root = await loadRootSpaceId()
-    if (root && spaceId === root) return
 
     const { data: prof } = await admin
       .from('profiles')

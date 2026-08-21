@@ -33,6 +33,8 @@ import { effectiveOrderSource } from '@/lib/pricing/network-world'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction } from '@/lib/finance/record'
+import { resolveHostingSpaceId, resolveHostingSpaceIdFromRow } from '@/lib/events/host-space'
+import { feeBearingSpaceId } from '@/lib/events/belonging'
 
 export const TICKET_MAX_QTY = 10
 
@@ -221,7 +223,13 @@ export async function createTicketCheckout(opts: {
   // members-included free ticket is gated exactly like a paid one. Keys on the same space
   // resolution attribution + fees use (host_space_id, else the placement space, ADR-819).
   if (tier && (tier.space_members_only || tier.space_tier_id)) {
-    const membershipSpaceId = event.host_space_id ?? event.space_id
+    // Root EXCLUDED (resolveHostingSpaceId): every event inherits the root tenant, so the raw
+    // placement fallback resolved this gate to "must hold a membership in Frequency",
+    // which nobody does — an unbuyable ticket, refused for a reason no one could act on.
+    const membershipSpaceId = await resolveHostingSpaceId({
+      spaceId: event.space_id,
+      hostSpaceId: event.host_space_id,
+    })
     if (!membershipSpaceId) return { error: 'That ticket type isn’t available.' }
     // space_memberships isn't in the generated types yet (ADR-246) — narrow untyped read.
     const mdb = db() as unknown as {
@@ -319,7 +327,10 @@ export async function createTicketCheckout(opts: {
   // else the placement space, else the personal host — so fee and payee always agree (ADR-819).
   // Hoisted above the classification because the RELATIONSHIP check needs it: "already your audience"
   // is asked of the selling SPACE (its followers, members, CRM) as well as the payee profile.
-  const feeSpaceId = event.host_space_id ?? event.space_id
+  // feeBearingSpaceId, NOT resolveHostingSpaceId: root is a real answer here. See its header —
+  // a platform-hosted event is Frequency's own event and pays the flat platform fee, and
+  // collapsing root to null would reprice the platform's own sales as personal ones.
+  const feeSpaceId = feeBearingSpaceId(event)
   const { source, attributionRef } = await classifyOrderSource({
     buyerProfileId: opts.buyerProfileId,
     sellerProfileId: payeeProfileId,
@@ -601,7 +612,11 @@ async function recordBuyerAsContact(eventId: string, buyerProfileId: string | nu
     .eq('id', eventId)
     .maybeSingle()
   const row = ev as { host_space_id: string | null; space_id: string | null } | null
-  const spaceId = (row?.host_space_id ?? row?.space_id)?.trim() || null
+  // 🔴 Root EXCLUDED. This writes the buyer into a Space's CRM, and every event inherits the root
+  // tenant, so before the guard EVERY buyer of EVERY personal event was filed as a contact of the
+  // platform's own Space. A personal event has no Space CRM to write into, so there is nothing to
+  // record and this returns.
+  const spaceId = await resolveHostingSpaceIdFromRow(row)
   if (!spaceId) return
 
   const { data: existing } = await db()

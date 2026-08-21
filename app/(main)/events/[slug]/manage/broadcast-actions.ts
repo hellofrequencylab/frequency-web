@@ -21,6 +21,7 @@ import { sendSpaceCampaignSystem } from '@/lib/spaces/email'
 import { renderCampaignHtml } from '@/lib/spaces/campaigns'
 import { sendBulkDm, resolveDmRecipients } from '@/lib/comms/bulk-dm'
 import { recordContactInteraction } from '@/lib/crm/interactions'
+import { resolveHostingSpaceIdFromRow } from '@/lib/events/host-space'
 import type {
   BroadcastChannelKey,
   BroadcastChannelResult,
@@ -85,7 +86,10 @@ async function resolveManagedEvent(slug: string): Promise<ManagedEvent | null> {
   if (!ev) return null
   const caps = await getEventCapabilities(ev.id)
   if (!caps.has('event.editSettings')) return null
-  return { id: ev.id, title: ev.title, slug: ev.slug, hostSpaceId: ev.host_space_id ?? ev.space_id ?? null }
+  // Root EXCLUDED: null here means "platform-hosted", which routes the broadcast down the Event
+  // Dispatch lane instead of a Space's own email. The root stamp made every personal event claim
+  // the platform tenant's lane.
+  return { id: ev.id, title: ev.title, slug: ev.slug, hostSpaceId: await resolveHostingSpaceIdFromRow(ev) }
 }
 
 function people(n: number): string {
