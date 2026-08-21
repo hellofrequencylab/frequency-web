@@ -1,10 +1,34 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
 import { X, Check, Loader2 } from 'lucide-react'
 import { fieldClasses } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
-import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
+import { Dialog } from '@/components/ui/dialog'
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// THE CREATE-MODAL SHELL, NOW ON THE SHARED PRIMITIVE (ADR-1100).
+//
+// docs/STUDIO.md §6 says to retire this file "once circles move". Circles moved — `NewCircleCompose`
+// is a bare `<Link>` and `CircleWizard` shipped — and the retirement never followed, leaving EIGHT
+// consumers on a second, hand-rolled overlay implementation: its own backdrop, its own focus trap,
+// its own ESC handler, its own scroll lock. None of them was a circle, and none was ever assigned
+// an owner by that migration order, which is why the condition could be met and nothing happen.
+//
+// 🔴 WHAT THE HAND-ROLLED OVERLAY WAS ACTUALLY COSTING, beyond duplication:
+//   • It did NOT portal, so any of the eight opened inside a transformed ancestor (the sliding
+//     admin rail) was trapped in that ancestor's box and rendered as a narrow panel.
+//   • It did NOT carry the Space theme across a portal (ADR-1097), because it had no portal.
+//   • It was NOT in the dialog stack, so ESC could close it and a dialog above it at the same time.
+//   • It padded a flat 0/16px, so on a notched phone its footer sat on the home indicator.
+//
+// The PUBLIC API IS UNCHANGED — same props, same names, same eight call sites untouched. What
+// changes is who owns the chrome. This file now owns only what is genuinely its own: the header
+// band, the form, the error banner and the footer buttons.
+//
+// The stale comment that justified the duplication said the centered `ui/Dialog` "can't express"
+// a bottom sheet. That was true when it was written and is not now: `align` exists, and this is
+// what `align="bottom"` was added for.
+// ─────────────────────────────────────────────────────────────────────────────────────────────
 
 const ICON_COLORS: Record<string, { bg: string; text: string }> = {
   indigo: { bg: 'bg-primary-bg', text: 'text-primary-strong' },
@@ -30,14 +54,12 @@ interface CreateModalProps {
 }
 
 /**
- * Responsive create-modal shell. On mobile (<sm) it renders as a
- * bottom sheet that fills the width and touches the bottom edge of
- * the viewport. On desktop it renders as a centered modal with a
- * constrained max-width.
+ * Responsive create-modal shell. On mobile (<sm) it renders as a bottom sheet that fills the width
+ * and touches the bottom edge of the viewport. On desktop it renders as a centered modal with a
+ * constrained max-width. Both come from `Dialog align="bottom"` now, not from this file.
  *
- * Parent owns open state and form data. This component handles the
- * overlay, layout, header (icon + title + close), and footer
- * (Cancel + Submit). Form fields go in `children`.
+ * Parent owns open state and form data. This component owns the header (icon + title + close), the
+ * form, the error banner and the footer (Cancel + Submit). Form fields go in `children`.
  */
 export function CreateModal({
   open,
@@ -53,43 +75,21 @@ export function CreateModal({
   error,
   children,
 }: CreateModalProps) {
-  // Trap + restore focus while open (mirrors ui/Dialog). ESC + scroll-lock stay in the
-  // effect below; the hook adds only the focus concerns this hand-rolled modal missed.
-  const panelRef = useRef<HTMLFormElement>(null)
-  useDialogFocusTrap(open, panelRef)
-
-  // ESC to close + body scroll-lock while open (mirrors ui/Dialog; CreateModal keeps
-  // its own bottom-sheet-on-mobile layout, which the centered Dialog can't express).
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !isPending) onClose() }
-    document.addEventListener('keydown', onKey)
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prevOverflow
-    }
-  }, [open, onClose, isPending])
-
-  if (!open) return null
-
   const colors = ICON_COLORS[titleIconColor] ?? ICON_COLORS.indigo
 
+  // 🔴 A PENDING SUBMIT STILL BLOCKS EVERY EXIT, and that has to be re-stated here rather than
+  // inherited: `Dialog` knows nothing about a form being mid-flight, so backdrop click and ESC both
+  // route through this guard, exactly as the hand-rolled overlay's did. Dropping it would let a
+  // member dismiss a modal whose server action is already running.
+  const close = () => {
+    if (!isPending) onClose()
+  }
+
   return (
-    <div
-      onClick={() => !isPending && onClose()}
-      className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4"
-    >
+    <Dialog open={open} onClose={close} ariaLabel={title} align="bottom" className="sm:max-w-2xl">
       <form
-        ref={panelRef}
         onSubmit={onSubmit}
-        onClick={e => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        tabIndex={-1}
-        className="w-full sm:max-w-2xl sm:my-8 rounded-t-2xl sm:rounded-2xl border border-border bg-surface lift-3 flex flex-col max-h-[90vh] sm:max-h-[calc(100vh-4rem)] outline-none"
+        className="flex max-h-[90vh] w-full flex-col rounded-t-2xl border border-border bg-surface lift-3 outline-none sm:max-h-[calc(100vh-4rem)] sm:rounded-2xl"
       >
         {/* Mobile drag indicator */}
         <div className="sm:hidden flex justify-center pt-2.5 pb-1">
@@ -108,7 +108,7 @@ export function CreateModal({
           <button
             type="button"
             aria-label="Close"
-            onClick={() => !isPending && onClose()}
+            onClick={close}
             className="shrink-0 rounded-lg p-1.5 text-subtle hover:text-muted hover:bg-surface-elevated transition-colors"
           >
             <X className="w-4 h-4" aria-hidden />
@@ -125,9 +125,12 @@ export function CreateModal({
           {children}
         </div>
 
-        {/* Footer — same warm sand band as the header, bookending the form. */}
-        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border bg-surface-elevated/50 sm:rounded-b-2xl shrink-0">
-          <Button type="button" variant="secondary" onClick={() => !isPending && onClose()} disabled={isPending}>
+        {/* Footer — same warm sand band as the header, bookending the form. The bottom safe-area
+            padding lives HERE, not on the overlay: `align="bottom"` deliberately leaves the panel
+            touching the edge, and only the panel knows which of its bands is last. Without it these
+            buttons sat on a notched phone's home indicator. */}
+        <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border bg-surface-elevated/50 px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:rounded-b-2xl sm:pb-4">
+          <Button type="button" variant="secondary" onClick={close} disabled={isPending}>
             Cancel
           </Button>
           <Button type="submit" className="lift-1" disabled={submitDisabled || isPending}>
@@ -136,7 +139,7 @@ export function CreateModal({
           </Button>
         </div>
       </form>
-    </div>
+    </Dialog>
   )
 }
 

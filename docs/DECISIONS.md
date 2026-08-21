@@ -28362,3 +28362,68 @@ component was right twice and wrong once. Reviewing the component finds nothing;
   *composition*. Guards that read a component in isolation cannot see that class of defect; the only
   thing that catches it is a test that walks the actual nesting a route produces. Where a repo has a
   routing contract, "what may appear underneath this" is part of it.
+
+## ADR-1100: CreateModal is a shell, not an overlay (2026-08-21)
+
+**Status:** Accepted · **Completes** the retirement `docs/STUDIO.md` §6 asked for · **Extends**
+[ADR-1097](DECISIONS.md) (the theme crosses the portal) · corroborated by
+`components/create-modal.tsx`, `components/ui/dialog.tsx`, `components/create-modal.test.tsx`
+
+**Context.** `docs/STUDIO.md` §6 ended with *"Retire `components/create-modal.tsx` once circles
+move."* **Circles moved** — `NewCircleCompose` is a bare `<Link>` and `CircleWizard` shipped — and
+the retirement never followed. Eight surfaces stayed on a second, hand-rolled overlay
+implementation: New Hub, New Nexus, Create a Channel, New Dispatch, New Crew Task, New Group DM,
+Invite a Member, Invite to Room.
+
+**🔴 Why a satisfied condition changed nothing.** **None of the eight is a circle**, and the
+migration order in §6 never assigned an owner to any of them. So the trigger fired against work
+nobody was holding. A retirement condition phrased as *"once X moves"* only works when the thing
+being retired is what X was using; here it named a file whose actual consumers were somewhere else
+entirely.
+
+**What the duplication was costing**, beyond having two overlays:
+
+- **It did not portal.** Any of the eight opened inside a transformed ancestor — the sliding admin
+  rail — was trapped in that ancestor's containing block and rendered as a narrow panel, the exact
+  defect `dialog.tsx` documents its portal as existing to prevent.
+- **It could not carry the Space theme** ([ADR-1097](DECISIONS.md)), because it had no portal to
+  carry it across.
+- **It was not in the dialog stack**, so Escape could dismiss it *and* a dialog above it at once.
+- **It padded a flat 0/16px**, so on a notched phone its footer buttons sat on the home indicator.
+- Its own comment justified the split by saying the centered `ui/Dialog` *"can't express"* a bottom
+  sheet. That was true when written and **stopped being true when `align` landed**, and nothing
+  re-read it.
+
+**Decision.**
+
+1. **`Dialog` gains `align="bottom"`** — a true bottom sheet: the panel rises from and touches the
+   bottom edge on mobile, sized by its own content, reverting to a centered card at `sm+`. It is
+   deliberately distinct from `sheet`, which fills the entire viewport: **a form with six fields
+   should not black out the screen.** At least four other hand-rolled sheets in the tree reach for
+   this same shape.
+2. **`CreateModal` keeps its public API exactly** — same props, same names, **all eight call sites
+   untouched** — and delegates the overlay to `Dialog`. What it still owns is what was genuinely its
+   own: the header band, the form element, the error banner, the footer buttons.
+3. **The pending-submit guard is re-stated, not inherited.** `Dialog` knows nothing about a form
+   being mid-flight, so backdrop click, Escape and both close controls route through one local
+   `close()` that refuses while `isPending`. Dropping it would let a member dismiss a modal whose
+   server action is already running. It is re-tested by hand for the same reason.
+4. **The bottom safe-area padding lives on the panel's footer, not on the overlay.** `align="bottom"`
+   leaves the panel touching the edge by definition, and only the panel knows which of its bands is
+   last.
+
+**Consequences.**
+
+- **Eight surfaces gain four fixes at once** and not one of them changed a line: they portal, they
+  inherit a Space's theme, they join the dialog stack, and they clear the home indicator.
+- **"Retire" turned out to be the wrong verb, and the doc now says so.** The overlay is gone; the
+  *shell* stays, because eight callers legitimately want a header-icon / form / footer shape and
+  deleting it would mean eight hand-rolled re-implementations of the thing that was just
+  consolidated.
+- **The negative control:** 7 of the 12 assertions fail against the pre-change file. The 5 that pass
+  on both trees are the pending-guard half — correctly so, since that behaviour was preserved by
+  hand rather than gained.
+- **The durable rule:** a retirement instruction should name the thing's **consumers**, not a
+  neighbouring milestone. And a comment that justifies a duplication by what a primitive "can't do"
+  needs re-reading every time that primitive grows, because it is a claim with an expiry date and
+  nothing about it fails when it expires.
