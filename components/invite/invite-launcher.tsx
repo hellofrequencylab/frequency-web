@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { UserPlus, X, Link2, Check, Share2, Loader2, Zap, Gem } from 'lucide-react'
 import { getInviteLink } from '@/app/(main)/invite-actions'
+import { Dialog } from '@/components/ui/dialog'
 
 // Mounts the Invite modal once, app-wide, and opens it on the `open-invite` window
 // event — so an "Invite friends" affordance anywhere just dispatches that event.
@@ -31,17 +32,14 @@ export function InviteLauncher() {
     return () => window.removeEventListener('open-invite', onOpen)
   }, [data, pending])
 
-  useEffect(() => {
-    if (!open) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.body.style.overflow = prev
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
+  // ESC, the scroll lock, the backdrop, the portal, the focus trap and the dialog semantics now
+  // come from `Dialog` (ADR-1100). THIS OVERLAY SET aria-modal="true" WITH NO FOCUS TRAP — telling a
+  // screen reader the rest of the page is inert while Tab could still walk straight out of it.
+  //
+  // It is the ONE overlay of seven surveyed whose scrim and z-tier already matched the primitive
+  // exactly (z-[80], bg-ink/60, backdrop-blur-sm, items-stretch -> sm:items-center = align="sheet"),
+  // which is why it converts with no visual change at all. The other six each differ in tier, scrim
+  // opacity, or both, and are NOT no-ops; see LIVE-089.
 
   function copy() {
     if (!data) return
@@ -62,18 +60,10 @@ export function InviteLauncher() {
     }
   }
 
-  if (!open) return null
-
   return (
-    <div
-      className="fixed inset-0 z-[80] flex items-stretch justify-center bg-ink/60 backdrop-blur-sm sm:items-center sm:p-4"
-      onMouseDown={(e) => { if (e.target === e.currentTarget) setOpen(false) }}
-    >
+    <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="Invite friends" align="sheet" className="sm:max-w-md">
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Invite friends"
-        className="relative flex w-full flex-col overflow-y-auto border-border bg-canvas p-4 lift-3 motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[92vh] sm:max-w-md sm:rounded-3xl sm:border"
+        className="relative flex w-full flex-col overflow-y-auto border-border bg-canvas p-4 lift-3 motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[92vh] sm:rounded-3xl sm:border"
         style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
       >
         <div className="mb-1 flex items-center justify-between">
@@ -130,7 +120,7 @@ export function InviteLauncher() {
           </>
         ) : null}
       </div>
-    </div>
+    </Dialog>
   )
 }
 
