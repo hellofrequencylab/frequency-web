@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { attachEventToCircleAction } from './events-actions'
+import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 
 // The circle Manage hub's EVENTS area (the Channel hub's sections.tsx pattern, ADR-870): an async
 // Server Component that fetches its own slice so the page streams it behind <Suspense>
@@ -72,7 +73,7 @@ async function listCircleUpcomingEvents(circleId: string): Promise<EligibleEvent
     .from('events')
     .select(EVENT_COLUMNS)
     .or(filter)
-    .gte('starts_at', new Date().toISOString())
+    .gte('starts_at', upcomingEventFloor())
     .order('starts_at', { ascending: true })
     .limit(50)
   const rows = (data ?? []) as EligibleEventRow[]
@@ -90,7 +91,6 @@ async function listAttachableEvents(circleId: string): Promise<EligibleEventRow[
   const profileId = await getMyProfileId()
   if (!profileId) return []
   const admin = untyped()
-  const nowIso = new Date().toISOString()
 
   // Spaces the caller helps run (owner or an active admin/editor member — the
   // getSpaceCapabilities().canEditProfile set getEventCapabilities asks about).
@@ -111,7 +111,7 @@ async function listAttachableEvents(circleId: string): Promise<EligibleEventRow[
       .select(EVENT_COLUMNS)
       .eq('host_id', profileId)
       .eq('status', 'published')
-      .gte('starts_at', nowIso)
+      .gte('starts_at', upcomingEventFloor())
       .order('starts_at', { ascending: true })
       .limit(ATTACHABLE_LIMIT),
     spaceIds.size > 0
@@ -120,7 +120,7 @@ async function listAttachableEvents(circleId: string): Promise<EligibleEventRow[
           .select(EVENT_COLUMNS)
           .in('space_id', [...spaceIds])
           .eq('status', 'published')
-          .gte('starts_at', nowIso)
+          .gte('starts_at', upcomingEventFloor())
           .order('starts_at', { ascending: true })
           .limit(ATTACHABLE_LIMIT)
       : Promise.resolve({ data: [] }),

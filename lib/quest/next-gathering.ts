@@ -5,6 +5,7 @@
 // authorizes it. No writes.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 
 export interface NextGathering {
   id: string
@@ -27,7 +28,6 @@ type EventRow = {
 
 export async function getNextGathering(profileId: string): Promise<NextGathering | null> {
   const db = createAdminClient()
-  const nowIso = new Date().toISOString()
 
   // 1. The member's next RSVP'd (going/maybe) upcoming event.
   try {
@@ -39,7 +39,7 @@ export async function getNextGathering(profileId: string): Promise<NextGathering
       .in('status', ['going', 'maybe'])
     const events = ((data ?? []) as { event: EventRow | EventRow[] | null }[])
       .map((r) => (Array.isArray(r.event) ? r.event[0] : r.event))
-      .filter((e): e is EventRow => !!e && !e.is_cancelled && e.starts_at >= nowIso)
+      .filter((e): e is EventRow => !!e && !e.is_cancelled && e.starts_at >= upcomingEventFloor())
       .sort((a, b) => (a.starts_at < b.starts_at ? -1 : 1))
     if (events[0]) {
       const e = events[0]
@@ -55,7 +55,7 @@ export async function getNextGathering(profileId: string): Promise<NextGathering
       .from('events')
       .select('id, title, slug, starts_at, location')
       .eq('is_cancelled', false)
-      .gte('starts_at', nowIso)
+      .gte('starts_at', upcomingEventFloor())
       .order('starts_at', { ascending: true })
       .limit(1)
     const e = (data?.[0] as Omit<EventRow, 'is_cancelled'> | undefined) ?? null

@@ -7,6 +7,7 @@ import { approximatePoint } from '@/lib/maps/approximate'
 import { locationCopy, moreDatesLine, memberCountLine } from '@/lib/maps/pin-copy'
 import { withholdsAddress } from '@/lib/events/location-intent'
 import type { MapPin } from '@/components/maps/types'
+import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 
 // THE AROUND YOU MAP'S PINS. One read per request, feeding components/nearby/nearby-map-header.tsx
 // (the page's header band since ADR-1034; it was an in-body section before that).
@@ -190,7 +191,6 @@ function eventCoverUrl(
 export const loadNearbyMapPins = cache(async (): Promise<MapPin[]> => {
   try {
     const admin = createAdminClient()
-    const nowIso = new Date().toISOString()
 
     const [eventsRes, circlesRes, spacesRes] = await Promise.all([
       admin
@@ -202,7 +202,7 @@ export const loadNearbyMapPins = cache(async (): Promise<MapPin[]> => {
         .eq('visibility', 'public')
         .is('removed_at', null)
         .eq('is_cancelled', false)
-        .gte('starts_at', nowIso)
+        .gte('starts_at', upcomingEventFloor())
         // Seeded demo content is not somewhere a member can actually turn up. Every other event
         // read in the app carries this (lib/events/store.ts filters it on all four of its queries)
         // and the other two layers below carry it or have no demo axis, so the map would have been

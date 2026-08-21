@@ -18,6 +18,7 @@ import {
 import { getMyOrbit } from '@/lib/connections/resonance'
 import { buildScopeContextResolver } from '@/lib/feed/post-origin'
 import { PostCard, type FeedPost, type RawPost } from './post-card'
+import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 
 // Day bucketing for the Story lens (matches /journal's grouping voice).
 function dayLabel(iso: string): string {
@@ -290,7 +291,7 @@ export async function FeedList({
             .eq('scope_type', 'public')
             .eq('is_cancelled', false)
             .eq('is_demo', false)
-            .gte('starts_at', new Date().toISOString())
+            .gte('starts_at', upcomingEventFloor())
             .order('starts_at', { ascending: true })
             .limit(1)
         : admin.from('events').select('id, title, starts_at, location, slug')
@@ -298,7 +299,7 @@ export async function FeedList({
             .eq('visibility', 'public')
             .eq('scope_type', 'public')
             .eq('is_cancelled', false)
-            .gte('starts_at', new Date().toISOString())
+            .gte('starts_at', upcomingEventFloor())
             .order('starts_at', { ascending: true })
             .limit(1)),
     ])

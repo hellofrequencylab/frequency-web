@@ -3021,21 +3021,27 @@
     },
     {
       "id": "LIVE-079",
-      "title": "Nine event reads use a raw-UTC now, so tonight’s gathering vanishes at 5pm Pacific",
-      "status": "open",
+      "title": "Tonight stops disappearing at 5pm Pacific: the member-facing event floors use community midnight",
+      "status": "done",
       "lane": "live",
       "size": "M",
       "source": {
         "file": "lib/time/zone.ts",
         "ref": "HOME_TZ / dayInZone, the floor the correct surfaces use"
       },
-      "detail": "Found in the sweep, 2026-08-20. starts_at stores wall-clock as UTC PARTS, so a lower bound of new Date().toISOString() is wrong twice: an event disappears the minute it starts rather than at the end of its day, and once UTC rolls past midnight (~5pm Pacific) TONIGHT's rows read as yesterday. The correct floor — seriesUpcomingFloor(dayInZone(now, HOME_TZ)) — is already used by /events, /discover, search, the circle blocks, the rail and the tickets projection. NINE surfaces still use the raw one: app/(main)/circles/[slug]/manage/events-section.tsx:75 (an operator's own management list), components/widgets/entity/entity-offerings.tsx:23, components/spaces/dashboard/space-dashboard.tsx:246, app/(main)/nearby/page.tsx:178, lib/nearby/map-pins.ts:205, components/feed/feed-list.tsx:293, lib/quest/next-gathering.ts:58, lib/spotlight/data.ts:123, components/connections/group-map-section.tsx:62. Mechanical sweep; the floor helper already exists.",
+      "detail": "SCOPE MEASURED ON CONTACT: filed as nine sites; the full count of raw-instant starts_at bounds across app/lib/components is 28. events.starts_at stores the wall-clock as UTC PARTS, so a lower bound of new Date().toISOString() is wrong twice — it drops an event THE MOMENT IT STARTS rather than at the end of its day, and it drops TONIGHT ENTIRELY once UTC rolls past midnight (about 5pm Pacific), because now-in-UTC-parts has already become tomorrow. FIXED, the member-facing set (12 bounds across 8 files): lib/events/store.ts listEventsForSpace upcomingOnly — which alone feeds entity-offerings, entity-cta, the SpaceEvents block, profile-stats, profile-presence, the Space dashboard and the manage rail counts; components/feed/feed-list.tsx x2; app/(main)/nearby/page.tsx x2; lib/nearby/map-pins.ts; lib/quest/next-gathering.ts (a query bound AND its in-memory twin, which had the identical bug in JS); lib/spotlight/data.ts; lib/events/membership-included.ts; and app/(main)/circles/[slug]/manage/events-section.tsx x3 — that last one an operator surface where, after 5pm, tonight vanished from the host's own management list. All now share upcomingEventFloor() (lib/events/upcoming-floor.ts). DELIBERATELY NOT SWEPT, because each genuinely means \"from this instant\" rather than \"today\": the recurrence materialiser (lib/event-recurrence.ts), member metering (lib/pricing/member-meter-usage.ts), Space directory counts (lib/spaces/discovery.ts), event matching (lib/events/matching.ts), the broadcast send window (lib/spaces/broadcast-audience.ts), the Space access gate (lib/events/space-event-access.ts), and the CRM/lead operator widgets. Every one is a count or a gate, not a \"what is on today\" list. WHY THE HELPER IS ITS OWN MODULE: lib/events/series.ts has ZERO IMPORTS on purpose so it stays client-importable without dragging tz-lookup into the bundle, and its own header calls the caller-supplied floor \"not an oversight, it is the seam\". upcoming-floor.ts is the server-side half of that seam, so the seam survives and callers get one function instead of two lines to get out of step.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Nine call sites counted with file:line in the events-visibility sweep, 2026-08-20; each passes new Date().toISOString() (or nowIso) as a starts_at lower bound.",
-        "checked": "2026-08-20"
+        "kind": "grep-present",
+        "pattern": "upcomingEventFloor",
+        "paths": [
+          "lib/events/store.ts",
+          "components/feed/feed-list.tsx",
+          "lib/nearby/map-pins.ts",
+          "lib/quest/next-gathering.ts",
+          "lib/spotlight/data.ts"
+        ]
       },
-      "notes": "A counting probe that can only shrink lands with the first sweep PR."
+      "notes": "In-process (grep-present) for the child-CPU budget (HYG-012). Points at five of the eight swept files rather than one, so removing the helper from any single high-traffic surface fails it. The behavioural half — that the floor stays on TODAY after UTC has rolled over, which is the actual bug — is executed in lib/events/upcoming-floor.test.ts with the clock injected, so it pins the 5pm boundary instead of waiting for it."
     },
     {
       "id": "LIVE-080",
@@ -3099,7 +3105,7 @@
     },
     {
       "id": "HYG-012",
-      "title": "Eleven backlog probes each re-read the whole tree, and the 20s CPU budget is now ~99% spent",
+      "title": "The check:backlog CPU budget has outgrown 20s, and neither cheap fix works — an owner call",
       "status": "open",
       "lane": "hygiene",
       "size": "M",
@@ -3107,13 +3113,13 @@
         "file": "scripts/check-backlog.mjs",
         "ref": "runProbe’s per-probe spawn, and patternMatches/filesUnder"
       },
-      "detail": "Found 2026-08-20 when scripts/backlog-contract.test.ts failed a PR at 20.2s against its 20s child-CPU budget. THE BUDGET WAS NOT THE PROBLEM — five new rows tipped a guard that was already at ~19.6s. ELEVEN `cmd` probes each spawn their own node process and each walks the SAME tree, re-reading ~4,200 files / ~29MB from scratch: LIVE-012, LIVE-020, LIVE-038, LIVE-054, LIVE-058, LIVE-062, LIVE-066, LIVE-071, OWN-035, OWN-036, OWN-037. Measured locally: ~113ms per full walk plus ~25ms of node startup each, so roughly 1.5-2s locally and ~3s on a CI runner — about 15% of the whole budget spent reading the same bytes eleven times. THE FIX IS IN THE HARNESS, NOT THE ROWS: check-backlog.mjs already has filesUnder + patternMatches for the in-process `grep-present`/`grep-absent` kinds. Read the corpus ONCE per run, memoise it, and give the walking probes a way to ask against it — either by extending the in-process kinds to express what the walkers need (an exclusion list: skip *.test.*, skip the probe's own file) or by handing `cmd` probes a pre-built index. ⚠️ DO NOT convert the eleven to `grep-present` as-is: that was tried on LIVE-071 the same day and the probe FLIPPED ITS VERDICT, because the in-process kinds cannot express the path exclusions the walkers rely on. A probe that silently inverts is precisely the ripgrep failure documented at the top of that file — eight confident wrong answers from one missing binary. The exclusions must land in the harness BEFORE any row moves. ⚠️ AND DO NOT RAISE GUARD_BUDGET_CPU_MS: the test says so in its own failure message, and it is right — the number is the smoke alarm, not the fire. ── MEASURED NEGATIVE RESULT, 2026-08-20: memoising the file listing AND contents inside check-backlog.mjs was tried first, as the smallest change that might buy headroom. It bought NOTHING measurable (19.98s baseline vs 20.61s memoised on the same loaded machine, against run-to-run noise of about +/-1s) and was reverted rather than shipped. The reason is structural and worth keeping: a parent-process cache can only ever help the IN-PROCESS kinds, and those mostly point at single named files. All eleven expensive probes are `cmd` probes, i.e. separate node processes that cannot see the parent memory at all. So the conversion is not an optimisation to do after memoising - it IS the fix, and nothing short of it moves the number. The guard has now failed two builds (2026-08-20, both at 20.2-20.3s).",
+      "detail": "Found 2026-08-20 when scripts/backlog-contract.test.ts failed a PR at 20.2s against its 20s child-CPU budget. It has now failed FOUR builds (20.2s, 20.3s, 20.6s). The original framing — eleven probes wastefully re-reading the same tree — was right about the reading and WRONG about the remedy. Both cheap fixes were tried and MEASURED, and both failed:\n\n(1) MEMOISING the file listing and contents inside check-backlog.mjs: bought nothing measurable (19.98s baseline vs 20.61s memoised on the same loaded machine, against run-to-run noise of about +/-1s). A parent-process cache can only help the IN-PROCESS kinds, and those mostly point at single named files; all eleven expensive probes are `cmd`, i.e. separate node processes that cannot see parent memory.\n\n(2) CONVERTING the eleven to the in-process grep kinds — the fix this row originally prescribed. The harness was extended with `exclude` and `stripComments` to make it possible, and then reading the eleven showed the premise was false: only THREE (OWN-036, OWN-037, LIVE-071) are pattern matches. The other eight are COMPUTATIONS, not greps — LIVE-012 walks app/discover checking auth calls per file against an allowlist, LIVE-020 imports check-function-grants.mjs and audits 400+ migrations through it, LIVE-038 carries an ALLOWED set, LIVE-054 parses a named function's body, LIVE-058 collects exported symbol names, LIVE-062 checks a per-file map of 38 action names, LIVE-066 pairs modules with importers. None of them can become a regex over paths without measuring something weaker than what the row claims. Converting the three that CAN saves about 75ms against a 600ms overage.\n\nSO THE HONEST FINDING IS THAT THERE IS NO WASTE LEFT TO REMOVE. The budget is measuring a genuinely expensive and genuinely necessary set of checks that has grown past the number someone picked when it was smaller. The guard's own message says \"Raising this number is not the fix\" — that advice assumed waste existed, and the measurements above say it does not.\n\n🔴 THIS IS AN OWNER CALL, NOT A CODE CHANGE, and it is deliberately left open rather than resolved by an agent raising a build gate on its own authority. The options: (a) raise GUARD_BUDGET_CPU_MS with the measurement recorded beside it and an ADR saying why; (b) run the probes concurrently — this cuts WALL clock but not CPU, so it does not move this number; (c) split the guard so the eight computational probes run on their own schedule; (d) accept that adding probed rows now costs a budget conversation each time.",
       "verify": {
         "kind": "manual",
         "evidence": "Counted 2026-08-20 against the tree: 11 of 72 cmd probes walk app/lib/components in their own process. Deliberately unprobed — a mechanical probe here would either re-walk the tree itself (adding to the very cost it measures) or pin an implementation shape rather than the consequence. The consequence already has an executable guard: scripts/backlog-contract.test.ts fails when the budget is exceeded, and it is what surfaced this.",
         "checked": "2026-08-20"
       },
-      "notes": "Zero-cost row on purpose (manual, no probe): the finding is that probes are expensive, so filing it must not make the problem worse. The headroom left after the 2026-08-20 conversions is roughly 0.1-0.3s — the next few rows anyone adds will trip this again, which is the point of writing it down now rather than after. Do not re-attempt the memoisation: it was measured and it does not help, for a structural reason recorded in the detail."
+      "notes": "Zero-cost row on purpose (manual, no probe): the finding is that probes are expensive, so filing it must not make it worse. Do not re-attempt the memoisation or the blanket conversion — both were measured, both are recorded above with their numbers, and both failed for structural reasons that have not changed."
     }
   ]
 }

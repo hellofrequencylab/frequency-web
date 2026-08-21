@@ -23,6 +23,7 @@ import {
   TEASER_CARDS_PER_SERIES,
 } from '@/lib/events/series'
 import { loadNearbyMapPins } from '@/lib/nearby/map-pins'
+import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 
 // /nearby is the Community Dashboard — the counterpart to the Quest Dashboard
 // (/crew), but for community life: what's being announced, what's coming up, and
@@ -155,7 +156,6 @@ export default async function NearbyPage({
   if (nexusIds.length > 0) promises.push(baseQuery().eq('audience_scope', 'nexus').in('audience_id', nexusIds))
 
   const now = new Date()
-  const nowIso = now.toISOString()
   const weekAgoIso = new Date(now.getTime() - 7 * 864e5).toISOString()
   const twoWeeksAgoIso = new Date(now.getTime() - 14 * 864e5).toISOString()
 
@@ -175,7 +175,7 @@ export default async function NearbyPage({
     // exists: a fixed block answers "which gathering", not "which date". Reading only 5 rows and
     // folding afterwards would leave 2 cards, so the read is multiplied first.
     admin.from('events').select(`id, title, slug, location, starts_at, is_cancelled, ${SERIES_COLUMNS}`)
-      .eq('is_cancelled', false).gte('starts_at', nowIso)
+      .eq('is_cancelled', false).gte('starts_at', upcomingEventFloor())
       .eq('status', 'published').eq('visibility', 'public').is('removed_at', null)
       .order('starts_at', { ascending: true }).limit(seriesFetchLimit(COMING_UP_COUNT)),
     // Freshly-created circles to join.
@@ -195,7 +195,7 @@ export default async function NearbyPage({
     admin.from('circles').select('id', { count: 'exact', head: true })
       .in('status', ['forming', 'active']).eq('unlisted', false),
     admin.from('events').select('id', { count: 'exact', head: true })
-      .eq('is_cancelled', false).gte('starts_at', nowIso)
+      .eq('is_cancelled', false).gte('starts_at', upcomingEventFloor())
       .eq('status', 'published').eq('visibility', 'public').is('removed_at', null),
   ])
 

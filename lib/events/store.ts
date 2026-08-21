@@ -14,6 +14,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
+import { upcomingEventFloor } from './upcoming-floor'
 
 /** An event as the by-space read returns it (the columns the offerings/schedule modules need). */
 export interface SpaceEvent {
@@ -523,7 +524,7 @@ export async function listEventsForSpace(
         .in('visibility', ['public', 'unlisted'])
         .is('removed_at', null)
     }
-    if (opts.upcomingOnly) q = q.gte('starts_at', new Date().toISOString())
+    if (opts.upcomingOnly) q = q.gte('starts_at', upcomingEventFloor())
     const { data, error } = await q.order('starts_at', { ascending: true }).limit(limit)
     if (error) return []
     // The typed rows carry starts_at as string|null and join_mode as plain string; SpaceEvent keeps
