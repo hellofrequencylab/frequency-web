@@ -123,12 +123,20 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
   // in the real window. Without this, the band compared real instants to wall-clock parts,
   // so reminders fired ~offset hours early/late for any non-HOME event. time_zone is newer
   // than the generated types, so read untyped and cast (repo convention).
+  //
+  // 🔴 status + removed_at ARE PART OF THE GATE, not decoration. This select used to carry
+  // `is_cancelled` alone, so an event that was never published — or that a moderator had removed —
+  // could still mail every one of its RSVPs a reminder for a gathering that appears on no public
+  // surface. A member cannot un-RSVP from an event they cannot open. The sibling cron
+  // (lib/events/follower-reminders.ts) has always gated on status; this one was the outlier.
   const { data: events } = await admin
     .from('events')
     .select('id, title, starts_at, location, slug, is_cancelled, time_zone, hide_address')
     .gte('starts_at', new Date(windowStart.getTime() - MAX_TZ_OFFSET_MS).toISOString())
     .lt('starts_at', new Date(windowEnd.getTime() + MAX_TZ_OFFSET_MS).toISOString())
     .eq('is_cancelled', false)
+    .eq('status', 'published')
+    .is('removed_at', null)
 
   const eventRows = ((events ?? []) as unknown as EventRow[]).filter((ev) => {
     const inst = eventInstant(ev.starts_at, resolveZone(ev.time_zone))

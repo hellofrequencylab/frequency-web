@@ -23,6 +23,13 @@ const page = readFileSync('app/(main)/people/[handle]/page.tsx', 'utf8')
 // count-based assertion runs against a comment-stripped copy. Without this, deleting a real
 // predicate while leaving the comment that explains it would pass.
 const code = mod.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+
+// The same treatment for the profile page, and for the same reason one level up: its comments now
+// quote the OLD spelling of the space wall (`c.space_id === null`) to explain why it changed, and a
+// bare `not.toContain` on the raw file would read that explanation as the defect. LINE comments
+// only — the whole-file block-comment regex above is safe on the small module but collapses a large
+// route file, because a `/*` inside a string or regex literal opens a comment that never closes.
+const pageCode = page.replace(/^\s*\/\/.*$/gm, '')
 const occurrences = (haystack: string, needle: string) => haystack.split(needle).length - 1
 
 describe('the associations module is non-trivial (guards a vacuous pass)', () => {
@@ -34,13 +41,21 @@ describe('the associations module is non-trivial (guards a vacuous pass)', () =>
 })
 
 describe('G1 — the Space wall, which RLS cannot enforce here', () => {
-  it("carries .is('space_id', null) on EXACTLY the four walled tables", () => {
+  it('carries the space wall on EXACTLY the four walled tables', () => {
     // 20260711090000_space_content_isolation.sql:53-71 puts an identical RESTRICTIVE policy on
     // circles, events, practices, journey_plans and programs. `programs` is out of v1; the other
     // four are all read here, and the admin client bypasses every one of those policies.
     // FEWER than four = a Private Space's content is named to strangers.
     // MORE than four = someone added a seventh kind without re-reading the restrictive set.
-    expect(occurrences(code, ".is('space_id', null)")).toBe(4)
+    // The wall is spelled `.or(unwalled)` since 2026-08-20. It used to be `.is('space_id', null)`,
+    // which stopped matching anything once 20260712030000 began stamping every row's space_id to
+    // the root tenant — measured that day: 0 of 7 circles, 0 of 20 practices, 0 of 12 journeys and
+    // 1 of 59 events were null, so all four tiles read zero for every member and looked merely empty.
+    expect(occurrences(code, '.or(unwalled)')).toBe(4)
+    // 🔴 BOTH ARMS, or the wall is back to matching almost nothing (or drops the pre-trigger rows).
+    expect(code).toContain('space_id.is.null,space_id.eq.${rootSpaceId}')
+    // And the root id is resolved, not assumed: no hardcoded uuid may appear here.
+    expect(code).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/)
   })
 
   it('market_listings is correctly NOT one of them (no space_id column exists)', () => {
@@ -69,7 +84,10 @@ describe('G2 — the leak this panel exists to replace', () => {
     // achievement chip, so the surviving read must carry the listing gate.
     expect(page).toContain('LISTABLE_CIRCLE_STATUS')
     expect(page).toContain('c.unlisted === false')
-    expect(page).toContain('c.space_id === null')
+    // The page's own copy of the wall now COMES FROM the module rather than being spelled again:
+    // the two drifted before, and only one of them was right.
+    expect(page).toContain('isUnwalledSpaceId(c.space_id, rootSpaceId)')
+    expect(pageCode).not.toContain('c.space_id === null')
   })
 })
 
@@ -140,7 +158,7 @@ describe('G6 — moderation-rejected content stays off a member profile', () => 
     expect(practices).toContain("eq('is_public', true)")
     expect(practices).toContain("eq('created_by', profileId)")
     expect(practices).toContain("eq('status', 'approved')")
-    expect(practices).toContain(".is('space_id', null)")
+    expect(practices).toContain('.or(unwalled)')
   })
 })
 
