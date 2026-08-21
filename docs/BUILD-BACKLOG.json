@@ -3272,6 +3272,31 @@
         "pattern": "fixed inset-0"
       },
       "notes": "The probe measures the CONSEQUENCE on both sides of the seam: CreateModal renders a Dialog with align=\"bottom\", it no longer carries ANY of the four overlay concerns it used to duplicate (fixed inset-0, the focus-trap hook, aria-modal, the body scroll lock), the pending guard survives, and Dialog actually implements the bottom align. Re-hand-rolling the overlay fails it; so does dropping the align value out of the primitive.\n\nBehaviour is proven by components/create-modal.test.tsx, negative-controlled: 7 of 12 assertions fail against the pre-change file. The 5 that pass on BOTH trees are the pending-guard half, correctly so — that behaviour was preserved by hand rather than gained, which is exactly why it needed its own assertions.\n\n🔴 THE PROBE IS A GREP, NOT A SPAWN, AND THAT IS DELIBERATE. `check:backlog` runs under a 20s CPU budget asserted by scripts/backlog-contract.test.ts, and that budget is a SHARED resource already ~99% consumed on main. Four new `cmd` rows landing at once tipped CI over it (20.19s measured). A `cmd` probe costs a process spawn even when its work is trivial — these were ~30ms each and almost all of that was startup — so the rows that CAN be answered by an in-process grep use one. The compound assertions these probes used to make are not lost: they live in this row's test file, where they are negative-controlled against the pre-change tree, which is a stronger place for them than a probe anyway."
+    },
+    {
+      "id": "LIVE-089",
+      "title": "Six hand-rolled overlays remain, and each differs from Dialog in scrim or z-tier, so none is a silent conversion",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "components/ui/dialog.tsx",
+        "ref": "the shared primitive these six bypass"
+      },
+      "detail": "🔴 THE SURVEY THAT PRODUCED THIS LIST WAS WRONG ABOUT ITS OWN EASY CASES, and that is the finding worth keeping. An overlay audit on 2026-08-21 sorted 28 modal-shaped overlays into \"trivially convertible / needs a decision / must not convert\" and put 12 in the first bucket. It sorted on GEOMETRY (items-end vs items-center) and never read scrim colour or z-tier. Verified one by one against Dialog's z-[80] + bg-ink/60 + backdrop-blur-sm, SEVEN candidates yielded exactly ONE true no-op:\n\n  invite-launcher       z-[80]  bg-ink/60  blur-sm   EXACT MATCH -> converted (align=\"sheet\")\n  vera-lightbox         z-[60]  bg-ink/60  blur-sm   scrim ok, tier 60 -> 80\n  invite-friend-button  z-[80]  button scrim         tier ok, scrim is a click-target element\n  capture-launcher      z-[70]  bg-ink/70  blur-sm   tier 70 -> 80, scrim lightens\n  chores-overlay        z-[70]  bg-ink/70  blur-sm   tier 70 -> 80, scrim lightens\n  teaser-gate           z-50    bg-ink/40  blur-2px  tier + scrim both change\n  induction             z-50    bg-ink/40  no blur   tier + scrim change, blur appears\n\nA GREP ALONE WOULD ALSO HAVE BEEN WRONG. teaser-gate and invite-friend-button look scrimless on the `fixed inset-0` line because their scrim is a SIBLING element (an absolute div, and a click-to-dismiss button respectively). Reading the line is not reading the overlay.\n\nSO THERE IS NO SWEEP HERE, only six individual judgments. A z-tier is a claim about what may appear above what (vera-lightbox at z-[60] sits BELOW the modal tier deliberately, so a Dialog can open over it), and a scrim opacity is a design choice (trophy-celebration, excluded from this row, uses a LIGHT bg-canvas/80 wash because it is a celebration, not a modal). Converting on autopilot would darken screens and reshuffle stacking with nobody having decided to.\n\nWHAT IS AT STAKE IF THEY STAY: every one of the six lacks a portal (so the sliding admin rail can trap it), lacks the Space theme (ADR-1097), sits outside the dialog stack, and pads no safe area. Five of the six set aria-modal=\"true\" with no focus trap at all, which tells a screen reader the page behind is inert while Tab walks straight out of it.",
+      "verify": {
+        "kind": "grep-absent",
+        "paths": [
+          "components/teaser-gate.tsx",
+          "app/join/(induction)/induction.tsx",
+          "components/sidebar/invite-friend-button.tsx",
+          "components/feed/capture-launcher.tsx",
+          "components/onboarding/vera-lightbox.tsx",
+          "components/onboarding/chores-overlay.tsx"
+        ],
+        "pattern": "fixed inset-0"
+      },
+      "notes": "OPEN, and the probe reports NOT DONE because all six still hand-roll `fixed inset-0`. Closing it does NOT require converting all six: if the owner decides one should keep its own tier or scrim, that decision gets recorded here and the file drops out of the probe's path list with the reason attached. What the row refuses is the third option — leaving them unconverted and undecided.\n\ncomponents/invite/invite-launcher.tsx is deliberately NOT in the list: it was the one exact match and is already on Dialog. components/practice/claim-practice.tsx and components/create-modal.tsx are likewise done (ADR-1100). trophy-celebration is excluded because its z-[100] lightbox tier and bg-canvas/80 celebratory wash make it a deliberate difference rather than a pending conversion."
     }
   ]
 }
