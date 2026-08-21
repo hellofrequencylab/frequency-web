@@ -28308,3 +28308,57 @@ change.
   protecting. This one said *"two doors"*, which is a count, and a count broke the moment an entity
   needed a field. Restated as an ORDER and a WEIGHTING, the same lock survives the change it would
   otherwise have blocked — and now covers the five entities it was really there for.
+
+## ADR-1099: A wizard destination opens no window of its own (2026-08-21)
+
+**Status:** Accepted · **Extends** [ADR-1017](DECISIONS.md) (the Spark modal's routing contract) ·
+corroborated by `app/(main)/events/new/page.tsx`, `app/(main)/@wizard/wizard-routes.test.ts`
+
+**Context.** `/events/new` mounted **two full overlays at once**, one inside the other, on the
+intercepted route:
+
+| | Renders |
+| :-- | :-- |
+| `app/(main)/@wizard/(.)events/new/page.tsx` | `WizardModal` |
+| `components/studio/wizard-modal.tsx` | `createPortal` → `StudioWindow` — **overlay A**, focus trap, scroll lock, close-confirm |
+| `app/(main)/events/new/page.tsx` | `EventEditorWindow` |
+| `components/studio/event/event-editor-window.tsx` | `StudioWindow` (`hideChrome`) — **overlay B**, a second trap, a second scroll lock, its own header with its own close X |
+| `app/(main)/events/event-spark.tsx` | `SparkShell` — a third heading and footer |
+
+Live consequences: two `useDialogFocusTrap` instances competing for Tab, two body-scroll locks,
+three stacked headers, and **two close buttons that did different things** — the inner one pushed
+`/events`, the outer ran the unsaved-work confirm.
+
+**🔴 Why nobody saw it.** `EventEditorWindow` is **correct** on its two other consumers,
+`/events/[slug]/edit` and `/admin/events/[id]`, because neither has an interceptor above it. The
+component was right twice and wrong once. Reviewing the component finds nothing; only the
+*composition on one route* is wrong, and nothing in the repo looked at compositions.
+
+**Decision.**
+
+1. **`/events/new` renders its Spark bare**, exactly as `/circles/new`, `/practices/new`,
+   `/journeys/new`, `/classifieds/new` and `/market/sell` already do. The chrome is the modal's job,
+   and `SparkShell` already centres itself (`mx-auto w-full max-w-lg`).
+2. **`EventEditorWindow` is NOT deleted.** It stays on both edit routes. Removing it there would be
+   a second regression in the opposite direction, and the contract test asserts it is still there.
+3. **The contract gets a fourth property, and it is DISCOVERED rather than listed.** The opener set
+   is computed by scanning `components/` for anything that renders `<StudioWindow`, so a wrapper
+   written next week is covered without editing the test. `studio-window.tsx` and `wizard-modal.tsx`
+   are excluded by name for opposite reasons: one **is** the primitive, the other's whole job is to
+   open it. A floor assertion (`openers.length >= 3`) refuses the vacuous-pass failure mode where
+   the scan breaks and every check below it passes against an empty list.
+
+**Consequences.**
+
+- **A copy loss, stated rather than buried.** `EventEditorWindow`'s header band — the brandmark
+  beside *"Share an Event with the community!"* — and its footer line no longer appear when creating
+  an event. They still appear when editing one. If that invitation is wanted on the create path it
+  belongs in `SparkShell`'s own eyebrow and description, where every other Spark puts its framing,
+  not in a window wrapper that also brings an overlay with it.
+- **The negative control is the whole value.** Against the pre-fix tree exactly **one** assertion
+  fails, `/events/new renders its Spark bare`, and the other 32 pass — so the guard is aimed at this
+  defect rather than being a blanket that would flag any future wrapper on sight.
+- **The durable rule:** a component can be correct at every call site and still be wrong in one
+  *composition*. Guards that read a component in isolation cannot see that class of defect; the only
+  thing that catches it is a test that walks the actual nesting a route produces. Where a repo has a
+  routing contract, "what may appear underneath this" is part of it.

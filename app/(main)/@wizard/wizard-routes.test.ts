@@ -20,6 +20,12 @@ import { join } from 'node:path'
 //      shared-link path is the one nobody tests by hand.
 //   3. THE LAYOUT ACCEPTS AND RENDERS THE SLOT. A parallel route that the layout never renders is
 //      silently dead: no error, no warning, the modal simply never appears.
+//   4. THE DESTINATION OPENS NO WINDOW OF ITS OWN. The modal already wraps the destination in a
+//      `StudioWindow`. A destination that ALSO opens one mounts two overlays at once: two focus
+//      traps fighting for Tab, two body-scroll locks, stacked headers, and two close buttons with
+//      different behaviour. `/events/new` shipped exactly that (ADR-1099) — it wrapped itself in
+//      `EventEditorWindow`, which was correct on its two EDIT routes, where nothing intercepts
+//      above it. The component was right twice and wrong once, which is why nobody saw it.
 //
 // These are file-shape assertions on purpose. The behaviour they protect cannot be exercised in
 // jsdom (interception is a router mechanism, not a component one), so what is testable is the
@@ -115,4 +121,65 @@ describe('the autosave scope is the same in both presentations', () => {
     expect(shell).toMatch(/useReportWizardDraft\(\{/)
     expect(shell).toContain('discard: draft.discard')
   })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// PROPERTY 4: the destination must not open a second window (ADR-1099).
+//
+// The opener list is DISCOVERED, not hardcoded: any component that renders `<StudioWindow` is one,
+// so a wrapper written next week is covered without editing this file. Two are excluded by name and
+// for opposite reasons — `studio-window.tsx` IS the primitive, and `wizard-modal.tsx` is the thing
+// whose whole job is to open it.
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+
+/** Strip comments before matching: a comment explaining why a wrapper was REMOVED must not read as
+ *  a call site. That mistake has its own ADR (ADR-1097) and cost this repo a red build. */
+const stripComments = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+
+function windowOpeners(): string[] {
+  const found = new Set<string>()
+  const walk = (dir: string) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      if (e.name === 'node_modules' || e.name.startsWith('.')) continue
+      const p = join(dir, e.name)
+      if (e.isDirectory()) walk(p)
+      else if (/\.tsx$/.test(p) && !/\.test\.tsx$/.test(p)) {
+        if (p.endsWith(join('studio', 'studio-window.tsx')) || p.endsWith(join('studio', 'wizard-modal.tsx'))) continue
+        if (!stripComments(read(p)).includes('<StudioWindow')) continue
+        for (const m of read(p).matchAll(/export function ([A-Z]\w*)/g)) found.add(m[1])
+      }
+    }
+  }
+  walk('components')
+  return [...found]
+}
+
+describe('property 4 — a wizard destination opens no window of its own', () => {
+  const openers = windowOpeners()
+
+  it('finds the window-opening wrappers by scanning, so a new one is covered automatically', () => {
+    // A sanity floor, not a snapshot: if this hits zero the scan broke and every assertion below
+    // would pass vacuously, which is the failure mode this whole file exists to refuse.
+    expect(openers.length).toBeGreaterThanOrEqual(3)
+    expect(openers).toContain('EventEditorWindow')
+  })
+
+  for (const { url, destination } of intercepts()) {
+    it(`${url} renders its Spark bare`, () => {
+      const src = stripComments(read(destination))
+      expect(src).not.toContain('<StudioWindow')
+      for (const opener of openers) expect(src).not.toContain(`<${opener}`)
+    })
+  }
+})
+
+describe('the wrappers stay where they were always correct', () => {
+  // The fix is not "delete EventEditorWindow". It is right on the two EDIT routes, which have no
+  // interceptor above them — and deleting it there would be a second, opposite regression.
+  for (const p of [join('app', '(main)', 'events', '[slug]', 'edit', 'page.tsx'), join('app', '(main)', 'admin', 'events', '[id]', 'page.tsx')]) {
+    it(`${p} still opens the event window`, () => {
+      expect(existsSync(p)).toBe(true)
+      expect(stripComments(read(p))).toContain('<EventEditorWindow')
+    })
+  }
 })

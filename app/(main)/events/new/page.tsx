@@ -5,7 +5,6 @@ import { getEventCapabilities, getCircleCapabilities } from '@/lib/core/load-cap
 import { EventSpark } from '../event-spark'
 import { getViewerHome } from '../admin-actions'
 import type { EventFormInitial } from './event-form'
-import { EventEditorWindow } from '@/components/studio/event/event-editor-window'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { listLinkableJourneys, resolveJourneyRef } from '@/lib/events/placement'
 import { canEditJourney } from '@/lib/journeys/authoring'
@@ -327,25 +326,41 @@ export default async function NewEventPage({
         }
       : undefined
 
+  // 🔴 NO WINDOW HERE. This page used to wrap itself in `EventEditorWindow`, which opens a
+  // `StudioWindow` — and on the `@wizard` route it is already rendered INSIDE one
+  // (`(.)events/new/page.tsx` -> `WizardModal` -> `StudioWindow`). Two overlays were mounted at
+  // once: two focus traps, two scroll locks, three stacked headers, and two close buttons doing
+  // different things (the inner pushed /events, the outer ran the unsaved-work confirm).
+  //
+  // Every sibling create route renders its Spark bare — `/circles/new`, `/practices/new`,
+  // `/journeys/new`, `/classifieds/new`, `/market/sell` — because the CHROME IS THE MODAL'S JOB
+  // and `SparkShell` already centres itself. `EventEditorWindow` stays on the two EDIT routes
+  // (`/events/[slug]/edit`, `/admin/events/[id]`), which have no interceptor above them and where
+  // it was always correct. That asymmetry is why this went unnoticed: the component was right
+  // twice and wrong once.
   return (
-    <EventEditorWindow backHref="/events">
-      {droppedSpaceLink && (
-        <p className="mb-4 rounded-xl border border-warning/40 bg-warning-bg/30 px-4 py-3 text-body-sm leading-relaxed text-text">
-          You opened this from a space you do not help run, so the event below will be a personal
-          event. To create it for the space, ask its owner to make you an editor first.
-        </p>
-      )}
-      {droppedCircleLink && (
-        <p className="mb-4 rounded-xl border border-warning/40 bg-warning-bg/30 px-4 py-3 text-body-sm leading-relaxed text-text">
-          You opened this from a Circle you do not run, so the event below will be a personal
-          event. To create it for the Circle, ask its host to add it for you.
-        </p>
-      )}
-      {droppedJourneyLink && (
-        <p className="mb-4 rounded-xl border border-warning/40 bg-warning-bg/30 px-4 py-3 text-body-sm leading-relaxed text-text">
-          You opened this from a Journey you do not run, so the event below will not be part of it.
-          To add it to the Journey, ask whoever runs the Journey to link it.
-        </p>
+    <>
+      {(droppedSpaceLink || droppedCircleLink || droppedJourneyLink) && (
+        <div className="mx-auto w-full max-w-lg px-4 pt-6">
+        {droppedSpaceLink && (
+          <p className="mb-4 rounded-xl border border-warning/40 bg-warning-bg/30 px-4 py-3 text-body-sm leading-relaxed text-text">
+            You opened this from a space you do not help run, so the event below will be a personal
+            event. To create it for the space, ask its owner to make you an editor first.
+          </p>
+        )}
+        {droppedCircleLink && (
+          <p className="mb-4 rounded-xl border border-warning/40 bg-warning-bg/30 px-4 py-3 text-body-sm leading-relaxed text-text">
+            You opened this from a Circle you do not run, so the event below will be a personal
+            event. To create it for the Circle, ask its host to add it for you.
+          </p>
+        )}
+        {droppedJourneyLink && (
+          <p className="mb-4 rounded-xl border border-warning/40 bg-warning-bg/30 px-4 py-3 text-body-sm leading-relaxed text-text">
+            You opened this from a Journey you do not run, so the event below will not be part of it.
+            To add it to the Journey, ask whoever runs the Journey to link it.
+          </p>
+        )}
+        </div>
       )}
       <EventSpark
         groups={scopeOptions}
@@ -355,6 +370,6 @@ export default async function NewEventPage({
         startInManual={!!duplicateInitial}
         home={viewerHome}
       />
-    </EventEditorWindow>
+    </>
   )
 }
