@@ -8,6 +8,7 @@ import {
   seriesUpcomingFloor,
 } from '@/lib/events/series'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 
 // The member profile's ASSOCIATIONS panel (ADR-895) — "what is this person actually part of",
 // answered in three tiers so the answer never publishes something the viewer was not entitled to.
@@ -39,14 +40,28 @@ import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 //       every circle on the list, so it publishes zero new bits (including when the answer is zero).
 //   C — the owner's own full picture, behind the established "only you can see this" treatment.
 //
-// THE HONEST GAP, stated rather than hidden: `.is('space_id', null)` appears on FOUR reads
+// THE HONEST GAP, stated rather than hidden: the SPACE WALL is re-applied by hand on FOUR reads
 // (circles, events, practices, journey_plans) because `20260711090000_space_content_isolation.sql`
-// puts the Space wall in RESTRICTIVE policies that never fire on the admin client. The consequence
-// is that content published INSIDE a Space is not counted here, even when the Space is public.
+// puts it in RESTRICTIVE policies that never fire on the admin client. The consequence is that
+// content published INSIDE a Space is not counted here, even when the Space is public.
 // UNDER-COUNTING IS THE CORRECT FAILURE DIRECTION. Lifting it needs either a viewer-aware read
 // (which would break tier A's viewer-independence) or a `security definer` RPC that runs
 // `can_view_space_content` for real — and an RPC re-creates the exact RLS bypass this module exists
 // to contain, so it is deliberately not built here.
+//
+// 🔴 THE WALL WAS SPELLED `.is('space_id', null)` UNTIL 2026-08-20, AND BY THEN IT MATCHED ALMOST
+// NOTHING. `20260712030000_content_space_id_default_root.sql` added a BEFORE INSERT trigger that
+// stamps every new row's `space_id` to the ROOT tenant, so "unpartitioned" stopped meaning "not in
+// a Space" — it came to mean "written before that migration". Measured against production the day
+// it was found: 0 of 7 circles, 0 of 20 practices, 0 of 12 journey_plans and 1 of 59 events had a
+// null `space_id`. The whole tier-A panel read zero for every member on the platform, and it read
+// zero the way a correct empty state reads, so nothing looked broken.
+//
+// The rule is now written as what it always MEANT — `unwalledSpaceFilter` below — and the root
+// tenant is admitted explicitly. That is not a widening of the wall: `can_view_space_content`
+// returns true for any space whose visibility is not `private`, and the root Space is `network`, so
+// root-owned content was already readable by anyone through RLS. The bits published here are bits
+// the viewer could already fetch; only PRIVATE-Space content stays out, which is the whole point.
 
 export type AssociationKind =
   | 'circles'
@@ -109,6 +124,39 @@ const LISTABLE_CIRCLE_STATUS = ['forming', 'active', 'inactive'] as const
  *  so the "exact" count would have been wrong for any active host. */
 const EVENT_SERIES_READ = seriesFetchLimit(24)
 
+/**
+ * The SPACE WALL as a PostgREST filter: a row belongs to no real Space when it is unpartitioned
+ * (`space_id is null`, pre-trigger rows) OR owned by the ROOT tenant (every row written since
+ * `20260712030000`, which stamps root by default).
+ *
+ * 🔴 BOTH ARMS ARE LOAD-BEARING, and dropping either one is silent. Without the root arm this
+ * matches almost nothing and every tile reads zero (the 2026-08-20 defect). Without the null arm
+ * it drops the pre-trigger rows. Never simplify it to one.
+ *
+ * Root is admitted deliberately and safely: the wall exists to keep PRIVATE-Space content out, and
+ * `can_view_space_content` already admits any space whose visibility is not `private`. Root is
+ * `network`. If the root Space is missing (pre-migration), this degrades to the null-only arm —
+ * under-counting, which is the correct failure direction for this module.
+ */
+function unwalledSpaceFilter(rootSpaceId: string | null): string {
+  return rootSpaceId ? `space_id.is.null,space_id.eq.${rootSpaceId}` : 'space_id.is.null'
+}
+
+/**
+ * The SAME rule, applied to a row already in memory. Exported because the profile page re-derives
+ * the browsable-Circle set for its achievement chip (app/(main)/people/[handle]/page.tsx) and a
+ * second hand-written copy of this wall is exactly how the two drifted before — one filter said
+ * `space_id === null` while the query said something else, and only one of them was right.
+ * PURE, so it is unit-testable without a database.
+ */
+export function isUnwalledSpaceId(
+  spaceId: string | null | undefined,
+  rootSpaceId: string | null,
+): boolean {
+  if (spaceId == null) return true
+  return !!rootSpaceId && spaceId === rootSpaceId
+}
+
 type Peek = { count: number | null; approximate: boolean; peek: AssociationLink[] }
 
 const EMPTY: Peek = { count: null, approximate: false, peek: [] }
@@ -131,12 +179,15 @@ const readBuilt = cache(async (profileId: string): Promise<AssociationStat[]> =>
   // ONE clock for the whole panel, taken in the community's zone, so the Events read and the fold
   // can never disagree about what "upcoming" means (ADR-897: the caller owns the clock).
   const floor = seriesUpcomingFloor(dayInZone(new Date(), HOME_TZ))
+  // ONE root lookup for the whole panel (React-cached anyway), so all four walled reads apply the
+  // identical rule and cannot drift apart.
+  const unwalled = unwalledSpaceFilter(await loadRootSpaceId())
 
   const settled = await Promise.allSettled<Peek>([
     // CIRCLES hosted. `unlisted` is the browse-hiding flag the Circles index honours
     // (`lib/circles/index-data.ts`), so a Circle the member deliberately kept out of browse stays
-    // out of their profile too. `.is('space_id', null)` is 1 of 4 — without it a Circle owned by a
-    // PRIVATE Space is named and deep-linked to every stranger.
+    // out of their profile too. `.or(unwalled)` is the space wall, 1 of 4 — without it a Circle owned
+    // by a PRIVATE Space is named and deep-linked to every stranger.
     (async (): Promise<Peek> => {
       const { data, count, error } = await admin
         .from('circles')
@@ -144,7 +195,7 @@ const readBuilt = cache(async (profileId: string): Promise<AssociationStat[]> =>
         .eq('host_id', profileId)
         .eq('unlisted', false)
         .in('status', [...LISTABLE_CIRCLE_STATUS])
-        .is('space_id', null)
+        .or(unwalled)
         .order('created_at', { ascending: false })
         .limit(PEEK_LIMIT)
       if (error) throw error
@@ -196,7 +247,7 @@ const readBuilt = cache(async (profileId: string): Promise<AssociationStat[]> =>
         .in('visibility', ['public', 'unlisted'])
         .eq('is_cancelled', false)
         .is('removed_at', null)
-        .is('space_id', null)
+        .or(unwalled)
         .gte('starts_at', floor)
         .order('starts_at', { ascending: true })
         .limit(EVENT_SERIES_READ)
@@ -225,7 +276,7 @@ const readBuilt = cache(async (profileId: string): Promise<AssociationStat[]> =>
         .eq('visibility', 'public')
         .eq('status', 'approved')
         .not('published_at', 'is', null)
-        .is('space_id', null)
+        .or(unwalled)
         .order('published_at', { ascending: false })
         .limit(PEEK_LIMIT)
       if (error) throw error
@@ -246,7 +297,7 @@ const readBuilt = cache(async (profileId: string): Promise<AssociationStat[]> =>
         .eq('created_by', profileId)
         .eq('is_public', true)
         .eq('status', 'approved')
-        .is('space_id', null)
+        .or(unwalled)
         .order('created_at', { ascending: false })
         .limit(PEEK_LIMIT)
       if (error) throw error
@@ -263,7 +314,7 @@ const readBuilt = cache(async (profileId: string): Promise<AssociationStat[]> =>
 
     // CLASSIFIEDS listings. `status='active'` is exactly what the board itself lists
     // (`lib/marketplace.ts` listListings), so count-equals-browse holds. `market_listings` carries
-    // no `space_id`, so no Space wall applies and no fifth `.is('space_id', null)` belongs here.
+    // no `space_id`, so no Space wall applies and no fifth `.or(unwalled)` belongs here.
     (async (): Promise<Peek> => {
       const { data, count, error } = await admin
         .from('market_listings')

@@ -122,6 +122,8 @@ function builder(table: string) {
     neq(col: string, val: unknown) { filters.push(['neq', col, val]); return api },
     in(col: string, val: unknown) { filters.push(['in', col, val]); return api },
     is(col: string, val: unknown) { filters.push(['is', col, val]); return api },
+    // The space wall is a two-arm .or() (null OR root) since 2026-08-20 — lib/people/space-wall.test.ts.
+    or(expr: string) { filters.push(['or', 'space_id', expr]); return api },
     not(col: string, op: string, val: unknown) { filters.push(['not', col, val ?? op]); return api },
     gte(col: string, val: unknown) { filters.push(['gte', col, val]); return api },
     order() { return api },
@@ -130,6 +132,10 @@ function builder(table: string) {
   }
   return api
 }
+
+vi.mock('@/lib/spaces/store', () => ({
+  loadRootSpaceId: async () => '00000000-0000-4000-a000-0000000000rt',
+}))
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({ from: (t: string) => builder(t) }),

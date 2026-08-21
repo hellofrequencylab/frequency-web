@@ -100,6 +100,9 @@ function builder(table: string) {
     neq(col: string, val: unknown) { rec.filters.push(['neq', col, val]); return api },
     in(col: string, val: unknown) { rec.filters.push(['in', col, val]); return api },
     is(col: string, val: unknown) { rec.filters.push(['is', col, val]); return api },
+    // The SPACE WALL is a two-arm .or() since 2026-08-20 (null OR the root tenant) — see
+    // lib/people/space-wall.test.ts for why the single `is null` arm stopped matching anything.
+    or(expr: string) { rec.filters.push(['or', 'space_id', expr]); return api },
     not(col: string, op: string, val: unknown) { rec.filters.push(['not', col, val ?? op]); return api },
     gte(col: string, val: unknown) { rec.filters.push(['gte', col, val]); return api },
     order() { return api },
@@ -111,6 +114,13 @@ function builder(table: string) {
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({ from: (t: string) => builder(t) }),
+}))
+
+// The panel resolves the root Space once to build the space-wall filter. Pinned to a fixed id here
+// so the filter string is deterministic and the assertions below can name it.
+const ROOT_SPACE_ID = '00000000-0000-4000-a000-0000000000rt'
+vi.mock('@/lib/spaces/store', () => ({
+  loadRootSpaceId: async () => ROOT_SPACE_ID,
 }))
 
 import { getProfileAssociations } from './associations'

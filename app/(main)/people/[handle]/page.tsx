@@ -44,6 +44,8 @@ import { FrequencySignature } from '@/components/profile/frequency-signature'
 import { getLinkedContactForProfile } from '@/lib/connections/matching'
 import { PrivateContactPanel } from '@/components/connections/private-contact-panel'
 import { ProfileAssociations } from '@/components/profile/profile-associations'
+import { isUnwalledSpaceId } from '@/lib/people/associations'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 // HERO_ACTION_CLASS is gone from this page on purpose: every control that rides this cover now
 // takes its colour from the hero ZONE's --color-on-media (ADR-894), and the fixed white-on-glass
 // original cannot do that. It stays exported and untouched for the seven non-adaptive heroes.
@@ -264,13 +266,19 @@ export default async function ProfilePage({
   // ordinary member may read (`archived` needs host+, `draft` needs guide+), and not owned by a
   // Space (the Space wall is a RESTRICTIVE policy, and this page reads through the admin client
   // where it never fires). Same allowlist as lib/people/associations.ts tier A.
+  //
+  // The wall itself comes FROM that module (isUnwalledSpaceId) rather than being spelled again
+  // here. It used to read `c.space_id === null`, which stopped matching anything once
+  // 20260712030000 began stamping every row's space_id to the root tenant — the same defect that
+  // emptied all four Association tiles, and the reason the rule now lives in exactly one place.
+  const rootSpaceId = await loadRootSpaceId()
   const LISTABLE_CIRCLE_STATUS = ['forming', 'active', 'inactive']
   const circles = ((circlesResult.data ?? []) as unknown as {
     circles: { id: string; name: string; slug: string; unlisted: boolean; status: string; space_id: string | null } | null
   }[])
     .map(m => m.circles)
     .filter((c): c is { id: string; name: string; slug: string; unlisted: boolean; status: string; space_id: string | null } =>
-      !!c && c.unlisted === false && LISTABLE_CIRCLE_STATUS.includes(c.status) && c.space_id === null)
+      !!c && c.unlisted === false && LISTABLE_CIRCLE_STATUS.includes(c.status) && isUnwalledSpaceId(c.space_id, rootSpaceId))
 
   // Rank, next tier, and progress come from the one canonical source (season-ranks),
   // so the profile shows the same ladder as the feed, crew home, and leaderboard.

@@ -3001,23 +3001,23 @@
     },
     {
       "id": "LIVE-078",
-      "title": "The profile Events tile reads zero for every host on the platform",
-      "status": "open",
+      "title": "The profile Associations panel read zero for every member: the space wall stopped matching anything",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "lib/people/associations.ts",
         "ref": "the .is(space_id, null) predicate"
       },
-      "detail": "Found and MEASURED in the sweep, 2026-08-20. lib/people/associations.ts:199 filters the profile's Events tile with .is('space_id', null), on the premise that a null space means \"a platform event, not a Space's\". That premise expired when 20260712030000_content_space_id_default_root.sql added a BEFORE INSERT trigger stamping every event's space_id to the root Space. Live count the same day: of 58 live events, 2 have space_id null and 32 are root-stamped — so the tile's own predicate excludes 56 of 58 rows before any other filter runs, and every host's public profile reads \"Events 0\". The module's header comment (:41-49) still states the dead assumption. FIX: drop the null predicate and exclude the ROOT space instead (lib/events/belonging.ts hostingSpaceId is the one function that already knows how), which is the same correction LIVE-075 makes everywhere else. The tile also filters host_id only, so it misses posted events — 38 of 58 live rows have host_id null; decide whether the tile counts what a person HOSTS or what they PUT UP, and say so in the code.",
+      "detail": "SCOPE CORRECTED ON CONTACT — this was filed as the Events tile and it was all FOUR tier-A tiles. lib/people/associations.ts re-applies the Space wall by hand on four reads (circles, events, practices, journey_plans) because 20260711090000_space_content_isolation.sql puts it in RESTRICTIVE policies that never fire on the admin client, so the app-code predicate IS the gate. It was spelled .is(space_id, null), written when null meant \"not in a Space\". 20260712030000_content_space_id_default_root.sql then added a BEFORE INSERT trigger stamping every new row space_id to the ROOT tenant, and null quietly came to mean \"written before that migration\". Measured against production 2026-08-20: 0 of 7 circles, 0 of 20 practices, 0 of 12 journey_plans and 1 of 59 events had a null space_id. The whole \"what this person built\" panel read zero for every member on the platform, and it read zero the way a correct empty state reads, so nothing looked broken. A FIFTH site had the same bug in memory: app/(main)/people/[handle]/page.tsx filtered c.space_id === null for the Circle Up achievement chip. FIXED: one named rule (unwalledSpaceFilter for queries, the pure exported isUnwalledSpaceId for rows) admitting null OR root, used at all five sites. NOT A WIDENING OF THE WALL: can_view_space_content returns true for any space whose visibility is not private, and root is network, so root-owned content was already RLS-readable by anyone; only PRIVATE-Space content stays out, which is the entire purpose. Root resolution failing degrades to the null-only arm, which under-counts rather than over-shares.",
       "verify": {
-        "kind": "grep-absent",
-        "pattern": "\\.is\\(\\s*'space_id',\\s*null\\s*\\)",
+        "kind": "grep-present",
+        "pattern": "space_id\\.is\\.null,space_id\\.eq\\.",
         "paths": [
           "lib/people/associations.ts"
         ]
       },
-      "notes": "In-process (grep-absent) to stay inside the guard’s child-CPU budget. The predicate IS the defect: while it is in the file the tile excludes 56 of 58 live rows. It closes by deleting the predicate, not by mentioning the fix in a comment."
+      "notes": "In-process (grep-present) for the child-CPU budget (HYG-012). Pins the BOTH-ARMS filter string, which is the half that was missing; the null-only arm alone is the defect. The rest of the contract is executed: lib/people/space-wall.test.ts mutation-checks the pure rule from both directions, and components/profile/profile-associations-wiring.test.ts counts the four call sites and pins the page’s use of the shared helper."
     },
     {
       "id": "LIVE-079",
@@ -3040,14 +3040,14 @@
     {
       "id": "LIVE-080",
       "title": "The RSVP reminder cron has no status gate, so a draft can email its RSVPs",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "app/api/cron/event-reminders/route.ts",
         "ref": "the candidate select"
       },
-      "detail": "Found in the sweep, 2026-08-20. app/api/cron/event-reminders/route.ts:125-131 selects reminder candidates with a starts_at band and .eq('is_cancelled', false) and NOTHING ELSE — no status, no removed_at. An unpublished draft that somehow carries RSVPs will send reminder emails for an event that exists on no public surface. Compare lib/events/follower-reminders.ts:264-278, the sibling cron, which does gate on status='published' AND visibility='public'. One predicate closes it.",
+      "detail": "Found in the sweep, 2026-08-20. app/api/cron/event-reminders/route.ts:125-131 selects reminder candidates with a starts_at band and .eq('is_cancelled', false) and NOTHING ELSE — no status, no removed_at. An unpublished draft that somehow carries RSVPs will send reminder emails for an event that exists on no public surface. Compare lib/events/follower-reminders.ts:264-278, the sibling cron, which does gate on status='published' AND visibility='public'. One predicate closes it. FIXED 2026-08-20: the candidate select gains .eq(status, published) AND .is(removed_at, null) — removed_at because a moderator-removed event is the same one-way failure as a draft. A member cannot un-RSVP from an event they cannot open.",
       "verify": {
         "kind": "grep-present",
         "pattern": "\\.eq\\(\\s*'status',\\s*'published'\\s*\\)",
@@ -3107,13 +3107,13 @@
         "file": "scripts/check-backlog.mjs",
         "ref": "runProbe’s per-probe spawn, and patternMatches/filesUnder"
       },
-      "detail": "Found 2026-08-20 when scripts/backlog-contract.test.ts failed a PR at 20.2s against its 20s child-CPU budget. THE BUDGET WAS NOT THE PROBLEM — five new rows tipped a guard that was already at ~19.6s. ELEVEN `cmd` probes each spawn their own node process and each walks the SAME tree, re-reading ~4,200 files / ~29MB from scratch: LIVE-012, LIVE-020, LIVE-038, LIVE-054, LIVE-058, LIVE-062, LIVE-066, LIVE-071, OWN-035, OWN-036, OWN-037. Measured locally: ~113ms per full walk plus ~25ms of node startup each, so roughly 1.5-2s locally and ~3s on a CI runner — about 15% of the whole budget spent reading the same bytes eleven times. THE FIX IS IN THE HARNESS, NOT THE ROWS: check-backlog.mjs already has filesUnder + patternMatches for the in-process `grep-present`/`grep-absent` kinds. Read the corpus ONCE per run, memoise it, and give the walking probes a way to ask against it — either by extending the in-process kinds to express what the walkers need (an exclusion list: skip *.test.*, skip the probe's own file) or by handing `cmd` probes a pre-built index. ⚠️ DO NOT convert the eleven to `grep-present` as-is: that was tried on LIVE-071 the same day and the probe FLIPPED ITS VERDICT, because the in-process kinds cannot express the path exclusions the walkers rely on. A probe that silently inverts is precisely the ripgrep failure documented at the top of that file — eight confident wrong answers from one missing binary. The exclusions must land in the harness BEFORE any row moves. ⚠️ AND DO NOT RAISE GUARD_BUDGET_CPU_MS: the test says so in its own failure message, and it is right — the number is the smoke alarm, not the fire.",
+      "detail": "Found 2026-08-20 when scripts/backlog-contract.test.ts failed a PR at 20.2s against its 20s child-CPU budget. THE BUDGET WAS NOT THE PROBLEM — five new rows tipped a guard that was already at ~19.6s. ELEVEN `cmd` probes each spawn their own node process and each walks the SAME tree, re-reading ~4,200 files / ~29MB from scratch: LIVE-012, LIVE-020, LIVE-038, LIVE-054, LIVE-058, LIVE-062, LIVE-066, LIVE-071, OWN-035, OWN-036, OWN-037. Measured locally: ~113ms per full walk plus ~25ms of node startup each, so roughly 1.5-2s locally and ~3s on a CI runner — about 15% of the whole budget spent reading the same bytes eleven times. THE FIX IS IN THE HARNESS, NOT THE ROWS: check-backlog.mjs already has filesUnder + patternMatches for the in-process `grep-present`/`grep-absent` kinds. Read the corpus ONCE per run, memoise it, and give the walking probes a way to ask against it — either by extending the in-process kinds to express what the walkers need (an exclusion list: skip *.test.*, skip the probe's own file) or by handing `cmd` probes a pre-built index. ⚠️ DO NOT convert the eleven to `grep-present` as-is: that was tried on LIVE-071 the same day and the probe FLIPPED ITS VERDICT, because the in-process kinds cannot express the path exclusions the walkers rely on. A probe that silently inverts is precisely the ripgrep failure documented at the top of that file — eight confident wrong answers from one missing binary. The exclusions must land in the harness BEFORE any row moves. ⚠️ AND DO NOT RAISE GUARD_BUDGET_CPU_MS: the test says so in its own failure message, and it is right — the number is the smoke alarm, not the fire. ── MEASURED NEGATIVE RESULT, 2026-08-20: memoising the file listing AND contents inside check-backlog.mjs was tried first, as the smallest change that might buy headroom. It bought NOTHING measurable (19.98s baseline vs 20.61s memoised on the same loaded machine, against run-to-run noise of about +/-1s) and was reverted rather than shipped. The reason is structural and worth keeping: a parent-process cache can only ever help the IN-PROCESS kinds, and those mostly point at single named files. All eleven expensive probes are `cmd` probes, i.e. separate node processes that cannot see the parent memory at all. So the conversion is not an optimisation to do after memoising - it IS the fix, and nothing short of it moves the number. The guard has now failed two builds (2026-08-20, both at 20.2-20.3s).",
       "verify": {
         "kind": "manual",
         "evidence": "Counted 2026-08-20 against the tree: 11 of 72 cmd probes walk app/lib/components in their own process. Deliberately unprobed — a mechanical probe here would either re-walk the tree itself (adding to the very cost it measures) or pin an implementation shape rather than the consequence. The consequence already has an executable guard: scripts/backlog-contract.test.ts fails when the budget is exceeded, and it is what surfaced this.",
         "checked": "2026-08-20"
       },
-      "notes": "Zero-cost row on purpose (manual, no probe): the finding is that probes are expensive, so filing it must not make the problem worse. The headroom left after the 2026-08-20 conversions is roughly 0.1-0.3s — the next few rows anyone adds will trip this again, which is the point of writing it down now rather than after."
+      "notes": "Zero-cost row on purpose (manual, no probe): the finding is that probes are expensive, so filing it must not make the problem worse. The headroom left after the 2026-08-20 conversions is roughly 0.1-0.3s — the next few rows anyone adds will trip this again, which is the point of writing it down now rather than after. Do not re-attempt the memoisation: it was measured and it does not help, for a structural reason recorded in the detail."
     }
   ]
 }
