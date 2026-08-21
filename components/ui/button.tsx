@@ -18,14 +18,19 @@ type ButtonVariant =
 type ButtonSize = 'sm' | 'md'
 
 const VARIANT: Record<ButtonVariant, string> = {
-  // FLAT FILL, NO FINISH (ADR-1096). The label carried an eight-shadow `text-emboss` ring and a
-  // `chisel` inset bevel; both are gone. Neither was ever required: ADR-1031 decided this pair
+  // FLAT FILL, NO FINISH (ADR-1096). The label carried an eight-shadow text-emboss ring and a
+  // chisel inset bevel; both are gone. Neither was ever required: ADR-1031 decided this pair
   // ships white-on-amber as a KNOWN exception that we DISCLOSE, and explicitly rejected the two
-  // moves that would raise the ratio. The emboss arrived six days later as a styling ask and its
-  // own CSS comment shows it was reasoned about as a way to move axe's number, which is gaming
-  // the instrument rather than fixing the pair. `lift-1` gives the button its edge instead —
-  // an outer elevation, which is what the hand-rolled primaries beside it were already using and
-  // which is why they looked cleaner than this one.
+  // moves that would raise the ratio. The emboss arrived six days later as a styling ask, and
+  // its own CSS comment shows it was reasoned about as a way to move the axe number, which is
+  // gaming the instrument rather than fixing the pair. `lift-1` gives the button its edge
+  // instead — an outer elevation, which is what the hand-rolled primaries beside it were already
+  // using, and which is why they looked cleaner than this one.
+  //
+  // 🔴 THE TWO DELETED NAMES ABOVE ARE BARE ON PURPOSE. `check:phantom` reads every
+  // backtick-delimited run in these files as a class string — it does not strip comments — so
+  // writing a class that no longer emits CSS inside backticks re-creates the exact phantom the
+  // deletion removed, and fails the build. Name a deleted class in prose, never in backticks.
   primary: 'bg-primary text-on-primary lift-1 hover:bg-primary-hover',
   // The MUTED amber: present, but not shouting until it matters. The token pair the system
   // already carries for exactly this (`bg-primary-bg` + `text-primary-strong`, ~250 sites), on
