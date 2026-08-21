@@ -5,6 +5,7 @@
 // hand-maintained benefit strings needed. Server-only, service-role read, FAIL-SAFE to [].
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { upcomingEventFloor } from './upcoming-floor'
 
 export interface MembershipIncludedEvent {
   id: string
@@ -30,7 +31,7 @@ export async function listMembershipIncludedEvents(
       .from('events')
       .select('id, slug, title, starts_at, status, is_cancelled')
       .or(`host_space_id.eq.${spaceId},and(host_space_id.is.null,space_id.eq.${spaceId})`)
-      .gte('starts_at', new Date().toISOString())
+      .gte('starts_at', upcomingEventFloor())
       .order('starts_at', { ascending: true })
       .limit(48)
     const rows = ((events ?? []) as unknown as {

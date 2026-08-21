@@ -13,6 +13,7 @@ import { readMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 import { getTopFriendsForOwner, type TopFriend } from './top-friends'
 import { SPOTLIGHT_SELECT, type SpotlightRow } from './privacy'
+import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 
 // Server data for the PUBLIC Spotlight page. Anonymous visitors get no RLS, so this
 // reads through the admin client and is fail-closed: it returns null unless the page
@@ -120,7 +121,7 @@ async function loadMemberSpotlight(
     .eq('host_id', g.id)
     .eq('status', 'published')
     .eq('is_cancelled', false)
-    .gte('starts_at', new Date().toISOString())
+    .gte('starts_at', upcomingEventFloor())
     .order('starts_at', { ascending: true })
     .limit(5)
 

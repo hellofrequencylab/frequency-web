@@ -48,8 +48,12 @@ describe('the map filters events on every axis the table carries', () => {
     })
   }
 
-  it('only maps events that have not happened yet', () => {
-    expect(SRC).toContain(`.gte('starts_at', nowIso)`)
+  it('only maps events that have not happened yet — from COMMUNITY midnight, not the raw instant', () => {
+    // Was `.gte('starts_at', nowIso)`. A raw instant is wrong against starts_at, which stores the
+    // wall-clock as UTC parts: it dropped an event the moment it began, and dropped tonight
+    // entirely once UTC rolled past midnight (~5pm Pacific), so the map emptied every evening.
+    expect(SRC).toContain(`.gte('starts_at', upcomingEventFloor())`)
+    expect(SRC).toContain(`upcomingEventFloor } from '@/lib/events/upcoming-floor'`)
   })
 
   it('keeps seeded demo events off the map, exactly as the circle layer does', () => {
