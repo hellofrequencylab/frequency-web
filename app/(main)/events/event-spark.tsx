@@ -421,7 +421,12 @@ export function EventSpark({
       <SparkShell
         eyebrow="New event"
         title="Start an event"
-        description="Tell Vera about it, drop in what you already have, or fill in the form yourself."
+        // The invitation lives HERE now, not in a window wrapper (ADR-1099/ADR-1101 follow-up).
+        // `EventEditorWindow` used to carry it as a brandmark header band, and that band came
+        // attached to a SECOND StudioWindow — two focus traps, two scroll locks. The words are
+        // worth keeping; the overlay they arrived in was not. This is where every other Spark
+        // puts its framing, so the copy is now composed rather than wrapped.
+        description="Share an Event with the community. Tell Vera about it, drop in what you already have, or fill in the form yourself."
         step={1}
         totalSteps={hasSource ? IMPORT_TOTAL : QUESTIONS_TOTAL}
         stepLabel="Start"
