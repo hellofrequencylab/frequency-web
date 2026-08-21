@@ -9,27 +9,40 @@
 // composes the kit instead:
 //
 //   SparkShell     the staged surface, the progress cue, the footer vocabulary
-//   SparkDoors     screen one: two doors at EQUAL weight, plus the entity's extra doors
-//   SparkDropzone  one drop zone under BOTH doors (source material is source material either way)
+//   SparkDoors     screen one: Vera's door (here a PROMPT FIELD), the manual door, the extras
+//   SparkDropzone  the drop zone, here riding with the prompt field it substitutes for
 //   FieldControl   one control per field KIND, rendered from JOURNEY_MANIFEST
 //   SparkSteer     the mood dial, on review, so it costs no extra step
 //
-// EVERY ENTRY PATH IS KEPT. What was buried is now first-class:
-//   • Vera drafts it, from four questions                     (door 1)
-//   • Build it yourself, in the full builder                  (door 2, was a text link)
-//   • The recommended Master Framework, no AI                 (extra door)
-//   • A ready-made template                                   (extra door, then the picker)
-//   • Bring your own write-up, pasted or uploaded             (the drop zone, on screen one)
+// FOUR DOORS, IN THIS ORDER (owner decision 2026-08-21, ADR-1098):
+//   1. "Tell me about your Journey"   a text field, not a button — Vera drafts from what you type
+//   2. "Upload Documents"             the drop zone, promoted to sit with the field it substitutes for
+//   3. "Build it yourself"            the full builder
+//   4. "Start with a template"        the picker, with the Master Framework first in it
+//
+// WHAT MOVED, AND WHY IT COSTS NOTHING. The old screen one offered Vera as a CARD you clicked to
+// reach four questions (who / topic / outcome / shape). Typing into the new field writes the SAME
+// `sourceText` an upload writes, so it lands on the SAME one-screen `source` path that has always
+// existed for uploads — the four questions were never the only way in, they were the way in when
+// you had brought nothing. They are still reachable, as an exit on that screen, for an author who
+// would rather be asked than write.
+//
+// THE RECOMMENDED FRAMEWORK IS NOT DROPPED, IT MOVED INTO THE PICKER, first and marked as the
+// recommended shape. It is the only creation path that stamps the named Expression Challenge, the
+// capstone, the anchor practice and the Welcome/Close bookends with no AI, and folding it into
+// "Start with a template" is the only arrangement that keeps its WEEKS author-chosen — the editor
+// and guide entries both call it at a hardcoded 4.
 //
 // DEFERRED CREATION IS UNCHANGED: nothing persists until the author commits a reviewed title.
+//
 // The server actions (sparkJourneyAction, createJourneyFromSparkAction, createMasterFrameworkAction,
 // createJourneyFromTemplateAction, extractOverviewFilesAction) keep their exact signatures and
 // payloads. This is a front-door rebuild, not a pipeline change.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useRef, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Compass, FileStack, LayoutTemplate, Loader2, Sparkles } from 'lucide-react'
+import { ArrowLeft, Compass, LayoutTemplate, Loader2, Sparkles } from 'lucide-react'
 import { wizardSecondaryClass } from '@/components/templates'
 import {
   SparkDoors,
@@ -132,6 +145,11 @@ export interface JourneyTemplateMeta {
   lessons: number
 }
 
+/** Mirrors MASTER_FRAMEWORK_ID (lib/journeys/templates.ts). Deliberately re-declared rather than
+ *  imported: that module pulls in server-only compose code, which is the same reason `templates`
+ *  arrives as props at all. journey-spark-doors.test.ts asserts the two never drift. */
+const FRAMEWORK_ID = 'master-framework'
+
 /** Weeks is a plain number field: keep it inside what createJourneyFromSparkAction will honour. */
 function clampWeeks(raw: string): number {
   const n = Math.floor(Number(raw))
@@ -148,9 +166,13 @@ export function JourneySpark({
   spaceSlug?: string | null
 }) {
   const router = useRouter()
-  // 'doors' is screen one for every entity. 'questions' and 'source' are the two lengths the
-  // guided path comes in; 'templates' is this entity's own extra door; 'manual' leaves the Spark.
-  const [stage, setStage] = useState<'doors' | 'questions' | 'source' | 'templates' | 'review' | 'manual'>('doors')
+  // 'doors' is screen one for every entity. 'source' is the guided path (the prompt field and the
+  // upload both feed it); 'questions' is the ask-me-instead exit off it. 'templates' is this
+  // entity's extra door and 'framework' is the weeks step behind the Master Framework entry in it.
+  // 'manual' leaves the Spark.
+  const [stage, setStage] = useState<
+    'doors' | 'questions' | 'source' | 'templates' | 'framework' | 'review' | 'manual'
+  >('doors')
   const [fromSource, setFromSource] = useState(false)
   const [qIndex, setQIndex] = useState(0)
   const [pending, start] = useTransition()
@@ -313,8 +335,9 @@ export function JourneySpark({
     )
   }
 
-  // The recommended path: stamp the new Journey to the Master Framework (deterministic, no AI) and
-  // open its editor. Uses the chosen number of weeks; the rest is the recommended shape, ready to fill.
+  // The recommended shape: stamp the new Journey to the Master Framework (deterministic, no AI) and
+  // open its editor. It reads the weeks the author chose on the `framework` step — the ONLY caller
+  // of this action that does; the editor and guide entries both pass nothing and land on 4.
   const framework = () => {
     setError(null)
     start(async () => {
@@ -328,13 +351,17 @@ export function JourneySpark({
   // redirects server-side) drop into the editor to make it yours.
   const chooseTemplate = (id: string) => {
     setError(null)
+    // The framework is not a template row and has its own action; it asks for weeks first.
+    if (id === FRAMEWORK_ID) {
+      setStage('framework')
+      return
+    }
     start(() => createJourneyFromTemplateAction(id, spaceSlug))
   }
 
   // Read a WHOLE stack of files at once (the outline plus any supporting docs). Vera extracts each
   // supported file (PDF, Word, text) and concatenates them; any it cannot read is reported honestly.
-  const onFiles = (fileList: FileList | null) => {
-    const files = fileList ? Array.from(fileList) : []
+  const onFiles = (files: File[]) => {
     if (!files.length) return
     setError(null)
     setSkipped([])
@@ -355,39 +382,57 @@ export function JourneySpark({
   // The drop zone, plus this entity's batch upload. The kit's zone takes one document at a time
   // (it appends), and "drop in your whole course at once" is the Journey's own promise, so the
   // multi-file picker rides beside it on the unchanged extractOverviewFilesAction.
+  // `paste` is dropped from what the ZONE offers, not from what the entity accepts: the manifest
+  // still declares both, and the prompt field above IS the paste box. Rendering a second textarea
+  // under the first would be two controls writing one `sourceText`, which reads as a bug.
+  const zoneAccepts = (JOURNEY_MANIFEST.accepts ?? []).filter((a) => a !== 'paste')
+
+  // ONE upload control, from the kit. This used to be two — the kit's single-document button and a
+  // bespoke `BatchUpload` beside it — which is exactly the confusion this pass exists to remove.
+  // The kit now takes `onDocuments` and the multi-file read stays on the Journey's own budgeted
+  // action, so nothing about the pipeline moved; only the second button is gone.
   const sourceZone = (
-    <>
-      <SparkDropzone
-        accepts={JOURNEY_MANIFEST.accepts ?? []}
-        sourceText={sourceText}
-        onSourceText={setSourceText}
-        disabled={pending}
-      />
-      <BatchUpload onFiles={onFiles} extracting={extracting} disabled={pending} skipped={skipped} />
-    </>
+    <SparkDropzone
+      accepts={zoneAccepts}
+      sourceText={sourceText}
+      onSourceText={setSourceText}
+      onDocuments={onFiles}
+      docLabel="Upload Documents"
+      docBusy={extracting}
+      docHint={
+        <span className="inline-flex items-center gap-1 text-2xs text-muted">
+          Your outline and every handout
+          <InfoTip
+            side="top"
+            label="Select your outline and every supporting document together. Vera reads PDF, Word, and plain text and weaves them into one Journey. A zip or an image is accepted but not read yet, so unzip first for now."
+          />
+        </span>
+      }
+      docNote={
+        skipped.length > 0 ? (
+          <p className="mt-2 rounded-lg border border-border bg-canvas px-3 py-2 text-2xs text-muted">
+            Could not read: {skipped.join(', ')}. Vera reads PDF, Word, and plain text.
+          </p>
+        ) : null
+      }
+      disabled={pending}
+    />
   )
 
   // ── Screen one: the doors ──
 
   if (stage === 'doors') {
+    // The Master Framework rides INSIDE this door now, so the door exists whenever either it or a
+    // template does — which, since the framework is not data-driven, is always.
     const extraDoors: SparkDoor[] = [
       {
-        key: 'framework',
-        label: 'Use the recommended framework',
-        hint: 'The proven shape, with no AI: a welcome, weekly practices across the Pillars, an Expression Challenge each week, and a capstone.',
-        Icon: Compass,
-        onSelect: framework,
-      },
-    ]
-    if (templates.length > 0) {
-      extraDoors.push({
         key: 'templates',
-        label: 'Start from a template',
-        hint: `${templates.length} ready-made shapes. We create it as a private draft and open the editor so you can make it yours.`,
+        label: 'Start with a template',
+        hint: `The recommended framework, plus ${templates.length} ready-made ${templates.length === 1 ? 'shape' : 'shapes'}. We create it as a private draft and open the editor so you can make it yours.`,
         Icon: LayoutTemplate,
         onSelect: () => setStage('templates'),
-      })
-    }
+      },
+    ]
 
     return (
       <SparkShell
@@ -395,20 +440,29 @@ export function JourneySpark({
         title="How do you want to start?"
         description="Every way here makes the same Journey. Pick whichever suits what you already have."
         step={1}
-        totalSteps={QUESTIONS.length + 2}
+        totalSteps={3}
         stepLabel="Start"
         error={error}
       >
         <SparkDoors
           entityLabel={JOURNEY_MANIFEST.label}
+          // Typing and uploading are the same act: both fill `sourceText`, so both land on the
+          // one-screen source path. `fromSource` stays true here because they are.
           onVera={() => {
-            setFromSource(!!source)
-            setStage(source ? 'source' : 'questions')
+            setFromSource(true)
+            setStage('source')
             setQIndex(0)
           }}
           onManual={() => setStage('manual')}
-          veraLabel="Have Vera draft it"
-          veraHint="Answer four short questions and Vera drafts the name, the promise, and the weekly arc for you to edit."
+          veraPrompt={{
+            label: 'Tell me about your Journey',
+            hint: 'A paragraph is plenty. Who it is for, what it covers, where someone lands at the end.',
+            placeholder:
+              'A six-week reset for people who sit at a desk all day. Short morning movement, one idea to chew on, and something to make by Friday.',
+            value: sourceText,
+            onChange: setSourceText,
+            submitLabel: 'Draft it with Vera',
+          }}
           manualLabel="Build it yourself"
           manualHint="Go straight to the builder and shape the Phases, modules, and lessons your own way."
           extraDoors={extraDoors}
@@ -429,7 +483,7 @@ export function JourneySpark({
         title="Start from a proven structure"
         description="Pick a shape. We create it as a private draft and open the editor so you can make it yours."
         step={2}
-        totalSteps={2}
+        totalSteps={3}
         stepLabel="Template"
         error={error}
         footer={
@@ -439,6 +493,28 @@ export function JourneySpark({
         }
       >
         <ul className="space-y-2.5">
+          {/* The recommended shape, first and named as such. It is not a template row — it has its
+              own action and its own weeks step — but this is where an author looks for it. */}
+          <li key={FRAMEWORK_ID}>
+            <button
+              type="button"
+              onClick={() => chooseTemplate(FRAMEWORK_ID)}
+              disabled={pending}
+              className="flex w-full items-start gap-3 rounded-control border border-primary/50 bg-primary-bg px-4 py-3 text-left transition-colors hover:bg-surface-elevated disabled:opacity-60"
+            >
+              <Compass className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
+              <span className="min-w-0 flex-1">
+                <span className="block text-body-sm font-semibold text-text">The recommended framework</span>
+                <span className="block text-meta leading-snug text-muted">
+                  The proven shape, with no AI: a welcome, weekly practices across the Pillars, an Expression
+                  Challenge each week, and a capstone.
+                </span>
+                <span className="mt-1 block text-2xs font-medium uppercase tracking-wide text-muted">
+                  You choose the length
+                </span>
+              </span>
+            </button>
+          </li>
           {templates.map((t) => (
             <li key={t.id}>
               <button
@@ -462,6 +538,33 @@ export function JourneySpark({
             </li>
           ))}
         </ul>
+      </SparkShell>
+    )
+  }
+
+  // ── The framework's one question: how long does it run? ──
+  //
+  // This step exists so the recommended shape keeps an AUTHOR-CHOSEN length. Its two other entry
+  // points (the editor's "Start from the recommended framework" and the guide's "Best start") both
+  // call createMasterFrameworkAction with no weeks and land on 4; this is the only place anyone is
+  // asked. Losing it was the real cost of folding the door into the picker, so it is not lost.
+
+  if (stage === 'framework') {
+    return (
+      <SparkShell
+        eyebrow="New Journey"
+        title="How long does it run?"
+        description="One Phase per week, laid out on the recommended shape: a welcome, the weekly Pillar practices and Expression Challenge, and a capstone at the end."
+        step={3}
+        totalSteps={3}
+        stepLabel="Length"
+        onBack={() => setStage('templates')}
+        onNext={framework}
+        nextLabel="Create Journey"
+        busy={pending}
+        error={error}
+      >
+        <div className="space-y-4">{askField('answers.weeks')}</div>
       </SparkShell>
     )
   }
@@ -633,62 +736,3 @@ export function JourneySpark({
   )
 }
 
-/**
- * The Journey's batch upload, beside the shared drop zone. The kit's zone reads one document at a
- * time; "bring your whole course at once" is this entity's own promise, so the multi-file picker
- * stays, on the same server action it always used, reporting honestly what it could not read.
- */
-function BatchUpload({
-  onFiles,
-  extracting,
-  disabled,
-  skipped,
-}: {
-  onFiles: (files: FileList | null) => void
-  extracting: boolean
-  disabled?: boolean
-  skipped: string[]
-}) {
-  const fileRef = useRef<HTMLInputElement>(null)
-
-  return (
-    <div className="mt-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          disabled={disabled || extracting}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
-        >
-          {extracting ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <FileStack className="h-3.5 w-3.5" aria-hidden />}
-          {extracting ? 'Reading…' : 'Add several files at once'}
-        </button>
-        <span className="inline-flex items-center gap-1 text-2xs text-muted">
-          Your outline and every handout
-          <InfoTip
-            side="top"
-            label="Select your outline and every supporting document together. Vera reads PDF, Word, and plain text and weaves them into one Journey. A zip or an image is accepted but not read yet, so unzip first for now."
-          />
-        </span>
-        <input
-          ref={fileRef}
-          type="file"
-          multiple
-          aria-label="Course documents"
-          accept=".txt,.md,.pdf,.docx,.doc,.rtf,.pages,.zip,application/pdf,text/plain,application/zip"
-          className="sr-only"
-          onChange={(e) => {
-            onFiles(e.target.files)
-            e.target.value = ''
-          }}
-        />
-      </div>
-
-      {skipped.length > 0 && (
-        <p className="mt-2 rounded-lg border border-border bg-canvas px-3 py-2 text-2xs text-muted">
-          Could not read: {skipped.join(', ')}. Vera reads PDF, Word, and plain text.
-        </p>
-      )}
-    </div>
-  )
-}

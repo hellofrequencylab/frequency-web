@@ -17,9 +17,17 @@
 // caller rather than parsed: reading a flyer is vision OCR, which is per-entity, budgeted, and
 // already implemented for events. The drop zone stages the file; the entity decides what seeing it
 // means.
+//
+// ── MANY DOCUMENTS AT ONCE (`onDocuments`) ──────────────────────────────────────────────────────
+// One document at a time is the default and reads through the shared action. An entity whose whole
+// promise is "bring the lot" — the Journey, with an outline plus every handout — passes
+// `onDocuments` and gets a MULTIPLE input, handing the files back unparsed the way images already
+// are, because reading a stack is a per-entity budgeted call (extractOverviewFilesAction), not a
+// shared one. This seam exists because the Journey had built its own second uploader beside this
+// zone: two buttons, two labels, two file inputs, one job. The capability belongs here.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useRef, useState, useTransition } from 'react'
+import { useRef, useState, useTransition, type ReactNode } from 'react'
 import { FileText, ImagePlus, Loader2, Upload, X } from 'lucide-react'
 import { Textarea } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
@@ -38,6 +46,16 @@ export interface SparkDropzoneProps {
   /** Images the author staged. The entity decides what to do with them (vision, cover, gallery). */
   images?: File[]
   onImages?: (next: File[]) => void
+  /** Take MANY documents and hand them back unparsed. Turns the doc input `multiple`. See the header. */
+  onDocuments?: (files: File[]) => void
+  /** The doc button's words. Defaults to the single-file phrasing; say what you actually take. */
+  docLabel?: string
+  /** The caller is reading files right now (only meaningful with `onDocuments`). */
+  docBusy?: boolean
+  /** Sits beside the doc button — a scope note, an InfoTip, whatever the entity owes the reader. */
+  docHint?: ReactNode
+  /** Rendered under the controls. Used for an honest "could not read these" list. */
+  docNote?: ReactNode
   disabled?: boolean
 }
 
@@ -51,6 +69,11 @@ export function SparkDropzone({
   onSourceText,
   images = [],
   onImages,
+  onDocuments,
+  docLabel,
+  docBusy = false,
+  docHint,
+  docNote,
   disabled,
 }: SparkDropzoneProps) {
   const docRef = useRef<HTMLInputElement>(null)
@@ -59,6 +82,9 @@ export function SparkDropzone({
   const [error, setError] = useState<string | null>(null)
 
   const takesDoc = accepts.includes('document')
+  // With `onDocuments` the caller owns both the reading and the busy state, so the zone's own
+  // transition is not what to spin on.
+  const docReading = onDocuments ? docBusy : pending
   const takesImage = accepts.includes('image')
   const takesPaste = accepts.includes('paste') || accepts.includes('url')
   if (!takesDoc && !takesImage && !takesPaste) return null
@@ -95,24 +121,29 @@ export function SparkDropzone({
             <button
               type="button"
               onClick={() => docRef.current?.click()}
-              disabled={disabled || pending}
+              disabled={disabled || docReading}
               className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
             >
-              {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <FileText className="h-3.5 w-3.5" aria-hidden />}
-              {pending ? 'Reading…' : 'Upload a document'}
+              {docReading ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <FileText className="h-3.5 w-3.5" aria-hidden />}
+              {docReading ? 'Reading…' : (docLabel ?? 'Upload a document')}
             </button>
             <input
               ref={docRef}
               type="file"
-              aria-label="Upload a document"
+              multiple={!!onDocuments}
+              aria-label={docLabel ?? 'Upload a document'}
               accept={DOC_TYPES}
               className="sr-only"
               onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) readDocument(file)
+                const picked = e.target.files ? Array.from(e.target.files) : []
+                if (picked.length) {
+                  if (onDocuments) onDocuments(picked)
+                  else readDocument(picked[0])
+                }
                 e.target.value = '' // let the same file be picked again after a failure
               }}
             />
+            {docHint}
           </>
         )}
 
@@ -180,6 +211,7 @@ export function SparkDropzone({
         </div>
       )}
 
+      {docNote}
       {error && <p className="mt-2 text-meta text-warning">{error}</p>}
     </div>
   )

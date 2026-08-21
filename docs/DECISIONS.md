@@ -28176,3 +28176,135 @@ about the emboss. **A mitigation that has to be labelled "never cite this as mit
 - **The durable rule:** when a visual treatment is justified by what a checker reports rather than by
   what a reader experiences, the treatment is load-bearing on the wrong thing. The giveaway is
   cheap to spot — it needs a comment telling future readers not to cite it as the fix.
+
+## ADR-1097: A popup renders in the theme it was opened from — carry the theme, keep the portal (2026-08-21)
+
+**Status:** Accepted · **Extends** [ADR-578](DECISIONS.md) (per-Space page themes) and
+[ADR-1017](DECISIONS.md) · corroborated by `components/ui/use-portaled-space-theme.ts`,
+`components/ui/dialog.tsx`, `components/studio/wizard-modal.tsx`,
+`components/ui/portaled-space-theme.test.tsx`
+
+**Context.** A Space's page theme is not established on the document root. `AccentScope`
+(`components/spaces/accent-scope.tsx`) renders a plain DIV carrying `data-space-theme` and the five
+`--color-primary*` custom properties inline, inside the profile subtree. Both the
+`[data-space-theme]` CSS blocks and the accent overrides hang off **that node**, not off `:root`.
+
+`Dialog` and `WizardModal` both `createPortal(…, document.body)`, which lands their subtree
+**outside** that DIV. So a Spark or a Dialog opened from a themed Space page rendered in the HOST
+amber and the HOST fonts, while `StudioWindow` — which does not portal — rendered in the Space's.
+**Two sibling surfaces, opposite behaviour**, and no gate could see it because every token involved
+is legal: the popup was not using a wrong colour, it was resolving a correct token against the
+wrong ancestor.
+
+**🔴 The portal is not the bug and must not be removed.** `dialog.tsx` already documents why it
+exists: inside a transformed or clipped ancestor — the sliding admin rail is the live case — a
+`fixed inset-0` overlay is trapped by that ancestor's containing block and renders as a narrow
+sidebar panel instead of covering the viewport. Portaling to `document.body` escapes every such
+context. Deleting the portal to fix the theme would trade an invisible palette bug for a visible
+layout one.
+
+**Decision.**
+
+1. **The theme travels across the portal.** The opener leaves a hidden, `aria-hidden` sentinel
+   element rendered IN PLACE; a ref callback on the portaled root reads the nearest
+   `[data-space-theme]` ancestor **of the sentinel** and mirrors the theme id and the five accent
+   properties onto the portaled root. The portaled subtree then resolves exactly as it would have
+   in place.
+2. **A ref callback, not `useEffect` + `setState`.** The obvious shape is wrong twice: it costs a
+   second render for something settled before paint, and it trips the repo's set-state-in-effect
+   lint. Mirroring one DOM node's theme onto another is a DOM operation, so it is done directly,
+   once, at mount. The theme cannot change while a popup is open — it is a property of the route
+   underneath — so there is nothing to re-sync. If that ever stops being true this becomes a
+   subscription, not a `setState`.
+3. **Read the inline style, never `getComputedStyle`.** The accent arrives as inline custom
+   properties on that same node, so `el.style` returns precisely what the Space set and nothing
+   else. Computing would copy a HOST default down and freeze it; absent an override, the token
+   simply keeps inheriting as normal.
+4. **The property list is copied BY NAME.** Only the five names `AccentVars` sets are read, so this
+   can never scrape unrelated inline styles off an ancestor.
+
+**Consequences.**
+
+- **Fail-safe by construction.** No themed ancestor — the common case, since most of the app is not
+  inside a Space — applies nothing at all, and the popup renders exactly as it did before. That is
+  asserted as a test, not assumed.
+- **The negative controls are the point.** `portaled-space-theme.test.tsx` carries four assertions:
+  the two theme-carrying ones **fail** against the pre-fix tree, and the two guard ones (still
+  portals to the document body; no theme applied outside a Space) pass on **both** trees, so the fix
+  is proven to work and proven not to over-reach.
+- **The durable rule:** when a design system establishes scope on an element rather than on the
+  document root, every escape hatch out of the tree — a portal, an overlay root, a rendered
+  sibling — is a place that scope silently stops. The bug is invisible to token gates precisely
+  because nothing about the tokens is wrong.
+
+## ADR-1098: The Journey Spark asks one question, and the recommended framework moves into the picker (2026-08-21)
+
+**Status:** Accepted · **Extends** [ADR-986](DECISIONS.md) (the Studio contract) · **Amends** the
+locked door structure in `components/studio/spark/spark-doors.tsx` · corroborated by
+`components/journey/v2/journey-spark.tsx`, `components/studio/spark/spark-dropzone.tsx`,
+`components/studio/spark/spark-doors.test.tsx`, `components/journey/v2/journey-spark-doors.test.ts`
+
+**Context.** The owner, on the Journey Spark: *"We recently went through all of them, and it's too
+confused now."* The screen-one audit says why. It offered **five** ways in — a Vera card leading to
+four questions, a manual card, a "Use the recommended framework" card, a "Start from a template"
+card, and a drop zone underneath — and the drop zone itself carried **two** upload controls: the
+kit's single-document button and a bespoke `BatchUpload` beside it, two labels and two file inputs
+doing one job.
+
+The owner specified the replacement exactly: a **"Tell me about your Journey"** text field, an
+**"Upload Documents"** button under it, then **"Build it Yourself"**, then **"Start with a
+Template"**.
+
+**🔴 The collision this had to resolve.** `spark-doors.tsx` carries a locked structure comment —
+*"The STRUCTURE is fixed (two doors, equal weight, Vera first)"* — and the shared component is used
+by six Sparks. The requested order replaces the first door with a field and promotes the drop zone
+above the second. Nothing in `EntityManifest` can express a door at all, so this could not be a data
+change.
+
+**Decision.**
+
+1. **`veraPrompt` changes the AFFORDANCE of the first door, never its position or its weight.** When
+   a Spark passes it, Vera's door renders as a labelled field with a submit under it instead of a
+   card. The structure lock is restated rather than removed: **Vera first, build-it-yourself second,
+   extras after, every one at equal weight.** Five Sparks pass nothing and are untouched, which is
+   asserted by a test that renders the standard screen and fails if a prompt ever appears in it.
+2. **With the prompt on, the drop zone moves up, directly beneath the field.** This is not cosmetic.
+   In the button layout the zone serves both doors equally and belongs under both; a prompt field
+   and an upload are two ways of saying *here is my material*, so the upload belongs with the field
+   it substitutes for, above the doors that ignore it.
+3. **Typing feeds the path uploading already fed.** The prompt writes the same `sourceText` an
+   upload writes, so it lands on the same one-screen `source` stage that has existed all along. The
+   four questions were never the only way in — they were the way in when the author had brought
+   nothing — and they remain reachable as a named exit on that screen. **No new AI work, no new
+   action, no pipeline change.**
+4. **`weeks` stays a control and is NOT inferred.** Vera treats it as a hard constraint and clamps
+   its own arc to it (`lib/ai/journey-spark.ts`), and `SparkSettings` — the only thing Vera lifts
+   from source text — deliberately excludes it. Inferring it would be new model work in a change
+   that otherwise has none, so the one-question `source` screen keeps asking.
+5. **The recommended framework moves into "Start with a Template", first and named as such.** It is
+   the only creation path that stamps the named Expression Challenge, the capstone, the anchor
+   practice and the Welcome/Close bookends with **no AI at all**, so it could not simply be dropped.
+   Choosing it routes to a weeks step and then to the unchanged `createMasterFrameworkAction`.
+6. **The multi-file capability moves into the kit.** `SparkDropzone` gains `onDocuments`, which
+   turns its input `multiple` and hands the files back **unparsed**, exactly as images already work
+   and for the same reason: reading a stack is a per-entity budgeted call, not a shared one. The
+   Journey's `BatchUpload` is deleted and its read stays on `extractOverviewFilesAction`.
+
+**Consequences.**
+
+- **The framework's length survives the move, and that was the whole reason to fold rather than
+  drop.** Its two other entry points — the editor's *"Start from the recommended framework"* and the
+  guide's *"Best start"* — both call the action with no `weeks` and land on 4. The Spark is the only
+  place an author is asked, and after this change it still is.
+- **`FRAMEWORK_ID` is copied, not imported**, because `lib/journeys/templates.ts` pulls in
+  server-only compose code — the same reason the template list arrives as props. A copied constant
+  is a correct trade only while something notices when the original moves, so a test asserts the two
+  match. Drift would be silent and expensive: the picker entry would fall through to
+  `createJourneyFromTemplateAction('master-framework')`, which has no such template.
+- **`paste` is dropped from what the ZONE offers, not from what the entity accepts.** The manifest
+  still declares both; the prompt field *is* the paste box, and a second textarea under the first
+  would be two controls writing one value.
+- **The durable rule:** a locked structure is worth keeping only if the lock says what it is
+  protecting. This one said *"two doors"*, which is a count, and a count broke the moment an entity
+  needed a field. Restated as an ORDER and a WEIGHTING, the same lock survives the change it would
+  otherwise have blocked — and now covers the five entities it was really there for.
