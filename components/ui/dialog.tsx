@@ -3,6 +3,7 @@
 import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
+import { usePortaledSpaceTheme } from './use-portaled-space-theme'
 
 // True on the client, false during SSR + the first hydration pass — without a setState-in-effect (which the
 // repo's lint forbids). Lets the portal render only once we're safely on the client, matching the server's
@@ -58,6 +59,9 @@ export function Dialog({
   // BOTH the press and the release land on the backdrop, so a drag/scroll that starts inside the panel and
   // ends on the backdrop (or a tap that starts on the backdrop margin during a touch-scroll) never closes.
   const downOnBackdropRef = useRef(false)
+  // Stays mounted IN PLACE on both branches, so there is always a node at this dialog's real
+  // position in the tree to read the Space theme from before the portal jumps to <body>.
+  const anchorRef = useRef<HTMLSpanElement>(null)
   // Only portal on the client (createPortal needs document.body); the server + first hydration render null.
   const isClient = useIsClient()
 
@@ -139,15 +143,25 @@ export function Dialog({
     // would capture a null panel and never re-bind.
   }, [open, onClose, isClient])
 
-  if (!open || !isClient) return null
+  // The theme in force where this dialog was OPENED. The portal below escapes the Space's
+  // `[data-space-theme]` div (ADR-578), so without this a Dialog opened from a themed Space page
+  // renders in the host palette while a non-portaled StudioWindow beside it renders in the Space's.
+  // The sentinel stays in place precisely so there is something left to read the theme from.
+  const applySpaceTheme = usePortaledSpaceTheme(anchorRef)
+
+  if (!open || !isClient) return <span ref={anchorRef} hidden aria-hidden="true" />
 
   // PORTAL TO document.body — the overlay is `position: fixed`, but a `fixed` element anchors to the
   // nearest ancestor with a `transform` / `filter` / `perspective`, not the viewport. Several callers open
   // this from inside the admin rail, which slides in with `transform: translateX(...)` — without the portal
   // the "full-screen" overlay was trapped inside that rail and rendered as a narrow sidebar panel. Portaling
   // to the body escapes every such context so it always covers the true viewport.
-  return createPortal(
+  return (
+    <>
+      <span ref={anchorRef} hidden aria-hidden="true" />
+      {createPortal(
     <div
+      ref={applySpaceTheme}
       className={cn(
         // z-[80] puts the shared modal in the same tier as the app's other full-screen modals, ABOVE the
         // mobile admin sheet + the page-editor bottom sheet (both z-[70]). At z-[60] a Dialog opened from
@@ -195,6 +209,8 @@ export function Dialog({
         {children}
       </div>
     </div>,
-    document.body,
+        document.body,
+      )}
+    </>
   )
 }

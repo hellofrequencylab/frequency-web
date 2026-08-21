@@ -18,21 +18,31 @@ type ButtonVariant =
 type ButtonSize = 'sm' | 'md'
 
 const VARIANT: Record<ButtonVariant, string> = {
-  // `text-emboss` is the letterpress: the white label carries a 1px dark ring + lit lower lip
-  // (app/globals.css), the owner's "sunken into the button" treatment for white-on-amber
-  // (OWN-014). It rides the variant, never a call site, so every primary label gets it.
-  primary: 'bg-primary text-on-primary chisel text-emboss hover:bg-primary-hover',
+  // FLAT FILL, NO FINISH (ADR-1096). The label carried an eight-shadow text-emboss ring and a
+  // chisel inset bevel; both are gone. Neither was ever required: ADR-1031 decided this pair
+  // ships white-on-amber as a KNOWN exception that we DISCLOSE, and explicitly rejected the two
+  // moves that would raise the ratio. The emboss arrived six days later as a styling ask, and
+  // its own CSS comment shows it was reasoned about as a way to move the axe number, which is
+  // gaming the instrument rather than fixing the pair. `lift-1` gives the button its edge
+  // instead — an outer elevation, which is what the hand-rolled primaries beside it were already
+  // using, and which is why they looked cleaner than this one.
+  //
+  // 🔴 THE TWO DELETED NAMES ABOVE ARE BARE ON PURPOSE. `check:phantom` reads every
+  // backtick-delimited run in these files as a class string — it does not strip comments — so
+  // writing a class that no longer emits CSS inside backticks re-creates the exact phantom the
+  // deletion removed, and fails the build. Name a deleted class in prose, never in backticks.
+  primary: 'bg-primary text-on-primary lift-1 hover:bg-primary-hover',
   // The MUTED amber: present, but not shouting until it matters. The token pair the system
   // already carries for exactly this (`bg-primary-bg` + `text-primary-strong`, ~250 sites), on
   // the primitive so a control can go quiet at rest without hand-rolling a fill string. Hover
   // steps up to the full amber, which is the "this is the same button, louder" cue. First
   // consumer: the dock's chat tab, muted until there is an unread.
-  primarySoft: 'bg-primary-bg text-primary-strong hover:bg-primary-hover hover:text-on-primary hover:chisel',
+  primarySoft: 'bg-primary-bg text-primary-strong hover:bg-primary-hover hover:text-on-primary',
   secondary: 'border border-border bg-surface text-text hover:border-border-strong hover:bg-surface-elevated',
   ghost: 'text-muted hover:bg-surface-elevated hover:text-text',
-  danger: 'bg-danger text-on-danger chisel hover:opacity-90',
+  danger: 'bg-danger text-on-danger lift-1 hover:opacity-90',
   // Solid caution action (moderation Hide/Warn) — the danger shape in the warning tone.
-  warning: 'bg-warning text-on-warning chisel hover:opacity-90',
+  warning: 'bg-warning text-on-warning lift-1 hover:opacity-90',
   // Outlined state-change actions (Delete account / Deactivate / Reactivate):
   // quieter than the solid fills, tinting on hover. One scale, three tones.
   dangerOutline: 'border border-danger text-danger hover:bg-danger-bg',

@@ -148,23 +148,24 @@ export const A11Y_WAIVERS: readonly ContrastWaiver[] = [
       'decision as the three ambers above, completing the set across all four render states.',
   },
 
-  // ── The same buttons, measured against their emboss shadow instead of their fill ──
-  // `.text-emboss` puts `0 1px 1.5px var(--brand-emboss-dark)` under the label. Where the shadow
-  // is heavy enough to dominate, axe switches to its `fgOnShadowColor` message and measures the
-  // label against the SHADOW rather than the fill. It is the same element and the same decision,
-  // but a different measurement, so it is frozen separately rather than folded in — the same
-  // reason check-contrast.mjs records the hover fill as its own entry.
+  // ── RETIRED 2026-08-21 (ADR-1096): the emboss shadow waivers ──────────────────────────────
   //
-  // 🔴 The emboss is a FINISH. It does not improve any ratio and must never be cited as
-  // mitigation; check-contrast.mjs says the same thing about `chisel`.
+  // `.text-emboss` is gone, so axe no longer has a shadow to measure a primary label against and
+  // never emits `fgOnShadowColor` for these buttons. The entries that lived here froze the SAME
+  // elements as the fill waivers above, at a second set of ratios, purely because a finish had
+  // been painted under the glyphs.
   //
-  // The shadow hex is the blur-weighted composite axe computed, so these ratios are reproducible
-  // from the two hexes only to ~0.02 (axe rounds the composite to a hex AFTER measuring).
-  // The two composites the SMALLER button paints (`py-2.5`, 14.875px bold). The four above were
-  // frozen off the large CTA; a shorter label at a smaller size shifts the blur weighting, so the
-  // composite axe rounds to lands a channel or two away from the large button's. Same element
-  // family, same finish, same decision — a different measurement, listed rather than folded in,
-  // for the reason the `#b8863b` entry states directly above.
+  // That second ledger is the clearest argument that the emboss was the wrong tool. It did not
+  // make the button more readable; it made the instrument report a different number, and the
+  // price was carrying two frozen measurements of one element and a comment explaining that the
+  // finish 'must never be cited as mitigation' — a note that only needs writing when the thing
+  // it describes looks like mitigation. The fill waivers above are the honest record, and they
+  // are unchanged: white on the brand amber, 1.88–2.86:1, knowingly shipped and disclosed
+  // (ADR-1031).
+  //
+  // The `shadow` field on the waiver type is DELIBERATELY KEPT. It is the seam that stops a fill
+  // waiver from silently swallowing a shadowed measurement, and the next finish anyone paints
+  // under text will need it again.
 
   // ── The tinted status chips ────────────────────────────────────────────────
   {

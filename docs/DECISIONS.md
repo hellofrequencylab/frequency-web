@@ -28111,3 +28111,68 @@ of one.**
   the real object. [DEPLOY-SAFETY §6](DEPLOY-SAFETY.md) says every fail-safe needs a gate that notices it
   fired — this one had a gate that noticed it *existed*, which is not the same thing, and the difference
   cost a production deploy.
+
+## ADR-1096: The primary button loses its bevel, and the contrast rule stops being something to beat (2026-08-21)
+
+**Status:** Accepted · **Amends** [ADR-1031](DECISIONS.md) (the disclosure stands; only the finish
+goes) · corroborated by `components/ui/button.tsx`, `app/globals.css`, `test/e2e/a11y-waivers.ts`
+
+**Context.** The owner, looking at a Circle header: *"the Post button looks like shit while the
+Create button looks good."* Same amber, same row, same padding, radius, weight and type size. The
+entire difference was two classes on `Post`:
+
+- **`.text-emboss`** — eight stacked `text-shadow`s under the white label, **seven of them dark**, a
+  1px opaque ring on all four sides. That ring is the halo in the screenshot.
+- **`chisel`** — a 1px inset highlight-and-shade bevel on the fill.
+
+`Create` had neither, because it was hand-rolled and bypassed the primitive entirely.
+
+**Nothing ever required the emboss.** `grep -n "emboss\|chisel" docs/DECISIONS.md` returned **zero
+matches** across 28,113 lines before this entry. [ADR-1031](DECISIONS.md) decided the opposite of
+what the emboss implies: white-on-amber ships **as a known exception that we disclose**, and it
+explicitly rejected both moves that would raise the ratio (a darker `#A06621` fill, or ink labels).
+The emboss arrived six days later as a styling request, not a contrast decision.
+
+**🔴 What the emboss was actually doing, in its own words.** Its CSS comment argued for the ring on
+the grounds that *"zero-blur text-shadows group per colour into a text STROKE when they cover all
+four edges… white on the four brand ambers moved from VIOLATION (1.87–2.86:1) to PASS (15.2–19.8:1)"*
+under axe. That is a change in **what the instrument reports**, not in what a person can read: the
+label is still white on `#E2912F`. A finish that moves the number without moving the legibility is
+gaming the check, and the tell was already in the tree — `check-contrast.mjs` says a finish
+*"changes no ratio; do not cite it as mitigation"*, and the axe ledger repeated the same warning
+about the emboss. **A mitigation that has to be labelled "never cite this as mitigation" is not one.**
+
+**Decision.**
+
+1. **Both finishes are deleted**, class and utility, along with all six `text-emboss` consumers and
+   all five `chisel` consumers. Filled controls now carry `lift-1` — an outer elevation, which is
+   what the hand-rolled primaries beside them were already using, and precisely why those looked
+   cleaner.
+2. **The disclosure is untouched.** ADR-1031's fill waivers stay exactly as they were: white on the
+   brand amber at 1.88–2.86:1, knowingly shipped and stated. Removing a finish cannot make a ratio
+   worse, because the finish never moved it. `pnpm check:contrast` passes unchanged — it measures
+   token against token and was already fully waived.
+3. **The second ledger is retired.** The axe waivers carried a comment describing a whole class of
+   *"same buttons, measured against their emboss shadow instead of their fill"* entries. Two things
+   were wrong with it: the shape existed only because a finish had been painted under the glyphs,
+   and **the entries it described were never actually there** — the comment documented a ledger that
+   did not exist. The `shadow` field on the waiver type is deliberately kept; it is the seam that
+   stops a fill waiver from swallowing a shadowed measurement, and the next finish will need it.
+4. **The hand-rolled primaries move onto the primitive.** The three `Create`-style buttons that
+   looked right did so by accident, and each one had silently dropped `tap-target` — so the button
+   that looked better was the one missing the 44px touch floor. On `buttonClasses('primary')` they
+   keep the look and regain the floor.
+5. **A stale comment goes with it.** `chisel`'s own header claimed *"the FILL was darkened to
+   4.75:1"*. ADR-1031 rolled that fill back to `#E2912F` (2.52:1) days later, so the sentence
+   explaining why the bevel was safe described a palette that no longer existed.
+
+**Consequences.**
+
+- The two honest options remain exactly the two ADR-1031 named, and neither is taken here: a darker
+  fill (`#A06621`, 4.75:1 in every state) or ink labels (7.35:1). This ADR removes a decoration; it
+  does not pretend to fix the pair.
+- `ADR-013` is now doubly stale — it still asserts the amber primary uses **dark** text *"because
+  white-on-amber fails WCAG"*, which ADR-1031 reversed. Flagged, not rewritten here.
+- **The durable rule:** when a visual treatment is justified by what a checker reports rather than by
+  what a reader experiences, the treatment is load-bearing on the wrong thing. The giveaway is
+  cheap to spot — it needs a comment telling future readers not to cite it as the fix.

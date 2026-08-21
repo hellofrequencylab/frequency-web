@@ -975,7 +975,7 @@ function ChatTrigger({
               : 'translate-y-[calc(100%_-_var(--dock-tab-peek))]',
             // Yielding is TONE ONLY, same law as the docked tab: the Vault owns the open panel,
             // so this goes quiet — it does not hide, and it stays pressable.
-            !yielding && (unread > 0 || open) ? 'bg-primary text-on-primary chisel' : 'bg-primary-bg text-primary-strong',
+            !yielding && (unread > 0 || open) ? 'bg-primary text-on-primary lift-1' : 'bg-primary-bg text-primary-strong',
           )}
         >
           <MessageSquare className="h-[18px] w-[18px]" aria-hidden />
