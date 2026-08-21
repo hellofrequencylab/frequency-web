@@ -132,7 +132,7 @@ export function CreateModal({
           </Button>
           <Button type="submit" className="lift-1" disabled={submitDisabled || isPending}>
             {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-            <span className="text-emboss">{isPending ? pendingLabel : submitLabel}</span>
+            <span>{isPending ? pendingLabel : submitLabel}</span>
           </Button>
         </div>
       </form>

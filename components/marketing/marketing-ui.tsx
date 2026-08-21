@@ -463,7 +463,7 @@ const BUTTON_SIZES: Record<ButtonSize, string> = {
   lg: 'px-10 py-4 text-body-lg gap-2',
 }
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'text-emboss bg-primary text-on-primary hover:bg-primary-hover shadow-pop',
+  primary: 'bg-primary text-on-primary hover:bg-primary-hover shadow-pop',
   secondary: 'border border-border bg-surface text-text hover:bg-surface-elevated',
   ghost: 'text-primary-strong hover:underline',
 }

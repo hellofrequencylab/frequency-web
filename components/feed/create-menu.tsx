@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { buttonClasses } from '@/components/ui/button'
 import { useState, useEffect, useRef } from 'react'
 import { Plus } from 'lucide-react'
 import { createItemsForRole, type CommunityRole } from './create-actions'
@@ -26,7 +27,7 @@ export function CreateMenu({ role }: { role: CommunityRole }) {
         onClick={() => setOpen((v) => !v)}
         aria-label="Create"
         aria-expanded={open}
-        className="inline-flex items-center gap-1.5 rounded-control bg-primary hover:bg-primary-hover text-on-primary text-body-sm font-semibold px-3 py-1.5 lift-1 transition-colors"
+        className={buttonClasses('primary', 'sm')}
       >
         <Plus className="w-4 h-4" strokeWidth={2.5} />
         Create

@@ -75,8 +75,10 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
             {circle.isStarter && <StarterBadge />}
             {circle.isFeatured && <FeaturedBadge />}
             {circle.isDemo && <DemoBadge />}
+            {/* `text-muted`, NOT `text-subtle`: subtle at text-2xs is sub-AA by construction, which
+                is what the subtle-tiny-type ratchet exists to catch. It caught this one. */}
             {closed && access && (
-              <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-subtle">
+              <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
                 {CIRCLE_ACCESS_LABEL[access]}
               </span>
             )}

@@ -73,8 +73,15 @@ export function TrophyCelebration({ milestone, onDismiss }: { milestone: TrophyM
       aria-label={eyebrow}
       onClick={onDismiss}
     >
+      {/* REDUCED MOTION, both animations. `@keyframes slideUp` carries no guard of its own in
+          globals.css, so every consumer must add `motion-safe:` — four of five did and this one
+          did not. The trophy below is the sharper case: `.animate-cue-pop` IS guarded in
+          globals.css, but writing it as an arbitrary `animate-[cue-pop_…]` value bypassed the
+          class and therefore the guard, while retyping a bezier that is already `--ease-pop`. The
+          confetti in this same file was guarded all along (`motion-reduce:hidden`), which is how
+          we know the rule was known and these two were missed. */}
       <div
-        className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-primary-bg bg-surface p-8 text-center lift-3 animate-[slideUp_0.45s_ease-out]"
+        className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-primary-bg bg-surface p-8 text-center lift-3 motion-safe:animate-[slideUp_0.45s_ease-out]"
         onClick={(e) => e.stopPropagation()}
       >
         <Burst />
@@ -86,7 +93,7 @@ export function TrophyCelebration({ milestone, onDismiss }: { milestone: TrophyM
           <X className="h-4 w-4" />
         </button>
 
-        <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-pill bg-primary-bg text-primary-strong animate-[cue-pop_0.5s_cubic-bezier(0.34,1.56,0.64,1)]">
+        <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-pill bg-primary-bg text-primary-strong animate-cue-pop">
           <Trophy className="h-10 w-10" strokeWidth={1.75} />
         </div>
 

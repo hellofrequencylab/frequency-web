@@ -98,6 +98,7 @@ import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { buttonClasses } from '@/components/ui/button'
 import { StudioWindow } from './studio-window'
+import { usePortaledSpaceTheme } from '@/components/ui/use-portaled-space-theme'
 import { WizardGuardContext, type WizardDraftReport } from './wizard-guard'
 
 /** Marks a history entry this component pushed, so `popstate` can tell it apart from a real one. */
@@ -149,6 +150,8 @@ export function WizardModal({
   const leaving = useRef(false)
   const bodyRef = useRef<HTMLDivElement>(null)
   const safeChoiceRef = useRef<HTMLButtonElement>(null)
+  // Left mounted in place so the Space theme is readable before the portal jumps to <body>.
+  const anchorRef = useRef<HTMLSpanElement>(null)
 
   const report = useCallback((next: WizardDraftReport) => {
     draft.current = next
@@ -278,11 +281,20 @@ export function WizardModal({
     if (ask) safeChoiceRef.current?.focus()
   }, [ask])
 
-  // Portal only on the client; the server and the first hydration pass render nothing, matching.
-  if (!isClient) return null
+  // The Space theme in force where the wizard was opened. StudioWindow does not portal, so mounted
+  // directly it inherits `[data-space-theme]` normally; portaled here it would not, and a Spark
+  // opened from a Space page would silently render in the host palette (ADR-578).
+  const applySpaceTheme = usePortaledSpaceTheme(anchorRef)
 
-  return createPortal(
+  // Portal only on the client; the server and the first hydration pass render nothing, matching.
+  if (!isClient) return <span ref={anchorRef} hidden aria-hidden="true" />
+
+  return (
+    <>
+      <span ref={anchorRef} hidden aria-hidden="true" />
+      {createPortal(
     <WizardGuardContext.Provider value={report}>
+      <div ref={applySpaceTheme} className="contents">
       <StudioWindow
         open
         onClose={requestClose}
@@ -361,7 +373,10 @@ export function WizardModal({
           {children}
         </div>
       </StudioWindow>
+      </div>
     </WizardGuardContext.Provider>,
-    document.body,
+        document.body,
+      )}
+    </>
   )
 }
