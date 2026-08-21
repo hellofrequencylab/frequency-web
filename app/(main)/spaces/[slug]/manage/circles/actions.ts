@@ -21,6 +21,16 @@ import { listManagedSpaces } from '@/lib/spaces/managed'
 import type { RunEndState } from '@/lib/journeys/runs'
 import { startJourneyRunAction, endJourneyRunAction } from '@/app/(main)/journeys/run-actions'
 
+/** Every surface a change here shows up on. The console is the one being edited; the PUBLIC Circles
+ *  tab lists the same circles to visitors; and the profile Home carries both the teaser block and
+ *  the hero's "Circles" stat, so a create / move / archive that skipped it left a stale count on the
+ *  page most people actually land on. */
+function revalidateSpaceCircles(slug: string) {
+  revalidatePath(`/spaces/${slug}/manage/circles`)
+  revalidatePath(`/spaces/${slug}/circles`)
+  revalidatePath(`/spaces/${slug}`)
+}
+
 /** The one door: the caller must edit this Space. Returns the space id, or the message to show. */
 async function requireSpaceEditor(
   slug: string,
@@ -56,7 +66,7 @@ export async function createSpaceCircleAction(
       name: clean,
       spaceId: gate.spaceId,
     })
-    revalidatePath(`/spaces/${slug}/circles`)
+    revalidateSpaceCircles(slug)
     return ok({ circleSlug })
   } catch {
     return fail('Could not create that circle. Please try again.')
@@ -81,7 +91,7 @@ export async function startSpaceCircleRunAction(
     kickoffAt: input.kickoffAt ?? null,
     journeyTitle: input.journeyTitle,
   })
-  if (!isError(res)) revalidatePath(`/spaces/${slug}/circles`)
+  if (!isError(res)) revalidateSpaceCircles(slug)
   return res
 }
 
@@ -97,7 +107,7 @@ export async function endSpaceCircleRunAction(
   if (typeof gate === 'string') return fail(gate)
 
   const res = await endJourneyRunAction({ runId: input.runId, state: input.state })
-  if (!isError(res)) revalidatePath(`/spaces/${slug}/circles`)
+  if (!isError(res)) revalidateSpaceCircles(slug)
   return res
 }
 
@@ -115,7 +125,7 @@ export async function transferSpaceCircleAction(
   const res = await transferCircle(input.circleId, input.target, gate.profileId)
   if (!res.ok) return fail(res.reason || 'Could not move that circle.')
 
-  revalidatePath(`/spaces/${slug}/circles`)
+  revalidateSpaceCircles(slug)
   if (res.slug) revalidatePath(`/circles/${res.slug}`)
   return ok()
 }
@@ -157,7 +167,7 @@ export async function attachCircleToSpaceAction(
   const res = await transferCircle(circleId, { kind: 'space', spaceId: gate.spaceId }, gate.profileId)
   if (!res.ok) return fail(res.reason || 'Could not attach that circle.')
 
-  revalidatePath(`/spaces/${slug}/circles`)
+  revalidateSpaceCircles(slug)
   if (res.slug) revalidatePath(`/circles/${res.slug}`)
   return ok()
 }
@@ -195,7 +205,7 @@ export async function offerSpaceCircleAction(
 
   const res = await offerCircleToPerson(input.circleId, input.toProfileId, gate.profileId)
   if (!res.ok) return fail(res.reason || 'Could not send that handoff.')
-  revalidatePath(`/spaces/${slug}/circles`)
+  revalidateSpaceCircles(slug)
   return ok()
 }
 
@@ -209,6 +219,6 @@ export async function cancelSpaceCircleOfferAction(
 
   const res = await cancelCircleOffer(offerId, gate.profileId)
   if (!res.ok) return fail(res.reason || 'Could not cancel that handoff.')
-  revalidatePath(`/spaces/${slug}/circles`)
+  revalidateSpaceCircles(slug)
   return ok()
 }

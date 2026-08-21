@@ -24,7 +24,7 @@ import { resolveSpaceManageAccess } from './entitlements'
 import { listEventsForSpace } from '@/lib/events/store'
 import { listPracticesForSpace } from '@/lib/practices'
 import { listJourneyPlansForSpace } from '@/lib/journey-plans'
-import { listCirclesForSpace } from '@/lib/circles/store'
+import { listPublicSpaceCircles } from '@/lib/circles/store'
 
 /** Does the active Space have ANY published content? Request-cached on the space id so the four
  *  list reads run at most once per request (shared by every entity module). Fail-safe to `true` on
@@ -40,11 +40,13 @@ export const spaceHasContent = cache(async (): Promise<boolean> => {
       // function's own contract), so a draft must not count as content.
       listPracticesForSpace(space.id, 1, { publishedOnly: true }),
       listJourneyPlansForSpace(space.id, 1, { publishedOnly: true }),
-      listCirclesForSpace(space.id, 1),
+      // The PUBLIC reader: this gate decides whether a VISITOR sees the "getting started"
+      // composite, so an unlisted circle is not content for this purpose (ADR-1094). Active +
+      // axis 1 both run in the query, so `limit: 1` still means "is there one they can see".
+      listPublicSpaceCircles(space.id, { limit: 1 }),
     ])
     const liveEvents = events.filter((e) => !e.is_cancelled)
-    const activeCircles = circles.filter((c) => c.status === 'active')
-    return liveEvents.length > 0 || practices.length > 0 || journeys.length > 0 || activeCircles.length > 0
+    return liveEvents.length > 0 || practices.length > 0 || journeys.length > 0 || circles.length > 0
   } catch {
     return true
   }

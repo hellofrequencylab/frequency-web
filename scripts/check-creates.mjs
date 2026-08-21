@@ -191,7 +191,7 @@ export const CREATE_ENTRIES = new Map([
   // Circle
   ['app/(main)/circles/builder-actions.ts::createDraftFromSparkAction', { entity: 'circle', writer: 'lib/circles/draft.ts::createBlankCircleDraft' }],
   ['app/(main)/circles/builder-actions.ts::createBlankDraftAction', { entity: 'circle', writer: 'lib/circles/draft.ts::createBlankCircleDraft' }],
-  ['app/(main)/spaces/[slug]/circles/actions.ts::createSpaceCircleAction', { entity: 'circle', writer: 'lib/circles/draft.ts::createBlankCircleDraft' }],
+  ['app/(main)/spaces/[slug]/manage/circles/actions.ts::createSpaceCircleAction', { entity: 'circle', writer: 'lib/circles/draft.ts::createBlankCircleDraft' }],
   // Event
   ['app/(main)/events/actions.ts::createEvent', { entity: 'event', writer: 'app/(main)/events/actions.ts::createEvent' }],
   ['app/(main)/events/scan/actions.ts::saveDraft', { entity: 'event', writer: 'lib/events/event-drafts.ts::createEventDraft' }],
@@ -277,7 +277,7 @@ export const NOT_PROPOSE_AND_CONFIRM = new Map([
 export const UNROUTED = new Map([
   ['app/(main)/circles/builder-actions.ts::createDraftFromSparkAction', '2026-08-11 — the Circle builder. Vera already drafts this spark, so it is the highest-value first adopter.'],
   ['app/(main)/circles/builder-actions.ts::createBlankDraftAction', '2026-08-11 — the "I will write it myself" Circle road. Adopts alongside the spark road.'],
-  ['app/(main)/spaces/[slug]/circles/actions.ts::createSpaceCircleAction', '2026-08-11 — the Space manager Circle road; same writer, a scoped Space gate on top.'],
+  ['app/(main)/spaces/[slug]/manage/circles/actions.ts::createSpaceCircleAction', '2026-08-11 — the Space manager Circle road; same writer, a scoped Space gate on top.'],
   ['app/(main)/events/actions.ts::createEvent', '2026-08-11 — the member Event road. Takes FormData, so adopting it means lifting the parse above the propose call first.'],
   ['app/(main)/events/scan/actions.ts::saveDraft', '2026-08-11 — the flyer-scan Event draft. Owned by the Event Seeder agent this cycle.'],
   ['app/(main)/journeys/create-actions.ts::createJourneyDraftAction', '2026-08-11 — the deferred-title Journey create. Redirects on completion, so adopting it means returning the slug instead.'],

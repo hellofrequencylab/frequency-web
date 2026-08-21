@@ -2,7 +2,7 @@
 
 // MOVE A CIRCLE, FROM THE CIRCLE'S OWN PAGE. The transfer engine (lib/circles/transfer.ts,
 // ADR-843) shipped with one door only: the SPACE side. A Space console can push one of its
-// circles out (app/(main)/spaces/[slug]/circles/actions.ts), and can pull one in. From a Circle's
+// circles out (app/(main)/spaces/[slug]/manage/circles/actions.ts), and can pull one in. From a Circle's
 // own admin rail there was no way to move it anywhere, so a host who also runs a Space had no
 // path from the circle they were looking at to the Space they wanted it in. This is that door.
 //
@@ -86,10 +86,12 @@ const CANNOT_CHECK = 'We could not check this circle right now. Try again in a m
  *  layer and the gate speak with one voice. */
 const NOT_YOURS_TO_TAKE = 'You can only move a circle into a space you help run.'
 
-/** Both surfaces a Space shows its circles and their events on. */
+/** Every surface a Space shows its circles and their events on: the profile Home (the teaser
+ *  block + the hero's Circles stat), the PUBLIC Circles tab, and the owner console. */
 function revalidateSpace(slug: string) {
   revalidatePath(`/spaces/${slug}`)
   revalidatePath(`/spaces/${slug}/circles`)
+  revalidatePath(`/spaces/${slug}/manage/circles`)
 }
 
 /**

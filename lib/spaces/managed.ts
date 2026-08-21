@@ -20,7 +20,7 @@
 // only ever contain Spaces the caller is entitled to steward (no cross-tenant leak).
 //
 // SHAPE: no 'use server' directive here, so SERVER components/readers import
-// listManagedSpaces directly (app/(main)/spaces/[slug]/circles/actions.ts and
+// listManagedSpaces directly (app/(main)/spaces/[slug]/manage/circles/actions.ts and
 // lib/crm/import/actions.ts both do). The mega-menu launcher this originally fed was
 // retired per ADR-349, and its 'use server' wrapper (lib/spaces/managed-actions.ts) has
 // now been deleted with it; a future CLIENT surface would need a new wrapper, because a

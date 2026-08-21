@@ -54,7 +54,10 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
   // Reviews is its OWN dedicated tab / page (added below), so an in-page section anchor for it is a
   // DUPLICATE nav link (the "two Reviews" bug: a stray #reviews anchor beside the real /reviews tab,
   // scrolling to nothing). Drop that anchor here so the dedicated tab is the only one.
-  const DEDICATED_TAB_ANCHORS = new Set(['reviews'])
+  // `circles` joins it for the same reason (ADR-1094): Circles is a real tab now, so the Home
+  // block's #circles anchor beside it is the "two Reviews" bug a second time, a stray menu link
+  // scrolling to a section that may not even be in the saved layout.
+  const DEDICATED_TAB_ANCHORS = new Set(['reviews', 'circles'])
   const sections = deriveSectionNav(homeDoc, presence).filter((s) => !DEDICATED_TAB_ANCHORS.has(s.anchor))
   // The public Shop tab (ADR-596): shown only when the owner has published their storefront, with the
   // owner's chosen (renameable) label. The catalog is gated status='active' and the route double-gates on
@@ -68,6 +71,17 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
   // review wall off in the Module Manager. A missing def keeps the tab (fail-safe to shown).
   const reviewsDef = spaceFunctionDef('reviews')
   const reviewsEnabled = !reviewsDef || spaceFunctionEnabled(space, reviewsDef)
+  // The Circles tab (ADR-1094): gated on the `circles` function AND on there being something behind
+  // it, the same honest-empty rule Calendar, Collaborators and Shop follow. `presence.circles` is
+  // the SAME request-cached read the Home teaser block renders from, so the gate and the page can
+  // never disagree about whether a visitor would find anything. ROOT never shows it: every personal
+  // circle on the platform is stamped to the root tenant, and the tab notFound()s there.
+  const circlesDef = spaceFunctionDef('circles')
+  const circlesEnabled = (!circlesDef || spaceFunctionEnabled(space, circlesDef)) && space.type !== 'root'
+
+  // Resolved BEFORE the tab list, which reads it: a manager keeps the Circles tab at zero so the
+  // "Start your first circle" empty state stays reachable.
+  const canSeeAsOwner = manage.canManage || manage.staffViewing
 
   const tabs: SpaceProfileTab[] = [
     { href: base, label: pages[0]?.label ?? 'Home' },
@@ -79,6 +93,10 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
     // The Collaborators tab (ADR-799 B1): the businesses that operate together with this space. Shown
     // only when there is at least one accepted collaboration.
     ...(hasCollaborators ? [{ href: `${base}/collaborators`, label: 'Collaborators' }] : []),
+    // Circles: a Space's community IS its Circles (NAMING.md, ADR-1091), and this is where they are.
+    // A manager sees it even at zero, because the empty state is where "Start your first circle"
+    // lives; a visitor only sees it once there is a circle they could actually open.
+    ...(circlesEnabled && (presence.circles || canSeeAsOwner) ? [{ href: `${base}/circles`, label: 'Circles' }] : []),
     // Reviews on their own tab (owner decision): the member rating + review wall. Public read; a signed-in
     // member (not the owner) leaves one review they can revise. Gated on the `reviews` function (default ON).
     ...(reviewsEnabled ? [{ href: `${base}/reviews`, label: 'Reviews' }] : []),
@@ -90,7 +108,6 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
       .map((p) => ({ href: `${base}/${p.slug}`, label: p.label })),
   ]
 
-  const canSeeAsOwner = manage.canManage || manage.staffViewing
   // Just "Manage" now: the CRM has no separate menu item (it lives inside the Manage dashboard's
   // Community area). `spaceManageHref` is the full-page console; the profile menu instead opens the
   // in-place `?panel=manage` dashboard, but this Manage tab still backs the /manage + shell layouts.

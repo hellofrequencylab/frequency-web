@@ -9,6 +9,7 @@ import {
   Calendar,
   CalendarCheck,
   ArrowUpRight,
+  ArrowRight,
   Users,
   Sparkles,
   CalendarDays,
@@ -111,6 +112,13 @@ function practicesFrom(puck: PuckArg): SpacePracticesData | undefined {
 function communityFrom(puck: PuckArg): SpaceCircleItem[] | undefined {
   const space = puck?.metadata?.space as { community?: SpaceCircleItem[] } | undefined
   return space?.community
+}
+// Where "All circles" on that block goes: the Space's public Circles tab (ADR-1094). Null in the
+// editor canvas and on a member Spotlight (no slug to build from), where the block renders no link
+// rather than a broken one.
+function communityHrefFrom(puck: PuckArg): string | null {
+  const space = puck?.metadata?.space as { communityHref?: string | null } | undefined
+  return space?.communityHref ?? null
 }
 // The Team block's picked network members, resolved to live cards keyed by profile id. Injected by the
 // render path (space-landing.tsx); undefined in the editor canvas, where the block shows only its stub.
@@ -776,11 +784,14 @@ export function SpaceCommunityBlock({
   eyebrow,
   heading,
   circles,
+  allHref,
   ink,
 }: {
   eyebrow?: string
   heading?: string
   circles: SpaceCircleItem[]
+  /** The Space's public Circles tab. When set, the block ends in a link to it. */
+  allHref?: string | null
   ink?: boolean
 }) {
   if (circles.length === 0) return null
@@ -810,6 +821,19 @@ export function SpaceCommunityBlock({
           </li>
         ))}
       </ul>
+      {allHref && (
+        // "All circles", not "See all": this block shows a capped six and cannot honestly claim
+        // there are more, so the link names its DESTINATION rather than a quantity.
+        <Link
+          href={allHref}
+          className={`mt-3 inline-flex items-center gap-1 text-body-sm font-semibold ${
+            ink ? 'text-on-ink hover:text-on-ink-muted' : 'text-primary-strong hover:text-primary'
+          }`}
+        >
+          All circles
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+        </Link>
+      )}
     </InfoCard>
   )
 }
@@ -2066,6 +2090,7 @@ export const profileComponents: Record<string, ComponentConfig> = {
             eyebrow={(eyebrow as string) || undefined}
             heading={(heading as string) || undefined}
             circles={circles}
+            allHref={communityHrefFrom(puck)}
           />
         </AnchorSection>
       )

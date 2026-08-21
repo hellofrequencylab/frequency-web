@@ -27940,3 +27940,174 @@ second one.
 thing was not a key — it was a form on stripe.com whose absence surfaces as a throw from a normal
 API call. When a dependency has configuration outside the repo, the ADR that describes going live
 has to name that configuration, or the first person to hit it reads it as a defect in the code.
+
+## ADR-1094: A Space's Circles get a page, and the one visibility rule moves into the reader (2026-08-21)
+
+**Status:** Accepted · corroborated by `app/(main)/spaces/[slug]/(profile)/circles/page.tsx`,
+`lib/circles/store.ts` (`listPublicSpaceCircles`), `lib/spaces/profile-nav.ts`, and
+`lib/circles/store.test.ts`
+
+**Context.** [ADR-1091](DECISIONS.md) settled that a Space's community **is** its Circles and
+deleted the old Community tab, leaving a 308 to the Space root. What it did not do was give the
+Circles anywhere to live. The profile menu's "Circles" item was an **anchor** produced by
+`deriveSectionNav` from the stored `SpaceCommunity` block, so it scroll-jumped to a six-item teaser
+on Home, appeared only when that block was in the saved layout, and had no "and the rest". Meanwhile
+`/spaces/[slug]/circles` already existed and looked exactly like the URL a visitor wants, but it was
+the owner console and opened with `if (!caps.canEditProfile) notFound()`. The most obvious click on
+a Space profile therefore ended in a 404, and the owner reported it as "no page shows up".
+
+Sweeping the six surfaces that show a Space's circles turned up a second thing. `listCirclesForSpace`
+reads through the service-role client, which holds `BYPASSRLS` and never sees
+`circles_access_restrictive`, and it applies no visibility filter of its own — its `COLS` string did
+not even **select** `unlisted` or `access`, so a caller could not have applied the rule if it had
+remembered to. Four public callers reached for it and all four filtered on `status` alone:
+`getSpaceCommunity` (the public Home block), `EntityCommunity` (the entity profile module),
+`resolveProfileStats` (the public hero's "Circles N") and `spaceHasContent` (the has-content gate).
+An **unlisted** circle rendered on a Space's public page, and was counted in a public stat. This is
+the failure `lib/circles/visibility.ts` predicts in its own header: *"a rule applied by hand in a
+dozen places is a rule that will be wrong in one of them."*
+
+**Decision.**
+
+1. **The public noun URL goes to the public page.** `/spaces/[slug]/circles` is now a tab inside the
+   `(profile)` route group, so the cover, identity row and menu come from that layout and the file is
+   only a body. The owner console moves to `/spaces/[slug]/manage/circles`, outside the group. This
+   is the split **Shop** already runs (public `/shop`, console `/settings/shop`), and the
+   `(profile)` layout's own header states the rule: owner surfaces are siblings outside the group so
+   they never inherit the chrome. No redirect was added for the old console URL — it 404'd for
+   everyone but managers, and a manager who had it bookmarked now lands on the public page, which
+   carries a **Manage circles** button. The console gained a **View public page** link the other way.
+2. **The tab is hidden at zero, for visitors only** (owner ruling, 2026-08-21). That is the same
+   honest-empty rule Calendar, Collaborators and Shop follow, and the anchor model was built on it
+   ("a link never scrolls to an empty spot"). A **manager keeps the tab at zero**, because the empty
+   state is where *Start your first circle* lives. The gate reads `presence.circles`, the SAME
+   request-cached read the Home teaser renders from, so the menu and the page cannot disagree.
+   `'circles'` joins `DEDICATED_TAB_ANCHORS`, or the Home anchor sits in the menu beside the real tab
+   — the "two Reviews" bug a second time.
+3. **The visibility rule moves into a reader, and runs in SQL.** `listPublicSpaceCircles` applies
+   `status = 'active'` and axis 1 as query predicates, and the four public callers now use it.
+   In-query matters as much as in-one-place: filtering a **capped** page in JavaScript lets a hidden
+   row eat a visible row's slot, so a Space with one unlisted circle would show five cards in a
+   six-slot block with nothing to explain the gap. `listCirclesForSpace` stays raw and is now
+   documented as the owner-surface read.
+4. **Axis 2 is deliberately not filtered.** A listed **closed** circle is the lead funnel the two
+   axes exist for ([ADR-1015](DECISIONS.md)); `canEnterCircle`, on the circle's own page, is the
+   door. What changed is the card: `CircleCard` takes an optional `access`, badges a closed circle
+   with its `CIRCLE_ACCESS_LABEL`, and swaps Join for **See what's inside** — offering Join was a
+   lie, because `canJoinCircle` refuses every closed mode.
+5. **ROOT is excluded, explicitly.** `stampCircleSpaceId` stamps every personal circle to the root
+   tenant, so without a guard the root Space's profile would have listed the whole platform's private
+   circles as "circles this space runs". The page `notFound()`s there and the nav never offers it.
+   Same class of defect [LIVE-075](BUILD-BACKLOG.json) closed across ten event call sites the day
+   before.
+6. **The `/spaces/:slug/community` 308 re-points** from the Space root to `/spaces/:slug/circles`.
+   C3.3 sent it to the root because there was no circles surface to send it to; there is one now, and
+   it is the page that URL always meant.
+
+**Consequences.**
+
+- The tab ships **zero client JS of its own**: format and sort are plain `<Link>`s over
+  `searchParams`, so a filtered view is shareable and the back button behaves. The filter row renders
+  only at **8 or more** circles — a filter bar over five cards is noise.
+- Stats on the tab are **Circles / Members / Open to join**, not the console's four. "Running" and
+  "Journeys offered" are operator facts in operator language; a visitor is asking whether there is
+  room. The counts read the visible set, never the raw one, or the page would leak the existence of
+  hidden circles by arithmetic.
+- Every write path that moves a circle now revalidates **three** paths per Space (profile Home, the
+  public tab, the console), not one. A create or move that skipped Home left a stale hero count on
+  the page most people land on.
+**Measured reach, 2026-08-21.** The row was filed with the blast radius unknown, and unknown is not a
+place to leave a claim ([ADR-1082](DECISIONS.md)), so it was measured the same day: 7 circles exist, 6
+on the ROOT tenant and 1 on a real business Space; 2 active, 3 draft, 2 forming; `access = 'open'` on
+all 7. **Exactly one row was actually leaking** — an active, unlisted circle on the root tenant, which
+`getSpaceCommunity` rendered on `/spaces/frequency`, the platform's own public profile. No real Space
+was publishing a hidden circle. The defect was real and its reach was one row; recording both is the
+point, because "we fixed a leak" and "one row on our own page" are different sentences and only one of
+them is true. It also re-proves why the LIVE-059 reading could not stand in for this one: "all
+`access='open'`" is axis 2, and this was axis 1.
+
+- **The durable rule, restated because this repo keeps re-learning it:** a reader that returns more
+  than a caller may show is a leak waiting for its fourth caller. Do not select the columns and hope;
+  either the reader applies the rule, or the columns are not there to be applied. The four callers
+  here were each written by someone who knew about `unlisted` — none of them could see it.
+
+## ADR-1095: An empty `code` is the absence of a code — the discover retry that never fired (2026-08-21)
+
+**Status:** Accepted · corroborated by `lib/discover.ts` (`isTransientDiscoverError`), `lib/discover.test.ts`
+(`PRODUCTION_KILLER`), and the build log of `dpl_2SRX2aYctYBXmZw1TaYyi1xBJtBy`
+
+**Context.** The production deploy of `eee84ba` failed:
+
+```
+Error [DiscoverReadError]: discover read failed: public_event_by_slug
+  at detailRead (lib/discover.ts:206)   ← via getPublicEventBySlug ← app/discover/events/[slug]/page.tsx:82
+  [cause]: TypeError: fetch failed → read ECONNRESET
+Export encountered an error on /discover/events/[slug]/page: …, exiting the build.
+```
+
+One dropped packet on one of 297 prerendered pages ended the export. That is the *exact* failure
+[LIVE-039](BUILD-BACKLOG.json) diagnosed on 2026-08-18 and shipped a bounded transient retry for, with
+tests, a passing probe, and a careful ADR-grade rationale in its own header comment.
+
+**The retry had never fired. Not once, in production, in three days.**
+
+The tell was in the log, not in the code: `attempt()` `console.error`s a line on every retry, the build
+died 2 seconds into static generation, and there was no retry line at all. The cause is one expression:
+
+```ts
+if (typeof e.code === 'string' && !TRANSIENT_RE.test(e.code)) return false
+```
+
+`supabase-js` does not *throw* a transport failure. It **resolves** an error object, and when the request
+never reaches PostgREST there is no PostgREST code to report, so it says so with **empty strings**:
+
+```js
+{ message: 'TypeError: fetch failed', details: '…read ECONNRESET…', hint: '', code: '' }
+```
+
+`typeof '' === 'string'` is `true`; `TRANSIENT_RE.test('')` is `false`. So the guard concluded *"a code is
+present, therefore the database gave a deterministic answer"* and refused to retry the one shape the
+retry existed to catch. **The absence of a code, expressed as an empty string, was read as the presence
+of one.**
+
+**Decision.**
+
+1. **Blank is absent.** Trim `code` and treat `''` as no code, so classification falls through to the
+   message text where `fetch failed` matches. `details` joins the searched text too, since that is the
+   field carrying `Caused by: Error: read ECONNRESET`. The code arm still returns `false` for any real
+   Postgres code, so widening the text cannot make a deterministic failure retryable, and two tests pin
+   that in both directions.
+2. **The fixture is the fix.** The regression test is the error object copied **verbatim out of the build
+   log that it killed**, not a hand-built approximation. This is the whole lesson: LIVE-039's tests were
+   good tests of a wrong model. Every one of them constructed its own error, and every constructed error
+   either omitted `code` or set a real Postgres code, so the empty string was never on trial. **A test
+   that builds its own input can only ever prove the author's model of the input.**
+3. **The probe now requires the fixture.** LIVE-039's probe asserted that `isTransientDiscoverError` and
+   `RETRY_DELAYS_MS` *exist* and that a test says `calls).toBe(3)`. All three were true of a retry that
+   never ran. It now additionally requires the empty-code guard and a test carrying `code: ''`. A
+   presence check over a behaviour claim is the shape-not-truth failure this repo names in four ADRs, and
+   it stayed green for three days over a dead fail-safe.
+4. **Two build-time throw sites are guarded, and the rest deliberately are not.**
+   `app/discover/events/[slug]/opengraph-image.tsx` called the throwing `getPublicEventBySlug` with no
+   catch while its circles twin had always used `.catch(() => null)`; the card already renders a branded
+   fallback, so it now catches. `generateStaticParams` in `discover/cities/[citySlug]` and
+   `discover/places/[citySlug]` gained the `.catch(() => [])` every sibling already had.
+   The **page bodies and `generateMetadata` keep throwing on purpose**: swallowing there would answer a
+   crawler with a genuine 404 on a sitemapped URL and de-index it. LIVE-039 was right that the fix is not
+   a bare `try/catch`; it was only wrong about whether its retry worked.
+
+**Consequences.**
+
+- The fix is one expression, and its reach is not one route. The same `attempt()` seam is the only
+  throwing read in the whole prerendered set, and it is reached unguarded by five detail routes
+  (`events/[slug]`, `circles/[id]`, `topics/[slug]`, `places/[citySlug]`, `cities/[citySlug]`) and six
+  prerendered index pages. All of them were relying on a retry that never ran; all of them get it now.
+- **Blast radius of the incident itself: nil, by luck.** The deploy that died was docs-only (#2235
+  changed one file), so production kept serving `e13b6b9` and no member saw anything. `main` is protected
+  because merging deploys to production, so the same blip on the same route would have taken down a
+  deploy that mattered.
+- **The durable rule:** when a fail-safe is built from a *reasoned* description of the failure rather than
+  the *captured artifact* of it, the tests will agree with the reasoning and the world will not. Capture
+  the real object. [DEPLOY-SAFETY §6](DEPLOY-SAFETY.md) says every fail-safe needs a gate that notices it
+  fired — this one had a gate that noticed it *existed*, which is not the same thing, and the difference
+  cost a production deploy.

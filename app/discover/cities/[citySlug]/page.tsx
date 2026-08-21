@@ -28,7 +28,10 @@ export const revalidate = 3600
 // and join the set on revalidate; a below-threshold slug renders on demand and
 // 404s (getDensityCity returns null), so no thin page is ever served.
 export async function generateStaticParams() {
-  const cities = await listDensityCities()
+  // `.catch(() => [])` matches every sibling detail route (LIVE-011): a params read that fails
+  // degrades to on-demand rendering instead of ending the export. These two city routes were the
+  // only ones in app/discover missing it (LIVE-084).
+  const cities = await listDensityCities().catch(() => [])
   return cities.map((c) => ({ citySlug: c.slug }))
 }
 

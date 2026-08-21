@@ -86,3 +86,77 @@ describe('attempt (the retry loop)', () => {
     expect(out.data).toEqual([1])
   })
 })
+
+// ── THE SHAPE THAT ACTUALLY KILLED A PRODUCTION DEPLOY (LIVE-084) ───────────────────────────────
+//
+// LIVE-039 added the retry on 2026-08-18 and these tests proved it fires and refuses. It still
+// never retried anything in production, because no test ever fed the classifier the object
+// supabase-js REALLY produces for a dropped connection. Every case above builds its own error by
+// hand, and every hand-built one omits `code` or sets it to a real Postgres code — so the empty
+// string, the one value that mattered, was never on trial.
+//
+// This block is that object, copied verbatim out of the build log of the deploy it killed
+// (dpl_2SRX2aYctYBXmZw1TaYyi1xBJtBy, eee84ba, 2026-08-21T02:28:05Z). It is a fixture, not a
+// paraphrase: `hint` and `code` are empty STRINGS because the request never reached PostgREST.
+//
+// Both assertions FAIL on the pre-fix tree: the first returns false, the second calls once.
+const PRODUCTION_KILLER = {
+  message: 'TypeError: fetch failed',
+  details:
+    'TypeError: fetch failed\n\nCaused by: Error: read ECONNRESET (ECONNRESET)\nError: read ECONNRESET\n    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)',
+  hint: '',
+  code: '',
+}
+
+describe('the error that killed the 2026-08-21 production deploy', () => {
+  it('is classified TRANSIENT: an empty `code` is the absence of a code, not the presence of one', () => {
+    expect(isTransientDiscoverError(PRODUCTION_KILLER)).toBe(true)
+  })
+
+  it('is retried, so one dropped packet no longer ends the export', async () => {
+    let calls = 0
+    const query = () => {
+      calls++
+      if (calls <= 2) return Promise.resolve({ data: null, error: PRODUCTION_KILLER })
+      return Promise.resolve({ data: [{ slug: 'breathe-connect-expand-2026-09-03' }], error: null })
+    }
+    const out = await __retryForTest.attempt('public_event_by_slug', query, noSleep)
+    expect(calls).toBe(3)
+    expect(out.error).toBeNull()
+  })
+
+  it('still gives up loudly when the blip outlasts the backoff, rather than shipping a hole', async () => {
+    let calls = 0
+    const query = () => {
+      calls++
+      return Promise.resolve({ data: null, error: PRODUCTION_KILLER })
+    }
+    const out = await __retryForTest.attempt('public_event_by_slug', query, noSleep)
+    expect(calls).toBe(__retryForTest.RETRY_DELAYS_MS.length + 1)
+    expect(out.error).toBeTruthy()
+  })
+
+  it('a REAL Postgres code is still never retried, empty-code fix notwithstanding', async () => {
+    let calls = 0
+    const query = () => {
+      calls++
+      // The shape a genuine RLS denial takes: a real code, and network words nowhere.
+      return Promise.resolve({ data: null, error: { code: '42501', message: 'permission denied', details: '', hint: '' } })
+    }
+    const out = await __retryForTest.attempt('public_event_by_slug', query, noSleep)
+    expect(calls).toBe(1)
+    expect(out.error).toBeTruthy()
+  })
+
+  it('a Postgres error whose DETAILS happen to say "network" is still not retried', async () => {
+    // Guards the widening: `details` joined the searched text, so prove the code arm still wins.
+    let calls = 0
+    const query = () => {
+      calls++
+      return Promise.resolve({ data: null, error: { code: 'PGRST116', message: 'no rows', details: 'network partition suspected', hint: '' } })
+    }
+    const out = await __retryForTest.attempt('public_event_by_slug', query, noSleep)
+    expect(calls).toBe(1)
+    expect(out.error).toBeTruthy()
+  })
+})

@@ -33,10 +33,14 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => currentAdmin }
 // without touching the DB.
 const listPracticesForSpace = vi.fn()
 const listJourneyPlansForSpace = vi.fn()
-const listCirclesForSpace = vi.fn()
+const listPublicSpaceCircles = vi.fn()
 vi.mock('@/lib/practices', () => ({ listPracticesForSpace: (...a: unknown[]) => listPracticesForSpace(...a) }))
 vi.mock('@/lib/journey-plans', () => ({ listJourneyPlansForSpace: (...a: unknown[]) => listJourneyPlansForSpace(...a) }))
-vi.mock('@/lib/circles/store', () => ({ listCirclesForSpace: (...a: unknown[]) => listCirclesForSpace(...a) }))
+// The PUBLIC reader (ADR-1094), not the raw one: getSpaceCommunity feeds a visitor-facing block, so
+// the status filter and axis 1 both live in the reader now and this file only proves the SHAPING.
+// The rule itself is proven against a fake query builder in lib/circles/store.test.ts.
+vi.mock('@/lib/circles/store', () => ({ listPublicSpaceCircles: (...a: unknown[]) => listPublicSpaceCircles(...a) }))
+vi.mock('@/lib/auth', () => ({ getMyProfileId: async () => 'viewer-1' }))
 
 import {
   getSpaceReviews,
@@ -51,7 +55,7 @@ beforeEach(() => {
   currentAdmin = makeAdmin({ data: [] })
   listPracticesForSpace.mockReset().mockResolvedValue([])
   listJourneyPlansForSpace.mockReset().mockResolvedValue([])
-  listCirclesForSpace.mockReset().mockResolvedValue([])
+  listPublicSpaceCircles.mockReset().mockResolvedValue([])
 })
 
 // getSpaceUpdates was retired by OWNER RULING (LIVE-062 batch 6, 2026-08-20) with the SpaceUpdates
@@ -182,13 +186,13 @@ describe('getSpaceContentData', () => {
   it('runs the live reads even without an input (staff preview + the anchor menu share one data path)', async () => {
     await getSpaceContentData('space-10')
     expect(listPracticesForSpace).toHaveBeenCalled()
-    expect(listCirclesForSpace).toHaveBeenCalled()
+    expect(listPublicSpaceCircles).toHaveBeenCalled()
   })
 })
 
 describe('getSpaceSectionPresence', () => {
   it('reports which live sections have rows, fail-safe false elsewhere', async () => {
-    listCirclesForSpace.mockResolvedValue([
+    listPublicSpaceCircles.mockResolvedValue([
       { id: 'c1', slug: 'c', name: 'Circle', about: null, member_count: 2, status: 'active' },
     ])
     const p = await getSpaceSectionPresence('space-11', null)
@@ -227,10 +231,9 @@ describe('getSpacePractices', () => {
 })
 
 describe('getSpaceCommunity', () => {
-  it('keeps only active circles and shapes them (member count defaulted)', async () => {
-    listCirclesForSpace.mockResolvedValue([
+  it('shapes what the public reader returns (member count defaulted)', async () => {
+    listPublicSpaceCircles.mockResolvedValue([
       { id: 'c1', slug: 'a', name: 'Alpha', about: 'About A', status: 'active', member_count: 5 },
-      { id: 'c2', slug: 'b', name: 'Beta', about: null, status: 'archived', member_count: 2 },
       { id: 'c3', slug: 'c', name: 'Gamma', about: null, status: 'active', member_count: null },
     ])
     const out = await getSpaceCommunity('space-1')
@@ -240,8 +243,16 @@ describe('getSpaceCommunity', () => {
     ])
   })
 
+  it('asks the PUBLIC reader, capped, with the viewer — never the raw by-space read (ADR-1094)', async () => {
+    // The regression this pins: the block used to call listCirclesForSpace and filter on status
+    // alone, which published every UNLISTED circle a Space owned on its public Home page. The cap
+    // rides along because it must be applied by the reader (in SQL, before LIMIT), not after.
+    await getSpaceCommunity('space-1')
+    expect(listPublicSpaceCircles).toHaveBeenCalledWith('space-1', { viewerProfileId: 'viewer-1', limit: 6 })
+  })
+
   it('fails safe to [] when the reader throws', async () => {
-    listCirclesForSpace.mockRejectedValue(new Error('boom'))
+    listPublicSpaceCircles.mockRejectedValue(new Error('boom'))
     expect(await getSpaceCommunity('space-1')).toEqual([])
   })
 })

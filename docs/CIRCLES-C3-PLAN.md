@@ -76,9 +76,13 @@ disjoint populations.** §4.2 turns on exactly this.
 
 ### 1.3 What Space Communities is not, in the code
 
-- It is **not** `/spaces/<slug>/circles`. That route exists but is an **owner-only manager** and
-  `notFound()`s on any viewer who cannot edit the Space (`app/(main)/spaces/[slug]/circles/page.tsx:37`).
-  **No public Circles tab exists on a Space profile today.**
+- ~~It is **not** `/spaces/<slug>/circles`. That route exists but is an **owner-only manager** and
+  `notFound()`s on any viewer who cannot edit the Space. **No public Circles tab exists on a Space
+  profile today.**~~
+  **CORRECTED 2026-08-21 ([ADR-1094](DECISIONS.md), LIVE-082).** True when written, and the owner
+  reported the consequence six weeks later as *"right now no page shows up"*. `/spaces/<slug>/circles`
+  is the **public tab** now, in the `(profile)` route group; the owner manager moved to
+  `/spaces/<slug>/manage/circles`, which is the split Shop already runs.
 - It is **not** the `SpaceCommunity` block. That block is labeled `'Circles (live)'` and renders the
   Space's live Circles (`components/page-editor/blocks/profile.tsx:769-775`, `:2038-2047`). It is
   already the Circle surface, wearing the wrong name.
@@ -277,15 +281,21 @@ access if they are a member"* — a Space's members, in the owner's language, ar
 it, not the staff who run it. But B widens a live authorization predicate, so it is a security change
 and does not belong buried inside a feature removal.
 
-### 4.3 The Circles surface ADR-1013 promised does not exist yet
+### 4.3 The Circles surface ADR-1013 promised does not exist yet — ✅ **BUILT 2026-08-21**
 
 > **ADR-1013 §3:** "Space Communities is removed. A Space's community is its **Circles**. The Space
 > keeps a first-class Circles surface, which is now gated on its own `circles` `SpaceFunctionKey`."
 
-What exists today: an **owner-only manager** at `/spaces/<slug>/circles` (`:37` `notFound()`s a
+~~What exists today: an **owner-only manager** at `/spaces/<slug>/circles` (`:37` `notFound()`s a
 non-editor), and a **block on Home** that lists live Circles. What does not exist: a public
 `Circles` **tab** in `buildSpaceProfileNav`. If the Community tab is deleted and nothing takes its
-place, a Space profile loses a tab and gains none. That is C3's build half.
+place, a Space profile loses a tab and gains none. That is C3's build half.~~
+
+**CLOSED 2026-08-21 ([ADR-1094](DECISIONS.md), LIVE-082).** This section called it exactly right, and
+it is what actually happened: the Community tab was deleted in C3.4, nothing took its place, and the
+`#circles` anchor the C3.1 amendment substituted was a scroll target on Home rather than a page. The
+real tab exists now, gated hide-at-zero for visitors and always-on for a manager. The URL collision
+the C3.1 amendment worried about was resolved the other way round: the **owner console** moved.
 
 ### 4.4 🔴 The one capability with no replacement
 
@@ -370,7 +380,7 @@ predecessor.
 | # | Ships | Depends on | Reversible? | Breaks a URL? |
 | :-- | :-- | :-- | :-- | :-- |
 | **C3.0** | ⚠️ **Fix the `space_members` copy or widen the predicate** (§4.2, option A or B). Standalone; own ADR; own pgTAP if B. | — | ✅ yes | no |
-| **C3.1** | ✅ **Circles takes the name.** ⚠️ *Amended 2026-08-20 (ADR-1091): the "public Circles tab" is the `#circles` SECTION ANCHOR, not a new route — `/spaces/<slug>/circles` is already the owner-only manager (`space.circles` deep-links to it), so a `(profile)/circles` page would collide on the same URL.* Rename the section anchor `community` → `circles` with label `Circles`, the presence flag with it (it already gates on ≥1 live Circle), **relabel the `SpaceCommunity` block to `Circles`** — 🔴 **type key unchanged**, see §7.1 — swap the template eyebrow `'Community'` → `'Join in'` plus a ledgered props-only rewrite of the 18 seeded layouts, and fold the ADR-1013 amendments into `NAMING.md`. | — | ✅ yes | no |
+| **C3.1** | ✅ **Circles takes the name.** ⚠️ *Amended 2026-08-20 (ADR-1091): the "public Circles tab" is the `#circles` SECTION ANCHOR, not a new route — `/spaces/<slug>/circles` is already the owner-only manager (`space.circles` deep-links to it), so a `(profile)/circles` page would collide on the same URL.* 🔴 **That amendment was reversed 2026-08-21 ([ADR-1094](DECISIONS.md)): an anchor is not a tab, and the collision was resolved by moving the CONSOLE to `/manage/circles`, not by settling for a scroll target. The anchor is now suppressed via `DEDICATED_TAB_ANCHORS` so it does not sit in the menu beside the real tab.* Rename the section anchor `community` → `circles` with label `Circles`, the presence flag with it (it already gates on ≥1 live Circle), **relabel the `SpaceCommunity` block to `Circles`** — 🔴 **type key unchanged**, see §7.1 — swap the template eyebrow `'Community'` → `'Join in'` plus a ledgered props-only rewrite of the 18 seeded layouts, and fold the ADR-1013 amendments into `NAMING.md`. | — | ✅ yes | no |
 | **C3.2** | ⚠️ **Repoint the notification destination.** `lib/notifications/href.ts:62` stops emitting `/spaces/<id>/community` and emits `/spaces/<id>` instead. | — | ✅ yes | no |
 | **C3.3** | ⚠️ **Add the 308.** `/spaces/<slug>/community` → `/spaces/<slug>` in `next.config.ts`. **Ships before C3.4, never with it**, so no window exists where the URL 404s. | C3.1 | ✅ yes | ✅ **fixes** one |
 | **C3.4** | 🔴 **Delete the feature.** Route, `components/spaces/community/space-community-{feed,rail}.tsx`, the 7 actions, `getSpaceCommunityFeed` + `getSpaceMemberPosts`, the tab row, `revalidatePath`, `DEDICATED_TAB_ANCHORS`'s `'community'` entry, and the 8 test files in §3.4. | C3.2, C3.3 | ⚠️ `git revert` only | the 308 covers it |
