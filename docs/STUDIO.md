@@ -156,7 +156,14 @@ All four data layers + server actions **already exist**: the work is the builder
 
 Each PR: extract any newly-shared block → compose the entity's tools → wire into
 `StudioWindow` → replace the old surface → keep the server actions (re-checked) +
-a no-JS fallback. Retire `components/create-modal.tsx` once circles move (§2 supersedes it).
+a no-JS fallback.
+
+`components/create-modal.tsx` is a SHELL over `ui/Dialog`, not an overlay of its own
+([ADR-1100](DECISIONS.md)). This line used to read "retire it once circles move"; circles moved,
+nothing followed, and the eight surfaces it serves are none of them a circle — so the sentence
+described a condition that could be met while nothing happened. What was actually duplicated was
+the OVERLAY (backdrop, focus trap, ESC, scroll lock, and no portal at all), and that is gone. The
+header/form/footer shell stays, because eight callers legitimately want that shape.
 
 ## 7. The contract (so it stays one tool)
 

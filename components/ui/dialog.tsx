@@ -48,8 +48,15 @@ export function Dialog({
    *  - `center`: centers it in the viewport.
    *  - `sheet`: edge-to-edge full screen on mobile (no backdrop padding, the panel fills the viewport),
    *    reverting to a centered card at `sm+`. For focused, complex mobile tasks like the media picker,
-   *    where a boxed center card wastes the screen. The panel supplies its own `h-full sm:h-auto` sizing. */
-  align?: 'top' | 'center' | 'sheet'
+   *    where a boxed center card wastes the screen. The panel supplies its own `h-full sm:h-auto` sizing.
+   *  - `bottom`: a true BOTTOM SHEET on mobile — the panel rises from and touches the bottom edge, sized
+   *    by its own content (`max-h-[90vh]` and rounded top corners belong to the panel), reverting to a
+   *    centered card at `sm+`. Distinct from `sheet`, which fills the whole viewport: a form with six
+   *    fields should not black out the screen. Added for `CreateModal` (ADR-1100), whose hand-rolled
+   *    overlay was `items-end sm:items-center` — the shape at least four other hand-rolled sheets in the
+   *    tree also reach for. NOTE the panel owns its own bottom safe-area padding here, because only the
+   *    panel knows which of its bands is last. */
+  align?: 'top' | 'center' | 'sheet' | 'bottom'
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
   // A stable identity for this instance, used to find it in the dialog stack (topmost check).
@@ -178,6 +185,9 @@ export function Dialog({
         // and capture-launcher each re-solved it by hand and each landed somewhere different.
         align === 'sheet'
           ? 'items-stretch p-0 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:items-center sm:p-8'
+          : align === 'bottom'
+          ? // No bottom padding on mobile: the panel must TOUCH the edge or it is not a bottom sheet.
+            'items-end p-0 pt-[env(safe-area-inset-top)] sm:items-center sm:p-8'
           : cn(
               'p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:p-8',
               align === 'center' ? 'items-center' : 'items-start',
@@ -202,7 +212,7 @@ export function Dialog({
         tabIndex={-1}
         className={cn(
           'w-full outline-none motion-safe:animate-[slideUp_0.3s_ease-out]',
-          align === 'sheet' ? 'sm:my-auto' : align === 'center' ? 'my-auto' : 'mt-[6vh]',
+          align === 'sheet' || align === 'bottom' ? 'sm:my-auto' : align === 'center' ? 'my-auto' : 'mt-[6vh]',
           className,
         )}
       >

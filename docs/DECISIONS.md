@@ -28308,3 +28308,122 @@ change.
   protecting. This one said *"two doors"*, which is a count, and a count broke the moment an entity
   needed a field. Restated as an ORDER and a WEIGHTING, the same lock survives the change it would
   otherwise have blocked — and now covers the five entities it was really there for.
+
+## ADR-1099: A wizard destination opens no window of its own (2026-08-21)
+
+**Status:** Accepted · **Extends** [ADR-1017](DECISIONS.md) (the Spark modal's routing contract) ·
+corroborated by `app/(main)/events/new/page.tsx`, `app/(main)/@wizard/wizard-routes.test.ts`
+
+**Context.** `/events/new` mounted **two full overlays at once**, one inside the other, on the
+intercepted route:
+
+| | Renders |
+| :-- | :-- |
+| `app/(main)/@wizard/(.)events/new/page.tsx` | `WizardModal` |
+| `components/studio/wizard-modal.tsx` | `createPortal` → `StudioWindow` — **overlay A**, focus trap, scroll lock, close-confirm |
+| `app/(main)/events/new/page.tsx` | `EventEditorWindow` |
+| `components/studio/event/event-editor-window.tsx` | `StudioWindow` (`hideChrome`) — **overlay B**, a second trap, a second scroll lock, its own header with its own close X |
+| `app/(main)/events/event-spark.tsx` | `SparkShell` — a third heading and footer |
+
+Live consequences: two `useDialogFocusTrap` instances competing for Tab, two body-scroll locks,
+three stacked headers, and **two close buttons that did different things** — the inner one pushed
+`/events`, the outer ran the unsaved-work confirm.
+
+**🔴 Why nobody saw it.** `EventEditorWindow` is **correct** on its two other consumers,
+`/events/[slug]/edit` and `/admin/events/[id]`, because neither has an interceptor above it. The
+component was right twice and wrong once. Reviewing the component finds nothing; only the
+*composition on one route* is wrong, and nothing in the repo looked at compositions.
+
+**Decision.**
+
+1. **`/events/new` renders its Spark bare**, exactly as `/circles/new`, `/practices/new`,
+   `/journeys/new`, `/classifieds/new` and `/market/sell` already do. The chrome is the modal's job,
+   and `SparkShell` already centres itself (`mx-auto w-full max-w-lg`).
+2. **`EventEditorWindow` is NOT deleted.** It stays on both edit routes. Removing it there would be
+   a second regression in the opposite direction, and the contract test asserts it is still there.
+3. **The contract gets a fourth property, and it is DISCOVERED rather than listed.** The opener set
+   is computed by scanning `components/` for anything that renders `<StudioWindow`, so a wrapper
+   written next week is covered without editing the test. `studio-window.tsx` and `wizard-modal.tsx`
+   are excluded by name for opposite reasons: one **is** the primitive, the other's whole job is to
+   open it. A floor assertion (`openers.length >= 3`) refuses the vacuous-pass failure mode where
+   the scan breaks and every check below it passes against an empty list.
+
+**Consequences.**
+
+- **A copy loss, stated rather than buried.** `EventEditorWindow`'s header band — the brandmark
+  beside *"Share an Event with the community!"* — and its footer line no longer appear when creating
+  an event. They still appear when editing one. If that invitation is wanted on the create path it
+  belongs in `SparkShell`'s own eyebrow and description, where every other Spark puts its framing,
+  not in a window wrapper that also brings an overlay with it.
+- **The negative control is the whole value.** Against the pre-fix tree exactly **one** assertion
+  fails, `/events/new renders its Spark bare`, and the other 32 pass — so the guard is aimed at this
+  defect rather than being a blanket that would flag any future wrapper on sight.
+- **The durable rule:** a component can be correct at every call site and still be wrong in one
+  *composition*. Guards that read a component in isolation cannot see that class of defect; the only
+  thing that catches it is a test that walks the actual nesting a route produces. Where a repo has a
+  routing contract, "what may appear underneath this" is part of it.
+
+## ADR-1100: CreateModal is a shell, not an overlay (2026-08-21)
+
+**Status:** Accepted · **Completes** the retirement `docs/STUDIO.md` §6 asked for · **Extends**
+[ADR-1097](DECISIONS.md) (the theme crosses the portal) · corroborated by
+`components/create-modal.tsx`, `components/ui/dialog.tsx`, `components/create-modal.test.tsx`
+
+**Context.** `docs/STUDIO.md` §6 ended with *"Retire `components/create-modal.tsx` once circles
+move."* **Circles moved** — `NewCircleCompose` is a bare `<Link>` and `CircleWizard` shipped — and
+the retirement never followed. Eight surfaces stayed on a second, hand-rolled overlay
+implementation: New Hub, New Nexus, Create a Channel, New Dispatch, New Crew Task, New Group DM,
+Invite a Member, Invite to Room.
+
+**🔴 Why a satisfied condition changed nothing.** **None of the eight is a circle**, and the
+migration order in §6 never assigned an owner to any of them. So the trigger fired against work
+nobody was holding. A retirement condition phrased as *"once X moves"* only works when the thing
+being retired is what X was using; here it named a file whose actual consumers were somewhere else
+entirely.
+
+**What the duplication was costing**, beyond having two overlays:
+
+- **It did not portal.** Any of the eight opened inside a transformed ancestor — the sliding admin
+  rail — was trapped in that ancestor's containing block and rendered as a narrow panel, the exact
+  defect `dialog.tsx` documents its portal as existing to prevent.
+- **It could not carry the Space theme** ([ADR-1097](DECISIONS.md)), because it had no portal to
+  carry it across.
+- **It was not in the dialog stack**, so Escape could dismiss it *and* a dialog above it at once.
+- **It padded a flat 0/16px**, so on a notched phone its footer buttons sat on the home indicator.
+- Its own comment justified the split by saying the centered `ui/Dialog` *"can't express"* a bottom
+  sheet. That was true when written and **stopped being true when `align` landed**, and nothing
+  re-read it.
+
+**Decision.**
+
+1. **`Dialog` gains `align="bottom"`** — a true bottom sheet: the panel rises from and touches the
+   bottom edge on mobile, sized by its own content, reverting to a centered card at `sm+`. It is
+   deliberately distinct from `sheet`, which fills the entire viewport: **a form with six fields
+   should not black out the screen.** At least four other hand-rolled sheets in the tree reach for
+   this same shape.
+2. **`CreateModal` keeps its public API exactly** — same props, same names, **all eight call sites
+   untouched** — and delegates the overlay to `Dialog`. What it still owns is what was genuinely its
+   own: the header band, the form element, the error banner, the footer buttons.
+3. **The pending-submit guard is re-stated, not inherited.** `Dialog` knows nothing about a form
+   being mid-flight, so backdrop click, Escape and both close controls route through one local
+   `close()` that refuses while `isPending`. Dropping it would let a member dismiss a modal whose
+   server action is already running. It is re-tested by hand for the same reason.
+4. **The bottom safe-area padding lives on the panel's footer, not on the overlay.** `align="bottom"`
+   leaves the panel touching the edge by definition, and only the panel knows which of its bands is
+   last.
+
+**Consequences.**
+
+- **Eight surfaces gain four fixes at once** and not one of them changed a line: they portal, they
+  inherit a Space's theme, they join the dialog stack, and they clear the home indicator.
+- **"Retire" turned out to be the wrong verb, and the doc now says so.** The overlay is gone; the
+  *shell* stays, because eight callers legitimately want a header-icon / form / footer shape and
+  deleting it would mean eight hand-rolled re-implementations of the thing that was just
+  consolidated.
+- **The negative control:** 7 of the 12 assertions fail against the pre-change file. The 5 that pass
+  on both trees are the pending-guard half — correctly so, since that behaviour was preserved by
+  hand rather than gained.
+- **The durable rule:** a retirement instruction should name the thing's **consumers**, not a
+  neighbouring milestone. And a comment that justifies a duplication by what a primitive "can't do"
+  needs re-reading every time that primitive grows, because it is a claim with an expiry date and
+  nothing about it fails when it expires.
