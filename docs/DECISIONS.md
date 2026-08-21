@@ -27940,3 +27940,93 @@ second one.
 thing was not a key — it was a form on stripe.com whose absence surfaces as a throw from a normal
 API call. When a dependency has configuration outside the repo, the ADR that describes going live
 has to name that configuration, or the first person to hit it reads it as a defect in the code.
+
+## ADR-1094: A Space's Circles get a page, and the one visibility rule moves into the reader (2026-08-21)
+
+**Status:** Accepted · corroborated by `app/(main)/spaces/[slug]/(profile)/circles/page.tsx`,
+`lib/circles/store.ts` (`listPublicSpaceCircles`), `lib/spaces/profile-nav.ts`, and
+`lib/circles/store.test.ts`
+
+**Context.** [ADR-1091](DECISIONS.md) settled that a Space's community **is** its Circles and
+deleted the old Community tab, leaving a 308 to the Space root. What it did not do was give the
+Circles anywhere to live. The profile menu's "Circles" item was an **anchor** produced by
+`deriveSectionNav` from the stored `SpaceCommunity` block, so it scroll-jumped to a six-item teaser
+on Home, appeared only when that block was in the saved layout, and had no "and the rest". Meanwhile
+`/spaces/[slug]/circles` already existed and looked exactly like the URL a visitor wants, but it was
+the owner console and opened with `if (!caps.canEditProfile) notFound()`. The most obvious click on
+a Space profile therefore ended in a 404, and the owner reported it as "no page shows up".
+
+Sweeping the six surfaces that show a Space's circles turned up a second thing. `listCirclesForSpace`
+reads through the service-role client, which holds `BYPASSRLS` and never sees
+`circles_access_restrictive`, and it applies no visibility filter of its own — its `COLS` string did
+not even **select** `unlisted` or `access`, so a caller could not have applied the rule if it had
+remembered to. Four public callers reached for it and all four filtered on `status` alone:
+`getSpaceCommunity` (the public Home block), `EntityCommunity` (the entity profile module),
+`resolveProfileStats` (the public hero's "Circles N") and `spaceHasContent` (the has-content gate).
+An **unlisted** circle rendered on a Space's public page, and was counted in a public stat. This is
+the failure `lib/circles/visibility.ts` predicts in its own header: *"a rule applied by hand in a
+dozen places is a rule that will be wrong in one of them."*
+
+**Decision.**
+
+1. **The public noun URL goes to the public page.** `/spaces/[slug]/circles` is now a tab inside the
+   `(profile)` route group, so the cover, identity row and menu come from that layout and the file is
+   only a body. The owner console moves to `/spaces/[slug]/manage/circles`, outside the group. This
+   is the split **Shop** already runs (public `/shop`, console `/settings/shop`), and the
+   `(profile)` layout's own header states the rule: owner surfaces are siblings outside the group so
+   they never inherit the chrome. No redirect was added for the old console URL — it 404'd for
+   everyone but managers, and a manager who had it bookmarked now lands on the public page, which
+   carries a **Manage circles** button. The console gained a **View public page** link the other way.
+2. **The tab is hidden at zero, for visitors only** (owner ruling, 2026-08-21). That is the same
+   honest-empty rule Calendar, Collaborators and Shop follow, and the anchor model was built on it
+   ("a link never scrolls to an empty spot"). A **manager keeps the tab at zero**, because the empty
+   state is where *Start your first circle* lives. The gate reads `presence.circles`, the SAME
+   request-cached read the Home teaser renders from, so the menu and the page cannot disagree.
+   `'circles'` joins `DEDICATED_TAB_ANCHORS`, or the Home anchor sits in the menu beside the real tab
+   — the "two Reviews" bug a second time.
+3. **The visibility rule moves into a reader, and runs in SQL.** `listPublicSpaceCircles` applies
+   `status = 'active'` and axis 1 as query predicates, and the four public callers now use it.
+   In-query matters as much as in-one-place: filtering a **capped** page in JavaScript lets a hidden
+   row eat a visible row's slot, so a Space with one unlisted circle would show five cards in a
+   six-slot block with nothing to explain the gap. `listCirclesForSpace` stays raw and is now
+   documented as the owner-surface read.
+4. **Axis 2 is deliberately not filtered.** A listed **closed** circle is the lead funnel the two
+   axes exist for ([ADR-1015](DECISIONS.md)); `canEnterCircle`, on the circle's own page, is the
+   door. What changed is the card: `CircleCard` takes an optional `access`, badges a closed circle
+   with its `CIRCLE_ACCESS_LABEL`, and swaps Join for **See what's inside** — offering Join was a
+   lie, because `canJoinCircle` refuses every closed mode.
+5. **ROOT is excluded, explicitly.** `stampCircleSpaceId` stamps every personal circle to the root
+   tenant, so without a guard the root Space's profile would have listed the whole platform's private
+   circles as "circles this space runs". The page `notFound()`s there and the nav never offers it.
+   Same class of defect [LIVE-075](BUILD-BACKLOG.json) closed across ten event call sites the day
+   before.
+6. **The `/spaces/:slug/community` 308 re-points** from the Space root to `/spaces/:slug/circles`.
+   C3.3 sent it to the root because there was no circles surface to send it to; there is one now, and
+   it is the page that URL always meant.
+
+**Consequences.**
+
+- The tab ships **zero client JS of its own**: format and sort are plain `<Link>`s over
+  `searchParams`, so a filtered view is shareable and the back button behaves. The filter row renders
+  only at **8 or more** circles — a filter bar over five cards is noise.
+- Stats on the tab are **Circles / Members / Open to join**, not the console's four. "Running" and
+  "Journeys offered" are operator facts in operator language; a visitor is asking whether there is
+  room. The counts read the visible set, never the raw one, or the page would leak the existence of
+  hidden circles by arithmetic.
+- Every write path that moves a circle now revalidates **three** paths per Space (profile Home, the
+  public tab, the console), not one. A create or move that skipped Home left a stale hero count on
+  the page most people land on.
+**Measured reach, 2026-08-21.** The row was filed with the blast radius unknown, and unknown is not a
+place to leave a claim ([ADR-1082](DECISIONS.md)), so it was measured the same day: 7 circles exist, 6
+on the ROOT tenant and 1 on a real business Space; 2 active, 3 draft, 2 forming; `access = 'open'` on
+all 7. **Exactly one row was actually leaking** — an active, unlisted circle on the root tenant, which
+`getSpaceCommunity` rendered on `/spaces/frequency`, the platform's own public profile. No real Space
+was publishing a hidden circle. The defect was real and its reach was one row; recording both is the
+point, because "we fixed a leak" and "one row on our own page" are different sentences and only one of
+them is true. It also re-proves why the LIVE-059 reading could not stand in for this one: "all
+`access='open'`" is axis 2, and this was axis 1.
+
+- **The durable rule, restated because this repo keeps re-learning it:** a reader that returns more
+  than a caller may show is a leak waiting for its fourth caller. Do not select the columns and hope;
+  either the reader applies the rule, or the columns are not there to be applied. The four callers
+  here were each written by someone who knew about `unlisted` — none of them could see it.

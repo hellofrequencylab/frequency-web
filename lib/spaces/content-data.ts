@@ -30,7 +30,8 @@ import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { eventPriceLabel } from '@/app/(main)/events/index-data'
 import { listPracticesForSpace } from '@/lib/practices'
 import { listJourneyPlansForSpace } from '@/lib/journey-plans'
-import { listCirclesForSpace } from '@/lib/circles/store'
+import { listPublicSpaceCircles } from '@/lib/circles/store'
+import { getMyProfileId } from '@/lib/auth'
 import { spaceRoleRank } from '@/lib/spaces/membership'
 import { computeReviewAggregate, type RatingDistribution } from '@/lib/spaces/reviews-aggregate'
 
@@ -134,8 +135,8 @@ export type SpacePracticesData = {
 }
 
 /** One live Circle the SpaceCommunity block lists, from the Space's OWN active circles (the same
- *  reader the entity-community module uses: listCirclesForSpace). Plain shape so the block imports
- *  nothing server-only. */
+ *  reader the entity-community module and the public Circles tab use: listPublicSpaceCircles).
+ *  Plain shape so the block imports nothing server-only. */
 export type SpaceCircleItem = {
   id: string
   slug: string
@@ -223,6 +224,10 @@ export type SpaceContentData = {
   /** The Space's live active Circles the SpaceCommunity block lists. Empty when none; undefined in the
    *  editor / a member Spotlight. */
   community?: SpaceCircleItem[]
+  /** Where "All circles" on that block goes: the Space's public Circles tab. Slug-relative, built the
+   *  same way `booking.href` is, and null in the editor / a member Spotlight (no slug to build from),
+   *  where the block simply renders no link. */
+  communityHref?: string | null
   /** The Space's TEAM — active members with an operator role (editor / moderator / admin), for the Team
    *  block. Empty when the operator has added no team (honest-empty; the block renders nothing). */
   team?: SpaceTeamMember[]
@@ -520,6 +525,7 @@ export async function getSpaceContentData(
     booking,
     practices,
     community,
+    communityHref: slug ? `/spaces/${slug}/circles` : null,
     team,
     profile: input?.profile,
     layoutPreset: input?.layoutPreset,
@@ -786,20 +792,26 @@ export async function resolveMemberCards(ids: string[]): Promise<SpaceTeamMember
 }
 
 /** The Space's live active Circles for the SpaceCommunity block, from the SAME reader the
- *  entity-community module uses (listCirclesForSpace, space_id-filtered + fail-safe), keeping only
- *  active circles and shaping to the plain block item. No new raw query. FAIL-SAFE to []. */
+ *  entity-community module and the public Circles tab use (`listPublicSpaceCircles`), shaped to the
+ *  plain block item. No new raw query. FAIL-SAFE to [].
+ *
+ *  It used to call the RAW by-space read and filter on status alone, which put every UNLISTED
+ *  circle a Space owned on that Space's public Home page (ADR-1094). The status filter and axis 1
+ *  both live in the reader now — and both run before the cap, so a hidden circle can no longer eat
+ *  a visible one's slot in the six. */
 export async function getSpaceCommunity(spaceId: string): Promise<SpaceCircleItem[]> {
   try {
-    const circles = await listCirclesForSpace(spaceId, CIRCLES_CAP)
-    return circles
-      .filter((c) => c.status === 'active')
-      .map((c) => ({
-        id: c.id,
-        slug: c.slug,
-        name: c.name,
-        about: c.about ?? null,
-        memberCount: c.member_count ?? 0,
-      }))
+    const circles = await listPublicSpaceCircles(spaceId, {
+      viewerProfileId: await getMyProfileId(),
+      limit: CIRCLES_CAP,
+    })
+    return circles.map((c) => ({
+      id: c.id,
+      slug: c.slug,
+      name: c.name,
+      about: c.about ?? null,
+      memberCount: c.member_count ?? 0,
+    }))
   } catch {
     return []
   }

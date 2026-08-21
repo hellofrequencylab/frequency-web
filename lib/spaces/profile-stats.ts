@@ -13,7 +13,7 @@ import { defaultHeroStats } from './profile-config'
 import { listEventsForSpace } from '@/lib/events/store'
 import { listPracticesForSpace } from '@/lib/practices'
 import { listJourneyPlansForSpace } from '@/lib/journey-plans'
-import { listCirclesForSpace } from '@/lib/circles/store'
+import { listPublicSpaceCircles } from '@/lib/circles/store'
 import { listSpaceMembers } from './membership'
 
 /** The stat metrics resolveProfileStats can compute a live value for. */
@@ -55,13 +55,16 @@ export async function resolveProfileStats(spaceId: string): Promise<ResolvedStat
     // (a Space with 3 private drafts must not advertise "Practices 3" over an empty block).
     listPracticesForSpace(spaceId, 200, { publishedOnly: true }),
     listJourneyPlansForSpace(spaceId, 200, { publishedOnly: true }),
-    listCirclesForSpace(spaceId, 200),
+    // The PUBLIC reader: this count renders on the PUBLIC hero, so it must not include the
+    // circles a visitor is not allowed to know exist. Counting them was an arithmetic leak
+    // (ADR-1094) and the same reason drafts are excluded two lines up.
+    listPublicSpaceCircles(spaceId, { limit: 200 }),
     listSpaceMembers(spaceId),
   ])
 
   const liveEvents = events.filter((e) => !e.is_cancelled)
   const upcoming = liveEvents.filter((e) => new Date(e.starts_at).getTime() >= Date.now()).length
-  const activeCircles = circles.filter((c) => c.status === 'active').length
+  const activeCircles = circles.length
   const activeMembers = members.filter((m) => m.status === 'active').length
 
   const valueFor = (metric: StatMetric): number => {

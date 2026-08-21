@@ -1,6 +1,7 @@
 import { Users } from 'lucide-react'
 import { getActiveSpace } from '@/lib/spaces/active-space'
-import { listCirclesForSpace } from '@/lib/circles/store'
+import { getMyProfileId } from '@/lib/auth'
+import { listPublicSpaceCircles } from '@/lib/circles/store'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EntityCard } from '@/components/cards/entity-card'
 import { EntitySectionEmpty } from '@/components/widgets/entity/entity-empty'
@@ -15,7 +16,10 @@ export async function EntityCommunity() {
   const space = getActiveSpace()
   if (!space) return null
 
-  const circles = (await listCirclesForSpace(space.id, 6)).filter((c) => c.status === 'active')
+  // The PUBLIC reader (ADR-1094): active + axis 1, both applied in the query so a hidden circle
+  // cannot eat a slot in the six. This module used to filter on status alone and listed every
+  // unlisted circle a Space owned to any visitor.
+  const circles = await listPublicSpaceCircles(space.id, { viewerProfileId: await getMyProfileId(), limit: 6 })
 
   return (
     <div>

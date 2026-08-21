@@ -195,8 +195,12 @@ describe('moveCircleToSpaceAction — refusals are returned, never thrown', () =
     expect(mocks.transferCircle).toHaveBeenCalledWith(CIRCLE, { kind: 'space', spaceId: MINE }, ME)
     const paths = mocks.revalidatePath.mock.calls.map((c) => c[0])
     expect(paths).toContain(`/circles/${SLUG}`)
+    // Both surfaces per space, not just the console: the PUBLIC Circles tab lists the same
+    // circles, so a move that skipped it left the circle on the old space's tab (ADR-1094).
     expect(paths).toContain('/spaces/my-space/circles')
+    expect(paths).toContain('/spaces/my-space/manage/circles')
     expect(paths).toContain('/spaces/home/circles')
+    expect(paths).toContain('/spaces/home/manage/circles')
   })
 
   it('returns the engine’s refusal verbatim instead of throwing', async () => {
@@ -276,6 +280,7 @@ describe('offerCircleToPersonAction — the gate decides, this layer only carrie
     const paths = mocks.revalidatePath.mock.calls.map((c) => c[0])
     expect(paths).toContain(`/circles/${SLUG}`)
     expect(paths).toContain('/spaces/home/circles')
+    expect(paths).toContain('/spaces/home/manage/circles')
   })
 
   it('refuses offering it to yourself, which is the immediate move instead', async () => {
@@ -323,6 +328,7 @@ describe('cancelCircleOfferAction — the way out of the block', () => {
     const paths = mocks.revalidatePath.mock.calls.map((c) => c[0])
     expect(paths).toContain(`/circles/${SLUG}`)
     expect(paths).toContain('/spaces/home/circles')
+    expect(paths).toContain('/spaces/home/manage/circles')
   })
 
   it('refuses a caller who may not manage the circle, without touching the offer', async () => {

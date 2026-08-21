@@ -315,7 +315,12 @@ const nextConfig: NextConfig = {
       // lib/marketing/funnel-redirects.test.ts guards against when it is unintended). Since C3.4
       // the rule shadows nothing; it is the only thing keeping the old URL alive. No :path* pair:
       // the community segment had no nested routes, and proxy.ts carries no carve-out for it.
-      { source: '/spaces/:slug/community', destination: '/spaces/:slug', permanent: true },
+      //
+      // RE-POINTED 2026-08-21 (ADR-1094). The destination was the Space ROOT because in C3.3 there was
+      // no circles surface to send anyone to; there is one now, and it is the page this URL always
+      // meant. Still 308: the same bookmarks and the same already-sent notification emails, now
+      // landing on the list of circles instead of one scroll away from a teaser.
+      { source: '/spaces/:slug/community', destination: '/spaces/:slug/circles', permanent: true },
     ]
   },
   images: {

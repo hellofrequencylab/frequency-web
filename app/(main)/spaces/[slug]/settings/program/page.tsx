@@ -239,7 +239,7 @@ export default async function SpaceProgramPage({
             title="Your Program starts with a circle"
             description="A Program turns your flagship circle into a blueprint members can start Chapters from. Create a circle in this space first, then come back."
             action={
-              <Link href={`/spaces/${slug}/circles`} className={buttonClasses('secondary', 'sm')}>
+              <Link href={`/spaces/${slug}/manage/circles`} className={buttonClasses('secondary', 'sm')}>
                 Go to Circles
               </Link>
             }

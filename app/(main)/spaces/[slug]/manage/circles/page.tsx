@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { UsersRound, Users, Route, PlayCircle } from 'lucide-react'
+import { UsersRound, Users, Route, PlayCircle, Eye } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
@@ -9,6 +9,7 @@ import { listSpaceCirclesWithRuns } from '@/lib/circles/store'
 import { pendingOfferForCircle } from '@/lib/circles/handoff'
 import { journeysOfferedBySpace } from '@/lib/journeys/run-gate'
 import { IndexTemplate } from '@/components/templates'
+import { buttonClasses } from '@/components/ui/button'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SpaceCirclesManager } from '@/components/spaces/space-circles-manager'
@@ -17,6 +18,13 @@ import { SpaceCirclesManager } from '@/components/spaces/space-circles-manager'
 // moving through. A Space Circle is a Circle stamped with this space_id, so it belongs to the Space
 // rather than to the member who made it. Starting a Run here enrolls that Circle's active members
 // in one of the Space's own Journeys.
+//
+// IT LIVES AT /manage/circles, NOT /circles (ADR-1094). This console sat on the pretty noun URL and
+// notFound()d every visitor who reached it, which is what made "click a Space's Circles" a 404 with
+// no page behind it. The public tab has the noun now, exactly the split Shop already runs (public
+// /shop, console /settings/shop), and it carries a "Manage circles" button back here for anyone who
+// had the old URL bookmarked. This route stays OUTSIDE the (profile) route group, so it never
+// inherits the profile chrome.
 //
 // GATE: notFound() on a missing / not-visible space AND on a viewer who cannot edit it (no
 // existence leak, the same owner-only pattern the other Space consoles use). Voice per
@@ -60,6 +68,12 @@ export default async function SpaceCirclesPage({ params }: { params: Promise<{ s
       eyebrow={space.brandName ?? space.name}
       title="Circles"
       description="The circles this space runs. Start a Run to move a circle through one of your Journeys together."
+      action={
+        <Link href={`/spaces/${space.slug}/circles`} className={buttonClasses('secondary', 'sm')}>
+          <Eye className="h-4 w-4" aria-hidden />
+          View public page
+        </Link>
+      }
     >
       <div className="max-w-4xl space-y-6">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

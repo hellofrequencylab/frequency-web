@@ -14,7 +14,7 @@ import {
   cancelSpaceCircleOfferAction,
   attachCircleToSpaceAction,
   listAttachableCirclesAction,
-} from '@/app/(main)/spaces/[slug]/circles/actions'
+} from '@/app/(main)/spaces/[slug]/manage/circles/actions'
 import { isError } from '@/lib/action-result'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Select } from '@/components/ui/select'

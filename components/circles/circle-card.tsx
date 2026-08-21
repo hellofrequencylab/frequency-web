@@ -8,6 +8,7 @@ import { FeaturedBadge } from '@/components/ui/featured-badge'
 import { StarterBadge } from '@/components/ui/starter-badge'
 import { TemplateHeaderArt } from '@/components/circles/template-art'
 import type { PillarSlug } from '@/lib/pillars'
+import { CIRCLE_ACCESS_LABEL, asCircleAccess, type CircleAccess } from '@/lib/circles/visibility'
 import { ProgressTrack } from '@/components/ui/progress-track'
 
 export type CircleCardData = {
@@ -33,6 +34,13 @@ export type CircleCardData = {
   /** Primary Pillar — lets a Starter card fall back to the drawn header art (themed
    *  by Pillar) when it has no uploaded cover photo. */
   primaryPillar?: PillarSlug
+  /** AXIS 2 (ADR-1015), when the surface knows it. A LISTED CLOSED circle is a real card on a
+   *  browse grid — that is the lead funnel the two axes exist for — but offering it a Join button
+   *  is a lie, because `canJoinCircle` will refuse. Supplying this swaps the button for a plain
+   *  link to the circle's own page, which is where every door actually is, and badges the card so
+   *  the reader knows before they click. OPTIONAL: a surface that does not read `circles.access`
+   *  (the /circles index) behaves exactly as it did. */
+  access?: CircleAccess | string | null
 }
 
 // Circle card — renders through the shared EntityCard so circles read identically
@@ -52,17 +60,26 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
   // Starters are virtual: they open a claim-able preview, never the live circle, and
   // carry no membership of their own.
   const href = circle.isStarter ? `/circles/starter/${circle.slug}` : `/circles/${circle.slug}`
+  // `asCircleAccess` narrows fail-CLOSED (an unrecognised value reads `circle_members`), so a
+  // schema drift badges a circle shut rather than offering a Join that cannot work.
+  const access = circle.access == null ? null : asCircleAccess(circle.access)
+  const closed = access !== null && access !== 'open'
 
   return (
     <EntityCard
       href={href}
       dimmed={circle.isDemo}
       badge={
-        circle.isStarter || circle.isFeatured || circle.isDemo ? (
+        circle.isStarter || circle.isFeatured || circle.isDemo || closed ? (
           <span className="flex shrink-0 items-center gap-1.5">
             {circle.isStarter && <StarterBadge />}
             {circle.isFeatured && <FeaturedBadge />}
             {circle.isDemo && <DemoBadge />}
+            {closed && access && (
+              <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-subtle">
+                {CIRCLE_ACCESS_LABEL[access]}
+              </span>
+            )}
           </span>
         ) : undefined
       }
@@ -154,6 +171,15 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
             className="inline-flex rounded-control bg-surface px-3 py-1.5 text-meta font-semibold text-primary-strong lift-1 ring-1 ring-border transition-colors hover:bg-surface-elevated"
           >
             Open
+          </Link>
+        ) : closed ? (
+          // No Join: `canJoinCircle` refuses every closed mode for someone who is not already
+          // inside, so the honest action is the circle's own page, which states the door.
+          <Link
+            href={href}
+            className="inline-flex rounded-control bg-surface px-3 py-1.5 text-meta font-semibold text-primary-strong lift-1 ring-1 ring-border transition-colors hover:bg-surface-elevated"
+          >
+            See what&rsquo;s inside
           </Link>
         ) : !full ? (
           <JoinCircleButton

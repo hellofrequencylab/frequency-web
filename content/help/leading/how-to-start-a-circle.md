@@ -3,7 +3,7 @@ title: How to start a Circle
 description: Pick one thing, set a standing time, recruit a co-host, and run a simple first night. You do not build a community. You host one Circle, and we hand you the format.
 category: leading
 order: 1
-updated: 2026-08-19
+updated: 2026-08-21
 audience: host
 role: host
 featureKeys: [circles, events]
@@ -110,8 +110,8 @@ stands), meeting details, and the rest.
 
 Yes. Open your Circle and find **Move this circle** in its settings. From there you can
 move it into another space you help run, or hand it to a person. If a space runs the
-Circle, that space's Circles page has the same **Move** control, plus one more option:
-take the Circle as your own.
+Circle, the space's Circles console has the same **Move** control, plus one more option:
+take the Circle as your own. You get there from **Manage**, then **Circles**.
 
 Handing it to a person is an **offer**, not a move: they see it on the Circle and
 choose to accept or pass, and nothing changes until they accept. It stays yours the
@@ -120,7 +120,7 @@ members, so it never lands on someone who did not agree to take it. When they ac
 the Circle becomes theirs to host, and its members and anything it is running come
 along.
 
-It works in the other direction too. If you help run a space, open its Circles page
+It works in the other direction too. If you help run a space, open that Circles console
 and choose **Attach a circle you host** to bring one of your own Circles into the
 space. The Circle keeps its host and its members. Its gatherings join the space's
 calendar, and they stay on the Circle's own page as well, so nobody loses track of
@@ -131,6 +131,17 @@ settings, each tier can name one Circle under **Circle access**. Join that
 membership and you are in the Circle while your membership is active; if it ends,
 you leave the Circle too, unless you had joined it on your own first. Your own
 joins are always yours to keep.
+
+### Where do people find the Circles my space runs?
+
+On the space's own page, under **Circles**. Every Circle the space runs shows up there
+with its meeting place, how many people are in it, and how much room is left, and anyone
+can open one and join from there. A Circle you have set to unlisted stays off that page,
+so it is reachable only by its link. The tab appears once the space has a Circle someone
+could actually open, so a visitor is never sent to an empty page.
+
+You see it at every stage, even before you have made your first Circle, with a link
+through to the console. Everyone else sees it only once there is something behind it.
 
 ### Do I have to be an expert in the activity?
 

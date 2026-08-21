@@ -17,7 +17,15 @@ import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
 import { asCircleAccess, canEnterCircle, canSeeCircle, type CircleAccess } from './visibility'
 import type { CircleDetail, MemberRow } from './detail-types'
 
-/** A circle as the by-space read returns it (the columns the community module needs). */
+/** A circle as the by-space read returns it (the columns the community module needs).
+ *
+ *  ⚠️ `unlisted` + `access` are NOT decoration. Every read in this module goes through the admin
+ *  client, which holds BYPASSRLS and never sees `circles_access_restrictive`, so a caller that
+ *  renders publicly has to apply the rule BY HAND (lib/circles/visibility.ts, the 🔴 block). The
+ *  columns used to be absent from `COLS`, which meant a public caller could not have applied it
+ *  even if it remembered to — and none of the four did (ADR-1094). They are selected now so the
+ *  question is at least askable, and `listPublicSpaceCircles` below is the answer nobody has to
+ *  re-derive. */
 export interface SpaceCircle {
   id: string
   slug: string
@@ -25,10 +33,18 @@ export interface SpaceCircle {
   about: string | null
   type: string
   member_count: number
+  member_cap: number | null
   status: string
   host_id: string | null
   space_id: string | null
   created_at: string | null
+  /** AXIS 1 (discovery). Read it through `isListedCircle`, never as a bare boolean. */
+  unlisted: boolean | null
+  /** AXIS 2 (entry). Narrow it through `asCircleAccess`; the door itself is the circle's own page. */
+  access: string | null
+  image_url: string | null
+  neighborhood: string | null
+  topical_channel_id: string | null
 }
 
 /** A Space's Circle plus the Journey it is running right now, if any (ADR-842). */
@@ -42,7 +58,8 @@ export interface SpaceCircleWithRun extends SpaceCircle {
   } | null
 }
 
-const COLS = 'id, slug, name, about, type, member_count, status, host_id, space_id, created_at'
+const COLS =
+  'id, slug, name, about, type, member_count, member_cap, status, host_id, space_id, created_at, unlisted, access, image_url, neighborhood, topical_channel_id'
 
 /**
  * The space_id to stamp on a NEW circle: the explicit owning space, else the root space
@@ -344,6 +361,11 @@ export const loadCircleShell = cache(async (slug: string): Promise<CircleShell |
  * Circles that BELONG TO a space, newest first. Defaults to the root space (so a caller that
  * passes no spaceId reads the root's circles, the canary). Filtered by space_id so a circle in
  * space A can never resolve for space B. FAIL-SAFE: [] on any error / missing tenant.
+ *
+ * 🔴 THIS IS THE RAW READ: no status filter and NO VISIBILITY FILTER, through a BYPASSRLS client.
+ * It is right for an OWNER surface that must see the archived and the hidden. If what you are
+ * writing renders to a visitor, you want `listPublicSpaceCircles` below instead — four public
+ * callers reached for this one and all four leaked unlisted circles (ADR-1094).
  */
 export async function listCirclesForSpace(spaceId?: string | null, limit = 50): Promise<SpaceCircle[]> {
   const sid = spaceId ?? (await loadRootSpaceId())
@@ -356,6 +378,138 @@ export async function listCirclesForSpace(spaceId?: string | null, limit = 50): 
       .order('created_at', { ascending: false })
       .limit(limit)
     if (error) return []
+    return (data as SpaceCircle[] | null) ?? []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * THE PUBLIC by-space read: the Circles of `spaceId` that this viewer may know exist.
+ *
+ * ── WHY THIS EXISTS (ADR-1094) ──────────────────────────────────────────────────────────────
+ *
+ * `listCirclesForSpace` is the RAW read: every circle stamped with the space_id, through the
+ * service-role client, no visibility filter, no status filter. That is correct for an OWNER
+ * surface (the manager must see the archived one and the hidden one) and WRONG for every public
+ * one. Four public callers each re-derived "and now drop the ones that should not show", each got
+ * the status half right, and all four omitted axis 1 entirely — so an UNLISTED circle rendered on
+ * a Space's public Home page, in the entity Community module, in the hero's "Circles N" stat and
+ * in the has-content gate. The columns were not even selected, so the omission was invisible.
+ *
+ * Both filters run IN THE QUERY, not over the result, because they must run BEFORE `limit`.
+ * Filtering a capped page in JavaScript lets a hidden row eat a visible row's slot: a Space with
+ * one unlisted circle would show five on a six-slot block and there would be nothing to see.
+ *
+ * ── WHAT IT DOES *NOT* FILTER ───────────────────────────────────────────────────────────────
+ *
+ * AXIS 2. A LISTED CLOSED circle is the lead funnel the two-axis model exists for (ADR-1015): a
+ * stranger finds it by name, Host and description and decides to join or buy. `canEnterCircle`,
+ * on the circle's own page, is what shuts the door. Dropping closed circles here would delete
+ * that cell, which is the one thing the owner's ruling was for.
+ *
+ * A viewer sees their OWN unlisted circle (the same courtesy `/circles` extends in its index),
+ * resolved in a second bounded query and merged, so the LIMIT stays honest on the listed half.
+ * FAIL-SAFE to [] like its siblings: a hiccup hides circles rather than publishing them.
+ */
+export async function listPublicSpaceCircles(
+  spaceId: string | null | undefined,
+  opts: { viewerProfileId?: string | null; limit?: number; includeHidden?: boolean } = {},
+): Promise<SpaceCircle[]> {
+  if (!spaceId) return []
+  const limit = opts.limit ?? 50
+  try {
+    const admin = createAdminClient()
+
+    // The OWNER path: every active circle the Space owns, hidden ones included. Only ever reached
+    // from a surface that has already proved the viewer may manage this Space.
+    if (opts.includeHidden) {
+      const { data, error } = await admin
+        .from('circles')
+        .select(COLS)
+        .eq('space_id', spaceId)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(limit)
+      if (error) return []
+      return (data as SpaceCircle[] | null) ?? []
+    }
+
+    // AXIS 1 in SQL. `unlisted` is nullable and a NULL row is a LISTED row, which is exactly what
+    // `isListedCircle` says in app code (`unlisted !== true`) — the two spellings of one rule, and
+    // the reason a bare `.eq('unlisted', false)` would be wrong here.
+    const listedQuery = admin
+      .from('circles')
+      .select(COLS)
+      .eq('space_id', spaceId)
+      .eq('status', 'active')
+      .or('unlisted.is.null,unlisted.eq.false')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    const [listed, mine] = await Promise.all([
+      listedQuery,
+      opts.viewerProfileId ? myCirclesInSpace(admin, spaceId, opts.viewerProfileId, limit) : Promise.resolve([]),
+    ])
+    if (listed.error) return []
+
+    const rows = (listed.data as SpaceCircle[] | null) ?? []
+    if (mine.length === 0) return rows
+
+    // Merge the viewer's own (possibly unlisted) circles in, deduped, newest first, back under the
+    // cap. Sorting here rather than trusting either query's order: the two are separate reads.
+    const byId = new Map(rows.map((c) => [c.id, c]))
+    for (const c of mine) byId.set(c.id, c)
+    return [...byId.values()]
+      .sort((a, b) => +new Date(b.created_at ?? 0) - +new Date(a.created_at ?? 0))
+      .slice(0, limit)
+  } catch {
+    return []
+  }
+}
+
+/**
+ * The circle ids this profile is an ACTIVE member of. Request-cached, so the page that needs it to
+ * decide "Join or Open" on each card and the reader that needs it to un-hide the viewer's own
+ * unlisted circle pay for exactly one query between them.
+ *
+ * Empty set for a signed-out caller, and empty on any error — which errs toward showing Join to
+ * someone already in, a wrong label, rather than toward hiding a circle they belong to.
+ */
+export const myActiveCircleIds = cache(async (profileId: string | null | undefined): Promise<Set<string>> => {
+  if (!profileId) return new Set()
+  try {
+    const { data } = await createAdminClient()
+      .from('memberships')
+      .select('circle_id')
+      .eq('profile_id', profileId)
+      .eq('status', 'active')
+      .limit(500)
+    return new Set((data ?? []).map((m) => m.circle_id as string).filter(Boolean))
+  } catch {
+    return new Set()
+  }
+})
+
+/** The viewer's OWN active circles inside one Space. Two bounded reads (their memberships, then
+ *  those circles narrowed to this space), never a join, and [] on anything unexpected. */
+async function myCirclesInSpace(
+  admin: ReturnType<typeof createAdminClient>,
+  spaceId: string,
+  profileId: string,
+  limit: number,
+): Promise<SpaceCircle[]> {
+  try {
+    const ids = [...(await myActiveCircleIds(profileId))]
+    if (ids.length === 0) return []
+    const { data } = await admin
+      .from('circles')
+      .select(COLS)
+      .eq('space_id', spaceId)
+      .eq('status', 'active')
+      .in('id', ids)
+      .order('created_at', { ascending: false })
+      .limit(limit)
     return (data as SpaceCircle[] | null) ?? []
   } catch {
     return []
