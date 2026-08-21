@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sparkles, Loader2, X, Wand2, ArrowLeft, Zap } from 'lucide-react'
 import { suggestPracticeAction, claimPracticeAction } from '@/app/(main)/practices/actions'
 import { isError } from '@/lib/action-result'
 import { Input, Textarea } from '@/components/ui/field'
+import { Dialog } from '@/components/ui/dialog'
 
 // Claim a starter TEMPLATE → your own practice, via a short Vera-guided wizard
 // (ADR-116). Mirrors the demo-circle claim (components/circles/claim-circle.tsx):
@@ -53,20 +54,12 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
     reset()
   }
 
-  // ESC to close + body scroll-lock while open. (Keeps the mobile bottom-sheet
-  // layout, which the centered ui/Dialog can't express.)
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }
-    document.addEventListener('keydown', onKey)
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prevOverflow
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
+  // ESC, the scroll lock, the backdrop, the portal, the focus trap and the dialog semantics all
+  // come from `Dialog` now (ADR-1100). The comment that used to sit here justified hand-rolling
+  // them by saying the centered `ui/Dialog` "can't express" a mobile bottom sheet — true when it
+  // was written, and false since `align` landed. THIS OVERLAY HAD NO FOCUS TRAP AT ALL while
+  // claiming `aria-modal="true"`, which tells a screen reader the rest of the page is inert when
+  // Tab could still walk straight out of it.
 
   function prefillFromFallback() {
     setTitle(fallback.title)
@@ -128,17 +121,14 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
         <Sparkles className="h-4 w-4" /> Claim &amp; make it yours
       </button>
 
-      {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-0 sm:items-center sm:p-4"
-          onMouseDown={(e) => { if (e.target === e.currentTarget) close() }}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label={step === 1 ? 'Make it yours' : 'Your practice'}
-            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-border bg-surface p-5 lift-3 sm:rounded-2xl"
-          >
+      <Dialog
+        open={open}
+        onClose={close}
+        ariaLabel={step === 1 ? 'Make it yours' : 'Your practice'}
+        align="bottom"
+        className="max-w-lg"
+      >
+        <div className="max-h-[90vh] w-full overflow-y-auto rounded-t-2xl border border-border bg-surface p-5 lift-3 sm:rounded-2xl">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-body-lg font-bold text-text">
                 <Wand2 className="h-5 w-5 text-primary" />
@@ -237,9 +227,8 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
                 </div>
               </div>
             )}
-          </div>
         </div>
-      )}
+      </Dialog>
     </>
   )
 }
