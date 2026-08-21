@@ -5,6 +5,8 @@ import { listActiveCircleMemberIds } from '@/lib/circles/crm-roster'
 import { listEventCrmMemberIds } from '@/lib/events/crm-roster'
 import { unionSegmentIds } from '@/lib/events/broadcast-audience'
 import type { BroadcastSegment } from '@/components/comms/broadcast-types'
+import { hostingSpaceId } from '@/lib/events/belonging'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 
 // THE SPACE BROADCAST AUDIENCE (Message center, ADR-858). The segments the Space's message
 // console offers, and the ONE server-side resolver its send action trusts (ADR-274: the
@@ -23,7 +25,7 @@ import type { BroadcastSegment } from '@/components/comms/broadcast-types'
 //                        roster uses. Hosts count as members, mirroring the owner rule.
 //   event:<id>         — one UPCOMING space event's RSVPs (going or maybe — the Message
 //                        Attendees set), for events the space owns or hosts
-//                        (host_space_id ?? space_id, the ADR-819 convention).
+//                        (hostingSpaceId, the ADR-819 convention with root excluded).
 //
 // Every read is service-role BEHIND the caller's space-manage gate, deduped by profile id,
 // and FAIL-SAFE: a broken read degrades to an empty segment, never a throw.
@@ -117,9 +119,18 @@ async function readEventSegments(spaceId: string): Promise<BroadcastSegment[]> {
       .is('removed_at', null)
       .order('starts_at', { ascending: true })
       .limit(EVENTS_CAP)
+    const root = await loadRootSpaceId()
     const rows = ((data ?? []) as { id: string; title: string | null; space_id: string | null; host_space_id: string | null }[])
       // ADR-819 convention: host_space_id wins; a row whose host is ANOTHER space is not ours.
-      .filter((e) => (e.host_space_id ?? e.space_id) === spaceId)
+      // 🔴 Root EXCLUDED, and on THIS surface the direction of the trade-off is the argument.
+      // Every event inherits the root tenant, so before the guard a broadcast sent from the ROOT
+      // Space's console addressed the attendees of EVERY event on the platform — a mass-email
+      // hazard reachable from an ordinary operator screen. With the guard, a root-Space broadcast
+      // now matches no events at all. That is the safe direction for a send surface: too few
+      // recipients is a missing email, too many is one that cannot be recalled. If the platform
+      // genuinely needs to broadcast to everyone, that wants to be its own deliberate, named
+      // feature rather than a side effect of a default column value.
+      .filter((e) => hostingSpaceId({ spaceId: e.space_id, hostSpaceId: e.host_space_id }, root) === spaceId)
     const segments = await Promise.all(
       rows.map(async (e) => {
         const ids = await listEventCrmMemberIds(e.id)

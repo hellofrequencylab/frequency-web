@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { featureAllowed } from '@/lib/pricing/gates'
 import { featureGatesLive } from '@/lib/pricing/settings'
 import { asSpacePlan } from '@/lib/pricing/plans'
+import { resolveHostingSpaceIdFromRow } from './host-space'
 
 // Shared ticket-tier logic (EVENTS-SYSTEM §2.2). Named tiers with richer pricing
 // modes + inventory, written ONLY through the service role (admin client). The
@@ -139,7 +140,10 @@ async function validateSpaceAccess(
     .eq('id', eventId)
     .maybeSingle()
   const evRow = ev as { space_id: string | null; host_space_id: string | null } | null
-  const spaceId = evRow?.host_space_id ?? evRow?.space_id ?? null
+  // Root EXCLUDED: without the guard this never threw, because the root stamp made every event
+  // look Space-hosted — so a host could restrict a ticket to "space members" on a personal event
+  // and ship a ticket nobody could buy. Now they are told at configuration time.
+  const spaceId = await resolveHostingSpaceIdFromRow(evRow)
   if (!spaceId) {
     throw new Error('Set a hosting space for this event before restricting a ticket to its members.')
   }

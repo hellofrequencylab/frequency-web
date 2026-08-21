@@ -11,6 +11,7 @@ import {
 } from '@/lib/events/crm-access'
 import { isSpaceEmailEnabled } from '@/lib/spaces/email'
 import { sendEventBroadcast, sendEventReinvite } from './broadcast-actions'
+import { resolveHostingSpaceIdFromRow } from '@/lib/events/host-space'
 
 // MESSAGE EVERYONE on the event hub's Home tab (ADR-827 ruling 3, first wiring). A
 // self-fetching RSC (streams behind its own <Suspense>, PAGE-FRAMEWORK §5): loads the
@@ -27,7 +28,9 @@ async function resolveEmailLane(eventId: string): Promise<{ enabled: boolean; no
     .eq('id', eventId)
     .maybeSingle()
   const ev = data as { space_id: string | null; host_space_id: string | null } | null
-  const hostSpaceId = ev?.host_space_id ?? ev?.space_id ?? null
+  // Root EXCLUDED, so a personal event falls to the platform lane below (which is what the very
+  // next branch already meant by `!hostSpaceId`).
+  const hostSpaceId = await resolveHostingSpaceIdFromRow(ev)
 
   // Platform-hosted: the Event Dispatch email lane (per-guest event email preference).
   if (!hostSpaceId) {

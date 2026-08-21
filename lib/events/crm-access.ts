@@ -5,6 +5,7 @@ import { asWebRole, isStaff } from '@/lib/core/roles'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { normalizeSpaceType, isConsoleSpaceType } from '@/lib/spaces/types'
 import { isPersonalMemberSpace } from '@/lib/events/event-share'
+import { resolveHostingSpaceIdFromRow } from './host-space'
 
 // EVENT CRM ACCESS TIERS (ADR-836, owner-ruled). The upsell seam between personal and business
 // accounts on an event's Message Attendees surface. One pure resolver decides what a viewer may
@@ -14,7 +15,7 @@ import { isPersonalMemberSpace } from '@/lib/events/event-share'
 // THE TIERS (for a viewer the manage gate already admitted — host, personal cohost, or a
 // steward of the event's host Space):
 //   staff     — platform staff (web_role admin/janitor). Full access always.
-//   business  — the viewer manages the event's host Space (host_space_id ?? space_id, the
+//   business  — the viewer manages the event's host Space (resolveHostingSpaceId, the
 //               ADR-819 resolution) AND that Space is a real Business / Non Profit Space
 //               (never the platform root, never a member's personal-mirror space, ADR-834).
 //               The attendee list is a marketing base: message any time, any channel.
@@ -35,7 +36,7 @@ import { isPersonalMemberSpace } from '@/lib/events/event-share'
 export type EventCrmTier = 'staff' | 'business' | 'personal'
 
 /** What the event row contributes to the decision. `hostSpaceId` is the ADR-819 hosting
- *  resolution ALREADY applied by the caller: host_space_id ?? space_id (null = personally or
+ *  resolution ALREADY applied by the caller: resolveHostingSpaceId (null = personally or
  *  platform hosted). Times are the anchor's own columns (recurrence kept simple, owner ruling:
  *  the anchor's ends_at, or starts_at plus a day when ends_at is null). */
 export interface EventCrmAccessEvent {
@@ -272,7 +273,11 @@ export const loadEventCrmAccess = cache(async (eventId: string): Promise<EventCr
     event = null
   }
 
-  const hostSpaceId = event ? (event.host_space_id ?? event.space_id ?? null) : null
+  // 🔴 Root EXCLUDED: this id decides who inherits CRM access to the event's ATTENDEES through
+  // Space stewardship. With the root stamp, a steward of the platform tenant inherited it on every
+  // personal event. Operators still reach it — through the explicit staff check below, which is
+  // where that authority belongs and where it can be seen.
+  const hostSpaceId = await resolveHostingSpaceIdFromRow(event)
   const [staff, hostSpace] = await Promise.all([
     isStaffProfile(viewerProfileId),
     resolveHostSpaceStewardship(viewerProfileId, hostSpaceId),

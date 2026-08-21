@@ -20,6 +20,7 @@ import { featureAllowed } from '@/lib/pricing/gates'
 import { featureGatesLive } from '@/lib/pricing/settings'
 import { asSpacePlan } from '@/lib/pricing/plans'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { resolveHostingSpaceIdFromRow } from './host-space'
 
 /** One upcoming event of the Space with its current members-ticket state.
  *  audience: 'none' = no members ticket; 'members' = any active membership; else a tier id. */
@@ -117,7 +118,11 @@ export async function setSpaceEventAccess(
     .eq('id', eventId)
     .maybeSingle()
   const evRow = ev as { id: string; space_id: string | null; host_space_id: string | null } | null
-  if (!evRow || (evRow.host_space_id ?? evRow.space_id) !== spaceId) {
+  // 🔴 Root EXCLUDED, and here it is an AUTHORIZATION boundary, not a label. The raw pair resolved
+  // every root-stamped (i.e. ordinary personal) event to the root tenant, so an operator working
+  // the ROOT Space's console passed this check on other members' events.
+  const hostingId = await resolveHostingSpaceIdFromRow(evRow)
+  if (!evRow || hostingId !== spaceId) {
     return fail('That event is not hosted by this space.')
   }
 

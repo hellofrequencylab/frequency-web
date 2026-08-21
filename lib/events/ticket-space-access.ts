@@ -10,6 +10,7 @@ import { listMembershipTiers } from '@/lib/spaces/memberships'
 import { featureAllowed } from '@/lib/pricing/gates'
 import { featureGatesLive } from '@/lib/pricing/settings'
 import { asSpacePlan } from '@/lib/pricing/plans'
+import { resolveHostingSpaceIdFromRow } from './host-space'
 
 /** Membership-linked access context (ADR-823): the event's hosting Space, its membership tiers,
  *  and whether its plan clears the Collective gate for members-only tickets. */
@@ -28,7 +29,9 @@ export async function loadSpaceAccessContext(eventId: string): Promise<SpaceAcce
     .eq('id', eventId)
     .maybeSingle()
   const evRow = ev as { space_id: string | null; host_space_id: string | null } | null
-  const spaceId = evRow?.host_space_id ?? evRow?.space_id ?? null
+  // Root EXCLUDED: a personal event has no Space access context, and the root stamp used to give
+  // it the platform tenant's one.
+  const spaceId = await resolveHostingSpaceIdFromRow(evRow)
   if (!spaceId) return null
 
   const { data: sp } = await admin

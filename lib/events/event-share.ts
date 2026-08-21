@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listSpaceStewardIds } from '@/lib/events/placement'
 import { normalizeSpaceType, isConsoleSpaceType } from '@/lib/spaces/types'
+import { resolveHostingSpaceIdFromRow } from './host-space'
 
 // Shared / co-hosted events (Events EC3, delivers collaborator B2) — the service-role READS + PURE
 // resolvers behind the event↔space share relationship. The WRITES (request / feature / approve /
@@ -312,7 +313,9 @@ export async function eventHomeSpaceId(eventId: string): Promise<string | null> 
       .select('space_id, host_space_id')
       .eq('id', eventId)
       .maybeSingle()
-    return data?.host_space_id ?? data?.space_id ?? null
+    // Root EXCLUDED: a personal event has no home Space, and sharing it as the platform tenant's
+    // is exactly the "it said it was under Frequency" report this row came from.
+    return resolveHostingSpaceIdFromRow(data as { space_id: string | null; host_space_id: string | null } | null)
   } catch {
     return null
   }
