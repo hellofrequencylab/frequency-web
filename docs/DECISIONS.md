@@ -28427,3 +28427,50 @@ entirely.
   neighbouring milestone. And a comment that justifies a duplication by what a primitive "can't do"
   needs re-reading every time that primitive grows, because it is a claim with an expiry date and
   nothing about it fails when it expires.
+
+## ADR-1101: A probe measures its own row, not a neighbouring guard (2026-08-21)
+
+**Status:** Accepted · **Amends** the `LIVE-018` probe · **Extends** [ADR-1043](DECISIONS.md) (the one
+list) and [ADR-970](DECISIONS.md) (a gate that cannot fire honestly gets routed around) ·
+corroborated by `docs/BUILD-BACKLOG.json`, `scripts/check-canon.mjs`
+
+**Context — this one cost a red `main`.** `check:backlog` runs under a 20s CPU budget asserted by
+`scripts/backlog-contract.test.ts`. On 2026-08-21 it came in at **20,080ms against the 20,000ms
+ceiling** and `main` went red for 56 minutes at commit `6127a26` — a merge whose entire diff was
+**18 PNG baselines**. Since merging here deploys to production, a red `main` is not cosmetic.
+
+Measured across all 79 `cmd` probes, the cost was not spread. **`LIVE-018` alone was 7.02s, 41% of
+the total and nearly 3× the next largest.** Its probe called `scanCodeSeam()`, which parses every
+file in the seam: 3,413 files, 21,947 strings, 7.57s of CPU.
+
+**🔴 What it was really doing.** Its final assertion was `found.length === 0` — *the whole tree is
+on-canon*. That is **exactly what `pnpm check:canon` asserts**, and `check:canon` runs as its own
+guard **in the same CI job**. So the repo paid 7.5s to compute an answer it already had, and bought
+a defect with it: a canon violation introduced by anyone, anywhere, would fail **this row** — which
+reads as a regression in seam-widening work that shipped months ago. That is a **mis-attribution
+engine**, the same class of error [ADR-948](DECISIONS.md) names for capture commits.
+
+**Decision.**
+
+1. **The probe measures this row's own consequence and stops there.** The row's claim is that the
+   canon seam was **widened past `content/` to `app/` + `lib/`**. So: `SEAM_ROOTS` must still contain
+   both roots, and the seam must still reach a real corpus.
+2. **The non-triviality floor survives, at 1/244th the cost.** `seamFiles()` — the directory **walk**
+   without the parse — is newly exported and runs in **0.031s against 7.57s**. `MIN_SEAM_FILES` is
+   still enforced, so a broken walk or a moved root still trips the row rather than reporting a clean
+   sweep of nothing. That failure mode is the entire reason the floors exist and it is not weakened.
+3. **The zero-violations assertion is deleted, not moved.** `check:canon` owns it and always did.
+
+**Consequences.**
+
+- **`check:backlog` drops from a ~19.7–21.0s coin flip to a 13.50s median**, and — the part that
+  matters more — its **spread collapses from 2.97s to 0.20s**, because the parse was also the noisy
+  half. A budget that was decided by runner luck is now decided by the code.
+- **Proven both ways:** narrowing `SEAM_ROOTS` fails the row **by name**; a `seamFiles()` that returns
+  nothing fails it on the floor rather than passing silently.
+- **The durable rule:** *a probe measures the consequence of ITS OWN row.* When a probe re-runs work
+  a neighbouring guard already does, it pays twice and reports the wrong owner — and the cost is
+  invisible until a shared budget runs out. Before adding an expensive probe, ask what else in CI
+  already computes that answer.
+- **The wider point stands:** the budget was ~99% consumed and nobody knew, because nothing reports
+  per-probe cost. This bought a third of it back; it did not add a way to notice the next time.

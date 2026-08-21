@@ -401,7 +401,10 @@ export function memberFacingStrings(src, filename = 'x.tsx') {
   return out
 }
 
-function seamFiles() {
+/** The seam's FILE list, without parsing any of them. Exported so a backlog probe can assert the
+ *  seam still reaches a real corpus (LIVE-018) at the cost of a directory walk (~0.1s) rather than
+ *  a full parse (~7.5s). `scanCodeSeam` below is the parsing half and stays the guard's own job. */
+export function seamFiles() {
   const out = []
   const walk = (rel) => {
     let entries
