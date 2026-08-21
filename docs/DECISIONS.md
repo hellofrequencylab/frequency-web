@@ -28176,3 +28176,63 @@ about the emboss. **A mitigation that has to be labelled "never cite this as mit
 - **The durable rule:** when a visual treatment is justified by what a checker reports rather than by
   what a reader experiences, the treatment is load-bearing on the wrong thing. The giveaway is
   cheap to spot — it needs a comment telling future readers not to cite it as the fix.
+
+## ADR-1097: A popup renders in the theme it was opened from — carry the theme, keep the portal (2026-08-21)
+
+**Status:** Accepted · **Extends** [ADR-578](DECISIONS.md) (per-Space page themes) and
+[ADR-1017](DECISIONS.md) · corroborated by `components/ui/use-portaled-space-theme.ts`,
+`components/ui/dialog.tsx`, `components/studio/wizard-modal.tsx`,
+`components/ui/portaled-space-theme.test.tsx`
+
+**Context.** A Space's page theme is not established on the document root. `AccentScope`
+(`components/spaces/accent-scope.tsx`) renders a plain DIV carrying `data-space-theme` and the five
+`--color-primary*` custom properties inline, inside the profile subtree. Both the
+`[data-space-theme]` CSS blocks and the accent overrides hang off **that node**, not off `:root`.
+
+`Dialog` and `WizardModal` both `createPortal(…, document.body)`, which lands their subtree
+**outside** that DIV. So a Spark or a Dialog opened from a themed Space page rendered in the HOST
+amber and the HOST fonts, while `StudioWindow` — which does not portal — rendered in the Space's.
+**Two sibling surfaces, opposite behaviour**, and no gate could see it because every token involved
+is legal: the popup was not using a wrong colour, it was resolving a correct token against the
+wrong ancestor.
+
+**🔴 The portal is not the bug and must not be removed.** `dialog.tsx` already documents why it
+exists: inside a transformed or clipped ancestor — the sliding admin rail is the live case — a
+`fixed inset-0` overlay is trapped by that ancestor's containing block and renders as a narrow
+sidebar panel instead of covering the viewport. Portaling to `document.body` escapes every such
+context. Deleting the portal to fix the theme would trade an invisible palette bug for a visible
+layout one.
+
+**Decision.**
+
+1. **The theme travels across the portal.** The opener leaves a hidden, `aria-hidden` sentinel
+   element rendered IN PLACE; a ref callback on the portaled root reads the nearest
+   `[data-space-theme]` ancestor **of the sentinel** and mirrors the theme id and the five accent
+   properties onto the portaled root. The portaled subtree then resolves exactly as it would have
+   in place.
+2. **A ref callback, not `useEffect` + `setState`.** The obvious shape is wrong twice: it costs a
+   second render for something settled before paint, and it trips the repo's set-state-in-effect
+   lint. Mirroring one DOM node's theme onto another is a DOM operation, so it is done directly,
+   once, at mount. The theme cannot change while a popup is open — it is a property of the route
+   underneath — so there is nothing to re-sync. If that ever stops being true this becomes a
+   subscription, not a `setState`.
+3. **Read the inline style, never `getComputedStyle`.** The accent arrives as inline custom
+   properties on that same node, so `el.style` returns precisely what the Space set and nothing
+   else. Computing would copy a HOST default down and freeze it; absent an override, the token
+   simply keeps inheriting as normal.
+4. **The property list is copied BY NAME.** Only the five names `AccentVars` sets are read, so this
+   can never scrape unrelated inline styles off an ancestor.
+
+**Consequences.**
+
+- **Fail-safe by construction.** No themed ancestor — the common case, since most of the app is not
+  inside a Space — applies nothing at all, and the popup renders exactly as it did before. That is
+  asserted as a test, not assumed.
+- **The negative controls are the point.** `portaled-space-theme.test.tsx` carries four assertions:
+  the two theme-carrying ones **fail** against the pre-fix tree, and the two guard ones (still
+  portals to the document body; no theme applied outside a Space) pass on **both** trees, so the fix
+  is proven to work and proven not to over-reach.
+- **The durable rule:** when a design system establishes scope on an element rather than on the
+  document root, every escape hatch out of the tree — a portal, an overlay root, a rendered
+  sibling — is a place that scope silently stops. The bug is invisible to token gates precisely
+  because nothing about the tokens is wrong.

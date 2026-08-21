@@ -4,7 +4,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
-// A POPUP RENDERS IN THE THEME IT WAS OPENED FROM (ADR-578 + ADR-1017).
+// A POPUP RENDERS IN THE THEME IT WAS OPENED FROM (ADR-1097; extends ADR-578 + ADR-1017).
 //
 // The defect: a Space's page theme lives on a DIV — `AccentScope` renders
 // `<div data-space-theme style={{'--color-primary': …}}>` inside the profile subtree. `Dialog` and

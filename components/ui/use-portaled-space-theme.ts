@@ -1,7 +1,7 @@
 'use client'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CARRY THE SPACE THEME THROUGH A PORTAL (ADR-578 + ADR-1017).
+// CARRY THE SPACE THEME THROUGH A PORTAL (ADR-1097; extends ADR-578 + ADR-1017).
 //
 // 🔴 THE DEFECT THIS EXISTS FOR. A Space's page theme is established on a DIV, not on <html>:
 // `components/spaces/accent-scope.tsx` renders `<div data-space-theme={theme} style={accentVars}>`
