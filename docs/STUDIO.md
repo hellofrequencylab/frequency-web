@@ -31,7 +31,7 @@ way only, and `pnpm check:studio` fails the build if it ever reverses.
 | **Manifests** | `lib/studio/entities/*`: one declaration per entity | ✅ **9 declared**: circle · event · journey · practice · space · business · listing · product · service |
 | **Shell** | `StudioWindow`: overlay panel, chrome, Esc/backdrop close, scroll-lock, sticky footer | ✅ built (ADR-142) |
 | **Builder kit** | identity, fields, autosave, footer, launcher, sortable, in `components/studio/kit/` | ✅ built (ADR-143) |
-| **Spark kit** | `components/studio/spark/*`: the shell, the two doors, the shared drop zone, one renderer per field kind | ✅ built (ADR-986) |
+| **Spark kit** | `components/studio/spark/*`: the shell, the doors, the shared drop zone, one renderer per field kind | ✅ built (ADR-986) |
 | **Wizards on the kit** | the per-entity flows composing the above | ⏳ none yet: the kit exists, the migration is next |
 
 > **Correction (ADR-986).** This table previously marked the Registry "✅ built

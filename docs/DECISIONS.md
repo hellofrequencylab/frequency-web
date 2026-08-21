@@ -28236,3 +28236,75 @@ layout one.
   document root, every escape hatch out of the tree — a portal, an overlay root, a rendered
   sibling — is a place that scope silently stops. The bug is invisible to token gates precisely
   because nothing about the tokens is wrong.
+
+## ADR-1098: The Journey Spark asks one question, and the recommended framework moves into the picker (2026-08-21)
+
+**Status:** Accepted · **Extends** [ADR-986](DECISIONS.md) (the Studio contract) · **Amends** the
+locked door structure in `components/studio/spark/spark-doors.tsx` · corroborated by
+`components/journey/v2/journey-spark.tsx`, `components/studio/spark/spark-dropzone.tsx`,
+`components/studio/spark/spark-doors.test.tsx`, `components/journey/v2/journey-spark-doors.test.ts`
+
+**Context.** The owner, on the Journey Spark: *"We recently went through all of them, and it's too
+confused now."* The screen-one audit says why. It offered **five** ways in — a Vera card leading to
+four questions, a manual card, a "Use the recommended framework" card, a "Start from a template"
+card, and a drop zone underneath — and the drop zone itself carried **two** upload controls: the
+kit's single-document button and a bespoke `BatchUpload` beside it, two labels and two file inputs
+doing one job.
+
+The owner specified the replacement exactly: a **"Tell me about your Journey"** text field, an
+**"Upload Documents"** button under it, then **"Build it Yourself"**, then **"Start with a
+Template"**.
+
+**🔴 The collision this had to resolve.** `spark-doors.tsx` carries a locked structure comment —
+*"The STRUCTURE is fixed (two doors, equal weight, Vera first)"* — and the shared component is used
+by six Sparks. The requested order replaces the first door with a field and promotes the drop zone
+above the second. Nothing in `EntityManifest` can express a door at all, so this could not be a data
+change.
+
+**Decision.**
+
+1. **`veraPrompt` changes the AFFORDANCE of the first door, never its position or its weight.** When
+   a Spark passes it, Vera's door renders as a labelled field with a submit under it instead of a
+   card. The structure lock is restated rather than removed: **Vera first, build-it-yourself second,
+   extras after, every one at equal weight.** Five Sparks pass nothing and are untouched, which is
+   asserted by a test that renders the standard screen and fails if a prompt ever appears in it.
+2. **With the prompt on, the drop zone moves up, directly beneath the field.** This is not cosmetic.
+   In the button layout the zone serves both doors equally and belongs under both; a prompt field
+   and an upload are two ways of saying *here is my material*, so the upload belongs with the field
+   it substitutes for, above the doors that ignore it.
+3. **Typing feeds the path uploading already fed.** The prompt writes the same `sourceText` an
+   upload writes, so it lands on the same one-screen `source` stage that has existed all along. The
+   four questions were never the only way in — they were the way in when the author had brought
+   nothing — and they remain reachable as a named exit on that screen. **No new AI work, no new
+   action, no pipeline change.**
+4. **`weeks` stays a control and is NOT inferred.** Vera treats it as a hard constraint and clamps
+   its own arc to it (`lib/ai/journey-spark.ts`), and `SparkSettings` — the only thing Vera lifts
+   from source text — deliberately excludes it. Inferring it would be new model work in a change
+   that otherwise has none, so the one-question `source` screen keeps asking.
+5. **The recommended framework moves into "Start with a Template", first and named as such.** It is
+   the only creation path that stamps the named Expression Challenge, the capstone, the anchor
+   practice and the Welcome/Close bookends with **no AI at all**, so it could not simply be dropped.
+   Choosing it routes to a weeks step and then to the unchanged `createMasterFrameworkAction`.
+6. **The multi-file capability moves into the kit.** `SparkDropzone` gains `onDocuments`, which
+   turns its input `multiple` and hands the files back **unparsed**, exactly as images already work
+   and for the same reason: reading a stack is a per-entity budgeted call, not a shared one. The
+   Journey's `BatchUpload` is deleted and its read stays on `extractOverviewFilesAction`.
+
+**Consequences.**
+
+- **The framework's length survives the move, and that was the whole reason to fold rather than
+  drop.** Its two other entry points — the editor's *"Start from the recommended framework"* and the
+  guide's *"Best start"* — both call the action with no `weeks` and land on 4. The Spark is the only
+  place an author is asked, and after this change it still is.
+- **`FRAMEWORK_ID` is copied, not imported**, because `lib/journeys/templates.ts` pulls in
+  server-only compose code — the same reason the template list arrives as props. A copied constant
+  is a correct trade only while something notices when the original moves, so a test asserts the two
+  match. Drift would be silent and expensive: the picker entry would fall through to
+  `createJourneyFromTemplateAction('master-framework')`, which has no such template.
+- **`paste` is dropped from what the ZONE offers, not from what the entity accepts.** The manifest
+  still declares both; the prompt field *is* the paste box, and a second textarea under the first
+  would be two controls writing one value.
+- **The durable rule:** a locked structure is worth keeping only if the lock says what it is
+  protecting. This one said *"two doors"*, which is a count, and a count broke the moment an entity
+  needed a field. Restated as an ORDER and a WEIGHTING, the same lock survives the change it would
+  otherwise have blocked — and now covers the five entities it was really there for.
