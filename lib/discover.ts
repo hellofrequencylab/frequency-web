@@ -149,11 +149,33 @@ const TRANSIENT_RE = /fetch failed|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|E
 
 export function isTransientDiscoverError(err: unknown): boolean {
   if (!err || typeof err !== 'object') return false
-  const e = err as { code?: unknown; message?: unknown; cause?: unknown }
+  const e = err as { code?: unknown; message?: unknown; details?: unknown; cause?: unknown }
   // A real Postgres/PostgREST code marks a deterministic answer — unless the "code" is itself
   // a network errno (supabase-js copies `cause.code` like ECONNRESET onto the error sometimes).
-  if (typeof e.code === 'string' && !TRANSIENT_RE.test(e.code)) return false
-  const text = [e.message, e.cause instanceof Error ? e.cause.message : '', (e.cause as { code?: string } | undefined)?.code]
+  //
+  // 🔴 AN EMPTY `code` IS NOT A CODE. This guard used to read `typeof e.code === 'string'` alone,
+  // and that is how this whole retry sat dead in production from the day it shipped (LIVE-084).
+  // When the request never REACHES PostgREST there is no PostgREST code to report, and supabase-js
+  // says so by resolving an error whose `code` and `hint` are EMPTY STRINGS, not undefined:
+  //
+  //     { message: 'TypeError: fetch failed', details: '...read ECONNRESET...', hint: '', code: '' }
+  //
+  // `typeof '' === 'string'` is true and `TRANSIENT_RE.test('')` is false, so the old guard read
+  // "there is a code, therefore the database answered" and returned false on the one shape the
+  // retry existed to catch. Measured, not reasoned: the production build of eee84ba called the
+  // query exactly ONCE (dpl_2SRX2aYctYBXmZw1TaYyi1xBJtBy, 2026-08-21) and the build log carries no
+  // retry line, because none was ever attempted.
+  const code = typeof e.code === 'string' ? e.code.trim() : ''
+  if (code !== '' && !TRANSIENT_RE.test(code)) return false
+  // `details` carries the causal chain on a resolved supabase-js network error ("Caused by: Error:
+  // read ECONNRESET"), so it is read alongside `message`. The code guard above is what keeps a real
+  // Postgres error out, so widening the TEXT cannot make a deterministic failure retryable.
+  const text = [
+    e.message,
+    e.details,
+    e.cause instanceof Error ? e.cause.message : '',
+    (e.cause as { code?: string } | undefined)?.code,
+  ]
     .filter((v): v is string => typeof v === 'string')
     .join(' ')
   return TRANSIENT_RE.test(text)

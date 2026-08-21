@@ -28030,3 +28030,84 @@ them is true. It also re-proves why the LIVE-059 reading could not stand in for 
   than a caller may show is a leak waiting for its fourth caller. Do not select the columns and hope;
   either the reader applies the rule, or the columns are not there to be applied. The four callers
   here were each written by someone who knew about `unlisted` — none of them could see it.
+
+## ADR-1095: An empty `code` is the absence of a code — the discover retry that never fired (2026-08-21)
+
+**Status:** Accepted · corroborated by `lib/discover.ts` (`isTransientDiscoverError`), `lib/discover.test.ts`
+(`PRODUCTION_KILLER`), and the build log of `dpl_2SRX2aYctYBXmZw1TaYyi1xBJtBy`
+
+**Context.** The production deploy of `eee84ba` failed:
+
+```
+Error [DiscoverReadError]: discover read failed: public_event_by_slug
+  at detailRead (lib/discover.ts:206)   ← via getPublicEventBySlug ← app/discover/events/[slug]/page.tsx:82
+  [cause]: TypeError: fetch failed → read ECONNRESET
+Export encountered an error on /discover/events/[slug]/page: …, exiting the build.
+```
+
+One dropped packet on one of 297 prerendered pages ended the export. That is the *exact* failure
+[LIVE-039](BUILD-BACKLOG.json) diagnosed on 2026-08-18 and shipped a bounded transient retry for, with
+tests, a passing probe, and a careful ADR-grade rationale in its own header comment.
+
+**The retry had never fired. Not once, in production, in three days.**
+
+The tell was in the log, not in the code: `attempt()` `console.error`s a line on every retry, the build
+died 2 seconds into static generation, and there was no retry line at all. The cause is one expression:
+
+```ts
+if (typeof e.code === 'string' && !TRANSIENT_RE.test(e.code)) return false
+```
+
+`supabase-js` does not *throw* a transport failure. It **resolves** an error object, and when the request
+never reaches PostgREST there is no PostgREST code to report, so it says so with **empty strings**:
+
+```js
+{ message: 'TypeError: fetch failed', details: '…read ECONNRESET…', hint: '', code: '' }
+```
+
+`typeof '' === 'string'` is `true`; `TRANSIENT_RE.test('')` is `false`. So the guard concluded *"a code is
+present, therefore the database gave a deterministic answer"* and refused to retry the one shape the
+retry existed to catch. **The absence of a code, expressed as an empty string, was read as the presence
+of one.**
+
+**Decision.**
+
+1. **Blank is absent.** Trim `code` and treat `''` as no code, so classification falls through to the
+   message text where `fetch failed` matches. `details` joins the searched text too, since that is the
+   field carrying `Caused by: Error: read ECONNRESET`. The code arm still returns `false` for any real
+   Postgres code, so widening the text cannot make a deterministic failure retryable, and two tests pin
+   that in both directions.
+2. **The fixture is the fix.** The regression test is the error object copied **verbatim out of the build
+   log that it killed**, not a hand-built approximation. This is the whole lesson: LIVE-039's tests were
+   good tests of a wrong model. Every one of them constructed its own error, and every constructed error
+   either omitted `code` or set a real Postgres code, so the empty string was never on trial. **A test
+   that builds its own input can only ever prove the author's model of the input.**
+3. **The probe now requires the fixture.** LIVE-039's probe asserted that `isTransientDiscoverError` and
+   `RETRY_DELAYS_MS` *exist* and that a test says `calls).toBe(3)`. All three were true of a retry that
+   never ran. It now additionally requires the empty-code guard and a test carrying `code: ''`. A
+   presence check over a behaviour claim is the shape-not-truth failure this repo names in four ADRs, and
+   it stayed green for three days over a dead fail-safe.
+4. **Two build-time throw sites are guarded, and the rest deliberately are not.**
+   `app/discover/events/[slug]/opengraph-image.tsx` called the throwing `getPublicEventBySlug` with no
+   catch while its circles twin had always used `.catch(() => null)`; the card already renders a branded
+   fallback, so it now catches. `generateStaticParams` in `discover/cities/[citySlug]` and
+   `discover/places/[citySlug]` gained the `.catch(() => [])` every sibling already had.
+   The **page bodies and `generateMetadata` keep throwing on purpose**: swallowing there would answer a
+   crawler with a genuine 404 on a sitemapped URL and de-index it. LIVE-039 was right that the fix is not
+   a bare `try/catch`; it was only wrong about whether its retry worked.
+
+**Consequences.**
+
+- The fix is one expression, and its reach is not one route. The same `attempt()` seam is the only
+  throwing read in the whole prerendered set, and it is reached unguarded by five detail routes
+  (`events/[slug]`, `circles/[id]`, `topics/[slug]`, `places/[citySlug]`, `cities/[citySlug]`) and six
+  prerendered index pages. All of them were relying on a retry that never ran; all of them get it now.
+- **Blast radius of the incident itself: nil, by luck.** The deploy that died was docs-only (#2235
+  changed one file), so production kept serving `e13b6b9` and no member saw anything. `main` is protected
+  because merging deploys to production, so the same blip on the same route would have taken down a
+  deploy that mattered.
+- **The durable rule:** when a fail-safe is built from a *reasoned* description of the failure rather than
+  the *captured artifact* of it, the tests will agree with the reasoning and the world will not. Capture
+  the real object. [DEPLOY-SAFETY §6](DEPLOY-SAFETY.md) says every fail-safe needs a gate that notices it
+  fired — this one had a gate that noticed it *existed*, which is not the same thing, and the difference
+  cost a production deploy.

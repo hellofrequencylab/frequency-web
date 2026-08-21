@@ -20,8 +20,15 @@ export const contentType = OG_CONTENT_TYPE
 
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
+  // `.catch(() => null)` mirrors the circles OG card, which has always guarded its read, and the
+  // asymmetry mattered: getPublicEventBySlug is a detailRead, so it THROWS, and this route is
+  // prerendered for the same ~200 slugs as the page. A share card that already renders a branded
+  // fallback for a missing event must not be the thing that ends a production export (LIVE-084).
+  //
+  // The PAGE deliberately keeps throwing: there, swallowing a read failure would answer a crawler
+  // with a genuine 404 on a sitemapped URL and de-index it. An OG image has no such consequence.
   const [event, enrichment] = await Promise.all([
-    getPublicEventBySlug(slug),
+    getPublicEventBySlug(slug).catch(() => null),
     getEventEnrichment(slug),
   ])
 

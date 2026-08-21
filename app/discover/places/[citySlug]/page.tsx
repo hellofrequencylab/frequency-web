@@ -22,7 +22,9 @@ export const revalidate = 3600
 // Pre-render the places that actually have public activity. New cities still
 // render on demand (dynamicParams defaults true) and join the set on revalidate.
 export async function generateStaticParams() {
-  const cities = await listDiscoverCities()
+  // `.catch(() => [])` matches every sibling detail route (LIVE-011): a params read that fails
+  // degrades to on-demand rendering instead of ending the export (LIVE-084).
+  const cities = await listDiscoverCities().catch(() => [])
   return cities.map((c) => ({ citySlug: c.slug }))
 }
 
