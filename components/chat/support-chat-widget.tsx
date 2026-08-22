@@ -13,10 +13,10 @@
 // app, where the full dock (Messages + Vera) lives. Auth detection mirrors the marketing header's
 // getSession() pattern (cookie read, no network). Off unless NEXT_PUBLIC_SUPPORT_CHAT is enabled.
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { MessageCircle, X, Send, Loader2, ArrowLeft, CheckCircle2, UserRound } from 'lucide-react'
+import { MessageCircle, X, Loader2, ArrowLeft, CheckCircle2, UserRound } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { isError } from '@/lib/action-result'
 import {
@@ -26,7 +26,8 @@ import {
 } from '@/app/support-chat/actions'
 import { useSupportChat } from './use-support-chat'
 import { Input, Textarea } from '@/components/ui/field'
-import { IconButton } from '@/components/ui/icon-button'
+import { ChatComposer } from '@/components/ui/chat-composer'
+import { useStickToBottom } from '@/components/ui/use-stick-to-bottom'
 
 interface Session {
   ref: string
@@ -123,7 +124,7 @@ export function SupportChatWidget() {
   return (
     <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-50 print:hidden">
       {open && (
-        <div className="mb-3 flex h-[32rem] max-h-[calc(100dvh-6rem)] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-pop">
+        <div className="mb-3 flex h-[32rem] max-h-[calc(100dvh-6rem)] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden overscroll-contain rounded-2xl border border-border bg-surface shadow-pop">
           <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
             <div className="min-w-0">
               <p className="text-body-sm font-semibold text-text">Contact us</p>
@@ -240,7 +241,7 @@ function StartForm({ onStarted }: { onStarted: (s: { ref: string; token: string;
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-1 flex-col gap-2 overflow-y-auto p-4">
+    <form onSubmit={submit} className="flex flex-1 flex-col gap-2 overflow-y-auto overscroll-contain p-4">
       <Input aria-label="Your name" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} required />
       <Input
         type="email"
@@ -285,17 +286,17 @@ function ChatSession({ session, viewerId, onBack }: { session: Session; viewerId
     loadHistory: () => loadSupportChatHistoryAction({ ref: session.ref, token: session.token }),
   })
   const [draft, setDraft] = useState('')
-  const endRef = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages.length, typingNames.length])
+  // scrollTop on the transcript, never scrollIntoView: the widget is position:fixed, so
+  // "bring the last message into view" used to scroll the PAGE behind the panel.
+  const { ref: listRef, stickNow } = useStickToBottom<HTMLDivElement>([messages.length, typingNames.length])
 
   function onSend() {
     const body = draft.trim()
     if (!body) return
     setDraft('')
-    void send(body)
+    stickNow()
+    // Restore the draft if it did not land — see the note on `send`.
+    void send(body).then((sent) => { if (!sent) setDraft((cur) => (cur ? cur : body)) })
   }
 
   return (
@@ -306,7 +307,7 @@ function ChatSession({ session, viewerId, onBack }: { session: Session; viewerId
         </button>
         <span className="text-meta font-medium text-muted">Your conversation</span>
       </div>
-      <div className="flex-1 space-y-2 overflow-y-auto p-3">
+      <div ref={listRef} className="flex-1 space-y-2 overflow-y-auto overscroll-contain p-3">
         {loading && <p className="text-center text-2xs text-muted">Loading…</p>}
         {!loading && messages.length === 0 && (
           <p className="text-center text-2xs text-muted">Your messages show here, along with our replies.</p>
@@ -331,35 +332,17 @@ function ChatSession({ session, viewerId, onBack }: { session: Session; viewerId
             </div>
           </div>
         )}
-        <div ref={endRef} />
       </div>
-      {error && (
-        <p role="alert" className="px-3 pb-1 text-2xs text-danger">
-          {error}
-        </p>
-      )}
-      <div className="flex items-end gap-2 border-t border-border p-2">
-        <Textarea
-          value={draft}
-          onChange={(e) => {
-            setDraft(e.target.value)
-            notifyTyping()
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault()
-              onSend()
-            }
-          }}
-          rows={1}
-          aria-label="Write a message"
-          placeholder="Write a message…"
-          className="max-h-24 flex-1 resize-none"
-        />
-        <IconButton label="Send" variant="filled" onClick={onSend} className="shrink-0">
-          <Send className="h-4 w-4" aria-hidden />
-        </IconButton>
-      </div>
+      <ChatComposer
+        className="border-t border-border p-2"
+        value={draft}
+        onValueChange={(next) => { setDraft(next); notifyTyping() }}
+        onSend={onSend}
+        label="Write a message"
+        placeholder="Write a message…"
+        error={error}
+        showHint={false}
+      />
     </>
   )
 }

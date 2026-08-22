@@ -2,9 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Send } from 'lucide-react'
 import { replyToTicket } from '@/app/(main)/support/actions'
-import { Textarea } from '@/components/ui/field'
+import { ChatComposer } from '@/components/ui/chat-composer'
 
 // Member reply box on their own ticket. ⌘/Ctrl+Enter or the button sends.
 export function TicketReply({ ticketId, disabled = false }: { ticketId: string; disabled?: boolean }) {
@@ -26,28 +25,19 @@ export function TicketReply({ ticketId, disabled = false }: { ticketId: string; 
   }
 
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-end gap-2">
-        <Textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) send() }}
-          rows={2}
-          aria-label="Add a reply"
-          placeholder={disabled ? 'This ticket is closed. Reopen it by replying.' : 'Add a reply…'}
-          className="flex-1 resize-none leading-relaxed"
-        />
-        <button
-          type="button"
-          onClick={send}
-          disabled={pending || !body.trim()}
-          aria-label="Send reply"
-          className="shrink-0 rounded-xl bg-primary p-2.5 text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
-        >
-          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-        </button>
-      </div>
-      {error && <p className="text-meta text-danger">{error}</p>}
-    </div>
+    // ⌘/Ctrl+Enter, not bare Enter: a ticket reply is long-form (paragraphs are normal here),
+    // where Enter-to-send sends half a thought. The hint says which, because an unlabelled
+    // send key is a guess.
+    <ChatComposer
+      value={body}
+      onValueChange={setBody}
+      onSend={send}
+      label="Add a reply"
+      placeholder={disabled ? 'This ticket is closed. Reopen it by replying.' : 'Add a reply…'}
+      pending={pending}
+      error={error}
+      submitKey="mod-enter"
+      minRows={2}
+    />
   )
 }

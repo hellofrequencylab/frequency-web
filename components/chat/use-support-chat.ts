@@ -56,7 +56,15 @@ export function useSupportChat({
 
     loadHistory().then((r) => {
       if (!alive) return
-      if (!isError(r)) setMessages(r.data.messages)
+      // MERGE, don't replace: a broadcast can land before this resolves, and a bare
+      // `setMessages(r.data.messages)` dropped it on the floor. Server rows first (they are
+      // the durable truth and carry the real order), then anything live we already hold.
+      if (!isError(r)) {
+        setMessages((prev) => {
+          const seen = new Set(r.data.messages.map((m) => m.id))
+          return [...r.data.messages, ...prev.filter((m) => !seen.has(m.id))]
+        })
+      }
       setLoading(false)
     })
 
@@ -69,10 +77,14 @@ export function useSupportChat({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
+  /** Send, and report whether it landed. The BOOLEAN matters: both callers clear their draft
+   *  the moment they call this, so without a failure signal a rejected message took the
+   *  operator's (or visitor's) typed text with it — the error banner appeared and the words
+   *  were gone. They now put the draft back on `false`. */
   const send = useCallback(
-    async (raw: string) => {
+    async (raw: string): Promise<boolean> => {
       const body = raw.trim()
-      if (!body) return
+      if (!body) return false
       setError(null)
       stopTyping()
       const optimisticId = `tmp-${viewerId}-${crypto.randomUUID()}`
@@ -82,11 +94,12 @@ export function useSupportChat({
       if (isError(r)) {
         setMessages((prev) => prev.filter((m) => m.id !== optimisticId))
         setError(r.error)
-        return
+        return false
       }
       // Swap the optimistic row for the stored one, and broadcast it to the other side.
       setMessages((prev) => prev.map((m) => (m.id === optimisticId ? r.data : m)))
       channelRef.current?.send({ type: 'broadcast', event: 'message', payload: r.data })
+      return true
     },
     [persist, role, stopTyping, viewerId],
   )

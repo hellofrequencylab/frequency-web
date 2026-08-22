@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { sendMessage } from '@/app/(main)/messages/actions'
@@ -8,6 +8,8 @@ import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { useTypingIndicator } from '@/lib/realtime/use-typing'
 import { TypingIndicator } from '@/components/messages/typing-indicator'
+import { ChatComposer } from '@/components/ui/chat-composer'
+import { useStickToBottom } from '@/components/ui/use-stick-to-bottom'
 
 export type Message = {
   id: string
@@ -58,8 +60,6 @@ export function MessageThread({
   const [body, setBody] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
-  const bottomRef = useRef<HTMLDivElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Build a map for quick participant lookup
   const participantMap = Object.fromEntries(participants.map((p) => [p.id, p]))
@@ -71,19 +71,13 @@ export function MessageThread({
     displayName: participantMap[myProfileId]?.display_name,
   })
 
-  // Scroll to bottom on mount and when messages change
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
-
-  // Focus the composer when the thread was opened programmatically. Skipped on a coarse
-  // pointer: on a phone, focusing a textarea raises the keyboard over the conversation the
-  // member has not read yet, which is worse than one extra tap.
-  useEffect(() => {
-    if (!autoFocus) return
-    if (typeof window !== 'undefined' && !window.matchMedia?.('(pointer: fine)').matches) return
-    textareaRef.current?.focus()
-  }, [autoFocus])
+  // The transcript's own scroller. `useStickToBottom` sets scrollTop on THIS element and
+  // nothing else, which is the fix for the reported "it scrolls the main page behind it up":
+  // the old `bottomRef.scrollIntoView()` walked every scrollable ancestor, and the dock is
+  // position:fixed, so the ancestor the browser found to scroll was the document. It also
+  // stops yanking the reader to the bottom while they are scrolled up reading history.
+  // The coarse-pointer autofocus rule moved into ChatComposer for the same reason: one seam.
+  const { ref: listRef, stickNow } = useStickToBottom<HTMLDivElement>([messages.length, typingNames.length])
 
   // Supabase Realtime subscription for new messages
   useEffect(() => {
@@ -141,6 +135,7 @@ export function MessageThread({
     setMessages((prev) => [...prev, optimistic])
     setBody('')
     stopTyping()
+    stickNow()
 
     const fd = new FormData()
     fd.set('body', trimmed)
@@ -158,13 +153,6 @@ export function MessageThread({
     })
   }
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      submit()
-    }
-  }
-
   // Group consecutive messages from the same sender
   type Group = { sender_id: string; msgs: Message[] }
   const groups: Group[] = []
@@ -180,7 +168,7 @@ export function MessageThread({
   return (
     <div className="flex flex-col h-full">
       {/* ── Message list ─────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div ref={listRef} className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4">
         {groups.length === 0 && (
           <div className="text-center py-12">
             <p className="text-body-sm text-subtle">
@@ -219,9 +207,10 @@ export function MessageThread({
                 {isMine && <div className="w-7" />}
               </div>
 
-              {/* Bubble stack */}
+              {/* Bubble stack. `group` sits on the STACK, not on each bubble row, so hovering
+                  anywhere in a run of messages reveals the one timestamp beneath it. */}
               <div
-                className={`flex flex-col gap-0.5 max-w-[72%] ${
+                className={`group flex flex-col gap-0.5 max-w-[72%] ${
                   isMine ? 'items-end' : 'items-start'
                 }`}
               >
@@ -232,93 +221,61 @@ export function MessageThread({
                 )}
                 {group.msgs.map((msg, mi) => {
                   const isFirst = mi === 0
-                  const isLast = mi === group.msgs.length - 1
                   return (
-                    <div key={msg.id} className="group flex items-end gap-1.5">
-                      {isMine && (
-                        <span
-                          className={`text-3xs text-muted opacity-0 group-hover:opacity-100 transition-opacity ${
-                            isLast ? '' : 'invisible'
-                          }`}
-                        >
-                          {formatTime(msg.created_at)}
-                        </span>
-                      )}
-                      <div
-                        className={`px-3 py-2 text-body-sm leading-relaxed break-words ${
-                          isMine
-                            ? 'bg-primary text-on-primary rounded-2xl rounded-br-md'
-                            : 'bg-surface-elevated text-text rounded-2xl rounded-bl-md'
-                        } ${isFirst && !isMine ? 'rounded-tl-2xl' : ''} ${
-                          isFirst && isMine ? 'rounded-tr-2xl' : ''
-                        }`}
-                      >
-                        {msg.body}
-                      </div>
-                      {!isMine && (
-                        <span
-                          className={`text-3xs text-muted opacity-0 group-hover:opacity-100 transition-opacity ${
-                            isLast ? '' : 'invisible'
-                          }`}
-                        >
-                          {formatTime(msg.created_at)}
-                        </span>
-                      )}
+                    <div
+                      key={msg.id}
+                      className={`px-3 py-2 text-body-sm leading-relaxed break-words ${
+                        isMine
+                          ? 'bg-primary text-on-primary rounded-2xl rounded-br-md'
+                          : 'bg-surface-elevated text-text rounded-2xl rounded-bl-md'
+                      } ${isFirst && !isMine ? 'rounded-tl-2xl' : ''} ${
+                        isFirst && isMine ? 'rounded-tr-2xl' : ''
+                      }`}
+                    >
+                      {msg.body}
                     </div>
                   )
                 })}
+                {/* 🔴 THE TIMESTAMP GOES UNDER THE RUN, NOT BESIDE IT.
+                    It used to be a flex SIBLING of the bubble inside this `max-w-[72%]` column,
+                    with no `shrink-0` and no `whitespace-nowrap`. So on any message long enough
+                    to claim the full width — which is most of them — flex squeezed the span to a
+                    few pixels and "Aug 20, 8:14 PM" wrapped one word per line into a crushed
+                    column against the edge. Owner report, 2026-08-22.
+                    In the column it cannot be squeezed at all, and `whitespace-nowrap` means it
+                    could not wrap even if something tried. It keeps its space at rest
+                    (`opacity-0`, not `hidden`), so revealing it never reflows the transcript. */}
+                <time
+                  dateTime={group.msgs[group.msgs.length - 1]!.created_at}
+                  className="px-1 text-3xs text-muted whitespace-nowrap opacity-0 transition-opacity group-hover:opacity-100 motion-reduce:transition-none"
+                >
+                  {formatTime(group.msgs[group.msgs.length - 1]!.created_at)}
+                </time>
               </div>
             </div>
           )
         })}
         <TypingIndicator names={typingNames} />
-        <div ref={bottomRef} />
       </div>
 
       {/* ── Composer ──────────────────────────────── */}
+      {/* One box, shared with every other chat surface: it GROWS as you type (the old one was
+          pinned at one row and scrolled your own sentence out of sight), owns Enter-to-send,
+          and keeps the draft on a failed send. */}
       <div className="shrink-0 border-t border-border bg-surface px-4 py-3">
-        {error && (
-          <p className="mb-2 text-meta text-danger" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="flex items-end gap-2">
-          <textarea
-            ref={textareaRef}
-            value={body}
-            aria-label="Message"
-            onChange={(e) => {
-              setBody(e.target.value)
-              notifyTyping()
-            }}
-            onKeyDown={handleKeyDown}
-            placeholder="Message…"
-            rows={1}
-            disabled={isPending}
-            className="flex-1 resize-none text-body-sm text-text placeholder-subtle outline-none leading-relaxed bg-surface rounded-control px-3 py-2.5 max-h-32 disabled:opacity-60"
-            style={{ minHeight: '42px' }}
-          />
-          <button
-            onClick={submit}
-            disabled={!body.trim() || isPending}
-            className="shrink-0 w-9 h-9 rounded-xl bg-primary flex items-center justify-center hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            aria-label="Send message"
-          >
-            <svg
-              className="w-4 h-4 text-on-primary"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="m22 2-7 20-4-9-9-4 20-7z" />
-              <path d="M22 2 11 13" />
-            </svg>
-          </button>
-        </div>
-        <p className="text-3xs text-muted mt-1.5 text-right">Enter to send · Shift+Enter for new line</p>
+        <ChatComposer
+          value={body}
+          onValueChange={(next) => {
+            setBody(next)
+            notifyTyping()
+          }}
+          onSend={submit}
+          label="Message"
+          placeholder="Message…"
+          pending={isPending}
+          error={error}
+          autoFocus={autoFocus}
+        />
       </div>
     </div>
   )

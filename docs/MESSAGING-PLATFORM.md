@@ -68,6 +68,37 @@ Use the right Supabase Realtime primitive per job instead of routing everything 
 
 ---
 
+## The two shared chat primitives (ADR-1102) — compose these, never hand-roll
+
+Every chat surface in the product (member DMs, room threads, the visitor live-chat widget, the
+operator bridge, the member support thread in the dock, the ticket reply) composes the same two
+pieces. Six hand-rolled versions is how bug #1003 ("scrolling the transcript scrolls the page
+behind it") shipped on five surfaces at once.
+
+| Piece | File | What it owns |
+| --- | --- | --- |
+| **Transcript scrolling** | `components/ui/use-stick-to-bottom.ts` | Pins the list to its newest message by setting `scrollTop` on the **container** — never `scrollIntoView`, which walks every scrollable ancestor and, from a `position: fixed` dock, scrolls the page. Releases the pin while the reader is scrolled up; `stickNow()` forces it back on when they send. |
+| **The message box** | `components/ui/chat-composer.tsx` | Auto-grows to a cap, owns the send key (`enter` \| `mod-enter`) and names it in a hint, carries the error into `role="alert"` + `aria-invalid`, and **never clears the draft** so a failed send can restore it. Built on the `Textarea` primitive. |
+
+**Rules:**
+
+- A transcript's scroll container needs BOTH the hook and `overscroll-contain`. The hook stops *us*
+  scrolling the page; the class stops the *browser* chaining a flick to it.
+- Declare `overscroll-contain` on the PANEL ROOT too. A scroll container only stops chaining once it
+  is actually scrollable, so a short transcript still hands its gesture to the document.
+- Never call `scrollIntoView` in a chat surface.
+- A composer's caller owns the draft. Clear it on success, restore it on failure.
+- New controls (attachments, a kind chip, a character count) go in `ChatComposer`'s
+  `leading` / `trailing` / `footer` slots, so every surface gets them at once.
+- A hover timestamp goes UNDER the bubble, in the column, with `whitespace-nowrap` — beside it, in
+  the flex row, it gets squeezed to a sliver and wraps one word per line (ADR-1102 §4).
+
+⚠️ **Chat has no attachments.** `components/support/report-dialog.tsx` holds the only
+`type="file"` in the messaging tree — a member cannot attach an image to a DM, a room post, a
+ticket reply or a support chat. Feature gap (schema + storage + moderation), tracked, not built.
+
+---
+
 ## Roadmap
 
 ### MVP (Phases 0-2) — the messaging dock

@@ -1,15 +1,16 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import Image from 'next/image'
-import { Send, Loader2, PenLine, X } from 'lucide-react'
+import { PenLine, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { sendRoomMessage, markRoomRead } from '@/app/(main)/messages/rooms/actions'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { useTypingIndicator } from '@/lib/realtime/use-typing'
 import { TypingIndicator } from '@/components/messages/typing-indicator'
-import { Textarea } from '@/components/ui/field'
+import { ChatComposer } from '@/components/ui/chat-composer'
+import { useStickToBottom } from '@/components/ui/use-stick-to-bottom'
 import { roomPostGateReason, type RoomVisibility } from '@/lib/messages/room-access'
 
 export type RoomMessage = {
@@ -72,8 +73,8 @@ export function RoomThread({
   // everyone to perform; a prompt asks them to say something.
   const [composerOpen, setComposerOpen] = useState(false)
   const [kind, setKind] = useState<ComposeKind | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
-  const endRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
   // Live typing indicator (Broadcast — see lib/realtime/use-typing.ts)
@@ -82,10 +83,9 @@ export function RoomThread({
     userId: myProfileId,
   })
 
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'auto' })
-  }, [messages.length])
+  // Pin the transcript to its newest message by setting scrollTop on the LIST — never
+  // `scrollIntoView`, which walks up to the document and scrolls the page behind the dock.
+  const { ref: listRef, stickNow } = useStickToBottom<HTMLDivElement>([messages.length, typingNames.length])
 
   // Realtime subscription
   useEffect(() => {
@@ -96,8 +96,11 @@ export function RoomThread({
         { event: 'INSERT', schema: 'public', table: 'room_messages', filter: `room_id=eq.${roomId}` },
         async (payload) => {
           const m = payload.new as RoomMessage
-          // Skip if it's my own message. Already added optimistically
-          if (m.author_id === myProfileId && messages.some(x => x.id === m.id)) return
+          // NO `messages.some(...)` guard here: this callback is created once (deps are
+          // [roomId]), so `messages` inside it is frozen at the array this component mounted
+          // with. The old early-return therefore never fired for a live message and only cost
+          // a wasted profile fetch. The setMessages updater below dedups against CURRENT
+          // state, which is the only place that can see it.
 
           // Fetch the author info for the new message
           const { data: author } = await supabase
@@ -123,18 +126,22 @@ export function RoomThread({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId])
 
-  function submit(e: React.FormEvent) {
-    e.preventDefault()
+  function submit(e?: React.FormEvent) {
+    e?.preventDefault()
     const trimmed = body.trim()
     if (!trimmed || isPending) return
 
+    setError(null)
+    stickNow()
     startTransition(async () => {
       try {
         await sendRoomMessage(roomId, trimmed)
         setBody('')
         stopTyping()
       } catch (err) {
-        console.error(err)
+        // Was `console.error(err)` — a room message that failed to post vanished with no sign
+        // it had gone anywhere, which is indistinguishable from "sent" to the member.
+        setError(err instanceof Error ? err.message : 'That message did not post. Try again.')
       }
     })
   }
@@ -142,7 +149,7 @@ export function RoomThread({
   return (
     <div className="flex-1 min-w-0 flex flex-col">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+      <div ref={listRef} className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-3">
         {messages.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <p className="text-body-sm text-subtle">No messages yet. Start the conversation.</p>
@@ -185,7 +192,6 @@ export function RoomThread({
           })
         )}
         <TypingIndicator names={typingNames} />
-        <div ref={endRef} />
       </div>
 
       {/* Composer — starts closed as one line; open, it knows a question from a plan. */}
@@ -235,39 +241,22 @@ export function RoomThread({
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="flex items-end gap-2">
-                <Textarea
-                  value={body}
-                  onChange={e => { setBody(e.target.value); notifyTyping() }}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      submit(e)
-                    }
-                    if (e.key === 'Escape' && !body.trim()) {
-                      setComposerOpen(false)
-                    }
-                  }}
-                  placeholder={kind ? KIND_COPY[kind].placeholder : 'Say it to the room.'}
-                  rows={1}
-                  autoFocus
-                  disabled={isPending}
-                  aria-label="Say it to the room"
-                  className="flex-1 resize-none leading-relaxed max-h-32"
-                  style={{ minHeight: '2.5rem' }}
-                />
-                <button
-                  type="submit"
-                  disabled={!body.trim() || isPending}
-                  className="rounded-lg bg-primary p-2.5 text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
-                  aria-label="Send"
-                >
-                  {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                </button>
-              </div>
-              {kind && (
-                <p className="mt-1.5 text-2xs text-muted">{KIND_COPY[kind].hint}</p>
-              )}
+              <ChatComposer
+                value={body}
+                onValueChange={next => { setBody(next); notifyTyping() }}
+                onSend={submit}
+                label="Say it to the room"
+                placeholder={kind ? KIND_COPY[kind].placeholder : 'Say it to the room.'}
+                pending={isPending}
+                error={error}
+                autoFocus
+                // Escape closes an empty composer, the way it did before it moved onto the
+                // shared primitive: a member who opened the box by accident gets out of it.
+                onKeyDown={e => { if (e.key === 'Escape' && !body.trim()) setComposerOpen(false) }}
+                // The kind hint IS this composer's footer line, so it takes the slot the
+                // generic "Enter to send" hint would have used rather than stacking under it.
+                footer={kind ? <p className="mt-1.5 text-2xs text-muted">{KIND_COPY[kind].hint}</p> : null}
+              />
             </div>
           </form>
         )

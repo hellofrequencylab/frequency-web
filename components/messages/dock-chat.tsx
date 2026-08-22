@@ -448,7 +448,7 @@ export function DockChat({
       {/* Results REPLACE the inbox while a query is live, rather than pushing it down: the panel
           is short, and a member who is searching is not reading their inbox. */}
       {q.trim() && (
-        <div className="min-h-0 shrink-0 max-h-64 overflow-y-auto border-b border-border">
+        <div className="min-h-0 shrink-0 max-h-64 overflow-y-auto overscroll-contain border-b border-border">
           {searching && people.length === 0 && (
             <div className="flex items-center justify-center py-6 text-subtle">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -503,7 +503,7 @@ export function DockChat({
         {leftNotice ?? ''}
       </p>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {loading && (
           <div className="flex items-center justify-center py-10 text-subtle"><Loader2 className="h-5 w-5 animate-spin" aria-hidden /></div>
         )}
