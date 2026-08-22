@@ -28474,3 +28474,147 @@ engine**, the same class of error [ADR-948](DECISIONS.md) names for capture comm
   already computes that answer.
 - **The wider point stands:** the budget was ~99% consumed and nobody knew, because nothing reports
   per-probe cost. This bought a third of it back; it did not add a way to notice the next time.
+
+---
+
+## ADR-1102: A transcript scrolls itself, one box sends every message, and the timestamp goes under it
+
+**Date:** 2026-08-22 · **Status:** ✅ shipped · **Scope:** every chat surface in the product
+
+**The report.** A member filed bug #1003 against Messages: *"When you scroll up to read the
+beginning of the message, it instead scrolls the main page behind it up… not the text in the
+message box."* They added, in passing, that the report dialog *"won't let me attach a screen shot
+either."* The owner's framing was broader: the chat is clunky, and the text inputs need to be more
+dynamic with better layout and controls. A second pass added: the hover timestamp is *"all crushed
+up on the left."*
+
+Four complaints, and a scan of the six chat surfaces found them to be four *classes*, each repeated
+once per surface because every surface was hand-rolled.
+
+### 1. `scrollIntoView` is the wrong tool for a transcript
+
+Five of the six opened with the same two lines:
+
+```ts
+const endRef = useRef<HTMLDivElement>(null)
+useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+```
+
+`scrollIntoView` scrolls **every scrollable ancestor**, up to and including the document. The dock
+is `position: fixed`, so the browser's way to "bring the last message into view" is to scroll the
+page underneath the panel. That is the reported symptom exactly. `block: 'nearest'` narrows it but
+still walks the chain; setting `scrollTop` on the one element we mean cannot touch an ancestor at
+all. It also fired unconditionally, so a message arriving while you were scrolled up reading
+history yanked you back to the bottom mid-sentence.
+
+**Decision:** `components/ui/use-stick-to-bottom.ts`. It takes the scroll container (not a sentinel
+`<div>` — there is nothing to scroll into view, so there is nothing to get wrong), sets `scrollTop`
+on that element only, and pins **conditionally**: it follows the live end only while the reader is
+already there, and releases the moment they scroll away. `stickNow()` forces the pin back on when
+the viewer sends.
+
+`components/vera/vera-chat.tsx` already used the right idiom (`scrollRef.current.scrollTo`). The
+pattern existed in the tree; it never reached the surfaces that needed it.
+
+### 2. Overscroll chained to the page, in TWO layers
+
+No chat scroll container declared `overscroll-behavior`, so a flick that reached the end handed the
+rest of the gesture to the page — the same symptom by a second route.
+
+The per-scroller fix has a hole worth naming: **a scroll container only stops chaining once it is
+actually scrollable.** A short transcript, or the Help list before it fills, is a scroll port with
+nothing to scroll, and the browser chains that gesture straight to the document. So containment is
+declared at BOTH levels — every inner scroller, and the panel root of the dock
+(`vera-launcher.tsx`) and the visitor widget (`support-chat-widget.tsx`). Fixing one layer without
+the other leaves the bug reproducible.
+
+### 3. None of the six message boxes grew
+
+| Surface | Before |
+| :--- | :--- |
+| DM thread | raw `<textarea rows={1}>`, `max-h-32`, hand-rolled send button |
+| Room thread | `rows={1}`, `max-h-32`, Enter-to-send |
+| Visitor live chat | `rows={1}`, `max-h-24` |
+| Operator bridge | `rows={1}`, `max-h-24`, no send hint |
+| Member support thread | `rows={1}`, no cap |
+| Ticket reply | `rows={2}`, ⌘Enter-to-send, undocumented |
+
+Every one was `resize-none` at a fixed row count, so a second sentence scrolled the first out of
+sight: you could not see what you were about to send. `components/feed/composer.tsx` has had the
+measure-and-grow effect for a long time. The chat boxes never got it.
+
+**Decision:** `components/ui/chat-composer.tsx` — one box, built **on** the `Textarea` primitive so
+the field chrome, focus halo, `aria-invalid` error look and disabled fade stay where they already
+live. It auto-grows to a cap, owns the send key (`enter` for live conversation, `mod-enter` for the
+long-form ticket reply) and **names it in a hint**, exposes `leading` / `trailing` / `footer` slots,
+and **never clears the draft itself** — the caller owns it, so a failed send can put the words back.
+
+That last point was live data loss: the widget and the operator bridge both cleared the box the
+moment they called `send()`, so a rejected message showed an error banner and took the typed text
+with it. `useSupportChat.send` now returns a boolean and both callers restore.
+
+### 4. The hover timestamp was crushed into a column
+
+In `components/messages/thread.tsx` the timestamp was a flex SIBLING of the bubble:
+
+```jsx
+<div className="group flex items-end gap-1.5">
+  <span className="text-3xs …">{formatTime(msg.created_at)}</span>   ← no shrink-0, no nowrap
+  <div className="px-3 py-2 …">{msg.body}</div>
+</div>
+```
+
+inside the `max-w-[72%]` bubble column. On any message long enough to claim the width — most of
+them — flex squeezed the span and the text wrapped one word per line. Measured in the browser
+against the real stylesheet: **22px × 70px** (four lines) before, **89 × 18** (one line) after.
+
+The fix is structural, not a `shrink-0` patch: the timestamp moved into the COLUMN under the bubble
+run, where flex has no cross-axis to squeeze it on, and carries `whitespace-nowrap` so it could not
+wrap even if something tried. It is a `<time dateTime=…>`, one per run, and it keeps its space at
+rest (`opacity-0`, not `hidden`) so revealing it never reflows the transcript.
+
+### 5. The screenshot attach failed silently
+
+`attach()` in the report dialog opened with `if (!raw || !raw.type.startsWith('image/')) return` and
+was invoked as `void attach(...)`. Two ways to fail with no trace:
+
+- **The MIME gate.** Several browsers report a blank `type` for an iPhone `.heic`. Recovery from
+  the extension is what `looksLikeImage` exists for — its own docstring says "so a blank-MIME
+  camera-roll photo is not filtered out before it can upload" — and the HEIC conversion three lines
+  below the gate was written for the files the gate was throwing away.
+- **No `try`/`catch`.** Any throw in the prep chain became an unhandled rejection: the picker closed
+  and the dialog sat there unchanged.
+
+Preparing is also not instant (a HEIC downloads a wasm decoder) and there was no busy state, so a
+slow prep looked identical to a dead button. There is now a "Getting your screenshot ready" state,
+plus drag-and-drop as a third way in.
+
+**Ruled out, so nobody re-investigates it:** `safeUploadPreviewSrc` gates the preview on
+`new URL(blob:…).origin` being http(s). Verified in a real browser — it returns the inner origin,
+the guard passes. The private `support` bucket exists, CSP `img-src` allows `blob:`, and
+`serverActions.bodySizeLimit` is 10mb. The failure was entirely client-side.
+
+### Smaller fixes carried in the same pass
+
+- **Room send failures were `console.error(err)`** — a message that did not post vanished with no
+  sign, indistinguishable from "sent". Now surfaced.
+- **The member support reply did nothing visible on failure.** Now surfaced.
+- **`room-thread.tsx` had a stale-closure guard.** `messages.some(...)` inside a subscription
+  created once (deps `[roomId]`) reads the mount-time array forever. Removed; the `setMessages`
+  updater dedups against current state, which is the only place that can see it.
+- **`useSupportChat` clobbered live messages with history.** Now merges.
+
+### Consequences
+
+- ✅ `raw-textarea` adoption baseline **1 → 0**: the last raw `<textarea>` in the product retired.
+- ✅ 20 new tests, including "never calls `scrollIntoView`", "stops following once the reader
+  scrolls up", and the timestamp's markup shape.
+- ⚠️ **Chat still has no attachments.** `report-dialog.tsx` holds the only `type="file"` in the
+  entire messaging tree: a member cannot attach an image to a DM, a room post, a ticket reply or a
+  support chat. Feature gap (schema + storage + moderation), not in this pass. `ChatComposer`'s
+  `leading` slot is where it lands.
+- ⚠️ **Authored on a stale branch.** This work was written on `feat/studio-kernel`, which had been
+  squash-merged as #2098 and left ~100 ADRs behind main. It was re-applied onto current main rather
+  than merged: merging the branch would have reverted ~89k lines. The original draft numbered
+  itself ADR-1002, which main had already used for the OG-rasteriser fix. Both hazards were caught
+  by comparing against `origin/main` before pushing, not by CI.

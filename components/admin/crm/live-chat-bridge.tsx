@@ -5,12 +5,11 @@
 // channel as the visitor's widget, so messages and the typing indicator are live both ways. Message history
 // is the durable server truth (loaded via the admin action); the operator's reply persists then broadcasts.
 
-import { useEffect, useRef, useState } from 'react'
-import { Send } from 'lucide-react'
+import { useState } from 'react'
 import { useSupportChat } from '@/components/chat/use-support-chat'
 import { sendOperatorChatReplyAction, loadOperatorChatHistoryAction } from '@/app/support-chat/operator-actions'
-import { Textarea } from '@/components/ui/field'
-import { IconButton } from '@/components/ui/icon-button'
+import { ChatComposer } from '@/components/ui/chat-composer'
+import { useStickToBottom } from '@/components/ui/use-stick-to-bottom'
 
 export function LiveChatBridge({ chatRef, token }: { chatRef: string; token: string }) {
   const [viewerId] = useState(() => `op-${crypto.randomUUID()}`)
@@ -23,17 +22,16 @@ export function LiveChatBridge({ chatRef, token }: { chatRef: string; token: str
     loadHistory: () => loadOperatorChatHistoryAction({ ref: chatRef }),
   })
   const [draft, setDraft] = useState('')
-  const endRef = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages.length, typingNames.length])
+  const { ref: listRef, stickNow } = useStickToBottom<HTMLDivElement>([messages.length, typingNames.length])
 
   function onSend() {
     const body = draft.trim()
     if (!body) return
     setDraft('')
-    void send(body)
+    stickNow()
+    // Put the words back if the send failed. Clearing the box and showing an error banner
+    // while the reply itself evaporates is the worst of both.
+    void send(body).then((sent) => { if (!sent) setDraft((cur) => (cur ? cur : body)) })
   }
 
   return (
@@ -44,7 +42,7 @@ export function LiveChatBridge({ chatRef, token }: { chatRef: string; token: str
         </span>
         {typingNames.length > 0 && <span className="text-2xs text-muted">visitor is typing…</span>}
       </div>
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+      <div ref={listRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain p-3">
         {loading && <p className="text-center text-2xs text-muted">Loading…</p>}
         {messages.map((m) => (
           <div key={m.id} className={m.author === 'staff' ? 'flex justify-end' : 'flex justify-start'}>
@@ -57,34 +55,17 @@ export function LiveChatBridge({ chatRef, token }: { chatRef: string; token: str
             </div>
           </div>
         ))}
-        <div ref={endRef} />
       </div>
-      {error && (
-        <p role="alert" className="px-3 pb-1 text-2xs text-danger">
-          {error}
-        </p>
-      )}
-      <div className="flex items-end gap-2 border-t border-border p-2">
-        <Textarea
-          value={draft}
-          onChange={(e) => {
-            setDraft(e.target.value)
-            notifyTyping()
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault()
-              onSend()
-            }
-          }}
-          rows={1}
-          placeholder="Reply live…"
-          className="max-h-24 flex-1 resize-none"
-        />
-        <IconButton label="Send" variant="filled" onClick={onSend} className="shrink-0">
-          <Send className="h-4 w-4" aria-hidden />
-        </IconButton>
-      </div>
+      <ChatComposer
+        className="border-t border-border p-2"
+        value={draft}
+        onValueChange={(next) => { setDraft(next); notifyTyping() }}
+        onSend={onSend}
+        label="Reply live"
+        placeholder="Reply live…"
+        error={error}
+        showHint={false}
+      />
     </div>
   )
 }

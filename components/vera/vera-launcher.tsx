@@ -687,7 +687,14 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
               // is why the class cap can be a plain default rather than a second measurement. The
               // pair is still pinned as one contiguous run by dock-bar.test.ts, for the reason its
               // comment gives: a loose search would be satisfied by prose naming a deleted class.
-              className="lift-3 flex h-[68dvh] max-h-[37.5rem] w-full flex-col overflow-hidden rounded-t-card border border-chrome-border bg-canvas pb-[env(safe-area-inset-bottom)] outline-none md:rounded-card md:h-auto md:max-h-[35rem] md:pb-2"
+              // `overscroll-contain` on the PANEL is the backstop under the per-scroller one.
+              // An inner scroller only stops chaining once it is actually scrollable; a short
+              // transcript (or the Help list before it fills) is a scroll port with nothing to
+              // scroll, and the browser hands that gesture straight to the document behind — this
+              // panel is position:fixed, so what moves is the page under the member's cursor.
+              // Containing at the panel boundary means no gesture inside the dock reaches the page,
+              // scrollable inner or not. Owner report, 2026-08-22.
+              className="lift-3 flex h-[68dvh] max-h-[37.5rem] w-full flex-col overflow-hidden overscroll-contain rounded-t-card border border-chrome-border bg-canvas pb-[env(safe-area-inset-bottom)] outline-none md:rounded-card md:h-auto md:max-h-[35rem] md:pb-2"
             >
               {/* Header — canvas, so it reads as the dock's own chrome rather than more
                   transcript. Reflects the active view; Help gets a Back affordance. */}
@@ -743,7 +750,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
               {helpOpen ? (
                 /* ── Help & support SECTION (link-opened, never a tab) — the deterministic
                       tiers: article search → Ask Vera → the help center → a human. ─────────── */
-                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-surface px-4 py-4">
+                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-surface px-4 py-4">
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
                     <input

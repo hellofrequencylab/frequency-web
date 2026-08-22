@@ -1,9 +1,11 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { ArrowLeft, Loader2, Send } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { Textarea } from '@/components/ui/field'
+import { ChatComposer } from '@/components/ui/chat-composer'
+import { useStickToBottom } from '@/components/ui/use-stick-to-bottom'
 import {
   startMySupportRequestAction,
   listMySupportRequestsAction,
@@ -41,7 +43,7 @@ export function SupportConversationsPanel() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 py-4">
       <NewRequest onSent={(ref) => { setOpenRef(ref); setView('thread') }} />
 
       <p className="mt-4 text-2xs font-semibold uppercase tracking-wide text-muted">Your requests</p>
@@ -116,25 +118,28 @@ function NewRequest({ onSent }: { onSent: (ref: string) => void }) {
 function SupportThread({ refId, onBack }: { refId: string; onBack: () => void }) {
   const [detail, setDetail] = useState<{ subject: string; status: string; messages: Msg[] } | null>(null)
   const [reply, setReply] = useState('')
+  const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
-  const endRef = useRef<HTMLDivElement>(null)
+  const { ref: listRef, stickNow } = useStickToBottom<HTMLDivElement>([detail?.messages.length ?? 0])
 
   useEffect(() => {
     void loadMySupportThreadAction(refId).then((res) => {
       if (!isError(res)) setDetail({ subject: res.data.subject, status: res.data.status, messages: res.data.messages })
     })
   }, [refId])
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [detail?.messages.length])
 
   const send = () => {
     const body = reply.trim()
     if (!body) return
+    setError(null)
+    stickNow()
     start(async () => {
       const res = await postMySupportReplyAction({ ref: refId, body })
-      if (!isError(res)) {
-        setReply('')
-        setDetail((d) => (d ? { ...d, messages: [...d.messages, res.data] } : d))
-      }
+      // A failed reply used to do NOTHING visible: no error, draft still sitting there, and no
+      // way to tell it had not been sent. Say so.
+      if (isError(res)) { setError(res.error); return }
+      setReply('')
+      setDetail((d) => (d ? { ...d, messages: [...d.messages, res.data] } : d))
     })
   }
 
@@ -146,7 +151,7 @@ function SupportThread({ refId, onBack }: { refId: string; onBack: () => void })
         </button>
         <span className="min-w-0 truncate text-body-sm font-semibold text-text">{detail?.subject ?? 'Support request'}</span>
       </div>
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 py-3">
+      <div ref={listRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain px-4 py-3">
         {detail === null ? (
           <div className="flex items-center justify-center py-6"><Loader2 className="h-4 w-4 animate-spin text-muted" /></div>
         ) : (
@@ -158,28 +163,18 @@ function SupportThread({ refId, onBack }: { refId: string; onBack: () => void })
             </div>
           ))
         )}
-        <div ref={endRef} />
       </div>
-      <div className="flex shrink-0 items-end gap-2 border-t border-border px-3 py-2">
-        <Textarea
-          value={reply}
-          onChange={(e) => setReply(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
-          rows={1}
-          aria-label="Reply"
-          placeholder="Reply…"
-          className="min-h-9 flex-1 resize-none"
-        />
-        <button
-          type="button"
-          onClick={send}
-          disabled={pending || !reply.trim()}
-          aria-label="Send reply"
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
-        >
-          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-        </button>
-      </div>
+      <ChatComposer
+        className="border-t border-border px-3 py-2"
+        value={reply}
+        onValueChange={setReply}
+        onSend={send}
+        label="Reply"
+        placeholder="Reply…"
+        pending={pending}
+        error={error}
+        showHint={false}
+      />
     </div>
   )
 }

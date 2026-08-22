@@ -10,6 +10,7 @@ import { createSupportTicket, askHelp } from '@/app/(main)/support/actions'
 import { isError } from '@/lib/action-result'
 import { gatherSupportContext, contextLines } from '@/lib/support/context'
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
+import { looksLikeImage } from '@/lib/library/upload-kinds'
 import { TYPE_LABELS, type SupportContext, type TicketType } from '@/lib/support/types'
 import type { HelpCitation } from '@/lib/ai/help-rag'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
@@ -43,6 +44,12 @@ export function ReportDialog({
   // and a fresh context capture initialize cleanly — no reset-on-open effect needed.
   const [context] = useState<SupportContext>(() => gatherSupportContext())
   const [shot, setShot] = useState<{ file: File; url: string } | null>(null)
+  // Preparing a screenshot is not instant: a HEIC from an iPhone downloads a wasm decoder, and a
+  // 12MP photo takes a beat to downscale. Without a state for that window the dialog looked
+  // frozen — you picked a file and NOTHING happened, which is exactly how "it won't let me
+  // attach a screenshot" gets reported.
+  const [preparing, setPreparing] = useState(false)
+  const [dragging, setDragging] = useState(false)
   const [showContext, setShowContext] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<{ id: string; ref: number } | null>(null)
@@ -85,32 +92,63 @@ export function ReportDialog({
   useEffect(() => () => { if (shot) URL.revokeObjectURL(shot.url) }, [shot])
 
   async function attach(raw: File | null | undefined) {
-    if (!raw || !raw.type.startsWith('image/')) return
-    // Prep in the browser first (the shared seam): an iPhone HEIC is converted to JPEG (a raw HEIC
-    // previews and stores broken in every browser but Safari), then a big screenshot is downscaled so
-    // the ticket's form post stays under the server body limit. An unconvertible HEIC gets an inline
-    // message instead of a broken attachment.
-    const prepared = await prepareImageForUpload(raw)
-    if ('error' in prepared) {
-      setError(prepared.error)
-      return
-    }
-    const file = prepared.file
-    if (file.size > SERVER_MAX_BYTES) {
-      setError(`That image is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Try a smaller one.`)
+    if (!raw) return
+    // 🔴 `looksLikeImage`, NOT `raw.type.startsWith('image/')`. The old gate was the raw-type form
+    // and it SILENTLY returned — no error, no preview, no sign the click had done anything. Two
+    // common files fail it: an iPhone .heic (several browsers report a BLANK type for one) and any
+    // image whose type the OS did not resolve. `looksLikeImage` exists for precisely this — its own
+    // docstring says "so a blank-MIME camera-roll photo is not filtered out before it can upload" —
+    // and the HEIC conversion three lines below was written for exactly the files the gate above it
+    // was throwing away. The Loom uploaders already gate this way; this dialog never did.
+    if (!looksLikeImage(raw.type, raw.name)) {
+      // And SAY so. A silent return is indistinguishable from a broken button.
+      setError('That file is not an image. Attach a PNG, JPEG, or HEIC screenshot.')
       return
     }
     setError(null)
-    setShot((prev) => {
-      if (prev) URL.revokeObjectURL(prev.url)
-      return { file, url: URL.createObjectURL(file) }
-    })
+    setPreparing(true)
+    try {
+      // Prep in the browser first (the shared seam): an iPhone HEIC is converted to JPEG (a raw HEIC
+      // previews and stores broken in every browser but Safari), then a big screenshot is downscaled so
+      // the ticket's form post stays under the server body limit. An unconvertible HEIC gets an inline
+      // message instead of a broken attachment.
+      const prepared = await prepareImageForUpload(raw)
+      if ('error' in prepared) {
+        setError(prepared.error)
+        return
+      }
+      const file = prepared.file
+      if (file.size > SERVER_MAX_BYTES) {
+        setError(`That image is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Try a smaller one.`)
+        return
+      }
+      setShot((prev) => {
+        if (prev) URL.revokeObjectURL(prev.url)
+        return { file, url: URL.createObjectURL(file) }
+      })
+    } catch {
+      // `attach` is invoked as `void attach(...)` from two handlers, so before this catch ANY throw
+      // in the prep chain became an unhandled rejection: the picker closed and the dialog sat there
+      // unchanged, with nothing to tell the member their screenshot had not been taken.
+      setError('That image could not be read. Try a different file, or send the report without it.')
+    } finally {
+      setPreparing(false)
+    }
   }
 
   // Paste a screenshot straight from the clipboard (Cmd/Ctrl+Shift+4 → paste).
   function onPaste(e: React.ClipboardEvent) {
     const item = Array.from(e.clipboardData.items).find((i) => i.type.startsWith('image/'))
     if (item) void attach(item.getAsFile())
+  }
+
+  // Drag a screenshot straight off the desktop. The third way in, alongside paste and the picker:
+  // dropping a file on a dialog that says "paste or attach" and having the BROWSER navigate to it
+  // (the default action) loses the half-written report, so the dialog has to take the drop.
+  function onDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setDragging(false)
+    void attach(e.dataTransfer.files?.[0])
   }
 
   function submit() {
@@ -146,7 +184,10 @@ export function ReportDialog({
         aria-label="Report an issue"
         tabIndex={-1}
         onPaste={onPaste}
-        className="relative flex w-full flex-col overflow-y-auto border-border bg-canvas p-4 lift-3 outline-none motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[92vh] sm:max-w-lg sm:rounded-3xl sm:border"
+        onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+        onDragLeave={(e) => { if (e.currentTarget === e.target) setDragging(false) }}
+        onDrop={onDrop}
+        className={`relative flex w-full flex-col overflow-y-auto border-border bg-canvas p-4 lift-3 outline-none motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[92vh] sm:max-w-lg sm:rounded-3xl sm:border ${dragging ? 'ring-2 ring-primary' : ''}`}
         style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
       >
         <div className="mb-1 flex items-center justify-between">
@@ -227,7 +268,7 @@ export function ReportDialog({
 
             {/* Screenshot */}
             <div className="mt-3">
-              <span className="mb-1 block text-meta font-medium text-subtle">Screenshot <span className="font-normal text-subtle">· optional, paste or attach</span></span>
+              <span className="mb-1 block text-meta font-medium text-subtle">Screenshot <span className="font-normal text-subtle">· optional, paste, drop or attach</span></span>
               {/* safeUploadPreviewSrc, not safeImageSrc: `shot.url` is a createObjectURL from the
                   file input or the paste handler, and lib/safe-image-src.ts names this exact
                   surface as one of the seven upload previews. It was calling the WIDER sibling,
@@ -246,9 +287,15 @@ export function ReportDialog({
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
-                  className="flex w-full items-center justify-center gap-2 rounded-control border border-dashed border-border bg-surface px-3 py-4 text-meta font-medium text-muted transition-colors hover:border-primary hover:text-text"
+                  disabled={preparing}
+                  aria-busy={preparing || undefined}
+                  className="flex w-full items-center justify-center gap-2 rounded-control border border-dashed border-border bg-surface px-3 py-4 text-meta font-medium text-muted transition-colors hover:border-primary hover:text-text disabled:opacity-60"
                 >
-                  <ImagePlus className="h-4 w-4" /> Paste a screenshot, or tap to attach
+                  {preparing ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Getting your screenshot ready…</>
+                  ) : (
+                    <><ImagePlus className="h-4 w-4" /> Paste, drop, or tap to attach a screenshot</>
+                  )}
                 </button>
               )}
               <input

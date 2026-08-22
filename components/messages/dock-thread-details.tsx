@@ -209,7 +209,7 @@ export function DockThreadDetails({
           </div>
         )}
 
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <h3 className="px-3 pt-2.5 pb-1 text-2xs font-semibold uppercase tracking-wider text-muted">
             People ({participants.length})
           </h3>
