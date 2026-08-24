@@ -1,53 +1,14 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import {
-  ArrowRight,
-  Brain,
-  HeartPulse,
-  Sparkle,
-  Palette,
-  Compass,
-  Users,
-  CalendarCheck,
-  Sprout,
-  Network,
-  HandHeart,
-  Sunrise,
-  MessageCircle,
-  MapPin,
-} from 'lucide-react'
+import type { Data } from '@/lib/page-editor/types'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
-import {
-  PhotoHero,
-  Section,
-  SectionHeading,
-  ZigZag,
-  Statement,
-  Marquee,
-  PillarNav,
-  BetaCTA,
-  Button,
-  Card,
-  Lead,
-  Body,
-} from '@/components/marketing/marketing-ui'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
 import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getLiveData } from '@/lib/page-editor/live-data'
-import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
-import { articleSchema, breadcrumbSchema } from '@/lib/jsonld'
-import { CREW_NOTE } from '@/lib/pricing/pricing-page'
-import { formatCents } from '@/lib/pricing/display'
-import { PLACEHOLDER_MEMBER_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
-
-/** The free-Member price, read from the ONE member-price map rather than typed as "$0". A zero is
- *  still a price, and a page that types one is a page that can disagree with the ladder. */
-const MEMBER_PRICE = formatCents(PLACEHOLDER_MEMBER_PRICE_CENTS.free)
-import { ProductTour } from './tour'
+import { breadcrumbSchema } from '@/lib/jsonld'
 
 export const revalidate = 3600
 
@@ -75,565 +36,92 @@ export const metadata: Metadata = {
 // Article dates. Google requires datePublished/dateModified on an Article node, and every other
 // pillar page stamps them as literals here; without them this URL published a dateless Article.
 // Sourced from the page's own history: first shipped 2026-07-28, last revised 2026-08-05.
+// They are PASSED THROUGH to BlockDocJsonLd below — a block document cannot know them, and the
+// coded body that used to carry the other copy of them is gone.
 const PUBLISHED = '2026-07-28'
 const UPDATED = '2026-08-05'
 
-// Answer-first FAQ for AIO. Every answer matches the definitions the page ships
-// (Circle, Channel, the four Pillars, how growth works) so structured data and
-// visible copy never contradict.
-// ⚠️ This array now feeds ONLY the unreachable legacy body's visible FAQ section
-// below. The live page's Q&A (and the FAQPage node they emit) moved to the
-// Accordion in lib/page-editor/templates/the-community.ts (LIVE-040), minus the
-// cost answer, whose fixed-price Crew framing is stale against the
-// pay-what-you-want contract in lib/pricing/pricing-page.ts.
-const COMMUNITY_FAQ = [
-  {
-    q: 'What is a Circle?',
-    a: 'A Circle is a few people near you doing life on purpose: a small standing group built around one Channel, with an always-on virtual space and a standing time to meet in person. It stays small enough that you are missed when you do not show up.',
-  },
-  {
-    q: 'What is a Channel?',
-    a: 'A Channel is what you practice, a topic inside a Pillar like breathwork, strength, or human relating. It connects you to people everywhere who care about the same thing, and it is the thread that leads you to a Circle near you.',
-  },
-  {
-    q: 'What are the four Pillars?',
-    a: 'The four Pillars are Mind, Body, Spirit, and Expression, the parts a whole life moves through. You pick the one calling you right now, and the Channels and Circles inside it are where you land.',
-  },
-  {
-    q: 'How much does it cost to join Frequency?',
-    a: `Joining the community is free, forever. Membership is ${MEMBER_PRICE}, and connection never costs anything. Hosting is free too, and so is charging for it: a free member can run a ticketed event and get paid on day one. The personal tier, Crew, is ${CREW_NOTE.foundingLabel} a month, and you never pay a cut of your own bookings on any tier.`,
-  },
-  {
-    q: 'How does a Circle grow?',
-    a: 'Circles are built to divide. When one fills up it seeds a new Circle, led by someone ready to step up. A few neighbouring Circles become a neighborhood, neighborhoods become a whole local community, and none of it is appointed from above.',
-  },
-]
+// A last-resort empty document. It is NOT a design decision: it exists only so the render path is
+// total (see the gate note below), and nothing should ever reach it.
+const EMPTY: Data = { content: [], root: {} }
 
-// The four Pillars (Mind / Body / Spirit / Expression). Named PILLARS, never
-// CHANNELS: the four are Pillars, and Channels are the topical layer below them
-// (docs/NAMING.md, "Pillars vs Channels").
-const PILLARS = [
-  {
-    icon: Brain,
-    title: 'Mind',
-    body: 'Meditation, breathwork, learning. The quiet practices that help you switch off and sharpen a life.',
-  },
-  {
-    icon: HeartPulse,
-    title: 'Body',
-    body: 'Movement, strength, cold and heat, the run club and the sauna night. The practices you feel the next morning.',
-  },
-  {
-    icon: Sparkle,
-    title: 'Spirit',
-    body: 'Ceremony, sound, human relating, the men’s table and the women’s circle. The work you do shoulder to shoulder.',
-  },
-  {
-    icon: Palette,
-    title: 'Expression',
-    body: 'Music, art, dance, making things with your hands. The creative practices that need a room and a crowd.',
-  },
-]
-
+// ONE RENDER PATH — /the-community is template-only (UX-MATURITY-PLAN Lift 5c, ADR-1068), the
+// fifth slug retired after `about`, `spaces`, `the-lab` and `the-quest`. The route is now
+// metadata + server data + <BlockRender>: the words on this page live in the page editor, and an
+// operator changing them changes the page. The coded `LegacyTheCommunity` body (plus its `Step` /
+// `Layer` / `Hold` / `DayBeat` sub-components, the `COMMUNITY_FAQ` and `PILLARS` tables, and the
+// `ProductTour` client island in ./tour, ~1,000 lines across the two files) that used to sit below
+// was already UNREACHABLE — `getTemplate('the-community')` returns a static 14-block document
+// whose every block names a string `type`, so `isWellFormed` is invariant, `data` could never be
+// null, and the `data ? … : <LegacyTheCommunity />` branch could not be taken. Deleting it moves
+// no pixels, which is a stronger guarantee than a snapshot comparison.
+//
+// 🔴 EVERY SCHEMA NODE SURVIVES, AND THE COUNT WAS MEASURED, NOT REASONED. /the-lab lost its
+// FAQPage for weeks (LIVE-040) because its `faqSchema()` rode the legacy branch and its template
+// had no Accordion, so retiring the body deleted the only source copy of markup that was already
+// dead. /the-community is NOT that case:
+//   • THE ROUTE NEVER EMITTED faqSchema. LIVE-040 already deleted that call as dead code and moved
+//     the Q&A into the template's Accordion. The premise that this retirement had to rescue a
+//     FAQPage out of the route was already expired when the row was picked up; it was re-tested
+//     rather than assumed (AGENTS.md, "re-test a row's premise before you work it").
+//   • The `articleSchema(...)` call deleted here sat on the LEGACY branch — the branch that could
+//     never be taken — so it emitted nothing before this change and emits nothing after. The
+//     Article a visitor actually gets comes from <BlockDocJsonLd>, which is unchanged.
+//   • lib/page-editor/templates/the-community.ts carries an Accordion (`tc-faq`) with four of the
+//     five coded Q&A, verbatim; the fifth (the cost answer) was deliberately dropped by LIVE-040
+//     because it quoted the pay-what-you-want floor as a fixed Crew price, which the CREW_NOTE
+//     contract forbids. `AccordionBlock` (components/page-editor/blocks/collections.tsx) renders
+//     its OWN `<JsonLd data={faqSchema(...)} />` from the items it puts on screen, so the schema
+//     cannot out-claim the visible page (CONTENT-VOICE §8b).
+//   • MEASURED: rendering breadcrumb + <BlockDocJsonLd> + <BlockRender config={config}> over the
+//     live document with renderToStaticMarkup emits THREE ld+json scripts and the node multiset
+//     { BreadcrumbList 1, ListItem 1, Article 1, WebPage 1, Organization 2, ImageObject 1,
+//     FAQPage 1, Question 4, Answer 4 } — identical before and after this change. NOT verified
+//     against production HTML — frequencylocal.com is outside this session's egress allowlist.
+//
+// NOTHING RENDERED WAS LOST WITH IT, and five things were RECOVERED. Because the template was
+// regenerated onto DAWN 2 in Lift 5b it is a re-expression rather than a transcript, so the coded
+// page was walked section by section against it: the premise, the four Pillars, the three steps,
+// the Channel/Circle mechanic, the growth loop, the Guru-free beat, the marquee, the FAQ and the
+// close all have a counterpart block. Five details nothing in the template drew — the
+// "No application, no audition." guardrail, the "Circulation, not exclusion." guardrail, the
+// FOUNDING_PLACE grounding, and the two contextual links to /discover and /pricing — are restored
+// INTO EXISTING BLOCKS in lib/page-editor/templates/the-community.ts, where that file's header
+// records each one and why it landed where it did. `git log -p` on this file and on ./tour is the
+// only remaining copy of the coded body.
+//
+// THE CROSS-LINK IS BACK (LIVE-100, 2026-08-24): the coded body closed with a <PillarNav> triptych,
+// and for one day this was the only pillar page that did not link across to its two siblings while
+// both of them still linked to it. It is a missing BLOCK, not a dropped sentence, so it was filed as
+// a row rather than smuggled into a retirement, and then added as `tc-pillars` in the template — in
+// the seat the-lab.ts and the-quest.ts already use, between the FAQ and the ink close.
+//
+// THE CHAIN, and what watches each rung:
+//   published doc  → an operator's published page wins.
+//   code template  → lib/page-editor/templates/the-community.ts, now the LAST rung and therefore
+//                    load-bearing. `templates.test.ts` asserts every EDITABLE_PAGES slug has a
+//                    template the CURRENT block config can render, and reads the ledger so a slug
+//                    at 0 fails with "there is no coded body to fall back to" — the fall to EMPTY
+//                    below cannot happen quietly (AGENTS.md: every fail-safe needs a gate that
+//                    notices it fired).
+//   EMPTY          → unreachable; present so `data` is always a Data.
+//
+// ⚠️ Do NOT add a coded section to this file. `scripts/render-path-bodies.txt` records
+// `the-community 0` and `check:render-path` matches it EXACTLY, so a second top-level component
+// here fails the build. New marketing structure on this page belongs in a BLOCK
+// (lib/page-editor/config.tsx).
 export default async function TheCommunityPage() {
-  // getPublishedData -> getTemplate -> legacy: prefer the operator-published doc,
-  // else the designed git template (so the designed page is live without a DB
-  // publish), with the hardcoded legacy component as a last resort.
   const published = await getPublishedData('the-community')
   const template = getTemplate('the-community')
-  const data = isWellFormed(published) ? published : isWellFormed(template) ? template : null
-  const live = data ? await getLiveData(createAdminClient()).catch(() => null) : null
+  const data: Data = isWellFormed(published) ? published : isWellFormed(template) ? template : EMPTY
+  const live = await getLiveData(createAdminClient()).catch(() => null)
   return (
     <>
-      {/* Derived on both rungs; editorial scoped to its own rung (see /pricing:280-313). */}
+      {/* Breadcrumb is DERIVED from the route, not from copy, so it is emitted here rather than
+          by any block. Everything editorial (Article, FAQPage) travels with the document. */}
       <JsonLd data={breadcrumbSchema([{ name: 'The Community', path: '/the-community' }])} />
-      {data ? (
-        // BlockDocJsonLd carries the Article. The FAQPage is NOT emitted here: the template's
-        // Accordion block (tc-faq, lib/page-editor/templates/the-community.ts) emits it itself,
-        // as a consequence of rendering the visible questions (LIVE-040, CONTENT-VOICE §8b).
-        // The dates are passed on BOTH rungs: this one renders in practice, so leaving them off
-        // here is what actually shipped the dateless Article.
-        <BlockDocJsonLd data={data} path="/the-community" published={PUBLISHED} updated={UPDATED} />
-      ) : (
-        // Unreachable in practice: getTemplate('the-community') is a static well-formed literal,
-        // so `data` is never null. The faqSchema(COMMUNITY_FAQ) call that used to sit here was
-        // deleted as dead code (LIVE-040); the whole rung goes with LIVE-006's retirement.
-        <JsonLd
-          data={articleSchema({
-            title: 'The Community',
-            description:
-              'How Frequency organizes community: four Pillars to find your practice, Channels to find your people, and Circles, small standing local groups that meet in person and grow on their own.',
-            path: '/the-community',
-            published: PUBLISHED,
-            updated: UPDATED,
-            image: '/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg',
-          })}
-        />
-      )}
-      {data ? <BlockRender config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyTheCommunity />}
+      <BlockDocJsonLd data={data} path="/the-community" published={PUBLISHED} updated={UPDATED} />
+      <BlockRender config={config} data={data} metadata={live ? { live } : {}} />
     </>
-  )
-}
-
-function LegacyTheCommunity() {
-  return (
-    <>
-      <PhotoHero
-        image="/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg"
-        alt="A Frequency community dancing together outdoors in golden-hour light"
-        focal="object-center"
-        eyebrow="The Community"
-        title={
-          <>
-            You don&apos;t need another app.
-            <br className="hidden sm:block" /> You need your people.
-          </>
-        }
-        subtitle="Most communities are a feed and a hope. Frequency has a structure that actually grows, and it only takes two words to belong."
-      >
-        <Button href={BETA_CTA_HREF}>
-          {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" />
-        </Button>
-      </PhotoHero>
-
-      {/* The premise */}
-      <Section tone="canvas">
-        <SectionHeading
-          eyebrow="The premise"
-          title="The cure for too many feeds isn't one more."
-          kicker="It's a few real people, near you, who notice when you're gone."
-        />
-        <Lead>
-          You already have the apps. What you&apos;re missing is the standing time,
-          the handful of faces, the small group small enough that your absence
-          leaves a hole. That&apos;s not a feature you download. It&apos;s a
-          structure you join.
-        </Lead>
-        <Body>
-          Frequency gives community a shape: four Pillars to find your practice,
-          Channels to find your people, and Circles to actually belong. No
-          application, no audition, two words and you&apos;re in the room.
-        </Body>
-      </Section>
-
-      <Statement tone="surface">
-        Not a feed. Not a follower count.{' '}
-        <span className="text-primary-strong">A few people who notice.</span>
-      </Statement>
-
-      {/* The four Pillars: the parts a whole life moves through */}
-      <Section tone="surface">
-        <SectionHeading
-          eyebrow="The four Pillars"
-          title="A whole life has four Pillars."
-          kicker="Mind, Body, Spirit, Expression. Start in any of them."
-        />
-        <p className="text-body-lg text-muted leading-relaxed mb-9">
-          The Pillars are the four parts a real life moves through. They&apos;re the
-          map you arrive on: pick the one that&apos;s calling you right now, and the
-          Channels and Circles inside it are where you actually land.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {PILLARS.map((c) => (
-            <Card
-              key={c.title}
-              tone="feature"
-              className="hover:border-border-strong transition-colors"
-            >
-              <div className="w-11 h-11 rounded-card bg-primary-bg flex items-center justify-center mb-4">
-                <c.icon className="w-5 h-5 text-primary-strong" aria-hidden />
-              </div>
-              <h3 className="font-display uppercase text-text text-page-title leading-none">
-                {c.title}
-              </h3>
-              <p className="mt-3 text-body text-muted leading-relaxed">{c.body}</p>
-            </Card>
-          ))}
-        </div>
-      </Section>
-
-      {/* The three steps: how you actually get from curious to belonging */}
-      <Section tone="canvas">
-        <SectionHeading
-          eyebrow="From the people, not the org chart"
-          title="Three steps to belong."
-          kicker="No application. No audition. Two words and you're in the room."
-        />
-        <div className="grid gap-5 sm:grid-cols-3">
-          <Step
-            n="01"
-            icon={Compass}
-            title="Pick what you practice"
-            text="Choose a Pillar, then a Channel inside it: breathwork, strength, supper clubs, sound. It's the thread that ties you to people who care about the same thing."
-          />
-          <Step
-            n="02"
-            icon={Users}
-            title="Join a Circle"
-            text="Find your people near you. A small standing group built around your Channel, with an always-on virtual space and a standing time to meet in person."
-          />
-          <Step
-            n="03"
-            icon={CalendarCheck}
-            title="Show up"
-            text="That's the whole secret. Small enough that you're missed when you don't come, so showing up stops feeling like effort and starts feeling like home."
-          />
-        </div>
-      </Section>
-
-      <Statement tone="surface">
-        Get people together.
-        <br />
-        Do things <span className="text-primary-strong">on purpose.</span>
-      </Statement>
-
-      {/* Channels + Circles: the core mechanic, in detail */}
-      <ZigZag
-        img="/images/site/971634cd-1d52-4b3a-a0ab-5713d395d58a.jpg"
-        alt="A Frequency Circle gathered for breathwork outdoors"
-        eyebrow="Where you belong"
-        title="Channels and Circles"
-        kicker="Two words are all it takes to find your place."
-        imgAspect="landscape"
-        tone="surface"
-      >
-        <p>
-          A <strong className="text-text">Channel</strong> is what you practice:
-          a topic inside a Pillar. Surfing, sound baths, strength, human relating.
-          It connects you to people everywhere who care about the same things you
-          do.
-        </p>
-        <p>
-          A <strong className="text-text">Circle</strong> is your people, near you:
-          a few friends doing life on purpose. A small standing group built around a
-          Channel, with an always-on virtual space, and a standing time to meet in
-          person. Small enough that you&apos;re missed when you don&apos;t show up.
-        </p>
-      </ZigZag>
-
-      {/* The app: an interactive look at what carries the thread day to day */}
-      <Section tone="canvas">
-        <SectionHeading
-          eyebrow="The app"
-          title="Your people, in your pocket."
-          kicker="Tap through the four things you'll actually use."
-        />
-        <ProductTour />
-      </Section>
-
-      <Statement tone="surface">
-        Two words are all you need to{' '}
-        <span className="text-primary-strong">belong</span>.
-      </Statement>
-
-      {/* The growth loop: cells, not franchises */}
-      <ZigZag
-        img="/images/site/PHOTO-2020-09-09-16-38-27.jpeg"
-        alt="A large Frequency community practicing yoga together on a lawn"
-        eyebrow="How it grows"
-        title="It spreads like cells, not franchises."
-        imgAspect="landscape"
-        reverse
-        tone="canvas"
-      >
-        <p>
-          Circles are designed to divide. When one fills up, it doesn&apos;t put
-          people on a waitlist. It seeds a new Circle, led by someone who was ready
-          to step up.
-        </p>
-        <p>
-          A handful of neighbouring Circles becomes a neighborhood. Neighborhoods
-          become a whole local community. None of it is appointed from above. It
-          grows on its own momentum, the way real things do.
-        </p>
-      </ZigZag>
-
-      {/* The shape of how it scales, made concrete */}
-      <Section tone="surface">
-        <SectionHeading
-          eyebrow="The shape of it"
-          title="From one Circle to a whole community."
-          kicker="Nobody hands it down. It grows from the inside out."
-        />
-        <div className="grid gap-5 sm:grid-cols-3">
-          <Layer
-            icon={Users}
-            title="A Circle"
-            text="A handful of neighbors around one Channel. The smallest unit that can hold you."
-          />
-          <Layer
-            icon={Network}
-            title="A neighborhood"
-            text="Circles that divide and multiply until your corner of the map is full of them."
-          />
-          <Layer
-            icon={Sprout}
-            title="A community"
-            text="A whole local ecosystem: leaderful, self-sustaining, grown rather than built."
-          />
-        </div>
-      </Section>
-
-      {/* Guru-free: the dark beat */}
-      <ZigZag
-        img="/images/site/PHOTO-2020-10-17-13-49-14.jpeg"
-        alt="A Frequency music circle gathered on a cliffside at golden hour"
-        eyebrow="Why it lasts"
-        title="Guru-free. By design."
-        imgAspect="landscape"
-        reverse
-        tone="ink"
-      >
-        <p>
-          Communities built around one charismatic founder live and die with that
-          person. We&apos;ve all watched it happen. So Frequency is built to be the
-          opposite: leaderful, not leader-dependent.
-        </p>
-        <p>
-          Leaders rise from showing up, not from being anointed. Take the same
-          structure away from any one of us and it keeps running, because the
-          practices, the places, and the people were the point all along.
-        </p>
-      </ZigZag>
-
-      {/* Rhythm band: marquee inside a dark slat band */}
-      <div className="bg-slat">
-        <Marquee
-          items={[
-            'Pick what you practice',
-            'Join a Circle',
-            'Show up',
-            'Be missed when you don’t',
-            'Lead by showing up',
-            'Hold the door',
-          ]}
-        />
-      </div>
-
-      {/* What makes a Circle hold: what keeps it standing on its own */}
-      <Section tone="surface">
-        <SectionHeading
-          eyebrow="What holds it together"
-          title="Leaderful, not leader-dependent."
-          kicker="Three things keep a Circle standing on its own."
-        />
-        <div className="grid gap-5 sm:grid-cols-3">
-          <Hold
-            icon={CalendarCheck}
-            title="Small and standing"
-            text="Circles stay small on purpose. A standing time, the same faces, and the quiet accountability of being noticed."
-          />
-          <Hold
-            icon={Sprout}
-            title="Earned, not appointed"
-            text="Leaders rise from showing up and looking after the people around them, never from being anointed from above."
-          />
-          <Hold
-            icon={HandHeart}
-            title="Hold the door"
-            text="When you can give a little more, you hold the door for the next person. Circulation, not exclusion."
-          />
-        </div>
-      </Section>
-
-      <Statement tone="surface">
-        The practices, the places, and{' '}
-        <span className="text-primary-strong">the people</span> are the point.
-      </Statement>
-
-      {/* A day in Frequency: how the structure plays out in real life */}
-      <Section tone="canvas">
-        <SectionHeading
-          eyebrow="A day in Frequency"
-          title="One ordinary Tuesday."
-          kicker="How the thread pulls you back to people."
-        />
-        <ol className="space-y-5">
-          <DayBeat
-            icon={Sunrise}
-            time="6:15a"
-            title="The bluff before work"
-            body="Your Sunrise Breathwork circle meets on Moonlight Beach. Cold, gold, quiet. You leave regulated instead of wired."
-          />
-          <DayBeat
-            icon={MessageCircle}
-            time="9:40a"
-            title="A ping from the Circle"
-            body="Someone posts a photo from the morning. A few Zaps, a couple of replies. The thread keeps the warmth alive between meetings."
-          />
-          <DayBeat
-            icon={CalendarCheck}
-            time="1:00p"
-            title="One tap to RSVP"
-            body="An event drops for Saturday's thermal circuit. You tap RSVP. Now you're expected, and you'll be missed if you don't show."
-          />
-          <DayBeat
-            icon={MapPin}
-            time="6:30p"
-            title="Meet in the flesh"
-            body="After work you walk into the room. Faces you know from the feed are already there. The app brought you here; the people take over."
-          />
-        </ol>
-      </Section>
-
-      {/* Where it's happening now: grounding in the real beta */}
-      <Section tone="canvas">
-        <SectionHeading
-          eyebrow="Where it starts"
-          title="It begins in one real place."
-          kicker={`The founding community is taking shape in ${FOUNDING_PLACE}.`}
-        />
-        <Body>
-          Every cell starts somewhere. Ours is taking root in {FOUNDING_PLACE}:
-          real Circles, real gatherings, real neighbors who show up for each other.
-          Join the beta and you&apos;re not a number on a waitlist; you&apos;re one
-          of the people this whole thing grows from. And you can start anywhere: a
-          Circle only needs a few people and a standing time.
-        </Body>
-        <p className="mt-6 text-body text-muted leading-relaxed">
-          <Link className="text-primary-strong font-semibold hover:underline" href="/discover">
-            Find a Circle near you
-          </Link>
-          , or{' '}
-          <Link className="text-primary-strong font-semibold hover:underline" href={BETA_CTA_HREF}>
-            start your own
-          </Link>
-          . See what membership opens on the{' '}
-          <Link className="text-primary-strong font-semibold hover:underline" href="/pricing">
-            pricing page
-          </Link>
-          .
-        </p>
-      </Section>
-
-      {/* Answer-first FAQ: mirrors the FAQPage schema so structured data and
-          visible copy agree (docs SEO/AIO mandate). */}
-      <Section tone="canvas">
-        <SectionHeading
-          eyebrow="Questions"
-          title="The short answers."
-          kicker="Circle, Channel, Pillars, and what it costs to join."
-        />
-        <dl className="space-y-6">
-          {COMMUNITY_FAQ.map((item) => (
-            <div key={item.q} className="rounded-card border border-border bg-surface p-6">
-              <dt className="font-display uppercase text-text text-lead leading-tight mb-2">
-                {item.q}
-              </dt>
-              <dd className="text-body text-muted leading-relaxed">{item.a}</dd>
-            </div>
-          ))}
-        </dl>
-      </Section>
-
-      <PillarNav current="/the-community" tone="surface" />
-
-      <BetaCTA
-        heading="Find your people."
-        body="Pick what you practice, find a Circle near you, and start showing up."
-      />
-    </>
-  )
-}
-
-// ── Local sub-components ──────────────────────────────────────────────────────
-
-type IconType = React.ComponentType<{ className?: string }>
-
-function Step({
-  n,
-  icon: Icon,
-  title,
-  text,
-}: {
-  n: string
-  icon: IconType
-  title: string
-  text: string
-}) {
-  return (
-    <Card tone="feature" className="relative flex flex-col">
-      <div className="flex items-center justify-between mb-5">
-        <span className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-primary-bg/50">
-          <Icon className="w-5 h-5 text-primary-strong" />
-        </span>
-        <span className="font-display uppercase text-display-h3 text-border-strong leading-none">
-          {n}
-        </span>
-      </div>
-      <h3 className="font-display uppercase text-text text-page-title mb-2">{title}</h3>
-      <p className="text-body-sm text-muted leading-relaxed">{text}</p>
-    </Card>
-  )
-}
-
-function Layer({
-  icon: Icon,
-  title,
-  text,
-}: {
-  icon: IconType
-  title: string
-  text: string
-}) {
-  return (
-    <Card tone="feature">
-      <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-primary-bg/50 mb-4">
-        <Icon className="w-5 h-5 text-primary-strong" />
-      </div>
-      <h3 className="font-display uppercase text-text text-lead mb-2">{title}</h3>
-      <p className="text-body-sm text-muted leading-relaxed">{text}</p>
-    </Card>
-  )
-}
-
-function Hold({
-  icon: Icon,
-  title,
-  text,
-}: {
-  icon: IconType
-  title: string
-  text: string
-}) {
-  return (
-    <Card tone="feature">
-      <div className="flex items-center gap-2.5 mb-3">
-        <Icon className="w-5 h-5 text-primary-strong" />
-        <h3 className="font-bold text-text text-body-lg leading-snug">{title}</h3>
-      </div>
-      <p className="text-body-sm text-muted leading-relaxed">{text}</p>
-    </Card>
-  )
-}
-
-function DayBeat({
-  icon: Icon,
-  time,
-  title,
-  body,
-}: {
-  icon: IconType
-  time: string
-  title: string
-  body: string
-}) {
-  return (
-    <li className="flex items-start gap-4 rounded-card border border-border bg-surface p-5 sm:p-6 lift-1">
-      <div className="shrink-0 w-12 h-12 rounded-card bg-primary-bg flex items-center justify-center">
-        <Icon className="w-6 h-6 text-primary-strong" aria-hidden />
-      </div>
-      <div className="min-w-0">
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="font-display uppercase text-text text-lead leading-none">
-            {title}
-          </span>
-          <span className="text-meta font-bold uppercase tracking-eyebrow text-primary-strong">
-            {time}
-          </span>
-        </div>
-        <p className="mt-2 text-body text-muted leading-relaxed">{body}</p>
-      </div>
-    </li>
   )
 }

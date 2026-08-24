@@ -25,13 +25,14 @@ import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 //   · Breadcrumb — page-level, the route's existing <JsonLd data={breadcrumbSchema}>.
 // So an enrolled article keeps all four; the route keeps the last two.
 //
-// ⚠️ STATUS. LIVE CONSUMERS: `how-to-start-a-circle` (enrolled 2026-08-19),
+// ⚠️ STATUS. LIVE CONSUMERS — ALL EIGHT seeker articles now run through this
+// generator: `how-to-start-a-circle` (enrolled 2026-08-19),
 // `how-to-build-community`, `loneliness`, `friendship-as-an-adult`,
-// `calm-down-fast` and `how-to-be-more-social` (all enrolled 2026-08-20), each
-// a spec beside this file run
-// through the recipe below. The other two articles are still coded pages;
-// `check:render-path` gates one slug per PR and enrolling an article is a route
-// change per article, so they enroll one at a time.
+// `calm-down-fast` and `how-to-be-more-social` (all enrolled 2026-08-20), and
+// `tools-for-community-builders` and `what-is-frequency` (both enrolled
+// 2026-08-24), each a spec beside this file run through the recipe below. Lift
+// 5d's article set is CLOSED: no coded seeker article is left, so the next change
+// here is a change to the grammar itself rather than another enrolment.
 // `article.test.ts` remains the guard that keeps this generator honest independently
 // of any one article — it renders a spec through the CURRENT block config, so a block
 // rename breaks this file loudly rather than on the day someone enrolls the next one.
@@ -112,6 +113,40 @@ import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 //                                        the coded page's final Statement (the brand
 //                                        line) sits. Without it that sentence would be
 //                                        dropped or moved above the FAQ.
+//
+// The SEVENTH enrolment (tools-for-community-builders, 2026-08-24) widened NOTHING, and
+// that is the first evidence the seams have converged: an article written for a DIFFERENT
+// reader (the Latent Leader assembling a stack, CONTENT-VOICE §2b, not the Seeker) fit the
+// existing fields exactly. It is also the second article to assert NO HowTo, using neither
+// `howTo` nor `steps`, because it carries no ordered guide to assert one from.
+//
+// The EIGHTH enrolment (what-is-frequency, 2026-08-24) widened three, under the same rule —
+// optional, copy-carrying, blocks that already ship in a live template, and an article using
+// none of them renders BYTE-IDENTICALLY to before. That last clause was measured, not
+// asserted: all six prior specs were rendered through the pre-change and post-change
+// generator and the JSON diffed, and nothing moved.
+//   · sections gained `tiers`          — the PRICE LADDER the coded page lifts so an answer
+//                                        engine can quote the whole shape in one place. Each
+//                                        row is four fields (name, price, who it is for, the
+//                                        network-only rate): `links` would drop three of them
+//                                        and folding it into `body` would need punctuation the
+//                                        copy never had. The `Tiers` block (live in
+//                                        templates/pricing.ts) carries all four and emits NO
+//                                        schema of its own, so no Product/Offer node is
+//                                        invented on a page that never made that claim.
+//   · sections gained `cards`          — a row of LINK CARDS: a title, a sentence, an internal
+//                                        href. The hub-and-spoke cross-links CONTENT-VOICE §8b
+//                                        asks for. Flattening them into `links` would keep the
+//                                        labels and silently drop the sentences. `FeatureGrid`
+//                                        (live in three templates) carries both, and also emits
+//                                        no schema.
+//   · sections gained `afterSteps`     — a paragraph closing the section BELOW its ordered
+//                                        steps. `body` renders above them, and `note` renders
+//                                        above them too (it closes the BUTTON row), so neither
+//                                        can hold a line the coded page printed under the
+//                                        steps. Exactly the silent reorder `note` and
+//                                        `closingBeat` exist to prevent, one position further
+//                                        down the section.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const L = { spaceTop: 'default', spaceBottom: 'default', visibility: 'all' } as const
@@ -158,6 +193,30 @@ export type ArticleLink = {
   variant?: 'primary' | 'secondary' | 'ghost'
 }
 
+/** One row of a price ladder an article LIFTS for answer engines. Four fields, because
+ *  the coded ladder prints four: dropping any of them is the silent-loss shape. Rendered
+ *  as a `Tiers` block, which emits NO schema — a page that never claimed Product/Offer
+ *  must not start claiming it because the ladder changed renderer. */
+export type ArticleTier = {
+  name: string
+  /** The figure, exactly as the page prints it (cadence included, e.g. `$29/mo`). */
+  price: string
+  /** Who the tier is for, in a sentence. */
+  who: string
+  /** The small line under the price (the coded ladder's network-only rate). */
+  note?: string
+}
+
+/** A link card: a title, a sentence, and an internal href. The hub-and-spoke cross-links
+ *  CONTENT-VOICE §8b asks for, kept as cards rather than flattened into a button row,
+ *  which would keep the labels and drop the sentences. Rendered as a `FeatureGrid`,
+ *  which emits no schema. */
+export type ArticleCard = {
+  title: string
+  body: string
+  href: string
+}
+
 /** One question-led section: the reader's question as the H2, answered in its first
  *  sentence. `answer` is the direct answer (set large); `body` is the elaboration. */
 export type ArticleSection = {
@@ -184,6 +243,16 @@ export type ArticleSection = {
    *  Each DawnHowToSteps block emits its own HowTo node, so several tracks ship
    *  several nodes — dropping the extras would be the silent-loss shape again. */
   howTo?: ArticleHowTo
+  /** The price ladder this section lifts, when it has one. Sits directly under the
+   *  section's answer and ABOVE its button row, exactly where the coded list sat. */
+  tiers?: ArticleTier[]
+  /** A row of link cards under the section's answer. */
+  cards?: ArticleCard[]
+  /** A paragraph closing the section BELOW its ordered steps. `body` renders above the
+   *  steps and `note` closes the BUTTON row above them, so neither can carry a line the
+   *  coded page printed under the steps. Same silent reorder `note` exists to prevent,
+   *  one position further down. `[label](/path)` links work. */
+  afterSteps?: string
   /** Optional beat that CLOSES this section's band group. */
   beat?: ArticleBeat
   /** Several closing beats (e.g. a photo beat then a pull quote), in order. The
@@ -412,6 +481,69 @@ export function articleTemplate(spec: ArticleSpec): Data {
         layout: { ...L, spaceTop: 'none', ...(links.length > 0 ? { spaceBottom: 'none' } : {}) },
       },
     })
+    if (section.tiers && section.tiers.length > 0) {
+      // The ladder sits INSIDE the section's band (the section's own `tone`, not
+      // nextTone()): the coded list was one `<ul>` inside the section, so it closes the
+      // answer rather than opening a moment of its own. The block emits no schema.
+      content.push({
+        type: 'Tiers',
+        props: {
+          id: id(`tiers${i + 1}`),
+          eyebrow: '',
+          title: '',
+          titleAccent: '',
+          kicker: '',
+          items: section.tiers.map((t) => ({
+            name: t.name,
+            livePriceKey: '',
+            price: t.price,
+            strikePrice: '',
+            cadence: '',
+            priceNote: t.note ?? '',
+            tagline: t.who,
+            highlight: 'normal',
+            badge: 'none',
+            features: [],
+            ctaLabel: '',
+            ctaHref: '',
+            ctaStyle: 'secondary',
+          })),
+          footnote: '',
+          emphasis: EMPHASIS,
+          tone,
+          width: 'default',
+          align: 'left',
+          layout: { ...L, spaceTop: 'none' },
+        },
+      })
+    }
+    if (section.cards && section.cards.length > 0) {
+      // Same band, same reason. `style: 'icon'` with no icon named renders the card
+      // without one, so no decoration is invented for a page that shipped none.
+      content.push({
+        type: 'FeatureGrid',
+        props: {
+          id: id(`cards${i + 1}`),
+          eyebrow: '',
+          title: '',
+          titleAccent: '',
+          style: 'icon',
+          columns: '3',
+          items: section.cards.map((c) => ({
+            icon: '',
+            image: '',
+            title: c.title,
+            body: c.body,
+            href: c.href,
+          })),
+          emphasis: EMPHASIS,
+          tone,
+          width: 'default',
+          align: 'left',
+          layout: { ...L, spaceTop: 'none' },
+        },
+      })
+    }
     if (links.length > 0) {
       content.push({
         type: 'Buttons',
@@ -475,6 +607,23 @@ export function articleTemplate(spec: ArticleSpec): Data {
     }
     if (spec.howTo && i + 1 === howToAfter) pushHowTo(spec.howTo, 'howto')
     if (section.howTo) pushHowTo(section.howTo, `howto-${i + 1}`)
+    if (section.afterSteps) {
+      // The section's closing paragraph, BELOW the steps, exactly where the coded page
+      // printed it. Returns to the SECTION's tone rather than drawing a new one: it is
+      // the section talking again, not a new moment.
+      content.push({
+        type: 'Text',
+        props: {
+          id: id(`after${i + 1}`),
+          body: section.afterSteps,
+          size: 'base',
+          tone,
+          width: 'default',
+          align: 'left',
+          layout: L,
+        },
+      })
+    }
     const beats = section.beats ?? (section.beat ? [section.beat] : [])
     // The first beat keeps the `beat-<n>` key the first enrolment shipped, so its
     // block ids (and any operator draft keyed on them) do not move.

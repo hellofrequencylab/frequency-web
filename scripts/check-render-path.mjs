@@ -71,6 +71,8 @@ const ROUTES = {
   'friendship-as-an-adult': 'app/(marketing)/friendship-as-an-adult/page.tsx',
   'calm-down-fast': 'app/(marketing)/calm-down-fast/page.tsx',
   'how-to-be-more-social': 'app/(marketing)/how-to-be-more-social/page.tsx',
+  'tools-for-community-builders': 'app/(marketing)/tools-for-community-builders/page.tsx',
+  'what-is-frequency': 'app/(marketing)/what-is-frequency/page.tsx',
 }
 
 /** Blank both comment forms, length-preserving (same reason as check-grants.mjs / check-labels.mjs:
