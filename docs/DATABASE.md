@@ -594,6 +594,16 @@ seeded (a non-default menu), so it is unchanged pre-seed. Tables are not in
 
   Nothing re-runs and no DDL is involved. Skipping it is what makes `db push` see the file as
   unapplied, which is the hazard the ban above exists to avoid. Reconcile, then re-check parity.
+- 🔴 **Applying to prod makes every branch that lacks the file go red, and that is the gate
+  working.** `check:migrations --require-ledger` reads the LIVE ledger, so it compares a
+  *branch-local* file set against a *project-global* row set. The instant a migration is applied,
+  every open PR whose tree does not carry that file fails with "N applied migration(s) the repo DOES
+  NOT RECORD". Two rules follow ([ADR-1111](DECISIONS.md)): a migration file never gets split away
+  from the PR that needs it, and when work is split across PRs, **the one carrying the migrations
+  merges first** while the others take `main` before they can go green. A branch red on this gate
+  ALONE, naming files that exist on another open PR, is an ordering fact rather than a defect in
+  that branch. The gate is symmetric — a committed-but-unapplied migration fails it from the other
+  side — so the file and the apply always travel together.
 - **Author + review** happen on the repo file. Local/branch/CI ephemeral databases build from the
   repo files on a clean slate (there is no prod history to collide with there), so `db push` is fine
   *only* against a throwaway DB, never the linked prod project.

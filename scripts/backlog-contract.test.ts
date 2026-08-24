@@ -183,6 +183,44 @@ describe('check:backlog — the probe/status contract', () => {
     expect(out).toContain('no verify block')
   })
 
+  // LIVE-007's probe threw `SyntaxError: Unexpected token 'for'` on EVERY invocation for six
+  // enrolments, because its slug list was double-quoted inside a `node -e "…"` body and the shell
+  // ate the quotes. A SyntaxError exits 1, which is indistinguishable from an honest "not done",
+  // so an OPEN row's broken probe AGREED with it forever and the row read as measured. The
+  // runProbe fence cannot catch this: the probe RUNS fine, the program inside it is what is broken.
+  it('FAILS a cmd probe carrying a bare double quote, which the shell would eat', () => {
+    writeBacklog(dir, [
+      ...ballast(),
+      {
+        id: 'EATEN',
+        title: 'a probe whose quotes the shell removes',
+        status: 'open',
+        lane: 'live',
+        verify: { kind: 'cmd', cmd: 'node -e "const need=["a","b"];process.exit(need.length?0:1)"' },
+      },
+    ])
+    const { code, out } = run(BACKLOG_GUARD, dir)
+    expect(code).toBe(1)
+    expect(out).toContain('carries a double quote inside')
+  })
+
+  // The positive control: a BACKSLASH-escaped quote survives the shell and must NOT be refused,
+  // or the rule would force a rewrite of the eleven probes that legitimately use one.
+  it('does NOT fail a cmd probe whose inner quotes are backslash-escaped', () => {
+    writeBacklog(dir, [
+      ...ballast(),
+      {
+        id: 'ESCAPED',
+        title: 'a probe that escapes its inner quotes',
+        status: 'open',
+        lane: 'live',
+        verify: { kind: 'cmd', cmd: 'node -e "const s=\\"x\\";process.exit(s?1:0)"' },
+      },
+    ])
+    const { out } = run(BACKLOG_GUARD, dir)
+    expect(out).not.toContain('carries a double quote inside')
+  })
+
   it('FAILS a truncated file rather than printing a ✓ over nothing (ADR-962)', () => {
     writeBacklog(dir, [
       { id: 'ONLY', title: 'lonely', status: 'parked', lane: 'live', verify: { kind: 'manual', evidence: 'x', checked: '2026-08-17' } },
@@ -384,7 +422,7 @@ describe('the probe engine does not depend on ambient tooling', () => {
   // closed rows carried a probe that spawned a vitest run to prove its consequence, and each now
   // measures the same consequence in-process instead). ~13s of real work, 60s of budget — headroom
   // for a loaded runner, without the allowance itself becoming the place a regression hides. That is
-  // what GUARD_BUDGET_CPU_MS below is for: the timeout catches a hang, the budget catches a creep.
+  // what the CPU budget below is for: the timeout catches a hang, the budget catches a creep.
   it('gives identical results with and without ripgrep on PATH', { timeout: 60_000 }, () => {
     const stub = mkdtempSync(path.join(tmpdir(), 'nopath-'))
     // Everything a probe legitimately needs (node, git, a shell) — but deliberately not `rg`.
@@ -465,18 +503,135 @@ describe('the probe engine does not depend on ambient tooling', () => {
     // Linux-only, so it degrades to SKIPPING rather than to the wall clock. Asserting the wrong
     // quantity elsewhere is what produced the false failure in the first place; a gate that cannot
     // measure honestly on a platform should say nothing there (ADR-970).
-    const GUARD_BUDGET_CPU_MS = 20_000
+    // ── HYG-012 step 2 (ADR-1107): A PER-PROBE CEILING, AND A TOTAL THAT SCALES WITH n ────
+    //
+    // The flat 20s failed FOUR builds (20.2s, 20.3s, 20.6s) and every one of them was an honest
+    // backlog getting longer, not a probe getting slower. A fixed total does not measure the thing
+    // this assertion's own message says it cares about ("something added expensive work to a
+    // PROBE") — it measures HOW MANY ROWS THE LIST HAS, so closing rows honestly walks the list
+    // into its own gate. Both cheap remedies were tried and measured and both failed (memoising
+    // bought nothing; only 3 of the 11 expensive probes are greps, the other 8 are computations).
+    // There was no waste left to remove.
+    //
+    // So the shape changed rather than the number, per the owner ruling of 2026-08-21:
+    //
+    //   (1) NO SINGLE PROBE may exceed PER_PROBE_CEILING_MS. That is the real regression signal and
+    //       it stays valid however long the list gets.
+    //   (2) The TOTAL is BASE + PER_PROBE_ALLOWANCE_MS x n, so a normal new row is free and only an
+    //       abnormal one trips it.
+    //
+    // 📐 WHERE THE CONSTANTS COME FROM — a PAIRED CI/local reading, the way PACKED_PER_RAW was
+    // settled, because CPU time is load-independent (LIVE-047) but NOT hardware-independent:
+    //
+    //                       n     totalCpuMs   maxCpuMs (PROG-DAWN9)
+    //   CI, checks job     111       8530            2150            <- 2026-08-24, run 32753212940
+    //   local, 3 runs      111    7690-8560      1960-2090
+    //
+    // CI:local is 1.00-1.11 on this pair, so the 1.6x this row's history recorded (CI 20.2s vs a
+    // contemporaneous local 12.0-13.4s) is NOT a property of today's runners. The constants are
+    // still set from the CI half, and generously, because that assumption is the one that expires.
+    //
+    // PROBES ARE 96% OF THE GUARD. Measured locally the same day: guardCpuMs 8360/8000 against a
+    // probe total of 8080/7690 — about 300ms of non-probe work (node startup, the tree walk the
+    // in-process kinds share). That is why a budget built from the probe reading can be asserted
+    // against guardCpuMs at all, and why BASE is 2s rather than 300ms: it is the half NOT covered
+    // by the per-probe reading, so it gets the loose end of the estimate.
+    const PER_PROBE_CEILING_MS = 4_500 // 2.1x the worst CI probe (2150ms), 2.3x the worst local
+    const BASE_CPU_MS = 2_000 // ~7x the measured 300ms of non-probe work
+    const PER_PROBE_ALLOWANCE_MS = 180 // 2.3x the 77ms CI average; at n=111 the total is 22.0s
+
+    // 🔎 THE LINE THIS ASSERTION IS BUILT FROM, PRINTED ON EVERY RUN — INCLUDING GREEN ONES.
+    // A number that only prints on FAILURE cannot be read BEFORE the gate is set from it, and
+    // AGENTS.md is explicit that a build-blocking gate which has never seen a real reading is the
+    // 2026-08-11 incident with the roles reversed. This is how the CI half above was obtained and
+    // how the next reader re-checks it without breaking a build to do so.
+    const costLine = /probe-cost: n=(\d+) totalCpuMs=(\d+) maxCpuMs=(\d+) slowest=(\S+)/.exec(withRg.out)
+    const selfReported = /guard-cost: guardCpuMs=(\d+)/.exec(withRg.out)
+    console.log(
+      `[backlog-budget] guardCpuMs=${guardCpuMs ?? 'n/a'} guardWallMs=${guardWallMs} ${costLine?.[0] ?? 'probe-cost=MISSING'}`,
+    )
+
+    // ⚠️ A STRUCTURAL FAILURE EXITS BEFORE ANY PROBE RUNS, so there is genuinely no cost to print
+    // and demanding the line here would accuse the wrong thing. This was not hypothetical: deleting
+    // a row's `source.file` (OWN-037, 2026-08-24) made the guard exit structurally, and the first
+    // version of this assertion reported "check:backlog stopped printing its probe-cost line" —
+    // sending the reader after the instrumentation instead of the broken row. A gate whose message
+    // misdirects is worse than no gate, which is the whole lesson of the wall-clock budget it
+    // replaced. So: the cost assertions apply to a run that REACHED the probes, and the structural
+    // failure is surfaced on its own terms.
+    if (/structural problem\(s\) in/.test(withRg.out)) {
+      expect(
+        withRg.out,
+        'check:backlog failed STRUCTURALLY, so no probe ran and the cost assertions below cannot\n' +
+          'apply. Fix the row it names — most often a `source.file` that was deleted without the\n' +
+          'row being re-pointed.\n\n' + withRg.out,
+      ).toBe('')
+    }
+
+    // The instrumentation is itself a fail-safe, so something has to notice when it stops firing
+    // (AGENTS.md: "every fail-safe needs a gate that notices it fired"). Without this, deleting the
+    // probe-cost line would silently retire the per-probe ceiling and leave a green build behind.
+    expect(
+      costLine,
+      'check:backlog stopped printing its `probe-cost:` summary line, so the per-probe ceiling below\n' +
+        'has nothing to measure. Restore the line in scripts/check-backlog.mjs rather than deleting\n' +
+        'this assertion — a ceiling with no reading is not a weaker gate, it is no gate.',
+    ).not.toBeNull()
+
+    const probeCount = Number(costLine![1])
+    const worstProbeMs = Number(costLine![3])
+    const worstProbeId = costLine![4]
+
+    // The guard SELF-REPORTS its total cost so a green CI run publishes the number (vitest's
+    // default reporter swallows the console.log above on a passing test). A self-report nobody
+    // checks is the shape-not-truth failure again, so it is cross-checked here against the same
+    // quantity measured from OUTSIDE the process. The band is deliberately wide — these are two
+    // different vantage points on one number (2026-08-24: 8375 self vs 8650 external, ~3% apart) —
+    // and it is here to catch a self-report that has come UNSTUCK, not to re-measure the guard.
+    expect(
+      selfReported,
+      'check:backlog stopped printing its `guard-cost:` line. That line is the only reading of this\n' +
+        'gate\u2019s own cost that a GREEN ci run publishes, and ADR-1107\u2019s constants were set from it.',
+    ).not.toBeNull()
+    if (guardCpuMs !== null && selfReported) {
+      const selfMs = Number(selfReported[1])
+      expect(
+        selfMs,
+        `The guard reported ${selfMs}ms of CPU for itself while this test measured ${Math.round(guardCpuMs)}ms\n` +
+          'from outside it. Those are two views of one quantity and they have drifted apart, so the\n' +
+          'number a future budget gets set from is no longer the number the budget is asserted on.\n' +
+          'Fix the self-report in scripts/check-backlog.mjs rather than widening this band.',
+      ).toBeGreaterThan(guardCpuMs * 0.5)
+      expect(selfMs).toBeLessThan(guardCpuMs * 2)
+    }
+
+    // (1) THE PER-PROBE CEILING. This is the assertion that survives the list getting longer.
+    expect(
+      worstProbeMs,
+      `The single probe \`${worstProbeId}\` burned ${(worstProbeMs / 1000).toFixed(2)}s of CPU, over the\n` +
+        `${PER_PROBE_CEILING_MS / 1000}s per-probe ceiling. This is the signal this gate exists for: ONE probe got\n` +
+        'expensive. Measure that row\u2019s consequence in-process instead of spawning a suite — see LIVE-034\n' +
+        'in docs/BUILD-BACKLOG.json for the nine rows that were converted and the pattern each used.\n' +
+        'Raising this ceiling is not the fix; the total below is what absorbs an honestly longer list.',
+    ).toBeLessThan(PER_PROBE_CEILING_MS)
+
+    // (2) THE COUNT-SCALED TOTAL. Adding a normal row raises the budget by more than a normal row
+    // costs, so the list can grow; a round of rows that are each quietly expensive still trips it.
+    const budget = BASE_CPU_MS + PER_PROBE_ALLOWANCE_MS * probeCount
     if (guardCpuMs === null) {
       expect(guardWallMs, 'the guard should at least finish inside its own 60s timeout').toBeLessThan(60_000)
     } else {
       expect(
         guardCpuMs,
-        `check:backlog burned ${(guardCpuMs / 1000).toFixed(1)}s of CPU, over its ${GUARD_BUDGET_CPU_MS / 1000}s budget.\n` +
+        `check:backlog burned ${(guardCpuMs / 1000).toFixed(1)}s of CPU, over its ${(budget / 1000).toFixed(1)}s budget\n` +
+          `(${BASE_CPU_MS / 1000}s base + ${PER_PROBE_ALLOWANCE_MS}ms x ${probeCount} probes).\n` +
           `(Wall clock was ${(guardWallMs / 1000).toFixed(1)}s, which is load-dependent and NOT what this asserts.)\n` +
-          'Something added expensive work to a probe. Find it, and measure that consequence in-process\n' +
-          'rather than by spawning a suite — see LIVE-034 in docs/BUILD-BACKLOG.json for the nine rows\n' +
-          'that were converted and the pattern each used. Raising this number is not the fix.',
-      ).toBeLessThan(GUARD_BUDGET_CPU_MS)
+          `The worst single probe was ${worstProbeId} at ${(worstProbeMs / 1000).toFixed(2)}s, under the per-probe\n` +
+          'ceiling — so this is COST SPREAD ACROSS PROBES, not one bad row. Several probes got more\n' +
+          'expensive together, or the guard itself did. Find it, and measure the consequence in-process\n' +
+          'rather than by spawning a suite (LIVE-034). Raising these constants is not the fix: they were\n' +
+          'set from a paired CI/local reading recorded in ADR-1107, and moving them needs the same.',
+      ).toBeLessThan(budget)
     }
   })
 })
