@@ -4,6 +4,7 @@ import {
   BETA_CTA_HREF,
   BETA_CTA_SECONDARY_LABEL,
   BETA_CTA_SECONDARY_HREF,
+  FOUNDING_PLACE,
 } from '@/lib/site'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -35,6 +36,36 @@ import {
 //    (BETA_CTA_SECONDARY_LABEL, "or just join as a member"). Never stack two
 //    buttons; a secondary text link is not a button. The hero's `note` carries
 //    honest founding status instead of fake urgency.
+//
+// RECOVERED 2026-08-24, when the coded body was retired (Lift 5c, LIVE-006). This
+// template is a DAWN 2 re-expression of the coded page, not a transcript, so walking
+// `app/(marketing)/the-community/page.tsx` section by section against this file is the
+// only way to find what it drew that nothing here did. Five details turned up, and all
+// five are restored IN PLACE, in blocks that already existed, rather than as new blocks:
+//   1. the "No application, no audition." guardrail — the coded premise Body and the
+//      three-steps kicker both carried it, and this file said it only in a CODE COMMENT
+//      ("never a gate"), which no visitor reads. Now the tail of `tc-reader-b`.
+//   2. the "See what membership opens on the [pricing page](/pricing)" link, from the
+//      coded `Where it starts` section. Also `tc-reader-b`, which is the rich-text sink
+//      nearest the subject (RolesPath `safetyNet` and CallToAction `body` both print raw,
+//      so a markdown link there would ship as literal text).
+//   3. the "Find a Circle near you" → /discover link, from the same coded section, now
+//      the `tc-channels` MediaText CTA (a designed slot that was empty). Same move the
+//      the-quest retirement made with `tq-practices`.
+//   4. the "Circulation, not exclusion." generosity guardrail, from the coded `Hold the
+//      door` card, now the closing sentence of the `tc-roles` safety-net beat, which is
+//      already the block about looking after the person on the next rung.
+//   5. the FOUNDING_PLACE grounding ("The founding community is taking shape in …"),
+//      from the coded `Where it starts` kicker, now the tail of the `tc-cta-mid` body.
+//      INTERPOLATED, never typed, so this page and lib/site.ts cannot drift.
+// Deliberately NOT restored, because the page or the site already says it in its own
+// words: "Get people together. Do things on purpose." (a site-wide brand line, live on
+// the homepage and in lib/ai/voice.ts, and not this page's to carry); the "cells, not
+// franchises" growth beat and its Circle → neighborhood → community trio (FAQ answer 4
+// carries the same claim, near-verbatim); "you're not a number on a waitlist" (the hero
+// `note` is this page's honest-status slot); and the coded `A day in Frequency` DayBeats
+// (CircleFirstNight is this file's concrete-evening beat). The interactive ProductTour
+// island (`./tour`) went with the body: it had exactly one caller and no block twin.
 //
 // Block adjust props every block carries: tone ('surface'|'canvas'|'ink'),
 // width ('default'|'wide'|'full'), align ('left'|'center'), layout (the L below).
@@ -94,7 +125,7 @@ export const data: Data = {
       type: 'Text',
       props: {
         id: 'tc-reader-b',
-        body: "You already have the apps. What you're missing is a standing time, a handful of faces, and a group small enough that your absence leaves a hole. That's not a feature you download. It's a room someone decides to hold open.\n\nFrequency is for the person who decides. You don't need a big personality or a finished plan. You need a Channel you care about, a few people near you, and a format you can run. We hand you the rest.",
+        body: "You already have the apps. What you're missing is a standing time, a handful of faces, and a group small enough that your absence leaves a hole. That's not a feature you download. It's a room someone decides to hold open.\n\nFrequency is for the person who decides. You don't need a big personality or a finished plan. You need a Channel you care about, a few people near you, and a format you can run. We hand you the rest. No application, no audition. See what membership opens on the [pricing page](/pricing).",
         size: 'lg',
         tone: 'canvas',
         width: 'default',
@@ -158,7 +189,7 @@ export const data: Data = {
           { name: 'Mentor', blurb: 'You keep the Guides steady across a whole local community.' },
         ],
         safetyNet:
-          'Nobody gets handed a room and left to sink. Whatever rung you take, the rung above it is there for backup: a Guide for every Host, a Mentor for every Guide. Step up exactly as far as feels right, and step back any time.',
+          'Nobody gets handed a room and left to sink. Whatever rung you take, the rung above it is there for backup: a Guide for every Host, a Mentor for every Guide. Step up exactly as far as feels right, and step back any time. When you can give a little more, you hold the door for the next person. Circulation, not exclusion.',
         tone: 'surface',
         width: 'default',
         align: 'left',
@@ -200,7 +231,7 @@ export const data: Data = {
         eyebrow: '',
         heading: 'Hold the door for one Circle.',
         headingAccent: 'one Circle',
-        body: "You've seen the night, the path, and the three steps. The first Hosts are setting the tone now.",
+        body: `You've seen the night, the path, and the three steps. The first Hosts are setting the tone now. The founding community is taking shape in ${FOUNDING_PLACE}.`,
         ctaPrimaryLabel: BETA_CTA_LABEL,
         ctaPrimaryHref: BETA_CTA_HREF,
         ctaSecondaryLabel: BETA_CTA_SECONDARY_LABEL,
@@ -229,8 +260,8 @@ export const data: Data = {
         side: 'left',
         imgAspect: 'landscape',
         focal: 'center',
-        ctaLabel: '',
-        ctaHref: '',
+        ctaLabel: 'Find a Circle near you',
+        ctaHref: '/discover',
         tone: 'canvas',
         width: 'default',
         align: 'left',

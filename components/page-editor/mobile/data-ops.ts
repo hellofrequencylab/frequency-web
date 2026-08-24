@@ -8,6 +8,7 @@
 
 import type { Config, Data } from '@/lib/page-editor/types'
 import { blockLimitReason, canAddBlock } from '@/lib/page-editor/block-limits'
+import { categoryKeysForSurface, type EditorSurface } from '@/lib/page-editor/palette-scope'
 
 type Item = Data['content'][number]
 
@@ -51,8 +52,13 @@ export type PickerGroup = {
 /** The block types the picker offers, grouped by the config's categories (with a "More" group for any
  *  uncategorized component). Pass `data` to annotate items that have hit their PER-PAGE cap — those come
  *  back `disabled` with a `reason`, so the palette can grey them out (design blocks up to 3 per page,
- *  primary profile blocks once per page; everything else is unlimited). Omit `data` for a plain palette. */
-export function derivePickerGroups(config: Config, data?: Data): PickerGroup[] {
+ *  primary profile blocks once per page; everything else is unlimited). Omit `data` for a plain palette.
+ *
+ *  Pass `surface` to SCOPE the palette to the categories that surface can actually bind (lib/page-editor/
+ *  palette-scope.ts): a marketing page stops offering the Space profile blocks, which render nothing there.
+ *  Both editors pass it — it is a required prop on <DesktopEditor> and <MobileEditor>, and palette-scope.test.ts
+ *  pins both call sites — so omitting it here means "unscoped", which is what the pure-function tests want. */
+export function derivePickerGroups(config: Config, data?: Data, surface?: EditorSurface): PickerGroup[] {
   const components = (config.components ?? {}) as Record<string, ComponentEntry>
   const labelFor = (type: string) => components[type]?.label ?? type
   const itemFor = (type: string): PickerItem => {
@@ -68,10 +74,17 @@ export function derivePickerGroups(config: Config, data?: Data): PickerGroup[] {
     string,
     { title?: string; components?: readonly string[] }
   >
+  // `null` means "offer every category" (no surface passed, or one this build does not recognise —
+  // palette-scope fails OPEN so an editor is never left with nothing to add).
+  const allowed = surface ? categoryKeysForSurface(surface) : null
   for (const [key, cat] of Object.entries(categories)) {
     const types = (cat.components ?? []).filter((t) => t in components)
     if (types.length === 0) continue
+    // A block is "placed" by BELONGING to a category, never by being offered. Marking it inside the
+    // allowlist check instead would push every scoped-out block straight into the "More" group below,
+    // which offers the whole Space set back on a marketing page and makes the scope a no-op.
     for (const t of types) placed.add(t)
+    if (allowed && !allowed.has(key)) continue
     groups.push({
       key,
       title: cat.title ?? key,
@@ -79,7 +92,9 @@ export function derivePickerGroups(config: Config, data?: Data): PickerGroup[] {
     })
   }
 
-  // Any component not assigned to a category still needs to be addable.
+  // Any component not assigned to a category still needs to be addable. Uncategorized means no surface
+  // claims it, so it stays offered everywhere rather than becoming unreachable; palette-scope.test.ts
+  // pins the current set, so a NEW orphan is noticed instead of quietly leaking onto every surface.
   const orphaned = Object.keys(components).filter((t) => !placed.has(t))
   if (orphaned.length > 0) {
     groups.push({

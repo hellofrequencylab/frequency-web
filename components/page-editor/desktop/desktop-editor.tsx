@@ -35,6 +35,7 @@ import {
   X,
 } from 'lucide-react'
 import type { Config, Data, Metadata } from '@/lib/page-editor/types'
+import type { EditorSurface } from '@/lib/page-editor/palette-scope'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { Button } from '@/components/ui/button'
 import {
@@ -67,6 +68,11 @@ export function useEditorDoc(): Data {
 
 export type DesktopEditorProps = {
   config: Config
+  /** WHICH EDITOR SURFACE this is ('marketing' | 'space'). REQUIRED, and required on purpose: it
+   *  scopes the "Add block" palette to the categories this surface can actually bind
+   *  (lib/page-editor/palette-scope.ts), and a required prop means a new editor mount cannot
+   *  forget it and silently inherit the whole 87-block library. */
+  surface: EditorSurface
   /** The initial document. The editor owns it in local state thereafter. */
   data: Data
   /** Render metadata threaded to the preview (space / spotlight / live channels). */
@@ -85,6 +91,7 @@ type PaletteTarget = { parentId: string; slotKey: string } | null
 
 export function DesktopEditor({
   config,
+  surface,
   data: initialData,
   metadata,
   headerTitle,
@@ -159,7 +166,8 @@ export function DesktopEditor({
   const outline = useMemo(() => buildOutline(data, config), [data, config])
   const selected = selectedId ? findBlockDeep(data, config, selectedId) : null
   // Pass the live document so the palette greys out any block at its per-page cap (block-limits.ts).
-  const pickerGroups = useMemo(() => derivePickerGroups(config, data), [config, data])
+  // Pass the SURFACE so the palette offers only the categories this surface can bind (palette-scope.ts).
+  const pickerGroups = useMemo(() => derivePickerGroups(config, data, surface), [config, data, surface])
 
   return (
     <EditorDocContext.Provider value={data}>

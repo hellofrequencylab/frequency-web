@@ -551,6 +551,23 @@ describe('the probe engine does not depend on ambient tooling', () => {
       `[backlog-budget] guardCpuMs=${guardCpuMs ?? 'n/a'} guardWallMs=${guardWallMs} ${costLine?.[0] ?? 'probe-cost=MISSING'}`,
     )
 
+    // ⚠️ A STRUCTURAL FAILURE EXITS BEFORE ANY PROBE RUNS, so there is genuinely no cost to print
+    // and demanding the line here would accuse the wrong thing. This was not hypothetical: deleting
+    // a row's `source.file` (OWN-037, 2026-08-24) made the guard exit structurally, and the first
+    // version of this assertion reported "check:backlog stopped printing its probe-cost line" —
+    // sending the reader after the instrumentation instead of the broken row. A gate whose message
+    // misdirects is worse than no gate, which is the whole lesson of the wall-clock budget it
+    // replaced. So: the cost assertions apply to a run that REACHED the probes, and the structural
+    // failure is surfaced on its own terms.
+    if (/structural problem\(s\) in/.test(withRg.out)) {
+      expect(
+        withRg.out,
+        'check:backlog failed STRUCTURALLY, so no probe ran and the cost assertions below cannot\n' +
+          'apply. Fix the row it names — most often a `source.file` that was deleted without the\n' +
+          'row being re-pointed.\n\n' + withRg.out,
+      ).toBe('')
+    }
+
     // The instrumentation is itself a fail-safe, so something has to notice when it stops firing
     // (AGENTS.md: "every fail-safe needs a gate that notices it fired"). Without this, deleting the
     // probe-cost line would silently retire the per-probe ceiling and leave a green build behind.
