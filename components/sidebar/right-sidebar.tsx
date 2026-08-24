@@ -8,6 +8,7 @@ import { getPracticesToLogToday, getRecentPracticeLogs, getMemberPractices } fro
 import { getMemberJourneyProgress } from '@/lib/journeys/progress'
 import { getSpendableBalance } from '@/lib/store/balance'
 import { resolveMemberDay } from '@/lib/member-day'
+import { frozenDaysFrom, streakDayRun } from '@/lib/practice-streak'
 import { DemoNotice } from '@/components/sidebar/demo-notice'
 import { pageRailPanels, isQuestSurface } from '@/lib/layout/rail-panels'
 import { ControlCenterPanel, PanelSkeleton } from '@/components/sidebar/rail-panels'
@@ -104,8 +105,12 @@ export const loadGameStats = cache(async function loadGameStats(profileId: strin
     spendable,
     memberToday,
   ] = await Promise.all([
+    // `meta` rides along on the row already being read: it carries
+    // `practiceStreak.frozenDates` + the rest window, which is the ONLY place a bridged
+    // day is recorded (a freeze writes no practice_log). One column on an existing
+    // single-row read, not a second query — the batch stays one round of parallel work.
     admin.from('profiles')
-      .select('current_season_zaps, lifetime_gems, current_streak')
+      .select('current_season_zaps, lifetime_gems, current_streak, meta')
       .eq('id', profileId).maybeSingle(),
     getPracticesToLogToday(profileId).catch(() => []),
     getMemberPractices(profileId).catch(() => []),
@@ -125,7 +130,12 @@ export const loadGameStats = cache(async function loadGameStats(profileId: strin
     resolveMemberDay(profileId).catch(() => null),
   ])
 
-  const p = profile as { current_season_zaps?: number; lifetime_gems?: number; current_streak?: number } | null
+  const p = profile as {
+    current_season_zaps?: number
+    lifetime_gems?: number
+    current_streak?: number
+    meta?: Record<string, unknown> | null
+  } | null
   const zaps = p?.current_season_zaps ?? 0
   const gems = p?.lifetime_gems ?? 0
   const streak = p?.current_streak ?? 0
@@ -148,13 +158,16 @@ export const loadGameStats = cache(async function loadGameStats(profileId: strin
   // server has already passed by ~16:00 local, so their own dot went dark and the whole window
   // sat one day off. Stepping back from the resolved YYYY-MM-DD with UTC arithmetic is safe
   // because the anchor is already a calendar date, not an instant.
+  //
+  // TRI-STATE, not boolean[] (LIVE-101). A day the reserve bridged or a rest window covered
+  // writes NO practice_log, so a boolean built from the logs alone called it `false` and the
+  // dock painted the member's own "life happens" pause as a MISS. The freeze is recorded in
+  // `profiles.meta.practiceStreak`, which is exactly what getPracticeStreak bridges the count
+  // with, so the run is built from BOTH sources through the shared helpers — one definition of
+  // a frozen day, and StreakMeter's kindest state finally has a producer.
   const loggedDays = new Set(recentLogs.map((r) => r.logged_for))
   const anchor = memberToday ?? new Date().toISOString().slice(0, 10)
-  const anchorMs = Date.parse(`${anchor}T00:00:00Z`)
-  const last7 = Array.from({ length: 7 }, (_, i) => {
-    const day = new Date(anchorMs - (6 - i) * 86_400_000).toISOString().slice(0, 10)
-    return loggedDays.has(day)
-  })
+  const last7 = streakDayRun(anchor, loggedDays, frozenDaysFrom(p?.meta, anchor))
 
   // Rank progress to next tier (completion-based)
   const idx = SEASON_RANKS.findIndex((r) => r.rank === rank)

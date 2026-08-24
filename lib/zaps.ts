@@ -96,6 +96,13 @@ export type ZapAction = keyof typeof ZAP_AMOUNTS
 export interface ZapAwardResult {
   awarded: boolean
   amount: number
+  /** True ONLY when the award was refused because the action's `zap_config.daily_cap` is
+   *  already spent for this UTC day (award_zaps_atomic, 20270322000000). Mirrors the `capped`
+   *  flag on the Gem path's AwardResult, but stays OPTIONAL here on purpose: several callers
+   *  already write `.catch(() => ({ awarded: false, amount: 0 }))` as their failure fallback
+   *  (lib/qr/referral.ts, lib/beta/referral-contest.ts), and a required third field would make
+   *  those literals stop type-checking for no gain. Absent means "not a cap refusal". */
+  capped?: boolean
 }
 
 export interface AwardZapsOpts {
@@ -113,6 +120,13 @@ export interface AwardZapsOpts {
  * verified external / in-person engagement. Idempotency is the caller's
  * responsibility — drive grants through recordEngagementEvent
  * (lib/engagement/events.ts) for exactly-once.
+ *
+ * ⚠️ NO DAILY CAP HERE. `zap_config.daily_cap` is enforced by `awardZapsForAction`, the
+ * config-driven entry point (the mirror of `awardGems`). This one takes a caller-computed
+ * amount and has no config row to read a cap from. Rows it writes still COUNT toward the
+ * day's allowance for the same `actionType`, because award_zaps_atomic counts ledger rows and
+ * cannot tell which path wrote them — so a partial practice log (1 Zap, written here) spends
+ * the practice_logged allowance that a later full log would have used.
  */
 export async function awardZaps(
   profileId: string,
@@ -189,11 +203,32 @@ export async function reverseZaps(
 }
 
 /**
- * Award zaps for a named action, reading the amount from the tunable `zap_config`
- * table (falls back to ZAP_AMOUNTS if the row is missing). Use this for fixed-value
- * actions; pass an explicit amount to `awardZaps` directly for dynamic values (e.g.
- * a node's own `zaps_value`). Idempotency stays the caller's responsibility (drive
+ * Award zaps for a named action, reading the amount AND the daily cap from the tunable
+ * `zap_config` table (falls back to ZAP_AMOUNTS if the row is missing). Use this for
+ * fixed-value actions; pass an explicit amount to `awardZaps` directly for dynamic values
+ * (e.g. a node's own `zaps_value`). Idempotency stays the caller's responsibility (drive
  * through recordEngagementEvent for exactly-once).
+ *
+ * ── daily_cap IS ENFORCED HERE, AND UNTIL 2026-08-24 IT WAS NOT ENFORCED ANYWHERE ──────────
+ * This function used to select `zaps_amount, is_active` and nothing else; the string
+ * `daily_cap` did not appear in this file at all, while /admin/gamification happily let a
+ * janitor set one. An operator set a throttle, the UI confirmed it, and the engine never
+ * asked — ADR-970's named failure, a switch that gates nothing reading as coverage. Two
+ * production rows carried an inert cap when this landed: practice_logged (12 Zaps, cap 1)
+ * and event_posted (20 Zaps, cap 3). Both are live from this change forward.
+ *
+ * The cap-check and the insert happen INSIDE one Postgres function under a per-(profile,
+ * action) advisory lock (`award_zaps_atomic`, migration 20270322000000, UTC day boundary).
+ * That is not gold-plating: the Gem path shipped the obvious count-then-insert first and it
+ * was a race — N concurrent awards at cap-1 all read the same count and all inserted, past
+ * the cap. This mirrors the FIXED shape, deliberately. A NULL cap means uncapped.
+ *
+ * ⚠️ SCOPE. The cap binds on THIS entry point only — the config-driven one, the mirror of
+ * `awardGems`. `awardZaps(profileId, amount, opts)` still inserts directly, because it has no
+ * config row behind it (a node's own value, a partial practice log, a finish top-up delta).
+ * Rows it writes DO count toward the day's allowance, since award_zaps_atomic counts ledger
+ * rows by action_type regardless of which path wrote them. And `reverseZaps` debits under a
+ * different action_type, so an un-log does not hand the allowance back.
  */
 export async function awardZapsForAction(
   profileId: string,
@@ -204,13 +239,72 @@ export async function awardZapsForAction(
 
   const { data: cfg } = await admin
     .from('zap_config')
-    .select('zaps_amount, is_active')
+    .select('zaps_amount, daily_cap, is_active')
     .eq('action_type', action)
     .maybeSingle()
 
+  // An explicitly inactive action awards nothing. NOTE the deliberate difference from gems,
+  // which reads `!config?.is_active` and so pays nothing when the row is MISSING: a missing
+  // `zap_config` row here keeps falling back to the static ZAP_AMOUNTS default, so a grant
+  // never breaks on a config gap. That fallback predates this change and survives it.
   if (cfg && !cfg.is_active) return { awarded: false, amount: 0 }
-  const amount = overrideAmount ?? cfg?.zaps_amount ?? ZAP_AMOUNTS[action]
-  return awardZaps(profileId, amount, { actionType: action })
+
+  const requested = overrideAmount ?? cfg?.zaps_amount ?? ZAP_AMOUNTS[action]
+  if (!Number.isFinite(requested) || requested <= 0) return { awarded: false, amount: 0 }
+  const amount = Math.floor(requested)
+
+  // The RPC is not in the generated types yet, so the call is cast (repo convention for
+  // not-yet-typed DB objects). `.bind(admin)` is mandatory, not stylistic: SupabaseClient.rpc
+  // opens by reading `this.rest`, and a detached alias threw `Cannot read properties of
+  // undefined (reading 'rest')` in production for six weeks (LIVE-053 / LIVE-061, digest
+  // 3920664382). scripts/check-detached-client-methods.test.ts fails the build if it comes back.
+  const rpc = admin.rpc.bind(admin) as unknown as (
+    name: 'award_zaps_atomic',
+    args: {
+      _profile: string
+      _action: string
+      _amount: number
+      _daily_cap: number | null
+      _metadata: Record<string, unknown>
+    },
+  ) => Promise<{ data: { awarded?: boolean; capped?: boolean } | null; error: { message: string } | null }>
+
+  const { data, error } = await rpc('award_zaps_atomic', {
+    _profile: profileId,
+    _action: action,
+    _amount: amount,
+    // NULL cap = uncapped, exactly as for Gems. `?? null` and not `|| null`: a cap of 0 is a
+    // real setting (pay nothing) and must not be coerced into "unlimited".
+    _daily_cap: cfg?.daily_cap ?? null,
+    _metadata: {},
+  })
+
+  if (error) {
+    // FAIL CLOSED — award nothing. Matches lib/gems.ts, and the direction is the whole point of
+    // this change: falling back to a raw `awardZaps` insert here would pay the Zaps UNCAPPED,
+    // i.e. it would silently restore the exact defect being fixed, and it would do so precisely
+    // when nobody is looking. An unpaid Zap is a support ticket; an uncapped one is the bug.
+    //
+    // THE GATE THAT NOTICES IT FIRED (AGENTS.md — a swallowed error is an invisible regression):
+    // console.error alone is pull-only, and this repo has already watched a pull-only signal go
+    // unread for five weeks (LIVE-091). So the fail-safe also reports to Sentry, tagged, through
+    // a DYNAMIC import so `@sentry/nextjs` never enters this module's static graph (lib/zaps.ts
+    // is reachable from a lot of server code, and ADR-1074 is the record of what a stray static
+    // import here costs). Fire-and-forget and swallowed: observability may never break the path
+    // it observes.
+    console.error('[awardZapsForAction] award_zaps_atomic failed, awarding nothing', action, error.message)
+    void import('@sentry/nextjs')
+      .then((S) =>
+        S.captureException(new Error(`award_zaps_atomic failed: ${error.message}`), {
+          tags: { area: 'rewards', currency: 'zaps', zap_action: action, failsafe: 'fail_closed' },
+        }),
+      )
+      .catch(() => {})
+    return { awarded: false, amount: 0 }
+  }
+
+  const awarded = !!data?.awarded
+  return { awarded, amount: awarded ? amount : 0, capped: !!data?.capped }
 }
 
 /**

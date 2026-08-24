@@ -5,6 +5,8 @@ import {
   dayDiff,
   pauseCoveredDays,
   isResting,
+  frozenDaysFrom,
+  streakDayRun,
   MAX_PAUSE_DAYS,
 } from './practice-streak'
 import { memberDay } from './member-day'
@@ -146,5 +148,104 @@ describe('a planned rest bridges the streak like a reserve day', () => {
     const r = derivePracticeStreak(logged, frozen, TODAY)
     expect(r.alive).toBe(true)
     expect(r.current).toBe(6) // today + 3 rested + 2 logged before
+  })
+})
+
+// ── The frozen-day set, and the run a surface paints (LIVE-101) ──────────────
+// StreakMeter has painted three day states since it shipped — done, missed, and `frozen`,
+// the "life happens" kindness. The third had NO live producer: the rail built its 7-day
+// strip from `practice_logs` alone as a boolean[], and a day the reserve bridged or a rest
+// window covered writes no log row, so it arrived as `false` and painted as MISSED. The
+// data was never missing — getPracticeStreak has always bridged the COUNT with exactly this
+// set — it was just never returned. These lock the two pure halves of the plumbing.
+
+describe('frozenDaysFrom', () => {
+  it('is empty for a member with no stored streak augmentation', () => {
+    expect(frozenDaysFrom(null, TODAY).size).toBe(0)
+    expect(frozenDaysFrom({}, TODAY).size).toBe(0)
+    expect(frozenDaysFrom({ practiceStreak: {} }, TODAY).size).toBe(0)
+  })
+
+  it('carries the reserve days already spent', () => {
+    const frozen = frozenDaysFrom({ practiceStreak: { frozenDates: [back(2), back(5)] } }, TODAY)
+    expect([...frozen].sort()).toEqual([back(5), back(2)].sort())
+  })
+
+  it('folds in every day an active rest window covers, and never the future', () => {
+    const frozen = frozenDaysFrom(
+      { practiceStreak: { rest: { from: back(2), through: shiftDay(TODAY, 3) } } },
+      TODAY,
+    )
+    expect([...frozen].sort()).toEqual([back(2), back(1), back(0)].sort())
+    expect(frozen.has(shiftDay(TODAY, 1))).toBe(false)
+  })
+
+  it('is the SAME set getPracticeStreak bridges the count with', () => {
+    // The read path's own construction, reproduced: reserve days ∪ pause days. If these ever
+    // diverge, a day can bridge the number while painting as an absence — the exact split that
+    // let the rail tell a resting member they had slipped.
+    const meta = {
+      practiceStreak: {
+        frozenDates: [back(6)],
+        rest: { from: back(2), through: back(1) },
+      },
+    }
+    const expected = new Set([back(6), ...pauseCoveredDays({ from: back(2), through: back(1) }, TODAY)])
+    expect([...frozenDaysFrom(meta, TODAY)].sort()).toEqual([...expected].sort())
+  })
+})
+
+describe('streakDayRun', () => {
+  it('returns `length` days, oldest first, ending at the anchor', () => {
+    const run = streakDayRun(TODAY, set(TODAY), set())
+    expect(run).toHaveLength(7)
+    expect(run[6]).toBe('done')
+    expect(run.slice(0, 6)).toEqual(Array(6).fill('missed'))
+  })
+
+  // THE EQUIVALENCE PROOF. `done` and `missed` must render exactly as they did before the
+  // tri-state landed, so the pre-change expression from right-sidebar.tsx is reproduced here
+  // VERBATIM as the oracle and the new run is checked against it. Anchors cross a month end, a
+  // year end and a short month, because the old code walked by milliseconds and the new one
+  // walks by calendar date.
+  const oldBooleanRun = (anchor: string, loggedDays: Set<string>) => {
+    const anchorMs = Date.parse(`${anchor}T00:00:00Z`)
+    return Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(anchorMs - (6 - i) * 86_400_000).toISOString().slice(0, 10)
+      return loggedDays.has(day)
+    })
+  }
+
+  it('with no freezes, is byte-for-byte the run the boolean[] version produced', () => {
+    for (const anchor of ['2026-06-06', '2026-03-02', '2027-01-03', '2026-12-31', '2026-02-28']) {
+      for (const pattern of [0b0000000, 0b1111111, 0b1010101, 0b0110011, 0b0000001, 0b1000000]) {
+        const days = Array.from({ length: 7 }, (_, i) => shiftDay(anchor, i - 6))
+        const logged = new Set(days.filter((_, i) => (pattern >> (6 - i)) & 1))
+        expect(streakDayRun(anchor, logged, set())).toEqual(
+          oldBooleanRun(anchor, logged).map((on) => (on ? 'done' : 'missed')),
+        )
+      }
+    }
+  })
+
+  it('paints a bridged day as `frozen` instead of the absence it looks like in the logs', () => {
+    const meta = { practiceStreak: { frozenDates: [back(3)] } }
+    const logged = set(back(6), back(5), back(4), back(2), back(1), back(0))
+    const run = streakDayRun(TODAY, logged, frozenDaysFrom(meta, TODAY))
+    expect(run).toEqual(['done', 'done', 'done', 'frozen', 'done', 'done', 'done'])
+    // Without the frozen set that same day is indistinguishable from a miss — this is the bug.
+    expect(streakDayRun(TODAY, logged, set())[3]).toBe('missed')
+  })
+
+  it('paints a whole rest window as frozen, so a planned break never reads as a slip', () => {
+    const meta = { practiceStreak: { rest: { from: back(3), through: back(1) } } }
+    const run = streakDayRun(TODAY, set(back(6), back(5), back(4), back(0)), frozenDaysFrom(meta, TODAY))
+    expect(run).toEqual(['done', 'done', 'done', 'frozen', 'frozen', 'frozen', 'done'])
+  })
+
+  it('lets showing up outrank a bridge: a logged day inside a pause is `done`', () => {
+    const meta = { practiceStreak: { rest: { from: back(2), through: back(0) } } }
+    const run = streakDayRun(TODAY, set(back(1)), frozenDaysFrom(meta, TODAY))
+    expect(run.slice(4)).toEqual(['frozen', 'done', 'frozen'])
   })
 })
