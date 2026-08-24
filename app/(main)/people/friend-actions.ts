@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { resolveConnectProvenance, type ConnectContext } from '@/lib/connections/edge-types'
+import { isBlockedBetween } from '@/lib/blocking'
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -48,6 +49,18 @@ export async function sendFriendRequest(
 ): Promise<ActionResult> {
   const me = await getMyProfile()
   if (me.id === targetProfileId) return fail('Cannot friend yourself')
+
+  // Blocking gate (LIVE-092), matching the six sibling contact-initiating paths. This one was
+  // missing, and the two DELETES on either side of it made the omission repeatable rather than
+  // one-off: blockUser deletes the friendship row, and declineFriendRequest deletes it again "so
+  // the requester can try again later" — so block → request → notification → decline → repeat ran
+  // indefinitely, writing a notifications row addressed to the person who blocked them each time.
+  // There is no layer underneath to catch it: no middleware, no trigger, and blocked_users is
+  // enforced in app code by design. Bidirectional on purpose — the profile page's own hasBlocked()
+  // guard asks only "did I block them", which is why the BLOCKED viewer still saw a live button.
+  if (await isBlockedBetween(me.id, targetProfileId)) {
+    return fail('You cannot connect with this member.')
+  }
 
   const pair = canonicalPair(me.id, targetProfileId)
   const admin = createAdminClient()

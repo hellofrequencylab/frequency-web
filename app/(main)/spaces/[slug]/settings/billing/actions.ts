@@ -7,6 +7,7 @@ import { createSpaceLoadoutCheckout, createSpaceBillingPortal } from '@/lib/bill
 import { updateOperatorSeats } from '@/lib/billing/operator-seats'
 import { type BillingInterval } from '@/lib/billing/pricing-keys'
 import { asAddonKey } from '@/lib/pricing/plans'
+import { viaStripe } from '@/lib/billing/via-stripe'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // SPACE PLAN BILLING ACTIONS (Pricing P3, ADR-363; collapsed ADR-552). The client-callable seams for
@@ -40,9 +41,12 @@ async function authorizeOwner(slug: string): Promise<{ spaceId: string; brandNam
 export async function openSpaceBillingPortal(slug: string): Promise<ActionResult<{ url: string }>> {
   const auth = await authorizeOwner(slug)
   if (!auth) return fail('You do not have access to manage this space.')
-  const url = await createSpaceBillingPortal(auth.spaceId)
-  if (!url) return fail('There is no subscription to manage yet.')
-  return ok({ url })
+  const portal = await viaStripe('spaces/billing openSpaceBillingPortal', () =>
+    createSpaceBillingPortal(auth.spaceId),
+  )
+  if ('error' in portal) return fail(portal.error)
+  if (!portal.value) return fail('There is no subscription to manage yet.')
+  return ok({ url: portal.value })
 }
 
 /** Set the Space's licensed operator-seat count directly on the live subscription (add / change / remove
@@ -52,7 +56,11 @@ export async function openSpaceBillingPortal(slug: string): Promise<ActionResult
 export async function setOperatorSeats(slug: string, seats: number): Promise<ActionResult<{ seats: number }>> {
   const auth = await authorizeOwner(slug)
   if (!auth) return fail('You do not have access to manage this space.')
-  const res = await updateOperatorSeats(auth.spaceId, seats)
+  const seatChange = await viaStripe('spaces/billing setOperatorSeats', () =>
+    updateOperatorSeats(auth.spaceId, seats),
+  )
+  if ('error' in seatChange) return fail(seatChange.error)
+  const res = seatChange.value
   if (!res.ok) return fail(res.error)
   return ok({ seats: res.seats })
 }
@@ -83,12 +91,15 @@ export async function startSpaceLoadoutCheckout(
   if (!auth) return fail('You do not have access to manage this space.')
   const addons = (input.addons ?? []).map((a) => asAddonKey(a)).filter((a): a is NonNullable<typeof a> => a !== null)
   const interval: BillingInterval = input.interval === 'year' ? 'year' : 'month'
-  const url = await createSpaceLoadoutCheckout(auth.spaceId, {
-    plan: asLoadoutPlan(input.plan),
-    addons,
-    interval,
-    seatQuantity: input.seatQuantity,
-  })
-  if (!url) return fail('Plan checkout is not available yet.')
-  return ok({ url })
+  const checkout = await viaStripe('spaces/billing startSpaceLoadoutCheckout', () =>
+    createSpaceLoadoutCheckout(auth.spaceId, {
+      plan: asLoadoutPlan(input.plan),
+      addons,
+      interval,
+      seatQuantity: input.seatQuantity,
+    }),
+  )
+  if ('error' in checkout) return fail(checkout.error)
+  if (!checkout.value) return fail('Plan checkout is not available yet.')
+  return ok({ url: checkout.value })
 }

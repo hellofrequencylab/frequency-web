@@ -404,7 +404,7 @@ export function JourneySpark({
           Your outline and every handout
           <InfoTip
             side="top"
-            label="Select your outline and every supporting document together. Vera reads PDF, Word, and plain text and weaves them into one Journey. A zip or an image is accepted but not read yet, so unzip first for now."
+            label="Select your outline and every supporting document together. Vera reads PDF, Word, and plain text and weaves them into one Journey."
           />
         </span>
       }

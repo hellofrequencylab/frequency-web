@@ -127,6 +127,26 @@ const rasterisers = traces.filter(isRasteriser)
 const starved = rasterisers.filter((rel) => !carrying.has(rel))
 const incidental = [...carrying].filter((rel) => !isRasteriser(rel))
 
+// ── WHOSE ARTIFACT IS THIS? (HYG-014) ───────────────────────────────────────────────────────
+// This gate is only as good as the .next/ underneath it, and it has exactly two honest states:
+// it read the artifact the deploy will ship, or it read some other artifact. With NO .next it
+// says so and stops. With a LOCAL build it happily prints a verdict — and on 2026-08-24 that
+// verdict ("16 card-rasterising routes ship WITHOUT sharp") was raised as a production incident
+// while the postbuild of the SAME commit reported sharp shipping to all 16. The failure text
+// below talks about Apple Mail timing out, so a false one reads as urgent and costs real time.
+//
+// AGENTS.md already says the artifact is gated in postbuild because CI never builds. That rule
+// has a second half this line supplies: a LOCAL read of this gate is a smoke test, and only the
+// production postbuild is evidence. Vercel sets VERCEL=1 in the build container.
+const IN_VERCEL_BUILD = process.env.VERCEL === '1'
+if (!IN_VERCEL_BUILD) {
+  console.warn(
+    'ℹ️  check:og-trace is reading a LOCAL .next, not the deploy artifact. Its verdict is a smoke\n' +
+      '   test, NOT evidence about production — trace shape can differ from the Vercel build. Before\n' +
+      '   acting on a failure here, read the `postbuild` output of the real deployment.',
+  )
+}
+
 let failed = false
 
 if (starved.length > 0) {
@@ -138,6 +158,12 @@ if (starved.length > 0) {
       `   exists specifically to stop Apple Mail timing out.\n`,
   )
   for (const rel of starved) console.error(`     ${route(rel)}`)
+  if (!IN_VERCEL_BUILD) {
+    console.error(
+      `\n   ⚠️ READ THIS BEFORE ESCALATING: the run above read a LOCAL build. Confirm against the\n` +
+        `      production deployment's postbuild output before treating it as a live incident.`,
+    )
+}
 }
 
 if (incidental.length > MAX_INCIDENTAL) {

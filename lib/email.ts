@@ -14,7 +14,7 @@
 
 import { Resend } from 'resend'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
-import { enqueue } from '@/lib/queue/outbox'
+import { enqueue, type JobLane } from '@/lib/queue/outbox'
 import { isSuppressed } from '@/lib/suppression'
 // Email Studio (Phase 4) transactional seam: renders an in-house email from its EDITABLE template when an
 // operator has seeded + edited one, else returns null so the hardcoded copy below stands. Additive + fail-safe.
@@ -169,8 +169,19 @@ export async function sendRawEmail(payload: EmailPayload): Promise<{ id: string 
 
 // Enqueue an email onto the durable outbox. Drained by /api/cron/process-queue
 // with retries + backoff. New email paths should go through this, not inline.
-export async function enqueueEmail(payload: EmailPayload): Promise<void> {
-  await enqueue('email', payload as unknown as Record<string, unknown>)
+//
+// `lane` defaults to transactional — one message one person is waiting for — and a LIST fan-out
+// (a campaign, a drip) must pass 'bulk'. That is what stops a campaign from spending the daily
+// sending quota a welcome email is queued behind, the way one did on 2026-07-17 (LIVE-091).
+// `runAfter` lets a fan-out drip itself (lib/queue/outbox bulkRunAfter) instead of coming due at once.
+export async function enqueueEmail(
+  payload: EmailPayload,
+  opts?: { lane?: JobLane; runAfter?: Date },
+): Promise<void> {
+  await enqueue('email', payload as unknown as Record<string, unknown>, {
+    lane: opts?.lane,
+    runAfter: opts?.runAfter,
+  })
 }
 
 // ── Welcome email ─────────────────────────────────────────────────────────────

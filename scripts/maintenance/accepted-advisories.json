@@ -5,10 +5,13 @@
     "rls_enabled_no_policy": "Deny-all is fail-closed — service-role-only tables reachable only via the admin client (scripts/rls-deny-all.txt, guarded by check:rls). Nothing exposed.",
     "anon_security_definer_function_executable": "Definers scope via auth.uid() + pinned search_path (ADR-004); anon EXECUTE returns nothing without a session. Public feed/discover RPCs are intentionally anon-callable.",
     "authenticated_security_definer_function_executable": "Same posture as the anon case (ADR-004); authed EXECUTE is scoped inside the function.",
-    "unused_index": "Pre-traffic noise — dropping an index the workload hasn't exercised is guessing. Revisit after real production traffic (META-SCAN-STATUS)."
+    "unused_index": "Pre-traffic noise — dropping an index the workload hasn't exercised is guessing. Revisit after real production traffic (META-SCAN-STATUS).",
+    "auth_db_connections_absolute": "INFO/perf, measured 2026-08-24 (HYG-013): the Auth server is pinned to 10 absolute DB connections rather than a percentage of the pool, so growing the instance would not grow Auth. Accepted rather than changed: at 56 profiles and 23 active members in 30 days, 10 connections is not the constraint, and the setting is an owner-side dashboard change with no repo-visible consequence. RE-OPEN THIS if the instance is ever resized or sign-in latency shows up in the SLOs — the acceptance is about the CURRENT scale, not about the setting being right."
   },
   "acceptedByTarget": {
-    "rls_disabled_in_public": ["spatial_ref_sys"]
+    "rls_disabled_in_public": [
+      "spatial_ref_sys"
+    ]
   },
   "_notDeliberatelyOmitted": {
     "auth_allow_anonymous_sign_ins": "FIXED by the owner (disabled), and ADR-1054 settles that it STAYS disabled — resonance/ was the only thing asking for it and no longer does. NOT accepted: if it comes back, the sweep must surface it. Pinned by supabase/anonymous-sign-ins-policy.test.ts.",

@@ -7,6 +7,66 @@
 > The durable record of the full-repo meta scan: what shipped, and what is still open with the
 > exact fix. Update it as items close. Newest pass first; earlier passes are kept below.
 
+## 2026-08-24 pass (production-first audit — the tree was already green)
+
+Run against a tree where **all 36 `check:*` gates, `tsc --noEmit`, the 180-row backlog contract and
+the migration ledger (628 repo / 628 applied) were green, with zero open PRs**, and where every one
+of the 144 security + 267 performance advisories was already adjudicated. So the sweep found nothing
+where a gate can look, and every finding below came from **production**: the Vercel runtime log, the
+`notification_queue` table, `platform_flags`, and the engagement ledger. Two finders ran sequentially
+(a delta audit of the 30 PRs since the 2026-08-20 scan, and a full-tree security sweep); the gates,
+premise re-tests and all production reads were the orchestrator's.
+
+**Status lives in the one list.** Every finding is a probed row: LIVE-090…LIVE-098, OWN-041, OWN-042,
+HYG-013. This section is the reasoning, not the record.
+
+### The two that mattered
+
+- **LIVE-090 — a member could grant themselves the paid tier.** `toggleMembership` established WHO
+  was asking and never asked WHETHER; the render was the only thing hiding it, and a server action is
+  a POST endpoint. Filed medium by the finder on the assumption billing was off; a production read
+  raised it: `billing_live` has been true since 2026-07-21, profiles are crew 40 / free 16, and both
+  payout paths read the stored tier to pick the take-rate rung. `check:authz` passed the file because
+  it *does* call `auth.getUser` — identity is not authorization, and the gate's header says gate
+  correctness is out of scope.
+- **LIVE-091 — 359 emails dropped in 1h43m on 2026-07-17, unnoticed for five weeks.** `nextRetry` is
+  error-blind: five attempts inside ~15 minutes against a Resend quota that resets daily, so a
+  `429 daily_quota_exceeded` is *guaranteed* to dead-letter every queued email. 356 were one bulk
+  campaign; the other three were transactional, including two welcome emails to real new members. A
+  DLQ surface with one-tap requeue exists, but nothing pages — grep for dead-letter references in
+  `lib/observability`, `scripts/` and `.github/` returns zero. The alerting half was already scoped
+  inside `DEF-HARDEN`; what this pass adds is the evidence it has already cost something.
+
+### Verified clean (worth not re-auditing)
+
+All 27 cron routes gate and honour it; every webhook verifies its signature before trusting the body
+and fails closed; every Stripe `unit_amount` is server-derived; 243 `'use server'` modules scanned per
+export with one policy gap (LIVE-090); no `'use client'` file reads a non-public env var; no
+`middleware.ts` exists anywhere, so there is no ambient layer and every gate read is the whole gate.
+
+### Two findings withdrawn, and why that is the useful part
+
+- **The Label debt is not growing.** A measurement of `<Label>` without `htmlFor` read 65 → 78 as
+  four days of regression. It is shape, not truth: the gate accepts *implicit* association, so a
+  `<Label>` wrapping its control is correct with no `htmlFor` at all. `check:labels` proves all 611
+  labels name exactly one control. **`LIVE-070` should be re-measured and probably resized before
+  anyone works it** — its own named worst case is already fixed, and the correctness half is gated at
+  zero, so what remains is a consistency sweep, not an a11y defect.
+- **No duplicate analytics emission.** `/settings` at 1,572 views per person looked like a
+  `nav.page_view` re-render loop. Inter-event gaps refute it: 3.8% within 2s vs 6.7% on `/feed` as
+  control. Genuine owner and dev churn.
+- Also not a gap: Vercel Web Analytics is disabled, but nothing ever depended on it (no
+  `@vercel/analytics` in `package.json`). `engagement_events` is the instrument.
+
+### The prioritisation fact nothing in the plan stated
+
+56 profiles, **23 active members in 30 days**, 0 orders, 0 financial transactions, 1 Connect account.
+`/feed` is the product for **20 of those 23**; every other surface is single-digit people. This is
+recorded because W4 is ten L/XL editor phases, and the usage numbers were not in front of anyone when
+the slate was ruled. The ruling stands; the number is now on the record beside it.
+
+---
+
 ## 2026-08-20 pass (post-C3 full-repo scan — orphans, wiring, security)
 
 Run against a mature, heavily-gated tree, one sequential finder at a time (this 4-core box hangs on

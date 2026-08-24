@@ -183,6 +183,28 @@ function patternMatches(pattern, paths) {
   return false
 }
 
+/** CPU burned by REAPED CHILDREN so far, in ms, or null off Linux.
+ *
+ *  This is the same quantity scripts/backlog-contract.test.ts budgets against, and it is the only
+ *  honest one: LIVE-047 established that the wall clock here measures the CI runner's contention
+ *  rather than any probe's cost (12.0s of CPU read as 9.3s wall unloaded and 18.6s wall against a
+ *  20s ceiling with six spinners, while the CPU stayed flat within 4%). Measuring it PER PROBE is
+ *  what lets the budget name the expensive probe instead of blaming the list for being long. */
+function childCpuMs() {
+  try {
+    const stat = readFileSync('/proc/self/stat', 'utf8')
+    const fields = stat.slice(stat.lastIndexOf(')') + 2).split(' ')
+    const ticks = Number(fields[13]) + Number(fields[14]) // cutime + cstime
+    if (!Number.isFinite(ticks)) return null
+    return (ticks / 100) * 1000 // CLK_TCK is 100 on every platform this runs on
+  } catch {
+    return null
+  }
+}
+
+/** Per-probe CPU, newest first, for the summary line the contract test parses. */
+const probeCosts = []
+
 /** Run one probe. Returns true (DONE), false (NOT DONE), or null (cannot tell). */
 function runProbe(p) {
   if (p.kind === 'manual') return null
@@ -278,7 +300,12 @@ for (const e of entries) {
     continue
   }
 
+  const cpuBefore = childCpuMs()
   const result = runProbe(p)
+  const cpuAfter = childCpuMs()
+  if (cpuBefore !== null && cpuAfter !== null) {
+    probeCosts.push({ id: e.id, kind: p.kind, cpuMs: Math.max(0, cpuAfter - cpuBefore) })
+  }
   if (result === null) {
     unprovable++
     continue
@@ -327,6 +354,37 @@ if (contradictions.length) {
 
 console.log(green(`✓ backlog contract: ${entries.length} entries, ${probed} probe(s) agree with the tree.`))
 console.log(`  ${openCount} open/blocked · ${parkedCount} parked · ${doneCount} done${unprovable ? ` · ${unprovable} unprovable here` : ''}`)
+
+// ── THE COST LINE (HYG-012) ─────────────────────────────────────────────────────────────────
+//
+// Printed so a human reading the output can see which probe is expensive, and so
+// scripts/backlog-contract.test.ts can budget the RIGHT quantity. The budget it replaces was a
+// flat 20s total, which failed four builds — and every one of those failures said "the list has
+// grown", not "a probe got expensive". A flat total measures the number of rows, so an honest new
+// row pushes it up and the gate fires for a reason unrelated to what it exists to catch.
+//
+// Two numbers, because there are two questions. `max` is the regression signal and stays valid
+// however long the list gets. `total` is capacity, and it scales with the probe count below.
+// Only for a real run. The fixtures in scripts/backlog-contract.test.ts probe a single row, and
+// several of them assert that a given row id does NOT appear in the output — that is how they prove
+// the guard did not accuse a healthy row of regressing. Naming the "slowest" of one probe would put
+// that id back on screen and break the assertion for a reason that has nothing to do with what it
+// guards. A cost summary over a handful of probes says nothing anyway: it is a statistic about the
+// fleet, and the fleet is 111.
+const COST_LINE_MIN_PROBES = 10
+if (probeCosts.length >= COST_LINE_MIN_PROBES) {
+  const sorted = [...probeCosts].sort((a, b) => b.cpuMs - a.cpuMs)
+  const total = Math.round(probeCosts.reduce((n, c) => n + c.cpuMs, 0))
+  const worst = sorted[0]
+  console.log(
+    `  probe-cost: n=${probeCosts.length} totalCpuMs=${total} maxCpuMs=${Math.round(worst.cpuMs)} slowest=${worst.id}`,
+  )
+  // The three most expensive, always — `--report` returns before any probe runs, so gating this
+  // on it would have printed the list exactly never.
+  for (const c of sorted.slice(0, 3)) {
+    console.log(`    ${String(Math.round(c.cpuMs)).padStart(6)} ms  ${c.id.padEnd(11)} ${c.kind}`)
+  }
+}
 
 if (staleManual.length) {
   console.log('')

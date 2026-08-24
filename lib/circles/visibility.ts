@@ -196,6 +196,30 @@ export function isListedCircle(unlisted: unknown): boolean {
   return unlisted !== true
 }
 
+/** THE LIFECYCLE AXIS, which is not axis 1 or axis 2 and keeps being mistaken for them.
+ *
+ *  `circles.status` says where a Circle is in its life, not who may see it. A `forming` Circle is
+ *  a real Circle that is gathering people — it belongs in discovery exactly as much as an `active`
+ *  one, and the operator create path (app/(main)/admin/actions.ts) defaults new rows to `forming`,
+ *  so filtering it out hides precisely the Circles an operator just made.
+ *
+ *  This constant exists because `listPublicSpaceCircles` pinned `status = 'active'` while every
+ *  other public reader admitted `forming` too (lib/nearby/map-pins.ts, lib/channels/programs.ts,
+ *  lib/circles/remix.ts). The result was a Space whose Circles tab did not appear at all, whose
+ *  hero read "Circles 0", and whose own manage console listed the rows the profile denied — live
+ *  in production on 2026-08-24 (LIVE-093).
+ *
+ *  NOT the same set as the one in lib/people/associations.ts, deliberately. That reader also
+ *  admits `inactive`, because a person's history is a different question from what a Space is
+ *  offering now. `draft` is in neither: a draft is not yet a Circle anyone else may see.
+ *
+ *  Deliberately NOT annotated `readonly string[]`, though every other constant in this file is.
+ *  `circles.status` is a typed enum in the generated types ('forming' | 'active' | 'draft' |
+ *  'inactive' | 'archived'), so widening this to string[] makes `.in('status', [...])` fail to
+ *  compile — the literal types are what let a caller pass it straight to PostgREST, and what
+ *  would reject a typo here at build time rather than at read time. */
+export const LISTABLE_CIRCLE_STATUS = ['forming', 'active'] as const
+
 /** The facts both gates decide over. Every field is something a caller already has; nothing here
  *  implies a database round trip of its own. */
 export interface CircleViewerFacts {

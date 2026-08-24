@@ -27,6 +27,21 @@ export async function toggleMembership(): Promise<ActionResult<{ tier: string }>
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return fail('Not signed in')
 
+  // ── THE GATE (LIVE-090). Identity is not authorization. Everything above this line
+  //    establishes WHO is asking; this line is the only thing that asks WHETHER the beta
+  //    toggle is still open. Once billing is live, free ↔ crew is a PURCHASE and belongs to
+  //    Stripe, so the beta shortcut has to close on the same date the checkout opens.
+  //
+  //    Why a server-side gate and not the render. `page.tsx` already picks PwywPicker over
+  //    UpgradeToggle when billing is live — but `upgrade-toggle.tsx` statically imports this
+  //    action and `page.tsx` statically imports that component, so Next registers the action id
+  //    at build time and it stays POST-able whichever branch renders. A server action is a POST
+  //    endpoint, not a button (see the Next data-security guide, §"Server Actions"), and the
+  //    tier it writes is what BOTH payout paths read to pick the take-rate rung
+  //    (lib/billing/tickets.ts, lib/commerce/checkout.ts via memberNetworkTakeRateBps).
+  //    Its sibling startSupporterContribution has carried this same gate all along.
+  if (await billingLive()) return fail('Manage your membership in billing.')
+
   const admin = createAdminClient()
   const { data: profile } = await admin
     .from('profiles')

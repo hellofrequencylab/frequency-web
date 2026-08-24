@@ -23,6 +23,7 @@ import { resolveSegment, sendCategoryForSegment, type SegmentKey } from '@/lib/s
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { isSuppressed } from '@/lib/suppression'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
+import { bulkRunAfter } from '@/lib/queue/outbox'
 import { buildConversationReplyAddress } from '@/lib/comms/reply-address'
 import { openOrGetConversation, appendConversationMessage, newConversationMessageId } from '@/lib/comms/conversations'
 import { buildUnsubscribeUrl, buildSpaceUnsubscribeUrl, buildManageEmailsUrl } from '@/lib/unsubscribe-tokens'
@@ -574,6 +575,9 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
   }
 
   let count = 0
+  // One clock for the whole fan-out, so the drip (bulkRunAfter below) is measured from when the
+  // send STARTED, not from each enqueue — otherwise a slow render would stretch the stagger.
+  const fanOutStartedAt = new Date()
   try {
     const recipients = await resolveSegment(row.segment)
     const names = await loadContactNames(recipients.map((r) => r.contactId))
@@ -680,16 +684,24 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
         }
       }
 
-      await enqueueEmail({
-        to: r.email,
-        from: emailFrom,
-        ...(emailReplyTo ? { replyTo: emailReplyTo } : {}),
-        subject,
-        html,
-        text,
-        headers: emailHeaders,
-        tags: [{ name: 'campaign_id', value: campaignId }],
-      })
+      // The BULK lane, dripped. A campaign is mail nobody is sitting and waiting for, so it must
+      // never be the reason a welcome email misses the daily sending quota (LIVE-091: on
+      // 2026-07-17 a 356-recipient campaign took the quota and two welcomes dead-lettered behind
+      // it). `bulkRunAfter` staggers when each job becomes DUE so the fan-out cannot fill the
+      // claim window either — the claim is ordered by run_after and knows nothing about lanes.
+      await enqueueEmail(
+        {
+          to: r.email,
+          from: emailFrom,
+          ...(emailReplyTo ? { replyTo: emailReplyTo } : {}),
+          subject,
+          html,
+          text,
+          headers: emailHeaders,
+          tags: [{ name: 'campaign_id', value: campaignId }],
+        },
+        { lane: 'bulk', runAfter: bulkRunAfter(count, fanOutStartedAt) },
+      )
       count++
     }
   } catch (err) {

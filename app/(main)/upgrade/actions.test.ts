@@ -55,7 +55,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 
-import { startSupporterContribution } from './actions'
+import { startSupporterContribution, toggleMembership } from './actions'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -64,6 +64,37 @@ beforeEach(() => {
   loadCatalogConfig.mockResolvedValue({ pwyw: { minCents: 500, suggestedCents: 1200 } })
   insertPendingContribution.mockResolvedValue(null)
   sessionsCreate.mockResolvedValue({ id: 'cs_test_1', url: 'https://checkout.stripe.com/c/pay/cs_test_1' })
+})
+
+// LIVE-090. `toggleMembership` writes the ENTITLEMENT that both payout paths read to pick the
+// take-rate rung, so "may I change my own tier" is a policy question, not an identity one. The
+// action was self-scoped and signed-in-gated from the start and still let any member flip
+// themselves to crew while billing was live — the render was the only thing hiding it, and a
+// server action is a POST endpoint rather than a button. These two tests pin both halves.
+describe('toggleMembership - closed once billing is live (LIVE-090)', () => {
+  it('refuses and writes NOTHING when billingLive() is true', async () => {
+    billingLiveMock.mockResolvedValue(true)
+    const res = await toggleMembership()
+    expect(res).toEqual({ error: 'Manage your membership in billing.' })
+    // THE GUARANTEE: no tier write at all. Not a different tier — none.
+    expect(profilesUpdate).not.toHaveBeenCalled()
+  })
+
+  it('still works as the beta toggle while billing is OFF', async () => {
+    billingLiveMock.mockResolvedValue(false)
+    profilesMaybeSingle.mockResolvedValue({ data: { id: 'profile-1', membership_tier: 'free' } })
+    const res = await toggleMembership()
+    expect(res).toEqual({ data: { tier: 'crew' } })
+    expect(profilesUpdate).toHaveBeenCalledWith({ membership_tier: 'crew' })
+  })
+
+  it('requires a signed-in profile', async () => {
+    billingLiveMock.mockResolvedValue(false)
+    getUser.mockResolvedValue({ data: { user: null } })
+    const res = await toggleMembership()
+    expect(res).toEqual({ error: 'Not signed in' })
+    expect(profilesUpdate).not.toHaveBeenCalled()
+  })
 })
 
 describe('startSupporterContribution - dormant when billing is OFF (no-charge invariant)', () => {

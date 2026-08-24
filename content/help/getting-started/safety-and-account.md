@@ -3,7 +3,7 @@ title: Blocking and deleting your account
 description: How to block another member and how to permanently delete your account.
 category: getting-started
 order: 4
-updated: 2026-06-10
+updated: 2026-08-24
 audience: member
 featureKeys: [blocking, account]
 status: published
@@ -20,6 +20,7 @@ Frequency **never shares your exact location**. When the app helps people find o
 Open the member's profile and choose **Block**. When you block someone:
 
 - neither of you can start a direct message with the other,
+- neither of you can send the other a friend request,
 - you are removed as friends, and
 - you stop seeing each other across the app.
 

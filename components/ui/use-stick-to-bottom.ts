@@ -33,7 +33,7 @@ import { useCallback, useEffect, useRef, type DependencyList } from 'react'
  *
  * Usage:
  *
- *     const listRef = useStickToBottom<HTMLDivElement>([messages.length, typingNames.length])
+ *     const { ref: listRef, stickNow } = useStickToBottom<HTMLDivElement>([messages.length, typingNames.length])
  *     <div ref={listRef} className="flex-1 overflow-y-auto overscroll-contain">…</div>
  *
  * Note it takes the SCROLL CONTAINER, not a sentinel <div> at the end — there is nothing to

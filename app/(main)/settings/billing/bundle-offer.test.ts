@@ -51,7 +51,7 @@ describe('the offer card is mounted and calls the deliberate action', () => {
     expect(actions).toContain("import { createBundleCheckout } from '@/lib/billing/bundle-checkout'")
     expect(actions).toContain('export async function startBundleCheckout')
     expect(actions).toContain('createBundleCheckout({')
-    expect(actions).toContain("viaStripe('startBundleCheckout'")
+    expect(actions).toContain("viaStripe('settings/billing startBundleCheckout'")
   })
 
   // 🔴 THE WHOLE POINT OF THE GUARD: one failing Stripe call must not take the page down with it.
@@ -59,16 +59,23 @@ describe('the offer card is mounted and calls the deliberate action', () => {
   // dashboard is an ordinary outcome. If a future edit adds a fifth action or unwraps one of these
   // four, this fails rather than waiting for a member to find it.
   it('every Stripe reach in the file goes through viaStripe', () => {
+    // Labels carry the SURFACE since LIVE-094. viaStripe used to be defined privately in this
+    // file, so the file itself said which page threw; it is now shared with the Space billing
+    // surface, which had none of this and could still be replaced wholesale by the error
+    // boundary. The prefix is what keeps the server log readable now that two pages log here.
     for (const label of [
-      'openBillingPortal',
-      'startBundleCheckout',
-      'startPayoutOnboarding',
-      'openPayoutDashboard',
+      'settings/billing openBillingPortal',
+      'settings/billing startBundleCheckout',
+      'settings/billing startPayoutOnboarding',
+      'settings/billing openPayoutDashboard',
     ]) {
       expect(actions).toContain(`viaStripe('${label}'`)
     }
-    // viaStripe returns a value/error union rather than throwing: no bare `throw` may reappear.
-    expect(actions).toContain('return { value: await run() }')
+    // The guard's own implementation moved to lib/billing/via-stripe.ts, where
+    // via-stripe.test.ts pins BOTH the value/error union and the rule that neither billing
+    // surface may await a Stripe call outside the wrapper. What this file still owns is that it
+    // reaches for the shared guard at all rather than growing a private copy back.
+    expect(actions).toContain("import { viaStripe } from '@/lib/billing/via-stripe'")
   })
 })
 

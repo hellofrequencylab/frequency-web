@@ -149,7 +149,17 @@ density scale (T-3), member Stripe Connect (D-3), Site as a surface (T-1), and t
 blocking E0. ⚠️ **O-1 is partly answered by shipped code** and its scope needs rewriting against
 `lib/billing/connect.ts` before anyone estimates E7 — see the E7 row above.
 
-## 🏗️ App Platform + white-label sites — deferred by owner decision — 2026-08-03 ([ADR-921](DECISIONS.md), specs [WHITE-LABEL-SITES.md](WHITE-LABEL-SITES.md) · [LOOM-PLATFORM.md](LOOM-PLATFORM.md) · [SPACES.md](SPACES.md))
+## 🏗️ App Platform + white-label sites — **App Platform UNPARKED 2026-08-20**; white label still held — 2026-08-03 ([ADR-921](DECISIONS.md), specs [WHITE-LABEL-SITES.md](WHITE-LABEL-SITES.md) · [LOOM-PLATFORM.md](LOOM-PLATFORM.md) · [SPACES.md](SPACES.md))
+
+> **⚠️ Corrected 2026-08-24. The section below describes a hold that was lifted.** The owner ruled on
+> 2026-08-20: *"Take all tasks out of deferred or parked programs and add them to the priority list. I
+> want all those things built out. The things that we are deferring are white labeling, mobile
+> application, texting."* So the App Platform **builds now** — `meta.slate` in
+> [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json) places **PROG-A1 and PROG-A3 in W2, the second wave**,
+> immediately after the hardening work. Only white label (E10/W6/P7), mobile and texting are still
+> parked, and they are named in `slate.deferredByName`. Status is the one list's, not this file's;
+> the 🔴 markers in the A-phase table below are stale for that reason and are left in place only so
+> this correction has something to point at.
 
 The two back phases of the 2026-08-03 master production plan, parked here so the work is on the
 list without being in flight. The active runway (ground truth → tenancy walls → instant shell →
@@ -176,7 +186,7 @@ re-measured 2026-08-11).
 > here and A1/E10; what is missing is the decision to schedule them. Do not re-list "run the pgTAP
 > suite" as work.
 
-### App Platform (packaged tenant apps) — 🔴 deferred
+### App Platform (packaged tenant apps) — ✅ unparked 2026-08-20 (A1 + A3 are in slate wave W2)
 
 | # | Scope | Lift | Status |
 |---|---|---|---|

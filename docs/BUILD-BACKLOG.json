@@ -15,8 +15,8 @@
     "lanes": {
       "owner": "Config or a decision. No code unblocks it.",
       "live": "The committed near-term queue.",
-      "program": "A named multi-phase program. Needs a scheduling decision, not a start.",
-      "deferred": "Specced and deliberately parked.",
+      "program": "A named multi-phase program. meta.slate sequences it; a program still on hold carries status \"parked\".",
+      "deferred": "Specced and deliberately parked. Since the 2026-08-20 ruling this is only the named holds — white label, mobile, texting — and a parked row also carries status \"parked\", which is what the working view reads.",
       "hygiene": "Debt in the record or the instruments."
     },
     "supersedes": [
@@ -34,8 +34,8 @@
       "ROADMAP.md"
     ],
     "slate": {
-      "ruled": "Owner ruling 2026-08-20 evening: \"Take all tasks out of deferred or parked programs and add them to the priority list. I want all those things built out. The things that we are deferring are white labeling, mobile application, texting.\" Supersedes the same-day \"hold white label and app at the end\" slate: the App Platform now builds; only the three named holds park.",
-      "note": "The development order for the whole open queue, waves in sequence, ids in order within a wave. Owner-lane rows are decisions, not sequenced dev. Status lives only in each row’s probe; this object is the sequence.",
+      "ruled": "Owner ruling 2026-08-20 evening: \"Take all tasks out of deferred or parked programs and add them to the priority list. I want all those things built out. The things that we are deferring are white labeling, mobile application, texting.\" Supersedes the same-day \"hold white label and app at the end\" slate: the App Platform now builds; only the three named holds park.\n\n── OWNER RULING 2026-08-24: \"I want to save the etsy grade store for last. Second to last is the white label tenant sites with full WYSIWYG editor. I want everything else fully functional and clean before those.\" So DEF-ETSY moves out of W8 into its own final wave W10, and white label (PROG-E10 Sites, PROG-W6 member sites + theme marketplace, PROG-P7 per-Space theming depth) is UNPARKED into W9 immediately before it. deferredByName drops to mobile and texting only.\n\nINTERPRETATION, stated so it can be corrected in one line: the CORE editor phases E0-E9 stay in W4 and were NOT moved to the end. \"White label tenant sites with full WYSIWYG editor\" is read as the tenant-sites DELIVERABLE — PROG-E10 is literally titled 'Sites, absorbs White Label W1-W5' — not as the editor platform underneath it. E10 depends on E0-E9; W1's content retirements block E3; E2 projects onto the Loom built in W3. Moving E0-E9 to the end would invert those documented dependencies and would leave 'everything else' with no editor to be built on. If the intent was to move the whole editor program back, only the W4 block moves.",
+      "note": "The development order for the whole open queue, waves in sequence, ids in order within a wave. Array order IS the sequence — W0 first through W10 last, with `owner-timed` kept at the end because it is scheduled by the owner rather than by this order. Owner-lane rows are decisions, not sequenced dev. Status lives only in each row's probe; this object is the sequence.",
       "waves": [
         {
           "name": "W0 · active now",
@@ -52,7 +52,18 @@
             "LIVE-078",
             "LIVE-080",
             "LIVE-075",
-            "HYG-012"
+            "HYG-012",
+            "LIVE-090",
+            "LIVE-091",
+            "LIVE-092",
+            "LIVE-093",
+            "LIVE-094",
+            "LIVE-095",
+            "LIVE-096",
+            "LIVE-097",
+            "LIVE-098",
+            "HYG-013",
+            "LIVE-081"
           ]
         },
         {
@@ -114,7 +125,8 @@
             "LIVE-068",
             "LIVE-070",
             "HYG-010",
-            "LIVE-079"
+            "LIVE-079",
+            "LIVE-089"
           ]
         },
         {
@@ -130,10 +142,23 @@
         {
           "name": "W8 · commerce + verticals (Resonance launch stays GO-gated)",
           "ids": [
-            "DEF-ETSY",
             "DEF-MONEY",
             "DEF-HOUS",
             "DEF-RESON"
+          ]
+        },
+        {
+          "name": "W9 · white-label tenant sites + the full WYSIWYG editor (SECOND TO LAST, owner ruling 2026-08-24)",
+          "ids": [
+            "PROG-E10",
+            "PROG-W6",
+            "PROG-P7"
+          ]
+        },
+        {
+          "name": "W10 · LAST — the Etsy-grade store (owner ruling 2026-08-24)",
+          "ids": [
+            "DEF-ETSY"
           ]
         },
         {
@@ -145,9 +170,6 @@
         }
       ],
       "deferredByName": [
-        "PROG-E10",
-        "PROG-W6",
-        "PROG-P7",
         "DEF-MOBILE",
         "DEF-A2P"
       ],
@@ -164,9 +186,11 @@
         "OWN-020",
         "OWN-032",
         "OWN-040",
-        "LIVE-074"
+        "LIVE-074",
+        "OWN-041",
+        "OWN-042"
       ],
-      "rationale": "Foundation before surface: hardening and module boundaries (A1/A3) pay compounding dividends across every later wave. Loom D1-D3 precede the Editor because E2 projects the editor’s asset model onto the Loom. Content retirements (W1) must precede E3, which replaces EDITABLE_PAGES in the opposite direction. Re-theme and the DAWN mechanical sweeps follow the editor so swept surfaces are not rebuilt. Flagship apps (A4) and the domain backlog ride after boundaries + editor exist. Commerce verticals close, with Resonance’s launch GO still the owner’s. White label (E10/W6/P7), mobile, and texting park by name."
+      "rationale": "Foundation before surface: hardening and module boundaries (A1/A3) pay compounding dividends across every later wave. Loom D1-D3 precede the Editor because E2 projects the editor’s asset model onto the Loom. Content retirements (W1) must precede E3, which replaces EDITABLE_PAGES in the opposite direction. Re-theme and the DAWN mechanical sweeps follow the editor so swept surfaces are not rebuilt. Flagship apps (A4) and the domain backlog ride after boundaries + editor exist. Commerce verticals close, with Resonance’s launch GO still the owner’s. White label (E10/W6/P7), mobile, and texting park by name. White-label sites and the Etsy-grade store now close the runway, in that order (owner ruling 2026-08-24): everything else is to be functional and clean before either starts."
     }
   },
   "entries": [
@@ -489,11 +513,11 @@
         "file": "docs/BASELINE-TODO-2026-08-12.md",
         "ref": "CP-9"
       },
-      "detail": "feat/studio-kernel, claude/studio-reland, fix/codeql-allowlist, fix/codeql-seeder-write-allowlist. All four verified BY CONTENT (a squash merge leaves no ancestry, so --is-ancestor proves nothing) to hold nothing main lacks. DO NOT resurrect feat/studio-kernel — it still carries app/opengraph-image.tsx, the root metadata image that caused the ENOSPC outage.",
+      "detail": "feat/studio-kernel, claude/studio-reland, fix/codeql-allowlist, fix/codeql-seeder-write-allowlist. All four verified BY CONTENT (a squash merge leaves no ancestry, so --is-ancestor proves nothing) to hold nothing main lacks. DO NOT resurrect feat/studio-kernel — it still carries app/opengraph-image.tsx, the root metadata image that caused the ENOSPC outage. ── RE-MEASURED 2026-08-24, AND THE ROW'S OWN EVIDENCE COULD NOT BE REPRODUCED FROM HERE. All four heads still exist, and the remote grew 930 -> 940 heads in five days, so branch debt is accumulating faster than it is cleared. SHAs recorded so deletion is reversible with one command each (git push origin <sha>:refs/heads/<name>): feat/studio-kernel 78b9ba52b2801b9da9e4528ab179c88f9799153e, claude/studio-reland b29cddc56bf2c9bb5684e56684d1efbc87657d21, fix/codeql-allowlist c55e8b41f4eb3f49f9f5152937db47c18ad50f6a, fix/codeql-seeder-write-allowlist a2bc8096c77f5ec28ef4f28b1d487d205b9aa315. WHY IT WAS NOT DONE HERE: the row says all four were 'verified BY CONTENT to hold nothing main lacks', but does not say by what method, and a diff against main does not reproduce it — each branch is ~1,400 files and ~22k insertions / ~90k deletions apart from today's main. That is the EXPECTED shape for an old branch main has run away from, and it is also the shape of a branch holding real unmerged work; a plain diff cannot tell those apart, and an agent deleting a shared branch on the strength of a number it cannot interpret is the wrong trade. The 2026-08-11 warning stands and is the reason to be careful rather than fast: feat/studio-kernel still carries app/opengraph-image.tsx, the root metadata image that caused the ENOSPC outage. NOT BLOCKING ANYTHING — nothing in the queue waits on this. ALSO: a local-only savepoint commit 263b7354 was reported on feat/studio-kernel; it is NOT on the remote (git cat-file cannot find it in a fresh clone), so there is nothing to delete server-side. It exists only in that working copy and goes away with it.",
       "verify": {
         "kind": "manual",
-        "evidence": "Re-measured 2026-08-19. `git ls-remote --heads origin` returns all four branches (feat/studio-kernel, claude/studio-reland, fix/codeql-allowlist, fix/codeql-seeder-write-allowlist) out of 930 heads. 🔴 Do NOT resurrect feat/studio-kernel: it still carries app/opengraph-image.tsx, the root metadata image behind the ENOSPC outage.",
-        "checked": "2026-08-19"
+        "evidence": "Re-measured 2026-08-24: all four heads present out of 940 (was 930 on 2026-08-19). SHAs recorded in the detail so deletion is one reversible command. The 'verified by content' claim was NOT reproducible by diff (~1,400 files apart each) and the method is unrecorded, so the deletion stays an owner action. 263b7354 is local-only and absent from the remote.",
+        "checked": "2026-08-24"
       }
     },
     {
@@ -1195,14 +1219,14 @@
     {
       "id": "PROG-E10",
       "title": "Editor E10: Sites — absorbs White Label W1-W5",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/EDITOR-ARCHITECTURE.md",
         "ref": "E10"
       },
-      "detail": "Domains, host routing, per-tenant theming and SEO. Subdomain on any paid plan, custom domain as the upgrade. W1-W5 are re-pointed here, not deleted — read them as the scope inventory, never schedule them independently. W4 is additionally blocked on Stripe Connect.\n\n── PARKED 2026-08-20 (owner ruling): white labeling is deferred by name; Sites absorbs W1-W5 and stays parked with W6.",
+      "detail": "Domains, host routing, per-tenant theming and SEO. Subdomain on any paid plan, custom domain as the upgrade. W1-W5 are re-pointed here, not deleted — read them as the scope inventory, never schedule them independently. W4 is additionally blocked on Stripe Connect.\n\n── PARKED 2026-08-20 (owner ruling): white labeling is deferred by name; Sites absorbs W1-W5 and stays parked with W6. ── UNPARKED + SEQUENCED 2026-08-24 (owner ruling): white-label tenant sites with the full WYSIWYG editor are now SECOND TO LAST, after everything else is functional and clean. This supersedes the 2026-08-20 ruling that held white label by name alongside mobile and texting; those two remain held, white label does not.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase; owner-gated (OWN-016).",
@@ -1454,14 +1478,14 @@
     {
       "id": "PROG-P7",
       "title": "Re-theme P7: per-Space / white-label theming depth",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/BUILD-LIST.md",
         "ref": "Re-theme P7"
       },
-      "detail": "Widen the child-theme override surface (surfaces + type), operator theme controls, and a theme-contract compile check.\n\n── PARKED 2026-08-20 (owner ruling): its substance is per-Space/white-label theming DEPTH, so it parks with the white-label group; say the word and it moves back into the re-theme wave.",
+      "detail": "Widen the child-theme override surface (surfaces + type), operator theme controls, and a theme-contract compile check.\n\n── PARKED 2026-08-20 (owner ruling): its substance is per-Space/white-label theming DEPTH, so it parks with the white-label group; say the word and it moves back into the re-theme wave. ── UNPARKED + SEQUENCED 2026-08-24 (owner ruling): white-label tenant sites with the full WYSIWYG editor are now SECOND TO LAST, after everything else is functional and clean. This supersedes the 2026-08-20 ruling that held white label by name alongside mobile and texting; those two remain held, white label does not.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1574,13 +1598,13 @@
       "id": "DEF-ETSY",
       "title": "Marketplace Etsy-Grade P3-P7",
       "status": "open",
-      "lane": "deferred",
+      "lane": "program",
       "size": "XL",
       "source": {
         "file": "docs/MASTER-TODO.md",
         "ref": "Marketplace future phases"
       },
-      "detail": "Shipping and delivery; faceted discovery and ranking; cart + multi-seller checkout (one intent, N destination charges, each take rate preserved); orders, fulfillment and order-scoped messaging; promotions, payout reporting and tax posture. Deferred by owner 2026-07-11.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
+      "detail": "Shipping and delivery; faceted discovery and ranking; cart + multi-seller checkout (one intent, N destination charges, each take rate preserved); orders, fulfillment and order-scoped messaging; promotions, payout reporting and tax posture. Deferred by owner 2026-07-11.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.",
       "verify": {
         "kind": "manual",
         "evidence": "Owner-deferred.",
@@ -1608,13 +1632,13 @@
       "id": "DEF-HOUS",
       "title": "Housing: natal-chart matching + Resonance match alerts",
       "status": "open",
-      "lane": "deferred",
+      "lane": "program",
       "size": "M",
       "source": {
         "file": "docs/MASTER-TODO.md",
         "ref": "Housing"
       },
-      "detail": "Natal-chart compatibility beyond the shipped sun-sign quiet-5%, as an opt-in both-sides factor — NEEDS AN EPHEMERIS/COMPUTE DECISION BEFORE BUILD. Alerts are the notification layer on matching RPCs that already exist.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
+      "detail": "Natal-chart compatibility beyond the shipped sun-sign quiet-5%, as an opt-in both-sides factor — NEEDS AN EPHEMERIS/COMPUTE DECISION BEFORE BUILD. Alerts are the notification layer on matching RPCs that already exist.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.",
       "verify": {
         "kind": "manual",
         "evidence": "Owner-deferred.",
@@ -1625,13 +1649,13 @@
       "id": "DEF-MONEY",
       "title": "Money verticals D1-D5 + the money foundation",
       "status": "open",
-      "lane": "deferred",
+      "lane": "program",
       "size": "XL",
       "source": {
         "file": "docs/DEVELOPMENT-MAP.md",
         "ref": "D1-D5"
       },
-      "detail": "The Collective (first commerce), freemium Vault cash-in, affiliate commission ledger, Donations & Grants (the Foundation rail), Lab Spaces. Plus the entity partition and entity-tagged financial_transactions, the inter-entity Lab bridge, physical merch fulfillment and the Frequency Shop. Gated on PMF and a legal entity, not on engineering.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
+      "detail": "The Collective (first commerce), freemium Vault cash-in, affiliate commission ledger, Donations & Grants (the Foundation rail), Lab Spaces. Plus the entity partition and entity-tagged financial_transactions, the inter-entity Lab bridge, physical merch fulfillment and the Frequency Shop. Gated on PMF and a legal entity, not on engineering.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.",
       "verify": {
         "kind": "manual",
         "evidence": "Gated on legal + PMF.",
@@ -1642,13 +1666,13 @@
       "id": "DEF-RESON",
       "title": "resonance/: 18 rungs, substantially built, GO-gated",
       "status": "open",
-      "lane": "deferred",
+      "lane": "program",
       "size": "XL",
       "source": {
         "file": "resonance/docs/BUILD-PLAN.md",
         "ref": "Sections 0-19"
       },
-      "detail": "PREMISE EXPIRED 2026-08-19: the row said 'nothing built', quoting a stale preamble sentence in the plan. The tree holds 180 files (142 TS/TSX), 16 migrations (0001_resonance_init..0016_atomic_economy) and 23 API routes under resonance/app/api. The plan's own boxes read 83 checked vs 20 open; Sections 0, 6 and 19 are done, 1-18 in progress. Build order still never reorders (sync engine -> DJ loop -> gamification -> embed -> world) and each rung still ends in a manual GO gate; voice via WebRTC and fiat cash-out remain follow-ups. UNVERIFIED: whether migrations past 0002 are applied to the shared 'resonance' schema (the public migration ledger does not carry them). NOTE the HYG-005 conflict (auth rung needs anonymous sign-ins, OWN-008 disabled them) was not re-tested this pass.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
+      "detail": "PREMISE EXPIRED 2026-08-19: the row said 'nothing built', quoting a stale preamble sentence in the plan. The tree holds 180 files (142 TS/TSX), 16 migrations (0001_resonance_init..0016_atomic_economy) and 23 API routes under resonance/app/api. The plan's own boxes read 83 checked vs 20 open; Sections 0, 6 and 19 are done, 1-18 in progress. Build order still never reorders (sync engine -> DJ loop -> gamification -> embed -> world) and each rung still ends in a manual GO gate; voice via WebRTC and fiat cash-out remain follow-ups. UNVERIFIED: whether migrations past 0002 are applied to the shared 'resonance' schema (the public migration ledger does not carry them). NOTE the HYG-005 conflict (auth rung needs anonymous sign-ins, OWN-008 disabled them) was not re-tested this pass.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.",
       "verify": {
         "kind": "manual",
         "evidence": "resonance/ tree: 16 migrations, 23 route.ts, 83/103 plan boxes checked (2026-08-19).",
@@ -1693,13 +1717,13 @@
       "id": "DEF-HARDEN",
       "title": "Foundation hardening H1-H5",
       "status": "open",
-      "lane": "deferred",
+      "lane": "program",
       "size": "XL",
       "source": {
         "file": "docs/FOUNDATION-HARDENING-PLAN.md",
         "ref": "H1-H5"
       },
-      "detail": "TWO PREMISES EXPIRED 2026-08-19. H2's 'erasure and export does not exist at all' is false: app/(main)/settings/account/ ships delete-account (deleteAccountAction -> lib/account deleteMyAccount, hard-delete cascade) and download-data (downloadMyData -> MemberExportPayload). H4's 'no retry/backoff or DLQ' is false for the outbox: lib/queue/outbox.ts has exponential backoff, a terminal dead-letter state after max_attempts, count/list/requeue, and an operator recovery surface at admin/marketing/deliverability; the Stripe webhook (app/api/webhooks/stripe/route.ts + stripe_webhook_events) is idempotent with claim-release so Stripe's retry re-processes instead of stranding. STILL OPEN: DLQ/cron-lag alerting is a countable signal, not verified as wired to anything that pages; backup and DR unverified (PITR tier, rehearsed restore, defined RPO/RTO); no incident runbooks; no load/soak harness, so every H3 scale claim remains unprovable. H3 is metric-gated and correctly not now.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
+      "detail": "TWO PREMISES EXPIRED 2026-08-19. H2's 'erasure and export does not exist at all' is false: app/(main)/settings/account/ ships delete-account (deleteAccountAction -> lib/account deleteMyAccount, hard-delete cascade) and download-data (downloadMyData -> MemberExportPayload). H4's 'no retry/backoff or DLQ' is false for the outbox: lib/queue/outbox.ts has exponential backoff, a terminal dead-letter state after max_attempts, count/list/requeue, and an operator recovery surface at admin/marketing/deliverability; the Stripe webhook (app/api/webhooks/stripe/route.ts + stripe_webhook_events) is idempotent with claim-release so Stripe's retry re-processes instead of stranding. STILL OPEN: DLQ/cron-lag alerting is a countable signal, not verified as wired to anything that pages; backup and DR unverified (PITR tier, rehearsed restore, defined RPO/RTO); no incident runbooks; no load/soak harness, so every H3 scale claim remains unprovable. H3 is metric-gated and correctly not now.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.",
       "verify": {
         "kind": "manual",
         "evidence": "Erasure/export and outbox-DLQ paths confirmed in tree 2026-08-19; alerting, DR rehearsal, runbooks and load harness not found.",
@@ -1710,13 +1734,13 @@
       "id": "DEF-DOMAIN",
       "title": "The domain feature backlog (~120 items across 15 areas)",
       "status": "open",
-      "lane": "deferred",
+      "lane": "program",
       "size": "XL",
       "source": {
         "file": "docs/BACKLOG.md",
         "ref": "§A-§V"
       },
-      "detail": "Items no current plan absorbed, kept as a body rather than 120 rows because none is individually scheduled: CRM follow-ups, the Network rework, circles/discovery, two-way inbox and @mentions, Quest/gamification depth, operator Growth Studio, Vera/AI (including the governance kernel and Proactive Vera), signup-lead recovery, the 12-item theme system, roles/personas long tails, IA, moderation and trust, and the 11 owner UI calls from the 2026-06-05 screenshot review. Promote an item to its own row when it is scheduled — that is the intended flow, not a workaround.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
+      "detail": "Items no current plan absorbed, kept as a body rather than 120 rows because none is individually scheduled: CRM follow-ups, the Network rework, circles/discovery, two-way inbox and @mentions, Quest/gamification depth, operator Growth Studio, Vera/AI (including the governance kernel and Proactive Vera), signup-lead recovery, the 12-item theme system, roles/personas long tails, IA, moderation and trust, and the 11 owner UI calls from the 2026-06-05 screenshot review. Promote an item to its own row when it is scheduled — that is the intended flow, not a workaround.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.",
       "verify": {
         "kind": "manual",
         "evidence": "Full text preserved in docs/TASK-INVENTORY-2026-08-17.md §8 and the source docs.",
@@ -2283,18 +2307,18 @@
     {
       "id": "PROG-W6",
       "title": "White label W6: member sites + the theme marketplace",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/WHITE-LABEL-SITES.md",
         "ref": "BUILD-LIST §White-label / ADR-974"
       },
-      "detail": "W1-W5 were re-pointed into editor phase E10; W6 explicitly was NOT — member sites on the same rails plus a theme/template marketplace on DTCG portable themes + site_templates. It stays deferred behind E10 and behind the same owner scheduling call as OWN-016, but it is scope E10 does not carry, so it needs its own row or it silently vanishes when E10 closes.\n\n── PARKED 2026-08-20 (owner ruling): white labeling is deferred by name.",
+      "detail": "W1-W5 were re-pointed into editor phase E10; W6 explicitly was NOT — member sites on the same rails plus a theme/template marketplace on DTCG portable themes + site_templates. It stays deferred behind E10 and behind the same owner scheduling call as OWN-016, but it is scope E10 does not carry, so it needs its own row or it silently vanishes when E10 closes.\n\n── PARKED 2026-08-20 (owner ruling): white labeling is deferred by name. ── UNPARKED + SEQUENCED 2026-08-24 (owner ruling): white-label tenant sites with the full WYSIWYG editor are now SECOND TO LAST, after everything else is functional and clean. This supersedes the 2026-08-20 ruling that held white label by name alongside mobile and texting; those two remain held, white label does not.",
       "verify": {
         "kind": "manual",
-        "evidence": "BUILD-LIST W6 row reads 'stays deferred and is not part of the editor program' (re-read 2026-08-18).",
-        "checked": "2026-08-18"
+        "evidence": "Owner ruling 2026-08-24 SUPERSEDES the BUILD-LIST line this row used to quote ('stays deferred and is not part of the editor program'). White-label tenant sites are scheduled second to last, in slate wave W9. Program phase, no repo-visible consequence yet.",
+        "checked": "2026-08-24"
       }
     },
     {
@@ -2420,11 +2444,11 @@
         "file": "lib/supabase/admin.ts",
         "ref": "createAdminClient"
       },
-      "detail": "FOUND 2026-08-19 by a runtime-health read after the five merges of that night, not by a gate. Vercel groups exactly one production runtime error for the project: TypeError: Cannot read properties of undefined (reading 'rest'), route /feed, first seen 2026-07-09T21:45:33Z and last seen 2026-08-19T04:36:35Z, 1 occurrence and 1 user in the trailing 6h. It is PRE-EXISTING: the last occurrence is 68 minutes BEFORE the first merge of that run (05:44), so none of #2166-#2170 introduced it. The frames are minified: at c (.next/server/chunks/ssr/lib_1b8tszi._.js:2:11541), at async gw (.next/server/chunks/ssr/app_(main)_view-as-actions_ts_073-c-k._.js:74:6517), at async l (.next/server/chunks/ssr/0anw_next_dist_0ns0ns1._.js:2:10950), digest 3920664382.\n\nDIAGNOSIS, and it is not the obvious one. The first reading was the practice-streak rest window (StoredStreak.rest, the 'life happens' pause), because /feed reads it and the word matches. That is WRONG on the code: readStored() coalesces with (meta?.practiceStreak ?? {}) and getPracticeStreak() always returns a constructed object, so neither ps.rest nor stored.rest can throw. 'rest' is a SUPABASE-INTERNAL property. In @supabase/supabase-js dist/index.mjs the SupabaseClient constructor sets this.rest (line 664) and exactly three methods read it: from() -> this.rest.from (690), schema() -> this.rest.schema (700), rpc() -> this.rest.rpc (730). So the error is one of those three called with a lost `this` — a client method used as a bare value rather than invoked on its client.\n\nWHAT THE TREE DOES NOT EXPLAIN. There is no such site in source. Swept app/, lib/ and components/ for a destructured or unbound client method: no `const { from } = client`, no `.from` / `.rpc` / `.schema` appearing as a value rather than a call, and the one deliberate rebinding is correct (lib/analytics/insights-read.ts:52 returns db.rpc.bind(db)). No runtime Proxy wraps a client outside tests. All four factories (admin/server/public/client) return the client directly. So closing this needs something the repo cannot supply on its own: a source-mapped frame, or a repro.\n\nWHY IT IS WORTH A ROW RATHER THAN A SPECULATIVE PATCH. It is rare (1 user), pre-existing, on a route this run did not touch, and every candidate fix would be a guard added blind — the shape-not-truth move this repo names in four ADRs. It is recorded instead so it stops being invisible: a real production error ran unrecorded for six weeks, which is exactly the 'every fail-safe needs a gate that notices it fired' rule with no gate at all.\n\nNEXT STEP for whoever picks it up: Vercel retains no log LINES this far back (a runtime-logs query over the 04:20-04:50 window on 2026-08-19 returned nothing, only the aggregated error group survives), so wait for the next occurrence and read it fresh, or map app_(main)_view-as-actions_ts_073-c-k._.js:74:6517 against the deployed build's source map to name `gw`. Do not raise a guard until the call site is named.\n\nRE-READ 2026-08-19 over a 12h window, and the read added a frame the first one did not print. The THROW SITE is at c (.next/server/chunks/ssr/lib_1b8tszi._.js:2:11541) — a lib_ chunk — called from gw in the (main) chunk, under Next's render path (0anw_next_dist). That CORROBORATES the Supabase attribution and narrows where to look: @supabase/supabase-js and everything under lib/ bundle into the lib_ chunk, while the component that reads a practice-streak `rest` window lives in components/. A one-character minified name at column 11541 of a lib_ chunk is the shape of a bundled one-line method, which is exactly what SupabaseClient.from/schema/rpc are. It does NOT name the CALLER, which is still the thing needed, and it is still not grounds for a guard.\n\nNOT A RECURRENCE. The same read shows last=2026-08-19T04:36:35Z, unchanged, count 1 over 12h — one event, rendered with a fuller stack, not a second hit. Eight production deploys shipped between 05:44 and 11:27 that day and none of them produced a new occurrence, and no OTHER error group exists for the project over the window. Twelve quiet hours is not evidence at a rate of roughly one hit per six weeks, so this closes no faster than the row already said.\n\nCALL SITE NAMED 2026-08-19, and the mechanism is now reproduced rather than inferred. A node probe against the installed @supabase/ssr confirms the exact string: an ALIAS call (const rpc = client.rpc; rpc(...)) throws TypeError: Cannot read properties of undefined (reading 'rest'), while an INLINE paren-cast call ((client.rpc)(...)) does NOT — tsc/swc emit client.rpc(...), so `this` survives. That is why the earlier sweep for a bare .rpc VALUE missed it: every site writes `const rpc = admin.rpc as unknown as Fn`, and the grep filter dropped lines without `.rpc(`.\n\nThe site matching the stack is app/(main)/messages/popover-actions.ts:108 — `const rpcAll = supabase.rpc as unknown as (...)`, invoked at :118 inside fetchMessagesSummary's Promise.all, guarded by roomIds.length > 0. Every frame fits: it is a 'use server' module under app/(main) (the chunk Turbopack named after view-as-actions.ts, another 'use server' file in the same group); fetchMessagesSummary is async (at async gu) and is dispatched by Next (at async l in next/dist); SupabaseClient.rpc is SYNCHRONOUS, so it throws as a non-async top frame (at c) inside bundled vendor code. The ROUTE SPREAD is the clincher: VeraLauncher calls prefetchDockSummary() in a mount effect from the (main) layout, so the action fires from whatever page the shell is on — /settings, /feed, /messages, /messages.rsc. The roomIds.length > 0 guard explains the 9 users (only members of at least one room reach it), and components/messages/dock-chat.tsx:34 swallows it in a bare catch, which is exactly why it ran six weeks unseen while the server logged every one.\n\nTen sites shared the shape and all ten are now bound (x.rpc.bind(x), the pattern lib/analytics/insights-read.ts:52 already used): messages/page.tsx:259, messages/popover-actions.ts:108, api/webhooks/stripe/route.ts:89, billing/bundle-invites.ts:457+534, billing/bundle-seats.ts:196, billing/tickets.ts:423, achievements.ts:76+157, gems.ts:71. The two inline paren-casts (popover-actions.ts:38, :170) are correct as written and were left alone. scripts/check-detached-client-methods.test.ts is the gate that notices: it fails on the alias shape (proven against the literal broken line as a fixture) and passes clean on the tree.\n\nPOST-FIX READ 2026-08-19T16:05Z, and it carries something worth writing down. The group is UNCHANGED at count=20, users=9, last=2026-08-19T04:36:35Z -- which is 10 hours BEFORE the fix deployed at 14:46Z, so there have been no new occurrences, and that proves nothing yet at a natural rate of roughly 20 hits a week.\n\n⚠️ WHAT IS NEW IS THAT THE GROUP SHOWS THREE DISTINCT DIGESTS, and only one of them is the stack this fix explains:\n    digest 2220602272  at c (lib_1b8tszi._.js) <- at async gu (app_(main)_view-as-actions_ts_...)\n    digest 467657171   at C (_0g12mbf._.js:2:4256)   -- SINGLE FRAME, different chunk\n    digest 3553111027  at E (_0g12mbf._.js:2:4788)   -- SINGLE FRAME, different chunk\n\nThe first is the popover-actions.ts call site, now bound. The other two are single-frame stacks in a DIFFERENT chunk and are not explained by the ten sites this fix bound. They are historical samples from the same aggregated group rather than new hits (the count and last-seen did not move), so they may well be the same defect seen through an older deployment's chunking. But they are not accounted for, and saying so is cheaper than discovering it later.\n\nTHIS MAKES THE CLOSE CONDITION FALSIFIABLE RATHER THAN JUST QUIET: if a post-fix occurrence appears carrying digest 467657171 or 3553111027, the fix is INCOMPLETE and there is at least one more unbound site in a chunk this sweep did not reach. If a clean week passes with no occurrence of any digest, it is done.\n\n── OBSERVABILITY HALF SHIPPED 2026-08-20: /api/status now publishes monitoring.sentry (booleanized from lib/observability/sentry.ts, never the DSN), so \"is the recorder on in this deployment?\" is one curl - the fail-safe finally has a gate that notices it is off. The recorder itself stays off until the OWNER sets NEXT_PUBLIC_SENTRY_DSN in Vercel production env and enables a Sentry new-issue alert; the repo can neither do nor verify that, but the curl now proves whichever state holds. Fix half unchanged: bound alias on main since f41c577 (#2175), regression locked by lib/gems.test.ts (#2198) + scripts/check-detached-client-methods.test.ts, and a full repo sweep found zero remaining detached aliases.",
+      "detail": "FOUND 2026-08-19 by a runtime-health read after the five merges of that night, not by a gate. Vercel groups exactly one production runtime error for the project: TypeError: Cannot read properties of undefined (reading 'rest'), route /feed, first seen 2026-07-09T21:45:33Z and last seen 2026-08-19T04:36:35Z, 1 occurrence and 1 user in the trailing 6h. It is PRE-EXISTING: the last occurrence is 68 minutes BEFORE the first merge of that run (05:44), so none of #2166-#2170 introduced it. The frames are minified: at c (.next/server/chunks/ssr/lib_1b8tszi._.js:2:11541), at async gw (.next/server/chunks/ssr/app_(main)_view-as-actions_ts_073-c-k._.js:74:6517), at async l (.next/server/chunks/ssr/0anw_next_dist_0ns0ns1._.js:2:10950), digest 3920664382.\n\nDIAGNOSIS, and it is not the obvious one. The first reading was the practice-streak rest window (StoredStreak.rest, the 'life happens' pause), because /feed reads it and the word matches. That is WRONG on the code: readStored() coalesces with (meta?.practiceStreak ?? {}) and getPracticeStreak() always returns a constructed object, so neither ps.rest nor stored.rest can throw. 'rest' is a SUPABASE-INTERNAL property. In @supabase/supabase-js dist/index.mjs the SupabaseClient constructor sets this.rest (line 664) and exactly three methods read it: from() -> this.rest.from (690), schema() -> this.rest.schema (700), rpc() -> this.rest.rpc (730). So the error is one of those three called with a lost `this` — a client method used as a bare value rather than invoked on its client.\n\nWHAT THE TREE DOES NOT EXPLAIN. There is no such site in source. Swept app/, lib/ and components/ for a destructured or unbound client method: no `const { from } = client`, no `.from` / `.rpc` / `.schema` appearing as a value rather than a call, and the one deliberate rebinding is correct (lib/analytics/insights-read.ts:52 returns db.rpc.bind(db)). No runtime Proxy wraps a client outside tests. All four factories (admin/server/public/client) return the client directly. So closing this needs something the repo cannot supply on its own: a source-mapped frame, or a repro.\n\nWHY IT IS WORTH A ROW RATHER THAN A SPECULATIVE PATCH. It is rare (1 user), pre-existing, on a route this run did not touch, and every candidate fix would be a guard added blind — the shape-not-truth move this repo names in four ADRs. It is recorded instead so it stops being invisible: a real production error ran unrecorded for six weeks, which is exactly the 'every fail-safe needs a gate that notices it fired' rule with no gate at all.\n\nNEXT STEP for whoever picks it up: Vercel retains no log LINES this far back (a runtime-logs query over the 04:20-04:50 window on 2026-08-19 returned nothing, only the aggregated error group survives), so wait for the next occurrence and read it fresh, or map app_(main)_view-as-actions_ts_073-c-k._.js:74:6517 against the deployed build's source map to name `gw`. Do not raise a guard until the call site is named.\n\nRE-READ 2026-08-19 over a 12h window, and the read added a frame the first one did not print. The THROW SITE is at c (.next/server/chunks/ssr/lib_1b8tszi._.js:2:11541) — a lib_ chunk — called from gw in the (main) chunk, under Next's render path (0anw_next_dist). That CORROBORATES the Supabase attribution and narrows where to look: @supabase/supabase-js and everything under lib/ bundle into the lib_ chunk, while the component that reads a practice-streak `rest` window lives in components/. A one-character minified name at column 11541 of a lib_ chunk is the shape of a bundled one-line method, which is exactly what SupabaseClient.from/schema/rpc are. It does NOT name the CALLER, which is still the thing needed, and it is still not grounds for a guard.\n\nNOT A RECURRENCE. The same read shows last=2026-08-19T04:36:35Z, unchanged, count 1 over 12h — one event, rendered with a fuller stack, not a second hit. Eight production deploys shipped between 05:44 and 11:27 that day and none of them produced a new occurrence, and no OTHER error group exists for the project over the window. Twelve quiet hours is not evidence at a rate of roughly one hit per six weeks, so this closes no faster than the row already said.\n\nCALL SITE NAMED 2026-08-19, and the mechanism is now reproduced rather than inferred. A node probe against the installed @supabase/ssr confirms the exact string: an ALIAS call (const rpc = client.rpc; rpc(...)) throws TypeError: Cannot read properties of undefined (reading 'rest'), while an INLINE paren-cast call ((client.rpc)(...)) does NOT — tsc/swc emit client.rpc(...), so `this` survives. That is why the earlier sweep for a bare .rpc VALUE missed it: every site writes `const rpc = admin.rpc as unknown as Fn`, and the grep filter dropped lines without `.rpc(`.\n\nThe site matching the stack is app/(main)/messages/popover-actions.ts:108 — `const rpcAll = supabase.rpc as unknown as (...)`, invoked at :118 inside fetchMessagesSummary's Promise.all, guarded by roomIds.length > 0. Every frame fits: it is a 'use server' module under app/(main) (the chunk Turbopack named after view-as-actions.ts, another 'use server' file in the same group); fetchMessagesSummary is async (at async gu) and is dispatched by Next (at async l in next/dist); SupabaseClient.rpc is SYNCHRONOUS, so it throws as a non-async top frame (at c) inside bundled vendor code. The ROUTE SPREAD is the clincher: VeraLauncher calls prefetchDockSummary() in a mount effect from the (main) layout, so the action fires from whatever page the shell is on — /settings, /feed, /messages, /messages.rsc. The roomIds.length > 0 guard explains the 9 users (only members of at least one room reach it), and components/messages/dock-chat.tsx:34 swallows it in a bare catch, which is exactly why it ran six weeks unseen while the server logged every one.\n\nTen sites shared the shape and all ten are now bound (x.rpc.bind(x), the pattern lib/analytics/insights-read.ts:52 already used): messages/page.tsx:259, messages/popover-actions.ts:108, api/webhooks/stripe/route.ts:89, billing/bundle-invites.ts:457+534, billing/bundle-seats.ts:196, billing/tickets.ts:423, achievements.ts:76+157, gems.ts:71. The two inline paren-casts (popover-actions.ts:38, :170) are correct as written and were left alone. scripts/check-detached-client-methods.test.ts is the gate that notices: it fails on the alias shape (proven against the literal broken line as a fixture) and passes clean on the tree.\n\nPOST-FIX READ 2026-08-19T16:05Z, and it carries something worth writing down. The group is UNCHANGED at count=20, users=9, last=2026-08-19T04:36:35Z -- which is 10 hours BEFORE the fix deployed at 14:46Z, so there have been no new occurrences, and that proves nothing yet at a natural rate of roughly 20 hits a week.\n\n⚠️ WHAT IS NEW IS THAT THE GROUP SHOWS THREE DISTINCT DIGESTS, and only one of them is the stack this fix explains:\n    digest 2220602272  at c (lib_1b8tszi._.js) <- at async gu (app_(main)_view-as-actions_ts_...)\n    digest 467657171   at C (_0g12mbf._.js:2:4256)   -- SINGLE FRAME, different chunk\n    digest 3553111027  at E (_0g12mbf._.js:2:4788)   -- SINGLE FRAME, different chunk\n\nThe first is the popover-actions.ts call site, now bound. The other two are single-frame stacks in a DIFFERENT chunk and are not explained by the ten sites this fix bound. They are historical samples from the same aggregated group rather than new hits (the count and last-seen did not move), so they may well be the same defect seen through an older deployment's chunking. But they are not accounted for, and saying so is cheaper than discovering it later.\n\nTHIS MAKES THE CLOSE CONDITION FALSIFIABLE RATHER THAN JUST QUIET: if a post-fix occurrence appears carrying digest 467657171 or 3553111027, the fix is INCOMPLETE and there is at least one more unbound site in a chunk this sweep did not reach. If a clean week passes with no occurrence of any digest, it is done.\n\n── OBSERVABILITY HALF SHIPPED 2026-08-20: /api/status now publishes monitoring.sentry (booleanized from lib/observability/sentry.ts, never the DSN), so \"is the recorder on in this deployment?\" is one curl - the fail-safe finally has a gate that notices it is off. The recorder itself stays off until the OWNER sets NEXT_PUBLIC_SENTRY_DSN in Vercel production env and enables a Sentry new-issue alert; the repo can neither do nor verify that, but the curl now proves whichever state holds. Fix half unchanged: bound alias on main since f41c577 (#2175), regression locked by lib/gems.test.ts (#2198) + scripts/check-detached-client-methods.test.ts, and a full repo sweep found zero remaining detached aliases. ── CHECKPOINT 2026-08-24 (day 5 of the 30-day silence window; NOT closed). Fresh Vercel runtime read, 7d, routes /feed /settings /messages: the 'rest' group's last occurrence is still 2026-08-19T04:36:35Z, ~10 hours BEFORE f41c577 landed at 14:46Z, and its lastDeployment is dpl_DGzaYAzyPLDxbBDtrpmfzfeufMQX — the pre-fix preview this row already identified. Zero occurrences on any post-fix deployment. Three code legs re-verified today: lib/gems.ts:71 carries admin.rpc.bind(admin); app/(main)/messages/popover-actions.ts:108 carries supabase.rpc.bind(supabase); and a fresh tree-wide sweep for a client method aliased as a VALUE rather than invoked found none (the two lib/menus/actions.ts hits are immediate db.from<…>(…) CALLS, not aliases). lib/gems.test.ts's mock reads this.rest like the real SupabaseClient, so the bind cannot be removed silently. DELIBERATELY LEFT OPEN: this row's own close condition is 30 days of silence counted from 2026-08-19T14:46Z, and 5 days of quiet on an app with 23 active members and ~5 hits in six weeks is suggestive, not sufficient. Closing on it would be the 'closed without the probe ever passing' failure this list exists to prevent. Next checkpoint due 2026-09-18.",
       "verify": {
         "kind": "manual",
         "evidence": "FRESH 7d READ 2026-08-19: one group, count 20, users 9, routes /settings /messages /messages.rsc /feed, first 2026-07-09, last 2026-08-19T04:36:35Z; identical offsets across three deployments (at c lib_1b8tszi._.js:2:11541, at async gu app_(main)_view-as-actions_ts_073-c-k._.js:74:6510, at async l 0r16_next_dist_0xmmoqx._.js:2:10954). MECHANISM REPRODUCED, not inferred: a node probe on the installed @supabase/ssr shows an aliased client.rpc throws the exact message and an inline paren-cast call does not; tsc emit confirms the inline cast compiles back to a normal method call. CALL SITE: app/(main)/messages/popover-actions.ts:108, invoked at :118 in fetchMessagesSummary, reached from every authed route via VeraLauncher -> prefetchDockSummary, gated on roomIds.length > 0 (the 9 users) and swallowed by components/messages/dock-chat.tsx:34. FIXED: all ten alias sites bound with .bind; guarded by scripts/check-detached-client-methods.test.ts, which fires on the literal broken line and passes on the tree. STILL OPEN because closing needs the production half: a runtime-errors read over a 7d window showing zero occurrences of this group AFTER the fix ships. At ~20 hits/week a clean week is real evidence here. | 2026-08-20: close condition is 7d of zero occurrences of the group counting only deployments carrying f41c577; a hit carrying digest 467657171 or 3553111027 means an unbound site the sweep missed. monitoring.sentry field shipped; recorder armed only once the owner sets the DSN (owner action, outside the repo).",
-        "checked": "2026-08-20"
+        "checked": "2026-08-24"
       }
     },
     {
@@ -2559,11 +2583,11 @@
         "file": "lib/gems.ts",
         "ref": "awardGems rpc alias (bound in f41c577)"
       },
-      "detail": "Production runtime error group, digest 3920664382: TypeError: Cannot read properties of undefined (reading 'rest') on /feed, stack through app/(main)/view-as-actions.ts into lib/practice-streak.ts. count=1 user=1, first 2026-07-09, last 2026-08-19. The public read path guards with (meta?.practiceStreak ?? {}), but several internal call sites read stored.rest on a parameter the view-as impersonation path can apparently pass as undefined. Rare, real, and cheap to harden: find the call site that forwards undefined (or make the internal readers total). NOT the LIVE-053 clean-week pair (467657171/3553111027 have not recurred). — 2026-08-20 re-test: the premise was wrong on both names. Reproduced the deployed Turbopack chunks byte-for-byte: the throwing frame lib_1b8tszi._.js:2:11541 is awardGems's `await rpc('award_gems_atomic', …)` in lib/gems.ts, and the calling frame app_(main)_view-as-actions_ts_073-c-k._.js:74:6517 is `await awardGems(profile.id, 'daily_login')` in dailyCheckIn (app/(main)/checkin-actions.ts) — the once-per-member-day check-in POSTed from whatever page the shell is on, hence /feed. 'view-as-actions' is only the merged action-chunk's name; lib/practice-streak.ts is not in the stack at all (readStored() normalizes every meta read; no path can pass an undefined stored). Mechanism: the pre-#2175 alias `const rpc = admin.rpc as unknown as (…)` detached `this`, and SupabaseClient.rpc reads `this.rest` — the LIVE-053 mechanism at the lib/gems.ts site (different digest because different frames). ALREADY FIXED on main by f41c5777f (#2175, 2026-08-19 14:46Z): the alias is bound. The last hit (2026-08-19T04:36Z) came from preview deployment dpl_DGzaYAzyPLDxbBDtrpmfzfeufMQX of branch claude/agenthandoff-2026-08-19-z1zayi, cut from 5d79b440a BEFORE the fix — it is not evidence the fix failed, and stale pre-fix preview branches can still re-fire the digest. Regression test added: lib/gems.test.ts now uses a `this`-sensitive client mock (from/rpc read this.rest like the real SupabaseClient) plus an explicit daily_login-path test — proven to fail with the exact production TypeError against the pre-fix gems.ts (f41c5777f~1) and pass on main. The 30-day silence clock counts only deployments carrying f41c5777f.",
+      "detail": "Production runtime error group, digest 3920664382: TypeError: Cannot read properties of undefined (reading 'rest') on /feed, stack through app/(main)/view-as-actions.ts into lib/practice-streak.ts. count=1 user=1, first 2026-07-09, last 2026-08-19. The public read path guards with (meta?.practiceStreak ?? {}), but several internal call sites read stored.rest on a parameter the view-as impersonation path can apparently pass as undefined. Rare, real, and cheap to harden: find the call site that forwards undefined (or make the internal readers total). NOT the LIVE-053 clean-week pair (467657171/3553111027 have not recurred). — 2026-08-20 re-test: the premise was wrong on both names. Reproduced the deployed Turbopack chunks byte-for-byte: the throwing frame lib_1b8tszi._.js:2:11541 is awardGems's `await rpc('award_gems_atomic', …)` in lib/gems.ts, and the calling frame app_(main)_view-as-actions_ts_073-c-k._.js:74:6517 is `await awardGems(profile.id, 'daily_login')` in dailyCheckIn (app/(main)/checkin-actions.ts) — the once-per-member-day check-in POSTed from whatever page the shell is on, hence /feed. 'view-as-actions' is only the merged action-chunk's name; lib/practice-streak.ts is not in the stack at all (readStored() normalizes every meta read; no path can pass an undefined stored). Mechanism: the pre-#2175 alias `const rpc = admin.rpc as unknown as (…)` detached `this`, and SupabaseClient.rpc reads `this.rest` — the LIVE-053 mechanism at the lib/gems.ts site (different digest because different frames). ALREADY FIXED on main by f41c5777f (#2175, 2026-08-19 14:46Z): the alias is bound. The last hit (2026-08-19T04:36Z) came from preview deployment dpl_DGzaYAzyPLDxbBDtrpmfzfeufMQX of branch claude/agenthandoff-2026-08-19-z1zayi, cut from 5d79b440a BEFORE the fix — it is not evidence the fix failed, and stale pre-fix preview branches can still re-fire the digest. Regression test added: lib/gems.test.ts now uses a `this`-sensitive client mock (from/rpc read this.rest like the real SupabaseClient) plus an explicit daily_login-path test — proven to fail with the exact production TypeError against the pre-fix gems.ts (f41c5777f~1) and pass on main. The 30-day silence clock counts only deployments carrying f41c5777f. ── CHECKPOINT 2026-08-24 (day 5 of the 30-day silence window; NOT closed). Fresh Vercel runtime read, 7d, routes /feed /settings /messages: the 'rest' group's last occurrence is still 2026-08-19T04:36:35Z, ~10 hours BEFORE f41c577 landed at 14:46Z, and its lastDeployment is dpl_DGzaYAzyPLDxbBDtrpmfzfeufMQX — the pre-fix preview this row already identified. Zero occurrences on any post-fix deployment. Three code legs re-verified today: lib/gems.ts:71 carries admin.rpc.bind(admin); app/(main)/messages/popover-actions.ts:108 carries supabase.rpc.bind(supabase); and a fresh tree-wide sweep for a client method aliased as a VALUE rather than invoked found none (the two lib/menus/actions.ts hits are immediate db.from<…>(…) CALLS, not aliases). lib/gems.test.ts's mock reads this.rest like the real SupabaseClient, so the bind cannot be removed silently. DELIBERATELY LEFT OPEN: this row's own close condition is 30 days of silence counted from 2026-08-19T14:46Z, and 5 days of quiet on an app with 23 active members and ~5 hits in six weeks is suggestive, not sufficient. Closing on it would be the 'closed without the probe ever passing' failure this list exists to prevent. Next checkpoint due 2026-09-18.",
       "verify": {
         "kind": "manual",
         "evidence": "SUPERSEDED READ CORRECTED 2026-08-20 (the row title and first evidence named practice-streak; the row detail re-test proved the frame map wrong): digest 3920664382 is awardGems await rpc(award_gems_atomic) in lib/gems.ts called from dailyCheckIn (app/(main)/checkin-actions.ts), POSTed from whatever page the shell is on - hence /feed. Mechanism (detached this on the pre-#2175 rpc alias) fixed on main f41c577 2026-08-19T14:46Z; regression locked by lib/gems.test.ts this-sensitive mock (#2198, proven to fail at f41c577~1). Close condition: the digest silent 30 days counting only deployments carrying f41c577 (clock start 2026-08-19T14:46Z); stale pre-fix preview deployments may re-fire it and do not reset the clock. Same defect and same fix commit as LIVE-053; kept as its own row only for the separate digest clock.",
-        "checked": "2026-08-20"
+        "checked": "2026-08-24"
       }
     },
     {
@@ -2836,14 +2860,14 @@
     {
       "id": "LIVE-069",
       "title": "The market-listing opt-out reaches the Tickets rail",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "HYG-009 sweep, 2026-08-20"
       },
-      "detail": "Re-verified still true 2026-08-20 (HYG-009): the host's 'List this event publicly' opt-out is honored on the index (lib/commerce/index-data.ts:487) but listTicketedEventProjections (lib/commerce/ticket-projection.ts:129,208) selects rows without applying listableOnly, so an opted-out ticketed event still surfaces on the Market Tickets rail. Apply listableOnly to the projection rows before shaping cards.",
+      "detail": "Re-verified still true 2026-08-20 (HYG-009): the host's 'List this event publicly' opt-out is honored on the index (lib/commerce/index-data.ts:487) but listTicketedEventProjections (lib/commerce/ticket-projection.ts:129,208) selects rows without applying listableOnly, so an opted-out ticketed event still surfaces on the Market Tickets rail. Apply listableOnly to the projection rows before shaping cards. ── PATH CORRECTED 2026-08-24: this row cites lib/commerce/index-data.ts:487 as where the opt-out IS honoured, and that file does not exist. The live site is app/(main)/events/index-data.ts:516, which calls listableOnly from lib/events/market-listing.ts:56. The defect itself re-verified TRUE the same day: lib/commerce/ticket-projection.ts still never applies it, and that file’s own header (line 5) claims it \"reads listable\" events, so the comment is false as well as the behaviour. ── CLOSED 2026-08-24. listableOnly now runs on the projection, and the docstring that already CLAIMED to return listable events is true. Two details beyond the one-line fix: (1) the read went WIDE (limit*2, capped 200) and the cap moved after the filter, because a filter applied after .limit() lets an opted-out event eat a visible card slot — the same ordering the /events browse surface uses for this rule; (2) the filter runs before the tier/space/profile reads, so those batch over fewer rows. Five tests, verified as a real control: the opt-out test FAILS against the pre-fix line and passes after. They also pin the fail-open default, since listed is the default and only an explicit false opts out.",
       "verify": {
         "kind": "grep-present",
         "pattern": "listableOnly",
@@ -2914,11 +2938,11 @@
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "HYG-009 sweep, 2026-08-20"
       },
-      "detail": "Ten owner-side items the HYG-009 sweep re-verified as still open, none repo-closable: ANTHROPIC_API_KEY repo secret; flip the visual + adoption CI jobs to required (contrast already blocks, ci.yml:262); recruit five test users (feeds LIVE-060); the rail-bank migration (changes per-scope quick links); the event Layout staff gate; accentize() amber (~26 elements, design-visible); dismiss the three CodeQL false positives; Supabase dashboard leaked-password protection ON + anonymous sign-ins OFF; submit the sitemap to Search Console and Bing; CRON_HEARTBEAT_BASE_URL so the cron fleet can page (pairs with OWN-005). Tick items off in this detail as they land; the row closes when the list is empty.",
+      "detail": "Ten owner-side items the HYG-009 sweep re-verified as still open, none repo-closable: ANTHROPIC_API_KEY repo secret; flip the visual + adoption CI jobs to required (contrast already blocks, ci.yml:262); recruit five test users (feeds LIVE-060); the rail-bank migration (changes per-scope quick links); the event Layout staff gate; accentize() amber (~26 elements, design-visible); dismiss the three CodeQL false positives; Supabase dashboard leaked-password protection ON + anonymous sign-ins OFF; submit the sitemap to Search Console and Bing; CRON_HEARTBEAT_BASE_URL so the cron fleet can page (pairs with OWN-005). Tick items off in this detail as they land; the row closes when the list is empty. ── ITEM STRUCK 2026-08-24: \"Supabase dashboard leaked-password protection ON + anonymous sign-ins OFF\" is NOT open and this row should stop asking for it. OWN-007 and OWN-008 are both `done` in this same file, and a fresh production advisor read on 2026-08-24 returned 144 security lints with ZERO relating to either — which is the positive signal, since Supabase emits an advisory whenever either is wrong. Nine items remain.",
       "verify": {
         "kind": "manual",
-        "evidence": "Each item re-verified open in the HYG-009 sweep, 2026-08-20; none has a repo-visible consequence yet.",
-        "checked": "2026-08-20"
+        "evidence": "Each remaining item re-verified open in the HYG-009 sweep, 2026-08-20. The leaked-password + anonymous-sign-ins item was STRUCK 2026-08-24: contradicted by OWN-007/OWN-008 (done) and by a 144-lint advisor read returning zero auth advisories. Nine items remain, none with a repo-visible consequence yet.",
+        "checked": "2026-08-24"
       }
     },
     {
@@ -3113,7 +3137,7 @@
         "file": "scripts/check-backlog.mjs",
         "ref": "runProbe’s per-probe spawn, and patternMatches/filesUnder"
       },
-      "detail": "Found 2026-08-20 when scripts/backlog-contract.test.ts failed a PR at 20.2s against its 20s child-CPU budget. It has now failed FOUR builds (20.2s, 20.3s, 20.6s). The original framing — eleven probes wastefully re-reading the same tree — was right about the reading and WRONG about the remedy. Both cheap fixes were tried and MEASURED, and both failed:\n\n(1) MEMOISING the file listing and contents inside check-backlog.mjs: bought nothing measurable (19.98s baseline vs 20.61s memoised on the same loaded machine, against run-to-run noise of about +/-1s). A parent-process cache can only help the IN-PROCESS kinds, and those mostly point at single named files; all eleven expensive probes are `cmd`, i.e. separate node processes that cannot see parent memory.\n\n(2) CONVERTING the eleven to the in-process grep kinds — the fix this row originally prescribed. The harness was extended with `exclude` and `stripComments` to make it possible, and then reading the eleven showed the premise was false: only THREE (OWN-036, OWN-037, LIVE-071) are pattern matches. The other eight are COMPUTATIONS, not greps — LIVE-012 walks app/discover checking auth calls per file against an allowlist, LIVE-020 imports check-function-grants.mjs and audits 400+ migrations through it, LIVE-038 carries an ALLOWED set, LIVE-054 parses a named function's body, LIVE-058 collects exported symbol names, LIVE-062 checks a per-file map of 38 action names, LIVE-066 pairs modules with importers. None of them can become a regex over paths without measuring something weaker than what the row claims. Converting the three that CAN saves about 75ms against a 600ms overage.\n\nSO THE HONEST FINDING IS THAT THERE IS NO WASTE LEFT TO REMOVE. The budget is measuring a genuinely expensive and genuinely necessary set of checks that has grown past the number someone picked when it was smaller. The guard's own message says \"Raising this number is not the fix\" — that advice assumed waste existed, and the measurements above say it does not.\n\n🔴 THIS IS AN OWNER CALL, NOT A CODE CHANGE, and it is deliberately left open rather than resolved by an agent raising a build gate on its own authority. The options: (a) raise GUARD_BUDGET_CPU_MS with the measurement recorded beside it and an ADR saying why; (b) run the probes concurrently — this cuts WALL clock but not CPU, so it does not move this number; (c) split the guard so the eight computational probes run on their own schedule; (d) accept that adding probed rows now costs a budget conversation each time.\n\n── OWNER RULING 2026-08-21: option (a) is chosen in a specific shape — A PER-PROBE CEILING PLUS A COUNT-SCALED TOTAL, not a raised constant. The reasoning is that the guard's own failure message already says what it cares about (\"something added expensive work to a PROBE\"), and a fixed total does not measure that: it measures how many rows the backlog has, so every honest new row pushes it up and the gate fires for a reason unrelated to the thing it exists to catch. THE SHAPE: (1) no SINGLE probe may exceed a per-probe CPU ceiling — that is the real regression signal, and it stays valid however long the list gets; (2) the TOTAL budget scales with the number of probes, so adding a normal row is free and only an abnormal one trips it. check-backlog.mjs needs to report per-probe timings for (1) to be assertable — a summary line the test parses is enough, and it is useful to a human reading the output too. Land the constants from a real measurement, the way PACKED_PER_RAW was settled, and write the numbers into the ADR beside them. NOT STARTED: the owner asked to stop and close the thread on 2026-08-21; this row now carries the decision so the next session implements rather than re-litigates.",
+      "detail": "Found 2026-08-20 when scripts/backlog-contract.test.ts failed a PR at 20.2s against its 20s child-CPU budget. It has now failed FOUR builds (20.2s, 20.3s, 20.6s). The original framing — eleven probes wastefully re-reading the same tree — was right about the reading and WRONG about the remedy. Both cheap fixes were tried and MEASURED, and both failed:\n\n(1) MEMOISING the file listing and contents inside check-backlog.mjs: bought nothing measurable (19.98s baseline vs 20.61s memoised on the same loaded machine, against run-to-run noise of about +/-1s). A parent-process cache can only help the IN-PROCESS kinds, and those mostly point at single named files; all eleven expensive probes are `cmd`, i.e. separate node processes that cannot see parent memory.\n\n(2) CONVERTING the eleven to the in-process grep kinds — the fix this row originally prescribed. The harness was extended with `exclude` and `stripComments` to make it possible, and then reading the eleven showed the premise was false: only THREE (OWN-036, OWN-037, LIVE-071) are pattern matches. The other eight are COMPUTATIONS, not greps — LIVE-012 walks app/discover checking auth calls per file against an allowlist, LIVE-020 imports check-function-grants.mjs and audits 400+ migrations through it, LIVE-038 carries an ALLOWED set, LIVE-054 parses a named function's body, LIVE-058 collects exported symbol names, LIVE-062 checks a per-file map of 38 action names, LIVE-066 pairs modules with importers. None of them can become a regex over paths without measuring something weaker than what the row claims. Converting the three that CAN saves about 75ms against a 600ms overage.\n\nSO THE HONEST FINDING IS THAT THERE IS NO WASTE LEFT TO REMOVE. The budget is measuring a genuinely expensive and genuinely necessary set of checks that has grown past the number someone picked when it was smaller. The guard's own message says \"Raising this number is not the fix\" — that advice assumed waste existed, and the measurements above say it does not.\n\n🔴 THIS IS AN OWNER CALL, NOT A CODE CHANGE, and it is deliberately left open rather than resolved by an agent raising a build gate on its own authority. The options: (a) raise GUARD_BUDGET_CPU_MS with the measurement recorded beside it and an ADR saying why; (b) run the probes concurrently — this cuts WALL clock but not CPU, so it does not move this number; (c) split the guard so the eight computational probes run on their own schedule; (d) accept that adding probed rows now costs a budget conversation each time.\n\n── OWNER RULING 2026-08-21: option (a) is chosen in a specific shape — A PER-PROBE CEILING PLUS A COUNT-SCALED TOTAL, not a raised constant. The reasoning is that the guard's own failure message already says what it cares about (\"something added expensive work to a PROBE\"), and a fixed total does not measure that: it measures how many rows the backlog has, so every honest new row pushes it up and the gate fires for a reason unrelated to the thing it exists to catch. THE SHAPE: (1) no SINGLE probe may exceed a per-probe CPU ceiling — that is the real regression signal, and it stays valid however long the list gets; (2) the TOTAL budget scales with the number of probes, so adding a normal row is free and only an abnormal one trips it. check-backlog.mjs needs to report per-probe timings for (1) to be assertable — a summary line the test parses is enough, and it is useful to a human reading the output too. Land the constants from a real measurement, the way PACKED_PER_RAW was settled, and write the numbers into the ADR beside them. NOT STARTED: the owner asked to stop and close the thread on 2026-08-21; this row now carries the decision so the next session implements rather than re-litigates. ── STEP 1 LANDED 2026-08-24, STEP 2 DELIBERATELY NOT. The owner's ruling needs check-backlog.mjs to report per-probe timings before the per-probe ceiling is assertable, so that half is built and shipping: each probe is now bracketed by a /proc/self/stat cutime+cstime read (the same quantity the contract test budgets, and the only load-independent one per LIVE-047), and the guard prints `probe-cost: n=… totalCpuMs=… maxCpuMs=… slowest=…` plus the three most expensive probes by name. LOCAL MEASUREMENT, three runs, variance under 0.3%: n=111, total 8.32-8.56s, worst single probe PROG-DAWN9 at 2.02-2.09s, then LIVE-014 850ms and LIVE-018 520ms. Average 75ms. 🔴 THE CONSTANTS ARE NOT SET FROM THAT, AND THIS IS THE WHOLE REASON THE ROW STAYS OPEN. CPU time is load-independent but it is NOT hardware-independent: a slower core burns MORE cpu-seconds for identical work. This row's own history proves the gap — CI failed at 20.2/20.3/20.6s CPU while contemporaneous local readings of the same tree were 12.0-13.4s, about 1.6x. Today's local 8.5s therefore says nothing safe about what CI will read, and a count-scaled total derived from it would be roughly 1.6-2.4x too tight the first time a loaded runner saw it — which is precisely the failure this row exists to end, re-created with better instrumentation. AGENTS.md settles the method: a build-blocking gate that has never seen a real artifact is the 2026-08-11 incident with the roles reversed, so wire it in the same change as the run that proves it and read what it prints. PACKED_PER_RAW was settled exactly this way, by a paired reading. STEP 2, once CI has printed the line on a real run: set PER_PROBE_CEILING from the observed worst probe with headroom (locally that is ~2.1s, so roughly 2x it), replace the flat 20s with BASE + PER_PROBE_ALLOWANCE x n derived from the CI total, and record both numbers and the local:CI ratio in an ADR beside them. The flat 20s assertion is UNTOUCHED in this change: instrumentation cannot fail a build, so nothing here can break CI while the real number is being collected.",
       "verify": {
         "kind": "manual",
         "evidence": "Counted 2026-08-20 against the tree: 11 of 72 cmd probes walk app/lib/components in their own process. Deliberately unprobed — a mechanical probe here would either re-walk the tree itself (adding to the very cost it measures) or pin an implementation shape rather than the consequence. The consequence already has an executable guard: scripts/backlog-contract.test.ts fails when the budget is exceeded, and it is what surfaced this.",
@@ -3131,7 +3155,7 @@
         "file": "app/(main)/events/calendar/page.tsx",
         "ref": "the month grid that drops the recurrence fields it is handed"
       },
-      "detail": "Owner report 2026-08-20: \"The only events that should be suppressed on the calendar are recurring weekly events. I want any event to show within a year of it being loaded but I don't want repeating events jamming the calendar.\" MEASURED the same day: 17 of the 20 upcoming events are occurrences of two weekly series (Breathe Connect Expand, Meld Community Cowork). 85% of the calendar is two events repeating.\n\nOWNER-SPECIFIED DESIGN (multiple choice, 2026-08-21):\n  • A Repeats STRIP sits between the month header and the grid, one chip per series, labelled with the series name AND its cadence (\"Breathe Connect Expand · Thursdays\"). Chips, not bare icons — an unlabelled icon fails the skeptic test because a member cannot tell what it is without clicking.\n  • Clicking a chip DOT-HIGHLIGHTS that series' dates in the grid (it does not filter the grid down, and it does not hide anything). Clicking the chip's name opens the event.\n  • In the cells: the NEXT occurrence of each series renders as a normal card; every later date gets a small dot rather than a card. So \"what is on this Thursday\" stays answerable at a glance while ~16 of the 17 repeat cards leave the grid.\n  • SCOPE IS /events/calendar ONLY. The master .ics already collapses a series to one RRULE entry, /events index cards already fold through collapseSeriesRows, and Space/Circle lists are explicitly out of scope for this row.\n\nTHE GROUNDWORK ALREADY EXISTS, which is most of why this is M and not L. supabase/migrations/20261203000000_calendar_feed_recurrence.sql already added recurrence_type, recurrence_until and parent_event_id to public_calendar_feed — precisely so the .ics routes could collapse a series — and app/(main)/events/calendar/page.tsx reads that feed and then DROPS all three when it builds its CalendarEvent objects. lib/events/series.ts already has collapseSeries, seriesKey and SeriesGroup, which every other surface uses. This is wiring, not building.\n\n⚠️ TWO TRAPS. (1) parent_event_id IS THE GROUPING KEY, NOT recurrence_type: the materialised child occurrences all carry recurrence_type 'none' and only the anchor knows the cadence, so grouping on cadence finds nothing. (2) \"WITHIN A YEAR\" AND \"REPEATING\" FIGHT EACH OTHER TODAY: occurrences are materialised rows and only 60 days ahead (HORIZON_DAYS in lib/event-recurrence.ts), so raising the listing horizon shows one-off events a year out but repeats simply stop existing past 60 days. Owner ruling: COMPUTE the strip's future dates from the anchor's recurrence_type + recurrence_until for display, and decide separately later whether to raise the materialiser. Those computed dates are display-only and cannot be RSVP'd or ticketed until the materialiser catches up — say so in the UI rather than letting a member click into nothing.\n\nRELATED, ALREADY DONE: the listing horizon is an operator setting (LIVE-073) and is currently set to 365.",
+      "detail": "Owner report 2026-08-20: \"The only events that should be suppressed on the calendar are recurring weekly events. I want any event to show within a year of it being loaded but I don't want repeating events jamming the calendar.\" MEASURED the same day: 17 of the 20 upcoming events are occurrences of two weekly series (Breathe Connect Expand, Meld Community Cowork). 85% of the calendar is two events repeating.\n\nOWNER-SPECIFIED DESIGN (multiple choice, 2026-08-21):\n  • A Repeats STRIP sits between the month header and the grid, one chip per series, labelled with the series name AND its cadence (\"Breathe Connect Expand · Thursdays\"). Chips, not bare icons — an unlabelled icon fails the skeptic test because a member cannot tell what it is without clicking.\n  • Clicking a chip DOT-HIGHLIGHTS that series' dates in the grid (it does not filter the grid down, and it does not hide anything). Clicking the chip's name opens the event.\n  • In the cells: the NEXT occurrence of each series renders as a normal card; every later date gets a small dot rather than a card. So \"what is on this Thursday\" stays answerable at a glance while ~16 of the 17 repeat cards leave the grid.\n  • SCOPE IS /events/calendar ONLY. The master .ics already collapses a series to one RRULE entry, /events index cards already fold through collapseSeriesRows, and Space/Circle lists are explicitly out of scope for this row.\n\nTHE GROUNDWORK ALREADY EXISTS, which is most of why this is M and not L. supabase/migrations/20261203000000_calendar_feed_recurrence.sql already added recurrence_type, recurrence_until and parent_event_id to public_calendar_feed — precisely so the .ics routes could collapse a series — and app/(main)/events/calendar/page.tsx reads that feed and then DROPS all three when it builds its CalendarEvent objects. lib/events/series.ts already has collapseSeries, seriesKey and SeriesGroup, which every other surface uses. This is wiring, not building.\n\n⚠️ TWO TRAPS. (1) parent_event_id IS THE GROUPING KEY, NOT recurrence_type: the materialised child occurrences all carry recurrence_type 'none' and only the anchor knows the cadence, so grouping on cadence finds nothing. (2) \"WITHIN A YEAR\" AND \"REPEATING\" FIGHT EACH OTHER TODAY: occurrences are materialised rows and only 60 days ahead (HORIZON_DAYS in lib/event-recurrence.ts), so raising the listing horizon shows one-off events a year out but repeats simply stop existing past 60 days. Owner ruling: COMPUTE the strip's future dates from the anchor's recurrence_type + recurrence_until for display, and decide separately later whether to raise the materialiser. Those computed dates are display-only and cannot be RSVP'd or ticketed until the materialiser catches up — say so in the UI rather than letting a member click into nothing.\n\nRELATED, ALREADY DONE: the listing horizon is an operator setting (LIVE-073) and is currently set to 365. ── SEQUENCED 2026-08-24 into W0: it was filed after the 2026-08-20 slate was ruled and sat in no wave. Placed near-term because the owner reported it directly and specified the design; move it if that is the wrong wave.",
       "verify": {
         "kind": "grep-present",
         "pattern": "parent_event_id",
@@ -3283,7 +3307,7 @@
         "file": "components/ui/dialog.tsx",
         "ref": "the shared primitive these six bypass"
       },
-      "detail": "🔴 THE SURVEY THAT PRODUCED THIS LIST WAS WRONG ABOUT ITS OWN EASY CASES, and that is the finding worth keeping. An overlay audit on 2026-08-21 sorted 28 modal-shaped overlays into \"trivially convertible / needs a decision / must not convert\" and put 12 in the first bucket. It sorted on GEOMETRY (items-end vs items-center) and never read scrim colour or z-tier. Verified one by one against Dialog's z-[80] + bg-ink/60 + backdrop-blur-sm, SEVEN candidates yielded exactly ONE true no-op:\n\n  invite-launcher       z-[80]  bg-ink/60  blur-sm   EXACT MATCH -> converted (align=\"sheet\")\n  vera-lightbox         z-[60]  bg-ink/60  blur-sm   scrim ok, tier 60 -> 80\n  invite-friend-button  z-[80]  button scrim         tier ok, scrim is a click-target element\n  capture-launcher      z-[70]  bg-ink/70  blur-sm   tier 70 -> 80, scrim lightens\n  chores-overlay        z-[70]  bg-ink/70  blur-sm   tier 70 -> 80, scrim lightens\n  teaser-gate           z-50    bg-ink/40  blur-2px  tier + scrim both change\n  induction             z-50    bg-ink/40  no blur   tier + scrim change, blur appears\n\nA GREP ALONE WOULD ALSO HAVE BEEN WRONG. teaser-gate and invite-friend-button look scrimless on the `fixed inset-0` line because their scrim is a SIBLING element (an absolute div, and a click-to-dismiss button respectively). Reading the line is not reading the overlay.\n\nSO THERE IS NO SWEEP HERE, only six individual judgments. A z-tier is a claim about what may appear above what (vera-lightbox at z-[60] sits BELOW the modal tier deliberately, so a Dialog can open over it), and a scrim opacity is a design choice (trophy-celebration, excluded from this row, uses a LIGHT bg-canvas/80 wash because it is a celebration, not a modal). Converting on autopilot would darken screens and reshuffle stacking with nobody having decided to.\n\nWHAT IS AT STAKE IF THEY STAY: every one of the six lacks a portal (so the sliding admin rail can trap it), lacks the Space theme (ADR-1097), sits outside the dialog stack, and pads no safe area. Five of the six set aria-modal=\"true\" with no focus trap at all, which tells a screen reader the page behind is inert while Tab walks straight out of it.",
+      "detail": "🔴 THE SURVEY THAT PRODUCED THIS LIST WAS WRONG ABOUT ITS OWN EASY CASES, and that is the finding worth keeping. An overlay audit on 2026-08-21 sorted 28 modal-shaped overlays into \"trivially convertible / needs a decision / must not convert\" and put 12 in the first bucket. It sorted on GEOMETRY (items-end vs items-center) and never read scrim colour or z-tier. Verified one by one against Dialog's z-[80] + bg-ink/60 + backdrop-blur-sm, SEVEN candidates yielded exactly ONE true no-op:\n\n  invite-launcher       z-[80]  bg-ink/60  blur-sm   EXACT MATCH -> converted (align=\"sheet\")\n  vera-lightbox         z-[60]  bg-ink/60  blur-sm   scrim ok, tier 60 -> 80\n  invite-friend-button  z-[80]  button scrim         tier ok, scrim is a click-target element\n  capture-launcher      z-[70]  bg-ink/70  blur-sm   tier 70 -> 80, scrim lightens\n  chores-overlay        z-[70]  bg-ink/70  blur-sm   tier 70 -> 80, scrim lightens\n  teaser-gate           z-50    bg-ink/40  blur-2px  tier + scrim both change\n  induction             z-50    bg-ink/40  no blur   tier + scrim change, blur appears\n\nA GREP ALONE WOULD ALSO HAVE BEEN WRONG. teaser-gate and invite-friend-button look scrimless on the `fixed inset-0` line because their scrim is a SIBLING element (an absolute div, and a click-to-dismiss button respectively). Reading the line is not reading the overlay.\n\nSO THERE IS NO SWEEP HERE, only six individual judgments. A z-tier is a claim about what may appear above what (vera-lightbox at z-[60] sits BELOW the modal tier deliberately, so a Dialog can open over it), and a scrim opacity is a design choice (trophy-celebration, excluded from this row, uses a LIGHT bg-canvas/80 wash because it is a celebration, not a modal). Converting on autopilot would darken screens and reshuffle stacking with nobody having decided to.\n\nWHAT IS AT STAKE IF THEY STAY: every one of the six lacks a portal (so the sliding admin rail can trap it), lacks the Space theme (ADR-1097), sits outside the dialog stack, and pads no safe area. Five of the six set aria-modal=\"true\" with no focus trap at all, which tells a screen reader the page behind is inert while Tab walks straight out of it. ── SEQUENCED 2026-08-24 into W6 beside PROG-DAWN3, the other mechanical sweep. It was filed after the 2026-08-20 slate was ruled and sat in no wave.",
       "verify": {
         "kind": "grep-absent",
         "paths": [
@@ -3297,6 +3321,277 @@
         "pattern": "fixed inset-0"
       },
       "notes": "OPEN, and the probe reports NOT DONE because all six still hand-roll `fixed inset-0`. Closing it does NOT require converting all six: if the owner decides one should keep its own tier or scrim, that decision gets recorded here and the file drops out of the probe's path list with the reason attached. What the row refuses is the third option — leaving them unconverted and undecided.\n\ncomponents/invite/invite-launcher.tsx is deliberately NOT in the list: it was the one exact match and is already on Dialog. components/practice/claim-practice.tsx and components/create-modal.tsx are likewise done (ADR-1100). trophy-celebration is excluded because its z-[100] lightbox tier and bg-canvas/80 celebratory wash make it a deliberate difference rather than a pending conversion."
+    },
+    {
+      "id": "LIVE-090",
+      "title": "toggleMembership makes no policy decision, so a member can grant themselves the paid tier",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 by a full-tree security sweep, then RAISED from med to high by a production read the finder could not take. toggleMembership (app/(main)/upgrade/actions.ts:25) establishes WHO the caller is (auth.getUser) and is correctly self-scoped, but never asks WHETHER a member may change their own tier right now. It writes profiles.membership_tier free<->crew through the ADMIN client with no billingLive() gate, while its sibling startSupporterContribution in the same file gates on billingLive() at :170. The only thing hiding it is a client-side conditional render (app/(main)/upgrade/page.tsx:215); upgrade-toggle.tsx statically imports the action and page.tsx statically imports the component, so Next registers the action id at build time and it stays POST-able whichever branch renders. NOT LATENT: billingLive() = billingEnabled() && billing_live (lib/pricing/settings.ts:213); loadPricingFlags reads platform_flags (:186) where billing_live = true; and production logs show live-mode Stripe calls against acct_1TdurHPhyalyRPP1. MEASURED BLAST RADIUS 2026-08-24: select membership_tier, count(*) from profiles -> crew 40, free 16. Sixteen members can POST one server action and take the paid tier for nothing. The money half is real because BOTH payout paths read the STORED tier to pick the take-rate rung (lib/billing/tickets.ts:383-387, lib/commerce/checkout.ts:75-82 via memberNetworkTakeRateBps) — free 10%, crew 8%. WHY THE GATE MISSED IT: check:authz matches auth.getUser as a GUARD and passes the file; identity is not authorization, and the gate's own header says gate CORRECTNESS is out of scope. FIX: add the sibling's gate at the top of toggleMembership. At launch, delete the action with its button in the same change — an orphaned 'use server' export is a live POST endpoint. ── CLOSED 2026-08-24: the gate is in place at the top of toggleMembership, above every read and write, and app/(main)/upgrade/actions.test.ts pins both halves — refuses with NO tier write when billingLive() is true, still toggles while billing is off.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "toggleMembership\\(\\)(?:(?!\\nexport )[\\s\\S])*?billingLive",
+        "paths": [
+          "app/(main)/upgrade/actions.ts"
+        ],
+        "note": "Bounded to toggleMembership's own body: the match may not cross the next top-level export, so the sibling action's billingLive() cannot satisfy it. In-process rather than a cmd probe, so no shell quoting can break it (it did) and it costs no extra node process."
+      }
+    },
+    {
+      "id": "LIVE-091",
+      "title": "The outbox retry policy is error-blind, and it dropped 359 emails in one afternoon",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 by reading notification_queue in production. Nothing recorded this: no row, no ADR, no doc. THE DATA: the table holds 379 'done' (healthy, latest 2026-08-24 13:00, so the drain works today) and 359 'failed', every one created between 2026-07-17 16:00 and 17:43, all kind='email', all at attempts = max_attempts = 5, all carrying the same last_error: [email] send failed: {\"statusCode\":429,\"message\":\"You have reached your daily email sending quota.\",\"name\":\"daily_quota_exceeded\"}. THE MECHANISM: nextRetry (lib/queue/outbox.ts:36-42) decides retryability from the ATTEMPT COUNT ALONE and never inspects the error. With BACKOFF_BASE_MS = 60_000 (:26) and max_attempts = 5, all five attempts land inside ~15 minutes, against a quota that resets DAILY. So a daily_quota_exceeded is not merely likely to dead-letter every queued email — it is guaranteed to. The queue drained itself into the dead-letter state in 1h43m. WHO PAID: 356 of the 359 were one bulk campaign to 356 distinct recipients; the other three are the real damage — two welcome emails to genuine new members and one event-claim invite. Bulk and transactional mail share one queue with no priority or quota separation, so a campaign starved the welcomes. WHY NOBODY SAW: the code dead-letters loudly (console.error at :128, comment says it 'needs operator attention (ADR-043)') and an operator surface exists with one-tap requeue (components/widgets/marketing/deliverability-dead-letters.tsx). But nothing pages: grepping lib/observability, scripts/ and .github/ for dead-letter references returns zero. Pull-only, and for five weeks nobody pulled. This is the AGENTS.md rule exactly — every fail-safe needs a gate that notices it fired. FIX (this row covers parts 1-2 only): 1. Classify before counting — a 429/rate-limit/quota error is retryable on a TIME axis, so push run_after past the window and do NOT increment attempts. 2. Separate bulk from transactional so a campaign can never starve a welcome. PART 3 (a gate that pages on a dead-letter spike) is already scoped inside DEF-HARDEN and stays there. PART 4 (requeue the three transactional rows, leave the five-week-stale campaign) is an operator action on live data — OWN-042. ── CLOSED 2026-08-24 (parts 1-2; part 3 stays in DEF-HARDEN, part 4 in OWN-042). PART 1: retryDelayFor (lib/queue/outbox.ts) classifies the error first and returns whether the attempt counts. A daily quota waits until the next UTC midnight and spends NO attempt; a generic 429 waits 15 minutes and spends no attempt; a provider Retry-After wins over both, floored at 1 minute and capped at 24 hours. Everything else is nextRetry byte for byte, dead-letter semantics untouched. Free deferrals are bounded by WALL-CLOCK AGE off created_at (the only clock the table already has, so no migration): 72h for a quota, 1h for a rate limit, after which the same error falls back to attempt counting and can dead-letter. PART 2: a lane (transactional | bulk) rides in the payload jsonb; the campaign fan-out and the nurture drip declare bulk, everything else is transactional by default, and a pre-lane campaign row still reads as bulk from its campaign_id tag. The drain runs transactional first within a batch and, on the first quota refusal, parks the rest of the bulk lane without calling the provider. The fan-out also drips its run_after at 10/min so it cannot fill the claim window. NOT DONE, and stated plainly: claim_outbox_jobs is 'order by run_after asc' and lane-blind, so an ALREADY-backlogged bulk queue can still sit in front of a welcome at CLAIM time. Closing that needs a lane/priority column plus a new ORDER BY in the RPC, i.e. a migration, which this row did not write.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "const retry = nextRetry\\(attempts, job\\.max_attempts\\)",
+        "paths": [
+          "lib/queue/outbox.ts"
+        ],
+        "note": "Measures the DEFECT, not the fix. The row originally specified grep-present \"retryDelayFor\", which passes the moment the NAME exists — the shape-not-truth failure four ADRs name, and the implementing agent said so unprompted. This greps for the drain line that made the decision from the attempt count alone. Behaviour is pinned by 22 tests in outbox.test.ts, including the 2026-07-17 case end-to-end: five drains of 429 daily_quota_exceeded never dead-letter, never write attempts, and each land within 10s of the next UTC midnight."
+      }
+    },
+    {
+      "id": "LIVE-092",
+      "title": "Blocking is not enforced on friend requests, so a blocked member keeps a channel",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 by a full-tree security sweep. sendFriendRequest (app/(main)/people/friend-actions.ts:45-88) resolves the caller from the session, so there is no IDOR, but it never consults isBlockedBetween — while SIX sibling contact-initiating paths do: app/(main)/messages/actions.ts:53,138,202, lib/messages/scoped-dm.ts:344, lib/comms/bulk-dm.ts:126, app/(main)/events/[slug]/social-actions.ts:101, app/(main)/market/service-actions.ts:109. The loop is closed by two deletes: blockUser DELETES the friendship row (lib/blocking.ts:31-33), leaving a clean slate for a fresh 'pending' insert, and declineFriendRequest deletes it again (:132-136, comment: 'so the requester can try again later'). So block -> request -> notification -> decline -> repeat, indefinitely, each cycle writing a notifications row addressed to the person who blocked them. The profile page's own guard is ONE-DIRECTIONAL — hasBlocked(myProfileId, profileId) asks 'did I block them' (app/(main)/people/[handle]/page.tsx:194) — so the BLOCKED viewer sees a normal FriendButton (:388) and is not even hidden client-side. VERIFIED there is no other layer: no wrapper (four client components call it directly), NO middleware.ts anywhere in the repo, no DB trigger and no RLS (supabase/migrations/20240301000000_blocked_users.sql states enforcement is app-code only), and no block filter in lib/notifications/. This is exactly the contact channel ADR-036 shipped blocking to close ('required for a public beta and for App Store review'). FIX: one line matching the six siblings, plus the same treatment for inviteToRoom (app/(main)/messages/rooms/actions.ts:278), which today relies only on an accepted-friendship check that a pre-block friendship could have satisfied. ── CLOSED 2026-08-24. One line matching the six siblings, plus friend-actions.test.ts pinning that a blocked pair writes NO friendships row and NO notifications row (the notification is the actual harm). ── ONE CLAIM IN THIS ROW WAS REFUTED WHILE FIXING IT: the row said inviteToRoom (app/(main)/messages/rooms/actions.ts:278) needed the same treatment because 'a pre-block friendship could have satisfied' its accepted-friendship check. It could not. blockUser (lib/blocking.ts:31-33) deletes the friendship row unconditionally on the canonical pair with no status filter, so after a block there is no row at all and the invite path already throws. Blocking IS enforced there, transitively. The asymmetry is worth keeping: the same unfriend-on-block CLOSES the invite path (which requires a friendship to exist) and OPENS the request path (which requires one to be absent). No gate was added to inviteToRoom — a guard that can never fire reads as coverage it does not provide (ADR-970). ── UNVERIFIED, NOT CHASED: blocking deletes the friendship but does NOT remove existing room_members rows, so a blocked pair already sharing a group room appears to stay in it together. That is a separate question from this row and wants its own measurement before anyone writes code.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "isBlockedBetween",
+        "paths": [
+          "app/(main)/people/friend-actions.ts"
+        ],
+        "note": "Passes when the friend-request path consults the block list, like its six siblings."
+      }
+    },
+    {
+      "id": "LIVE-093",
+      "title": "listPublicSpaceCircles admits only active, so a Space with forming Circles shows none",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 in the delta audit of the 30 PRs since the last full scan, and CONFIRMED LIVE against production the same day. listPublicSpaceCircles hard-filters .eq('status', 'active') on all three of its arms (lib/circles/store.ts:431 owner path, :445 listed path, :509 inside myCirclesInSpace), where every other public circle reader admits forming too: lib/nearby/map-pins.ts:218 and lib/channels/programs.ts:123 use .in('status', ['forming','active']), lib/circles/remix.ts:120 the same, and lib/people/associations.ts:116 carries a local LISTABLE_CIRCLE_STATUS of ['forming','active','inactive']. app/(main)/admin/actions.ts:235 creates circles with status defaulting to 'forming', so the operator path produces exactly the rows this reader hides. CONSEQUENCE: a Space whose Circles sit at forming gets no Circles tab at all (lib/spaces/profile-nav.ts:81 gates on presence.circles, which flows from this reader), a 'Circles 0' hero stat (lib/spaces/profile-stats.ts:58), and a 'No circles yet' empty state on a page its own manage console lists rows on. NOT HYPOTHETICAL: select status, count(*) from circles on prod azsqfeonabsbmemvddqd, 2026-08-24 -> forming 2 circles in 1 space, draft 3 in 1 space, active 2 in 2 spaces. A real Space's Circles tab is suppressed right now. ATTRIBUTION, because it matters: LIVE-083 is honestly done — its probe proves the unlisted/access visibility fix it was about. This is a NEW adjacent defect from that same change, where the fix for one visibility axis over-narrowed a different one, and LIVE-083's probe structurally cannot see it. FIX: replace the three .eq('status','active') calls in these two functions with .in('status', [...LISTABLE_CIRCLE_STATUS]) against one exported constant. NOT widened to map-pins/programs/remix this pass: those are already behaviourally correct, and map-pins.test.ts:109 asserts the string literal, so adopting the constant there is a separate mechanical change. ── CLOSED 2026-08-24. LISTABLE_CIRCLE_STATUS = ['forming','active'] now lives in lib/circles/visibility.ts, next to the two axes it is repeatedly confused with, and all three circles reads in store.ts use it. Four tests in store.test.ts pin it: forming lists beside active, draft and archived still do not, the owner path agrees so preview matches the manage console, and the viewer's own forming circle still resolves. CORRECTION TO THIS ROW'S OWN COUNT: it said three .eq('status','active') sites at :431,:445,:509 and the file holds nine. Six of the other seven are on memberships / space_members / space_memberships / journey_runs and are correct as written (an ACTIVE MEMBERSHIP is a real thing); only the three named were on circles. The test harness also had to learn that PostgREST ANDs multiple .in() calls — its fake builder kept one slot, so with two .in() clauses it would have silently dropped the status filter and passed a tree that filtered on neither. NOT WIDENED: map-pins / programs / remix already admit forming and were left alone; map-pins.test.ts:109 asserts the string literal, so adopting the constant there is a separate mechanical change.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "from\\('circles'\\)(?:(?!\\.from\\()[\\s\\S])*?\\.eq\\('status', 'active'\\)",
+        "paths": [
+          "lib/circles/store.ts"
+        ],
+        "note": "TABLE-SCOPED on purpose. The first draft of this probe was bounded by function markers and would have demanded changing .eq(status, active) on MEMBERSHIPS, which is correct code on a different table. This one matches only a query chain rooted at from(circles), so it fires on a real regression anywhere in the module and never on the six legitimate membership/run filters. Proven with three controls: passes now, fires when one circles filter is restored, silent when only the memberships filters remain."
+      }
+    },
+    {
+      "id": "LIVE-094",
+      "title": "ADR-1093’s Stripe throw-guard reached one billing surface of two",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 in the delta audit. Commit bb4a690 added the viaStripe() wrapper to every Stripe reach in app/(main)/settings/billing/actions.ts with the note 'Never let one of these throw again.' The sibling file — modified in the same range — was left bare: 5 viaStripe uses on the member surface, ZERO on the Space surface, with three raw awaits at app/(main)/spaces/[slug]/settings/billing/actions.ts:43 (createSpaceBillingPortal), :55 (updateOperatorSeats) and :86 (createSpaceLoadoutCheckout). Neither callee catches: lib/billing/space-plan-checkout.ts:100 calls stripe.billingPortal.sessions.create with no try, and the loadout path calls stripe.checkout.sessions.create the same way; both return string|null only for GATE misses (no key, no customer, plan not sellable), never for a throw. NOT THEORETICAL: a StripeInvalidRequestError is exactly what production threw on /settings on 2026-08-20 ('You must complete your platform profile to use Connect...' and 'Please review the responsibilities of managing losses...'), which is the incident ADR-1093 was written about. On the Space surface such a throw escapes the action and trips the error boundary, replacing the whole /spaces/<slug>/settings/billing page — plan, seats and portal — rather than showing an inline error on the card that asked. FIX: lift viaStripe out of the member actions file into a shared module and wrap all three call sites. ── CLOSED 2026-08-24. viaStripe moved out of the member actions file into lib/billing/via-stripe.ts and all three Space call sites wrapped. The seam that stops this recurring is lib/billing/via-stripe.test.ts: a source-shape test that holds BOTH surfaces to the rule at once, so a fourth Stripe reach added to either file without a wrapper fails there rather than in production. Proven as a real control, not one that passes by existing — the regex matches the pre-fix line and not the post-fix one. Log labels are now prefixed by surface (settings/billing …, spaces/billing …) since the file no longer implies which page threw.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "viaStripe",
+        "paths": [
+          "app/(main)/spaces/[slug]/settings/billing/actions.ts"
+        ],
+        "note": "Passes when the Space billing surface carries the same throw-guard as the member surface."
+      }
+    },
+    {
+      "id": "LIVE-095",
+      "title": "A rejected chat send loses the draft and leaves the bubble reading as sent",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 in the delta audit. send() (components/chat/use-support-chat.ts:93) has no try/catch around persist(), and both callers consume it with a bare .then(): support-chat-widget.tsx:299 and live-chat-bridge.tsx:34. isError(r) only covers the action RETURNING an ActionResult failure. A Next.js server action REJECTS on a network drop or an unhandled server error — the most likely failure for a visitor-facing widget. On that path the promise rejects before 'return false', so the .then callback never runs and the draft is gone (the exact loss the new JSDoc claims it fixed: 'they now put the draft back on false'), the optimistic bubble is never removed so the visitor sees their message as sent, setError never fires so no banner appears, and the rejection is unhandled. Same shape one line up at :57: loadHistory().then((r) => { ...; setLoading(false) }) with no .catch, so a rejected history read leaves the panel on 'Loading...' forever. The file currently contains ZERO catch blocks. FIX: wrap the body of send in try/catch — drop the optimistic row, set a real error, return false — and add .catch(() => setLoading(false)) to the loadHistory chain. Both callers then need no change. ── CLOSED 2026-08-24. send() now wraps persist() in try/catch and handles a REJECTION exactly as it handles a returned failure: the optimistic row is dropped, a readable error is set, and it returns false, so the draft-restoring .then in both callers runs on the network-drop path too. Neither caller changed. The loadHistory chain gained a .catch that clears loading and sets an error, so a rejected history read ends the \"Loading…\" state instead of pinning it. Two fallback strings live at the top of the file for the failures the server never gets to describe. Proven by components/chat/use-support-chat.test.tsx (5 tests): the two rejection cases fail against the pre-fix file, the happy path and the returned-ActionResult-failure path pass both before and after.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='components/chat/use-support-chat.ts',T='components/chat/use-support-chat.test.tsx';if(!fs.existsSync(S)||!fs.existsSync(T))process.exit(79);const s=fs.readFileSync(S,'utf8'),t=fs.readFileSync(T,'utf8');const code=s.split(String.fromCharCode(10)).filter(x=>x.trim().indexOf('//')!==0&&x.trim().indexOf('*')!==0).join(String.fromCharCode(10));const bad=[];const p=code.indexOf('await persist(');if(p<0)bad.push('persist() call not found - re-read this probe');else if(code.slice(Math.max(0,p-200),p).lastIndexOf('try')<0)bad.push('the await persist() call is not inside a try: a REJECTED persist leaves the optimistic bubble reading as sent, loses the draft and never returns false');const c=code.indexOf('.catch(');if(c<0)bad.push('the loadHistory chain has no .catch: a rejected history read pins the panel on Loading');else if(code.slice(c).indexOf('setLoading(false)')<0)bad.push('the .catch never clears loading');if(t.indexOf('Promise.reject')<0)bad.push('no rejection test in '+T);if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\"",
+        "note": "Three conditions, all measuring the DEFECT. The first version checked only that the word catch appeared ANYWHERE in the file, so it still passed against a source with send()'s try/catch removed — the loadHistory .catch alone satisfied it. It now requires the `await persist(` call itself to sit inside a try, verified as a control in both directions."
+      }
+    },
+    {
+      "id": "LIVE-096",
+      "title": "An uncapped Circle sorts last under \"Most room\"",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 in the delta audit, confirmed by reading both functions. roomIn (app/(main)/spaces/[slug]/(profile)/circles/page.tsx:315-320) returns 0 when member_cap is absent, but cap <= 0 means NO CAP, which isOpenToJoin fifteen lines above (:299-303) correctly reads as always-joinable (return cap <= 0 || ...). So under ?sort=open ('Most room') every uncapped Circle sorts BELOW a capped one with a single seat left — the exact opposite of the function's own docstring, which says an uncapped circle is 'treated as roomy but never infinite'. Uncapped is the default for a new Circle, so this is the common case, not the edge. FIX: return a named constant expressing the docstring's own rule (roomy but not infinite) for the uncapped case, and unit-test sortCircles with one uncapped circle against one capped circle at cap-1. ── CLOSED 2026-08-24. The three pure helpers (roomIn, sortCircles, isOpenToJoin) moved out of page.tsx into a colocated sort.ts, because while they sat in the route file they could not be unit-tested — which is exactly what this bug cost. Seven tests now pin it, including the docstring rule in both directions: an uncapped Circle beats a nearly-full capped one, AND a genuinely emptier capped Circle still beats the uncapped one, so \"roomy but never infinite\" is a measured claim rather than a comment.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "member_count \\?\\? 0\\)\\) : 0",
+        "paths": [
+          "app/(main)/spaces/[slug]/(profile)/circles"
+        ],
+        "note": "Measures the DEFECT, not the fix: this is the exact expression that returned zero room for an uncapped Circle. A grep-present for the new constant would pass by existing, which is the shape-not-truth failure. Proven as a control: the pattern matches the pre-fix line and not the post-fix one. The behaviour itself is pinned by sort.test.ts, which runs in CI."
+      }
+    },
+    {
+      "id": "LIVE-097",
+      "title": "The /spaces/:slug/community 308 can now land on a permanently cached 404",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 in the delta audit. next.config.ts:318 redirects /spaces/:slug/community -> /spaces/:slug/circles with permanent: true. The previous destination (/spaces/:slug) resolved for any visible Space. The new destination notFound()s on two conditions the old one did not: app/(main)/spaces/[slug]/(profile)/circles/page.tsx:96 (space.type === 'root') and :100 (the circles function switched off). Because this is a 308 the browser caches it, so an operator who turns the Circles function off converts a previously-working bookmark — and every already-sent notification link — into a permanently cached 404. FIX: in the circles page, replace those two notFound() calls with redirect(`/spaces/${slug}`). The tab is already hidden from the nav in both cases, so nothing else changes. Leave the :93 !space notFound() alone — a missing Space is a real 404. ── CLOSED 2026-08-24. Both soft cases (root Space, circles function off) now redirect to the Space root instead of 404ing; the missing-Space case stays a notFound(), because that is a real 404. The gate comment in the page header now states why, naming the cached-308 interaction that makes a 404 here permanent rather than transient.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "redirect\\(",
+        "paths": [
+          "app/(main)/spaces/[slug]/(profile)/circles/page.tsx"
+        ],
+        "note": "The page imports only notFound today. Passes when the two soft cases redirect to the Space root instead of 404ing."
+      }
+    },
+    {
+      "id": "LIVE-098",
+      "title": "Two statements in shipped code are false about their own behaviour",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 in the delta audit. (a) components/ui/use-stick-to-bottom.ts:36 — the usage block shows `const listRef = useStickToBottom<HTMLDivElement>([...])` then `<div ref={listRef}>`, but the hook returns { ref, stickNow } (:87). All five real callers destructure correctly; the documented example does not compile. (b) components/journey/v2/journey-spark.tsx:409 — the retained InfoTip still says 'A zip or an image is accepted but not read yet, so unzip first for now.' The bespoke BatchUpload it came from accepted .zip explicitly; the shared zone it moved to uses DOC_TYPES = '.pdf,.doc,.docx,.txt,.md,...' (components/studio/spark/spark-dropzone.tsx:37), which filters zip out of the picker entirely. So the tip tells a member to do something the control will not let them do. FIX: correct the example to destructure; drop the zip clause from the tip (or add .zip back to DOC_TYPES, which is a product decision rather than a copy fix). ── CLOSED 2026-08-24. (a) the usage example destructures { ref, stickNow } and now matches the hook it documents. (b) the InfoTip drops the zip/image clause entirely rather than being softened: DOC_TYPES is .pdf,.doc,.docx,.txt,.md plus three MIME types, so the picker filters zip AND images out, and the tip was telling a member to do something the control does not permit. check:canon passes on the new string.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "unzip first for now",
+        "paths": [
+          "components/journey/v2/journey-spark.tsx"
+        ],
+        "note": "Passes when the member-facing half is corrected. The docstring half is proven by review in the same commit."
+      }
+    },
+    {
+      "id": "OWN-041",
+      "title": "The two circle-claim Zap awards carry no daily cap",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 by a full-tree security sweep, then settled against production. claimCircle (app/(main)/circles/[slug]/claim-actions.ts:13-56) verifies the caller is real and the circle is is_demo, then sets host_id: myId. There is no check that the caller ever visited, joined or was offered that circle, and the id is a client argument — this is the documented ADR-1048 flow, so the CLAIM is intended. The reward side-effect is not: each claim calls awardZapsForAction(myId, 'circle_start') (:78) and, with a practiceId, 'circle_activate' (:79). recordEngagementEvent is idempotent per circle; the Zap award is not. MEASURED 2026-08-24: select action_type, zaps_amount, daily_cap, is_active from zap_config -> circle_start 100 Zaps daily_cap NULL active, circle_activate 40 Zaps daily_cap NULL active. So enumerating demo circle ids farms 140 Zaps a time with no ceiling. OWNER LANE because the cheapest correct fix is a config write to live data (set daily_cap on the two rows), which an agent must not make unilaterally; the alternative is a code change binding the claim to a demo circle the caller is actually a member of. Either arm closes this.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Measured on prod azsqfeonabsbmemvddqd, 2026-08-24: circle_start (100 Zaps) and circle_activate (40 Zaps) both have daily_cap NULL and is_active true. Closes when either a cap is set on both rows or the claim is bound to the caller’s own demo circle.",
+        "checked": "2026-08-24"
+      }
+    },
+    {
+      "id": "OWN-042",
+      "title": "Decide what happens to the 359 dead-lettered emails",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "The operator half of LIVE-091. 359 rows sit in notification_queue at status='failed' from the 2026-07-17 quota exhaustion. The operator surface (components/widgets/marketing/deliverability-dead-letters.tsx) already offers a one-tap requeue, so no code is needed. THE DECISION: 356 of the 359 are one bulk campaign now five weeks stale and almost certainly should NOT be re-sent; the other three are transactional and arguably should be — two welcome emails to genuine new members who never received one, and one event-claim invite. Requeuing the transactional three is a live send to real people, so it is the owner's call, not an agent's. Note the ordering: fixing LIVE-091 first is what stops a requeue from re-running the same failure.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Measured on prod azsqfeonabsbmemvddqd, 2026-08-24: 359 rows at status=failed, all kind=email, all attempts=max_attempts=5, all last_error 429 daily_quota_exceeded, created 2026-07-17 16:00-17:43. Closes when the owner rules on the three transactional rows.",
+        "checked": "2026-08-24"
+      }
+    },
+    {
+      "id": "HYG-013",
+      "title": "A new Supabase advisor is unaccounted for in the accepted list",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 reading the production advisors. Security returned 144 lints and performance 267, and every one is already adjudicated — spatial_ref_sys by ADR, the 60 security_definer_function_executable WARNs and the 266 unused_index INFOs by scripts/maintenance/accepted-advisories.json, extension_in_public by ADR-507, rls_enabled_no_policy as accepted default-deny — EXCEPT one: auth_db_connections_absolute (INFO, performance). 'Your project's Auth server is configured to use at most 10 connections. Increasing the instance size without manually adjusting this number will not improve the performance of the Auth server.' It is not in the accepted list and not in any row, so the next maintenance sweep will re-surface it as novel. Either accept it by name with the reasoning, or switch the project to percentage-based allocation and record that instead. Also worth noting while here: unused_index has gone 247 (2026-07-27) -> 266 (2026-08-24), which is a trend rather than a finding, and the pre-traffic acceptance still holds at 0 orders. ── CLOSED 2026-08-24 by ACCEPTING it, not by changing the setting. The acceptance is explicitly scale-bound and says so in the entry: at 23 active members 10 Auth connections is not the constraint, and it re-opens if the instance is resized or sign-in latency reaches the SLOs. Accepting a finding is only honest when the reason is written down and carries its own expiry.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "auth_db_connections_absolute",
+        "paths": [
+          "scripts/maintenance/accepted-advisories.json"
+        ],
+        "note": "Passes once the advisor is named on purpose, with its reasoning, rather than arriving as novel on every sweep."
+      }
+    },
+    {
+      "id": "LIVE-099",
+      "title": "Two campaign senders, two reliability postures: one queues, one sends inline",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 while fixing LIVE-091, and it is the reason that fix does not reach as far as it looks. LIVE-091 said 'bulk and transactional mail share one queue', which assumes all bulk mail IS queued. It is not. lib/email-studio/send.ts fans a campaign out through the OUTBOX — durable, retried, and now lane-tagged so it can never starve a welcome. lib/spaces/email.ts sendSpaceCampaign sends campaigns INLINE via sendRawEmail, with no outbox row at all: no durability, no retry, no lane, and no dead-letter surface. So a Space campaign that hits the same daily quota that dropped 359 emails on 2026-07-17 does not get deferred and does not get recorded — it just fails, and nothing holds the message. The LIVE-091 lane work cannot reach that path by construction. THE DECISION: route sendSpaceCampaign through enqueueEmail with lane 'bulk' like its sibling, or state deliberately why a Space campaign is allowed to be best-effort while a platform campaign is durable. Two senders with different reliability postures and no recorded reason is the thing to fix either way.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "enqueueEmail",
+        "paths": [
+          "lib/spaces/email.ts"
+        ],
+        "note": "Passes when the Space campaign sender goes through the durable outbox like its sibling. If the owner rules the other way (best-effort by design), close this by recording that ruling and replace the probe with a manual row citing it."
+      }
+    },
+    {
+      "id": "HYG-014",
+      "title": "check:og-trace read from a local build is not evidence, and it just cost an alarm",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24. A parallel session reported check:og-trace FAILING with '16 card-rasterising routes ship without sharp', cards silently serving ~1.7MB instead of ~151KB. RE-MEASURED AGAINST PRODUCTION AND IT IS NOT TRUE: the postbuild of dpl_4RwDvdMkY1kAJYyR77Zmx5zfDZLC (sha 16c3cf7, the same commit) printed '✅ check:og-trace — sharp ships to all 16 rasterising route(s), and to 67 other function(s) by segment inheritance (budget 100). 414 functions carry none of it.' The '16' is the same number in both readings: the COUNT OF RASTERISING ROUTES, not the count of starved ones. THE REAL HAZARD, which is worth a row: this gate reads .next/server/**/*.nft.json, and its verdict is only as good as the artifact underneath. With NO .next it is honest — it prints 'Run pnpm build first' and exits. With a LOCAL build whose trace shape differs from Vercel's it can report starved routes that are not starved in the deploy, and the failure message talks about Apple Mail timing out, so it reads as urgent. AGENTS.md already says the artifact is gated in postbuild, not CI, because CI never builds — that rule needs to extend to READING the gate: a local run is a smoke test, the production postbuild is the evidence. FIX: teach the gate to say so when it cannot tell it is running against a production artifact, and note it in DEPLOY-SAFETY.md. NOT diagnosed further here: reproducing the local trace shape needs pnpm build, which hangs this box, so WHY a local build traces differently is unmeasured and must not be guessed at. ── CLOSED 2026-08-24. The gate now checks VERCEL=1 and, when it is not in a Vercel build, prints that its verdict is a smoke test rather than evidence — and repeats that beside the red starved-route block, which is exactly where the false alarm gets read and escalated. Proven with two controls in a throwaway artifact: the notice fires on a local read and is silent under VERCEL=1, and the escalation line appears attached to a genuinely starved route. The no-.next path was already honest (it refuses to answer) and is unchanged. NOT diagnosed: WHY a local build traces differently from Vercel is still unmeasured, because reproducing it needs pnpm build, which hangs this box. The gate now says it cannot tell, which is the honest state; it does not guess.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "READ THIS BEFORE ESCALATING",
+        "paths": [
+          "scripts/check-og-trace.mjs"
+        ],
+        "note": "Greps for the sentence a reader actually sees next to a red starved-route block, which is where the false alarm was read. My first probe for this row matched the word \"postbuild\", already present in the file, so it passed on arrival — caught by check:backlog on the same run that added it."
+      }
     }
   ]
 }

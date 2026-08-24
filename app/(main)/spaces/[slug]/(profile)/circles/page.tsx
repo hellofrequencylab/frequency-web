@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
+import { isOpenToJoin, sortCircles, type Sort } from './sort'
 import Link from 'next/link'
 import { UsersRound, Users, DoorOpen, Settings2, MapPin, Globe } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
@@ -9,7 +10,6 @@ import { spaceFunctionDef, spaceFunctionEnabled } from '@/lib/spaces/functions'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 import { listPublicSpaceCircles, myActiveCircleIds, type SpaceCircle } from '@/lib/circles/store'
-import { asCircleAccess } from '@/lib/circles/visibility'
 import { CircleCard } from '@/components/circles/circle-card'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -37,8 +37,13 @@ import { cn } from '@/lib/utils'
 //     stamped to the root tenant by `stampCircleSpaceId`, so without this guard the root Space's
 //     profile would list the whole platform's private circles as "circles this space runs". Same
 //     class of bug LIVE-075 just closed across ten event call sites.
-//   • The `circles` FUNCTION being switched off is a notFound(), matching how Reviews handles its
-//     own switch. The nav gate agrees, so the tab is not offered either.
+//   • ROOT and the `circles` FUNCTION being switched off both REDIRECT to the Space root, they do
+//     not 404 (LIVE-097). next.config.ts sends /spaces/:slug/community here with a PERMANENT 308,
+//     and the browser caches a 308 — so a 404 on either of these would turn an operator's ordinary
+//     "turn the Circles function off" into a permanently cached dead end for every old bookmark and
+//     every notification link already sent. The Space still exists in both cases and its root is the
+//     honest destination; the nav gate already hides the tab, so nothing is advertised that 404s.
+//     A MISSING Space is still a notFound(), because that is a real 404.
 //
 // VISIBILITY is not decided here. `listPublicSpaceCircles` owns axis 1 and applies it in SQL; this
 // page only decides whether the viewer is a manager, which is the one fact the reader cannot know.
@@ -53,7 +58,6 @@ const FILTER_THRESHOLD = 8
  *  not going to solve, and /circles is the surface for it. */
 const CAP = 60
 
-type Sort = 'new' | 'active' | 'open'
 const SORTS: { key: Sort; label: string }[] = [
   { key: 'new', label: 'Newest' },
   { key: 'active', label: 'Busiest' },
@@ -93,11 +97,11 @@ export default async function SpaceCirclesProfilePage({
   if (!space) notFound()
   // The root tenant is the platform host, never a member-facing Space, and every personal circle
   // is stamped to it. Listing them here would publish the platform's private rooms.
-  if (space.type === 'root') notFound()
+  if (space.type === 'root') redirect(`/spaces/${slug}`)
   setActiveSpace(space)
 
   const circlesDef = spaceFunctionDef('circles')
-  if (circlesDef && !spaceFunctionEnabled(space, circlesDef)) notFound()
+  if (circlesDef && !spaceFunctionEnabled(space, circlesDef)) redirect(`/spaces/${slug}`)
 
   // The ONE fact the reader cannot resolve for itself: may this viewer manage the Space? A manager
   // sees the hidden circles too (they are the ones who hid them) and gets the console link.
@@ -292,31 +296,6 @@ function FilterRow({ base, type, sort }: { base: string; type: string; sort: Sor
       </div>
     </div>
   )
-}
-
-/** Can a stranger walk in? Open access AND a seat free. Used for the "Open to join" stat, so the
- *  number means what a visitor would take it to mean rather than counting rooms they cannot enter. */
-function isOpenToJoin(c: SpaceCircle): boolean {
-  if (asCircleAccess(c.access) !== 'open') return false
-  const cap = c.member_cap ?? 0
-  return cap <= 0 || (c.member_count ?? 0) < cap
-}
-
-/** Newest / busiest / most room. `new` is the default and matches the reader's own order, so the
- *  unfiltered page costs no sort at all beyond this copy. */
-function sortCircles(rows: SpaceCircle[], sort: Sort): SpaceCircle[] {
-  const out = [...rows]
-  if (sort === 'active') return out.sort((a, b) => (b.member_count ?? 0) - (a.member_count ?? 0))
-  if (sort === 'open')
-    return out.sort((a, b) => roomIn(b) - roomIn(a))
-  return out.sort((a, b) => +new Date(b.created_at ?? 0) - +new Date(a.created_at ?? 0))
-}
-
-/** Seats left, with an uncapped circle treated as roomy but never infinite (so it does not
- *  permanently outrank a real circle with real space). */
-function roomIn(c: SpaceCircle): number {
-  const cap = c.member_cap ?? 0
-  return cap > 0 ? Math.max(0, cap - (c.member_count ?? 0)) : 0
 }
 
 /** SpaceCircle -> the shared CircleCard shape, so a Space's circle reads identically to a circle

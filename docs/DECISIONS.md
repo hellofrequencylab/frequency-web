@@ -28618,3 +28618,54 @@ the guard passes. The private `support` bucket exists, CSP `img-src` allows `blo
   than merged: merging the branch would have reverted ~89k lines. The original draft numbered
   itself ADR-1002, which main had already used for the OG-rasteriser fix. Both hazards were caught
   by comparing against `origin/main` before pushing, not by CI.
+
+---
+
+## ADR-1103: A closed quota is a wait, not a failure (2026-08-24)
+
+**Status:** Accepted · **Extends** [ADR-043](DECISIONS.md) (the durable outbox) and
+[ADR-026](DECISIONS.md) (all email is queued, never sent inline) · closes `LIVE-091` parts 1–2 ·
+corroborated by `lib/queue/outbox.ts`, `lib/queue/outbox.test.ts`, production `notification_queue`
+
+**Context.** On 2026-07-17 Resend answered every queued email with
+`429 daily_quota_exceeded`. `nextRetry` decided retryability from the **attempt count alone** and
+never read the error, so with `BACKOFF_BASE_MS = 60_000` and `max_attempts = 5` all five attempts
+landed inside ~15 minutes — against a quota that resets **daily**. **359 emails dead-lettered in
+1h43m.** 356 were one campaign; the other three were two welcome emails to real new members and an
+event-claim invite, which died because bulk and transactional mail shared one undifferentiated queue.
+
+**Decision.**
+
+1. **Classify the error before counting the attempt.** `retryDelayFor(err, ctx)` is the retry
+   decision: pure, clock-injected, and it returns `countsAsAttempt`. A **daily quota** waits until
+   the next **UTC midnight** and spends **no attempt**; a **generic 429** waits 15 minutes and
+   spends no attempt; a provider **`Retry-After` wins over both**, floored at 1 minute (never a hot
+   loop) and capped at 24 hours (a bad header cannot park a welcome for a month). Everything else is
+   `nextRetry` unchanged, and the dead-letter semantics for genuine permanent failures are untouched.
+2. **Bound the free deferrals by WALL-CLOCK AGE, not by a new counter.** Not counting an attempt
+   removes the thing that used to stop a retry loop, so each class gets a ceiling measured from
+   `created_at` — the only clock `notification_queue` already carries, so **no migration**: **72h**
+   for a quota (three windows, a Friday cap survives the weekend, ~3 free retries) and **1h** for a
+   rate limit (~4 free retries). Past the ceiling the same error falls back to attempt counting and
+   can dead-letter, so nothing retries forever and the operator surface still sees a stuck job.
+3. **Lanes: transactional first, bulk behind it.** A `lane` (`transactional` | `bulk`) rides in the
+   payload jsonb. The campaign fan-out and the nurture drip declare `bulk`; everything else defaults
+   to transactional, and a pre-lane campaign row still reads as bulk from its `campaign_id` tag. The
+   drain runs transactional first within a claimed batch, and the **first quota refusal trips the
+   lane**: every remaining bulk job is parked past the window without calling the provider and
+   without spending an attempt. The fan-out also drips its `run_after` at 10 jobs/min, under the
+   drain's ~12.5/min capacity, so a campaign never fills the claim window.
+
+**Consequences.**
+
+- **The regression is pinned, not argued:** a job failing `429 daily_quota_exceeded` five times in a
+  row is never dead-lettered, never writes `attempts`, and comes back past the daily window.
+- **`ProcessResult` gains `deferred`**, kept separate from `retried` so "we are waiting on a window"
+  can never read as "we are failing", and the operator drain button reports it.
+- ⚠️ **Not closed, and it needs a migration:** `claim_outbox_jobs` is `order by run_after asc` and
+  lane-blind, so an **already-backlogged** bulk queue can still sit in front of a welcome at CLAIM
+  time. The drip makes that backlog unlikely; only a `lane`/`priority` column plus a new `ORDER BY`
+  in the RPC makes it impossible. This change deliberately wrote no migration.
+- ⚠️ **Still nothing pages on a dead-letter spike.** The 2026-07-17 pile sat unseen for five weeks
+  because the only alarm is a page an operator has to open. That gate stays scoped in `DEF-HARDEN`,
+  and it is the half of this incident that code alone does not fix.

@@ -109,7 +109,9 @@ export function DrainQueueButton() {
           <Check className="h-3.5 w-3.5" />
           {result.processed === 0
             ? 'Queue was already empty'
-            : `${result.done} sent, ${result.retried} retrying, ${result.failed} parked`}
+            : `${result.done} sent, ${result.retried} retrying, ${result.failed} parked${
+                result.deferred ? `, ${result.deferred} waiting on the send quota` : ''
+              }`}
         </span>
       )}
       {result && !result.ok && (
