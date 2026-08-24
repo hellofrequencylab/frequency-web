@@ -14,7 +14,13 @@ import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
-import { asCircleAccess, canEnterCircle, canSeeCircle, type CircleAccess } from './visibility'
+import {
+  asCircleAccess,
+  canEnterCircle,
+  canSeeCircle,
+  LISTABLE_CIRCLE_STATUS,
+  type CircleAccess,
+} from './visibility'
 import type { CircleDetail, MemberRow } from './detail-types'
 
 /** A circle as the by-space read returns it (the columns the community module needs).
@@ -428,7 +434,7 @@ export async function listPublicSpaceCircles(
         .from('circles')
         .select(COLS)
         .eq('space_id', spaceId)
-        .eq('status', 'active')
+        .in('status', [...LISTABLE_CIRCLE_STATUS])
         .order('created_at', { ascending: false })
         .limit(limit)
       if (error) return []
@@ -442,7 +448,7 @@ export async function listPublicSpaceCircles(
       .from('circles')
       .select(COLS)
       .eq('space_id', spaceId)
-      .eq('status', 'active')
+      .in('status', [...LISTABLE_CIRCLE_STATUS])
       .or('unlisted.is.null,unlisted.eq.false')
       .order('created_at', { ascending: false })
       .limit(limit)
@@ -506,7 +512,7 @@ async function myCirclesInSpace(
       .from('circles')
       .select(COLS)
       .eq('space_id', spaceId)
-      .eq('status', 'active')
+      .in('status', [...LISTABLE_CIRCLE_STATUS])
       .in('id', ids)
       .order('created_at', { ascending: false })
       .limit(limit)

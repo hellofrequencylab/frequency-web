@@ -25,12 +25,15 @@ const seen: { or: string[]; limitedAt: number[] } = { or: [], limitedAt: [] }
 function builder(table: 'circles' | 'memberships') {
   const eqs: Array<[string, unknown]> = []
   let orClause: string | null = null
-  let inClause: { col: string; vals: unknown[] } | null = null
+  // PostgREST ANDs every .in() together, and `myCirclesInSpace` now issues two (status, then id),
+  // so a single-slot inClause would silently drop the first filter and let this fake pass a tree
+  // that filters on neither.
+  const inClauses: Array<{ col: string; vals: unknown[] }> = []
 
   function rows(): Row[] {
     let out = db[table] ?? []
     for (const [col, val] of eqs) out = out.filter((r) => r[col] === val)
-    if (inClause) out = out.filter((r) => inClause!.vals.includes(r[inClause!.col]))
+    for (const c of inClauses) out = out.filter((r) => c.vals.includes(r[c.col]))
     // The ONE predicate axis 1 is allowed to be spelled as. `unlisted` is nullable and a NULL row
     // is a LISTED row, which is why a bare `.eq('unlisted', false)` would be wrong: it would drop
     // every circle written before the column existed.
@@ -51,7 +54,7 @@ function builder(table: 'circles' | 'memberships') {
       return api
     },
     in(col: string, vals: unknown[]) {
-      inClause = { col, vals }
+      inClauses.push({ col, vals })
       return api
     },
     order: () => api,
@@ -212,6 +215,44 @@ describe('listPublicSpaceCircles (ADR-1094 — the rule, in one place)', () => {
     expect(out.map((r) => r.id).sort()).toEqual(['hidden', 'shown'])
     // No axis-1 predicate was sent at all on this path.
     expect(seen.or).toEqual([])
+  })
+
+  // LIVE-093. status is the LIFECYCLE axis, not axis 1 or axis 2, and this reader pinned it to
+  // 'active' while every other public reader admitted 'forming' too. The operator create path
+  // defaults new rows to 'forming', so the filter hid precisely the Circles an operator had just
+  // made: no Circles tab at all (profile-nav gates on presence.circles, which flows from here),
+  // a "Circles 0" hero stat, and an empty state on a page the manage console listed rows on.
+  // Live in production when found — a real Space had 2 forming Circles and a suppressed tab.
+  describe('the lifecycle axis (LIVE-093)', () => {
+    it('lists a FORMING circle alongside an active one', async () => {
+      db.circles = [circle({ id: 'live' }), circle({ id: 'gathering', status: 'forming' })]
+      const out = await listPublicSpaceCircles(SPACE_A)
+      expect(out.map((r) => r.id).sort()).toEqual(['gathering', 'live'])
+    })
+
+    it('still refuses draft and archived — they are not Circles anyone else may see', async () => {
+      db.circles = [
+        circle({ id: 'live' }),
+        circle({ id: 'gathering', status: 'forming' }),
+        circle({ id: 'notyet', status: 'draft' }),
+        circle({ id: 'gone', status: 'archived' }),
+      ]
+      const out = await listPublicSpaceCircles(SPACE_A)
+      expect(out.map((r) => r.id).sort()).toEqual(['gathering', 'live'])
+    })
+
+    it('applies on the OWNER path too, so preview matches the manage console', async () => {
+      db.circles = [circle({ id: 'gathering', status: 'forming', unlisted: true })]
+      const out = await listPublicSpaceCircles(SPACE_A, { includeHidden: true })
+      expect(out.map((r) => r.id)).toEqual(['gathering'])
+    })
+
+    it("applies to the viewer's OWN circles, so a forming circle they joined still resolves", async () => {
+      db.circles = [circle({ id: 'mine', status: 'forming', unlisted: true })]
+      db.memberships = [{ circle_id: 'mine', profile_id: 'p-mine', status: 'active' }]
+      const out = await listPublicSpaceCircles(SPACE_A, { viewerProfileId: 'p-mine' })
+      expect(out.map((r) => r.id)).toEqual(['mine'])
+    })
   })
 
   it('FAIL-SAFE: a missing tenant hides circles rather than publishing them', async () => {
