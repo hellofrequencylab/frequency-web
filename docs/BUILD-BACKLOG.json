@@ -3677,6 +3677,57 @@
         "evidence": "Measured 2026-08-24 by reimplementing check:a11y-names' decision path independently and reproducing its 429 exactly, so the per-file split is trustworthy. Stays manual until the ratchet ships: the ceiling constant and the work that lowers it belong in one change, because a budget wired without a reading is the gate-with-no-artifact failure AGENTS.md names.",
         "checked": "2026-08-24"
       }
+    },
+    {
+      "id": "HYG-016",
+      "title": "check:cache-budget cannot tell a dependency BUMP from dependency GROWTH, and fails the bump",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "scripts/check-cache-budget.mjs",
+        "ref": "FLOOR_BUDGET"
+      },
+      "detail": "FOUND 2026-08-24 on #2252 (Dependabot, 14 bumps), which failed its Vercel build with 'node_modules is 1.39 GiB, over the 1.25 GiB floor budget'. THE BUMPS DID NOT GROW THE TREE. Measured by running the control before theorising (AGENTS.md): a CLEAN install of that exact lockfile is 1.018 GiB and the gate PASSES on it, printing 'about 0.52 GB packed (0.91 GiB raw: node_modules 932 MiB)'. The 1.39 GiB is Vercel's RESTORED CACHE carrying both the old and the new copy of every bumped package - reproduced locally, where installing the branch on top of an existing store left next@16.3.1 AND 16.3.2 (198 MiB + 57 MiB), @supabase+cli-linux-x64@2.114.0 AND 2.115.0 (155 MiB + 152 MiB), lucide-react@1.31.0 AND 1.33.0 (36 MiB + 27 MiB), and maplibre-gl at both versions. Roughly 370 MiB of duplication, which is the whole overage. 🔴 THIS MAKES THE GATE FIRE ON THE ONE CHANGE SHAPE THAT CANNOT FIX IT. AGENTS.md's rule is 'when the budget gate fires, fix the fan-out, do not raise the budget' - but on a bump there is no fan-out to fix, nothing grew, and the only levers the message offers (cut a dependency, or raise the budget on purpose) are both wrong answers. A gate whose advice cannot be followed is how a gate gets routed around (ADR-970), and this one has a history of killing builds. DO NOT CLOSE THIS BY RAISING FLOOR_BUDGET: the floor is not wrong: 1.018 GiB clean is comfortably under it. The candidate fix is to prune extraneous packages before measuring, so the number reflects the lockfile rather than the cache's history - but note the duplicated bytes ARE really uploaded, so pruning changes the artifact and not just the reading, and it must be proven on a real build. ⚠️ Per AGENTS.md, wire any change here in the SAME change as the green build that proves it: this gate's first version killed two builds by being reasoned about carefully and still wrong by a factor of two.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Paired reading 2026-08-24 on #2252's lockfile. Dirty tree (old + new versions present): 1.39 GiB, gate exits 1. Same lockfile, node_modules deleted and reinstalled: 1.018 GiB by du, 932 MiB node_modules by the gate's own accounting, exits 0. Stays manual because closing it needs a real Vercel build printing both the pre-trim reading and the upload line, and no probe in this repo can cause a Vercel build to happen or read its log.",
+        "checked": "2026-08-24"
+      }
+    },
+    {
+      "id": "OWN-043",
+      "title": "/ serves an owner-published document that shadows home.ts, so Lift 5c cannot recover content there",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "app/page.tsx",
+        "ref": "getPublishedData('home')"
+      },
+      "detail": "FOUND 2026-08-24 while planning LIVE-006's next slug. app/page.tsx prefers getPublishedData('home') over getTemplate('home'), and production carries a PUBLISHED home document from 2026-07-13 with 13 blocks. So the live homepage is NOT lib/page-editor/templates/home.ts, and anything recovered into that template during the retirement is invisible to visitors until the owner republishes. 🔴 THE OBVIOUS REMEDY IS THE WRONG ONE. This looks like the row that shadowed /the-community and stalled LIVE-040 - same date, same shape - but that one was a CORRUPTED verbatim template copy (identical blocks, no SEO overrides) and was deleted. This one has the same 13 block types and ids but genuinely different, owner-AUTHORED copy: the hero reads 'Frequency exists to create and support healthy community' where the template reads 'Frequency is a Community Collective...', and four more blocks differ the same way. DO NOT DELETE IT. OWNER DECISION, one of two: republish / from the code template (accepting the template's words), or accept that home.ts is permanently unreachable and treat the published document as the source of truth for /. Everything else about home's retirement is blocked on this answer, because content recovery has nowhere to land until it is made.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Queried production 2026-08-24 (root space `frequency`): home is `published` at 2026-07-13 with 13 blocks; about / how-it-works / the-lab are all `draft`. Block-by-block comparison against lib/page-editor/templates/home.ts shows identical types and ids with different copy in at least five blocks. Owner-side by construction: an agent cannot decide which words the homepage should carry.",
+        "checked": "2026-08-24"
+      }
+    },
+    {
+      "id": "LIVE-104",
+      "title": "The homepage offers the visitor exactly one destination, and the coded body was the last copy of the rest",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/page-editor/templates/home.ts",
+        "ref": "the cross-links neither rung carries"
+      },
+      "detail": "FOUND 2026-08-24 during LIVE-006's loss inventory, and filed BEFORE the retirement rather than discovered after it - which is the whole lesson of LIVE-100, where /the-community's PillarNav went silently. This is the same category, five times over. The coded body of app/page.tsx links to /start (three times: hero, 'Help me pick', closing CTA), /about ('Read the full story' under the Moonlight Beach origin beat), /pricing ('See the full breakdown'), /sign-in ('Already a member?'), and per-item /events/{slug} + /people/{handle}. NEITHER surviving rung carries any of them: the template and the published document both link only to the beta CTA. Confirmed by querying the live document, which contains no /start, no /pricing, no /about and no /discover. ⚠️ THE REGRESSION IS PRE-EXISTING, NOT CAUSED BY THE RETIREMENT - the coded body has been unreachable since the template landed, so visitors already see the one-destination homepage. What the retirement does is delete the last SOURCE copy of those links, which is why this is filed now. Gated on OWN-043: until the published/template question is answered there is nowhere to put them back.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Inventoried 2026-08-24 against app/page.tsx, lib/page-editor/templates/home.ts, and the live published document queried from production. Manual because the fix is a set of editorial placements in a block document, not a code shape a probe can assert; it becomes mechanical once OWN-043 settles where the links should live.",
+        "checked": "2026-08-24"
+      }
     }
   ]
 }
