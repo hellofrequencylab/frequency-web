@@ -83,6 +83,7 @@ after_zap_transaction                internal
 apply_bundle_seating_atomic          internal
 apply_membership_event_atomic        internal
 award_gems_atomic                    internal
+award_zaps_atomic                    internal
 capture_guest_rsvp                   public
 capture_signup_lead                  public
 challenge_outcomes                   public

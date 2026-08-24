@@ -464,7 +464,6 @@ lib/circles/social-fuel.ts
 lib/circles/store.ts
 lib/circles/templates-data.ts
 lib/circles/transfer.ts
-lib/claims/tokens.ts
 lib/commerce/checkout.ts
 lib/commerce/disputes.ts
 lib/commerce/orders.ts

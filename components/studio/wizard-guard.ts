@@ -17,8 +17,8 @@
 //     /circles/new renders the page, not the modal), `useReportWizardDraft` is a no-op. One
 //     wizard component, two presentations, and the guard only exists in the one that needs it.
 //
-// A surface that is NOT a Spark (the /market/sell upgrade wall, say) simply never registers, and
-// the modal correctly offers no Discard for a draft that does not exist.
+// A surface that is NOT a Spark (a plain settings page opened in the modal, say) simply never
+// registers, and the modal correctly offers no Discard for a draft that does not exist.
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 
 import { createContext, useContext, useEffect } from 'react'

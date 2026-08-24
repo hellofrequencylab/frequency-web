@@ -27941,6 +27941,34 @@ thing was not a key — it was a form on stripe.com whose absence surfaces as a 
 API call. When a dependency has configuration outside the repo, the ADR that describes going live
 has to name that configuration, or the first person to hit it reads it as a defect in the code.
 
+**⚠️ Amended 2026-08-24 (LIVE-074).** This ADR reads the **Platform profile** page as the live
+declaration Stripe is acting on. It is not, and Stripe says so on the page itself: *"This shows
+historical information you provided during Connect onboarding. Current integration details and
+updates are in **platform setup**."* So the table above is a record of what was answered during
+onboarding on 2026-08-20, not a description of the platform's current configuration — and a future
+reader should go to `Settings → Connect → platform setup` before concluding anything about the live
+state from it.
+
+The owner reviewed the live settings the same day and reports that **the options Stripe offered were
+limited** — the change this row asked for could only be made as far as Stripe permits. As of
+2026-08-24 the historical profile still displays *"Sellers will collect payments directly"*,
+`Negative balance liability: Stripe`, `Account creation: Onboarding hosted by Stripe`, `Dashboard
+experience: Stripe Dashboard`, `Ongoing seller compliance: Stripe`, with both acknowledgements
+completed 2026-08-20.
+
+**What that means for the mismatch this ADR names, honestly:** the mismatch is REAL and the fix was
+NOT fully available. The code side is unchanged and correct — Express accounts, four destination
+charge sites, zero `Stripe-Account` headers — and this ADR's ruling stands: **fix the profile, not
+the code.** But "fix the profile" turns out to be bounded by what Stripe's form allows, so the
+residual gap is not an outstanding task, it is a limitation to be aware of when a support
+conversation starts from those answers. Nothing mis-settles either way: a per-charge API call
+decides how a charge settles, never a profile default. Re-open only if Stripe later exposes the
+business-model answer as editable, or if a settlement behaves unexpectedly.
+
+Independent signal from the same session, worth recording beside this: the Connect overview shows
+**gross payment volume $0.00 and 0 new accounts** over the trailing twelve months, so no money has
+ever moved through Connect and none of this has yet been exercised in production.
+
 ## ADR-1094: A Space's Circles get a page, and the one visibility rule moves into the reader (2026-08-21)
 
 **Status:** Accepted · corroborated by `app/(main)/spaces/[slug]/(profile)/circles/page.tsx`,
@@ -28847,4 +28875,117 @@ quietly becoming a downgrade.
 The durable rule: **a tolerance is only as honest as its premise, and a premise is a claim with an
 expiry date. When the thing a fail-safe protects against becomes impossible, the fail-safe stops
 being protection and starts being documentation of a world that no longer exists.**
+---
 
+## ADR-1108: ADR-907's hashed claim tokens are retired unimplemented, because the exposure they were designed for was closed a different way (2026-08-24)
+
+**Status.** Accepted (2026-08-24). Owner ruling. Retires ADR-907 **unimplemented** and closes
+`OWN-037`. Full measurements and the per-flow inventory: [`CLAIM-LINKS.md`](CLAIM-LINKS.md).
+
+**Context.** ADR-907 specified a hashed `claim_tokens` table and said to use it for *every* new
+claim flow. A year on it had **zero** production callers. Every live claim flow still minted a
+plaintext token onto an entity column: `lib/spaces/claim.ts`, `lib/listing-seeder/claim.ts`,
+`lib/events/event-drafts.ts`, with readers comparing on those columns.
+
+The row that tracked this justified itself on one sentence: *"the plaintext-on-anon-readable-column
+shape is the reason ADR-907 exists."* **That premise had half expired, and nobody had re-read the
+row against the migrations that expired it.** Measured against production on 2026-08-24:
+
+| Check | Reading |
+|---|---|
+| `has_column_privilege('anon', 'public.spaces', 'claim_token', 'SELECT')` | **false** |
+| same for `events`, `listings`, `market_listings` | **false** |
+| Rows in `claim_tokens` | **0** |
+| Non-test importers of `lib/claims/tokens.ts` outside `lib/claims/` | **0** |
+
+Migrations `20270127000000`, `20270128000000` and `20270129000000` revoked the column from `anon`
+on all four tables. The **anon-readable** half of the justification was already closed, by a
+different and simpler mechanism than the one ADR-907 proposed.
+
+**Decision.** Delete `lib/claims/tokens.ts` and its tests; drop the empty `public.claim_tokens`
+table by migration (`20270321000000`). The four plaintext minters and the three reader routes are
+**deliberately untouched**, so every live unredeemed token keeps working.
+
+**⚠️ The residual risk is named, not closed, and this ADR must not be read as "solved".** Tokens
+remain **plaintext at rest** and non-expiring. **37 unredeemed tokens are live** — `spaces` 9,
+`events` 27, `market_listings` 1 — readable by anyone with service-role or direct database access.
+That is a *different threat model* from the anonymous-web-reader one ADR-907 was written for, and
+retiring ADR-907 does nothing about it. The honest position is that the platform is accepting this
+exposure explicitly rather than having eliminated it.
+
+**Alternatives considered.** *Migrate the four flows onto the hashed table*: rejected as the larger
+change against the smaller remaining risk — it would need three reader routes rewritten and a
+backfill that must hash the **existing** secrets rather than reissue them, or the 9 unclaimed Space
+tokens stop working. *Keep the empty table for a future flow*: rejected — an unreferenced table with
+no writer is ADR-970's failure, a thing that gates nothing still reading as coverage.
+
+**Reopen this when** a fifth claimable entity appears — that is the point at which a shared hashed
+minter pays for itself — or if the at-rest exposure is judged unacceptable on its own.
+
+---
+
+## ADR-1109: `zap_config.daily_cap` is enforced, and two live caps start biting on deploy (2026-08-24)
+
+**Status.** Accepted (2026-08-24). Owner ruling. Mirrors the Gem path (`award_gems_atomic`,
+migration `20260929000000`) onto Zaps. Unblocks the owner arm of `OWN-041`, which was **inert**.
+
+**Context — a switch that gated nothing.** `awardZapsForAction` selected `zaps_amount, is_active`
+and handed off to an unconditional insert. The string `daily_cap` appeared **zero times** in
+`lib/zaps.ts`. Meanwhile `/admin/gamification` has always let an operator set a Zap cap, and
+validates it carefully — a present-but-invalid cap is *rejected* rather than silently becoming
+`NULL`, precisely so an operator's throttle is never quietly dropped. So the operator set a
+throttle, the UI confirmed it, the validation that protects it ran, and the award engine never
+asked. ADR-970's named failure with every trapping detail present.
+
+The Gem path was correct throughout, which is why the divergence stayed invisible: both engines look
+identical at the call site.
+
+**Measured on production before a line was written.** 23 `zap_config` rows, all active, two carrying
+an inert cap: `practice_logged` 12 Zaps / cap 1, and `event_posted` 20 Zaps / cap 3.
+
+**Decision.** `awardZapsForAction` reads `daily_cap` and delegates the cap-check **and** the insert
+to `public.award_zaps_atomic` (migration `20270322000000`) — the Gem RPC's shape, copied rather than
+re-derived: a per-`(profile, action)` `pg_advisory_xact_lock`, a UTC day boundary, count and insert
+in one serialized section, `NULL` cap meaning uncapped.
+
+**The RPC is not gold-plating; it is the fix for a defect already paid for once.**
+`award_gems_atomic` exists *because* the obvious count-then-insert was a race. Reproduced on the Zap
+function before shipping: 8 simultaneous calls at cap 1 wrote **1** ledger row with the lock and
+**8** without it.
+
+**Fail-safe direction: CLOSED.** An RPC error awards nothing rather than falling back to a raw
+insert, because that fallback would pay Zaps **uncapped** — silently restoring the exact defect
+being fixed, at the moment nobody is watching. An unpaid Zap is a support ticket; an uncapped one is
+the bug. The gate that notices it fired is a tagged Sentry capture, because `console.error` alone is
+pull-only and this repo watched a pull-only signal go unread for five weeks (LIVE-091). It goes
+through a **dynamic** import so `@sentry/nextjs` never enters `lib/zaps.ts`'s static graph
+(ADR-1074).
+
+**⚠️ THIS IS A MEMBER-VISIBLE REDUCTION IN EARNINGS, NOT A SILENT BUGFIX.** Measured against the
+whole ledger: of 199 positive `practice_logged` rows, only **13** go through the gateable path — and
+**all 13 were not the first `practice_logged` row of their UTC day, so all 13 would now pay 0.** That
+is 156 Zaps withheld over ten weeks, from **one** member. `event_posted`: zero effect measured.
+
+**The scope limit, stated here rather than left to be discovered.** The cap binds on
+`awardZapsForAction` only — the exact mirror of `awardGems`. `awardZaps(profileId, amount, opts)`
+has no config row and still inserts directly, and **186 of the 199 rows go through it**. Two
+consequences: an uncapped `awardZaps` row still **consumes** the day's allowance (the RPC counts by
+`action_type` and cannot tell which path wrote a row), and `reverseZaps` debits under a *different*
+`action_type`, so un-logging a practice does **not** return the allowance. If the intent behind
+`practice_logged`'s cap was "throttle practice-log farming generally", **this change does not
+deliver that**, and that is a decision to revisit rather than a gap to paper over.
+
+**How it is proved, and what the proof does NOT cover.** 32 TypeScript tests with a
+`this`-sensitive mock (LIVE-053) that **projects the `select` column list like PostgREST**. That
+projection is load-bearing: the first mock returned the whole row regardless, and dropping
+`daily_cap` from the query left every behavioural cap test green **against the defective code** — a
+fake that flatters. Six SQL mutations turn 20 pgTAP assertions red. **The seventh does not:**
+removing the advisory lock leaves all 20 green, because pgTAP is one session in one transaction and
+cannot see a race. A gate that survives the removal of the thing it protects is coverage-shaped and
+not coverage, so the lock is proved by the concurrency run instead and the pgTAP header states the
+gap.
+
+**🔴 DEPLOY ORDER IS LOAD-BEARING.** The migration must be applied **before** the TypeScript ships.
+If `lib/zaps.ts` lands first, `award_zaps_atomic` does not exist, the fail-safe fires, and **every**
+`awardZapsForAction` grant pays nothing until the migration lands. Fail-closed makes that loud and
+reversible rather than silent, but it is a reward-path outage.

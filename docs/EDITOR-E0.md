@@ -246,8 +246,8 @@ the draft.
 `pages` is service-role-only and fail-closed: RLS on, **no policies**, listed `internal` in
 `scripts/table-grants.txt:188` and in `scripts/rls-deny-all.txt:60`. **A version table holding the
 same documents must not be more reachable than the table it versions.** So the correct posture is
-RLS-on-no-policy plus the explicit `revoke` that `check:grants` requires — exactly `claim_tokens` and
-`signup_leads`.
+RLS-on-no-policy plus the explicit `revoke` that `check:grants` requires — exactly `signup_leads`.
+(`claim_tokens` was the other example until it was dropped on 2026-08-24, [ADR-1108](DECISIONS.md).)
 
 The permissive quad becomes correct only when E10 un-gates per-Space authoring. Write it into the
 migration as a **commented Phase 2 block**, which is precisely what `20260924000100_app_instances.sql`
