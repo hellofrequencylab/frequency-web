@@ -28945,3 +28945,63 @@ failed builds already priced.
 
 ---
 
+## ADR-1111: `check:migrations` reads the LIVE ledger, so an applied migration makes every branch that lacks its file red (2026-08-24)
+
+**Status:** Accepted · **Touches:** documentation + process only · **Reads:**
+`scripts/check-migrations.mjs`, `supabase/migrations/`, `docs/DATABASE.md` ·
+**Extends:** [ADR-1007](DECISIONS.md) (which removed the pinned digest so both sides are read live)
+
+### Why this exists
+
+`check:migrations --require-ledger` compares the repo's `supabase/migrations/` files against
+`supabase_migrations.schema_migrations` **in the linked production project**, at run time. That is
+the right design, and ADR-1007 argued for it explicitly: a pinned count is not a set, and a number
+in prose goes stale within days. What nobody had written down is the consequence for **branches**.
+
+The ledger is **project-global**. A pull request's file list is **branch-local**. So the gate is
+structurally comparing one against the other, and the moment a migration is applied to production,
+*every open branch whose tree does not carry that file* fails — not because that branch is wrong,
+but because it is being measured against a ledger that has moved ahead of it.
+
+### What happened
+
+Two migrations, `20270321000000_drop_claim_tokens_adr_907_retired` and `20270322000000_award_zaps_atomic`,
+were applied to production before their pull request merged. That was **deliberate and correct**: a
+merge to `main` is a deploy here, and the `lib/zaps.ts` code that reads `daily_cap` cannot deploy
+before the `award_zaps_atomic` RPC it calls exists.
+
+The work was then split into three pull requests at its natural seams, and only the money/data one
+carried the migration files. The other two went red on `check:migrations` and on **nothing else** —
+628 repo files against 630 ledger rows, both named in the output — and the claim recorded at the
+time, *"they're independent of each other, so they can merge in any order"*, was false from the
+moment of the apply. It had simply never been tested, because until that day no split had straddled
+an applied migration.
+
+### The decision
+
+1. **Apply-before-merge stays.** It is required whenever code in the same change reads the new
+   schema. The alternative — merge the code first and let it deploy against a schema that lacks its
+   RPC — is a production error, not a tidier ordering.
+2. **A migration file never gets split away from the work that needs it.** When a change is divided
+   across several pull requests and any part of it is already applied, the pull request carrying the
+   migration files **merges first**, and the others take `main` before they can go green.
+3. **The ordering gets stated where the split is described**, in the pull request body. A dependency
+   that lives only in the author's memory is the same failure mode as a status recorded in prose:
+   unverifiable, and wrong as soon as nobody re-reads it.
+
+### Consequences, including the diagnostic one
+
+A branch that is red on `check:migrations` **alone**, naming applied migrations the repo does not
+record, is very often not a defect in that branch at all. Check whether the named files exist on
+another open pull request before changing anything: the repair is an ordering decision, not an edit.
+
+The gate is symmetric, and that symmetry is what makes the pairing strict. A migration file that is
+committed but **not** yet applied fails the same gate from the other side — a repo file with no
+ledger row. So the file and the apply travel together in both directions, and there is no window in
+which either half is safely alone.
+
+**Not a defect in the gate.** Nothing here argues for softening `check:migrations`. It reported the
+true state of the world on every one of those runs, in a message that named both missing versions.
+The failure was a planning assumption, and the fix is the sequencing rule above.
+
+---
