@@ -15,6 +15,23 @@ const PUBLIC_KEY  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
 const PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY
 const SUBJECT     = process.env.VAPID_SUBJECT ?? 'mailto:hello@frequencylocal.com'
 
+/** Is push SENDING armed in this deployment? Booleanized, never the key itself.
+ *
+ *  WHY THIS EXISTS, and why it is exported rather than inferred. `configure()` below is a
+ *  fail-safe: with no keys it warns once and every send becomes a silent no-op. That is the
+ *  exact shape AGENTS.md names — "every fail-safe needs a gate that notices it fired" — and
+ *  here nothing did. Production carries 24 push subscriptions, 5 of them from the last 30 days:
+ *  two dozen members granted permission, and whether a single notification can actually leave
+ *  the process was unanswerable without dashboard access, because the ONLY signal was a
+ *  `console.warn` in a runtime log.
+ *
+ *  So it is published as a boolean on /api/status, the same move LIVE-053 made for the Sentry
+ *  DSN. `curl /api/status` now answers "can this deployment send a push?" in one line.
+ *
+ *  BOTH halves are required: the public key alone proves only that a browser could SUBSCRIBE
+ *  (which push_subscriptions already proves), never that the server can SEND. */
+export const pushSendingEnabled = Boolean(PUBLIC_KEY && PRIVATE_KEY)
+
 let configured = false
 function configure(): boolean {
   if (configured) return true
