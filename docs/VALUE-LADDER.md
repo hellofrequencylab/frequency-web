@@ -183,28 +183,33 @@ amount earns the **Supporter badge** (`profiles.is_supporter`) — recognition o
 - **Grandfathered SPACE rates are untouched.** The three cash-paid Collectives on `founding_members`
   ($490/yr, ADR-880) and the Founding Business cohort are a different mechanism on the plan axis.
 
-#### ⚠️ OPEN: two hard "you cannot sell" walls remain, and they contradict ADR-914
+#### ✅ CLOSED 2026-08-24: the Market is open on the free tier (owner ruling, OWN-032)
 
-ADR-914 says selling is not a tier: a free Member takes payments on day one and the paid rungs buy the
-**rate** down. Phase 1 removed the `event_paid_tickets` and `personal_payouts` gates on that basis, and
-`/pricing` now quotes a rate in every column instead of "Selling is not included."
+~~**OPEN: two hard "you cannot sell" walls remain, and they contradict ADR-914.**~~ **Ruled and
+removed, 2026-08-24.** The owner ruled that ADR-914's principle governs the Market too: **open the
+Market to free members, leave the five Crew feature gates alone.** Three hand-rolled tier checks are
+gone, and none of them was replaced by a gate key, because the ruling is that there is no wall here to
+make visible.
 
-**The Market never got the same treatment.** Two surfaces still refuse a free Member outright:
+| Wall | File | What it did | Now |
+|---|---|---|---|
+| The list-a-product page | `app/(main)/market/sell/page.tsx` | Rendered "Selling is a paid feature" instead of the editor | Signed in is the whole gate |
+| The commerce action | `app/(main)/marketplace/commerce-actions.ts` | `redirect('/upgrade')` on create | Signed in is the whole gate |
+| The Spark's Vera door | `app/(main)/marketplace/commerce-actions.ts` | `draftMakerProductCopyAction` returned empty copy to a free member | Signed in, with Vera's own daily cap unchanged |
 
-| Wall | File | What it does |
-|---|---|---|
-| The list-a-product page | `app/(main)/market/sell/page.tsx:25` | Renders "Selling is a paid feature" instead of the editor |
-| The commerce action | `app/(main)/marketplace/commerce-actions.ts:36` | `redirect('/upgrade')` |
+The third was found by sweeping for the idiom rather than the two named lines. It existed for one
+stated reason — it mirrored the paid gate on creating the product — so removing the creation gate and
+leaving it would have left a Vera door that silently did nothing for the member who may now list.
 
-Both are hand-rolled `isPaid(profile.realMembershipTier)` checks that live **outside** `FEATURE_GATES`,
-so no gate audit, meter reconciliation, or `/pricing` cell can see them. That is the second defect: a
-wall the pricing page cannot know about is a wall the pricing page will contradict, and it does today.
+**The rate does the work the wall was pretending to do.** `lib/commerce/checkout.ts` threads the
+payee's real `membership_tier` into `memberTakeRateCents` → `memberNetworkTakeRateBps`, which resolves
+a free seller to the `memberFree` rung (1000bps, 10%) and a Crew seller to `member` (800bps, 8%), with
+`self`-sourced sales 0% on both. The lookup asks `isPaid`, an allow-list, so an unreadable tier prices
+at the HIGHER free rung (ADR-914's deliberate fail-safe direction), verified 2026-08-24.
 
-The fee path is already ready for the fix — `lib/commerce/checkout.ts` threads the payee's real tier, so
-a free-Member Market sale would settle at 10% exactly like a free-Member ticket. **This is a product
-call, not a cleanup**, so it is written down rather than changed: the owner's ruling named event
-tickets, and opening the Market is a separate decision. Whichever way it goes, the check should move
-into `FEATURE_GATES` so it stops being invisible.
+The lock is `app/(main)/marketplace/free-seller.test.tsx`: it runs the real page function and the real
+server action against a free-tier profile and asserts what they DID, proven by mutation (re-adding
+either wall fails it), plus the take-rate rungs and the five untouched Crew gates.
 
 ### Space ladder (`spaces.plan`)
 

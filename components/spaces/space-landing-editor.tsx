@@ -149,6 +149,9 @@ export function SpaceLandingEditor({
       desktop={
         <DesktopEditor
           config={config}
+          // A Space page injects `metadata.space`, so it keeps the Space profile + link-tree blocks and
+          // drops the Circles-index set, which binds only on /circles (palette-scope.ts).
+          surface="space"
           data={data}
           metadata={metadata}
           headerTitle={`Editing: ${title}`}
@@ -163,6 +166,7 @@ export function SpaceLandingEditor({
       }
       mobile={{
         config,
+        surface: 'space',
         data,
         metadata,
         title,

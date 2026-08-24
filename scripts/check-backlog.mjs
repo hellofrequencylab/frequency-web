@@ -126,6 +126,31 @@ function validate(entries) {
       if (!p.checked) problems.push(`${at}: manual rows need "checked" (YYYY-MM-DD)`)
     } else if (p.kind === 'cmd') {
       if (!p.cmd) problems.push(`${at}: verify.kind "cmd" needs "cmd"`)
+      // 🔴 A PROBE THAT CANNOT PARSE IS NOT A VERDICT, AND IT LOOKS EXACTLY LIKE A FAILING ONE.
+      //
+      // Every cmd probe here is a `node -e "…"` string handed to a shell. A double quote INSIDE
+      // that body is eaten by the shell, so `['a','b']` written as ["a","b"] reaches node as
+      // [a, b] and throws a SyntaxError. SyntaxError exits 1 — indistinguishable from an honest
+      // "not done" — so an OPEN row's probe AGREES with it by failing to parse, forever, and the
+      // row reads as measured when nothing ever measured it. LIVE-007 lived that way through six
+      // enrolments; LIVE-090's probe was caught the same way the day before. The runProbe fence
+      // above catches a probe that could not RUN (signal, missing binary, exit 79) and cannot
+      // catch this one, because this one runs fine and the PROGRAM is what is broken.
+      //
+      // The rule is structural rather than a test-run, because running 76 probes to validate 76
+      // probes is the re-entrancy LIVE-034 already paid for: outside the two delimiters that wrap
+      // the body, a cmd probe carries no double quote. Use single quotes, or String.fromCharCode(39)
+      // where a literal single quote is needed inside them.
+      // A BACKSLASH-ESCAPED quote survives the shell and is fine; only a BARE one is eaten. So the
+      // escaped pairs come out first, and what is left must be exactly the two delimiters.
+      const bareQuotes = p.cmd ? (p.cmd.replace(/\\"/g, '').match(/"/g) ?? []).length : 0
+      if (p.cmd && bareQuotes > 2) {
+        problems.push(
+          `${at}: verify.cmd carries a double quote inside its \`node -e "…"\` body. The shell eats it, ` +
+            'so the probe throws a SyntaxError, exits 1, and reads as an honest "not done" forever. ' +
+            'Use single quotes (or String.fromCharCode(39)) inside the body.',
+        )
+      }
     } else {
       if (!p.pattern) problems.push(`${at}: verify.kind "${p.kind}" needs "pattern"`)
       if (!Array.isArray(p.paths) || p.paths.length === 0) problems.push(`${at}: verify.kind "${p.kind}" needs "paths"`)
@@ -333,28 +358,6 @@ for (const e of entries) {
   }
 }
 
-const openCount = entries.filter((e) => e.status === 'open' || e.status === 'blocked').length
-const parkedCount = entries.filter((e) => e.status === 'parked').length
-const doneCount = entries.filter((e) => e.status === 'done').length
-
-if (contradictions.length) {
-  console.error(red(`✗ backlog contract: ${contradictions.length} row(s) disagree with the tree\n`))
-  for (const c of contradictions) {
-    console.error(`   ${red(c.e.id)}  says ${c.says.toUpperCase()}, tree says ${c.found}`)
-    console.error(`      ${c.e.title}`)
-    console.error(`      ${dim(c.why)}`)
-    if (c.e.verify.pattern) console.error(`      ${dim(`probe: ${c.e.verify.kind} /${c.e.verify.pattern}/ in ${c.e.verify.paths.join(', ')}`)}`)
-    if (c.e.verify.cmd) console.error(`      ${dim(`probe: ${c.e.verify.cmd}`)}`)
-    console.error('')
-  }
-  console.error(dim(`   Fix the ROW (change its status) or the PROBE (if it measures the wrong thing).`))
-  console.error(dim(`   Do not delete the probe to make this pass — that is how the last five lists drifted.\n`))
-  process.exit(1)
-}
-
-console.log(green(`✓ backlog contract: ${entries.length} entries, ${probed} probe(s) agree with the tree.`))
-console.log(`  ${openCount} open/blocked · ${parkedCount} parked · ${doneCount} done${unprovable ? ` · ${unprovable} unprovable here` : ''}`)
-
 // ── THE COST LINE (HYG-012) ─────────────────────────────────────────────────────────────────
 //
 // Printed so a human reading the output can see which probe is expensive, and so
@@ -372,19 +375,59 @@ console.log(`  ${openCount} open/blocked · ${parkedCount} parked · ${doneCount
 // guards. A cost summary over a handful of probes says nothing anyway: it is a statistic about the
 // fleet, and the fleet is 111.
 const COST_LINE_MIN_PROBES = 10
-if (probeCosts.length >= COST_LINE_MIN_PROBES) {
+function printCost() {
+  if (probeCosts.length < COST_LINE_MIN_PROBES) return
   const sorted = [...probeCosts].sort((a, b) => b.cpuMs - a.cpuMs)
   const total = Math.round(probeCosts.reduce((n, c) => n + c.cpuMs, 0))
   const worst = sorted[0]
+  // `guardCpuMs` is the WHOLE guard — this process plus every probe it reaped — and it is the
+  // quantity scripts/backlog-contract.test.ts budgets. It is reported HERE, by the guard itself,
+  // for one reason: the contract test's own `console.log` is swallowed by vitest's default
+  // reporter on a PASSING test, so on a green CI run it prints exactly nowhere, and a number that
+  // can only be read by breaking a build cannot be what a build-blocking constant is set from
+  // (AGENTS.md, and the reason PACKED_PER_RAW needed a paired real reading). The `checks` job pipes
+  // this stdout straight through, so a green run publishes it. Self CPU is added to child CPU
+  // because ~4% of the cost is this process walking the tree for the in-process probe kinds.
+  const selfCpu = process.cpuUsage()
+  const guardCpuMs = Math.round((selfCpu.user + selfCpu.system) / 1000 + (childCpuMs() ?? 0))
   console.log(
     `  probe-cost: n=${probeCosts.length} totalCpuMs=${total} maxCpuMs=${Math.round(worst.cpuMs)} slowest=${worst.id}`,
   )
+  console.log(`  guard-cost: guardCpuMs=${guardCpuMs} (probes ${total} + this process)`)
   // The three most expensive, always — `--report` returns before any probe runs, so gating this
   // on it would have printed the list exactly never.
   for (const c of sorted.slice(0, 3)) {
     console.log(`    ${String(Math.round(c.cpuMs)).padStart(6)} ms  ${c.id.padEnd(11)} ${c.kind}`)
   }
 }
+
+const openCount = entries.filter((e) => e.status === 'open' || e.status === 'blocked').length
+const parkedCount = entries.filter((e) => e.status === 'parked').length
+const doneCount = entries.filter((e) => e.status === 'done').length
+
+if (contradictions.length) {
+  console.error(red(`✗ backlog contract: ${contradictions.length} row(s) disagree with the tree\n`))
+  for (const c of contradictions) {
+    console.error(`   ${red(c.e.id)}  says ${c.says.toUpperCase()}, tree says ${c.found}`)
+    console.error(`      ${c.e.title}`)
+    console.error(`      ${dim(c.why)}`)
+    if (c.e.verify.pattern) console.error(`      ${dim(`probe: ${c.e.verify.kind} /${c.e.verify.pattern}/ in ${c.e.verify.paths.join(', ')}`)}`)
+    if (c.e.verify.cmd) console.error(`      ${dim(`probe: ${c.e.verify.cmd}`)}`)
+    console.error('')
+  }
+  console.error(dim(`   Fix the ROW (change its status) or the PROBE (if it measures the wrong thing).`))
+  console.error(dim(`   Do not delete the probe to make this pass — that is how the last five lists drifted.\n`))
+  // The cost reading prints on a FAILING run too. It has to: scripts/backlog-contract.test.ts
+  // budgets from this line, and suppressing it whenever the tree happens to disagree would mean
+  // the budget silently loses its input exactly when someone is mid-change — which is when they
+  // are most likely to be the one making a probe expensive.
+  printCost()
+  process.exit(1)
+}
+
+console.log(green(`✓ backlog contract: ${entries.length} entries, ${probed} probe(s) agree with the tree.`))
+console.log(`  ${openCount} open/blocked · ${parkedCount} parked · ${doneCount} done${unprovable ? ` · ${unprovable} unprovable here` : ''}`)
+printCost()
 
 if (staleManual.length) {
   console.log('')

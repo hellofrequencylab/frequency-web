@@ -6,7 +6,7 @@
 // Scripted Vera (hot register). The `preview` prop mocks the auth writes; the
 // city search + reel run for real in preview too.
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useId, useRef } from 'react'
 import Link from 'next/link'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
@@ -36,6 +36,7 @@ import { DonateRender } from '@/components/onboarding/renders/donate-render'
 import { TicketsRender } from '@/components/onboarding/renders/tickets-render'
 import { CrmRender } from '@/components/onboarding/renders/crm-render'
 import { WizardProgress, wizardPrimaryClass } from '@/components/templates'
+import { Dialog } from '@/components/ui/dialog'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
@@ -195,6 +196,8 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
 
   const [beat, setBeat] = useState(() => Math.min(Math.max(initialBeat, 0), BEAT_COUNT - 1))
   const [previewDone, setPreviewDone] = useState(false)
+  // The preview end-state modal names itself by its own heading (LIVE-089).
+  const previewDoneTitleId = useId()
   // Move focus to the top of each beat as it mounts so keyboard + screen-reader
   // users land on the new content rather than being stranded where the old
   // button was. Skipped on the very first paint (the page already has focus).
@@ -608,30 +611,42 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
         </div>
       )}
 
-      {/* Preview end-state. */}
-      {/* The modal backdrop scrim is the INK tone at low alpha, not raw black, so the dim follows the skin. */}
-      {preview && previewDone && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-6">
-          <div className="w-full max-w-sm rounded-card border border-border bg-surface p-7 text-center lift-3">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-pill bg-primary-bg text-page-title text-primary-strong">✓</div>
-            <h2 className="mt-4 text-lead font-bold text-text">Welcome in.</h2>
-            <p className="mt-2 text-body-sm leading-relaxed text-muted">
-              In the real induction this writes your profile and drops you into the feed to make your
-              first post. Here it just stops, nothing was saved.
-            </p>
-            <button
-              onClick={() => {
-                setPreviewDone(false)
-                setBeat(0)
-                setReelIndex(0)
-              }}
-              className="mt-5 w-full rounded-pill border border-border px-6 py-3 text-body-sm font-semibold text-muted transition-colors hover:text-text"
-            >
-              Run it again
-            </button>
-          </div>
+      {/* Preview end-state — `Dialog`, not a hand-rolled box (LIVE-089). This was a modal with NO
+          dialog role, no name, no ESC, no scroll lock and no focus management; on the public
+          /preview route it is the last thing a visitor meets, and it was invisible to a screen
+          reader. The scrim moves bg-ink/40 (no blur) -> the primitive's bg-ink/60 +
+          backdrop-blur-sm, and the tier z-50 -> z-[80]; the older note here defended the INK TONE
+          against raw black, which the primitive keeps, not the alpha. */}
+      <Dialog
+        open={preview && previewDone}
+        onClose={() => {
+          setPreviewDone(false)
+          setBeat(0)
+          setReelIndex(0)
+        }}
+        ariaLabelledBy={previewDoneTitleId}
+        align="center"
+        className="max-w-sm"
+      >
+        <div className="w-full rounded-card border border-border bg-surface p-7 text-center lift-3">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-pill bg-primary-bg text-page-title text-primary-strong">✓</div>
+          <h2 id={previewDoneTitleId} className="mt-4 text-lead font-bold text-text">Welcome in.</h2>
+          <p className="mt-2 text-body-sm leading-relaxed text-muted">
+            In the real induction this writes your profile and drops you into the feed to make your
+            first post. Here it just stops, nothing was saved.
+          </p>
+          <button
+            onClick={() => {
+              setPreviewDone(false)
+              setBeat(0)
+              setReelIndex(0)
+            }}
+            className="mt-5 w-full rounded-pill border border-border px-6 py-3 text-body-sm font-semibold text-muted transition-colors hover:text-text"
+          >
+            Run it again
+          </button>
         </div>
-      )}
+      </Dialog>
 
       {/* Stage: one centered column — logo, content, progress — with tight, consistent gaps. */}
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-12">

@@ -32,7 +32,7 @@ describe('DesktopEditor mounts and previews through BlockRender', () => {
       ],
     }
 
-    const html = renderToStaticMarkup(<DesktopEditor config={config} data={data} headerTitle="Editing: Test" />)
+    const html = renderToStaticMarkup(<DesktopEditor config={config} surface="marketing" data={data} headerTitle="Editing: Test" />)
 
     // Chrome mounted.
     expect(html).toContain('Editing: Test')
@@ -46,7 +46,7 @@ describe('DesktopEditor mounts and previews through BlockRender', () => {
   })
 
   it('mounts an empty doc without throwing (shows the empty-state hint)', () => {
-    const html = renderToStaticMarkup(<DesktopEditor config={config} data={{ root: {}, content: [] }} />)
+    const html = renderToStaticMarkup(<DesktopEditor config={config} surface="marketing" data={{ root: {}, content: [] }} />)
     expect(html).toContain('Nothing here yet')
   })
 })

@@ -27941,6 +27941,34 @@ thing was not a key — it was a form on stripe.com whose absence surfaces as a 
 API call. When a dependency has configuration outside the repo, the ADR that describes going live
 has to name that configuration, or the first person to hit it reads it as a defect in the code.
 
+**⚠️ Amended 2026-08-24 (LIVE-074).** This ADR reads the **Platform profile** page as the live
+declaration Stripe is acting on. It is not, and Stripe says so on the page itself: *"This shows
+historical information you provided during Connect onboarding. Current integration details and
+updates are in **platform setup**."* So the table above is a record of what was answered during
+onboarding on 2026-08-20, not a description of the platform's current configuration — and a future
+reader should go to `Settings → Connect → platform setup` before concluding anything about the live
+state from it.
+
+The owner reviewed the live settings the same day and reports that **the options Stripe offered were
+limited** — the change this row asked for could only be made as far as Stripe permits. As of
+2026-08-24 the historical profile still displays *"Sellers will collect payments directly"*,
+`Negative balance liability: Stripe`, `Account creation: Onboarding hosted by Stripe`, `Dashboard
+experience: Stripe Dashboard`, `Ongoing seller compliance: Stripe`, with both acknowledgements
+completed 2026-08-20.
+
+**What that means for the mismatch this ADR names, honestly:** the mismatch is REAL and the fix was
+NOT fully available. The code side is unchanged and correct — Express accounts, four destination
+charge sites, zero `Stripe-Account` headers — and this ADR's ruling stands: **fix the profile, not
+the code.** But "fix the profile" turns out to be bounded by what Stripe's form allows, so the
+residual gap is not an outstanding task, it is a limitation to be aware of when a support
+conversation starts from those answers. Nothing mis-settles either way: a per-charge API call
+decides how a charge settles, never a profile default. Re-open only if Stripe later exposes the
+business-model answer as editable, or if a settlement behaves unexpectedly.
+
+Independent signal from the same session, worth recording beside this: the Connect overview shows
+**gross payment volume $0.00 and 0 new accounts** over the trailing twelve months, so no money has
+ever moved through Connect and none of this has yet been exercised in production.
+
 ## ADR-1094: A Space's Circles get a page, and the one visibility rule moves into the reader (2026-08-21)
 
 **Status:** Accepted · corroborated by `app/(main)/spaces/[slug]/(profile)/circles/page.tsx`,
@@ -28847,4 +28875,329 @@ quietly becoming a downgrade.
 The durable rule: **a tolerance is only as honest as its premise, and a premise is a claim with an
 expiry date. When the thing a fail-safe protects against becomes impossible, the fail-safe stops
 being protection and starts being documentation of a world that no longer exists.**
+---
 
+## ADR-1107: The check:backlog budget becomes a per-probe ceiling plus a total that scales with probe count (2026-08-24)
+
+**Status.** Accepted (2026-08-24). Implements the owner ruling of 2026-08-21 recorded on `HYG-012`.
+Amends the flat `GUARD_BUDGET_CPU_MS = 20_000` introduced with LIVE-034/LIVE-047.
+
+**Context.** `scripts/backlog-contract.test.ts` budgets the CPU `pnpm check:backlog` burns, because a
+probe that quietly starts spawning a test runner costs +2s per closed row and nothing else would
+notice. The budget was a flat 20 seconds, and it failed four builds: 20.2s, 20.3s, 20.6s. Every one
+of those was an honest backlog getting longer, not a probe getting slower.
+
+That is the defect. The guard's own failure message says what it cares about ("*something added
+expensive work to a PROBE*"), and **a fixed total does not measure that** — it measures how many
+rows the list has. So closing rows honestly walks the list into its own gate, and the gate fires for
+a reason unrelated to the thing it exists to catch. Both cheap remedies were tried and *measured*
+before this shape was chosen, and both failed:
+
+| Remedy tried | Reading |
+|---|---|
+| Memoise the file listing + contents inside the guard | 19.98s baseline vs 20.61s memoised, against ±1s run-to-run noise. The eleven expensive probes are `cmd`, i.e. separate processes that cannot see parent memory. |
+| Convert the eleven expensive probes to in-process grep kinds | Only **3** of 11 are pattern matches. The other 8 are computations (walking `app/discover` against an allowlist, auditing 400+ migrations, parsing a named function body). Converting the three saves ~75ms against a ~600ms overage. |
+
+**There was no waste left to remove.** The budget was measuring a genuinely expensive and genuinely
+necessary set of checks that had grown past a number picked when it was smaller.
+
+**Decision.** Two assertions replace the one.
+
+1. **A per-probe ceiling.** No single probe may exceed `PER_PROBE_CEILING_MS`. This is the real
+   regression signal and it stays valid however long the list gets.
+2. **A count-scaled total.** `BASE_CPU_MS + PER_PROBE_ALLOWANCE_MS × n`, so a normal new row is free
+   and only an abnormal one trips it.
+
+**The constants, and the paired reading they come from.** CPU time is load-independent (LIVE-047)
+but it is **not hardware-independent**, so a local reading alone could not set a build-blocking
+number — the same trap `PACKED_PER_RAW` was settled out of, by a paired real reading. Both halves
+were taken on 2026-08-24 against the same tree:
+
+| | `n` | `totalCpuMs` | `maxCpuMs` (PROG-DAWN9) | `guardCpuMs` |
+|---|---|---|---|---|
+| **CI**, `checks` job, run 32753212940 | 111 | **8530** | **2150** | — |
+| **CI**, `checks` job, run 32756093205 (replication) | 111 | **8510** | **2120** | — |
+| **local**, 3 runs | 111 | 7690–8560 | 1960–2090 | 8000–8650 |
+
+CI:local is **1.00–1.11** on this pair. The 1.6× that `HYG-012` recorded from its own history (CI
+20.2s against a contemporaneous local 12.0–13.4s) is **not** a property of today's runners. The
+constants are still set from the CI half, and generously, because that is the assumption most
+likely to expire.
+
+**The CI half replicated on a second, unrelated run the same afternoon** — a different branch, a
+different runner, 90 minutes apart: 8510 vs 8530 total (0.2% apart) and 2120 vs 2150 worst probe
+(1.4% apart). Two readings is not a distribution, but it does rule out the first one having been a
+fluke of one runner, which is the specific way a single-sample constant goes wrong.
+
+| Constant | Value | Where it comes from |
+|---|---|---|
+| `PER_PROBE_CEILING_MS` | 4,500 | 2.1× the worst CI probe (2,150 ms), 2.3× the worst local |
+| `BASE_CPU_MS` | 2,000 | ~7× the measured ~300 ms of non-probe work |
+| `PER_PROBE_ALLOWANCE_MS` | 180 | 2.3× the 77 ms CI average; at n=111 the total is 22.0s |
+
+**Probes are ~96% of the guard**, which is what makes a budget built from the probe reading
+assertable against the whole-guard number: measured the same day, `guardCpuMs` 8360/8000 against a
+probe total of 8080/7690, so roughly 300 ms is the guard itself walking the tree for the in-process
+kinds. That 300 ms is the half the per-probe reading does not cover, so it gets the loose end of the
+estimate.
+
+**A green run has to publish the numbers, or the next constant is set from nothing.** The measurement
+that failed four builds could only ever be read *by* failing a build, and AGENTS.md is explicit that
+a build-blocking gate which has never seen a real reading is the 2026-08-11 incident with the roles
+reversed. So:
+
+- `check:backlog` prints `probe-cost: n=… totalCpuMs=… maxCpuMs=… slowest=…` **and** a new
+  `guard-cost: guardCpuMs=…` line. The `checks` CI job pipes that stdout straight through, so a
+  **green** run publishes both. The guard self-reports because vitest's default reporter swallows a
+  passing test's `console.log`, which is where the contract test's own copy of the line goes.
+- Both lines are themselves fail-safes, so both get a gate that notices they stopped firing: the
+  contract test fails if either line is absent, rather than silently losing the ceiling.
+- The self-report is cross-checked against the same quantity measured from **outside** the process,
+  in a deliberately wide band (8,375 self vs 8,650 external on the day, ~3% apart). It is there to
+  catch a self-report that has come unstuck, not to re-measure the guard.
+
+**Both new assertions were mutation-proven, not merely observed green.** Adding 7,000 ms to the
+reported worst probe fails the per-probe ceiling with its own message; deleting the `guard-cost:`
+line fails the presence assertion. Neither passes by existing.
+
+**Alternatives considered.** *Raise the flat constant*: rejected — it re-creates the same failure at
+a larger `n`, on the one gate whose job is telling a real regression from a noisy one. *Run the
+probes concurrently*: cuts wall clock, not CPU, so it does not move the asserted quantity at all.
+*Split the eight computational probes onto their own schedule*: real, but it takes the cheap probes
+out from under the ceiling too, and a gate that runs somewhere else is a gate that gets routed
+around (ADR-970). *Accept a budget conversation per probed row*: that is the status quo the four
+failed builds already priced.
+
+**Reversible:** the two constants and the two parsed lines are the whole change; restoring the flat
+20s is a three-line revert with nothing depending on it.
+
+---
+
+## ADR-1108: ADR-907's hashed claim tokens are retired unimplemented, because the exposure they were designed for was closed a different way (2026-08-24)
+
+**Status.** Accepted (2026-08-24). Owner ruling. Retires ADR-907 **unimplemented** and closes
+`OWN-037`. Full measurements and the per-flow inventory: [`CLAIM-LINKS.md`](CLAIM-LINKS.md).
+
+**Context.** ADR-907 specified a hashed `claim_tokens` table and said to use it for *every* new
+claim flow. A year on it had **zero** production callers. Every live claim flow still minted a
+plaintext token onto an entity column: `lib/spaces/claim.ts`, `lib/listing-seeder/claim.ts`,
+`lib/events/event-drafts.ts`, with readers comparing on those columns.
+
+The row that tracked this justified itself on one sentence: *"the plaintext-on-anon-readable-column
+shape is the reason ADR-907 exists."* **That premise had half expired, and nobody had re-read the
+row against the migrations that expired it.** Measured against production on 2026-08-24:
+
+| Check | Reading |
+|---|---|
+| `has_column_privilege('anon', 'public.spaces', 'claim_token', 'SELECT')` | **false** |
+| same for `events`, `listings`, `market_listings` | **false** |
+| Rows in `claim_tokens` | **0** |
+| Non-test importers of `lib/claims/tokens.ts` outside `lib/claims/` | **0** |
+
+Migrations `20270127000000`, `20270128000000` and `20270129000000` revoked the column from `anon`
+on all four tables. The **anon-readable** half of the justification was already closed, by a
+different and simpler mechanism than the one ADR-907 proposed.
+
+**Decision.** Delete `lib/claims/tokens.ts` and its tests; drop the empty `public.claim_tokens`
+table by migration (`20270321000000`). The four plaintext minters and the three reader routes are
+**deliberately untouched**, so every live unredeemed token keeps working.
+
+**⚠️ The residual risk is named, not closed, and this ADR must not be read as "solved".** Tokens
+remain **plaintext at rest** and non-expiring. **37 unredeemed tokens are live** — `spaces` 9,
+`events` 27, `market_listings` 1 — readable by anyone with service-role or direct database access.
+That is a *different threat model* from the anonymous-web-reader one ADR-907 was written for, and
+retiring ADR-907 does nothing about it. The honest position is that the platform is accepting this
+exposure explicitly rather than having eliminated it.
+
+**Alternatives considered.** *Migrate the four flows onto the hashed table*: rejected as the larger
+change against the smaller remaining risk — it would need three reader routes rewritten and a
+backfill that must hash the **existing** secrets rather than reissue them, or the 9 unclaimed Space
+tokens stop working. *Keep the empty table for a future flow*: rejected — an unreferenced table with
+no writer is ADR-970's failure, a thing that gates nothing still reading as coverage.
+
+**Reopen this when** a fifth claimable entity appears — that is the point at which a shared hashed
+minter pays for itself — or if the at-rest exposure is judged unacceptable on its own.
+
+---
+
+## ADR-1109: `zap_config.daily_cap` is enforced, and two live caps start biting on deploy (2026-08-24)
+
+**Status.** Accepted (2026-08-24). Owner ruling. Mirrors the Gem path (`award_gems_atomic`,
+migration `20260929000000`) onto Zaps. Unblocks the owner arm of `OWN-041`, which was **inert**.
+
+**Context — a switch that gated nothing.** `awardZapsForAction` selected `zaps_amount, is_active`
+and handed off to an unconditional insert. The string `daily_cap` appeared **zero times** in
+`lib/zaps.ts`. Meanwhile `/admin/gamification` has always let an operator set a Zap cap, and
+validates it carefully — a present-but-invalid cap is *rejected* rather than silently becoming
+`NULL`, precisely so an operator's throttle is never quietly dropped. So the operator set a
+throttle, the UI confirmed it, the validation that protects it ran, and the award engine never
+asked. ADR-970's named failure with every trapping detail present.
+
+The Gem path was correct throughout, which is why the divergence stayed invisible: both engines look
+identical at the call site.
+
+**Measured on production before a line was written.** 23 `zap_config` rows, all active, two carrying
+an inert cap: `practice_logged` 12 Zaps / cap 1, and `event_posted` 20 Zaps / cap 3.
+
+**Decision.** `awardZapsForAction` reads `daily_cap` and delegates the cap-check **and** the insert
+to `public.award_zaps_atomic` (migration `20270322000000`) — the Gem RPC's shape, copied rather than
+re-derived: a per-`(profile, action)` `pg_advisory_xact_lock`, a UTC day boundary, count and insert
+in one serialized section, `NULL` cap meaning uncapped.
+
+**The RPC is not gold-plating; it is the fix for a defect already paid for once.**
+`award_gems_atomic` exists *because* the obvious count-then-insert was a race. Reproduced on the Zap
+function before shipping: 8 simultaneous calls at cap 1 wrote **1** ledger row with the lock and
+**8** without it.
+
+**Fail-safe direction: CLOSED.** An RPC error awards nothing rather than falling back to a raw
+insert, because that fallback would pay Zaps **uncapped** — silently restoring the exact defect
+being fixed, at the moment nobody is watching. An unpaid Zap is a support ticket; an uncapped one is
+the bug. The gate that notices it fired is a tagged Sentry capture, because `console.error` alone is
+pull-only and this repo watched a pull-only signal go unread for five weeks (LIVE-091). It goes
+through a **dynamic** import so `@sentry/nextjs` never enters `lib/zaps.ts`'s static graph
+(ADR-1074).
+
+**⚠️ THIS IS A MEMBER-VISIBLE REDUCTION IN EARNINGS, NOT A SILENT BUGFIX.** Measured against the
+whole ledger: of 199 positive `practice_logged` rows, only **13** go through the gateable path — and
+**all 13 were not the first `practice_logged` row of their UTC day, so all 13 would now pay 0.** That
+is 156 Zaps withheld over ten weeks, from **one** member. `event_posted`: zero effect measured.
+
+**The scope limit, stated here rather than left to be discovered.** The cap binds on
+`awardZapsForAction` only — the exact mirror of `awardGems`. `awardZaps(profileId, amount, opts)`
+has no config row and still inserts directly, and **186 of the 199 rows go through it**. Two
+consequences: an uncapped `awardZaps` row still **consumes** the day's allowance (the RPC counts by
+`action_type` and cannot tell which path wrote a row), and `reverseZaps` debits under a *different*
+`action_type`, so un-logging a practice does **not** return the allowance. If the intent behind
+`practice_logged`'s cap was "throttle practice-log farming generally", **this change does not
+deliver that**, and that is a decision to revisit rather than a gap to paper over.
+
+**How it is proved, and what the proof does NOT cover.** 32 TypeScript tests with a
+`this`-sensitive mock (LIVE-053) that **projects the `select` column list like PostgREST**. That
+projection is load-bearing: the first mock returned the whole row regardless, and dropping
+`daily_cap` from the query left every behavioural cap test green **against the defective code** — a
+fake that flatters. Six SQL mutations turn 20 pgTAP assertions red. **The seventh does not:**
+removing the advisory lock leaves all 20 green, because pgTAP is one session in one transaction and
+cannot see a race. A gate that survives the removal of the thing it protects is coverage-shaped and
+not coverage, so the lock is proved by the concurrency run instead and the pgTAP header states the
+gap.
+
+**🔴 DEPLOY ORDER IS LOAD-BEARING.** The migration must be applied **before** the TypeScript ships.
+If `lib/zaps.ts` lands first, `award_zaps_atomic` does not exist, the fail-safe fires, and **every**
+`awardZapsForAction` grant pays nothing until the migration lands. Fail-closed makes that loud and
+reversible rather than silent, but it is a reward-path outage.
+
+## ADR-1110: The six hand-rolled overlays move onto `Dialog` — the z-tiers were inheritance, the scrims were choices (2026-08-24)
+
+**Status.** Accepted (2026-08-24). Closes `LIVE-089`.
+
+**Context.** Six overlays hand-rolled `fixed inset-0` instead of composing `Dialog`. The row said
+none was a faithful copy, and it was right — but **it was wrong about two things, and the errors
+both understated the problem:**
+
+- *"Five of the six set `aria-modal` with no focus trap"* — it is **four**. `teaser-gate` and the
+  induction preview end-state have **no dialog role at all**: no name, no modal semantics, nothing.
+  That is a different and worse defect, and the row's sentence hid the two worst cases inside a
+  claim about the other four.
+- *"`vera-lightbox`'s `z-[60]` is deliberate, so a Dialog can open over it"* — **false.** Nothing in
+  that subtree opens a Dialog. `z-[60]` is the tier `Dialog` itself abandoned, and its own comment
+  records why: at `z-[60]` a modal renders *behind* the `z-[70]` mobile admin sheet while still
+  locking scroll. Inheritance, not intent.
+
+**Decision, and the distinction that matters.** Every **tier** moved (50/60/70 → 80) as a **bug
+fix**: those are the exact values `Dialog` migrated away from, none of the six hosts a nested dialog
+needing to sit above, none carries a comment justifying its tier (Dialog's carries nine lines), and
+two of them mount from `app/(main)/layout.tsx` on every route — including `/admin`, where they tied
+with the `z-[70]` admin sheet. Three **scrims** moved onto `bg-ink/60` as **declared design
+changes**, argued in the file each lives in. Those are different kinds of change and are labelled
+differently rather than swept together.
+
+`Dialog` gains **`ariaLabelledBy`**, because without it the conversion would have silently renamed
+two dialogs. `invite-friend-button` is the sharpest case: its `aria-label` said *"Invite a friend"*
+while its visible heading read *"Invite a friend, earn Zaps"*, so a screen-reader user heard a
+different name than a sighted member read. It now points at the heading.
+
+**Equivalence proved, not asserted.** The same jsdom harness ran against the tree before and after,
+dumping `<body>` per overlay and diffing: **every panel's inner markup is byte-identical**. The only
+deltas are the intended ones, enumerated per file. Each panel's duplicate
+`motion-safe:animate-[slideUp…]` was removed — the primitive supplies the identical one, and keeping
+both translated the panel twice.
+
+**Mutation-proven.** Each mutant re-hand-rolls that file's *original* overlay under the name
+`Dialog`, so call sites are unchanged and only the overlay regresses. Every one turns its suite red
+(6, 7, 8, 7 and 6 failures respectively), and dropping `ariaLabelledBy` fails its own test.
+
+**One consequence worth stating.** `Dialog` portals, so it renders nothing during SSR.
+`test/a11y/vera-transcript.a11y.test.tsx` used `renderToStaticMarkup` and went red. The **LIVE-016
+assertion is untouched**; only the render moved to a real client render. A test that had been
+passing against static markup was, for this component, no longer testing what it claimed to.
+
+**Three overlays the original audit never listed**, found while converting and filed rather than
+folded in: `report-dialog.tsx:177` is a *second* exact `align="sheet"` no-op — the audit's "the ONE
+exact match" was true only of the seven it surveyed — and `composer.tsx:578` plus
+`creator.tsx:611` are two textbook `align="bottom"` candidates.
+
+**Left alone deliberately**, each with a reason in place: `trophy-celebration` (`z-[100]` +
+`bg-canvas/80` celebration wash), `studio-window` (`z-[80]`, deliberately *not* portaled — Dialog's
+own comment names it), the `z-[100]` lightboxes, `z-[150/160]` drawers, and the `z-[200]`
+impersonation banner.
+
+## ADR-1111: `check:migrations` reads the LIVE ledger, so an applied migration makes every branch that lacks its file red (2026-08-24)
+
+**Status:** Accepted · **Touches:** documentation + process only · **Reads:**
+`scripts/check-migrations.mjs`, `supabase/migrations/`, `docs/DATABASE.md` ·
+**Extends:** [ADR-1007](DECISIONS.md) (which removed the pinned digest so both sides are read live)
+
+### Why this exists
+
+`check:migrations --require-ledger` compares the repo's `supabase/migrations/` files against
+`supabase_migrations.schema_migrations` **in the linked production project**, at run time. That is
+the right design, and ADR-1007 argued for it explicitly: a pinned count is not a set, and a number
+in prose goes stale within days. What nobody had written down is the consequence for **branches**.
+
+The ledger is **project-global**. A pull request's file list is **branch-local**. So the gate is
+structurally comparing one against the other, and the moment a migration is applied to production,
+*every open branch whose tree does not carry that file* fails — not because that branch is wrong,
+but because it is being measured against a ledger that has moved ahead of it.
+
+### What happened
+
+Two migrations, `20270321000000_drop_claim_tokens_adr_907_retired` and `20270322000000_award_zaps_atomic`,
+were applied to production before their pull request merged. That was **deliberate and correct**: a
+merge to `main` is a deploy here, and the `lib/zaps.ts` code that reads `daily_cap` cannot deploy
+before the `award_zaps_atomic` RPC it calls exists.
+
+The work was then split into three pull requests at its natural seams, and only the money/data one
+carried the migration files. The other two went red on `check:migrations` and on **nothing else** —
+628 repo files against 630 ledger rows, both named in the output — and the claim recorded at the
+time, *"they're independent of each other, so they can merge in any order"*, was false from the
+moment of the apply. It had simply never been tested, because until that day no split had straddled
+an applied migration.
+
+### The decision
+
+1. **Apply-before-merge stays.** It is required whenever code in the same change reads the new
+   schema. The alternative — merge the code first and let it deploy against a schema that lacks its
+   RPC — is a production error, not a tidier ordering.
+2. **A migration file never gets split away from the work that needs it.** When a change is divided
+   across several pull requests and any part of it is already applied, the pull request carrying the
+   migration files **merges first**, and the others take `main` before they can go green.
+3. **The ordering gets stated where the split is described**, in the pull request body. A dependency
+   that lives only in the author's memory is the same failure mode as a status recorded in prose:
+   unverifiable, and wrong as soon as nobody re-reads it.
+
+### Consequences, including the diagnostic one
+
+A branch that is red on `check:migrations` **alone**, naming applied migrations the repo does not
+record, is very often not a defect in that branch at all. Check whether the named files exist on
+another open pull request before changing anything: the repair is an ordering decision, not an edit.
+
+The gate is symmetric, and that symmetry is what makes the pairing strict. A migration file that is
+committed but **not** yet applied fails the same gate from the other side — a repo file with no
+ledger row. So the file and the apply travel together in both directions, and there is no window in
+which either half is safely alone.
+
+**Not a defect in the gate.** Nothing here argues for softening `check:migrations`. It reported the
+true state of the world on every one of those runs, in a message that named both missing versions.
+The failure was a planning assumption, and the fix is the sequencing rule above.
+
+---

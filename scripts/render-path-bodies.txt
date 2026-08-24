@@ -14,7 +14,7 @@
 # context and never checked.
 #
 # RETIREMENT ORDER (FINALIZE-PLAN §5.2, by risk): ~~circles~~ -> ~~about~~ -> ~~spaces~~ -> ~~the-lab~~ ->
-# the-quest -> the-community -> pricing. Each retirement is gated on the visual suite proving the
+# ~~the-quest~~ -> ~~the-community~~ -> pricing. Each retirement is gated on the visual suite proving the
 # template equivalent, one slug per PR. `pricing` is partial only: it carries LIVE take-rate
 # bindings, and its figures must never be frozen into a document.
 #
@@ -41,7 +41,34 @@ the-lab         0   # ✅ RETIRED 2026-08-18 (Lift 5c, ADR-1068). LegacyTheLab +
                     #    document, always well-formed), so the retirement moved no pixels. Every section
                     #    it drew is in the template word for word. The only thing deleted with it was
                     #    THE_LAB_FAQ, which neither rung rendered. Template-only from here.
-the-community   5   # LegacyTheCommunity + Step + Layer + Hold + DayBeat (635 lines)
+the-community   0   # ✅ RETIRED 2026-08-24 (Lift 5c, ADR-1068). LegacyTheCommunity + Step + Layer +
+                    #    Hold + DayBeat deleted, not moved, along with the COMMUNITY_FAQ / PILLARS
+                    #    tables and the ProductTour client island in ./tour, its only caller:
+                    #    `git log -p app/(marketing)/the-community/page.tsx` and `… /tour.tsx` are
+                    #    the only copies left. The body was already unreachable
+                    #    (getTemplate('the-community') is a static 14-block document, always
+                    #    well-formed), so the retirement moved no pixels.
+                    #    EVERY SCHEMA NODE SURVIVES, and the count was MEASURED, not inferred:
+                    #    rendering breadcrumb + BlockDocJsonLd + BlockRender over the live document
+                    #    with renderToStaticMarkup emits THREE ld+json scripts and the multiset
+                    #    { BreadcrumbList 1, ListItem 1, Article 1, WebPage 1, Organization 2,
+                    #    ImageObject 1, FAQPage 1, Question 4, Answer 4 } — identical before and
+                    #    after. NOT the LIVE-040 shape, and not for the reason the row predicted:
+                    #    the route had ALREADY stopped emitting faqSchema (LIVE-040 deleted that
+                    #    call and moved the Q&A into the template's `tc-faq` Accordion, which emits
+                    #    its own FAQPage from the four questions it visibly renders). The only
+                    #    schema call deleted here was the legacy branch's articleSchema(), which
+                    #    could never be reached; the Article a visitor gets comes from
+                    #    BlockDocJsonLd and is unchanged. FIVE coded details the template did not
+                    #    draw were recovered into existing template blocks in the same change: the
+                    #    "No application, no audition." guardrail, the "Circulation, not exclusion."
+                    #    guardrail, the FOUNDING_PLACE grounding, and the /discover and /pricing
+                    #    links. Template-only from here.
+                    #    ⚠️ ONE THING WAS NOT RECOVERED: the coded body's closing <PillarNav>
+                    #    triptych. the-lab.ts and the-quest.ts both carry that block and
+                    #    the-community.ts does not, so this page no longer cross-links to its two
+                    #    siblings. That is a missing BLOCK, not a dropped sentence; it is a backlog
+                    #    row, not a silent part of a retirement.
 the-quest       0   # ✅ RETIRED 2026-08-19 (Lift 5c, ADR-1068). LegacyTheQuest + Guard deleted, not
                     #    moved: `git log -p app/(marketing)/the-quest/page.tsx` is the only copy left.
                     #    The body was already unreachable (getTemplate('the-quest') is a static
@@ -126,3 +153,40 @@ how-to-be-more-social  0  # ✅ ENROLLED + template-only 2026-08-20 (Lift 5d, AD
                     #    enrolment; the coded steps carried no per-step url), FAQPage from the
                     #    Accordion (13 Q&A), Breadcrumb still from the route. Template-only
                     #    from here.
+tools-for-community-builders  0  # ✅ ENROLLED + template-only 2026-08-24 (Lift 5d, ADR-1068). The
+                    #    281-line coded article became
+                    #    lib/page-editor/templates/tools-for-community-builders.ts, a spec run
+                    #    through articleTemplate(). Every block, in the coded order, and every word
+                    #    verbatim. It is the FIRST enrolment that widened NO seam: the seven
+                    #    optional fields the six prior enrolments added already covered everything
+                    #    it carries (openingBeat, beat, beats, a media beat's cta, section links).
+                    #    ONLY THREE schema nodes, because the coded page asserted only three: it
+                    #    has no ordered guide, so the spec uses neither `howTo` nor `steps`, no
+                    #    DawnHowToSteps block is composed, and NO HowTo node is invented. Article
+                    #    from <BlockDocJsonLd> (route passes its own title/description/dates/three
+                    #    images, unchanged), FAQPage from the Accordion (6 Q&A), Breadcrumb still
+                    #    from the route. Template-only from here.
+what-is-frequency  0  # ✅ ENROLLED + template-only 2026-08-24 (Lift 5d, ADR-1068). The 517-line
+                    #    coded article became lib/page-editor/templates/what-is-frequency.ts, a
+                    #    spec run through articleTemplate(). Every block, in the coded order, and
+                    #    every word verbatim. It widened THREE seams, each optional and each
+                    #    mapped to a block already live in another template: `tiers` (the six-rung
+                    #    price ladder → `Tiers`), `cards` (the three sibling-pillar link cards →
+                    #    `FeatureGrid`) and `afterSteps` (the taxonomy paragraph the coded page
+                    #    printed BELOW the steps, which `body` and `note` both render ABOVE them).
+                    #    The six prior specs were rendered through the old and the new generator
+                    #    and diffed: byte-identical, all six.
+                    #    ⚠️ THE PRICE FIGURES ARE NOT FROZEN. The ladder and the money answers
+                    #    still interpolate from lib/pricing/* in the spec, exactly as the route
+                    #    did, so /pricing and this page cannot drift.
+                    #    ALL FOUR schema nodes survive: Article from <BlockDocJsonLd> (route
+                    #    passes its own title, the LONG description, dates and the one hero image,
+                    #    unchanged), HowTo from the DawnHowToSteps block (ONE node, as coded; it
+                    #    loses its explicit hero photo to the OG fallback, the same delta as every
+                    #    prior enrolment, and the coded steps carried no per-step url), FAQPage
+                    #    from the Accordion (12 Q&A), Breadcrumb still from the route. Three
+                    #    VISIBLE deltas, none of them a lost word, are named in the spec header:
+                    #    DawnHowToSteps prints its own name + intro above the steps, the ladder
+                    #    renders as Tiers cards rather than the coded compact list, and the cards
+                    #    read "Learn more" (the block's word) instead of "Read more".
+                    #    Template-only from here.

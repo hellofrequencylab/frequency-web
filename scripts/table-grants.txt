@@ -52,7 +52,6 @@ circle_profiles                      authenticated
 circle_templates                     public
 circle_transfer_offers               internal
 circles                              authenticated
-claim_tokens                         internal
 client_notes                         authenticated
 commerce_disputes                    authenticated
 commerce_order_items                 authenticated

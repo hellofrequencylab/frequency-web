@@ -45,8 +45,8 @@ This doc is the source of truth for the whole effort. Each phase links back here
 
 | # | Decision |
 |---|---|
-| 1 | **Who sells** — Individual Makers are retired. **Any paid member** may list *products* with limited functions; **Business Spaces** get the full Shop (products + services + tickets). Free members cannot sell (trade only). |
-| 2 | **Take-rate ladder** — **network-sourced sales only** (ADR-913): paid member (Crew) **8%**, Business **5%** (Collective the same, Non Profit **0%**). The subscription buys down the fee; the 3-point spread is the upgrade math. A sale to the seller's **own audience** is **0%**, and **tips are 0% on every tier**. |
+| 1 | **Who sells** — Individual Makers are retired. **Any signed-in member** may list *products* with limited functions; **Business Spaces** get the full Shop (products + services + tickets). ~~Any *paid* member … free members cannot sell (trade only).~~ **Corrected 2026-08-24 (owner ruling, OWN-032, on [ADR-914](DECISIONS.md)):** selling is not a tier. The Market's two hard walls and the Spark's Vera-door gate are removed; a free Member lists on day one and the ladder is the RATE, not the permission. Classifieds remains the no-checkout peer board, not the free tier's consolation. |
+| 2 | **Take-rate ladder** — **network-sourced sales only**: ~~(ADR-913)~~ **amended by [ADR-914](DECISIONS.md), rungs re-read from `NETWORK_TAKE_RATE_DEFAULT` 2026-08-24** — free Member **10%** (`memberFree`), Crew **8%**, free Space **10%**, Business **5%**, Collective **3%**, Non Profit **0%**, Independent **0%**. The subscription buys down the fee; the spread is the upgrade math. A sale to the seller's **own audience** is **0%** on every rung, and **tips are 0% on every tier**. |
 | 3 | **Forced on-platform checkout** — all transactional sales settle through Stripe Connect. No "contact to buy" for priced items. Connect-only is reserved for Classifieds. |
 | 4 | **Classifieds** — the peer board (offer / free / lend / request), connect-only, free members and up. Renamed from "General Marketplace". |
 | 5 | **Market is an umbrella** — one browse surface grouped by **type** (Products · Services · Tickets), not separate top-level verticals. Renamed from "Makers". |
@@ -162,9 +162,10 @@ re-pointed and relabeled; the six commerce "Offerings" rows fold in as item type
 - **Storefront** — renameable Shop-tab name, publish / visibility states, collections /
   grouping, ordering, policies, payout onboarding, reviews.
 
-Member editor (Phase 2, paid members) is the thin subset of the Catalog editor: single
-product, no service/ticket, no storefront theming, with the upgrade CTA on every locked
-control.
+Member editor (Phase 2, ~~paid members~~ **every member — owner ruling 2026-08-24, ADR-914**) is the
+thin subset of the Catalog editor: single product, no service/ticket, no storefront theming, with the
+Business Space CTA beside the locked controls. The CTA points at the fuller Shop, never at a wall on
+listing at all.
 
 ### 5a. Phase 3 build map (from the scout pass, 2026-07-09)
 
