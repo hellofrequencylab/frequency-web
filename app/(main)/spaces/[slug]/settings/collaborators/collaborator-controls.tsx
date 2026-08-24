@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, X, UserPlus, Loader2 } from 'lucide-react'
 import { Button, buttonClasses } from '@/components/ui/button'
-import { Input } from '@/components/ui/field'
+import { Field, Input } from '@/components/ui/field'
 import { isError, type ActionResult } from '@/lib/action-result'
 import {
   acceptCollaboration,
@@ -153,16 +153,17 @@ export function InviteCollaborator({ spaceId }: { spaceId: string }) {
         Paste the other business space&rsquo;s link or slug. They run inside your space but keep their own
         business. They approve the invite from their own Collaborators page.
       </p>
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Input
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="royal-temple  or  frequencylocal.com/spaces/royal-temple"
-          className="min-w-0 flex-1"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') submit()
-          }}
-        />
+      <div className="mt-3 flex flex-wrap items-end gap-2">
+        <Field label="Their Space link or slug" className="min-w-0 flex-1">
+          <Input
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="royal-temple  or  frequencylocal.com/spaces/royal-temple"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') submit()
+            }}
+          />
+        </Field>
         <Button type="button" onClick={submit} disabled={!value.trim() || pending}>
           {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <UserPlus className="h-4 w-4" aria-hidden />}
           Send invite

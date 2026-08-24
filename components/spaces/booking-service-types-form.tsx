@@ -209,6 +209,7 @@ export function BookingServiceTypesForm({
               {r.questions.map((q, j) => (
                 <div key={q.id} className="flex flex-wrap items-center gap-2">
                   <Input
+                    aria-label={`Question ${j + 1}`}
                     value={q.label}
                     onChange={(e) => updateQuestion(i, j, { label: e.target.value })}
                     placeholder="What would you like to focus on?"

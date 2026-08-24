@@ -193,7 +193,7 @@ function renderControl({
       )
 
     case 'tags':
-      return <TagsControl {...common} value={asList(value)} onChange={onChange} />
+      return <TagsControl {...common} label={def.label} value={asList(value)} onChange={onChange} />
 
     // A design token name or a hex. The native swatch cannot express a token, so the text box is
     // authoritative and the swatch is an assist beside it.
@@ -361,12 +361,20 @@ function LoomImageSlot({
  *  the last chip (the behaviour people expect from every tag input they have used). */
 function TagsControl({
   value,
+  label,
   onChange,
   disabled,
   id,
   'aria-describedby': describedBy,
 }: {
   value: string[]
+  /** The declared field's own label, carried in so the entry box can name ITSELF.
+   *  A caller wraps this control in a `<StudioField>` label, and HTML binds a wrapping
+   *  label to the FIRST labelable descendant — which is a chip's remove button the moment
+   *  there is one chip. So the entry box below cannot rely on that association, and its
+   *  placeholder is gone the moment someone types. The name comes from the manifest, not
+   *  from copy written here (docs/STUDIO.md). */
+  label: string
   onChange: (next: string[]) => void
   disabled?: boolean
   id?: string
@@ -404,6 +412,7 @@ function TagsControl({
       <Input
         id={id}
         disabled={disabled}
+        aria-label={label}
         aria-describedby={describedBy}
         value={entry}
         placeholder="Type and press Enter"

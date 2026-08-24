@@ -156,6 +156,7 @@ export function ListingQna({
         <div className="mb-4 rounded-card border border-border bg-surface p-3">
           <Textarea
             variant="seamless"
+            aria-label={isOwner ? 'Your answer' : 'Your question'}
             value={body}
             onChange={(e) => setBody(e.target.value)}
             onKeyDown={(e) => {

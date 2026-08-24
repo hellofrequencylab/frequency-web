@@ -284,6 +284,7 @@ export function EventActivity({
 
           <Textarea
             variant="seamless"
+            aria-label={asDispatch ? 'Dispatch' : 'Your comment'}
             value={body}
             onChange={(e) => setBody(e.target.value)}
             onKeyDown={(e) => {
@@ -332,6 +333,7 @@ export function EventActivity({
             <div className="mt-2 flex items-center gap-2">
               <input
                 type="url"
+                aria-label="GIF link"
                 value={gifDraft}
                 onChange={(e) => setGifDraft(e.target.value)}
                 onKeyDown={(e) => {

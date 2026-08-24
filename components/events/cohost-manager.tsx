@@ -178,6 +178,7 @@ function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
         <Input
           variant="seamless"
           type="text"
+          aria-label="Invite a Co Host"
           value={query}
           onChange={(e) => {
             const v = e.target.value
@@ -329,6 +330,7 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
         <div className="mt-2">
           <Input
             type="text"
+            aria-label="New host"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value)

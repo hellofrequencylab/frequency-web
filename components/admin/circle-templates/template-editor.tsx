@@ -280,6 +280,7 @@ export function TemplateEditor({ template }: { template: CircleTemplate }) {
       >
         <Textarea
           name="agreements"
+          aria-label="Agreements"
           rows={4}
           defaultValue={template.agreements.join('\n')}
           placeholder={'read what you can, no shame if you didn’t finish\nno spoilers past the agreed chapter'}
