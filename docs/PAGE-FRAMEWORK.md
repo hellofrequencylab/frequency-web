@@ -644,8 +644,9 @@ they moved to the **editable index** below. Same hero, different body.)*
 with the title, subtitle, and the page's own action buttons overlaid on an ink scrim. Adopters:
 [`practices/page.tsx`](<../app/(main)/practices/page.tsx>),
 [`library/page.tsx`](<../app/(main)/library/page.tsx>),
-[`journeys/page.tsx`](<../app/(main)/journeys/page.tsx>) (`journeys/mine` and `network` also
-pass `heroOverlay`, without a hero image). Each keeps its own title/description +
+[`journeys/page.tsx`](<../app/(main)/journeys/page.tsx>), plus the surfaces that take the band
+with no cover image (the gradient placeholder): `journeys/mine`, `network`,
+`network/contacts`, `network/friends`. Each keeps its own title/description +
 buttons; a section default image (under `public/images/site/`) keeps the band present when the
 operator has set none. Secondary buttons that ride the scrim use on-ink styling
 (`border-white/30 bg-white/10 text-on-ink`); primary create buttons stay `bg-primary`.
@@ -708,6 +709,31 @@ code change on either path.
 > image (`getPageHeaderImage`, [`lib/page-settings/store.ts`](../lib/page-settings/store.ts))
 > and/or the page-content hero (`resolvePageContent` `heroImage`), then passes the resolved
 > string to `heroImage`.
+
+**Don't re-type that resolution — call `resolveIndexHero`.**
+[`lib/layout/index-hero.ts`](../lib/layout/index-hero.ts) (PROG-P4) holds the whole ladder and
+returns a **spreadable prop bag**, so adopting the band is one line rather than a six-line stanza:
+
+```tsx
+const hero = await resolveIndexHero('/network/friends')
+return <IndexTemplate {...hero} title="Friends" … />
+```
+
+| Rung | Source |
+|---|---|
+| 1 | the operator's Settings header image for the route (`getPageHeaderImage`) — **and only this rung carries the focal point**, since a focal point is picked against one specific upload |
+| 2 | the page-content hero the caller passes as `contentImage` (ADR-180) |
+| 3 | an explicit `fallbackImage`, else the route's section default from `INDEX_HERO_DEFAULTS` |
+| 4 | `null` — the neutral gradient band, a **result** and not a failure |
+
+`INDEX_HERO_DEFAULTS` is a route-prefix map (longest prefix wins) that also holds the
+**`short` / `large` split**, deliberately as data rather than per-page taste: PageHero owns the
+page's `<h1>` in `font-display` uppercase at `clamp(1.75rem, 6vw, 3.75rem)` and `large` is
+`min-h-[24rem]` on desktop, which is right over a **discovery** section (`/practices`,
+`/journeys`, `/library`, `/network`) and wrong over a **utility** one (`/journeys/mine`,
+`/network/contacts`, `/network/friends`) where the member came to get something done. Those rows
+feed `resolveHeaderElement` as the *surface* default, so an operator height master still wins.
+Adding a page to the program is a row in that map plus `{...hero}` — never a new stanza.
 
 ### The standard Detail cover: `coverImage`
 
