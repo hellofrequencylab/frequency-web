@@ -60,7 +60,18 @@ vi.mock('./entitlements', async (orig) => ({
 
 // The Resend sender mock: records each call so we can assert WHAT was sent (and that nothing is sent
 // when fail-closed). Returns a fake provider id by default. NO real email leaves the process.
-const sends: { to: string; subject: string; from?: string; headers?: Record<string, string> }[] = []
+// `__lane` / `__runAfter` are the QUEUE decision, not part of the message, so they are recorded
+// alongside the payload rather than inside it — the enqueue seam takes them as a second argument
+// (LIVE-091's lane + drip). They are named with the underscore prefix so a reader never mistakes
+// them for headers the provider sees.
+const sends: {
+  to: string
+  subject: string
+  from?: string
+  headers?: Record<string, string>
+  __lane?: string
+  __runAfter?: Date
+}[] = []
 let nextSendId: string | null = 'resend-id-xyz'
 let throwOnSend = false
 // LIVE-099 moved the seam: the campaign loop ENQUEUES onto the durable outbox instead of calling
