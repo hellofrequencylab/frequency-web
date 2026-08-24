@@ -34,8 +34,8 @@
       "ROADMAP.md"
     ],
     "slate": {
-      "ruled": "Owner ruling 2026-08-20 evening: \"Take all tasks out of deferred or parked programs and add them to the priority list. I want all those things built out. The things that we are deferring are white labeling, mobile application, texting.\" Supersedes the same-day \"hold white label and app at the end\" slate: the App Platform now builds; only the three named holds park.",
-      "note": "The development order for the whole open queue, waves in sequence, ids in order within a wave. Owner-lane rows are decisions, not sequenced dev. Status lives only in each row’s probe; this object is the sequence.",
+      "ruled": "Owner ruling 2026-08-20 evening: \"Take all tasks out of deferred or parked programs and add them to the priority list. I want all those things built out. The things that we are deferring are white labeling, mobile application, texting.\" Supersedes the same-day \"hold white label and app at the end\" slate: the App Platform now builds; only the three named holds park.\n\n── OWNER RULING 2026-08-24: \"I want to save the etsy grade store for last. Second to last is the white label tenant sites with full WYSIWYG editor. I want everything else fully functional and clean before those.\" So DEF-ETSY moves out of W8 into its own final wave W10, and white label (PROG-E10 Sites, PROG-W6 member sites + theme marketplace, PROG-P7 per-Space theming depth) is UNPARKED into W9 immediately before it. deferredByName drops to mobile and texting only.\n\nINTERPRETATION, stated so it can be corrected in one line: the CORE editor phases E0-E9 stay in W4 and were NOT moved to the end. \"White label tenant sites with full WYSIWYG editor\" is read as the tenant-sites DELIVERABLE — PROG-E10 is literally titled 'Sites, absorbs White Label W1-W5' — not as the editor platform underneath it. E10 depends on E0-E9; W1's content retirements block E3; E2 projects onto the Loom built in W3. Moving E0-E9 to the end would invert those documented dependencies and would leave 'everything else' with no editor to be built on. If the intent was to move the whole editor program back, only the W4 block moves.",
+      "note": "The development order for the whole open queue, waves in sequence, ids in order within a wave. Array order IS the sequence — W0 first through W10 last, with `owner-timed` kept at the end because it is scheduled by the owner rather than by this order. Owner-lane rows are decisions, not sequenced dev. Status lives only in each row's probe; this object is the sequence.",
       "waves": [
         {
           "name": "W0 · active now",
@@ -142,10 +142,23 @@
         {
           "name": "W8 · commerce + verticals (Resonance launch stays GO-gated)",
           "ids": [
-            "DEF-ETSY",
             "DEF-MONEY",
             "DEF-HOUS",
             "DEF-RESON"
+          ]
+        },
+        {
+          "name": "W9 · white-label tenant sites + the full WYSIWYG editor (SECOND TO LAST, owner ruling 2026-08-24)",
+          "ids": [
+            "PROG-E10",
+            "PROG-W6",
+            "PROG-P7"
+          ]
+        },
+        {
+          "name": "W10 · LAST — the Etsy-grade store (owner ruling 2026-08-24)",
+          "ids": [
+            "DEF-ETSY"
           ]
         },
         {
@@ -157,9 +170,6 @@
         }
       ],
       "deferredByName": [
-        "PROG-E10",
-        "PROG-W6",
-        "PROG-P7",
         "DEF-MOBILE",
         "DEF-A2P"
       ],
@@ -180,7 +190,7 @@
         "OWN-041",
         "OWN-042"
       ],
-      "rationale": "Foundation before surface: hardening and module boundaries (A1/A3) pay compounding dividends across every later wave. Loom D1-D3 precede the Editor because E2 projects the editor’s asset model onto the Loom. Content retirements (W1) must precede E3, which replaces EDITABLE_PAGES in the opposite direction. Re-theme and the DAWN mechanical sweeps follow the editor so swept surfaces are not rebuilt. Flagship apps (A4) and the domain backlog ride after boundaries + editor exist. Commerce verticals close, with Resonance’s launch GO still the owner’s. White label (E10/W6/P7), mobile, and texting park by name."
+      "rationale": "Foundation before surface: hardening and module boundaries (A1/A3) pay compounding dividends across every later wave. Loom D1-D3 precede the Editor because E2 projects the editor’s asset model onto the Loom. Content retirements (W1) must precede E3, which replaces EDITABLE_PAGES in the opposite direction. Re-theme and the DAWN mechanical sweeps follow the editor so swept surfaces are not rebuilt. Flagship apps (A4) and the domain backlog ride after boundaries + editor exist. Commerce verticals close, with Resonance’s launch GO still the owner’s. White label (E10/W6/P7), mobile, and texting park by name. White-label sites and the Etsy-grade store now close the runway, in that order (owner ruling 2026-08-24): everything else is to be functional and clean before either starts."
     }
   },
   "entries": [
@@ -1209,14 +1219,14 @@
     {
       "id": "PROG-E10",
       "title": "Editor E10: Sites — absorbs White Label W1-W5",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/EDITOR-ARCHITECTURE.md",
         "ref": "E10"
       },
-      "detail": "Domains, host routing, per-tenant theming and SEO. Subdomain on any paid plan, custom domain as the upgrade. W1-W5 are re-pointed here, not deleted — read them as the scope inventory, never schedule them independently. W4 is additionally blocked on Stripe Connect.\n\n── PARKED 2026-08-20 (owner ruling): white labeling is deferred by name; Sites absorbs W1-W5 and stays parked with W6.",
+      "detail": "Domains, host routing, per-tenant theming and SEO. Subdomain on any paid plan, custom domain as the upgrade. W1-W5 are re-pointed here, not deleted — read them as the scope inventory, never schedule them independently. W4 is additionally blocked on Stripe Connect.\n\n── PARKED 2026-08-20 (owner ruling): white labeling is deferred by name; Sites absorbs W1-W5 and stays parked with W6. ── UNPARKED + SEQUENCED 2026-08-24 (owner ruling): white-label tenant sites with the full WYSIWYG editor are now SECOND TO LAST, after everything else is functional and clean. This supersedes the 2026-08-20 ruling that held white label by name alongside mobile and texting; those two remain held, white label does not.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase; owner-gated (OWN-016).",
@@ -1468,14 +1478,14 @@
     {
       "id": "PROG-P7",
       "title": "Re-theme P7: per-Space / white-label theming depth",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/BUILD-LIST.md",
         "ref": "Re-theme P7"
       },
-      "detail": "Widen the child-theme override surface (surfaces + type), operator theme controls, and a theme-contract compile check.\n\n── PARKED 2026-08-20 (owner ruling): its substance is per-Space/white-label theming DEPTH, so it parks with the white-label group; say the word and it moves back into the re-theme wave.",
+      "detail": "Widen the child-theme override surface (surfaces + type), operator theme controls, and a theme-contract compile check.\n\n── PARKED 2026-08-20 (owner ruling): its substance is per-Space/white-label theming DEPTH, so it parks with the white-label group; say the word and it moves back into the re-theme wave. ── UNPARKED + SEQUENCED 2026-08-24 (owner ruling): white-label tenant sites with the full WYSIWYG editor are now SECOND TO LAST, after everything else is functional and clean. This supersedes the 2026-08-20 ruling that held white label by name alongside mobile and texting; those two remain held, white label does not.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -2297,18 +2307,18 @@
     {
       "id": "PROG-W6",
       "title": "White label W6: member sites + the theme marketplace",
-      "status": "parked",
+      "status": "open",
       "lane": "program",
       "size": "L",
       "source": {
         "file": "docs/WHITE-LABEL-SITES.md",
         "ref": "BUILD-LIST §White-label / ADR-974"
       },
-      "detail": "W1-W5 were re-pointed into editor phase E10; W6 explicitly was NOT — member sites on the same rails plus a theme/template marketplace on DTCG portable themes + site_templates. It stays deferred behind E10 and behind the same owner scheduling call as OWN-016, but it is scope E10 does not carry, so it needs its own row or it silently vanishes when E10 closes.\n\n── PARKED 2026-08-20 (owner ruling): white labeling is deferred by name.",
+      "detail": "W1-W5 were re-pointed into editor phase E10; W6 explicitly was NOT — member sites on the same rails plus a theme/template marketplace on DTCG portable themes + site_templates. It stays deferred behind E10 and behind the same owner scheduling call as OWN-016, but it is scope E10 does not carry, so it needs its own row or it silently vanishes when E10 closes.\n\n── PARKED 2026-08-20 (owner ruling): white labeling is deferred by name. ── UNPARKED + SEQUENCED 2026-08-24 (owner ruling): white-label tenant sites with the full WYSIWYG editor are now SECOND TO LAST, after everything else is functional and clean. This supersedes the 2026-08-20 ruling that held white label by name alongside mobile and texting; those two remain held, white label does not.",
       "verify": {
         "kind": "manual",
-        "evidence": "BUILD-LIST W6 row reads 'stays deferred and is not part of the editor program' (re-read 2026-08-18).",
-        "checked": "2026-08-18"
+        "evidence": "Owner ruling 2026-08-24 SUPERSEDES the BUILD-LIST line this row used to quote ('stays deferred and is not part of the editor program'). White-label tenant sites are scheduled second to last, in slate wave W9. Program phase, no repo-visible consequence yet.",
+        "checked": "2026-08-24"
       }
     },
     {
@@ -3127,7 +3137,7 @@
         "file": "scripts/check-backlog.mjs",
         "ref": "runProbe’s per-probe spawn, and patternMatches/filesUnder"
       },
-      "detail": "Found 2026-08-20 when scripts/backlog-contract.test.ts failed a PR at 20.2s against its 20s child-CPU budget. It has now failed FOUR builds (20.2s, 20.3s, 20.6s). The original framing — eleven probes wastefully re-reading the same tree — was right about the reading and WRONG about the remedy. Both cheap fixes were tried and MEASURED, and both failed:\n\n(1) MEMOISING the file listing and contents inside check-backlog.mjs: bought nothing measurable (19.98s baseline vs 20.61s memoised on the same loaded machine, against run-to-run noise of about +/-1s). A parent-process cache can only help the IN-PROCESS kinds, and those mostly point at single named files; all eleven expensive probes are `cmd`, i.e. separate node processes that cannot see parent memory.\n\n(2) CONVERTING the eleven to the in-process grep kinds — the fix this row originally prescribed. The harness was extended with `exclude` and `stripComments` to make it possible, and then reading the eleven showed the premise was false: only THREE (OWN-036, OWN-037, LIVE-071) are pattern matches. The other eight are COMPUTATIONS, not greps — LIVE-012 walks app/discover checking auth calls per file against an allowlist, LIVE-020 imports check-function-grants.mjs and audits 400+ migrations through it, LIVE-038 carries an ALLOWED set, LIVE-054 parses a named function's body, LIVE-058 collects exported symbol names, LIVE-062 checks a per-file map of 38 action names, LIVE-066 pairs modules with importers. None of them can become a regex over paths without measuring something weaker than what the row claims. Converting the three that CAN saves about 75ms against a 600ms overage.\n\nSO THE HONEST FINDING IS THAT THERE IS NO WASTE LEFT TO REMOVE. The budget is measuring a genuinely expensive and genuinely necessary set of checks that has grown past the number someone picked when it was smaller. The guard's own message says \"Raising this number is not the fix\" — that advice assumed waste existed, and the measurements above say it does not.\n\n🔴 THIS IS AN OWNER CALL, NOT A CODE CHANGE, and it is deliberately left open rather than resolved by an agent raising a build gate on its own authority. The options: (a) raise GUARD_BUDGET_CPU_MS with the measurement recorded beside it and an ADR saying why; (b) run the probes concurrently — this cuts WALL clock but not CPU, so it does not move this number; (c) split the guard so the eight computational probes run on their own schedule; (d) accept that adding probed rows now costs a budget conversation each time.\n\n── OWNER RULING 2026-08-21: option (a) is chosen in a specific shape — A PER-PROBE CEILING PLUS A COUNT-SCALED TOTAL, not a raised constant. The reasoning is that the guard's own failure message already says what it cares about (\"something added expensive work to a PROBE\"), and a fixed total does not measure that: it measures how many rows the backlog has, so every honest new row pushes it up and the gate fires for a reason unrelated to the thing it exists to catch. THE SHAPE: (1) no SINGLE probe may exceed a per-probe CPU ceiling — that is the real regression signal, and it stays valid however long the list gets; (2) the TOTAL budget scales with the number of probes, so adding a normal row is free and only an abnormal one trips it. check-backlog.mjs needs to report per-probe timings for (1) to be assertable — a summary line the test parses is enough, and it is useful to a human reading the output too. Land the constants from a real measurement, the way PACKED_PER_RAW was settled, and write the numbers into the ADR beside them. NOT STARTED: the owner asked to stop and close the thread on 2026-08-21; this row now carries the decision so the next session implements rather than re-litigates.",
+      "detail": "Found 2026-08-20 when scripts/backlog-contract.test.ts failed a PR at 20.2s against its 20s child-CPU budget. It has now failed FOUR builds (20.2s, 20.3s, 20.6s). The original framing — eleven probes wastefully re-reading the same tree — was right about the reading and WRONG about the remedy. Both cheap fixes were tried and MEASURED, and both failed:\n\n(1) MEMOISING the file listing and contents inside check-backlog.mjs: bought nothing measurable (19.98s baseline vs 20.61s memoised on the same loaded machine, against run-to-run noise of about +/-1s). A parent-process cache can only help the IN-PROCESS kinds, and those mostly point at single named files; all eleven expensive probes are `cmd`, i.e. separate node processes that cannot see parent memory.\n\n(2) CONVERTING the eleven to the in-process grep kinds — the fix this row originally prescribed. The harness was extended with `exclude` and `stripComments` to make it possible, and then reading the eleven showed the premise was false: only THREE (OWN-036, OWN-037, LIVE-071) are pattern matches. The other eight are COMPUTATIONS, not greps — LIVE-012 walks app/discover checking auth calls per file against an allowlist, LIVE-020 imports check-function-grants.mjs and audits 400+ migrations through it, LIVE-038 carries an ALLOWED set, LIVE-054 parses a named function's body, LIVE-058 collects exported symbol names, LIVE-062 checks a per-file map of 38 action names, LIVE-066 pairs modules with importers. None of them can become a regex over paths without measuring something weaker than what the row claims. Converting the three that CAN saves about 75ms against a 600ms overage.\n\nSO THE HONEST FINDING IS THAT THERE IS NO WASTE LEFT TO REMOVE. The budget is measuring a genuinely expensive and genuinely necessary set of checks that has grown past the number someone picked when it was smaller. The guard's own message says \"Raising this number is not the fix\" — that advice assumed waste existed, and the measurements above say it does not.\n\n🔴 THIS IS AN OWNER CALL, NOT A CODE CHANGE, and it is deliberately left open rather than resolved by an agent raising a build gate on its own authority. The options: (a) raise GUARD_BUDGET_CPU_MS with the measurement recorded beside it and an ADR saying why; (b) run the probes concurrently — this cuts WALL clock but not CPU, so it does not move this number; (c) split the guard so the eight computational probes run on their own schedule; (d) accept that adding probed rows now costs a budget conversation each time.\n\n── OWNER RULING 2026-08-21: option (a) is chosen in a specific shape — A PER-PROBE CEILING PLUS A COUNT-SCALED TOTAL, not a raised constant. The reasoning is that the guard's own failure message already says what it cares about (\"something added expensive work to a PROBE\"), and a fixed total does not measure that: it measures how many rows the backlog has, so every honest new row pushes it up and the gate fires for a reason unrelated to the thing it exists to catch. THE SHAPE: (1) no SINGLE probe may exceed a per-probe CPU ceiling — that is the real regression signal, and it stays valid however long the list gets; (2) the TOTAL budget scales with the number of probes, so adding a normal row is free and only an abnormal one trips it. check-backlog.mjs needs to report per-probe timings for (1) to be assertable — a summary line the test parses is enough, and it is useful to a human reading the output too. Land the constants from a real measurement, the way PACKED_PER_RAW was settled, and write the numbers into the ADR beside them. NOT STARTED: the owner asked to stop and close the thread on 2026-08-21; this row now carries the decision so the next session implements rather than re-litigates. ── STEP 1 LANDED 2026-08-24, STEP 2 DELIBERATELY NOT. The owner's ruling needs check-backlog.mjs to report per-probe timings before the per-probe ceiling is assertable, so that half is built and shipping: each probe is now bracketed by a /proc/self/stat cutime+cstime read (the same quantity the contract test budgets, and the only load-independent one per LIVE-047), and the guard prints `probe-cost: n=… totalCpuMs=… maxCpuMs=… slowest=…` plus the three most expensive probes by name. LOCAL MEASUREMENT, three runs, variance under 0.3%: n=111, total 8.32-8.56s, worst single probe PROG-DAWN9 at 2.02-2.09s, then LIVE-014 850ms and LIVE-018 520ms. Average 75ms. 🔴 THE CONSTANTS ARE NOT SET FROM THAT, AND THIS IS THE WHOLE REASON THE ROW STAYS OPEN. CPU time is load-independent but it is NOT hardware-independent: a slower core burns MORE cpu-seconds for identical work. This row's own history proves the gap — CI failed at 20.2/20.3/20.6s CPU while contemporaneous local readings of the same tree were 12.0-13.4s, about 1.6x. Today's local 8.5s therefore says nothing safe about what CI will read, and a count-scaled total derived from it would be roughly 1.6-2.4x too tight the first time a loaded runner saw it — which is precisely the failure this row exists to end, re-created with better instrumentation. AGENTS.md settles the method: a build-blocking gate that has never seen a real artifact is the 2026-08-11 incident with the roles reversed, so wire it in the same change as the run that proves it and read what it prints. PACKED_PER_RAW was settled exactly this way, by a paired reading. STEP 2, once CI has printed the line on a real run: set PER_PROBE_CEILING from the observed worst probe with headroom (locally that is ~2.1s, so roughly 2x it), replace the flat 20s with BASE + PER_PROBE_ALLOWANCE x n derived from the CI total, and record both numbers and the local:CI ratio in an ADR beside them. The flat 20s assertion is UNTOUCHED in this change: instrumentation cannot fail a build, so nothing here can break CI while the real number is being collected.",
       "verify": {
         "kind": "manual",
         "evidence": "Counted 2026-08-20 against the tree: 11 of 72 cmd probes walk app/lib/components in their own process. Deliberately unprobed — a mechanical probe here would either re-walk the tree itself (adding to the very cost it measures) or pin an implementation shape rather than the consequence. The consequence already has an executable guard: scripts/backlog-contract.test.ts fails when the budget is exceeded, and it is what surfaced this.",
