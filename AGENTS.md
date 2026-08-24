@@ -38,14 +38,20 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
     59-second control). Both defects are fixed and **proven by mutation tests** that reconstruct the
     exact bad trim (#2194); `PACKED_PER_RAW` was **settled at 0.53 by a paired real reading**
     (measured 0.5254 beside the same build's upload line, rounded toward firing early). A re-added
-    `--warn-only` fails CI as a silent demotion. ⚠️ **That ratio is mix-dependent and the gate applies
-    one number to two mixes** — the 2026-08-24 production build estimated 0.52 GB packed and then
-    uploaded 257.84 MB, a factor of 2.0, because the gate had just trimmed `.next/cache` to nothing
-    and left a node_modules-dominated cache that compresses far better than the compiler-heavy one
-    0.53 was derived from. It errs toward trimming, which is the safe direction and costs only build
-    minutes. **Do not lower the constant from that reading** — a ratio has to be measured on the mix
-    it will be applied to, and getting exactly that backwards is what killed two builds. See
-    `HYG-015`.
+    `--warn-only` fails CI as a silent demotion. ✅ **The ratio is mix-dependent, and it was re-measured
+    on 2026-08-24 (`HYG-015` closed, [ADR-1113](docs/DECISIONS.md)): the answer is "real but
+    immaterial".** Five paired readings that day — three printing an estimate beside their own
+    `Uploading build cache` line (1.26/1.25, 1.26/1.25, 1.28/1.27 GB), plus two production uploads on
+    the same composition — put the implied ratio at **0.524–0.526 against a constant of 0.53**, i.e.
+    accurate to 1% and rounded toward firing the trim early. The 2× gap is genuine for the OTHER mix:
+    with `.next/cache` trimmed to nothing, node_modules alone packs near 0.264. It changes nothing,
+    and the reason is structural rather than lucky — **the ratio only alters behaviour near the 1.38 GB
+    trim point, and 0.52 GB sits 62% below it.** Near the threshold the cache is compiler-heavy by
+    definition, because being compiler-heavy is what makes it big enough to approach the threshold at
+    all, and that is the mix 0.53 was derived on. So one constant is adequate by construction.
+    🔴 **Do not lower it toward 0.264**: that measures on one mix and applies to another, which is the
+    error this row exists to prevent, performed in reverse. The probe holds it in a two-sided
+    0.52–0.54 band.
   - `check:shell-weight` ([ADR-1066](docs/DECISIONS.md)) — the CLIENT half: the app shell's eager
     first-load JS (**1010 KB across 21 chunks on two production artifacts, 2026-08-18**, ceiling
     1,400 KB) plus named fingerprints for admin module bodies that must stay behind `next/dynamic`

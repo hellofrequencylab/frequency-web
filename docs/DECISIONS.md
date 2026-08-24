@@ -29276,3 +29276,69 @@ probe wired without the work that makes it pass is the gate-with-no-artifact fai
 names, and it would read as coverage the moment it went green for the wrong reason.
 
 ---
+
+## ADR-1113: The cache ratio is mix-dependent, the 2× gap is real, and it cannot matter (2026-08-24)
+
+**Status:** accepted · closes `HYG-015` · amends [ADR-1064](#adr-1064), [ADR-1086](#adr-1086)
+
+`check:cache-budget` converts a raw byte measurement into the packed units Vercel's 1.50 GB
+ceiling applies, through one constant, `PACKED_PER_RAW = 0.53`. `HYG-015` was filed because that
+constant is applied to two different cache mixes and was derived on only one of them, and because a
+build had been seen estimating 0.52 GB and uploading 257.84 MB — a factor of two.
+
+Both halves of the alarm are true. The conclusion drawn from them was not.
+
+### What five real builds say
+
+Every reading below is from a production or preview build on 2026-08-24, taken from the build's own
+log rather than reasoned about. Three printed both halves, which is the only pairing that settles
+anything:
+
+| Build | Estimate | `Uploading build cache` | Implied ratio |
+|---|---|---|---|
+| 21:10 preview | 1.26 GB | 1.25 GB | 0.5244 |
+| 21:39 preview | 1.26 GB | 1.25 GB | 0.5244 |
+| 22:02 preview | 1.28 GB | 1.27 GB | 0.5257 |
+| 20:16 production | — | 1.25 GB | consistent composition |
+| 20:29 production | — | 1.27 GB | consistent composition |
+
+**0.524–0.526 against a constant of 0.53**: accurate to 1%, and rounded up, which biases toward
+firing the trim early. That is the direction the file says it intended, and it now has evidence
+rather than an intention.
+
+### The 2× gap is real, and it is about the other mix
+
+It is not retracted. With `.next/cache` trimmed to nothing, `node_modules` alone packs near **0.264**,
+so a 0.977 GB raw tree estimates 0.52 GB and uploads about 0.26 GB. Applying a compiler-derived ratio
+to a node_modules-only tree really is wrong by a factor of two.
+
+### Why it cannot matter, structurally
+
+The ratio only changes behaviour near the **1.38 GB trim point**. In the empty-cache state the
+estimate is 0.52 GB — **62% below that point** — so no decision turns on its accuracy there. And near
+the threshold the cache is compiler-heavy *by definition*, because being compiler-heavy is what makes
+it large enough to approach the threshold at all. That is precisely the mix 0.53 was derived on.
+
+A single constant is therefore adequate **by construction, not by coincidence**. The two-term model
+this row implied — separate ratios for `node_modules` and `.next/cache` — was derived and fits all
+three paired readings to within 1%, and was **not adopted**, because it adds a second number to
+maintain in order to improve an estimate in the one region where the estimate is not consulted.
+
+### The instruction that follows
+
+🔴 **Do not lower the constant toward 0.264.** That would measure on one mix and apply to another,
+which is the error this row was filed to prevent, performed in reverse — and getting exactly that
+backwards is what killed two builds under ADR-1086. The probe holds it in a **two-sided 0.52–0.54
+band**: raising it hides real growth, lowering it repeats the original defect. The probe also pins
+the two things that keep the number *re-derivable* — the composition line printing `node_modules` and
+`.next/cache` separately, and the printed instruction to compare the estimate against the build's own
+upload line. Losing either leaves a constant nobody can check, which is how this one came to be
+suspected in the first place.
+
+### The wider point
+
+This row was worked because AGENTS.md carried its alarm as a standing instruction. Re-measuring took
+five log reads and turned a suspected 2× error into a bounded, explained property. The row was not
+wrong to exist — the gap it named is real — but it had drawn a conclusion the measurement does not
+support, and that conclusion was sitting in the file every agent reads first. Same shape as
+[ADR-1082](#adr-1082) and [ADR-1112](#adr-1112): re-test a premise before you build on it.
