@@ -14,9 +14,13 @@
 # context and never checked.
 #
 # RETIREMENT ORDER (FINALIZE-PLAN §5.2, by risk): ~~circles~~ -> ~~about~~ -> ~~spaces~~ -> ~~the-lab~~ ->
-# ~~the-quest~~ -> ~~the-community~~ -> pricing. Each retirement is gated on the visual suite proving the
-# template equivalent, one slug per PR. `pricing` is partial only: it carries LIVE take-rate
-# bindings, and its figures must never be frozen into a document.
+# ~~the-quest~~ -> ~~the-community~~ -> ~~home~~ -> pricing. Each retirement is gated on the visual suite
+# proving the template equivalent, one slug per PR. `pricing` is partial only: it carries LIVE
+# take-rate bindings, and its figures must never be frozen into a document.
+#
+# ⚠️ `home` WAS MISSING FROM THIS LINE UNTIL 2026-08-24, which made the order read as though the
+# series ended at the-community. It never did: LIVE-006 always named `home` LAST (Splash carried the
+# live-proof band and its own header/footer chrome). The order above is now the whole series.
 #
 # ⚠️ THE COUNT CANNOT TELL A RETIREMENT FROM A MOVE. If a body leaves the route file for a
 # sibling component rather than actually retiring, the number falls and this gate will ask you to
@@ -24,7 +28,41 @@
 #
 # Seeded 2026-08-10 from the live tree (ADR-967).
 
-home            5   # Splash + LiveProof + LiveProofSkeleton + PostPreviewCard + EventRow (940 lines)
+home            0   # ✅ RETIRED 2026-08-24 (Lift 5c, ADR-1068). Splash + LiveProof + LiveProofSkeleton
+                    #    + PostPreviewCard + EventRow deleted, not moved, along with HOME_ROLES,
+                    #    HOME_FAQ, hasRole/ROLE_RANK use, the PostPreviewRow/HomeRole types and the
+                    #    interpolated pricing constants (P / INDEPENDENT_PRICE / MEMBER_PRICE /
+                    #    TAKE / NETWORK_RATES): route 938 -> 137 lines. `git log -p app/page.tsx` is
+                    #    the only copy left. The body was DOUBLY unreachable: `/` serves an owner-
+                    #    PUBLISHED 13-block document (published 2026-07-13) whose every block names
+                    #    a string type, so isWellFormed(published) already wins at the FIRST rung,
+                    #    and getTemplate('home') is a static 13-block document behind it. `data`
+                    #    could never be null and the `data ? … : <Splash/>` branch could not be
+                    #    taken, so the retirement moved no pixels — no visual baseline recapture.
+                    #    🔴 THE PUBLISHED DOCUMENT IS THE SOURCE OF TRUTH FOR `/` (owner ruling,
+                    #    2026-08-24), which makes lib/page-editor/templates/home.ts unreachable BY
+                    #    DECISION. So unlike the five retirements before it, NOTHING WAS RECOVERED
+                    #    into the template: recovering copy into home.ts would be writing into a
+                    #    file no visitor reaches. Anything wanted from the old splash goes in the
+                    #    EDITOR. app/page.tsx's header records this so the next reader does not
+                    #    "fix" home.ts.
+                    #    SCHEMA MEASURED, NOT INFERRED: rendering <BlockDocJsonLd data path="/"> +
+                    #    <BlockRender config data> with renderToStaticMarkup emits ONE ld+json
+                    #    script and the multiset { Article 1, WebPage 1, Organization 2,
+                    #    ImageObject 1 } — byte-identical before and after, on BOTH rungs (the
+                    #    published document and getTemplate('home')). There is no breadcrumb (this
+                    #    IS the root) and no metadata override, matching the route.
+                    #    ⚠️ NOT the LIVE-040 shape, and it must not be read as one: faqSchema(
+                    #    HOME_FAQ) was called INSIDE Splash, so `/` HAS EMITTED NO FAQPage SINCE THE
+                    #    home TEMPLATE LANDED. Deleting it neither caused nor cured that; the
+                    #    before/after measurement above is the proof. A FAQPage on `/` would need an
+                    #    Accordion in the PUBLISHED document, and that is an editor change.
+                    #    ORPHANS DELETED WITH IT (same discipline as the-community's tour.tsx):
+                    #    ScrollCue / CountUp / Parallax (components/marketing/motion.tsx, plus the
+                    #    reduced-motion hook only Parallax used) and Steps
+                    #    (components/marketing/marketing-ui.tsx). All four lost their only caller
+                    #    here and had no test consumer; `Reveal` stays (three live callers).
+                    #    Template-only from here — and, in practice, published-document-only.
 about           0   # ✅ RETIRED 2026-08-17 (Lift 5c, ADR-1068). LegacyAbout + Value + Ask deleted, not
                     #    moved: `git log -p app/(marketing)/about/page.tsx` is the only copy left.
                     #    The body was already unreachable (getTemplate('about') is always well-formed),

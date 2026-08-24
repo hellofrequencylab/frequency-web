@@ -1,87 +1,19 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import Image from 'next/image'
-import { ArrowRight, CalendarDays } from 'lucide-react'
+import type { Data } from '@/lib/page-editor/types'
 import { BlockRender } from '@/lib/page-editor/block-render'
-import { createClient } from '@/lib/supabase/server'
-import { MarketingHeader } from '@/components/layout/marketing-header'
-import { MarketingFooter } from '@/components/layout/marketing-footer'
-import {
-  Marquee,
-  Button,
-  Section,
-  SectionHeading,
-  PhotoHero,
-  PullQuote,
-  Steps,
-  Card,
-  Faq,
-} from '@/components/marketing/marketing-ui'
-import { Stat } from '@/components/ui/stat'
-import { Illustration, type IllustrationName } from '@/components/marketing/illustrations'
-import { Reveal, Parallax, CountUp, ScrollCue } from '@/components/marketing/motion'
-import { JsonLd } from '@/components/json-ld'
-import { faqSchema } from '@/lib/jsonld'
 import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
-import { getInitials, relativeTime, eventDateBadge, formatEventDate } from '@/lib/utils'
-import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
-import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, BETA_CTA_LABEL, BETA_CTA_HREF, SOCIAL_PROOF_FLOOR, FOUNDING_PLACE } from '@/lib/site'
-import { resolvePageContent } from '@/lib/page-content'
-import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
 import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
-import { Suspense } from 'react'
-import { getLiveData } from '@/lib/page-editor/live-data'
-import { getReferrer } from '@/lib/qr/referral'
-import type { LiveEvent } from '@/components/marketing/blocks'
+import { createClient } from '@/lib/supabase/server'
+import { MarketingHeader } from '@/components/layout/marketing-header'
+import { MarketingFooter } from '@/components/layout/marketing-footer'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
-import type { MenuSettings, ResolvedMenu } from '@/lib/menus/types'
-import { priceStrings, CREW_NOTE } from '@/lib/pricing/pricing-page'
-import { PLACEHOLDER_SPACE_PRICE_CENTS, PLACEHOLDER_MEMBER_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
-import { formatBps, formatCents } from '@/lib/pricing/display'
-import { PRICING_DEFAULTS } from '@/lib/pricing/settings'
-
-// Every dollar figure on the splash interpolates from the ONE price source (the code catalog via
-// priceStrings + the feature-tiers placeholder maps), so the strip can never drift from /pricing.
-const P = priceStrings()
-const INDEPENDENT_PRICE = formatCents(PLACEHOLDER_SPACE_PRICE_CENTS.independent)
-/** What it costs to show up: the free-Member price, read from the ONE member-price map. It was the
- *  last literal dollar figure on this page. */
-const MEMBER_PRICE = formatCents(PLACEHOLDER_MEMBER_PRICE_CENTS.free)
-
-// And every PERCENTAGE interpolates from the take-rate config the fee code charges, for the same reason.
-// The free Member rung LEADS: selling is free on every tier, so the rate a reader starts on is the honest
-// first number, and the paid rungs are what buys it down. Any rung the owner retires disappears with it.
-const TAKE = PRICING_DEFAULTS.take_rate
-// 🔴 EVERY RUNG, OR THE LADDER LIES BY OMISSION. This listed Member, Crew, Business and Non Profit and
-// silently dropped the free Space (10%) and Collective (3%) rungs. That is not a cosmetic gap: this
-// string is emitted as FAQPage JSON-LD further down, so an incomplete ladder was being published to
-// answer engines while /pricing and /llms.txt published the complete one. An answer engine reconciling
-// two versions of our own pricing will pick one, and we do not get to choose which.
-//
-// Built by iterating the rungs rather than naming four of them, so a rung added to the config appears
-// here automatically and a rung retired disappears. The only way to omit one now is to delete it from
-// the take-rate vector, which is the honest way to retire a rung.
-const NETWORK_RATES = [
-  `Member ${formatBps(TAKE.member_free_bps)}`,
-  `Crew ${formatBps(TAKE.member_bps)}`,
-  `free Space ${formatBps(TAKE.network_bps.free)}`,
-  `Business ${formatBps(TAKE.network_bps.business)}`,
-  `Collective ${formatBps(TAKE.network_bps.collective)}`,
-  `Non Profit ${formatBps(TAKE.network_bps.nonprofit)}`,
-].join(', ')
-
-// The home is philosophy-led and builder-first: it sells a movement and a role,
-// not "Circles near you." There is no local inventory yet, so the sequence runs
-// manifesto → the three roles (Build / Practice / Spread, the same decision as
-// /start) → how it works → live proof (honest below the SOCIAL_PROOF_FLOOR) →
-// an honest "we are early" beat → a short FAQ → one CTA into /start. The single
-// primary action is /start; "Join the Beta" is the secondary path.
+import { resolvePageContent } from '@/lib/page-content'
+import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from '@/lib/site'
 
 // SEO title + description are operator-editable through the ADR-180 page-content
-// system (edited at /pages/home; the coded strings below are the fallback). The
-// page BODY stays a coded experience — see the EDITABLE_PAGES note below.
+// system (edited at /pages/home; the coded strings below are the fallback).
 export async function generateMetadata(): Promise<Metadata> {
   const { title, description } = await resolvePageContent('/', {
     title: `${SITE_NAME} · ${SITE_TAGLINE}`,
@@ -101,838 +33,105 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-type PostPreviewRow = {
-  id: string
-  body: string
-  created_at: string
-  media_urls: string[]
-  author: {
-    display_name: string
-    handle: string
-    avatar_url: string | null
-    community_role?: string
-  } | null
-}
+// A last-resort empty document. It is NOT a design decision: it exists only so the render path is
+// total (see the chain below), and nothing should ever reach it.
+const EMPTY: Data = { content: [], root: {} }
 
-function hasRole(role: string | null | undefined): role is CommunityRole {
-  return !!role && role in ROLE_RANK
-}
-
-// The three roles — the same decision a visitor makes at /start. Each card carries
-// its spot illustration and routes to its landing (and its first action there).
-type HomeRole = {
-  illustration: IllustrationName
-  label: string
-  blurb: string
-  cta: string
-  href: string
-}
-
-const HOME_ROLES: HomeRole[] = [
-  {
-    illustration: 'lead',
-    label: 'Build',
-    blurb: 'Be the reason your people have somewhere to go. Host one Circle and we hand you the format.',
-    cta: 'Start one Circle',
-    href: '/the-community',
-  },
-  {
-    illustration: 'practice',
-    label: 'Practice',
-    blurb: 'Start where you are, today. Practices, Journeys, and the Mindless timer, all on your own.',
-    cta: 'Do one practice today',
-    href: '/the-quest',
-  },
-  {
-    illustration: 'spread',
-    label: 'Spread',
-    blurb: 'Take a small role in building community around you. Bring one person, host once, or share the idea.',
-    cta: 'Bring one person',
-    href: '/the-community',
-  },
-]
-
-// Plain-text mirror of the visible "Honest answers" FAQ, emitted as FAQPage
-// JSON-LD (AEO: lets search + AI engines surface and cite the answers).
-const HOME_FAQ = [
-  {
-    q: 'Do I have to be a leader to start?',
-    a: 'No. There are three ways in. Build means you set out the chairs for one Circle, and we hand you the format. Practice means you start where you are today, on your own. Spread means you bring one person or host once. Pick the one that fits, and you can change your mind later.',
-  },
-  {
-    q: 'What does it cost?',
-    a: `The community is free, forever. Browsing, joining a Circle, and showing up never cost anything, and a business never pays for access to people; paid plans raise the limits. A free member creates events, takes RSVPs, and sells tickets at the Member rate; Crew is contribute what you want, ${CREW_NOTE.fromLabel} a month, turns on The Quest, buys that rate down, and is free for the whole beta. If you run a practice or a Space, you keep 100% of your own bookings on one honest price, and we earn only on a sale the network introduced (${NETWORK_RATES}), never on someone who is already yours. There is no card today, and every plan is one price, the same whenever you start, with two months free if you pay for the year.`,
-  },
-  {
-    q: 'Is there a catch?',
-    a: 'None. Frequency is leaderful, not leader-dependent: it is built to outlast any one person, with no single figure to follow and no upsell funnel. We never take a cut of your own bookings, the price is one honest number with no surprise invoices, and you can take your data and leave anytime. Physical Spaces are funded by a separate, community-owned vehicle where members co-own the building, never by platform margin.',
-  },
-  {
-    q: 'What if there are no Circles near me yet?',
-    a: 'That is most places right now, and that is the point. We are recruiting the people who start them. A Circle only needs a few people and a standing time, so you can start one where you are. The first Lab is taking root in North County San Diego, and the next cities follow the people who show up.',
-  },
-  {
-    q: 'What if it is not for me?',
-    a: 'Then you leave anytime, no questions and nothing lost. The beta is free, there is no card on file, and nothing locks you in.',
-  },
-]
-
+// ONE RENDER PATH — `/` is template-only (UX-MATURITY-PLAN Lift 5c, ADR-1068), the sixth and last
+// slug of the series after `about`, `spaces`, `the-lab`, `the-quest` and `the-community`. The route
+// is now metadata + chrome + <BlockRender>: the words on the home page live in the page editor, and
+// an operator changing them changes the site's front door. The coded `Splash` body (plus its
+// `LiveProof` / `LiveProofSkeleton` / `PostPreviewCard` / `EventRow` sub-components, the
+// `HOME_ROLES` and `HOME_FAQ` tables, and the interpolated pricing constants, ~810 lines) that used
+// to sit below was already UNREACHABLE, and here it was doubly so:
+//   • `getPublishedData('home')` returns an owner-PUBLISHED 13-block document (published
+//     2026-07-13). Every one of its 13 blocks names a string `type`, so `isWellFormed(published)`
+//     is true and the FIRST rung already wins.
+//   • `getTemplate('home')` is a static 13-block document whose every block also names a string
+//     `type`, so the second rung is well-formed too, and templates.test.ts asserts it renders under
+//     the current config.
+// `data` therefore could never be null and the `data ? … : <Splash />` branch could not be taken.
+// Deleting it moves no pixels — a stronger guarantee than a snapshot comparison, and the reason no
+// visual baseline was recaptured for this change.
+//
+// 🔴 lib/page-editor/templates/home.ts IS UNREACHABLE BY DECISION, NOT BY ACCIDENT — do not "fix"
+// it. The owner ruled on 2026-08-24 that the PUBLISHED document is the source of truth for `/`.
+// The code template is the fallback rung beneath it and, while a published document exists, nothing
+// in it is ever rendered. So: do NOT recover copy into home.ts, and do NOT reconcile it against the
+// published page. Change the home page in the EDITOR. (The file stays because it is the seed for a
+// fresh editor session and the safety rung if the published document is ever unpublished — see
+// templates.test.ts, which fails loudly if it stops resolving.)
+//
+// 🔴 EVERY SCHEMA NODE SURVIVES, AND THE COUNT WAS MEASURED, NOT REASONED. /the-lab lost its
+// FAQPage for weeks (LIVE-040) because a `faqSchema()` call rode a legacy branch that never
+// rendered. This route carried the same shape — `faqSchema(HOME_FAQ)` sat INSIDE `Splash` — so it
+// is worth being blunt: `/` HAS EMITTED NO FAQPage SINCE THE `home` TEMPLATE LANDED, and deleting
+// HOME_FAQ neither caused that nor cured it. MEASURED with renderToStaticMarkup over
+// `<BlockDocJsonLd data={data} path="/" />` + `<BlockRender config={config} data={data} />`, the
+// exact pair this route renders (no breadcrumb — this IS the root, and an empty BreadcrumbList is
+// worse than none; no metadata overrides passed):
+//   · the PUBLISHED document → 1 ld+json script, { Article 1, WebPage 1, Organization 2,
+//     ImageObject 1 }
+//   · getTemplate('home')    → 1 ld+json script, { Article 1, WebPage 1, Organization 2,
+//     ImageObject 1 }
+// Byte-identical before and after this change, on both rungs. NOT verified against production HTML
+// — frequencylocal.com is outside this session's egress allowlist.
+//
+// NOTHING RENDERED WAS LOST, and nothing was recovered, BY DESIGN. The five retirements before this
+// one walked the coded body section by section and moved anything the template did not draw into
+// the template. That step is deliberately absent here: the published document — not home.ts — is
+// what a visitor sees, and recovering copy into home.ts would be writing into a file no reader ever
+// reaches. Anything the owner wants from the old splash belongs in the EDITOR. `git log -p` on this
+// file is the only remaining copy of the coded body.
+//
+// THE CHAIN, and what watches each rung:
+//   published doc  → the owner's published 13-block page. WINS TODAY, and by decision.
+//   code template  → lib/page-editor/templates/home.ts. Unreachable while the above exists;
+//                    `templates.test.ts` still asserts it resolves and renders, so the fall to
+//                    EMPTY cannot happen quietly (AGENTS.md: every fail-safe needs a gate that
+//                    notices it fired).
+//   EMPTY          → unreachable; present so `data` is always a Data.
+//
+// The home page renders its OWN header/footer: it sits over a dark hero, OUTSIDE the (marketing)
+// layout group, so the chrome is wrapped around <BlockRender> here rather than inherited. Live
+// counts stay OFF (no `metadata={{ live }}`): the home document carries the honest, qualitative
+// founding framing, never invented numbers.
+//
+// ⚠️ Do NOT add a coded section to this file. `scripts/render-path-bodies.txt` records `home 0` and
+// `check:render-path` matches it EXACTLY, so a second top-level component here fails the build. New
+// marketing structure on this page belongs in a BLOCK (lib/page-editor/config.tsx).
 export default async function RootPage() {
-  // Home ("/") shows the splash for EVERYONE, signed in or out (owner directive): the
-  // marketing/home page is the brand front door, and a member's feed lives at /feed
-  // (reached from the in-app logo / Community). We no longer bounce logged-in members
-  // off "/" to their feed, so the "Home" nav tab lands on the splash as expected. We
-  // still read `user` so the marketing header + splash render the signed-in chrome.
+  // Home ("/") shows the marketing front door for EVERYONE, signed in or out (owner directive): a
+  // member's feed lives at /feed (reached from the in-app logo / Community). We still read `user`
+  // so the marketing header renders the signed-in chrome.
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // `home` is editable in the visual editor (see EDITABLE_PAGES in
-  // lib/page-editor/data): the render chain is getPublishedData('home') ->
-  // getTemplate('home') -> this coded splash as the last-resort fallback. So a
-  // published draft or the designed template shadows the splash when present.
-  // Personalize the splash when arriving via a scanned personal code: the /q
-  // resolver dropped an fq_ref cookie, so we can name the inviter (research: a
-  // generic splash discards the inviter's social proof, the strongest referral
-  // lever). Read-only — the cookie is applied/cleared at signup.
-  const referrer = await getReferrer()
-  // DB-backed nav megas for the splash header (lib/menus); fall back to code defaults on any
-  // miss, so safe pre-migration. The splash is always a logged-out 'visitor' surface.
+  // DB-backed nav megas for the header (lib/menus); fall back to code defaults on any miss, so
+  // safe pre-migration.
   const [headerMenu, footerMenu, menuTimings] = await Promise.all([
     getMenu('header'),
     getMenu('footer'),
     getMenuSettings(),
   ])
-  // getPublishedData -> getTemplate -> legacy, mirroring every other marketing route.
-  // Home keeps its live counts OFF: a designed `home` template (when one ships) carries
-  // the honest, qualitative founding framing — never invented numbers — and the coded
-  // Splash stays the last-resort fallback. The home splash renders its OWN header/footer
-  // (it sits over a dark hero, outside the (marketing) layout), so a Puck document is
-  // wrapped in that same chrome here.
+
   const published = await getPublishedData('home')
   const template = getTemplate('home')
-  const data = isWellFormed(published) ? published : isWellFormed(template) ? template : null
-  if (data) {
-    return (
-      <>
-        {/* The home page shipped ZERO structured data. The only JsonLd in this file sits
-            inside the coded Splash below, and that body never renders: `data` is non-null
-            whenever a template exists, and templates.test.ts asserts the 'home' template is
-            always renderable. So the highest-value page on the site published no Article, no
-            breadcrumb and no FAQPage at all.
-            Breadcrumb is derived from the route; the Article comes from the rendered document
-            via BlockDocJsonLd. The FAQPage is deliberately NOT lifted up here: the home
-            template carries no Accordion, so HOME_FAQ describes copy this rung does not show,
-            and asserting it would publish answers no visitor can read (/pricing:309-313).
-            No breadcrumb either: this IS the root, so the list would be empty, and an empty
-            BreadcrumbList is worse than none. */}
-        <BlockDocJsonLd data={data} path="/" />
-        <MarketingHeader overHero isAuth={!!user} headerMenu={headerMenu} menuTimings={menuTimings} ctaLabel="Join the beta" />
-        <main id="main">
-          <BlockRender config={config} data={data} />
-        </main>
-        <MarketingFooter menu={footerMenu} />
-      </>
-    )
-  }
+  const data: Data = isWellFormed(published) ? published : isWellFormed(template) ? template : EMPTY
 
-  // The live-proof band (counts, events, posts) streams in its own <Suspense> inside Splash,
-  // so getLiveData never blocks the hero's first byte (PAGE-FRAMEWORK §5).
-  return (
-    <Splash
-      referrer={referrer}
-      isAuth={!!user}
-      headerMenu={headerMenu}
-      footerMenu={footerMenu}
-      menuTimings={menuTimings}
-    />
-  )
-}
-
-// Splash narrative — philosophy first, then the role:
-//   manifesto (the third place is gone; you can be the reason it comes back) →
-//   the three roles (Build / Practice / Spread) → how it works → live proof →
-//   the honest "we are early" beat → the short FAQ → one CTA into /start.
-function Splash({
-  referrer,
-  isAuth = false,
-  headerMenu,
-  footerMenu,
-  menuTimings,
-}: {
-  referrer: { displayName: string; handle: string; avatarUrl: string | null; vcardEnabled: boolean } | null
-  isAuth?: boolean
-  headerMenu?: ResolvedMenu
-  footerMenu?: ResolvedMenu
-  menuTimings?: MenuSettings
-}) {
   return (
     <>
-      <MarketingHeader
-        overHero
-        isAuth={isAuth}
-        headerMenu={headerMenu}
-        menuTimings={menuTimings}
-        ctaLabel="Join the beta"
-      />
-
+      {/* The Article comes from the rendered document via BlockDocJsonLd. No breadcrumb: this IS
+          the root, so the list would be empty. No FAQPage: the home document carries no Accordion,
+          and asserting answers no visitor can read is what /pricing:309-313 forbids. */}
+      <BlockDocJsonLd data={data} path="/" />
+      <MarketingHeader overHero isAuth={!!user} headerMenu={headerMenu} menuTimings={menuTimings} ctaLabel="Join the beta" />
       <main id="main">
-      {/* ── Collective hero — everything a community needs in one place; the
-          collaboration-first Community Collective positioning (ADR-811). One
-          primary CTA into /start. ─────────────────────────────────────────── */}
-      <PhotoHero
-        minHeight="screen"
-        image="/images/site/community-1.jpg"
-        alt="A small circle of neighbors talking and laughing together on a sunny lawn"
-        focal="object-center"
-        eyebrow="A Community Collective for creators, coaches, healers, and small businesses"
-        title={
-          <>
-            Everything a community needs,
-            <br />
-            in <span className="text-primary">one place.</span>
-          </>
-        }
-        subtitle="Frequency is a Community Collective. Start a Circle, host Events, and grow a Space alongside people building the same thing. You keep 100% of your own bookings. We earn only on what the network sends you."
-        footer={
-          <>
-            <p className="mt-8 text-body font-semibold text-on-ink/90">
-              0% on your own bookings, always. We earn only a small, shrinking network-only take-rate on what the network sends you.
-            </p>
-            <p className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-body-sm text-on-ink/70">
-              <span>Never a cut of your bookings</span>
-              <span aria-hidden className="text-on-ink/25">·</span>
-              <span>One honest price, no surprise invoices</span>
-              <span aria-hidden className="text-on-ink/25">·</span>
-              <span>Leave anytime with your data</span>
-              <span aria-hidden className="text-on-ink/25">·</span>
-              <span>See what the network earned you</span>
-            </p>
-            <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-body-sm text-on-ink/55">
-              <span>Member free</span>
-              <span aria-hidden className="text-on-ink/25">·</span>
-              <span>Crew {CREW_NOTE.fromLabel}</span>
-              <span aria-hidden className="text-on-ink/25">·</span>
-              <span>Business {P.businessList}</span>
-              <span aria-hidden className="text-on-ink/25">·</span>
-              <span>Collective {P.collectiveList}</span>
-              <span aria-hidden className="text-on-ink/25">·</span>
-              <span>Non Profit {P.nonprofit}</span>
-              <span aria-hidden className="text-on-ink/25">·</span>
-              <span>Independent {INDEPENDENT_PRICE}</span>
-            </p>
-            <p className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-body-sm text-on-ink/55">
-              <span className="font-semibold text-on-ink/75">Free during the beta.</span>
-              <span aria-hidden className="text-on-ink/25">·</span>
-              <span>No card. Crew is contribute what you want. Leave anytime.</span>
-            </p>
-            <p className="mt-2 text-body-sm text-on-ink/40">
-              The first Lab is taking root in {FOUNDING_PLACE}.{' '}
-              <Link href="/sign-in" className="underline hover:text-on-ink/70 transition-colors">
-                Already a member? Sign in
-              </Link>
-            </p>
-            <ScrollCue label="Three ways to start" />
-          </>
-        }
-      >
-        <div className="flex flex-col items-center justify-center gap-4">
-          {referrer && (
-            <div className="inline-flex items-center gap-2.5 rounded-pill border border-on-ink/20 bg-on-ink/10 px-4 py-2 text-body-sm text-on-ink lift-1 backdrop-blur-sm">
-              {referrer.avatarUrl ? (
-                <Image
-                  src={avatarSrc(referrer.avatarUrl)}
-                  alt=""
-                  width={28}
-                  height={28}
-                  className="h-7 w-7 rounded-pill object-cover ring-2 ring-on-ink/30"
-                  style={avatarFocusStyle(referrer.avatarUrl)}
-                />
-              ) : (
-                <span className="flex h-7 w-7 items-center justify-center rounded-pill bg-on-ink/20 text-meta font-bold">
-                  {getInitials(referrer.displayName)}
-                </span>
-              )}
-              <span>
-                <span className="font-semibold">{referrer.displayName}</span> invited you to Frequency
-              </span>
-            </div>
-          )}
-          {/* A scanned personal code lands here (the splash) for a not-yet-member scanner. When the
-              inviter published a contact card, offer "Save contact" so the scan can reach it — the
-              personal code's whole point in person. Links to the public vCard route (attachment .vcf). */}
-          {referrer?.vcardEnabled && (
-            <a
-              href={`/people/${referrer.handle}/vcard`}
-              className="inline-flex items-center gap-1.5 rounded-pill border border-on-ink/20 bg-on-ink/5 px-3.5 py-1.5 text-body-sm font-semibold text-on-ink lift-1 backdrop-blur-sm transition-colors hover:bg-on-ink/15"
-            >
-              Save {referrer.displayName.trim().split(/\s+/)[0]}&rsquo;s contact
-            </a>
-          )}
-          <div className="flex flex-col items-center gap-3 sm:flex-row">
-            <Button href="/start">
-              Find your way in <ArrowRight className="w-5 h-5" aria-hidden />
-            </Button>
-            <Link
-              href={BETA_CTA_HREF}
-              className="text-body-sm font-semibold text-on-ink/70 underline-offset-4 hover:text-on-ink hover:underline"
-            >
-              {BETA_CTA_LABEL}
-            </Link>
-          </div>
-        </div>
-      </PhotoHero>
-
-      {/* ── The case · why it falls to ordinary people ─────────────────────── */}
-      <Section tone="canvas">
-        <Reveal>
-          <SectionHeading
-            eyebrow="It's not you"
-            title={
-              <>
-                The third place is broken.
-                <br />
-                <span className="text-primary-strong">Somebody</span> has to start the next one.
-              </>
-            }
-            kicker="It does not take a big personality. It takes a standing time and a door someone holds open."
-          />
-        </Reveal>
-        <Reveal delay={100} className="space-y-5 text-body-lg text-muted leading-relaxed">
-          <p>
-            Most of a generation reports feeling lonely, not for lack of people, but for lack of{' '}
-            <em>places</em>. The corner café, the town square, the gathering ground all quietly
-            closed, and we traded them for feeds. You are not broken. The third place is.
-          </p>
-          <p>
-            <span className="font-semibold text-text">
-              No company is going to hand the third place back. People rebuild it, one Circle at a
-              time.
-            </span>{' '}
-            Frequency is the toolkit for the people who decide to be one of them: the format, the
-            rails, the backup, and a real room to grow into.
-          </p>
-        </Reveal>
-      </Section>
-
-      <PullQuote tone="surface" cite="The wedge, in one line">
-        Seen, not followed.
-        <br />
-        <span className="text-primary-strong">Missed,</span> not muted.
-      </PullQuote>
-
-      {/* ── The three roles — Build / Practice / Spread, the /start decision ── */}
-      <Section tone="canvas">
-        <Reveal>
-          <SectionHeading
-            eyebrow="Pick your way in"
-            title={
-              <>
-                Three ways to <span className="text-primary-strong">be one of them.</span>
-              </>
-            }
-            kicker="Builders first. Pick the role that fits you, and we will point you at your first move."
-          />
-        </Reveal>
-        <Reveal delay={100}>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-            {HOME_ROLES.map((role) => (
-              <Card key={role.label} tone="feature" className="flex flex-col text-center">
-                <div className="mb-5 flex h-28 items-center justify-center">
-                  <Illustration name={role.illustration} className="h-full" />
-                </div>
-                <h3 className="mb-2 font-display uppercase text-page-title text-text">{role.label}</h3>
-                <p className="mb-6 text-body leading-relaxed text-muted">{role.blurb}</p>
-                <div className="mt-auto">
-                  <Button href={role.href} size="sm">
-                    {role.cta} <ArrowRight className="h-4 w-4" aria-hidden />
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </Reveal>
-        <p className="mt-10 text-center text-body-sm text-subtle">
-          Not sure yet? Any door works.{' '}
-          <Link href="/start" className="font-semibold text-primary-strong hover:underline">
-            Help me pick
-          </Link>
-          .
-        </p>
-      </Section>
-
-      {/* ── How it works · three plain steps ───────────────────────────────── */}
-      <Section tone="surface">
-        <Reveal>
-          <SectionHeading
-            eyebrow="How it works"
-            title={
-              <>
-                A standing time, a small group, and <span className="text-primary-strong">show up.</span>
-              </>
-            }
-            kicker="No application. No audition. No performance."
-          />
-        </Reveal>
-        <Reveal delay={100}>
-          <Steps
-            steps={[
-              {
-                title: 'Pick a Circle',
-                body: 'A small standing group around something you love, a run, a supper, a sauna night, a side project. Join one near you, or start one where you are.',
-              },
-              {
-                title: 'Set the rhythm',
-                body: 'Same time, same group, week after week. We hand builders the format and the first-night script, so a group lasts past week three.',
-              },
-              {
-                title: 'Show up',
-                body: 'Come back. Your people notice, The Quest rewards the real stuff, and you are missed when you are gone.',
-              },
-            ]}
-          />
-        </Reveal>
-      </Section>
-
-      {/* ── It already happened once · Moonlight Beach as evidence ──────────── */}
-      <section className="relative bg-slat overflow-hidden">
-        <div className="light-strip absolute inset-x-0 top-0 z-20" />
-        <Parallax speed={-0.18} className="absolute inset-0">
-          <Image
-            src="/images/site/63978107-8b40-4ce2-8eaf-01a2f6f35cb9.jpg"
-            alt="Roughly a thousand people gathered on the sand at Moonlight Beach, arms raised in celebration at sunrise"
-            fill
-            sizes="100vw"
-            className="object-cover object-center scale-110"
-          />
-        </Parallax>
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              'linear-gradient(180deg, color-mix(in srgb, var(--color-ink) 78%, transparent) 0%, color-mix(in srgb, var(--color-ink) 62%, transparent) 48%, color-mix(in srgb, var(--color-ink) 90%, transparent) 100%)',
-          }}
-        />
-        <div className="amber-glow absolute inset-0 pointer-events-none" />
-        <div className="relative z-10 mx-auto max-w-5xl px-6 py-28 sm:py-40">
-          <Reveal>
-            <p className="eyebrow text-primary mb-5">
-              Moonlight Beach · 2020
-            </p>
-            <h2 className="font-display uppercase text-on-ink text-display-hero leading-[0.9] text-balance">
-              It already
-              <br />
-              <span className="text-primary">happened once.</span>
-            </h2>
-          </Reveal>
-          <div className="mt-12 grid gap-10 lg:grid-cols-12">
-            <Reveal as="div" delay={100} className="lg:col-span-7 lg:col-start-6">
-              <div className="space-y-5 text-body-lg sm:text-lead text-on-ink/85 leading-relaxed">
-                <p>
-                  A few people started gathering on the cliffs at Moonlight Beach to meditate, every
-                  single morning. They kept showing up for more than 500 days straight.
-                </p>
-                <p className="text-on-ink/70">
-                  Over a thousand people came through. No app, no agenda, just a standing time and a
-                  place to be. It proved the hunger is real, and that ordinary people can answer it.
-                </p>
-              </div>
-              <Link
-                href="/about"
-                className="mt-7 inline-flex items-center gap-1.5 text-body-sm font-bold uppercase tracking-wide text-primary hover:underline"
-              >
-                Read the full story <ArrowRight className="w-4 h-4" aria-hidden />
-              </Link>
-            </Reveal>
-          </div>
-          <Reveal delay={200} className="mt-16 grid grid-cols-3 gap-6 max-w-2xl">
-            <div>
-              <p className="font-display text-stat text-on-ink">
-                <CountUp value={500} />+
-              </p>
-              <p className="mt-3 text-meta uppercase tracking-widest font-bold text-on-ink/50">
-                Mornings in a row
-              </p>
-            </div>
-            <div>
-              <p className="font-display text-stat text-on-ink">
-                <CountUp value={1000} />+
-              </p>
-              <p className="mt-3 text-meta uppercase tracking-widest font-bold text-on-ink/50">
-                People came through
-              </p>
-            </div>
-            <div>
-              <p className="font-display text-stat text-primary">{MEMBER_PRICE}</p>
-              <p className="mt-3 text-meta uppercase tracking-widest font-bold text-on-ink/50">
-                To show up
-              </p>
-            </div>
-          </Reveal>
-        </div>
-        <div className="light-strip absolute inset-x-0 bottom-0 z-20" />
-      </section>
-
-      {/* ── Live proof (counts · events · posts) — streamed so it never blocks the
-          hero's first byte (PAGE-FRAMEWORK §5). Honest below the floor. ───── */}
-      <Suspense fallback={<LiveProofSkeleton />}>
-        <LiveProof />
-      </Suspense>
-
-      {/* ── It grows on its own · leaderful, honest money model ─────────────── */}
-      <Section tone="canvas">
-        <Reveal>
-          <SectionHeading
-            eyebrow="Built together"
-            title={
-              <>
-                It grows on <span className="text-primary-strong">its own.</span>
-              </>
-            }
-            kicker="Leaderful, never leader-dependent."
-          />
-        </Reveal>
-        <Reveal delay={100} className="space-y-5 text-body-lg text-muted leading-relaxed">
-          <p>
-            No guru, no franchise. Leaders rise from the people who simply keep showing up. Circles
-            fill and split, neighborhoods multiply, and where enough people gather in one place, the
-            next Lab gets a reason to open.
-          </p>
-          <p>
-            The money model matches. You keep 100% of your own bookings on one honest price, no
-            surprise invoices, and we earn only on a sale the network introduced ({NETWORK_RATES}).
-            Once someone is yours, a follower, a member, a contact, or a past buyer, it is 0% for
-            good: we charge once for the introduction, and after that they are your people, free.
-            Physical Spaces get funded a different way: a separate, community-owned vehicle where
-            members co-own the building, never platform margin.
-          </p>
-        </Reveal>
-      </Section>
-
-      <PullQuote tone="surface" cite="The promise we won't trade">
-        0% on your own bookings.
-        <br />
-        <span className="text-primary-strong">Always.</span>
-      </PullQuote>
-
-      {/* ── The honest "we are early" trust beat ───────────────────────────── */}
-      <section className="relative bg-slat overflow-hidden">
-        <div className="light-strip absolute inset-x-0 top-0 z-10" />
-        <Marquee items={['Worldwide', 'Day one', 'Built together', 'Real places']} />
-        <div className="amber-glow absolute inset-0 pointer-events-none" />
-        <div className="relative z-10 mx-auto max-w-3xl px-6 py-24 sm:py-28 text-center">
-          <Reveal>
-            <p className="eyebrow text-primary mb-4">
-              The honest part
-            </p>
-            <h2 className="font-display uppercase text-on-ink text-display-h2 mb-6 text-balance">
-              We are early. That&apos;s the offer.
-            </h2>
-          </Reveal>
-          <Reveal delay={100}>
-            <div className="mx-auto max-w-xl space-y-4 text-body-lg text-on-ink-muted leading-relaxed">
-              <p>
-                We won&apos;t pretend there are Circles on every corner yet. There aren&apos;t. The
-                first ones are forming in {FOUNDING_PLACE}, and the rest of the map is open.
-              </p>
-              <p className="font-semibold text-on-ink/90">
-                That is the whole point of joining now. You don&apos;t arrive to a finished thing.
-                You help start it, and the way it works in your city is shaped by the people who show
-                up first.
-              </p>
-            </div>
-          </Reveal>
-        </div>
-        <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
-      </section>
-
-      {/* ── Honest answers (short FAQ) ─────────────────────────────────────── */}
-      <Section tone="canvas">
-        <JsonLd data={[faqSchema(HOME_FAQ)]} />
-        <Reveal>
-          <SectionHeading
-            eyebrow="Honest answers"
-            title="Is this for you?"
-            kicker="The real questions people ask before they start."
-          />
-        </Reveal>
-        <div className="space-y-3">
-          <Faq q="Do I have to be a leader to start?">
-            No. There are three ways in. <span className="font-semibold text-text">Build</span> means
-            you set out the chairs for one Circle, and we hand you the format, the first-night script,
-            and the rails. <span className="font-semibold text-text">Practice</span> means you start
-            where you are today, on your own, with the Practices and the Mindless timer.{' '}
-            <span className="font-semibold text-text">Spread</span> means you bring one person, host
-            once, or share the idea. Pick the one that fits, and you can change your mind later.
-          </Faq>
-          <Faq q="What does it cost?">
-            The community is free, forever. Browsing, joining a Circle, and showing up never cost
-            anything, and a business never pays for access to people. Selling is free too: a free
-            member creates events, takes RSVPs, and sells tickets from day one. Crew is pay what you
-            want, {CREW_NOTE.fromLabel}/mo, turns on The Quest, buys that rate down, and is free for
-            the whole beta. You keep 100% of your own bookings on every plan, and we earn only a small,
-            shrinking network-only take-rate on the business the network sends you. There&apos;s no
-            card today, and every plan is one price, the same whenever you start, with two months free
-            if you pay for the year.{' '}
-            <Link href="/pricing" className="font-semibold text-primary-strong hover:underline">
-              See the full breakdown
-            </Link>
-            .
-          </Faq>
-          <Faq q="Is there a catch?">
-            None. Frequency is leaderful, not leader-dependent: it&apos;s built to outlast any one
-            person, with no single figure to follow and no upsell funnel hiding behind the free tier.
-            Leaders rise from the people who simply keep showing up, and when someone moves on, the
-            Circle keeps going. We never take a cut of your own bookings, and physical Spaces are
-            funded by a separate, community-owned vehicle where members co-own the building, never by
-            platform margin.
-          </Faq>
-          <Faq q="What if there are no Circles near me yet?">
-            That&apos;s most places right now, and that&apos;s the point. We&apos;re recruiting the
-            people who start them. A Circle only needs a few people and a standing time, so you can
-            start one where you are. The first Lab is taking root in {FOUNDING_PLACE}, and the next
-            cities follow the people who show up. Tell us where you are and we&apos;ll know which city
-            to seed next.
-          </Faq>
-          <Faq q="What if it's not for me?">
-            Then you leave anytime, no questions and nothing lost. The beta is free, there&apos;s no
-            card on file, and nothing locks you in: no contracts, no cancellation maze. Try a
-            gathering or two, and if the room isn&apos;t for you, walk away with our blessing.
-          </Faq>
-        </div>
-      </Section>
-
-      {/* ── Closing CTA — one calm path into /start ─────────────────────────── */}
-      <section className="relative bg-slat mk-band text-center overflow-hidden">
-        <div className="light-strip absolute inset-x-0 top-0" />
-        <div className="amber-glow absolute inset-0 pointer-events-none" />
-        <div className="relative mx-auto max-w-2xl">
-          <h2 className="font-display uppercase text-on-ink text-display-h2 mb-6 text-balance">
-            Be the reason your people have somewhere to go.
-          </h2>
-          <p className="text-lead text-on-ink-muted mb-9 leading-relaxed">
-            Get people together, do things on purpose. Three ways in: build a Circle, start a practice
-            today, or bring one person. Pick yours and we&apos;ll point you at the first move.
-          </p>
-          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button href="/start" size="lg">
-              Find your way in <ArrowRight className="w-5 h-5" aria-hidden />
-            </Button>
-            <Link
-              href={BETA_CTA_HREF}
-              className="text-body-sm font-semibold text-on-ink-muted underline-offset-4 hover:text-on-ink hover:underline"
-            >
-              {BETA_CTA_LABEL}
-            </Link>
-          </div>
-        </div>
-      </section>
+        <BlockRender config={config} data={data} />
       </main>
-
       <MarketingFooter menu={footerMenu} />
     </>
-  )
-}
-
-// ── Building blocks ─────────────────────────────────────────────────────────
-
-// The live-proof band — counts, upcoming events, recent member posts. Self-fetching async
-// server component so it streams in its own <Suspense> and never blocks the splash hero.
-async function LiveProof() {
-  const supabase = await createClient()
-  const live = await getLiveData(supabase)
-  const posts = live.posts as PostPreviewRow[]
-  const postsCurated = live.postsCurated
-  const memberCount = live.memberCount
-  const circleCount = live.circleCount
-  const upcomingEvents = live.upcomingEvents
-  const hasProof = memberCount >= SOCIAL_PROOF_FLOOR
-
-  return (
-    <>
-      {/* ── It's real, and it's early (honest live proof) ──────────────────── */}
-      <section className="relative bg-slat mk-band overflow-hidden">
-        <div className="light-strip absolute inset-x-0 top-0 z-10" />
-        <div className="amber-glow absolute inset-0 pointer-events-none" />
-        <div className="relative z-10 mx-auto max-w-3xl text-center">
-          <Reveal>
-            <p className="eyebrow text-primary mb-4">
-              Not a someday idea
-            </p>
-            <h2 className="font-display uppercase text-on-ink text-display-h2 mb-6">
-              It&apos;s already happening.
-            </h2>
-          </Reveal>
-          {hasProof ? (
-            <Reveal delay={100}>
-              <p className="text-body-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto mb-12">
-                Real people, real Circles, real gatherings, taking root in {FOUNDING_PLACE} right now.
-              </p>
-              <div className="grid grid-cols-3 gap-6 max-w-xl mx-auto">
-                <Stat value={memberCount} label="Members" tone="ink" />
-                <Stat value={circleCount} label="Circles" tone="ink" />
-                <Stat value={upcomingEvents.length} label="Events soon" tone="ink" />
-              </div>
-            </Reveal>
-          ) : (
-            <Reveal delay={100}>
-              <p className="text-body-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto">
-                The first Circles are forming in {FOUNDING_PLACE}. The early members are shaping what
-                this becomes. Come be one of them.
-              </p>
-            </Reveal>
-          )}
-        </div>
-        <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
-      </section>
-
-      {/* ── Upcoming events (live) ─────────────────────────────────────────── */}
-      {upcomingEvents.length > 0 && (
-        <section className="bg-marketing-canvas mk-beat">
-          <div className="max-w-2xl mx-auto">
-            <Reveal className="flex items-center justify-center gap-2 mb-9">
-              <CalendarDays className="w-5 h-5 text-primary-strong" aria-hidden />
-              <h2 className="font-display uppercase text-text text-display-h3 text-center">
-                Coming up near you
-              </h2>
-            </Reveal>
-            <div className="space-y-3">
-              {upcomingEvents.map((event, i) => (
-                <Reveal key={event.id} delay={i * 60}>
-                  <EventRow event={event} />
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── Member posts (live social proof) ───────────────────────────────── */}
-      {posts.length > 0 && (
-        <section className="bg-surface mk-beat">
-          <div className="max-w-2xl mx-auto">
-            <Reveal className="text-center">
-              <p className="eyebrow text-primary-strong mb-4">
-                In their own words
-              </p>
-              <h2 className={`font-display uppercase text-text text-display-h3 text-balance ${postsCurated ? 'mb-3' : 'mb-10'}`}>
-                People showing up for each other
-              </h2>
-              {postsCurated && (
-                <p className="mb-10 text-body-sm text-subtle">Hand-picked by Vera</p>
-              )}
-            </Reveal>
-            <div className="space-y-4">
-              {posts.map((post, i) => (
-                <Reveal key={post.id} delay={i * 60}>
-                  <PostPreviewCard post={post} />
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-    </>
-  )
-}
-
-// Holds the live-proof band's vertical space (bg matches the proof section) while it streams.
-function LiveProofSkeleton() {
-  return <section aria-hidden className="bg-slat mk-band" />
-}
-
-function PostPreviewCard({ post }: { post: PostPreviewRow }) {
-  const a = post.author
-  const showRole = hasRole(a?.community_role ?? null)
-  const initials = a?.display_name ? getInitials(a.display_name) : '?'
-
-  const identity = (
-    <>
-      {a?.avatar_url ? (
-        <Image
-          src={avatarSrc(a.avatar_url)}
-          alt={a.display_name}
-          width={40}
-          height={40}
-          className="w-10 h-10 rounded-pill object-cover shrink-0"
-          style={avatarFocusStyle(a.avatar_url)}
-        />
-      ) : (
-        <div className="w-10 h-10 rounded-pill bg-surface-elevated text-muted text-meta font-semibold flex items-center justify-center shrink-0 select-none">
-          {initials}
-        </div>
-      )}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-body font-semibold text-text truncate">
-            {a?.display_name ?? 'Community member'}
-          </span>
-          {showRole && (
-            <RoleBadge role={a!.community_role as CommunityRole} className="text-3xs leading-tight" />
-          )}
-        </div>
-        <p className="text-meta text-subtle mt-0.5">
-          {a?.handle && <>@{a.handle} · </>}
-          {relativeTime(post.created_at)}
-        </p>
-      </div>
-    </>
-  )
-
-  return (
-    <article className="rounded-card border border-border bg-surface lift-2">
-      <div className="p-5">
-        {a?.handle ? (
-          <Link href={`/people/${a.handle}`} className="flex items-start gap-3 mb-3 group">
-            {identity}
-          </Link>
-        ) : (
-          <div className="flex items-start gap-3 mb-3">{identity}</div>
-        )}
-
-        <p className="text-body text-text leading-relaxed line-clamp-3">{post.body}</p>
-
-        {post.media_urls?.length > 0 && (
-          <div className="relative mt-3 h-72 w-full rounded-card overflow-hidden border border-border">
-            <Image
-              src={post.media_urls[0]}
-              alt={`Shared by ${a?.display_name ?? 'a Frequency member'}`}
-              fill
-              sizes="(min-width: 768px) 40rem, 100vw"
-              className="object-cover"
-            />
-          </div>
-        )}
-      </div>
-    </article>
-  )
-}
-
-// Live event row — date chip + title, links to the beta capture.
-function EventRow({ event }: { event: LiveEvent }) {
-  const { month, day } = eventDateBadge(event.starts_at)
-  const dateStr = formatEventDate(event.starts_at)
-  return (
-    <div className="flex items-center gap-4 rounded-card border border-border bg-surface px-5 py-4 lift-1">
-      <div className="shrink-0 flex h-12 w-12 flex-col items-center justify-center rounded-xl bg-primary-bg">
-        <span className="text-3xs font-bold leading-none text-primary-strong">{month}</span>
-        <span className="text-body font-bold leading-tight text-primary-strong">{day}</span>
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-body font-semibold text-text">{event.title}</p>
-        <p className="mt-0.5 text-body-sm text-subtle">
-          {dateStr}
-          {event.city && <> &middot; {event.city}</>}
-        </p>
-      </div>
-      <Link
-        href={`/events/${event.slug}`}
-        className="flex shrink-0 items-center gap-1 text-body-sm font-semibold text-primary-strong hover:underline"
-      >
-        Join <ArrowRight className="h-3 w-3" aria-hidden />
-      </Link>
-    </div>
   )
 }
