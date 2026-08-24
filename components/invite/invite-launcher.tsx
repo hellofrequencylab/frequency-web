@@ -63,8 +63,7 @@ export function InviteLauncher() {
   return (
     <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="Invite friends" align="sheet" className="sm:max-w-md">
       <div
-        className="relative flex w-full flex-col overflow-y-auto border-border bg-canvas p-4 lift-3 motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[92vh] sm:rounded-3xl sm:border"
-        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+        className="relative flex w-full flex-col overflow-y-auto border-border bg-canvas p-4 lift-3 sm:max-h-[92vh] sm:rounded-3xl sm:border"
       >
         <div className="mb-1 flex items-center justify-between">
           <p className="flex items-center gap-2 text-body font-bold text-text">

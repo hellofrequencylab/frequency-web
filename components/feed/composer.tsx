@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, useRef, useEffect, useCallback, type ReactNode } from 'react'
+import { Dialog } from '@/components/ui/dialog'
 import Image from 'next/image'
 import { Megaphone, ImagePlus, X, PenLine, Bold, Italic, List, Link2, Maximize2, Minimize2, ChevronDown, ChevronUp, Camera, type LucideIcon } from 'lucide-react'
 import { IconButton } from '@/components/ui/icon-button'
@@ -574,17 +575,14 @@ export function Composer({
       {/* Quick photo choice (touch only): Take photo opens the camera, Upload the
           library. A bottom sheet on phones, a centered card on larger touch screens. */}
       {photoSheetOpen && (
-        <div
-          className="fixed inset-0 z-[80] flex items-end justify-center bg-ink/40 backdrop-blur-sm sm:items-center"
-          onClick={() => setPhotoSheetOpen(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Add a photo"
+        <Dialog
+          open
+          onClose={() => setPhotoSheetOpen(false)}
+          ariaLabel="Add a photo"
+          align="bottom"
+          className="max-w-sm"
         >
-          <div
-            className="w-full max-w-sm space-y-1 rounded-t-card border border-border bg-surface p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lift-3 sm:rounded-card sm:pb-2"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="w-full space-y-1 rounded-t-card border border-border bg-surface p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lift-3 sm:rounded-card sm:pb-2">
             <button
               type="button"
               onClick={() => { setPhotoSheetOpen(false); cameraInputRef.current?.click() }}
@@ -607,7 +605,7 @@ export function Composer({
               Cancel
             </button>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {/* Formatting + media — the writing tools, cleanly clustered. Folded by
