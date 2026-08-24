@@ -6,6 +6,7 @@ import { getPublicCircleById, getPublicCircles } from '@/lib/discover'
 import { SignInCta } from '@/components/discover/cards'
 import { RippleRings } from '@/components/marketing/vector-art'
 import { DetailTemplate } from '@/components/templates'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, circleSchema } from '@/lib/jsonld'
@@ -66,6 +67,12 @@ export default async function CirclePage({
   const circle = await getPublicCircleById(id)
   if (!circle) notFound()
 
+  // The standard entity cover (PROG-P5, ADR-1115). This is the RUNG-3 case in production: the
+  // public Circle read (`public_circle_by_id`) exposes no image at all, so the section default in
+  // DETAIL_HERO_DEFAULTS is the only thing that can give this page a band. An operator who sets a
+  // header image on /discover/circles in Settings replaces it for every public Circle at once.
+  const hero = await resolveDetailHero(`/discover/circles/${circle.id}`)
+
   return (
     <div className="relative overflow-hidden max-w-3xl mx-auto px-6 py-20 sm:py-24">
       {/* Ripple rings: a circle widening out, the motif for this surface. */}
@@ -95,6 +102,7 @@ export default async function CirclePage({
       </Link>
 
       <DetailTemplate
+        {...hero}
         title={circle.name}
         subtitle={
           <div className="flex flex-wrap items-center gap-4 text-body-sm text-muted">

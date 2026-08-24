@@ -14,6 +14,7 @@ import {
 import { matchItLine, newBestLine, depthStreakLine } from '@/lib/practices/depth-streak'
 import { resolvePracticeSlugRedirect } from '@/lib/practices/clean'
 import { getPillars, pillarsById } from '@/lib/pillars'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { DetailTemplate } from '@/components/templates'
 import { PageModules } from '@/components/widgets/page-modules'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
@@ -100,7 +101,7 @@ export default async function PracticeDetailPage({ params }: Params) {
       ? getPracticeDepthContext(profileId, practice.id)
       : Promise.resolve({ lastSession: null, depthStreak: 0 })
 
-  const [pillars, state, creator, practiceCaps, depth] = await Promise.all([
+  const [pillars, state, creator, practiceCaps, depth, hero] = await Promise.all([
     getPillars(),
     profileId
       ? getPracticeMemberState(profileId, practice.id)
@@ -108,6 +109,12 @@ export default async function PracticeDetailPage({ params }: Params) {
     getPracticeCreator(practice.created_by),
     getPracticeCapabilities(practice.id),
     depthPromise,
+    // The standard entity cover (PROG-P5, ADR-1115). It joins this batch rather than sitting in
+    // front of the JSX: the cover cannot paint without it and a serial await here is
+    // PAGE-FRAMEWORK §5.3's anti-pattern. The practice's own `header_image` is rung 1; a practice
+    // with none falls to the operator's /practices Settings image, then to the section's
+    // `placeholder` tail — the empty slot a manager can fill from the Settings drawer below.
+    resolveDetailHero(`/practices/${id}`, { entityImage: practice.header_image }),
   ])
   // The Edit-practice affordance opens the in-place Settings drawer. Show it to a
   // manager only — practice.editSettings is exactly the owner / staff / parent-space
@@ -135,6 +142,7 @@ export default async function PracticeDetailPage({ params }: Params) {
 
   return (
     <DetailTemplate
+      {...hero}
       title={practice.title}
       subtitle={
         summary || authorLine ? (
@@ -175,15 +183,10 @@ export default async function PracticeDetailPage({ params }: Params) {
         ) : undefined
       }
     >
-      {practice.header_image && (
-        // Plain <img>: topical placeholder host (no next/image remote-host coupling).
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={practice.header_image}
-          alt=""
-          className="mb-5 h-48 w-full rounded-2xl border border-border object-cover sm:h-60"
-        />
-      )}
+      {/* The practice photo used to be a hand-rolled <img> right here, INSIDE the body and below
+          the title. It is now the template's standard cover above the identity band, resolved by
+          `resolveDetailHero` and rendered through the canonical PageHero — one cover grammar for
+          entity and index alike (PROG-P5). */}
 
       {/* Claim / adopt / log / edit — interactive + member-state dependent, so they stay fixed
           (not a layout block). */}

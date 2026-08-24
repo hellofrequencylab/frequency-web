@@ -10,6 +10,7 @@ import {
 import { CircleCard, SignInCta } from '@/components/discover/cards'
 import { CircleConstellation } from '@/components/marketing/vector-art'
 import { DetailTemplate } from '@/components/templates'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { circleListSchema, breadcrumbSchema } from '@/lib/jsonld'
@@ -65,7 +66,12 @@ export default async function TopicPage({
   const channel = await getTopicalChannelBySlug(slug)
   if (!channel) notFound()
 
-  const circles = await getPublicCirclesByChannel(channel.slug)
+  // The standard entity cover (PROG-P5, ADR-1115). The Topic's own `cover_image` is rung 1; the
+  // section's `none` tail means a Topic with no artwork renders exactly as it did before.
+  const [circles, hero] = await Promise.all([
+    getPublicCirclesByChannel(channel.slug),
+    resolveDetailHero(`/discover/topics/${channel.slug}`, { entityImage: channel.cover_image }),
+  ])
 
   return (
     <div className="relative overflow-hidden max-w-4xl mx-auto px-6 py-20 sm:py-24">
@@ -94,6 +100,7 @@ export default async function TopicPage({
       </Link>
 
       <DetailTemplate
+        {...hero}
         title={channel.name}
         subtitle={
           channel.description ? (
