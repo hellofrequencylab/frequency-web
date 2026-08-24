@@ -211,8 +211,14 @@ export function isListedCircle(unlisted: unknown): boolean {
  *
  *  NOT the same set as the one in lib/people/associations.ts, deliberately. That reader also
  *  admits `inactive`, because a person's history is a different question from what a Space is
- *  offering now. `draft` is in neither: a draft is not yet a Circle anyone else may see. */
-export const LISTABLE_CIRCLE_STATUS: readonly string[] = ['forming', 'active'] as const
+ *  offering now. `draft` is in neither: a draft is not yet a Circle anyone else may see.
+ *
+ *  Deliberately NOT annotated `readonly string[]`, though every other constant in this file is.
+ *  `circles.status` is a typed enum in the generated types ('forming' | 'active' | 'draft' |
+ *  'inactive' | 'archived'), so widening this to string[] makes `.in('status', [...])` fail to
+ *  compile — the literal types are what let a caller pass it straight to PostgREST, and what
+ *  would reject a typo here at build time rather than at read time. */
+export const LISTABLE_CIRCLE_STATUS = ['forming', 'active'] as const
 
 /** The facts both gates decide over. Every field is something a caller already has; nothing here
  *  implies a database round trip of its own. */
