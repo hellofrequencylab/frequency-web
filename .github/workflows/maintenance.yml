@@ -14,6 +14,9 @@
 #   - migration ledger parity: supabase/migrations/*.sql filenames vs the applied ledger, on BOTH
 #     the version and the name. This is the home for DB-credentialed checks precisely because CI
 #     has none, so the ci.yml guard array cannot host them.
+#   - public header menu drift: the `header` menu rows a visitor actually reads, against the code
+#     defaults they were seeded from. Fails on a link whose LABEL names one page and whose HREF
+#     goes to another, and on a default the inserts-only sync can never restore (ADR-1113).
 #
 # On any new WARN/ERROR it creates-or-updates one issue titled "🔧 Weekly maintenance sweep";
 # a clean run adds nothing (quiet-by-default). Phase 4 layers an AI triage step on top.
@@ -118,6 +121,44 @@ jobs:
           echo "$REPORT" > ledger.txt
           echo "code=$CODE" >> "$GITHUB_OUTPUT"
 
+      # ── Public header menu drift (DB rows ⇄ the code defaults they were seeded from) ────────
+      #
+      # Same credential path and same shape as the two steps above: a token-gated fetch here,
+      # and scripts/maintenance/menu-drift.mjs consumes the JSON, so the script never touches a
+      # database and stays testable without one (scripts/maintenance/menu-drift.test.ts).
+      #
+      # WHY THE SWEEP AND NOT ci.yml. The header a visitor reads is DB rows, and CI has no
+      # database credentials, so this could only pass vacuously there (ADR-970). It is also the
+      # kind of finding no pull request causes: an operator's edit in the Menu manager is what
+      # moves it. Read-only; every finding names the repair and none is applied.
+      #
+      # Scoped to `header` and NOT `admin_header` on purpose: admin_header has zero DB rows, so
+      # that check would guard an empty set forever and read as coverage (ADR-1113).
+      - name: Public header menu drift
+        id: menudrift
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+        run: |
+          set +e
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$SUPABASE_PROJECT_REF" ]; then
+            echo "skipped=1" >> "$GITHUB_OUTPUT"
+            echo "ℹ️ Header menu drift skipped — set the SUPABASE_ACCESS_TOKEN secret + SUPABASE_PROJECT_REF var to arm it." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          QUERY=$(node scripts/maintenance/menu-drift.mjs --print-query)
+          curl -sS -X POST \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data "$(jq -n --arg q "$QUERY" '{query: $q}')" \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" > menu.json
+          REPORT=$(node scripts/maintenance/menu-drift.mjs menu.json 2>&1)
+          CODE=$?
+          echo "$REPORT"
+          { echo "## Public header menu drift"; echo "$REPORT"; echo ""; } >> "$GITHUB_STEP_SUMMARY"
+          echo "$REPORT" > menudrift.txt
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+
       # ── Cron heartbeat coverage (docs/MAINTENANCE-AUTOMATION.md item 7) ──────────────────────
       #
       # WHY HERE. This is the one guard the repo defines that ran in no workflow at all, so 27 cron
@@ -197,7 +238,7 @@ jobs:
       #    broken wiring contract and 0 for the advisory coverage verdict, so any OTHER code means
       #    node itself died and a dead instrument is exactly what this sweep must not swallow.
       - name: Report to a tracking issue on delta
-        if: steps.audit.outputs.code != '0' || steps.advisors.outputs.code == '1' || steps.ledger.outputs.code == '1' || steps.cron.outputs.code != '0' || steps.collective.outputs.code != '0'
+        if: steps.audit.outputs.code != '0' || steps.advisors.outputs.code == '1' || steps.ledger.outputs.code == '1' || steps.menudrift.outputs.code == '1' || steps.cron.outputs.code != '0' || steps.collective.outputs.code != '0'
         uses: actions/github-script@v9
         with:
           script: |
@@ -210,6 +251,7 @@ jobs:
               read('audit.txt') && ('### Dependency audit\n```\n' + read('audit.txt').split('\n').slice(-40).join('\n') + '\n```'),
               read('advisors.txt') && ('### Supabase advisors (new)\n' + read('advisors.txt')),
               read('ledger.txt') && ('### Migration ledger parity\n' + read('ledger.txt')),
+              read('menudrift.txt') && ('### Public header menu drift\n' + read('menudrift.txt')),
               read('cron.txt') && ('### Cron heartbeat coverage\n' + read('cron.txt')),
               read('collective.txt') && ('### Community Collective phase gate\n' + read('collective.txt')),
             ].filter(Boolean).join('\n')

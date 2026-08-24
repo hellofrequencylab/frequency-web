@@ -170,8 +170,11 @@ export function MarketingHeader({
         {ctaLabel}
       </Link>
 
-      {/* Mobile nav (the desktop PrimaryNav is hidden below md). */}
-      <MarketingMobileMenu light={light} />
+      {/* Mobile nav (the desktop PrimaryNav is hidden below md). It takes the SAME
+          `headerMenu` PrimaryNav takes: until 2026-08-24 it took only `light`, so the bar
+          above rendered the DB-backed menu and the sheet rendered the code default, and an
+          operator's edit in the Menu manager reached the desktop and never a phone. */}
+      <MarketingMobileMenu light={light} headerMenu={headerMenu} />
     </header>
   )
 }

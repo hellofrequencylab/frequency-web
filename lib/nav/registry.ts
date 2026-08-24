@@ -131,7 +131,11 @@ function studioNodes(): NavNode[] {
  *  Visitor-gated (public marketing). All six primary pages (the FOOTER_LINK_SEEDS set)
  *  are triggers here, so the header and footer cover the same six tabs: The Community
  *  and Spaces open dropdowns (community explore pages; the Spaces directory + the
- *  persona doors and Business pricing), alongside The Quest and About. */
+ *  persona doors and Business pricing), alongside The Quest and About.
+ *
+ *  🔴 EVERY DROPDOWN TRIGGER LEADS WITH ITS OWN LANDING ROW. A trigger that opens a panel
+ *  gets no href of its own, so a landing page that is not also a row in its own panel has
+ *  no path from the header at all. `registry.gate.test.ts` holds that invariant. */
 type HeaderTriggerSeed = {
   id: string
   label: string
@@ -146,6 +150,15 @@ const HEADER_TRIGGER_SEEDS: readonly HeaderTriggerSeed[] = [
     label: 'The Community',
     href: '/the-community',
     items: [
+      // 🔴 A DROPDOWN TRIGGER CARRIES NO HREF, so its own landing page is reachable ONLY as a
+      // row inside its panel (lib/menus/project.ts::categoryTriggers, and the same rule in the
+      // phone sheet). The Quest and About already led with their landing; The Community and
+      // Spaces did not, so /the-community and /spaces had NO path from the public header.
+      // docs/MENU-AUDIT-2026-08-06.md row 3 called that out for Spaces and routed the repair to
+      // the DB, where an operator patched it by RELABELLING the directory row — which is how the
+      // header came to offer "Spaces directory" and land on the marketing page (LIVE-107).
+      // The landing row belongs in the code default, so every surface projecting it gets it.
+      { label: 'The Community', href: '/the-community', desc: 'Four Pillars, your Channels, and a Circle near you' },
       { label: 'Discover', href: '/discover', desc: 'Everything happening near you' },
       { label: 'Circles', href: '/discover/circles', desc: 'Small groups around an interest' },
       { label: 'Events', href: '/discover/events', desc: 'Gatherings you can show up to' },
@@ -169,7 +182,13 @@ const HEADER_TRIGGER_SEEDS: readonly HeaderTriggerSeed[] = [
     label: 'Spaces',
     href: '/spaces',
     items: [
-      { label: 'Spaces directory', href: '/spaces/directory', desc: 'Browse every Space in the network' },
+      { label: 'Spaces', href: '/spaces', desc: 'Run your community as a Space on Frequency' },
+      // /discover/spaces, NOT /spaces/directory. The two render the SAME directory body
+      // (components/spaces/directory-view), but /spaces/directory is the APP-SHELL twin:
+      // app/robots.ts disallows it so it cannot cannibalise the canonical, and the (main)
+      // layout redirects a signed-out visitor from it to /discover/spaces anyway. A public
+      // header link should point at the public page, not bounce through a noindex twin.
+      { label: 'Spaces directory', href: '/discover/spaces', desc: 'Browse every Space in the network' },
       { label: 'For coaches and healers', href: '/for/coaches-and-healers', desc: 'Packages, scheduling, and a client CRM' },
       { label: 'For community builders', href: '/for/community-builders', desc: 'Circles, memberships, and connections' },
       { label: 'For event hosts', href: '/for/event-hosts', desc: 'Tickets, check-in, and a full room' },
