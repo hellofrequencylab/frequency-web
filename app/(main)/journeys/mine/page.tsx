@@ -13,7 +13,7 @@ import { NewJourneyButton } from '@/components/studio/journey/new-journey-button
 import { JourneyManageCard, type ManagePlan } from '@/components/journeys/journey-manage-card'
 import { AuthoringAccessNote } from '@/components/pricing/authoring-access-note'
 import { MeterUpsell } from '@/components/pricing/meter-upsell'
-import { resolveHeaderElement } from '@/lib/elements/header'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 
 export const metadata: Metadata = { title: 'Your Journeys' }
 export const dynamic = 'force-dynamic'
@@ -72,15 +72,15 @@ export default async function MyJourneysPage({ searchParams }: { searchParams: P
   // public is live to the library). The "Published" stat above deliberately means public-in-library,
   // which is a different question, so the meter does its own count rather than reusing that one.
   const publishedCount = all.filter((p) => p.visibility !== 'private').length
-  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
-  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
+  // The overlay hero band (lib/layout/index-hero.ts). This is a MANAGEMENT space, so the route map
+  // gives it the SHORT band rather than the 24rem discovery billboard /journeys gets — the work is
+  // the stat row and the journey cards, and they should not start below the fold on a phone. An
+  // operator height master still wins over that (ADR-793).
+  const hero = await resolveIndexHero('/journeys/mine')
 
   return (
     <IndexTemplate
-      heroOverlay
-      heroLayout={header.layout}
-      heroSize={header.height}
-      heroScrim={header.scrim}
+      {...hero}
       back={{ href: '/journeys', label: 'Back to the library' }}
       title="Your Journeys"
       description="Your space to store, edit, and publish everything you build. Drafts stay private until you publish them to the community library."

@@ -16,6 +16,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { PersonCard } from '@/components/cards/person-card'
 import { InviteButton } from '@/components/invite/invite-button'
 import { NetworkTabs } from '@/components/people/network-tabs'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { dockThreadPath } from '@/lib/messages/dock-open'
 import { OrbitGroups, PlainFriendList } from './orbit-list'
 import { NearMissesSection } from './near-misses'
@@ -51,12 +52,17 @@ export default async function FriendsPage() {
   const { incoming, outgoing, accepted } = bucketFriendships(
     (data as FriendshipRpcRow[] | null) ?? [],
   )
+  // The overlay hero band (PROG-P4, lib/layout/index-hero.ts) — the same band /network and
+  // /network/contacts wear, so the hub reads as one surface. A personal friends list is a UTILITY
+  // surface, so the route map gives it the SHORT band and no section cover.
+  const hero = await resolveIndexHero('/network/friends')
 
   return (
     <div className="mx-auto max-w-5xl">
       {/* Hub tab strip — Community · Friends · Contacts read as one Network hub. */}
       <NetworkTabs active="/network/friends" />
       <IndexTemplate
+        {...hero}
         title="Friends"
         description="Your people. Connections you’ve made, reconnect nudges, near-misses, and introductions."
         action={

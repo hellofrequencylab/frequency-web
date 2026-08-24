@@ -33,7 +33,7 @@ import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { getInitials } from '@/lib/utils'
 import { ConnectionsPulse } from '@/components/connections/connections-pulse'
 import { NetworkTabs } from '@/components/people/network-tabs'
-import { resolveHeaderElement } from '@/lib/elements/header'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 
 type Profile = ProfileIdentity & {
   id: string
@@ -375,8 +375,11 @@ export default async function CommunityPage({
     topicFilter || roleFilter || qFilter?.trim() || nearParam
   )
 
-  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
-  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
+  // The overlay hero band, resolved once (lib/layout/index-hero.ts): the operator's Settings header
+  // image / focal point over the route's section default, plus the operator-tunable header element
+  // (ADR-793). The directory ships no section cover, so this resolves to the gradient band at the
+  // large directory height — exactly what this page rendered when it spelled the stanza out.
+  const hero = await resolveIndexHero('/network')
 
   return (
     <div>
@@ -386,10 +389,7 @@ export default async function CommunityPage({
       {/* Header: unified hero band with the operator-editable title/description, Invite on
           the right. Globe glyph rides the title; the stats row + filters follow in the body. */}
       <IndexTemplate
-        heroOverlay
-        heroLayout={header.layout}
-        heroSize={header.height}
-        heroScrim={header.scrim}
+        {...hero}
         title={
           <span className="flex items-center gap-2">
             <Globe className="h-5 w-5" />
