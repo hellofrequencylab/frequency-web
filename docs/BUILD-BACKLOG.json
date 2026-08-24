@@ -126,7 +126,8 @@
             "LIVE-070",
             "HYG-010",
             "LIVE-079",
-            "LIVE-089"
+            "LIVE-089",
+            "HYG-015"
           ]
         },
         {
@@ -3595,6 +3596,24 @@
         ],
         "note": "Greps for the sentence a reader actually sees next to a red starved-route block, which is where the false alarm was read. My first probe for this row matched the word \"postbuild\", already present in the file, so it passed on arrival — caught by check:backlog on the same run that added it."
       }
+    },
+    {
+      "id": "HYG-015",
+      "title": "PACKED_PER_RAW is applied to one cache mix and was measured on another, and today's build shows the gap is 2x",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "scripts/check-cache-budget.mjs",
+        "ref": "PACKED_PER_RAW"
+      },
+      "detail": "FOUND 2026-08-24 by doing what check:cache-budget's own output asks for. It prints: \"Packed figure is an estimate: raw x 0.53 (measured 2026-08-19 from one build that printed both halves). Compare it with this build's 'Uploading build cache' line; if the two have drifted apart, the cache MIX has changed and the ratio wants re-deriving.\" Nobody had compared them since. The production build of 086667000 (#2245, dpl_2zgzjMjWzCKPhygibKzepoWNQskJ, READY 2026-08-24) prints BOTH halves:\n\n  gate estimate   0.91 GiB raw x 0.53  ->  about 0.52 GB packed\n  actual upload   \"Uploading build cache [257.84 MB]\"  ->  0.258 GB\n\nThat is a factor of 2.0. The measured post-trim ratio is 0.26, not 0.53.\n\n🔴 THE FINDING IS NOT \"THE CONSTANT IS WRONG\", AND THAT DISTINCTION IS THE WHOLE ROW. The 0.53 was derived on 2026-08-19 from a build whose cache was MOSTLY COMPILER CACHE. The 0.26 above was measured on a cache that is almost entirely node_modules (933 MiB) because this same gate had just trimmed .next/cache to 0 MiB in the line above. Those are two different mixes and they compress differently, so neither number is wrong about its own build and the two cannot be averaged. What today proves is that the mix-dependence is LARGE - a factor of two - and the gate applies ONE ratio to BOTH mixes: it decides whether to trim from the PRE-trim mix, then reports the post-trim figure using the same constant.\n\nWHAT IT COSTS TODAY, AND WHY THIS IS NOT URGENT. The error is in the fail-safe direction, deliberately (ADR-1086 rounded toward firing early). Over-estimating packed size makes the gate trim SOONER than necessary, and losing a compiler cache costs CPU on the next build; under-estimating would let Vercel discard the WHOLE cache, node_modules included, which is the failure ADR-1064 exists to prevent. So nothing is at risk. What it costs is build minutes: this build measured 3.10 GiB raw pre-trim, estimated 1.76 GB packed against a 1.40 GB trim point, and threw away 2237 MiB of turbopack cache - \"Next build: warm install, cold compile\", on every deploy. If the pre-trim mix also packs nearer 0.26 than 0.53 then 3.10 GiB is about 0.87 GB packed, comfortably under the 1.50 GB ceiling, and that trim was not needed at all.\n\n⚠️ THE ONE THING NOT TO DO IS LOWER THE CONSTANT FROM THIS READING. 0.26 is the ratio of a node_modules-dominated cache, and it would be applied to a compiler-cache-dominated one. Getting this backwards is precisely how the first version of this gate KILLED TWO BUILDS (raw-vs-packed threshold about 2:1 off, and a trim that deleted the incremental fetch cache and hung Collecting page data until BUILD_EXCEEDED_MAXIMUM_TIME at 46 minutes). A ratio has to be measured on the mix it will be applied to.\n\nHOW TO CLOSE IT: get a build that prints BOTH halves with an UNTRIMMED cache - i.e. one where the raw figure is under the trim point, so the upload line measures the same mix the gate reasoned about. Then either (a) carry two ratios, one per mix, with the pre-trim decision using the compiler-heavy one; or (b) stop estimating and read the previous build's actual upload line, which is the only number that is not a model. Record whichever, and the paired readings, in an ADR beside the constant the way ADR-1086 did.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Paired reading from one production build, 2026-08-24: the gate printed \"about 0.52 GB packed (0.91 GiB raw)\" and the build system printed \"Uploading build cache [257.84 MB]\" fourteen lines later. Deliberately manual: closing this needs a build whose cache was NOT trimmed, so the upload line measures the same mix the ratio was applied to, and no probe in this repo can cause a Vercel build to happen or read its log. All four postbuild gates PASSED on that build - this row is about the estimate being loose in the safe direction, not about a failure.",
+        "checked": "2026-08-24"
+      },
+      "notes": "Filed from the same build that recorded build-budget 6.02 GB / 496 functions - the FIRST fall in that number since it has been read (6.04 GB / 499 on 2026-08-18, 5.81 on 08-13, 5.59 before). Worth noting beside AGENTS.md's \"the trend, not the headroom, is the thing to watch\"."
     }
   ]
 }
