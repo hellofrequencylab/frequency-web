@@ -3344,12 +3344,12 @@
       },
       "detail": "FOUND 2026-08-24 by reading notification_queue in production. Nothing recorded this: no row, no ADR, no doc. THE DATA: the table holds 379 'done' (healthy, latest 2026-08-24 13:00, so the drain works today) and 359 'failed', every one created between 2026-07-17 16:00 and 17:43, all kind='email', all at attempts = max_attempts = 5, all carrying the same last_error: [email] send failed: {\"statusCode\":429,\"message\":\"You have reached your daily email sending quota.\",\"name\":\"daily_quota_exceeded\"}. THE MECHANISM: nextRetry (lib/queue/outbox.ts:36-42) decides retryability from the ATTEMPT COUNT ALONE and never inspects the error. With BACKOFF_BASE_MS = 60_000 (:26) and max_attempts = 5, all five attempts land inside ~15 minutes, against a quota that resets DAILY. So a daily_quota_exceeded is not merely likely to dead-letter every queued email — it is guaranteed to. The queue drained itself into the dead-letter state in 1h43m. WHO PAID: 356 of the 359 were one bulk campaign to 356 distinct recipients; the other three are the real damage — two welcome emails to genuine new members and one event-claim invite. Bulk and transactional mail share one queue with no priority or quota separation, so a campaign starved the welcomes. WHY NOBODY SAW: the code dead-letters loudly (console.error at :128, comment says it 'needs operator attention (ADR-043)') and an operator surface exists with one-tap requeue (components/widgets/marketing/deliverability-dead-letters.tsx). But nothing pages: grepping lib/observability, scripts/ and .github/ for dead-letter references returns zero. Pull-only, and for five weeks nobody pulled. This is the AGENTS.md rule exactly — every fail-safe needs a gate that notices it fired. FIX (this row covers parts 1-2 only): 1. Classify before counting — a 429/rate-limit/quota error is retryable on a TIME axis, so push run_after past the window and do NOT increment attempts. 2. Separate bulk from transactional so a campaign can never starve a welcome. PART 3 (a gate that pages on a dead-letter spike) is already scoped inside DEF-HARDEN and stays there. PART 4 (requeue the three transactional rows, leave the five-week-stale campaign) is an operator action on live data — OWN-042. ── CLOSED 2026-08-24 (parts 1-2; part 3 stays in DEF-HARDEN, part 4 in OWN-042). PART 1: retryDelayFor (lib/queue/outbox.ts) classifies the error first and returns whether the attempt counts. A daily quota waits until the next UTC midnight and spends NO attempt; a generic 429 waits 15 minutes and spends no attempt; a provider Retry-After wins over both, floored at 1 minute and capped at 24 hours. Everything else is nextRetry byte for byte, dead-letter semantics untouched. Free deferrals are bounded by WALL-CLOCK AGE off created_at (the only clock the table already has, so no migration): 72h for a quota, 1h for a rate limit, after which the same error falls back to attempt counting and can dead-letter. PART 2: a lane (transactional | bulk) rides in the payload jsonb; the campaign fan-out and the nurture drip declare bulk, everything else is transactional by default, and a pre-lane campaign row still reads as bulk from its campaign_id tag. The drain runs transactional first within a batch and, on the first quota refusal, parks the rest of the bulk lane without calling the provider. The fan-out also drips its run_after at 10/min so it cannot fill the claim window. NOT DONE, and stated plainly: claim_outbox_jobs is 'order by run_after asc' and lane-blind, so an ALREADY-backlogged bulk queue can still sit in front of a welcome at CLAIM time. Closing that needs a lane/priority column plus a new ORDER BY in the RPC, i.e. a migration, which this row did not write.",
       "verify": {
-        "kind": "grep-present",
-        "pattern": "retryDelayFor",
+        "kind": "grep-absent",
+        "pattern": "const retry = nextRetry\\(attempts, job\\.max_attempts\\)",
         "paths": [
           "lib/queue/outbox.ts"
         ],
-        "note": "Passes when the retry decision consults the ERROR, not just the attempt count. Names the classifier that must exist and be called from the catch block. The grep alone is shape, not truth: the behaviour is pinned by lib/queue/outbox.test.ts, where a job failing 429 daily_quota_exceeded five times in a row is never dead-lettered, never spends an attempt, and is scheduled past the daily window."
+        "note": "Measures the DEFECT, not the fix. The row originally specified grep-present \"retryDelayFor\", which passes the moment the NAME exists — the shape-not-truth failure four ADRs name, and the implementing agent said so unprompted. This greps for the drain line that made the decision from the attempt count alone. Behaviour is pinned by 22 tests in outbox.test.ts, including the 2026-07-17 case end-to-end: five drains of 429 daily_quota_exceeded never dead-letter, never write attempts, and each land within 10s of the next UTC midnight."
       }
     },
     {
@@ -3544,6 +3544,46 @@
           "scripts/maintenance/accepted-advisories.json"
         ],
         "note": "Passes once the advisor is named on purpose, with its reasoning, rather than arriving as novel on every sweep."
+      }
+    },
+    {
+      "id": "LIVE-099",
+      "title": "Two campaign senders, two reliability postures: one queues, one sends inline",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 while fixing LIVE-091, and it is the reason that fix does not reach as far as it looks. LIVE-091 said 'bulk and transactional mail share one queue', which assumes all bulk mail IS queued. It is not. lib/email-studio/send.ts fans a campaign out through the OUTBOX — durable, retried, and now lane-tagged so it can never starve a welcome. lib/spaces/email.ts sendSpaceCampaign sends campaigns INLINE via sendRawEmail, with no outbox row at all: no durability, no retry, no lane, and no dead-letter surface. So a Space campaign that hits the same daily quota that dropped 359 emails on 2026-07-17 does not get deferred and does not get recorded — it just fails, and nothing holds the message. The LIVE-091 lane work cannot reach that path by construction. THE DECISION: route sendSpaceCampaign through enqueueEmail with lane 'bulk' like its sibling, or state deliberately why a Space campaign is allowed to be best-effort while a platform campaign is durable. Two senders with different reliability postures and no recorded reason is the thing to fix either way.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "enqueueEmail",
+        "paths": [
+          "lib/spaces/email.ts"
+        ],
+        "note": "Passes when the Space campaign sender goes through the durable outbox like its sibling. If the owner rules the other way (best-effort by design), close this by recording that ruling and replace the probe with a manual row citing it."
+      }
+    },
+    {
+      "id": "HYG-014",
+      "title": "check:og-trace read from a local build is not evidence, and it just cost an alarm",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24. A parallel session reported check:og-trace FAILING with '16 card-rasterising routes ship without sharp', cards silently serving ~1.7MB instead of ~151KB. RE-MEASURED AGAINST PRODUCTION AND IT IS NOT TRUE: the postbuild of dpl_4RwDvdMkY1kAJYyR77Zmx5zfDZLC (sha 16c3cf7, the same commit) printed '✅ check:og-trace — sharp ships to all 16 rasterising route(s), and to 67 other function(s) by segment inheritance (budget 100). 414 functions carry none of it.' The '16' is the same number in both readings: the COUNT OF RASTERISING ROUTES, not the count of starved ones. THE REAL HAZARD, which is worth a row: this gate reads .next/server/**/*.nft.json, and its verdict is only as good as the artifact underneath. With NO .next it is honest — it prints 'Run pnpm build first' and exits. With a LOCAL build whose trace shape differs from Vercel's it can report starved routes that are not starved in the deploy, and the failure message talks about Apple Mail timing out, so it reads as urgent. AGENTS.md already says the artifact is gated in postbuild, not CI, because CI never builds — that rule needs to extend to READING the gate: a local run is a smoke test, the production postbuild is the evidence. FIX: teach the gate to say so when it cannot tell it is running against a production artifact, and note it in DEPLOY-SAFETY.md. NOT diagnosed further here: reproducing the local trace shape needs pnpm build, which hangs this box, so WHY a local build traces differently is unmeasured and must not be guessed at.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "READ THIS BEFORE ESCALATING",
+        "paths": [
+          "scripts/check-og-trace.mjs"
+        ],
+        "note": "Greps for the sentence a reader actually sees next to a red starved-route block, which is where the false alarm was read. My first probe for this row matched the word \"postbuild\", already present in the file, so it passed on arrival — caught by check:backlog on the same run that added it."
       }
     }
   ]

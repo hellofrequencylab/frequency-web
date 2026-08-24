@@ -182,13 +182,18 @@ export async function runDueNurture(limit = 200): Promise<NurtureRunResult> {
           html: renderEmail(step.body, unsubscribeUrl),
           text: `${step.body}\n\nUnsubscribe: ${unsubscribeUrl}`,
         }
-    await enqueueEmail({
-      to: e.email,
-      subject: message.subject,
-      html: message.html,
-      text: message.text,
-      headers: listUnsubscribeHeaders(unsubscribeUrl),
-    })
+    // A drip step is BULK mail: scheduled marketing to a list, not a message someone is waiting
+    // on. The lane keeps it behind transactional sends when the daily quota is tight (LIVE-091).
+    await enqueueEmail(
+      {
+        to: e.email,
+        subject: message.subject,
+        html: message.html,
+        text: message.text,
+        headers: listUnsubscribeHeaders(unsubscribeUrl),
+      },
+      { lane: 'bulk' },
+    )
     sent++
 
     const next = nextStepAfter(steps, step.order)

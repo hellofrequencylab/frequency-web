@@ -13,6 +13,9 @@ export interface DrainResult {
   done?: number
   retried?: number
   failed?: number
+  /** Jobs waiting on a send window (a daily quota or a rate limit) rather than failing. These
+   *  spent no attempt and will come back on their own, so they are not a backlog to act on. */
+  deferred?: number
   error?: string
 }
 
@@ -79,7 +82,14 @@ export async function drainQueueNow(): Promise<DrainResult> {
   try {
     const r = await processQueue(queueHandlers, 100)
     revalidatePath('/admin/marketing/deliverability')
-    return { ok: true, processed: r.processed, done: r.done, retried: r.retried, failed: r.failed }
+    return {
+      ok: true,
+      processed: r.processed,
+      done: r.done,
+      retried: r.retried,
+      failed: r.failed,
+      deferred: r.deferred,
+    }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Could not drain the queue.' }
   }
