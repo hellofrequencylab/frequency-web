@@ -439,6 +439,7 @@ export function DraftEditor({
               )}
               <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
                 <Input
+                  aria-label="Lineup name"
                   value={row.name}
                   onChange={(e) => setLineup((p) => p.map((r, x) => (x === i ? { ...r, name: e.target.value, confidence: undefined } : r)))}
                   placeholder="Name"
@@ -469,6 +470,7 @@ export function DraftEditor({
                 <Input
                   value={row.time ?? ''}
                   onChange={(e) => setSchedule((p) => p.map((r, x) => (x === i ? { ...r, time: e.target.value, confidence: undefined } : r)))}
+                  aria-label="Start time"
                   placeholder="7 pm"
                   disabled={pending}
                   className="min-w-0"
@@ -476,6 +478,7 @@ export function DraftEditor({
                 <Input
                   value={row.title}
                   onChange={(e) => setSchedule((p) => p.map((r, x) => (x === i ? { ...r, title: e.target.value, confidence: undefined } : r)))}
+                  aria-label="What happens"
                   placeholder="What happens"
                   disabled={pending}
                   className="min-w-0"
@@ -493,6 +496,7 @@ export function DraftEditor({
               <Input
                 value={f}
                 onChange={(e) => setFeatures((p) => p.map((v, x) => (x === i ? e.target.value : v)))}
+                aria-label="Feature"
                 placeholder="e.g. all ages, food trucks"
                 disabled={pending}
               />
@@ -509,6 +513,7 @@ export function DraftEditor({
                 <Input
                   value={row.label}
                   onChange={(e) => setTickets((p) => p.map((r, x) => (x === i ? { ...r, label: e.target.value, confidence: undefined } : r)))}
+                  aria-label="Ticket name"
                   placeholder="General admission"
                   disabled={pending}
                   className="min-w-0"
@@ -529,6 +534,7 @@ export function DraftEditor({
                       ),
                     )
                   }}
+                  aria-label="Ticket price in dollars"
                   placeholder="$"
                   disabled={pending}
                   className="min-w-0"
@@ -547,6 +553,7 @@ export function DraftEditor({
                 <Input
                   value={row.label}
                   onChange={(e) => setLinks((p) => p.map((r, x) => (x === i ? { ...r, label: e.target.value } : r)))}
+                  aria-label="Link label"
                   placeholder="Label"
                   disabled={pending}
                   className="min-w-0"
@@ -554,6 +561,7 @@ export function DraftEditor({
                 <Input
                   value={row.url}
                   onChange={(e) => setLinks((p) => p.map((r, x) => (x === i ? { ...r, url: e.target.value } : r)))}
+                  aria-label="Link address"
                   placeholder="https://"
                   disabled={pending}
                   className="min-w-0"
@@ -582,6 +590,7 @@ export function DraftEditor({
               <Input
                 value={s}
                 onChange={(e) => setSponsors((p) => p.map((v, x) => (x === i ? e.target.value : v)))}
+                aria-label="Sponsor name"
                 placeholder="Sponsor name"
                 disabled={pending}
               />
@@ -625,6 +634,7 @@ export function DraftEditor({
                 <Input
                   value={row.label}
                   onChange={(e) => setOther((p) => p.map((r, x) => (x === i ? { ...r, label: e.target.value } : r)))}
+                  aria-label="Detail label"
                   placeholder="Label"
                   disabled={pending}
                   className="min-w-0"
@@ -632,6 +642,7 @@ export function DraftEditor({
                 <Input
                   value={row.value}
                   onChange={(e) => setOther((p) => p.map((r, x) => (x === i ? { ...r, value: e.target.value } : r)))}
+                  aria-label="Detail value"
                   placeholder="Value"
                   disabled={pending}
                   className="min-w-0"

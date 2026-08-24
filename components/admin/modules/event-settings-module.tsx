@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { ImagePlus } from 'lucide-react'
-import { Input, Textarea, labelClasses } from '@/components/ui/field'
+import { Field, Input, Textarea, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { RailSaveRow } from '@/components/admin/rail/rail-autosave-form'
@@ -650,15 +650,28 @@ export function EventSettingsModule() {
                 <VenueAutocomplete onPick={handleVenuePick} bias={bias} />
               </div>
 
-              {/* The full address — filled by a pick, editable by hand. */}
-              <Input name="street" value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Street address" />
+              {/* The full address — filled by a pick, editable by hand. Each part carries a real
+                  <label> rather than a placeholder: a placeholder disappears the moment the field
+                  has a value, so a host tabbing back through a filled-in address had five boxes of
+                  text and nothing saying which was which. */}
+              <Field label="Street address">
+                <Input name="street" value={street} onChange={(e) => setStreet(e.target.value)} />
+              </Field>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Input name="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" className="min-w-0" />
-                <Input name="region" value={region} onChange={(e) => setRegion(e.target.value)} placeholder="State or province" className="min-w-0" />
+                <Field label="City" className="min-w-0">
+                  <Input name="city" value={city} onChange={(e) => setCity(e.target.value)} />
+                </Field>
+                <Field label="State or province" className="min-w-0">
+                  <Input name="region" value={region} onChange={(e) => setRegion(e.target.value)} />
+                </Field>
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Input name="postal_code" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} placeholder="Postal code" className="min-w-0" />
-                <Input name="country" value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country" className="min-w-0" />
+                <Field label="Postal code" className="min-w-0">
+                  <Input name="postal_code" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
+                </Field>
+                <Field label="Country" className="min-w-0">
+                  <Input name="country" value={country} onChange={(e) => setCountry(e.target.value)} />
+                </Field>
               </div>
 
               {/* Hidden address (ADR-825). A controlled HIDDEN input ('on'/'off') so the field is
