@@ -422,7 +422,7 @@ export function Faq({ q, children }: { q: string; children: React.ReactNode }) {
             ask". As a span they were invisible to a heading-outline scan, to a screen reader's
             heading rotor, and to the answer engines the FAQPage block exists to feed. h3 because
             every caller renders this list beneath the Section's <h2>, so the outline stays
-            contiguous; the sibling Steps primitive already settled on the same level.
+            contiguous; the retired `Steps` primitive had already settled on the same level.
             `heading-as-text` keeps it LOOKING exactly like the span it replaced: without it the
             global heading rule renders the question at weight 800 / 1.2 with tightened tracking,
             which re-wraps the questions and moved /pricing and /the-quest 46px on mobile. */}
@@ -634,45 +634,12 @@ export function Lead({ children }: { children: React.ReactNode }) {
   return <p className="text-lead text-text/85 leading-relaxed mb-6">{children}</p>
 }
 
-// Numbered how-it-works steps — big display numerals, no imagery, so the
-// "what you actually do" reads at a glance. Used on the home + how-it-works.
-export function Steps({
-  steps,
-  tone = 'surface',
-}: {
-  steps: readonly { title: string; body: React.ReactNode }[]
-  tone?: 'surface' | 'canvas' | 'ink'
-}) {
-  const isInk = tone === 'ink'
-  return (
-    <div className="grid gap-6 sm:grid-cols-3 sm:gap-8">
-      {steps.map((s, i) => (
-        <div key={i} className="relative">
-          {/* The numeral is large text, so it needs 3:1. The brand amber gives 2.52:1 on a
-              light surface and only clears the bar against ink, so it branches on tone like
-              every other coloured element in this kit. It read `text-primary` unconditionally
-              while `isInk` sat computed and unused two lines up, which failed on every light
-              rendering of Steps at once. */}
-          <span
-            className={`font-display text-5xl sm:text-6xl leading-none ${
-              isInk ? 'text-primary' : 'text-primary-strong'
-            }`}
-          >
-            {String(i + 1).padStart(2, '0')}
-          </span>
-          <h3
-            className={`mt-3 font-display uppercase text-page-title ${isInk ? 'text-on-ink' : 'text-text'}`}
-          >
-            {s.title}
-          </h3>
-          <p className={`mt-2 text-body leading-relaxed ${isInk ? 'text-on-ink-muted' : 'text-muted'}`}>
-            {s.body}
-          </p>
-        </div>
-      ))}
-    </div>
-  )
-}
+// `Steps` — numbered how-it-works steps, big display numerals — was RETIRED with the coded home
+// splash when `/` went template-only (Lift 5c, ADR-1068). Its comment said "used on the home +
+// how-it-works"; /how-it-works became a redirect stub long ago, so the splash was its last caller
+// and it had none left. `git log -p` on this file is the only remaining copy. The block that draws
+// numbered steps today is `BuildTimeline` (components/page-editor/blocks/dawn.tsx) — put new
+// ordered-step structure THERE, not back here.
 
 
 export function Body({ children }: { children: React.ReactNode }) {
