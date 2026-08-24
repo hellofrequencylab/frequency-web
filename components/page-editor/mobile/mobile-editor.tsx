@@ -20,6 +20,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronLeft, Eye, EyeOff, Layers, Plus, Trash2 } from 'lucide-react'
 import type { Config, Data } from '@/lib/page-editor/types'
+import type { EditorSurface } from '@/lib/page-editor/palette-scope'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
@@ -50,6 +51,12 @@ export type EditorPanel = {
 
 export type MobileEditorProps = {
   config: Config
+  /** WHICH EDITOR SURFACE this is ('marketing' | 'space'). REQUIRED, and required on purpose: it
+   *  scopes the block picker to the categories this surface can actually bind (lib/page-editor/
+   *  palette-scope.ts), and a required prop means a new editor mount cannot forget it and silently
+   *  inherit the whole 87-block library. Kept identical to the desktop prop so both halves of one
+   *  editor can never be scoped differently. */
+  surface: EditorSurface
   /** The initial document (draft). The editor owns it in local state thereafter. */
   data: Data
   /** Page/space/spotlight title shown in the top bar. */
@@ -106,6 +113,7 @@ type DockSheet = { kind: 'blocks' } | { kind: 'panel'; key: string } | null
 
 export function MobileEditor({
   config,
+  surface,
   data: initialData,
   title,
   onSaveDraft,
@@ -265,8 +273,9 @@ export function MobileEditor({
     )
   }
 
-  // Pass the live document so blocks at their per-page cap come back disabled (block-limits.ts).
-  const pickerGroups = derivePickerGroups(config, data)
+  // Pass the live document so blocks at their per-page cap come back disabled (block-limits.ts), and the
+  // SURFACE so the picker offers only the categories this surface can bind (palette-scope.ts).
+  const pickerGroups = derivePickerGroups(config, data, surface)
   const activePanel = sheet?.kind === 'panel' ? panels.find((p) => p.key === sheet.key) ?? null : null
 
   // ── Render: home — live preview + control dock ───────────────────────────────

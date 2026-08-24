@@ -10,14 +10,28 @@ import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
 import type { DeckSlide, VeraOpening } from '@/lib/onboarding/vera-welcome'
 import { WelcomeArt } from '@/components/onboarding/welcome-art'
 import { Input } from '@/components/ui/field'
+import { Dialog } from '@/components/ui/dialog'
 
 // Vera's onboarding lightbox (ADR-066 Phase D). It opens OVER the feed the moment
 // a Founder lands from induction (?welcome=vera). Two beats: a short, personalized
 // "deck" (the inspirational continuance + the one instruction that matters), then
 // Vera's chat — pre-seeded with a warm opening that picks up the thread from what
-// they told us at induction, never a cold "what brought you here?". Best-practice
-// modal: focus-trapped, ESC + backdrop to leave, body scroll locked, reduced-motion
-// friendly. There's always a one-tap escape to /circles — we never trap them on Vera.
+// they told us at induction, never a cold "what brought you here?". There's always a
+// one-tap escape to /circles — we never trap them on Vera.
+//
+// THE OVERLAY IS `Dialog` (LIVE-089). The old comment above claimed this was a
+// "best-practice modal: focus-trapped" — it was not. It set aria-modal="true" and
+// focused its card, and that was the whole of it: Tab walked straight back out into the
+// feed the modal had just declared inert, and focus never returned to the trigger. ESC
+// and the scroll lock were real but hand-rolled, and there was no portal (so the sliding
+// admin rail could trap it) and no Space theme across it (ADR-1097).
+//
+// ONE DELIBERATE CHANGE, not a silent one: the tier moves z-[60] -> z-[80]. z-[60] was the
+// tier `Dialog` ITSELF abandoned, for the reason its own comment records — at z-[60] a modal
+// renders BEHIND the z-[70] mobile admin sheet while still locking scroll and trapping focus
+// off-screen. Nothing opens over this lightbox on purpose (it hosts no nested dialog), so the
+// low tier was inheritance, not intent. The scrim is untouched: bg-ink/60 + backdrop-blur-sm
+// is already exactly what the primitive paints.
 
 // Idle delay before the window settles into sleep mode (fades further).
 const SLEEP_MS = 16000
@@ -73,7 +87,6 @@ export function VeraLightbox({
   // further so it recedes while you think. Any movement, key, or tap wakes it.
   const [asleep, setAsleep] = useState(false)
 
-  const cardRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // Dismiss: hide immediately, then strip the param so a refresh doesn't reopen.
@@ -81,22 +94,6 @@ export function VeraLightbox({
     setOpen(false)
     router.replace('/feed')
   }, [router])
-
-  // Lock body scroll + focus the card + ESC-to-close while open.
-  useEffect(() => {
-    if (!open) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    cardRef.current?.focus()
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') close()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.body.style.overflow = prev
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open, close])
 
   // Keep the transcript pinned to the latest message.
   useEffect(() => {
@@ -151,26 +148,14 @@ export function VeraLightbox({
     await confirmProposal(p.tool, JSON.stringify(p.args))
   }
 
-  if (!open) return null
-
   const lastSlide = slide >= slides.length - 1
   const current = slides[slide]
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/60 p-4 backdrop-blur-sm"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) close()
-      }}
-    >
+    <Dialog open={open} onClose={close} ariaLabelledBy="vera-lightbox-title" align="center" className="max-w-lg">
       <div
-        ref={cardRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="vera-lightbox-title"
-        tabIndex={-1}
         onMouseEnter={() => setAsleep(false)}
-        className={`relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-border bg-surface/90 shadow-2xl outline-none backdrop-blur-md transition-opacity duration-700 motion-safe:animate-[slideUp_0.3s_ease-out] ${asleep ? 'opacity-65' : 'opacity-100'}`}
+        className={`relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-3xl border border-border bg-surface/90 shadow-2xl backdrop-blur-md transition-opacity duration-700 ${asleep ? 'opacity-65' : 'opacity-100'}`}
       >
         {/* Warm glow header band */}
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-primary/10 to-transparent" />
@@ -327,6 +312,6 @@ export function VeraLightbox({
           </div>
         )}
       </div>
-    </div>
+    </Dialog>
   )
 }

@@ -129,6 +129,7 @@
             "LIVE-089",
             "HYG-015",
             "LIVE-100",
+            "LIVE-102",
             "LIVE-101"
           ]
         },
@@ -1515,19 +1516,19 @@
     {
       "id": "PROG-DAWN2",
       "title": "DAWN Phase 2: primitives shipped and adopted; StreakMeter + GateNotice widening remains",
-      "status": "open",
+      "status": "done",
       "lane": "program",
       "size": "S",
       "source": {
         "file": "docs/DAWN-CONVERSION.md",
         "ref": "Phase 2"
       },
-      "detail": "PREMISE EXPIRED 2026-08-19: the row said 11 primitives were missing and half the sweep volume was blocked. All 8 named primitives are shipped AND adopted (importer counts 2026-08-19: Select 145, Checkbox 42, RankBadge 13, Badge 7, CounterRow 7, Avatar 7, Stat 6; Toast composes into achievement-toast/zap-toast with the lane mounted in app/(main)/layout.tsx). Glyph was struck per ADR-505 - components/ui/icon.tsx already is it. The zero-importer trap the row warned about was also closed (RankBadge 0 -> 13). Remaining: widen StreakMeter (no second day-run surface) and GateNotice (single-p body cannot hold three-paragraph notices) - both exist with tests in components/ui/. Phase 3 is NOT blocked on this row any more.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
+      "detail": "PREMISE EXPIRED 2026-08-19: the row said 11 primitives were missing and half the sweep volume was blocked. All 8 named primitives are shipped AND adopted (importer counts 2026-08-19: Select 145, Checkbox 42, RankBadge 13, Badge 7, CounterRow 7, Avatar 7, Stat 6; Toast composes into achievement-toast/zap-toast with the lane mounted in app/(main)/layout.tsx). Glyph was struck per ADR-505 - components/ui/icon.tsx already is it. The zero-importer trap the row warned about was also closed (RankBadge 0 -> 13). Remaining: widen StreakMeter (no second day-run surface) and GateNotice (single-p body cannot hold three-paragraph notices) - both exist with tests in components/ui/. Phase 3 is NOT blocked on this row any more.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── CLOSED 2026-08-24. Both halves resolved, one by BUILDING and one by MEASURING. GATENOTICE: widened and adopted. Three slots added, each exercised by one real consumer — components/upsell/beta-grace-notice.tsx, live at 8+ mounts via UpsellTease: a body of block children renders as a div stack instead of landing inside the body <p>; an `action` slot (the DAWN reference kit has one, production had dropped it); and onDismiss. THE BODY GAP WAS NEVER COSMETIC: these pages are SSR'd, the HTML parser auto-closes a <p> at the next <p>, so a two-paragraph notice hydrated wrong. beta-grace-notice retired its own frame, glyph chip and dismiss control and now composes kind='preview'. Every pre-existing caller renders BYTE-FOR-BYTE identically, proven by diffing renderToStaticMarkup for all four kinds plus the room-page caller before and after. Five mutation proofs each turn the suite red; M1 is checked THROUGH THE HTML PARSER rather than through React's DOM calls, because React will happily appendChild a <p> into a <p> and a DOM-only assertion would have passed on the broken version. STREAKMETER: PREMISE EXPIRED, NOTHING BUILT, AND THAT IS THE FINDING. Re-measured 2026-08-24: StreakMeter has exactly ONE importer and ONE render site repo-wide (components/sidebar/game-stats-dock.tsx:456). DAWN-CONVERSION.md's '3 call sites' is stale, and components/quest/streak-hero.tsx matches a grep only inside a COMMENT. Nothing in the product hand-rolls a day run: activity-chart.tsx charts MINUTES (a magnitude, not a tri-state run) and streak-hero.tsx, the flagship streak surface, renders no day strip at all. A widening would have been dead API (ADR-970). Split out as LIVE-101 instead: StreakMeter's `frozen` state is UNREACHABLE in production. Retires 4 sites in literal-radius, deliberately NOT re-frozen because three other agents were live in the tree and --update would have banked their work under this row's reason.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Program phase. All 8 primitives resolved to files with importers, 2026-08-19; DAWN-CONVERSION.md section 1 concurs (re-derived 2026-08-11).",
-        "checked": "2026-08-19"
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const G='components/ui/gate-notice.tsx',C='components/upsell/beta-grace-notice.tsx';for(const f of [G,C])if(!fs.existsSync(f))process.exit(79);const g=fs.readFileSync(G,'utf8'),c=fs.readFileSync(C,'utf8');const bad=[];if(g.indexOf('action')<0)bad.push('GateNotice has no action slot');if(g.indexOf('onDismiss')<0)bad.push('GateNotice has no onDismiss slot');if(g.indexOf('isValidElement')<0)bad.push('GateNotice no longer branches a block body away from the paragraph');if(c.indexOf('<GateNotice')<0)bad.push('beta-grace-notice does not RENDER a GateNotice');if(c.indexOf('rounded-2xl')>=0)bad.push('beta-grace-notice still hand-rolls its own frame');if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
+      },
+      "notes": "Probes the consequence in-process rather than spawning the suite (LIVE-034 forbids a probe that runs a test runner). The five mutation proofs live in components/ui/gate-notice.test.tsx and components/upsell/beta-grace-notice.test.tsx and run in `pnpm test`. docs/DAWN-CONVERSION.md still says StreakMeter has 3 call sites and that both primitives need a widening; live is 1 call site and only GateNotice did. Corrected there in the same pass."
     },
     {
       "id": "PROG-DAWN3",
@@ -2850,20 +2851,19 @@
     {
       "id": "LIVE-068",
       "title": "The block palette is scoped per surface",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "HYG-009 sweep, 2026-08-20"
       },
-      "detail": "Re-verified still true 2026-08-20 (HYG-009): one shared config feeds derivePickerGroups on every editor surface (lib/page-editor/config.tsx:30; components/page-editor/mobile/data-ops.ts:55), so a marketing page's palette offers the entire 17-block Profile category and Space content blocks that cannot bind there. Fix: a per-surface category allowlist (page kind -> category keys) passed into derivePickerGroups on both the desktop and mobile paths.",
+      "detail": "Re-verified still true 2026-08-20 (HYG-009): one shared config feeds derivePickerGroups on every editor surface (lib/page-editor/config.tsx:30; components/page-editor/mobile/data-ops.ts:55), so a marketing page's palette offers the entire 17-block Profile category and Space content blocks that cannot bind there. Fix: a per-surface category allowlist (page kind -> category keys) passed into derivePickerGroups on both the desktop and mobile paths. ── CLOSED 2026-08-24. lib/page-editor/palette-scope.ts declares EditorSurface ('marketing' | 'space') and SURFACE_CATEGORIES, an exhaustive Record of category allowlists; derivePickerGroups takes the surface and both editors pass it through a REQUIRED prop. THE PREMISE HELD BUT CORRECTED THE ROW ON THREE POINTS. (1) The Profile category is 18 blocks, not 17. (2) An unbindable block dropped on a marketing page is a SILENT NO-OP, not a crash — measured by rendering all 20 profile+spaceContent blocks with no metadata.space: 13 render ZERO bytes, 3 render an empty wrapper, and 5 render fine from their own props. So an operator could place, save and PUBLISH a section a visitor never sees, with no error anywhere: worse than a crash for detectability, milder for blast radius, and it means the blanket 'Profile is illegal on marketing' claim was too strong. (3) The leak was BIDIRECTIONAL and the row named one direction: the 6 circles blocks read metadata.circlesIndex and render zero bytes on a Space page. Marketing was over-offered by 30 blocks, Space by 6. Blast radius checked before narrowing: all 16 EDITABLE_PAGES templates use only sections/content/media/productStory/circles, so zero existing documents lose anything. THE FAIL-SAFE IS OPEN BY DESIGN — an unrecognised surface offers the FULL palette, never an empty one, because an over-wide palette is cosmetic while an empty one is an editor that cannot author anything and reads as broken with no operator recovery. Four things notice the open path (an exhaustive Record, a required prop at both mounts, a source-shape pin on both call sites, and a test asserting the union of allowlists is EXACTLY the config's category set). Mutation-proven five ways, including the subtle one: moving placed.add(t) below the allowlist check re-leaks all 30 blocks through the 'More' group while looking correct.",
       "verify": {
-        "kind": "manual",
-        "evidence": "derivePickerGroups called with the full shared config and no surface filter on both paths (HYG-009 read).",
-        "checked": "2026-08-20"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='lib/page-editor/palette-scope.ts',D='components/page-editor/desktop/desktop-editor.tsx',M='components/page-editor/mobile/mobile-editor.tsx';for(const f of [S,D,M])if(!fs.existsSync(f))process.exit(79);const s=fs.readFileSync(S,'utf8');const bad=[];if(s.indexOf('SURFACE_CATEGORIES')<0)bad.push('no SURFACE_CATEGORIES allowlist');const i=s.indexOf('marketing:');const j=s.indexOf(']',i);if(i<0||j<0)bad.push('no marketing allowlist');else{const seg=s.slice(i,j);for(const cat of ['profile','spaceContent','linkTree'])if(seg.indexOf(cat)>=0)bad.push('marketing still offers '+cat)}const k=s.indexOf('space:');const l=s.indexOf(']',k);if(k<0||l<0)bad.push('no space allowlist');else if(s.slice(k,l).indexOf('circles')>=0)bad.push('space still offers circles');for(const [f,n] of [[D,'desktop'],[M,'mobile']]){const t=fs.readFileSync(f,'utf8');if(t.indexOf('surface: EditorSurface')<0)bad.push(n+' does not require a surface prop');if(t.indexOf('derivePickerGroups')>=0&&t.indexOf('surface')<0)bad.push(n+' does not thread the surface')}if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
       },
-      "notes": "Probe upgrades to mechanical when worked (the allowlist parameter existing and being passed at both call sites)."
+      "notes": "Probes the POLICY in-process rather than spawning the suite (LIVE-034 forbids a probe that runs a test runner). The 15-test suite with its five mutation proofs is the real guard and runs in `pnpm test`. Follow-up worth its own row: the `circles` category binds only on the /circles slug, so marketing is still over-wide by 6 blocks on the other 15 pages; slug-level scoping needs a 16-row map beside EDITABLE_PAGES. Second: SpaceArrangement is a preset-only region that is uncategorized, so it rides the 'More' group on every surface and probably belongs out of the palette entirely."
     },
     {
       "id": "LIVE-069",
@@ -3307,25 +3307,17 @@
     {
       "id": "LIVE-089",
       "title": "Six hand-rolled overlays remain, and each differs from Dialog in scrim or z-tier, so none is a silent conversion",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "M",
       "source": {
         "file": "components/ui/dialog.tsx",
         "ref": "the shared primitive these six bypass"
       },
-      "detail": "🔴 THE SURVEY THAT PRODUCED THIS LIST WAS WRONG ABOUT ITS OWN EASY CASES, and that is the finding worth keeping. An overlay audit on 2026-08-21 sorted 28 modal-shaped overlays into \"trivially convertible / needs a decision / must not convert\" and put 12 in the first bucket. It sorted on GEOMETRY (items-end vs items-center) and never read scrim colour or z-tier. Verified one by one against Dialog's z-[80] + bg-ink/60 + backdrop-blur-sm, SEVEN candidates yielded exactly ONE true no-op:\n\n  invite-launcher       z-[80]  bg-ink/60  blur-sm   EXACT MATCH -> converted (align=\"sheet\")\n  vera-lightbox         z-[60]  bg-ink/60  blur-sm   scrim ok, tier 60 -> 80\n  invite-friend-button  z-[80]  button scrim         tier ok, scrim is a click-target element\n  capture-launcher      z-[70]  bg-ink/70  blur-sm   tier 70 -> 80, scrim lightens\n  chores-overlay        z-[70]  bg-ink/70  blur-sm   tier 70 -> 80, scrim lightens\n  teaser-gate           z-50    bg-ink/40  blur-2px  tier + scrim both change\n  induction             z-50    bg-ink/40  no blur   tier + scrim change, blur appears\n\nA GREP ALONE WOULD ALSO HAVE BEEN WRONG. teaser-gate and invite-friend-button look scrimless on the `fixed inset-0` line because their scrim is a SIBLING element (an absolute div, and a click-to-dismiss button respectively). Reading the line is not reading the overlay.\n\nSO THERE IS NO SWEEP HERE, only six individual judgments. A z-tier is a claim about what may appear above what (vera-lightbox at z-[60] sits BELOW the modal tier deliberately, so a Dialog can open over it), and a scrim opacity is a design choice (trophy-celebration, excluded from this row, uses a LIGHT bg-canvas/80 wash because it is a celebration, not a modal). Converting on autopilot would darken screens and reshuffle stacking with nobody having decided to.\n\nWHAT IS AT STAKE IF THEY STAY: every one of the six lacks a portal (so the sliding admin rail can trap it), lacks the Space theme (ADR-1097), sits outside the dialog stack, and pads no safe area. Five of the six set aria-modal=\"true\" with no focus trap at all, which tells a screen reader the page behind is inert while Tab walks straight out of it. ── SEQUENCED 2026-08-24 into W6 beside PROG-DAWN3, the other mechanical sweep. It was filed after the 2026-08-20 slate was ruled and sat in no wave.",
+      "detail": "🔴 THE SURVEY THAT PRODUCED THIS LIST WAS WRONG ABOUT ITS OWN EASY CASES, and that is the finding worth keeping. An overlay audit on 2026-08-21 sorted 28 modal-shaped overlays into \"trivially convertible / needs a decision / must not convert\" and put 12 in the first bucket. It sorted on GEOMETRY (items-end vs items-center) and never read scrim colour or z-tier. Verified one by one against Dialog's z-[80] + bg-ink/60 + backdrop-blur-sm, SEVEN candidates yielded exactly ONE true no-op:\n\n  invite-launcher       z-[80]  bg-ink/60  blur-sm   EXACT MATCH -> converted (align=\"sheet\")\n  vera-lightbox         z-[60]  bg-ink/60  blur-sm   scrim ok, tier 60 -> 80\n  invite-friend-button  z-[80]  button scrim         tier ok, scrim is a click-target element\n  capture-launcher      z-[70]  bg-ink/70  blur-sm   tier 70 -> 80, scrim lightens\n  chores-overlay        z-[70]  bg-ink/70  blur-sm   tier 70 -> 80, scrim lightens\n  teaser-gate           z-50    bg-ink/40  blur-2px  tier + scrim both change\n  induction             z-50    bg-ink/40  no blur   tier + scrim change, blur appears\n\nA GREP ALONE WOULD ALSO HAVE BEEN WRONG. teaser-gate and invite-friend-button look scrimless on the `fixed inset-0` line because their scrim is a SIBLING element (an absolute div, and a click-to-dismiss button respectively). Reading the line is not reading the overlay.\n\nSO THERE IS NO SWEEP HERE, only six individual judgments. A z-tier is a claim about what may appear above what (vera-lightbox at z-[60] sits BELOW the modal tier deliberately, so a Dialog can open over it), and a scrim opacity is a design choice (trophy-celebration, excluded from this row, uses a LIGHT bg-canvas/80 wash because it is a celebration, not a modal). Converting on autopilot would darken screens and reshuffle stacking with nobody having decided to.\n\nWHAT IS AT STAKE IF THEY STAY: every one of the six lacks a portal (so the sliding admin rail can trap it), lacks the Space theme (ADR-1097), sits outside the dialog stack, and pads no safe area. Five of the six set aria-modal=\"true\" with no focus trap at all, which tells a screen reader the page behind is inert while Tab walks straight out of it. ── SEQUENCED 2026-08-24 into W6 beside PROG-DAWN3, the other mechanical sweep. It was filed after the 2026-08-20 slate was ruled and sat in no wave. ── ✅ CLOSED 2026-08-24 (ADR-1110). All six converted. THE ROW WAS RIGHT ABOUT THE COUNT AND WRONG ABOUT TWO THINGS, both in the direction of understating it. (1) 'Five of the six set aria-modal with no focus trap' is FOUR — components/teaser-gate.tsx and the induction preview end-state have NO dialog role at all: no name, no modal semantics, nothing. The row's sentence hid the two worst cases inside a claim about the other four. (2) 'vera-lightbox's z-[60] is deliberate so a Dialog can open over it' is FALSE — nothing in that subtree opens a Dialog, and z-[60] is the tier Dialog ITSELF abandoned (its own comment records why: at z-[60] a modal renders BEHIND the z-[70] mobile admin sheet while still locking scroll). Inheritance, not intent. THE TIERS AND THE SCRIMS ARE DIFFERENT KINDS OF CHANGE and are labelled as such rather than swept together: every tier move (50/60/70 -> 80) is a BUG FIX (none carried a justifying comment, none hosts a nested dialog, and two mount from app/(main)/layout.tsx on every route including /admin where they tied with the admin sheet), while three scrim moves onto bg-ink/60 are DECLARED design changes argued in each file. Dialog gained ariaLabelledBy, without which the conversion would have silently RENAMED two dialogs — invite-friend-button is the sharpest: its aria-label said 'Invite a friend' while its visible heading read 'Invite a friend, earn Zaps', so a screen-reader user heard a different name than a sighted member read. EQUIVALENCE PROVED rather than asserted: the same jsdom harness ran before and after, dumping <body> per overlay and diffing — every panel's inner markup is byte-identical, and every delta is enumerated per file. Mutation-proven five ways, each mutant re-hand-rolling that file's ORIGINAL overlay under the name Dialog so only the overlay regresses (6/7/8/7/6 failures). ⚠️ ONE CONSEQUENCE STATED: Dialog portals, so it renders nothing during SSR, and the LIVE-016 a11y test used renderToStaticMarkup and went red — the ASSERTION is untouched, only the render moved to a real client render. A test passing against static markup was, for that component, no longer testing what it claimed. THREE MORE OVERLAYS FOUND that the 2026-08-21 audit never listed, filed as LIVE-102 rather than folded in.",
       "verify": {
-        "kind": "grep-absent",
-        "paths": [
-          "components/teaser-gate.tsx",
-          "app/join/(induction)/induction.tsx",
-          "components/sidebar/invite-friend-button.tsx",
-          "components/feed/capture-launcher.tsx",
-          "components/onboarding/vera-lightbox.tsx",
-          "components/onboarding/chores-overlay.tsx"
-        ],
-        "pattern": "fixed inset-0"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const files=['components/teaser-gate.tsx','app/join/(induction)/induction.tsx','components/sidebar/invite-friend-button.tsx','components/feed/capture-launcher.tsx','components/onboarding/vera-lightbox.tsx','components/onboarding/chores-overlay.tsx'];const bad=[];for(const f of files){if(!fs.existsSync(f)){console.error('missing: '+f);process.exit(79)}const t=fs.readFileSync(f,'utf8');if(t.indexOf('<Dialog')<0)bad.push(f+' no longer renders a Dialog');if(/fixed inset-0 z-\\\\[?[0-9]/.test(t))bad.push(f+' hand-rolls a fixed inset-0 overlay again')}if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
       },
       "notes": "OPEN, and the probe reports NOT DONE because all six still hand-roll `fixed inset-0`. Closing it does NOT require converting all six: if the owner decides one should keep its own tier or scrim, that decision gets recorded here and the file drops out of the probe's path list with the reason attached. What the row refuses is the third option — leaving them unconverted and undecided.\n\ncomponents/invite/invite-launcher.tsx is deliberately NOT in the list: it was the one exact match and is already on Dialog. components/practice/claim-practice.tsx and components/create-modal.tsx are likewise done (ADR-1100). trophy-celebration is excluded because its z-[100] lightbox tier and bg-canvas/80 celebratory wash make it a deliberate difference rather than a pending conversion."
     },
@@ -3652,6 +3644,22 @@
         "checked": "2026-08-24"
       },
       "notes": "Filed from the same build that recorded build-budget 6.02 GB / 496 functions - the FIRST fall in that number since it has been read (6.04 GB / 499 on 2026-08-18, 5.81 on 08-13, 5.59 before). Worth noting beside AGENTS.md's \"the trend, not the headroom, is the thing to watch\"."
+    },
+    {
+      "id": "LIVE-102",
+      "title": "Three more overlays the 2026-08-21 audit never surveyed, two of them exact Dialog no-ops",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "components/ui/dialog.tsx",
+        "ref": "the align variants these three already reimplement"
+      },
+      "detail": "Found 2026-08-24 while converting the six in LIVE-089, and DELIBERATELY NOT folded into that change. The 2026-08-21 audit surveyed SEVEN overlays and generalised from them — its claim that one of them was 'the ONE exact match' for Dialog was true only of that sample. Three more exist. components/support/report-dialog.tsx:177 is a SECOND exact align='sheet' no-op: z-[80] + bg-ink/60 + backdrop-blur-sm + items-stretch -> sm:items-center, the primitive's sheet geometry reimplemented line for line, with aria-modal and no focus trap. components/feed/composer.tsx:578 and app/(main)/connections/new/creator.tsx:611 are both z-[80] items-end … sm:items-center bg-ink/40 — textbook align='bottom' candidates, differing from the shared scrim only in opacity. The lesson worth keeping is about the AUDIT rather than the overlays: a survey of seven that concludes something about the codebase is a sample, and this one was quoted afterwards as a census.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const files=['components/support/report-dialog.tsx','components/feed/composer.tsx','app/(main)/connections/new/creator.tsx'];const bad=[];for(const f of files){if(!fs.existsSync(f))process.exit(79);const t=fs.readFileSync(f,'utf8');if(t.indexOf('<Dialog')<0)bad.push(f)}if(bad.length){console.error('still hand-rolled: '+bad.join(', '));process.exit(1)}process.exit(0)\""
+      }
     }
   ]
 }
