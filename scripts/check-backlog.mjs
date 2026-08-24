@@ -376,9 +376,20 @@ if (probeCosts.length >= COST_LINE_MIN_PROBES) {
   const sorted = [...probeCosts].sort((a, b) => b.cpuMs - a.cpuMs)
   const total = Math.round(probeCosts.reduce((n, c) => n + c.cpuMs, 0))
   const worst = sorted[0]
+  // `guardCpuMs` is the WHOLE guard — this process plus every probe it reaped — and it is the
+  // quantity scripts/backlog-contract.test.ts budgets. It is reported HERE, by the guard itself,
+  // for one reason: the contract test's own `console.log` is swallowed by vitest's default
+  // reporter on a PASSING test, so on a green CI run it prints exactly nowhere, and a number that
+  // can only be read by breaking a build cannot be what a build-blocking constant is set from
+  // (AGENTS.md, and the reason PACKED_PER_RAW needed a paired real reading). The `checks` job pipes
+  // this stdout straight through, so a green run publishes it. Self CPU is added to child CPU
+  // because ~4% of the cost is this process walking the tree for the in-process probe kinds.
+  const selfCpu = process.cpuUsage()
+  const guardCpuMs = Math.round((selfCpu.user + selfCpu.system) / 1000 + (childCpuMs() ?? 0))
   console.log(
     `  probe-cost: n=${probeCosts.length} totalCpuMs=${total} maxCpuMs=${Math.round(worst.cpuMs)} slowest=${worst.id}`,
   )
+  console.log(`  guard-cost: guardCpuMs=${guardCpuMs} (probes ${total} + this process)`)
   // The three most expensive, always — `--report` returns before any probe runs, so gating this
   // on it would have printed the list exactly never.
   for (const c of sorted.slice(0, 3)) {

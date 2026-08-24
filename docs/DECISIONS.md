@@ -28848,3 +28848,92 @@ The durable rule: **a tolerance is only as honest as its premise, and a premise 
 expiry date. When the thing a fail-safe protects against becomes impossible, the fail-safe stops
 being protection and starts being documentation of a world that no longer exists.**
 
+---
+
+## ADR-1107: The check:backlog budget becomes a per-probe ceiling plus a total that scales with probe count (2026-08-24)
+
+**Status.** Accepted (2026-08-24). Implements the owner ruling of 2026-08-21 recorded on `HYG-012`.
+Amends the flat `GUARD_BUDGET_CPU_MS = 20_000` introduced with LIVE-034/LIVE-047.
+
+**Context.** `scripts/backlog-contract.test.ts` budgets the CPU `pnpm check:backlog` burns, because a
+probe that quietly starts spawning a test runner costs +2s per closed row and nothing else would
+notice. The budget was a flat 20 seconds, and it failed four builds: 20.2s, 20.3s, 20.6s. Every one
+of those was an honest backlog getting longer, not a probe getting slower.
+
+That is the defect. The guard's own failure message says what it cares about ("*something added
+expensive work to a PROBE*"), and **a fixed total does not measure that** — it measures how many
+rows the list has. So closing rows honestly walks the list into its own gate, and the gate fires for
+a reason unrelated to the thing it exists to catch. Both cheap remedies were tried and *measured*
+before this shape was chosen, and both failed:
+
+| Remedy tried | Reading |
+|---|---|
+| Memoise the file listing + contents inside the guard | 19.98s baseline vs 20.61s memoised, against ±1s run-to-run noise. The eleven expensive probes are `cmd`, i.e. separate processes that cannot see parent memory. |
+| Convert the eleven expensive probes to in-process grep kinds | Only **3** of 11 are pattern matches. The other 8 are computations (walking `app/discover` against an allowlist, auditing 400+ migrations, parsing a named function body). Converting the three saves ~75ms against a ~600ms overage. |
+
+**There was no waste left to remove.** The budget was measuring a genuinely expensive and genuinely
+necessary set of checks that had grown past a number picked when it was smaller.
+
+**Decision.** Two assertions replace the one.
+
+1. **A per-probe ceiling.** No single probe may exceed `PER_PROBE_CEILING_MS`. This is the real
+   regression signal and it stays valid however long the list gets.
+2. **A count-scaled total.** `BASE_CPU_MS + PER_PROBE_ALLOWANCE_MS × n`, so a normal new row is free
+   and only an abnormal one trips it.
+
+**The constants, and the paired reading they come from.** CPU time is load-independent (LIVE-047)
+but it is **not hardware-independent**, so a local reading alone could not set a build-blocking
+number — the same trap `PACKED_PER_RAW` was settled out of, by a paired real reading. Both halves
+were taken on 2026-08-24 against the same tree:
+
+| | `n` | `totalCpuMs` | `maxCpuMs` (PROG-DAWN9) | `guardCpuMs` |
+|---|---|---|---|---|
+| **CI**, `checks` job, run 32753212940 | 111 | **8530** | **2150** | — |
+| **local**, 3 runs | 111 | 7690–8560 | 1960–2090 | 8000–8650 |
+
+CI:local is **1.00–1.11** on this pair. The 1.6× that `HYG-012` recorded from its own history (CI
+20.2s against a contemporaneous local 12.0–13.4s) is **not** a property of today's runners. The
+constants are still set from the CI half, and generously, because that is the assumption most
+likely to expire.
+
+| Constant | Value | Where it comes from |
+|---|---|---|
+| `PER_PROBE_CEILING_MS` | 4,500 | 2.1× the worst CI probe (2,150 ms), 2.3× the worst local |
+| `BASE_CPU_MS` | 2,000 | ~7× the measured ~300 ms of non-probe work |
+| `PER_PROBE_ALLOWANCE_MS` | 180 | 2.3× the 77 ms CI average; at n=111 the total is 22.0s |
+
+**Probes are ~96% of the guard**, which is what makes a budget built from the probe reading
+assertable against the whole-guard number: measured the same day, `guardCpuMs` 8360/8000 against a
+probe total of 8080/7690, so roughly 300 ms is the guard itself walking the tree for the in-process
+kinds. That 300 ms is the half the per-probe reading does not cover, so it gets the loose end of the
+estimate.
+
+**A green run has to publish the numbers, or the next constant is set from nothing.** The measurement
+that failed four builds could only ever be read *by* failing a build, and AGENTS.md is explicit that
+a build-blocking gate which has never seen a real reading is the 2026-08-11 incident with the roles
+reversed. So:
+
+- `check:backlog` prints `probe-cost: n=… totalCpuMs=… maxCpuMs=… slowest=…` **and** a new
+  `guard-cost: guardCpuMs=…` line. The `checks` CI job pipes that stdout straight through, so a
+  **green** run publishes both. The guard self-reports because vitest's default reporter swallows a
+  passing test's `console.log`, which is where the contract test's own copy of the line goes.
+- Both lines are themselves fail-safes, so both get a gate that notices they stopped firing: the
+  contract test fails if either line is absent, rather than silently losing the ceiling.
+- The self-report is cross-checked against the same quantity measured from **outside** the process,
+  in a deliberately wide band (8,375 self vs 8,650 external on the day, ~3% apart). It is there to
+  catch a self-report that has come unstuck, not to re-measure the guard.
+
+**Both new assertions were mutation-proven, not merely observed green.** Adding 7,000 ms to the
+reported worst probe fails the per-probe ceiling with its own message; deleting the `guard-cost:`
+line fails the presence assertion. Neither passes by existing.
+
+**Alternatives considered.** *Raise the flat constant*: rejected — it re-creates the same failure at
+a larger `n`, on the one gate whose job is telling a real regression from a noisy one. *Run the
+probes concurrently*: cuts wall clock, not CPU, so it does not move the asserted quantity at all.
+*Split the eight computational probes onto their own schedule*: real, but it takes the cheap probes
+out from under the ceiling too, and a gate that runs somewhere else is a gate that gets routed
+around (ADR-970). *Accept a budget conversation per probed row*: that is the status quo the four
+failed builds already priced.
+
+**Reversible:** the two constants and the two parsed lines are the whole change; restoring the flat
+20s is a three-line revert with nothing depending on it.
