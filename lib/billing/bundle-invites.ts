@@ -261,7 +261,7 @@ async function purchasedTerms(
     config: {
       ...config,
       seats: seats && seats > 0 ? seats : config.seats,
-      tier: tier === 'crew' || tier === 'supporter' ? tier : config.tier,
+      tier: tier === 'crew' ? tier : config.tier,
     },
   }
 }

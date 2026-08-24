@@ -70,8 +70,9 @@ export default async function UpgradePage({
   if (!profile) redirect('/onboarding')
 
   // Membership is the entitlement axis (orthogonal to the community role). Paid = Crew, and Crew is
-  // the only paid rung (ADR-878). A historical 'supporter' row still reads as paid here, exactly as
-  // deriveTier maps it (ADR-458), so nobody loses access.
+  // the only paid rung (ADR-878, and since 2026-08-24 the only other label on EntitlementTier is
+  // 'free'). Anything that is not 'free' reads as paid, which is the same access-preserving direction
+  // the retired read-time fold took.
   const tier = (profile.membership_tier ?? 'free') as string
   const isCrew = tier !== 'free'
 

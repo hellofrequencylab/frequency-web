@@ -122,7 +122,7 @@ export async function confirmCheckout(sessionId: string, profileId: string): Pro
   if (session.payment_status !== 'paid') return null
   if ((session.metadata?.profile_id ?? session.client_reference_id) !== profileId) return null
 
-  // Only a member Crew/Supporter subscription grants a membership tier here. A one-time
+  // Only a member Crew subscription grants a membership tier here. A one-time
   // Founders payment (mode:'payment', kind:'founders') and Space subscriptions
   // (kind:'space_plan'/'space_membership') are ALSO 'paid' sessions for this profile —
   // without this guard, opening /settings/billing?session_id=<founders session> would
@@ -130,9 +130,11 @@ export async function confirmCheckout(sessionId: string, profileId: string): Pro
   if (session.mode !== 'subscription' || session.metadata?.kind) return null
 
   // READ TOLERANCE, not a sell path. Nothing opens a Supporter checkout any more (ADR-878), but a
-  // session minted before this change could still land here: honor it as 'crew' + the is_supporter
-  // PWYW badge, never 'supporter' (which the membership_tier CHECK rejects). Access-preserving, the
-  // same direction as the `supporter -> crew` read mapping in lib/core/entitlement.ts (ADR-458).
+  // session minted before that change could still land here: honor it as 'crew' + the is_supporter
+  // PWYW BADGE, never as a tier (the membership_tier CHECK rejects it, and since 2026-08-24
+  // EntitlementTier has no such label to write). This tolerance lives HERE, on the boundary, because
+  // Stripe session metadata is an external string the union cannot constrain — unlike the profile
+  // column, whose retired read-time fold is gone precisely because the column can no longer hold it.
   //
   // PWYW: a member who chose at or above the suggested amount also earns the Supporter mark. The mark is
   // RECOGNITION ONLY — every Crew amount buys identical access — so a failure to resolve it must never

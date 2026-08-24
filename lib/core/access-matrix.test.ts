@@ -12,7 +12,6 @@ import {
 const visitor: Hats = { loggedIn: false }
 const freeMember: Hats = { loggedIn: true, role: 'member', tier: 'free' }
 const paidMember: Hats = { loggedIn: true, role: 'member', tier: 'crew' }
-const supporter: Hats = { loggedIn: true, role: 'member', tier: 'supporter' }
 const host: Hats = { loggedIn: true, role: 'host', tier: 'free' }
 const mentor: Hats = { loggedIn: true, role: 'mentor', tier: 'free' }
 const business: Hats = { loggedIn: true, role: 'member', tier: 'free', personas: ['business'] }
@@ -51,7 +50,6 @@ describe('the ✋ paid-membership gate (the Entitlement axis)', () => {
       expect(accessTo(s, freeMember)).toBe('limited')
       expect(isGated(s, freeMember)).toBe(true)
       expect(accessTo(s, paidMember)).toBe('full')
-      expect(accessTo(s, supporter)).toBe('full')
     }
   })
 

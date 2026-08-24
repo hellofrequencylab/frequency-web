@@ -44,9 +44,9 @@ describe('resolveCapabilities · global creation gates (ADR-414 · event opened 
     }
   })
 
-  it('grants the deeper create gates to a real paid Crew (or Supporter) member', () => {
+  it('grants the deeper create gates to a real paid Crew member', () => {
+    // Crew is the only paid rung: the Supporter rung left EntitlementTier on 2026-08-24.
     expect(hasAllCreates(resolveCapabilities({ profileId: 'p', role: 'member', realTier: 'crew' }, { kind: 'global' }))).toBe(true)
-    expect(hasAllCreates(resolveCapabilities({ profileId: 'p', role: 'member', realTier: 'supporter' }, { kind: 'global' }))).toBe(true)
   })
 
   it('denies the deeper gates to a genuinely free member EVEN under the beta tier override', () => {

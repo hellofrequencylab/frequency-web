@@ -16,7 +16,7 @@ and **Support** staff). Adding a role anywhere lights up its surfaces; nothing e
 | Layer | Answers | How you get it | Stored as | Stack? |
 |---|---|---|---|---|
 | **1 · Community** | how much do you steward, *where*? | community position | stewardship **edges** (role × place) | one per scope |
-| **· Entitlement** | Member (free), Crew (paid), or Supporter? | self-serve billing | tier flag | n/a |
+| **· Entitlement** | Member (free) or Crew (paid)? | self-serve billing | tier flag | n/a |
 | **2 · Partners** | what are you here to do/sell? | **paid upgrade package** (sign up) | persona rows (multi-select) | yes, any combo |
 | **3 · Admin** | what platform tooling do you run? | granted, top-down | super-ladder + capability matrix | one |
 
@@ -51,7 +51,7 @@ Broadcasts flow **downward by scope**: Mentor → Nexus · Guide → Hub · Host
 Channel/Outpost lead → its members. **Management roles get the full member site** (they need it
 to do the work). Access comes from the role, not from paying.
 
-## Entitlement: Member (free) → Crew (paid) → Supporter (billing axis)
+## Entitlement: Member (free) → Crew (paid) (billing axis)
 
 The **membership** axis, orthogonal to every role. *"Everyone is part of the Crew on the paid
 tier, that's the membership point."*
@@ -60,11 +60,16 @@ tier, that's the membership point."*
 |---|---|---|
 | 🌱 **Member** *(free, default)* | $0 | The community to **participate**, but with **limited ✋ access**: some areas are greyed out (the Quest cash-in / Vault, and the paid-only surfaces). |
 | 🚀 **Crew** *(paid membership)* | paid | **The full member site: no core feature is limited.** Gamification cash-in on (claim/spend/compete; rewards already accrue for all in the Vault). This is the membership. |
-| 💖 **Supporter** | pays more | Everything Crew has, **plus a special Supporter badge**: recognition for contributing beyond the membership. |
+
+**Supporter is not a rung.** It was one, briefly. ADR-458 turned it into a pay-what-you-want
+BADGE on Crew (`profiles.is_supporter`), ADR-878 took it off the sellable ladder, and on 2026-08-24
+the owner retired the label outright: it left `EntitlementTier`, and `profiles.membership_tier`
+CHECKs to exactly `free` / `crew`. A member who contributes beyond the membership still earns the
+Supporter badge, which is recognition, not access. Retiring a rung is not retiring a way to give.
 
 **Partner packages are separate paid upgrades** (a higher monthly rate for added services):
 Practitioner · Collaborator · Business · Organization (→ System 2). Stored as `membership_tier`
-(`free` → `crew` → `supporter`); paying for a partner package is its own persona + billing.
+(`free` → `crew`); paying for a partner package is its own persona + billing.
 
 ## System 2: Partners (self-serve account roles · multi-select hats)
 
@@ -113,7 +118,7 @@ Organizations get their **own** instance of this matrix, sandboxed to their tena
 ```
 access = union of
    each Community stewardship edge (scoped to its circle / hub / nexus / outpost)
-   the Entitlement tier (free → member → supporter)
+   the Entitlement tier (free → crew)
    each active Partner persona
    the Admin role × its domains            (Frequency platform only)
    …inside a Hook tenant only:
@@ -125,7 +130,7 @@ access = union of
 | Layer | Store as |
 |---|---|
 | Community | **`stewardships`**: `profile_id, role(crew/host/guide/mentor/outpost_lead), scope_type(circle/hub/nexus/outpost), scope_id, state`. Member implicit via `memberships`; cache `community_level` for fast global gates. |
-| Entitlement | membership/subscription flag: `tier(free/member/supporter)` + game-claim state. |
+| Entitlement | membership/subscription flag: `tier(free/crew)` + game-claim state. |
 | Partners | **`profile_personas`**: `profile_id, persona, state, stripe_account_id?, entity_id?` (multi-row). |
 | Admin (platform) | **`team_members`**: `profile_id, staff_role` → domains via matrix; Janitor/Admin the super-tiers. |
 | Org (Hook) admin | **tenant-scoped** staff rows on the org's Hook instance, isolated; never read by the Frequency resolver. |
@@ -205,7 +210,7 @@ function* (🚫 none / ✋ limited / ✅ full) each hat gets per surface, and th
 
 - `community_role` global enum → **derived from `stewardships`** (keep a denormalized cache).
 - `janitor`/`admin` → the **Admin system** (super-ladder), out of the community ladder.
-- `crew` (entitlement) → the **Free / Member / Supporter** axis; **Crew stays** as the
+- `crew` (entitlement) → the **Member / Crew** axis; **Crew stays** as the
   circle-stewardship role; `isCrew`/`/upgrade`/game-eligibility re-point to the entitlement.
 - **Outpost** repurposed: city-container → in-person overlay inside a Nexus; drop the old
   `Outpost → Nexus` containment; add `outposts`/`labs` + `scope_type='outpost'` + Outpost Lead.

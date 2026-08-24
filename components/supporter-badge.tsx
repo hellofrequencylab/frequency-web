@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 // Gate the render on the DISPLAYED profile's badge column, not the viewer's, and keep the legacy tier
 // check beside it so a historical row minted before ADR-878 keeps its badge (see the live consumer at
 // app/(main)/people/[handle]/page.tsx:273):
-//   {(profile.is_supporter === true || profile.membership_tier === 'supporter') && <SupporterBadge />}
+//   {profile.is_supporter === true && <SupporterBadge />}
 //
 // Composes the shared Badge primitive (components/ui/badge.tsx): this file owns the
 // MEANING — which tone, which glyph, what the tooltip says — and never the pill's metrics.

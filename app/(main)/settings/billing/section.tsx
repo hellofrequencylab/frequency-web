@@ -71,9 +71,7 @@ export async function PlanSection({
       {justUpgradedTo && (
         <div className="mb-4 inline-flex items-center gap-2 rounded-xl border border-success/50 bg-success-bg/30 px-4 py-2.5 text-body-sm font-semibold text-success">
           <Check className="h-4 w-4" />{' '}
-          {justUpgradedTo === 'supporter'
-            ? 'You’re in. Thank you for supporting Frequency.'
-            : 'You’re in. Welcome to the Crew.'}
+          {'You’re in. Welcome to the Crew.'}
         </div>
       )}
 

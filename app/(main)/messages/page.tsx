@@ -46,10 +46,11 @@ type ThreadItem =
   | { kind: 'room'; id: string; lastActivity: string | null; sortName: string; unread: number; room: RoomRow }
   | { kind: 'dm'; id: string; lastActivity: string | null; sortName: string; unread: number; conv: ConversationRow }
 
-// Room creation = paid (Crew/Supporter TIER) or a steward (host+). Crew is the
-// paid tier, not a role (PB.1/ADR-207).
+// Room creation = the paid Crew TIER or a steward (host+). Crew is the paid tier, not a
+// role (PB.1/ADR-207), and it is the ONLY paid rung: the Supporter rung was retired from
+// EntitlementTier on 2026-08-24 and profiles.membership_tier CHECKs to exactly free/crew.
 const STEWARD_ROLES = ['host', 'guide', 'mentor', 'admin', 'janitor']
-const PAID_TIERS = ['crew', 'supporter']
+const PAID_TIERS = ['crew']
 
 type Filter = 'all' | 'rooms' | 'dms'
 const FILTERS: { value: Filter; label: string }[] = [

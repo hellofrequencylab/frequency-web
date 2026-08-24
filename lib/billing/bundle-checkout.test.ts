@@ -122,10 +122,12 @@ describe('createBundleCheckout — what the webhook will read back', () => {
     expect(last().metadata.billing_period).toBe('annual')
   })
 
-  it('stamps the tier the operator configured, so a later config edit cannot re-tier what was sold', async () => {
-    H.config = { ...H.config, tier: 'supporter', seats: 6 }
+  it('stamps the terms the operator configured, so a later config edit cannot re-size what was sold', async () => {
+    // Crew is the only grantable member rung (the Supporter rung was retired 2026-08-24), so the
+    // seat COUNT is what a config edit can move. The stamp is what pins it at purchase time.
+    H.config = { ...H.config, tier: 'crew', seats: 6 }
     await createBundleCheckout({ profileId: OWNER, seatProfileIds: [SEAT_A] })
-    expect(last().metadata).toMatchObject({ bundle_tier: 'supporter', bundle_seats: '6' })
+    expect(last().metadata).toMatchObject({ bundle_tier: 'crew', bundle_seats: '6' })
   })
 })
 

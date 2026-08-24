@@ -14,7 +14,7 @@ import { isPaid, type EntitlementTier } from '@/lib/core/entitlement'
  *  compete; full = the complete loop (claim, spend, compete). Matches the canCashIn split. */
 export type GamificationAccess = 'earn_only' | 'full'
 
-/** The DEFAULT access derived from the billing tier: paid (crew/supporter) = full, free = earn-only.
+/** The DEFAULT access derived from the billing tier: paid (crew) = full, free = earn-only.
  *  This is the same line canCashIn draws (lib/core/entitlement.ts) — kept here as the pure derive so
  *  the override can layer over it. */
 export function deriveGamificationAccess(tier: EntitlementTier | null | undefined): GamificationAccess {

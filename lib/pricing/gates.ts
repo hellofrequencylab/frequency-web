@@ -4,7 +4,7 @@
 // operator chrome overrides over the code defaults (loadChromeOverrides + mergeChrome).
 //
 // Two axes of entitlement live here, deliberately separate (the three-flag rule, ADR-362):
-//   * PERSONAL features rank on the membership tier (free < crew < supporter).
+//   * PERSONAL features rank on the membership tier (free < crew).
 //   * SPACE features rank on the space tier (free < business ~ nonprofit, ADR-552).
 // A feature names which ladder it sits on via `axis`. featureAllowed takes the account's tier
 // and/or plan and answers a single boolean.
@@ -21,7 +21,7 @@ import { ENTITLEMENT_TIERS, type EntitlementTier } from '@/lib/core/entitlement'
 import { SPACE_PLANS, asSpacePlan, isSpacePlanLabel, type SpacePlan } from './plans'
 
 // ── The two entitlement ladders (low → high) ────────────────────────────────────────────
-// Personal: free < crew < supporter (ENTITLEMENT_TIERS from lib/core/entitlement.ts).
+// Personal: free < crew (ENTITLEMENT_TIERS from lib/core/entitlement.ts).
 const TIER_RANK: Record<EntitlementTier, number> = Object.fromEntries(
   ENTITLEMENT_TIERS.map((t, i) => [t, i]),
 ) as Record<EntitlementTier, number>

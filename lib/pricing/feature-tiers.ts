@@ -95,10 +95,9 @@ export const PLACEHOLDER_SPACE_PRICE_CENTS: Record<SpacePlan, number> = {
  *  is not sold through the plan loadout), so this pure, client-safe map is the source, and
  *  PRICING_DEFAULTS.tier.crew reads it rather than restating it.
  *
- *  Supporter has no entry (ADR-878): it is off the sellable ladder, so there is no member price for it.
- *  A historical `supporter` tier is priced through tierPriceCents, which collapses it to Crew the same
- *  way deriveTier does, so a Supporter row prices at Crew and never at $12. */
-export const PLACEHOLDER_MEMBER_PRICE_CENTS: Record<Exclude<EntitlementTier, 'supporter'>, number> = {
+ *  Two rungs and no exclusion: the Supporter rung left EntitlementTier entirely (owner directive,
+ *  2026-08-24), so this is now a total map over the union rather than the union minus a retired label. */
+export const PLACEHOLDER_MEMBER_PRICE_CENTS: Record<EntitlementTier, number> = {
   free: 0,
   // 🔴 CREW IS PAY-WHAT-YOU-WANT. This is the FLOOR ($4.99), not a price: a member picks any amount at
   // or above it and every amount buys identical access (PWYW_CONFIG_DEFAULT, lib/pricing/catalog-config).
@@ -127,8 +126,9 @@ export function spacePlanPriceCents(plan: SpacePlan, betaActive: boolean = isBet
 // ── The ascending display ladders per axis (a clean upgrade path) ───────────────────────────────────
 // The RANGE the selector moves across. Space uses free → business (ADR-552: free-vs-paid is a usage
 // state within Business; Non Profit is a sibling verified-501c3 plan, sold separately, not a rung here).
-// Personal uses free → crew: the whole member ladder (ADR-878). Supporter is not a rung and is not sold;
-// the Supporter badge rides on top of Crew and unlocks nothing beyond it.
+// Personal uses free → crew: the whole member ladder (ADR-878). Supporter is not a rung, is not sold,
+// and is no longer an entitlement label at all; the Supporter badge rides on top of Crew and unlocks
+// nothing beyond it.
 
 /** The Space plan rungs the range selector shows, ascending. A clean upgrade path (Non Profit is sold
  *  separately, so it is not a rung here). */
@@ -166,9 +166,10 @@ export function tierPriceCents(axis: GateAxis, tier: string, betaActive: boolean
   if (axis === 'plan') {
     return SPACE_PLAN_PRICE_CENTS[tier as SpacePlan] ? spacePlanPriceCents(tier as SpacePlan, betaActive) : 0
   }
-  // deriveTier collapses a historical 'supporter' to 'crew' (ADR-458/878), so a legacy row prices at
-  // Crew rather than at a $12 tier nobody can buy.
-  const sellable = deriveTier(tier as EntitlementTier) as Exclude<EntitlementTier, 'supporter'>
+  // The member axis has exactly two rungs. deriveTier normalises null/undefined to 'free'; any label
+  // that is not one of the two falls through the map to 0, the same default-deny direction
+  // tierRankOnAxis takes for an unknown rung.
+  const sellable = deriveTier(tier as EntitlementTier)
   return PLACEHOLDER_MEMBER_PRICE_CENTS[sellable] ?? 0
 }
 

@@ -17,7 +17,7 @@
 //     gamificationFullAllowed short-circuits to TRUE (featureAllowed grants everything), so nothing a
 //     surface gates on this changes.
 //   * resolveViewerGamificationAccess folds in the per-role flags whose DEFAULTS already mirror
-//     today's derive-from-tier line (crew/supporter = full, member = earn_only), so with the
+//     today's derive-from-tier line (crew = full, member = earn_only), so with the
 //     seeded flags it returns EXACTLY what deriveGamificationAccess(tier) returns today.
 // Every read is FAIL-SAFE: any DB/flag error degrades to the pure derive (today's behavior),
 // never to a lockout.
@@ -34,20 +34,21 @@ import {
 } from './gamification'
 import { featureGatesLive, loadPricingFlags } from './settings'
 
-/** The per-role gamification_full_* flag key for a tier (the operator's per-tier override). */
-const GAMIFICATION_FLAG: Record<EntitlementTier, 'gamification_full_member' | 'gamification_full_crew' | 'gamification_full_supporter'> = {
+/** The per-role gamification_full_* flag key for a tier (the operator's per-tier override).
+ *  Two rungs, two flags: the Supporter rung was retired from EntitlementTier (2026-08-24), and its
+ *  `gamification_full_supporter` flag went with it — no tier could ever select it again. */
+const GAMIFICATION_FLAG: Record<EntitlementTier, 'gamification_full_member' | 'gamification_full_crew'> = {
   free: 'gamification_full_member',
   crew: 'gamification_full_crew',
-  supporter: 'gamification_full_supporter',
 }
 
 /** Resolve the effective gamification access for a profile shape, folding the operator per-role
  *  flags OVER the pure resolver. PURE-ish helper (flags passed in): the per-profile override wins
  *  first (pinned), then a per-role flag that grants FULL elevates the derived default, else the
- *  derive-from-tier line. The defaults (crew/supporter on, member off) reproduce today exactly. */
+ *  derive-from-tier line. The defaults (crew on, member off) reproduce today exactly. */
 export function resolveGamificationAccessWithFlags(
   profile: { membership_tier?: EntitlementTier | string | null; gamification_access_override?: unknown } | null | undefined,
-  flags: { gamification_full_member: boolean; gamification_full_crew: boolean; gamification_full_supporter: boolean },
+  flags: { gamification_full_member: boolean; gamification_full_crew: boolean },
 ): GamificationAccess {
   // 1. A per-profile override PINS the access regardless of tier or flags (the third flag's switch).
   const override = asGamificationAccess(profile?.gamification_access_override)

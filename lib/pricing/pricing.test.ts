@@ -137,7 +137,6 @@ describe('gamification access (the third flag)', () => {
     expect(deriveGamificationAccess('free')).toBe('earn_only')
     expect(deriveGamificationAccess(null)).toBe('earn_only')
     expect(deriveGamificationAccess('crew')).toBe('full')
-    expect(deriveGamificationAccess('supporter')).toBe('full')
   })
 
   it('asGamificationAccess only accepts the two known values', () => {
@@ -170,12 +169,22 @@ describe('feature gate ladder math (meetsGate)', () => {
   const tierGate: FeatureGate = { axis: 'tier', minEntitlement: 'crew', enabled: true }
   const planGate: FeatureGate = { axis: 'plan', minEntitlement: 'business', enabled: true }
 
-  it('tier ladder: free < crew (supporter still ranks as paid during the transition)', () => {
+  it('tier ladder: free < crew, and those are the only two rungs (Supporter retired 2026-08-24)', () => {
     expect(meetsGate(tierGate, { tier: 'free' })).toBe(false)
     expect(meetsGate(tierGate, { tier: 'crew' })).toBe(true)
-    // Supporter is retired as a tier (ADR-458) but the rank still treats it as paid until the
-    // member-tier collapse migration remaps it to crew, so a still-supporter row never loses access.
-    expect(meetsGate(tierGate, { tier: 'supporter' })).toBe(true)
+    // The retired label ranks LOWEST now (unknown -> 0, default-deny), so a row that somehow still
+    // carried it would be BLOCKED by a crew gate rather than sailing through it.
+    expect(meetsGate(tierGate, { tier: 'supporter' as unknown as 'crew' })).toBe(false)
+  })
+
+  it('a stored gate MINIMUM of the retired tier is refused, not applied (no fail-open)', () => {
+    // The hazard the /admin/pricing tier options dropped for: meetsGate ranks an unknown minimum at
+    // 0, so `have >= 0` allows everyone. mergeGate validates against TIER_RANK first, so the retired
+    // label loses its rank and the CODE default stands instead of the gate silently opening.
+    const merged = mergeGate('vault_cash_in', { vault_cash_in: { minEntitlement: 'supporter' } })
+    expect(merged).toEqual(FEATURE_GATES.vault_cash_in)
+    expect(merged!.minEntitlement).toBe('crew')
+    expect(meetsGate(merged!, { tier: 'free' })).toBe(false)
   })
 
   it('collapsed plan ladder: free < business ~ nonprofit (paid floor is business · ADR-552)', () => {
@@ -270,7 +279,6 @@ describe('featureAllowed — OFF preserves current behavior', () => {
     expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { gatesLive: false })).toBe(true)
     expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { gatesLive: true })).toBe(false)
     expect(await featureAllowed('vault_cash_in', { tier: 'crew' }, { gatesLive: true })).toBe(true)
-    expect(await featureAllowed('vault_cash_in', { tier: 'supporter' }, { gatesLive: true })).toBe(true)
   })
 })
 

@@ -4,7 +4,7 @@
 //  - account.updated (Connect) — mirror a connected host's capability flags onto the
 //    owning profile as they progress through onboarding.
 //  - checkout.session.completed — a single checkout can be a member Crew subscription, a
-//    Space plan/membership, a tip, a ticket, a PWYW supporter contribution, or a store
+//    Space plan/membership, a tip, a ticket, a PWYW Supporter contribution, or a store
 //    order. The member/space branch runs first; the payout-channel recorders run after
 //    (each no-ops on a session that isn't its kind, so running all of them for every
 //    checkout is safe).
@@ -21,7 +21,7 @@
 //
 // Pricing P2 (ADR-363): subscription/checkout events carrying metadata.kind = 'space_plan' /
 // 'space_membership' route to the Space reconcilers (lib/billing/space-subscriptions.ts) FIRST;
-// the member Crew/Supporter path only runs for non-Space subscriptions.
+// the member Crew path only runs for non-Space subscriptions.
 //
 // ADR-370: metadata.kind = 'household_bundle' routes to the bundle seating branch
 // (lib/billing/bundle-seats.ts) on the same principle — that payer bought SEATS, not a personal
@@ -98,7 +98,10 @@ export async function POST(req: Request) {
     },
   ) => Promise<{ data: { applied?: boolean; reason?: string } | null; error: { message: string } | null }>
 
-  // Supporter was retired as a TIER (ADR-458) and maps to crew + the is_supporter PWYW badge.
+  // Supporter was retired as a TIER (ADR-458, rung removed from EntitlementTier 2026-08-24) and
+  // maps to crew + the is_supporter PWYW badge. `tier` is a STRING here on purpose: it comes from
+  // Stripe metadata, which the union cannot constrain, so the boundary keeps the fold the profile
+  // column no longer needs.
   // A failed write must NOT ack 200 (a paying member would be stranded on the wrong tier with
   // the event claimed as processed), so throw and let the outer catch release the claim + 500.
   const setTier = async (

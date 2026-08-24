@@ -28759,3 +28759,92 @@ behaviourally: mutating it to `recurrence_type` fails 8 of the 19 tests in
 gained one read (`listSeriesAnchors`, run in parallel with the engagement read). All the logic is in
 a pure, clock-free module rather than the route file, following the `circles/sort.ts` precedent.
 **Reversible:** drop the `repeats` prop and the calendar renders as it did.
+
+---
+
+## ADR-1106: The Supporter rung leaves the entitlement ladder, because the column can no longer hold it (2026-08-24)
+
+**Status.** Accepted (2026-08-24). Owner directive. Closes the `TODO(ADR-458)` drop condition and
+the OWN-039 backlog row. Supersedes the "*Drop `'supporter'` from `EntitlementTier`*" alternative
+ADR-878 rejected, and only that one; every other ruling in ADR-878 stands.
+
+**Context.** ADR-458 retired Supporter as a tier and made it a pay-what-you-want BADGE
+(`profiles.is_supporter`). It left a read-time fold in `lib/core/entitlement.ts` mapping
+`supporter -> crew` so no historical row could lose access, with a `TODO` to drop it once the
+collapse migration applied and no profile carried the label. ADR-878 then took Supporter off the
+SELL and DISPLAY paths, but explicitly declined to narrow the union: *"that union is the READ axis,
+and narrowing it would break the `supporter -> crew` tolerance that guarantees a historical row
+never loses access."*
+
+That reasoning was right when it was written and expired without anyone re-reading it. The
+premise it rests on is measurable, and it was measured on 2026-08-24 against production:
+
+| Check | Reading |
+|---|---|
+| `profiles_membership_tier_check` | `CHECK ((membership_tier = ANY (ARRAY['free','crew'])))` |
+| Profiles carrying `membership_tier = 'supporter'` | **0** of 56 |
+| Distinct `membership_tier` values live | `crew`, `free` |
+| `pricing_settings` rows keyed `tier.supporter` | **0** (ADR-878's SQL ran) |
+| `pricing_feature_gates` rows | **0**, so no stored gate minimum names it |
+
+Migration `20260915000100_pricing_member_tier.sql` narrowed the CHECK and backfilled every former
+Supporter into `is_supporter`. **A historical row cannot exist, because the column rejects the
+value.** The tolerance had nothing left to tolerate, and a fail-safe that cannot fire is the
+ADR-970 failure: it reads as coverage.
+
+**Decision.** `EntitlementTier` is `'free' | 'crew'`. The ripple is the work:
+
+1. **The union and everything derived from it.** `ENTITLEMENT_TIERS` is `['free','crew']`,
+   `ENTITLEMENT_LABEL` loses its Supporter entry, `isPaid` is `tier === 'crew'`, and the read-time
+   fold in `deriveTier` is deleted. `TIER_RANK` (`gates.ts`) and `tierRank` (`tease-gate.ts`) derive
+   from `ENTITLEMENT_TIERS` and needed no edit — which is the argument for deriving them.
+2. **`gamification_full_supporter` goes too.** `GAMIFICATION_FLAG` is keyed by the union, so no tier
+   could select that flag any more. It left `PRICING_FLAG_KEYS`, `FLAG_DEFAULTS` and the
+   `/admin/pricing` toggle list. Its stored `platform_flags` row is now orphaned and unread
+   (`loadPricingFlags` filters on `PRICING_FLAG_KEYS`); the owner may delete it out of band.
+3. **The SELL-path guards STAY, untouched.** `memberTierSellable(tier: 'crew' | 'supporter')` still
+   accepts and refuses the label, `tier_supporter_enabled` stays in `PRICING_FLAG_KEYS`, and the
+   `supporter_*` price keys stay in `RETIRED_CATALOG_KEYS`. ADR-878 §2 reasoned this exactly right:
+   a stale caller that fails safe beats a stale caller that fails the build. Selling and reading are
+   different questions and this ADR only answers the second.
+4. **The BOUNDARY tolerances stay, and move to where they belong.** Stripe metadata is an external
+   string the union cannot constrain, so `confirmCheckout`, the webhook's `setTier`, and
+   `tierForPrice` still fold a `tier: 'supporter'` session into Crew plus the badge. A session minted
+   before ADR-878 must not strand a payment. What changed is that the fold now lives only on the
+   boundary, not on the profile column that has been unable to hold the value for months.
+5. **Live consumers that named the label are corrected, not merely re-typed.** The
+   `/admin/pricing` feature-gate `TIER_OPTIONS` dropped it, because `mergeGate` would now reject a
+   stored `supporter` minimum and an operator picking it would have silently kept the code default;
+   `listAssignableMembers` / `isAssignableMember` dropped it from a live `.or()` filter; the messages
+   room gate and `PAID_TIERS` dropped it; the profile header's `membership_tier === 'supporter'`
+   badge fallback dropped it (the badge column is the writer, and the migration backfilled it); and
+   the household-bundle narrowings (`asHouseholdBundleConfig`, `bundleTermsFromMetadata`,
+   `bundleSeatBoard`) dropped it, where granting it would have made the seating RPC reject the whole
+   bundle against the very CHECK this ADR leans on.
+6. **The BADGE is not retired, and was never a rung.** `profiles.is_supporter`,
+   `startSupporterContribution`, `lib/billing/supporter.ts`, the `supporter_contributions` ledger,
+   `earnsSupporterMark` and `components/supporter-badge.tsx` are all untouched. Retiring a rung is
+   not retiring a way to give.
+7. **NO MIGRATION.** This is a code-side retirement. `profiles.membership_tier` keeps the CHECK it
+   has carried since `20260915000100`; there is nothing to alter, and a migration here would only
+   restate what the column already enforces.
+
+**Alternatives considered.** *Leave the fold in place — it is harmless*: rejected, and this is the
+whole point. It is harmless in the sense that it never fires, which is precisely what makes it
+misleading: it is the reason five surfaces kept `'supporter'` in a live query, an operator dropdown
+and a seat-granting narrowing, each in good faith, each reading the fold as evidence the label was
+still real. *Delete the `platform_flags` row for `gamification_full_supporter` in this change*:
+rejected — this task writes no production state; an orphaned row is inert and the owner deletes it.
+*Narrow `memberTierSellable` to `'crew'`*: rejected, see §3.
+
+**Consequences.** The read axis and the sell axis finally say the same thing, and the ladder has two
+rungs everywhere a person, an operator, or a type can see it. `lib/pricing/supporter-retired.test.ts`
+inverts: where it used to assert the fold still worked, it now asserts the label resolves to nothing
+paid, ranks lowest on a gate rather than highest, and prices at 0 — and it pins the migration's CHECK
+text directly, so if that constraint ever widens again the test fails rather than the retirement
+quietly becoming a downgrade.
+
+The durable rule: **a tolerance is only as honest as its premise, and a premise is a claim with an
+expiry date. When the thing a fail-safe protects against becomes impossible, the fail-safe stops
+being protection and starts being documentation of a world that no longer exists.**
+

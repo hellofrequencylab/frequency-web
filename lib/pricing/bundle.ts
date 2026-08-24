@@ -43,7 +43,10 @@ export function asHouseholdBundleConfig(raw: unknown): HouseholdBundleConfig {
   const monthly = typeof r.monthly_cents === 'number' ? r.monthly_cents : HOUSEHOLD_BUNDLE_DEFAULT.monthly_cents
   const annual =
     r.annual_cents === null ? null : typeof r.annual_cents === 'number' ? r.annual_cents : HOUSEHOLD_BUNDLE_DEFAULT.annual_cents
-  const tier = r.tier === 'crew' || r.tier === 'supporter' ? (r.tier as EntitlementTier) : HOUSEHOLD_BUNDLE_DEFAULT.tier
+  // Crew is the only grantable member rung (the Supporter rung was retired 2026-08-24, and
+  // profiles.membership_tier CHECKs to exactly free/crew), so a stored tier of anything else
+  // fails safe to the seeded default rather than being written onto a seated member.
+  const tier = r.tier === 'crew' ? (r.tier as EntitlementTier) : HOUSEHOLD_BUNDLE_DEFAULT.tier
   return { seats, monthly_cents: monthly, annual_cents: annual, tier }
 }
 

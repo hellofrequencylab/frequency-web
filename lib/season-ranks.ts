@@ -102,7 +102,7 @@ export function getRankDef(rank: SeasonRank) {
  * Whether a member's rank (and other status endorsements — cosmetics, custom
  * titles, Journey badges as they ship) render on PUBLIC surfaces (their profile,
  * people cards, post flair). Everyone *earns*; only the PAID tier (Crew or
- * Supporter) is *endorsed* (ECONOMY-AND-JOURNEYS §4, ADR-141). A free member's
+ * only) is *endorsed* (ECONOMY-AND-JOURNEYS §4, ADR-141). A free member's
  * earned rank stays visible to themselves in their own Vault/dashboard, but not
  * to others. Inert in Beta, where every member is comped the Crew tier.
  *

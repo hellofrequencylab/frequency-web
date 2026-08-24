@@ -11,7 +11,7 @@
 //                              state-of-record.
 //   kind:'space_membership'  → upsert space_memberships.stripe_subscription_id + payment_status + status.
 //
-// The member Crew/Supporter path stays in app/api/webhooks/stripe/route.ts UNTOUCHED. All writes are
+// The member Crew path stays in app/api/webhooks/stripe/route.ts UNTOUCHED. All writes are
 // idempotent (the webhook claims the event id first; these set fixed values keyed by id) and FAIL-SAFE
 // (a missing space/tier no-ops). Server-only.
 //
@@ -349,7 +349,7 @@ async function claimSpacePlanEvent(spaceId: string, eventCreatedSec: number): Pr
 }
 
 /** Route a subscription event to the right reconciler by its kind. Returns true if handled (so the
- *  caller knows the member Crew/Supporter path should be skipped). No-ops for an unknown kind.
+ *  caller knows the member Crew path should be skipped). No-ops for an unknown kind.
  *  `eventCreatedSec` (Stripe event.created, unix seconds) drives the space_plan ordering guard: a
  *  stale event is claimed-and-skipped but still reported handled (it IS a space event; the member
  *  path must not run). space_membership events are per-member and deliberately not gated on the

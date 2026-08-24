@@ -39,8 +39,16 @@ export function maxLevel(a: AccessLevel, b: AccessLevel): AccessLevel {
 // ── New axes the matrix introduces (see docs/ROLES.md). Defined here so the matrix
 //    is self-contained until the dedicated tables land (P1.3 / P2 / P3). ──────────
 /** Billing entitlement — the membership axis, orthogonal to every role.
- *  Member (free) → Crew (paid) → Supporter. "Everyone is part of the Crew on the paid tier." */
-export type EntitlementTier = 'free' | 'crew' | 'supporter'
+ *  Member (free) → Crew (paid). Two rungs, and only two. "Everyone is part of the Crew on the
+ *  paid tier."
+ *
+ *  Supporter is NOT here (ADR-458 retired it as a tier, ADR-878 took it off the sellable ladder,
+ *  and the owner retired the rung outright on 2026-08-24). The read-time `supporter -> crew` map
+ *  went with it: `profiles.membership_tier` carries a CHECK of exactly ('free','crew') since
+ *  migration 20260915000100, so the label is unrepresentable in the column this type describes.
+ *  The Supporter BADGE (`profiles.is_supporter`, the pay-what-you-want contribution) is a
+ *  different axis entirely and is untouched. */
+export type EntitlementTier = 'free' | 'crew'
 
 /** Self-serve partner personas (multi-select hats). */
 export type PartnerPersona = 'collaborator' | 'practitioner' | 'business' | 'organization'
@@ -155,7 +163,7 @@ export type Hats = {
   loggedIn?: boolean
   /** Community stewardship ladder (lib/core/roles). */
   role?: CommunityRole | null
-  /** Billing entitlement. A paid tier (member/supporter) unlocks the ✋ "crew" column. */
+  /** Billing entitlement. The paid tier (Crew) unlocks the ✋ "crew" column. */
   tier?: EntitlementTier | null
   /** Active partner personas (multi-select). */
   personas?: PartnerPersona[] | null
@@ -163,9 +171,9 @@ export type Hats = {
   staff?: StaffRole | null
 }
 
-/** True when the viewer holds a paid membership — Crew or Supporter (the entitlement unlock). */
+/** True when the viewer holds a paid membership — Crew, the one paid rung (the entitlement unlock). */
 export function isPaid(tier: EntitlementTier | null | undefined): boolean {
-  return tier === 'crew' || tier === 'supporter'
+  return tier === 'crew'
 }
 
 /**

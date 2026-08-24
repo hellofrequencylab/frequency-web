@@ -1,5 +1,5 @@
-// Entitlement tier (the billing/membership axis) — Member (free) → Crew (paid) →
-// Supporter. Orthogonal to every role (docs/ROLES.md › "Entitlement"). Framework-
+// Entitlement tier (the billing/membership axis) — Member (free) → Crew (paid). Two
+// rungs. Orthogonal to every role (docs/ROLES.md › "Entitlement"). Framework-
 // independent, like the rest of lib/core. The single place that decides "what does this
 // person pay for", so the ✋→✅ gates in the access matrix have one source of truth.
 //
@@ -16,12 +16,11 @@ export type { EntitlementTier }
 // matrix it feeds). Re-exported here so app code imports it from the entitlement seam.
 export { isPaid }
 
-export const ENTITLEMENT_TIERS: readonly EntitlementTier[] = ['free', 'crew', 'supporter'] as const
+export const ENTITLEMENT_TIERS: readonly EntitlementTier[] = ['free', 'crew'] as const
 
 export const ENTITLEMENT_LABEL: Record<EntitlementTier, string> = {
   free: 'Member', // the free participant — "come in as a member on the free tier"
   crew: 'Crew', // the paid membership
-  supporter: 'Supporter',
 }
 
 /**
@@ -29,16 +28,16 @@ export const ENTITLEMENT_LABEL: Record<EntitlementTier, string> = {
  * backfilled, so this is just the source of truth + a safe default; kept as the single
  * seam so any future billing logic (grace periods, comps) lives in one place.
  *
- * TRANSITION (Pricing ladder Phase A · ADR-458). The member tiers collapse to free / crew;
- * Supporter is retired as a tier (it becomes a pay-what-you-want badge, `profiles.is_supporter`).
- * This reader stays TOLERANT of the old `supporter` label during the transition window — it maps
- * `supporter -> crew` at READ time, which is access-preserving (Supporter sat ABOVE Crew; both are
- * paid, both cash in, both get full gamification, so collapsing to crew never reduces access). The
- * collapse migration (pricing_member_tier) remaps the column the same way.
- * TODO(ADR-458): drop the supporter mapping once the migration has applied and no profile carries it.
+ * RETIRED, 2026-08-24 (owner directive closing the ADR-458 drop condition). This reader used to
+ * fold the old Supporter label into Crew so a historical row could not lose access. That fold is
+ * gone, and it is gone because its drop condition was MET rather than assumed: migration
+ * 20260915000100 narrowed the column CHECK to exactly ('free','crew') and remapped every row, and
+ * the live column carries zero of the retired label. It cannot enter the column, so the tolerance
+ * had nothing left to tolerate, and a fail-safe nothing can trip is one that only reads as cover.
+ * The Supporter BADGE (the pay-what-you-want contribution mark on a profile) is a different axis
+ * and is untouched: retiring a rung is not retiring a way to give.
  */
 export function deriveTier(membershipTier: EntitlementTier | null | undefined): EntitlementTier {
-  if (membershipTier === 'supporter') return 'crew'
   return membershipTier ?? 'free'
 }
 

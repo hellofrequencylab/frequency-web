@@ -232,7 +232,7 @@ export function sourceAwareTakeRateCents(
  *  to `undefined` → a NaN fee: an absent rung falls back to the seeded rate, never to 0.
  *
  *  🔴 FAIL-SAFE DIRECTION IS THE SELLER'S, NOT OURS. Paid-ness is asked through `isPaid`, the repo's
- *  canonical ALLOW-LIST predicate (crew | supporter), so anything unrecognised prices at the HIGHER
+ *  canonical ALLOW-LIST predicate (crew), so anything unrecognised prices at the HIGHER
  *  free rung. Note `deriveTier` alone is NOT enough here: it passes an unknown label straight through,
  *  so a `!== 'free'` test would read a typo as PAID and hand out the discount. That exact inversion was
  *  written first and caught by the test below; keep the allow-list. That is deliberate and it is the opposite of

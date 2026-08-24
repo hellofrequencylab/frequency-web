@@ -16,7 +16,7 @@ interface Scenario {
   /** billingLive() — is checkout real. Default true. */
   selling?: boolean
   /** The caller's true membership tier. Default 'free'. */
-  tier?: 'free' | 'crew' | 'supporter'
+  tier?: 'free' | 'crew'
   /** A founding_members row for the subject, or null. */
   founding?: { status: 'reserved' | 'active' | 'lapsed' } | null
   /** An ACTIVE off-Stripe agreement for the Space, or null. */

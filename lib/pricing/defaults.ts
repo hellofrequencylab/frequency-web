@@ -46,8 +46,8 @@ export interface PricingDefaults {
   /** The SELLABLE member ladder is exactly Member (free) and Crew (ADR-878). Free is the baseline, not
    *  a priced row, so `tier` carries Crew alone. Supporter is NOT here on purpose: it left the sellable
    *  ladder, and typing it out of the shape is what makes a $12 member price unrenderable rather than
-   *  merely unrendered. The `supporter` ENTITLEMENT label still exists for read tolerance (ADR-458,
-   *  lib/core/entitlement.ts maps supporter -> crew); that is a different axis from what we SELL. */
+   *  merely unrendered. The Supporter ENTITLEMENT label is gone as well as of 2026-08-24 (the rung
+   *  left EntitlementTier and its read-time fold went with it), so neither axis carries it now. */
   tier: { crew: TierPrice }
   plan: {
     business: TierPrice

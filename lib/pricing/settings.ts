@@ -147,7 +147,11 @@ export const PRICING_FLAG_KEYS = [
   'plan_independent_enabled',
   'gamification_full_member',
   'gamification_full_crew',
-  'gamification_full_supporter',
+  // NO 'gamification_full_supporter' (owner directive, 2026-08-24). The Supporter RUNG left
+  // EntitlementTier, so no tier can select that flag: GAMIFICATION_FLAG is keyed by the union and
+  // has two entries. A key kept here would render an operator toggle that gates nothing, which is
+  // the "a dead switch reads as coverage" failure. Its stored platform_flags row is now orphaned
+  // and unread (loadPricingFlags filters on this list); the owner deletes it out of band.
   // Household / Circle multi-seat bundle (ADR-370, REMAINING-WORK #6). Default OFF (never sold while OFF).
   'bundle_household_enabled',
   // Operator-seat ACTIVATION (ADR-803). Default OFF = the seat stays the inert PLACEHOLDER (catalog sync
@@ -158,8 +162,8 @@ export const PRICING_FLAG_KEYS = [
 
 export type PricingFlagKey = (typeof PRICING_FLAG_KEYS)[number]
 
-// Default OFF/safe for everything except the two flags that already match today's behavior (crew +
-// supporter get full gamification, mirroring the derive-from-tier default).
+// Default OFF/safe for everything except the one flag that already matches today's behavior (crew
+// gets full gamification, mirroring the derive-from-tier default).
 const FLAG_DEFAULTS: Record<PricingFlagKey, boolean> = {
   billing_live: false,
   tier_crew_enabled: false,
@@ -170,7 +174,6 @@ const FLAG_DEFAULTS: Record<PricingFlagKey, boolean> = {
   plan_independent_enabled: false,
   gamification_full_member: false,
   gamification_full_crew: true,
-  gamification_full_supporter: true,
   bundle_household_enabled: false,
   // OFF = the operator seat is a placeholder, inert until an operator activates it (ADR-362/803).
   catalog_operator_seat_active: false,

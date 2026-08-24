@@ -283,15 +283,18 @@ export default async function ProfilePage({
   // Rank, next tier, and progress come from the one canonical source (season-ranks),
   // so the profile shows the same ladder as the feed, crew home, and leaderboard.
   const { rank, def: rankDef, next: rankNext, pct: rankPct, zapsToNext } = rankProgress(journeysDone)
-  // Rank is *endorsed* (shown publicly) only on the paid tier (Crew/Supporter); a
+  // Rank is *endorsed* (shown publicly) only on the paid Crew tier; a
   // free member earns it but it stays in their own Vault, not on their public
   // profile (ADR-141, PB.1i: tier, not role). Inert in Beta (everyone is comped Crew).
   const rankEndorsed = isEndorsed(profile.membership_tier)
   // The Supporter BADGE is the thank-you for backing the Foundation, orthogonal to role and rank
-  // (ADR-458: `profiles.is_supporter`, granted by a pay-what-you-want contribution). Supporter is not
-  // a tier any more and is no longer sold (ADR-878), so the badge reads the badge column; the legacy
-  // `membership_tier = 'supporter'` check stays beside it so a historical row keeps its badge too.
-  const isSupporter = profile.is_supporter === true || profile.membership_tier === 'supporter'
+  // (ADR-458: `profiles.is_supporter`, granted by a pay-what-you-want contribution). It reads the
+  // badge column and only the badge column. The legacy `membership_tier = 'supporter'` fallback that
+  // used to sit beside it is GONE (owner directive, 2026-08-24): the rung left EntitlementTier, and
+  // the column has CHECKed to exactly ('free','crew') since migration 20260915000100, so the fallback
+  // could not fire. The badge itself is untouched, and every profile that had the retired tier was
+  // backfilled into is_supporter by that same migration.
+  const isSupporter = profile.is_supporter === true
 
   // Rewards — surface the "nearly earned" ones so the next milestone feels within
   // reach (the celebration hook from the Progress spec), not just dimmed-out.
