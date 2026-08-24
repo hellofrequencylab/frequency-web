@@ -2,7 +2,6 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-// @ts-expect-error — .mjs sibling, no d.ts by design (this is a build script, not app code)
 import { pnpmOrphans } from './lib/pnpm-orphans.mjs'
 
 // THE GATE THAT NOTICES (backlog HYG-016). scripts/lib/pnpm-orphans.mjs decides which pnpm store
