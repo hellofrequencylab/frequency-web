@@ -623,7 +623,9 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       page-global modules off the client on-open fetch); ④ optionally align the left-rail "Manage" labels
       to the suite names.
 - [x] **Onboarding → Vera handoff + activation instrumentation** (ADR-074/075): induction now redirects
-      to **`/onboarding/vera`** (the Vera concierge, the primary new-member path), with a feed
+      to **`/onboarding/vera`** (the Vera concierge, the primary new-member path — superseded by
+      ADR-081, which moved Vera into a lightbox over the feed; the standalone page was retired by
+      LIVE-071 on 2026-08-24), with a feed
       first-run banner catching anyone who skips; the dead `/feed?intro=1` param is retired. The
       activation funnel is instrumented, `track()` emits `onboarding.induction_completed`,
       `onboarding.vera_opened`, `circle.joined`, `practice.adopted`, `profile.completed`, surfaced as a

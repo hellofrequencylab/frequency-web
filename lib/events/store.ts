@@ -15,6 +15,7 @@ import { loadRootSpaceId } from '@/lib/spaces/store'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { upcomingEventFloor } from './upcoming-floor'
+import { seriesAnchorIsLive, type RepeatAnchorRow } from './calendar-repeats'
 
 /** An event as the by-space read returns it (the columns the offerings/schedule modules need). */
 export interface SpaceEvent {
@@ -64,6 +65,16 @@ export interface SpaceCalendarEvent {
 }
 
 const CALENDAR_COLS = 'id, slug, title, starts_at, ends_at, location, time_zone, is_cancelled'
+
+/** A MASTER-calendar row: the display fields plus the three recurrence columns the feed RPCs have
+ *  carried since 20261203000000. The .ics route already reads them to collapse a series to one
+ *  RRULE; the HTML grid reads them to build its Repeats strip (LIVE-081). They are declared here so
+ *  a caller cannot silently drop them again — the calendar page did exactly that for two months. */
+export type PublicCalendarEvent = SpaceCalendarEvent & {
+  recurrence_type: string | null
+  recurrence_until: string | null
+  parent_event_id: string | null
+}
 
 /** A calendar event row with the gate columns (status/visibility/removed_at/is_demo) alongside the
  *  display fields. */
@@ -404,11 +415,58 @@ export async function spaceHasPublicUpcomingEvents(spaceId: string | null | unde
  * (the same set the .ics route renders), so the grid and the subscribed feed can never drift.
  * FAIL-SAFE: [] on any error. The RPC is in the regenerated types (ADR-246 closed), so it's typed.
  */
-export async function listPublicCalendarEvents(): Promise<SpaceCalendarEvent[]> {
+export async function listPublicCalendarEvents(): Promise<PublicCalendarEvent[]> {
   try {
     const { data, error } = await createAdminClient().rpc('public_calendar_feed')
     if (error || !Array.isArray(data)) return []
     return data.filter((e) => !e.is_cancelled)
+  } catch {
+    return []
+  }
+}
+
+/**
+ * The ANCHOR rows behind a set of series, read by id. The master calendar needs them and cannot get
+ * them from the feed: public_calendar_feed() floors at `now() - 1 day`, so an established series'
+ * anchor aged out of the window months ago while its children keep arriving, and a child row
+ * carries `recurrence_type: 'none'` by DB CHECK. Without this read the calendar can group a series
+ * (parent_event_id is enough for that) but cannot say how often it lands or how far it runs.
+ *
+ * GATED, not raw: the SQL filters mirror the master feed's own gate, and seriesAnchorIsLive()
+ * re-applies it in JS on the way out (defence in depth, the shape ADR-899/903 asked for). The date
+ * floor is the ONE clause deliberately dropped, because a past anchor date is why we are here.
+ * Only cadence-carrying, parentless rows come back, and only the shape columns — nothing about an
+ * anchor that the series' own public children do not already expose.
+ *
+ * FAIL-SAFE: [] on any error, which costs the strip its cadence labels and its computed dates and
+ * never costs the grid an event.
+ */
+export async function listSeriesAnchors(ids: string[]): Promise<RepeatAnchorRow[]> {
+  const want = [...new Set(ids)].filter(Boolean)
+  if (want.length === 0) return []
+  try {
+    const { data, error } = await createAdminClient()
+      .from('events')
+      .select('id, starts_at, recurrence_type, recurrence_until, is_cancelled, status, visibility, removed_at, is_demo')
+      .in('id', want)
+      .is('parent_event_id', null)
+      .eq('is_cancelled', false)
+      .is('removed_at', null)
+      .eq('visibility', 'public')
+      .neq('recurrence_type', 'none')
+    if (error || !Array.isArray(data)) return []
+    const anchors: RepeatAnchorRow[] = data.map((r) => ({
+      id: r.id,
+      starts_at: r.starts_at,
+      recurrence_type: r.recurrence_type,
+      recurrence_until: r.recurrence_until,
+      is_cancelled: r.is_cancelled,
+      status: r.status,
+      visibility: r.visibility,
+      removed_at: r.removed_at,
+      is_demo: r.is_demo,
+    }))
+    return anchors.filter(seriesAnchorIsLive)
   } catch {
     return []
   }

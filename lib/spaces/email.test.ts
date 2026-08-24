@@ -60,14 +60,32 @@ vi.mock('./entitlements', async (orig) => ({
 
 // The Resend sender mock: records each call so we can assert WHAT was sent (and that nothing is sent
 // when fail-closed). Returns a fake provider id by default. NO real email leaves the process.
-const sends: { to: string; subject: string; from?: string; headers?: Record<string, string> }[] = []
+// `__lane` / `__runAfter` are the QUEUE decision, not part of the message, so they are recorded
+// alongside the payload rather than inside it — the enqueue seam takes them as a second argument
+// (LIVE-091's lane + drip). They are named with the underscore prefix so a reader never mistakes
+// them for headers the provider sees.
+const sends: {
+  to: string
+  subject: string
+  from?: string
+  headers?: Record<string, string>
+  __lane?: string
+  __runAfter?: Date
+}[] = []
 let nextSendId: string | null = 'resend-id-xyz'
 let throwOnSend = false
+// LIVE-099 moved the seam: the campaign loop ENQUEUES onto the durable outbox instead of calling
+// sendRawEmail inline, so `sends` now captures what was handed to the queue. Every assertion below
+// is unchanged in meaning — the payload carries the same to/subject/from/headers it always did, and
+// the enqueue is where the send is now decided. `throwOnSend` still models a failing send, because
+// a throw out of enqueue is caught by the same handler that caught a throw out of the provider.
 vi.mock('@/lib/email', () => ({
-  sendRawEmail: async (payload: { to: string; subject: string; from?: string; headers?: Record<string, string> }) => {
-    sends.push(payload)
+  enqueueEmail: async (
+    payload: { to: string; subject: string; from?: string; headers?: Record<string, string> },
+    opts?: { lane?: string; runAfter?: Date },
+  ) => {
+    sends.push({ ...payload, __lane: opts?.lane, __runAfter: opts?.runAfter })
     if (throwOnSend) throw new Error('provider boom')
-    return { id: nextSendId }
   },
   listUnsubscribeHeaders: (url: string) => ({
     'List-Unsubscribe': `<${url}>`,
@@ -408,11 +426,20 @@ describe('sendSpaceCampaign: happy path + headers', () => {
     // RFC 8058 one-click headers present
     expect(sends[0]!.headers!['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click')
     expect(sends[0]!.headers!['List-Unsubscribe']).toContain('/unsubscribe?s=space-A')
-    // ledger rows written with the resend id + campaign link
-    const sentRows = db.outreach.filter((o) => o.status === 'sent')
-    expect(sentRows).toHaveLength(2)
-    expect(sentRows[0]!.resend_id).toBe('resend-id-xyz')
-    expect(sentRows[0]!.campaign_id).toBe('camp-1')
+    // Every job rides the BULK lane, so a campaign can never spend the quota a welcome email is
+    // queued behind (LIVE-091), and the fan-out is dripped rather than dumped into one claim window.
+    expect(sends.every((x) => x.__lane === 'bulk')).toBe(true)
+    expect(sends[1]!.__runAfter!.getTime()).toBeGreaterThanOrEqual(sends[0]!.__runAfter!.getTime())
+
+    // Ledger rows are QUEUED, not sent: the send happens in the drain and the delivery webhook
+    // moves the row on from there. There is deliberately no resend id yet — it does not exist
+    // until the provider accepts the message, and asserting one here is what would make this test
+    // pass against an inline send it is no longer doing (LIVE-099).
+    const queuedRows = db.outreach.filter((o) => o.status === 'queued')
+    expect(queuedRows).toHaveLength(2)
+    expect(queuedRows[0]!.resend_id ?? null).toBeNull()
+    expect(queuedRows[0]!.campaign_id).toBe('camp-1')
+    expect(db.outreach.filter((o) => o.status === 'sent')).toHaveLength(0)
   })
 
   it('records a provider throw as failed (does not abort the batch)', async () => {

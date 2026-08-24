@@ -234,7 +234,7 @@ share), acceptance email → induction.
 ### Engine 4 — Onboarding Sequence Engine  ·  🟡 extend
 **Purpose:** per-persona stepped flows to first real action, fully instrumented; the activation
 machine.
-**Rides on:** Vera concierge (`/onboarding/vera`), `engagement_events` activation funnel, profile
+**Rides on:** Vera concierge (the lightbox over `/feed?welcome=vera`; the standalone `/onboarding/vera` page was retired by LIVE-071, 2026-08-24), `engagement_events` activation funnel, profile
 chores, Founder's First Week, coachmark tour, `lib/onboarding/*`.
 **New/extend:** per-persona operator onboarding (each Space type → first value in its tool);
 a **sequence builder** so steps per persona are config; GA progressive tour (post-beta).

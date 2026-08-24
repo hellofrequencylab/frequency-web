@@ -141,7 +141,7 @@ export const JOURNEYS: readonly Journey[] = [
         stream: 'engagement',
         markers: ['onboarding.vera_opened'],
         coverage: 'emitted',
-        note: 'Emitted at app/onboarding/vera/page.tsx. No rows yet.',
+        note: 'Emitted server-side at app/(main)/feed/page.tsx when the welcome lightbox is built, keyed per profile so it lands at most once. It read zero for its whole life because it pointed at the standalone /onboarding/vera page, which ADR-081 replaced in June and nothing ever linked (LIVE-071).',
       },
       {
         key: 'browsed_circles',

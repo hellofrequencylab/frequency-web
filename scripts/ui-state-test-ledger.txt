@@ -35,7 +35,6 @@ components/ui/badge.tsx
 components/ui/counter.tsx
 components/ui/demo-badge.tsx
 components/ui/dialog.tsx
-components/ui/editor-shell.tsx
 components/ui/empty-state.tsx
 components/ui/facet-dropdown.tsx
 components/ui/featured-badge.tsx

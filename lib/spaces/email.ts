@@ -28,7 +28,8 @@ import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess, spaceFunctionAvailable } from '@/lib/spaces/functions'
-import { sendRawEmail, listUnsubscribeHeaders } from '@/lib/email'
+import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
+import { bulkRunAfter } from '@/lib/queue/outbox'
 import { suppress } from '@/lib/suppression'
 import { buildSpaceUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
@@ -277,7 +278,11 @@ async function recordSend(row: {
   campaignId?: string
   contactId?: string
   email: string
-  status: 'sent' | 'failed' | 'suppressed'
+  /** The DB's own CHECK already models the async lifecycle — queued | sent | delivered | bounced |
+   *  complained | failed | suppressed — and only this type was narrower. A campaign row is 'queued'
+   *  the moment it reaches the outbox: the send itself happens in the drain, and the delivery
+   *  webhook moves it on from there (LIVE-099). */
+  status: 'queued' | 'sent' | 'failed' | 'suppressed'
   resendId?: string | null
   error?: string | null
 }): Promise<void> {
@@ -499,6 +504,9 @@ async function deliverSpaceCampaign(
   let sent = 0
   let suppressed = 0
   let failed = 0
+  // One clock for the whole fan-out, so bulkRunAfter staggers each job against the same origin
+  // rather than against the moment its own iteration happened to run.
+  const fanOutStartedAt = new Date()
 
   for (const rec of recipients) {
     // (c continued) RACE-SAFE CAP: re-read the live count every RECHECK_EVERY accepted sends, so two
@@ -571,17 +579,33 @@ async function deliverSpaceCampaign(
     }
 
     try {
-      const { id } = await sendRawEmail({
-        to: rec.email,
-        subject,
-        html: personalizedHtml,
-        from: fromLine,
-        headers,
-      })
-      // sendRawEmail returns id=null when sending is disabled (no key) or the GLOBAL guard skipped it.
-      // We already filtered this-Space + global suppression above, so a null id here means "disabled"
-      // (treat as failed so the tally is honest) unless the address slipped a global-only race.
-      if (id) {
+      // ── THROUGH THE OUTBOX, NOT INLINE (LIVE-099) ────────────────────────────────────────
+      // This loop used to call sendRawEmail directly, which is the one thing lib/email.ts's own
+      // header forbids: "the spine: queue all email, never send inline (ADR-026)". The sibling
+      // campaign sender (lib/email-studio/send.ts) has always queued. So the platform had TWO
+      // campaign senders with opposite reliability postures, and this was the one with no
+      // durability, no retry, no lane and no dead-letter surface — a Space campaign that hit the
+      // daily quota simply vanished, which is exactly the failure that cost 359 emails on
+      // 2026-07-17 on the OTHER sender (LIVE-091).
+      //
+      // The BULK lane, dripped: a campaign is mail nobody is sitting and waiting for, so it must
+      // never spend the quota a welcome email is queued behind. bulkRunAfter staggers when each
+      // job becomes DUE, because the claim is ordered by run_after and knows nothing about lanes.
+      await enqueueEmail(
+        {
+          to: rec.email,
+          subject,
+          html: personalizedHtml,
+          from: fromLine,
+          headers,
+        },
+        { lane: 'bulk', runAfter: bulkRunAfter(sent, fanOutStartedAt) },
+      )
+      // The row is QUEUED, not sent — the send happens in the drain and the delivery webhook moves
+      // it on. The ledger id still equals the tracking token's send id, so opens and clicks resolve
+      // exactly as before. The caps count a job we have COMMITTED to send, which is what makes the
+      // in-window check honest against a fresh countTodaySends.
+      {
         sent++
         // Track our own accepted send against the live count so the cap holds between re-reads (a
         // fresh countTodaySends would also count this row; this keeps the in-window check honest).
@@ -594,8 +618,7 @@ async function deliverSpaceCampaign(
           campaignId: input.campaignId,
           contactId: rec.contactId,
           email: rec.email,
-          status: 'sent',
-          resendId: id,
+          status: 'queued',
         })
         // CRM TIMELINE (ADR-378): log the outbound touch on the unified contact_interactions timeline,
         // owner-scoped to the Space's owner. STRICTLY owner+subject scoped — only when this recipient
@@ -614,7 +637,7 @@ async function deliverSpaceCampaign(
                 direction: 'outbound',
                 summary: subject,
                 source: 'engagement',
-                metadata: { provider: 'resend', resend_id: id, campaign_id: input.campaignId ?? null },
+                metadata: { provider: 'resend', resend_id: null, campaign_id: input.campaignId ?? null },
                 idempotencyKey: input.campaignId ? `campaign:${input.campaignId}:${rec.contactId}` : null,
                 // Scope spine (ADR-827): first-class campaign scope, dual-written next to the
                 // legacy metadata.campaign_id convention.
@@ -626,16 +649,6 @@ async function deliverSpaceCampaign(
             // swallow — the email already sent; the timeline row is best-effort.
           }
         }
-      } else {
-        failed++
-        await recordSend({
-          spaceId,
-          campaignId: input.campaignId,
-          contactId: rec.contactId,
-          email: rec.email,
-          status: 'failed',
-          error: 'send disabled or address suppressed',
-        })
       }
     } catch (err) {
       failed++
