@@ -18,6 +18,7 @@ import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { posterSignedUrlMap } from '@/lib/events/poster-media'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
+import { listableOnly } from '@/lib/events/market-listing'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 import type { MarketItem } from './types'
 
@@ -102,7 +103,8 @@ export function ticketsSoldOut(tiers: TierStockRow[]): boolean {
 
 /**
  * List READ-ONLY Market projections of ticketed events for the Tickets rail. Returns listable
- * (`visibility='public'`, `status='published'`, not cancelled) events that are upcoming OR ongoing
+ * (`visibility='public'`, `status='published'`, not cancelled, and NOT opted out of public listing
+ * via ADR-844's `marketListed`) events that are upcoming OR ongoing
  * and carry >= 1 ACTIVE ticket tier, soonest first. Each item is shaped for the shared ProductCard:
  * a synthetic id (`event:<id>`), the event title/description, a cover image (uploaded cover, else the
  * scanned poster), a "from" price (null when free), an explicit `href` to /events/<slug>, the owner
@@ -133,10 +135,23 @@ export async function listTicketedEventProjections(
       .eq('is_cancelled', false)
       .or(`starts_at.gte.${listableFrom},ends_at.gte.${nowIso}`)
       .order('starts_at', { ascending: true })
-      .limit(limit)
+      // Read WIDE, then cap after the listing filter below. `marketListed` cannot be a SQL
+      // predicate (lib/events/market-listing.ts explains why: a jsonb ->> miss is NULL, so the
+      // obvious .not(...) drops every event that never set the key, which is all of them), so the
+      // filter runs in app code — and a filter applied after `.limit()` lets an opted-out event
+      // eat a visible event's card slot. Mirrors the wide read app/(main)/events/index-data.ts
+      // does for the same rule.
+      .limit(Math.min(limit * 2, 200))
       .returns<EventRow[]>()
     if (eventErr || !eventData || eventData.length === 0) return []
-    const events = eventData
+
+    // THE HOST'S CHOICE (ADR-844, LIVE-069). A host can keep an event fully public and linkable
+    // while opting out of being merchandised alongside everyone else's. That was honoured on the
+    // /events browse surface and nowhere else, so an opted-out ticketed event still surfaced on the
+    // Market Tickets rail — the one listing the host had actually said no to. Applied here, before
+    // the tier read, so the batched reads below also do less work.
+    const events = listableOnly(eventData).slice(0, limit)
+    if (events.length === 0) return []
 
     // ── ONE grouped ticket-tiers read keyed by event_id (batched, never N+1) ──────────
     const eventIds = events.map((e) => e.id)

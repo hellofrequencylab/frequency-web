@@ -1,5 +1,105 @@
-import { describe, it, expect } from 'vitest'
-import { ticketFromPriceCents, ticketsSoldOut } from './ticket-projection'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+// LIVE-069. The host's "List this event publicly" opt-out (ADR-844) was honoured on the /events
+// browse surface and NOWHERE ELSE, so an opted-out ticketed event still surfaced on the Market
+// Tickets rail — the exact listing the host had said no to. This file's own docstring claimed it
+// returned "listable" events while never applying the rule.
+//
+// The DB fake below is deliberately minimal: enough PostgREST to answer the four reads the
+// projection makes, and it records the events `limit` so the wide-read-then-cap ordering is
+// checked too. A filter applied AFTER the limit lets an opted-out event eat a visible card's slot.
+const db: { events: Record<string, unknown>[]; tiers: Record<string, unknown>[] } = { events: [], tiers: [] }
+const seen: { eventsLimit: number | null } = { eventsLimit: null }
+
+function builder(table: string) {
+  const api: Record<string, unknown> = {}
+  const self = () => api
+  Object.assign(api, {
+    select: self,
+    eq: self,
+    or: self,
+    in: self,
+    order: self,
+    returns: self,
+    limit(n: number) {
+      // Stays CHAINABLE: the real call is .limit(n).returns<EventRow[]>(), and .returns() is a
+      // type-only helper that hands the builder back. A limit() that resolved here would make
+      // .returns() throw into the function's own try/catch and every test pass against an empty
+      // list — which is exactly what the first draft of this fake did.
+      if (table === 'events') seen.eventsLimit = n
+      return api
+    },
+    then(res: (v: { data: unknown[]; error: null }) => unknown) {
+      // The tiers read ends in .returns() and is awaited with no .limit(); spaces / profiles
+      // resolve straight off .in(...). Each has to answer with ITS OWN table or the projection
+      // sees no active tier and returns nothing, which would make these tests pass vacuously.
+      const rows = table === 'events' ? db.events : table === 'event_ticket_types' ? db.tiers : []
+      return Promise.resolve({ data: rows, error: null }).then(res)
+    },
+  })
+  return api
+}
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => ({
+    from: (t: string) => builder(t),
+    storage: { from: () => ({ getPublicUrl: () => ({ data: { publicUrl: null } }) }) },
+  }),
+}))
+vi.mock('@/lib/events/poster-media', () => ({ posterSignedUrlMap: async () => new Map<string, string>() }))
+
+import { ticketFromPriceCents, ticketsSoldOut, listTicketedEventProjections } from './ticket-projection'
+
+const ev = (over: Record<string, unknown>) => ({
+  id: 'e1', slug: 'e1', title: 'An event', description: null, currency: 'usd',
+  starts_at: '2099-01-01T00:00:00.000Z', is_demo: false, cover_image_path: null, poster_path: null,
+  space_id: null, host_id: null, organizer_name: null, theme: null, ...over,
+})
+const activeTier = (eventId: string) => ({
+  event_id: eventId, pricing_mode: 'fixed', price_cents: 1000, min_cents: null, suggested_cents: null,
+})
+
+describe('listTicketedEventProjections honours the market-listing opt-out (LIVE-069)', () => {
+  beforeEach(() => {
+    db.events = []
+    db.tiers = []
+    seen.eventsLimit = null
+  })
+
+  it('drops an event whose host opted out of public listing', async () => {
+    db.events = [ev({ id: 'listed' }), ev({ id: 'opted-out', theme: { marketListed: false } })]
+    db.tiers = [activeTier('listed'), activeTier('opted-out')]
+    const out = await listTicketedEventProjections()
+    expect(out.map((p) => p.id)).toEqual(['event:listed'])
+  })
+
+  it('keeps an event that never touched the control, and one that explicitly opted IN', async () => {
+    // Listed is the DEFAULT: the key is only written on opt-out, so a null theme must still list.
+    db.events = [ev({ id: 'untouched', theme: null }), ev({ id: 'opted-in', theme: { marketListed: true } })]
+    db.tiers = [activeTier('untouched'), activeTier('opted-in')]
+    const out = await listTicketedEventProjections()
+    expect(out.map((p) => p.id).sort()).toEqual(['event:opted-in', 'event:untouched'])
+  })
+
+  it('fails OPEN on a malformed theme bag rather than hiding a host’s event', async () => {
+    db.events = [ev({ id: 'weird', theme: { marketListed: 'nope' } })]
+    db.tiers = [activeTier('weird')]
+    expect((await listTicketedEventProjections()).map((p) => p.id)).toEqual(['event:weird'])
+  })
+
+  it('reads WIDE so an opted-out event cannot eat a visible card’s slot', async () => {
+    db.events = [ev({ id: 'a' })]
+    db.tiers = [activeTier('a')]
+    await listTicketedEventProjections({ limit: 40 })
+    expect(seen.eventsLimit).toBeGreaterThan(40)
+  })
+
+  it('still caps the result at the caller’s limit', async () => {
+    db.events = Array.from({ length: 10 }, (_, i) => ev({ id: `e${i}`, slug: `e${i}` }))
+    db.tiers = db.events.map((e) => activeTier(e.id as string))
+    expect((await listTicketedEventProjections({ limit: 3 })).length).toBe(3)
+  })
+})
 
 // The "from" price is the minimum POSITIVE effective price across a ticketed event's active tiers:
 // fixed uses price_cents; buyer-chosen modes (pwyc/sliding_scale/donation) use suggested then min; a

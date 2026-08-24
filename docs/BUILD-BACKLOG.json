@@ -2850,14 +2850,14 @@
     {
       "id": "LIVE-069",
       "title": "The market-listing opt-out reaches the Tickets rail",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "HYG-009 sweep, 2026-08-20"
       },
-      "detail": "Re-verified still true 2026-08-20 (HYG-009): the host's 'List this event publicly' opt-out is honored on the index (lib/commerce/index-data.ts:487) but listTicketedEventProjections (lib/commerce/ticket-projection.ts:129,208) selects rows without applying listableOnly, so an opted-out ticketed event still surfaces on the Market Tickets rail. Apply listableOnly to the projection rows before shaping cards. ── PATH CORRECTED 2026-08-24: this row cites lib/commerce/index-data.ts:487 as where the opt-out IS honoured, and that file does not exist. The live site is app/(main)/events/index-data.ts:516, which calls listableOnly from lib/events/market-listing.ts:56. The defect itself re-verified TRUE the same day: lib/commerce/ticket-projection.ts still never applies it, and that file’s own header (line 5) claims it \"reads listable\" events, so the comment is false as well as the behaviour.",
+      "detail": "Re-verified still true 2026-08-20 (HYG-009): the host's 'List this event publicly' opt-out is honored on the index (lib/commerce/index-data.ts:487) but listTicketedEventProjections (lib/commerce/ticket-projection.ts:129,208) selects rows without applying listableOnly, so an opted-out ticketed event still surfaces on the Market Tickets rail. Apply listableOnly to the projection rows before shaping cards. ── PATH CORRECTED 2026-08-24: this row cites lib/commerce/index-data.ts:487 as where the opt-out IS honoured, and that file does not exist. The live site is app/(main)/events/index-data.ts:516, which calls listableOnly from lib/events/market-listing.ts:56. The defect itself re-verified TRUE the same day: lib/commerce/ticket-projection.ts still never applies it, and that file’s own header (line 5) claims it \"reads listable\" events, so the comment is false as well as the behaviour. ── CLOSED 2026-08-24. listableOnly now runs on the projection, and the docstring that already CLAIMED to return listable events is true. Two details beyond the one-line fix: (1) the read went WIDE (limit*2, capped 200) and the cap moved after the filter, because a filter applied after .limit() lets an opted-out event eat a visible card slot — the same ordering the /events browse surface uses for this rule; (2) the filter runs before the tier/space/profile reads, so those batch over fewer rows. Five tests, verified as a real control: the opt-out test FAILS against the pre-fix line and passes after. They also pin the fail-open default, since listed is the default and only an explicit false opts out.",
       "verify": {
         "kind": "grep-present",
         "pattern": "listableOnly",
@@ -3415,21 +3415,18 @@
     {
       "id": "LIVE-095",
       "title": "A rejected chat send loses the draft and leaves the bubble reading as sent",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "full audit, 2026-08-24"
       },
-      "detail": "FOUND 2026-08-24 in the delta audit. send() (components/chat/use-support-chat.ts:93) has no try/catch around persist(), and both callers consume it with a bare .then(): support-chat-widget.tsx:299 and live-chat-bridge.tsx:34. isError(r) only covers the action RETURNING an ActionResult failure. A Next.js server action REJECTS on a network drop or an unhandled server error — the most likely failure for a visitor-facing widget. On that path the promise rejects before 'return false', so the .then callback never runs and the draft is gone (the exact loss the new JSDoc claims it fixed: 'they now put the draft back on false'), the optimistic bubble is never removed so the visitor sees their message as sent, setError never fires so no banner appears, and the rejection is unhandled. Same shape one line up at :57: loadHistory().then((r) => { ...; setLoading(false) }) with no .catch, so a rejected history read leaves the panel on 'Loading...' forever. The file currently contains ZERO catch blocks. FIX: wrap the body of send in try/catch — drop the optimistic row, set a real error, return false — and add .catch(() => setLoading(false)) to the loadHistory chain. Both callers then need no change.",
+      "detail": "FOUND 2026-08-24 in the delta audit. send() (components/chat/use-support-chat.ts:93) has no try/catch around persist(), and both callers consume it with a bare .then(): support-chat-widget.tsx:299 and live-chat-bridge.tsx:34. isError(r) only covers the action RETURNING an ActionResult failure. A Next.js server action REJECTS on a network drop or an unhandled server error — the most likely failure for a visitor-facing widget. On that path the promise rejects before 'return false', so the .then callback never runs and the draft is gone (the exact loss the new JSDoc claims it fixed: 'they now put the draft back on false'), the optimistic bubble is never removed so the visitor sees their message as sent, setError never fires so no banner appears, and the rejection is unhandled. Same shape one line up at :57: loadHistory().then((r) => { ...; setLoading(false) }) with no .catch, so a rejected history read leaves the panel on 'Loading...' forever. The file currently contains ZERO catch blocks. FIX: wrap the body of send in try/catch — drop the optimistic row, set a real error, return false — and add .catch(() => setLoading(false)) to the loadHistory chain. Both callers then need no change. ── CLOSED 2026-08-24. send() now wraps persist() in try/catch and handles a REJECTION exactly as it handles a returned failure: the optimistic row is dropped, a readable error is set, and it returns false, so the draft-restoring .then in both callers runs on the network-drop path too. Neither caller changed. The loadHistory chain gained a .catch that clears loading and sets an error, so a rejected history read ends the \"Loading…\" state instead of pinning it. Two fallback strings live at the top of the file for the failures the server never gets to describe. Proven by components/chat/use-support-chat.test.tsx (5 tests): the two rejection cases fail against the pre-fix file, the happy path and the returned-ActionResult-failure path pass both before and after.",
       "verify": {
-        "kind": "grep-present",
-        "pattern": "catch",
-        "paths": [
-          "components/chat/use-support-chat.ts"
-        ],
-        "note": "The file has zero catch blocks today, so any real rejection handling flips this. Paired with a unit test that rejects persist()."
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='components/chat/use-support-chat.ts',T='components/chat/use-support-chat.test.tsx';if(!fs.existsSync(S)||!fs.existsSync(T))process.exit(79);const s=fs.readFileSync(S,'utf8'),t=fs.readFileSync(T,'utf8');const code=s.split(String.fromCharCode(10)).filter(x=>x.trim().indexOf('//')!==0&&x.trim().indexOf('*')!==0).join(String.fromCharCode(10));const bad=[];if(code.indexOf('catch')<0)bad.push('send() still has no catch: a REJECTED persist leaves the optimistic bubble reading as sent and never returns false');const c=code.indexOf('.catch(');if(c<0)bad.push('the loadHistory chain has no .catch: a rejected history read pins the panel on Loading');else if(code.slice(c).indexOf('setLoading(false)')<0)bad.push('the .catch never clears loading');if(t.indexOf('Promise.reject')<0)bad.push('no rejection test in '+T);if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\"",
+        "note": "Measures the consequence, not the word: the send path must have a catch, the loadHistory chain a .catch that clears loading, and the test file must actually reject a promise. Fails against the pre-fix file."
       }
     },
     {
@@ -3529,14 +3526,14 @@
     {
       "id": "HYG-013",
       "title": "A new Supabase advisor is unaccounted for in the accepted list",
-      "status": "open",
+      "status": "done",
       "lane": "hygiene",
       "size": "XS",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "full audit, 2026-08-24"
       },
-      "detail": "FOUND 2026-08-24 reading the production advisors. Security returned 144 lints and performance 267, and every one is already adjudicated — spatial_ref_sys by ADR, the 60 security_definer_function_executable WARNs and the 266 unused_index INFOs by scripts/maintenance/accepted-advisories.json, extension_in_public by ADR-507, rls_enabled_no_policy as accepted default-deny — EXCEPT one: auth_db_connections_absolute (INFO, performance). 'Your project's Auth server is configured to use at most 10 connections. Increasing the instance size without manually adjusting this number will not improve the performance of the Auth server.' It is not in the accepted list and not in any row, so the next maintenance sweep will re-surface it as novel. Either accept it by name with the reasoning, or switch the project to percentage-based allocation and record that instead. Also worth noting while here: unused_index has gone 247 (2026-07-27) -> 266 (2026-08-24), which is a trend rather than a finding, and the pre-traffic acceptance still holds at 0 orders.",
+      "detail": "FOUND 2026-08-24 reading the production advisors. Security returned 144 lints and performance 267, and every one is already adjudicated — spatial_ref_sys by ADR, the 60 security_definer_function_executable WARNs and the 266 unused_index INFOs by scripts/maintenance/accepted-advisories.json, extension_in_public by ADR-507, rls_enabled_no_policy as accepted default-deny — EXCEPT one: auth_db_connections_absolute (INFO, performance). 'Your project's Auth server is configured to use at most 10 connections. Increasing the instance size without manually adjusting this number will not improve the performance of the Auth server.' It is not in the accepted list and not in any row, so the next maintenance sweep will re-surface it as novel. Either accept it by name with the reasoning, or switch the project to percentage-based allocation and record that instead. Also worth noting while here: unused_index has gone 247 (2026-07-27) -> 266 (2026-08-24), which is a trend rather than a finding, and the pre-traffic acceptance still holds at 0 orders. ── CLOSED 2026-08-24 by ACCEPTING it, not by changing the setting. The acceptance is explicitly scale-bound and says so in the entry: at 23 active members 10 Auth connections is not the constraint, and it re-opens if the instance is resized or sign-in latency reaches the SLOs. Accepting a finding is only honest when the reason is written down and carries its own expiry.",
       "verify": {
         "kind": "grep-present",
         "pattern": "auth_db_connections_absolute",
