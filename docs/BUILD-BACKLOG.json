@@ -3696,6 +3696,23 @@
       }
     },
     {
+      "id": "LIVE-105",
+      "title": "A production deploy died at 46 minutes today, hung in Collecting page data - the ADR-1064 signature",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "scripts/check-cache-budget.mjs",
+        "ref": "the trim"
+      },
+      "detail": "🔴 FOUND 2026-08-24. The PRODUCTION deploy of #2248 (commit c02dc96, dpl_H5zLPERKne5KGNxF7UU9HEbU5spx) FAILED after 46m11s. Its log compiled cleanly - '✓ Compiled successfully in 84s', runAfterProductionCompile done in 6.2s, TypeScript config validated - then printed 'Collecting page data using 3 workers ...' at 20:03:22 and produced NOTHING for the next 44 minutes before dying. postbuild never ran, so no gate reported anything. ⚠️ THAT IS THE ADR-1064 / ADR-1086 SIGNATURE, VERBATIM. AGENTS.md describes the first version of check:cache-budget deleting the incremental fetch cache and 'hanging Collecting page data until BUILD_EXCEEDED_MAXIMUM_TIME at 46 minutes, against a 59-second control'. Same phase, same silence, same 46 minutes. AGENTS.md also states that defect is fixed and 'proven by mutation tests that reconstruct the exact bad trim (#2194)'. Either the fix does not cover this path, or something else produces an identical failure - and the second possibility is worth as much attention as the first, because the repo currently reads this signature as a solved problem. ⚪ PRODUCTION WAS NEVER DOWN, and that is exactly why this needs a row rather than a memory: #2249's deploy 13 minutes later (db0d186, a superset of the same code) succeeded in 7m32s and #2251's is live, so the failure left no user-visible trace and no red mark on any PR - #2248 had already merged. A production deploy died and nothing in the repo noticed. 🔴 DO NOT ASSUME IT WAS THE TRIM. The 2026-08-11 incident's lesson (ADR-1002/1003) is to run the CONTROL before theorising: redeploy c02dc96 as-is and see whether it reproduces, which costs three minutes and separates 'this tree hangs' from 'that cache state hung it'. The immediately preceding production build (04d120f) reported node_modules 947 MB and uploaded a 1.27 GB cache, so the cache the failing build restored is identifiable.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Read from the build log directly, 2026-08-24: dpl_H5zLPERKne5KGNxF7UU9HEbU5spx, 46m11s, last line 'Collecting page data using 3 workers ...' at 20:03:22 with 44 minutes of silence after it. Manual because no probe in this repo can cause a Vercel build or read its log; the close condition is a reproduction attempt on the same commit plus, if it reproduces, a root cause.",
+        "checked": "2026-08-24"
+      }
+    },
+    {
       "id": "OWN-043",
       "title": "/ serves an owner-published document that shadows home.ts, so Lift 5c cannot recover content there",
       "status": "done",
