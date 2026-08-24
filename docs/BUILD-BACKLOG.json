@@ -2644,17 +2644,21 @@
     {
       "id": "OWN-036",
       "title": "EditorShell orphan: delete, or adopt it in the Space/profile editors its header promises",
-      "status": "open",
+      "status": "done",
       "lane": "owner",
       "size": "S",
       "source": {
-        "file": "components/ui/editor-shell.tsx",
-        "ref": "meta-scan 2026-08-20 finder A (med)"
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "2026-08-20 pass; closed in the 2026-08-24 audit"
       },
-      "detail": "components/ui/editor-shell.tsx ('the ONE master container for any on-page editor') has zero importers; its stated consumer, the beta email editor, was deleted in the ADR-1088/1089 beta teardown, and its header comment is now stale ('the beta email editor today'). Not a zero-cost delete: LIVE-025's eyebrow-utility ratchet names EditorShell as one of seven shared-kit adopters, and scripts/ui-state-test-ledger.txt carries an editor-shell entry, so a delete must also update those or a canon/ledger gate trips. Owner's call: delete it (and the ledger/ratchet references), or adopt it as the frame for the Space/profile editors it was built for and correct the header. Low blast radius either way.",
+      "detail": "components/ui/editor-shell.tsx ('the ONE master container for any on-page editor') has zero importers; its stated consumer, the beta email editor, was deleted in the ADR-1088/1089 beta teardown, and its header comment is now stale ('the beta email editor today'). Not a zero-cost delete: LIVE-025's eyebrow-utility ratchet names EditorShell as one of seven shared-kit adopters, and scripts/ui-state-test-ledger.txt carries an editor-shell entry, so a delete must also update those or a canon/ledger gate trips. Owner's call: delete it (and the ledger/ratchet references), or adopt it as the frame for the Space/profile editors it was built for and correct the header. Low blast radius either way. ── CLOSED 2026-08-24 by the DELETE arm (owner ruling). components/ui/editor-shell.tsx is gone. It called itself 'the ONE master container for any on-page editor' and named the beta email editor as its consumer; that editor was deleted in the ADR-1088/1089 teardown, and a full-tree sweep (not just app/components/lib — that narrower sweep missed a consumer earlier today) found exactly two references: the component itself and a historical census comment in lib/theme/eyebrow-role.test.ts naming it as one of seven hand-rolled eyebrow slots. That comment is prose about a 2026-08-17 measurement and stays accurate as history. Adopting it instead would have committed the Space and profile editors to a container never validated against them, on the strength of a header comment rather than a need. SIDE EFFECT, MEASURED: the adoption ratchet's handrolled-eyebrow class shrank 609 -> 603, because the shell carried six of them. THIS ROW'S OWN source.file POINTED AT THE DELETED COMPONENT, so check:backlog failed with 'source file does not exist' the moment it went — the gate correctly refusing a row that had outlived its justification. Re-pointed at the scan doc that recorded the finding.",
       "verify": {
-        "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs'),pa=require('path');const skip=new Set(['node_modules','.next']);function*w(d){for(const n of fs.readdirSync(d)){if(skip.has(n))continue;const f=pa.join(d,n);const s=fs.statSync(f);if(s.isDirectory())yield*w(f);else if(/\\\\.(ts|tsx)$/.test(f))yield f}}const files=[];for(const r of ['app','lib','components'])for(const f of w(r))files.push([f,fs.readFileSync(f,'utf8')]);const isTest=(f)=>/\\\\.test\\\\.tsx?$/.test(f);if(!fs.existsSync('components/ui/editor-shell.tsx'))process.exit(0);const used=files.some(([f,t])=>!isTest(f)&&f!=='components/ui/editor-shell.tsx'&&t.includes('ui/editor-shell'));process.exit(used?0:1)\""
+        "kind": "grep-absent",
+        "pattern": "EditorShell",
+        "paths": [
+          "components/ui"
+        ],
+        "note": "Measures the consequence: the component is gone from the kit. Deliberately scoped to components/ui rather than the whole tree, because a historical census comment in lib/theme/eyebrow-role.test.ts names it as prose about a 2026-08-17 measurement and is still accurate."
       },
       "notes": "Probe upgraded from manual to mechanical 2026-08-20 (this row and #2214’s LIVE-063 were the same item filed twice in parallel; LIVE-063 is withdrawn in its favor): closes when components/ui/editor-shell.tsx is deleted or gains a non-test importer. The delete arm must also update the LIVE-025 eyebrow-ratchet reference and scripts/ui-state-test-ledger.txt, or those gates trip — the evidence names them. Probe rewritten 2026-08-20: the first version declared fs twice (a SyntaxError exiting 1), which read as NOT DONE and could never flip - the mirror of the ripgrep bug this file documents."
     },
@@ -3519,17 +3523,17 @@
     {
       "id": "OWN-042",
       "title": "Decide what happens to the 359 dead-lettered emails",
-      "status": "open",
+      "status": "done",
       "lane": "owner",
       "size": "XS",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "full audit, 2026-08-24"
       },
-      "detail": "The operator half of LIVE-091. 359 rows sit in notification_queue at status='failed' from the 2026-07-17 quota exhaustion. The operator surface (components/widgets/marketing/deliverability-dead-letters.tsx) already offers a one-tap requeue, so no code is needed. THE DECISION: 356 of the 359 are one bulk campaign now five weeks stale and almost certainly should NOT be re-sent; the other three are transactional and arguably should be — two welcome emails to genuine new members who never received one, and one event-claim invite. Requeuing the transactional three is a live send to real people, so it is the owner's call, not an agent's. Note the ordering: fixing LIVE-091 first is what stops a requeue from re-running the same failure.",
+      "detail": "The operator half of LIVE-091. 359 rows sit in notification_queue at status='failed' from the 2026-07-17 quota exhaustion. The operator surface (components/widgets/marketing/deliverability-dead-letters.tsx) already offers a one-tap requeue, so no code is needed. THE DECISION: 356 of the 359 are one bulk campaign now five weeks stale and almost certainly should NOT be re-sent; the other three are transactional and arguably should be — two welcome emails to genuine new members who never received one, and one event-claim invite. Requeuing the transactional three is a live send to real people, so it is the owner's call, not an agent's. Note the ordering: fixing LIVE-091 first is what stops a requeue from re-running the same failure. ── OWNER RULED 2026-08-24 'requeue the 3 transactional only', AND THEN THE RULING'S PREMISE DID NOT SURVIVE THE DATA, SO NOTHING WAS SENT. The ruling was made on my characterisation that the three were 'worth sending late'. Measured before touching anything, that is false for all three. (1) The claim invite is for 'Exquisite Beasts: Night of the Soul', starts_at 2026-07-18 — FIVE WEEKS PAST. Sending it invites a host to claim an event that already happened. (2) The welcome to IshAset Lumi goes to a member with 239 engagement events who was active on 2026-08-20; a 'Welcome to Frequency' five weeks after they joined and while they are actively using the product reads as broken software, not as hospitality. (3) The welcome to David is the only one where the mail was genuinely missed and never substituted — he joined 2026-07-17, recorded 5 events, left after about three hours and never came back — but a five-week-late 'Welcome' to someone who has gone is a RE-ENGAGEMENT email wearing a welcome's clothes, and it should be written as one rather than replayed. NOTHING WAS REQUEUED. Sending is outward-facing and irreversible, and the justification for it evaporated on inspection; an agent executing it anyway on a ruling made from a wrong summary is the failure mode this list exists to prevent. WHAT THIS ROW NOW NEEDS is a smaller decision than the one it asked: either mark all three handled and leave them as history, or write David a real re-engagement note that does not pretend to be a welcome. The 356-row campaign is unchanged and still should not be sent. NOTE the underlying defect is fixed either way: LIVE-091 shipped, so a requeue can no longer re-run the 2026-07-17 quota failure. ── CLOSED 2026-08-24: OWNER RULED 'don't send those emails, clear it all out'. All 359 rows deleted from notification_queue (the 356-recipient campaign and the 3 that had been called transactional). The queue is now 379 done, 0 failed, 0 pending. NOTHING WAS SENT, which is the right outcome on the evidence: the claim invite was for an event five weeks past, one welcome was addressed to a member with 239 engagement events who was active four days ago, and the other was to a member who left after three hours — a five-week-late 'Welcome' to any of them reads as broken software rather than hospitality. The DLQ sitting at ZERO is now a usable baseline: any non-zero dead-letter count from here is new, which is exactly the signal DEF-HARDEN's alerting half needs and could not have had while 359 stale rows sat in front of it.",
       "verify": {
         "kind": "manual",
-        "evidence": "Measured on prod azsqfeonabsbmemvddqd, 2026-08-24: 359 rows at status=failed, all kind=email, all attempts=max_attempts=5, all last_error 429 daily_quota_exceeded, created 2026-07-17 16:00-17:43. Closes when the owner rules on the three transactional rows.",
+        "evidence": "Deleted 2026-08-24 on the owner's ruling; verified after: notification_queue is 379 done, 0 failed, 0 pending. Future sends verified healthy the same day: 20 emails drained successfully in the trailing 14 days, most recent 2026-08-24 13:00, and LIVE-091's error-aware retry is deployed in e4e44123c.",
         "checked": "2026-08-24"
       }
     },
@@ -3556,21 +3560,21 @@
     {
       "id": "LIVE-099",
       "title": "Two campaign senders, two reliability postures: one queues, one sends inline",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "M",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "full audit, 2026-08-24"
       },
-      "detail": "FOUND 2026-08-24 while fixing LIVE-091, and it is the reason that fix does not reach as far as it looks. LIVE-091 said 'bulk and transactional mail share one queue', which assumes all bulk mail IS queued. It is not. lib/email-studio/send.ts fans a campaign out through the OUTBOX — durable, retried, and now lane-tagged so it can never starve a welcome. lib/spaces/email.ts sendSpaceCampaign sends campaigns INLINE via sendRawEmail, with no outbox row at all: no durability, no retry, no lane, and no dead-letter surface. So a Space campaign that hits the same daily quota that dropped 359 emails on 2026-07-17 does not get deferred and does not get recorded — it just fails, and nothing holds the message. The LIVE-091 lane work cannot reach that path by construction. THE DECISION: route sendSpaceCampaign through enqueueEmail with lane 'bulk' like its sibling, or state deliberately why a Space campaign is allowed to be best-effort while a platform campaign is durable. Two senders with different reliability postures and no recorded reason is the thing to fix either way.",
+      "detail": "FOUND 2026-08-24 while fixing LIVE-091, and it is the reason that fix does not reach as far as it looks. LIVE-091 said 'bulk and transactional mail share one queue', which assumes all bulk mail IS queued. It is not. lib/email-studio/send.ts fans a campaign out through the OUTBOX — durable, retried, and now lane-tagged so it can never starve a welcome. lib/spaces/email.ts sendSpaceCampaign sends campaigns INLINE via sendRawEmail, with no outbox row at all: no durability, no retry, no lane, and no dead-letter surface. So a Space campaign that hits the same daily quota that dropped 359 emails on 2026-07-17 does not get deferred and does not get recorded — it just fails, and nothing holds the message. The LIVE-091 lane work cannot reach that path by construction. THE DECISION: route sendSpaceCampaign through enqueueEmail with lane 'bulk' like its sibling, or state deliberately why a Space campaign is allowed to be best-effort while a platform campaign is durable. Two senders with different reliability postures and no recorded reason is the thing to fix either way. ── CLOSED 2026-08-24 by the ROUTE arm (owner ruling). sendSpaceCampaign now enqueues each recipient onto the durable outbox with lane 'bulk' and a dripped run_after off one fan-out clock, exactly like its sibling lib/email-studio/send.ts. The inline sendRawEmail call is gone, which also settles the contradiction that made this a finding: lib/email.ts's own header states 'the spine: queue all email, never send inline (ADR-026)', and this was the one campaign sender violating it. THE RECONCILIATION QUESTION THAT MADE ME DEFER THIS TURNED OUT TO BE ALREADY ANSWERED BY THE SCHEMA. The blocker looked like recordSend writing status 'sent' + resend_id per recipient, which cannot be true at enqueue time. But outreach_sends_status_check already permits queued | sent | delivered | bounced | complained | failed | suppressed — the DB was designed for this async lifecycle all along and only the TypeScript union was narrower. So a campaign row is now 'queued' with no resend_id, the delivery webhook moves it on, and NO MIGRATION was needed. The ledger id still equals the tracking token's send id, so opens and clicks resolve unchanged. Cap accounting is unchanged and still honest: it counts a job we have COMMITTED to send, which is what a fresh countTodaySends will also see. Tests: the suite's mock was re-pointed from sendRawEmail to enqueueEmail (the seam moved, the assertions did not), and the ledger assertion now pins the queued lifecycle including the deliberate ABSENCE of a resend id — asserting one there is precisely what would let this test pass against an inline send it no longer does. 83 files / 1,215 tests green across lib/spaces, lib/queue and lib/email-studio.",
       "verify": {
         "kind": "grep-present",
         "pattern": "enqueueEmail",
         "paths": [
           "lib/spaces/email.ts"
         ],
-        "note": "Passes when the Space campaign sender goes through the durable outbox like its sibling. If the owner rules the other way (best-effort by design), close this by recording that ruling and replace the probe with a manual row citing it."
+        "note": "Passes when the Space campaign sender goes through the durable outbox like its sibling."
       }
     },
     {
