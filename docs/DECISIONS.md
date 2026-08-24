@@ -29277,7 +29277,7 @@ names, and it would read as coverage the moment it went green for the wrong reas
 
 ---
 
-## ADR-1113: The 46-minute hang was not the cache trim — the control was already in the logs (2026-08-24)
+## ADR-1114: The 46-minute hang was not the cache trim — the control was already in the logs (2026-08-24)
 
 **Status:** Accepted · **Corrects:** `LIVE-105` · **Re-frames:** `HYG-015` ·
 **Bounds:** [ADR-1064](DECISIONS.md), [ADR-1086](DECISIONS.md) ·
