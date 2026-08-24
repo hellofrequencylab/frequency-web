@@ -15,8 +15,8 @@
     "lanes": {
       "owner": "Config or a decision. No code unblocks it.",
       "live": "The committed near-term queue.",
-      "program": "A named multi-phase program. Needs a scheduling decision, not a start.",
-      "deferred": "Specced and deliberately parked.",
+      "program": "A named multi-phase program. meta.slate sequences it; a program still on hold carries status \"parked\".",
+      "deferred": "Specced and deliberately parked. Since the 2026-08-20 ruling this is only the named holds — white label, mobile, texting — and a parked row also carries status \"parked\", which is what the working view reads.",
       "hygiene": "Debt in the record or the instruments."
     },
     "supersedes": [
@@ -62,7 +62,8 @@
             "LIVE-096",
             "LIVE-097",
             "LIVE-098",
-            "HYG-013"
+            "HYG-013",
+            "LIVE-081"
           ]
         },
         {
@@ -124,7 +125,8 @@
             "LIVE-068",
             "LIVE-070",
             "HYG-010",
-            "LIVE-079"
+            "LIVE-079",
+            "LIVE-089"
           ]
         },
         {
@@ -1586,13 +1588,13 @@
       "id": "DEF-ETSY",
       "title": "Marketplace Etsy-Grade P3-P7",
       "status": "open",
-      "lane": "deferred",
+      "lane": "program",
       "size": "XL",
       "source": {
         "file": "docs/MASTER-TODO.md",
         "ref": "Marketplace future phases"
       },
-      "detail": "Shipping and delivery; faceted discovery and ranking; cart + multi-seller checkout (one intent, N destination charges, each take rate preserved); orders, fulfillment and order-scoped messaging; promotions, payout reporting and tax posture. Deferred by owner 2026-07-11.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
+      "detail": "Shipping and delivery; faceted discovery and ranking; cart + multi-seller checkout (one intent, N destination charges, each take rate preserved); orders, fulfillment and order-scoped messaging; promotions, payout reporting and tax posture. Deferred by owner 2026-07-11.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.",
       "verify": {
         "kind": "manual",
         "evidence": "Owner-deferred.",
@@ -1620,13 +1622,13 @@
       "id": "DEF-HOUS",
       "title": "Housing: natal-chart matching + Resonance match alerts",
       "status": "open",
-      "lane": "deferred",
+      "lane": "program",
       "size": "M",
       "source": {
         "file": "docs/MASTER-TODO.md",
         "ref": "Housing"
       },
-      "detail": "Natal-chart compatibility beyond the shipped sun-sign quiet-5%, as an opt-in both-sides factor — NEEDS AN EPHEMERIS/COMPUTE DECISION BEFORE BUILD. Alerts are the notification layer on matching RPCs that already exist.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
+      "detail": "Natal-chart compatibility beyond the shipped sun-sign quiet-5%, as an opt-in both-sides factor — NEEDS AN EPHEMERIS/COMPUTE DECISION BEFORE BUILD. Alerts are the notification layer on matching RPCs that already exist.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.",
       "verify": {
         "kind": "manual",
         "evidence": "Owner-deferred.",
@@ -1637,13 +1639,13 @@
       "id": "DEF-MONEY",
       "title": "Money verticals D1-D5 + the money foundation",
       "status": "open",
-      "lane": "deferred",
+      "lane": "program",
       "size": "XL",
       "source": {
         "file": "docs/DEVELOPMENT-MAP.md",
         "ref": "D1-D5"
       },
-      "detail": "The Collective (first commerce), freemium Vault cash-in, affiliate commission ledger, Donations & Grants (the Foundation rail), Lab Spaces. Plus the entity partition and entity-tagged financial_transactions, the inter-entity Lab bridge, physical merch fulfillment and the Frequency Shop. Gated on PMF and a legal entity, not on engineering.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
+      "detail": "The Collective (first commerce), freemium Vault cash-in, affiliate commission ledger, Donations & Grants (the Foundation rail), Lab Spaces. Plus the entity partition and entity-tagged financial_transactions, the inter-entity Lab bridge, physical merch fulfillment and the Frequency Shop. Gated on PMF and a legal entity, not on engineering.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.",
       "verify": {
         "kind": "manual",
         "evidence": "Gated on legal + PMF.",
@@ -1654,13 +1656,13 @@
       "id": "DEF-RESON",
       "title": "resonance/: 18 rungs, substantially built, GO-gated",
       "status": "open",
-      "lane": "deferred",
+      "lane": "program",
       "size": "XL",
       "source": {
         "file": "resonance/docs/BUILD-PLAN.md",
         "ref": "Sections 0-19"
       },
-      "detail": "PREMISE EXPIRED 2026-08-19: the row said 'nothing built', quoting a stale preamble sentence in the plan. The tree holds 180 files (142 TS/TSX), 16 migrations (0001_resonance_init..0016_atomic_economy) and 23 API routes under resonance/app/api. The plan's own boxes read 83 checked vs 20 open; Sections 0, 6 and 19 are done, 1-18 in progress. Build order still never reorders (sync engine -> DJ loop -> gamification -> embed -> world) and each rung still ends in a manual GO gate; voice via WebRTC and fiat cash-out remain follow-ups. UNVERIFIED: whether migrations past 0002 are applied to the shared 'resonance' schema (the public migration ledger does not carry them). NOTE the HYG-005 conflict (auth rung needs anonymous sign-ins, OWN-008 disabled them) was not re-tested this pass.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
+      "detail": "PREMISE EXPIRED 2026-08-19: the row said 'nothing built', quoting a stale preamble sentence in the plan. The tree holds 180 files (142 TS/TSX), 16 migrations (0001_resonance_init..0016_atomic_economy) and 23 API routes under resonance/app/api. The plan's own boxes read 83 checked vs 20 open; Sections 0, 6 and 19 are done, 1-18 in progress. Build order still never reorders (sync engine -> DJ loop -> gamification -> embed -> world) and each rung still ends in a manual GO gate; voice via WebRTC and fiat cash-out remain follow-ups. UNVERIFIED: whether migrations past 0002 are applied to the shared 'resonance' schema (the public migration ledger does not carry them). NOTE the HYG-005 conflict (auth rung needs anonymous sign-ins, OWN-008 disabled them) was not re-tested this pass.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.",
       "verify": {
         "kind": "manual",
         "evidence": "resonance/ tree: 16 migrations, 23 route.ts, 83/103 plan boxes checked (2026-08-19).",
@@ -1705,13 +1707,13 @@
       "id": "DEF-HARDEN",
       "title": "Foundation hardening H1-H5",
       "status": "open",
-      "lane": "deferred",
+      "lane": "program",
       "size": "XL",
       "source": {
         "file": "docs/FOUNDATION-HARDENING-PLAN.md",
         "ref": "H1-H5"
       },
-      "detail": "TWO PREMISES EXPIRED 2026-08-19. H2's 'erasure and export does not exist at all' is false: app/(main)/settings/account/ ships delete-account (deleteAccountAction -> lib/account deleteMyAccount, hard-delete cascade) and download-data (downloadMyData -> MemberExportPayload). H4's 'no retry/backoff or DLQ' is false for the outbox: lib/queue/outbox.ts has exponential backoff, a terminal dead-letter state after max_attempts, count/list/requeue, and an operator recovery surface at admin/marketing/deliverability; the Stripe webhook (app/api/webhooks/stripe/route.ts + stripe_webhook_events) is idempotent with claim-release so Stripe's retry re-processes instead of stranding. STILL OPEN: DLQ/cron-lag alerting is a countable signal, not verified as wired to anything that pages; backup and DR unverified (PITR tier, rehearsed restore, defined RPO/RTO); no incident runbooks; no load/soak harness, so every H3 scale claim remains unprovable. H3 is metric-gated and correctly not now.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
+      "detail": "TWO PREMISES EXPIRED 2026-08-19. H2's 'erasure and export does not exist at all' is false: app/(main)/settings/account/ ships delete-account (deleteAccountAction -> lib/account deleteMyAccount, hard-delete cascade) and download-data (downloadMyData -> MemberExportPayload). H4's 'no retry/backoff or DLQ' is false for the outbox: lib/queue/outbox.ts has exponential backoff, a terminal dead-letter state after max_attempts, count/list/requeue, and an operator recovery surface at admin/marketing/deliverability; the Stripe webhook (app/api/webhooks/stripe/route.ts + stripe_webhook_events) is idempotent with claim-release so Stripe's retry re-processes instead of stranding. STILL OPEN: DLQ/cron-lag alerting is a countable signal, not verified as wired to anything that pages; backup and DR unverified (PITR tier, rehearsed restore, defined RPO/RTO); no incident runbooks; no load/soak harness, so every H3 scale claim remains unprovable. H3 is metric-gated and correctly not now.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.",
       "verify": {
         "kind": "manual",
         "evidence": "Erasure/export and outbox-DLQ paths confirmed in tree 2026-08-19; alerting, DR rehearsal, runbooks and load harness not found.",
@@ -1722,13 +1724,13 @@
       "id": "DEF-DOMAIN",
       "title": "The domain feature backlog (~120 items across 15 areas)",
       "status": "open",
-      "lane": "deferred",
+      "lane": "program",
       "size": "XL",
       "source": {
         "file": "docs/BACKLOG.md",
         "ref": "§A-§V"
       },
-      "detail": "Items no current plan absorbed, kept as a body rather than 120 rows because none is individually scheduled: CRM follow-ups, the Network rework, circles/discovery, two-way inbox and @mentions, Quest/gamification depth, operator Growth Studio, Vera/AI (including the governance kernel and Proactive Vera), signup-lead recovery, the 12-item theme system, roles/personas long tails, IA, moderation and trust, and the 11 owner UI calls from the 2026-06-05 screenshot review. Promote an item to its own row when it is scheduled — that is the intended flow, not a workaround.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
+      "detail": "Items no current plan absorbed, kept as a body rather than 120 rows because none is individually scheduled: CRM follow-ups, the Network rework, circles/discovery, two-way inbox and @mentions, Quest/gamification depth, operator Growth Studio, Vera/AI (including the governance kernel and Proactive Vera), signup-lead recovery, the 12-item theme system, roles/personas long tails, IA, moderation and trust, and the 11 owner UI calls from the 2026-06-05 screenshot review. Promote an item to its own row when it is scheduled — that is the intended flow, not a workaround.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.",
       "verify": {
         "kind": "manual",
         "evidence": "Full text preserved in docs/TASK-INVENTORY-2026-08-17.md §8 and the source docs.",
@@ -2855,7 +2857,7 @@
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "HYG-009 sweep, 2026-08-20"
       },
-      "detail": "Re-verified still true 2026-08-20 (HYG-009): the host's 'List this event publicly' opt-out is honored on the index (lib/commerce/index-data.ts:487) but listTicketedEventProjections (lib/commerce/ticket-projection.ts:129,208) selects rows without applying listableOnly, so an opted-out ticketed event still surfaces on the Market Tickets rail. Apply listableOnly to the projection rows before shaping cards.",
+      "detail": "Re-verified still true 2026-08-20 (HYG-009): the host's 'List this event publicly' opt-out is honored on the index (lib/commerce/index-data.ts:487) but listTicketedEventProjections (lib/commerce/ticket-projection.ts:129,208) selects rows without applying listableOnly, so an opted-out ticketed event still surfaces on the Market Tickets rail. Apply listableOnly to the projection rows before shaping cards. ── PATH CORRECTED 2026-08-24: this row cites lib/commerce/index-data.ts:487 as where the opt-out IS honoured, and that file does not exist. The live site is app/(main)/events/index-data.ts:516, which calls listableOnly from lib/events/market-listing.ts:56. The defect itself re-verified TRUE the same day: lib/commerce/ticket-projection.ts still never applies it, and that file’s own header (line 5) claims it \"reads listable\" events, so the comment is false as well as the behaviour.",
       "verify": {
         "kind": "grep-present",
         "pattern": "listableOnly",
@@ -2926,11 +2928,11 @@
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "HYG-009 sweep, 2026-08-20"
       },
-      "detail": "Ten owner-side items the HYG-009 sweep re-verified as still open, none repo-closable: ANTHROPIC_API_KEY repo secret; flip the visual + adoption CI jobs to required (contrast already blocks, ci.yml:262); recruit five test users (feeds LIVE-060); the rail-bank migration (changes per-scope quick links); the event Layout staff gate; accentize() amber (~26 elements, design-visible); dismiss the three CodeQL false positives; Supabase dashboard leaked-password protection ON + anonymous sign-ins OFF; submit the sitemap to Search Console and Bing; CRON_HEARTBEAT_BASE_URL so the cron fleet can page (pairs with OWN-005). Tick items off in this detail as they land; the row closes when the list is empty.",
+      "detail": "Ten owner-side items the HYG-009 sweep re-verified as still open, none repo-closable: ANTHROPIC_API_KEY repo secret; flip the visual + adoption CI jobs to required (contrast already blocks, ci.yml:262); recruit five test users (feeds LIVE-060); the rail-bank migration (changes per-scope quick links); the event Layout staff gate; accentize() amber (~26 elements, design-visible); dismiss the three CodeQL false positives; Supabase dashboard leaked-password protection ON + anonymous sign-ins OFF; submit the sitemap to Search Console and Bing; CRON_HEARTBEAT_BASE_URL so the cron fleet can page (pairs with OWN-005). Tick items off in this detail as they land; the row closes when the list is empty. ── ITEM STRUCK 2026-08-24: \"Supabase dashboard leaked-password protection ON + anonymous sign-ins OFF\" is NOT open and this row should stop asking for it. OWN-007 and OWN-008 are both `done` in this same file, and a fresh production advisor read on 2026-08-24 returned 144 security lints with ZERO relating to either — which is the positive signal, since Supabase emits an advisory whenever either is wrong. Nine items remain.",
       "verify": {
         "kind": "manual",
-        "evidence": "Each item re-verified open in the HYG-009 sweep, 2026-08-20; none has a repo-visible consequence yet.",
-        "checked": "2026-08-20"
+        "evidence": "Each remaining item re-verified open in the HYG-009 sweep, 2026-08-20. The leaked-password + anonymous-sign-ins item was STRUCK 2026-08-24: contradicted by OWN-007/OWN-008 (done) and by a 144-lint advisor read returning zero auth advisories. Nine items remain, none with a repo-visible consequence yet.",
+        "checked": "2026-08-24"
       }
     },
     {
@@ -3143,7 +3145,7 @@
         "file": "app/(main)/events/calendar/page.tsx",
         "ref": "the month grid that drops the recurrence fields it is handed"
       },
-      "detail": "Owner report 2026-08-20: \"The only events that should be suppressed on the calendar are recurring weekly events. I want any event to show within a year of it being loaded but I don't want repeating events jamming the calendar.\" MEASURED the same day: 17 of the 20 upcoming events are occurrences of two weekly series (Breathe Connect Expand, Meld Community Cowork). 85% of the calendar is two events repeating.\n\nOWNER-SPECIFIED DESIGN (multiple choice, 2026-08-21):\n  • A Repeats STRIP sits between the month header and the grid, one chip per series, labelled with the series name AND its cadence (\"Breathe Connect Expand · Thursdays\"). Chips, not bare icons — an unlabelled icon fails the skeptic test because a member cannot tell what it is without clicking.\n  • Clicking a chip DOT-HIGHLIGHTS that series' dates in the grid (it does not filter the grid down, and it does not hide anything). Clicking the chip's name opens the event.\n  • In the cells: the NEXT occurrence of each series renders as a normal card; every later date gets a small dot rather than a card. So \"what is on this Thursday\" stays answerable at a glance while ~16 of the 17 repeat cards leave the grid.\n  • SCOPE IS /events/calendar ONLY. The master .ics already collapses a series to one RRULE entry, /events index cards already fold through collapseSeriesRows, and Space/Circle lists are explicitly out of scope for this row.\n\nTHE GROUNDWORK ALREADY EXISTS, which is most of why this is M and not L. supabase/migrations/20261203000000_calendar_feed_recurrence.sql already added recurrence_type, recurrence_until and parent_event_id to public_calendar_feed — precisely so the .ics routes could collapse a series — and app/(main)/events/calendar/page.tsx reads that feed and then DROPS all three when it builds its CalendarEvent objects. lib/events/series.ts already has collapseSeries, seriesKey and SeriesGroup, which every other surface uses. This is wiring, not building.\n\n⚠️ TWO TRAPS. (1) parent_event_id IS THE GROUPING KEY, NOT recurrence_type: the materialised child occurrences all carry recurrence_type 'none' and only the anchor knows the cadence, so grouping on cadence finds nothing. (2) \"WITHIN A YEAR\" AND \"REPEATING\" FIGHT EACH OTHER TODAY: occurrences are materialised rows and only 60 days ahead (HORIZON_DAYS in lib/event-recurrence.ts), so raising the listing horizon shows one-off events a year out but repeats simply stop existing past 60 days. Owner ruling: COMPUTE the strip's future dates from the anchor's recurrence_type + recurrence_until for display, and decide separately later whether to raise the materialiser. Those computed dates are display-only and cannot be RSVP'd or ticketed until the materialiser catches up — say so in the UI rather than letting a member click into nothing.\n\nRELATED, ALREADY DONE: the listing horizon is an operator setting (LIVE-073) and is currently set to 365.",
+      "detail": "Owner report 2026-08-20: \"The only events that should be suppressed on the calendar are recurring weekly events. I want any event to show within a year of it being loaded but I don't want repeating events jamming the calendar.\" MEASURED the same day: 17 of the 20 upcoming events are occurrences of two weekly series (Breathe Connect Expand, Meld Community Cowork). 85% of the calendar is two events repeating.\n\nOWNER-SPECIFIED DESIGN (multiple choice, 2026-08-21):\n  • A Repeats STRIP sits between the month header and the grid, one chip per series, labelled with the series name AND its cadence (\"Breathe Connect Expand · Thursdays\"). Chips, not bare icons — an unlabelled icon fails the skeptic test because a member cannot tell what it is without clicking.\n  • Clicking a chip DOT-HIGHLIGHTS that series' dates in the grid (it does not filter the grid down, and it does not hide anything). Clicking the chip's name opens the event.\n  • In the cells: the NEXT occurrence of each series renders as a normal card; every later date gets a small dot rather than a card. So \"what is on this Thursday\" stays answerable at a glance while ~16 of the 17 repeat cards leave the grid.\n  • SCOPE IS /events/calendar ONLY. The master .ics already collapses a series to one RRULE entry, /events index cards already fold through collapseSeriesRows, and Space/Circle lists are explicitly out of scope for this row.\n\nTHE GROUNDWORK ALREADY EXISTS, which is most of why this is M and not L. supabase/migrations/20261203000000_calendar_feed_recurrence.sql already added recurrence_type, recurrence_until and parent_event_id to public_calendar_feed — precisely so the .ics routes could collapse a series — and app/(main)/events/calendar/page.tsx reads that feed and then DROPS all three when it builds its CalendarEvent objects. lib/events/series.ts already has collapseSeries, seriesKey and SeriesGroup, which every other surface uses. This is wiring, not building.\n\n⚠️ TWO TRAPS. (1) parent_event_id IS THE GROUPING KEY, NOT recurrence_type: the materialised child occurrences all carry recurrence_type 'none' and only the anchor knows the cadence, so grouping on cadence finds nothing. (2) \"WITHIN A YEAR\" AND \"REPEATING\" FIGHT EACH OTHER TODAY: occurrences are materialised rows and only 60 days ahead (HORIZON_DAYS in lib/event-recurrence.ts), so raising the listing horizon shows one-off events a year out but repeats simply stop existing past 60 days. Owner ruling: COMPUTE the strip's future dates from the anchor's recurrence_type + recurrence_until for display, and decide separately later whether to raise the materialiser. Those computed dates are display-only and cannot be RSVP'd or ticketed until the materialiser catches up — say so in the UI rather than letting a member click into nothing.\n\nRELATED, ALREADY DONE: the listing horizon is an operator setting (LIVE-073) and is currently set to 365. ── SEQUENCED 2026-08-24 into W0: it was filed after the 2026-08-20 slate was ruled and sat in no wave. Placed near-term because the owner reported it directly and specified the design; move it if that is the wrong wave.",
       "verify": {
         "kind": "grep-present",
         "pattern": "parent_event_id",
@@ -3295,7 +3297,7 @@
         "file": "components/ui/dialog.tsx",
         "ref": "the shared primitive these six bypass"
       },
-      "detail": "🔴 THE SURVEY THAT PRODUCED THIS LIST WAS WRONG ABOUT ITS OWN EASY CASES, and that is the finding worth keeping. An overlay audit on 2026-08-21 sorted 28 modal-shaped overlays into \"trivially convertible / needs a decision / must not convert\" and put 12 in the first bucket. It sorted on GEOMETRY (items-end vs items-center) and never read scrim colour or z-tier. Verified one by one against Dialog's z-[80] + bg-ink/60 + backdrop-blur-sm, SEVEN candidates yielded exactly ONE true no-op:\n\n  invite-launcher       z-[80]  bg-ink/60  blur-sm   EXACT MATCH -> converted (align=\"sheet\")\n  vera-lightbox         z-[60]  bg-ink/60  blur-sm   scrim ok, tier 60 -> 80\n  invite-friend-button  z-[80]  button scrim         tier ok, scrim is a click-target element\n  capture-launcher      z-[70]  bg-ink/70  blur-sm   tier 70 -> 80, scrim lightens\n  chores-overlay        z-[70]  bg-ink/70  blur-sm   tier 70 -> 80, scrim lightens\n  teaser-gate           z-50    bg-ink/40  blur-2px  tier + scrim both change\n  induction             z-50    bg-ink/40  no blur   tier + scrim change, blur appears\n\nA GREP ALONE WOULD ALSO HAVE BEEN WRONG. teaser-gate and invite-friend-button look scrimless on the `fixed inset-0` line because their scrim is a SIBLING element (an absolute div, and a click-to-dismiss button respectively). Reading the line is not reading the overlay.\n\nSO THERE IS NO SWEEP HERE, only six individual judgments. A z-tier is a claim about what may appear above what (vera-lightbox at z-[60] sits BELOW the modal tier deliberately, so a Dialog can open over it), and a scrim opacity is a design choice (trophy-celebration, excluded from this row, uses a LIGHT bg-canvas/80 wash because it is a celebration, not a modal). Converting on autopilot would darken screens and reshuffle stacking with nobody having decided to.\n\nWHAT IS AT STAKE IF THEY STAY: every one of the six lacks a portal (so the sliding admin rail can trap it), lacks the Space theme (ADR-1097), sits outside the dialog stack, and pads no safe area. Five of the six set aria-modal=\"true\" with no focus trap at all, which tells a screen reader the page behind is inert while Tab walks straight out of it.",
+      "detail": "🔴 THE SURVEY THAT PRODUCED THIS LIST WAS WRONG ABOUT ITS OWN EASY CASES, and that is the finding worth keeping. An overlay audit on 2026-08-21 sorted 28 modal-shaped overlays into \"trivially convertible / needs a decision / must not convert\" and put 12 in the first bucket. It sorted on GEOMETRY (items-end vs items-center) and never read scrim colour or z-tier. Verified one by one against Dialog's z-[80] + bg-ink/60 + backdrop-blur-sm, SEVEN candidates yielded exactly ONE true no-op:\n\n  invite-launcher       z-[80]  bg-ink/60  blur-sm   EXACT MATCH -> converted (align=\"sheet\")\n  vera-lightbox         z-[60]  bg-ink/60  blur-sm   scrim ok, tier 60 -> 80\n  invite-friend-button  z-[80]  button scrim         tier ok, scrim is a click-target element\n  capture-launcher      z-[70]  bg-ink/70  blur-sm   tier 70 -> 80, scrim lightens\n  chores-overlay        z-[70]  bg-ink/70  blur-sm   tier 70 -> 80, scrim lightens\n  teaser-gate           z-50    bg-ink/40  blur-2px  tier + scrim both change\n  induction             z-50    bg-ink/40  no blur   tier + scrim change, blur appears\n\nA GREP ALONE WOULD ALSO HAVE BEEN WRONG. teaser-gate and invite-friend-button look scrimless on the `fixed inset-0` line because their scrim is a SIBLING element (an absolute div, and a click-to-dismiss button respectively). Reading the line is not reading the overlay.\n\nSO THERE IS NO SWEEP HERE, only six individual judgments. A z-tier is a claim about what may appear above what (vera-lightbox at z-[60] sits BELOW the modal tier deliberately, so a Dialog can open over it), and a scrim opacity is a design choice (trophy-celebration, excluded from this row, uses a LIGHT bg-canvas/80 wash because it is a celebration, not a modal). Converting on autopilot would darken screens and reshuffle stacking with nobody having decided to.\n\nWHAT IS AT STAKE IF THEY STAY: every one of the six lacks a portal (so the sliding admin rail can trap it), lacks the Space theme (ADR-1097), sits outside the dialog stack, and pads no safe area. Five of the six set aria-modal=\"true\" with no focus trap at all, which tells a screen reader the page behind is inert while Tab walks straight out of it. ── SEQUENCED 2026-08-24 into W6 beside PROG-DAWN3, the other mechanical sweep. It was filed after the 2026-08-20 slate was ruled and sat in no wave.",
       "verify": {
         "kind": "grep-absent",
         "paths": [
@@ -3333,21 +3335,21 @@
     {
       "id": "LIVE-091",
       "title": "The outbox retry policy is error-blind, and it dropped 359 emails in one afternoon",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "M",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "full audit, 2026-08-24"
       },
-      "detail": "FOUND 2026-08-24 by reading notification_queue in production. Nothing recorded this: no row, no ADR, no doc. THE DATA: the table holds 379 'done' (healthy, latest 2026-08-24 13:00, so the drain works today) and 359 'failed', every one created between 2026-07-17 16:00 and 17:43, all kind='email', all at attempts = max_attempts = 5, all carrying the same last_error: [email] send failed: {\"statusCode\":429,\"message\":\"You have reached your daily email sending quota.\",\"name\":\"daily_quota_exceeded\"}. THE MECHANISM: nextRetry (lib/queue/outbox.ts:36-42) decides retryability from the ATTEMPT COUNT ALONE and never inspects the error. With BACKOFF_BASE_MS = 60_000 (:26) and max_attempts = 5, all five attempts land inside ~15 minutes, against a quota that resets DAILY. So a daily_quota_exceeded is not merely likely to dead-letter every queued email — it is guaranteed to. The queue drained itself into the dead-letter state in 1h43m. WHO PAID: 356 of the 359 were one bulk campaign to 356 distinct recipients; the other three are the real damage — two welcome emails to genuine new members and one event-claim invite. Bulk and transactional mail share one queue with no priority or quota separation, so a campaign starved the welcomes. WHY NOBODY SAW: the code dead-letters loudly (console.error at :128, comment says it 'needs operator attention (ADR-043)') and an operator surface exists with one-tap requeue (components/widgets/marketing/deliverability-dead-letters.tsx). But nothing pages: grepping lib/observability, scripts/ and .github/ for dead-letter references returns zero. Pull-only, and for five weeks nobody pulled. This is the AGENTS.md rule exactly — every fail-safe needs a gate that notices it fired. FIX (this row covers parts 1-2 only): 1. Classify before counting — a 429/rate-limit/quota error is retryable on a TIME axis, so push run_after past the window and do NOT increment attempts. 2. Separate bulk from transactional so a campaign can never starve a welcome. PART 3 (a gate that pages on a dead-letter spike) is already scoped inside DEF-HARDEN and stays there. PART 4 (requeue the three transactional rows, leave the five-week-stale campaign) is an operator action on live data — OWN-042.",
+      "detail": "FOUND 2026-08-24 by reading notification_queue in production. Nothing recorded this: no row, no ADR, no doc. THE DATA: the table holds 379 'done' (healthy, latest 2026-08-24 13:00, so the drain works today) and 359 'failed', every one created between 2026-07-17 16:00 and 17:43, all kind='email', all at attempts = max_attempts = 5, all carrying the same last_error: [email] send failed: {\"statusCode\":429,\"message\":\"You have reached your daily email sending quota.\",\"name\":\"daily_quota_exceeded\"}. THE MECHANISM: nextRetry (lib/queue/outbox.ts:36-42) decides retryability from the ATTEMPT COUNT ALONE and never inspects the error. With BACKOFF_BASE_MS = 60_000 (:26) and max_attempts = 5, all five attempts land inside ~15 minutes, against a quota that resets DAILY. So a daily_quota_exceeded is not merely likely to dead-letter every queued email — it is guaranteed to. The queue drained itself into the dead-letter state in 1h43m. WHO PAID: 356 of the 359 were one bulk campaign to 356 distinct recipients; the other three are the real damage — two welcome emails to genuine new members and one event-claim invite. Bulk and transactional mail share one queue with no priority or quota separation, so a campaign starved the welcomes. WHY NOBODY SAW: the code dead-letters loudly (console.error at :128, comment says it 'needs operator attention (ADR-043)') and an operator surface exists with one-tap requeue (components/widgets/marketing/deliverability-dead-letters.tsx). But nothing pages: grepping lib/observability, scripts/ and .github/ for dead-letter references returns zero. Pull-only, and for five weeks nobody pulled. This is the AGENTS.md rule exactly — every fail-safe needs a gate that notices it fired. FIX (this row covers parts 1-2 only): 1. Classify before counting — a 429/rate-limit/quota error is retryable on a TIME axis, so push run_after past the window and do NOT increment attempts. 2. Separate bulk from transactional so a campaign can never starve a welcome. PART 3 (a gate that pages on a dead-letter spike) is already scoped inside DEF-HARDEN and stays there. PART 4 (requeue the three transactional rows, leave the five-week-stale campaign) is an operator action on live data — OWN-042. ── CLOSED 2026-08-24 (parts 1-2; part 3 stays in DEF-HARDEN, part 4 in OWN-042). PART 1: retryDelayFor (lib/queue/outbox.ts) classifies the error first and returns whether the attempt counts. A daily quota waits until the next UTC midnight and spends NO attempt; a generic 429 waits 15 minutes and spends no attempt; a provider Retry-After wins over both, floored at 1 minute and capped at 24 hours. Everything else is nextRetry byte for byte, dead-letter semantics untouched. Free deferrals are bounded by WALL-CLOCK AGE off created_at (the only clock the table already has, so no migration): 72h for a quota, 1h for a rate limit, after which the same error falls back to attempt counting and can dead-letter. PART 2: a lane (transactional | bulk) rides in the payload jsonb; the campaign fan-out and the nurture drip declare bulk, everything else is transactional by default, and a pre-lane campaign row still reads as bulk from its campaign_id tag. The drain runs transactional first within a batch and, on the first quota refusal, parks the rest of the bulk lane without calling the provider. The fan-out also drips its run_after at 10/min so it cannot fill the claim window. NOT DONE, and stated plainly: claim_outbox_jobs is 'order by run_after asc' and lane-blind, so an ALREADY-backlogged bulk queue can still sit in front of a welcome at CLAIM time. Closing that needs a lane/priority column plus a new ORDER BY in the RPC, i.e. a migration, which this row did not write.",
       "verify": {
         "kind": "grep-present",
         "pattern": "retryDelayFor",
         "paths": [
           "lib/queue/outbox.ts"
         ],
-        "note": "Passes when the retry decision consults the ERROR, not just the attempt count. Names the classifier that must exist and be called from the catch block."
+        "note": "Passes when the retry decision consults the ERROR, not just the attempt count. Names the classifier that must exist and be called from the catch block. The grep alone is shape, not truth: the behaviour is pinned by lib/queue/outbox.test.ts, where a job failing 429 daily_quota_exceeded five times in a row is never dead-lettered, never spends an attempt, and is scheduled past the daily window."
       }
     },
     {
@@ -3433,34 +3435,34 @@
     {
       "id": "LIVE-096",
       "title": "An uncapped Circle sorts last under \"Most room\"",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "full audit, 2026-08-24"
       },
-      "detail": "FOUND 2026-08-24 in the delta audit, confirmed by reading both functions. roomIn (app/(main)/spaces/[slug]/(profile)/circles/page.tsx:315-320) returns 0 when member_cap is absent, but cap <= 0 means NO CAP, which isOpenToJoin fifteen lines above (:299-303) correctly reads as always-joinable (return cap <= 0 || ...). So under ?sort=open ('Most room') every uncapped Circle sorts BELOW a capped one with a single seat left — the exact opposite of the function's own docstring, which says an uncapped circle is 'treated as roomy but never infinite'. Uncapped is the default for a new Circle, so this is the common case, not the edge. FIX: return a named constant expressing the docstring's own rule (roomy but not infinite) for the uncapped case, and unit-test sortCircles with one uncapped circle against one capped circle at cap-1.",
+      "detail": "FOUND 2026-08-24 in the delta audit, confirmed by reading both functions. roomIn (app/(main)/spaces/[slug]/(profile)/circles/page.tsx:315-320) returns 0 when member_cap is absent, but cap <= 0 means NO CAP, which isOpenToJoin fifteen lines above (:299-303) correctly reads as always-joinable (return cap <= 0 || ...). So under ?sort=open ('Most room') every uncapped Circle sorts BELOW a capped one with a single seat left — the exact opposite of the function's own docstring, which says an uncapped circle is 'treated as roomy but never infinite'. Uncapped is the default for a new Circle, so this is the common case, not the edge. FIX: return a named constant expressing the docstring's own rule (roomy but not infinite) for the uncapped case, and unit-test sortCircles with one uncapped circle against one capped circle at cap-1. ── CLOSED 2026-08-24. The three pure helpers (roomIn, sortCircles, isOpenToJoin) moved out of page.tsx into a colocated sort.ts, because while they sat in the route file they could not be unit-tested — which is exactly what this bug cost. Seven tests now pin it, including the docstring rule in both directions: an uncapped Circle beats a nearly-full capped one, AND a genuinely emptier capped Circle still beats the uncapped one, so \"roomy but never infinite\" is a measured claim rather than a comment.",
       "verify": {
-        "kind": "grep-present",
-        "pattern": "UNCAPPED_ROOM",
+        "kind": "grep-absent",
+        "pattern": "member_count \\?\\? 0\\)\\) : 0",
         "paths": [
-          "app/(main)/spaces/[slug]/(profile)/circles/page.tsx"
+          "app/(main)/spaces/[slug]/(profile)/circles"
         ],
-        "note": "Passes when the uncapped case has a named non-zero value rather than falling through to 0."
+        "note": "Measures the DEFECT, not the fix: this is the exact expression that returned zero room for an uncapped Circle. A grep-present for the new constant would pass by existing, which is the shape-not-truth failure. Proven as a control: the pattern matches the pre-fix line and not the post-fix one. The behaviour itself is pinned by sort.test.ts, which runs in CI."
       }
     },
     {
       "id": "LIVE-097",
       "title": "The /spaces/:slug/community 308 can now land on a permanently cached 404",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "full audit, 2026-08-24"
       },
-      "detail": "FOUND 2026-08-24 in the delta audit. next.config.ts:318 redirects /spaces/:slug/community -> /spaces/:slug/circles with permanent: true. The previous destination (/spaces/:slug) resolved for any visible Space. The new destination notFound()s on two conditions the old one did not: app/(main)/spaces/[slug]/(profile)/circles/page.tsx:96 (space.type === 'root') and :100 (the circles function switched off). Because this is a 308 the browser caches it, so an operator who turns the Circles function off converts a previously-working bookmark — and every already-sent notification link — into a permanently cached 404. FIX: in the circles page, replace those two notFound() calls with redirect(`/spaces/${slug}`). The tab is already hidden from the nav in both cases, so nothing else changes. Leave the :93 !space notFound() alone — a missing Space is a real 404.",
+      "detail": "FOUND 2026-08-24 in the delta audit. next.config.ts:318 redirects /spaces/:slug/community -> /spaces/:slug/circles with permanent: true. The previous destination (/spaces/:slug) resolved for any visible Space. The new destination notFound()s on two conditions the old one did not: app/(main)/spaces/[slug]/(profile)/circles/page.tsx:96 (space.type === 'root') and :100 (the circles function switched off). Because this is a 308 the browser caches it, so an operator who turns the Circles function off converts a previously-working bookmark — and every already-sent notification link — into a permanently cached 404. FIX: in the circles page, replace those two notFound() calls with redirect(`/spaces/${slug}`). The tab is already hidden from the nav in both cases, so nothing else changes. Leave the :93 !space notFound() alone — a missing Space is a real 404. ── CLOSED 2026-08-24. Both soft cases (root Space, circles function off) now redirect to the Space root instead of 404ing; the missing-Space case stays a notFound(), because that is a real 404. The gate comment in the page header now states why, naming the cached-308 interaction that makes a 404 here permanent rather than transient.",
       "verify": {
         "kind": "grep-present",
         "pattern": "redirect\\(",
@@ -3473,14 +3475,14 @@
     {
       "id": "LIVE-098",
       "title": "Two statements in shipped code are false about their own behaviour",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "full audit, 2026-08-24"
       },
-      "detail": "FOUND 2026-08-24 in the delta audit. (a) components/ui/use-stick-to-bottom.ts:36 — the usage block shows `const listRef = useStickToBottom<HTMLDivElement>([...])` then `<div ref={listRef}>`, but the hook returns { ref, stickNow } (:87). All five real callers destructure correctly; the documented example does not compile. (b) components/journey/v2/journey-spark.tsx:409 — the retained InfoTip still says 'A zip or an image is accepted but not read yet, so unzip first for now.' The bespoke BatchUpload it came from accepted .zip explicitly; the shared zone it moved to uses DOC_TYPES = '.pdf,.doc,.docx,.txt,.md,...' (components/studio/spark/spark-dropzone.tsx:37), which filters zip out of the picker entirely. So the tip tells a member to do something the control will not let them do. FIX: correct the example to destructure; drop the zip clause from the tip (or add .zip back to DOC_TYPES, which is a product decision rather than a copy fix).",
+      "detail": "FOUND 2026-08-24 in the delta audit. (a) components/ui/use-stick-to-bottom.ts:36 — the usage block shows `const listRef = useStickToBottom<HTMLDivElement>([...])` then `<div ref={listRef}>`, but the hook returns { ref, stickNow } (:87). All five real callers destructure correctly; the documented example does not compile. (b) components/journey/v2/journey-spark.tsx:409 — the retained InfoTip still says 'A zip or an image is accepted but not read yet, so unzip first for now.' The bespoke BatchUpload it came from accepted .zip explicitly; the shared zone it moved to uses DOC_TYPES = '.pdf,.doc,.docx,.txt,.md,...' (components/studio/spark/spark-dropzone.tsx:37), which filters zip out of the picker entirely. So the tip tells a member to do something the control will not let them do. FIX: correct the example to destructure; drop the zip clause from the tip (or add .zip back to DOC_TYPES, which is a product decision rather than a copy fix). ── CLOSED 2026-08-24. (a) the usage example destructures { ref, stickNow } and now matches the hook it documents. (b) the InfoTip drops the zip/image clause entirely rather than being softened: DOC_TYPES is .pdf,.doc,.docx,.txt,.md plus three MIME types, so the picker filters zip AND images out, and the tip was telling a member to do something the control does not permit. check:canon passes on the new string.",
       "verify": {
         "kind": "grep-absent",
         "pattern": "unzip first for now",
