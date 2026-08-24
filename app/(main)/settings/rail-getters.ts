@@ -171,7 +171,7 @@ export interface MemberHubData {
   streak: number
   /** Accepted connections count. */
   connections: number
-  /** The entitlement plan label (Member / Crew / Supporter). */
+  /** The entitlement plan label (Member / Crew). */
   planLabel: string
 }
 

@@ -183,9 +183,14 @@ describe('the TWO individual seller rungs — free Member 10%, Crew 8% (ADR-914)
     expect(memberNetworkTakeRateBps('free', { ...NETWORK_TAKE_RATE_DEFAULT, memberFree: 1200 })).toBe(1200)
   })
 
-  it('a legacy supporter row folds into Crew, exactly as deriveTier does everywhere else', () => {
-    // Otherwise a Supporter would be billed the free rung on a tier they paid more than Crew for.
-    expect(memberNetworkTakeRateBps('supporter')).toBe(800)
+  it('the RETIRED Supporter label prices at the HIGHER free rung, like any unknown tier', () => {
+    // It used to fold into Crew's 8%, because a real Supporter row could exist and would have been
+    // billed the free rung on a tier they paid MORE than Crew for. The rung was retired on
+    // 2026-08-24 and profiles.membership_tier CHECKs to exactly ('free','crew'), so no seller can
+    // carry the label — and an unreadable tier must price at 10%, the fail-safe direction this whole
+    // function is built around. Under-collecting is the failure mode we refuse; there is no seller
+    // left to over-charge.
+    expect(memberNetworkTakeRateBps('supporter')).toBe(1000)
   })
 
   it('🔴 an unknown or missing tier prices at the HIGHER free rung, never the discount', () => {

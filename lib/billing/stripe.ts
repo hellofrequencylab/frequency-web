@@ -32,8 +32,8 @@ export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? ''
 /** Explicit price id for a paid tier, if the owner configured one. Optional — when
  *  absent, checkout builds an inline price (see createMembershipCheckout).
  *
- *  Crew is the only sellable member tier (ADR-878), so every other label resolves to null and cannot
- *  start a purchase. A historical `supporter` row reads null here, never a $12 price. */
+ *  Crew is the only sellable member tier (ADR-878), and since 2026-08-24 the only paid label on
+ *  EntitlementTier at all, so 'free' resolves to null and cannot start a purchase. */
 export function priceFor(tier: EntitlementTier): string | null {
   if (tier === 'crew') return process.env.STRIPE_PRICE_CREW ?? null
   return null
@@ -55,7 +55,8 @@ export function membershipAmount(): number {
 
 /** The tier a Stripe price id maps back to (for the webhook). Always Crew: Crew is the only member
  *  subscription that is sold (ADR-878), and a legacy Supporter subscription is access-preserved as Crew
- *  exactly like the read-time `supporter -> crew` mapping in lib/core/entitlement.ts (ADR-458). */
+ *  — the same direction the retired read-time fold took, kept HERE because a Stripe price id is an
+ *  external value the union cannot constrain. */
 export function tierForPrice(_priceId?: string | null): EntitlementTier {
   return 'crew'
 }

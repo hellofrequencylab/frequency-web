@@ -189,7 +189,7 @@ function pricedOffering(
 }
 
 /** Is a PERSONAL column a paid rung? The one predicate the whole repo uses (`isPaid(deriveTier(...))`),
- *  so a legacy 'supporter' label folds into Crew here exactly as it does on the charging path and a
+ *  so the tier normalises here exactly as it does on the charging path and a
  *  column can never quote a rate the fee math would not apply. PURE. */
 function isPaidTierLabel(tier: string): boolean {
   return isPaid(deriveTier(tier as EntitlementTier))

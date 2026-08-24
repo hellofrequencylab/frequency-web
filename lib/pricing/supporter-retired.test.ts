@@ -1,23 +1,28 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 
-// SUPPORTER IS OFF THE SELLABLE LADDER (ADR-878). The founder's member ladder is exactly Member (free)
-// and Crew (pay-what-you-want, from $4.99/mo). This file is the guard that it stays that way, and that retiring the SELL path did
-// not cost a historical member a single unit of access.
+// SUPPORTER IS OFF THE LADDER ENTIRELY. The founder's member ladder is exactly Member (free) and Crew
+// (pay-what-you-want, from $4.99/mo). This file is the guard that it stays that way.
 //
-// The two halves, deliberately kept in one file so they are read together:
+// The three halves, deliberately kept in one file so they are read together:
 //
-//   1. NOTHING SELLS OR SHOWS SUPPORTER. memberTierSellable('supporter') refuses even with the flag ON,
-//      no display row or pricing-grid column carries it, no member surface renders a $12 price, and
-//      Crew renders ONE clean price with no crossed-out anchor.
-//   2. NOTHING LOSES ACCESS. The read-time `supporter -> crew` mapping (ADR-458) still works, a
-//      historical row still clears the paid gates, and deriveGamificationAccess('supporter') is still
-//      'full'. Retiring a sell path must never be a downgrade.
+//   1. NOTHING SELLS OR SHOWS SUPPORTER (ADR-878). memberTierSellable('supporter') refuses even with
+//      the flag ON, no display row or pricing-grid column carries it, no member surface renders a $12
+//      price, and Crew renders ONE clean price with no crossed-out anchor.
+//   2. THE RUNG ITSELF IS GONE (owner directive, 2026-08-24). It left the EntitlementTier union,
+//      ENTITLEMENT_TIERS, ENTITLEMENT_LABEL, the isPaid matrix and the gamification flag map, and the
+//      read-time `supporter -> crew` fold in deriveTier went with it.
+//   3. NOBODY LOST ACCESS, because nobody could be holding it. The fold was removable only because its
+//      drop condition was MEASURED: migration 20260915000100 narrowed profiles.membership_tier to
+//      CHECK (membership_tier in ('free','crew')) and remapped every row, so the label is
+//      unrepresentable in the column. §3 pins that migration, because it is the entire premise: if the
+//      CHECK ever widened again, removing the fold would become a downgrade and this test must fail.
 //
 // ADR-458 retired Supporter as a TIER (it became the pay-what-you-want `profiles.is_supporter` badge).
-// ADR-878 removes what was left: the sell + display surfaces. The badge is NOT under test here; it
-// stays, and lib/billing/supporter.test.ts covers it.
+// ADR-878 removed the sell + display surfaces. This change removes the label. The BADGE is NOT under
+// test here and is NOT retired; it stays, and lib/billing/supporter.test.ts covers it. Retiring a rung
+// is not retiring a way to give.
 
-import { catalogConfigByKey, defaultCatalogConfig } from './catalog-config'
+import { catalogConfigByKey, defaultCatalogConfig, earnsSupporterMark, PWYW_CONFIG_DEFAULT } from './catalog-config'
 import { memberTierRows, priceRow } from './display'
 import { deriveGamificationAccess } from './gamification'
 import { resolveGamificationAccessWithFlags } from './gamification-access'
@@ -26,7 +31,8 @@ import { memberFeatureGrid, memberOfferings, type PricingGridInput } from './pri
 import { PRICING_DEFAULTS } from './settings'
 import { PLACEHOLDER_MEMBER_PRICE_CENTS, tierPriceCents, tierPriceLabel } from './feature-tiers'
 import { CREW_NOTE, pricingLadderSummary } from './pricing-page'
-import { deriveTier, isPaid } from '@/lib/core/entitlement'
+import { readFileSync } from 'node:fs'
+import { deriveTier, isPaid, ENTITLEMENT_TIERS, ENTITLEMENT_LABEL } from '@/lib/core/entitlement'
 
 const input: PricingGridInput = {
   values: PRICING_DEFAULTS,
@@ -165,32 +171,68 @@ describe('the Supporter DISPLAY surfaces are gone (ADR-878)', () => {
   })
 })
 
-// ── 2. Nothing loses access ──────────────────────────────────────────────────────────────────────
+// ── 2. The RUNG is gone from the type and every structure derived from it ───────────────────────
 
-describe('a HISTORICAL supporter row keeps every unit of access (ADR-458 tolerance kept)', () => {
-  it('deriveTier maps supporter -> crew at read time', () => {
-    expect(deriveTier('supporter')).toBe('crew')
-    expect(isPaid('supporter')).toBe(true)
+describe('the Supporter RUNG left the entitlement ladder (owner directive, 2026-08-24)', () => {
+  it('the ladder is exactly two rungs, and neither is Supporter', () => {
+    expect([...ENTITLEMENT_TIERS]).toEqual(['free', 'crew'])
+    expect(Object.keys(ENTITLEMENT_LABEL).sort()).toEqual(['crew', 'free'])
+    expect(ENTITLEMENT_LABEL).not.toHaveProperty('supporter')
+    expect(Object.values(ENTITLEMENT_LABEL)).not.toContain('Supporter')
   })
 
-  it('deriveGamificationAccess("supporter") is still full', () => {
-    expect(deriveGamificationAccess('supporter')).toBe('full')
+  it('the read-time fold is gone: the retired label no longer resolves to a paid rung', () => {
+    // Cast, because the label is not representable through the type any more. The compiler is the
+    // first gate; this is the second, and it is the assertion that inverts the old §2.
+    const retired = 'supporter' as unknown as 'crew'
+    expect(deriveTier(retired)).not.toBe('crew')
+    expect(isPaid(retired)).toBe(false)
+    expect(deriveGamificationAccess(retired)).toBe('earn_only')
     expect(
       resolveGamificationAccessWithFlags({ membership_tier: 'supporter' }, {
         gamification_full_member: false,
         gamification_full_crew: true,
-        gamification_full_supporter: true,
       }),
-    ).toBe('full')
+    ).toBe('earn_only')
   })
 
-  it('a supporter row still clears the paid tier gates', () => {
+  it('a paid gate ranks the retired label LOWEST, never highest (default-deny, not fail-open)', () => {
     const gate: FeatureGate = { axis: 'tier', minEntitlement: 'crew', enabled: true }
-    expect(meetsGate(gate, { tier: 'supporter' })).toBe(true)
+    expect(meetsGate(gate, { tier: 'supporter' as unknown as 'crew' })).toBe(false)
+    expect(meetsGate(gate, { tier: 'crew' })).toBe(true)
   })
 
-  it('a supporter row prices at CREW, never at the retired $12', () => {
-    expect(tierPriceCents('tier', 'supporter')).toBe(PLACEHOLDER_MEMBER_PRICE_CENTS.crew)
-    expect(tierPriceLabel('tier', 'supporter')).toBe('from $4.99/mo')
+  it('the retired label has no member price, and Crew still does', () => {
+    expect(tierPriceCents('tier', 'supporter')).toBe(0)
+    expect(tierPriceCents('tier', 'crew')).toBe(PLACEHOLDER_MEMBER_PRICE_CENTS.crew)
+    expect(Object.keys(PLACEHOLDER_MEMBER_PRICE_CENTS).sort()).toEqual(['crew', 'free'])
+  })
+})
+
+// ── 3. The premise: the column cannot hold the label ─────────────────────────────────────────────
+
+describe('nobody could lose access, because the column cannot carry the label', () => {
+  it('the member-tier collapse migration still CHECKs membership_tier to exactly free / crew', () => {
+    // THE LOAD-BEARING ASSERTION. Removing the read-time fold is safe if and ONLY if the column
+    // cannot hold the retired label. Measured live on 2026-08-24: the constraint reads
+    // CHECK ((membership_tier = ANY (ARRAY['free','crew']))) and 0 of 56 profiles carry the label.
+    // This pins the migration that put it there, so a future widening breaks the build rather than
+    // quietly turning this retirement into a downgrade.
+    const sql = readFileSync('supabase/migrations/20260915000100_pricing_member_tier.sql', 'utf8')
+    expect(sql).toContain("check (membership_tier in ('free', 'crew'))")
+    // And the same migration is what preserved the distinction it retired: the badge backfill.
+    expect(sql).toContain("update public.profiles set is_supporter = true where membership_tier = 'supporter'")
+  })
+})
+
+// ── 4. The BADGE is a different axis and is untouched ────────────────────────────────────────────
+
+describe('the Supporter BADGE survives the rung (ADR-458 § the whole point)', () => {
+  it('a contribution at or above the suggested amount still earns the mark', () => {
+    // The pay-what-you-want contribution channel is how a member backs the Foundation on top of Crew.
+    // It writes profiles.is_supporter, which is NOT membership_tier and was never a rung.
+    const pwyw = PWYW_CONFIG_DEFAULT
+    expect(earnsSupporterMark(pwyw.suggestedCents, pwyw)).toBe(true)
+    expect(earnsSupporterMark(pwyw.suggestedCents - 1, pwyw)).toBe(false)
   })
 })

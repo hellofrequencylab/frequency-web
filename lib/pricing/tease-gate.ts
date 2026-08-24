@@ -59,7 +59,7 @@ async function caller(): Promise<{ id: string | null; tier: EntitlementTier }> {
   }
 }
 
-/** Tier rank on the ladder (free < crew < supporter). Unknown ranks lowest. */
+/** Tier rank on the ladder (free < crew). Unknown ranks lowest. */
 function tierRank(tier: EntitlementTier): number {
   const i = ENTITLEMENT_TIERS.indexOf(tier)
   return i < 0 ? 0 : i

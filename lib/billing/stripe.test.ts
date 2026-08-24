@@ -37,7 +37,9 @@ describe('the Supporter sell path is gone (ADR-878)', () => {
   it('priceFor never resolves a Supporter price id, even with the env set', () => {
     process.env.STRIPE_PRICE_SUPPORTER = 'price_supporter_legacy'
     process.env.STRIPE_PRICE_CREW = 'price_crew'
-    expect(priceFor('supporter')).toBeNull()
+    // The label is not on EntitlementTier any more (retired 2026-08-24), so the cast is what asking
+    // the question at all now takes — and the answer is still null, never a $12 price.
+    expect(priceFor('supporter' as unknown as 'crew')).toBeNull()
     expect(priceFor('free')).toBeNull()
     expect(priceFor('crew')).toBe('price_crew')
   })

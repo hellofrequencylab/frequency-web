@@ -5,9 +5,10 @@ import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile, getMyProfileId, type CommunityRole } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { isPaid } from '@/lib/core/entitlement'
 import { searchRoom, type RoomSearchHit } from '@/lib/ai/room-search'
 
-// Room creation = paid (Crew/Supporter TIER) or a steward (host+) — PB.1/ADR-207.
+// Room creation = the paid Crew TIER or a steward (host+) — PB.1/ADR-207.
 const STEWARD_ROLES: CommunityRole[] = ['host', 'guide', 'mentor', 'admin', 'janitor'] as CommunityRole[]
 
 type RoomVisibility = 'public' | 'private' | 'circle' | 'hub' | 'nexus' | 'outpost'
@@ -28,7 +29,7 @@ export async function searchRoomAction(
 export async function createRoom(fd: FormData): Promise<ActionResult<{ id: string }>> {
   const caller = await getCallerProfile()
   if (!caller) return fail('Not signed in')
-  const paid = caller.membershipTier === 'crew' || caller.membershipTier === 'supporter'
+  const paid = isPaid(caller.membershipTier)
   if (!paid && !STEWARD_ROLES.includes(caller.community_role)) {
     return fail('Crew membership required to create rooms')
   }

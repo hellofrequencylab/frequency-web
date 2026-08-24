@@ -779,7 +779,7 @@ The canonical predicates are `isPaid(deriveTier(tier))` and `asSpacePlan(plan)`.
 | Where | Re-derives | Risk |
 |---|---|---|
 | `lib/pricing/space-limits.ts` | `isPaidSpacePlan` = business \|\| nonprofit | 🔴 **Bug.** Omits `collective` + `independent`; all 4 paid Spaces are `collective` |
-| `app/(main)/messages/page.tsx` (×2) | `PAID_TIERS = ['crew','supporter']` | 🔴 Hand-rolled, reads the raw column, bypasses `deriveTier` |
+| `app/(main)/messages/page.tsx` (×2) | ~~`PAID_TIERS = ['crew','supporter']`~~ | ✅ Fixed 2026-08-24 (ADR-1106): the list is `['crew']` and the server action routes through `isPaid`. The retired rung is gone from the union, so the raw column can only read `free` or `crew`. |
 | `app/(main)/events/index-data.ts` | same inline array | 🔴 |
 | `lib/journeys/journey-access.ts` · `publish-gate.ts` | `paidSpace = plan !== 'free'` | ⚠️ A second, disagreeing definition of "paid Space" |
 | `lib/qr/space-codes.ts` | its own plan → number map | ⚠️ A third plan ladder |
@@ -789,7 +789,7 @@ The canonical predicates are `isPaid(deriveTier(tier))` and `asSpacePlan(plan)`.
 
 | Table | Finding |
 |---|---|
-| `profiles.membership_tier` (48) | crew **33** · free 15 · supporter **0** (the `deriveTier` supporter mapping is now dead weight) |
+| `profiles.membership_tier` (48) | crew **33** · free 15 · supporter **0** (the `deriveTier` supporter mapping was dead weight; ✅ removed 2026-08-24, ADR-1106, and the column CHECKs to `free`/`crew`) |
 | `spaces.plan` (19) | free **14** · collective **4** · null 1 (root). 🔴 **No Space is `business`, `nonprofit`, or `independent`** |
 | `pricing_settings` (13 rows) | 🔴 `beta_grace` **absent**. `take_rate` holds only the legacy flat blob (`free_bps`, `member_bps`, `business_bps`, `nonprofit_bps`) with **no `network_bps`** — the live vector comes entirely from the code default via per-field merge |
 | `pricing_feature_gates` (11 rows) | 6 of 11 disagree with the code map (see B3) |

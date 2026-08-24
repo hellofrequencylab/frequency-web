@@ -57,8 +57,9 @@ spec and [ONBOARDING-BUILD-LIST.md](ONBOARDING-BUILD-LIST.md) §11 the build pla
   per-domain capability layer for scoped staff hires. `profiles.web_role` is the new
   column (migration `20260613000050`); the deprecated `community_role` `admin`/`janitor`
   rungs are kept as no-ops for enum-order stability but no longer consulted by staff gates.
-- **Billing (`membership_tier`)**: a third, independent attribute (Free → Member →
-  Supporter).
+- **Billing (`membership_tier`)**: a third, independent attribute, and exactly two rungs:
+  Member (free) → Crew (paid). Supporter is a BADGE on Crew (`profiles.is_supporter`), not a
+  rung: the tier was retired on 2026-08-24 and the column CHECKs to `free` / `crew`.
 
 Community-ladder authz still uses the `HIERARCHY` index-comparison pattern
 (`get_my_role() >= 'host'`); staff gates read `get_my_web_role()`.

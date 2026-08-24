@@ -119,8 +119,9 @@ export interface AssignableMember {
   role: string
 }
 
-/** Active members an operator can assign an entry point to: paid (Crew/Supporter
- *  tier) or stewards (host+). Crew = the paid TIER, not a role (PB.1/ADR-207). */
+/** Active members an operator can assign an entry point to: the paid Crew tier or stewards
+ *  (host+). Crew = the paid TIER, not a role (PB.1/ADR-207), and the only paid rung: the
+ *  Supporter rung left EntitlementTier on 2026-08-24 and the column CHECKs to free/crew. */
 export async function listAssignableMembers(limit = 200): Promise<AssignableMember[]> {
   const hostPlus = ROLE_HIERARCHY.slice(ROLE_HIERARCHY.indexOf('host')) as readonly string[]
   const db = createAdminClient()
@@ -129,7 +130,7 @@ export async function listAssignableMembers(limit = 200): Promise<AssignableMemb
     .select('id, display_name, community_role')
     .eq('is_active', true)
     .eq('is_system', false)
-    .or(`membership_tier.in.(crew,supporter),community_role.in.(${hostPlus.join(',')})`)
+    .or(`membership_tier.in.(crew),community_role.in.(${hostPlus.join(',')})`)
     .order('display_name', { ascending: true })
     .limit(limit)
   return ((data as { id: string; display_name: string; community_role: string }[] | null) ?? []).map((p) => ({
@@ -151,6 +152,6 @@ export async function isAssignableMember(profileId: string): Promise<boolean> {
   const p = data as { community_role: string; membership_tier: string | null; is_active: boolean; is_system: boolean } | null
   return (
     !!p && p.is_active && !p.is_system &&
-    (['crew', 'supporter'].includes(p.membership_tier ?? '') || hostPlus.includes(p.community_role))
+    (p.membership_tier === 'crew' || hostPlus.includes(p.community_role))
   )
 }

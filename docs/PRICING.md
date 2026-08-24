@@ -162,14 +162,18 @@
 > spaces keep resolving). ⚠️ "Opening Beta price" is RETIRED as a copy phrase (ADR-1060): no surface may
 > offer a beta rate, because the checkout no longer charges one.
 >
-> **Supporter is NOT on the ladder (ADR-878).** ADR-458 retired it as a tier (it became the
-> pay-what-you-want `profiles.is_supporter` badge); ADR-818 briefly sold it again at $12; ADR-878 removed
-> it from the sell + display paths for good, and cleared Crew's $12 anchor with it. `tier.supporter` is
-> gone from `PricingDefaults`, `memberTierSellable('supporter')` refuses regardless of the flag, and the
-> `supporter_*` price keys are RETIRED-but-resolvable. The read-time `supporter -> crew` mapping in
-> `lib/core/entitlement.ts` STAYS, so a historical row never loses access. The Supporter BADGE and its
-> PWYW contribution channel are untouched. Operator SQL: `scripts/adr-878-retire-supporter-tier.sql`.
-> Every mention of a sellable Supporter tier below this line is historical.
+> **Supporter is NOT a tier at all (ADR-1106, on top of ADR-878).** ADR-458 retired it as a tier (it
+> became the pay-what-you-want `profiles.is_supporter` badge); ADR-818 briefly sold it again at $12;
+> ADR-878 removed it from the sell + display paths for good, and cleared Crew's $12 anchor with it.
+> `tier.supporter` is gone from `PricingDefaults`, `memberTierSellable('supporter')` refuses regardless
+> of the flag, and the `supporter_*` price keys are RETIRED-but-resolvable. On **2026-08-24** the owner
+> retired the LABEL: it left the `EntitlementTier` union, `ENTITLEMENT_TIERS`, `ENTITLEMENT_LABEL`, the
+> `isPaid` matrix and the `gamification_full_*` flag map, and the read-time `supporter -> crew` fold in
+> `lib/core/entitlement.ts` went with it. Safe because the label is unrepresentable: migration
+> `20260915000100` CHECKs `membership_tier` to exactly `free` / `crew`, and 0 of 56 profiles carry it.
+> The Supporter BADGE and its PWYW contribution channel are untouched. Operator SQL:
+> `scripts/adr-878-retire-supporter-tier.sql`.
+> Every mention of a sellable or readable Supporter tier below this line is historical.
 >
 > **Billing went LIVE 2026-07-25** (owner flipped `billing_live` + the plan switches; Stripe
 > configured). After any price change here or in code, re-run BOTH Stripe syncs in the admin pricing
@@ -203,7 +207,7 @@
 > | **Entitlement partition** | `spaces.entitlements` splits into TWO namespaces, read as a **union**: top-level **manual** operator grants OR-ed with a reserved **`entitlements.billing`** object the plan/add-on resolver owns (service-role only). A key is granted if either source has it. Default-deny + malformed-blob safety unchanged. `crm.autonomy` stays a top-level per-Space dial, never a billing key. | `lib/spaces/entitlements.ts` (`spaceEntitlements` union read, `spaceBillingEntitlements`, `BILLING_NAMESPACE`) |
 > | **Set-to-target resolver** | `setSpacePlan` + new `setSpaceAddons` REPLACE the billing namespace wholesale (no longer append-only). An add-on toggling OFF removes only its billing keys; a manual top-level grant of the same key survives. Still gated on `billingLive()` with the `force` escape. | `lib/pricing/space-plan.ts` |
 > | **Plan collapse (code)** | `SPACE_PLANS = ['free','pro','nonprofit','organization']`. Pro core = `['crm','crm.playbooks']` (keeps the practitioner depth, non-regressive); add-ons = Marketing (`email`/`automation`/`multi_pipeline`/`reporting`), AI Engine (`crm.resonance`/`crm.resonance_ai`), Team (`team`), Branding (`whitelabel`). Nonprofit + Organization = core ∪ all add-ons. `asSpacePlan` narrows OLD labels (`practitioner`/`business`/`partner`/`whitelabel` → `pro`) at read time during the transition. | `lib/pricing/plans.ts` |
-> | **Member-tier collapse (code)** | `deriveTier` maps the retired `supporter` → `crew` at read time (access-preserving). | `lib/core/entitlement.ts` |
+> | **Member-tier collapse (code)** | `deriveTier` mapped the retired `supporter` → `crew` at read time (access-preserving). **That fold is gone as of 2026-08-24** (ADR-1106): the column CHECK made the label unrepresentable, so the tolerance had nothing to tolerate. | `lib/core/entitlement.ts` |
 > | **Migrations (files only, NOT applied)** | `20260915000000_pricing_plan_collapse.sql` (adds `spaces.is_comped`, moves each space's current grants into `entitlements.billing`, remaps `spaces.plan`, comps former Partner). `20260915000100_pricing_member_tier.sql` (collapses `membership_tier` to free/crew, adds `profiles.is_supporter`, backfills the PWYW badge). Behavior identical pre/post because the union read sees the same effective set. | `supabase/migrations/` |
 >
 > The Stripe price-key catalog (`lib/billing/pricing-keys.ts`) + the P3 price-display rows
@@ -237,7 +241,7 @@ billing OFF leaves the product behaving exactly as it does today.
 
 | Flag | What it means | Where it lives | Set by |
 |---|---|---|---|
-| **billing_tier** | What someone PAYS for | personal: `profiles.membership_tier` (`free`/`crew`/`supporter`) · space: `spaces.plan` (`free`/`practitioner`/`partner`/`nonprofit`/`business`/`organization`/`whitelabel`) | billing (P2) / operator |
+| **billing_tier** | What someone PAYS for | personal: `profiles.membership_tier` (`free`/`crew`) · space: `spaces.plan` (`free`/`practitioner`/`partner`/`nonprofit`/`business`/`organization`/`whitelabel`) | billing (P2) / operator |
 | **community_role** | EARNED standing | `community_role` ladder | earned, **never** billing (ADR-207) |
 | **gamification_access** | Full game vs earn only | derived from `billing_tier`, overridable via `profiles.gamification_access_override` | derive **or** operator |
 
@@ -250,7 +254,7 @@ founder/override bits, the operator-config tables, and the admin console.
 
 ### 1. billing_tier (what you pay for)
 
-- **Personal:** `profiles.membership_tier` IS the personal billing tier (free → crew → supporter).
+- **Personal:** `profiles.membership_tier` IS the personal billing tier (free → crew).
   Unchanged. `lib/core/entitlement.ts` stays the single seam.
 - **Space:** `spaces.plan` IS the space billing plan. `lib/pricing/plans.ts` gives the labels a typed
   home (`SPACE_PLANS`) and the default **plan → entitlement-keys** map (`planEntitlements`). The P2
@@ -356,7 +360,7 @@ grant (its failure strips someone). While EITHER is off:
   No surface that consults it changes behavior.
 - `setSpacePlan(...)` is a **no-op** (returns `billing_off`), so no Space's entitlements change.
 - Per-tier/plan `*_enabled` switches are all OFF; the gamification toggles mirror the existing
-  derive-from-tier default (crew/supporter full, member earn-only).
+  derive-from-tier default (crew full, member earn-only).
 
 Every reader is additionally FAIL-SAFE: a DB error or the pre-migration state falls back to the
 seeded code defaults, never to a charge or a lockout.

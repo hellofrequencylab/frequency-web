@@ -8,7 +8,7 @@
 //     feature gates are not live (billing off, or the beta grace window still open, ADR-874), so
 //     veraDailyCapReached ALWAYS returns false today — the cap never bites, no extra DB read changes
 //     the answer, Vera behaves exactly as before.
-//   * Once the gates are live, a crew/supporter member passes the gate (unlimited); a FREE member is
+//   * Once the gates are live, a Crew member passes the gate (unlimited); a FREE member is
 //     held to vera_free_daily_cap.messages live Vera turns per UTC day. Over the cap, the live loop
 //     degrades to the deterministic concierge (the EXISTING fallback path — never an error or a wall).
 // FAIL-SAFE: any error (gate read, count read) degrades to NOT capped (today's behavior), never to a
@@ -55,7 +55,7 @@ export async function veraMessagesToday(profileId: string): Promise<number> {
 /** Has this member reached the free Vera daily cap for a LIVE turn? Routed through the vera_unlimited
  *  gate, so:
  *   - gates NOT live → featureAllowed grants → returns FALSE (never capped; today's behavior, no count read).
- *   - gates live + crew/supporter → gate passes (unlimited) → FALSE.
+ *   - gates live + Crew → gate passes (unlimited) → FALSE.
  *   - gates live + free → counts the member's turns today; TRUE once at/over vera_free_daily_cap.messages.
  *  FAIL-SAFE FALSE on any error. */
 export async function veraDailyCapReached(

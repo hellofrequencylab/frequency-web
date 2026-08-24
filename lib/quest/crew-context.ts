@@ -34,7 +34,7 @@ export interface CrewContext {
   /** The viewer's resolved gamification access (the third flag, ADR-362/370): 'full' = the complete
    *  loop (compete/claim/spend), 'earn_only' = accrue but cannot cash in. Folds the per-profile
    *  override, the operator per-role flags, then derive-from-tier. While billing is OFF this is the
-   *  same line as today (crew/supporter = full, member = earn_only). */
+   *  same line as today (crew = full, member = earn_only). */
   gamificationAccess: GamificationAccess
   /** The standalone full-gamification gate (gamification_full via featureAllowed). INERT (true) while
    *  billing is OFF, so surfaces that consult it behave exactly as today until an operator turns

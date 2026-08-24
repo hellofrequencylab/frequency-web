@@ -152,7 +152,7 @@ export interface Viewer {
    *  Independent of `role`. Drives admin.access, channel.manage, profile.edit by
    *  a janitor, and the staff override on circle/event leadership. Omitted ⇒ 'none'. */
   webRole?: WebRole | null
-  /** Billing entitlement tier. Paid (Crew/Supporter) unlocks the membership-gated
+  /** Billing entitlement tier. Paid (Crew) unlocks the membership-gated
    *  capabilities (e.g. task volunteering). Omitted ⇒ free. */
   tier?: EntitlementTier | null
   /** The REAL billing tier from the DB, BEFORE any beta open-access override
@@ -430,7 +430,7 @@ export type CapabilityGapReason = 'needs-membership' | 'needs-paid-tier' | 'need
  * which it first appears:
  *
  *   • 'needs-membership' — an active membership in the scope would unlock it.
- *   • 'needs-paid-tier'  — the paid tier (Crew/Supporter) would unlock it, assuming
+ *   • 'needs-paid-tier'  — the paid tier (Crew) would unlock it, assuming
  *     membership (so a free non-member's `task.volunteer` reads 'needs-paid-tier':
  *     the upgrade is the gate the upsell UI sells; joining is its own affordance).
  *   • 'needs-role'       — only stewardship/staff standing unlocks it (e.g.
@@ -461,7 +461,7 @@ export function capabilityGaps(
     attribute(resolveCapabilities(viewer, scopeAsMember), 'needs-membership')
   }
 
-  // Rung 2 — the paid tier (Crew/Supporter), on top of membership. Bump BOTH the
+  // Rung 2 — the paid tier (Crew), on top of membership. Bump BOTH the
   // effective tier and the real tier so the creation gates (which read realTier)
   // attribute to 'needs-paid-tier' — that is exactly the rung the upgrade popup sells.
   let viewerPaid = viewer

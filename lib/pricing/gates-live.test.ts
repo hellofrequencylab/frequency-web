@@ -252,10 +252,9 @@ describe('featureAllowed({ gatesLive })', () => {
   })
 
   it('enforces the ladder once the gates ARE live', async () => {
-    // personal axis: free < crew < supporter
+    // personal axis: free < crew (the whole ladder)
     expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { gatesLive: true })).toBe(false)
     expect(await featureAllowed('vault_cash_in', { tier: 'crew' }, { gatesLive: true })).toBe(true)
-    expect(await featureAllowed('vault_cash_in', { tier: 'supporter' }, { gatesLive: true })).toBe(true)
     // plan axis: free < business < collective ~ nonprofit ~ independent
     expect(await featureAllowed('space_memberships', { plan: 'free' }, { gatesLive: true })).toBe(false)
     expect(await featureAllowed('space_memberships', { plan: 'business' }, { gatesLive: true })).toBe(true)

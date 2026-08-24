@@ -14,11 +14,11 @@ import { daysUntilSeasonReset, shouldNudgeBeforeReset, SEASON_RESET_NUDGE_DAYS }
 import { featureKeyForFunction } from '@/lib/spaces/function-access'
 
 // The seeded flag defaults (mirror lib/pricing/settings.ts FLAG_DEFAULTS): the per-role gamification
-// flags reproduce today's derive-from-tier line (crew/supporter full, member earn_only).
+// flags reproduce today's derive-from-tier line (crew full, member earn_only). Two rungs, two flags —
+// gamification_full_supporter left the list with the Supporter rung on 2026-08-24.
 const SEEDED_FLAGS = {
   gamification_full_member: false,
   gamification_full_crew: true,
-  gamification_full_supporter: true,
 }
 
 describe('REMAINING-WORK #5 — gamification_full standalone gate is INERT while billing OFF', () => {
@@ -27,13 +27,11 @@ describe('REMAINING-WORK #5 — gamification_full standalone gate is INERT while
     // true while OFF — so a free member is NOT blocked, exactly as today.
     expect(await featureAllowed('gamification_full', { tier: 'free' }, { gatesLive: false })).toBe(true)
     expect(await featureAllowed('gamification_full', { tier: 'crew' }, { gatesLive: false })).toBe(true)
-    expect(await featureAllowed('gamification_full', { tier: 'supporter' }, { gatesLive: false })).toBe(true)
   })
 
   it('ON: blocks free (earn-only), allows crew+ (the crew minimum)', async () => {
     expect(await featureAllowed('gamification_full', { tier: 'free' }, { gatesLive: true })).toBe(false)
     expect(await featureAllowed('gamification_full', { tier: 'crew' }, { gatesLive: true })).toBe(true)
-    expect(await featureAllowed('gamification_full', { tier: 'supporter' }, { gatesLive: true })).toBe(true)
   })
 })
 
@@ -45,7 +43,9 @@ describe('REMAINING-WORK #2 — resolveGamificationAccessWithFlags (the live con
     expect(resolveGamificationAccessWithFlags({ membership_tier: 'crew' }, SEEDED_FLAGS)).toBe(
       deriveGamificationAccess('crew'),
     )
-    expect(resolveGamificationAccessWithFlags({ membership_tier: 'supporter' }, SEEDED_FLAGS)).toBe('full')
+    // An unrecognised label (the retired rung included) falls to the member flag then the pure
+    // derive, which is earn_only. Nothing can hold that label: the column CHECKs to free/crew.
+    expect(resolveGamificationAccessWithFlags({ membership_tier: 'supporter' }, SEEDED_FLAGS)).toBe('earn_only')
   })
 
   it('a per-profile override PINS access over the flags + tier', () => {
@@ -116,8 +116,15 @@ describe('REMAINING-WORK #6 — Household / Circle bundle config (pure)', () => 
     expect(asHouseholdBundleConfig({ seats: -3 }).seats).toBe(HOUSEHOLD_BUNDLE_DEFAULT.seats)
   })
   it('reads valid operator values', () => {
-    const cfg = asHouseholdBundleConfig({ seats: 6, monthly_cents: 3000, annual_cents: 30000, tier: 'supporter' })
-    expect(cfg).toEqual({ seats: 6, monthly_cents: 3000, annual_cents: 30000, tier: 'supporter' })
+    const cfg = asHouseholdBundleConfig({ seats: 6, monthly_cents: 3000, annual_cents: 30000, tier: 'crew' })
+    expect(cfg).toEqual({ seats: 6, monthly_cents: 3000, annual_cents: 30000, tier: 'crew' })
+  })
+  it('a bundle tier of the RETIRED Supporter rung fails safe to the seeded Crew tier', () => {
+    // A bundle grants membership_tier to every seated member. profiles.membership_tier CHECKs to
+    // exactly ('free','crew'), so a stored 'supporter' would have made the seating RPC reject the
+    // whole bundle. Crew is the only grantable rung and the narrowing says so.
+    expect(asHouseholdBundleConfig({ seats: 6, monthly_cents: 3000, annual_cents: 30000, tier: 'supporter' }).tier)
+      .toBe(HOUSEHOLD_BUNDLE_DEFAULT.tier)
   })
   it('price keys + seats math', () => {
     expect(householdBundlePriceKey('monthly')).toBe('household_monthly')

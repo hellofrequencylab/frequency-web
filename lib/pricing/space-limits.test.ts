@@ -55,11 +55,6 @@ describe('canCreateSpace', () => {
     expect(canCreateSpace({ tier: 'crew', ownedSpaceCount: 1, ownsPaidSpace: false })).toBe(false)
   })
 
-  it('Supporter behaves like Crew (paid personal tier)', () => {
-    expect(canCreateSpace({ tier: 'supporter', ownedSpaceCount: 0, ownsPaidSpace: false })).toBe(true)
-    expect(canCreateSpace({ tier: 'supporter', ownedSpaceCount: 1, ownsPaidSpace: false })).toBe(false)
-  })
-
   it('owning a paid space lifts the cap entirely (run multiple)', () => {
     // Even a free personal tier can run more spaces once one of theirs is a paid Business/Non Profit.
     expect(canCreateSpace({ tier: 'crew', ownedSpaceCount: 5, ownsPaidSpace: true })).toBe(true)

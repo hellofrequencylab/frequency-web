@@ -192,12 +192,22 @@ describe('bundle seating — the pure decisions', () => {
   })
 
   it('prefers the terms stamped at purchase over the live config', () => {
-    expect(bundleTermsFromMetadata({ bundle_seats: '6', bundle_tier: 'supporter' } as Stripe.Metadata)).toEqual({
+    expect(bundleTermsFromMetadata({ bundle_seats: '6', bundle_tier: 'crew' } as Stripe.Metadata)).toEqual({
       seats: 6,
-      tier: 'supporter',
+      tier: 'crew',
     })
     expect(bundleTermsFromMetadata({ bundle_seats: 'lots', bundle_tier: 'free' } as Stripe.Metadata)).toEqual({
       seats: null,
+      tier: null,
+    })
+  })
+
+  it('a stamp carrying the RETIRED Supporter rung reads as no tier, not as a grantable one', () => {
+    // Crew is the only grantable member rung (retired 2026-08-24), and profiles.membership_tier
+    // CHECKs to exactly ('free','crew') — a 'supporter' stamp would have made the seating RPC reject
+    // the bundle outright. Reading it as null hands the decision back to the live config.
+    expect(bundleTermsFromMetadata({ bundle_seats: '6', bundle_tier: 'supporter' } as Stripe.Metadata)).toEqual({
+      seats: 6,
       tier: null,
     })
   })

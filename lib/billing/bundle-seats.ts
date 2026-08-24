@@ -111,7 +111,8 @@ export function bundleTermsFromMetadata(
   const rawSeats = Number(metadata?.bundle_seats)
   const seats = Number.isFinite(rawSeats) && rawSeats > 0 ? Math.floor(rawSeats) : null
   const rawTier = metadata?.bundle_tier
-  const tier = rawTier === 'crew' || rawTier === 'supporter' ? rawTier : null
+  // Crew is the only grantable member rung (Supporter retired from EntitlementTier, 2026-08-24).
+  const tier = rawTier === 'crew' ? rawTier : null
   return { seats, tier }
 }
 
