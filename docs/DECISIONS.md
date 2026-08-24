@@ -29201,3 +29201,78 @@ true state of the world on every one of those runs, in a message that named both
 The failure was a planning assumption, and the fix is the sequencing rule above.
 
 ---
+## ADR-1112: Five rows audited, five premises wrong — and the pattern is the finding (2026-08-24)
+
+**Status:** Accepted · **Closes:** `LIVE-102`, `LIVE-061`, `LIVE-070` (retracted) · **Corrects:**
+`LIVE-053`, `LIVE-067`, `PROG-P4` · **Files:** `LIVE-103` ·
+**Extends:** [ADR-1082](DECISIONS.md) (re-test the premise) and [ADR-1110](DECISIONS.md) (the overlays)
+
+### Why this exists
+
+Five open rows were picked up on 2026-08-24 and each was re-tested against the tree before any work
+started, as ADR-1082 requires. **All five were wrong about themselves**, and the errors were not
+random — every one pointed the same way:
+
+| Row | What it claimed | What was true |
+|:--|:--|:--|
+| `LIVE-102` | three overlays, two exact `Dialog` no-ops, one "no focus trap" | **zero** were no-ops; the one said to lack a focus trap **had** one; two put `role="dialog"` on the *backdrop* |
+| `LIVE-061` | practice-streak can be handed an undefined stored state | **structurally impossible** — and it was never a practice-streak defect |
+| `LIVE-053` | ten unbound alias sites, no gate | all ten bound; the gate exists; only the silence clock is open |
+| `LIVE-070` | ~65 bare `<Label>` remain | **0**, and gated at 0 — the row is `LIVE-044` minted a second time |
+| `LIVE-067` | 12 unreachable modules, cite at `module-routes.ts:57` | **11**, and that file has no such declaration |
+| `PROG-P4` | build a universal browse hero | `PageHero` + the `heroOverlay` branch **already shipped**; only adoption remains |
+
+### The two directions of error, which are not symmetric
+
+**A row that overstates** (`LIVE-070`, `LIVE-067`, `PROG-P4`, and `LIVE-053`'s code half) costs a
+re-measurement and then closes or shrinks. Cheap, and ADR-1082 already priced it.
+
+**A row that understates** (`LIVE-102`) is the dangerous one, because the work is scoped from the
+row and the row is short. `LIVE-102` said "two exact no-ops"; converting them on that basis would
+have shipped three overlays that still had no focus trap, no ESC, no scroll-lock and no portal, and
+left a real bug untouched: the composer's photo sheet opens *inside* `ComposeLightbox`, itself a
+`Dialog`, so ESC hit the lightbox's handler and collapsed the composer while leaving the sheet open.
+**This is the second consecutive overlay row to understate its own contents** — `LIVE-089` did the
+same, and ADR-1110 recorded it. Twice is a pattern in how overlay rows get written: someone surveys
+the *geometry*, which is visible in a diff, and does not survey the *behaviour*, which is not.
+
+**The durable rule:** re-testing a premise is not only asking *"is this still true?"* but *"is this
+the whole of it?"* A row is a claim about scope as much as about state, and the scope half is the
+one that has now been wrong twice running in the same lane.
+
+### What shipped here
+
+1. **Three overlays onto `Dialog`**, plus a **fourth site the row never surveyed**:
+   `invite-launcher.tsx` was already on `Dialog` but kept both duplicates ADR-1110 removed from the
+   six — a second `slideUp` translating against the primitive's, and an inline bottom inset stacking
+   on the backdrop's, roughly 68px of padding on a notched phone. ADR-1110's claim that both
+   duplicates were gone was true of the six it converted and not of the one converted earlier.
+2. **`report-dialog`'s accessible name now comes from its visible heading.** It announced "Report an
+   issue" while the heading read "Send a report" / "Report sent" — the same defect `ariaLabelledBy`
+   was added for.
+3. **The detached-client guard can now see clients it cannot spell.** It matched receivers by name
+   shape (`supabase|admin|client|db|sb`). Measured against every variable in the tree assigned from
+   a client factory: matched `admin`(775) `db`(308) `supabase`(223) `client`(1); **missed** `q`(4)
+   `dbc`(4) `dbh`(2) `ub`(2) `d`(2) `base`(2) `cfg`(1) `handle`(1) — eight real client-holding names
+   over 18 sites. None was detached, so **this fixes no bug; it fixes the gate**, which is the point
+   ([ADR-970](DECISIONS.md): a fail-safe that cannot notice the next occurrence reads as coverage
+   without being coverage). It now also resolves, per file, the names that file assigns from a
+   factory. File-scoped deliberately: `base` is a client in one file and a URL string in another, and
+   a repo-wide name list would re-admit exactly the false positives the narrow test exists to avoid.
+4. **`LIVE-053` stopped contradicting itself.** Its `verify` block said a 7-day silence closes it;
+   its `detail` said 30. By one half it was two days from closing, by the other twenty-five. Settled
+   at **30** — at roughly five hits over six weeks, a 7-day silence sits inside the natural gap
+   between occurrences and would close the row on noise.
+
+### Both new probes are negative-controlled, not merely green
+
+`LIVE-061`'s probe fails when `readStored` stops coalescing `rest`. `LIVE-102`'s gained the
+residual-overlay clause `LIVE-089`'s had and it lacked — without it, a partial conversion leaving a
+second hand-rolled overlay in the same file read green. Re-introducing one now fails by name.
+
+**Not recorded as done what was not done.** `LIVE-067`'s retirement and `PROG-P4`'s adoption are
+corrected and re-scoped here, not performed. Their probes stay `manual` on purpose: a mechanical
+probe wired without the work that makes it pass is the gate-with-no-artifact failure AGENTS.md
+names, and it would read as coverage the moment it went green for the wrong reason.
+
+---
