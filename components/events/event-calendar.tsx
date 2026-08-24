@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils'
 import { monthMatrix, monthLabel, addMonth, WEEKDAY_LABELS } from '@/lib/events/calendar-grid'
 import { eventCoverFocusStyle } from '@/lib/events/cover-focus'
 import { IconButton } from '@/components/ui/icon-button'
+import { CalendarRepeatsStrip } from '@/components/events/calendar-repeats-strip'
+import type { CalendarRepeatSeries } from '@/lib/events/calendar-repeats'
 
 // The month-grid events calendar (Events EC2). Renders a Space's (or the platform's) events on a month
 // grid; clicking an event opens a TRUNCATED popup (title, when, where) with a "Go to Event" link that
@@ -49,6 +51,12 @@ export interface CalendarEvent {
    *  list row's affordance is the editor — the space Calendar console's click-to-edit contract. */
   editHref?: string | null
   isCancelled: boolean
+  /** REPEATS (LIVE-081): the series this date belongs to (parent_event_id ?? id), or absent for a
+   *  one-off. Only used to highlight a series when its chip is pressed. */
+  seriesKey?: string | null
+  /** REPEATS: true when this is NOT the next date of its series. It renders as a dot instead of a
+   *  card, so one weekly series stops occupying a dozen cells of the month. */
+  isLaterDate?: boolean
 }
 
 /** Format an absolute instant in the VIEWER's local zone with native Intl (never the project tz lib, so
@@ -87,12 +95,17 @@ export function EventCalendar({
   initialMonth1,
   initialView = 'grid',
   onSelectEvent,
+  repeats,
 }: {
   events: CalendarEvent[]
   initialYear: number
   initialMonth1: number
   /** Which view opens first: the month grid (default) or the chronological list. */
   initialView?: 'grid' | 'list'
+  /** The series behind the Repeats strip (LIVE-081). Absent on every mount that has not opted in,
+   *  which leaves this calendar rendering exactly as it did before. Scope today is
+   *  /events/calendar; the Space and manage calendars pass nothing. */
+  repeats?: CalendarRepeatSeries[]
   /** When set, clicking an event calls THIS instead of opening the built-in truncated popup — the
    *  host surface owns the popup (e.g. the Space page Events block's RSVP dialog). Absent (every
    *  existing mount), the built-in popup opens exactly as before. */
@@ -105,6 +118,24 @@ export function EventCalendar({
   const [inViewerTz, setInViewerTz] = useState(false)
   // The grid is the mental model; the list is how people scan "what is next". Default to the grid.
   const [view, setView] = useState<'grid' | 'list'>(initialView)
+  // Which series the Repeats strip is highlighting. Null = nothing highlighted, which is the only
+  // state that existed before the strip. Pressing a chip NEVER removes anything from the grid.
+  const [activeSeries, setActiveSeries] = useState<string | null>(null)
+
+  const series = useMemo(() => repeats ?? [], [repeats])
+  // Day key -> the series whose COMPUTED (not yet materialised) dates land on it. These have no
+  // event row, so they render as a hollow dot and are never clickable.
+  const pendingByDay = useMemo(() => {
+    const map = new Map<string, CalendarRepeatSeries[]>()
+    for (const s of series) {
+      for (const key of s.pendingDayKeys) {
+        const bucket = map.get(key)
+        if (bucket) bucket.push(s)
+        else map.set(key, [s])
+      }
+    }
+    return map
+  }, [series])
 
   const weeks = useMemo(() => monthMatrix(year, month1), [year, month1])
   // The whole loaded window, soonest first, for the list view (independent of the grid's month nav).
@@ -223,6 +254,12 @@ export function EventCalendar({
       {/* Weekday header + grid (grid view only). */}
       {view === 'grid' && (
       <>
+      {/* The Repeats strip, between the month header and the grid. */}
+      <CalendarRepeatsStrip
+        series={series}
+        activeKey={activeSeries}
+        onToggle={(key) => setActiveSeries((cur) => (cur === key ? null : key))}
+      />
       <div className="grid grid-cols-7 border-b border-border">
         {WEEKDAY_LABELS.map((label) => (
           <div key={label} className="px-2 py-2 text-center text-2xs font-semibold uppercase tracking-wide text-muted">
@@ -238,6 +275,12 @@ export function EventCalendar({
           <div key={week[0].date} className="grid grid-cols-7 border-b border-border last:border-b-0">
             {week.map((cell) => {
               const dayEvents = byDay.get(cell.date) ?? []
+              // The next date of a series keeps its card; every later date of the SAME series
+              // becomes a dot, so "what is on this Thursday" stays answerable at a glance while a
+              // weekly series stops filling the month. A one-off is never a dot.
+              const cards = dayEvents.filter((ev) => !ev.isLaterDate)
+              const dots = dayEvents.filter((ev) => ev.isLaterDate)
+              const pending = pendingByDay.get(cell.date) ?? []
               const isToday = cell.date === today
               const dayNum = Number(cell.date.slice(8, 10))
               return (
@@ -259,7 +302,7 @@ export function EventCalendar({
                     </span>
                   </div>
                   <div className="flex flex-col gap-1">
-                    {dayEvents.slice(0, 3).map((ev, i) => (
+                    {cards.slice(0, 3).map((ev, i) => (
                       <button
                         key={`${ev.slug}-${i}`}
                         type="button"
@@ -270,13 +313,61 @@ export function EventCalendar({
                           ev.isCancelled
                             ? 'bg-surface-elevated text-muted line-through'
                             : 'bg-primary/10 text-primary-strong hover:bg-primary/20',
+                          activeSeries !== null && ev.seriesKey === activeSeries && 'ring-2 ring-primary/50',
                         )}
                       >
                         <span className="tabular-nums">{ev.timeLabel}</span> {ev.title}
                       </button>
                     ))}
-                    {dayEvents.length > 3 && (
-                      <span className="px-1.5 text-2xs font-medium text-muted">+{dayEvents.length - 3} more</span>
+                    {cards.length > 3 && (
+                      <span className="px-1.5 text-2xs font-medium text-muted">+{cards.length - 3} more</span>
+                    )}
+                    {(dots.length > 0 || pending.length > 0) && (
+                      <div className="flex flex-wrap items-center gap-0.5">
+                        {/* A later date of a series: a real event row, so the dot opens the same
+                            popup a card would. */}
+                        {dots.map((ev, i) => (
+                          <button
+                            key={`dot-${ev.slug}-${i}`}
+                            type="button"
+                            onClick={() => select(ev)}
+                            aria-label={`${ev.title}, ${ev.timeLabel}`}
+                            title={`${ev.title}, ${ev.timeLabel}`}
+                            className="inline-flex h-5 w-5 items-center justify-center rounded-pill transition-colors hover:bg-primary/10"
+                          >
+                            {/* ONE background class, never two: `bg-primary` and `bg-primary/60`
+                                are different utilities and the cascade, not this string, would
+                                decide which won. */}
+                            <span
+                              className={cn(
+                                'h-1.5 w-1.5 rounded-pill',
+                                activeSeries !== null && ev.seriesKey === activeSeries
+                                  ? 'bg-primary ring-2 ring-primary/40'
+                                  : ev.isCancelled
+                                    ? 'bg-subtle'
+                                    : 'bg-primary/60',
+                              )}
+                            />
+                          </button>
+                        ))}
+                        {/* A date the series LANDS on that has no event row yet: hollow, and never
+                            a link, because there is nothing on the other side of it to open. */}
+                        {pending.map((s) => (
+                          <span
+                            key={`pending-${s.key}`}
+                            title={`${s.name}, not open yet`}
+                            className="inline-flex h-5 w-5 items-center justify-center"
+                          >
+                            <span
+                              className={cn(
+                                'h-1.5 w-1.5 rounded-pill border',
+                                activeSeries === s.key ? 'border-primary ring-2 ring-primary/40' : 'border-primary/60',
+                              )}
+                            />
+                            <span className="sr-only">{s.name}, a date that is not open yet</span>
+                          </span>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>

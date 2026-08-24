@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates'
-import { listPublicCalendarEvents, listCalendarEngagement } from '@/lib/events/store'
+import { listPublicCalendarEvents, listCalendarEngagement, listSeriesAnchors } from '@/lib/events/store'
+import { missingAnchorIds, planCalendarRepeats } from '@/lib/events/calendar-repeats'
 import { formatEventWhen, eventInstant } from '@/lib/time/zone'
 import { eventDayKey } from '@/lib/events/calendar-grid'
 import { SITE_URL } from '@/lib/site'
@@ -32,8 +33,22 @@ export default async function EventsCalendarPage() {
   const initialMonth1 = now.getUTCMonth() + 1
 
   const rows = await listPublicCalendarEvents()
-  // Enrich with "going" count + cover for the popup (kept out of the feed RPC; display-only).
-  const engagement = await listCalendarEngagement(rows.map((r) => r.id))
+  // Enrich with "going" count + cover for the popup (kept out of the feed RPC; display-only), and
+  // read the ANCHOR rows behind the repeating series. The anchors are a separate read because the
+  // feed cannot carry them: it floors at `now() - 1 day`, so an established series' anchor date
+  // passed out of the window long ago while its children keep arriving — and a child row says
+  // `recurrence_type: 'none'` by DB CHECK, so the cadence exists nowhere else (LIVE-081 trap 2).
+  const [engagement, anchors] = await Promise.all([
+    listCalendarEngagement(rows.map((r) => r.id)),
+    listSeriesAnchors(missingAnchorIds(rows)),
+  ])
+
+  // The Repeats plan: one chip per series, the next date of each series kept as a card, every later
+  // date demoted to a dot, and the dates past the 60-day materialised horizon COMPUTED for display
+  // (LIVE-081). Pure and unit-tested in lib/events/calendar-repeats.test.ts — the route file owns no
+  // logic, per the sort.ts precedent.
+  const repeats = planCalendarRepeats(rows, { anchors, now })
+  const laterDateIds = new Set(repeats.laterDateIds)
 
   // Pre-format each event server-side (the timezone lib never ships to the client): the short chip
   // time, the full popup when-line (both in the event's own zone), and the day key the grid buckets on.
@@ -55,6 +70,8 @@ export default async function EventsCalendarPage() {
         coverUrl: eng?.coverUrl ?? null,
         coverFocus: eng?.coverFocus ?? null,
         isCancelled: !!ev.is_cancelled,
+        seriesKey: repeats.seriesKeyByEventId[ev.id] ?? null,
+        isLaterDate: laterDateIds.has(ev.id),
       }
     })
     .filter((e): e is CalendarEvent => e !== null)
@@ -80,7 +97,12 @@ export default async function EventsCalendarPage() {
       }
     >
       <div className="space-y-4">
-        <EventCalendar events={events} initialYear={initialYear} initialMonth1={initialMonth1} />
+        <EventCalendar
+          events={events}
+          initialYear={initialYear}
+          initialMonth1={initialMonth1}
+          repeats={repeats.series}
+        />
 
         {events.length === 0 && (
           <p className="rounded-card border border-dashed border-border bg-surface px-4 py-6 text-center text-body-sm text-muted">

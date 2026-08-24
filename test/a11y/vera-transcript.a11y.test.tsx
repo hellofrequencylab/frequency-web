@@ -1,8 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
-import { act } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { createRoot } from 'react-dom/client'
 import { findA11yViolations, formatViolations } from './axe'
 
 // LIVE-016 — Vera's chat transcript must be a LIVE REGION, or her reply lands in a scroll
@@ -36,12 +34,6 @@ vi.mock('next/navigation', () => ({
 
 import { VeraChat, COMPANION_OPENING } from '@/components/vera/vera-chat'
 import { VeraLightbox } from '@/components/onboarding/vera-lightbox'
-
-/** React tracks the input's value on the node, so a plain assignment is swallowed. */
-function setNativeValue(el: HTMLInputElement, value: string) {
-  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
-  setter?.call(el, value)
-}
 
 /** Mount static markup into the document and hand back the container. */
 function mount(html: string): HTMLElement {
