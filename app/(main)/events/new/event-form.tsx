@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { createEvent, updateEvent } from '@/app/(main)/events/actions'
 import { uploadNewEventImage } from '@/app/(main)/events/admin-actions'
 import { isError } from '@/lib/action-result'
-import { Input, Textarea, Label, labelClasses } from '@/components/ui/field'
+import { Field, Input, Textarea, Label, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
@@ -720,44 +720,53 @@ export function EventForm({
                     : home ?? null
                 }
               />
-              <Input
-                type="text"
-                value={street}
-                onChange={(e) => setStreet(e.target.value)}
-                placeholder="Street address"
-                disabled={isPending}
-              />
+              {/* Each part of the address carries a real <label> rather than leaning on its
+                  placeholder. A placeholder is gone the moment the field has a value — and a pick
+                  from the typeahead above fills all five at once — so without these, someone
+                  tabbing back through a filled address hears five unnamed text boxes. */}
+              <Field label="Street address">
+                <Input
+                  type="text"
+                  value={street}
+                  onChange={(e) => setStreet(e.target.value)}
+                  disabled={isPending}
+                />
+              </Field>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Input
-                  type="text"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  placeholder="City"
-                  disabled={isPending}
-                />
-                <Input
-                  type="text"
-                  value={region}
-                  onChange={(e) => setRegion(e.target.value)}
-                  placeholder="State or province"
-                  disabled={isPending}
-                />
+                <Field label="City" className="min-w-0">
+                  <Input
+                    type="text"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    disabled={isPending}
+                  />
+                </Field>
+                <Field label="State or province" className="min-w-0">
+                  <Input
+                    type="text"
+                    value={region}
+                    onChange={(e) => setRegion(e.target.value)}
+                    disabled={isPending}
+                  />
+                </Field>
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Input
-                  type="text"
-                  value={postalCode}
-                  onChange={(e) => setPostalCode(e.target.value)}
-                  placeholder="Postal code"
-                  disabled={isPending}
-                />
-                <Input
-                  type="text"
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  placeholder="Country"
-                  disabled={isPending}
-                />
+                <Field label="Postal code" className="min-w-0">
+                  <Input
+                    type="text"
+                    value={postalCode}
+                    onChange={(e) => setPostalCode(e.target.value)}
+                    disabled={isPending}
+                  />
+                </Field>
+                <Field label="Country" className="min-w-0">
+                  <Input
+                    type="text"
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    disabled={isPending}
+                  />
+                </Field>
               </div>
             </div>
 
@@ -940,6 +949,10 @@ export function EventForm({
                   placeholder="0.00"
                   disabled={isPending}
                   className="pl-7"
+                  // The visible name here is the "$" glyph and the Price caption above, neither of
+                  // which a screen reader reads as this control's name. "0.00" is a format hint,
+                  // not a label, and it is gone as soon as there is a price.
+                  aria-label="Ticket price in dollars"
                 />
               </div>
             )}

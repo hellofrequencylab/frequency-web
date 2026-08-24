@@ -335,6 +335,7 @@ function DemoStep({
               type="text"
               value={lead.name}
               onChange={(e) => onLead({ ...lead, name: e.target.value })}
+              aria-label="Your name"
               placeholder="Your name"
               autoComplete="name"
               className={FIELD}
@@ -343,6 +344,7 @@ function DemoStep({
               type="email"
               value={lead.email}
               onChange={(e) => onLead({ ...lead, email: e.target.value })}
+              aria-label="Your email address"
               placeholder="you@email.com"
               autoComplete="email"
               inputMode="email"
@@ -621,6 +623,7 @@ function JoinStep({
               type="text"
               value={lead.name}
               onChange={(e) => onLead({ ...lead, name: e.target.value })}
+              aria-label="Your name"
               placeholder="Your name"
               autoComplete="name"
               className={FIELD}
@@ -633,6 +636,7 @@ function JoinStep({
           type="email"
           value={lead.email}
           onChange={(e) => onLead({ ...lead, email: e.target.value })}
+          aria-label="Your email address"
           placeholder="you@email.com"
           autoComplete="email"
           inputMode="email"

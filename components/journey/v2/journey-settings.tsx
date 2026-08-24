@@ -207,8 +207,13 @@ export function JourneySettings(props: JourneySettingsProps) {
           image below, set through the Loom picker. Hidden in the single-page editor (ADR-301). */}
       {!props.hideIdentity && (
         <div className="min-w-0">
+          {/* Both are seamless inline fields that READ as the Journey's title and subtitle, so a
+              visible label would put chrome where the design deliberately has none. They carry an
+              aria-label instead: the placeholder was the only other name they had, and it is gone
+              the moment the Journey is named. */}
           <Input
             variant="seamless"
+            aria-label="Journey title"
             defaultValue={props.initialTitle}
             onBlur={(e) => meta({ title: e.target.value })}
             maxLength={120}
@@ -217,6 +222,7 @@ export function JourneySettings(props: JourneySettingsProps) {
           />
           <Input
             variant="seamless"
+            aria-label="Journey summary"
             defaultValue={props.initialSummary ?? ''}
             onBlur={(e) => meta({ summary: e.target.value })}
             maxLength={280}

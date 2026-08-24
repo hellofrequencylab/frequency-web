@@ -15,8 +15,10 @@
 // the six naming paths the accessible-name computation actually has — the real number was 17,
 // across 14 files. 126 of the 143 were false positives. That ratio is the whole reason ADR-970
 // exists: a gate at 143 would have fired on correct code on its first run and been routed around
-// within a day. The 17 were then FIXED, so this gate ships at ZERO with no allowlist and no
-// ratchet file — there is nothing here to waive, and nothing to quietly grow.
+// within a day. The 17 were then FIXED, so the VIOLATION half of this gate runs at ZERO with no
+// allowlist — there is nothing there to waive. That is not the whole gate any more: a second and
+// deliberately WEAKER ratchet rides alongside it, on placeholder-only names. See
+// MAX_PLACEHOLDER_ONLY, and §8 below for why that one has to be a ceiling and not a zero.
 //
 // WHAT COUNTS AS A NAME. All six paths the spec gives, plus the two the repo actually uses:
 //   1. `aria-label`                      5. an `<svg><title>` inside the control
@@ -27,10 +29,21 @@
 //      its `any:` list is aria-label · aria-labelledby · non-empty-title · non-empty-placeholder ·
 //      implicit-label · explicit-label · presentational-role (verified in axe-core 4.13.0, the
 //      version this repo runs in test/e2e). A placeholder is a WEAK name — it vanishes the moment
-//      you type — but it is a name, and a gate that called it a violation would be stricter than
-//      the axe pass already running in e2e and would disagree with it on 428 controls. That number
-//      is printed on every run rather than hidden, so nobody reads green as "428 fields have a
-//      visible label". Tightening it is a product decision, not a parser change.
+//      you type — but it is a name, and a gate that called it a VIOLATION would be stricter than
+//      the axe pass already running in e2e, disagree with it, and get routed around (ADR-970).
+//      So it is not a violation. It is RATCHETED instead — see MAX_PLACEHOLDER_ONLY below.
+//
+// 🔴 THE SECOND NUMBER THAT WAS WRONG, AND WHY THE ORDER OF THE CHECKS IS THE MEASUREMENT
+// (2026-08-24). This gate printed "429 placeholder (weak)" and that was read — in the backlog and
+// in this file's own comments — as "429 controls whose ONLY name is a placeholder". It was not.
+// The placeholder test used to sit inside the `else if` chain AHEAD of `htmlFor`, `wrapping label`
+// and `contents`, so `<Label htmlFor="x" /><Input id="x" placeholder="e.g. …" />` and every
+// `<Field label="Title"><Input placeholder="…" /></Field>` scored `placeholder (weak)` despite
+// having a real, permanent label. Measured with the placeholder LAST — where HTML-AAM puts it,
+// behind aria-labelledby, aria-label and the native <label> — the honest number was 87, not 429.
+// 347 of the 429 were false positives, which is the LIVE-033 ratio (126 of 143) repeating on the
+// same gate for the same reason: a naming path checked in the wrong order is a naming path missed.
+// The lesson generalises past this file — a tally is only worth what its precedence is worth.
 //
 // WHAT IS JUDGED. Under app/ + components/:
 //   · the intrinsic controls `<button> <a href> <input> <textarea> <select>`
@@ -82,6 +95,54 @@ export const MIN_JUDGED = 2500
  *  discovering must fail loudly rather than turn 283 correctly-wrapped controls into violations.
  *  6 wrapper components naming 283 controls on 2026-08-17. */
 export const MIN_WRAPPERS = 4
+
+/**
+ * ⚠️ THE WEAK-NAME RATCHET — how many controls may be named ONLY by their placeholder.
+ *
+ * A placeholder is a name that deletes itself. It is announced on an empty field and gone the
+ * instant there is a value, so a member who tabs back through a form they half-filled hears a row
+ * of unnamed text boxes. axe-core accepts it (see §8 above), the e2e pass therefore accepts it,
+ * and a static gate that FAILED on it would be stricter than the pass already running — the exact
+ * reason LIVE-033 declined to fail here and counted instead.
+ *
+ * 🔴 SO THIS IS A RATCHET, DELIBERATELY NOT A ZERO. It is weaker than a violation on purpose: it
+ * never disagrees with axe about whether existing code is broken, it only refuses to let the
+ * population GROW. New code may not add a placeholder-only control; retiring them is a per-field
+ * product judgement about what the label should SAY (docs/CONTENT-VOICE.md), which is not a
+ * codemod. What the freeze buys is the property the count never had — it stops rising while that
+ * judgement gets made, one surface at a time.
+ *
+ * SEEDED 2026-08-24 at the measured value, twice. 429 under the old (wrong) precedence; 87 once
+ * the placeholder test moved behind the real label paths; 59 after this same change retired 28 of
+ * them across the event address blocks, the event-draft editor rows, the induction funnel and the
+ * Journey title rail. The number here is the LAST of those three, because a ceiling seeded above
+ * reality is a ceiling guarding nothing.
+ *
+ * A COUNT, NOT A SET — and check-templates.mjs's §"A COUNT IS NOT A SET" is the argument against
+ * that, so it is answered rather than ignored. There, one page adopting a template and one new
+ * bare page net to zero and hide a regression, so the baseline had to become a path list. Here the
+ * population is undifferentiated — a placeholder-only field is a leftover, not a justified
+ * exception — which is check-adoption.mjs's own test for when a count is the right shape ("a count
+ * is right when the goal is monotone decline of an undifferentiated population"). The swap-hiding
+ * risk is real and is bought back cheaply: the failure below prints the worst files by count, and
+ * every run prints the tally, so a net-zero swap still shows up as a moved number in a diff.
+ *
+ * TO LOWER IT: give the fields real names, then set this to what the run prints, in the SAME
+ * change. Never raise it.
+ */
+export const MAX_PLACEHOLDER_ONLY = 59
+
+/**
+ * The ceiling verdict, as a pure function of the count.
+ *
+ * Split out from `main()` for one reason: a ratchet nobody has watched fire is a ratchet nobody
+ * knows is wired (AGENTS.md — "every fail-safe needs a gate that notices it fired"). The sibling
+ * test drives this at the ceiling, one below it and one above it, so the FIRING direction is
+ * proven without a fixture tree and without shelling out.
+ */
+export function placeholderCeiling(count, max = MAX_PLACEHOLDER_ONLY) {
+  return { count, max, over: count > max, delta: count - max }
+}
 
 // ───────────────────────────────────────────────────────────────────────────────────────────────
 // AST helpers
@@ -316,9 +377,11 @@ export function iconNames(sf) {
  * LOCAL names in this file. Splitting resolution from judgement is what lets the sibling test drive
  * every arm from a string fixture with no filesystem at all.
  *
- * Returns `{ violations, judged, named }`, where `named` is a { path -> count } tally the caller
- * prints. Publishing HOW controls get their names is the point: 428 of them are named only by a
- * placeholder, and a run that hid that would be claiming more than it measured.
+ * Returns `{ violations, judged, named, weak }`, where `named` is a { path -> count } tally the
+ * caller prints and `weak` is the SITE LIST behind its `placeholder (weak)` entry. Publishing HOW
+ * controls get their names is the point: 59 of them are named only by a placeholder, and a run
+ * that hid that would be claiming more than it measured. The site list is what lets the ceiling
+ * name files rather than just a number.
  */
 export function auditNames(src, ctx, file = 'fixture.tsx') {
   const sf = parse(file, src)
@@ -340,6 +403,10 @@ export function auditNames(src, ctx, file = 'fixture.tsx') {
 
   const violations = []
   const named = new Map()
+  /** Every control whose ONLY name is its placeholder — the weak-name population MAX_PLACEHOLDER_ONLY
+   *  ratchets. Collected as SITES, not just a tally, so a run that is OVER the ceiling can say where
+   *  to go instead of printing a bare number the reader has to re-derive by hand. */
+  const weak = []
   let judged = 0
 
   const walk = (node, stack) => {
@@ -373,7 +440,6 @@ export function auditNames(src, ctx, file = 'fixture.tsx') {
           // `Checkbox`/`Field` name themselves from their own `label` prop.
           else if (attr(open, 'label') && !INTRINSIC_CONTROLS.has(tag)) via = 'label prop'
           else if (kind === 'input' && attr(open, 'value') && ['submit', 'button', 'reset'].includes(type ?? '')) via = 'value'
-          else if ((kind === 'input' || kind === 'textarea') && attr(open, 'placeholder')) via = 'placeholder (weak)'
           if (!via) {
             const id = attrText(open, 'id')
             if (id != null && fors.has(id.replace(/\s+/g, ''))) via = 'htmlFor'
@@ -384,13 +450,28 @@ export function auditNames(src, ctx, file = 'fixture.tsx') {
           if (!via && ts.isJsxElement(node) && node.children.some((c) => contributes(c, icons))) {
             via = 'contents'
           }
-          if (via) named.set(via, (named.get(via) ?? 0) + 1)
-          else {
-            violations.push({
-              line: sf.getLineAndCharacterOfPosition(node.getStart()).line + 1,
-              tag,
-              snippet: open.getText().replace(/\s+/g, ' ').slice(0, 110),
-            })
+          // 🔴 PLACEHOLDER IS THE LAST RESORT, AND THE ORDER IS THE WHOLE MEASUREMENT (2026-08-24).
+          // This test used to sit up in the `else if` chain above, ahead of `htmlFor`, `wrapping
+          // label` and `contents` — so `<Label htmlFor="x" /><Input id="x" placeholder="e.g. …" />`
+          // and `<Field label="Title"><Input placeholder="…" /></Field>` both scored
+          // `placeholder (weak)`, and the 429 this gate printed was NOT "429 controls whose only
+          // name is a placeholder". It was "429 controls that HAVE a placeholder", most of them
+          // properly labelled. A ratchet seeded on that number would have been guarding a
+          // population it had misidentified — coverage in name only (ADR-970). HTML-AAM agrees on
+          // the order: aria-labelledby, aria-label, the native <label>, and only then placeholder.
+          if (!via && (kind === 'input' || kind === 'textarea') && attr(open, 'placeholder')) {
+            via = 'placeholder (weak)'
+          }
+          const site = () => ({
+            line: sf.getLineAndCharacterOfPosition(node.getStart()).line + 1,
+            tag,
+            snippet: open.getText().replace(/\s+/g, ' ').slice(0, 110),
+          })
+          if (via) {
+            named.set(via, (named.get(via) ?? 0) + 1)
+            if (via === 'placeholder (weak)') weak.push(site())
+          } else {
+            violations.push(site())
           }
         }
       }
@@ -399,7 +480,7 @@ export function auditNames(src, ctx, file = 'fixture.tsx') {
     ts.forEachChild(node, (c) => walk(c, next))
   }
   walk(sf, [])
-  return { violations, judged, named }
+  return { violations, judged, named, weak }
 }
 
 // ───────────────────────────────────────────────────────────────────────────────────────────────
@@ -430,6 +511,7 @@ export function runAudit(roots = ROOTS) {
 
   const violations = []
   const named = new Map()
+  const weak = []
   let judged = 0
   for (const [file, src] of files) {
     const sf = parse(file, src)
@@ -449,12 +531,13 @@ export function runAudit(roots = ROOTS) {
     judged += res.judged
     for (const [k, v] of res.named) named.set(k, (named.get(k) ?? 0) + v)
     for (const v of res.violations) violations.push({ file, ...v })
+    for (const w of res.weak) weak.push({ file, ...w })
   }
-  return { files: paths.length, wrappers, violations, judged, named }
+  return { files: paths.length, wrappers, violations, judged, named, weak }
 }
 
 function main() {
-  const { files, wrappers, violations, judged, named } = runAudit()
+  const { files, wrappers, violations, judged, named, weak } = runAudit()
 
   if (files < MIN_FILES) {
     console.error(`✗ check:a11y-names — found ${files} .tsx file(s) under ${ROOTS.join(' + ')}, expected at least ${MIN_FILES}.`)
@@ -492,9 +575,54 @@ function main() {
   }
 
   const tally = [...named].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${v} ${k}`).join(' · ')
+
+  // ── The weak-name ratchet ────────────────────────────────────────────────────────────────────
+  // Instrument check first, in the same spirit as MIN_JUDGED: the tally and the site list are two
+  // derivations of the same fact, so if they ever disagree the collector has drifted from the
+  // counter and the ceiling below is being applied to a number nobody can point at.
+  const tallied = named.get('placeholder (weak)') ?? 0
+  if (weak.length !== tallied) {
+    console.error(
+      `✗ check:a11y-names — instrument broken: ${tallied} placeholder-only control(s) tallied but ` +
+        `${weak.length} site(s) collected. Fix the walk; do not touch the ceiling.`,
+    )
+    process.exit(1)
+  }
+
+  const ceiling = placeholderCeiling(weak.length)
+  if (ceiling.over) {
+    const byFile = new Map()
+    for (const w of weak) byFile.set(w.file, (byFile.get(w.file) ?? 0) + 1)
+    const worst = [...byFile].sort((a, b) => b[1] - a[1]).slice(0, 10)
+    console.error(
+      `\n✗ check:a11y-names — ${ceiling.count} control(s) are named ONLY by their placeholder, ` +
+        `${ceiling.delta} over the ceiling of ${ceiling.max}.\n`,
+    )
+    console.error('  A placeholder is a name that deletes itself: it is announced on an empty field and')
+    console.error('  gone the moment there is a value, so a member tabbing back through a form they')
+    console.error('  half-filled hears a row of unnamed text boxes. Where the count is now worst:\n')
+    for (const [f, n] of worst) console.error(`    ${String(n).padStart(3)}  ${f}`)
+    console.error('\n  Give the NEW ones a real name — a visible label first, an aria-label only where a')
+    console.error('  visible one would put chrome on a surface that deliberately has none:')
+    console.error('    <Field label="Street address"><Input … /></Field>     (components/ui/field.tsx)')
+    console.error('    <Label htmlFor="city">City</Label><Input id="city" … />')
+    console.error('    <Input aria-label="Journey title" variant="seamless" … />   (inline/seamless fields)')
+    console.error('\n  Copy from docs/NAMING.md + docs/CONTENT-VOICE.md. Keep the placeholder when it is a')
+    console.error('  genuine EXAMPLE ("e.g. Torus Co.") and drop it when it only repeats the label.')
+    console.error('\n  🔴 Do NOT raise MAX_PLACEHOLDER_ONLY in scripts/check-a11y-names.mjs. It is a ratchet;')
+    console.error('  raising it is how the five previous lists in this repo drifted.\n')
+    process.exit(1)
+  }
+
   console.log(
     `✓ Accessible names: all ${judged} control(s) across ${files} file(s) have one ` +
-      `(${wrappers.size} label-wrapping components resolved).\n    named by: ${tally}`,
+      `(${wrappers.size} label-wrapping components resolved).\n    named by: ${tally}` +
+      `\n    weak names: ${ceiling.count} control(s) named only by a placeholder ` +
+      `(ceiling ${ceiling.max}, may only shrink)` +
+      (ceiling.delta < 0
+        ? `\n      ${-ceiling.delta} below the ceiling — lower it in this change:` +
+          `\n        export const MAX_PLACEHOLDER_ONLY = ${ceiling.count}`
+        : ''),
   )
 }
 
