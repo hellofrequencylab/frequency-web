@@ -66,6 +66,25 @@ describe('pnpm store entries nothing can reach', () => {
     expect(orphans.sort()).toEqual(['next@16.3.1', 'only-the-orphan-needs-me@1.0.0'])
   })
 
+  it('keeps a package reached only through a .bin shim, because deleting is the costly direction', () => {
+    // `.bin` is not a package directory, so a walk that only descends into `@scope` never sees the
+    // shims inside it. A CLI-only dependency normally ALSO carries an ordinary sibling symlink, so
+    // this is a hole rather than a known leak — pinned anyway, because under-counting reachability
+    // is precisely the direction that deletes something in use.
+    const root = mkdtempSync(join(tmpdir(), 'pnpm-bin-'))
+    try {
+      makeTree(root, { entries: { 'some-cli@1.0.0': 'some-cli' }, top: {} })
+      mkdirSync(join(root, 'node_modules', '.bin'), { recursive: true })
+      symlinkSync(
+        join('..', '.pnpm', 'some-cli@1.0.0', 'node_modules', 'some-cli', 'index.js'),
+        join(root, 'node_modules', '.bin', 'some-cli'),
+      )
+      expect(pnpmOrphans(root).orphans).toEqual([])
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
   it('keeps the linked copy and the scoped package, which are what a wrong walk deletes', () => {
     const { reachable } = pnpmOrphans(root)
     expect(reachable.has('next@16.3.2'), 'the version the lockfile asks for').toBe(true)

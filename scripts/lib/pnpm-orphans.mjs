@@ -56,8 +56,16 @@
 import { readdirSync, readlinkSync, existsSync } from 'node:fs'
 import path from 'node:path'
 
-/** Every symlink directly under `dir`, descending ONE level into `@scope/` directories because
- *  that is where pnpm puts scoped packages and they are not symlinks themselves. */
+/** Directories that are not packages but CONTAIN links to packages, so a walk that ignores them
+ *  under-counts reachability — and under-counting reachability is the direction that DELETES.
+ *  `@scope` because pnpm puts scoped packages one level down and the scope itself is a real
+ *  directory; `.bin` because a CLI-only dependency is reached through its shim. In practice a bin
+ *  shim's package also carries an ordinary sibling symlink, so this closes a hole rather than a
+ *  known leak — which is the point: the cost of scanning it is nothing and the cost of being wrong
+ *  about it is deleting a package that something executes. */
+const LINK_BEARING = (name) => name.startsWith('@') || name === '.bin'
+
+/** Every symlink directly under `dir`, descending one level into the directories above. */
 function symlinksIn(dir) {
   const out = []
   let entries
@@ -69,7 +77,7 @@ function symlinksIn(dir) {
   for (const entry of entries) {
     const child = path.join(dir, entry.name)
     if (entry.isSymbolicLink()) out.push(child)
-    else if (entry.isDirectory() && entry.name.startsWith('@')) out.push(...symlinksIn(child))
+    else if (entry.isDirectory() && LINK_BEARING(entry.name)) out.push(...symlinksIn(child))
   }
   return out
 }
