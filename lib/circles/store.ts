@@ -3,8 +3,10 @@
 //   - stampCircleSpaceId(): the DEFAULT space_id for a new circle — the root space (via
 //     loadRootSpaceId), so new circles created through the existing single-tenant flows are
 //     space-stamped to root and nothing changes today. A space-scoped caller passes its own id.
-//   - listCirclesForSpace(): the by-space read the Phase 1 profile's `entity-community` module
-//     uses to list a Space's own circles.
+//   - listCirclesForSpace(): the by-space read that lists a Space's own circles. It was written
+//     for the Phase 1 profile's `entity-community` layout module, which was RETIRED in
+//     LIVE-067 (registered under '/spaces/*', mounted by no page). The seam outlived it: the
+//     live consumers are lib/spaces/content-data.ts and the profile Community block.
 //
 // Server-only (admin client; callers enforce authz, exactly like the existing circle flows).
 // `circles.space_id` (added by 20260711000000_object_space_id.sql) is in the generated types now,

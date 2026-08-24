@@ -128,7 +128,7 @@ describe('appsForScope — page apps resolve a most-specific-wins route chain', 
   it('a circle scope resolves the /circles/* section blocks, shadowing the global default', () => {
     const ids = appsForScope({ kind: 'circle', id: 'sunrise-sit' }, anyone, 'page').map((a) => a.id)
     expect(ids).toContain('circle-feed')
-    expect(ids).not.toContain('community-pulse') // the '*' default is shadowed by the section set
+    expect(ids).not.toContain('event-join') // a neighbouring section's blocks never leak in
   })
 
   it('an event scope resolves the /events/* section blocks', () => {
@@ -136,9 +136,12 @@ describe('appsForScope — page apps resolve a most-specific-wins route chain', 
     expect(ids).toContain('event-join')
   })
 
-  it('the operator global scope resolves the community default (*) blocks', () => {
-    const ids = appsForScope({ kind: 'global' }, anyone, 'page').map((a) => a.id)
-    expect(ids).toContain('community-pulse')
+  it('the operator global scope resolves NO page blocks — it addresses no route', () => {
+    // LIVE-067. This used to resolve the four community blocks, because `routeChainForScope` fell
+    // through to ['*'] for any kind with no URL section and '*' was the one key those blocks sat
+    // under. So the admin bar offered an operator page blocks on a scope that is not a page, and
+    // none of them rendered anywhere. A scope that addresses no route offers no page blocks.
+    expect(appsForScope({ kind: 'global' }, anyone, 'page')).toEqual([])
   })
 })
 
@@ -150,10 +153,16 @@ describe('showsAdminBar', () => {
   })
 
   it('is editor-only: page blocks do NOT light the bar on the global scope (the flaw guard)', () => {
-    // The operator global scope offers page blocks (gate 'none') but they must NOT light the bar. A
-    // viewer with no caps holds neither a page-block editor App (there are none) nor the personal gate,
-    // so the bar stays dark — page blocks alone never light it.
+    // The bar must ride EDITOR authority alone. A viewer with no caps holds neither a page-block
+    // editor App (there are none) nor the personal gate, so the bar stays dark. (The global scope
+    // offers no page blocks at all since LIVE-067, so the section scopes below carry the real
+    // weight of this guard — a circle page has page blocks and must still not light the bar.)
     expect(showsAdminBar({ kind: 'global' }, { caps: new Set() })).toBe(false)
+    // The load-bearing half, on a scope that really does carry page blocks: a no-caps viewer
+    // resolves circle page blocks and the bar still stays dark. Without this the assertion above
+    // would pass on an empty set and prove nothing.
+    expect(appsForScope({ kind: 'circle', id: 'c1' }, { caps: new Set() }, 'page').length).toBeGreaterThan(0)
+    expect(showsAdminBar({ kind: 'circle', id: 'c1' }, { caps: new Set() })).toBe(false)
   })
 
   it('lights on the global scope for a viewer holding the personal gate (Phase 4 always-on)', () => {

@@ -347,12 +347,9 @@ components/widgets/challenges/challenges-season.tsx
 components/widgets/channels/channels-list.tsx
 components/widgets/circles/circle-events.tsx
 components/widgets/circles/circle-meeting.tsx
-components/widgets/community-pulse.tsx
 components/widgets/community/manage.tsx
 components/widgets/community/structure.tsx
 components/widgets/community/trust-safety.tsx
-components/widgets/entity/entity-about.tsx
-components/widgets/entity/entity-team.tsx
 components/widgets/events/event-attendees.tsx
 components/widgets/events/event-gallery-block.tsx
 components/widgets/events/event-when-where.tsx
@@ -374,18 +371,15 @@ components/widgets/lead/lead-practices.tsx
 components/widgets/lead/lead-recognition.tsx
 components/widgets/lead/lead-stats.tsx
 components/widgets/leaderboard/leaderboard-consistency.tsx
-components/widgets/newest-members.tsx
 components/widgets/operations/ai-area.tsx
 components/widgets/operations/manage.tsx
 components/widgets/operations/platform-area.tsx
-components/widgets/popular-channels.tsx
 components/widgets/practices/admin/contributor-recognition.tsx
 components/widgets/practices/admin/remix-levers.tsx
 components/widgets/practices/practices-mine.tsx
 components/widgets/quest/quest-journeys.tsx
 components/widgets/quest/quest-leaderboard.tsx
 components/widgets/quest/quest-tasks.tsx
-components/widgets/top-circles.tsx
 lib/account.ts
 lib/achievements.ts
 lib/admin/audit.ts
@@ -807,7 +801,6 @@ lib/walkthroughs.ts
 lib/walkthroughs/progress.ts
 lib/zaps.ts
 test/authz/check-authz-lib.test.ts
-test/contract/tenancy-entity-modules.test.ts
 # Added 2026-08-17 (LIVE-022). NOT a real service-role import: the string the ratchet matches sits
 # inside a template literal — BARE_ROUTE, the fixture route handler this test feeds to the classifier
 # to prove check:authz says NO to an ungated privileged endpoint. The fixture has to depict a real

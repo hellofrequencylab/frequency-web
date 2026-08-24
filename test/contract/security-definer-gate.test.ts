@@ -166,12 +166,18 @@ describe('(B) every entity-backing reader binds the Space on each space-scoped t
   }
 
   it('every entity widget that reads the admin client directly binds the Space', () => {
-    // The only entity widget that talks to the admin client directly is entity-about (it reads the
-    // not-yet-typed spaces.about). Scan the whole entity widget dir: any widget that imports the admin
-    // client must also reference a Space bind (space.id / spaceId / .eq('id'/'space_id')).
+    // Scan the whole entity widget dir: any widget that imports the admin client must also
+    // reference a Space bind (space.id / spaceId / .eq('id'/'space_id')).
+    //
+    // ⚠️ NO WIDGET IN THIS DIRECTORY IMPORTS THE ADMIN CLIENT TODAY. The two that did — entity-about
+    // (reading the not-yet-typed spaces.about) and entity-team — were deleted with the '/spaces/*'
+    // module family no page mounted (LIVE-067). So this guard is currently a TRIPWIRE for the next
+    // widget rather than a check on a live one, and the file count below is what keeps that state
+    // honest: without it, a moved or emptied directory would report success having scanned nothing.
     const dir = join(ROOT, 'components/widgets/entity')
-    for (const name of readdirSync(dir)) {
-      if (!name.endsWith('.tsx')) continue
+    const names = readdirSync(dir).filter((n) => n.endsWith('.tsx'))
+    expect(names.length, 'the entity widget directory is empty or moved; this guard scanned nothing').toBeGreaterThan(0)
+    for (const name of names) {
       const src = readFileSync(join(dir, name), 'utf8')
       if (!src.includes('createAdminClient')) continue
       const bound = /space\.id|spaceId|\.eq\(\s*['`](?:id|space_id)['`]/.test(src)

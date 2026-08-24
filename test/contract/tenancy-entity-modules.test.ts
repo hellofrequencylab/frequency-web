@@ -499,28 +499,15 @@ describe('crm pipeline: a per-space caller pins space_id; the read honors it', (
   })
 })
 
-// ── components/widgets/entity/entity-about.tsx - the inline About reader (entity surface) ─────────
-describe('entity-about: the inline about reader binds the Space by id', () => {
-  it('LEAK ORACLE: reading About for Space A never returns the other Space prose', async () => {
-    // entity-about reads `.from('spaces').select('about').eq('id', spaceId)`. The row IS the Space,
-    // so binding by primary key is the correct tenancy gate. Prove a two-space table yields only A.
-    h.client = makeTwoSpaceDb({
-      // For the `spaces` table the scoping column is `id` (the row is the Space); model it as the
-      // scope key so the oracle filters on it.
-      spaces: [
-        { space_id: SPACE_A, id: SPACE_A, about: 'About A' },
-        { space_id: SPACE_B, id: SPACE_B, about: 'About B' },
-      ],
-    })
-    // Exercise the same query shape the widget's readAbout uses, through the mocked admin client.
-    const { createAdminClient } = await import('@/lib/supabase/admin')
-    const db = createAdminClient() as unknown as {
-      from: (t: string) => { select: (c: string) => { eq: (col: string, v: string) => { maybeSingle: () => Promise<{ data: { about?: string } | null }> } } }
-    }
-    const { data } = await db.from('spaces').select('about').eq('id', SPACE_A).maybeSingle()
-    expect(data?.about).toBe('About A') // never 'About B'
-  })
-})
+// ── entity-about RETIRED (LIVE-067, 2026-08-24) ──────────────────────────────────────────────────
+// A `describe` block sat here proving that the inline About reader bound the Space by primary key.
+// Its subject — components/widgets/entity/entity-about.tsx — was one of the seven '/spaces/*' layout
+// modules no page ever mounted, and it is deleted. The block did not import the widget: it replayed
+// the widget's query shape against the mock, so it would have kept passing forever with nothing on
+// the other end. That is the shape this file's other blocks avoid by exercising the real reader, and
+// it is why this one is removed rather than left as green output about a file that no longer exists.
+// The Space-by-id tenancy rule it asserted is unchanged and still covered wherever a live reader
+// binds `spaces` (see the SCOPED_TABLES sweep in test/contract/security-definer-gate.test.ts).
 
 // ── lib/spaces/automation.ts - per-Space rules + drip sequences (automation module, R5) ──────────
 // The three tables (space_automation_rules / space_drip_sequences / space_drip_steps) are service-role

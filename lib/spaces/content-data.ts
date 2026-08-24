@@ -113,7 +113,7 @@ export type SpaceEventItem = {
 export type SpaceBookingInfo = { enabled: boolean; href: string | null }
 
 /** One live practice OR journey the SpacePractices block lists, from the Space's OWN rows (the same
- *  readers the entity-practices module uses: listPracticesForSpace + listJourneyPlansForSpace). Plain
+ *  readers the profile Practices surfaces use: listPracticesForSpace + listJourneyPlansForSpace). Plain
  *  shape so the block imports nothing server-only. `kind` splits the two groups the block renders. */
 export type SpacePracticeItem = {
   kind: 'practice' | 'journey'
@@ -128,14 +128,14 @@ export type SpacePracticeItem = {
 }
 
 /** The live practices + journeys the SpacePractices block reads. Split so the block can render the two
- *  labelled groups (entity-practices' "Practices to start" / "Journeys to begin") without re-filtering. */
+ *  labelled groups ("Practices to start" / "Journeys to begin") without re-filtering. */
 export type SpacePracticesData = {
   practices: SpacePracticeItem[]
   journeys: SpacePracticeItem[]
 }
 
 /** One live Circle the SpaceCommunity block lists, from the Space's OWN active circles (the same
- *  reader the entity-community module and the public Circles tab use: listPublicSpaceCircles).
+ *  reader the public Circles tab uses: listPublicSpaceCircles).
  *  Plain shape so the block imports nothing server-only. */
 export type SpaceCircleItem = {
   id: string
@@ -533,7 +533,7 @@ export async function getSpaceContentData(
 }
 
 /** The live highlight counts (members / offerings / ...) for the SpaceHighlights strip, from the same
- *  resolver the hero stats + the entity-stats module read, so the strip never disagrees with the hero.
+ *  resolver the hero stats read, so the strip never disagrees with the hero.
  *  Only the positive counts ride through (honest at day zero). FAIL-SAFE to []. */
 export async function getSpaceHighlights(spaceId: string): Promise<SpaceHighlight[]> {
   try {
@@ -667,7 +667,7 @@ const JOURNEYS_CAP = 6
 const CIRCLES_CAP = 6
 
 /** The Space's live practices + journeys for the SpacePractices block, from the SAME readers the
- *  entity-practices module uses (listPracticesForSpace + listJourneyPlansForSpace, both space_id-
+ *  profile Practices surfaces use (listPracticesForSpace + listJourneyPlansForSpace, both space_id-
  *  filtered + fail-safe), shaped to the plain block item. No new raw query. FAIL-SAFE to empty groups. */
 export async function getSpacePractices(spaceId: string): Promise<SpacePracticesData> {
   try {
@@ -792,7 +792,7 @@ export async function resolveMemberCards(ids: string[]): Promise<SpaceTeamMember
 }
 
 /** The Space's live active Circles for the SpaceCommunity block, from the SAME reader the
- *  entity-community module and the public Circles tab use (`listPublicSpaceCircles`), shaped to the
+ *  public Circles tab uses (`listPublicSpaceCircles`), shaped to the
  *  plain block item. No new raw query. FAIL-SAFE to [].
  *
  *  It used to call the RAW by-space read and filter on status alone, which put every UNLISTED

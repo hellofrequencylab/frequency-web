@@ -3,8 +3,10 @@
 //   - stampEventSpaceId(): the DEFAULT space_id for a new event — the root space (via
 //     loadRootSpaceId), so new events created through the existing single-tenant flows are
 //     space-stamped to root and nothing changes today. A space-scoped caller passes its own id.
-//   - listEventsForSpace(): the by-space read the Phase 1 profile's `entity-offerings` /
-//     `entity-schedule` modules use to list a Space's own events.
+//   - listEventsForSpace(): the by-space read that lists a Space's own events. It was written
+//     for the Phase 1 profile's `entity-offerings` module, retired in LIVE-067; the live
+//     consumers are entity-cta.tsx (the Book tab), lib/spaces/content-data.ts and
+//     lib/spaces/profile-stats.ts.
 //
 // Server-only (admin client; callers enforce authz, exactly like the existing event flows).
 // `space_id` (20260711000000_object_space_id.sql) and the rest of the columns here are covered
@@ -567,8 +569,8 @@ export async function listEventsForSpace(
     // This reads through the SERVICE-ROLE client, so RLS is bypassed and this query is the only
     // gate there is. It had none. `SpaceEvent.status` has carried the comment "public readers
     // filter on it" since it was added — and not one of them did: the public Space profile blocks
-    // (components/widgets/entity/entity-offerings.tsx, entity-cta.tsx), the SpaceEvents block
-    // (lib/spaces/content-data.ts) and the public hero stat (lib/spaces/profile-stats.ts) all
+    // (entity-cta.tsx, and entity-offerings.tsx before LIVE-067 retired it), the SpaceEvents
+    // block (lib/spaces/content-data.ts) and the public hero stat (lib/spaces/profile-stats.ts) all
     // rendered whatever came back, so an unpublished DRAFT or a `private` event on a Space showed
     // up on that Space's PUBLIC page. A contract written in a comment that nothing enforces is not
     // a contract; nine callers each remembering to filter is the same bet, nine times.

@@ -28,7 +28,8 @@ import { loadAppOverrides, mergeAppOverrides, effectiveMinRole, scopeKeyFor } fr
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
 
 // A scope kind → its URL section, so a scope can address the page-app route sets keyed under
-// ROUTE_MODULE_IDS ('/circles/*', '/events/*', …). 'global' addresses the default '*' set.
+// ROUTE_MODULE_IDS ('/circles/*', '/events/*', …). A kind with no section (the operator 'global'
+// scope, 'space', …) addresses NO route set — see routeChainForScope.
 const SECTION_BY_KIND: Partial<Record<ScopeKind, string>> = {
   circle: 'circles',
   event: 'events',
@@ -41,10 +42,15 @@ const SECTION_BY_KIND: Partial<Record<ScopeKind, string>> = {
 }
 
 /** The most-specific-wins route-key chain for a scope (mirrors `moduleScopeChain`): the entity
- *  section then the global default; the operator `global` scope is just '*'. */
+ *  section, then the '*' rung the chain still ends at, which no longer declares a set.
+ *
+ *  A kind with no section maps to NO chain at all. It used to fall through to ['*'] (LIVE-067),
+ *  which is how the operator `global` scope came to offer four page blocks — the retired community
+ *  set — in the admin bar: the ONLY thing '*' ever held, on a scope that is not a page. A scope
+ *  that addresses no route offers no page blocks, which is the honest answer and now the coded one. */
 function routeChainForScope(scope: AdminScope): string[] {
   const section = SECTION_BY_KIND[scope.kind]
-  return section ? moduleScopeChain(`/${section}/*`) : ['*']
+  return section ? moduleScopeChain(`/${section}/*`) : []
 }
 
 /** The PAGE apps offered at a scope: the first route level in the chain that declares any (most-

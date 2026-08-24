@@ -4,24 +4,43 @@ import { join } from 'node:path'
 import { moduleIdsForScope, moduleMeta, ROUTE_MODULE_IDS } from './modules'
 import { COMPONENT_IDS } from './registry'
 import { MODULE_ROUTES } from './module-routes'
+import { PARKED, findViolations, readTree, floorFailures } from '../../scripts/check-module-reachability.mjs'
 
-// The global community set — the default everywhere ('*'). (The LAYOUT_MODULE_IDS alias was
-// removed in Phase 0.5a; '*' is the single source of the default.)
-const GLOBAL = ROUTE_MODULE_IDS['*']
+// The twelve modules RETIRED by LIVE-067 (2026-08-24): four under the global '*' key, whose
+// fallback no route ever reached, and eight under '/spaces/*', which no page mounts. entity-cta is
+// deliberately NOT here — it is the one member of that family a page renders, by direct import.
+const RETIRED = [
+  'community-pulse',
+  'newest-members',
+  'popular-channels',
+  'top-circles',
+  'entity-getting-started',
+  'entity-about',
+  'entity-stats',
+  'entity-offerings',
+  'entity-practices',
+  'entity-community',
+  'entity-team',
+] as const
 
 // Route-scoping (ADR-294): a page only offers — and the resolver only renders — its own block set.
 describe('moduleIdsForScope', () => {
-  it('the global default (*) returns the community set', () => {
-    expect(moduleIdsForScope('*')).toBe(ROUTE_MODULE_IDS['*'])
-    expect(moduleIdsForScope('*')).toEqual(GLOBAL)
+  it('there is NO global default set: * declares nothing and resolves to nothing', () => {
+    // LIVE-067. '*' was the one key whose set no page could render — the chain puts it last and
+    // every converted route declares its own, so the fallback only ever applied to routes that
+    // render no modules at all. Both halves matter: deleting the KEY while `moduleIdsForScope`
+    // still ended in `?? COMMUNITY_MODULE_IDS` would have resurrected the retired set through the
+    // hardcoded fallback, which is the exact trap this pair pins shut.
+    expect(ROUTE_MODULE_IDS['*']).toBeUndefined()
+    expect(moduleIdsForScope('*')).toEqual([])
   })
 
   it('an exact converted route returns its own set, not the global one', () => {
     const crew = moduleIdsForScope('/crew')
     expect(crew).toBe(ROUTE_MODULE_IDS['/crew'])
     expect(crew).toContain('quest-season-map')
-    // No leakage: My Quest blocks never include the community default blocks.
-    expect(crew).not.toContain('community-pulse')
+    // No leakage: My Quest's set is its own — never the Leadership hub's.
+    expect(crew).not.toContain('lead-stats')
   })
 
   it('a nested admin route resolves its exact set', () => {
@@ -55,8 +74,7 @@ describe('moduleIdsForScope', () => {
     expect(p.indexOf('admin-practices-contributor-recognition')).toBeGreaterThan(
       p.indexOf('admin-practices-remix-levers'),
     )
-    // A distinct exact route — it never inherits the global community blocks or the journeys set.
-    expect(p).not.toContain('community-pulse')
+    // A distinct exact route — it never inherits the journeys workspace's set.
     expect(p).not.toContain('admin-journeys-library')
   })
 
@@ -73,8 +91,8 @@ describe('moduleIdsForScope', () => {
     const p = moduleIdsForScope('/practices')
     expect(p).toBe(ROUTE_MODULE_IDS['/practices'])
     expect(p).toEqual(['practices-stats', 'practices-activity', 'practices-balance', 'practices-mine', 'practices-library'])
-    // No leakage; the faceted library IS a module now (it reads the URL from the x-search header).
-    expect(p).not.toContain('community-pulse')
+    // No leakage: the MEMBER library is a module here; the ADMIN curation table never is.
+    expect(p).not.toContain('admin-practices-library')
     expect(p).toContain('practices-library')
   })
 
@@ -98,11 +116,12 @@ describe('moduleIdsForScope', () => {
     ])
   })
 
-  it('an unconverted route falls back through its section to the global set', () => {
-    // A section scope with no declared set falls back to global.
-    expect(moduleIdsForScope('/settings/*')).toEqual(GLOBAL)
-    // A truly unknown exact route with no section set also inherits global.
-    expect(moduleIdsForScope('/nope')).toEqual(GLOBAL)
+  it('an unconverted route resolves NOTHING — it does not inherit a global set', () => {
+    // A section scope with no declared set, and a truly unknown exact route, both fall off the end
+    // of the chain. Empty is the honest answer: the page renders no modules, so the Layout editor
+    // has no toggles to offer for it.
+    expect(moduleIdsForScope('/settings/*')).toEqual([])
+    expect(moduleIdsForScope('/nope')).toEqual([])
   })
 
   it('the Vault (/crew/store) resolves its own blocks, not /crew’s', () => {
@@ -110,9 +129,8 @@ describe('moduleIdsForScope', () => {
     expect(v).toBe(ROUTE_MODULE_IDS['/crew/store'])
     expect(v).toContain('vault-standing')
     expect(v).toContain('vault-store')
-    // It's a distinct exact route — it does NOT inherit My Quest's blocks or the global set.
+    // It's a distinct exact route — it does NOT inherit My Quest's blocks.
     expect(v).not.toContain('quest-season-map')
-    expect(v).not.toContain('community-pulse')
   })
 
   it('the Menu Manager (/admin/menu) resolves its five blocks, in render order, with no leakage', () => {
@@ -123,8 +141,6 @@ describe('moduleIdsForScope', () => {
     expect(m).toEqual(['menu-surface', 'menu-groups', 'menu-speed', 'menu-layout', 'menu-rail-cards'])
     // The retired single `menu-manager` id is gone.
     expect(m).not.toContain('menu-manager')
-    // A distinct exact route — it never inherits the global community blocks.
-    expect(m).not.toContain('community-pulse')
   })
 
   it('a practice detail page resolves the shared detail blocks via the /practices/* section scope', () => {
@@ -143,7 +159,7 @@ describe('moduleIdsForScope', () => {
   it("a section scope of a converted route does NOT inherit the exact route's blocks", () => {
     // '/crew/*' is a wildcard for crew SUB-pages (challenges, …) — distinct from '/crew' AND from
     // the now-converted exact '/crew/store' — so the wildcard still gets the generic set.
-    expect(moduleIdsForScope('/crew/*')).toEqual(GLOBAL)
+    expect(moduleIdsForScope('/crew/*')).toEqual([])
   })
 
   it('the Operations dashboard (/admin/operations) resolves its blocks, in order, no leakage', () => {
@@ -151,8 +167,6 @@ describe('moduleIdsForScope', () => {
     expect(o).toBe(ROUTE_MODULE_IDS['/admin/operations'])
     // Default render order: the AI & assistant KPIs, the platform stats, the Manage grid, then Related.
     expect(o).toEqual(['operations-ai', 'operations-platform', 'operations-manage', 'operations-related'])
-    // A distinct exact route — it never inherits the global community blocks.
-    expect(o).not.toContain('community-pulse')
   })
 
   it('the Growth dashboard (/admin/growth) resolves its blocks, in order, no leakage', () => {
@@ -160,7 +174,6 @@ describe('moduleIdsForScope', () => {
     expect(g).toBe(ROUTE_MODULE_IDS['/admin/growth'])
     // Default render order: funnel & activation, pipeline, expansion, the Manage grid, then Related.
     expect(g).toEqual(['growth-funnel', 'growth-pipeline', 'growth-expansion', 'growth-manage', 'growth-related'])
-    expect(g).not.toContain('community-pulse')
   })
 
   it('the master-detail CRM home (/admin/crm) is NOT a module route — it composes its kit directly', () => {
@@ -171,6 +184,7 @@ describe('moduleIdsForScope', () => {
     expect(ROUTE_MODULE_IDS['/admin/crm']).toBeUndefined()
     expect(MODULE_ROUTES).not.toContain('/admin/crm')
     const c = moduleIdsForScope('/admin/crm')
+    expect(c).toEqual([]) // LIVE-067: it falls off the end of the chain rather than onto a global set
     expect(c).not.toContain('crm-cockpit-stats')
     expect(c).not.toContain('crm-rising')
     expect(c).not.toContain('crm-trust')
@@ -197,7 +211,6 @@ describe('moduleIdsForScope', () => {
     // The nested exact route wins over the /admin/crm cockpit set: the cockpit's own crm-members
     // block never leaks here (nor this roster into the cockpit), and never the global default.
     expect(m).not.toContain('crm-members')
-    expect(m).not.toContain('community-pulse')
     expect(moduleIdsForScope('/admin/crm')).not.toContain('crm-members-roster')
   })
 
@@ -215,21 +228,42 @@ describe('moduleIdsForScope', () => {
       'gamification-achievements',
       'gamification-challenges',
     ])
-    // A distinct exact route — it never inherits the global community blocks.
-    expect(g).not.toContain('community-pulse')
   })
 
-  it('an entity profile tab resolves the family module set via the /spaces/* section scope', () => {
-    // Every /spaces/<slug>/<tab> shares one family set keyed at '/spaces/*' (ENTITY-SPACES §B.2):
-    // the index profile, a tab, and a different slug all resolve the same set, never the global one.
-    const family = ROUTE_MODULE_IDS['/spaces/*']
-    expect(moduleIdsForScope('/spaces/demo-practitioner')).toBe(family)
-    expect(moduleIdsForScope('/spaces/demo-practitioner/offerings')).toBe(family)
-    expect(moduleIdsForScope('/spaces/another-space/book')).toBe(family)
-    expect(family).toContain('entity-about')
-    expect(family).toContain('entity-cta')
-    // No leakage: a profile never offers the global community blocks.
-    expect(family).not.toContain('community-pulse')
+  it('an entity profile tab offers NO module set — the profile renders lib/entity-blocks', () => {
+    // LIVE-067. '/spaces/*' declared an eight-block family palette for a surface that never mounted
+    // <PageModules>: the tabs under app/(main)/spaces/[slug]/(profile)/ compose lib/entity-blocks
+    // directly. The set's only effect was to fill the Layout editor with blocks the page does not
+    // contain. Registering it again is only honest beside a real mount (Epic 1.7), which
+    // check:module-reachability now requires.
+    expect(ROUTE_MODULE_IDS['/spaces/*']).toBeUndefined()
+    expect(moduleIdsForScope('/spaces/demo-practitioner')).toEqual([])
+    expect(moduleIdsForScope('/spaces/demo-practitioner/offerings')).toEqual([])
+    expect(moduleIdsForScope('/spaces/another-space/book')).toEqual([])
+  })
+
+  it('🔴 the twelve retired modules are gone from every registry, not merely unlisted', () => {
+    // The regression this closes is CHEAP to reintroduce: one line in a route set, or one revived
+    // `?? COMMUNITY_MODULE_IDS`, brings a block back into the Layout editor that no page draws.
+    // So assert all three registries at once — the route sets, the metadata union, and the
+    // component bindings — rather than trusting any one of them.
+    for (const [key, ids] of Object.entries(ROUTE_MODULE_IDS)) {
+      for (const id of RETIRED) {
+        expect(ids, `ROUTE_MODULE_IDS['${key}'] offers retired module ${id}`).not.toContain(id)
+      }
+    }
+    for (const id of RETIRED) {
+      expect(moduleMeta(id), `${id} still carries metadata`).toBeUndefined()
+      expect(COMPONENT_IDS, `${id} still has a bound component`).not.toContain(id)
+    }
+  })
+
+  it('entity-cta SURVIVED the retirement: still bound, still described, offered by no route', () => {
+    // The positive control. A guard that only proves things are gone would pass just as happily
+    // after deleting the whole family, including the one block a page really renders.
+    expect(COMPONENT_IDS).toContain('entity-cta')
+    expect(moduleMeta('entity-cta')?.label).toBe('Book')
+    expect(Object.values(ROUTE_MODULE_IDS).some((ids) => ids.includes('entity-cta'))).toBe(false)
   })
 })
 
@@ -276,7 +310,7 @@ describe('moduleMeta', () => {
   it('resolves metadata across the whole union (any route block)', () => {
     expect(moduleMeta('quest-season-map')?.label).toBe('Season map')
     expect(moduleMeta('admin-journeys-library')?.label).toBe('Journey library')
-    expect(moduleMeta('community-pulse')?.label).toBe('Community pulse')
+    expect(moduleMeta('entity-cta')?.label).toBe('Book')
     expect(moduleMeta('does-not-exist')).toBeUndefined()
   })
 
@@ -287,39 +321,61 @@ describe('moduleMeta', () => {
   })
 })
 
-// Reachability (site-audit BUG-1/BUG-2): a component bound in the registry but absent from every
-// route set can never render or be added from the Layout editor — a silent dead feature. Each
-// bound id must be offered by some route set OR be on the explicit PARKED allowlist (modules kept
-// defined for a future surface, by owner decision). Adding a binding without wiring a route fails here.
+// ── Reachability: does a page actually RENDER this block? ────────────────────────────────────────
+//
+// 🔴 THIS TEST USED TO PASS ON TWELVE DEAD MODULES, and how it did is the lesson. It read:
+//
+//     for (const ids of Object.values(ROUTE_MODULE_IDS)) for (const id of ids) reachable.add(id)
+//
+// — so a module counted as reachable because it appeared in a route set, when whether that route
+// set reaches a page was the entire question. '*' and '/spaces/*' are keys no page mounts, and all
+// twelve of their ids sailed through for months (LIVE-067). A probe that restates its own premise
+// measures nothing; it just reads like coverage.
+//
+// The real question is one level down: does some page under app/ MOUNT this route key, or import
+// this block by name? That takes reading the app tree, which is what
+// scripts/check-module-reachability.mjs does. This suite drives the same guard the CLI and CI run,
+// so there is one definition of "reachable" and it is the one that looks at pages.
 describe('module reachability', () => {
-  // Intentionally defined-but-unoffered, documented in modules.ts (Phase 0.5.11 + event defaults).
-  // The event trim (redundant-module cleanup) pulled four more from the event set so they no longer
-  // render: the bare second venue map (event-venue-map — event-location is the canonical venue block),
-  // the duplicate photo strip (event-gallery — the hero gallery renders in the page), and the poster
-  // Pricing + host Sales boxes (event-pricing / event-sales — ticketing lives in the Join box and the
-  // sold count is folded onto the ticket card). Their components stay bound so they compile.
-  const PARKED = new Set([
-    'quest-tasks',
-    'event-details',
-    'event-dispatch',
-    'event-venue-map',
-    'event-gallery',
-    'event-pricing',
-    'event-sales',
-    // Former /admin/crm cockpit blocks. The master-detail Resonance home no longer renders modules,
-    // so these are no longer offered by the module engine: crm-cockpit-stats / crm-rising / crm-trust
-    // are now composed DIRECTLY on /admin/crm/intelligence (they stay bound so they compile), and
-    // crm-members (the cockpit's inline roster) is fully superseded by the master-detail roster.
-    'crm-members',
-    'crm-cockpit-stats',
-    'crm-rising',
-    'crm-trust',
-  ])
+  const tree = readTree(join(__dirname, '..', '..'))
 
-  it('every bound component is route-reachable or explicitly parked', () => {
-    const reachable = new Set<string>()
-    for (const ids of Object.values(ROUTE_MODULE_IDS)) for (const id of ids) reachable.add(id)
-    const stranded = COMPONENT_IDS.filter((id) => !reachable.has(id) && !PARKED.has(id))
-    expect(stranded, `bound but unreachable (wire a route set or add to PARKED): ${stranded.join(', ')}`).toEqual([])
+  it('read the tree it is about to judge (the non-triviality control)', () => {
+    // Without this, a broken walk or a parser that stopped matching would make every assertion
+    // below iterate zero times and report success — "I never looked" wearing "I looked and it was
+    // fine" as a costume, which is the failure mode this whole file now exists to prevent.
+    expect(floorFailures(tree)).toEqual([])
+  })
+
+  it('every bound component is mounted by a page, imported by one, or explicitly parked', () => {
+    const violations = findViolations(tree)
+    const report = violations
+      .map((v) => (v.kind === 'unmounted-key' ? `${v.key}: ${v.ids.join(', ')}` : `stranded: ${v.ids.join(', ')}`))
+      .join(' | ')
+    expect(violations, `unreachable blocks — ${report}`).toEqual([])
+  })
+
+  it('the PARKED allowlist has one home, and it is not a copy of the live sets', () => {
+    // The allowlist lives in the guard so the CLI, CI and this suite cannot disagree about which
+    // blocks are deliberately unrenderable. Parking is an OWNER decision; each entry carries its
+    // reason there. A parked id must still be a real binding — an entry for a deleted module is a
+    // stale exemption that would silently cover a future block of the same name.
+    expect(PARKED.size).toBeGreaterThan(0)
+    for (const [id, reason] of PARKED) {
+      expect(COMPONENT_IDS, `PARKED names ${id}, which is bound to nothing`).toContain(id)
+      expect(reason.length, `PARKED['${id}'] needs a reason`).toBeGreaterThan(10)
+    }
+  })
+
+  it('the guard would FAIL if a retired module were re-registered under an unmounted key', () => {
+    // The mutation control. Re-register the community set at '*' — exactly the state of the tree
+    // before LIVE-067 — and the guard must name all four. If this passes green, the guard has gone
+    // vacuous and the assertion above is worthless.
+    const mutant = {
+      ...tree,
+      routeSets: new Map([...tree.routeSets, ['*', ['community-pulse', 'newest-members', 'popular-channels', 'top-circles']]]),
+      bindings: new Map([...tree.bindings, ['community-pulse', '@/components/widgets/community-pulse']]),
+    }
+    const dead = findViolations(mutant).find((v) => v.kind === 'unmounted-key' && v.key === '*')
+    expect(dead?.ids).toContain('community-pulse')
   })
 })

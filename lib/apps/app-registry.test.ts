@@ -34,7 +34,7 @@ describe('appsAsLibraryItems', () => {
   it('element Apps are previewable; editor/page Apps are not', () => {
     expect(isPreviewableApp(APPS.find((a) => a.id === 'element:icon/lotus')!)).toBe(true)
     expect(isPreviewableApp(APPS.find((a) => a.id === 'circle.settings')!)).toBe(false)
-    expect(isPreviewableApp(APPS.find((a) => a.id === 'community-pulse')!)).toBe(false)
+    expect(isPreviewableApp(APPS.find((a) => a.id === 'quest-season-map')!)).toBe(false)
   })
 })
 

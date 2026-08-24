@@ -197,6 +197,12 @@ describe('the read-path ratchet — every service-role circle read that feeds a 
   // Each entry is a real leak on the pre-C1 tree: the file reads `circles` through the ADMIN
   // client (BYPASSRLS) and renders or returns the circle's NAME to somebody who is not a member.
   // They key on AXIS 1: a LISTED closed circle SHOULD appear (the funnel), an unlisted one never.
+  // ⚠️ TWO ENTRIES LEFT THIS LIST on 2026-08-24, and the reason matters: components/widgets/
+  // top-circles.tsx and components/widgets/community-pulse.tsx were DELETED (LIVE-067). Both were
+  // page modules registered only under the global '*' key, which no page mounts — so each was a
+  // service-role circle read that had been correctly filtered here and rendered to nobody. Removing
+  // a row because its file is gone is the only safe reason to shrink this list; a row whose file
+  // still exists must be fixed, never dropped.
   const DISCOVERY_READS: [file: string, why: string][] = [
     ['app/api/search-scopes/route.ts', 'the event-placement / collaborator picker'],
     // ⚠️ MISSED BY C1's OWN SWEEP, found 2026-08-12 while scoping the map page. The list above was
@@ -211,13 +217,11 @@ describe('the read-path ratchet — every service-role circle read that feeds a 
     // whole lesson of the entry above it.
     ['lib/nearby/map-pins.ts', 'the Around You map circle pins'],
     ['components/sidebar/rail-panels.tsx', 'the "circles to explore" and "newest circles" rails'],
-    ['components/widgets/top-circles.tsx', 'the "active circles" page module'],
     ['lib/ai/vera/read-tools.ts', 'Vera naming a circle and its host out loud'],
     ['app/(main)/channels/[id]/page.tsx', 'the Interest page listing the circles inside it'],
     ['components/widgets/channels/channels-list.tsx', 'the per-Interest circle count'],
     ['components/widgets/community/structure.tsx', 'the community structure totals'],
     ['app/llms.txt/route.ts', 'the machine-readable community stats'],
-    ['components/widgets/community-pulse.tsx', 'the community pulse count'],
   ]
 
   for (const [file, why] of DISCOVERY_READS) {
