@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Gift, Check, Copy, Download, Share2, X, Loader2 } from 'lucide-react'
 import { downloadStyledQrPng } from '@/lib/qr/client-download'
+import { Dialog } from '@/components/ui/dialog'
 
 // THE "INVITE A FRIEND" CTA + POPUP for the right rail (under Report a bug). A member's PERSONAL code IS
 // their invite link: scanning / opening it drops the referrer cookie, and when the friend joins and gets
@@ -75,21 +76,23 @@ export function InviteFriendButton({
         </span>
       </button>
 
+      {/* LIVE-089: this was the sixth hand-rolled overlay, and the last to convert. It already had
+          the right z-tier, so what it was actually missing was the behaviour: no focus trap, no
+          scroll lock, no ESC, and a <button> standing in for the backdrop — an element in the tab
+          order whose only job is to be clicked. Dialog owns all four.
+          Two deltas, both deliberate: the scrim moves bg-ink/50 -> bg-ink/60, the one shared value;
+          and the name now comes from ariaLabelledBy rather than aria-label, because the panel HAS a
+          visible heading. The old aria-label said "Invite a friend" while the heading read "Invite a
+          friend, earn Zaps", so a screen reader heard a different name than a sighted member read. */}
       {open && (
-        <div
-          className="fixed inset-0 z-[80] flex items-center justify-center p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Invite a friend"
+        <Dialog
+          open={open}
+          onClose={() => setOpen(false)}
+          ariaLabelledBy="invite-friend-title"
+          align="center"
+          className="max-w-sm"
         >
-          {/* Backdrop — click to dismiss. */}
-          <button
-            type="button"
-            aria-label="Close"
-            onClick={() => setOpen(false)}
-            className="absolute inset-0 cursor-default bg-ink/50 backdrop-blur-sm"
-          />
-          <div className="relative w-full max-w-sm rounded-2xl border border-border bg-surface p-6 lift-3">
+          <div className="relative w-full rounded-2xl border border-border bg-surface p-6 lift-3">
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -103,7 +106,7 @@ export function InviteFriendButton({
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-on-primary">
                 <Gift className="h-5 w-5" aria-hidden />
               </span>
-              <h2 className="mt-3 text-body-lg font-bold text-text">Invite a friend, earn Zaps</h2>
+              <h2 id="invite-friend-title" className="mt-3 text-body-lg font-bold text-text">Invite a friend, earn Zaps</h2>
               <p className="mt-1 text-body-sm leading-relaxed text-muted">
                 Share your link or code. When a friend joins Frequency and gets started, you earn Zaps ⚡
               </p>
@@ -154,7 +157,7 @@ export function InviteFriendButton({
               </div>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
     </>
   )

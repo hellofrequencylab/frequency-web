@@ -1,8 +1,15 @@
--- ⚠️ NOT YET APPLIED. Authored 2026-08-24; production has NOT run this file, and no zap_config
--- row was touched. Apply it with the two-step protocol in supabase/migrations/README.md (apply,
--- then repair the ledger to THIS version). Until it is applied, `pnpm check:migrations` Rule 4
--- reports this file as `unpairedRepo` whenever it is armed with credentials — that is the guard
--- working, not a defect, and it clears on apply.
+-- ✅ APPLIED 2026-08-24 to azsqfeonabsbmemvddqd, and the ledger repaired to THIS version.
+-- No zap_config row was touched: the two live caps (practice_logged 1, event_posted 3) are the
+-- ones the operator had already set, and they were inert until the TypeScript half shipped.
+-- Verified after apply by asking the CATALOG rather than trusting this file:
+--   anon false · authenticated false · service_role true · prosecdef true · search_path=""
+--
+-- ⚠️ THE LEDGER NEEDED THE SECOND STEP, and it is worth knowing why rather than just that.
+-- The tooling records an applied migration under a version derived from the WALL CLOCK, not from
+-- this filename, so it landed as 20260824185040 — leaving the repo⇄ledger bijection (ADR-963)
+-- broken in BOTH directions at once: a ledger row the repo lacks, and a repo file the ledger
+-- lacks. `check:migrations` would have reported the second and been silent about the first.
+-- Repaired by updating that row's version to this filename's. Ledger is 630 rows against 630 files.
 --
 -- ═══════════════════════════════════════════════════════════════════════════════════════════════
 -- Make `zap_config.daily_cap` mean something. It has never been read.

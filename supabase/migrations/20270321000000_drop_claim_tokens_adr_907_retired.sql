@@ -1,12 +1,11 @@
 -- DROP public.claim_tokens — ADR-907 is RETIRED UNIMPLEMENTED (OWN-037, owner decision 2026-08-24).
 --
--- ⚠️ NOT YET APPLIED. Written 2026-08-24 alongside the deletion of lib/claims/tokens.ts and
--- lib/claims/tokens.test.ts. It must be pushed before this file and the ledger agree; until it is,
--- the repo carries one migration the ledger head (20270320000000) does not, which is the exact
--- divergence `pnpm check:migrations` rule 4 fails on when it has database credentials. Apply it or
--- revert this file; do not leave it. Regenerate lib/database.types.ts in the SAME push that applies
--- this — the generated `claim_tokens` block is correct until then, and hand-editing it would make
--- the types disagree with the live database rather than agree with it.
+-- ✅ APPLIED 2026-08-24 to azsqfeonabsbmemvddqd, and the ledger repaired to THIS version.
+-- The row guard below RAN and PASSED against the real table (0 rows). That matters more than the
+-- authoring-time measurement: the guard exists precisely because a migration is applied later than
+-- it is written, and here it did its job at apply time rather than only being reasoned about.
+-- Verified after: to_regclass('public.claim_tokens') is null.
+-- lib/database.types.ts regenerated in the same push, as this header required.
 --
 -- ── WHY, AND WHY "UNIMPLEMENTED" IS THE HONEST WORD ───────────────────────────────────────────
 --
