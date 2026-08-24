@@ -22,10 +22,14 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
   `buildCommand: pnpm build` so a dashboard edit cannot silently take the lifecycle away. **Four
   gates run there and fail the build** (all wired and proven on real artifacts as of #2194,
   2026-08-19 — LIVE-035/LIVE-048/LIVE-029 closed):
-  - `check:build-budget` — total per-function output under 8 GB; **measured 6.04 GB across 499
-    functions, 2026-08-18**, up from 5.81 GB (2026-08-13) and 5.59 GB before that. It has risen every
-    time it has been read; the trend, not the headroom, is the thing to watch.
-  - `check:og-trace` — sharp reaching 67 functions of a 100 budget.
+  - `check:build-budget` — total per-function output under 8 GB; **measured 6.03 GB across 497
+    functions, 2026-08-24** (production build of #2243), after 6.04 GB / 499 fns (2026-08-18), 5.81 GB
+    (2026-08-13) and 5.59 GB before that. This sentence used to read "it has risen every time it has
+    been read"; the 2026-08-24 reading is the first that did not, on both axes. The trend, not the
+    headroom, is still the thing to watch — but note that at **75%** of its ceiling this is NOT the
+    gate closest to firing. `check:cache-budget` is, at **84%**, and it is also the one with a history
+    of killing builds.
+  - `check:og-trace` — sharp reaching 67 functions of a 100 budget (unchanged, 2026-08-24).
   - `check:cache-budget` ([ADR-1064](docs/DECISIONS.md), [ADR-1086](docs/DECISIONS.md)) — the build
     cache under Vercel's packed 1.50 GB ceiling, trimming only a named compiler-cache list when over.
     It earned its wiring the hard way: the first version **killed two builds** (raw-vs-packed
