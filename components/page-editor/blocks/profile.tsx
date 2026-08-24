@@ -676,7 +676,7 @@ export function SpaceEventsBlock({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 3f. SpacePractices -- the Space's LIVE practices + journeys (block parity with the
-// entity-practices module). Reads both lists off metadata (listPracticesForSpace +
+// profile Practices surfaces). Reads both lists off metadata (listPracticesForSpace +
 // listJourneyPlansForSpace); renders "Practices to start" and "Journeys to begin" as
 // linked card rows. HONEST-empty: a group with no rows is dropped, and the whole block
 // renders nothing on the live page when the Space has neither.
@@ -774,8 +774,8 @@ export function SpacePracticesBlock({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3g. SpaceCommunity -- the Space's LIVE Circles (block parity with the entity-community
-// module). Reads the active circles off metadata (listCirclesForSpace); renders each as a
+// 3g. SpaceCommunity -- the Space's LIVE Circles (block parity with the profile Circles tab).
+// Reads the active circles off metadata (listCirclesForSpace); renders each as a
 // linked card with its member count. HONEST-empty: nothing on the live page when the Space
 // runs no active circles.
 // ─────────────────────────────────────────────────────────────────────────────

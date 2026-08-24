@@ -24,7 +24,12 @@ const ROLE_LABEL: Record<ModuleRole, string> = {
   mentor: 'Mentors and up',
 }
 
-type ScopeChoice = 'page' | 'section' | 'global'
+// 'global' (the '*' key) was a THIRD choice here until LIVE-067. It offered an operator toggles for
+// the four community blocks, which were the only thing '*' ever held and which no page rendered —
+// so every switch in that scope was inert. Nothing declares a set at '*' now, so the scope would
+// draw an empty panel; it is removed rather than left to render nothing. Restoring it means
+// registering a real '*' set, which check:module-reachability will ask a page to mount.
+type ScopeChoice = 'page' | 'section'
 
 // A tiny vector mock of a template's shape — blocks laid out the way the real page is, so an
 // operator picks a LAYOUT by clicking its picture, not by reading a name. The proportions match the
@@ -119,7 +124,6 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
         hint: `The default for every page under /${seg}. A page's own layout overrides it.`,
       })
     }
-    list.push({ choice: 'global', label: 'All pages', key: '*', hint: 'The default everywhere. A section or page layout overrides it.' })
     return list
   }, [pathname])
 

@@ -112,6 +112,6 @@ describe('surfacesFor fail-closed', () => {
   it('a route query matches the page Apps offered at that exact key', () => {
     const crew = surfacesFor(APPS, { on: 'route', key: '/crew' }, viewer([]), 'page').map((a) => a.id)
     expect(crew).toContain('quest-season-map')
-    expect(crew).not.toContain('community-pulse') // '*' only, not '/crew'
+    expect(crew).not.toContain('circle-feed') // '/circles/*' only, not '/crew'
   })
 })

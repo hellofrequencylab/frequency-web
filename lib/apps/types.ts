@@ -162,7 +162,7 @@ export interface AppAction {
  */
 export interface App {
   /** Stable id. Editor Apps reuse the AdminModule id ('circle.settings'); page Apps reuse the layout
-   *  module id ('community-pulse'); element Apps are namespaced 'element:<registry>/<name>'. */
+   *  module id ('quest-season-map'); element Apps are namespaced 'element:<registry>/<name>'. */
   id: string
   /** Member/operator-facing label — MIRRORS the source registry's label (voice canon, no em dashes). */
   label: string
