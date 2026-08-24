@@ -1319,7 +1319,7 @@
         "file": "docs/BUILD-LIST.md",
         "ref": "Loom D1"
       },
-      "detail": "Shipped, but the ingest extras are still pending: checksum dedupe, EXIF strip, dims/colors/blurhash, the rendition set, and FTS-ranked/trigram search.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
+      "detail": "Shipped, but the ingest extras are still pending: checksum dedupe, EXIF strip, dims/colors/blurhash, the rendition set, and FTS-ranked/trigram search.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── ⚙️ RE-TESTED AND RE-SHAPED 2026-08-24 (ADR-1082). The row is TRUE - no ingest module exists, no `textSearch` appears anywhere in the tree - but it is MIS-SHAPED: it reads as build-from-zero and is actually a WIRING job. 🔴 THE MOST USEFUL FINDING FOR SEQUENCING: PR 1 NEEDS NO MIGRATION. Every column and index D1 writes to is already applied - sha256, blurhash, focal_x/y, orig_width/height and the dedupe index library_assets_sha256_idx (20260920000000_library_dam.sql:15-33), plus the generated search_tsv column with GIN and a gin_trgm_ops index on title (20260919000000_library_assets.sql:61-88). So the first increment carries ZERO ADR-1111 ordering risk and can merge alongside siblings in any order. THE BLAST RADIUS IS SMALLER THAN IT LOOKS: eight upload sites, but six already funnel through insertSpaceLibraryImage (lib/library/store.ts:264). Only two bypass it - app/(main)/admin/library/actions.ts:53 and recraft-actions.ts:101 - so widening the chokepoint plus routing those two covers everything. FIRST PR: a pure lib/library/ingest.ts (node:crypto sha256 + a dependency-free image-header dimension parser), the widened chokepoint writing sha256/width/height, dedupe on the existing (space_id, sha256) index, the two bypass sites routed through it, and materialize.ts:772's `bytes: 0`. 🔴 THREE THINGS DELIBERATELY NOT IN PR 1, each with a reason. (1) EXIF STRIP CARRIES A HAZARD THE ROW NEVER MENTIONS: removing APP1 removes the ORIENTATION tag, so any phone JPEG relying on it renders rotated. The safe form strips APP1/APP13/XMP then re-emits a minimal APP1 carrying only Orientation, proven by a test on a rotation-6 JPEG that keeps orientation and loses GPS. Note only photos over 3.5 MB currently lose EXIF at all, by accident, via the canvas re-encode at image-shrink.ts:127. (2) blurhash and colours need PIXEL DECODE, which server-side means sharp - and check:og-trace is at 67 of a 100 ceiling with this seam reachable from the Loom picker, page editor, importer and email studio. That is the 2026-08-11 ENOSPC fan-out one directory over; compute them in the browser where image-shrink.ts already holds an ImageBitmap. (3) FTS ranking is its own PR because it is the one piece that MAY need a migration: PostgREST can filter on search_tsv with no schema change but cannot ORDER BY ts_rank, so either rank in-process (migration-free, recommended first) or add a search_library_assets RPC mirroring the existing match_library_assets - and that path takes the full ADR-1111 ordering discipline. ⚠️ lib/library/store.ts:149 says FTS is 'a follow-up, D7', contradicting BUILD-LIST.md:1233 which puts it in D1; the code comment is the stale one and gets fixed in the same pass.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -1421,7 +1421,7 @@
         "file": "docs/BUILD-LIST.md",
         "ref": "Loom D7"
       },
-      "detail": "Populate embedding, hybrid FTS+vector RRF ranking, AI auto-tag and colour extraction, background removal / upscale. Later the Weave generative composer.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
+      "detail": "Populate embedding, hybrid FTS+vector RRF ranking, AI auto-tag and colour extraction, background removal / upscale. Later the Weave generative composer.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── 🔴 ITS FIRST ITEM IS ALREADY SHIPPED, found 2026-08-24 while re-testing PROG-D1. 'Populate embedding' and vector search are LIVE and cron-driven: lib/library/embeddings.ts exports reindexLibraryEmbeddings / matchLibraryAssets / similarLibraryAssets over the match_library_assets RPC (20260921000000_library_embeddings.sql), wired into the Studio at app/(main)/admin/library/page.tsx:162,167 behind sort=relevant, with a cron at vercel.json:37. D7's real remainder is hybrid FTS+vector RRF, auto-tag, colour extraction and background removal - and RRF is BLOCKED ON D1's FTS half, a dependency neither row states.",
       "verify": {
         "kind": "manual",
         "evidence": "Program phase.",
@@ -3693,6 +3693,23 @@
         "kind": "manual",
         "evidence": "Paired reading 2026-08-24 on #2252's lockfile. Dirty tree (old + new versions present): 1.39 GiB, gate exits 1. Same lockfile, node_modules deleted and reinstalled: 1.018 GiB by du, 932 MiB node_modules by the gate's own accounting, exits 0. Stays manual because closing it needs a real Vercel build printing both the pre-trim reading and the upload line, and no probe in this repo can cause a Vercel build to happen or read its log. ── CONFIRMED 2026-08-24 from Vercel's build report on dpl_8trMCgXbV: both @supabase+cli-linux-x64 2.114.0 and 2.115.0 present in one node_modules. The local paired reading that first suggested this is superseded as EVIDENCE (build scripts were ignored locally, so the floor understated) while its conclusion is confirmed independently by the build's own file listing. ── ESCALATED 2026-08-24: main's production deploy of the bump merge failed the same gate, so the condition is self-sustaining rather than confined to one PR. Owner broke the loop with a no-cache redeploy; the row stays open for the durable fix.",
         "checked": "2026-08-24"
+      }
+    },
+    {
+      "id": "HYG-017",
+      "title": "library_renditions has a table, an index, a typed contract and a presets file, and zero writers",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20260920000000_library_dam.sql",
+        "ref": "library_renditions"
+      },
+      "detail": "FOUND 2026-08-24 while scoping PROG-D1. `library_renditions` (20260920000000_library_dam.sql:47-62) has a table, an index, a typed contract, and lib/library/renditions.ts holding RENDITION_PRESETS and CROP_FRAMES whose header says they are 'shared by the ingest pipeline'. A repo-wide grep for `library_renditions` across app/ lib/ components/ returns NOTHING. Zero writers, zero readers. 🔴 THAT IS THE SHAPE ADR-979 PUNISHED, and the same shape `library_usages` had before EDITOR-ARCHITECTURE dropped it: schema and types standing in for work, reading as capability. ⚠️ AND THE PRESETS FILE MAY CONTRADICT THE TABLE'S PREMISE - renditions.ts says transforms are on-the-fly and 'these are targets, not pre-baked sizes', which if true means the honest D1 deliverable is a RESOLVER over Supabase Storage transforms, not five stored files per asset, and the table should be dropped rather than populated. One owner sentence settles which, and it should be settled BEFORE anyone writes rendition writers - building them is the expensive way to answer a question a doc edit can answer.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const{execSync}=require('child_process');const fs=require('fs');if(!fs.existsSync('lib/library/renditions.ts'))process.exit(79);let hits='';try{hits=execSync('grep -rl library_renditions app lib components 2>/dev/null||true',{encoding:'utf8'})}catch(e){hits=''}if(hits.trim()){process.exit(0)}console.error('library_renditions still has zero writers and zero readers in app/ lib/ components/ - populate it or drop it');process.exit(1)\"",
+        "note": "Passes when something in the app actually reads or writes the table, OR fails while it remains an unpopulated contract. Measures the consequence (is this schema attached to anything?) rather than the row's words."
       }
     },
     {
