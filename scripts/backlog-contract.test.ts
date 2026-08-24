@@ -183,6 +183,44 @@ describe('check:backlog — the probe/status contract', () => {
     expect(out).toContain('no verify block')
   })
 
+  // LIVE-007's probe threw `SyntaxError: Unexpected token 'for'` on EVERY invocation for six
+  // enrolments, because its slug list was double-quoted inside a `node -e "…"` body and the shell
+  // ate the quotes. A SyntaxError exits 1, which is indistinguishable from an honest "not done",
+  // so an OPEN row's broken probe AGREED with it forever and the row read as measured. The
+  // runProbe fence cannot catch this: the probe RUNS fine, the program inside it is what is broken.
+  it('FAILS a cmd probe carrying a bare double quote, which the shell would eat', () => {
+    writeBacklog(dir, [
+      ...ballast(),
+      {
+        id: 'EATEN',
+        title: 'a probe whose quotes the shell removes',
+        status: 'open',
+        lane: 'live',
+        verify: { kind: 'cmd', cmd: 'node -e "const need=["a","b"];process.exit(need.length?0:1)"' },
+      },
+    ])
+    const { code, out } = run(BACKLOG_GUARD, dir)
+    expect(code).toBe(1)
+    expect(out).toContain('carries a double quote inside')
+  })
+
+  // The positive control: a BACKSLASH-escaped quote survives the shell and must NOT be refused,
+  // or the rule would force a rewrite of the eleven probes that legitimately use one.
+  it('does NOT fail a cmd probe whose inner quotes are backslash-escaped', () => {
+    writeBacklog(dir, [
+      ...ballast(),
+      {
+        id: 'ESCAPED',
+        title: 'a probe that escapes its inner quotes',
+        status: 'open',
+        lane: 'live',
+        verify: { kind: 'cmd', cmd: 'node -e "const s=\\"x\\";process.exit(s?1:0)"' },
+      },
+    ])
+    const { out } = run(BACKLOG_GUARD, dir)
+    expect(out).not.toContain('carries a double quote inside')
+  })
+
   it('FAILS a truncated file rather than printing a ✓ over nothing (ADR-962)', () => {
     writeBacklog(dir, [
       { id: 'ONLY', title: 'lonely', status: 'parked', lane: 'live', verify: { kind: 'manual', evidence: 'x', checked: '2026-08-17' } },

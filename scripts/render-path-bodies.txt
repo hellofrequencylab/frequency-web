@@ -126,3 +126,40 @@ how-to-be-more-social  0  # ✅ ENROLLED + template-only 2026-08-20 (Lift 5d, AD
                     #    enrolment; the coded steps carried no per-step url), FAQPage from the
                     #    Accordion (13 Q&A), Breadcrumb still from the route. Template-only
                     #    from here.
+tools-for-community-builders  0  # ✅ ENROLLED + template-only 2026-08-24 (Lift 5d, ADR-1068). The
+                    #    281-line coded article became
+                    #    lib/page-editor/templates/tools-for-community-builders.ts, a spec run
+                    #    through articleTemplate(). Every block, in the coded order, and every word
+                    #    verbatim. It is the FIRST enrolment that widened NO seam: the seven
+                    #    optional fields the six prior enrolments added already covered everything
+                    #    it carries (openingBeat, beat, beats, a media beat's cta, section links).
+                    #    ONLY THREE schema nodes, because the coded page asserted only three: it
+                    #    has no ordered guide, so the spec uses neither `howTo` nor `steps`, no
+                    #    DawnHowToSteps block is composed, and NO HowTo node is invented. Article
+                    #    from <BlockDocJsonLd> (route passes its own title/description/dates/three
+                    #    images, unchanged), FAQPage from the Accordion (6 Q&A), Breadcrumb still
+                    #    from the route. Template-only from here.
+what-is-frequency  0  # ✅ ENROLLED + template-only 2026-08-24 (Lift 5d, ADR-1068). The 517-line
+                    #    coded article became lib/page-editor/templates/what-is-frequency.ts, a
+                    #    spec run through articleTemplate(). Every block, in the coded order, and
+                    #    every word verbatim. It widened THREE seams, each optional and each
+                    #    mapped to a block already live in another template: `tiers` (the six-rung
+                    #    price ladder → `Tiers`), `cards` (the three sibling-pillar link cards →
+                    #    `FeatureGrid`) and `afterSteps` (the taxonomy paragraph the coded page
+                    #    printed BELOW the steps, which `body` and `note` both render ABOVE them).
+                    #    The six prior specs were rendered through the old and the new generator
+                    #    and diffed: byte-identical, all six.
+                    #    ⚠️ THE PRICE FIGURES ARE NOT FROZEN. The ladder and the money answers
+                    #    still interpolate from lib/pricing/* in the spec, exactly as the route
+                    #    did, so /pricing and this page cannot drift.
+                    #    ALL FOUR schema nodes survive: Article from <BlockDocJsonLd> (route
+                    #    passes its own title, the LONG description, dates and the one hero image,
+                    #    unchanged), HowTo from the DawnHowToSteps block (ONE node, as coded; it
+                    #    loses its explicit hero photo to the OG fallback, the same delta as every
+                    #    prior enrolment, and the coded steps carried no per-step url), FAQPage
+                    #    from the Accordion (12 Q&A), Breadcrumb still from the route. Three
+                    #    VISIBLE deltas, none of them a lost word, are named in the spec header:
+                    #    DawnHowToSteps prints its own name + intro above the steps, the ladder
+                    #    renders as Tiers cards rather than the coded compact list, and the cards
+                    #    read "Learn more" (the block's word) instead of "Read more".
+                    #    Template-only from here.
