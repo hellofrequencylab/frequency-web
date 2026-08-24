@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
+import { act } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { createRoot } from 'react-dom/client'
 import { findA11yViolations, formatViolations } from './axe'
 
 // LIVE-016 — Vera's chat transcript must be a LIVE REGION, or her reply lands in a scroll
@@ -41,6 +43,34 @@ function mount(html: string): HTMLElement {
   host.innerHTML = html
   document.body.appendChild(host)
   return host
+}
+
+/**
+ * Mount a component for real, and hand back <body> as the search scope.
+ *
+ * The lightbox moved onto the shared `Dialog` (LIVE-089), which PORTALS to document.body — and a
+ * portal needs a client. `renderToStaticMarkup` therefore returns the primitive's SSR placeholder
+ * and no transcript, which is true of every Dialog-based surface in the tree, not a property of
+ * this one. The LIVE-016 assertion below is unchanged and still measures the same consequence
+ * (the node a reply is appended into announces its own additions); only the render does.
+ */
+function mountClient(node: React.ReactNode): { scope: HTMLElement; cleanup: () => void } {
+  // jsdom scaffolding for a real client render: `act` wants the flag, and jsdom ships no
+  // Element.prototype.scrollTo, which the transcript calls to pin itself to the newest message.
+  ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+  if (!Element.prototype.scrollTo) Element.prototype.scrollTo = () => {}
+  const host = document.createElement('div')
+  document.body.appendChild(host)
+  const root = createRoot(host)
+  act(() => root.render(node))
+  return {
+    scope: document.body,
+    cleanup: () => {
+      act(() => root.unmount())
+      host.remove()
+      document.body.style.overflow = ''
+    },
+  }
 }
 
 /**
@@ -102,11 +132,11 @@ describe('Vera transcript is a live region (LIVE-016)', () => {
 
   it('the onboarding lightbox transcript announces Vera’s replies', async () => {
     const opening = { message: 'Picking up where induction left off.', suggestions: ['Find me a Circle'], stage: 'orient' as const }
-    const host = mount(renderToStaticMarkup(<VeraLightbox slides={[]} opening={opening} startInChat />))
+    const { scope, cleanup } = mountClient(<VeraLightbox slides={[]} opening={opening} startInChat />)
     try {
-      assertTranscriptIsALiveRegion(host, 'Picking up where induction left off.')
+      assertTranscriptIsALiveRegion(scope, 'Picking up where induction left off.')
     } finally {
-      host.remove()
+      cleanup()
     }
   })
 

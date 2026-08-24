@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Gem, X } from 'lucide-react'
+import { GateNotice } from '@/components/ui/gate-notice'
 import {
   afterBetaNoticeDismissed,
   afterBetaNoticeShown,
@@ -14,7 +14,9 @@ import {
 // sleeps. It appears at the same success moments <UpsellTease> already knows about (it renders from
 // inside that component, so it inherits every existing placement and adds no new call sites), and it
 // says three plain things: which tier's tools you are using, when memberships start, and that
-// subscribing before then holds the beta rate and earns a Founding badge.
+// taking the yearly plan before then adds the Founding badge. (It used to say the invite also held
+// a beta rate; ADR-1060 closed the beta pricing window on 2026-08-17 and lib/pricing/beta-notice.ts
+// stopped writing that sentence, so this line was describing copy the module no longer produces.)
 //
 // IT BLOCKS NOTHING. There is no wall, no muted content, no modal, and no word claiming a lock. It is
 // a `role="note"` beside the thing that just worked, and every capability behind it stays open.
@@ -81,32 +83,32 @@ export function BetaGraceNotice({ notice }: { notice: BetaNotice }) {
   }
 
   return (
-    <div
-      role="note"
-      className="relative mt-4 flex items-start gap-3 rounded-2xl border border-border bg-surface-elevated p-4"
-    >
-      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
-        <Gem className="h-4 w-4" aria-hidden />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-body-sm font-semibold text-text">{notice.title}</p>
-        <p className="mt-1 text-body-sm leading-relaxed text-muted">{notice.body}</p>
-        <p className="mt-1 text-body-sm leading-relaxed text-muted">{notice.invite}</p>
-        <Link
-          href={notice.href}
-          className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface"
-        >
-          {notice.cta}
-        </Link>
-      </div>
-      <button
-        type="button"
-        onClick={onDismiss}
-        aria-label="Dismiss"
-        className="-mr-1 -mt-1 rounded-lg p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
+    // THROUGH THE KIT (PROG-DAWN2). This was a hand-rolled box that said exactly what
+    // GateNotice's `preview` kind says: the capability is visible and free while billing
+    // is off, and billing turns on later. It kept its own frame only because the kit had
+    // nowhere to put a second paragraph, a CTA, or a dismiss control; all three are slots
+    // now, so the notice composes and the product carries one gate vocabulary instead of two.
+    // The wrapper keeps `role="note"` (a note beside the win, never a wall) and owns the
+    // spacing, because spacing at a call site is the caller's job.
+    <div role="note" className="mt-4">
+      <GateNotice
+        kind="preview"
+        title={notice.title}
+        onDismiss={onDismiss}
+        action={
+          <Link
+            href={notice.href}
+            className="inline-flex items-center gap-1.5 rounded-control border border-border px-3.5 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface"
+          >
+            {notice.cta}
+          </Link>
+        }
       >
-        <X className="h-4 w-4" aria-hidden />
-      </button>
+        {/* The three plain things, and the reason this could not compose before: the second
+            and third are separate paragraphs, and a <p> cannot hold a <p>. */}
+        <p className="leading-relaxed">{notice.body}</p>
+        <p className="leading-relaxed">{notice.invite}</p>
+      </GateNotice>
     </div>
   )
 }

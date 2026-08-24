@@ -28847,4 +28847,59 @@ quietly becoming a downgrade.
 The durable rule: **a tolerance is only as honest as its premise, and a premise is a claim with an
 expiry date. When the thing a fail-safe protects against becomes impossible, the fail-safe stops
 being protection and starts being documentation of a world that no longer exists.**
+---
 
+## ADR-1110: The six hand-rolled overlays move onto `Dialog` — the z-tiers were inheritance, the scrims were choices (2026-08-24)
+
+**Status.** Accepted (2026-08-24). Closes `LIVE-089`.
+
+**Context.** Six overlays hand-rolled `fixed inset-0` instead of composing `Dialog`. The row said
+none was a faithful copy, and it was right — but **it was wrong about two things, and the errors
+both understated the problem:**
+
+- *"Five of the six set `aria-modal` with no focus trap"* — it is **four**. `teaser-gate` and the
+  induction preview end-state have **no dialog role at all**: no name, no modal semantics, nothing.
+  That is a different and worse defect, and the row's sentence hid the two worst cases inside a
+  claim about the other four.
+- *"`vera-lightbox`'s `z-[60]` is deliberate, so a Dialog can open over it"* — **false.** Nothing in
+  that subtree opens a Dialog. `z-[60]` is the tier `Dialog` itself abandoned, and its own comment
+  records why: at `z-[60]` a modal renders *behind* the `z-[70]` mobile admin sheet while still
+  locking scroll. Inheritance, not intent.
+
+**Decision, and the distinction that matters.** Every **tier** moved (50/60/70 → 80) as a **bug
+fix**: those are the exact values `Dialog` migrated away from, none of the six hosts a nested dialog
+needing to sit above, none carries a comment justifying its tier (Dialog's carries nine lines), and
+two of them mount from `app/(main)/layout.tsx` on every route — including `/admin`, where they tied
+with the `z-[70]` admin sheet. Three **scrims** moved onto `bg-ink/60` as **declared design
+changes**, argued in the file each lives in. Those are different kinds of change and are labelled
+differently rather than swept together.
+
+`Dialog` gains **`ariaLabelledBy`**, because without it the conversion would have silently renamed
+two dialogs. `invite-friend-button` is the sharpest case: its `aria-label` said *"Invite a friend"*
+while its visible heading read *"Invite a friend, earn Zaps"*, so a screen-reader user heard a
+different name than a sighted member read. It now points at the heading.
+
+**Equivalence proved, not asserted.** The same jsdom harness ran against the tree before and after,
+dumping `<body>` per overlay and diffing: **every panel's inner markup is byte-identical**. The only
+deltas are the intended ones, enumerated per file. Each panel's duplicate
+`motion-safe:animate-[slideUp…]` was removed — the primitive supplies the identical one, and keeping
+both translated the panel twice.
+
+**Mutation-proven.** Each mutant re-hand-rolls that file's *original* overlay under the name
+`Dialog`, so call sites are unchanged and only the overlay regresses. Every one turns its suite red
+(6, 7, 8, 7 and 6 failures respectively), and dropping `ariaLabelledBy` fails its own test.
+
+**One consequence worth stating.** `Dialog` portals, so it renders nothing during SSR.
+`test/a11y/vera-transcript.a11y.test.tsx` used `renderToStaticMarkup` and went red. The **LIVE-016
+assertion is untouched**; only the render moved to a real client render. A test that had been
+passing against static markup was, for this component, no longer testing what it claimed to.
+
+**Three overlays the original audit never listed**, found while converting and filed rather than
+folded in: `report-dialog.tsx:177` is a *second* exact `align="sheet"` no-op — the audit's "the ONE
+exact match" was true only of the seven it surveyed — and `composer.tsx:578` plus
+`creator.tsx:611` are two textbook `align="bottom"` candidates.
+
+**Left alone deliberately**, each with a reason in place: `trophy-celebration` (`z-[100]` +
+`bg-canvas/80` celebration wash), `studio-window` (`z-[80]`, deliberately *not* portaled — Dialog's
+own comment names it), the `z-[100]` lightboxes, `z-[150/160]` drawers, and the `z-[200]`
+impersonation banner.

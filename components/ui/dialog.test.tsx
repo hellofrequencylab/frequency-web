@@ -107,3 +107,42 @@ describe('Dialog align="sheet" (edge-to-edge on mobile)', () => {
     expect(overlay.className).toContain('sm:items-center')
   })
 })
+
+// `ariaLabelledBy` (LIVE-089). Two of the overlays converted in that row — vera-lightbox and
+// chores-overlay — already named themselves by their own visible heading. Without this prop the
+// conversion would have had to restate the name as a literal `ariaLabel`, SILENTLY RENAMING two
+// dialogs and letting the name drift away from the heading it duplicates.
+describe('Dialog naming by a heading in the panel', () => {
+  it('points aria-labelledby at the id it is given, and omits it when it is not', () => {
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    act(() => {
+      root!.render(
+        <Dialog open onClose={() => {}} ariaLabelledBy="panel-heading" align="center">
+          <h2 id="panel-heading">Chores first.</h2>
+        </Dialog>,
+      )
+    })
+    const panel = document.querySelector('[role="dialog"]')!
+    expect(panel.getAttribute('aria-labelledby')).toBe('panel-heading')
+    expect(panel.hasAttribute('aria-label')).toBe(false)
+    expect(document.getElementById('panel-heading')!.textContent).toBe('Chores first.')
+  })
+
+  it('still takes a literal name when the panel has no heading to point at', () => {
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    act(() => {
+      root!.render(
+        <Dialog open onClose={() => {}} ariaLabel="Capture a moment" align="center">
+          <div>tiles</div>
+        </Dialog>,
+      )
+    })
+    const panel = document.querySelector('[role="dialog"]')!
+    expect(panel.getAttribute('aria-label')).toBe('Capture a moment')
+    expect(panel.hasAttribute('aria-labelledby')).toBe(false)
+  })
+})

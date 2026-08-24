@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Sparkles, Check, X, ArrowRight, ListChecks, PartyPopper, Gem, Rocket } from 'lucide-react'
@@ -9,6 +9,7 @@ import type { OnboardingStep } from '@/lib/onboarding/status'
 import { claimChoresReward } from '@/app/(main)/feed/chores-actions'
 import { EdgePill } from '@/components/layout/edge-pill'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { Dialog } from '@/components/ui/dialog'
 
 // Vera's coach — the bait-and-switch (BETA-ACTIVATION §2) plus the "what next" nudge
 // (§5, build item 1.3 folded in here rather than a competing feed card). One Vera
@@ -19,6 +20,20 @@ import { ProgressTrack } from '@/components/ui/progress-track'
 //                 (join a circle, log a practice) from the funnel, then retires.
 // Dismissible throughout (ESC / ✕ / "later"): the screen-lock is a gag, not a trap.
 // Paced so it nudges, never nags.
+//
+// THE OVERLAY IS `Dialog` (LIVE-089). It set aria-modal="true" and focused its card, which is
+// not a focus trap: Tab walked straight out into the feed it had just told a screen reader was
+// inert, and focus never came back to the pill that opened it. It also had no portal, no Space
+// theme across one (ADR-1097), and no place in the dialog stack.
+//
+// TWO DELIBERATE CHANGES, declared rather than absorbed:
+//   · tier z-[70] -> z-[80]. z-[70] is the MOBILE ADMIN SHEET's tier, and this overlay mounts from
+//     app/(main)/layout.tsx on every route under it, /admin included — so the two could tie and
+//     paint in DOM order. z-[80] is the modal tier, above both.
+//   · scrim bg-ink/70 -> bg-ink/60, a ten-point lightening. The heavier dim read as support for the
+//     copy's "I've locked your screen" gag, but the gag is carried by the words and the ✕ that
+//     follows them, not by four percent of alpha; one scrim for every modal is worth more.
+// The blur is unchanged (backdrop-blur-sm, both).
 
 const COOLDOWN_MS = 60 * 60 * 1000 // 1 hour between unprompted full-stops
 const SEEN_KEY = 'fq_chores_seen_at'
@@ -42,7 +57,6 @@ export function ChoresOverlay({
   // tab until the snooze expires. A plain boolean (computed in an effect / the
   // snooze handler, never in render) so we don't read the clock during render.
   const [snoozed, setSnoozed] = useState(false)
-  const cardRef = useRef<HTMLDivElement>(null)
 
   const reward = chores.complete && !chores.rewarded
   const coach = chores.complete && chores.rewarded && !!nextAction
@@ -99,22 +113,6 @@ export function ChoresOverlay({
     } catch {}
   }, [])
 
-  // ESC closes; focus moves into the card; body scroll locks while open.
-  useEffect(() => {
-    if (!open) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    cardRef.current?.focus()
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.body.style.overflow = prev
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open, close])
-
   const left = chores.todo.length
 
   // ── Persistent entry: a slim pill (bottom-LEFT, clear of the Vera launcher) so
@@ -148,20 +146,8 @@ export function ChoresOverlay({
   return (
     <>
       {pill}
-      <div
-        className="fixed inset-0 z-[70] flex items-center justify-center bg-ink/70 p-4 backdrop-blur-sm"
-        onMouseDown={(e) => {
-          if (e.target === e.currentTarget) close()
-        }}
-      >
-        <div
-          ref={cardRef}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="chores-title"
-          tabIndex={-1}
-          className="relative flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-border bg-surface lift-3 outline-none motion-safe:animate-[slideUp_0.25s_ease-out]"
-        >
+      <Dialog open={open} onClose={close} ariaLabelledBy="chores-title" align="center" className="max-w-md">
+        <div className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-3xl border border-border bg-surface lift-3">
           <button
             type="button"
             onClick={close}
@@ -300,7 +286,7 @@ export function ChoresOverlay({
             </div>
           )}
         </div>
-      </div>
+      </Dialog>
     </>
   )
 }

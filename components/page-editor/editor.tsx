@@ -123,6 +123,9 @@ export function PageEditor({
       desktop={
         <DesktopEditor
           config={config}
+          // A marketing page binds no Space metadata, so its palette is scoped to the categories that
+          // render from their own props (palette-scope.ts): no Space profile / link-tree blocks.
+          surface="marketing"
           data={data}
           headerTitle={`Editing: ${title}`}
           headerActions={
@@ -141,6 +144,7 @@ export function PageEditor({
       }
       mobile={{
         config,
+        surface: 'marketing',
         data,
         title,
         // Marketing pages have no draft-only path: like the desktop <Puck>, edits
