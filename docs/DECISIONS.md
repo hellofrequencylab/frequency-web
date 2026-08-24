@@ -28889,12 +28889,18 @@ were taken on 2026-08-24 against the same tree:
 | | `n` | `totalCpuMs` | `maxCpuMs` (PROG-DAWN9) | `guardCpuMs` |
 |---|---|---|---|---|
 | **CI**, `checks` job, run 32753212940 | 111 | **8530** | **2150** | — |
+| **CI**, `checks` job, run 32756093205 (replication) | 111 | **8510** | **2120** | — |
 | **local**, 3 runs | 111 | 7690–8560 | 1960–2090 | 8000–8650 |
 
 CI:local is **1.00–1.11** on this pair. The 1.6× that `HYG-012` recorded from its own history (CI
 20.2s against a contemporaneous local 12.0–13.4s) is **not** a property of today's runners. The
 constants are still set from the CI half, and generously, because that is the assumption most
 likely to expire.
+
+**The CI half replicated on a second, unrelated run the same afternoon** — a different branch, a
+different runner, 90 minutes apart: 8510 vs 8530 total (0.2% apart) and 2120 vs 2150 worst probe
+(1.4% apart). Two readings is not a distribution, but it does rule out the first one having been a
+fluke of one runner, which is the specific way a single-sample constant goes wrong.
 
 | Constant | Value | Where it comes from |
 |---|---|---|
