@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
-import { isPaid } from '@/lib/core/entitlement'
 import { createProduct, setProductStatus, deleteProduct, productOwnerProfileId } from '@/lib/commerce/products'
 import { createCommerceCheckout } from '@/lib/commerce/checkout'
 import { canListNew } from '@/lib/commerce/selling'
@@ -31,10 +30,11 @@ function parseStringArray(raw: FormDataEntryValue | null): string[] {
 export async function createMakerProductAction(formData: FormData): Promise<void> {
   const profile = await getCallerProfile()
   if (!profile) redirect('/sign-in?next=/market/sell')
-  // Selling in the Market is a paid-member feature (ADR-596); free members trade in Classifieds.
-  // Server-side gate mirrors the page gate (defense in depth), on the REAL tier (never beta-overridden)
-  // per the creation-gate convention (auth.ts, ADR-414) — a genuinely free member is sent to upgrade.
-  if (!isPaid(profile.realMembershipTier)) redirect('/upgrade')
+  // 🔴 SIGNED IN IS THE WHOLE GATE. Listing in the Market is open on the free tier (ADR-914, owner
+  // ruling 2026-08-24): never gate the transaction, gate the repeat. A `redirect('/upgrade')` used to
+  // stand on this line and must not come back — the ladder is the RATE the sale settles at (free
+  // Member 10%, Crew 8%, own audience 0%), resolved from the payee's real tier at checkout by
+  // `memberNetworkTakeRateBps`, not a permission to list at all. Locked by ./free-seller.test.ts.
   const profileId = profile.id
 
   const title = String(formData.get('title') ?? '').trim()
@@ -82,18 +82,24 @@ export async function createMakerProductAction(formData: FormData): Promise<void
 /**
  * Draft the name + details for a member's product with Vera (the Spark's first door, ADR-986). The
  * member-side twin of the Space console's `draftListingCopyAction`: same generator, same voice primer,
- * same usage ledger, gated to the SAME paid tier that may create the product at all, on the REAL
- * (never beta-overridden) tier per the creation-gate convention (auth.ts, ADR-414).
+ * same usage ledger, and the same shape of gate — the Space twin asks "may you write in this Space",
+ * so the member twin asks "are you signed in", which is the whole permission to list (ADR-914).
+ *
+ * 🔴 This used to demand a PAID tier, for one stated reason: it mirrored the paid gate on creating the
+ * product. That gate is gone, so mirroring it would leave a Vera door that silently does nothing for
+ * the member who may list. Vera's own spend limit is unchanged and lives where it belongs — the
+ * per-feature daily cap inside `draftListingCopy` — and the `vera_unlimited` Crew gate (the repeat)
+ * still meters Vera chat. Locked by ./free-seller.test.ts.
  *
  * NEVER throws and never blocks: draftListingCopy falls back to a deterministic draft when Vera is off
- * or over budget, and an ungated caller gets empty copy (the Spark then leaves its fields alone).
+ * or over budget, and a signed-out caller gets empty copy (the Spark then leaves its fields alone).
  */
 export async function draftMakerProductCopyAction(input: {
   productKind?: ProductKind | null
   seed?: string | null
 }): Promise<ListingCopy> {
   const profile = await getCallerProfile()
-  if (!profile || !isPaid(profile.realMembershipTier)) return { title: '', description: '' }
+  if (!profile) return { title: '', description: '' }
   return draftListingCopy({
     kind: input.productKind === 'digital' ? 'digital' : 'physical',
     seed: input.seed ?? null,

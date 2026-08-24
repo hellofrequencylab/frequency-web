@@ -22,6 +22,7 @@
 import { NextResponse } from 'next/server'
 import { SLOS, CRON_FRESHNESS } from '@/lib/observability/slos'
 import { sentryEnabled } from '@/lib/observability/sentry'
+import { pushSendingEnabled } from '@/lib/push'
 
 export const dynamic = 'force-static'
 export const revalidate = 3600
@@ -88,13 +89,19 @@ export function GET() {
     {
       // Which commit is live. Frozen at build time; see buildIdentity() for why it belongs here.
       build: buildIdentity(),
-      // Whether the error recorder is armed in THIS deployment (LIVE-053). Sentry's wiring is a
-      // DSN-gated no-op, which makes it a fail-safe nothing notices is off — /feed threw for six
-      // weeks with nothing recording it. This boolean is the gate that notices: `curl /api/status`
-      // answers "is the recorder on?" in one line. Booleanized in lib/observability/sentry.ts —
-      // never the DSN itself, and no env read in this file, so the pin test below stays honest.
-      // Frozen at build like everything else here: setting the DSN needs a redeploy to show.
-      monitoring: { sentry: sentryEnabled },
+      // Two fail-safes that are invisible when they fire, published as booleans so one curl
+      // answers "is this deployment actually able to do it?".
+      //   sentry — the error recorder is a DSN-gated no-op (LIVE-053). /feed threw for six weeks
+      //     with nothing recording it, because a swallowed error is an invisible regression.
+      //   push  — sending is a VAPID-gated no-op (lib/push.ts). Production carries 24 push
+      //     subscriptions, 5 from the last 30 days, so two dozen members have granted permission;
+      //     whether a notification can LEAVE the process was answerable only from a dashboard, or
+      //     by finding one console.warn in a runtime log. Note the asymmetry that made this worth
+      //     publishing: push_subscriptions proves the PUBLIC key is served to browsers, and says
+      //     nothing at all about the PRIVATE key the server sends with.
+      // Both are booleanized at their source — never the DSN, never the key — and both freeze at
+      // build like everything else here, so setting either needs a redeploy to show.
+      monitoring: { sentry: sentryEnabled, push: pushSendingEnabled },
       // A timestamp so a consumer can tell roughly when it read the index; the
       // contract itself only changes on deploy (the response is statically cached).
       generatedAt: new Date().toISOString(),
