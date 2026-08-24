@@ -100,21 +100,40 @@ catalogue never drifts into stale copies ([ADR-482](DECISIONS.md)):
 
 ## Data model
 
-The five DAM entities (migrations `20260919000000_library_assets.sql` +
-`20260920000000_library_dam.sql`):
+The DAM entities (migrations `20260919000000_library_assets.sql` +
+`20260920000000_library_dam.sql`). **Two of the original five no longer exist** — see the 🔴 note
+under the table before building against either.
 
 | Table | Purpose | Notable columns |
 |---|---|---|
 | `library_assets` | The **master** record | `kind`, `title`, `slug`, `description`, `category`, `tags[]`, `colors[]`; `space_id` (NOT NULL; **root space = shared**); file payload (`storage_*`/`url`/`mime`/`width`/`height`/`bytes`) or parametric `config jsonb`; ingest meta (`sha256`, `alt`, `blurhash`, `focal_x/y`, `orig_width/height`); protection hooks (`is_protected`, `download_policy`, `expires_at`); `search_tsv` + `embedding vector(384)` |
-| `library_renditions` | Derived files off a master | `kind` (thumb/grid/hero/og/source/custom), `recipe jsonb` (on-the-fly transform), storage + dims |
 | `library_versions` | Non-destructive edit history | `version`, `recipe jsonb` (a full **asset snapshot** — url/storage/mime/dims/config — from any edit source: a Recraft edit, a Vera SVG save, or a Filerobot recipe), `is_current` (one per asset), `note`; see `lib/library/versions.ts` |
 | `library_styles` | Trained Recraft brand styles for matching sets ([ADR-489](DECISIONS.md)) | `name`, `recraft_style_id`, `lane` (vector/raster), `ref_count`; space-scoped, service-role/fail-closed; see `lib/library/styles.ts` |
 | `library_collections` + `_items` | Arbitrary groupings ("Q3 sales funnel"), space-scoped | `title`, `slug`; items are many-to-many with `sort` |
-| `library_usages` | Where each asset is referenced | `context` (page/space_brand/spotlight/email/other), `ref_id`, `block_id` |
 
-Typed contract: `lib/library/types.ts`; rendition + crop-frame presets: `lib/library/renditions.ts`.
-Access is **service-role only** for now (like `public.pages`); per-space client RLS lands with the
-tenancy phase.
+> 🔴 **`library_renditions` and `library_usages` were created and then DROPPED.** Corrected
+> 2026-08-24 (the renditions half; the usages half was already corrected in
+> [BUILD-LIST.md](BUILD-LIST.md) and [LOOM-PLATFORM.md](LOOM-PLATFORM.md) and never here). Both were
+> created in `supabase/migrations/20260920000000_library_dam.sql` (lines 47 and 101) and dropped
+> five days later in `supabase/migrations/20260925000000_retire_orphaned_tables_and_functions.sql`
+> (lines 16 and 17), each verified to have 0 code references, 0 incoming FKs, 0 triggers and 0
+> policy dependencies first. Measured against the live database on 2026-08-24, `public` holds
+> `library_assets`, `library_collection_items`, `library_collections`, `library_styles` and
+> `library_versions` — and neither of the two.
+>
+> - **Usages** has a named replacement: `block_usage`, derived rather than written directly
+>   ([ADR-975](DECISIONS.md)), after [ADR-979](DECISIONS.md) deleted every reader of the old table.
+>   D4 below builds that write path from zero.
+> - **Renditions has no replacement yet, and that is an open question rather than an omission.**
+>   The owner decision above says transforms are **on-the-fly**, which means a rendition is a
+>   *request* (a width + format against the master) and never a row — in which case
+>   `RENDITION_PRESETS` belongs to the D3 resolver and no table returns. Nothing in the tree
+>   consumes those presets today. Tracked as `HYG-017` in
+>   [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json); do not add rendition writers before it is answered.
+
+Typed contract: `lib/library/types.ts`; rendition + crop-frame presets (targets for the on-the-fly
+resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-role only** for now
+(like `public.pages`); per-space client RLS lands with the tenancy phase.
 
 ## Best-practice architecture
 
