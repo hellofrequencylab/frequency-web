@@ -25,13 +25,32 @@
 -- Runs via `supabase test db` (see supabase/tests/README.md), NOT under vitest.
 
 begin;
-select plan(20);
+select plan(21);
 
 -- The day boundary assertions below must be able to tell UTC midnight from LOCAL midnight, so the
 -- session runs in a zone with a NON-ZERO offset. award_zaps_atomic pins search_path but not
 -- TimeZone, so it inherits this — which is exactly the condition under which a `date_trunc('day',
 -- now())` (no `at time zone 'UTC'`) would silently be a local-day cap.
 set local timezone = 'America/Los_Angeles';
+
+-- ── 0. THE SESSION MUST LOOK LIKE A REAL CALLER, AND THAT IS NOT A WORKAROUND ────────────────
+-- award_zaps_atomic is service_role-only (§9 pins the grants), and every real call comes from
+-- lib/zaps.ts through the admin client, so PostgREST has already put `role: service_role` into
+-- request.jwt.claims before the RPC starts. pgTAP has no PostgREST in front of it, so that claim
+-- is absent and `auth.role()` returns NULL.
+--
+-- That matters because `after_zap_transaction` UPDATEs `profiles`, and `prevent_economy_self_edit`
+-- (20260630020000) rejects any economy-column write where `auth.role() IS DISTINCT FROM
+-- 'service_role'`. Without the claim, the FIRST award below dies inside the trigger and all 20
+-- assertions go with it. SECURITY DEFINER does not help: that guard reads the JWT GUC, not the
+-- executing role, so the claim is precisely what makes the real path work in production. Setting
+-- it here reproduces the production condition rather than routing around the guard.
+select set_config('request.jwt.claims', json_build_object('role', 'service_role')::text, true);
+select is(
+  auth.role(),
+  'service_role'::text,
+  'harness precondition: the session presents the service_role claim every real caller carries'
+);
 
 -- profiles.id carries no auth FK, so bare uuids are fine (same idiom as household_bundle_seating).
 insert into public.profiles (id, display_name, handle) values
