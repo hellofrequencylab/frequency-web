@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { createElement } from 'react'
 import { data } from '@/lib/page-editor/templates/the-community'
+import { data as labData } from '@/lib/page-editor/templates/the-lab'
+import { data as questData } from '@/lib/page-editor/templates/the-quest'
 import { isRenderable } from '@/lib/page-editor/templates'
 import { config } from '@/lib/page-editor/config'
+import { BlockRender } from '@/lib/page-editor/block-render'
+import type { Data } from '@/lib/page-editor/types'
 
 // /the-community renders this template (the coded body is the unreachable legacy rung), and until
 // LIVE-040 it emitted no FAQPage: COMMUNITY_FAQ and its faqSchema() call sat on the branch of
@@ -48,5 +54,49 @@ describe('FAQPage — the Accordion carries every question, and it is never opti
       'What are the four Pillars?',
       'How does a Circle grow?',
     ])
+  })
+})
+
+// ── The triptych cross-link (LIVE-100) ───────────────────────────────────────
+// The coded body closed with <PillarNav current="/the-community" />, and when that body was
+// retired the block did not come with it, so for one day this was the only pillar page that did
+// not link across while both siblings still linked to it. These assertions are on the RENDERED
+// markup, not the document: a PillarNav whose props are right but whose anchors never reach the
+// page is exactly the shape-not-truth failure this repo keeps naming. Each block is rendered
+// through the CURRENT config, so a block rename or a dropped href fails here.
+const renderBlocks = (blocks: Data['content']) =>
+  renderToStaticMarkup(
+    createElement(BlockRender, { config, data: { root: {}, content: blocks } as Data }),
+  )
+
+const pillarNavOf = (doc: Data) => doc.content.filter((b) => b.type === 'PillarNav')
+
+describe('PillarNav — the third pillar links across, and the other two still link back', () => {
+  it('the-community carries exactly one PillarNav, marked as the current page', () => {
+    const navs = pillarNavOf(data)
+    expect(navs).toHaveLength(1)
+    expect(navs[0].props.current).toBe('/the-community')
+  })
+
+  it('renders anchors to BOTH siblings, and marks itself current rather than linking to itself', () => {
+    const html = renderBlocks(pillarNavOf(data))
+    expect(html).toContain('href="/the-lab"')
+    expect(html).toContain('href="/the-quest"')
+    expect(html).not.toContain('href="/the-community"')
+    expect(html).toContain('aria-current="page"')
+  })
+
+  it('sits between the FAQ and the ink close, the seat its two siblings use', () => {
+    const ids = data.content.map((b) => b.props.id)
+    expect(ids.indexOf('tc-pillars')).toBe(ids.indexOf('tc-faq') + 1)
+    expect(ids.indexOf('tc-pillars')).toBe(ids.indexOf('tc-cta') - 1)
+  })
+
+  it('the-lab and the-quest still render a link back to /the-community', () => {
+    for (const doc of [labData, questData]) {
+      const navs = pillarNavOf(doc)
+      expect(navs).toHaveLength(1)
+      expect(renderBlocks(navs)).toContain('href="/the-community"')
+    }
   })
 })

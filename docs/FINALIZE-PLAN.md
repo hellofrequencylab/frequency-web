@@ -485,10 +485,11 @@ new/guided-client.tsx:19` does exactly the same thing and **says so**, with a re
 `lib/layout/page-chrome.ts` and the shell that reads it. No page toggles its own rail. `FOCUS_NONE_PREFIXES`
 being empty is the documented contract (§8.2), not a gap.
 
-✅ Arbitrary content type, the canon's own ban: **6 hits in 2 files, and every one of them is
-accounted for.** `app/(marketing)/the-community/tour.tsx` (`text-[9px]` ×4, `text-[8px]`) sits under
-the marketing allowlist, which is the separate brand design system rather than the in-app DAWN
-surface. `components/feed/post-body.tsx:46` (`text-[0.85em]`, inline `<code>` sizing) carries a
+✅ Arbitrary content type, the canon's own ban: **1 hit in 1 file, and it is accounted for.**
+(Was 6 hits in 2 files: `app/(marketing)/the-community/tour.tsx` carried `text-[9px]` ×4 and
+`text-[8px]` under the marketing allowlist, and that file was DELETED on 2026-08-24 with the
+`/the-community` coded body it was the only caller of — Lift 5c, LIVE-006.)
+`components/feed/post-body.tsx:46` (`text-[0.85em]`, inline `<code>` sizing) carries a
 `// token-ok:` annotation with its reason: the mark sizes relative to whatever text surrounds it,
 which is the one thing a fixed type role cannot do. The two sites this row used to name are gone —
 `join/(induction)/induction.tsx` (né onboarding/beta) and `page-editor/desktop/desktop-editor.tsx` now hold no `text-[…]`

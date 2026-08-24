@@ -22,13 +22,13 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
   `buildCommand: pnpm build` so a dashboard edit cannot silently take the lifecycle away. **Four
   gates run there and fail the build** (all wired and proven on real artifacts as of #2194,
   2026-08-19 — LIVE-035/LIVE-048/LIVE-029 closed):
-  - `check:build-budget` — total per-function output under 8 GB; **measured 6.03 GB across 497
-    functions, 2026-08-24** (production build of #2243), after 6.04 GB / 499 fns (2026-08-18), 5.81 GB
-    (2026-08-13) and 5.59 GB before that. This sentence used to read "it has risen every time it has
-    been read"; the 2026-08-24 reading is the first that did not, on both axes. The trend, not the
-    headroom, is still the thing to watch — but note that at **75%** of its ceiling this is NOT the
-    gate closest to firing. `check:cache-budget` is, at **84%**, and it is also the one with a history
-    of killing builds.
+  - `check:build-budget` — total per-function output under 8 GB; **measured 6.02 GB across 496
+    functions, 2026-08-24** (production build of #2245), after 6.03 GB / 497 fns (#2243, same day),
+    6.04 GB / 499 fns (2026-08-18), 5.81 GB (2026-08-13) and 5.59 GB before that. This sentence used
+    to read "it has risen every time it has been read"; **two consecutive readings have now fallen**,
+    on both axes. The trend, not the headroom, is still the thing to watch — but note that at **75%**
+    of its ceiling this is NOT the gate closest to firing. `check:cache-budget` is, at **84%**, and it
+    is also the one with a history of killing builds.
   - `check:og-trace` — sharp reaching 67 functions of a 100 budget (unchanged, 2026-08-24).
   - `check:cache-budget` ([ADR-1064](docs/DECISIONS.md), [ADR-1086](docs/DECISIONS.md)) — the build
     cache under Vercel's packed 1.50 GB ceiling, trimming only a named compiler-cache list when over.
@@ -38,7 +38,14 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
     59-second control). Both defects are fixed and **proven by mutation tests** that reconstruct the
     exact bad trim (#2194); `PACKED_PER_RAW` was **settled at 0.53 by a paired real reading**
     (measured 0.5254 beside the same build's upload line, rounded toward firing early). A re-added
-    `--warn-only` fails CI as a silent demotion.
+    `--warn-only` fails CI as a silent demotion. ⚠️ **That ratio is mix-dependent and the gate applies
+    one number to two mixes** — the 2026-08-24 production build estimated 0.52 GB packed and then
+    uploaded 257.84 MB, a factor of 2.0, because the gate had just trimmed `.next/cache` to nothing
+    and left a node_modules-dominated cache that compresses far better than the compiler-heavy one
+    0.53 was derived from. It errs toward trimming, which is the safe direction and costs only build
+    minutes. **Do not lower the constant from that reading** — a ratio has to be measured on the mix
+    it will be applied to, and getting exactly that backwards is what killed two builds. See
+    `HYG-015`.
   - `check:shell-weight` ([ADR-1066](docs/DECISIONS.md)) — the CLIENT half: the app shell's eager
     first-load JS (**1010 KB across 21 chunks on two production artifacts, 2026-08-18**, ceiling
     1,400 KB) plus named fingerprints for admin module bodies that must stay behind `next/dynamic`
