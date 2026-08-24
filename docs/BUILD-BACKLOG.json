@@ -2924,16 +2924,50 @@
       "title": "The small-residue sweep: UI consistency nits, menu polish, and the info-grade leftovers",
       "status": "open",
       "lane": "hygiene",
-      "size": "M",
+      "size": "S",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "HYG-009 sweep, 2026-08-20"
       },
-      "detail": "The HYG-009 carry-forwards too small for their own rows, gathered so none lives only in prose. UI consistency (one sweep PR): feed-list.tsx:495 local EmptyState -> kit variant; five retired-shell loading.tsx files; theme-editor.tsx:158 hand-rolled h1; operator/admin em dashes; 113 raw <img> on non-LCP surfaces. Menus (ADR-860 tail): drift badges in the Menu manager (derive from synced_default_keys, lib/menus/actions.ts:459); the marketing mobile menu renders trigger children as collapsible groups (marketing-mobile-menu.tsx:14-18,105); AdminSubNav heading separators is an owner taste call (admin-sub-nav.tsx:52-60). Info-grade: pages.space_id NOT NULL contract step (migration 20270209000000:93, needs the untenanted-rows ruling); the as-unknown-as cast burn-down (654, opportunistic); check:authz per-export extension to use-server files (check-authz-guards.mjs:8-16); axe incomplete-class note in the a11y docs; the embed-events cron cadence (vercel.json:90, owner taste); the admin row-action error-feedback class audit; a weekly DB-side admin_header drift check in the maintenance workflow.",
+      "detail": "The HYG-009 carry-forwards too small for their own rows, gathered so none lives only in prose. UI consistency (one sweep PR): feed-list.tsx:495 local EmptyState -> kit variant; five retired-shell loading.tsx files; theme-editor.tsx:158 hand-rolled h1; operator/admin em dashes; 113 raw <img> on non-LCP surfaces. Menus (ADR-860 tail): drift badges in the Menu manager (derive from synced_default_keys, lib/menus/actions.ts:459); the marketing mobile menu renders trigger children as collapsible groups (marketing-mobile-menu.tsx:14-18,105); AdminSubNav heading separators is an owner taste call (admin-sub-nav.tsx:52-60). Info-grade: pages.space_id NOT NULL contract step (migration 20270209000000:93, needs the untenanted-rows ruling); the as-unknown-as cast burn-down (654, opportunistic); check:authz per-export extension to use-server files (check-authz-guards.mjs:8-16); axe incomplete-class note in the a11y docs; the embed-events cron cadence (vercel.json:90, owner taste); the admin row-action error-feedback class audit; a weekly DB-side admin_header drift check in the maintenance workflow. ── 🔴 TRIAGED ITEM-BY-ITEM 2026-08-24 AND THE ROW SHOULD NOT BE WORKED AS WRITTEN. Of 15 items: 3 are effectively closed, 2 blockers have EMPTY SUBJECTS, 3 are mis-measured from greps that counted the wrong thing, 3 are understated, and only 5 are open and correctly stated. Most of why this row is sized M is items that are not there. ── CLOSE WITH EVIDENCE: '113 raw <img> on non-LCP surfaces' is 94, ZERO of which point at a static local asset (every one takes a runtime URL; 33 carry a written justification), and 'non-LCP' is wrong - templates/page-hero.tsx's rawImg is a DOCUMENTED escape hatch on the LCP hero itself (:75-78). The operator/admin em-dash sweep is DONE: zero prose em dashes remain in components/admin, app/(main)/admin and **/manage; the grep counted 429 code comments, 132 JSX comments, 14 empty-cell placeholders, and 30 lib/traits/registry.ts `description` fields that NEVER RENDER (only t.label is projected). Three real strays remain tree-wide. The check:authz per-export extension surfaces exactly ONE candidate once in-file guard helpers are resolved (stopActingAsMember, cookie-gated, audit-write only); a naive per-body scan reports 119 and 118 are false because guards like resolveModerator() are not in the GUARD regex - LIVE-103's false-positive trap again. ── 🔴 TWO BLOCKERS WITH NOTHING BEHIND THEM, the ADR-1082 pattern twice in one row: `pages.space_id` NOT NULL waited on an 'untenanted-rows ruling' and there are ZERO untenanted rows of 4 total; and the weekly `admin_header` drift check would guard an EMPTY SET because admin_header has no DB rows, which also moots the AdminSubNav separator item whose stated harm cannot occur. ── ⚠️ ONE TRIAGE CLAIM I AM NOT PASSING ON: it called check:headers not following into components/** a 'blind spot'. It is not. scripts/check-headers.mjs:25-33 states the boundary AND its reason - a shared component is imported by many routes, so following in turns the gate into a component census - and names where that population is swept instead: DAWN Phase 3. The four hand-rolled headers are real and worth fixing; the gate is not defective for declining to see them, and recording it as a defect would have manufactured work against a correct design.",
       "verify": {
         "kind": "manual",
         "evidence": "Each item re-verified individually in the HYG-009 sweep, 2026-08-20, with file:line pins recorded in META-SCAN-STATUS.md.",
         "checked": "2026-08-20"
+      }
+    },
+    {
+      "id": "LIVE-106",
+      "title": "20 marketing destinations are unreachable on a phone, and operator menu edits never reach mobile",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "components/layout/marketing-mobile-menu.tsx",
+        "ref": "headerTriggers() at :105"
+      },
+      "detail": "🔴 FOUND 2026-08-24 while triaging HYG-010, where it sat inside a clause about 'menu polish'. It is not polish; it is the highest-impact member-facing defect that row contained. components/layout/marketing-mobile-menu.tsx:105 maps `headerTriggers()` FLAT. headerTriggers() returns the PARENTLESS trigger nodes of the desktop mega nav, so every CHILD destination under them never renders on a phone. Twenty destinations are unreachable: /pricing, /help, /privacy, /terms, the six /discover/* surfaces (circles, events, partners, journeys, practices, topics), and ALL FIVE /for/* conversion landing pages. ── A SECOND DEFECT IN THE SAME COMPONENT PAIR: marketing-header.tsx passes only `light` to the mobile sheet, so PrimaryNav receives the DB-backed menu and the mobile sheet does not. An operator editing the marketing menu sees the change on desktop and never on mobile - a silent divergence between what the menu manager promises and what a phone renders. Needs a design call on collapsible groups in the sheet, which is why it is M and its own row rather than a line in a sweep. NOTE an unmerged remote branch `claude/mobile-menu-popover-fixes` exists; check for overlap before starting.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const F='components/layout/marketing-mobile-menu.tsx';if(!fs.existsSync(F))process.exit(79);const t=fs.readFileSync(F,'utf8');if(/headerTriggers\\\\(\\\\)\\\\.map/.test(t)){console.error('the mobile sheet still maps headerTriggers() flat, so every child destination stays unreachable on a phone');process.exit(1)}process.exit(0)\"",
+        "note": "Measures the consequence: the flat map IS the bug. Fails today, passes when the sheet renders children. Not a grep for the row's title words."
+      }
+    },
+    {
+      "id": "LIVE-107",
+      "title": "The public header menu is drifting now: /spaces/directory is unreachable and a trigger is mislabelled",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/menus/actions.ts",
+        "ref": "synced_default_keys"
+      },
+      "detail": "FOUND 2026-08-24 during the HYG-010 triage, by RETARGETING an item that pointed at the wrong surface. HYG-010 asked for a weekly drift check on `admin_header`; admin_header has no DB rows, so that check would guard an empty set. Meanwhile the PUBLIC `header` menu is drifting right now: 23 DB items against 26 code nodes. Two member-visible consequences. (1) /spaces/directory sits in `synced_default_keys`, meaning it WAS synced then deleted - and because the sync is non-destructive and skips anything already in that set, the engine will NEVER resurrect it. The real Spaces directory has no path from the public header. (2) The /spaces trigger is relabelled 'Spaces directory', so the public header's 'Spaces directory' link lands on the marketing page instead; a visitor following the obvious label reaches the wrong destination. The fix is a data correction plus the drift check the original item wanted, retargeted at `header`.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Measured 2026-08-24: header menu 23 DB items vs 26 code nodes; /spaces/directory in synced_default_keys with no live row; /spaces trigger label reads 'Spaces directory'. Manual until the drift check ships, because the subject is DB state no repo probe can read.",
+        "checked": "2026-08-24"
       }
     },
     {
