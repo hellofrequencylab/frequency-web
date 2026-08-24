@@ -52,7 +52,17 @@
             "LIVE-078",
             "LIVE-080",
             "LIVE-075",
-            "HYG-012"
+            "HYG-012",
+            "LIVE-090",
+            "LIVE-091",
+            "LIVE-092",
+            "LIVE-093",
+            "LIVE-094",
+            "LIVE-095",
+            "LIVE-096",
+            "LIVE-097",
+            "LIVE-098",
+            "HYG-013"
           ]
         },
         {
@@ -164,7 +174,9 @@
         "OWN-020",
         "OWN-032",
         "OWN-040",
-        "LIVE-074"
+        "LIVE-074",
+        "OWN-041",
+        "OWN-042"
       ],
       "rationale": "Foundation before surface: hardening and module boundaries (A1/A3) pay compounding dividends across every later wave. Loom D1-D3 precede the Editor because E2 projects the editor’s asset model onto the Loom. Content retirements (W1) must precede E3, which replaces EDITABLE_PAGES in the opposite direction. Re-theme and the DAWN mechanical sweeps follow the editor so swept surfaces are not rebuilt. Flagship apps (A4) and the domain backlog ride after boundaries + editor exist. Commerce verticals close, with Resonance’s launch GO still the owner’s. White label (E10/W6/P7), mobile, and texting park by name."
     }
@@ -3297,6 +3309,234 @@
         "pattern": "fixed inset-0"
       },
       "notes": "OPEN, and the probe reports NOT DONE because all six still hand-roll `fixed inset-0`. Closing it does NOT require converting all six: if the owner decides one should keep its own tier or scrim, that decision gets recorded here and the file drops out of the probe's path list with the reason attached. What the row refuses is the third option — leaving them unconverted and undecided.\n\ncomponents/invite/invite-launcher.tsx is deliberately NOT in the list: it was the one exact match and is already on Dialog. components/practice/claim-practice.tsx and components/create-modal.tsx are likewise done (ADR-1100). trophy-celebration is excluded because its z-[100] lightbox tier and bg-canvas/80 celebratory wash make it a deliberate difference rather than a pending conversion."
+    },
+    {
+      "id": "LIVE-090",
+      "title": "toggleMembership makes no policy decision, so a member can grant themselves the paid tier",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 by a full-tree security sweep, then RAISED from med to high by a production read the finder could not take. toggleMembership (app/(main)/upgrade/actions.ts:25) establishes WHO the caller is (auth.getUser) and is correctly self-scoped, but never asks WHETHER a member may change their own tier right now. It writes profiles.membership_tier free<->crew through the ADMIN client with no billingLive() gate, while its sibling startSupporterContribution in the same file gates on billingLive() at :170. The only thing hiding it is a client-side conditional render (app/(main)/upgrade/page.tsx:215); upgrade-toggle.tsx statically imports the action and page.tsx statically imports the component, so Next registers the action id at build time and it stays POST-able whichever branch renders. NOT LATENT: billingLive() = billingEnabled() && billing_live (lib/pricing/settings.ts:213); loadPricingFlags reads platform_flags (:186) where billing_live = true; and production logs show live-mode Stripe calls against acct_1TdurHPhyalyRPP1. MEASURED BLAST RADIUS 2026-08-24: select membership_tier, count(*) from profiles -> crew 40, free 16. Sixteen members can POST one server action and take the paid tier for nothing. The money half is real because BOTH payout paths read the STORED tier to pick the take-rate rung (lib/billing/tickets.ts:383-387, lib/commerce/checkout.ts:75-82 via memberNetworkTakeRateBps) — free 10%, crew 8%. WHY THE GATE MISSED IT: check:authz matches auth.getUser as a GUARD and passes the file; identity is not authorization, and the gate's own header says gate CORRECTNESS is out of scope. FIX: add the sibling's gate at the top of toggleMembership. At launch, delete the action with its button in the same change — an orphaned 'use server' export is a live POST endpoint.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync(\"app/(main)/upgrade/actions.ts\",'utf8');const i=s.indexOf(\"export async function toggleMembership\");if(i<0)process.exit(1);const j=s.indexOf(\"\\nexport \",i+10);const body=s.slice(i,j<0?undefined:j);process.exit(\"billingLive\"&&new RegExp(\"billingLive\").test(body)?0:1)\"",
+        "note": "Passes when toggleMembership itself reaches a policy gate. Scoped to the function body so the sibling action’s billingLive() call cannot satisfy it."
+      }
+    },
+    {
+      "id": "LIVE-091",
+      "title": "The outbox retry policy is error-blind, and it dropped 359 emails in one afternoon",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 by reading notification_queue in production. Nothing recorded this: no row, no ADR, no doc. THE DATA: the table holds 379 'done' (healthy, latest 2026-08-24 13:00, so the drain works today) and 359 'failed', every one created between 2026-07-17 16:00 and 17:43, all kind='email', all at attempts = max_attempts = 5, all carrying the same last_error: [email] send failed: {\"statusCode\":429,\"message\":\"You have reached your daily email sending quota.\",\"name\":\"daily_quota_exceeded\"}. THE MECHANISM: nextRetry (lib/queue/outbox.ts:36-42) decides retryability from the ATTEMPT COUNT ALONE and never inspects the error. With BACKOFF_BASE_MS = 60_000 (:26) and max_attempts = 5, all five attempts land inside ~15 minutes, against a quota that resets DAILY. So a daily_quota_exceeded is not merely likely to dead-letter every queued email — it is guaranteed to. The queue drained itself into the dead-letter state in 1h43m. WHO PAID: 356 of the 359 were one bulk campaign to 356 distinct recipients; the other three are the real damage — two welcome emails to genuine new members and one event-claim invite. Bulk and transactional mail share one queue with no priority or quota separation, so a campaign starved the welcomes. WHY NOBODY SAW: the code dead-letters loudly (console.error at :128, comment says it 'needs operator attention (ADR-043)') and an operator surface exists with one-tap requeue (components/widgets/marketing/deliverability-dead-letters.tsx). But nothing pages: grepping lib/observability, scripts/ and .github/ for dead-letter references returns zero. Pull-only, and for five weeks nobody pulled. This is the AGENTS.md rule exactly — every fail-safe needs a gate that notices it fired. FIX (this row covers parts 1-2 only): 1. Classify before counting — a 429/rate-limit/quota error is retryable on a TIME axis, so push run_after past the window and do NOT increment attempts. 2. Separate bulk from transactional so a campaign can never starve a welcome. PART 3 (a gate that pages on a dead-letter spike) is already scoped inside DEF-HARDEN and stays there. PART 4 (requeue the three transactional rows, leave the five-week-stale campaign) is an operator action on live data — OWN-042.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "retryDelayFor",
+        "paths": [
+          "lib/queue/outbox.ts"
+        ],
+        "note": "Passes when the retry decision consults the ERROR, not just the attempt count. Names the classifier that must exist and be called from the catch block."
+      }
+    },
+    {
+      "id": "LIVE-092",
+      "title": "Blocking is not enforced on friend requests, so a blocked member keeps a channel",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 by a full-tree security sweep. sendFriendRequest (app/(main)/people/friend-actions.ts:45-88) resolves the caller from the session, so there is no IDOR, but it never consults isBlockedBetween — while SIX sibling contact-initiating paths do: app/(main)/messages/actions.ts:53,138,202, lib/messages/scoped-dm.ts:344, lib/comms/bulk-dm.ts:126, app/(main)/events/[slug]/social-actions.ts:101, app/(main)/market/service-actions.ts:109. The loop is closed by two deletes: blockUser DELETES the friendship row (lib/blocking.ts:31-33), leaving a clean slate for a fresh 'pending' insert, and declineFriendRequest deletes it again (:132-136, comment: 'so the requester can try again later'). So block -> request -> notification -> decline -> repeat, indefinitely, each cycle writing a notifications row addressed to the person who blocked them. The profile page's own guard is ONE-DIRECTIONAL — hasBlocked(myProfileId, profileId) asks 'did I block them' (app/(main)/people/[handle]/page.tsx:194) — so the BLOCKED viewer sees a normal FriendButton (:388) and is not even hidden client-side. VERIFIED there is no other layer: no wrapper (four client components call it directly), NO middleware.ts anywhere in the repo, no DB trigger and no RLS (supabase/migrations/20240301000000_blocked_users.sql states enforcement is app-code only), and no block filter in lib/notifications/. This is exactly the contact channel ADR-036 shipped blocking to close ('required for a public beta and for App Store review'). FIX: one line matching the six siblings, plus the same treatment for inviteToRoom (app/(main)/messages/rooms/actions.ts:278), which today relies only on an accepted-friendship check that a pre-block friendship could have satisfied.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "isBlockedBetween",
+        "paths": [
+          "app/(main)/people/friend-actions.ts"
+        ],
+        "note": "Passes when the friend-request path consults the block list, like its six siblings."
+      }
+    },
+    {
+      "id": "LIVE-093",
+      "title": "listPublicSpaceCircles admits only active, so a Space with forming Circles shows none",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 in the delta audit of the 30 PRs since the last full scan, and CONFIRMED LIVE against production the same day. listPublicSpaceCircles hard-filters .eq('status', 'active') on all three of its arms (lib/circles/store.ts:431 owner path, :445 listed path, :509 inside myCirclesInSpace), where every other public circle reader admits forming too: lib/nearby/map-pins.ts:218 and lib/channels/programs.ts:123 use .in('status', ['forming','active']), lib/circles/remix.ts:120 the same, and lib/people/associations.ts:116 carries a local LISTABLE_CIRCLE_STATUS of ['forming','active','inactive']. app/(main)/admin/actions.ts:235 creates circles with status defaulting to 'forming', so the operator path produces exactly the rows this reader hides. CONSEQUENCE: a Space whose Circles sit at forming gets no Circles tab at all (lib/spaces/profile-nav.ts:81 gates on presence.circles, which flows from this reader), a 'Circles 0' hero stat (lib/spaces/profile-stats.ts:58), and a 'No circles yet' empty state on a page its own manage console lists rows on. NOT HYPOTHETICAL: select status, count(*) from circles on prod azsqfeonabsbmemvddqd, 2026-08-24 -> forming 2 circles in 1 space, draft 3 in 1 space, active 2 in 2 spaces. A real Space's Circles tab is suppressed right now. ATTRIBUTION, because it matters: LIVE-083 is honestly done — its probe proves the unlisted/access visibility fix it was about. This is a NEW adjacent defect from that same change, where the fix for one visibility axis over-narrowed a different one, and LIVE-083's probe structurally cannot see it. FIX: replace the three .eq('status','active') calls in these two functions with .in('status', [...LISTABLE_CIRCLE_STATUS]) against one exported constant. NOT widened to map-pins/programs/remix this pass: those are already behaviourally correct, and map-pins.test.ts:109 asserts the string literal, so adopting the constant there is a separate mechanical change.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync(\"lib/circles/store.ts\",'utf8');const i=s.indexOf(\"export async function listPublicSpaceCircles\");if(i<0)process.exit(1);const j=s.indexOf(\"export async function listSpaceCirclesWithRuns\",i+10);const body=s.slice(i,j<0?undefined:j);process.exit(\"\\\\.eq\\\\('status', 'active'\\\\)\"&&new RegExp(\"\\\\.eq\\\\('status', 'active'\\\\)\").test(body)?1:0)\"",
+        "note": "Passes when neither listPublicSpaceCircles nor myCirclesInSpace pins status to active. Scoped between two function markers so the other seven active-only filters in the same file are not implicated."
+      }
+    },
+    {
+      "id": "LIVE-094",
+      "title": "ADR-1093’s Stripe throw-guard reached one billing surface of two",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 in the delta audit. Commit bb4a690 added the viaStripe() wrapper to every Stripe reach in app/(main)/settings/billing/actions.ts with the note 'Never let one of these throw again.' The sibling file — modified in the same range — was left bare: 5 viaStripe uses on the member surface, ZERO on the Space surface, with three raw awaits at app/(main)/spaces/[slug]/settings/billing/actions.ts:43 (createSpaceBillingPortal), :55 (updateOperatorSeats) and :86 (createSpaceLoadoutCheckout). Neither callee catches: lib/billing/space-plan-checkout.ts:100 calls stripe.billingPortal.sessions.create with no try, and the loadout path calls stripe.checkout.sessions.create the same way; both return string|null only for GATE misses (no key, no customer, plan not sellable), never for a throw. NOT THEORETICAL: a StripeInvalidRequestError is exactly what production threw on /settings on 2026-08-20 ('You must complete your platform profile to use Connect...' and 'Please review the responsibilities of managing losses...'), which is the incident ADR-1093 was written about. On the Space surface such a throw escapes the action and trips the error boundary, replacing the whole /spaces/<slug>/settings/billing page — plan, seats and portal — rather than showing an inline error on the card that asked. FIX: lift viaStripe out of the member actions file into a shared module and wrap all three call sites.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "viaStripe",
+        "paths": [
+          "app/(main)/spaces/[slug]/settings/billing/actions.ts"
+        ],
+        "note": "Passes when the Space billing surface carries the same throw-guard as the member surface."
+      }
+    },
+    {
+      "id": "LIVE-095",
+      "title": "A rejected chat send loses the draft and leaves the bubble reading as sent",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 in the delta audit. send() (components/chat/use-support-chat.ts:93) has no try/catch around persist(), and both callers consume it with a bare .then(): support-chat-widget.tsx:299 and live-chat-bridge.tsx:34. isError(r) only covers the action RETURNING an ActionResult failure. A Next.js server action REJECTS on a network drop or an unhandled server error — the most likely failure for a visitor-facing widget. On that path the promise rejects before 'return false', so the .then callback never runs and the draft is gone (the exact loss the new JSDoc claims it fixed: 'they now put the draft back on false'), the optimistic bubble is never removed so the visitor sees their message as sent, setError never fires so no banner appears, and the rejection is unhandled. Same shape one line up at :57: loadHistory().then((r) => { ...; setLoading(false) }) with no .catch, so a rejected history read leaves the panel on 'Loading...' forever. The file currently contains ZERO catch blocks. FIX: wrap the body of send in try/catch — drop the optimistic row, set a real error, return false — and add .catch(() => setLoading(false)) to the loadHistory chain. Both callers then need no change.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "catch",
+        "paths": [
+          "components/chat/use-support-chat.ts"
+        ],
+        "note": "The file has zero catch blocks today, so any real rejection handling flips this. Paired with a unit test that rejects persist()."
+      }
+    },
+    {
+      "id": "LIVE-096",
+      "title": "An uncapped Circle sorts last under \"Most room\"",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 in the delta audit, confirmed by reading both functions. roomIn (app/(main)/spaces/[slug]/(profile)/circles/page.tsx:315-320) returns 0 when member_cap is absent, but cap <= 0 means NO CAP, which isOpenToJoin fifteen lines above (:299-303) correctly reads as always-joinable (return cap <= 0 || ...). So under ?sort=open ('Most room') every uncapped Circle sorts BELOW a capped one with a single seat left — the exact opposite of the function's own docstring, which says an uncapped circle is 'treated as roomy but never infinite'. Uncapped is the default for a new Circle, so this is the common case, not the edge. FIX: return a named constant expressing the docstring's own rule (roomy but not infinite) for the uncapped case, and unit-test sortCircles with one uncapped circle against one capped circle at cap-1.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "UNCAPPED_ROOM",
+        "paths": [
+          "app/(main)/spaces/[slug]/(profile)/circles/page.tsx"
+        ],
+        "note": "Passes when the uncapped case has a named non-zero value rather than falling through to 0."
+      }
+    },
+    {
+      "id": "LIVE-097",
+      "title": "The /spaces/:slug/community 308 can now land on a permanently cached 404",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 in the delta audit. next.config.ts:318 redirects /spaces/:slug/community -> /spaces/:slug/circles with permanent: true. The previous destination (/spaces/:slug) resolved for any visible Space. The new destination notFound()s on two conditions the old one did not: app/(main)/spaces/[slug]/(profile)/circles/page.tsx:96 (space.type === 'root') and :100 (the circles function switched off). Because this is a 308 the browser caches it, so an operator who turns the Circles function off converts a previously-working bookmark — and every already-sent notification link — into a permanently cached 404. FIX: in the circles page, replace those two notFound() calls with redirect(`/spaces/${slug}`). The tab is already hidden from the nav in both cases, so nothing else changes. Leave the :93 !space notFound() alone — a missing Space is a real 404.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "redirect\\(",
+        "paths": [
+          "app/(main)/spaces/[slug]/(profile)/circles/page.tsx"
+        ],
+        "note": "The page imports only notFound today. Passes when the two soft cases redirect to the Space root instead of 404ing."
+      }
+    },
+    {
+      "id": "LIVE-098",
+      "title": "Two statements in shipped code are false about their own behaviour",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 in the delta audit. (a) components/ui/use-stick-to-bottom.ts:36 — the usage block shows `const listRef = useStickToBottom<HTMLDivElement>([...])` then `<div ref={listRef}>`, but the hook returns { ref, stickNow } (:87). All five real callers destructure correctly; the documented example does not compile. (b) components/journey/v2/journey-spark.tsx:409 — the retained InfoTip still says 'A zip or an image is accepted but not read yet, so unzip first for now.' The bespoke BatchUpload it came from accepted .zip explicitly; the shared zone it moved to uses DOC_TYPES = '.pdf,.doc,.docx,.txt,.md,...' (components/studio/spark/spark-dropzone.tsx:37), which filters zip out of the picker entirely. So the tip tells a member to do something the control will not let them do. FIX: correct the example to destructure; drop the zip clause from the tip (or add .zip back to DOC_TYPES, which is a product decision rather than a copy fix).",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "unzip first for now",
+        "paths": [
+          "components/journey/v2/journey-spark.tsx"
+        ],
+        "note": "Passes when the member-facing half is corrected. The docstring half is proven by review in the same commit."
+      }
+    },
+    {
+      "id": "OWN-041",
+      "title": "The two circle-claim Zap awards carry no daily cap",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 by a full-tree security sweep, then settled against production. claimCircle (app/(main)/circles/[slug]/claim-actions.ts:13-56) verifies the caller is real and the circle is is_demo, then sets host_id: myId. There is no check that the caller ever visited, joined or was offered that circle, and the id is a client argument — this is the documented ADR-1048 flow, so the CLAIM is intended. The reward side-effect is not: each claim calls awardZapsForAction(myId, 'circle_start') (:78) and, with a practiceId, 'circle_activate' (:79). recordEngagementEvent is idempotent per circle; the Zap award is not. MEASURED 2026-08-24: select action_type, zaps_amount, daily_cap, is_active from zap_config -> circle_start 100 Zaps daily_cap NULL active, circle_activate 40 Zaps daily_cap NULL active. So enumerating demo circle ids farms 140 Zaps a time with no ceiling. OWNER LANE because the cheapest correct fix is a config write to live data (set daily_cap on the two rows), which an agent must not make unilaterally; the alternative is a code change binding the claim to a demo circle the caller is actually a member of. Either arm closes this.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Measured on prod azsqfeonabsbmemvddqd, 2026-08-24: circle_start (100 Zaps) and circle_activate (40 Zaps) both have daily_cap NULL and is_active true. Closes when either a cap is set on both rows or the claim is bound to the caller’s own demo circle.",
+        "checked": "2026-08-24"
+      }
+    },
+    {
+      "id": "OWN-042",
+      "title": "Decide what happens to the 359 dead-lettered emails",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "The operator half of LIVE-091. 359 rows sit in notification_queue at status='failed' from the 2026-07-17 quota exhaustion. The operator surface (components/widgets/marketing/deliverability-dead-letters.tsx) already offers a one-tap requeue, so no code is needed. THE DECISION: 356 of the 359 are one bulk campaign now five weeks stale and almost certainly should NOT be re-sent; the other three are transactional and arguably should be — two welcome emails to genuine new members who never received one, and one event-claim invite. Requeuing the transactional three is a live send to real people, so it is the owner's call, not an agent's. Note the ordering: fixing LIVE-091 first is what stops a requeue from re-running the same failure.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Measured on prod azsqfeonabsbmemvddqd, 2026-08-24: 359 rows at status=failed, all kind=email, all attempts=max_attempts=5, all last_error 429 daily_quota_exceeded, created 2026-07-17 16:00-17:43. Closes when the owner rules on the three transactional rows.",
+        "checked": "2026-08-24"
+      }
+    },
+    {
+      "id": "HYG-013",
+      "title": "A new Supabase advisor is unaccounted for in the accepted list",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "full audit, 2026-08-24"
+      },
+      "detail": "FOUND 2026-08-24 reading the production advisors. Security returned 144 lints and performance 267, and every one is already adjudicated — spatial_ref_sys by ADR, the 60 security_definer_function_executable WARNs and the 266 unused_index INFOs by scripts/maintenance/accepted-advisories.json, extension_in_public by ADR-507, rls_enabled_no_policy as accepted default-deny — EXCEPT one: auth_db_connections_absolute (INFO, performance). 'Your project's Auth server is configured to use at most 10 connections. Increasing the instance size without manually adjusting this number will not improve the performance of the Auth server.' It is not in the accepted list and not in any row, so the next maintenance sweep will re-surface it as novel. Either accept it by name with the reasoning, or switch the project to percentage-based allocation and record that instead. Also worth noting while here: unused_index has gone 247 (2026-07-27) -> 266 (2026-08-24), which is a trend rather than a finding, and the pre-traffic acceptance still holds at 0 orders.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "auth_db_connections_absolute",
+        "paths": [
+          "scripts/maintenance/accepted-advisories.json"
+        ],
+        "note": "Passes once the advisor is named on purpose, with its reasoning, rather than arriving as novel on every sweep."
+      }
     }
   ]
 }
