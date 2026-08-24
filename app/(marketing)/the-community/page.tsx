@@ -90,10 +90,11 @@ const EMPTY: Data = { content: [], root: {} }
 // records each one and why it landed where it did. `git log -p` on this file and on ./tour is the
 // only remaining copy of the coded body.
 //
-// ⚠️ ONE CROSS-LINK IS NOT RECOVERED HERE: the coded body closed with a <PillarNav> triptych, and
-// the-lab.ts and the-quest.ts both carry a PillarNav block while this template does not. That is a
-// missing BLOCK, not a dropped sentence, and inserting one changes this exemplar file's documented
-// section rhythm, so it is reported as a backlog row rather than smuggled into a retirement.
+// THE CROSS-LINK IS BACK (LIVE-100, 2026-08-24): the coded body closed with a <PillarNav> triptych,
+// and for one day this was the only pillar page that did not link across to its two siblings while
+// both of them still linked to it. It is a missing BLOCK, not a dropped sentence, so it was filed as
+// a row rather than smuggled into a retirement, and then added as `tc-pillars` in the template — in
+// the seat the-lab.ts and the-quest.ts already use, between the FAQ and the ink close.
 //
 // THE CHAIN, and what watches each rung:
 //   published doc  → an operator's published page wins.

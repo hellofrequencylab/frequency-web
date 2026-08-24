@@ -89,12 +89,6 @@ export function GET() {
     {
       // Which commit is live. Frozen at build time; see buildIdentity() for why it belongs here.
       build: buildIdentity(),
-      // Whether the error recorder is armed in THIS deployment (LIVE-053). Sentry's wiring is a
-      // DSN-gated no-op, which makes it a fail-safe nothing notices is off — /feed threw for six
-      // weeks with nothing recording it. This boolean is the gate that notices: `curl /api/status`
-      // answers "is the recorder on?" in one line. Booleanized in lib/observability/sentry.ts —
-      // never the DSN itself, and no env read in this file, so the pin test below stays honest.
-      // Frozen at build like everything else here: setting the DSN needs a redeploy to show.
       // Two fail-safes that are invisible when they fire, published as booleans so one curl
       // answers "is this deployment actually able to do it?".
       //   sentry — the error recorder is a DSN-gated no-op (LIVE-053). /feed threw for six weeks

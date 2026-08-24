@@ -37,6 +37,7 @@ import { awardZaps } from '@/lib/zaps'
 import { STREAK_MILESTONES, STREAK_FREEZE_CAP, FULL_DAYS_PER_FREEZE, streakProgress } from '@/lib/streak'
 import { postSystemLine } from '@/lib/system-line'
 import type { Json } from '@/lib/database.types'
+import type { StreakDay } from '@/components/ui/streak-meter'
 
 // How far back to read logs / keep frozen-day records. A streak longer than this
 // is vanishingly rare and still displays via the cached `longest`.
@@ -106,6 +107,52 @@ export function pauseCoveredDays(rest: RestWindow | null | undefined, today: str
 export function isResting(rest: RestWindow | null | undefined, today: string): boolean {
   if (!rest) return false
   return dayDiff(today, rest.from) >= 0 && dayDiff(rest.through, today) >= 0
+}
+
+// --- the frozen-day SET, for surfaces that PAINT a freeze ------------------
+//
+// getPracticeStreak already builds this set to bridge gaps in the count, but it only
+// ever returned the CONSEQUENCE (a number, a boolean `reserveHeld`). A surface that
+// draws the days themselves needs the days. Without them a bridged day is
+// indistinguishable from an absence in the logs, so StreakMeter's `frozen` state — the
+// "life happens" kindness, info teal + snowflake — had no live producer anywhere in the
+// app and the rail painted a deliberate rest as a MISS (LIVE-101).
+
+/**
+ * The days a member's stored streak augmentation has COVERED as of `today`: reserve days
+ * already spent (`frozenDates`) plus every day an active rest window covers. Pure — it
+ * takes `profiles.meta` and returns the same set getPracticeStreak bridges gaps with, so
+ * the definition of "frozen" lives in exactly one place.
+ */
+export function frozenDaysFrom(
+  meta: Record<string, unknown> | null | undefined,
+  today: string,
+): Set<string> {
+  const stored = readStored(meta)
+  const frozen = new Set(stored.frozenDates)
+  for (const d of pauseCoveredDays(stored.rest, today)) frozen.add(d)
+  return frozen
+}
+
+/**
+ * The last `length` days ending at `anchor` (oldest first) as StreakMeter day states.
+ * `anchor` is a YYYY-MM-DD calendar date in the MEMBER's day, never an instant, so the
+ * walk is plain UTC date arithmetic (shiftDay) and cannot drift with the server's zone.
+ *
+ * Precedence is deliberate: a LOGGED day is `done` even when a rest window also covers
+ * it. Showing up outranks a bridge, and a member who practiced during their own pause
+ * should see the day they earned, not the day the system gave them.
+ */
+export function streakDayRun(
+  anchor: string,
+  logged: ReadonlySet<string>,
+  frozen: ReadonlySet<string>,
+  length = 7,
+): StreakDay[] {
+  return Array.from({ length }, (_, i) => {
+    const day = shiftDay(anchor, i - (length - 1))
+    return logged.has(day) ? 'done' : frozen.has(day) ? 'frozen' : 'missed'
+  })
 }
 
 // --- the pure deriver ------------------------------------------------------
@@ -229,10 +276,11 @@ export async function getPracticeStreak(
   const stored = readStored(prof?.meta as Record<string, unknown> | null)
   const logged = new Set((rows ?? []).map((r) => String((r as { logged_for: string }).logged_for)))
   // The frozen set bridges gaps two ways: reserve days already spent, and the days
-  // an active rest window covers (a planned break is not a miss).
-  const frozen = new Set(stored.frozenDates)
+  // an active rest window covers (a planned break is not a miss). Built by the exported
+  // frozenDaysFrom so the read path and every surface that PAINTS a freeze agree on what
+  // a frozen day is — two copies of that rule is how the rail came to draw a rest as a miss.
+  const frozen = frozenDaysFrom(prof?.meta as Record<string, unknown> | null, today)
   const pauseDays = pauseCoveredDays(stored.rest, today)
-  for (const d of pauseDays) frozen.add(d)
 
   const { current, loggedToday, alive } = derivePracticeStreak(logged, frozen, today)
   const longest = Math.max(stored.longest, current)

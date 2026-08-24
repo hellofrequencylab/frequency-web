@@ -6,8 +6,8 @@
 // not an edit here.
 //
 // This island owns only what is genuinely this surface's business: the seed values a member's own
-// listing starts from, the seed handed to Vera, and the call to the EXISTING server action. The paid
-// gate lives on the page and is re-checked inside `createMakerProductAction` itself, untouched.
+// listing starts from, the seed handed to Vera, and the call to the EXISTING server action. Listing is
+// open on the free tier (ADR-914); the page and the action both ask only that you are signed in.
 //
 // The Loom scope is deliberately left undefined: a member listing their own piece should see their own
 // Loom plus every Space they run, which is what the picker does with no scopeKey.
@@ -76,7 +76,7 @@ export function ProductSpark() {
         })
       }
       onCreate={async (draft) => {
-        // The SAME action the old form posted to, with the same field names: it re-checks the paid gate,
+        // The SAME action the old form posted to, with the same field names: it re-checks sign-in,
         // enforces the used-only rule (R3), normalizes the category, caps the photos, and redirects.
         const fd = new FormData()
         fd.set('title', text(draft, 'title'))

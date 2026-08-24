@@ -1,8 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Lock, Sparkles } from 'lucide-react'
+import { Dialog } from '@/components/ui/dialog'
 
 // A soft "tease" gate. Below-tier members can READ gated content for a metered
 // preview, but any attempt to ENGAGE (or running out the timer) blurs it and
@@ -14,6 +15,23 @@ import { Lock, Sparkles } from 'lucide-react'
 //   <TeaserGate allowed={atLeastRole(role, 'crew')} resourceKey={`circle:${id}`}>
 //     {body}
 //   </TeaserGate>
+//
+// THE UPGRADE PROMPT IS `Dialog` (LIVE-089). It was the WORST of the six hand-rolled overlays on
+// a11y, and in the opposite way to the other five: where they claimed aria-modal="true" and had no
+// focus trap, this one had no dialog role at all — no name, no modal semantics, no ESC, no scroll
+// lock, and no focus management of any kind. A screen reader met an unannounced box; a keyboard
+// user tabbed through the blurred content behind it.
+//
+// TWO DELIBERATE CHANGES:
+//   · tier z-50 -> z-[80]. z-50 is the app shell's own mobile drawer tier, so which one painted on
+//     top was decided by DOM order rather than by anyone.
+//   · scrim bg-ink/40 + backdrop-blur-[2px] -> the primitive's bg-ink/60 + backdrop-blur-sm. The
+//     light scrim looked like it was protecting the tease, but the tease is protected by the
+//     CONTENT's own treatment, which is untouched here (blur-[6px] + opacity-60 on the subtree):
+//     what you can still make out behind the card does not change.
+// AND ONE ADDITION that follows from the primitive: ESC and a backdrop click now dismiss, landing
+// on exactly the state the "Keep looking" button already reached — the gate stays tripped and the
+// persistent upgrade nudge takes over.
 
 const METER_KEY = 'freq_teaser_meter_v1'
 
@@ -55,6 +73,8 @@ export function TeaserGate({
   const [remaining, setRemaining] = useState(previewSeconds)
   const [ready, setReady] = useState(false)
   const remainingRef = useRef(previewSeconds)
+  // The prompt names itself by its own heading, and a page can mount several gates.
+  const titleId = useId()
 
   const trip = useCallback(() => {
     remainingRef.current = 0
@@ -130,31 +150,34 @@ export function TeaserGate({
       )}
 
       {/* Upgrade modal once gated */}
-      {gated && !dismissed && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-ink/40 backdrop-blur-[2px]" />
-          <div className="relative w-full max-w-sm rounded-3xl border border-border bg-surface p-7 text-center lift-3">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-bg">
-              <Lock className="h-6 w-6 text-primary-strong" />
-            </div>
-            <h2 className="text-body-lg font-bold text-text">{title}</h2>
-            <p className="mt-2 text-body-sm leading-relaxed text-muted">{body}</p>
-            <Link
-              href="/upgrade"
-              className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-3 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
-            >
-              Upgrade membership
-            </Link>
-            <button
-              type="button"
-              onClick={() => setDismissed(true)}
-              className="mt-2 w-full rounded-xl px-5 py-2.5 text-body-sm font-medium text-muted transition-colors hover:text-text"
-            >
-              Keep looking
-            </button>
+      <Dialog
+        open={gated && !dismissed}
+        onClose={() => setDismissed(true)}
+        ariaLabelledBy={titleId}
+        align="center"
+        className="max-w-sm"
+      >
+        <div className="relative w-full rounded-3xl border border-border bg-surface p-7 text-center lift-3">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-bg">
+            <Lock className="h-6 w-6 text-primary-strong" />
           </div>
+          <h2 id={titleId} className="text-body-lg font-bold text-text">{title}</h2>
+          <p className="mt-2 text-body-sm leading-relaxed text-muted">{body}</p>
+          <Link
+            href="/upgrade"
+            className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-3 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+          >
+            Upgrade membership
+          </Link>
+          <button
+            type="button"
+            onClick={() => setDismissed(true)}
+            className="mt-2 w-full rounded-xl px-5 py-2.5 text-body-sm font-medium text-muted transition-colors hover:text-text"
+          >
+            Keep looking
+          </button>
         </div>
-      )}
+      </Dialog>
 
       {/* After dismissing, a persistent nudge remains over the blurred content */}
       {gated && dismissed && (

@@ -16778,6 +16778,42 @@ The `memberFree` rung returns to `NetworkTakeRate` at 1000bps, deleted under ADR
 
 **Consequences.** Nothing changes for anyone today: `featureGatesLive()` is false, so every gate still short-circuits to granted, and no Stripe account on the platform can receive money yet. ⚠️ The direction of the fail-safe SPLITS here and the split is deliberate. The audience check fails toward **not charging** (an unproven relationship means 0%, because the promise is public and charging against it is unrecoverable). The rate lookup fails toward the **higher** rung (an unreadable tier prices at free, because the sale is already established as network-sourced and quoting the paid discount to a seller we could not identify is under-collecting on a sale nobody disputes). And the ticket seller check fails **closed** (an unknown payout state refuses the sale, because letting a buyer pay into an account Stripe cannot pay out of does not under-collect — it strands someone's money between two parties who each think the other has it).
 
+**⚠️ Amended 2026-08-24 (OWN-032).** Two sentences of the Consequences paragraph above have
+expired, and the scope was extended by an owner ruling.
+
+**First, "Nothing changes for anyone today: `featureGatesLive()` is false" is no longer true.**
+`billing_live` is `true` and `beta_grace` was removed by migration `20270314000000`, so
+`featureGatesLive()` returns **true** and the five remaining personal gates
+(`journey_library_list`, `entry_points`, `gamification_full`, `vault_cash_in`, `vera_unlimited`)
+bite in production. Read that clause as a statement about 2026-07-30, not about the tree.
+**Second, "no Stripe account on the platform can receive money yet"** was a measurement of that
+day and should be re-measured before it is cited again.
+
+**Scope extended, same date.** This ADR's *mechanics* section named only `event_paid_tickets` and
+`personal_payouts`, which is why the Market kept hard `isPaid` walls for twenty-five days after the
+principle that forbids them was written. The owner ruled that **the principle governs the Market
+too**: a free Member lists and sells on day one. Three walls came out, not the two the backlog row
+knew about — the third was on the Spark's Vera copy-draft door, whose only stated rationale was
+mirroring the creation gate, so removing the gate without it would have left a door that silently
+did nothing for the member who may now list. All three lived OUTSIDE `FEATURE_GATES`, which is why
+no gate audit and no `/pricing` cell had ever shown them.
+
+The blast radius was measured before the ruling rather than after: **2 listings in the entire
+product**, and 15 of 16 free members have never logged in. So this cost nothing to reverse — it was
+worth reversing because a written principle and live code disagreed, not because the wall was
+expensive.
+
+The five Crew gates **stay**, and that is the other half of the ruling: they gate the *repeat*,
+which is exactly where this ADR says a wall belongs. The rate lookup's fail-toward-the-higher-rung
+direction, recorded in the paragraph above, was re-verified against the code the same day and holds.
+
+**Two things found and deliberately left**, both reported rather than folded in: `canTakePayments`
+is false for an `owner_kind` of `profile`, so a member listing is connect-only and no member Market
+sale settles in-app yet — an owner-kind rule, not a tier, so a Crew member is blocked identically;
+and `canReceivePayouts` gates Stripe onboarding on role-or-persona, so a plain free Member cannot
+open the funnel this ADR wants triggered at first sale. **Opening the Market opened the listing.
+The sale still needs those two.**
+
 One inversion caught by its own test, recorded because the shape recurs: paid-ness was first written as `deriveTier(t) !== 'free'`. `deriveTier` passes unknown labels straight through, so a typo would have read as **paid** and handed out the discount. It asks `isPaid` now, which is an allow-list. The durable rule: **a negation over an open set of strings is an allow-all wearing a deny's clothes.**
 
 ## ADR-915

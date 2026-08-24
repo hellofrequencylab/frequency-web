@@ -6,6 +6,7 @@ import { X, BookOpen, Zap, ChevronRight } from 'lucide-react'
 import { observe } from '@/lib/analytics/observe'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
 import { useMindless } from '@/components/on-air/mindless'
+import { Dialog } from '@/components/ui/dialog'
 import { CaptureBox } from './capture-box'
 import { EventArt, ContactArt, ConnectArt, PartnersArt, CheckInArt, GhostArt, MindlessArt } from './zap-menu-art'
 
@@ -17,6 +18,23 @@ type Mode = 'post' | 'note' | 'photo' | 'contact'
 //   • desktop → a floating FAB (the mobile tab bar isn't there).
 // The modal is always mounted so either trigger can open it from any page. Posts
 // default to the member's wall.
+//
+// THE OVERLAY IS `Dialog align="sheet"` (LIVE-089) — full-bleed on mobile, a centred card at sm+,
+// which is the exact geometry this hand-rolled one described. It had a real ESC handler and a real
+// scroll lock, but it set aria-modal="true" with NO focus trap and no focus restore, so Tab left the
+// sheet while a screen reader was told the feed behind it was inert; and it did not portal, so
+// opening it from inside the sliding admin rail (which is `transform`ed, and `fixed` anchors to a
+// transformed ancestor) rendered the "full-screen" sheet as a narrow sidebar panel.
+//
+// TWO DELIBERATE CHANGES:
+//   · tier z-[70] -> z-[80]. z-[70] is the mobile admin sheet's own tier and this component mounts
+//     from app/(main)/layout.tsx on every route beneath it, /admin included, so the two tied.
+//   · scrim bg-ink/70 -> bg-ink/60 (the primitive's), a ten-point lightening. Blur unchanged.
+// AND ONE REPAIR: the safe-area padding is now the primitive's. `Dialog`'s own comment names this
+// file as one of three that each re-solved notch padding by hand and each landed somewhere
+// different; `align="sheet"` pads the overlay top and bottom, so the panel's inline
+// `paddingBottom: max(1rem, inset)` and the header's `pt-[max(0px,inset)]` are removed as exact
+// duplicates rather than adjusted.
 export function CaptureLauncher({ scopeId }: { scopeId: string }) {
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<Mode>('post')
@@ -95,44 +113,20 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
     return () => window.removeEventListener('open-capture', onOpen)
   }, [])
 
-  useEffect(() => {
-    if (!open) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.body.style.overflow = prev
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open, close])
-
   return (
     <>
       {/* No desktop button — Capture lives in the mobile centre-nav; on web the feed's
           inline Capture box is the entry. This component only hosts the modal. */}
-      {open && (
-        <div
-          className="fixed inset-0 z-[70] flex items-stretch justify-center bg-ink/70 backdrop-blur-sm sm:items-center sm:p-4"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) close()
-          }}
-        >
+      <Dialog open={open} onClose={close} ariaLabel="Capture a moment" align="sheet" className="h-full sm:h-auto sm:max-w-md">
           {/* Full-screen on mobile, a centred card on desktop. */}
           <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Capture a moment"
-            className="relative flex max-h-[100dvh] w-full flex-col overflow-y-auto border-border bg-canvas p-4 lift-3 motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[90vh] sm:max-w-md sm:rounded-card sm:border"
-            style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+            className="relative flex h-full w-full flex-col overflow-y-auto border-border bg-canvas p-4 lift-3 sm:h-auto sm:max-h-[90vh] sm:rounded-card sm:border"
           >
             {/* Header — the Zap menu: where the interactive energy starts.
                 Vera's live line reacts to the member's day (streak, next step);
                 it renders instantly from a fallback and swaps when the cheap
                 cached line arrives. */}
-            <div className="mb-4 flex shrink-0 items-start justify-between gap-2 px-1 pt-[max(0px,env(safe-area-inset-top))]">
+            <div className="mb-4 flex shrink-0 items-start justify-between gap-2 px-1">
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-primary-strong">
                   <Zap className="h-5 w-5 fill-primary-strong/20" aria-hidden />
@@ -214,8 +208,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               <BookOpen className="h-3.5 w-3.5" aria-hidden /> View your log
             </Link>
           </div>
-        </div>
-      )}
+      </Dialog>
     </>
   )
 }

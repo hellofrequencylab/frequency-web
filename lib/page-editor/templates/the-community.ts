@@ -58,6 +58,11 @@ import {
 //   5. the FOUNDING_PLACE grounding ("The founding community is taking shape in …"),
 //      from the coded `Where it starts` kicker, now the tail of the `tc-cta-mid` body.
 //      INTERPOLATED, never typed, so this page and lib/site.ts cannot drift.
+//   6. the PillarNav triptych, RESTORED 2026-08-24 by LIVE-100 (a separate row, because a
+//      missing BLOCK is not a dropped sentence). It closed the coded body, and both siblings
+//      carry one, so without it this pillar page was the only one that did not link across.
+//      It lands between the FAQ and the ink close on `surface`, the same seat and the same
+//      tone the-lab.ts and the-quest.ts use, so the three pillar pages end the same way.
 // Deliberately NOT restored, because the page or the site already says it in its own
 // words: "Get people together. Do things on purpose." (a site-wide brand line, live on
 // the homepage and in lib/ai/voice.ts, and not this page's to carry); the "cells, not
@@ -369,6 +374,23 @@ export const data: Data = {
         tone: 'surface',
         width: 'default',
         align: 'left',
+        layout: L,
+      },
+    },
+
+    // ── The triptych cross-link ── RECOVERED from the coded body (LIVE-100), which
+    // closed with <PillarNav current="/the-community" />. It sits in the SAME seat its two
+    // siblings use, between the FAQ and the ink close (the-lab.ts, the-quest.ts), and on
+    // the same `surface` tone: the triptych is a way OUT of the page, so it belongs after
+    // the last question is answered and before the one ask. It does not disturb the
+    // documented rhythm — the single ink beat (`tc-guru`) is still the only dark band
+    // before the ink close, and the FAQ it follows is already `surface`. ─────────────────
+    {
+      type: 'PillarNav',
+      props: {
+        id: 'tc-pillars',
+        current: '/the-community',
+        tone: 'surface',
         layout: L,
       },
     },
