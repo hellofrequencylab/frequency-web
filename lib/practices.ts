@@ -1407,7 +1407,7 @@ export async function createPractice(input: {
  * Practices that BELONG TO a space (tenancy axis, Phase 0 / ENTITY-SPACES §4.3), newest first.
  * Defaults to the root space (so a caller that passes no spaceId reads the root's practices, the
  * canary). Filtered by space_id so a practice in space A can never resolve for space B — the
- * by-space read the Phase 1 profile's `entity-practices` module uses. FAIL-SAFE: [] on any
+ * by-space read the Phase 1 profile's Practices surfaces use. FAIL-SAFE: [] on any
  * error / missing tenant. space_id is reached with an untyped handle (ADR-246).
  */
 export async function listPracticesForSpace(

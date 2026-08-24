@@ -1,8 +1,4 @@
 import type { ReactElement } from 'react'
-import { CommunityPulse } from '@/components/widgets/community-pulse'
-import { NewestMembers } from '@/components/widgets/newest-members'
-import { PopularChannels } from '@/components/widgets/popular-channels'
-import { TopCircles } from '@/components/widgets/top-circles'
 import { QuestFinishCelebration } from '@/components/widgets/quest/quest-finish-celebration'
 import { QuestIntention } from '@/components/widgets/quest/quest-intention'
 import { QuestSeasonMap } from '@/components/widgets/quest/quest-season-map'
@@ -56,13 +52,6 @@ import { PracticeDetailUsedIn } from '@/components/widgets/practice-detail/pract
 import { PracticeDetailLineage } from '@/components/widgets/practice-detail/practice-detail-lineage'
 import { ChannelsList } from '@/components/widgets/channels/channels-list'
 import { ChallengesSeason } from '@/components/widgets/challenges/challenges-season'
-import { EntityGettingStarted } from '@/components/widgets/entity/entity-getting-started'
-import { EntityAbout } from '@/components/widgets/entity/entity-about'
-import { EntityStats } from '@/components/widgets/entity/entity-stats'
-import { EntityOfferings } from '@/components/widgets/entity/entity-offerings'
-import { EntityPractices } from '@/components/widgets/entity/entity-practices'
-import { EntityCommunity } from '@/components/widgets/entity/entity-community'
-import { EntityTeam } from '@/components/widgets/entity/entity-team'
 import { EntityCta } from '@/components/widgets/entity/entity-cta'
 import { PagesInAppMember, PagesInAppFocus } from '@/components/widgets/pages/pages-in-app'
 import { PagesSplashFunnels } from '@/components/widgets/pages/pages-splash-funnels'
@@ -162,11 +151,8 @@ import { GamificationChallenges } from '@/components/widgets/gamification/gamifi
 type ModuleComponent = () => Promise<ReactElement | null>
 
 const COMPONENTS: Record<string, ModuleComponent> = {
-  // Community blocks (the global default set).
-  'community-pulse': CommunityPulse,
-  'newest-members': NewestMembers,
-  'popular-channels': PopularChannels,
-  'top-circles': TopCircles,
+  // RETIRED (LIVE-067): the four community blocks that were bound here were offered only under the
+  // global '*' key, which no page mounts and which moduleIdsForScope never reached.
   // My Quest blocks (/crew).
   'quest-finish-celebration': QuestFinishCelebration,
   'quest-intention': QuestIntention,
@@ -234,14 +220,9 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'channels-list': ChannelsList,
   // Season Challenges (/crew/challenges) — the season KPI band + challenges grid.
   'challenges-season': ChallengesSeason,
-  // Entity profile (/spaces/<slug>/*) — the networked profile module set (ENTITY-SPACES-BUILD §B.2).
-  'entity-getting-started': EntityGettingStarted,
-  'entity-about': EntityAbout,
-  'entity-stats': EntityStats,
-  'entity-offerings': EntityOfferings,
-  'entity-practices': EntityPractices,
-  'entity-community': EntityCommunity,
-  'entity-team': EntityTeam,
+  // Entity profile (/spaces/<slug>/*). RETIRED (LIVE-067): seven siblings were bound here under a
+  // '/spaces/*' set the profile never mounted. entity-cta stays bound because the Book tab renders
+  // <EntityCta> directly — the binding is what lets a future <PageModules> mount adopt it.
   'entity-cta': EntityCta,
   // Pages workspace (/pages) — the operator's find-any-page-and-edit-it surface.
   'pages-in-app-member': PagesInAppMember,

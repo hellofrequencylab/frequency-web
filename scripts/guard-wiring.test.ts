@@ -147,6 +147,13 @@ const VITEST_ENFORCED: Record<string, string> = {
   // shipped a real false-positive on its first run, reading a type annotation as the record) and
   // drives every arm against fixtures that must FAIL, plus the real shelf census.
   'check:cosmetic-renders': 'scripts/check-cosmetic-renders.test.ts',
+  // Added 2026-08-24 (LIVE-067). It reads lib/widgets/modules.ts, lib/widgets/registry.tsx and the
+  // whole app/ tree and asserts a wiring property — every registered layout module is one a page
+  // mounts or imports — so vitest is its home by the rule above. Its sibling test drives every arm
+  // against fixtures that must FAIL, including a reconstruction of the pre-retirement tree, and
+  // cross-checks both source parsers against the real TypeScript modules so a parser that stops
+  // matching cannot turn the guard green.
+  'check:module-reachability': 'scripts/check-module-reachability.test.ts',
 }
 
 function packageScripts(): Record<string, string> {

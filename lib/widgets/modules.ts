@@ -4,10 +4,16 @@
 // Adding a module = add a meta entry here + bind its component in registry.tsx.
 //
 // ROUTE-SCOPING (ADR-294): a module belongs to a route's module SET, not to every page.
-// `ROUTE_MODULE_IDS` maps a scope key ('*', a section '/seg/*', or an exact route) to the
-// ids that page offers; `moduleIdsForScope` resolves the set for any key (most-specific
-// wins). The renderer + the editor both read through it, so a page only ever shows ITS OWN
-// blocks (My Quest's gauges never leak onto the Leadership dashboard, and vice versa).
+// `ROUTE_MODULE_IDS` maps a scope key (a section '/seg/*' or an exact route) to the ids that
+// page offers; `moduleIdsForScope` resolves the set for any key (most-specific wins), and
+// returns [] for a key no level declares. The renderer + the editor both read through it, so a
+// page only ever shows ITS OWN blocks (My Quest's gauges never leak onto the Leadership
+// dashboard, and vice versa).
+//
+// 🔴 A SET HERE IS A CLAIM THAT A PAGE RENDERS IT, and it is not self-proving: registering ids
+// under a key nothing mounts produces blocks an operator can arrange and no visitor can ever see.
+// Twelve modules lived that way for months (LIVE-067). `scripts/check-module-reachability.mjs`
+// now measures the consequence: every id under an unmounted key must be imported by a page.
 
 export interface LayoutModuleMeta {
   id: string
@@ -18,11 +24,13 @@ export interface LayoutModuleMeta {
 // The union of every known module's metadata (any route's blocks live here). `moduleMeta`
 // looks an id up across the whole set; ROUTE_MODULE_IDS decides which subset a page offers.
 export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
-  // ── Community blocks — the generic default set (the global '*' scope) ──
-  { id: 'community-pulse', label: 'Community pulse', description: 'Member and active-circle counts at a glance.' },
-  { id: 'newest-members', label: 'Newest members', description: 'The latest people to join.' },
-  { id: 'popular-channels', label: 'Channels', description: 'The public channels to tune into.' },
-  { id: 'top-circles', label: 'Active circles', description: 'Circles filling up across the community.' },
+  // RETIRED (LIVE-067, 2026-08-24): the four generic community blocks — community-pulse,
+  // newest-members, popular-channels, top-circles — lived here and under the global '*' key. That
+  // key resolved for nothing: every converted route declares its own set, so `moduleIdsForScope`
+  // never reached the fallback, and no page mounts <PageModules route="*">. Their metas, their
+  // registry bindings and their components are gone rather than parked, because "parked" is an
+  // owner decision to keep something for a future surface and this was four blocks nobody could
+  // draw. `scripts/check-module-reachability.mjs` now fails a re-registration that no page mounts.
 
   // ── My Quest blocks (/crew) — the member's season home ──
   { id: 'quest-finish-celebration', label: 'Finish celebration', description: 'The rank-up moment that greets a member after they finish a Journey.' },
@@ -112,13 +120,16 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   // (ENTITY-SPACES-BUILD §B.2). Each is a self-fetching RSC scoped to the ACTIVE Space
   // (lib/spaces/active-space.ts); it reads only that Space's own rows and renders kit primitives,
   // returning null when the Space has nothing.
-  { id: 'entity-getting-started', label: 'Getting started', description: 'A single composite empty shown only while a brand-new profile has no content yet.' },
-  { id: 'entity-about', label: 'About', description: 'The entity’s story, in plain prose.' },
-  { id: 'entity-stats', label: 'Highlights', description: 'Live counts: sessions, offerings, practices, circles.' },
-  { id: 'entity-offerings', label: 'Offerings', description: 'Upcoming sessions and events the entity hosts.' },
-  { id: 'entity-practices', label: 'Practices & Journeys', description: 'The Practices and Journeys the entity shares.' },
-  { id: 'entity-community', label: 'Community', description: 'The Circles the entity runs.' },
-  { id: 'entity-team', label: 'Team', description: 'The people behind the entity.' },
+  // RETIRED (LIVE-067, 2026-08-24): seven siblings — entity-getting-started, entity-about,
+  // entity-stats, entity-offerings, entity-practices, entity-community, entity-team — were
+  // registered under '/spaces/*' and rendered by nothing. The profile tabs compose
+  // `lib/entity-blocks` directly and never mount <PageModules>, so the registration only ever
+  // fed the Layout editor a palette of blocks the page does not contain.
+  //
+  // entity-cta SURVIVES, and it is the reason the retirement is not simply "delete the family":
+  // app/(main)/spaces/[slug]/(profile)/book/page.tsx imports <EntityCta> by name and renders it.
+  // Its meta + registry binding stay so a future mount can adopt it; only its dead '/spaces/*'
+  // registration went. check:module-reachability proves the difference rather than assuming it.
   { id: 'entity-cta', label: 'Book', description: 'The primary action. Book a session at an open time.' },
 
   // ── Pages workspace blocks (/pages) — the operator's "find any page and edit it" surface ──
@@ -267,8 +278,11 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
 ] as const
 
 // ── Route module SETS (ADR-294) ────────────────────────────────────────────────
-// The generic blocks any page can carry — the default everywhere ('*').
-const COMMUNITY_MODULE_IDS = ['community-pulse', 'newest-members', 'popular-channels', 'top-circles'] as const
+// There is NO global default set any more (LIVE-067). COMMUNITY_MODULE_IDS was the '*' entry, and
+// '*' was never reached: `moduleScopeChain` puts it last, and every route that renders
+// <PageModules> declares its own set, so the fallback existed only for routes that render no
+// modules at all. Registering a set at '*' again means claiming every unconverted route will draw
+// it, which is what made four blocks dead-but-listed for months.
 
 // The Leadership hub (/lead) — a community leader's consolidated home for everything they steward, in
 // default render order. lead-stats is the DASHBOARD header (always renders). The CREATOR areas
@@ -544,22 +558,13 @@ const CHANNELS_MODULE_IDS = ['channels-list'] as const
 // from one viewer-scoped fetch, so the whole interior is one module rather than a double-fetch.
 const CHALLENGES_MODULE_IDS = ['challenges-season'] as const
 
-// Every entity-profile block, in the Practitioner default order (ENTITY-SPACES-BUILD §B.3). This
-// is the FAMILY palette for the '/spaces/*' section scope — the full set the layout editor offers
-// on any profile tab. The route shell passes the per-TAB subset (the blueprint's tab.modules) to
-// PageModules as `moduleIds`, so a tab renders only its own blocks; this set governs what an
-// operator may arrange. New role blueprints reuse the same registry bindings (one change updates
-// every profile of every type — the C3 guarantee).
-const SPACE_MODULE_IDS = [
-  'entity-getting-started',
-  'entity-about',
-  'entity-stats',
-  'entity-offerings',
-  'entity-practices',
-  'entity-community',
-  'entity-team',
-  'entity-cta',
-] as const
+// RETIRED (LIVE-067): SPACE_MODULE_IDS was the '/spaces/*' family palette. It described a design
+// the profile never adopted — the tabs under app/(main)/spaces/[slug]/(profile)/ compose
+// `lib/entity-blocks` directly and no page there mounts <PageModules>, so the set fed the Layout
+// editor a palette of blocks the page does not contain and nothing else. Seven of its eight
+// components are deleted; entity-cta stays because the Book tab imports it by name. Re-declaring a
+// '/spaces/*' set is only honest alongside a real <PageModules route={`/spaces/${slug}`}> mount
+// (Epic 1.7); check:module-reachability fails a set without one.
 
 // The Pages workspace (/pages), in default render order — the one place to find any page and
 // open it ready to edit. The two in-app blocks render for every operator (admin+); the splash
@@ -655,7 +660,7 @@ const EVENT_DETAIL_MODULE_IDS = [
  *  ('/seg/*'), or an exact route. Add a route's set here when you convert its page to
  *  `<PageModules>` (and list it in lib/widgets/module-routes.ts). */
 export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
-  '*': COMMUNITY_MODULE_IDS,
+  // NOTE: there is no '*' entry. See the Route module SETS header above (LIVE-067).
   '/admin/menu': MENU_MODULE_IDS,
   '/lead': LEAD_MODULE_IDS,
   '/crew': CREW_MODULE_IDS,
@@ -688,9 +693,8 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/crew/store': VAULT_MODULE_IDS,
   '/crew/challenges': CHALLENGES_MODULE_IDS,
   '/channels': CHANNELS_MODULE_IDS,
-  // Section scope: every entity profile tab (/spaces/<slug>/<tab>) shares one family module set;
-  // the shell narrows it to the active tab's blocks via the `moduleIds` override (ADR-294).
-  '/spaces/*': SPACE_MODULE_IDS,
+  // NOTE: there is no '/spaces/*' entry either — the profile tabs render lib/entity-blocks, not
+  // <PageModules>. See the SPACE_MODULE_IDS retirement note above (LIVE-067).
   '/pages': PAGES_MODULE_IDS,
   // Section scope: every circle detail page (/circles/<slug>) shares one layout.
   '/circles/*': CIRCLE_DETAIL_MODULE_IDS,
@@ -703,11 +707,10 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
 // itself. Mirrors the layout scope cascade (lib/page-settings/layout.ts) but stays self-
 // contained so this file keeps zero dependencies.
 //
-// SPACE LAYER (Phase 0.5a): a per-entity profile route (e.g. '/spaces/<slug>/about') is a
-// concrete route, so its chain already emits the route's own key, then the SPACE-SCOPED
-// SECTION key ('/spaces/*' — the family default for every entity profile), and only THEN the
-// global '*' fallback. So a space's profile tabs resolve their own module set before any
-// global default, with no special-casing here once those '/spaces/*' sets are registered.
+// The chain still ENDS at '*', and nothing declares a set there any more (LIVE-067), so the
+// walk simply falls off the end and `moduleIdsForScope` returns []. The rung is kept because it
+// is the cascade's shape — mirroring lib/page-settings/layout.ts, where a saved '*' layout is
+// still a legal thing for an operator to have written.
 export function moduleScopeChain(key: string): string[] {
   if (key === '*') return ['*']
   if (key.endsWith('/*')) return [key, '*']
@@ -715,16 +718,22 @@ export function moduleScopeChain(key: string): string[] {
   return seg ? [key, `/${seg}/*`, '*'] : ['*']
 }
 
-/** The module ids offered at a scope key (an exact route, a section '/seg/*', or '*'): the
- *  most-specific level in the chain that declares a set wins; else the global default. Both
- *  the renderer (PageModules) and the editor (page-settings/actions) resolve through this, so
- *  what an operator can arrange always matches what the page actually renders. */
+/** The module ids offered at a scope key (an exact route or a section '/seg/*'): the most-specific
+ *  level in the chain that declares a set wins; a key no level declares offers NOTHING. Both the
+ *  renderer (PageModules) and the editor (page-settings/actions) resolve through this, so what an
+ *  operator can arrange always matches what the page actually renders. */
 export function moduleIdsForScope(key: string): readonly string[] {
   for (const k of moduleScopeChain(key)) {
     const ids = ROUTE_MODULE_IDS[k]
     if (ids) return ids
   }
-  return ROUTE_MODULE_IDS['*'] ?? COMMUNITY_MODULE_IDS
+  // A key no level declares offers NOTHING. This used to read
+  // `ROUTE_MODULE_IDS['*'] ?? COMMUNITY_MODULE_IDS`, which is why deleting the '*' entry alone
+  // would have RESURRECTED the retired community set through the hardcoded fallback (LIVE-067):
+  // every unconverted route would still have rendered and offered four blocks no page mounts.
+  // An empty set is the honest answer — a page with no module set renders no modules, and the
+  // Layout editor offers no toggles for it.
+  return []
 }
 
 export function moduleMeta(id: string): LayoutModuleMeta | undefined {

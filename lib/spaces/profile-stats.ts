@@ -1,6 +1,6 @@
-// Profile STAT counts for the in-body Stats / Highlights blocks + the `entity-stats` module
+// Profile STAT counts for the in-body Stats / Highlights blocks
 // (ENTITY-SPACES-BUILD §A.4). One place computes a Space's live numbers from its OWN rows so the
-// SpaceStats / SpaceHighlights blocks and the `entity-stats` module never drift. Each read is
+// SpaceStats / SpaceHighlights blocks and the profile hero never drift. Each read is
 // space_id-filtered + fail-safe, so a brand-new Space resolves to zeros (the empties carry the page).
 //
 // The stat SET is universal now (the type-driven template system is retired): every Space reads the

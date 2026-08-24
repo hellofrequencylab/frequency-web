@@ -18,7 +18,7 @@ describe('App id integrity', () => {
 
   it('appById resolves and misses cleanly', () => {
     expect(appById('circle.settings')?.surfaces.editor).toBeDefined()
-    expect(appById('community-pulse')?.surfaces.page).toBeDefined()
+    expect(appById('quest-season-map')?.surfaces.page).toBeDefined()
     expect(appById('element:icon/lotus')?.surfaces.element).toBeDefined()
     expect(appById('does-not-exist')).toBeUndefined()
   })
@@ -155,11 +155,17 @@ describe('page superset ← LAYOUT_MODULES', () => {
   })
 
   it("a page App's route scopes are exactly the ROUTE_MODULE_IDS keys that offer it", () => {
-    // community-pulse is offered only by the global '*' set; quest-season-map only by '/crew'.
-    expect(appById('community-pulse')?.scopes).toEqual([{ on: 'route', key: '*' }])
+    // quest-season-map is offered only by '/crew'; circle-feed only by the '/circles/*' section.
+    // (This used to name community-pulse and the global '*' key. Both were retired by LIVE-067 —
+    // '*' held only blocks no page mounted — so the example moved to a route that renders.)
     expect(appById('quest-season-map')?.scopes).toEqual([{ on: 'route', key: '/crew' }])
+    expect(appById('circle-feed')?.scopes).toEqual([{ on: 'route', key: '/circles/*' }])
     // A parked module (offered by no route set today) has an empty scope list, by design.
     expect(appById('quest-tasks')?.scopes).toEqual([])
+    // …and so does entity-cta, which a PAGE renders by direct import rather than through a route
+    // set (app/(main)/spaces/[slug]/(profile)/book/page.tsx). An empty scope list here is not the
+    // same claim as "unreachable" — check:module-reachability is what tells those two apart.
+    expect(appById('entity-cta')?.scopes).toEqual([])
   })
 })
 

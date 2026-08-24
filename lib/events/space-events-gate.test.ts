@@ -47,12 +47,16 @@ describe('exactly one caller opts out, and it is the operator console', () => {
   it('🔴 no PUBLIC reader asks for unpublished rows', async () => {
     // The public Space surfaces, by file. If a future edit adds `includeUnpublished` to any of
     // them, a draft goes back on a public page and this fails instead of a member finding it.
+    //
+    // ⚠️ TWO READERS LEFT THIS LIST on 2026-08-24 because their FILES were deleted (LIVE-067):
+    // components/widgets/entity/entity-offerings.tsx and lib/spaces/profile-presence.ts were part
+    // of the '/spaces/*' layout-module family that no page ever mounted. The positive control below
+    // is what makes shrinking this list safe: a reader that still exists but stopped calling
+    // listEventsForSpace fails loudly instead of quietly dropping off.
     const PUBLIC_READERS = [
-      'components/widgets/entity/entity-offerings.tsx',
       'components/widgets/entity/entity-cta.tsx',
       'lib/spaces/content-data.ts',
       'lib/spaces/profile-stats.ts',
-      'lib/spaces/profile-presence.ts',
       'components/spaces/dashboard/space-dashboard.tsx',
     ]
     for (const f of PUBLIC_READERS) {
