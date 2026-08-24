@@ -3313,18 +3313,21 @@
     {
       "id": "LIVE-090",
       "title": "toggleMembership makes no policy decision, so a member can grant themselves the paid tier",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "full audit, 2026-08-24"
       },
-      "detail": "FOUND 2026-08-24 by a full-tree security sweep, then RAISED from med to high by a production read the finder could not take. toggleMembership (app/(main)/upgrade/actions.ts:25) establishes WHO the caller is (auth.getUser) and is correctly self-scoped, but never asks WHETHER a member may change their own tier right now. It writes profiles.membership_tier free<->crew through the ADMIN client with no billingLive() gate, while its sibling startSupporterContribution in the same file gates on billingLive() at :170. The only thing hiding it is a client-side conditional render (app/(main)/upgrade/page.tsx:215); upgrade-toggle.tsx statically imports the action and page.tsx statically imports the component, so Next registers the action id at build time and it stays POST-able whichever branch renders. NOT LATENT: billingLive() = billingEnabled() && billing_live (lib/pricing/settings.ts:213); loadPricingFlags reads platform_flags (:186) where billing_live = true; and production logs show live-mode Stripe calls against acct_1TdurHPhyalyRPP1. MEASURED BLAST RADIUS 2026-08-24: select membership_tier, count(*) from profiles -> crew 40, free 16. Sixteen members can POST one server action and take the paid tier for nothing. The money half is real because BOTH payout paths read the STORED tier to pick the take-rate rung (lib/billing/tickets.ts:383-387, lib/commerce/checkout.ts:75-82 via memberNetworkTakeRateBps) — free 10%, crew 8%. WHY THE GATE MISSED IT: check:authz matches auth.getUser as a GUARD and passes the file; identity is not authorization, and the gate's own header says gate CORRECTNESS is out of scope. FIX: add the sibling's gate at the top of toggleMembership. At launch, delete the action with its button in the same change — an orphaned 'use server' export is a live POST endpoint.",
+      "detail": "FOUND 2026-08-24 by a full-tree security sweep, then RAISED from med to high by a production read the finder could not take. toggleMembership (app/(main)/upgrade/actions.ts:25) establishes WHO the caller is (auth.getUser) and is correctly self-scoped, but never asks WHETHER a member may change their own tier right now. It writes profiles.membership_tier free<->crew through the ADMIN client with no billingLive() gate, while its sibling startSupporterContribution in the same file gates on billingLive() at :170. The only thing hiding it is a client-side conditional render (app/(main)/upgrade/page.tsx:215); upgrade-toggle.tsx statically imports the action and page.tsx statically imports the component, so Next registers the action id at build time and it stays POST-able whichever branch renders. NOT LATENT: billingLive() = billingEnabled() && billing_live (lib/pricing/settings.ts:213); loadPricingFlags reads platform_flags (:186) where billing_live = true; and production logs show live-mode Stripe calls against acct_1TdurHPhyalyRPP1. MEASURED BLAST RADIUS 2026-08-24: select membership_tier, count(*) from profiles -> crew 40, free 16. Sixteen members can POST one server action and take the paid tier for nothing. The money half is real because BOTH payout paths read the STORED tier to pick the take-rate rung (lib/billing/tickets.ts:383-387, lib/commerce/checkout.ts:75-82 via memberNetworkTakeRateBps) — free 10%, crew 8%. WHY THE GATE MISSED IT: check:authz matches auth.getUser as a GUARD and passes the file; identity is not authorization, and the gate's own header says gate CORRECTNESS is out of scope. FIX: add the sibling's gate at the top of toggleMembership. At launch, delete the action with its button in the same change — an orphaned 'use server' export is a live POST endpoint. ── CLOSED 2026-08-24: the gate is in place at the top of toggleMembership, above every read and write, and app/(main)/upgrade/actions.test.ts pins both halves — refuses with NO tier write when billingLive() is true, still toggles while billing is off.",
       "verify": {
-        "kind": "cmd",
-        "cmd": "node -e \"const s=require('fs').readFileSync(\"app/(main)/upgrade/actions.ts\",'utf8');const i=s.indexOf(\"export async function toggleMembership\");if(i<0)process.exit(1);const j=s.indexOf(\"\\nexport \",i+10);const body=s.slice(i,j<0?undefined:j);process.exit(\"billingLive\"&&new RegExp(\"billingLive\").test(body)?0:1)\"",
-        "note": "Passes when toggleMembership itself reaches a policy gate. Scoped to the function body so the sibling action’s billingLive() call cannot satisfy it."
+        "kind": "grep-present",
+        "pattern": "toggleMembership\\(\\)(?:(?!\\nexport )[\\s\\S])*?billingLive",
+        "paths": [
+          "app/(main)/upgrade/actions.ts"
+        ],
+        "note": "Bounded to toggleMembership's own body: the match may not cross the next top-level export, so the sibling action's billingLive() cannot satisfy it. In-process rather than a cmd probe, so no shell quoting can break it (it did) and it costs no extra node process."
       }
     },
     {
@@ -3379,9 +3382,12 @@
       },
       "detail": "FOUND 2026-08-24 in the delta audit of the 30 PRs since the last full scan, and CONFIRMED LIVE against production the same day. listPublicSpaceCircles hard-filters .eq('status', 'active') on all three of its arms (lib/circles/store.ts:431 owner path, :445 listed path, :509 inside myCirclesInSpace), where every other public circle reader admits forming too: lib/nearby/map-pins.ts:218 and lib/channels/programs.ts:123 use .in('status', ['forming','active']), lib/circles/remix.ts:120 the same, and lib/people/associations.ts:116 carries a local LISTABLE_CIRCLE_STATUS of ['forming','active','inactive']. app/(main)/admin/actions.ts:235 creates circles with status defaulting to 'forming', so the operator path produces exactly the rows this reader hides. CONSEQUENCE: a Space whose Circles sit at forming gets no Circles tab at all (lib/spaces/profile-nav.ts:81 gates on presence.circles, which flows from this reader), a 'Circles 0' hero stat (lib/spaces/profile-stats.ts:58), and a 'No circles yet' empty state on a page its own manage console lists rows on. NOT HYPOTHETICAL: select status, count(*) from circles on prod azsqfeonabsbmemvddqd, 2026-08-24 -> forming 2 circles in 1 space, draft 3 in 1 space, active 2 in 2 spaces. A real Space's Circles tab is suppressed right now. ATTRIBUTION, because it matters: LIVE-083 is honestly done — its probe proves the unlisted/access visibility fix it was about. This is a NEW adjacent defect from that same change, where the fix for one visibility axis over-narrowed a different one, and LIVE-083's probe structurally cannot see it. FIX: replace the three .eq('status','active') calls in these two functions with .in('status', [...LISTABLE_CIRCLE_STATUS]) against one exported constant. NOT widened to map-pins/programs/remix this pass: those are already behaviourally correct, and map-pins.test.ts:109 asserts the string literal, so adopting the constant there is a separate mechanical change.",
       "verify": {
-        "kind": "cmd",
-        "cmd": "node -e \"const s=require('fs').readFileSync(\"lib/circles/store.ts\",'utf8');const i=s.indexOf(\"export async function listPublicSpaceCircles\");if(i<0)process.exit(1);const j=s.indexOf(\"export async function listSpaceCirclesWithRuns\",i+10);const body=s.slice(i,j<0?undefined:j);process.exit(\"\\\\.eq\\\\('status', 'active'\\\\)\"&&new RegExp(\"\\\\.eq\\\\('status', 'active'\\\\)\").test(body)?1:0)\"",
-        "note": "Passes when neither listPublicSpaceCircles nor myCirclesInSpace pins status to active. Scoped between two function markers so the other seven active-only filters in the same file are not implicated."
+        "kind": "grep-absent",
+        "pattern": "listPublicSpaceCircles\\((?:(?!listSpaceCirclesWithRuns)[\\s\\S])*?\\.eq\\('status', 'active'\\)",
+        "paths": [
+          "lib/circles/store.ts"
+        ],
+        "note": "Bounded between listPublicSpaceCircles and the next function, so the seven other active-only filters in this file are not implicated. Passes when neither it nor myCirclesInSpace pins status to active."
       }
     },
     {
