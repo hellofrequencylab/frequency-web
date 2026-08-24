@@ -14,6 +14,11 @@ import type { ChatMessage } from '@/lib/comms/support-chat'
 
 type Channel = ReturnType<ReturnType<typeof createClient>['channel']>
 
+// Copy for the two failures the server never gets to describe (a dropped connection, an unhandled
+// server error). A returned `ActionResult` carries its own wording; these are the fallbacks.
+const SEND_FAILED = 'That message did not send. Try again.'
+const HISTORY_FAILED = 'We could not load this conversation. Try again in a moment.'
+
 export function useSupportChat({
   token,
   viewerId,
@@ -54,19 +59,28 @@ export function useSupportChat({
       .subscribe()
     channelRef.current = channel
 
-    loadHistory().then((r) => {
-      if (!alive) return
-      // MERGE, don't replace: a broadcast can land before this resolves, and a bare
-      // `setMessages(r.data.messages)` dropped it on the floor. Server rows first (they are
-      // the durable truth and carry the real order), then anything live we already hold.
-      if (!isError(r)) {
-        setMessages((prev) => {
-          const seen = new Set(r.data.messages.map((m) => m.id))
-          return [...r.data.messages, ...prev.filter((m) => !seen.has(m.id))]
-        })
-      }
-      setLoading(false)
-    })
+    loadHistory()
+      .then((r) => {
+        if (!alive) return
+        // MERGE, don't replace: a broadcast can land before this resolves, and a bare
+        // `setMessages(r.data.messages)` dropped it on the floor. Server rows first (they are
+        // the durable truth and carry the real order), then anything live we already hold.
+        if (!isError(r)) {
+          setMessages((prev) => {
+            const seen = new Set(r.data.messages.map((m) => m.id))
+            return [...r.data.messages, ...prev.filter((m) => !seen.has(m.id))]
+          })
+        }
+        setLoading(false)
+      })
+      // A server action REJECTS on a dropped connection or an unhandled server error, which never
+      // reaches the `.then` above. Without this the panel sits on "Loading…" for the rest of the
+      // session, and the reader has nothing to act on.
+      .catch(() => {
+        if (!alive) return
+        setError(HISTORY_FAILED)
+        setLoading(false)
+      })
 
     return () => {
       alive = false
@@ -90,7 +104,21 @@ export function useSupportChat({
       const optimisticId = `tmp-${viewerId}-${crypto.randomUUID()}`
       const optimistic: ChatMessage = { id: optimisticId, author: role, body, at: new Date().toISOString() }
       setMessages((prev) => [...prev, optimistic])
-      const r = await persist(body)
+      // A returned failure and a REJECTION are the same event to the person typing, so they get the
+      // same handling. Only the returned failure was covered before, and a rejection is the likelier
+      // one out here: a phone losing signal mid-send rejects the action rather than answering it.
+      // On that path the promise threw past `return false`, so the caller's `.then` never ran, the
+      // draft went with it, the optimistic bubble stayed on screen reading as sent, and nothing said so.
+      let r: ActionResult<ChatMessage>
+      try {
+        r = await persist(body)
+      } catch {
+        setMessages((prev) => prev.filter((m) => m.id !== optimisticId))
+        setError(SEND_FAILED)
+        return false
+      }
+      // Only the CALL is guarded: what follows has already been stored, so a throw down there is not
+      // a failed send and must never be reported as one.
       if (isError(r)) {
         setMessages((prev) => prev.filter((m) => m.id !== optimisticId))
         setError(r.error)
