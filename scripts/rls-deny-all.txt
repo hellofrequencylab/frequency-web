@@ -21,7 +21,6 @@ beta_referrals
 business_intake
 challenge_qr_codes
 circle_transfer_offers
-claim_tokens
 content_ratings
 creator_tips
 element_settings

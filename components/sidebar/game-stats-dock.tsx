@@ -8,7 +8,7 @@ import {
 import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 import { RankBadge } from '@/components/ui/rank-badge'
 import { ProgressTrack } from '@/components/ui/progress-track'
-import { StreakMeter } from '@/components/ui/streak-meter'
+import { StreakMeter, type StreakDay } from '@/components/ui/streak-meter'
 import { Counter } from '@/components/ui/counter'
 import { StandingTiles } from '@/components/gamification/standing-tiles'
 import {
@@ -31,7 +31,10 @@ export type DockData = {
   streak: number
   rank: SeasonRank | null
   todaysMove: { kind: 'log' | 'adopt' | 'done' }
-  last7: boolean[]
+  /** The last 7 days, oldest first, as StreakMeter day states. TRI-state, not boolean[]:
+   *  a day the reserve or a rest window bridged is `frozen`, and a boolean could only ever
+   *  say done-or-not (LIVE-101). Assembled by lib/practice-streak.streakDayRun. */
+  last7: StreakDay[]
   rankProgress: { nextLabel: string | null; toGo: number; pct: number }
   arc: { chain: string; step: string; pct: number } | null
   vaultGems: number
@@ -445,15 +448,17 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
 
       {/* Streak — the kit's StreakMeter, not seven hand-rolled bars. StreakMeter was built for
           this exact run (DAWN 2026-08-03 §5) with the emotional contract that matters: a missed
-          day is a HOLLOW dot, never red, because an absence is not a failure state. It shipped
-          with a test and then sat at ZERO importers while this file drew flat bars that cannot
-          express the difference between missed and frozen.
-          `last7` is boolean[], so it maps to done/missed only — a freeze reads as 'done' here
-          because DockData carries no freeze flags. That is a data gap, not a rendering choice:
-          feeding the third state needs the tri-state out of lib/practice-streak.ts. */}
+          day is a HOLLOW dot, never red, because an absence is not a failure state.
+          THE THIRD STATE IS LIVE (LIVE-101). `last7` used to be boolean[], built from
+          practice_logs alone, so a day the reserve bridged or a rest window covered had no log
+          row and painted as MISSED — the rail told a member who had deliberately paused that
+          they had slipped, which is the opposite of what the freeze is for. It is now a
+          StreakDay[] assembled by lib/practice-streak.streakDayRun from the same frozen-day set
+          getPracticeStreak bridges the count with, so a freeze paints as a freeze. This
+          component chooses nothing: it renders the states it is handed. */}
       <div className="space-y-1.5">
         <SectionLabel>Streak</SectionLabel>
-        <StreakMeter days={last7.map((on) => (on ? 'done' : 'missed'))} count={streak} />
+        <StreakMeter days={last7} count={streak} />
       </div>
 
       {/* Rank progress */}

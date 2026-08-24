@@ -86,6 +86,28 @@ describe('the recorder is a checkable fact (LIVE-053)', () => {
     expect(typeof json.monitoring?.sentry).toBe('boolean')
   })
 
+  it('publishes monitoring.push as a boolean, never the VAPID key', async () => {
+    // Push SENDING is a VAPID-gated safe no-op (lib/push.ts configure()): with no keys it warns
+    // once and every send silently succeeds-as-nothing. Production carries 24 push subscriptions,
+    // so two dozen members have granted permission — and whether a notification can actually
+    // leave the process had no repo-visible answer at all. This boolean is that answer.
+    const json = (await GET().json()) as { monitoring?: { push?: unknown } }
+    expect(typeof json.monitoring?.push).toBe('boolean')
+  })
+
+  it('booleanizes push through lib/push rather than reading VAPID env here', () => {
+    // Same rule as the DSN: the secret-bearing read stays in the module that owns it, so this
+    // route's env allowlist never grows a var that could leak a key into a public payload.
+    //
+    // Stripped of comments before asserting, for the reason the env-pin test below spells out:
+    // this file's own prose EXPLAINS that push is VAPID-gated, and a guard that trips on the
+    // documentation for the thing it guards is a guard that gets deleted. (It tripped on exactly
+    // that when first written.)
+    const code = SRC.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+    expect(SRC).toContain("import { pushSendingEnabled } from '@/lib/push'")
+    expect(code).not.toContain('VAPID')
+  })
+
   it('booleanizes through the sentry module rather than reading env here', () => {
     // The env-pin test above is what keeps this route safe to hand to anyone; the DSN read
     // must stay in lib/observability/sentry.ts so the allowlist never grows a secret-bearing var.

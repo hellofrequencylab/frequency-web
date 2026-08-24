@@ -7,10 +7,12 @@
 # Adding a bare page is a deliberate, reviewable act and needs a reason the diff carries:
 #   node scripts/check-templates.mjs --update --allow-raise --reason="why"
 #
-# ⚠️ Two entries are compliant pages the gate cannot see (ADR-986): app/(main)/classifieds/new
-# and app/(main)/spaces/[slug]/settings/services/new are SERVER pages that gate and then delegate
-# to a client Spark which composes SparkShell. The gate matches literal tags in the page file by
-# design — it over-reports rather than certifying a hand-rolled layout — so they are listed here.
+# ⚠️ Three entries are compliant pages the gate cannot see (ADR-986): app/(main)/classifieds/new,
+# app/(main)/spaces/[slug]/settings/services/new and app/(main)/market/sell are SERVER pages that
+# gate and then delegate to a client Spark which composes SparkShell. The gate matches literal tags
+# in the page file by design — it over-reports rather than certifying a hand-rolled layout — so they
+# are listed here. market/sell joined them on 2026-08-24 (ADR-914 / OWN-032): its FocusTemplate was
+# the upgrade WALL, so opening the Market to free members removed the composition with it.
 #
 # ⚠️ Six entries are PRESENTATIONS of a page, not pages (ADR-1017): the app/(main)/@wizard/(.)…
 # intercepting routes. Each one imports and renders the SAME page module its real route serves,
@@ -58,6 +60,7 @@ app/(main)/journeys/[slug]/guide/page.tsx
 app/(main)/journeys/new/page.tsx
 app/(main)/journeys/page.tsx
 app/(main)/market/page.tsx
+app/(main)/market/sell/page.tsx
 app/(main)/messages/[id]/page.tsx
 app/(main)/messages/r/[roomId]/page.tsx
 app/(main)/people/[handle]/profile-preview/edit/page.tsx

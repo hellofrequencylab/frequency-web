@@ -1426,66 +1426,6 @@ export type Database = {
           },
         ]
       }
-      claim_tokens: {
-        Row: {
-          consumed_at: string | null
-          consumed_by: string | null
-          created_at: string
-          created_by: string | null
-          expires_at: string
-          id: string
-          revoked_at: string | null
-          revoked_reason: string | null
-          sent_at: string | null
-          subject_id: string
-          subject_type: string
-          token_hash: string
-        }
-        Insert: {
-          consumed_at?: string | null
-          consumed_by?: string | null
-          created_at?: string
-          created_by?: string | null
-          expires_at?: string
-          id?: string
-          revoked_at?: string | null
-          revoked_reason?: string | null
-          sent_at?: string | null
-          subject_id: string
-          subject_type: string
-          token_hash: string
-        }
-        Update: {
-          consumed_at?: string | null
-          consumed_by?: string | null
-          created_at?: string
-          created_by?: string | null
-          expires_at?: string
-          id?: string
-          revoked_at?: string | null
-          revoked_reason?: string | null
-          sent_at?: string | null
-          subject_id?: string
-          subject_type?: string
-          token_hash?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "claim_tokens_consumed_by_fkey"
-            columns: ["consumed_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "claim_tokens_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       client_notes: {
         Row: {
           author_profile_id: string | null
