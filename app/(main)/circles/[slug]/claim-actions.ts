@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
+import { rateLimitOk } from '@/lib/rate-limit'
 
 // "Claim this Circle" — a real member converts a demo circle into their own,
 // in place. The circle stops being demo, they become its host, their answers
@@ -31,6 +32,22 @@ export async function claimCircle(
     throw new Error('Only real members can claim a circle.')
   }
   const myId = (me as { id: string }).id
+
+  // ── THE FARMING GATE (OWN-041) ────────────────────────────────────────────────────────────
+  // `circleId` is a client argument and this action deliberately does NOT require the caller to
+  // be a member: DEMO-SYSTEM.md's flow is that a signed-in real member VIEWING a demo circle sees
+  // the claim banner, so a membership check would break ADR-1048 rather than harden it. What is
+  // farmable is the REWARD, not the claim — each claim awards `circle_start` (100 Zaps) and, with
+  // a practice, `circle_activate` (40), and while `recordEngagementEvent` is idempotent per circle
+  // the Zap award is not. So a member who enumerates demo circle ids collects 140 a time.
+  //
+  // A per-profile rate limit closes that without touching the flow or under-rewarding a real host:
+  // claiming three sample circles in a day is already far past any honest use, and someone
+  // genuinely starting circles does it over weeks, not in a loop. The operator-side cap on the two
+  // zap_config rows is the other half and is set independently, so neither depends on the other.
+  if (!(await rateLimitOk('circle:claim', myId, 3, '1 d'))) {
+    throw new Error('You have claimed a few circles already today. Try again tomorrow.')
+  }
 
   const { data: circle } = await admin
     .from('circles')

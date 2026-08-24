@@ -28669,3 +28669,93 @@ event-claim invite, which died because bulk and transactional mail shared one un
 - ⚠️ **Still nothing pages on a dead-letter spike.** The 2026-07-17 pile sat unseen for five weeks
   because the only alarm is a page an operator has to open. That gate stays scoped in `DEF-HARDEN`,
   and it is the half of this incident that code alone does not fix.
+
+## ADR-1104: The standalone Vera page is retired; the funnel step follows the member (2026-08-24)
+
+**Status:** Accepted · 2026-08-24 · closes LIVE-071 · finishes what [ADR-081](DECISIONS.md) started ·
+touches `app/(main)/feed/page.tsx`, `lib/analytics/journeys.ts`; deletes `app/onboarding/vera/page.tsx`
+and `components/onboarding/vera-concierge.tsx`. **NO migration.**
+
+**Context.** ADR-081 moved Vera's onboarding out of a standalone page and into a lightbox over the
+feed in June, on the reasoning that a separate page "pulled the Founder out of the product on their
+first second inside". Its consequences paragraph then kept the old page "as a direct-nav fallback".
+
+Nothing ever linked that fallback. A sweep on 2026-08-24 found zero inbound references from `app/`,
+`components/` or `lib/` — the only mentions were the page's own file and a note in the journeys
+registry. So for fifteen weeks the route existed, rendered, and could not be reached by any member
+following the product.
+
+The second half is what makes this worth an ADR rather than a delete. The page was the ONLY emitter
+of `onboarding.vera_opened`, which is activation-funnel step 2 (ADR-075) and appears on
+`/admin/engagement`. So "Met Vera" has read zero for its entire life, and it was never a measurement
+of whether members meet Vera — it measured whether they reached a page they had no route to. An
+operator reading that funnel would conclude nobody meets Vera, when in fact the lightbox is the path
+and it fires for every post-induction member.
+
+**Decision.**
+- **Retire the page** and `VeraConcierge`, its only consumer. `app/onboarding/vera-actions.ts` STAYS:
+  it is imported by `vera-chat`, `vera-lightbox` and `vera-concierge`'s replacement path, and it is
+  the server seam the lightbox itself calls.
+- **Move the marker to the surface members reach.** `onboarding.vera_opened` is emitted server-side
+  in `app/(main)/feed/page.tsx`, inside the `showVeraWelcome` branch — the exact point where the app
+  decides to show a member Vera. Server-side because the event is `clientEmittable: false` in the
+  registry and the feed page is a Server Component, so the seam stays honest.
+- **Key it per profile.** Meeting Vera is a lifecycle fact, not a page view, so the emit passes
+  `idempotencyKey: onboarding.vera_opened:<profileId>`. Re-opening `/feed?welcome=vera` cannot add a
+  second row. This is the `account.created` pattern from `lib/analytics/track.ts`, and it is
+  STRICTER than the page it replaces, which counted every visit.
+
+**Consequences.** "Met Vera" starts measuring something true, and the number it reports will rise
+from zero for the first time — that is the fix working, not a regression, and anyone reading the
+funnel should expect the step change. Three docs that still described the standalone page as "the
+primary new-member path" are corrected in the same change (`ONBOARDING.md`, `DEVELOPMENT-MAP.md`,
+`GROWTH-OS-BUILD-PLAN.md`); they had been wrong since ADR-081, not since today. **Reversible:** the
+page is one file in git history and the emit is four lines; nothing about the lightbox changed.
+
+## ADR-1105: The master calendar collapses a series to a Repeats strip, and READS the anchor to do it (2026-08-24)
+
+**Status:** Accepted · 2026-08-24 · closes LIVE-081 · builds on [ADR-897](DECISIONS.md) (the HTML
+series fold) and [ADR-807](DECISIONS.md) (the .ics collapse) · adds `lib/events/calendar-repeats.ts`
++ `components/events/calendar-repeats-strip.tsx`; touches `app/(main)/events/calendar/page.tsx`,
+`components/events/event-calendar.tsx`, `lib/events/store.ts`. **NO migration, and the materialiser
+is untouched.**
+
+**Context.** 17 of the 20 upcoming events on `/events/calendar` were dates of two weekly series, so
+85% of the master calendar was two events repeating. Every other browse surface has folded since
+ADR-897, but a calendar must not fold: the owner's standing instruction (pinned by
+`components/events/series-browse-wiring.test.ts`) is that every date shows on a calendar. Those two
+rules only look contradictory. **A date can stay on the grid without occupying a card.**
+
+**Decision.**
+- **A Repeats strip between the month header and the grid**, one CHIP per series carrying the series
+  name AND its cadence ("Breathe Connect Expand · Thursdays"). An unlabelled icon fails the skeptic
+  test, so there are no bare markers. The chip's NAME is a link to the next date; the cadence half is
+  an `aria-pressed` toggle that HIGHLIGHTS that series' dates. It filters nothing and hides nothing.
+- **The next date of a series keeps its card; every later date becomes a dot** in its own cell. So
+  "what is on this Thursday" is still answerable at a glance, no date is deleted, and ~16 of the 17
+  repeat cards leave the grid.
+- **Dates past the 60-day materialised horizon are COMPUTED for display only** and drawn as a hollow
+  dot that is deliberately not clickable, under one line of copy saying those dates open for RSVP
+  about two months ahead. A computed date has no event row, so it has no page, no RSVP and no ticket,
+  and the grid must never link a member into nothing. Raising `HORIZON_DAYS` is a separate decision.
+- **Scope is `/events/calendar`.** The `repeats` prop is optional, so the Space and manage calendars
+  render exactly as before.
+
+**🔴 The premise that was wrong, and is the real content of this ADR.** The row (and the obvious
+reading of the schema) says to take the cadence from the anchor's `recurrence_type` +
+`recurrence_until`. **The anchor is not in the feed.** `public_calendar_feed()` floors at
+`now() - 1 day`, so an established series' anchor row aged out months ago while its children keep
+arriving, and a materialised child carries `recurrence_type: 'none'` by DB CHECK. Measured against
+production on 2026-08-24: both live weekly series had **zero** anchors in the feed and eight children
+each, so the cadence existed nowhere the page could reach. `listSeriesAnchors()` therefore reads the
+anchors back BY ID, gated to published + public + not cancelled + not staff-removed + not demo + a
+real cadence — the master-feed gate MINUS its date floor, which is the one clause that has to go,
+re-applied in JS by `seriesAnchorIsLive()`. It fails safe to `[]`, which costs the strip its cadence
+labels and its computed dates and never costs the grid an event.
+
+**Consequences.** The grouping key is `parent_event_id ?? id` and never the cadence, which is pinned
+behaviourally: mutating it to `recurrence_type` fails 8 of the 19 tests in
+`lib/events/calendar-repeats.test.ts`, whose fixture is copied from the production feed. The page
+gained one read (`listSeriesAnchors`, run in parallel with the engagement read). All the logic is in
+a pure, clock-free module rather than the route file, following the `circles/sort.ts` precedent.
+**Reversible:** drop the `repeats` prop and the calendar renders as it did.

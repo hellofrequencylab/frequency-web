@@ -20,6 +20,7 @@ import { JourneyBoard } from '@/components/feed/journey-board'
 import { VeraLightbox } from '@/components/onboarding/vera-lightbox'
 import { autoPopupsEnabled } from '@/lib/onboarding/flags'
 import { buildVeraOpening, buildWelcomeSlides } from '@/lib/onboarding/vera-welcome'
+import { track } from '@/lib/analytics/track'
 import { getPracticesToLogToday, getPartialPracticesToday } from '@/lib/practices'
 import { getMemberProgress } from '@/lib/member-progress'
 import { getMemberPillarBalance } from '@/lib/pillars'
@@ -116,6 +117,23 @@ export default async function FeedPage({
           location: beta.location?.label ?? null,
         }
         veraWelcome = { slides: buildWelcomeSlides(ctx), opening: buildVeraOpening(ctx) }
+
+        // Activation-funnel step 2, "Met Vera" (ADR-075). This used to be emitted by the
+        // standalone /onboarding/vera page, which ADR-081 replaced with this lightbox in June
+        // and then kept "as a direct-nav fallback". Nothing ever linked the fallback, so the
+        // marker never fired and the funnel step read zero for its whole life — it was pointed
+        // at a surface members did not reach. It is emitted HERE now, at the moment the app
+        // decides to show a member Vera, which is the surface they actually meet her on.
+        //
+        // Server-side on purpose: the event is `clientEmittable: false` in the registry, and
+        // this is a Server Component, so the seam stays honest. Keyed per profile rather than
+        // per call because meeting Vera is a LIFECYCLE FACT, not a page view — re-opening
+        // /feed?welcome=vera must not add a second "met Vera" row. Same reasoning as
+        // `account.created` (lib/analytics/track.ts), and stricter than the page it replaces,
+        // which counted every visit.
+        await track('onboarding.vera_opened', {}, profile.id, {
+          idempotencyKey: `onboarding.vera_opened:${profile.id}`,
+        })
       }
       canAnnounce = ['host', 'guide', 'mentor', 'janitor'].includes(myRole)
     }

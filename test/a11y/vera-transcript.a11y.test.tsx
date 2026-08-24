@@ -35,7 +35,6 @@ vi.mock('next/navigation', () => ({
 }))
 
 import { VeraChat, COMPANION_OPENING } from '@/components/vera/vera-chat'
-import { VeraConcierge } from '@/components/onboarding/vera-concierge'
 import { VeraLightbox } from '@/components/onboarding/vera-lightbox'
 
 /** React tracks the input's value on the node, so a plain assignment is swallowed. */
@@ -103,32 +102,11 @@ describe('Vera transcript is a live region (LIVE-016)', () => {
     }
   })
 
-  it('the onboarding concierge transcript announces Vera’s replies', async () => {
-    // The concierge renders "Talk to Vera" until it is started, so this one is really mounted and
-    // really clicked: the transcript only exists on the far side of that tap. The mocked
-    // `conciergeTurn` above stands in for the server action so the turn resolves offline.
-    const host = document.createElement('div')
-    document.body.appendChild(host)
-    const root = createRoot(host)
-    try {
-      await act(async () => { root.render(<VeraConcierge />) })
-      const startButton = [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('Talk to Vera'))
-      expect(startButton, 'the concierge did not render its "Talk to Vera" entry point').toBeTruthy()
-      await act(async () => { startButton!.click() })
-      // The member's own first line is what proves the region wraps the appended bubbles.
-      await act(async () => {
-        const field = host.querySelector('input') as HTMLInputElement
-        setNativeValue(field, 'Hello Vera')
-        field.dispatchEvent(new Event('input', { bubbles: true }))
-      })
-      const send = [...host.querySelectorAll('button')].find((b) => b.getAttribute('aria-label') === 'Send')
-      await act(async () => { send!.click() })
-      assertTranscriptIsALiveRegion(host, 'Hello Vera')
-    } finally {
-      await act(async () => { root.unmount() })
-      host.remove()
-    }
-  })
+  // The onboarding CONCIERGE case was removed on 2026-08-24 with the component it mounted.
+  // LIVE-071 retired the standalone /onboarding/vera page and VeraConcierge, its only consumer,
+  // because nothing had linked that page since ADR-081 moved Vera into the feed lightbox in June.
+  // The LIVE-016 guarantee is unchanged for the two surfaces a member can still reach — the
+  // companion transcript above and the onboarding lightbox below — and both are still asserted.
 
   it('the onboarding lightbox transcript announces Vera’s replies', async () => {
     const opening = { message: 'Picking up where induction left off.', suggestions: ['Find me a Circle'], stage: 'orient' as const }

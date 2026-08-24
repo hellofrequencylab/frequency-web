@@ -1,8 +1,11 @@
 # Onboarding: progressive, non-blocking, AI-guided
 
 Status: **the Vera concierge path is ✅ LIVE** (shipped 2026-06-03, ADR-074/075) and is the
-**primary new-member path**: induction redirects to `/onboarding/vera` (the Vera concierge,
-[AI-VERA.md](AI-VERA.md)), with a feed first-run banner catching anyone who skips, and the
+**primary new-member path**: induction redirects to **`/feed?welcome=vera`**, where Vera opens as a
+lightbox over the real product (ADR-081), with a feed first-run banner catching anyone who skips.
+⚠️ Corrected 2026-08-24: this said induction redirects to a standalone `/onboarding/vera` page. It
+has not since ADR-081 in June, and that page was RETIRED by LIVE-071 after shipping fifteen weeks
+with zero inbound links, and the
 activation funnel instrumented end-to-end (ADR-075: `onboarding.induction_completed` →
 `onboarding.vera_opened` → `circle.joined` → `practice.adopted` → `profile.completed`, surfaced
 on `/admin/engagement`). The deterministic **coachmark tour (Phase 1) remains the designed
@@ -121,8 +124,9 @@ appears after the pacing gate clears, so it reads as a guide noticing you, not a
 
 ### Phase 2: AI concierge ✅ (shipped as Vera, 2026-06-03, ADR-074/075)
 
-This is the path that **shipped** and is now the primary new-member experience (`/onboarding/vera`,
-[AI-VERA.md](AI-VERA.md)); the Phase 1 coachmark tour above is its deterministic fallback when the
+This is the path that **shipped** and is now the primary new-member experience (the Vera lightbox
+over `/feed?welcome=vera`, [AI-VERA.md](AI-VERA.md); the standalone `/onboarding/vera` page it
+originally shipped on was retired by LIVE-071 on 2026-08-24); the Phase 1 coachmark tour above is its deterministic fallback when the
 AI kernel is off. The original spec:
 
 A conversational surface (slide-in) where Claude greets the newcomer, explains Frequency,
