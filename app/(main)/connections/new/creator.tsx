@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, useEffect } from 'react'
+import { Dialog } from '@/components/ui/dialog'
 import { useRouter } from 'next/navigation'
 import { ScanText, Pencil, Camera, Upload, Sparkles, Loader2, Check, X, User, ChevronDown, Mail, RefreshCcw } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -606,18 +607,14 @@ export function Creator({ userId }: { userId: string }) {
           {/* Take photo / Upload choice for a card side — Take photo opens the camera,
               Upload opens the library. Shown when a slot is tapped. */}
           {pickSide && (
-            <div
-              // The modal backdrop scrim is the INK tone at low alpha, not raw black, so the dim follows the skin.
-              className="fixed inset-0 z-[80] flex items-end justify-center bg-ink/40 backdrop-blur-sm sm:items-center"
-              onClick={() => setPickSide(null)}
-              role="dialog"
-              aria-modal="true"
-              aria-label="Add a card photo"
+            <Dialog
+              open
+              onClose={() => setPickSide(null)}
+              ariaLabel="Add a card photo"
+              align="bottom"
+              className="max-w-sm"
             >
-              <div
-                className="w-full max-w-sm space-y-1 rounded-t-2xl border border-border bg-surface p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lift-3 sm:rounded-card sm:pb-2"
-                onClick={(e) => e.stopPropagation()}
-              >
+              <div className="w-full space-y-1 rounded-t-2xl border border-border bg-surface p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lift-3 sm:rounded-card sm:pb-2">
                 <button
                   type="button"
                   onClick={() => { const s = pickSide; setPickSide(null); (s === 'back' ? backCamRef : frontCamRef).current?.click() }}
@@ -640,7 +637,7 @@ export function Creator({ userId }: { userId: string }) {
                   Cancel
                 </button>
               </div>
-            </div>
+            </Dialog>
           )}
         </div>
       ) : (

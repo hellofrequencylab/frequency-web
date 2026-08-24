@@ -13,7 +13,7 @@ import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shr
 import { looksLikeImage } from '@/lib/library/upload-kinds'
 import { TYPE_LABELS, type SupportContext, type TicketType } from '@/lib/support/types'
 import type { HelpCitation } from '@/lib/ai/help-rag'
-import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
+import { Dialog } from '@/components/ui/dialog'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { Input, Textarea } from '@/components/ui/field'
 
@@ -57,12 +57,6 @@ export function ReportDialog({
   const [asking, startAsk] = useTransition()
   const [vera, setVera] = useState<{ answer: string | null; citations: HelpCitation[]; deflected: boolean } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
-  const panelRef = useRef<HTMLDivElement>(null)
-
-  // Trap + restore focus while open (mirrors ui/Dialog). ESC + scroll-lock stay in the
-  // effect below; the hook adds only the focus concerns this hand-rolled dialog missed.
-  useDialogFocusTrap(open, panelRef)
-
   // "Ask Vera before you file" — try the help center first; if it answers, the member can
   // close without filing a ticket (the support-deflection / intake side of the loop).
   function askVera() {
@@ -74,19 +68,6 @@ export function ReportDialog({
       setVera(r.data)
     })
   }
-
-  // Esc to close + lock body scroll while open.
-  useEffect(() => {
-    if (!open) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.body.style.overflow = prev
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open, onClose])
 
   // Revoke the preview object URL when it changes/unmounts.
   useEffect(() => () => { if (shot) URL.revokeObjectURL(shot.url) }, [shot])
@@ -173,25 +154,16 @@ export function ReportDialog({
   const lines = contextLines(context)
 
   return (
-    <div
-      className="fixed inset-0 z-[80] flex items-stretch justify-center bg-ink/60 backdrop-blur-sm sm:items-center sm:p-4"
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
-    >
+    <Dialog open onClose={onClose} ariaLabelledBy="report-dialog-title" align="sheet" className="sm:max-w-lg">
       <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Report an issue"
-        tabIndex={-1}
         onPaste={onPaste}
         onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
         onDragLeave={(e) => { if (e.currentTarget === e.target) setDragging(false) }}
         onDrop={onDrop}
-        className={`relative flex w-full flex-col overflow-y-auto border-border bg-canvas p-4 lift-3 outline-none motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[92vh] sm:max-w-lg sm:rounded-3xl sm:border ${dragging ? 'ring-2 ring-primary' : ''}`}
-        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+        className={`relative flex w-full flex-col overflow-y-auto border-border bg-canvas p-4 lift-3 outline-none sm:max-h-[92vh] sm:rounded-3xl sm:border ${dragging ? 'ring-2 ring-primary' : ''}`}
       >
         <div className="mb-1 flex items-center justify-between">
-          <p className="text-body font-bold text-text">{done ? 'Report sent' : 'Send a report'}</p>
+          <p id="report-dialog-title" className="text-body font-bold text-text">{done ? 'Report sent' : 'Send a report'}</p>
           <button type="button" onClick={onClose} aria-label="Close" className="rounded-pill p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text">
             <X className="h-5 w-5" />
           </button>
@@ -383,6 +355,6 @@ export function ReportDialog({
           </>
         )}
       </div>
-    </div>
+    </Dialog>
   )
 }
