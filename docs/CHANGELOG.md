@@ -121,6 +121,26 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Fixed
 
+- **Blocking now stops friend requests too**: blocking someone removed you as friends and closed
+  direct messages, but they could still send a friend request, and each one sent you a
+  notification. It cannot any more, in either direction.
+- **A Space's new Circles show up on its Circles tab**: a Circle that was still gathering people
+  did not appear on the Space's public page, so a Space could show "Circles 0" while its own
+  manage screen listed them.
+- **"Most room" sorts by most room**: a Circle with no size limit used to sort below one with a
+  single seat left. It now ranks where it should.
+- **A message that does not send says so**: if the connection dropped mid-send, the message
+  looked sent, and what you typed was gone. It now stays in the box with a note, so you can
+  send it again.
+- **Events kept off the browse listings stay off**: a ticketed event whose host turned off
+  "List this event publicly" no longer appears on the Market Tickets rail.
+- **A Space's billing page keeps working when a payment step fails**: an error while opening the
+  billing portal or starting a checkout used to replace the whole page. It now shows on the card
+  that asked.
+- **Email that hits a daily sending limit waits instead of being dropped**: mail now retries past
+  the limit rather than giving up inside a few minutes, and a bulk send can no longer use up the
+  room a welcome email needs.
+
 - **Repeating events land on the right dates**: a monthly event set on the 29th, 30th, or
   31st now falls on the last day of shorter months (so a "31st" series hits Feb 28 or 29,
   then March 31, April 30) instead of skipping a month.
