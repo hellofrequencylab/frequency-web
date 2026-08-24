@@ -122,11 +122,16 @@
 // node_modules measured 1.44 GiB — over the floor, exit 1 — of which 0.49 GiB was orphans absent
 // from `pnpm-lock.yaml`: two copies of `next`, two of `@supabase/cli-linux-x64` at 154 MB each, two
 // of `@next/swc-linux-x64-gnu`. Subtract them and it is 0.96 GiB, which is Vercel's 947 MB. A
-// Vercel build installs from the lockfile into an empty tree and never has them. If this fails
-// locally, check for orphans before believing it.
+// 🔴 AND SO DOES A VERCEL BUILD — this note used to end "a Vercel build installs from the lockfile
+// into an empty tree and never has them", and on 2026-08-24 that premise killed every deploy in the
+// repo for hours. Vercel RESTORES node_modules from the build cache (prepareCache, above), so it has
+// the same orphans, and the floor arm below read them as a grown install. The prune wired at
+// `orphansPruned` removes them first, in both places, so the figure the budgets weigh is the install
+// the lockfile describes. See scripts/lib/pnpm-orphans.mjs and backlog HYG-016.
 // ─────────────────────────────────────────────────────────────────────────────
 import { lstatSync, readdirSync, rmSync, existsSync } from 'node:fs'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 // ── WARN-ONLY: the stage between "fixed" and "enforcing" ────────────────────────────────────
 // LIVE-035's problem was never whether this gate is correct on paper. It is that the ONE thing it
@@ -336,7 +341,66 @@ const mib = (b) => (b / MIB).toFixed(0)
 /** Raw bytes on disk to the packed bytes Vercel weighs. The one conversion in this file. */
 const packed = (rawBytes) => rawBytes * PACKED_PER_RAW
 
-const nodeModules = measure('node_modules')
+// ── ORPHANED pnpm STORE ENTRIES, REMOVED BEFORE THE FLOOR IS WEIGHED (HYG-016) ───────────────
+// 🔴 THIS IS THE ARM THAT DEADLOCKED THE REPO, and it deadlocked it through the FLOOR arm below
+// rather than through the trim. On 2026-08-24 every deploy — production and every preview — failed
+// on `node_modules is 1.39 GiB, over the 1.25 GiB floor budget`, while a build of the same lockfile
+// that happened to start from a COLD cache measured `node_modules 932 MiB` and passed. Nothing had
+// grown. The 458 MiB was superseded package copies: Vercel caches `node_modules/**` (the
+// prepareCache contract at the top of this file), `pnpm install --frozen-lockfile` adds the versions
+// the lockfile asks for without removing the versions it no longer asks for, and a failed build
+// uploads no cache — so the stale tree survived every attempt and re-poisoned the next build. The
+// repo could not clear it from inside. Every deploy waited on a human redeploying without the cache.
+//
+// The comment eighty lines above USED to say this could not happen on Vercel ("installs from the
+// lockfile into an empty tree and never has them"). That was written from a dev container and was
+// never re-tested against a Vercel build, which restores node_modules and therefore has exactly the
+// condition it ruled out. It is corrected in scripts/lib/pnpm-orphans.mjs, which also explains why
+// an orphan is identified by REACHABILITY over the symlink graph rather than by a lockfile diff.
+//
+// WHY THIS DELETE IS NOT THE 2026-08-18 DELETE. That one dropped the incremental FETCH cache, which
+// only the network could rebuild, mid-prerender, and hung two builds for 46 minutes. node_modules is
+// reconstructible from pnpm-lock.yaml by the install step that runs before every build — repairing
+// it is what that step is FOR — so the worst case of a wrong deletion here is a slower install, not
+// a build that does not finish. The bound is the argument; confidence is not.
+//
+// It runs unconditionally rather than only when over the floor, because an orphan is dead weight in
+// the cache at any size and leaving it means the deadlock re-forms on the next bump. It runs never
+// in --warn-only, which promises to delete nothing. A crash here skips the prune and lets the arms
+// below run on the unpruned figure: a gate that fails to tidy must still be a gate.
+let nodeModules = measure('node_modules')
+let orphansPruned = null
+if (!WARN_ONLY) {
+  try {
+    // Resolved from ROOT rather than imported relatively: scripts/check-cache-budget-warn-only.test.ts
+    // proves this file's guarantees by running MUTATED COPIES of it out of a temp directory, where a
+    // sibling `./lib/...` specifier does not exist. A static import would make those mutants die on
+    // module resolution and pass their exit-code assertions for the wrong reason.
+    const { pnpmOrphans } = await import(pathToFileURL(path.join(ROOT, 'scripts/lib/pnpm-orphans.mjs')).href)
+    const { orphans, entries } = pnpmOrphans(ROOT)
+    if (orphans.length > 0) {
+      const before = nodeModules
+      for (const name of orphans) rmSync(path.join(ROOT, 'node_modules/.pnpm', name), { recursive: true, force: true })
+      nodeModules = measure('node_modules')
+      orphansPruned = { count: orphans.length, of: entries.length, freed: before - nodeModules, before }
+    }
+  } catch (err) {
+    console.log(
+      `\n⚠️  check:cache-budget could not prune orphaned pnpm entries: ${err && err.message}.\n` +
+        `   Nothing was deleted and the budgets below are measured on the unpruned tree. If the ` +
+        `floor arm fails right after this line, that is HYG-016 and not a grown install.\n`,
+    )
+  }
+}
+if (orphansPruned) {
+  console.log(
+    `\n♻️  check:cache-budget removed ${orphansPruned.count} of ${orphansPruned.of} pnpm store ` +
+      `entries that nothing links to, reclaiming ${mib(orphansPruned.freed)} MiB.\n` +
+      `   node_modules ${mib(orphansPruned.before)} MiB → ${mib(nodeModules)} MiB. These are package ` +
+      `versions a restored cache still carried and the lockfile no longer asks for; no import can\n` +
+      `   resolve into them. See scripts/lib/pnpm-orphans.mjs (HYG-016).\n`,
+  )
+}
 let nextCache = measure('.next/cache')
 const yarnCache = measure('.yarn/cache')
 

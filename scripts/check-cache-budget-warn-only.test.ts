@@ -28,7 +28,15 @@ const SRC = readFileSync(SCRIPT, 'utf8')
 function runMutant(mutate: (src: string) => string, args: string[] = []): number {
   const dir = mkdtempSync(join(tmpdir(), 'cache-budget-'))
   const file = join(dir, 'mutant.mjs')
-  writeFileSync(file, mutate(SRC))
+  const mutated = mutate(SRC)
+  // A MUTATION THAT NO LONGER APPLIES PASSES EVERY ASSERTION BELOW, for the wrong reason: the
+  // unmutated script exits 0 in warn-only because that is exactly what it promises. So the mutators
+  // are pattern replacements against a file that keeps being edited, and one of them silently became
+  // a no-op on 2026-08-24 when `const nodeModules` became `let nodeModules` — the crash case stopped
+  // forcing a crash and the test asserting "it says CRASHED out loud" was the only thing that caught
+  // it. This makes the mutation itself the assertion rather than relying on that.
+  if (mutated === SRC) throw new Error('mutation did not apply — this test would pass vacuously')
+  writeFileSync(file, mutated)
   // cwd stays the repo root so the script measures the real node_modules, which is the point:
   // these assertions are about the exit code under a real measurement, not a mocked one.
   const res = spawnSync(process.execPath, [file, ...args], { cwd: process.cwd(), encoding: 'utf8' })
@@ -42,8 +50,8 @@ const breachFloor = (src: string) =>
 /** Force an unhandled throw partway through, after the warn-only handler is installed. */
 const forceCrash = (src: string) =>
   src.replace(
-    /^const nodeModules = measure\('node_modules'\)$/m,
-    "const nodeModules = (() => { throw new Error('simulated measurement failure') })()",
+    /^let nodeModules = measure\('node_modules'\)$/m,
+    "let nodeModules = (() => { throw new Error('simulated measurement failure') })()",
   )
 
 describe('check:cache-budget warn-only cannot fail a build', () => {
