@@ -2,8 +2,10 @@ import { describe, it, expect } from 'vitest'
 import {
   auditNames,
   discoverWrappers,
+  placeholderCeiling,
   runAudit,
   KIT_CONTROLS,
+  MAX_PLACEHOLDER_ONLY,
   MIN_FILES,
   MIN_JUDGED,
   MIN_WRAPPERS,
@@ -215,5 +217,75 @@ describe('check:a11y-names — against the REAL tree', () => {
       expect(result.files, `${file} must exist for KIT_CONTROLS to mean anything`).toBeGreaterThan(0)
     }
     expect(KIT_CONTROLS.size).toBeGreaterThanOrEqual(6)
+  })
+})
+
+describe('check:a11y-names — the weak-name ratchet', () => {
+  // A placeholder-only control is not a violation (axe-core accepts a non-empty placeholder, so
+  // failing on it would be stricter than the e2e pass and get routed around — ADR-970). It is
+  // RATCHETED instead. These are the tests that say the ratchet is wired, because a fail-safe
+  // nobody has watched fire is a fail-safe nobody knows is there.
+
+  it('🔴 FIRES when the count rises above the ceiling — the positive control', () => {
+    const verdict = placeholderCeiling(MAX_PLACEHOLDER_ONLY + 1)
+    expect(verdict.over).toBe(true)
+    expect(verdict.delta).toBe(1)
+  })
+
+  it('is silent AT the ceiling, so holding the line is not a failure', () => {
+    expect(placeholderCeiling(MAX_PLACEHOLDER_ONLY).over).toBe(false)
+  })
+
+  it('is silent BELOW the ceiling, and reports how far there is to re-seed', () => {
+    const verdict = placeholderCeiling(MAX_PLACEHOLDER_ONLY - 10)
+    expect(verdict.over).toBe(false)
+    expect(verdict.delta).toBe(-10)
+  })
+
+  it('the ceiling is a number the repo can actually meet', () => {
+    const weak = runAudit().named.get('placeholder (weak)') ?? 0
+    expect(weak, 'lower MAX_PLACEHOLDER_ONLY in the same change that lowers the count').toBeLessThanOrEqual(
+      MAX_PLACEHOLDER_ONLY,
+    )
+  })
+
+  it('the tally and the collected sites are the same fact, counted twice', () => {
+    // The ceiling is applied to `weak.length`; the run PRINTS `named.get('placeholder (weak)')`.
+    // If those two ever drift, the number in the failure message stops pointing at the files in it.
+    const { named, weak } = runAudit()
+    expect(weak.length).toBe(named.get('placeholder (weak)') ?? 0)
+  })
+})
+
+describe('check:a11y-names — placeholder is the LAST naming path, not the first', () => {
+  // 🔴 THE REGRESSION THIS PINS. The placeholder test used to sit ahead of `htmlFor`, `wrapping
+  // label` and `contents`, so a properly labelled field WITH a placeholder scored
+  // `placeholder (weak)`. That inflated the printed number from 87 to 429 and made the ratchet
+  // above meaningless — it would have been guarding 347 controls that were never at risk. Move
+  // the check back up the chain and these three go red.
+
+  const via = (src: string) => {
+    const { named } = auditNames(src, KIT)
+    return [...named.keys()]
+  }
+
+  it('an explicit <label htmlFor> beats the placeholder', () => {
+    expect(via('<div><label htmlFor="city">City</label><Input id="city" placeholder="City" /></div>')).toEqual([
+      'htmlFor',
+    ])
+  })
+
+  it('a wrapping <Field label> beats the placeholder', () => {
+    expect(via('<Field label="Title"><Input placeholder="e.g. Wednesday Ride" /></Field>')).toEqual([
+      'wrapping label',
+    ])
+  })
+
+  it('an aria-label beats the placeholder', () => {
+    expect(via('<Input aria-label="Journey title" placeholder="Name your Journey" />')).toEqual(['aria-label'])
+  })
+
+  it('and a placeholder ALONE is still counted as the weak name it is', () => {
+    expect(via('<Input placeholder="Street address" />')).toEqual(['placeholder (weak)'])
   })
 })
