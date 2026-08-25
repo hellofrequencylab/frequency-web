@@ -29757,3 +29757,109 @@ The exclusion was true, the reasoning was sound, and it had been written three t
 note and a ledger comment without ever being a decision. A committed order is a promise; walking one
 back is a decision, and decisions live here. Same shape as [ADR-1112](#adr-1112): the thing to
 distrust is not the finding, it is a finding that never got recorded where it would be read.
+
+---
+
+## ADR-1120: Operator page copy inherits down the route tree, and the six rows that already existed were the section rung all along (2026-08-25)
+
+**Status:** accepted · advances `PROG-P6` (Re-theme P6, the copy cascade) · generalizes
+[ADR-180](#adr-180) / [ADR-182](#adr-182) · feeds PROG-P4's `resolveIndexHero` (and PROG-P5's
+detail-side twin when it lands) · enforced by `lib/layout/content-cascade.test.ts` +
+`lib/layout/index-hero.test.ts`
+
+### What the row said, and what the table actually held
+
+`PROG-P6` reads: "Generalize `page_content` into a site → section → page inherit-cascade, widen
+editable fields to body copy and images, and extend `check:canon` to `.tsx`." Two of those three
+clauses did not survive measurement.
+
+**`check:canon` already covers `.tsx`, and has since [ADR-1065](#adr-1065).** `SEAM_ROOTS` is
+`['app', 'lib', 'components']` and the walk takes `/\.tsx?$/`. Measured on this branch:
+**3,406 seam files, 1,882 of them `.tsx`, 21,674 member-facing strings judged, 0 violations.** The
+clause was closed by `LIVE-018` eight days before this row was picked up, and the row never heard.
+The number to quote for "how many violations would turning it on surface" is **zero**, because it
+is on.
+
+**`page_content` does not hold copy.** The production table was read before anything was designed:
+
+| Rows | On section roots | Setting `title` | Setting `description` | Setting `hero_image` | Setting a usable CTA |
+|---|---|---|---|---|---|
+| 6 | 6 | **0** | **0** | **6** | **0** |
+
+`/circles`, `/events`, `/journeys`, `/nearby`, `/network`, `/practices`. Every row is a section
+root. Not one sets a word of copy. All six set a hero image. The one row that mentions a CTA
+(`/circles`, label `"Start a Circle"`) has an **empty `cta_href`**, so it has never rendered.
+
+So the operator's real use of this table is a single field, the section hero, stored at exactly the
+rung a cascade would inherit *from* — while the reader only ever looked at the exact route. The
+cascade is not a generalization waiting for data. It is the thing that makes six rows that already
+exist reach the pages under them.
+
+### The decision
+
+`lib/layout/content-cascade.ts` resolves a route against **page → section(s) → site → coded
+fallback**, in one `WHERE route IN (...)`, request-cached and fail-safe.
+`resolvePageContent` calls it. **No migration, no new column**: the section rung is the row that is
+already there.
+
+Three properties, each a consequence rather than taste:
+
+1. **Per FIELD, not per row.** A page that sets only its title still inherits its section's hero.
+   That is the difference between a cascade and a fallback chain.
+2. **Identity does not inherit.** `title` and `description` resolve at the page rung or fall
+   through to the coded copy. A section titled "Events" inherited by `/events/calendar` renames the
+   calendar; and both feed `pageContentMetadata` straight into `<title>`, the meta description and
+   the og/twitter cards, so inheriting them would emit one description across a whole section. That
+   is the duplicate-metadata pattern `check:seo` exists to keep out of this tree, manufactured by
+   the cascade itself.
+3. **The CTA is one unit.** Label and href come from the nearest scope that sets *either*, and
+   render only when both survive. Resolving them independently would splice a page's label onto a
+   section's link, and production's `/circles` row is the live proof that the halves come apart: a
+   label with no link would otherwise be handed to the first page beneath `/circles` that set a
+   link of its own, labelling someone else's button.
+
+The site rung is the reserved key `'*'`, **deliberately not `'/'`**. The home page already owns the
+`'/'` row for its SEO title and meta description alone, so making `'/'` the site rung would quietly
+promote the home page's `<title>` to the default for every page in the app. Production's `'/'`
+fields are empty, which is precisely what would have made that the expensive kind of mistake.
+
+### The adoption, and the bug it closes
+
+`resolveIndexHero` (PROG-P4) now **resolves rung 2 itself** instead of waiting to be handed it.
+`/network` is why. It has carried a `page_content.hero_image` since June, it resolves that very row
+for its title and description, and it calls `resolveIndexHero('/network')` with no `contentImage` —
+so the operator's uploaded directory cover has been invisible in production for two months. Four
+adopters had the same shape. Making the resolver read what it needs closes the class instead of the
+instance.
+
+One guard rides with it. `INDEX_HERO_DEFAULTS` rows gain **`inheritHero`** (default true), set
+`false` on the three utility rows. `/journeys` and `/network` both carry heroes; without the flag
+the cascade would hand `/journeys/mine`, `/network/contacts` and `/network/friends` a section
+photograph and silently overturn the documented short/large split, which says a management space
+gets the band without the billboard. A hero set on the utility route *itself* still wins, because
+that is not inheritance. **A cascade that can reverse a product decision by arriving is a cascade
+with a missing parameter.**
+
+`longestPrefixRow` moves into the cascade module and `index-hero.ts` consumes it. The same loop was
+written by hand there, again in PROG-P5's in-flight `detail-hero.ts`, and was about to be written a
+third time.
+
+### What this cascade does NOT subsume, stated so nobody tries
+
+It does not replace the two hero ladders, and the reason is not that the work was skipped. The
+cascade is a **lookup mechanism over one table**. The ladders **order different tables by
+ownership**, and they order them deliberately opposite: `resolveIndexHero` puts the operator's
+`page_settings` image on top because an operator owns a browse surface; `resolveDetailHero` puts the
+entity's own cover on top because a host owns their Circle. Collapsing them into one three-rung
+cascade would force the detail side to invert and hand a site-wide setting authority over a host's
+own photograph. What genuinely was shared is now shared: the prefix loop, and the `page_content`
+rung itself.
+
+### What is left, and it is counted on `PROG-P6`
+
+"Widen editable fields to body copy and images" is the remaining half and it is the half that needs
+columns. It is deliberately not in this change: a new migration file makes every other open branch
+red under `check:migrations --require-ledger` until it merges, and there were four branches open the
+night this landed. Also unwritten: an operator surface for the `'*'` site rung. The resolver reads
+it and the test covers it; `CONTENT_EDIT_ROUTES` gates writes to real routes, so nothing can set it
+yet. Both are on the row, not in a new document.

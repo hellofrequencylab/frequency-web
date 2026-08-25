@@ -2,6 +2,7 @@ import { cache } from 'react'
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadPageSettings } from '@/lib/page-settings/store'
+import { resolveContentCascade } from '@/lib/layout/content-cascade'
 
 // Operator-editable page content, keyed by route (ADR-180/182). A coded page reads
 // this and falls back to its hardcoded default when nothing is set, so editing is
@@ -16,6 +17,13 @@ import { loadPageSettings } from '@/lib/page-settings/store'
 //     nothing). The CTA renders only when BOTH label and href are set.
 //
 // Cached per request so the header, metadata, and hero/CTA all share one read.
+//
+// ── THE READ IS A CASCADE NOW (PROG-P6, ADR-1120) ────────────────────────────
+// `resolvePageContent` resolves site -> section -> page -> coded fallback via
+// lib/layout/content-cascade.ts, so a route beneath a section inherits that
+// section's hero and CTA instead of resolving to nothing. `getPageContent` below
+// is UNCHANGED and still exact-route: it is what the operator editor reads, and an
+// editor must show what THIS route stores, never what it borrows.
 //
 // 🔴 THIS FILE USED TO CAST THE ROW TO A HAND-WRITTEN SHAPE, and that is how the
 // `hero_image` bug in ADR-1020's amendment stayed invisible. The comment here said
@@ -61,18 +69,26 @@ export const getPageContent = cache(async (route: string): Promise<PageContent |
   }
 })
 
-/** Resolve a page's editable content, preferring the operator override. */
+/** Resolve a page's editable content through the site → section → page CASCADE (PROG-P6,
+ *  ADR-1120), with the page's coded copy as the last rung.
+ *
+ *  This used to be `getPageContent(route)` — one `.eq('route', route)` read — and the difference is
+ *  only visible on a route BENEATH a section that has a row. `/events/calendar` now inherits
+ *  `/events`'s hero; `/events` itself resolves exactly as it did. Identity fields (title,
+ *  description) deliberately do NOT inherit: see lib/layout/content-cascade.ts for why, and for the
+ *  CTA's pair rule. `getPageContent` keeps its exact-route meaning — the editor must show an
+ *  operator what THIS route stores, not what it borrows. */
 export async function resolvePageContent(
   route: string,
   fallback: PageContent,
 ): Promise<PageContent> {
-  const c = await getPageContent(route)
+  const c = await resolveContentCascade(route, fallback)
   return {
-    title: c?.title?.trim() || fallback.title,
-    description: c?.description?.trim() || fallback.description,
-    heroImage: c?.heroImage?.trim() || fallback.heroImage || null,
-    ctaLabel: c?.ctaLabel?.trim() || fallback.ctaLabel || null,
-    ctaHref: c?.ctaHref?.trim() || fallback.ctaHref || null,
+    title: c.title,
+    description: c.description,
+    heroImage: c.heroImage,
+    ctaLabel: c.ctaLabel,
+    ctaHref: c.ctaHref,
   }
 }
 

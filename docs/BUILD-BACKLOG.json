@@ -63,7 +63,8 @@
             "LIVE-097",
             "LIVE-098",
             "HYG-013",
-            "LIVE-081"
+            "LIVE-081",
+            "LIVE-111"
           ]
         },
         {
@@ -1472,11 +1473,11 @@
         "file": "docs/BUILD-LIST.md",
         "ref": "Re-theme P6"
       },
-      "detail": "Generalize page_content into a site → section → page inherit-cascade, widen editable fields to body copy and images, and extend check:canon to .tsx. Overlaps LIVE-018.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
+      "detail": "Generalize page_content into a site -> section -> page inherit-cascade, widen editable fields to body copy and images, and extend check:canon to .tsx. Overlaps LIVE-018.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.\n\n🔴 PREMISE RE-TESTED 2026-08-25 (ADR-1120). Two of the three clauses did not survive measurement.\n\n✅ CLAUSE 3 WAS ALREADY DONE, by LIVE-018 / ADR-1065, eight days before this row was picked up. check:canon's SEAM_ROOTS is ['app','lib','components'] and its walk takes /\\.tsx?$/. Measured: 3,406 seam files, 1,882 of them .tsx, 21,674 member-facing strings judged, 0 violations. The violation count for 'turning it on' is ZERO, because it is on.\n\n⚠️ CLAUSE 1'S PREMISE WAS BACKWARDS. page_content does not hold copy. Production, read 2026-08-25: SIX rows, all six on SECTION ROOTS (/circles, /events, /journeys, /nearby, /network, /practices). ZERO set title. ZERO set description. ALL SIX set hero_image. The one row mentioning a CTA (/circles, label 'Start a Circle') has an EMPTY cta_href, so it has never rendered. The operator's real use of this table is one field, the section hero, stored at exactly the rung a cascade would inherit FROM, while the reader only ever looked at the exact route.\n\n✅ SHIPPED (ADR-1120): lib/layout/content-cascade.ts, resolving page -> section(s) -> site ('*') -> coded fallback in one query, request-cached, fail-safe, PER FIELD. Identity fields (title/description) deliberately do not inherit, because they feed pageContentMetadata and inheriting them manufactures duplicate meta descriptions across a section; the CTA resolves as ONE unit so a page label is never spliced onto a section link. NO MIGRATION: the section rung is the row that already exists. resolvePageContent consumes it. resolveIndexHero now resolves rung 2 itself, closing a live bug: /network has carried a page_content hero since June and dropped it on the floor. INDEX_HERO_DEFAULTS gains inheritHero (false on the three utility rows) so the cascade cannot silently overturn the short/large split. longestPrefixRow is shared out of the cascade module and index-hero consumes it. 26 cascade tests plus 10 new index-hero tests.\n\n⏳ STILL OPEN, COUNTED HERE AND NOWHERE ELSE:\n  (a) WIDEN THE EDITABLE FIELDS to body copy and images. This is the half that needs COLUMNS, and it is deliberately not in the cascade PR: a new migration file makes every other open branch red under check:migrations --require-ledger until it merges, and four branches were open that night. Its own PR, when the tree is quieter.\n  (b) AN OPERATOR SURFACE FOR THE SITE RUNG. The resolver reads '*' and the test covers it, but CONTENT_EDIT_ROUTES gates writes to real routes, so nothing can set it yet. One editor entry, not a schema change.\n  (c) The cascade does NOT subsume the two hero ladders, and that is a finding rather than a gap. See ADR-1120's last-but-one section: they order DIFFERENT tables by ownership, deliberately in opposite directions (operator-owned browse surface vs host-owned entity). What was genuinely shared is now shared: the prefix loop and the page_content rung.",
       "verify": {
         "kind": "manual",
-        "evidence": "Program phase.",
-        "checked": "2026-08-17"
+        "evidence": "Program phase. The shipped half is proven by lib/layout/content-cascade.test.ts (26 cases, every rung) plus lib/layout/index-hero.test.ts; the open half is (a) and (b) in the detail.",
+        "checked": "2026-08-25"
       }
     },
     {
@@ -3864,6 +3865,23 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const F='components/layout/site-header.tsx';if(!fs.existsSync(F))process.exit(79);const t=fs.readFileSync(F,'utf8');if(!/MobileMenu/.test(t)){console.error('SiteHeader still renders no phone navigation, so /discover/* and /help have no header nav below md');process.exit(1)}if(!/headerMenu=\\{headerMenu\\}/.test(t)){console.error('SiteHeader renders a phone menu but does not hand it the DB-backed headerMenu, so operator edits would not reach it');process.exit(1)}process.exit(0)\"",
         "note": "Measures the consequence: below md there is no header nav on these routes. Fails today; passes when the sheet is mounted AND fed the same menu the bar gets. Not a grep for the row title."
+      }
+    },
+    {
+      "id": "LIVE-111",
+      "title": "A CTA can be saved half-finished, and one has sat unrenderable in production since June",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1120"
+      },
+      "detail": "savePageContent (lib/page-content-actions.ts) accepts a cta_label with no cta_href and writes it. Both renderers require BOTH (migration 20260612050000), so the row is stored, is invisible, and gives the operator no signal that what they typed does nothing.\n\nMEASURED 2026-08-25 against production: page_content['/circles'] carries cta_label = 'Start a Circle' with cta_href EMPTY, last touched 2026-06-25. It has never rendered a button.\n\nTWO PARTS. (1) The WRITER should refuse the half-pair, or clear both, and say so. (2) The production row needs the missing link set or the label cleared, which is an owner data call since only the owner knows which was meant.\n\nThe READ side is already safe: the copy cascade (ADR-1120) resolves the CTA as one unit at every rung, so the dangling label is never spliced onto a descendant page's link. That is containment, not a fix.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Read from production page_content 2026-08-25: one row with cta_label set and cta_href empty. Re-measure with: select route, cta_label, cta_href from page_content where (cta_label is not null) <> (cta_href is not null).",
+        "checked": "2026-08-25"
       }
     },
     {
