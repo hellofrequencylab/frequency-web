@@ -32146,3 +32146,51 @@ other. Do not edit `20270327000000` — it describes an apply that already happe
 - ⚠️ **A retirement sweep is only as good as the clock it is read against.** "0 references" is a fact
   about one day. Nothing stopped a later branch from writing against the dropped table, and nothing
   will next time either — which is why the untyped handle, not the sweep, is the thing to fix.
+
+---
+
+## ADR-1145: a dead export is not automatically dead code, and a doc comment is not evidence of a caller (2026-08-25)
+
+**Status:** Accepted · `scripts/maintenance/dead-exports.mjs`, SCAN-502 (re-scoped), SCAN-510 (filed)
+
+**Context.** SCAN-502 was filed as an API-surface trim over ~154 lib modules carrying dead exports.
+Re-deriving the index — now committed as `scripts/maintenance/dead-exports.mjs` so the next reader
+re-runs it instead of trusting a number in a row — gives: **6,137 files walked, 5,765 consumers,
+1,213 lib modules, 7,688 attributable exports, 1,343 dead outside their own file, 45
+declaration-only.**
+
+**🔴 The load-bearing correction is which files count as consumers.** SCAN-502's first pass read only
+`.ts`/`.tsx` and scored `lib/help/drift.ts` and `lib/ai/autodoc.ts` as *fully dead*. Both are **live**,
+consumed by `scripts/*.mts`. A sweep run on that output deletes working code, so `CONSUMER_EXT` in the
+script is the line that matters: `.ts .tsx .mts .cts .cjs .mjs .js .jsx .yml .yaml .json .md .sql`.
+
+**And the framing needed a second correction.** Classifying the 19 unreferenced lib **functions** by
+hand splits them three ways, and only one third is safe to delete blindly:
+
+| kind | example | what a blind trim would do |
+| :-- | :-- | :-- |
+| **Built, never scheduled** | `runContestSweep` — its own doc says *"safe to run on a schedule"*, and none of `vercel.json`'s 27 crons calls it | **delete a finished feature** |
+| **Retired, stale doc** | `spaceTrailingProcessedCents` — still cites ADR-552 for the *"you'd have saved $X"* nudge, which **ADR-811 retired** | correct, but only by luck |
+| **Convenience wrapper** | most of the rest | correct — drop the `export` keyword |
+
+**Decision.** SCAN-502 stays open and stays a **judgement**, not a sweep. The index is a committed
+report that ranks; it does not decide. `runContestSweep` is filed separately as **SCAN-510**, because
+whether to wire a cron or delete the sweep is an owner ruling about whether the contest is live.
+
+**Consequences.**
+- 🔴 **And it is not evidence of the ABSENCE of one, either — I got this wrong on my own new row within
+  the hour.** SCAN-510 was first written saying the contest *"never tallies"*, from reading
+  `runContestSweep`'s callers and its doc. Both of its sibling recorders are in fact wired inline
+  (`lib/qr/referral.ts:121`, `app/(main)/circles/actions.ts:233`), so the contest tallies fine and only
+  the **reconciliation pass** is missing. Classifying one export means reading the module, not the
+  symbol.
+- ⚠️ **A doc comment is not evidence of a caller.** Two of the three categories above are
+  indistinguishable from their comments alone — one advertises a schedule it never got, the other
+  advertises a feature that was removed from under it. Both read as gaps; only one is.
+- This is the same lesson [ADR-1144](#adr-1144) reached from the opposite side. There, a *"0 code
+  references"* count was true on the day it was measured and false a month later. Here, a comment
+  describing an intended caller is true about intent and says nothing about the tree. **Neither a
+  count nor a comment survives being read later as a fact about now.**
+- `scripts/maintenance/dead-exports.mjs` fails only when its own walk stops descending (a 2,000-file
+  floor). It is a report, so it must not be a gate: a gate over 1,343 findings that nobody can action
+  is the shape [ADR-970](#adr-970) warns about.
