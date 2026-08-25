@@ -155,6 +155,14 @@ export const CREATE_GATES: Readonly<Record<string, CreateGate>> = {
     kind: 'scoped',
     why: 'The marketplace seller gate on the owning Space decides (lib/spaces/entitlements.ts), not a global capability.',
   },
+  housing: {
+    kind: 'scoped',
+    why:
+      'Signed in with a profile is the whole gate: createHousingListingAction (app/(main)/marketplace/actions.ts) ' +
+      'redirects to /sign-in and does nothing else. Housing is a NEIGHBOUR board, not a seller surface, so ' +
+      'unlike `listing` there is no owning Space and no seller entitlement to consult. Stated here rather ' +
+      'than left absent, because "no gate" and "nobody wrote the gate down" have to look different.',
+  },
   product: {
     kind: 'scoped',
     why: 'The owning Space role ladder decides who may add a product (lib/spaces/entitlements.ts).',

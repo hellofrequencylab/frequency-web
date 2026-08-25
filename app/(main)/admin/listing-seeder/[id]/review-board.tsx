@@ -423,15 +423,19 @@ function FieldEditor({
   if (field.input === 'amenities') {
     const toggle = (slug: string) =>
       setAmenities(amenities.includes(slug) ? amenities.filter((a) => a !== slug) : [...amenities, slug])
+    // The vocabulary comes from the FIELD, which the Studio manifest supplies (ADR-1151), so the
+    // chips an operator can pick and the values the DB CHECK accepts have one source. The fallback
+    // to the raw constant keeps this honest rather than blank if a spec ever omits its options.
+    const vocab = field.options ?? AMENITIES.map((a) => ({ value: a.slug, label: a.label }))
     return (
       <div className="flex flex-wrap gap-1.5">
-        {AMENITIES.map((a) => {
-          const on = amenities.includes(a.slug)
+        {vocab.map((a) => {
+          const on = amenities.includes(a.value)
           return (
             <button
-              key={a.slug}
+              key={a.value}
               type="button"
-              onClick={() => toggle(a.slug)}
+              onClick={() => toggle(a.value)}
               aria-pressed={on}
               className={cn(
                 'rounded-pill border px-2.5 py-1 text-2xs font-medium transition-colors',
